@@ -2948,27 +2948,28 @@
                full-book-name
                old-chk-sum
                ev-lst-chk-sum))
-          (t (er-let* ((fixed-cmds
-                        (make-include-books-absolute-lst
-                         (append
-                          cmds
-                          (cons (assert$
+          (t (mv-let (changedp fixed-cmds)
+               (make-include-books-absolute-lst
+                (append
+                 cmds
+                 (cons (assert$
 
 ; We want to execute the in-package here.  But we don't need to restore the
 ; package, as that is done with a state-global-let* binding in puff-fn1.
 
-                                 (and (consp (car ev-lst))
-                                      (eq (caar ev-lst) 'in-package))
-                                 (car ev-lst))
-                                (subst-by-position expansion-alist
-                                                   (cdr ev-lst)
-                                                   1)))
-                         (directory-of-absolute-pathname full-book-name)
-                         (cbd)
-                         (list* 'in-package
-                                'defpkg
-                                (primitive-event-macros))
-                         t ctx state)))
+                        (and (consp (car ev-lst))
+                             (eq (caar ev-lst) 'in-package))
+                        (car ev-lst))
+                       (subst-by-position expansion-alist
+                                          (cdr ev-lst)
+                                          1)))
+                (directory-of-absolute-pathname full-book-name)
+                (cbd)
+                (list* 'in-package
+                       'defpkg
+                       (primitive-event-macros))
+                t ctx state)
+               (declare (ignore changedp))
                (value `((set-cbd ,(get-directory-of-file full-book-name))
                         ,@fixed-cmds
                         (maybe-install-acl2-defaults-table

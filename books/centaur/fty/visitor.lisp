@@ -41,24 +41,6 @@
      sym)))
 (program)
 
-(defun search-deftypes-types (type-name types)
-  (if (atom types)
-      nil
-    (or (with-flextype-bindings (x (car types))
-          (and (eq type-name x.name) x))
-        (search-deftypes-types type-name (cdr types)))))
-
-(defun search-deftypes-table (type-name table)
-  ;; Returns (mv flextypes-obj type-obj) where type-obj describes either a sum,
-  ;; list, or alist type, and flextypes-obj contains the type-obj and any other
-  ;; types created in its mutual-recursion.
-  (if (atom table)
-      (mv nil nil)
-    (let ((type (search-deftypes-types type-name (flextypes->types (cdar table)))))
-      (if type
-          (mv (cdar table) ;; info for whole deftypes form
-              type) ;; info for this type
-        (search-deftypes-table type-name (cdr table))))))
 
 ;; (search-deftypes-table 'vl::vl-expr (table-alist 'flextypes-table (w state)))
 

@@ -97,6 +97,8 @@ interface_ansi_header ::=
                                               :vl-import
                                               ;; :vl-fwdtypedef -- bozo? not yet
                                               :vl-modport
+                                              ;; :vl-assertion -- I don't think these are ok?
+                                              ;; :vl-cassertion -- I don't think these are ok?
                                               )))
        (warnings
         (if (not bad-item)

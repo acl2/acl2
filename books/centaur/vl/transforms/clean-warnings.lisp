@@ -37,9 +37,10 @@
   :parents (transforms warnings)
   :short "A transform to clean up all the warnings in a design."
 
-  :long "<p>See @(see vl-clean-warnings), which sorts warnings and eliminates
-duplicates.  This transform just extends @('vl-clean-warnings') throughout a
-design.</p>")
+  :long "<p>The top-level function here is @(see vl-design-clean-warnings).
+This function simply applies @('vl-clean-warnings'), which sorts a list of
+warnings and eliminates duplicate warnings, to all of the warnings lists
+throughout the design.</p>")
 
 (local (xdoc::set-default-parents clean-warnings))
 

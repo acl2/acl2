@@ -1,0 +1,19 @@
+; Copyright (C) 2014, ForrestHunt, Inc.
+
+; Written by J Moore
+; Modifications for LLVM by David Hardin
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+(defpkg "LL2"
+  (set-difference-eq (union-eq *acl2-exports*
+                               *common-lisp-symbols-from-main-lisp-package*)
+                     '(push pop pc program step)))
+
+; Added by Matt K.:
+
+; The use of codewalker seems to require that parallelism be turned off (in
+; ACL2(p)).  The problem is that generate-def-semantics-name calls
+; fmt1-to-string, which leads to a call of with-local-state, which is
+; prohibited under waterfall parallelism.
+#+acl2-par
+#!acl2(set-parallel-execution nil)

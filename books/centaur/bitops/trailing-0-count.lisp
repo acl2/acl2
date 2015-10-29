@@ -229,7 +229,7 @@ bignums.</p>"
                (trailing-0-count-rec x 0)))
   ///
 
-  (defthm trailing-0-count-properties
+  (defthmd trailing-0-count-properties
     (implies (not (zip x))
              (let ((count (trailing-0-count x)))
                (and (logbitp count x)
@@ -239,6 +239,8 @@ bignums.</p>"
     :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
                                        bitops::ihsext-inductions)
             :induct (logbitp idx x))))
+
+  (local (in-theory (enable trailing-0-count-properties)))
 
   (local (in-theory (disable unsigned-byte-p)))
 
@@ -255,7 +257,9 @@ bignums.</p>"
              (< (trailing-0-count x) (integer-length x)))
     :hints(("Goal" :induct (trailing-0-count x)
             :expand ((:with bitops::integer-length** (integer-length x)))))
-    :rule-classes :linear))
+    :rule-classes ((:linear :trigger-terms ((trailing-0-count x))))))
+
+(local (in-theory (enable trailing-0-count-properties)))
 
 (local
  (defsection trailing-0-count-lemmas
@@ -375,7 +379,7 @@ bignums.</p>"
     (implies (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
              (<= (* 32 (nfix slice-idx))
                  (trailing-0-count-rec x slice-idx)))
-    :rule-classes :linear)
+    :rule-classes ((:linear :trigger-terms ((trailing-0-count-rec x slice-idx)))))
 
   (defthm trailing-0-count-rec-props2
     (implies (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
@@ -398,7 +402,7 @@ bignums.</p>"
                          (x (logtail (* 32 (nfix slice-idx)) x))))
                   :in-theory (disable loghead-zero-compose)))))
 
-  (defthm trailing-0-count-rec-props3
+  (defthmd trailing-0-count-rec-props3
     (implies (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
              (let ((ans (trailing-0-count-rec x slice-idx)))
                (implies (and (< (nfix idx) ans)
@@ -414,7 +418,7 @@ bignums.</p>"
                                 logbitp-when-bitmaskp)
             :do-not-induct t)))
 
-
+  (local (in-theory (enable trailing-0-count-rec-props3)))
 
   (defthm trailing-0-count-rec-rw2
     (implies (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))

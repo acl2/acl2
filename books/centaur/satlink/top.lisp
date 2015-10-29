@@ -307,8 +307,8 @@ and the various files in @('centaur/regression').</p>")
 
   :long "<p>For higher confidence (at some cost to runtime), some SAT solvers
 are able to produce UNSAT proofs.  Small programs such as <a
-href='http://www.cs.utexas.edu/~marijn/drup/'>drup-trim</a> can check these
-proofs, to ensure the SAT solver reasoned correctly.</p>
+href='http://www.cs.utexas.edu/~marijn/drat-trim/'>drat-trim</a> can check
+these proofs, to ensure the SAT solver reasoned correctly.</p>
 
 <p>Satlink now includes Perl scripts that can make use of this capability for
 the Glucose and Riss3g solvers.  In particular, see the following scripts:</p>
@@ -327,8 +327,8 @@ the Glucose and Riss3g solvers.  In particular, see the following scripts:</p>
 <li>When Glucose reports SAT, we just exit (because Satlink can check the
 satisfying assignment itself); or</li>
 
-<li>When Glucose reports UNSAT, we check the proof using the Drup-Trim unsat
-proof checker.  We only print an \"s UNSATISFIABLE\" line if Drup-Trim says
+<li>When Glucose reports UNSAT, we check the proof using the Drat-Trim unsat
+proof checker.  We only print an \"s UNSATISFIABLE\" line if Drat-Trim says
 that the proof is ok.</li>
 
 </ul>
@@ -346,8 +346,9 @@ solver and the verifier in real time, interrupt it, etc.</p>
 <li>Install @('glucose') and/or @('riss3g') as described in @(see
 sat-solver-options), and</li>
 
-<li>Install the <a href='http://www.cs.utexas.edu/~marijn/drup/'>drup-trim</a>
-program as @('drup-trim') somewhere in your PATH.</li>
+<li>Install the <a
+href='http://www.cs.utexas.edu/~marijn/drat-trim/'>drat-trim</a> program as
+@('drat-trim') somewhere in your PATH.</li>
 
 </ul>
 

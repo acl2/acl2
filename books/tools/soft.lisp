@@ -22,7 +22,7 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,7 +74,7 @@
 (define wfrel ((fun symbolp) (w plist-worldp))
   (cddr (caddr (justification fun w))))
 
-(define measure ((fun symbolp) (w plist-worldp))
+(define fmeasure ((fun symbolp) (w plist-worldp))
   (car (cadddr (justification fun w))))
 
 ; Logic-mode simplified version of the GUARD system utility.
@@ -459,7 +459,7 @@
 
 (define funvars-of-defun ((fun symbolp) (w plist-worldp))
   (let* ((body (body fun nil w))
-         (measure (measure fun w))
+         (measure (fmeasure fun w))
          (guard (fguard fun w))
          (body-funvars (funvars-of-term body w))
          (measure-funvars (funvars-of-term measure w)) ; NIL if no measure
@@ -472,7 +472,7 @@
 ; may reference function variables in their defining bodies.
 
 (define funvars-of-defchoose ((fun symbolp) (w plist-worldp))
-  (funvars-of-terms (defchoose-body fun w) w))
+  (funvars-of-term (defchoose-body fun w) w))
 
 ; Second-order theorems and their instances
 ; may reference function variables in their formulas.
@@ -1332,7 +1332,7 @@
               (plain-sofunp sofun w))
   (b* (;; retrieve body, measure, and guard of SOFUN:
        (sofun-body (body sofun nil w))
-       (sofun-measure (measure sofun w))
+       (sofun-measure (fmeasure sofun w))
        (sofun-guard (fguard sofun w))
        ;; extend instantiation with (SOFUN . FUN) if SOFUN is recursive
        ;; (so that recursive calls to SOFUN can be properly replaced with FUN)

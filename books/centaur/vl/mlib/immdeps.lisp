@@ -315,11 +315,10 @@ elements.")
           vl-arguments
           vl-paramargs
           vl-paramtype
-          vl-maybe-delayoreventcontrol))
-
-
-
-
+          vl-maybe-delayoreventcontrol
+          vl-exprdist
+          vl-propexpr
+          vl-propspec))
 
 (fty::defvisitor vl-stmt-immdeps
   :type statements
@@ -350,11 +349,11 @@ elements.")
 
 
 
-(defmacro def-vl-immdeps (type &key body verbosep guard-debug prepwork (ctxp 't))
+(defmacro def-vl-immdeps (type &key body verbosep guard-debug prepwork name-override (ctxp 't))
   (let* ((mksym-package-symbol 'vl::foo)
          (rec            (mksym type '-p))
          (fix            (mksym type '-fix))
-         (collect        (mksym type '-immdeps)))
+         (collect        (or name-override (mksym type '-immdeps))))
     `(define ,collect ((x   ,rec)
                        (ans vl-immdeps-p)
                        &key
@@ -366,14 +365,14 @@ elements.")
        :prepwork ,prepwork
        (b* ((x   (,fix x))
             (ans (vl-immdeps-fix ans))
-            (ss       (vl-scopestack-fix ss)))
+            (ss  (vl-scopestack-fix ss)))
          ,body))))
 
-(defmacro def-vl-immdeps-list (type element &key guard-debug verbosep (ctxp 't))
+(defmacro def-vl-immdeps-list (type element &key name-override element-name-override guard-debug verbosep (ctxp 't))
   (let* ((mksym-package-symbol 'vl::foo)
          (list-rec             (mksym type '-p))
-         (list-collect         (mksym type '-immdeps))
-         (element-collect      (mksym element '-immdeps)))
+         (list-collect         (or name-override (mksym type '-immdeps)))
+         (element-collect      (or element-name-override (mksym element '-immdeps))))
     `(define ,list-collect ((x   ,list-rec)
                             (ans vl-immdeps-p)
                             &key
@@ -775,8 +774,13 @@ elements.")
 
 (def-vl-immdeps-list vl-initiallist vl-initial :ctxp nil)
 
+(def-vl-immdeps vl-final
+  :ctxp nil
+  :body
+  (b* (((vl-final x)))
+    (vl-stmt-immdeps x.stmt ans :ctx x)))
 
-
+(def-vl-immdeps-list vl-finallist vl-final :ctxp nil)
 
 
 
@@ -837,6 +841,59 @@ elements.")
 (def-vl-immdeps-list vl-typedeflist vl-typedef :ctxp nil)
 
 
+(def-vl-immdeps vl-assertion
+  :name-override vl-assertion-top-immdeps
+  :ctxp nil
+  :body (vl-assertion-immdeps x ans :ctx ans))
+
+(def-vl-immdeps-list vl-assertionlist vl-assertion
+  :element-name-override vl-assertion-top-immdeps
+  :ctxp nil)
+
+(def-vl-immdeps vl-cassertion
+  :name-override vl-cassertion-top-immdeps
+  :ctxp nil
+  :body (vl-cassertion-immdeps x ans :ctx ans))
+
+(def-vl-immdeps-list vl-cassertionlist vl-cassertion
+  :element-name-override vl-cassertion-top-immdeps
+  :ctxp nil)
+
+(def-vl-immdeps vl-propport
+  :ctxp t
+  :body
+  (b* (((vl-propport x))
+       (ans (vl-datatype-immdeps x.type ans))
+       (ans (vl-propactual-immdeps x.arg ans)))
+    ans))
+
+(def-vl-immdeps-list vl-propportlist vl-propport :ctxp t)
+
+(def-vl-immdeps vl-property
+  :ctxp nil
+  :body
+  (b* (((vl-property x))
+       (ctx x)
+       (ans (vl-propportlist-immdeps x.ports ans))
+       (ans (vl-vardecllist-immdeps x.decls ans))
+       (ans (vl-propspec-immdeps x.spec ans)))
+    ans))
+
+(def-vl-immdeps-list vl-propertylist vl-property :ctxp nil)
+
+(def-vl-immdeps vl-sequence
+  :ctxp nil
+  :body
+  (b* (((vl-sequence x))
+       (ctx x)
+       (ans (vl-propportlist-immdeps x.ports ans))
+       (ans (vl-vardecllist-immdeps x.decls ans))
+       (ans (vl-propexpr-immdeps x.expr ans)))
+    ans))
+
+(def-vl-immdeps-list vl-sequencelist vl-sequence :ctxp nil)
+
+
 (def-vl-immdeps vl-modelement
   :prepwork ((local (in-theory (enable vl-modelement-p
                                        tag-reasoning))))
@@ -856,10 +913,15 @@ elements.")
     (:vl-gateinst      (vl-gateinst-immdeps x ans))
     (:vl-always        (vl-always-immdeps x ans))
     (:vl-initial       (vl-initial-immdeps x ans))
+    (:vl-final         (vl-final-immdeps x ans))
     (:vl-typedef       (vl-typedef-immdeps x ans))
     (:vl-import        (vl-import-immdeps x ans))
     (:vl-fwdtypedef    ans) ;; no dependencies on a forward typedef
     (:vl-genvar        ans) ;; no dependencies
+    (:vl-property      (vl-property-immdeps x ans))
+    (:vl-sequence      (vl-sequence-immdeps x ans))
+    (:vl-assertion     (vl-assertion-top-immdeps x ans))
+    (:vl-cassertion    (vl-cassertion-top-immdeps x ans))
     (otherwise         (vl-modport-immdeps x ans))))
 
 
@@ -1097,7 +1159,12 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
        (ans (vl-gateinstlist-immdeps   x.gateinsts  ans))
        (ans (vl-alwayslist-immdeps     x.alwayses   ans))
        (ans (vl-initiallist-immdeps    x.initials   ans))
-       (ans (vl-typedeflist-immdeps     x.typedefs   ans))
+       (ans (vl-finallist-immdeps      x.finals     ans))
+       (ans (vl-typedeflist-immdeps    x.typedefs   ans))
+       (ans (vl-propertylist-immdeps   x.properties ans))
+       (ans (vl-sequencelist-immdeps   x.sequences  ans))
+       (ans (vl-assertionlist-immdeps  x.assertions ans))
+       (ans (vl-cassertionlist-immdeps x.cassertions ans))
        (ans (vl-genelementlist-immdeps x.generates  ans)))
     (vl-immdepgraph-merge (hons-copy x.name) ans graph)))
 

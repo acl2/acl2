@@ -126,7 +126,7 @@ sub run_sat_solver
 
 sub check_unsat_proof
 {
-    # Call drup-trim to check an UNSAT proof.  On any failure we abort by
+    # Call drat-trim to check an UNSAT proof.  On any failure we abort by
     # calling fatal().  That is, if this function returns, then the UNSAT proof
     # was verified successfully.
 
@@ -134,7 +134,7 @@ sub check_unsat_proof
     my @args = ($infile, $proof_file);
 
     # I'll just hard-code this in for now.
-    my $cmd = "drup-trim";
+    my $cmd = "drat-trim";
 
     debug("Checker command: $cmd @args\n");
 

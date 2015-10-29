@@ -47,6 +47,7 @@
    equiv-means-fixes-equal ;; (implies (foo-equiv x y) (equal (foo-fix x) (foo-fix y)))  (or iff/equal)
    inline
    equal
+   topic    ;; preferred xdoc topic to link to this
    ))
 
 (table fixtypes)
@@ -54,7 +55,7 @@
 (defun get-fixtypes-alist (world)
   (cdr (assoc 'fixtype-alist (table-alist 'fixtypes world))))
 
-(defun deffixtype-fn (name predicate fix equiv execp definep inline equal verbosep hints forward)
+(defun deffixtype-fn (name predicate fix equiv execp definep inline equal topic verbosep hints forward)
   (if definep
       `(with-output ,@(and (not verbosep) '(:off :all :on acl2::error)) :stack :push
          (encapsulate nil
@@ -123,6 +124,7 @@
                                                        equiv)
                                                      :inline inline
                                                      :equal equal
+                                                     :topic topic
                                                      ))
                         (get-fixtypes-alist world)))))
     (b* ((thmname (intern-in-package-of-symbol
@@ -156,6 +158,7 @@
                                                    :equiv-means-fixes-equal thmname
                                                    :inline inline
                                                    :equal equal
+                                                   :topic topic
                                                    ))
                              (get-fixtypes-alist world))))))))
 
@@ -167,11 +170,14 @@
                            hints
                            forward
                            (inline 't)
-                           (equal 'equal))
+                           (equal 'equal)
+                           (topic 'nil topic-p))
 ; We contemplated making "equal" the default equivalence relation but decided
 ; against it.  See Github Issue 240 for relevant discussion.
   (declare (xargs :guard (and pred fix equiv)))
-  (deffixtype-fn name pred fix equiv execp define inline equal verbosep hints forward))
+  (deffixtype-fn name pred fix equiv execp define inline equal
+    (if topic-p topic name)
+    verbosep hints forward))
 
 (defun find-fixtype-for-pred (pred alist)
   (if (atom alist)

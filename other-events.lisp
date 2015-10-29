@@ -1450,7 +1450,7 @@
   (let ((wrld
          (global-set-lst
           (list*
-           (list 'event-landmark (make-event-tuple -1 0 nil nil 0 nil))
+           (list 'event-landmark (make-event-tuple -1 0 nil nil 0 nil nil))
            (list 'command-landmark (make-command-tuple -1 :logic nil nil nil))
            (list 'known-package-alist *initial-known-package-alist*)
            (list 'well-founded-relation-alist
@@ -1729,7 +1729,8 @@
                         'state 'stobj '(*the-live-state*)
                         (primordial-world-globals
                          operating-system)))))))))))))))))))
-      t))))
+      t
+      nil))))
 
 (defun same-name-twice (l)
   (cond ((null l) nil)
@@ -3056,7 +3057,8 @@
       'exit-boot-strap-mode
       0
       wrld2
-      t))))
+      t
+      nil))))
 
 (defun theory-namep (name wrld)
 
@@ -3494,6 +3496,42 @@
          (car l))
         (t (duplicate-key-in-keyword-value-listp (cddr l)))))
 
+(defun formals-pretty-flags-mismatch-msg (formals pretty-flags
+                                                  fn
+                                                  formals-top
+                                                  pretty-flags-top)
+
+; Pretty-flags-top is a true-listp.  We check elsewhere that formals is a
+; true-listp; here we simply ignore its final cdr.  Pretty-flags and formals
+; are corresponding NTHCDRs of pretty-flags-top and formals-top.  The result is
+; a message explaining why formals-top and pretty-flags-top are incompatible in
+; the same signature.
+
+  (declare (xargs :guard (true-listp pretty-flags)))
+  (cond ((or (atom formals)
+             (endp pretty-flags))
+         (cond ((and (atom formals)
+                     (endp pretty-flags))
+                nil)
+               (t
+                (msg "the specified list of :FORMALS, ~x0, is of length ~x1, ~
+                      which does not match the arity of ~x2 specified by ~x3"
+                     formals-top (length formals-top)
+                     (length pretty-flags-top)
+                     (cons fn pretty-flags-top)))))
+        ((and (not (eq (car pretty-flags) '*)) ; stobj argument
+              (not (eq (car pretty-flags) (car formals))))
+         (let ((posn (- (length formals-top) (length formals))))
+           (msg "the specified list of :FORMALS, ~x0, has stobj ~x1 at ~
+                 (zero-based) position ~x2, but the argument specified by ~x3 ~
+                 at that position is a different stobj, ~x4"
+                formals-top (car formals) posn
+                (cons fn pretty-flags-top)
+                (car pretty-flags))))
+        (t (formals-pretty-flags-mismatch-msg
+            (cdr formals) (cdr pretty-flags)
+            fn formals-top pretty-flags-top))))
+
 (defun chk-signature (x ctx wrld state)
 
 ; Warning: If you change the acceptable form of signatures, change the raw lisp
@@ -3628,8 +3666,17 @@
 ; Note:  Stobjs will contain duplicates iff formals does.  Stobjs will
 ; contain STATE iff formals does.
 
-                 (stobjs (collect-non-x '* pretty-flags1)))
-            (mv nil fn formals val stobjs kwd-value-list)))))
+                 (stobjs (collect-non-x '* pretty-flags1))
+                 (msg (and formals-tail
+                           (formals-pretty-flags-mismatch-msg
+                            formals pretty-flags1
+                            fn
+                            formals pretty-flags1))))
+            (cond (msg (mv (msg "The object ~x0 is not a legal signature ~
+                                 because ~@1.  See :DOC signature."
+                                x msg)
+                           nil nil nil nil nil))
+                  (t (mv nil fn formals val stobjs kwd-value-list)))))))
        ((fn formals val . kwd-value-list)
         (cond
          ((not (true-listp formals))
@@ -9061,7 +9108,7 @@
 
 (mutual-recursion
 
-(defun make-include-books-absolute (form cbd dir names localp ctx state)
+(defun make-include-books-absolute-1 (form cbd dir names localp ctx state)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
 ; destructure-expansion, and elide-locals-rec.
@@ -9111,7 +9158,7 @@
 ; make-event case (case (b)).
 
   (cond
-   ((atom form) (value form)) ; This should never happen.
+   ((atom form) (mv nil form)) ; This should never happen.
    ((member-eq (car form) '(local skip-proofs))
     (cond
      ((and (eq (car form) 'local)
@@ -9121,22 +9168,25 @@
 ; evaluating portcullis commands from a book's certificate, so we can ignore
 ; local events then.
 
-      (value form))
-     (t (er-let* ((x (make-include-books-absolute
-                      (cadr form) cbd dir names localp ctx state)))
-          (value (list (car form) x))))))
+      (mv nil form))
+     (t (mv-let (changedp x)
+          (make-include-books-absolute-1
+           (cadr form) cbd dir names localp ctx state)
+          (cond (changedp (mv t (list (car form) x)))
+                (t (mv nil form)))))))
    ((eq (car form) 'progn)
 
 ; Since progn! has forms that need not be events, we don't try to deal with it.
 ; We consider this not to present any soundness problems, since progn!
 ; requires a ttag.
 
-    (er-let* ((rest (make-include-books-absolute-lst
-                     (cdr form) cbd dir names localp ctx state)))
-      (value (cons (car form)
-                   rest))))
+    (mv-let (changedp rest)
+      (make-include-books-absolute-lst
+       (cdr form) cbd dir names localp ctx state)
+      (cond (changedp (mv t (cons (car form) rest)))
+            (t (mv nil form)))))
    ((eq (car form) 'value)
-    (value form))
+    (mv nil form))
    ((eq (car form) 'include-book)
 
 ; Consider the case that we are processing the portcullis commands for a book,
@@ -9171,31 +9221,31 @@
 ; branch, where form is returned unchanged -- except in both cases, an absolute
 ; pathname under the system books directory is replaced using :dir :system.
 
-    (value
-     (assert$
-      (keyword-value-listp (cddr form)) ; as form is a legal event
-      (cond
-       ((assoc-keyword :dir form)
+    (assert$
+     (keyword-value-listp (cddr form)) ; as form is a legal event
+     (cond
+      ((assoc-keyword :dir form)
 
 ; We do not need to convert a relative pathname to an absolute pathname if the
 ; :dir argument already specifies how to do this.  Recall that the table guard
 ; of the acl2-defaults-table specifies that :dir arguments are absolute
 ; pathnames.
 
-        form)
-       ((not (equal cbd dir)) ; always true in case (b)
-        (assert$
-         (stringp cbd)
-         (mv-let (full-book-name directory-name familiar-name)
-                 (parse-book-name cbd (cadr form) nil ctx state)
-                 (declare (ignore directory-name familiar-name))
-                 (let ((x (filename-to-sysfile full-book-name state)))
-                   (cond ((consp x) ; (sysfile-p x)
-                          (list* 'include-book
-                                 (sysfile-filename x)
-                                 :dir :system
-                                 (cddr form)))
-                         ((and dir
+       (mv nil form))
+      ((not (equal cbd dir)) ; always true in case (b)
+       (assert$
+        (stringp cbd)
+        (mv-let (full-book-name directory-name familiar-name)
+          (parse-book-name cbd (cadr form) nil ctx state)
+          (declare (ignore directory-name familiar-name))
+          (let ((x (filename-to-sysfile full-book-name state)))
+            (cond ((consp x) ; (sysfile-p x)
+                   (mv t
+                       (list* 'include-book
+                              (sysfile-filename x)
+                              :dir :system
+                              (cddr form))))
+                  ((and dir
 
 ; Note that if dir is nil, then we are doing this on behalf of make-event so
 ; that the expansion-alist of a .cert file is relocatable.  In that case, there
@@ -9204,20 +9254,22 @@
 ; the make-event occurs in a certification world, then fix-portcullis-cmds will
 ; fix, as appropriate, any expansion that is an include-book.
 
-                               (not (equal x (cadr form))))
-                          (list* 'include-book
-                                 x
-                                 (cddr form)))
-                         (t form))))))
-       (t (assert$
-           (stringp (cadr form))
-           (let ((sysfile (filename-to-sysfile (cadr form) state)))
-             (cond ((consp sysfile) ; (sysfile-p sysfile)
-                    (list* 'include-book
-                           (sysfile-filename sysfile)
-                           :dir :system
-                           (cddr form)))
-                   (t form)))))))))
+                        (not (equal x (cadr form))))
+                   (mv t
+                       (list* 'include-book
+                              x
+                              (cddr form))))
+                  (t (mv nil form)))))))
+      (t (assert$
+          (stringp (cadr form))
+          (let ((sysfile (filename-to-sysfile (cadr form) state)))
+            (cond ((consp sysfile) ; (sysfile-p sysfile)
+                   (mv t
+                       (list* 'include-book
+                              (sysfile-filename sysfile)
+                              :dir :system
+                              (cddr form))))
+                  (t (mv nil form)))))))))
    ((member-eq (car form)
                '(add-include-book-dir add-include-book-dir!))
 
@@ -9249,25 +9301,25 @@
 ; ACL2 Error in ( INCLUDE-BOOK "foo" ...):  There is no file named
 ; "D/SUB/foo.lisp" that can be opened for input.
 
-    (value
-     (cond
-      ((sysfile-p (caddr form)) ; already "absolute"
-       form)
-      ((not (equal cbd dir)) ; always true in case (b)
-       (assert$
-        (stringp cbd)
-        (list (car form)
-              (cadr form)
-              (filename-to-sysfile (extend-pathname cbd (caddr form) state)
-                                   state))))
-      (t (let ((sysfile (if (consp (caddr form)) ; presumably sysfile-p holds
-                            (caddr form)
-                          (filename-to-sysfile (caddr form) state))))
-           (cond ((consp sysfile) ; (sysfile-p sysfile)
-                  (list (car form)
-                        (cadr form)
-                        sysfile))
-                 (t form)))))))
+    (cond
+     ((sysfile-p (caddr form)) ; already "absolute"
+      (mv nil form))
+     ((not (equal cbd dir)) ; always true in case (b)
+      (assert$
+       (stringp cbd)
+       (mv t
+           (list (car form)
+                 (cadr form)
+                 (filename-to-sysfile (extend-pathname cbd (caddr form) state)
+                                      state)))))
+     (t (let ((sysfile (if (consp (caddr form)) ; presumably sysfile-p holds
+                           (caddr form)
+                         (filename-to-sysfile (caddr form) state))))
+          (cond ((consp sysfile) ; (sysfile-p sysfile)
+                 (mv t (list (car form)
+                             (cadr form)
+                             sysfile)))
+                (t (mv nil form)))))))
    ((member-eq (car form) names)
 
 ; Note that we do not have a special case for encapsulate.  Every include-book
@@ -9276,42 +9328,58 @@
 ; an encapsulate, then we will need to add a case for encapsulate that is
 ; similar to the case for progn.
 
-    (value form))
+    (mv nil form))
    ((eq (car form) 'make-event) ; already fixed
-    (value form))
+    (mv nil form))
    ((and (member-eq (car form) '(with-output
-                                 with-prover-step-limit
-                                 with-prover-time-limit))
+                                  with-prover-step-limit
+                                  with-prover-time-limit))
          (consp (cdr form)))
-    (er-let* ((form1 (make-include-books-absolute
-                      (car (last form))
-                      cbd dir names localp ctx state)))
-      (value (append (butlast form 1) (list form1)))))
+    (mv-let (changedp x)
+      (make-include-books-absolute-1
+       (car (last form))
+       cbd dir names localp ctx state)
+      (cond (changedp (mv t (append (butlast form 1) (list x))))
+            (t (mv nil form)))))
    ((getprop (car form) 'macro-body nil 'current-acl2-world (w state))
-    (er-let*
-        ((form1 (macroexpand1 form ctx state)))
-
-; We might consider throwing away the following result, instead returning the
-; original form, if no actual pathname conversion takes place.  We would need
-; to record such information, say, with (mv changedp result).
-
-      (make-include-books-absolute form1 cbd dir names localp ctx state)))
-   (t (value (er hard ctx
-                 "Implementation error in make-include-books-absolute:  ~
-                  unrecognized event type, ~x0.  Make-include-books-absolute ~
-                  needs to be kept in sync with chk-embedded-event-form.  ~
-                  Please send this error message to the implementors."
-                 (car form))))))
+    (mv-let (erp x)
+      (macroexpand1-cmp form ctx (w state)
+                        (default-state-vars t))
+      (cond (erp (mv (er hard erp "~@0" x) nil))
+            (t (make-include-books-absolute-1 x cbd dir names localp ctx
+                                              state)))))
+   (t (mv nil
+          (er hard ctx
+              "Implementation error in make-include-books-absolute-1:  ~
+               unrecognized event type, ~x0.  Make-include-books-absolute ~
+               needs to be kept in sync with chk-embedded-event-form.  Please ~
+               send this error message to the implementors."
+              (car form))))))
 
 (defun make-include-books-absolute-lst (forms cbd dir names localp ctx state)
+
+; For each form F in forms, if F is not changed by
+; make-include-books-absolute-1 then it is returned unchanged in the result.
+
   (if (endp forms)
-      (value nil)
-    (er-let* ((first (make-include-books-absolute
-                      (car forms) cbd dir names localp ctx state))
-              (rest (make-include-books-absolute-lst
-                     (cdr forms) cbd dir names localp ctx state)))
-             (value (cons first rest)))))
+      (mv nil nil)
+    (mv-let (changedp-1 first)
+      (make-include-books-absolute-1
+       (car forms) cbd dir names localp ctx state)
+      (mv-let (changedp-2 rest)
+        (make-include-books-absolute-lst
+         (cdr forms) cbd dir names localp ctx state)
+        (cond (changedp-1 (mv t (cons first rest)))
+              (changedp-2 (mv t (cons (car forms) rest)))
+              (t (mv nil forms)))))))
 )
+
+(defun make-include-books-absolute (form cbd dir names localp ctx state)
+  (mv-let (changedp new-form)
+    (make-include-books-absolute-1 form cbd dir names localp ctx state)
+    (if changedp
+        new-form
+      form)))
 
 (defun first-known-package-alist (wrld-segment)
   (cond
@@ -9633,14 +9701,14 @@
 
 (defun fix-portcullis-cmds1 (dir cmds cbds ans names ctx state)
   (cond
-   ((null cmds) (value ans))
-   (t (er-let* ((cmd (make-include-books-absolute (car cmds) (car cbds) dir
-                                                  names nil ctx state)))
-               (fix-portcullis-cmds1 dir
-                                     (cdr cmds)
-                                     (cdr cbds)
-                                     (cons cmd ans)
-                                     names ctx state)))))
+   ((null cmds) ans)
+   (t (let ((cmd (make-include-books-absolute (car cmds) (car cbds) dir
+                                              names nil ctx state)))
+        (fix-portcullis-cmds1 dir
+                              (cdr cmds)
+                              (cdr cbds)
+                              (cons cmd ans)
+                              names ctx state)))))
 
 (defun fix-portcullis-cmds (dir cmds cbds names wrld ctx state)
 
@@ -9687,12 +9755,11 @@
 ; Call this function using the same names parameter as that used when verifying
 ; that cmds is a list of embedded event forms.
 
-  (er-let* ((new-cmds (fix-portcullis-cmds1 dir cmds cbds nil names
-                                            ctx state))
-            (new-defpkgs (hidden-defpkg-events
-                          (global-val 'known-package-alist wrld)
-                          wrld ctx state)))
-           (value (revappend new-cmds new-defpkgs))))
+  (let ((new-cmds (fix-portcullis-cmds1 dir cmds cbds nil names ctx state)))
+    (er-let* ((new-defpkgs (hidden-defpkg-events
+                            (global-val 'known-package-alist wrld)
+                            wrld ctx state)))
+      (value (revappend new-cmds new-defpkgs)))))
 
 (defun collect-uncertified-books (alist)
 
@@ -27461,13 +27528,13 @@
                               (symbolp (car def))
                               (symbol-listp (cadr def)))))
 
-  `(progn (defun ,@def)
-          ,@(and (not (program-declared-p def))
-                 `((with-output
-                    :off summary
-                    (in-theory (disable ,(car def))))))
-          (value-triple ',(xd-name 'defund (car def))
-                        :on-skip-proofs t)))
+  `(with-output
+     :stack :push :off (summary event)
+     (progn (with-output :stack :pop (defun ,@def))
+            ,@(and (not (program-declared-p def))
+                   `((in-theory (disable ,(car def)))))
+            (value-triple ',(xd-name 'defund (car def))
+                          :on-skip-proofs t))))
 
 #-acl2-loop-only
 (defmacro defund (&rest def)
@@ -27660,58 +27727,58 @@
 (defun make-event-fn2 (expansion0 whole-form in-encapsulatep check-expansion
                                   wrld ctx state)
   (mv-let
-   (do-proofsp expansion0)
-   (case-match expansion0
-     ((':DO-PROOFS x)
-      (mv (ld-skip-proofsp state)
-          x))
-     (& (mv nil expansion0)))
-   (er-let* ((expansion1a ; apply macroexpansion to get embedded event form
-              (do-proofs?
+    (do-proofsp expansion0)
+    (case-match expansion0
+      ((':DO-PROOFS x)
+       (mv (ld-skip-proofsp state)
+           x))
+      (& (mv nil expansion0)))
+    (er-let* ((expansion1a ; apply macroexpansion to get embedded event form
+               (do-proofs?
 
 ; This wrapper of do-proofs? avoids errors in checking expansions when
 ; ld-skip-proofsp is 'include-book.  See the "Very Technical Remark" in
 ; community book  books/make-event/read-from-file.lisp.
 
-               check-expansion
-               (chk-embedded-event-form
-                expansion0 whole-form wrld ctx state (primitive-event-macros)
-                nil ; portcullisp
-                (f-get-global 'in-local-flg state)
-                in-encapsulatep
-                nil))) 
-             (expansion1b
-              (value (or expansion1a
+                check-expansion
+                (chk-embedded-event-form
+                 expansion0 whole-form wrld ctx state (primitive-event-macros)
+                 nil ; portcullisp
+                 (f-get-global 'in-local-flg state)
+                 in-encapsulatep
+                 nil))) 
+              (expansion1b
+               (value (or expansion1a
 
 ; Else the alleged embedded event form, from the expansion, is nil, presumably
 ; because of local.
 
-                         *local-value-triple-elided*)))
-             (stobjs-out-and-raw-result
-              (do-proofs?
-               do-proofsp
-               (trans-eval
+                          *local-value-triple-elided*)))
+              (stobjs-out-and-raw-result
+               (do-proofs?
+                do-proofsp
+                (trans-eval
 
 ; Note that expansion1b is guaranteed to be an embedded event form, which (as
 ; checked just below) must evaluate to an error triple.
 
-                expansion1b
-                ctx state t))))
-     (let ((raw-result (cdr stobjs-out-and-raw-result)))
-       (cond ((car raw-result)
-              (silent-error state))
-             (t (er-let* ((expansion1
-                           (if (f-get-global 'boot-strap-flg state)
-                               (value expansion1b)
-                             (make-include-books-absolute
-                              expansion1b
-                              (cbd)
-                              nil
-                              (primitive-event-macros)
-                              nil ctx state))))
-                  (value (list* expansion1
-                                (car stobjs-out-and-raw-result)
-                                (cadr raw-result))))))))))
+                 expansion1b
+                 ctx state t))))
+      (let ((raw-result (cdr stobjs-out-and-raw-result)))
+        (cond ((car raw-result)
+               (silent-error state))
+              (t (let ((expansion1
+                        (if (f-get-global 'boot-strap-flg state)
+                            expansion1b
+                          (make-include-books-absolute
+                           expansion1b
+                           (cbd)
+                           nil
+                           (primitive-event-macros)
+                           nil ctx state))))
+                   (value (list* expansion1
+                                 (car stobjs-out-and-raw-result)
+                                 (cadr raw-result))))))))))
 
 (defun make-event-fn2-lst (expansion-lst whole-form in-encapsulatep
                                          check-expansion wrld ctx state)

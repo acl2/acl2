@@ -8426,9 +8426,8 @@
 
 (defun tilde-*-raw-simp-phrase (ttree punct phrase)
 
-; See tilde-*-simp-phrase.  But here, we print as specified by value :raw for
-; state global 'raw-proof-format.  We supply the concluding punctuation msg,
-; punct.
+; See tilde-*-simp-phrase.  But here, we print for the case that state global
+; 'raw-proof-format is true.  We supply the concluding punctuation msg, punct.
 
   (let ((forced-runes (recover-forced-runes ttree)))
     (let ((runes (all-runes-in-ttree ttree nil)))
@@ -8442,7 +8441,7 @@
                nil)
               (list* (concatenate 'string "trivial ob~-ser~-va~-tions"
                                   (case punct
-                                    (#\, ",")
+                                    (#\, ", ") ; Space not always needed?
                                     (#\. ".")
                                     (otherwise "")))
                      "~@*"

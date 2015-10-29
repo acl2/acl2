@@ -168,6 +168,10 @@
        (vl-ps-seq (vl-print "Initial statement at ")
                   (vl-print-loc (vl-initial->loc x))))
 
+      (:vl-final
+       (vl-ps-seq (vl-print "Final statement at ")
+                  (vl-print-loc (vl-final->loc x))))
+
       (:vl-typedef
        (vl-ps-seq (vl-print "Typedef of ")
                   (vl-print-wirename (vl-typedef->name x))
@@ -191,6 +195,38 @@
       (:vl-import
        ;; These are simple enough to just print.
        (vl-pp-import x))
+
+      (:vl-property
+       (vl-ps-seq (vl-print "Property ")
+                  (vl-print-str (vl-property->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-property->loc x)))
+                    ps)))
+
+      (:vl-sequence
+       (vl-ps-seq (vl-print "Sequence ")
+                  (vl-print-str (vl-sequence->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-sequence->loc x)))
+                    ps)))
+
+      (:vl-assertion
+       (vl-ps-seq (vl-print "Assertion ")
+                  (vl-print-str (or (vl-assertion->name x) ""))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-assertion->loc x)))
+                    ps)))
+
+      (:vl-cassertion
+       (vl-ps-seq (vl-print "Assertion ")
+                  (vl-print-str (or (vl-cassertion->name x) ""))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-cassertion->loc x)))
+                    ps)))
 
       ((:vl-genif :vl-genloop :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
        (vl-ps-seq (vl-print "Generate block at ")
@@ -238,11 +274,16 @@ quick summary instead, see @(see vl-pp-ctxelement-summary).</p>"
       (:vl-gateinst      (vl-pp-gateinst x))
       (:vl-always        (vl-pp-always x))
       (:vl-initial       (vl-pp-initial x))
+      (:vl-final         (vl-pp-final x))
       (:vl-alias         (vl-pp-alias x))
       (:vl-typedef       (vl-pp-typedef x))
       (:vl-fwdtypedef    (vl-pp-fwdtypedef x))
       (:vl-modport       (vl-pp-modport x))
       (:vl-import        (vl-pp-import x))
+      (:vl-property      (vl-pp-property x))
+      (:vl-sequence      (vl-pp-sequence x))
+      (:vl-assertion     (vl-pp-assertion x :include-name t))
+      (:vl-cassertion    (vl-pp-cassertion x :include-name t))
       ((:vl-genif :vl-genloop :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
        (vl-pp-genelement x))
       (otherwise (prog2$ (impossible) ps)))))

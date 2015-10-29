@@ -147,10 +147,17 @@ we ignore file names.</p>"
 (def-vl-ppmap :list gateinstlist :elem gateinst)
 (def-vl-ppmap :list alwayslist :elem always)
 (def-vl-ppmap :list initiallist :elem initial)
+(def-vl-ppmap :list finallist :elem final)
 (def-vl-ppmap :list paramdecllist :elem paramdecl)
 (def-vl-ppmap :list fundecllist :elem fundecl)
 (def-vl-ppmap :list taskdecllist :elem taskdecl)
 (def-vl-ppmap :list modportlist :elem modport)
+(def-vl-ppmap :list typedeflist :elem typedef)
+(def-vl-ppmap :list propertylist :elem property)
+(def-vl-ppmap :list sequencelist :elem sequence)
+(def-vl-ppmap :list assertionlist :elem assertion)
+(def-vl-ppmap :list cassertionlist :elem cassertion)
+
 
 ;; This one's a bit different because it takes a scopestack
 (define vl-modinstlist-ppmap ((x  vl-modinstlist-p)
@@ -301,6 +308,11 @@ we ignore file names.</p>"
        ((mv imap ps) (vl-gateinstlist-ppmap x.gateinsts imap))
        ((mv imap ps) (vl-alwayslist-ppmap x.alwayses imap))
        ((mv imap ps) (vl-initiallist-ppmap x.initials imap))
+       ((mv imap ps) (vl-finallist-ppmap x.finals imap))
+       ((mv imap ps) (vl-propertylist-ppmap x.properties imap))
+       ((mv imap ps) (vl-sequencelist-ppmap x.sequences imap))
+       ((mv imap ps) (vl-assertionlist-ppmap x.assertions imap))
+       ((mv imap ps) (vl-cassertionlist-ppmap x.cassertions imap))
 
        ;; Why are we reversing the imap when we're going to sort it anyway?  I
        ;; think the answer is that some module elements may share a location,

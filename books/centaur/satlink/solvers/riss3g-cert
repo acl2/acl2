@@ -38,7 +38,7 @@
 #
 #     http://fv.centtech.com/acl2/latest/doc/?topic=ACL2____SATLINK
 #
-# Prerequisites: "riss3gSimp" and "drup-trim" are installed and in your PATH.
+# Prerequisites: "riss3gSimp" and "drat-trim" are installed and in your PATH.
 #
 # Usage:  russ3g-cert [OPTIONS] FILE
 #
@@ -78,8 +78,9 @@ if (!$ENV{"SATLINK_TRUST_SOLVER"})
     @args = (@args,
 	     "-drup=" . $proof_file,
 	     "-no-enabled_cp3",
-	     # Special option to not print the drup format line, which
-	     # drup-trim doesn't support.  Thanks to Norbert Manthey for this
+	     # Special option to not print the drat format line, which
+	     # drat-trim may not support (drup-trim definitely didn't
+	     # support it).  Thanks to Norbert Manthey for this
 	     # suggestion!
 	     "-no-proofFormat"
 	);

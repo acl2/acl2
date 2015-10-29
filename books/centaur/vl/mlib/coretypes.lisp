@@ -64,6 +64,9 @@
    (vl-coredatatype-info   :vl-event       :vl-kwd-event       nil               nil         nil    nil       nil  )
    (vl-coredatatype-info   :vl-chandle     :vl-kwd-chandle     nil               nil         nil    nil       nil  )
    (vl-coredatatype-info   :vl-void        nil                 nil               nil         nil    nil       nil  )
+   (vl-coredatatype-info   :vl-untyped     nil                 nil               nil         nil    nil       nil  )
+   (vl-coredatatype-info   :vl-sequence    nil                 nil               nil         nil    nil       nil  )
+   (vl-coredatatype-info   :vl-property    nil                 nil               nil         nil    nil       nil  )
    ;; non-integer types                           N/A
    (vl-coredatatype-info   :vl-shortreal   :vl-kwd-shortreal   nil               nil         nil    nil       nil  )
    (vl-coredatatype-info   :vl-real        :vl-kwd-real        nil               nil         nil    nil       nil  )

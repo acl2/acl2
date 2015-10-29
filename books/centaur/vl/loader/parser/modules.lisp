@@ -72,6 +72,8 @@
                                               ;; :vl-fwdtypedef -- doesn't seem like these should be ok
                                               ;; :vl-modport    -- definitely not ok
                                               :vl-genvar
+                                              :vl-assertion
+                                              :vl-cassertion
                                               )))
        (warnings
         (if (not bad-item)
