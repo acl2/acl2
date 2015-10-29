@@ -35,6 +35,7 @@
 
 (in-package "STD")
 (include-book "support")
+(include-book "tools/rulesets" :dir :system)
 
 (defsection tag
   :parents (defaggregate)
@@ -47,7 +48,11 @@ being represented (e.g., \"employee\").</p>
 <p>The @('tag') function is an alias for @('car'), and so it can be used to get
 the tag from these kinds of objects.  We introduce this alias and keep it
 disabled so that reasoning about the tags of objects does not slow down
-reasoning about @('car') in general.</p>"
+reasoning about @('car') in general.</p>
+
+<p>Tag reasoning can occasionally get expensive.  Macros like
+@('defaggregate'), @(see defprod), etc., generally add their tag-related rules
+to the @('tag-reasoning') ruleset; see @(see rulesets).</p>"
 
   (defund-inline tag (x)
     (declare (xargs :guard t))
@@ -60,7 +65,9 @@ reasoning about @('car') in general.</p>"
     (implies (tag x)
              (consp x))
     :rule-classes :forward-chaining
-    :hints(("Goal" :in-theory (enable tag)))))
+    :hints(("Goal" :in-theory (enable tag))))
+
+  (def-ruleset! std::tag-reasoning nil))
 
 (deftheory defaggregate-basic-theory
   (union-theories

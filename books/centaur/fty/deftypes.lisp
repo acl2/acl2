@@ -33,13 +33,10 @@
 (include-book "std/util/deflist-base" :dir :system)
 (include-book "std/util/defalist-base" :dir :system)
 (include-book "fixequiv")
-(include-book "tools/rulesets" :dir :system)
 (include-book "misc/hons-help" :dir :system) ;; for hons-list
 (include-book "xdoc/names" :dir :system)
 (include-book "std/lists/acl2-count" :dir :system)
 (set-state-ok t)
-
-(def-ruleset! std::tag-reasoning nil)
 
 ;; Lemmas for deftagprod.
 (defthmd equal-of-strip-cars

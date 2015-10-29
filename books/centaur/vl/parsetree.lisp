@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-10-22")
+  "VL Syntax 2015-10-29")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -738,6 +738,8 @@ these.</p>")
 (defprod vl-propspec
   :parents (property-expressions)
   :short "A single property specification."
+  :tag :vl-propspec
+  :layout :tree
   ((evatoms vl-evatomlist-p
             "The top-level clocking events for this property specification; this
              can just be @('nil') if there is no clocking event.")
@@ -3931,6 +3933,41 @@ initially kept in a big, mixed list.</p>"
                                              vl-genelement-p
                                              vl-genelement-kind
                                              tag)))))
+
+  (defthmd tag-when-vl-ctxelement-p
+    (implies (vl-ctxelement-p x)
+             (or (equal (tag x) :vl-regularport)
+                 (equal (tag x) :vl-interfaceport)
+                 (equal (tag x) :vl-portdecl)
+                 (equal (tag x) :vl-assign)
+                 (equal (tag x) :vl-alias)
+                 (equal (tag x) :vl-vardecl)
+                 (equal (tag x) :vl-paramdecl)
+                 (equal (tag x) :vl-fundecl)
+                 (equal (tag x) :vl-taskdecl)
+                 (equal (tag x) :vl-modinst)
+                 (equal (tag x) :vl-gateinst)
+                 (equal (tag x) :vl-always)
+                 (equal (tag x) :vl-initial)
+                 (equal (tag x) :vl-final)
+                 (equal (tag x) :vl-typedef)
+                 (equal (tag x) :vl-fwdtypedef)
+                 (equal (tag x) :vl-assertion)
+                 (equal (tag x) :vl-cassertion)
+                 (equal (tag x) :vl-property)
+                 (equal (tag x) :vl-sequence)
+                 (equal (tag x) :vl-import)
+                 (equal (tag x) :vl-genblock)
+                 (equal (tag x) :vl-genarray)
+                 (equal (tag x) :vl-genbase)
+                 (equal (tag x) :vl-genif)
+                 (equal (tag x) :vl-gencase)
+                 (equal (tag x) :vl-genloop)
+                 (equal (tag x) :vl-modport)))
+    :rule-classes (:forward-chaining)
+    :hints(("Goal" :in-theory (enable vl-ctxelement-p))))
+
+  (add-to-ruleset tag-reasoning '(tag-when-vl-ctxelement-p))
 
   (define vl-ctxelement->loc ((x vl-ctxelement-p))
     :returns (loc vl-location-p :hints(("Goal" :in-theory (enable vl-ctxelement-fix

@@ -43,8 +43,6 @@
 
 (program)
 
-(def-ruleset! tag-reasoning nil)
-
 (defxdoc defaggregate
   :parents (std/util)
   :short "Introduce a record structure, like a @('struct') in C."
