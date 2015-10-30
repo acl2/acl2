@@ -102,6 +102,8 @@
             fty::deffixtype
             fty::deffixequiv
             fty::deffixequiv-mutual
+            fty::deftranssum
+
             true-p
             true-fix
             true-equiv

@@ -39,20 +39,37 @@
 
 (defsection tag
   :parents (defaggregate)
-  :short "Alias for @('car') used by @(see defaggregate)."
+  :short "Get the tag from a tagged object."
 
-  :long "<p>The types introduced by @('defaggregate') are basically objects of
-the form @('(tag . field-data)'), where the tag says what kind of object is
-being represented (e.g., \"employee\").</p>
+  :long "<p>The @('tag') function is simply an alias for @('car') that is
+especially meant to be used for accessing the <i>tag</i> of a <i>tagged
+object</i>.</p>
 
-<p>The @('tag') function is an alias for @('car'), and so it can be used to get
-the tag from these kinds of objects.  We introduce this alias and keep it
-disabled so that reasoning about the tags of objects does not slow down
-reasoning about @('car') in general.</p>
+<p>When new types are introduced by macros such as @(see defaggregate), @(see
+fty::defprod), @(see fty::deftagsum), etc., they may be tagged.  When a type is
+tagged, its objects have the form @('(tag . data)'), where the @('tag') says
+what kind of object is being represented (e.g., ``employee'', ``student'',
+etc.) and @('data') contains the actual information for this kind of
+structure (e.g., name, age, ...).  Tagging objects has some runtime/memory
+cost (an extra cons for each object), but makes it easy to tell different kinds
+of objects apart by inspecting their tags.</p>
 
-<p>Tag reasoning can occasionally get expensive.  Macros like
+<p>We could (of course) just get the tag with @(see car), but @('car') is a
+widely used function and we do not want to slow down reasoning about it.
+Instead, we introduce @('tag') as an alias for @('car') and keep it disabled so
+that reasoning about the tags of objects does not slow down reasoning about
+@('car') in general.</p>
+
+<p>Even so, tag reasoning can occasionally get expensive.  Macros like
 @('defaggregate'), @(see defprod), etc., generally add their tag-related rules
-to the @('tag-reasoning') ruleset; see @(see rulesets).</p>"
+to the @('tag-reasoning') ruleset; see @(see rulesets).  You may generally want
+to keep this ruleset disabled, and only enable it when you really want to use
+tags to distinguish between objects.</p>
+
+<p>Note: if you are using the @(see fty) framework, it is generally best to
+avoid using @('tag') to distinguish between members of the same sum of products
+type.  Instead, consider using the custom @('-kind') macros that are introduced
+by macros such as @(see fty::deftagsum) and @(fty::deftranssum).</p>"
 
   (defund-inline tag (x)
     (declare (xargs :guard t))
@@ -116,29 +133,14 @@ to the @('tag-reasoning') ruleset; see @(see rulesets).</p>"
    (concatenate 'string (symbol-name basename) "-P")
    basename))
 
-(defun da-changer-fn-name (basename)
-  (intern-in-package-of-symbol
-   (concatenate 'string "CHANGE-" (symbol-name basename) "-FN")
-   basename))
-
 (defun da-changer-name (basename)
   (intern-in-package-of-symbol
    (concatenate 'string "CHANGE-" (symbol-name basename))
    basename))
 
-(defun da-maker-fn-name (basename)
-  (intern-in-package-of-symbol
-   (concatenate 'string "MAKE-" (symbol-name basename) "-FN")
-   basename))
-
 (defun da-maker-name (basename)
   (intern-in-package-of-symbol
    (concatenate 'string "MAKE-" (symbol-name basename))
-   basename))
-
-(defun da-honsed-maker-fn-name (basename)
-  (intern-in-package-of-symbol
-   (concatenate 'string "MAKE-HONSED-" (symbol-name basename) "-FN")
    basename))
 
 (defun da-honsed-maker-name (basename)
@@ -520,120 +522,149 @@ to the @('tag-reasoning') ruleset; see @(see rulesets).</p>"
 
 ; (CHANGE-FOO ...) MACRO.
 
-(defun da-changer-args-to-alist
-  (args           ; user-supplied args to an actual (change-foo ...) macro, i.e.,
-                  ; should be like (:field1 val1 :field2 val2)
-   valid-fields   ; list of valid fields (already keywordified) for this aggregate
-   )
-  ;; Makes sure args are valid, turns them into a (field . value) alist
-  (b* (((when (null args))
-        nil)
-       ((when (atom args))
-        (er hard? 'da-changer-args-to-alist
-            "Expected a true-list, but instead it ends with ~x0." args))
-       ((when (atom (cdr args)))
-        (er hard? 'da-changer-args-to-alist
-            "Expected :field val pairs, but found ~x0." args))
-       (field (first args))
-       (value (second args))
-       ((unless (member-equal field valid-fields))
-        (er hard? 'da-changer-args-to-alist
-            "~x0 is not among the allowed fields, ~&1." field valid-fields))
-       (rest (da-changer-args-to-alist (cddr args) valid-fields))
-       ((when (assoc field rest))
-        (er hard? 'da-changer-args-to-alist
-            "Multiple occurrences of ~x0 in change/make macro." field)))
-    (cons (cons field value)
-          rest)))
-
 (defun da-make-valid-fields-for-changer (fields)
-  ;; Convert field names into keywords for the (change-foo ...) macro
+  ;; Convert field names into keywords for use in da-changer-args-to-alist.
   (if (consp fields)
       (cons (intern-in-package-of-symbol (symbol-name (car fields)) :keyword)
             (da-make-valid-fields-for-changer (cdr fields)))
     nil))
 
-(defun da-alist-name (basename)
-  (intern-in-package-of-symbol "ALIST" basename))
+(defun da-changer-args-to-alist
+  ;; Makes sure user-supplied args are valid for this kind of a structure,
+  ;; and turn them into a (field . value) alist
+  (macroname      ; change-foo or make-foo, for error reporting.
+   args           ; user-supplied args to an actual (change-foo ...) macro, i.e.,
+                  ; should be like (:field1 val1 :field2 val2)
+   kwd-fields     ; list of valid fields (already keywordified) for this aggregate
+   )
+  (b* (((when (null args))
+        nil)
+       ((when (atom args))
+        (er hard? macroname "Expected a true-list, but instead it ends with ~x0." args))
+       ((when (atom (cdr args)))
+        (er hard? macroname "Expected :field val pairs, but found ~x0." args))
+       (field (first args))
+       (value (second args))
+       ((unless (member-equal field kwd-fields))
+        (er hard? macroname "~x0 is not among the allowed fields, ~&1." field kwd-fields))
+       (rest (da-changer-args-to-alist macroname (cddr args) kwd-fields))
+       ((when (assoc field rest))
+        (er hard? macroname "Multiple occurrences of ~x0 in change/make macro." field)))
+    (cons (cons field value)
+          rest)))
 
-(defun da-make-changer-fn-aux (basename field-alist)
-  ;; Writes the body of the change-foo macro.  For each field, look up whether the
-  ;; field is given a value, or else use the accessor to preserve previous value
-  (if (consp field-alist)
-      (let* ((field    (caar field-alist))
-             (acc      (cdar field-alist))
-             (kwd-name (intern-in-package-of-symbol (symbol-name field) :keyword))
-             (alist    (da-alist-name basename))
-             (x        (da-x basename)))
-        (cons `(if (assoc ,kwd-name ,alist)
-                   (cdr (assoc ,kwd-name ,alist))
-                 (list ',acc ,x))
-              (da-make-changer-fn-aux basename (cdr field-alist))))
-    nil))
+(defun da-changer-fill-in-fields
+  ;; Build the actual arguments to give to the structure's raw constructor
+  (obj        ; object being changed, in case we need to extract fields from it
+   acc-map    ; binds keywordified fields to their accessors, ordered per constructor
+   alist      ; binds keywordified fields to their values, if provided by the user
+   )
+  (b* (((when (atom acc-map))
+        nil)
+       (rest (da-changer-fill-in-fields obj (cdr acc-map) alist))
+       ((cons field1 accessor1) (car acc-map))
+       (look1 (assoc field1 alist))
+       ((when look1)
+        ;; User gave us a value for this field, so insert it.
+        (cons (cdr look1) rest)))
+    ;; No value for this field, so get it from the object.
+    (cons `(,accessor1 ,obj) rest)))
 
-(defun da-make-changer-fn-gen (basename field-alist)
-  (let ((alist         (intern-in-package-of-symbol "ALIST" basename))
-        (x             (da-x basename))
-        (change-foo-fn (da-changer-fn-name basename))
-        (foo           (da-constructor-name basename)))
-    `(defun ,change-foo-fn (,x ,alist)
-       (declare (xargs :mode :program))
-       (cons ',foo ,(cons 'list (da-make-changer-fn-aux basename field-alist))))))
-
-(defun da-make-changer-fn (basename fields)
-  (da-make-changer-fn-gen basename (pairlis$ fields (da-accessor-names basename fields))))
+(defun change-aggregate
+  (basename    ; basename for this structure, for name generation
+   obj         ; object being changed, e.g., a term in the user's program.
+   args        ; user-level arguments to the change macro, e.g., (:name newname :age 5)
+   acc-map     ; binds fields to their accessors, e.g., ((name . student->name) ...), ordered per constructor
+   macroname   ; e.g., change-student, for error reporting
+   )
+  (b* ((ctor-name  (da-constructor-name basename))
+       (kwd-fields (strip-cars acc-map))
+       (alist      (da-changer-args-to-alist macroname args kwd-fields))
+       (nobind-p   (or
+                    ;; If the object being changed is already evaluated, there's no
+                    ;; need to evaluate it. (variables, constants)
+                    (atom obj)
+                    (and (consp obj)
+                         (equal (car obj) 'quote))
+                    ;; If the object being changed is never accessed, there's no
+                    ;; need to evaluate it.
+                    (if (subsetp kwd-fields (strip-cars alist))
+                        (prog2$
+                         (cw ";; CHANGE-NOTE: ~x0 skipping evaluation of ~x1 ~
+                              since all fields are set.~%" macroname obj)
+                         t)
+                      nil)))
+       (newvar     (if nobind-p
+                       obj
+                     (acl2::pack (cons macroname obj))))
+       (ctor-call  (cons ctor-name
+                         (da-changer-fill-in-fields newvar acc-map alist))))
+    (if nobind-p
+        ctor-call
+      (progn$
+       ;; Eventually remove this printing, but I want to see them for now.
+       (cw ";; CHANGE-NOTE: binding ~x0~%" newvar)
+       `(let ((,newvar ,obj))
+          ,ctor-call)))))
 
 (defun da-make-changer (basename fields)
-  (let ((x             (da-x basename))
-        (change-foo    (da-changer-name basename))
-        (change-foo-fn (da-changer-fn-name basename))
-        (kwd-fields    (da-make-valid-fields-for-changer fields)))
+  (let* ((x          (da-x basename))
+         (change-foo (da-changer-name basename))
+         (acc-names  (da-accessor-names basename fields))
+         (kwd-fields (da-make-valid-fields-for-changer fields))
+         (acc-map    (pairlis$ kwd-fields acc-names)))
     `(defmacro ,change-foo (,x &rest args)
-       (,change-foo-fn ,x (da-changer-args-to-alist args ',kwd-fields)))))
-
+       (change-aggregate ',basename ,x args ',acc-map ',change-foo))))
 
 
 ; (MAKE-FOO ...) MACRO.
 
-(defun da-make-maker-fn-aux (basename fields defaults)
-  (if (consp fields)
-      (let ((kwd-name (intern-in-package-of-symbol (symbol-name (car fields)) :keyword))
-            (alist    (da-alist-name basename)))
-        (cons `(if (assoc ,kwd-name ,alist)
-                   (cdr (assoc ,kwd-name ,alist))
-                 ',(car defaults))
-              (da-make-maker-fn-aux basename (cdr fields) (cdr defaults))))
-    nil))
+(defun da-maker-fill-in-fields
+  ;; Build the actual arguments to give to the structure's raw constructor
+  (dflt-map  ; binds keywordified fields to default values, ordered per constructor
+   alist     ; binds keywordified fields to their values, if provided by the user
+   )
+  (b* (((when (atom dflt-map))
+        nil)
+       (rest (da-maker-fill-in-fields (cdr dflt-map) alist))
+       ((cons field1 default1) (car dflt-map))
+       (look1 (assoc field1 alist))
+       ((when look1)
+        ;; User gave us a value for this field, so insert it.
+        (cons (cdr look1) rest)))
+    ;; No value for this field, so use the default value.
+    ;; Not quoting the default values is a little scary, but allows for
+    ;; the use of things like (pkg-witness "ACL2") and *foo*
+    (cons default1 rest)))
 
-(defun da-make-maker-fn (basename fields defaults)
-  (let ((alist       (da-alist-name basename))
-        (make-foo-fn (da-maker-fn-name basename))
-        (foo         (da-constructor-name basename)))
-    `(defun ,make-foo-fn (,alist)
-       (declare (xargs :mode :program))
-       (cons ',foo ,(cons 'list (da-make-maker-fn-aux basename fields defaults))))))
+(defun make-aggregate
+  (basename    ; basename for this structure, for name generation
+   args        ; user-level arguments to the make macro, e.g., (:name newname :age 5)
+   dflt-map    ; binds keywordified fields to default values, ordered per constructor
+   macroname   ; e.g., make-student or make-honsed-student, for error reporting
+   honsp       ; call the honsed constructor or not?
+   )
+  (b* ((ctor-name  (if honsp
+                       (da-honsed-constructor-name basename)
+                     (da-constructor-name basename)))
+       (kwd-fields (strip-cars dflt-map))
+       (alist      (da-changer-args-to-alist macroname args kwd-fields)))
+    (cons ctor-name
+          (da-maker-fill-in-fields dflt-map alist))))
 
-(defun da-make-maker (basename fields)
-  (let ((make-foo    (da-maker-name basename))
-        (make-foo-fn (da-maker-fn-name basename))
-        (kwd-fields  (da-make-valid-fields-for-changer fields)))
-  `(defmacro ,make-foo (&rest args)
-     (,make-foo-fn (da-changer-args-to-alist args ',kwd-fields)))))
+(defun da-make-maker (basename fields defaults)
+  (let* ((make-foo    (da-maker-name basename))
+         (kwd-fields  (da-make-valid-fields-for-changer fields))
+         (dflt-map    (pairlis$ kwd-fields defaults)))
+    `(defmacro ,make-foo (&rest args)
+       (make-aggregate ',basename args ',dflt-map ',make-foo nil))))
 
-(defun da-make-honsed-maker-fn (basename fields defaults)
-  (let ((alist              (intern-in-package-of-symbol "ALIST" basename))
-        (make-honsed-foo-fn (da-honsed-maker-fn-name basename))
-        (honsed-foo         (da-honsed-constructor-name basename)))
-    `(defun ,make-honsed-foo-fn (,alist)
-       (declare (xargs :mode :program))
-       (cons ',honsed-foo ,(cons 'list (da-make-maker-fn-aux basename fields defaults))))))
-
-(defun da-make-honsed-maker (basename fields)
-  (let ((make-honsed-foo    (da-honsed-maker-name basename))
-        (make-honsed-foo-fn (da-honsed-maker-fn-name basename))
-        (kwd-fields         (da-make-valid-fields-for-changer fields)))
-    `(defmacro ,make-honsed-foo (&rest args)
-       (,make-honsed-foo-fn (da-changer-args-to-alist args ',kwd-fields)))))
+(defun da-make-honsed-maker (basename fields defaults)
+  (let* ((make-foo    (da-honsed-maker-name basename))
+         (kwd-fields  (da-make-valid-fields-for-changer fields))
+         (dflt-map    (pairlis$ kwd-fields defaults)))
+    `(defmacro ,make-foo (&rest args)
+       (make-aggregate ',basename args ',dflt-map ',make-foo t))))
 
 
 ; SUPPORT FOR B* INTEGRATION
@@ -742,10 +773,8 @@ to the @('tag-reasoning') ruleset; see @(see rulesets).</p>"
        ,@(da-make-accessors basename tag fields layout)
        ,@(da-make-accessors-of-constructor basename fields)
        ,(da-make-binder basename fields)
-       ,(da-make-changer-fn basename fields)
        ,(da-make-changer basename fields)
-       ,(da-make-maker-fn basename fields nil)
-       ,(da-make-maker basename fields))))
+       ,(da-make-maker basename fields nil))))
 
 (defmacro def-primitive-aggregate (name fields &key tag)
   `(make-event
@@ -755,10 +784,13 @@ to the @('tag-reasoning') ruleset; see @(see rulesets).</p>"
 
 (def-primitive-aggregate employee
   (name title department manager salary)
-  :tag :foo)
+  :tag :helper)
 
 (b* ((emp (make-employee :name "jared"))
      ((employee emp) emp))
   emp.name)
+
+(b* ((emp (make-employee :name "anakin")))
+  (change-employee emp :name "vader" :department "evil"))
 
 ||#

@@ -953,14 +953,16 @@ expression-sizing) for details.</p>")
   :hints(("Goal" :induct (len x))))
 
 (define vl-port->name ((x vl-port-p))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (name maybe-stringp :rule-classes :type-prescription)
   (b* ((x (vl-port-fix x)))
     (case (tag x)
       (:vl-regularport   (vl-regularport->name x))
       (:vl-interfaceport (vl-interfaceport->name x))
-      (otherwise         (impossible)))))
+      (otherwise         (progn$ (impossible) "")))))
 
 (define vl-port->loc ((x vl-port-p))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (loc vl-location-p)
   (b* ((x (vl-port-fix x)))
     (case (tag x)
@@ -970,7 +972,6 @@ expression-sizing) for details.</p>")
 
 (defprojection vl-portlist->names ((x vl-portlist-p))
   :parents (vl-portlist-p)
-  :nil-preservingp t
   (vl-port->name x)
   ///
   (defthm string-listp-of-vl-portlist->names
@@ -997,6 +998,7 @@ expression-sizing) for details.</p>")
   :returns (ifports (and (vl-portlist-p ifports)
                          (vl-interfaceportlist-p ifports)))
   :verify-guards nil
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   (mbe :logic
        (b* (((when (atom x))
              nil)
@@ -1045,6 +1047,7 @@ expression-sizing) for details.</p>")
   :returns (ifports (and (vl-portlist-p ifports)
                          (vl-regularportlist-p ifports)))
   :verify-guards nil
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   (mbe :logic
        (b* (((when (atom x))
              nil)
@@ -2366,20 +2369,17 @@ respectively.</p>"
    vl-paramdecl
    vl-import))
 
-(defthmd vl-blockitem-possible-tags
-  (implies (vl-blockitem-p x)
-           (or (equal (tag x) :vl-vardecl)
-               (equal (tag x) :vl-paramdecl)
-               (equal (tag x) :vl-import)))
-  :rule-classes :forward-chaining)
-
+;; BOZO maybe deftranssum should prove this automatically
 (defthmd vl-blockitem-fix-possible-tags
   (or (equal (tag (vl-blockitem-fix x)) :vl-vardecl)
       (equal (tag (vl-blockitem-fix x)) :vl-paramdecl)
       (equal (tag (vl-blockitem-fix x)) :vl-import))
-  :hints (("goal" :use ((:instance vl-blockitem-possible-tags
-                         (x (vl-blockitem-fix x))))))
-  :rule-classes ((:forward-chaining :trigger-terms ((tag (vl-blockitem-fix x))))))
+  :rule-classes ((:forward-chaining :trigger-terms ((tag (vl-blockitem-fix x)))))
+  :hints (("goal"
+           :in-theory (enable tag-reasoning)
+           :cases ((vl-blockitem-p (vl-blockitem-fix x))))))
+
+(add-to-ruleset tag-reasoning '(vl-blockitem-fix-possible-tags))
 
 (defthm vl-blockitem-fix-type
   (consp (vl-blockitem-fix x))
@@ -2413,7 +2413,7 @@ respectively.</p>"
                                 (vardecls-acc vl-vardecllist-p)
                                 (paramdecls-acc vl-paramdecllist-p)
                                 (imports-acc vl-importlist-p))
-  :prepwork ((local (in-theory (enable vl-blockitem-fix-possible-tags))))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (mv (vardecls vl-vardecllist-p)
                (paramdecls vl-paramdecllist-p)
                (imports vl-importlist-p))
@@ -3736,6 +3736,7 @@ initially kept in a big, mixed list.</p>"
                         (vl-modelementlist-p x)))))
 
       (define vl-modelement->loc ((x vl-modelement-p))
+        :prepwork ((local (in-theory (enable tag-reasoning))))
         :returns (loc vl-location-p :hints(("Goal" :in-theory (enable vl-modelement-fix
                                                                       vl-modelement-p
                                                                       tag-reasoning
@@ -3887,17 +3888,21 @@ initially kept in a big, mixed list.</p>"
 
 (encapsulate nil
 
-  (defthm tag-when-vl-genelement-p-forward
-    (implies (vl-genelement-p x)
-             (or (equal (tag x) :vl-genbase)
-                 (equal (tag x) :vl-genloop)
-                 (equal (tag x) :vl-genif)
-                 (equal (tag x) :vl-gencase)
-                 (equal (tag x) :vl-genblock)
-                 (equal (tag x) :vl-genarray)))
-    :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
-    :rule-classes :forward-chaining)
+;; (defthmd tag-when-vl-genelement-p-forward
+;;       (implies (vl-genelement-p x)
+;;                (or (equal (tag x) :vl-genbase)
+;;                    (equal (tag x) :vl-genloop)
+;;                    (equal (tag x) :vl-genif)
+;;                    (equal (tag x) :vl-gencase)
+;;                    (equal (tag x) :vl-genblock)
+;;                    (equal (tag x) :vl-genarray)))
+;;       :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
+;;       :rule-classes :forward-chaining)
 
+  ;; (add-to-ruleset tag-reasoning '(tag-when-vl-genelement-p-forward))
+  
+  ;; Baseline time 44 seconds.
+  ;; Now 15 seconds 
   (deftranssum vl-ctxelement
     ;; Add any tagged product that can be written with ~a and has a loc field.
     (vl-portdecl
@@ -3965,16 +3970,18 @@ initially kept in a big, mixed list.</p>"
                  (equal (tag x) :vl-genloop)
                  (equal (tag x) :vl-modport)))
     :rule-classes (:forward-chaining)
-    :hints(("Goal" :in-theory (enable vl-ctxelement-p))))
+    :hints(("Goal" :in-theory (enable tag-reasoning vl-ctxelement-p))))
 
   (add-to-ruleset tag-reasoning '(tag-when-vl-ctxelement-p))
 
   (define vl-ctxelement->loc ((x vl-ctxelement-p))
-    :returns (loc vl-location-p :hints(("Goal" :in-theory (enable vl-ctxelement-fix
-                                                                  vl-ctxelement-p
-                                                                  tag-reasoning
-                                                                  (tau-system)))))
-    :guard-hints (("Goal" :do-not-induct t))
+    :returns (loc vl-location-p)
+    :prepwork ((local (in-theory (enable tag-reasoning
+                                         ;; bozo probably don't need this if we add thms about
+                                         ;; tag of vl-ctxelement-fix.  or maybe we want to just
+                                         ;; have it known that a fixing function produces a
+                                         ;; well-typed object, as a forward chaining rule?
+                                         vl-ctxelement-fix))))
     (let ((x (vl-ctxelement-fix X)))
       (case (tag x)
         (:vl-portdecl (vl-portdecl->loc x))
@@ -4004,8 +4011,7 @@ initially kept in a big, mixed list.</p>"
         (:vl-assertion (vl-assertion->loc x))
         (:vl-cassertion (vl-cassertion->loc x))
         (:vl-property (vl-property->loc x))
-        (:vl-sequence (vl-sequence->loc x))
-        ))))
+        (:vl-sequence (vl-sequence->loc x))))))
 
 (defprod vl-context1
   :short "Description of where an expression occurs."
@@ -4327,7 +4333,9 @@ transforms to not modules with this attribute.</p>"
            (implies (and (not (vl-collect-interface-ports x))
                          (vl-portlist-p x))
                     (vl-regularportlist-p x))
-           :hints(("Goal" :induct (len x)))))
+           :hints(("Goal"
+                   :induct (len x)
+                   :in-theory (enable tag-reasoning)))))
 
   (defthm vl-regularportlist-p-when-no-module->ifports
     (implies (not (vl-module->ifports x))

@@ -396,7 +396,8 @@ top-level hierarchical identifiers.</p>"
                                      (vl-interface-p x))
                                  (vl-scope-p x))))
                (local (in-theory (disable double-containment
-                                          tag-reasoning)))
+                                          ;tag-reasoning
+                                          )))
 
                (local (defthm vl-maybe-expr-p-of-car-exprlist
                         (implies (vl-exprlist-p x)

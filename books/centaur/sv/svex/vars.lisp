@@ -31,6 +31,9 @@
 (in-package "SV")
 (include-book "svex")
 (include-book "std/osets/top" :dir :system)
+;; [Jared] BOZO fragile, previously included via fty, needed for some reason here
+;; want to just include std/util/alist-keys but that doesn't work
+(include-book "misc/hons-help" :dir :system)
 (include-book "clause-processors/witness-cp" :dir :system)
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))

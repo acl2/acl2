@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "expr")
+(include-book "centaur/vl/mlib/writer" :dir :system) ;; bozo?
 (include-book "svstmt-compile")
 ;; (include-book "vl-fns-called")
 ;; (include-book "vl-paramrefs")
@@ -420,7 +421,11 @@ because... (BOZO)</p>
                          :args (list lhs err))
                   nil nil))
 
-             ((list dynselect-final) (sv::svexlist-rewrite-top (list dynselect-trunc)))
+             ((list dynselect-final)
+              (time$ (sv::svexlist-rewrite-top (list dynselect-trunc))
+                     :mintime 1/2
+                     :msg "vl-procedural-assign->svstmts: rewriting dynamic select ~s0: ~st sec, ~sa bytes~%"
+                     :args (list (vl-pps-expr lhs))))
 
              ((mv err dyn-rhs)
               (sv::svex-resolve-single-assignment

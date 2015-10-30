@@ -711,7 +711,9 @@ provide a :ctrl when there is one, etc.</p>
 
   (defmacro change-vl-compoundstmt (x &rest args)
     (change-vl-compoundstmt-fn x
-                               (std::da-changer-args-to-alist args '(:stmts :exprs :ctrl :vardecls :paramdecls))))
+                               (std::da-changer-args-to-alist 'change-vl-compoundstmt
+                                                              args
+                                                              '(:stmts :exprs :ctrl :vardecls :paramdecls))))
 
   (local (defthm test0
            (equal (change-vl-compoundstmt x)

@@ -91,29 +91,32 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
       :tag :vl-genblob
       :layout :tree)
 
-    (define vl-modelement-loc ((x vl-modelement-p))
-      :parents (vl-modelement)
-      :short "Get the location of any @(see vl-modelement-p)."
-      :returns (loc vl-location-p
-                    :hints(("Goal" :in-theory (enable vl-modelement-fix
-                                                      (tau-system)))))
-      (b* ((x (vl-modelement-fix x)))
-        (case (tag x)
-          . ,(project-over-modelement-types
-              '(:vl-__type__       (vl-__type__->loc x))))))
+;; [Jared] ++ungoodly we had these defined here and also we had vl-modelement->loc and
+;; vl-genelement->loc in parsetree!  What are we doing !??
 
-    (define vl-genelement-loc ((x vl-genelement-p))
-      :parents (vl-genelement)
-      :short "Get the location of any @(see vl-genelement-p)."
-      :returns (loc vl-location-p
-                    :hints(("Goal" :in-theory (enable vl-genelement-fix))))
-      (vl-genelement-case x
-        :vl-genbase (vl-modelement-loc x.item)
-        :vl-genloop   x.loc
-        :vl-genif     x.loc
-        :vl-gencase   x.loc
-        :vl-genblock  x.loc
-        :vl-genarray  x.loc))
+    ;; (define vl-modelement-loc ((x vl-modelement-p))
+    ;;   :parents (vl-modelement)
+    ;;   :short "Get the location of any @(see vl-modelement-p)."
+    ;;   :returns (loc vl-location-p
+    ;;                 :hints(("Goal" :in-theory (enable vl-modelement-fix
+    ;;                                                   (tau-system)))))
+    ;;   (b* ((x (vl-modelement-fix x)))
+    ;;     (case (tag x)
+    ;;       . ,(project-over-modelement-types
+    ;;           '(:vl-__type__       (vl-__type__->loc x))))))
+
+    ;; (define vl-genelement-loc ((x vl-genelement-p))
+    ;;   :parents (vl-genelement)
+    ;;   :short "Get the location of any @(see vl-genelement-p)."
+    ;;   :returns (loc vl-location-p
+    ;;                 :hints(("Goal" :in-theory (enable vl-genelement-fix))))
+    ;;   (vl-genelement-case x
+    ;;     :vl-genbase (vl-modelement-loc x.item)
+    ;;     :vl-genloop   x.loc
+    ;;     :vl-genif     x.loc
+    ;;     :vl-gencase   x.loc
+    ;;     :vl-genblock  x.loc
+    ;;     :vl-genarray  x.loc))
 
     (local (defun my-default-hint (fnname id clause world)
              (declare (xargs :mode :program))
@@ -137,9 +140,7 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
        ,@(project-over-modelement-types '(__elts__       vl-__type__list-p))
        ;; Accumulator for generates since they aren't ordinary moditems
        (generates   vl-genelementlist-p))
-      :returns (mv ,@(project-over-modelement-types
-                      `(__elts__
-                        vl-__type__list-p))
+      :returns (mv ,@(project-over-modelement-types `(__elts__ vl-__type__list-p))
                    (generates vl-genelementlist-p))
       :hooks ((:fix :hints ((my-default-hint
                              'vl-sort-genelements-aux
@@ -164,22 +165,20 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
            (cdr x) ,@(project-over-modelement-types '__elts__)
            (cons (vl-genelement-fix (car x)) generates))))
       :prepwork
-      ((local (in-theory (disable
-                          ;; just a speed hint
-                          double-containment
-                          set::nonempty-means-set
-                          set::sets-are-true-lists
-                          acl2::rev-when-not-consp
-                          default-car
-                          default-cdr
-                          pick-a-point-subset-strategy
-                          vl-genelement-p-when-member-equal-of-vl-genelementlist-p
-                          ,@(project-over-modelement-types
-                             'vl-__type__list-p-when-subsetp-equal)
-                          ,@(project-over-modelement-types
-                             'vl-modelementlist-p-when-vl-__type__list-p)
-                          (:rules-of-class :type-prescription :here)
-                          (:ruleset tag-reasoning))))))
+      ((local (in-theory (e/d (tag-reasoning)
+                              (;; just a speed hint
+                               double-containment
+                               set::nonempty-means-set
+                               set::sets-are-true-lists
+                               acl2::rev-when-not-consp
+                               default-car
+                               default-cdr
+                               pick-a-point-subset-strategy
+                               vl-genelement-p-when-member-equal-of-vl-genelementlist-p
+                               ,@(project-over-modelement-types 'vl-__type__list-p-when-subsetp-equal)
+                               ,@(project-over-modelement-types 'vl-modelementlist-p-when-vl-__type__list-p)
+                               (:rules-of-class :type-prescription :here)
+                               ))))))
 
     (define vl-sort-genelements
       :parents (genblob)
@@ -209,7 +208,8 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
            (implies (and (not (vl-collect-interface-ports x))
                          (vl-portlist-p x))
                     (vl-regularportlist-p x))
-           :hints(("Goal" :induct (len x)))))
+           :hints(("Goal" :induct (len x)
+                   :in-theory (enable tag-reasoning)))))
 
   (defthm vl-regularportlist-p-when-no-genblob->ifports
     (implies (not (vl-genblob->ifports x))
