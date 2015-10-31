@@ -3757,6 +3757,20 @@
             illegal-to-certify-message ;;; needs to persist past expansion
             splitter-output            ;;; allow user to modify this in a book
             top-level-errorp           ;;; allow TOP-LEVEL errors to propagate
+
+; Do not remove deferred-ttag-notes or deferred-ttag-notes-saved from this
+; list!  Consider the following example.
+
+;   (make-event (er-progn (set-deferred-ttag-notes t state)
+;                         (defttag t1)
+;                         (defttag t2)
+;                         (value '(value-triple :done))))
+
+; When deferred-ttag-notes and deferred-ttag-notes-saved were not in this list
+; (through Version_7.1), we never saw a TTAG NOTE for :T2.
+
+            deferred-ttag-notes        ;;; see comment immediately above
+            deferred-ttag-notes-saved  ;;; see comment immediately above
             ))))
     val))
 
@@ -4711,7 +4725,6 @@
                                   '(include-book
                                     defchoose
                                     defconst
-                                    defdoc
                                     deflabel
                                     defmacro
                                     defpkg
@@ -5689,7 +5702,7 @@
         (list (car form) (cadr form) (caddr form) *evisceration-ellipsis-mark*))
        ((defthm defthmd)
         (list (car form) (cadr form) *evisceration-ellipsis-mark*))
-       ((defdoc defconst)
+       (defconst
         (list (car form) (cadr form) *evisceration-ellipsis-mark*))
        (mutual-recursion
         (cons 'mutual-recursion
@@ -6656,10 +6669,7 @@
   '(ubt! :x))
 
 ; We now develop the most trivial event we have: deflabel.  It
-; illustrates the basic structure of our event code and we need it for
-; all other events because any event with a documentation string uses
-; the processing defined here.  (Actually defdoc is a bit simpler, and
-; we deal with it just after deflabel.)
+; illustrates the basic structure of our event code.
 
 (defun chk-virgin (name new-type wrld)
 
@@ -7298,7 +7308,7 @@
        (getprop name 'label nil 'current-acl2-world wrld)
        (equal event-form (get-event name wrld))))
 
-(defun deflabel-fn (name state doc event-form)
+(defun deflabel-fn (name state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -7308,10 +7318,7 @@
    (if (output-in-infixp state) event-form (cons 'deflabel name))
    (let ((wrld1 (w state))
          (event-form (or event-form
-                         (list* 'deflabel name
-                                (if doc
-                                    (list :doc doc)
-                                  nil)))))
+                         (list 'deflabel name))))
      (cond
       ((redundant-labelp name event-form wrld1)
        (stop-redundant-event ctx state))

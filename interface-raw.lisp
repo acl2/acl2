@@ -7102,7 +7102,6 @@
            defaxiom
            defconst
            defconstant
-           defdoc
            defg
            define-@par-macros
            define-atomically-modifiable-counter

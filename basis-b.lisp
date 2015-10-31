@@ -314,66 +314,56 @@
          (cdr body)))
     nil))
 
-(defmacro defstub (name &rest rst)
-  (mv-let (erp args key-alist)
-          (partition-rest-and-keyword-args rst '(:doc))
-          (cond
-           ((or erp
-                (not (or (equal (length args) 2)
-                         (and (equal (length args) 3)
-                              (symbol-listp (car args))
-                              (symbolp (cadr args))
-                              (equal (symbol-name (cadr args)) "=>")))))
-            `(er soft 'defstub
-                 "Defstub must be of the form (defstub name formals ~
-                  body) or (defstub name args-sig => body-sig), where ~
-                  args-sig is a true-list of symbols.  Both ~
-                  forms permit an optional, final :DOC doc-string ~
-                  argument.  See :DOC defstub."))
-           (t
-            (let ((doc (cdr (assoc-eq :doc key-alist))))
-              (cond
-               ((equal (length args) 2)
+(defmacro defstub (name &rest args)
+  (cond
+   ((not (or (equal (length args) 2)
+             (and (equal (length args) 3)
+                  (symbol-listp (car args))
+                  (symbolp (cadr args))
+                  (equal (symbol-name (cadr args)) "=>"))))
+    `(er soft 'defstub
+         "Defstub must be of the form (defstub name formals body) or (defstub ~
+          name args-sig => body-sig), where args-sig is a true-list of ~
+          symbols.  See :DOC defstub."))
+   ((equal (length args) 2)
 
 ; Old style
-                (let* ((formals (car args))
-                       (body (cadr args))
-                       (ignores (defstub-ignores formals body)))
-                  `(encapsulate
-                    ((,name ,formals ,body))
-                    (logic)
-                    (local
-                     (defun ,name ,formals
-                       (declare (ignore ,@ignores))
-                       ,body))
-                    ,@(and (consp body)
-                           (eq (car body) 'mv)
-                           `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
-                                                 name)
-                               (true-listp (,name ,@formals))
-                               :rule-classes :type-prescription)))
-                    ,@(if doc `((defdoc ,name ,doc)) nil))))
-               (t (let* ((args-sig (car args))
-                         (body-sig (caddr args))
-                         (formals (gen-formals-from-pretty-flags args-sig))
-                         (body (defstub-body body-sig))
-                         (ignores (defstub-ignores formals body))
-                         (stobjs (collect-non-x '* args-sig)))
-                    `(encapsulate
-                      (((,name ,@args-sig) => ,body-sig))
-                      (logic)
-                      (local
-                       (defun ,name ,formals
-                         (declare (ignore ,@ignores)
-                                  (xargs :stobjs ,stobjs))
-                         ,body))
-                      ,@(and (consp body-sig)
-                             (eq (car body-sig) 'mv)
-                             `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
-                                                   name)
-                                 (true-listp (,name ,@formals))
-                                 :rule-classes :type-prescription)))
-                      ,@(if doc `((defdoc ,name ,doc)) nil))))))))))
+    (let* ((formals (car args))
+           (body (cadr args))
+           (ignores (defstub-ignores formals body)))
+      `(encapsulate
+         ((,name ,formals ,body))
+         (logic)
+         (local
+          (defun ,name ,formals
+            (declare (ignore ,@ignores))
+            ,body))
+         ,@(and (consp body)
+                (eq (car body) 'mv)
+                `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
+                                      name)
+                    (true-listp (,name ,@formals))
+                    :rule-classes :type-prescription))))))
+   (t (let* ((args-sig (car args))
+             (body-sig (caddr args))
+             (formals (gen-formals-from-pretty-flags args-sig))
+             (body (defstub-body body-sig))
+             (ignores (defstub-ignores formals body))
+             (stobjs (collect-non-x '* args-sig)))
+        `(encapsulate
+           (((,name ,@args-sig) => ,body-sig))
+           (logic)
+           (local
+            (defun ,name ,formals
+              (declare (ignore ,@ignores)
+                       (xargs :stobjs ,stobjs))
+              ,body))
+           ,@(and (consp body-sig)
+                  (eq (car body-sig) 'mv)
+                  `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
+                                        name)
+                      (true-listp (,name ,@formals))
+                      :rule-classes :type-prescription))))))))
 
 ;; RAG - I changed the primitive guard for the < function, and the
 ;; complex function.  Added the functions complexp, realp, and floor1.

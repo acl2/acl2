@@ -1043,18 +1043,16 @@
             (list 'quote rule-classes)
             (list 'quote doc)
             (list 'quote event-form)))
-    (defmacro deflabel (&whole event-form name &key doc)
+    (defmacro deflabel (&whole event-form name)
       (list 'deflabel-fn
             (list 'quote name)
             'state
-            (list 'quote doc)
             (list 'quote event-form)))
     (defmacro deftheory (&whole event-form name expr &key doc)
       (list 'deftheory-fn
             (list 'quote name)
             (list 'quote expr)
             'state
-            (list 'quote doc)
             (list 'quote event-form)))
     (defmacro in-theory (&whole event-form expr &key doc)
       (list 'in-theory-fn
@@ -1527,7 +1525,7 @@
                          in-package
                          defpkg defun defuns mutual-recursion defmacro defconst
                          defstobj defthm defaxiom progn encapsulate include-book
-                         deflabel defdoc deftheory
+                         deflabel deftheory
                          in-theory in-arithmetic-theory regenerate-tau-database
                          push-untouchable remove-untouchable set-body table
                          reset-prehistory verify-guards verify-termination-boot-strap
@@ -3087,7 +3085,7 @@
 
   (list 'theory-fn name 'world))
 
-(defun deftheory-fn (name expr state doc event-form)
+(defun deftheory-fn (name expr state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -3166,10 +3164,7 @@
     (if (output-in-infixp state) event-form (cons 'deftheory name))
     (let ((wrld (w state))
           (event-form (or event-form
-                          (list* 'deftheory name expr
-                                 (if doc
-                                     (list :doc doc)
-                                   nil)))))
+                          (list 'deftheory name expr))))
       (er-progn
        (chk-all-but-new-name name ctx nil wrld state)
        (er-let* ((wrld1 (chk-just-new-name name nil 'theory nil ctx wrld
@@ -3942,7 +3937,6 @@
      defaxiom
      defchoose
      defconst
-     defdoc
      deflabel
      defmacro
 ;    defpkg ; We prohibit defpkgs except in very special places.  See below.
@@ -10066,8 +10060,8 @@
                 (cond (erp
                        (msg "~|AND NOTE that file ~x0 does not currently ~
                              exist, so you will need to recertify ~x1 and the ~
-                             books the depend on it (and, if you are using an ~
-                             image created by save-exec, then consider ~
+                             books that depend on it (and, if you are using ~
+                             an image created by save-exec, then consider ~
                              rebuilding that image)"
                             (concatenate 'string familiar-name ".cert")
                             familiar-name))
@@ -10083,76 +10077,82 @@
                             familiar-name))))
               state)))
 
-(defun tilde-*-book-check-sums-phrase1 (reqd-alist actual-alist-cddrs state)
+(defun tilde-*-book-check-sums-phrase1 (reqd-alist actual-alist state)
 
-; The two alists are strip-cddrs of include-book-alists.  Thus, each
-; entry in each is of the form (familiar-name cert-annotations
-; . ev-lst-chk-sum).  For each entry in reqd-alist we either find an
-; identical entry in actual-alist-cddrs or else we print a message.
+; The two alists are include-book-alists.  Thus, each element of each is of the
+; form (full-book-name directory-name familiar-name cert-annotations
+; . ev-lst-chk-sum).  For each entry (cert-annotations . ev-lst-chk-sum) in
+; reqd-alist we either find a corresponding entry for the same full-book-name
+; in actual-alist (note that we ignore the directory-name and familiar-name,
+; which may differ between the two but are irrelevant) or else we return a
+; message.
 
   (cond
    ((null reqd-alist) (mv nil state))
-   (t (let* ((reqd-entry (cddr (car reqd-alist)))
+   (t (let* ((reqd-entry (cdddr (car reqd-alist)))
+             (familiar-name (caddr (car reqd-alist)))
              (full-book-name (car (car reqd-alist)))
-             (familiar-name (car reqd-entry))
-             (actual-entry (assoc-equal familiar-name actual-alist-cddrs)))
+             (actual-element (assoc-equal full-book-name actual-alist))
+             (actual-entry (cdddr actual-element)))
+        (assert$
 
-; We know there is an entry for familiar-name because otherwise we would have
-; caused an error.  The question is only whether we found a cert file
-; for it, etc.
+; We know there is an entry for full-book-name because otherwise we would have
+; caused an error when trying to include the book (or process its portcullis
+; commands).  The question is only whether we found a cert file for it, etc.
 
-        (cond
-         ((equal reqd-entry actual-entry)
-          (tilde-*-book-check-sums-phrase1 (cdr reqd-alist)
-                                           actual-alist-cddrs
-                                           state))
-         (t
-          (mv-let
-           (msgs state)
+         actual-element          
+         (cond
+          ((equal reqd-entry actual-entry)
            (tilde-*-book-check-sums-phrase1 (cdr reqd-alist)
-                                            actual-alist-cddrs
-                                            state)
+                                            actual-alist
+                                            state))
+          (t
            (mv-let
-            (phrase state)
-            (tilde-@-cert-post-alist-phrase full-book-name
-                                            familiar-name
-                                            (cdr reqd-entry)
-                                            (cdr actual-entry)
-                                            state)
-            (mv (cons
-                 (msg "-- its certificate requires the book \"~s0\" with ~
-                      certificate annotations~|  ~x1~|and check sum ~x2, but ~
-                      we have included ~@3~@4"
-                      full-book-name
-                      (cadr reqd-entry)  ;;; cert-annotations
-                      (cddr reqd-entry) ;;; ev-lst-chk-sum
-                      (cond
-                       ((null (cddr actual-entry))
-                        (msg "an uncertified version of ~x0 with certificate ~
-                             annotations~|  ~x1,"
-                             familiar-name
-                             (cadr actual-entry) ; cert-annotations
-                             ))
-                       (t (msg "a version of ~x0 with certificate ~
-                               annotations~|  ~x1~|and check sum ~x2,"
-                               familiar-name
-                               (cadr actual-entry) ; cert-annotations
-                               (cddr actual-entry))))
-                      phrase)
-                 msgs)
-                state)))))))))
+             (msgs state)
+             (tilde-*-book-check-sums-phrase1 (cdr reqd-alist)
+                                              actual-alist
+                                              state)
+             (mv-let
+               (phrase state)
+               (tilde-@-cert-post-alist-phrase full-book-name
+                                               familiar-name
+                                               reqd-entry
+                                               actual-entry
+                                               state)
+               (mv (cons
+                    (msg "-- its certificate requires the book \"~s0\" with ~
+                          certificate annotations~|  ~x1~|and check sum ~x2, ~
+                          but we have included ~@3~@4"
+                         full-book-name
+                         (car reqd-entry)  ;;; cert-annotations
+                         (cdr reqd-entry)  ;;; ev-lst-chk-sum
+                         (cond
+                          ((null (cdr actual-entry))
+                           (msg "an uncertified version of ~x0 with ~
+                                 certificate annotations~|  ~x1,"
+                                familiar-name
+                                (car actual-entry) ; cert-annotations
+                                ))
+                          (t (msg "a version of ~x0 with certificate ~
+                                   annotations~|  ~x1~|and check sum ~x2,"
+                                  familiar-name
+                                  (car actual-entry) ; cert-annotations
+                                  (cdr actual-entry))))
+                         phrase)
+                    msgs)
+                   state))))))))))
 
 (defun tilde-*-book-check-sums-phrase (reqd-alist actual-alist state)
 
 ; The two alists each contain pairs of the form (full-book-name user-book-name
 ; familiar-name cert-annotations . ev-lst-chk-sum).  Reqd-alist shows what is
 ; required and actual-alist shows that is actual (presumably, present in the
-; world's include-book-alist).  We know reqd-alist ought to be a `include-book
+; world's include-book-alist).  We know reqd-alist ought to be an `include-book
 ; alist subset' of actual-alist but it is not.
 
   (mv-let (phrase1 state)
           (tilde-*-book-check-sums-phrase1 reqd-alist
-                                           (strip-cddrs actual-alist)
+                                           actual-alist
                                            state)
           (mv (list "" "~%~@*" "~%~@*;~|" "~%~@*;~|"
                     phrase1)
@@ -16542,12 +16542,11 @@
                                           fn 'defchoose-axiom constraint wrld)
                                          state))))))))))))))))))))))
 
-(defun non-acceptable-defun-sk-p (name args body doc quant-ok rewrite exists-p)
+(defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p)
 
 ; Since this is just a macro, we only do a little bit of vanilla checking,
 ; leaving it to the real events to implement the most rigorous checks.
 
-  (declare (ignore doc))
   (let ((bound-vars (and (true-listp body) ;this is to guard cadr
                          (cadr body)
                          (if (atom (cadr body))
@@ -16624,7 +16623,7 @@
 
 (defmacro defun-sk (name args body
                          &key
-                         doc quant-ok skolem-name thm-name rewrite strengthen
+                         quant-ok skolem-name thm-name rewrite strengthen
                          #+:non-standard-analysis
                          (classicalp 't classicalp-p)
                          (witness-dcls
@@ -16649,7 +16648,7 @@
           (or thm-name
               (add-suffix name
                           (if exists-p "-SUFF" "-NECC"))))
-         (msg (non-acceptable-defun-sk-p name args body doc quant-ok rewrite
+         (msg (non-acceptable-defun-sk-p name args body quant-ok rewrite
                                          exists-p)))
     (if msg
         `(er soft '(defun-sk . ,name)
@@ -16707,10 +16706,7 @@
                   (t rewrite))
            :hints (("Goal"
                      :use (,skolem-name ,name)
-                     :in-theory (theory 'minimal-theory))))
-         ,@(if doc
-               `((defdoc ,name ,doc))
-             nil))))))
+                     :in-theory (theory 'minimal-theory)))))))))
 
 ; Here is the defstobj event.  Note that many supporting functions have been
 ; moved from this file to basis-a.lisp, in support of ACL2 "toothbrush"
@@ -16721,14 +16717,12 @@
 
 ; (defstobj name ... field-descri ...
 ;           :renaming alist
-;           :doc string)
 ;           :inline flag)
 
-; where the :renaming, :doc, and :inline keyword arguments are
-; optional.  This syntax is not supported by macros because you can't
-; have an &REST arg and a &KEYS arg without all the arguments being in
-; the keyword style.  So we use &REST and implement the new style of
-; argument recovery.
+; where the :renaming and :inline keyword arguments are optional.  This syntax
+; is not supported by macros because you can't have an &REST arg and a &KEYS
+; arg without all the arguments being in the keyword style.  So we use &REST
+; and implement the new style of argument recovery.
 
 ; Once we have partitioned the args for defstobj, we'll have recovered
 ; the field-descriptors, a renaming alist, and a doc string.  Our next

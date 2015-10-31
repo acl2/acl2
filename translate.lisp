@@ -5250,8 +5250,6 @@
 ;   + -           ; guarded
     or and list
 ;   local
-;   defdoc
-
     with-live-state
     ))
 
@@ -7828,7 +7826,6 @@
                       defaxiom
                       defchoose
                       defconst
-                      defdoc
                       deflabel
                       defstobj defabsstobj
                       deftheory

@@ -1602,10 +1602,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore args))
   nil)
 
-(defmacro defdoc (&rest args)
-  (declare (ignore args))
-  nil)
-
 (defmacro deftheory (&rest args)
   (declare (ignore args))
   nil)
@@ -8521,7 +8517,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro deflabel (&whole event-form name &key doc)
+(defmacro deflabel (&whole event-form name)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8532,11 +8528,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (list 'deflabel-fn
         (list 'quote name)
         'state
-        (list 'quote doc)
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro deftheory (&whole event-form name expr &key doc)
+(defmacro deftheory (&whole event-form name expr)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8548,7 +8543,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote name)
         (list 'quote expr)
         'state
-        (list 'quote doc)
         (list 'quote event-form)))
 
 (defmacro deftheory-static (name theory)
@@ -12703,7 +12697,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     make-event set-verify-guards-eagerness
     wormhole verify-termination-boot-strap start-proof-tree
     f-decrement-big-clock defabsstobj defstobj defund defttag
-    defdoc push-gframe defthmd f-get-global
+    push-gframe defthmd f-get-global
 
 ; Most of the following were discovered after we included macros defined in
 ; #+acl2-loop-only whose definitions are missing in #-acl-loop-only.
@@ -21763,7 +21757,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   nil)
 
 #+acl2-loop-only
-(defmacro defttag (tag-name &key doc)
+(defmacro defttag (tag-name)
   (declare (xargs :guard (symbolp tag-name)))
   `(state-global-let*
     ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
@@ -21771,8 +21765,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   :ttag
                   ',(and tag-name
                          (intern (symbol-name tag-name) "KEYWORD")))
-           ,@(cond (doc `((defdoc ,tag-name ,doc)))
-                   (t nil))
            (table acl2-defaults-table :ttag))))
 
 #-acl2-loop-only

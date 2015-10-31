@@ -3692,7 +3692,6 @@
      defstobj defabsstobj
      defpkg
      deflabel
-     defdoc
      deftheory
      defchoose
      verify-guards
