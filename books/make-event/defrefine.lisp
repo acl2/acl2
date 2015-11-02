@@ -200,6 +200,7 @@ Future Work
         (thm-name 'nil)
         (functional-substitution 'nil)
         instructions hints otf-flg rule-classes doc)
+  (declare (ignore doc))
   `(make-event
     (mv-let (erp val state)
 
@@ -224,7 +225,7 @@ Future Work
                       (quote ,thm-name)))
                    (hints (quote ,hints))
                    (instructions (quote ,instructions))
-                   (doc ,doc)
+                   ;; (doc ,doc) ; Matt K. mod for v7-2
                    (rule-classes ,rule-classes)
                    (otf-flg ,otf-flg)
                    (name (quote ,name))
@@ -260,7 +261,7 @@ Future Work
                        ,thm-form
                        :hints ,hints
                        :instructions ,instructions
-                       :doc ,doc
+                       ;; :doc ,doc ; Matt K. mod for v7-2
                        :rule-classes ,rule-classes
                        :otf-flg ,otf-flg))
 
@@ -285,6 +286,7 @@ Future Work
         (thm-name 'nil)
         (functional-substitution 'nil)
         instructions hints otf-flg rule-classes doc)
+  (declare (ignore doc))
   `(make-event
     (mv-let (erp val state)
             (table abstraction-table (quote ,abstraction))
@@ -297,7 +299,7 @@ Future Work
                       (quote ,thm-name)))
                    (hints (quote ,hints))
                    (instructions (quote ,instructions))
-                   (doc ,doc)
+                   ;; :doc ,doc ; Matt K. mod for v7-2
                    (rule-classes ,rule-classes)
                    (otf-flg ,otf-flg)
                    (substitution
@@ -313,7 +315,7 @@ Future Work
                        ,thm-form
                        :hints ,hints
                        :instructions ,instructions
-                       :doc ,doc
+                       ;; :doc ,doc ; Matt K. mod for v7-2
                        :rule-classes ,rule-classes
                        :otf-flg ,otf-flg))
                    (all-events (snoc (quote ,term-list) cumulative-thm)))

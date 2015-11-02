@@ -297,7 +297,9 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
                    (and look `(:rule-classes ,(cdr look))))
                :otf-flg      ,(cdr (assoc :otf-flg kwd-alist))
                :instructions ,(cdr (assoc :instructions kwd-alist))
-               :doc          ,(cdr (assoc :doc kwd-alist))))
+; Commented out by Matt K. for post-v-7.1 removal of :doc for defthm:
+;              :doc          ,(cdr (assoc :doc kwd-alist))
+               ))
 
        (event
         (if (and (not want-xdoc)

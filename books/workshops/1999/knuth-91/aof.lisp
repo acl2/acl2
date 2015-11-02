@@ -274,7 +274,9 @@ To certify this book, first, create a world with the following packages:
 		 (aofp y))
 	    (<=_a x y))
    :rule-classes (:rewrite :forward-chaining)
-   :doc "Equivalent to asymmetry of <_a.")
+; Matt K. mod: :doc is no longer supported for defthm after v7-1
+   ;; :doc "Equivalent to asymmetry of <_a."
+   )
 
  (defthm
    Transitivity-of-<_a
@@ -293,7 +295,9 @@ To certify this book, first, create a world with the following packages:
 		 (aofp y))
 	    (equal x y))
    :rule-classes :forward-chaining
-   :doc "Equivalent to trichotomy of <_a.")
+; Matt K. mod: :doc is no longer supported for defthm after v7-1
+   ;; :doc "Equivalent to trichotomy of <_a."
+   )
 
  (defthm
    Compatibility-Laws
@@ -813,7 +817,9 @@ To certify this book, first, create a world with the following packages:
   Reflexivity-of-<=_a
   (implies (aofp x)
 	   (<=_a x x))
-  :doc "Equivalent to irreflexivity of <_a.")
+; Matt K. mod: :doc is no longer supported for defthm after v7-1
+  ;; :doc "Equivalent to irreflexivity of <_a."
+  )
 
 (defthm
   Transitivity-of-<=_a

@@ -986,14 +986,13 @@
             'state
             (list 'quote event-form)))
     (defmacro verify-guards (&whole event-form name
-                                    &key hints otf-flg guard-debug doc)
+                                    &key hints otf-flg guard-debug)
       (list 'verify-guards-fn
             (list 'quote name)
             'state
             (list 'quote hints)
             (list 'quote otf-flg)
             (list 'quote guard-debug)
-            (list 'quote doc)
             (list 'quote event-form)))
     (defmacro defmacro (&whole event-form &rest mdef)
       (list 'defmacro-fn
@@ -1018,8 +1017,7 @@
                              &key (rule-classes '(:REWRITE))
                              instructions
                              hints
-                             otf-flg
-                             doc)
+                             otf-flg)
       (list 'defthm-fn
             (list 'quote name)
             (list 'quote term)
@@ -1028,61 +1026,53 @@
             (list 'quote instructions)
             (list 'quote hints)
             (list 'quote otf-flg)
-            (list 'quote doc)
             (list 'quote event-form)
             #+:non-standard-analysis ; std-p
             nil))
     (defmacro defaxiom (&whole event-form
                                name term
-                               &key (rule-classes '(:REWRITE))
-                               doc)
+                               &key (rule-classes '(:REWRITE)))
       (list 'defaxiom-fn
             (list 'quote name)
             (list 'quote term)
             'state
             (list 'quote rule-classes)
-            (list 'quote doc)
             (list 'quote event-form)))
     (defmacro deflabel (&whole event-form name)
       (list 'deflabel-fn
             (list 'quote name)
             'state
             (list 'quote event-form)))
-    (defmacro deftheory (&whole event-form name expr &key doc)
+    (defmacro deftheory (&whole event-form name expr)
       (list 'deftheory-fn
             (list 'quote name)
             (list 'quote expr)
             'state
             (list 'quote event-form)))
-    (defmacro in-theory (&whole event-form expr &key doc)
+    (defmacro in-theory (&whole event-form expr)
       (list 'in-theory-fn
             (list 'quote expr)
             'state
-            (list 'quote doc)
             (list 'quote event-form)))
-    (defmacro in-arithmetic-theory (&whole event-form expr &key doc)
+    (defmacro in-arithmetic-theory (&whole event-form expr)
       (list 'in-arithmetic-theory-fn
             (list 'quote expr)
             'state
-            (list 'quote doc)
             (list 'quote event-form)))
-    (defmacro regenerate-tau-database (&whole event-form &key doc)
+    (defmacro regenerate-tau-database (&whole event-form)
       (list 'regenerate-tau-database-fn
             'state
-            (list 'quote doc)
             (list 'quote event-form)))
-    (defmacro push-untouchable (&whole event-form name fn-p &key doc)
+    (defmacro push-untouchable (&whole event-form name fn-p)
       (list 'push-untouchable-fn
             (list 'quote name)
             (list 'quote fn-p)
             'state
-            (list 'quote doc)
             (list 'quote event-form)))
-    (defmacro reset-prehistory (&whole event-form &optional permanent-p doc)
+    (defmacro reset-prehistory (&whole event-form &optional permanent-p)
       (list 'reset-prehistory-fn
             (list 'quote permanent-p)
             'state
-            (list 'quote doc)
             (list 'quote event-form)))
     (defmacro set-body (&whole event-form fn name-or-rune)
       (list 'set-body-fn
@@ -1113,8 +1103,7 @@
                                    (defaxioms-okp 't)
                                    (skip-proofs-okp 't)
                                    (ttags 'nil)
-                                   dir
-                                   doc)
+                                   dir)
       (list 'include-book-fn
             (list 'quote user-book-name)
             'state
@@ -1124,7 +1113,6 @@
             (list 'quote defaxioms-okp)
             (list 'quote skip-proofs-okp)
             (list 'quote ttags)
-            (list 'quote doc)
             (list 'quote dir)
             (list 'quote event-form)))
     (defmacro local (x)
@@ -3201,7 +3189,7 @@
 ; expression into a theory and then load it into the global enabled
 ; structure.
 
-(defun in-theory-fn (expr state doc event-form)
+(defun in-theory-fn (expr state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -3213,23 +3201,14 @@
     (if (output-in-infixp state)
         event-form
       (cond ((atom expr)
-             (cond ((null doc)
-                    (msg "( IN-THEORY ~x0)" expr))
-                   (t (cons 'in-theory expr))))
+             (msg "( IN-THEORY ~x0)" expr))
             ((symbolp (car expr))
-             (cond ((null doc)
-                    (msg "( IN-THEORY (~x0 ...))"
-                         (car expr)))
-                   (t (msg "( IN-THEORY (~x0 ...) ...)"
-                           (car expr)))))
-            ((null doc) "( IN-THEORY (...))")
-            (t "( IN-THEORY (...) ...)")))
+             (msg "( IN-THEORY (~x0 ...))"
+                  (car expr)))
+            (t "( IN-THEORY (...))")))
     (let ((wrld (w state))
           (event-form (or event-form
-                          (list* 'in-theory expr
-                                 (if doc
-                                     (list :doc doc)
-                                   nil)))))
+                          (list 'in-theory expr))))
       (er-let*
        ((theory0 (translate-in-theory-hint expr t ctx wrld state)))
        (let* ((ens1 (ens state))
@@ -3266,7 +3245,7 @@
                      (ens state) ctx wrld state))
                   (value (list :NUMBER-OF-ENABLED-RUNES val))))))))))
 
-(defun in-arithmetic-theory-fn (expr state doc event-form)
+(defun in-arithmetic-theory-fn (expr state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -3283,23 +3262,14 @@
     (if (output-in-infixp state)
         event-form
       (cond ((atom expr)
-             (cond ((null doc)
-                    (msg "( IN-ARITHMETIC-THEORY ~x0)" expr))
-                   (t (cons 'in-arithmetic-theory expr))))
+             (msg "( IN-ARITHMETIC-THEORY ~x0)" expr))
             ((symbolp (car expr))
-             (cond ((null doc)
-                    (msg "( IN-ARITHMETIC-THEORY (~x0 ...))"
-                         (car expr)))
-                   (t (msg "( IN-ARITHMETIC-THEORY (~x0 ...) ...)"
-                           (car expr)))))
-            ((null doc) "( IN-ARITHMETIC-THEORY (...))")
-            (t "( IN-ARITHMETIC-THEORY (...) ...)")))
+             (msg "( IN-ARITHMETIC-THEORY (~x0 ...))"
+                  (car expr)))
+            (t "( IN-ARITHMETIC-THEORY (...))")))
     (let ((wrld (w state))
           (event-form (or event-form
-                          (list* 'in-arithmetic-theory expr
-                                 (if doc
-                                     (list :doc doc)
-                                   nil)))))
+                          (list 'in-arithmetic-theory expr))))
       (cond
        ((not (quotep expr))
         (er soft ctx
@@ -12621,7 +12591,6 @@
                                         defaxioms-okp
                                         skip-proofs-okp
                                         ttags
-                                        doc
 ; Bound above and used below:
                                         ctx
                                         full-book-name
@@ -12630,7 +12599,6 @@
                                         behalf-of-certify-flg
                                         cddr-event-form)
   #+acl2-loop-only (declare (ignore load-compiled-file))
-  (declare (ignore doc))
   (let* ((wrld0 (w state))
          (old-skip-proofs-seen (global-val 'skip-proofs-seen wrld0))
          (active-book-name (active-book-name wrld0 state))
@@ -13415,7 +13383,6 @@
                                        defaxioms-okp
                                        skip-proofs-okp
                                        ttags
-                                       doc
                                        dir
                                        event-form)
 
@@ -13489,9 +13456,6 @@
                      (if (not (eq skip-proofs-okp t))
                          (list :skip-proofs-okp
                                skip-proofs-okp)
-                       nil)
-                     (if doc
-                         (list :doc doc)
                        nil)))))
             (cond ((or behalf-of-certify-flg
                        #-acl2-loop-only *hcomp-book-ht*
@@ -13502,7 +13466,7 @@
 
                    (include-book-fn1
                     user-book-name state load-compiled-file expansion-alist
-                    uncertified-okp defaxioms-okp skip-proofs-okp ttags doc
+                    uncertified-okp defaxioms-okp skip-proofs-okp ttags
 ; The following were bound above:
                     ctx full-book-name directory-name familiar-name
                     behalf-of-certify-flg cddr-event-form))
@@ -13520,7 +13484,7 @@
                         (include-book-fn1
                          user-book-name state load-compiled-file
                          expansion-alist uncertified-okp defaxioms-okp
-                         skip-proofs-okp ttags doc
+                         skip-proofs-okp ttags
 ; The following were bound above:
                          ctx full-book-name directory-name familiar-name
                          behalf-of-certify-flg cddr-event-form)))))))))))))
@@ -15954,7 +15918,7 @@
                                                       defaxioms-okp
                                                       skip-proofs-okp
                                                       ttags-seen
-                                                      nil nil
+                                                      nil
                                                       nil))
                                                     (t
                                                      (get-declaim-list
@@ -16394,7 +16358,7 @@
     (let* ((wrld (w state))
            (event-form (or event-form (cons 'defchoose def)))
            (raw-bound-vars (cadr def))
-           (valid-keywords '(:doc :strengthen))
+           (valid-keywords '(:strengthen))
            (ka (nthcdr 4 def)) ; def is the argument list of a defchoose call
            (strengthen (cadr (assoc-keyword :strengthen def))))
       (er-progn
@@ -16404,8 +16368,8 @@
                    (null (strip-keyword-list valid-keywords ka))))
          (er soft ctx
              "Defchoose forms must have the form (defchoose fn bound-vars ~
-              formals body), with optional keyword arguments ~&0. However, ~
-              ~x1 does not have this form.  See :DOC defchoose."
+              formals body), with optional keyword argument~#0~[~/s~] ~&0.  ~
+              However, ~x1 does not have this form.  See :DOC defchoose."
              valid-keywords
              event-form))
         ((not (booleanp strengthen))
@@ -16724,9 +16688,9 @@
 ; arg without all the arguments being in the keyword style.  So we use &REST
 ; and implement the new style of argument recovery.
 
-; Once we have partitioned the args for defstobj, we'll have recovered
-; the field-descriptors, a renaming alist, and a doc string.  Our next
-; step is to check that the renaming alist is of the correct form.
+; Once we have partitioned the args for defstobj, we'll have recovered the
+; field-descriptors and a renaming alist.  Our next step is to check that the
+; renaming alist is of the correct form.
 
 (defun doublet-style-symbol-to-symbol-alistp (x)
   (cond ((atom x) (equal x nil))
@@ -18466,7 +18430,7 @@
                               &key
                               concrete recognizer creator corr-fn exports
                               protect-default
-                              congruent-to missing-only doc)
+                              congruent-to missing-only)
   (declare (xargs :guard (and (symbolp name)
                               (booleanp protect-default))))
   (list 'defabsstobj-fn
@@ -18479,7 +18443,6 @@
         (list 'quote protect-default)
         (list 'quote congruent-to)
         (list 'quote missing-only)
-        (list 'quote doc)
         'state
         (list 'quote event-form)))
 
@@ -18496,7 +18459,7 @@
                                              &key
                                              concrete recognizer creator
                                              corr-fn exports protect-default
-                                             congruent-to doc)
+                                             congruent-to)
   (declare (xargs :guard (symbolp name)))
   (list 'defabsstobj-fn1
         (list 'quote name)
@@ -18508,7 +18471,6 @@
         (list 'quote protect-default)
         (list 'quote congruent-to)
         (list 'quote t) ; missing-only
-        (list 'quote doc)
         (list 'quote (msg "( DEFABSSTOBJ-MISSING-EVENTS ~x0 ...)" name)) ; ctx
         'state
         (list 'quote event-form)))
@@ -19377,7 +19339,7 @@
         (t (first-keyword (cdr lst)))))
 
 (defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator corr-fn
-                                        exports protect-default congruent-to doc
+                                        exports protect-default congruent-to
                                         see-doc ctx wrld state event-form)
 
 ; We return an error triple such that when there is no error, the value
@@ -19390,7 +19352,6 @@
 ; recognizer, creator, and exports.  Wrld1 is an extension of the given world,
 ; wrld, that deals with redefinition.
 
-  (declare (ignore doc))
   (cond
    ((atom exports)
     (er soft ctx
@@ -19754,7 +19715,7 @@
                                 wrld))))))))
 
 (defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
-                                protect-default congruent-to missing-only doc
+                                protect-default congruent-to missing-only
                                 ctx state event-form)
   (let* ((wrld0 (w state))
          (see-doc "See :DOC defabsstobj.")
@@ -19773,7 +19734,7 @@
               (missing/methods/wrld1
                (chk-acceptable-defabsstobj
                 st-name st$c recognizer st$ap creator corr-fn exports
-                protect-default congruent-to doc see-doc ctx wrld0 state
+                protect-default congruent-to see-doc ctx wrld0 state
                                 event-form)))
       (cond
        ((eq missing/methods/wrld1 'redundant)
@@ -19977,7 +19938,7 @@
                                        state)))))))))))))))))))
 
 (defun defabsstobj-fn (st-name st$c recognizer creator corr-fn exports
-                               protect-default congruent-to missing-only doc
+                               protect-default congruent-to missing-only
                                state event-form)
 
 ; This definition shares a lot of code and ideas with the definition of
@@ -19994,7 +19955,7 @@
        event-form
      (msg "( DEFABSSTOBJ ~x0 ...)" st-name))
    (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
-     protect-default congruent-to missing-only doc ctx state event-form)))
+     protect-default congruent-to missing-only ctx state event-form)))
 
 (defun create-state ()
   (declare (xargs :guard t))
@@ -20208,7 +20169,7 @@
   #-acl2-loop-only
   (stobj-let-fn-raw x))
 
-(defun push-untouchable-fn (name fn-p state doc event-form)
+(defun push-untouchable-fn (name fn-p state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -20218,17 +20179,11 @@
    (if (output-in-infixp state)
        event-form
      (cond ((symbolp name)
-            (cond ((null doc)
-                   (msg "( PUSH-UNTOUCHABLE ~x0 ~x1)" name fn-p))
-                  (t (msg "( PUSH-UNTOUCHABLE ~x0 ~x1 ...)" name fn-p))))
-           ((null doc) "( PUSH-UNTOUCHABLE ...)")
-           (t "( PUSH-UNTOUCHABLE ... ...)")))
+            (msg "( PUSH-UNTOUCHABLE ~x0 ~x1)" name fn-p))
+           (t "( PUSH-UNTOUCHABLE ...)")))
    (let ((wrld (w state))
          (event-form (or event-form
-                         (list* 'push-untouchable name fn-p
-                                (if doc
-                                    (list :doc doc)
-                                  nil))))
+                         (list 'push-untouchable name fn-p)))
          (names (if (symbolp name) (list name) name))
          (untouchable-prop (cond (fn-p 'untouchable-fns)
                                  (t 'untouchable-vars))))
@@ -20288,7 +20243,7 @@
                  bad
                  nil)))))))))
 
-(defun remove-untouchable-fn (name fn-p state doc event-form)
+(defun remove-untouchable-fn (name fn-p state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -20298,17 +20253,11 @@
    (if (output-in-infixp state)
        event-form
      (cond ((symbolp name)
-            (cond ((null doc)
-                   (msg "( REMOVE-UNTOUCHABLE ~x0 ~x1)" name fn-p))
-                  (t (msg "( REMOVE-UNTOUCHABLE ~x0 ~x1 ...)" name fn-p))))
-           ((null doc) "( REMOVE-UNTOUCHABLE ...)")
-           (t "( REMOVE-UNTOUCHABLE ... ...)")))
+            (msg "( REMOVE-UNTOUCHABLE ~x0 ~x1)" name fn-p))
+           (t "( REMOVE-UNTOUCHABLE ...)")))
    (let ((wrld (w state))
          (event-form (or event-form
-                         (list* 'remove-untouchable name fn-p
-                                (if doc
-                                    (list :doc doc)
-                                  nil))))
+                         (list 'remove-untouchable name fn-p)))
          (names (if (symbolp name) (list name) name))
          (untouchable-prop (cond (fn-p 'untouchable-fns)
                                  (t 'untouchable-vars))))
@@ -23188,7 +23137,7 @@
   nil)
 
 #+acl2-loop-only
-(defmacro reset-prehistory (&whole event-form &optional permanent-p doc)
+(defmacro reset-prehistory (&whole event-form &optional permanent-p)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -23200,7 +23149,6 @@
   (list 'reset-prehistory-fn
         (list 'quote permanent-p)
         'state
-        (list 'quote doc)
         (list 'quote event-form)))
 
 #+acl2-loop-only
@@ -27251,7 +27199,7 @@
 
 ; Tau Todo:  see the install-event comment below!
 
-(defun regenerate-tau-database-fn (state doc event-form)
+(defun regenerate-tau-database-fn (state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -27262,15 +27210,10 @@
    (with-ctx-summarized
     (if (output-in-infixp state)
         event-form
-        (if doc
-            "( REGENERATE-TAU-DATABASE ...)"
-            "( REGENERATE-TAU-DATABASE)"))
+      "( REGENERATE-TAU-DATABASE)")
     (let* ((wrld (w state))
            (event-form (or event-form
-                           `(REGENERATE-TAU-DATABASE
-                             ,@(if doc
-                                   (list :doc doc)
-                                   nil))))
+                           '(REGENERATE-TAU-DATABASE)))
            (boot-strap-auto-modep (cdar *tau-status-boot-strap-settings*))
            (user-auto-modep (tau-auto-modep wrld))
            (ens (ens state)))

@@ -311,6 +311,8 @@ sublis-fn.
                     (sublis-fn substitution term nil)
                     (declare (ignore erp))
                     thm)))
+; Matt K. mod: :doc is no longer supported for defthm after v7-1:
+        (declare (ignore doc))
         (value
 
          ;; And finally I lay out the defthm event.  Notice that the default is
@@ -321,7 +323,8 @@ sublis-fn.
             ,thm-form
             :hints ,hints
             :instructions ,instructions
-            :doc ,doc
+; Matt K. mod: :doc is no longer supported for defthm after v7-1
+            ;; :doc ,doc
             :rule-classes ,rule-classes
             :otf-flg ,otf-flg)))))))
 
