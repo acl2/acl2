@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "BUILD")
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc cert.pl
@@ -95,7 +95,7 @@ symbolic links, etc.</p>")
 
 
 (defxdoc cert-pl-on-windows
-  :parents (|0. Preliminaries|)
+  :parents (preliminaries)
   :short "Special notes about using @('cert.pl') on Windows."
 
   :long "<p>There are two main ways you can run @('cert.pl') (and for that
@@ -152,7 +152,7 @@ beta-testing and with making it more robust.</p>")
 
 
 
-(defxdoc |0. Preliminaries|
+(defxdoc preliminaries
   :parents (cert.pl)
   :short "Where to find @('cert.pl'), how to set up your environment before
 using it, and the supporting software you'll need."
@@ -259,7 +259,7 @@ use.</p>")
 
 
 
-(defxdoc |1. Certifying Simple Books|
+(defxdoc certifying-simple-books ; Step 1
   :parents (cert.pl)
   :short "How to use certify simple ACL2 books, take advantage of parallel
 builds, and manage the dependency scanner."
@@ -520,7 +520,7 @@ this:</p>
 
 
 
-(defxdoc |2. Pre Certify-Book Commands|
+(defxdoc pre-certify-book-commands ; Step 2
   :parents (cert.pl)
   :short "How to add commands to be executed before calling @(see
 certify-book).  You'll need this to use ACL2 features like @(see defpkg) and
@@ -633,7 +633,7 @@ are all supposed to be in some package, you just need a single @('cert.acl2')
 file that gets that @(see defpkg) form loaded.</p>")
 
 
-(defxdoc |3. Custom Certify-Book Commands|
+(defxdoc custom-certify-book-commands ; Step 3
   :parents (cert.pl)
   :short "How to control the options that will be passed to the @(see
 certify-book) command.  You'll need this to allow the use of <see topic='@(url
@@ -663,7 +663,7 @@ you'll need to tell @('cert.pl') that you want to give different arguments to
 
 <p>You can do this on a per-book or per-directory basis by adding a special
 comment into the corresponding @('.acl2') file.  If you don't know what an
-@('.acl2') file is, see @(see |2. Pre Certify-Book Commands|).</p>
+@('.acl2') file is, see @(see pre-certify-book-commands).</p>
 
 <p>Example: to allow all trust tags, you could use a comment like this:</p>
 
@@ -692,7 +692,7 @@ dumb perl script is reading this, after all.</li>
 </ul>")
 
 
-(defxdoc |4. Optimizing Build Time|
+(defxdoc optimizing-build-time ; Step 4
   :parents (cert.pl)
   :short "How to use @('critpath.pl') to profile your build, so that you can
 focus your efforts on speeding up the most critical parts."
@@ -761,7 +761,7 @@ books it depends on.</li>
 useful.  See @('critpath.pl --help') for details.</p>")
 
 
-(defxdoc |5. Raw Lisp and Other Dependencies|
+(defxdoc raw-lisp-and-other-dependencies ; Step 5
   :parents (cert.pl)
   :short "How to use @('depends-on') to tell @('cert.pl') about additional,
 non-Lisp files that your books depend on."
@@ -836,7 +836,7 @@ to help you write a Makefile for your whole project.</p>")
 
 
 
-(defxdoc |6. Static Makefiles|
+(defxdoc static-makefiles ; Step 6
   :parents (cert.pl)
   :short "How to use @('cert.pl') within a larger Makefile that needs to know
 how to build non-ACL2 files (e.g., C libraries) or dynamically generated ACL2
@@ -941,7 +941,7 @@ section, to rename variables like @('CERT_PL_CERTS'), etc.  See @('cert.pl
 --help') for a summary.</p>")
 
 
-(defxdoc |7. Using Extended ACL2 Images|
+(defxdoc using-extended-acl2-images ; Step 7
   :parents (cert.pl)
   :short "(Advanced) how to get @(see cert.pl) to use @(see save-exec) images
 to certify parts of your project."
@@ -954,7 +954,7 @@ simple.</p>
 <p>By default, @('cert.pl') will simply try to certify all books using whatever
 ACL2 image is invoked with @('acl2'), or else whatever image it is told to use
 via the @('$ACL2') environment variable or the @('--acl2') option; see
-<i>Helping @('cert.pl') find ACL2</i> of @(see |0. Preliminaries|) for
+<i>Helping @('cert.pl') find ACL2</i> of @(see preliminaries) for
 details.</p>
 
 <p>Unfortunately, this usual approach means that widely included books must be
@@ -989,7 +989,7 @@ using the following script:</p>
 certify particular books, there is currently no way to directly tell
 @('cert.pl') that it needs to run this script to create the @('extended-acl2')
 image.  Instead, if you want to use extended ACL2 images, you will probably
-need to put together a @('Makefile').  See @(see |6. Static Makefiles|) for
+need to put together a @('Makefile').  See @(see static-makefiles) for
 information about how to use @('cert.pl') to do the dependency scanning for
 your @('Makefile').</p>
 
@@ -1029,10 +1029,10 @@ should simply contain:</p>
 
 <p>You can also write a @('cert.image') file to indicate a directory-wide
 default image to use.  (This is exactly analogous to how @('cert.pl') looks for
-@('.acl2') files for @(see |2. Pre Certify-Book Commands|).)</p>")
+@('.acl2') files for @(see pre-certify-book-commands).)</p>")
 
 
-(defxdoc |8. Distributed Builds|
+(defxdoc distributed-builds ; Step 8
   :parents (cert.pl)
   :short "(Advanced) how to distribute ACL2 book building over a cluster
 of machines."
@@ -1132,6 +1132,14 @@ exit codes instead of files to determine success.  In cases where the exit code
 says the job completed successfully, we wait until @('A.cert') becomes visible
 to the head node before returning control to the Makefile.</p>")
 
+(xdoc::order-subtopics cert.pl
+  (preliminaries certifying-simple-books pre-certify-book-commands
+                 custom-certify-book-commands optimizing-build-time
+                 raw-lisp-and-other-dependencies static-makefiles
+                 using-extended-acl2-images ; rename to remove "using"
+                 distributed-builds cert_param))
+
+
 ; added by Matt K., 8/14/2014
 (defxdoc cert_param
   :parents (cert.pl)
@@ -1141,7 +1149,7 @@ certification using @('make')"
  "<p>You can restrict the @(see books) to be certified using @('make')
   by adding a stylized ``@('cert_param:')'' comment.  For example, suppose that
   you include the following comment in your book or in a corresponding
-  @('.acl2') file (see @(see |2. Pre Certify-Book Commands|)).</p>
+  @('.acl2') file (see @(see pre-certify-book-commands)).</p>
 
  @({
  ; cert_"
