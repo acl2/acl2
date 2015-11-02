@@ -130,6 +130,8 @@ of packages:</p>
 <dd>
 @({
     ;; load other packages needed to define our new packages...
+    ;; note that we only include portcullis files, that define
+    ;; the packages, not the libraries which those files support
     (include-book \"lib1/portcullis\" :dir :system)
     (include-book \"lib2/portcullis\" :dir :system)
 
