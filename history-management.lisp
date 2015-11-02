@@ -14486,12 +14486,6 @@
 ;            result.  The table must be empty.  Store term as the
 ;            table's :guard.
 
-; Should table events be permitted to have documentation strings?  No.
-; The reason is that we do not protect other names from being used as
-; tables.  For example, the user might set up a table with the name
-; defthm.  If we permitted a doc-string for that table, :DOC defthm
-; would be overwritten.
-
   (let* ((ctx (cons 'table name))
          (wrld (w state))
          (event-form (or event-form

@@ -856,6 +856,8 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
 
 ;COPIED FROM DEFDATA ----- to be deprecated and deleted
 (defun compute-defdata-relation (T1 T2 hints rule-classes otf-flg doc ctx wrld)
+; Matt K. mod: :doc is no longer supported for defthm after v7-1
+    (declare (ignore doc))
     (b* ((T1p (predicate-name T1))
          (T2p (predicate-name T2))
          (M (table-alist 'type-metadata-table wrld))
@@ -891,7 +893,9 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                        :hints ,hints
                        :rule-classes ,rule-classes
                        :otf-flg ,otf-flg
-                       :doc ,doc)))
+; Matt K. mod: :doc is no longer supported for defthm after v7-1
+                       ;; :doc ,doc
+                       )))
        (ev-form-to-print `(defthm ,nm
                             ,form
                             ,@(and hints

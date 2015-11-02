@@ -394,12 +394,7 @@
             (UPDATE-MISC2 :logic update-misc$a
                           :exec update-misc$c
                           :correspondence update-misc{correspondence}
-                          :preserved update-misc{preserved}))
-  :doc ; nil is OK, but we test the use of an actual :doc string
-    ;; Jared removed the doc section here toward axing legacy doc stuff
-  "a defabsstobj example~/
-
-  This :DOC string is just a stub.  ~l[defabsstobj].~/~/")
+                          :preserved update-misc{preserved})))
 
 ; Finally, we show that the use of a logical stobj can result in improvements
 ; to rewrite rules by way of eliminating hypotheses.

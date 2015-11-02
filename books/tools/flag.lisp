@@ -577,7 +577,7 @@ one such form may affect what you might think of as the proof of another.</p>
 ;
 ;  -or-
 ;
-;   (defthm[d] <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
+;   (defthm[d] <thmname> <thm-body> :flag ... :rule-classes ...)
 
 (defun flag-from-thmpart (thmpart)
   (if (member (car thmpart) '(defthm defthmd))
@@ -678,13 +678,15 @@ one such form may affect what you might think of as the proof of another.</p>
        (thmname           (flag-thm-entry-thmname explicit-name flag thmpart))
        (body              (body-from-thmpart thmpart))
        (rule-classes-look (member :rule-classes thmpart))
-       (doc               (extract-keyword-from-args :doc thmpart)))
+; Commented out by Matt K. for post-v-7.1 removal of :doc for defthm:
+       ;;(doc               (extract-keyword-from-args :doc thmpart))
+       )
     (cons `(with-output :stack :pop
              (,defthm[d] ,thmname
                ,body
                ,@(and rule-classes-look
                       `(:rule-classes ,(cadr rule-classes-look)))
-               :doc ,doc
+               ;; :doc ,doc ; Removed by Matt K.; see comment above
                :hints(("Goal"
                        :in-theory (theory 'minimal-theory)
                        :use ((:instance ,lemma-name (,flag-var ',flag)))))))
