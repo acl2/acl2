@@ -10866,12 +10866,11 @@
   (let ((supporters (instantiable-ancestors (all-fnnames tterm) wrld nil)))
     (value supporters)))
 
-(defun defaxiom-fn (name term state rule-classes doc event-form)
+(defun defaxiom-fn (name term state rule-classes event-form)
 
 ; Important Note: Don't change the formals of this function without reading the
 ; *initial-event-defmacros* discussion in axioms.lisp.
 
-  (declare (ignore doc))
   (when-logic
    "DEFAXIOM"
    (with-ctx-summarized
@@ -11082,7 +11081,6 @@
                         instructions
                         hints
                         otf-flg
-                        doc
                         event-form
                         #+:non-standard-analysis std-p)
   (with-ctx-summarized
@@ -11109,9 +11107,6 @@
                                             nil)
                                           (if otf-flg
                                               (list :otf-flg otf-flg)
-                                            nil)
-                                          (if doc
-                                              (list :doc doc)
                                             nil)))))
            (ld-skip-proofsp (ld-skip-proofsp state)))
        (pprogn
@@ -11233,7 +11228,6 @@
                        instructions
                        hints
                        otf-flg
-                       doc
                        event-form
                        #+:non-standard-analysis std-p)
 
@@ -11247,24 +11241,22 @@
      instructions
      hints
      otf-flg
-     doc
      event-form
      #+:non-standard-analysis std-p)))
 
-(defmacro thm (term &key hints otf-flg doc)
+(defmacro thm (term &key hints otf-flg)
   (list 'thm-fn
         (list 'quote term)
         'state
         (list 'quote hints)
-        (list 'quote otf-flg)
-        (list 'quote doc)))
+        (list 'quote otf-flg)))
 
-(defun thm-fn (term state hints otf-flg doc)
+(defun thm-fn (term state hints otf-flg)
   (er-progn
    (with-ctx-summarized
     (if (output-in-infixp state)
-        (list* 'THM term (if (or hints otf-flg doc) '(irrelevant) nil))
-        "( THM ...)")
+        (list* 'THM term (if (or hints otf-flg) '(irrelevant) nil))
+      "( THM ...)")
     (let ((wrld (w state))
           (ens (ens state)))
       (er-let* ((hints (translate-hints+ 'thm

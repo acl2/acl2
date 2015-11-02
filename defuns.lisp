@@ -5046,7 +5046,7 @@
         (print-verify-guards-msg names col state)
         (value (cons wrld1 ttree1)))))))
 
-(defun verify-guards-fn (name state hints otf-flg guard-debug doc event-form)
+(defun verify-guards-fn (name state hints otf-flg guard-debug event-form)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -5057,8 +5057,7 @@
     (if (output-in-infixp state)
         event-form
         (cond ((and (null hints)
-                    (null otf-flg)
-                    (null doc))
+                    (null otf-flg))
                (msg "( VERIFY-GUARDS ~x0)"
                     name))
               (t (cons 'verify-guards name))))
@@ -5072,9 +5071,6 @@
                                     nil)
                                   (if otf-flg
                                       (list :otf-flg otf-flg)
-                                    nil)
-                                  (if doc
-                                      (list :doc doc)
                                     nil)))))
           (assumep (or (eq (ld-skip-proofsp state) 'include-book)
                        (eq (ld-skip-proofsp state) 'include-book-with-locals)

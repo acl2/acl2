@@ -853,14 +853,16 @@
   (let ((recognizer (access-defstobj-template x :recognizer))
         (creator (access-defstobj-template x :creator))
         (field-templates (access-defstobj-template x :field-templates))
-        (doc (access-defstobj-template x :doc))
+; Matt K. mod: :doc is no longer supported for defstobj after v7-1
+        ;; (doc (access-defstobj-template x :doc))
         (inline (access-defstobj-template x :inline))
         (congruent-to (access-defstobj-template x :congruent-to))
         (non-memoizable (access-defstobj-template x :non-memoizable)))
     (list recognizer
           creator
           field-templates
-          doc
+; Matt K. mod: :doc is no longer supported for defstobj after v7-1
+          ;; doc
           inline
           congruent-to
           non-memoizable)))
@@ -881,7 +883,10 @@
        (st-fields     (eat-typed-records rsfs))
        (st-kw-part    (alist-to-keyword-alist st-kw-alist nil))
        (st-template   (defstobj-template name (append st-fields st-kw-part) wrld))
-       ((list namep create-name st-fld-templates ?doc ?inline ?congruent-to
+       ((list namep create-name st-fld-templates
+; Matt K. mod: :doc is no longer supported for defthm after v7-1
+              ;; ?doc
+              ?inline ?congruent-to
               ?non-memoizable)
         ;; BOZO this has to be kept in sync with defstobj-template.
         (destructure-defstobj-template st-template))

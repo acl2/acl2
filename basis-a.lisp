@@ -5074,8 +5074,7 @@
   ((congruent-to . non-memoizable)
    (recognizer . creator)
    field-templates
-   inline
-   doc)
+   inline)
   nil)
 
 (defun packn1 (lst)
@@ -5241,7 +5240,7 @@
               (cdr field-descriptors) renaming wrld))))))
 
 (defconst *defstobj-keywords*
-  '(:renaming :doc :inline :congruent-to :non-memoizable))
+  '(:renaming :inline :congruent-to :non-memoizable))
 
 ; The following function is used to implement a slighly generalized
 ; form of macro args, namely one in which we can provide an arbitrary
@@ -5297,20 +5296,18 @@
 
 ; Note: Wrld may be a world or nil.  See fix-stobj-array-type.
 
-; We unpack the args to get the renamed field descriptors.  We return a list of
-; the form (namep create-name fields doc inline congruent-to), where: namep is
-; the name of the recognizer for the single-threaded object; create-name is the
-; name of the constructor for the stobj; fields is a list corresponding to the
-; field descriptors, but normalized with respect to the renaming, types, etc.;
-; doc is the doc string, or nil if no doc string is supplied; inline is t if
-; :inline t was specified in the defstobj event, else nil; and congruent-to is
-; the :congruent-to field of the defstobj event (default: nil).  A field in
-; fields is of the form (recog-name type init accessor-name updater-name
-; length-name resize-name resizable).  The last three fields are nil unless
-; type has the form (ARRAY ptype (n)), in which case ptype is a primitive type
-; and n is a positive integer.  Init is the evg of a constant term, i.e.,
-; should be quoted to be a treated as a term.  Doc is the value of the :doc
-; keyword arg in args.
+; We unpack the args to get the renamed field descriptors.  We return a
+; defstobj-template with fields (namep create-name fields inline congruent-to),
+; where: namep is the name of the recognizer for the single-threaded object;
+; create-name is the name of the constructor for the stobj; fields is a list
+; corresponding to the field descriptors, but normalized with respect to the
+; renaming, types, etc.; inline is t if :inline t was specified in the defstobj
+; event, else nil; and congruent-to is the :congruent-to field of the defstobj
+; event (default: nil).  A field in fields is of the form (recog-name type init
+; accessor-name updater-name length-name resize-name resizable).  The last
+; three fields are nil unless type has the form (ARRAY ptype (n)), in which
+; case ptype is a primitive type and n is a positive integer.  Init is the evg
+; of a constant term, i.e., should be quoted to be a treated as a term.
 
   (mv-let
    (erp field-descriptors key-alist)
@@ -5329,7 +5326,6 @@
          (list* 'defstobj name args)))
     (t
      (let ((renaming (cdr (assoc-eq :renaming key-alist)))
-           (doc (cdr (assoc-eq :doc key-alist)))
            (inline (cdr (assoc-eq :inline key-alist)))
            (congruent-to (cdr (assoc-eq :congruent-to key-alist)))
            (non-memoizable (cdr (assoc-eq :non-memoizable key-alist))))
@@ -5339,7 +5335,6 @@
              :field-templates (defstobj-field-templates
                                 field-descriptors renaming wrld)
              :non-memoizable non-memoizable
-             :doc doc
              :inline inline
              :congruent-to congruent-to))))))
 
@@ -6154,11 +6149,10 @@
 ; book.  Either way, ok-p would be false when this code is executed by loading
 ; the compiled file.
 
-; We do not check the :doc, :inline, or :congruent-to fields, because these
-; incur no proof obligations.  If a second pass of encapsulate, or inclusion of
-; a book, exposes a later non-local defstobj that is redundant with an earlier
-; local one, then any problems will be caught during local compatibility
-; checks.
+; We do not check the :inline :congruent-to fields, because these incur no
+; proof obligations.  If a second pass of encapsulate, or inclusion of a book,
+; exposes a later non-local defstobj that is redundant with an earlier local
+; one, then any problems will be caught during local compatibility checks.
 
                          )))
          (cond

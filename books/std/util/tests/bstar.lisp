@@ -58,7 +58,7 @@
       (value '(value-triple :invisible))
     (mv-let (erp val state)
       (thm-fn `(equal ,(caar tests) ,(cadar tests))
-              state '(("goal" :in-theory nil)) nil nil)
+              state '(("goal" :in-theory nil)) nil)
       (if erp
           (mv (msg "~% ****** ERROR ******~%~
 Testing of the patbind macro failed on expression ~x0~%~%" (car tests))

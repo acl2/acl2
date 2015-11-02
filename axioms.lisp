@@ -1729,9 +1729,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         defaxioms-okp
                         skip-proofs-okp
                         ttags
-                        dir
-                        doc)
-  (declare (ignore uncertified-okp defaxioms-okp skip-proofs-okp ttags doc))
+                        dir)
+  (declare (ignore uncertified-okp defaxioms-okp skip-proofs-okp ttags))
   `(include-book-raw ,user-book-name nil ,load-compiled-file ,dir
                      '(include-book . ,user-book-name)
                      *the-live-state*))
@@ -8303,6 +8302,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; equal-modulo-hidden-defpkgs, and (of course) the #-acl2-loop-only definition
 ; of defpkg.
 
+; Note: It is tempting to remove the doc argument, as we have done for many
+; other event forms after Version_7.1.  However, all defpkg calls with non-nil
+; book-path or hidden-p would need to be revisited, both in the regression
+; suite and in every user application of ACL2 outside the regression suite.
+; That doesn't seem worth the trouble.
+
   (list 'defpkg-fn
         (list 'quote name)
         (list 'quote form)
@@ -8367,8 +8372,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro verify-guards (&whole event-form name &key hints otf-flg guard-debug
-                                doc)
+(defmacro verify-guards (&whole event-form name &key hints otf-flg guard-debug)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8382,7 +8386,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (list 'quote hints)
        (list 'quote otf-flg)
        (list 'quote guard-debug)
-       (list 'quote doc)
        (list 'quote event-form)))
 
 (defmacro verify-guards+ (name &rest rest)
@@ -8446,8 +8449,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        &key (rule-classes '(:REWRITE))
                        instructions
                        hints
-                       otf-flg
-                       doc)
+                       otf-flg)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8459,7 +8461,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote instructions)
         (list 'quote hints)
         (list 'quote otf-flg)
-        (list 'quote doc)
         (list 'quote event-form)
         #+:non-standard-analysis ; std-p
         nil))
@@ -8487,8 +8488,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        &key (rule-classes '(:REWRITE))
                        instructions
                        hints
-                       otf-flg
-                       doc)
+                       otf-flg)
   (list 'defthm-fn
         (list 'quote name)
         (list 'quote term)
@@ -8497,14 +8497,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote instructions)
         (list 'quote hints)
         (list 'quote otf-flg)
-        (list 'quote doc)
         (list 'quote event-form)
         t))
 
 #+acl2-loop-only
 (defmacro defaxiom (&whole event-form name term
-                    &key (rule-classes '(:REWRITE))
-                         doc)
+                    &key (rule-classes '(:REWRITE)))
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8513,7 +8511,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote term)
         'state
         (list 'quote rule-classes)
-        (list 'quote doc)
         (list 'quote event-form)))
 
 #+acl2-loop-only
@@ -8568,7 +8565,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro in-theory (&whole event-form expr &key doc)
+(defmacro in-theory (&whole event-form expr)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8579,11 +8576,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (list 'in-theory-fn
         (list 'quote expr)
         'state
-        (list 'quote doc)
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro in-arithmetic-theory (&whole event-form expr &key doc)
+(defmacro in-arithmetic-theory (&whole event-form expr)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8594,11 +8590,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (list 'in-arithmetic-theory-fn
         (list 'quote expr)
         'state
-        (list 'quote doc)
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro regenerate-tau-database (&whole event-form &key doc)
+(defmacro regenerate-tau-database (&whole event-form)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8608,11 +8603,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (list 'regenerate-tau-database-fn
         'state
-        (list 'quote doc)
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro push-untouchable (&whole event-form name fn-p &key doc)
+(defmacro push-untouchable (&whole event-form name fn-p)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8628,11 +8622,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote name)
         (list 'quote fn-p)
         'state
-        (list 'quote doc)
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro remove-untouchable (&whole event-form name fn-p &key doc)
+(defmacro remove-untouchable (&whole event-form name fn-p)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8652,7 +8645,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (list 'quote name)
                    (list 'quote fn-p)
                    'state
-                   (list 'quote doc)
                    (list 'quote event-form)))))
 
 #+acl2-loop-only
@@ -8711,8 +8703,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                (defaxioms-okp 't)
                                (skip-proofs-okp 't)
                                (ttags ':default)
-                               dir
-                               doc)
+                               dir)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8727,7 +8718,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote defaxioms-okp)
         (list 'quote skip-proofs-okp)
         (list 'quote ttags)
-        (list 'quote doc)
         (list 'quote dir)
         (list 'quote event-form)))
 
