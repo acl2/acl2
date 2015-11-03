@@ -794,31 +794,31 @@
 
 ; End of Essay on Abbreviating Live Stobjs
 
-(defabbrev flambda-applicationp (term)
+(defmacro flambda-applicationp (term)
 
 ; Term is assumed to be nvariablep.
 
-  (consp (car term)))
+  `(consp (car ,term)))
 
 (defabbrev lambda-applicationp (term)
   (and (consp term)
        (flambda-applicationp term)))
 
-(defabbrev flambdap (fn)
+(defmacro flambdap (fn)
 
 ; Fn is assumed to be the fn-symb of some term.
 
-  (consp fn))
+  `(consp ,fn))
 
-(defabbrev lambda-formals (x) (cadr x))
+(defmacro lambda-formals (x) `(cadr ,x))
 
-(defabbrev lambda-body (x) (caddr x))
+(defmacro lambda-body (x) `(caddr ,x))
 
-(defabbrev make-lambda (args body)
-  (list 'lambda args body))
+(defmacro make-lambda (args body)
+  `(list 'lambda ,args ,body))
 
-(defabbrev make-let (bindings body)
-  (list 'let bindings body))
+(defmacro make-let (bindings body)
+  `(list 'let ,bindings ,body))
 
 (defun doubleton-list-p (x)
   (cond ((atom x) (equal x nil))
