@@ -4784,11 +4784,11 @@
         (t (cons (fcons-term* 'mv-nth (list 'quote i) var)
                  (mv-nth-list var (1+ i) maximum)))))
 
-(defabbrev translate-bind (x val bindings)
+(defmacro translate-bind (x val bindings)
 
 ; Used only in translation.  Binds x to val on bindings.
 
-  (cons (cons x val) bindings))
+  `(cons (cons ,x ,val) ,bindings))
 
 (defun translate-deref (x bindings)
 
