@@ -942,7 +942,7 @@ section, to rename variables like @('CERT_PL_CERTS'), etc.  See @('cert.pl
 
 
 (defxdoc using-extended-acl2-images ; Step 7
-  :parents (cert.pl ACL2::building-acl2 books-certification)
+  :parents (cert.pl ACL2::building-acl2 ACL2::books-certification)
   :short "(Advanced) how to get @(see cert.pl) to use @(see save-exec) images
 to certify parts of your project."
 
