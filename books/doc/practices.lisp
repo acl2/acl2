@@ -79,8 +79,9 @@ certifiable books should use @('.lsp')</li>
 
 <h4>Rationale</h4>
 
-<p>These conventions allow build systems like @(see cert.pl) to automatically
-distinguish between what should be certified and what should not.</p>
+<p>These conventions allow build systems like @(see build::cert.pl) to
+automatically distinguish between what should be certified and what should
+not.</p>
 
 <p>Once a user is familiar with these conventions, they act as a signal about
 what files are likely to be of interest.</p>")
@@ -191,7 +192,7 @@ convention that improves consistency and discoverability.</p>
 
 <ul>
 <li>The @('.lsp') extension helps Emacs realize the package file is a Lisp file</li>
-<li>It also helps @(see cert.pl) know it is not a certifiable book.</li>
+<li>It also helps @(see build::cert.pl) know it is not a certifiable book.</li>
 </ul>
 
 <p>The empty portcullis book is a useful trick.  Including this book, rather

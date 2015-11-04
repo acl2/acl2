@@ -82,9 +82,9 @@
 
  <p>When we move a book, we often add a <b>stub</b> book in its previous
  location to help you transition your @(see include-book) commands.  The @(see
- cert.pl) build system prints warnings when a stub book is being included.
- Stub books have a lifespan of one release.  The following books were stubs in
- ACL2 7.0, so we've deleted them.</p>
+ build::cert.pl) build system prints warnings when a stub book is being
+ included.  Stub books have a lifespan of one release.  The following books
+ were stubs in ACL2 7.0, so we've deleted them.</p>
 
  @({
      Previous Location                          Replacement
@@ -301,7 +301,7 @@
 
  <h3>Build System Updates</h3>
 
- <p>@(see cert.pl), et al. now tolerate @('( include-book...') instead
+ <p>@(see build::cert.pl), et al. now tolerate @('( include-book...') instead
  of @('(include-book...'), etc.</p>
 
  <p>Errors during portcullis events (i.e., @('.acl2') files) should now cause
@@ -311,8 +311,8 @@
  <p>Various updates have been made to the Jenkins scripts to keep things up to
  date.</p>
 
- <p>For most Lisps, @(see cert.pl) will now include garbage collection messages
- in output logs files.  This may occasionally be useful when debugging
+ <p>For most Lisps, @(see build::cert.pl) will now include garbage collection
+ messages in output logs files.  This may occasionally be useful when debugging
  performance issues.</p>
 
 ")
@@ -480,7 +480,8 @@
 
  <p>When we move a book, we often add a <b>stub</b> book in its previous
  location to help you transition your @(see include-book) commands.  The @(see
- cert.pl) build system prints warnings when a stub book is being included.</p>
+ build::cert.pl) build system prints warnings when a stub book is being
+ included.</p>
 
  <p>Stub books have a lifespan of one release.  The following books were stubs
  in ACL2 6.5, so we've deleted them.</p>
@@ -520,13 +521,14 @@
  <li>@('cert.pl') now has better support for @(see
  provisional-certification).</li>
 
- <li>The @(see cert_param) mechanism, which is used by @(see cert.pl) to
- indicate that books have special requirements, is now documented.</li>
+ <li>The @(see build::cert_param) mechanism, which is used by @(see
+ build::cert.pl) to indicate that books have special requirements, is now
+ documented.</li>
 
  <li>New @('cert_param') directives have been added to avoid certifying certain
  books on incompatible Lisps.</li>
 
- <li>@(see cert.pl) now better avoids overflowing the maximum number of
+ <li>@(see build::cert.pl) now better avoids overflowing the maximum number of
  arguments to shell commands on some platforms when certifying large numbers of
  books.</li>
 
@@ -1167,8 +1169,8 @@
  <h3>Deleted Stubs</h3>
 
  <p>When we move a book, we often add a <b>stub</b> book in its previous
- location to help you transition your @(see include-book) commands.  The
- @(see cert.pl) build system prints warnings when a stub book is being
+ location to help you transition your @(see include-book) commands.  The @(see
+ build::cert.pl) build system prints warnings when a stub book is being
  included.</p>
 
  <p>Stub books have a lifespan of one release.  The following books were stubs
@@ -1290,7 +1292,7 @@
  </ul>
 
 
- <p>The @(see cert.pl) build system has been enhanced in many ways.  Of
+ <p>The @(see build::cert.pl) build system has been enhanced in many ways.  Of
  particular note, it now deals more automatically with portcullis files, which
  may help to improve the reliability of including uncertified files.  Other
  improvements include:</p>
@@ -1919,8 +1921,8 @@
  <h3>Deleted Stubs</h3>
 
  <p>When we move a book, we often add a <b>stub</b> book in its previous
- location to help you transition your @(see include-book) commands.  The
- @(see cert.pl) build system prints warnings when a stub book is being
+ location to help you transition your @(see include-book) commands.  The @(see
+ build::cert.pl) build system prints warnings when a stub book is being
  included.</p>
 
  <p>Stub books have a lifespan of one release.  The following books were stubs
@@ -2032,8 +2034,8 @@
 
  <h3>Scripts Moved</h3>
 
- <p>We've moved many build scripts like @(see cert.pl), @('clean.pl'), and
- @('critpath.pl') from the top-level @('books') directory, into a new
+ <p>We've moved many build scripts like @(see build::cert.pl), @('clean.pl'),
+ and @('critpath.pl') from the top-level @('books') directory, into a new
  @('books/build') directory.  You may need to update paths to these files in
  your Makefiles or other build scripts.</p>
 
@@ -2060,7 +2062,7 @@
  including at least:</p>
 
  <ul>
- <li>@(see cert.pl) - a build system for certifying ACL2 books</li>
+ <li>@(see build::cert.pl) - a build system for certifying ACL2 books</li>
  <li>@(see defconsts) - like @('defconst') but supports stobjs, state, and multiple values</li>
  <li>@(see defrstobj) - a macro for introducing record-like stobjs</li>
  <li>@(see bitops) - an arithmetic library especially for bit-vector arithmetic</li>
