@@ -19,6 +19,16 @@
   :short "Specification of IA-32e Paging"
   )
 
+(defthm loghead-zero-smaller
+  (implies (and (equal (loghead n x) 0)
+                (natp n)
+                (<= m n))
+           (equal (loghead m x) 0))
+  :hints (("Goal" :in-theory (e/d*
+                              (acl2::ihsext-recursive-redefs
+                               acl2::ihsext-inductions)
+                              ()))))
+
 ;; ======================================================================
 
 (define good-lin-addr-p (lin-addr x86)
@@ -166,6 +176,18 @@
 
   )
 
+(define set-accessed-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (a-entry (unsigned-byte-p 64 a-entry) :hyp :guard)
+  (!ia32e-page-tables-slice :a 1 entry))
+
+(define set-dirty-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (d-entry (unsigned-byte-p 64 d-entry) :hyp :guard)
+  (!ia32e-page-tables-slice :d 1 entry))
+
 ;; ======================================================================
 
 ;; We define inlined functions that compute the entry address for a
@@ -237,6 +259,12 @@
 
    ///
 
+   (defthm natp-page-table-entry-addr
+     (implies (natp base-addr)
+              (natp (page-table-entry-addr lin-addr base-addr)))
+     :hints (("Goal" :in-theory (e/d* (page-table-entry-addr) nil)))
+     :rule-classes (:rewrite :type-prescription))
+
    (defthm-usb *physical-address-size*p-page-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
                (signed-byte-p   *max-linear-address-size* lin-addr))
@@ -249,8 +277,12 @@
                                       not))))
      :hints-l (("Goal" :in-theory (e/d ()
                                        (page-table-entry-addr))))
-     :gen-linear t
-     :gen-type t)
+     :gen-linear t)
+
+   (defthm page-table-entry-addr-is-a-multiple-of-8
+     (implies (equal (loghead 12 base-addr) 0)
+              (equal (loghead 3 (page-table-entry-addr lin-addr base-addr))
+                     0)))
 
    (defthm-usb adding-7-to-page-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
@@ -295,6 +327,12 @@
 
    ///
 
+   (defthm natp-page-directory-entry-addr
+     (implies (natp base-addr)
+              (natp (page-directory-entry-addr lin-addr base-addr)))
+     :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr) nil)))
+     :rule-classes (:rewrite :type-prescription))
+
    (defthm-usb *physical-address-size*p-page-directory-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
                (signed-byte-p   *max-linear-address-size* lin-addr))
@@ -307,8 +345,12 @@
                                       not))))
      :hints-l (("Goal" :in-theory (e/d ()
                                        (page-directory-entry-addr))))
-     :gen-linear t
-     :gen-type t)
+     :gen-linear t)
+
+   (defthm page-directory-entry-addr-is-a-multiple-of-8
+     (implies (equal (loghead 12 base-addr) 0)
+              (equal (loghead 3 (page-directory-entry-addr lin-addr base-addr))
+                     0)))
 
    (defthm-usb adding-7-to-page-directory-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
@@ -348,6 +390,12 @@
 
    ///
 
+   (defthm natp-page-dir-ptr-table-entry-addr
+     (implies (natp base-addr)
+              (natp (page-dir-ptr-table-entry-addr lin-addr base-addr)))
+     :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr) nil)))
+     :rule-classes (:rewrite :type-prescription))
+
    (defthm-usb *physical-address-size*p-page-dir-ptr-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
                (signed-byte-p   *max-linear-address-size* lin-addr))
@@ -360,8 +408,12 @@
                                       not))))
      :hints-l (("Goal" :in-theory (e/d ()
                                        (page-dir-ptr-table-entry-addr))))
-     :gen-linear t
-     :gen-type t)
+     :gen-linear t)
+
+   (defthm page-dir-ptr-table-entry-addr-is-a-multiple-of-8
+     (implies (equal (loghead 12 base-addr) 0)
+              (equal (loghead 3 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                     0)))
 
    (defthm-usb adding-7-to-page-dir-ptr-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
@@ -404,6 +456,12 @@
 
    ///
 
+   (defthm natp-pml4-table-entry-addr
+     (implies (natp base-addr)
+              (natp (pml4-table-entry-addr lin-addr base-addr)))
+     :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr) nil)))
+     :rule-classes (:rewrite :type-prescription))
+
    (defthm-usb *physical-address-size*p-pml4-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
                (signed-byte-p   *max-linear-address-size* lin-addr))
@@ -416,8 +474,12 @@
                                       not))))
      :hints-l (("Goal" :in-theory (e/d ()
                                        (pml4-table-entry-addr))))
-     :gen-linear t
-     :gen-type t)
+     :gen-linear t)
+
+   (defthm pml4-table-entry-addr-is-a-multiple-of-8
+     (implies (equal (loghead 12 base-addr) 0)
+              (equal (loghead 3 (pml4-table-entry-addr lin-addr base-addr))
+                     0)))
 
    (defthm-usb adding-7-to-pml4-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
@@ -641,11 +703,13 @@
        (dirty           (ia32e-page-tables-slice :d entry))
        ;; Compute accessed and dirty bits:
        (entry (if (equal accessed 0)
-                  (!ia32e-page-tables-slice :a 1 entry)
+                  (mbe :logic (set-accessed-bit entry)
+                       :exec (!ia32e-page-tables-slice :a 1 entry))
                 entry))
        (entry (if (and (equal dirty 0)
                        (equal r-w-x :w))
-                  (!ia32e-page-tables-slice :d 1 entry)
+                  (mbe :logic (set-dirty-bit entry)
+                       :exec (!ia32e-page-tables-slice :d 1 entry))
                 entry))
        ;; Update x86 (to reflect accessed and dirty bits change), if needed:
        (x86 (if (or (equal accessed 0)
@@ -947,11 +1011,13 @@
 
                ;; Compute accessed and dirty bits:
                (entry (if (equal accessed 0)
-                          (!ia32e-pde-2MB-page-slice :pde-a 1 entry)
+                          (mbe :logic (set-accessed-bit entry)
+                               :exec (!ia32e-pde-2MB-page-slice :pde-a 1 entry))
                         entry))
                (entry (if (and (equal dirty 0)
                                (equal r-w-x :w))
-                          (!ia32e-pde-2MB-page-slice :pde-d 1 entry)
+                          (mbe :logic (set-dirty-bit entry)
+                               :exec (!ia32e-pde-2MB-page-slice :pde-d 1 entry))
                         entry))
                ;; Update x86 (to reflect accessed and dirty bits change), if needed:
                (x86 (if (or (equal accessed 0)
@@ -1003,7 +1069,8 @@
              (accessed        (ia32e-page-tables-slice :a entry))
              ;; Update accessed bit, if needed.
              (entry (if (equal accessed 0)
-                        (!ia32e-page-tables-slice :a 1 entry)
+                        (mbe :logic (set-accessed-bit entry)
+                             :exec (!ia32e-page-tables-slice :a 1 entry))
                       entry))
              ;; Update x86, if needed.
              (x86 (if (equal accessed 0)
@@ -1261,11 +1328,13 @@
                (dirty           (ia32e-pdpte-1GB-page-slice :pdpte-d entry))
                ;; Compute accessed and dirty bits:
                (entry (if (equal accessed 0)
-                          (!ia32e-pdpte-1GB-page-slice :pdpte-a 1 entry)
+                          (mbe :logic (set-accessed-bit entry)
+                               :exec (!ia32e-pdpte-1GB-page-slice :pdpte-a 1 entry))
                         entry))
                (entry (if (and (equal dirty 0)
                                (equal r-w-x :w))
-                          (!ia32e-pdpte-1GB-page-slice :pdpte-d 1 entry)
+                          (mbe :logic (set-dirty-bit entry)
+                               :exec (!ia32e-pdpte-1GB-page-slice :pdpte-d 1 entry))
                         entry))
                ;; Update x86 (to reflect accessed and dirty bits change), if needed:
                (x86 (if (or (equal accessed 0)
@@ -1317,7 +1386,8 @@
              (accessed        (ia32e-page-tables-slice :a entry))
              ;; Update accessed bit, if needed.
              (entry (if (equal accessed 0)
-                        (!ia32e-page-tables-slice :a 1 entry)
+                        (mbe :logic (set-accessed-bit entry)
+                             :exec (!ia32e-page-tables-slice :a 1 entry))
                       entry))
              ;; Update x86, if needed.
              (x86 (if (equal accessed 0)
@@ -1568,7 +1638,8 @@
        (accessed        (ia32e-page-tables-slice :a entry))
        ;; Update accessed bit, if needed.
        (entry (if (equal accessed 0)
-                  (!ia32e-page-tables-slice :a 1 entry)
+                  (mbe :logic (set-accessed-bit entry)
+                       :exec (!ia32e-page-tables-slice :a 1 entry))
                 entry))
        ;; Update x86, if needed.
        (x86 (if (equal accessed 0)
@@ -2335,5 +2406,9 @@
   (if (mbt (canonical-address-p lin-addr))
       (ia32e-la-to-pa lin-addr r-w-x cpl x86)
     (mv (list :ia32e-paging-invalid-linear-address lin-addr) 0 x86)))
+
+;; ======================================================================
+
+(in-theory (e/d* () (set-accessed-bit set-dirty-bit)))
 
 ;; ======================================================================

@@ -21,16 +21,6 @@
 ;; Some useful arithmetic theorems, currently placed here because
 ;; they've yet to find a good home:
 
-(defthm loghead-smaller
-  (implies (and (equal (loghead n x) 0)
-                (natp n)
-                (<= m n))
-           (equal (loghead m x) 0))
-  :hints (("Goal" :in-theory (e/d*
-                              (acl2::ihsext-recursive-redefs
-                               acl2::ihsext-inductions)
-                              ()))))
-
 (defthm loghead-unequal
   (implies (and (signed-byte-p x a)
                 (signed-byte-p x b)

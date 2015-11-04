@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
 (local (include-book "centaur/gl/gl" :dir :system))
 
 (set-irrelevant-formals-ok t)

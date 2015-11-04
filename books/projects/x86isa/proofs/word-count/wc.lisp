@@ -1,15 +1,13 @@
 ;; AUTHOR:
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
-;; This whole book is a work in progress, even though the proof of correctness
-;; of wc and its memory analysis is complete. There are a lot of
-;; similar-looking theorems here that I plan to generate and prove
-;; automatically in the future.
+;;  There are a lot of similar-looking theorems here that I plan to
+;; generate and prove automatically in the future.
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-memory-utils" :dir :proof-utils :ttags :all)
-(include-book "environment-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/environment-utils" :dir :proof-utils :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
 ;; Including the WC program binary and other misc. stuff:
 (include-book "wc-addr-byte")

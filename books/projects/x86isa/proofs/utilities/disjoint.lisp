@@ -61,8 +61,9 @@
    (y (true-listp y)))
 
   :parents (proof-utilities)
-  :short "@('disjoint-p') recognizes whether @('x') and @('y') are
-  disjoint lists."
+  :long "<p>@('disjoint-p') returns @('t') if @(see true-listp)-satisfying
+  inputs @('x') and @('y') have no element in common. Otherwise, @('nil') is
+  returned.</p>"
   :enabled t
 
   (if (endp x)
@@ -128,11 +129,16 @@
                          (disjoint-p a c))))))
 
 (define pairwise-disjoint-p-aux
+  ;; Need a better name for this.
+  ;; Think of this function as perm-member --- x is not a perm-member of l iff
+  ;; this predicate returns t.
   ((x true-listp)
    (l true-list-listp))
   :parents (proof-utilities)
-  :short "@('pairwise-disjoint-p-aux') recognizes whether a true-list
-  @('x') is disjoint from every sub-list in a true-list-list @('l')."
+  :long "<p>@('pairwise-disjoint-p-aux') returns @('t') if the @(see
+  true-listp)-satisfying input @('x') is disjoint from every element in @(see
+  true-list-listp)-satisfying input @('l'). Otherwise, it returns
+  @('nil').</p>"
   :guard t
   :enabled t
 
@@ -145,8 +151,9 @@
 (define pairwise-disjoint-p
   ((l true-list-listp))
   :parents (proof-utilities)
-  :short "@('pairwise-disjoint-p') recognizes whether all the
-  sub-lists in the true-list-list @('l') are pairwise disjoint."
+  :long "<p>@('pairwise-disjoint-p') returns @('t') if every two different
+  elements of the @(see true-list-listp)-satisfying input @('l') are
+  disjoint. Otherwise, @('nil') is returned.</p>"
   :guard t
   :enabled t
 
@@ -160,9 +167,9 @@
   ((xs true-list-listp)
    (ys true-list-listp))
   :parents (proof-utilities)
-  :short "@('true-list-list-disjoint-p') recognizes whether a
-  true-list-list @('xs') is disjoint from another true-list-list
-  @('ys')."
+  :long "<p>@('true-list-list-disjoint-p') returns @('t') if the @(see
+  true-list-listp)-satisfying inputs @('xs') and @('ys') are
+  disjoint. Otherwise, @('nil') is returned.</p>"
   :guard t
   :enabled t
 

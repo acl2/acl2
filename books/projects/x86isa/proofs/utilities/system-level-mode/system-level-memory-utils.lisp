@@ -2,8 +2,9 @@
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
-(include-book "paging-utils" :dir :proof-utils)
-(include-book "programmer-level-memory-utils" :dir :proof-utils)
+(include-book "paging-top")
+;; [Shilpi]: Why do I need the following book?
+;; (include-book "../programmer-level-mode/programmer-level-memory-utils")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -111,9 +112,19 @@
                 ;; (1+ lin-addr) might definitely overlap. I need more work in
                 ;; paging-utils.lisp to prove more general version(s) of
                 ;; validity-preserved-same-x86-state-disjoint-addresses-top-level-thm.
+
+                ;; Instead, I'd like to have the following hyps. here:
+                ;; (pairwise-disjoint-p
+                ;;  (translation-governing-addresses lin-addr x86))
+                ;; (pairwise-disjoint-p
+                ;;  (translation-governing-addresses (+ 1 lin-addr) x86))
+                ;; Of course, these two are true only if lin-addr and
+                ;; 1+lin-addr fall within the same page. I might need
+                ;; other hyps in an OR to capture other cases.
                 (pairwise-disjoint-p
                  (append (translation-governing-addresses lin-addr x86)
                          (translation-governing-addresses (+ 1 lin-addr) x86)))
+
 
                 ;; See the lemma
                 ;; disjoint-memi-read-mv-nth-2-no-error-ia32e-la-to-pa
