@@ -3356,9 +3356,6 @@
                                preprocess-fn wrld)
                  (untranslate1 (fargn (fargn term 1) 1) nil untrans-tbl
                                preprocess-fn wrld)))
-          ((eq (ffn-symb term) 'not)
-           (dumb-negate-lit (untranslate1 (fargn term 1) t untrans-tbl
-                                          preprocess-fn wrld)))
           ((member-eq (ffn-symb term) '(implies iff))
            (fcons-term* (ffn-symb term)
                         (untranslate1 (fargn term 1) t untrans-tbl preprocess-fn
@@ -4054,6 +4051,30 @@
                    (car form)
                    (macro-args (car form) wrld)))))
 
+(table duplicate-keys-action-table nil nil
+       :guard
+       (and (symbolp key)
+            (member val '(:error :warning nil))))
+
+(defmacro set-duplicate-keys-action! (key action)
+  `(with-output
+     :off (event summary)
+     (progn (table duplicate-keys-action-table ',key ',action)
+            (value-triple ',action))))
+
+(defmacro set-duplicate-keys-action (key action)
+  `(local (set-duplicate-keys-action! ,key ,action)))
+
+(defun duplicate-keys-action (key wrld)
+  (let ((pair (assoc-eq key (table-alist 'duplicate-keys-action-table wrld))))
+    (cond (pair (cdr pair))
+          (t ; default
+
+; We make :error the default in order to help users to identify quickly
+; potential dumb bugs involving a duplicated keyword in a macro call.
+
+           :error))))
+
 (defun bind-macro-args-keys1 (args actuals allow-flg alist form wrld
                                    state-vars)
 
@@ -4088,30 +4109,42 @@
                                 (cons (cons (caddr (car args))
                                             (not (null tl)))
                                       alist))
-                               (t alist))))
+                               (t alist)))
+                  (name (car form))
+                  (duplicate-keys-action
+                   (and (assoc-keyword key (cddr tl))
+                        (duplicate-keys-action name wrld)))
+                  (er-or-warn-string
+                   "The keyword argument ~x0 occurs twice in ~x1.  This ~
+                    situation is explicitly allowed in Common Lisp (see ~
+                    CLTL2, page 80) but it often suggests a mistake was ~
+                    made.~@2  See :DOC set-duplicate-keys-action."))
              (prog2$
-              (cond ((assoc-keyword key (cddr tl))
-                     (warning$-cw1 *macro-expansion-ctx* "Duplicate-Keys"
-                                   "The keyword argument ~x0 occurs twice in ~
-                                    ~x1.  This situation is explicitly ~
-                                    allowed in Common Lisp (see CLTL2, page ~
-                                    80) but it often suggests a mistake was ~
-                                    made.  The leftmost value for ~x0 is used."
-                                   key form))
-                    (t nil))
-              (bind-macro-args-keys1
-               (cdr args)
-               (remove-keyword key actuals)
-               allow-flg
-               (cons (cons formal
-                           (cond (tl (cadr tl))
-                                 ((atom (car args))
-                                  nil)
-                                 ((> (length (car args)) 1)
-                                  (cadr (cadr (car args))))
-                                 (t nil)))
-                     alist)
-               form wrld state-vars))))))
+              (and (eq duplicate-keys-action :warning)
+                   (warning$-cw1 *macro-expansion-ctx* "Duplicate-Keys"
+                                 er-or-warn-string
+                                 key
+                                 form
+                                 "  The leftmost value for ~x0 is used."))
+              (cond
+               ((eq duplicate-keys-action :error)
+                (er-cmp *macro-expansion-ctx*
+                        er-or-warn-string
+                        key form ""))
+               (t
+                (bind-macro-args-keys1
+                 (cdr args)
+                 (remove-keyword key actuals)
+                 allow-flg
+                 (cons (cons formal
+                             (cond (tl (cadr tl))
+                                   ((atom (car args))
+                                    nil)
+                                   ((> (length (car args)) 1)
+                                    (cadr (cadr (car args))))
+                                   (t nil)))
+                       alist)
+                 form wrld state-vars))))))))
 
 (defun bind-macro-args-keys (args actuals alist form wrld state-vars)
   (er-progn-cmp

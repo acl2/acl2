@@ -7132,6 +7132,7 @@
            memoize
            push
            reset-future-parallelism-variables
+           set-duplicate-keys-action
            set-guard-msg
            set-invisible-fns-table
            set-tau-auto-mode

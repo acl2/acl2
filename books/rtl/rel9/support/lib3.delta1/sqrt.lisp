@@ -8563,7 +8563,6 @@
             (<= (* h h x)
                (* (expt 2 (* 2 (rho%%))) x)))
   :rule-classes ()
-  :rule-classes ()
   :hints (("Goal" :use (rho%%-constraint k%%-constraint
                         (:instance converse-66 (x h) (y (expt 2 (rho%%))))
                         (:instance *-weakly-monotonic (y (* h h))
@@ -8574,7 +8573,6 @@
                 (<= (abs h) (expt 2 (rho%%))))
             (<= (* h h (expt 2 (- (* (+ 2 (k%%)) (rho%%)))))
                (expt 2 (- (* (k%%) (rho%%))))))
-  :rule-classes ()
   :rule-classes ()
   :hints (("Goal" :use (rho%%-constraint k%%-constraint
                         (:instance xtable-31 (x (expt 2 (- (* (+ 2 (k%%)) (rho%%))))))))))

@@ -3025,13 +3025,23 @@
                        (list 'redef-seen nil)
                        (list 'cert-replay nil)
                        (list 'proof-supporters-alist nil))
-                 (putprop 'acl2-defaults-table
-                          'table-alist
-                          *initial-acl2-defaults-table*
-                          (putprop 'return-last-table
-                                   'table-alist
-                                   *initial-return-last-table*
-                                   (initialize-invariant-risk wrld)))))
+                 (putprop
+                  'acl2-defaults-table
+                  'table-alist
+                  *initial-acl2-defaults-table*
+                  (putprop
+                   'return-last-table
+                   'table-alist
+                   *initial-return-last-table*
+                   (putprop
+
+; Temporary (?) mod to avoid errors in .acl2x file generation during
+; regression.
+
+                    'duplicate-keys-action-table
+                    'table-alist
+                    '((certify-book . :warning))
+                    (initialize-invariant-risk wrld))))))
          (wrld2 (update-current-theory (current-theory1 wrld nil nil) wrld1)))
     (add-command-landmark
      :logic

@@ -471,9 +471,11 @@ directly with ACL2.</p>
 ;;;;;;; Tool 2
 
 (defmacro tool2 (term hyps
-                      &key hints equiv (prove-assumptions 't) inhibit-output)
+                      &key
+                      hints equiv (prove-assumptions 't) inhibit-output
+                      (must-rewrite-flg 't))
   `(tool2-fn ',term ',hyps ',equiv state ',hints ',prove-assumptions
-             ',inhibit-output t t))
+             ',inhibit-output t t ,must-rewrite-flg))
 
 (defun tool2-print (print-flg runes rewritten-term state)
   (cond
