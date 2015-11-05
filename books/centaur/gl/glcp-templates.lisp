@@ -225,7 +225,7 @@
                   :stobjs ,*glcp-stobjs*))
         (b* ((pathcond (lbfr-hyp-fix pathcond))
              ((when (zp clk))
-              (glcp-interp-error "The clock ran out.~%"))
+              (glcp-interp-error "The clock ran out."))
              ((glcp-er xobj)
               (interp-term x alist contexts . ,*glcp-common-inputs*))
              ((unless (glcp-term-obj-p xobj))
