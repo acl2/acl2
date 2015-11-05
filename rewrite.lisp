@@ -9409,8 +9409,66 @@
 
 (defun extend-unify-subst (alist unify-subst)
 
-; We attempt to keep all terms in quote-normal form, which explains the
-; modification of val just below.
+; We attempt to keep all terms in quote-normal form, which explains the use of
+; sublis-var-lst below.  There are also three related calls, all of the form
+; (sublis-var nil X), in rewrite-with-lemma.
+
+; We wondered if for large problems, the cost of exploring large terms might
+; not be worth the benefit of maintaining quote-normal form, so we tried
+; replacing the pairlis$ call below with, simply, alist.  However, we found
+; relatively little benefit, as we now describe.
+
+; Below are timings from 4 different configurations.  In all cases, we
+; abstained from doing anything else on the laptop during the run.  So the
+; differences you see are real, up to GC time.  All the runs were conducted
+; sequentially in the same image.
+; 
+; The first configuration, A, is as reported in the Stateman paper (by J Moore)
+; at the 2015 ACL2 Workshop.  The relevant fact is that sublis-var1 is memoized
+; when the substitution is nil and the term has a HIDE on it.  Three runs were
+; done to see if the time would stabilize.  The time reported in the paper was
+; 275 seconds.
+; 
+; ; A runs:
+; ; 388.94 seconds realtime, 382.18 seconds runtime
+; ; 265.68 seconds realtime, 262.71 seconds runtime
+; ; 274.68 seconds realtime, 272.27 seconds runtime
+; 
+; The next configuration is the same as A except that here, sublis-var1 is not
+; memoized.  So here you see the extra cost of the sublis-var nil calls.
+; 
+; ; B runs:
+; ; 485.81 seconds realtime, 482.91 seconds runtime
+; ; 494.81 seconds realtime, 491.70 seconds runtime
+; 
+; The next configuration is with the change described above, as follows: we
+; replaced the pairlis$ call with the variable, alist, and replaced each
+; (sublis-var nil X) call in rewrite-with-lemma by the corresponding X.  Note
+; that sublis-var is not memoized here either.
+; 
+; ; C runs:
+; ; 281.10 seconds realtime, 278.37 seconds runtime
+; ; 284.11 seconds realtime, 281.30 seconds runtime
+; 
+; So eliminating the call has about the same effect on time as memoizing it.
+; 
+; The final experiment leaves memoization on (for sublis-var1 with nil
+; substitution and a term beginning with HIDE) but also includes the
+; modifications described above, that is, to avoid the (sublis-var nil ...)
+; call in this function and the three such calls in rewrite-with-lemma.
+
+; D runs:
+; 273.10 seconds realtime, 270.52 seconds runtime
+; 299.00 seconds realtime, 277.31 seconds runtime
+
+; This suggests that memoizing sublis-var as Stateman does and eliminating
+; these sublis-var calls is marginally worse than just memoizing sublis-var (as
+; in A).  That seems rather unlikely, so we are willing to conclude that the
+; differences are just noise.  So we have decided to keep these four calls of
+; sublis-var-lst or sublis-var, which will avoid the potential pain of
+; modifying some books to accommodate their removal.  (Actually no regression
+; books as of early November 2015 needed to be modified; but other user books
+; might need to be.)
 
   (append (pairlis$ (strip-cars alist)
                     (sublis-var-lst nil (strip-cdrs alist)))
@@ -13517,13 +13575,13 @@
                                          (hyps0 (flatten-ands-in-lit
 
 ; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).
+; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
 
                                                  (sublis-var nil evaled-hyp)))
                                          (extra-hyps (flatten-ands-in-lit
 
 ; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).
+; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
 
                                                       (sublis-var nil
                                                                   extra-evaled-hyp)))
@@ -13619,8 +13677,9 @@
                                            t
                                            (rewrite-entry (rewrite
 
-; Note: The sublis-var below normalizes the explicit constant
-; constructors in val, e.g., (cons '1 '2) becomes '(1 . 2).
+; Note: The sublis-var below normalizes the explicit constant constructors in
+; val, e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in
+; extend-unify-subst.
 
                                                            (sublis-var nil val)
 
