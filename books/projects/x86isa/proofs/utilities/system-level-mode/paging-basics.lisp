@@ -883,4 +883,23 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                                     set-dirty-bit)
                                    (ACL2::BIT->BOOL-OF-BOOL->BIT)))))
 
+;; For page directory pointer table:
+
+(defthm logtail-30-of-set-accessed-bit
+  (equal (logtail 30 (set-accessed-bit entry))
+         (logtail 30 entry))
+  :hints (("Goal" :in-theory (e/d* (set-accessed-bit) ()))))
+
+(defthm logtail-30-of-set-dirty-bit
+  (equal (logtail 30 (set-dirty-bit entry))
+         (logtail 30 entry))
+  :hints (("Goal" :in-theory (e/d* (set-dirty-bit) ()))))
+
+(defthm logtail-30-of-set-dirty-and-accessed-bits
+  (equal (logtail 30 (set-dirty-bit (set-accessed-bit entry)))
+         (logtail 30 entry))
+  :hints (("Goal" :in-theory (e/d* (set-accessed-bit
+                                    set-dirty-bit)
+                                   ()))))
+
 ;; ======================================================================

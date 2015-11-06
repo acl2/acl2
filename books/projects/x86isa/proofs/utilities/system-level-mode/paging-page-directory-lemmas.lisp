@@ -1813,77 +1813,78 @@ Scenario (4)
 ;; 2M pages:
 
 ;; 2M - Scenario (3), (4)
-(defrule two-page-table-walks-ia32e-la-to-pa-page-directory-2M-pages-same-entry
-  ;; Two walks of a page directory entry, with same or different
-  ;; "input" linear addresses.
+(local
+ (defrule two-page-table-walks-ia32e-la-to-pa-page-directory-2M-pages-same-entry
+   ;; Two walks of a page directory entry, with same or different
+   ;; "input" linear addresses.
 
-  ;; Shilpi: A very rough (and possibly imprecise) proof sketch, which
-  ;; I'm leaving as a note to myself:
+   ;; Shilpi: A very rough (and possibly imprecise) proof sketch, which
+   ;; I'm leaving as a note to myself:
 
-  ;; For primary pages of a data structure (i.e., pages that can be
-  ;; accessed directly from the data structure), the two page walks
-  ;; theorem needs the following kinds of key lemmas:
+   ;; For primary pages of a data structure (i.e., pages that can be
+   ;; accessed directly from the data structure), the two page walks
+   ;; theorem needs the following kinds of key lemmas:
 
-  ;; 1. mv-nth-2-no-error-ia32e-la-to-pa-page-directory-2m-pages
-  ;; 2. reading-entry-with-accessed-bit-set-ia32e-la-to-pa-page-directory-2m-pages
-  ;; 3. reading-entry-with-dirty-bit-set-ia32e-la-to-pa-page-directory-2m-pages
-  ;; 4. reading-entry-with-accessed-and-dirty-bits-ia32e-la-to-pa-page-directory-2m-pages
+   ;; 1. mv-nth-2-no-error-ia32e-la-to-pa-page-directory-2m-pages
+   ;; 2. reading-entry-with-accessed-bit-set-ia32e-la-to-pa-page-directory-2m-pages
+   ;; 3. reading-entry-with-dirty-bit-set-ia32e-la-to-pa-page-directory-2m-pages
+   ;; 4. reading-entry-with-accessed-and-dirty-bits-ia32e-la-to-pa-page-directory-2m-pages
 
-  ;; The x86 state returned by walking the page directory the first
-  ;; time (i.e., (mv-nth 2 (ia32e-la-to-pa-page-directory ...))) can
-  ;; be described in terms of the initial x86 state, with or without
-  ;; the accessed/dirty bits being set. Lemma 1 is used to rewrite
-  ;; this state in the LHS of the theorem.  Four cases result from the
-  ;; application of lemma 1: one, no modification of page-directory-entry
-  ;; (so LHS = RHS); two, :a set in page-directory-entry; three, :d set in
-  ;; page-directory-entry; and four, both :a and :d set in page-directory-entry.
-  ;; Lemmas 2, 3, and 4 deal with cases two, three, and four, and
-  ;; rewrite the LHS to RHS.
+   ;; The x86 state returned by walking the page directory the first
+   ;; time (i.e., (mv-nth 2 (ia32e-la-to-pa-page-directory ...))) can
+   ;; be described in terms of the initial x86 state, with or without
+   ;; the accessed/dirty bits being set. Lemma 1 is used to rewrite
+   ;; this state in the LHS of the theorem.  Four cases result from the
+   ;; application of lemma 1: one, no modification of page-directory-entry
+   ;; (so LHS = RHS); two, :a set in page-directory-entry; three, :d set in
+   ;; page-directory-entry; and four, both :a and :d set in page-directory-entry.
+   ;; Lemmas 2, 3, and 4 deal with cases two, three, and four, and
+   ;; rewrite the LHS to RHS.
 
-  (implies (and (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
-                (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
-                (equal page-directory-entry-addr-1
-                       (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
-                (equal page-directory-entry-addr-2
-                       (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
-                (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
-                (equal (ia32e-page-tables-slice :ps page-directory-entry-1) 1)
+   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+                 (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+                 (equal page-directory-entry-addr-1
+                        (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
+                 (equal page-directory-entry-addr-2
+                        (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
+                 (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
+                 (equal (ia32e-page-tables-slice :ps page-directory-entry-1) 1)
 
-                ;; Same page directory entry.
-                (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
+                 ;; Same page directory entry.
+                 (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
 
-                (equal (loghead 12 page-directory-base-addr-1) 0)
-                (physical-address-p page-directory-base-addr-1)
-                (canonical-address-p lin-addr-1)
-                (canonical-address-p lin-addr-2)
-                (x86p x86))
-           (equal
-            (mv-nth
-             1
-             (ia32e-la-to-pa-page-directory
-              lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-              (mv-nth
-               2
-               (ia32e-la-to-pa-page-directory
-                lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-            (mv-nth
-             1
-             (ia32e-la-to-pa-page-directory
-              lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-              x86))))
-  :do-not '(preprocess)
-  :in-theory (e/d* ()
-                   (ia32e-la-to-pa-page-directory-entry-validp
-                    mv-nth-1-no-error-ia32e-la-to-pa-page-directory-2m-pages
-                    mv-nth-1-no-error-ia32e-la-to-pa-page-table
-                    mv-nth-2-no-error-ia32e-la-to-pa-page-table
-                    member-p-cons
-                    disjoint-p-cons
-                    not
-                    unsigned-byte-p
-                    signed-byte-p)))
+                 (equal (loghead 12 page-directory-base-addr-1) 0)
+                 (physical-address-p page-directory-base-addr-1)
+                 (canonical-address-p lin-addr-1)
+                 (canonical-address-p lin-addr-2)
+                 (x86p x86))
+            (equal
+             (mv-nth
+              1
+              (ia32e-la-to-pa-page-directory
+               lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+               (mv-nth
+                2
+                (ia32e-la-to-pa-page-directory
+                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+             (mv-nth
+              1
+              (ia32e-la-to-pa-page-directory
+               lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+               x86))))
+   :do-not '(preprocess)
+   :in-theory (e/d* ()
+                    (ia32e-la-to-pa-page-directory-entry-validp
+                     mv-nth-1-no-error-ia32e-la-to-pa-page-directory-2m-pages
+                     mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                     mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                     member-p-cons
+                     disjoint-p-cons
+                     not
+                     unsigned-byte-p
+                     signed-byte-p))))
 
 ;; 4K pages:
 
@@ -1936,186 +1937,188 @@ Scenario (4)
                         unsigned-byte-p
                         signed-byte-p)))))
 
-(defrule re-read-entry-still-page-directory-valid-page-table-4K-pages
-  (implies (and (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
-                (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
-                (equal page-directory-entry-addr-1
-                       (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
-                (equal page-directory-entry-addr-2
-                       (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
+(local
+ (defrule re-read-entry-still-page-directory-valid-page-table-4K-pages
+   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+                 (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+                 (equal page-directory-entry-addr-1
+                        (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
+                 (equal page-directory-entry-addr-2
+                        (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
 
-                (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
+                 (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
 
-                (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
-                (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
+                 (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
+                 (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
 
-                ;; For ia32e-la-to-pa-page-table:
-                (equal page-table-base-addr
-                       ;; Same if page directory entry is the same.
-                       (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
-                (equal u-s-acc
-                       ;; Same if page directory entry is the same.
-                       (ia32e-page-tables-slice :u/s page-directory-entry-1))
-                (equal page-table-entry-addr-1
-                       (page-table-entry-addr lin-addr-1 page-table-base-addr))
-                (equal page-table-entry-addr-2
-                       (page-table-entry-addr lin-addr-2 page-table-base-addr))
+                 ;; For ia32e-la-to-pa-page-table:
+                 (equal page-table-base-addr
+                        ;; Same if page directory entry is the same.
+                        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
+                 (equal u-s-acc
+                        ;; Same if page directory entry is the same.
+                        (ia32e-page-tables-slice :u/s page-directory-entry-1))
+                 (equal page-table-entry-addr-1
+                        (page-table-entry-addr lin-addr-1 page-table-base-addr))
+                 (equal page-table-entry-addr-2
+                        (page-table-entry-addr lin-addr-2 page-table-base-addr))
 
-                ;; Same page table entries.
-                (equal page-table-entry-addr-1 page-table-entry-addr-2)
+                 ;; Same page table entries.
+                 (equal page-table-entry-addr-1 page-table-entry-addr-2)
 
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-1 page-directory-base-addr-1 x86))
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-2 page-directory-base-addr-2 x86))
+                 (pairwise-disjoint-p
+                  (translation-governing-addresses-for-page-directory
+                   lin-addr-1 page-directory-base-addr-1 x86))
+                 (pairwise-disjoint-p
+                  (translation-governing-addresses-for-page-directory
+                   lin-addr-2 page-directory-base-addr-2 x86))
 
-                (physical-address-p page-directory-base-addr-1)
-                (physical-address-p page-directory-base-addr-2)
-                (canonical-address-p lin-addr-1)
-                (canonical-address-p lin-addr-2)
-                (equal (loghead 12 page-directory-base-addr-1) 0)
-                (equal (loghead 12 page-directory-base-addr-2) 0)
-                (x86p x86))
+                 (physical-address-p page-directory-base-addr-1)
+                 (physical-address-p page-directory-base-addr-2)
+                 (canonical-address-p lin-addr-1)
+                 (canonical-address-p lin-addr-2)
+                 (equal (loghead 12 page-directory-base-addr-1) 0)
+                 (equal (loghead 12 page-directory-base-addr-2) 0)
+                 (x86p x86))
 
-           (ia32e-la-to-pa-page-directory-entry-validp
-            lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-            (mv-nth
-             2
-             (ia32e-la-to-pa-page-table
-              lin-addr-2 page-table-base-addr u-s-acc wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+            (ia32e-la-to-pa-page-directory-entry-validp
+             lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+             (mv-nth
+              2
+              (ia32e-la-to-pa-page-table
+               lin-addr-2 page-table-base-addr u-s-acc wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
 
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d
-                       (page-directory-components-equal-rm-low-64-of-page-directory-entry-addr-via-page-table-4K-pages
-                        page-table-components-equal-rm-low-64-of-table-page-table-entry-addr-via-page-table-4K-pages
-                        re-read-entry-still-valid-ia32e-la-to-pa-page-directory-4K-pages)
-                       (ia32e-la-to-pa-page-directory-entry-validp
-                        member-p-cons
-                        disjoint-p-cons
-                        not
-                        mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
-                        mv-nth-2-no-error-ia32e-la-to-pa-page-table
-                        mv-nth-1-no-error-ia32e-la-to-pa-page-table
-                        unsigned-byte-p
-                        signed-byte-p)))))
+   :hints (("Goal" :do-not '(preprocess)
+            :in-theory (e/d
+                        (page-directory-components-equal-rm-low-64-of-page-directory-entry-addr-via-page-table-4K-pages
+                         page-table-components-equal-rm-low-64-of-table-page-table-entry-addr-via-page-table-4K-pages
+                         re-read-entry-still-valid-ia32e-la-to-pa-page-directory-4K-pages)
+                        (ia32e-la-to-pa-page-directory-entry-validp
+                         member-p-cons
+                         disjoint-p-cons
+                         not
+                         mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
+                         mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                         mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                         unsigned-byte-p
+                         signed-byte-p))))))
 
 ;; 4K - Scenario (3), (4)
-(defrule two-page-table-walks-ia32e-la-to-pa-page-directory-4K-pages-same-entry
-  ;; Two walks of a page directory entry, with same or different page table entries
+(local
+ (defrule two-page-table-walks-ia32e-la-to-pa-page-directory-4K-pages-same-entry
+   ;; Two walks of a page directory entry, with same or different page table entries
 
-  ;; Shilpi: A very rough (and possibly imprecise) proof sketch, which
-  ;; I'm leaving as a note to myself:
+   ;; Shilpi: A very rough (and possibly imprecise) proof sketch, which
+   ;; I'm leaving as a note to myself:
 
-  ;; For secondary pages of a data structure (i.e., the pages that
-  ;; have to be accessed after one level of indirection), the two page
-  ;; walks theorem needs the following kinds of key lemmas:
+   ;; For secondary pages of a data structure (i.e., the pages that
+   ;; have to be accessed after one level of indirection), the two page
+   ;; walks theorem needs the following kinds of key lemmas:
 
-  ;; 1. mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
-  ;; 2. re-read-entry-still-page-directory-valid-page-table-4K-pages
-  ;; 3. reading-entry-with-accessed-bit-set-ia32e-la-to-pa-page-directory-4K-pages
-  ;; 4. reading-entry-with-dirty-bit-set-ia32e-la-to-pa-page-directory-4K-pages
-  ;; 5. reading-entry-with-accessed-and-dirty-bits-set-ia32e-la-to-pa-page-directory-4K-pages
-  ;; 6. mv-nth-1-no-error-ia32e-la-to-pa-page-directory-4K-pages
-  ;; 7. page-directory-entry-validp-to-page-table-entry-validp
-  ;; 8. two-page-table-walks-ia32e-la-to-pa-page-table
+   ;; 1. mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
+   ;; 2. re-read-entry-still-page-directory-valid-page-table-4K-pages
+   ;; 3. reading-entry-with-accessed-bit-set-ia32e-la-to-pa-page-directory-4K-pages
+   ;; 4. reading-entry-with-dirty-bit-set-ia32e-la-to-pa-page-directory-4K-pages
+   ;; 5. reading-entry-with-accessed-and-dirty-bits-set-ia32e-la-to-pa-page-directory-4K-pages
+   ;; 6. mv-nth-1-no-error-ia32e-la-to-pa-page-directory-4K-pages
+   ;; 7. page-directory-entry-validp-to-page-table-entry-validp
+   ;; 8. two-page-table-walks-ia32e-la-to-pa-page-table
 
-  ;; The x86 state returned by walking the page directory the first
-  ;; time (i.e., (mv-nth 2 (ia32e-la-to-pa-page-directory ...))) can
-  ;; be described in terms of the x86 state returned after walking the
-  ;; page table (i.e., (mv-nth 2 (ia32e-la-to-pa-page-table ...))),
-  ;; with or without the accessed/dirty bits being set.  Lemma 1
-  ;; rewrites this state in the LHS of the theorem.  Lemma 2
-  ;; establishes that the state returned after walking the page table
-  ;; satisfies ia32e-la-to-pa-page-directory-entry-validp, and lemmas
-  ;; 3, 4, and 5 will rewrite the LHS to the following form:
+   ;; The x86 state returned by walking the page directory the first
+   ;; time (i.e., (mv-nth 2 (ia32e-la-to-pa-page-directory ...))) can
+   ;; be described in terms of the x86 state returned after walking the
+   ;; page table (i.e., (mv-nth 2 (ia32e-la-to-pa-page-table ...))),
+   ;; with or without the accessed/dirty bits being set.  Lemma 1
+   ;; rewrites this state in the LHS of the theorem.  Lemma 2
+   ;; establishes that the state returned after walking the page table
+   ;; satisfies ia32e-la-to-pa-page-directory-entry-validp, and lemmas
+   ;; 3, 4, and 5 will rewrite the LHS to the following form:
 
-  ;; (mv-nth 1 (ia32e-la-to-pa-page-directory ....
-  ;;           (mv-nth 2 (ia32e-la-to-pa-page-table ...)))
+   ;; (mv-nth 1 (ia32e-la-to-pa-page-directory ....
+   ;;           (mv-nth 2 (ia32e-la-to-pa-page-table ...)))
 
-  ;; Using lemmas 2 and 6, the above form will be re-written to:
+   ;; Using lemmas 2 and 6, the above form will be re-written to:
 
-  ;; (mv-nth 1 (ia32e-la-to-pa-page-table ....
-  ;;           (mv-nth 2 (ia32e-la-to-pa-page-table ...)))
+   ;; (mv-nth 1 (ia32e-la-to-pa-page-table ....
+   ;;           (mv-nth 2 (ia32e-la-to-pa-page-table ...)))
 
-  ;; and lemmas 7 and 8 will re-write this to (mv-nth 1
-  ;; (ia32e-la-to-pa-page-table ....).
+   ;; and lemmas 7 and 8 will re-write this to (mv-nth 1
+   ;; (ia32e-la-to-pa-page-table ....).
 
-  ;; Lemma 6 will rewrite the RHS to match this LHS.
+   ;; Lemma 6 will rewrite the RHS to match this LHS.
 
-  (implies
-   (and (ia32e-la-to-pa-page-directory-entry-validp
-         lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
-        (ia32e-la-to-pa-page-directory-entry-validp
-         lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
-        (equal page-directory-entry-addr-1
-               (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
-        (equal page-directory-entry-addr-2
-               (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
+   (implies
+    (and (ia32e-la-to-pa-page-directory-entry-validp
+          lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+         (ia32e-la-to-pa-page-directory-entry-validp
+          lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+         (equal page-directory-entry-addr-1
+                (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
+         (equal page-directory-entry-addr-2
+                (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
 
-        ;; Same page directory entry.
-        (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
+         ;; Same page directory entry.
+         (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
 
-        (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
-        (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
-        ;; For ia32e-la-to-pa-page-table:
-        (equal page-table-base-addr
-               ;; Same for the page table entries if page directory entry is the same.
-               (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
-        (equal u-s-acc
-               ;; Same for the page table entries if page directory entry is the same.
-               (ia32e-page-tables-slice :u/s page-directory-entry-1))
-        (equal page-table-entry-addr-1
-               (page-table-entry-addr lin-addr-1 page-table-base-addr))
-        (equal page-table-entry-addr-2
-               (page-table-entry-addr lin-addr-2 page-table-base-addr))
+         (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
+         (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
+         ;; For ia32e-la-to-pa-page-table:
+         (equal page-table-base-addr
+                ;; Same for the page table entries if page directory entry is the same.
+                (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
+         (equal u-s-acc
+                ;; Same for the page table entries if page directory entry is the same.
+                (ia32e-page-tables-slice :u/s page-directory-entry-1))
+         (equal page-table-entry-addr-1
+                (page-table-entry-addr lin-addr-1 page-table-base-addr))
+         (equal page-table-entry-addr-2
+                (page-table-entry-addr lin-addr-2 page-table-base-addr))
 
-        ;; Page table entries may or may not be the same.
+         ;; Page table entries may or may not be the same.
 
-        (pairwise-disjoint-p
-         (translation-governing-addresses-for-page-directory
-          lin-addr-1 page-directory-base-addr-1 x86))
-        (pairwise-disjoint-p
-         (translation-governing-addresses-for-page-directory
-          lin-addr-2 page-directory-base-addr-2 x86))
+         (pairwise-disjoint-p
+          (translation-governing-addresses-for-page-directory
+           lin-addr-1 page-directory-base-addr-1 x86))
+         (pairwise-disjoint-p
+          (translation-governing-addresses-for-page-directory
+           lin-addr-2 page-directory-base-addr-2 x86))
 
-        (physical-address-p page-directory-base-addr-1)
-        (physical-address-p page-directory-base-addr-2)
-        (canonical-address-p lin-addr-1)
-        (canonical-address-p lin-addr-2)
-        (equal (loghead 12 page-directory-base-addr-1) 0)
-        (equal (loghead 12 page-directory-base-addr-2) 0)
-        (x86p x86))
+         (physical-address-p page-directory-base-addr-1)
+         (physical-address-p page-directory-base-addr-2)
+         (canonical-address-p lin-addr-1)
+         (canonical-address-p lin-addr-2)
+         (equal (loghead 12 page-directory-base-addr-1) 0)
+         (equal (loghead 12 page-directory-base-addr-2) 0)
+         (x86p x86))
 
-   (equal
-    (mv-nth
-     1
-     (ia32e-la-to-pa-page-directory
-      lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-      (mv-nth
-       2
-       (ia32e-la-to-pa-page-directory
-        lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-    (mv-nth
-     1
-     (ia32e-la-to-pa-page-directory
-      lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-      x86))))
-  :cases ((equal page-table-entry-addr-1 page-table-entry-addr-2))
-  :do-not '(preprocess)
-  :in-theory (e/d
-              ()
-              (ia32e-la-to-pa-page-directory-entry-validp
-               mv-nth-1-no-error-ia32e-la-to-pa-page-table
-               mv-nth-2-no-error-ia32e-la-to-pa-page-table
-               member-p-cons
-               disjoint-p-cons
-               not
-               unsigned-byte-p
-               signed-byte-p)))
+    (equal
+     (mv-nth
+      1
+      (ia32e-la-to-pa-page-directory
+       lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+       (mv-nth
+        2
+        (ia32e-la-to-pa-page-directory
+         lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+     (mv-nth
+      1
+      (ia32e-la-to-pa-page-directory
+       lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+       x86))))
+   :cases ((equal page-table-entry-addr-1 page-table-entry-addr-2))
+   :do-not '(preprocess)
+   :in-theory (e/d
+               ()
+               (ia32e-la-to-pa-page-directory-entry-validp
+                mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                member-p-cons
+                disjoint-p-cons
+                not
+                unsigned-byte-p
+                signed-byte-p))))
 
 ;; ......................................................................
 ;; Two page table walks --- different entries:
@@ -2123,532 +2126,363 @@ Scenario (4)
 
 ;; 2M - Scenario (1), (2)
 ;; 4K - Scenario (1)
-(defrule two-page-table-walks-ia32e-la-to-pa-page-directory-different-entries
-  ;; Two talks of a page directory, all the directory and table
-  ;; entries are mutually disjoint.
-  (implies (and (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
-                (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+(local
+ (defrule two-page-table-walks-ia32e-la-to-pa-page-directory-different-entries
+   ;; Two walks of a page directory, all the directory and table
+   ;; entries are mutually disjoint.
+   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+                 (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
 
-                (pairwise-disjoint-p
-                 (append
-                  (translation-governing-addresses-for-page-directory
-                   lin-addr-2 page-directory-base-addr-2 x86)
-                  (translation-governing-addresses-for-page-directory
-                   lin-addr-1 page-directory-base-addr-1 x86)))
+                 (pairwise-disjoint-p
+                  (append
+                   (translation-governing-addresses-for-page-directory
+                    lin-addr-2 page-directory-base-addr-2 x86)
+                   (translation-governing-addresses-for-page-directory
+                    lin-addr-1 page-directory-base-addr-1 x86)))
 
-                (physical-address-p page-directory-base-addr-1)
-                (canonical-address-p lin-addr-1)
-                (equal (loghead 12 page-directory-base-addr-1) 0)
+                 (physical-address-p page-directory-base-addr-1)
+                 (canonical-address-p lin-addr-1)
+                 (equal (loghead 12 page-directory-base-addr-1) 0)
 
-                (physical-address-p page-directory-base-addr-2)
-                (canonical-address-p lin-addr-2)
-                (equal (loghead 12 page-directory-base-addr-2) 0)
+                 (physical-address-p page-directory-base-addr-2)
+                 (canonical-address-p lin-addr-2)
+                 (equal (loghead 12 page-directory-base-addr-2) 0)
 
-                (x86p x86))
-           (equal
-            (mv-nth
-             1
-             (ia32e-la-to-pa-page-directory
-              lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-              (mv-nth
-               2
-               (ia32e-la-to-pa-page-directory
-                lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-            (mv-nth
-             1
-             (ia32e-la-to-pa-page-directory
-              lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-              x86))))
-  :do-not '(preprocess)
-  :cases ((and (equal (ia32e-page-tables-slice :ps
-                                               (rm-low-64 (part-install (part-select lin-addr-1 :low 21 :high 29)
-                                                                        page-directory-base-addr-1
-                                                                        :low 3 :high 11)
-                                                          x86))
-                      1)
-               (equal (ia32e-page-tables-slice :ps
-                                               (rm-low-64 (part-install (part-select lin-addr-2 :low 21 :high 29)
-                                                                        page-directory-base-addr-2
-                                                                        :low 3 :high 11) x86))
-                      1))
+                 (x86p x86))
+            (equal
+             (mv-nth
+              1
+              (ia32e-la-to-pa-page-directory
+               lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+               (mv-nth
+                2
+                (ia32e-la-to-pa-page-directory
+                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+             (mv-nth
+              1
+              (ia32e-la-to-pa-page-directory
+               lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+               x86))))
+   :do-not '(preprocess)
+   :cases ((and (equal (ia32e-page-tables-slice :ps
+                                                (rm-low-64 (part-install (part-select lin-addr-1 :low 21 :high 29)
+                                                                         page-directory-base-addr-1
+                                                                         :low 3 :high 11)
+                                                           x86))
+                       1)
+                (equal (ia32e-page-tables-slice :ps
+                                                (rm-low-64 (part-install (part-select lin-addr-2 :low 21 :high 29)
+                                                                         page-directory-base-addr-2
+                                                                         :low 3 :high 11) x86))
+                       1))
 
-          (and (equal (ia32e-page-tables-slice :ps
-                                               (rm-low-64 (part-install (part-select lin-addr-1 :low 21 :high 29)
-                                                                        page-directory-base-addr-1
-                                                                        :low 3 :high 11)
-                                                          x86))
-                      1)
-               (equal (ia32e-page-tables-slice :ps
-                                               (rm-low-64 (part-install (part-select lin-addr-2 :low 21 :high 29)
-                                                                        page-directory-base-addr-2
-                                                                        :low 3 :high 11) x86))
-                      0))
+           (and (equal (ia32e-page-tables-slice :ps
+                                                (rm-low-64 (part-install (part-select lin-addr-1 :low 21 :high 29)
+                                                                         page-directory-base-addr-1
+                                                                         :low 3 :high 11)
+                                                           x86))
+                       1)
+                (equal (ia32e-page-tables-slice :ps
+                                                (rm-low-64 (part-install (part-select lin-addr-2 :low 21 :high 29)
+                                                                         page-directory-base-addr-2
+                                                                         :low 3 :high 11) x86))
+                       0))
 
-          (and (equal (ia32e-page-tables-slice :ps
-                                               (rm-low-64 (part-install (part-select lin-addr-1 :low 21 :high 29)
-                                                                        page-directory-base-addr-1
-                                                                        :low 3 :high 11)
-                                                          x86))
-                      0)
-               (equal (ia32e-page-tables-slice :ps
-                                               (rm-low-64 (part-install (part-select lin-addr-2 :low 21 :high 29)
-                                                                        page-directory-base-addr-2
-                                                                        :low 3 :high 11) x86))
-                      1))
+           (and (equal (ia32e-page-tables-slice :ps
+                                                (rm-low-64 (part-install (part-select lin-addr-1 :low 21 :high 29)
+                                                                         page-directory-base-addr-1
+                                                                         :low 3 :high 11)
+                                                           x86))
+                       0)
+                (equal (ia32e-page-tables-slice :ps
+                                                (rm-low-64 (part-install (part-select lin-addr-2 :low 21 :high 29)
+                                                                         page-directory-base-addr-2
+                                                                         :low 3 :high 11) x86))
+                       1))
 
-          (and (equal (ia32e-page-tables-slice :ps
-                                               (rm-low-64 (part-install (part-select lin-addr-1 :low 21 :high 29)
-                                                                        page-directory-base-addr-1
-                                                                        :low 3 :high 11)
-                                                          x86))
-                      0)
-               (equal (ia32e-page-tables-slice :ps
-                                               (rm-low-64 (part-install (part-select lin-addr-2 :low 21 :high 29)
-                                                                        page-directory-base-addr-2
-                                                                        :low 3 :high 11) x86))
-                      0)))
-  :in-theory (e/d ()
-                  (ia32e-la-to-pa-page-directory-entry-validp
-                   mv-nth-1-no-error-ia32e-la-to-pa-page-table
-                   mv-nth-2-no-error-ia32e-la-to-pa-page-table
-                   member-p-cons
-                   disjoint-p-cons
-                   not
-                   unsigned-byte-p
-                   signed-byte-p)))
-
-(defrule re-read-entry-still-page-directory-valid-page-table-4K-pages-different-dir-entries
-  (implies (and (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
-                (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
-                (equal page-directory-entry-addr-1
-                       (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
-                (equal page-directory-entry-addr-2
-                       (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
-
-                (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
-                (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
-                (equal page-directory-entry-2 (rm-low-64 page-directory-entry-addr-2 x86))
-                (equal (ia32e-page-tables-slice :ps  page-directory-entry-2) 0)
-
-                ;; For ia32e-la-to-pa-page-table:
-                (equal page-table-base-addr-1
-                       (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
-                (equal page-table-base-addr-2
-                       (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-2) 12))
-                (equal u-s-acc-2
-                       (ia32e-page-tables-slice :u/s page-directory-entry-2))
-
-                (equal page-table-entry-addr-1
-                       (page-table-entry-addr lin-addr-1 page-table-base-addr-1))
-                (equal page-table-entry-addr-2
-                       (page-table-entry-addr lin-addr-2 page-table-base-addr-2))
-
-                ;; Same page table entries.
-                (equal page-table-entry-addr-2 page-table-entry-addr-1)
-
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-1 page-directory-base-addr-1 x86))
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-2 page-directory-base-addr-2 x86))
-
-                (physical-address-p page-directory-base-addr-1)
-                (physical-address-p page-directory-base-addr-2)
-                (canonical-address-p lin-addr-1)
-                (canonical-address-p lin-addr-2)
-                (equal (loghead 12 page-directory-base-addr-1) 0)
-                (equal (loghead 12 page-directory-base-addr-2) 0)
-                (x86p x86))
-
-           (ia32e-la-to-pa-page-directory-entry-validp
-            lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-            (mv-nth
-             2
-             (ia32e-la-to-pa-page-table
-              lin-addr-2 page-table-base-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d
-                       (page-directory-components-equal-rm-low-64-of-page-directory-entry-addr-via-page-table-4K-pages
-                        page-table-components-equal-rm-low-64-of-table-page-table-entry-addr-via-page-table-4K-pages
-                        re-read-entry-still-valid-ia32e-la-to-pa-page-directory-4K-pages)
-                       (ia32e-la-to-pa-page-directory-entry-validp
-                        member-p-cons
-                        disjoint-p-cons
-                        not
-                        mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
-                        mv-nth-2-no-error-ia32e-la-to-pa-page-table
-                        mv-nth-1-no-error-ia32e-la-to-pa-page-table
-                        unsigned-byte-p
-                        signed-byte-p)))))
-
-;; 4K - Scenario (2)
-(defrule two-page-table-walks-ia32e-la-to-pa-page-directory-4K-pages-different-dir-entries-same-table-entry
-  (implies (and (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
-                (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
-                (equal page-directory-entry-addr-1
-                       (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
-                (equal page-directory-entry-addr-2
-                       (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
-
-                (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
-                (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
-                (equal page-directory-entry-2 (rm-low-64 page-directory-entry-addr-2 x86))
-                (equal (ia32e-page-tables-slice :ps  page-directory-entry-2) 0)
-
-                ;; For ia32e-la-to-pa-page-table:
-                (equal page-table-base-addr-1
-                       (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
-                (equal page-table-base-addr-2
-                       (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-2) 12))
-                (equal u-s-acc-2
-                       (ia32e-page-tables-slice :u/s page-directory-entry-2))
-
-                (equal page-table-entry-addr-1
-                       (page-table-entry-addr lin-addr-1 page-table-base-addr-1))
-                (equal page-table-entry-addr-2
-                       (page-table-entry-addr lin-addr-2 page-table-base-addr-2))
-
-                ;; Same page table entries.
-                (equal page-table-entry-addr-2 page-table-entry-addr-1)
-
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-1 page-directory-base-addr-1 x86))
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-2 page-directory-base-addr-2 x86))
-
-                (physical-address-p page-directory-base-addr-1)
-                (physical-address-p page-directory-base-addr-2)
-                (canonical-address-p lin-addr-1)
-                (canonical-address-p lin-addr-2)
-                (equal (loghead 12 page-directory-base-addr-1) 0)
-                (equal (loghead 12 page-directory-base-addr-2) 0)
-                (x86p x86))
-           (equal
-            (mv-nth
-             1
-             (ia32e-la-to-pa-page-directory
-              lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-              (mv-nth
-               2
-               (ia32e-la-to-pa-page-directory
-                lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-            (mv-nth
-             1
-             (ia32e-la-to-pa-page-directory
-              lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-              x86))))
-  :do-not '(preprocess)
-  :cases ((equal page-directory-entry-addr-2 page-directory-entry-addr-1))
-  :in-theory (e/d
-              ()
-              (ia32e-la-to-pa-page-directory-entry-validp
-               mv-nth-1-no-error-ia32e-la-to-pa-page-table
-               mv-nth-2-no-error-ia32e-la-to-pa-page-table
-               member-p-cons
-               disjoint-p-cons
-               not
-               unsigned-byte-p
-               signed-byte-p)))
-
-;; ......................................................................
-;; More theorems about validity of page directory entries being
-;; preserved when the translation-governing addresses are disjoint:
-;; ......................................................................
-
-;; 2M - Scenario (3), (4)
-(defrule validity-preserved-same-x86-state-2M-pages-wrt-page-directory-same-entry
-  ;; Two walks of a page directory entry, with same or different
-  ;; "input" linear addresses.
-
-  (implies (and (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
-                (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
-                (equal page-directory-entry-addr-1
-                       (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
-                (equal page-directory-entry-addr-2
-                       (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
-                (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
-                (equal (ia32e-page-tables-slice :ps page-directory-entry-1) 1)
-
-                ;; Same page directory entry.
-                (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
-
-                (equal (loghead 12 page-directory-base-addr-1) 0)
-                (physical-address-p page-directory-base-addr-1)
-                (canonical-address-p lin-addr-1)
-                (canonical-address-p lin-addr-2)
-                (x86p x86))
-           (ia32e-la-to-pa-page-directory-entry-validp
-            lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-            (mv-nth 2 (ia32e-la-to-pa-page-directory
-                       lin-addr-2 page-directory-base-addr-2
-                       wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-  :do-not '(preprocess)
-  :in-theory (e/d* ()
+           (and (equal (ia32e-page-tables-slice :ps
+                                                (rm-low-64 (part-install (part-select lin-addr-1 :low 21 :high 29)
+                                                                         page-directory-base-addr-1
+                                                                         :low 3 :high 11)
+                                                           x86))
+                       0)
+                (equal (ia32e-page-tables-slice :ps
+                                                (rm-low-64 (part-install (part-select lin-addr-2 :low 21 :high 29)
+                                                                         page-directory-base-addr-2
+                                                                         :low 3 :high 11) x86))
+                       0)))
+   :in-theory (e/d ()
                    (ia32e-la-to-pa-page-directory-entry-validp
-                    mv-nth-1-no-error-ia32e-la-to-pa-page-directory-2m-pages
                     mv-nth-1-no-error-ia32e-la-to-pa-page-table
                     mv-nth-2-no-error-ia32e-la-to-pa-page-table
                     member-p-cons
                     disjoint-p-cons
                     not
                     unsigned-byte-p
-                    signed-byte-p)))
+                    signed-byte-p))))
 
-;; 4K - Scenario (3), (4)
-(defrule validity-preserved-same-x86-state-4K-pages-wrt-page-directory-same-entry
-  ;; Two walks of a page directory entry, with same or different page table entries
-  (implies
-   (and (ia32e-la-to-pa-page-directory-entry-validp
-         lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
-        (ia32e-la-to-pa-page-directory-entry-validp
-         lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
-        (equal page-directory-entry-addr-1
-               (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
-        (equal page-directory-entry-addr-2
-               (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
+(local
+ (defrule re-read-entry-still-page-directory-valid-page-table-4K-pages-different-dir-entries
+   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+                 (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+                 (equal page-directory-entry-addr-1
+                        (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
+                 (equal page-directory-entry-addr-2
+                        (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
 
-        ;; Same page directory entry.
-        (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
+                 (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
+                 (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
+                 (equal page-directory-entry-2 (rm-low-64 page-directory-entry-addr-2 x86))
+                 (equal (ia32e-page-tables-slice :ps  page-directory-entry-2) 0)
 
-        (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
-        (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
-        ;; For ia32e-la-to-pa-page-table:
-        (equal page-table-base-addr
-               ;; Same for the page table entries if page directory entry is the same.
-               (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
-        (equal u-s-acc
-               ;; Same for the page table entries if page directory entry is the same.
-               (ia32e-page-tables-slice :u/s page-directory-entry-1))
-        (equal page-table-entry-addr-1
-               (page-table-entry-addr lin-addr-1 page-table-base-addr))
-        (equal page-table-entry-addr-2
-               (page-table-entry-addr lin-addr-2 page-table-base-addr))
+                 ;; For ia32e-la-to-pa-page-table:
+                 (equal page-table-base-addr-1
+                        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
+                 (equal page-table-base-addr-2
+                        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-2) 12))
+                 (equal u-s-acc-2
+                        (ia32e-page-tables-slice :u/s page-directory-entry-2))
 
-        ;; Page table entries may or may not be the same.
+                 (equal page-table-entry-addr-1
+                        (page-table-entry-addr lin-addr-1 page-table-base-addr-1))
+                 (equal page-table-entry-addr-2
+                        (page-table-entry-addr lin-addr-2 page-table-base-addr-2))
 
-        (pairwise-disjoint-p
-         (translation-governing-addresses-for-page-directory
-          lin-addr-1 page-directory-base-addr-1 x86))
-        (pairwise-disjoint-p
-         (translation-governing-addresses-for-page-directory
-          lin-addr-2 page-directory-base-addr-2 x86))
+                 ;; Same page table entries.
+                 (equal page-table-entry-addr-2 page-table-entry-addr-1)
 
-        (physical-address-p page-directory-base-addr-1)
-        (physical-address-p page-directory-base-addr-2)
-        (canonical-address-p lin-addr-1)
-        (canonical-address-p lin-addr-2)
-        (equal (loghead 12 page-directory-base-addr-1) 0)
-        (equal (loghead 12 page-directory-base-addr-2) 0)
-        (x86p x86))
-   (ia32e-la-to-pa-page-directory-entry-validp
-    lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-    (mv-nth 2 (ia32e-la-to-pa-page-directory
-               lin-addr-2 page-directory-base-addr-2
-               wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-  :cases ((equal page-table-entry-addr-1 page-table-entry-addr-2))
-  :do-not '(preprocess)
-  :in-theory (e/d
-              ()
-              (ia32e-la-to-pa-page-directory-entry-validp
-               mv-nth-1-no-error-ia32e-la-to-pa-page-table
-               mv-nth-2-no-error-ia32e-la-to-pa-page-table
-               member-p-cons
-               disjoint-p-cons
-               not
-               unsigned-byte-p
-               signed-byte-p)))
-
-;; 2M - Scenario (1), (2)
-;; 4K - Scenario (1)
-(defrule validity-preserved-same-x86-state-wrt-page-directory-different-entries
-  (implies (and (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
-                (ia32e-la-to-pa-page-directory-entry-validp
-                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
-
-                (pairwise-disjoint-p
-                 (append
+                 (pairwise-disjoint-p
                   (translation-governing-addresses-for-page-directory
-                   lin-addr-2 page-directory-base-addr-2 x86)
+                   lin-addr-1 page-directory-base-addr-1 x86))
+                 (pairwise-disjoint-p
                   (translation-governing-addresses-for-page-directory
-                   lin-addr-1 page-directory-base-addr-1 x86)))
+                   lin-addr-2 page-directory-base-addr-2 x86))
 
-                (physical-address-p page-directory-base-addr-1)
-                (canonical-address-p lin-addr-1)
-                (equal (loghead 12 page-directory-base-addr-1) 0)
+                 (physical-address-p page-directory-base-addr-1)
+                 (physical-address-p page-directory-base-addr-2)
+                 (canonical-address-p lin-addr-1)
+                 (canonical-address-p lin-addr-2)
+                 (equal (loghead 12 page-directory-base-addr-1) 0)
+                 (equal (loghead 12 page-directory-base-addr-2) 0)
+                 (x86p x86))
 
-                (physical-address-p page-directory-base-addr-2)
-                (canonical-address-p lin-addr-2)
-                (equal (loghead 12 page-directory-base-addr-2) 0)
+            (ia32e-la-to-pa-page-directory-entry-validp
+             lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+             (mv-nth
+              2
+              (ia32e-la-to-pa-page-table
+               lin-addr-2 page-table-base-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
 
-                (x86p x86))
-
-           (ia32e-la-to-pa-page-directory-entry-validp
-            lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-            (mv-nth 2 (ia32e-la-to-pa-page-directory
-                       lin-addr-2 page-directory-base-addr-2
-                       wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-  :in-theory (e/d ()
-                  (ia32e-la-to-pa-page-directory-entry-validp
-                   mv-nth-2-no-error-ia32e-la-to-pa-page-directory-2M-pages
-                   mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
-                   member-p-cons
-                   disjoint-p-cons
-                   not
-                   unsigned-byte-p
-                   signed-byte-p)))
+   :hints (("Goal" :do-not '(preprocess)
+            :in-theory (e/d
+                        (page-directory-components-equal-rm-low-64-of-page-directory-entry-addr-via-page-table-4K-pages
+                         page-table-components-equal-rm-low-64-of-table-page-table-entry-addr-via-page-table-4K-pages
+                         re-read-entry-still-valid-ia32e-la-to-pa-page-directory-4K-pages)
+                        (ia32e-la-to-pa-page-directory-entry-validp
+                         member-p-cons
+                         disjoint-p-cons
+                         not
+                         mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
+                         mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                         mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                         unsigned-byte-p
+                         signed-byte-p))))))
 
 ;; 4K - Scenario (2)
-(defrule validity-preserved-same-x86-state-wrt-page-directory-4K-pages-different-dir-entries-same-table-entry
+(local
+ (defrule two-page-table-walks-ia32e-la-to-pa-page-directory-4K-pages-different-dir-entries-same-table-entry
+   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+                 (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+                 (equal page-directory-entry-addr-1
+                        (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
+                 (equal page-directory-entry-addr-2
+                        (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
+
+                 (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
+                 (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
+                 (equal page-directory-entry-2 (rm-low-64 page-directory-entry-addr-2 x86))
+                 (equal (ia32e-page-tables-slice :ps  page-directory-entry-2) 0)
+
+                 ;; For ia32e-la-to-pa-page-table:
+                 (equal page-table-base-addr-1
+                        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
+                 (equal page-table-base-addr-2
+                        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-2) 12))
+                 (equal u-s-acc-2
+                        (ia32e-page-tables-slice :u/s page-directory-entry-2))
+
+                 (equal page-table-entry-addr-1
+                        (page-table-entry-addr lin-addr-1 page-table-base-addr-1))
+                 (equal page-table-entry-addr-2
+                        (page-table-entry-addr lin-addr-2 page-table-base-addr-2))
+
+                 ;; Same page table entries.
+                 (equal page-table-entry-addr-2 page-table-entry-addr-1)
+
+                 (pairwise-disjoint-p
+                  (translation-governing-addresses-for-page-directory
+                   lin-addr-1 page-directory-base-addr-1 x86))
+                 (pairwise-disjoint-p
+                  (translation-governing-addresses-for-page-directory
+                   lin-addr-2 page-directory-base-addr-2 x86))
+
+                 (physical-address-p page-directory-base-addr-1)
+                 (physical-address-p page-directory-base-addr-2)
+                 (canonical-address-p lin-addr-1)
+                 (canonical-address-p lin-addr-2)
+                 (equal (loghead 12 page-directory-base-addr-1) 0)
+                 (equal (loghead 12 page-directory-base-addr-2) 0)
+                 (x86p x86))
+            (equal
+             (mv-nth
+              1
+              (ia32e-la-to-pa-page-directory
+               lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+               (mv-nth
+                2
+                (ia32e-la-to-pa-page-directory
+                 lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+             (mv-nth
+              1
+              (ia32e-la-to-pa-page-directory
+               lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+               x86))))
+   :do-not '(preprocess)
+   :cases ((equal page-directory-entry-addr-2 page-directory-entry-addr-1))
+   :in-theory (e/d
+               ()
+               (ia32e-la-to-pa-page-directory-entry-validp
+                mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                member-p-cons
+                disjoint-p-cons
+                not
+                unsigned-byte-p
+                signed-byte-p))))
+
+(local
+ (defthmd pairwise-disjoint-p-lemma-for-page-directory
+   (implies (and (not (equal (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
+                             (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)))
+                 (pairwise-disjoint-p
+                  (translation-governing-addresses-for-page-directory
+                   lin-addr-1 page-directory-base-addr-1 x86))
+                 (pairwise-disjoint-p
+                  (translation-governing-addresses-for-page-directory
+                   lin-addr-2 page-directory-base-addr-2 x86))
+
+                 (if (equal (ia32e-page-tables-slice
+                             :ps
+                             (rm-low-64
+                              (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)
+                              x86))
+                            0)
+                     (disjoint-p
+                      (addr-range 8 (page-table-entry-addr
+                                     lin-addr-2
+                                     (ash (ia32e-pde-pg-table-slice
+                                           :pde-pt
+                                           (rm-low-64
+                                            (page-directory-entry-addr
+                                             lin-addr-2
+                                             page-directory-base-addr-2)
+                                            x86))
+                                          12)))
+                      (addr-range 8 (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)))
+                   t)
+
+                 (if (equal (ia32e-page-tables-slice
+                             :ps
+                             (rm-low-64
+                              (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
+                              x86))
+                            0)
+                     (disjoint-p
+                      (addr-range 8 (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
+                      (addr-range 8 (page-table-entry-addr
+                                     lin-addr-1
+                                     (ash (ia32e-pde-pg-table-slice
+                                           :pde-pt
+                                           (rm-low-64
+                                            (page-directory-entry-addr
+                                             lin-addr-1
+                                             page-directory-base-addr-1)
+                                            x86))
+                                          12))))
+                   t)
+
+                 (if (and
+                      (equal (ia32e-page-tables-slice
+                              :ps
+                              (rm-low-64
+                               (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
+                               x86))
+                             0)
+                      (equal (ia32e-page-tables-slice
+                              :ps
+                              (rm-low-64
+                               (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)
+                               x86))
+                             0))
+                     (disjoint-p
+                      (addr-range
+                       8
+                       (page-table-entry-addr
+                        lin-addr-2
+                        (ash
+                         (loghead
+                          40
+                          (logtail
+                           12
+                           (rm-low-64
+                            (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)
+                            x86)))
+                         12)))
+                      (addr-range
+                       8
+                       (page-table-entry-addr
+                        lin-addr-1
+                        (ash
+                         (loghead
+                          40
+                          (logtail
+                           12
+                           (rm-low-64
+                            (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
+                            x86)))
+                         12))))
+                   t)
+
+                 (equal (loghead 12 page-directory-base-addr-1) 0)
+                 (equal (loghead 12 page-directory-base-addr-2) 0)
+                 (physical-address-p page-directory-base-addr-1)
+                 (physical-address-p page-directory-base-addr-2)
+                 (canonical-address-p lin-addr-1)
+                 (canonical-address-p lin-addr-2)
+                 (x86p x86))
+            (pairwise-disjoint-p
+             (append (translation-governing-addresses-for-page-directory
+                      lin-addr-2 page-directory-base-addr-2 x86)
+                     (translation-governing-addresses-for-page-directory
+                      lin-addr-1 page-directory-base-addr-1 x86))))))
+
+(defrule two-page-table-walks-ia32e-la-to-pa-page-directory
   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
                  lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-page-directory-entry-validp
                  lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
-                (equal page-directory-entry-addr-1
-                       (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
-                (equal page-directory-entry-addr-2
-                       (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
 
-                (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
-                (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
-                (equal page-directory-entry-2 (rm-low-64 page-directory-entry-addr-2 x86))
-                (equal (ia32e-page-tables-slice :ps  page-directory-entry-2) 0)
-
-                ;; For ia32e-la-to-pa-page-table:
-                (equal page-table-base-addr-1
-                       (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
-                (equal page-table-base-addr-2
-                       (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-2) 12))
-                (equal u-s-acc-2
-                       (ia32e-page-tables-slice :u/s page-directory-entry-2))
-
-                (equal page-table-entry-addr-1
-                       (page-table-entry-addr lin-addr-1 page-table-base-addr-1))
-                (equal page-table-entry-addr-2
-                       (page-table-entry-addr lin-addr-2 page-table-base-addr-2))
-
-                ;; Same page table entries.
-                (equal page-table-entry-addr-2 page-table-entry-addr-1)
 
                 (pairwise-disjoint-p
                  (translation-governing-addresses-for-page-directory
                   lin-addr-1 page-directory-base-addr-1 x86))
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-2 page-directory-base-addr-2 x86))
 
-                (physical-address-p page-directory-base-addr-1)
-                (physical-address-p page-directory-base-addr-2)
-                (canonical-address-p lin-addr-1)
-                (canonical-address-p lin-addr-2)
-                (equal (loghead 12 page-directory-base-addr-1) 0)
-                (equal (loghead 12 page-directory-base-addr-2) 0)
-                (x86p x86))
-           (ia32e-la-to-pa-page-directory-entry-validp
-            lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-            (mv-nth 2 (ia32e-la-to-pa-page-directory
-                       lin-addr-2 page-directory-base-addr-2
-                       wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-  :do-not '(preprocess)
-  :cases ((equal page-directory-entry-addr-2 page-directory-entry-addr-1))
-  :in-theory (e/d
-              ()
-              (ia32e-la-to-pa-page-directory-entry-validp
-               mv-nth-1-no-error-ia32e-la-to-pa-page-table
-               mv-nth-2-no-error-ia32e-la-to-pa-page-table
-               member-p-cons
-               disjoint-p-cons
-               not
-               unsigned-byte-p
-               signed-byte-p)))
-
-;; (i-am-here)
-
-(defthmd pairwise-disjoint-p-lemma-for-page-directory
-  (implies (and (not (equal (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
-                            (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)))
-                (not (pairwise-disjoint-p
-                      (append (translation-governing-addresses-for-page-directory
-                               lin-addr-2 page-directory-base-addr-2 x86)
-                              (translation-governing-addresses-for-page-directory
-                               lin-addr-1 page-directory-base-addr-1 x86))))
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-1 page-directory-base-addr-1 x86))
-                (disjoint-p
-                 (addr-range 8 (page-table-entry-addr
-                                lin-addr-2
-                                (ash (ia32e-pde-pg-table-slice
-                                      :pde-pt
-                                      (rm-low-64
-                                       (page-directory-entry-addr
-                                        lin-addr-2
-                                        page-directory-base-addr-2)
-                                       x86))
-                                     12)))
-                 (addr-range 8 (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)))
-                (disjoint-p
-                 (addr-range 8 (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
-                 (addr-range 8 (page-table-entry-addr
-                                lin-addr-1
-                                (ash (ia32e-pde-pg-table-slice
-                                      :pde-pt
-                                      (rm-low-64
-                                       (page-directory-entry-addr
-                                        lin-addr-1
-                                        page-directory-base-addr-1)
-                                       x86))
-                                     12))))
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-2 page-directory-base-addr-2 x86))
-
-                (equal (loghead 12 page-directory-base-addr-1) 0)
-                (equal (loghead 12 page-directory-base-addr-2) 0)
-                (physical-address-p page-directory-base-addr-1)
-                (physical-address-p page-directory-base-addr-2)
-                (canonical-address-p lin-addr-1)
-                (canonical-address-p lin-addr-2)
-                (x86p x86))
-           (equal (page-table-entry-addr
-                   lin-addr-2
-                   (ash (ia32e-pde-pg-table-slice
-                         :pde-pt
-                         (rm-low-64
-                          (page-directory-entry-addr
-                           lin-addr-2
-                           page-directory-base-addr-2)
-                          x86))
-                        12))
-                  (page-table-entry-addr
-                   lin-addr-1
-                   (ash (ia32e-pde-pg-table-slice
-                         :pde-pt
-                         (rm-low-64
-                          (page-directory-entry-addr
-                           lin-addr-1
-                           page-directory-base-addr-1)
-                          x86))
-                        12)))))
-
-(defthmd pairwise-disjoint-p-lemma-for-page-directory-2M-pages
-  (implies (and (not (equal (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
-                            (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)))
-                (pairwise-disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr-1 page-directory-base-addr-1 x86))
                 (pairwise-disjoint-p
                  (translation-governing-addresses-for-page-directory
                   lin-addr-2 page-directory-base-addr-2 x86))
@@ -2693,48 +2527,6 @@ Scenario (4)
                                          12))))
                   t)
 
-                (if (and
-                     (equal (ia32e-page-tables-slice
-                             :ps
-                             (rm-low-64
-                              (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
-                              x86))
-                            0)
-                     (equal (ia32e-page-tables-slice
-                             :ps
-                             (rm-low-64
-                              (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)
-                              x86))
-                            0))
-                    (disjoint-p
-                     (addr-range
-                      8
-                      (page-table-entry-addr
-                       lin-addr-2
-                       (ash
-                        (loghead
-                         40
-                         (logtail
-                          12
-                          (rm-low-64
-                           (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)
-                           x86)))
-                        12)))
-                     (addr-range
-                      8
-                      (page-table-entry-addr
-                       lin-addr-1
-                       (ash
-                        (loghead
-                         40
-                         (logtail
-                          12
-                          (rm-low-64
-                           (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
-                           x86)))
-                        12))))
-                  t)
-
                 (equal (loghead 12 page-directory-base-addr-1) 0)
                 (equal (loghead 12 page-directory-base-addr-2) 0)
                 (physical-address-p page-directory-base-addr-1)
@@ -2742,11 +2534,324 @@ Scenario (4)
                 (canonical-address-p lin-addr-1)
                 (canonical-address-p lin-addr-2)
                 (x86p x86))
-           (pairwise-disjoint-p
-            (append (translation-governing-addresses-for-page-directory
-                     lin-addr-2 page-directory-base-addr-2 x86)
-                    (translation-governing-addresses-for-page-directory
-                     lin-addr-1 page-directory-base-addr-1 x86)))))
+           (equal
+            (mv-nth
+             1
+             (ia32e-la-to-pa-page-directory
+              lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+              (mv-nth
+               2
+               (ia32e-la-to-pa-page-directory
+                lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+            (mv-nth
+             1
+             (ia32e-la-to-pa-page-directory
+              lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+              x86))))
+  :hints (("Goal"
+           :do-not '(preprocess)
+           :cases (
+                   ;; validity-preserved-same-x86-state-2M-pages-wrt-page-directory-same-entry
+                   (and (logbitp
+                         7
+                         (rm-low-64
+                          (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
+                          x86))
+                        (equal (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
+                               (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)))
+
+                   ;; validity-preserved-same-x86-state-4K-pages-wrt-page-directory-same-entry
+                   (and (not (logbitp
+                              7
+                              (rm-low-64
+                               (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
+                               x86)))
+                        (equal (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
+                               (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)))
+
+                   ;; validity-preserved-same-x86-state-wrt-page-directory-different-entries
+                   (pairwise-disjoint-p
+                    (append
+                     (translation-governing-addresses-for-page-directory
+                      lin-addr-2 page-directory-base-addr-2 x86)
+                     (translation-governing-addresses-for-page-directory
+                      lin-addr-1 page-directory-base-addr-1 x86)))
+
+                   ;; validity-preserved-same-x86-state-wrt-page-directory-4K-pages-different-dir-entries-same-table-entry
+                   (and (not (logbitp
+                              7
+                              (rm-low-64
+                               (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1)
+                               x86)))
+                        (not (logbitp
+                              7
+                              (rm-low-64
+                               (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2)
+                               x86)))
+                        (equal (page-table-entry-addr lin-addr-2 (ash (ia32e-pde-pg-table-slice
+                                                                       :pde-pt
+                                                                       (rm-low-64
+                                                                        (page-directory-entry-addr
+                                                                         lin-addr-2
+                                                                         page-directory-base-addr-2)
+                                                                        x86))
+                                                                      12))
+                               (page-table-entry-addr lin-addr-1 (ash (ia32e-pde-pg-table-slice
+                                                                       :pde-pt
+                                                                       (rm-low-64
+                                                                        (page-directory-entry-addr
+                                                                         lin-addr-1
+                                                                         page-directory-base-addr-1)
+                                                                        x86))
+                                                                      12)))))
+           :in-theory (e/d* ()
+                            (ia32e-la-to-pa-page-directory-entry-validp
+                             mv-nth-1-no-error-ia32e-la-to-pa-page-directory-2m-pages
+                             mv-nth-2-no-error-ia32e-la-to-pa-page-directory-2M-pages
+                             mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4k-pages
+                             mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                             mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                             member-p-cons
+                             pairwise-disjoint-p
+                             translation-governing-addresses-for-page-directory
+                             disjoint-p-cons
+                             pairwise-disjoint-p-aux
+                             unsigned-byte-p
+                             signed-byte-p)))
+          ("Subgoal 5"
+           :use ((:instance pairwise-disjoint-p-lemma-for-page-directory))
+           :in-theory (e/d* ()
+                            (ia32e-la-to-pa-page-directory-entry-validp
+                             pairwise-disjoint-p-lemma-for-page-directory
+                             mv-nth-1-no-error-ia32e-la-to-pa-page-directory-2m-pages
+                             mv-nth-2-no-error-ia32e-la-to-pa-page-directory-2M-pages
+                             mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4k-pages
+                             mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                             mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                             member-p-cons
+                             translation-governing-addresses-for-page-directory
+                             disjoint-p-cons
+                             pairwise-disjoint-p-aux
+                             unsigned-byte-p
+                             signed-byte-p)))))
+
+;; ......................................................................
+;; More theorems about validity of page directory entries being
+;; preserved when the translation-governing addresses are disjoint:
+;; ......................................................................
+
+;; 2M - Scenario (3), (4)
+(local
+ (defrule validity-preserved-same-x86-state-2M-pages-wrt-page-directory-same-entry
+   ;; Two walks of a page directory entry, with same or different
+   ;; "input" linear addresses.
+
+   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+                 (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+                 (equal page-directory-entry-addr-1
+                        (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
+                 (equal page-directory-entry-addr-2
+                        (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
+                 (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
+                 (equal (ia32e-page-tables-slice :ps page-directory-entry-1) 1)
+
+                 ;; Same page directory entry.
+                 (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
+
+                 (equal (loghead 12 page-directory-base-addr-1) 0)
+                 (physical-address-p page-directory-base-addr-1)
+                 (canonical-address-p lin-addr-1)
+                 (canonical-address-p lin-addr-2)
+                 (x86p x86))
+            (ia32e-la-to-pa-page-directory-entry-validp
+             lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+             (mv-nth 2 (ia32e-la-to-pa-page-directory
+                        lin-addr-2 page-directory-base-addr-2
+                        wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+   :do-not '(preprocess)
+   :in-theory (e/d* ()
+                    (ia32e-la-to-pa-page-directory-entry-validp
+                     mv-nth-1-no-error-ia32e-la-to-pa-page-directory-2m-pages
+                     mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                     mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                     member-p-cons
+                     disjoint-p-cons
+                     not
+                     unsigned-byte-p
+                     signed-byte-p))))
+
+;; 4K - Scenario (3), (4)
+(local
+ (defrule validity-preserved-same-x86-state-4K-pages-wrt-page-directory-same-entry
+   ;; Two walks of a page directory entry, with same or different page table entries
+   (implies
+    (and (ia32e-la-to-pa-page-directory-entry-validp
+          lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+         (ia32e-la-to-pa-page-directory-entry-validp
+          lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+         (equal page-directory-entry-addr-1
+                (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
+         (equal page-directory-entry-addr-2
+                (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
+
+         ;; Same page directory entry.
+         (equal page-directory-entry-addr-2 page-directory-entry-addr-1)
+
+         (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
+         (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
+         ;; For ia32e-la-to-pa-page-table:
+         (equal page-table-base-addr
+                ;; Same for the page table entries if page directory entry is the same.
+                (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
+         (equal u-s-acc
+                ;; Same for the page table entries if page directory entry is the same.
+                (ia32e-page-tables-slice :u/s page-directory-entry-1))
+         (equal page-table-entry-addr-1
+                (page-table-entry-addr lin-addr-1 page-table-base-addr))
+         (equal page-table-entry-addr-2
+                (page-table-entry-addr lin-addr-2 page-table-base-addr))
+
+         ;; Page table entries may or may not be the same.
+
+         (pairwise-disjoint-p
+          (translation-governing-addresses-for-page-directory
+           lin-addr-1 page-directory-base-addr-1 x86))
+         (pairwise-disjoint-p
+          (translation-governing-addresses-for-page-directory
+           lin-addr-2 page-directory-base-addr-2 x86))
+
+         (physical-address-p page-directory-base-addr-1)
+         (physical-address-p page-directory-base-addr-2)
+         (canonical-address-p lin-addr-1)
+         (canonical-address-p lin-addr-2)
+         (equal (loghead 12 page-directory-base-addr-1) 0)
+         (equal (loghead 12 page-directory-base-addr-2) 0)
+         (x86p x86))
+    (ia32e-la-to-pa-page-directory-entry-validp
+     lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+     (mv-nth 2 (ia32e-la-to-pa-page-directory
+                lin-addr-2 page-directory-base-addr-2
+                wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+   :cases ((equal page-table-entry-addr-1 page-table-entry-addr-2))
+   :do-not '(preprocess)
+   :in-theory (e/d
+               ()
+               (ia32e-la-to-pa-page-directory-entry-validp
+                mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                member-p-cons
+                disjoint-p-cons
+                not
+                unsigned-byte-p
+                signed-byte-p))))
+
+;; 2M - Scenario (1), (2)
+;; 4K - Scenario (1)
+(local
+ (defrule validity-preserved-same-x86-state-wrt-page-directory-different-entries
+   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+                 (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+
+                 (pairwise-disjoint-p
+                  (append
+                   (translation-governing-addresses-for-page-directory
+                    lin-addr-2 page-directory-base-addr-2 x86)
+                   (translation-governing-addresses-for-page-directory
+                    lin-addr-1 page-directory-base-addr-1 x86)))
+
+                 (physical-address-p page-directory-base-addr-1)
+                 (canonical-address-p lin-addr-1)
+                 (equal (loghead 12 page-directory-base-addr-1) 0)
+
+                 (physical-address-p page-directory-base-addr-2)
+                 (canonical-address-p lin-addr-2)
+                 (equal (loghead 12 page-directory-base-addr-2) 0)
+
+                 (x86p x86))
+
+            (ia32e-la-to-pa-page-directory-entry-validp
+             lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+             (mv-nth 2 (ia32e-la-to-pa-page-directory
+                        lin-addr-2 page-directory-base-addr-2
+                        wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+   :in-theory (e/d ()
+                   (ia32e-la-to-pa-page-directory-entry-validp
+                    mv-nth-2-no-error-ia32e-la-to-pa-page-directory-2M-pages
+                    mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
+                    member-p-cons
+                    disjoint-p-cons
+                    not
+                    unsigned-byte-p
+                    signed-byte-p))))
+
+;; 4K - Scenario (2)
+(local
+ (defrule validity-preserved-same-x86-state-wrt-page-directory-4K-pages-different-dir-entries-same-table-entry
+   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+                 (ia32e-la-to-pa-page-directory-entry-validp
+                  lin-addr-2 page-directory-base-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+                 (equal page-directory-entry-addr-1
+                        (page-directory-entry-addr lin-addr-1 page-directory-base-addr-1))
+                 (equal page-directory-entry-addr-2
+                        (page-directory-entry-addr lin-addr-2 page-directory-base-addr-2))
+
+                 (equal page-directory-entry-1 (rm-low-64 page-directory-entry-addr-1 x86))
+                 (equal (ia32e-page-tables-slice :ps  page-directory-entry-1) 0)
+                 (equal page-directory-entry-2 (rm-low-64 page-directory-entry-addr-2 x86))
+                 (equal (ia32e-page-tables-slice :ps  page-directory-entry-2) 0)
+
+                 ;; For ia32e-la-to-pa-page-table:
+                 (equal page-table-base-addr-1
+                        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-1) 12))
+                 (equal page-table-base-addr-2
+                        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry-2) 12))
+                 (equal u-s-acc-2
+                        (ia32e-page-tables-slice :u/s page-directory-entry-2))
+
+                 (equal page-table-entry-addr-1
+                        (page-table-entry-addr lin-addr-1 page-table-base-addr-1))
+                 (equal page-table-entry-addr-2
+                        (page-table-entry-addr lin-addr-2 page-table-base-addr-2))
+
+                 ;; Same page table entries.
+                 (equal page-table-entry-addr-2 page-table-entry-addr-1)
+
+                 (pairwise-disjoint-p
+                  (translation-governing-addresses-for-page-directory
+                   lin-addr-1 page-directory-base-addr-1 x86))
+                 (pairwise-disjoint-p
+                  (translation-governing-addresses-for-page-directory
+                   lin-addr-2 page-directory-base-addr-2 x86))
+
+                 (physical-address-p page-directory-base-addr-1)
+                 (physical-address-p page-directory-base-addr-2)
+                 (canonical-address-p lin-addr-1)
+                 (canonical-address-p lin-addr-2)
+                 (equal (loghead 12 page-directory-base-addr-1) 0)
+                 (equal (loghead 12 page-directory-base-addr-2) 0)
+                 (x86p x86))
+            (ia32e-la-to-pa-page-directory-entry-validp
+             lin-addr-1 page-directory-base-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+             (mv-nth 2 (ia32e-la-to-pa-page-directory
+                        lin-addr-2 page-directory-base-addr-2
+                        wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+   :do-not '(preprocess)
+   :cases ((equal page-directory-entry-addr-2 page-directory-entry-addr-1))
+   :in-theory (e/d
+               ()
+               (ia32e-la-to-pa-page-directory-entry-validp
+                mv-nth-1-no-error-ia32e-la-to-pa-page-table
+                mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                member-p-cons
+                disjoint-p-cons
+                not
+                unsigned-byte-p
+                signed-byte-p))))
 
 (defrule validity-preserved-same-x86-state-page-directory
   (implies (and (ia32e-la-to-pa-page-directory-entry-validp
@@ -2870,12 +2975,7 @@ Scenario (4)
                                                                          lin-addr-1
                                                                          page-directory-base-addr-1)
                                                                         x86))
-                                                                      12))))
-
-                   ;;
-
-
-                   )
+                                                                      12)))))
            :in-theory (e/d* ()
                             (ia32e-la-to-pa-page-directory-entry-validp
                              mv-nth-1-no-error-ia32e-la-to-pa-page-directory-2m-pages
@@ -2891,8 +2991,7 @@ Scenario (4)
                              unsigned-byte-p
                              signed-byte-p)))
           ("Subgoal 5"
-           :use ((:instance pairwise-disjoint-p-lemma-for-page-directory)
-                 (:instance pairwise-disjoint-p-lemma-for-page-directory-2M-pages))
+           :use ((:instance pairwise-disjoint-p-lemma-for-page-directory))
            :in-theory (e/d* ()
                             (ia32e-la-to-pa-page-directory-entry-validp
                              pairwise-disjoint-p-lemma-for-page-directory
