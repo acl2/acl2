@@ -43,6 +43,17 @@
 
 (local (xdoc::set-default-parents port-resolve))
 
+
+;; BOZO temporary shim until we figure out how case/kind macros should work for
+;; transparent sums.
+(defmacro vl-port-kind (x) `(tag (vl-port-fix ,x)))
+
+(defmacro vl-port-case (x &key vl-interfaceport vl-regularport)
+  `(if (eq (vl-port-kind ,x) :vl-interfaceport)
+       ,vl-interfaceport
+     ,vl-regularport))
+
+
 ;; ===================== Fixing up ANSI Ports ====================================
 
 
@@ -203,14 +214,21 @@ is specified.
                        (consp ports))
                   (posp (len (vl-collect-regular-ports ports))))
          :hints(("Goal" :expand ((vl-collect-regular-ports ports))
-                 :in-theory (enable vl-port-kind vl-regularport-fix vl-port-fix tag)))
+                 :in-theory (enable vl-regularport-fix
+                                    vl-port-fix
+                                    ;tag
+                                    )))
          :rule-classes :type-prescription))
 
 (local (defthm vl-port-kind-of-vl-regularport
          (equal (vl-port-kind (vl-regularport name expr loc))
-                :vl-regularport)
-         :hints(("Goal" :in-theory (enable vl-port-kind vl-regularport tag)))))
+                :vl-regularport)))
+         ;; :hints(("Goal" :in-theory (enable vl-regularport
+         ;;                                   tag
+         ;;                                   )))))
 
+
+(local (in-theory (enable tag-reasoning)))
 
 (define vl-ansi-portdecl-to-regularport
   ((x vl-ansi-portdecl-p)
@@ -342,13 +360,21 @@ is specified.
 
 
 ;; BOZO this is horrible
-(local (defthm vl-port-kind-to-tag
-         (implies (vl-port-p x)
-                  (equal (vl-port-kind x) (tag x)))
-         :hints(("Goal" :in-theory (enable vl-port-p vl-port-kind
-                                           vl-interfaceport-p
-                                           vl-regularport-p
-                                           tag)))))
+;; (local (defthm vl-port-kind-to-tag
+;;          (implies (vl-port-p x)
+;;                   (equal (vl-port-kind x) (tag x)))
+;;          :hints(("Goal" :in-theory (enable vl-port-p vl-port-kind
+;;                                            vl-interfaceport-p
+;;                                            vl-regularport-p
+;;                                            tag)))))
+
+(local (defthm tag-when-vl-interfaceport-p-unrestricted
+         (implies (vl-interfaceport-p x)
+                  (equal (tag x) :vl-interfaceport))))
+
+(local (defthm tag-when-vl-regularport-p-unrestricted
+         (implies (vl-regularport-p x)
+                  (equal (tag x) :vl-regularport))))
 
 
 

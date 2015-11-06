@@ -34,11 +34,7 @@
 (include-book "fixequiv")
 (include-book "deftypes")
 (include-book "basetypes")
-
-#||
-(include-book "deftypes-tests")
-(include-book "doc-tests")
-||#
+(include-book "visitor")
 
 (defxdoc fty
   :parents (acl2::macro-libraries)
@@ -860,7 +856,7 @@ other FTY type generating macros.  (Fields can also be completely untyped.)
 See also @(see basetypes) for some base types with fixing functions.</p>
 
 
-<h4>Basic Example</h4>
+<h3>Basic Example</h3>
 
 @({
     (defprod sandwich
@@ -911,81 +907,166 @@ accessor.</li>
 </ul>
 
 
-<h4>Options</h4>
-<p>Keyword options for @('defprod') include:</p>
-<ul>
+<h3>Name/Documentation Options</h3>
 
-<li>@(':pred'), @(':fix'), @(':equiv'), @(':count'): override default function
-names, which are (respectively) @('name-p'), @('name-fix'), @('name-equiv'),
-and @('name-count').  As a special case, @(':count') may be nil, meaning no
-count function is produced.  (A count function is only produced when this is
-mutually-recursive with other type generators.)</li>
+<dl>
 
-<li>@(':parents'), @(':short'), @(':long'): add xdoc about the type.  (Note:
-xdoc support is half-baked; e.g. documentation strings for fields are allowed
-but not yet used.</li>
+<dt>@(':pred')</dt>
+<dt>@(':fix')</dt>
+<dt>@(':equiv')</dt>
+<dt>@(':count')</dt>
 
-<li>@(':layout'): must be one of @(':tree'), @(':list'), or @(':alist'),
-defaulting to @(':alist').  This determines how the fields are laid out in the
-object; e.g., a 5-element product will be laid out as follows for each case:
+<dd>These allow you to override the default function names, which
+are (respectively) @('name-p'), @('name-fix'), @('name-equiv'), and
+@('name-count').</dd>
+
+<dd>As a special case, @(':count') may be nil, meaning no count function is
+produced.  (A count function is only produced when this is mutually-recursive
+with other type generators.)</dd>
+
+
+<dt>@(':parents')</dt>
+<dt>@(':short')</dt>
+<dt>@(':long')</dt>
+
+<dd>These let you customize the @(see xdoc) documentation produced for this
+type.  The documentation generated for products will automatically list the
+fields and link to their types; it's often convenient to put additional notes
+directly in the fields, e.g.,
+
 @({
-  `((,a . ,b) . (,c . (,d . e)))                   ;; :tree
-  `(,a ,b ,c ,d ,e)                                ;; :list
-  `((a . ,a) (b . ,b) (c . ,c) (d . ,d) (e . ,e))  ;; :alist
- })
-</li>
+    (defprod monster
+      :parents (game)
+      :short \"A monster to fight.\"
+      ((name   stringp \"Name of the monster\")
+       (health natp    \"How many hit points does the monster have?\")
+       ...)
+      :long \"<p>More details about monsters could go here.</p>\")
+})</dd>
 
-<li>@(':tag'): defaults to NIL, meaning it isn't present; otherwise it must be
-a keyword symbol, which is consed onto every occurrence of the object.</li>
+</dl>
 
-<li>@(':measure'): Only necessary in the mutually-recursive case, but probably
-necessary then.  The default measure is @('(acl2-count x)'), but this is
-unlikely to work in the mutually-recursive case because of the possibility that
-@('x') could be (say) an atom, in which case the @('acl2-count') of @('x') will
-be no greater than the @('acl2-count') of a field.  Often something like
+
+<h3>Performance/Efficiency Options</h3>
+
+<dl>
+
+<dt>@(':tag')</dt>
+
+<dd>Defaults to @('nil'), meaning that the product is untagged.  Otherwise it
+must be a keyword symbol and this symbol will be consed onto every occurrence
+of the object.</dd>
+
+<dd>Having tags on your objects adds some execution/memory overhead, but
+provides a reasonably nice way to distinguish different kinds of objects from
+one another at runtime.</dd>
+
+
+<dt>@(':layout')</dt>
+
+<dd>Defaults to @(':alist'), but might instead be set to @(':tree') or
+@(':list').  This determines how the fields are laid out in the object's
+representation.</dd>
+
+<dd>The @(':alist') format provides the best readability/debuggability but is
+the worst layout for execution/memory efficiency.  This layout represents
+instances of your product type using an alist-like format where the name of
+each field is next to its value.  When printing such an object you can easily
+see the fields and their values, but creating these objects requires additional
+consing to put the field names on, etc.</dd>
+
+<dd>The @(':tree') layout provides the best efficiency and worst readability.
+It packs the fields into a compact tree structure, without their names.
+Creating these structures requires minimal consing, and each accessor simply
+follows some minimal, fixed car/cdr path into the object.  The objects print as
+horrible blobs of conses that can be hard to inspect.</dd>
+
+<dd>The @(':list') layout strikes a middle ground, with the fields of the
+object laid out as a plain list.  Accessing the fields of such a structure may
+require more @('cdr') operations than for a @(':tree') layout, but at least
+when you print them it is still pretty easy to tell what the fields are.</dd>
+
+<dd>Example: a tagless product with 5 fields could be laid out as follows:
+
+@({
+    `((,a . ,b) . (,c . (,d . e)))                   ;; :tree
+    `(,a ,b ,c ,d ,e)                                ;; :list
+    `((a . ,a) (b . ,b) (c . ,c) (d . ,d) (e . ,e))  ;; :alist
+})</dd>
+
+
+<dt>:hons</dt>
+
+<dd>NIL by default.  When T, the constructor is defined using @(see hons)
+rather than @(see cons), so your structures will always be structure shared.
+This may improve memory efficiency in certain cases but is probably not a good
+idea for most structures.</dd>
+
+<dt>:inline</dt>
+
+<dd>Default: @('(:acc :fix)'), meaning that the accessors and fixing function,
+which for execution purposes is just the identity, will be defined as an @(see
+inline) function.  This argument may also contain @(':xtor'), which causes the
+constructor to be inlined as well, but this is typically less useful as the
+constructor requires some amount of consing.  The option @(':all') (not in a
+list) is also possible.</dd>
+
+</dl>
+
+
+<h3>Other Options</h3>
+
+<dl>
+
+<dt>@(':measure')</dt>
+
+<dd>A measure is only necessary in the mutually-recursive case, but is probably
+necessary then.  The default measure is @('(acl2-count x)'), but this may not
+work in the mutually-recursive case because of the possibility that @('x')
+could be (say) an atom, in which case the @('acl2-count') of @('x') will be no
+greater than the @('acl2-count') of a field.  Often something like
 @('(two-nats-measure (acl2-count x) 5)') is a good measure for the product,
 where the other mutually-recursive types have a similar measure with smaller
-second component.</li>
+second component.</dd>
 
-<li>@(':hons'), NIL by default; when T, the constructor is defined using @(see
-hons) rather than cons.</li>
 
-<li>@(':inline') is @('(:acc :fix)') by default, which causes the accessors and
-fixing function (which for execution purposes is just the identity) to be
-inlined.  The list may also contain @(':xtor'), which causes the constructor to
-be inlined as well; @(':all') (not in a list) is also possible.</li>
+<dt>@(':require')</dt>
+<dt>@(':reqfix')</dt>
 
-<li>@(':require') adds a dependent type requirement; see the section on this feature below.</li>
-</ul>
+<dd>This adds a dependent type requirement; see the section on this feature
+below.</dd>
+
+</dl>
+
 
 <h4>Experimental Dependent Type Option</h4>
 
-<p>An additional top-level keyword, @(':require'), can add a requirement that
-the fields satisfy some relation.  Using this option requires that one or more
-fields be given a @(':reqfix') option; it must be a theorem that applying the
-regular fixing functions followed by the @(':reqfix') of each field
-independently yields fields that satisfy the requirement.  (It should also be
-the case that applying the reqfixes to fields already satisfying the
-requirement leaves them unchanged.) For example:</p>
+<p>The top-level keyword @(':require') can add a requirement that the fields
+satisfy some relation.  Using this option requires that one or more fields be
+given a @(':reqfix') option; it must be a theorem that applying the regular
+fixing functions followed by the @(':reqfix') of each field independently
+yields fields that satisfy the requirement.  It should also be the case that
+applying the reqfixes to fields already satisfying the requirement leaves them
+unchanged.  For example:</p>
 
 @({
- (defprod sizednum
-   ((size natp)
-    (bits natp :reqfix (loghead size bits)))
-   :require (unsigned-byte-p size bits))
+     (defprod sizednum
+       ((size natp)
+        (bits natp :reqfix (loghead size bits)))
+       :require (unsigned-byte-p size bits))
  })
 
 <p>If there is more than one field with a @(':reqfix') option, these reqfixes
-are applied to each field independently, after applying all of their types' fixing functions.
-For example, for the following to succeed:</p>
+are applied to each field independently, after applying all of their types'
+fixing functions.  For example, for the following to succeed:</p>
 
 @({
- (defprod foo
-   ((a atype :reqfix (afix a b c))
-    (b btype :reqfix (bfix a b c))
-    (c       :reqfix (cfix a b c)))
-   :require (foo-req a b c))
- })
+     (defprod foo
+       ((a atype :reqfix (afix a b c))
+        (b btype :reqfix (bfix a b c))
+        (c       :reqfix (cfix a b c)))
+       :require (foo-req a b c))
+})
 
 <p>the following must be a theorem (assuming @('afix') and @('bfix') are the
 fixing functions for @('atype') and @('btype'), respectively):</p>
@@ -1000,12 +1081,13 @@ fixing functions for @('atype') and @('btype'), respectively):</p>
  })
 
 <p>Notice the LET, rather than LET*, binding the fields to their reqfixes.  It
-would NOT be sufficient for this to be true with a LET*.</p>
-")
+would NOT be sufficient for this to be true with a LET*.</p>")
+
 
 (defxdoc deftagsum
   :parents (fty deftypes)
-  :short "Define a (possibly recursive) tagged union/sum of products type."
+  :short "Define a (possibly recursive) tagged union, a.k.a. ``sum of
+          products'' type."
 
   :long "<p>@('Deftagsum') produces a tagged union type consisting of several
 product types, each with a tag to distinguish them.  It is similar in spirit to
@@ -1025,11 +1107,11 @@ functions.</p>
 <p>Note: It may be helpful to be familiar with @(see defprod).</p>
 
 @({
-  (deftagsum arithtm
-    (:num ((val integerp)))
-    (:plus ((left arithtm-p)
-            (right arithtm-p)))
-    (:minus ((arg arithtm-p))))
+    (deftagsum arithtm
+      (:num ((val integerp)))
+      (:plus ((left arithtm-p)
+              (right arithtm-p)))
+      (:minus ((arg arithtm-p))))
  })
 
 <p>This defines the following functions and macros:</p>
@@ -1405,6 +1487,535 @@ function.  This is @(':rewrite') by default; you may wish to change it to
   :long "<p>BOZO document me.  There used to be documentation for this when
 it was part of VL.  See @(see vl::defoption).  I don't know how much of it
 is the same...</p>")
+
+(defxdoc defvisitor-template
+  :parents (defvisitors)
+  :short "Create a template that says how to make visitor functions."
+  :long "<p>This is used in combination with @(see defvisitors) and @(see
+defvisitor) to automatically generate \"visitor\" functions, i.e. functions
+that traverse a data structure and do something at specified locations in it.
+E.g., they can be used to transform all fields of a certain type, or to collect
+some information about all occurrences of a certain product field, etc.  The
+types that these visitors may traverse are those defined by @(see deftypes) and
+related macros @(see defprod), @(see deftagsum), @(see deflist), @(see
+defalist), @(see defoption), @(see deftranssum), and @(see defflexsum).</p>
+
+<p>Visitor templates can be used by @(see defvisitor), @(see defvisitors), and
+@(see defvisitor-multi) to automatically generate immense amounts of
+boilerplate code for traversing complicated datatypes, especially when the
+operation you want to do only really has to do with a few fields or component
+types.</p>
+
+<p>Here is a simple example from visitor-tests.lisp, annotated:</p>
+
+@({
+ (defvisitor-template
+
+   ;; Name of the template.  This gets referred to later when this template is
+   ;; used by defvisitor/defvisitors.
+   collect-strings
+
+   ;; Formals, similar to the formals in std::define.  Here :object stands for
+   ;; the type predicate of whatever kind of object we're currently visiting; we'll
+   ;; typically instantiate this template with several different :object types.
+   ((x :object))
+
+   ;; Return specifiers.  These are also like in std::define, but after each return name
+   ;; is a description of how the return value gets constructed.  The names here are
+   ;; a \"join\" value, which means they get constructed by combining,
+   ;; pairwise, the corresponding values returned by sub-calls.  In this case, the
+   ;; value (names1) returned from the most recent subcall is appended onto the
+   ;; previous value (names).  The initial value is nil, i.e. this is what a
+   ;; visitor function returns when run on an empty list or an object with no fields.
+   :returns (names (:join (append names1 names)
+                    :tmp-var names1
+                    :initial nil)
+                   string-listp)
+
+   ;; Now we describe what is a base case and what we return in base cases.
+   ;; This says, for any string field x, just produce (list x).  (The value
+   ;; bound in the alist is a lambda or function that gets applied to the
+   ;; formals, in this case just x.)
+   :type-fns ((string list))
+
+   ;; Describes how the functions we produce should be named.  Here, <type> gets
+   ;; replaced by the type of object each separate visitor function operates on.
+   :fnname-template collect-strings-in-<type>)
+})
+
+<p>Besides join values, there are two other kinds of visitor return values:
+accumulators and updaters.  The following example shows how to use an
+accumulator:</p>
+
+@({
+ (defvisitor-template collect-names-acc   ;; template name
+     ;; formals:
+     ((x :object)
+      (names string-listp)) ;; accumulator formal
+
+     ;; Names the return value and declares it to be an accumulator, which
+     ;; corresponds to the formal NAMES.  The :fix is optional but is needed if
+     ;; the return type of your accumulator output is unconditional.
+     :returns  (names-out (:acc names :fix (string-list-fix names))
+                          string-listp)
+
+     ;; Base case specification.  This says that when visiting a
+     ;; simple-tree-leaf product, use the function CONS as the visitor for the
+     ;; NAME field.  That is, instead of recurring on name, use (cons x names),
+     ;; i.e., add the name to the accumulator.
+     :prod-fns ((simple-tree-leaf  (name cons))))
+ })
+
+<p>This shows how to use an updater return value:</p>
+
+@({
+  (defvisitor-template incr-val  ((x :object)
+                                  (incr-amount natp))
+
+    ;; In an :update return value, the type is implicitly the same as :object.
+    ;; It can optionally be specified differently.  This means that new-x gets
+    ;; created by updating all the fields that we recurred on (or that were base
+    ;; cases) with the corresponding results.
+    :returns (new-x :update)
+
+    ;; This says that when we visit a simple-tree-leaf, we replace its value field with
+    ;; the field's previous value plus (lnfix incr-amount).  (We could just use
+    ;; + here instead of the lambda, but this would violate the fixing convention for
+    ;; incr-amount.)
+    :prod-fns ((simple-tree-leaf  (value (lambda (x incr-amount) (+ x (lnfix incr-amount)))))))
+ })
+
+<p>The general form of a @('defvisitor-template') call is:</p>
+@({
+ (defvisitor-template template-name formals ... keyword-args)
+ })
+
+<p>where the accepted keywords are as follows:</p>
+
+<ul>
+
+<li>@(':returns'), required, describing the values returned by each visitor
+function and how they are constructed from recursive calls.  The argument to
+@(':returns') is either a single return tuple or several return tuples inside
+an @('(mv ...)'), and each return tuple is similar to a @(see std::define)
+returnspec except that it has an extra form after the return name and before
+the rest of the arguments, describing how it is constructed -- either a
+@(':join'), @(':acc'), or @(':update') form, as in the examples above.</li>
+
+<li>@(':type-fns') specify base cases for fields of certain types.  The
+argument is a list of pairs @('(type function)'), where the function applied to
+the visitor formals gives the visitor values for fields of that type.
+Alternatively, function may be @(':skip'), meaning that we don't recur on
+fields of this type. (This is the default for field types that were not defined
+by @(see deftypes).)  The @(':type-fns') entry is only used if there is no
+applicable entry in @(':field-fns') or @(':prod-fns'), below.</li>
+
+<li>@(':prod-fns') specify base cases for certain fields of certain products.
+The argument is a list of entries @('(prod-name (field-name1
+function1) (field-name2 function2) ...)'), where the functions work the same
+way as in @(':type-fns').  @(':prod-fns') entries override @(':type-fns') and
+@(':field-fns') entries.</li>
+
+<li>@(':field-fns') specify base cases for fields with certain names.  The
+argument is a list of pairs @('(field-name function)'), where function is as in
+the @(':type-fns').  This is similar to using @(':prod-fns'), but applies to
+fields of the given name inside any product.  @(':field-fns') entries override
+@(':type-fns') entries, but @(':prod-fns') entries override both.</li>
+
+<li>@(':fnname-template') describes how the generated functions should be
+named. The argument is a symbol containing the substring @('<TYPE>'), and
+function names are generated by replacing this with the name of the type.</li>
+
+<li>@(':renames') allows you to specify function names that differ from the
+ones described by the @(':fnname-template').  The argument is a list of pairs
+@('(type function-name)').</li>
+
+<li>@(':fixequivs') -- true by default, says whether to prove
+congruence (deffixequiv) theorems about the generated functions.</li>
+
+<li>@(':reversep') -- false by default, says whether to reverse the order in
+which fields are processed.</li>
+
+<li>@(':wrapper') -- @(':body') by default; gives a form in which to wrap the
+generated body of each function, where @(':body') is replaced by that generated
+body.  Advanced use.</li>
+
+</ul>
+
+<p>See also @('defvisitor'), @('defvisitors'), and @('defvisitor-multi').</p>")
+
+(defxdoc defvisitor
+  :parents (defvisitors)
+  :short "Generate visitor functions for one type or one mutually-recursive clique of types."
+  :long "<p>Defvisitor first requires that you have a visitor template defined
+using @(see defvisitor-template).  The defvisitor form then instantiates that
+template to create a visitor function for a type, or for each type in a
+mutually-recursive clique of types.  See also @(see defvisitors), which
+generates several defvisitor forms in order to traverse several types, and
+@(see defvisitor-multi), which combines defvisitor and defvisitors forms into a
+mutual recursion.</p>
+
+<p>For example, the following visitor template was described in @(see
+defvisitor-template):</p>
+
+@({
+ (defvisitor-template collect-strings ((x :object))
+   :returns (names (:join (append names1 names)
+                    :tmp-var names1
+                    :initial nil)
+                   string-listp)
+   :type-fns ((string list))
+   :fnname-template collect-strings-in-<type>)
+})
+
+<p>If we have a type defined as follows:</p>
+@({
+ (deftagsum simple-tree
+   ;; Some simple kind of structure
+   (:leaf ((name  stringp)
+           (value natp)
+           (cost  integerp)))
+   (:branch ((left   simple-tree)
+             (right  simple-tree)
+             (hint   booleanp)
+             (family stringp)
+             (size   natp))))
+ })
+<p>then to create a visitor for the simple-tree type, we can do:</p>
+
+@({
+ (defvisitor collect-strings-in-simple-tree-definition
+             ;; optional event name, for tags etc
+
+   ;; type or mutually-recursive clique of types to visit
+   :type simple-tree
+
+   ;; template to instantiate
+   :template collect-strings)
+ })
+
+<p>This creates (essentially) the following function definition:</p>
+
+@({
+  (define collect-strings-in-simple-tree ((x simple-tree-p))
+    :returns (names string-listp)
+    :measure (simple-tree-count x)
+    (simple-tree-case x
+      :leaf   (b* ((names (list x.name)))
+                 names)
+      :branch (b* ((names (collect-strings-in-simple-tree x.left))
+                   (names1 (collect-strings-in-simple-tree x.right))
+                   (names (append names1 names))
+                   (names1 (list x.family))
+                   (names (append names1 names)))
+                 names)))
+ })
+
+<p>Additionally, defvisitor modifies the collect-strings template so that
+future instantiations of the template will, by default, use
+@('collect-strings-in-simple-tree') when visiting a simple-tree object.  (The
+pair @('(simple-tree collect-strings-in-simple-tree)') is added to the
+@(':type-fns') of the template; see @(see defvisitor-template).)</p>
+
+
+<p>If we instead have a mutually-recursive clique of types, like the following:</p>
+
+@({
+ (deftypes mrec-tree
+   (deftagsum mrec-tree-node
+      (:leaf ((name stringp)
+              (value natp)
+              (cost integerp)))
+      (:branch ((children mrec-treelist)
+                (family stringp)
+                (size natp))))
+   (deflist mrec-treelist :elt-type mrec-tree-node))
+ })
+
+<p>then we can create a mutual recursion of visitors for these types as follows:</p>
+
+@({
+ (defvisitor collect-mrec-tree-strings
+    :type mrec-tree   ;; the deftypes form name, not one of the type names
+    :template collect-strings)
+ })
+
+<p>This creates a definition like this:</p>
+
+@({
+  (defines collect-strings-in-mrec-tree
+    (define collect-strings-in-mrec-tree-node ((x mrec-tree-node-p))
+       :returns (names string-listp)
+       :measure (mrec-tree-node-count x)
+       (mrec-tree-node-case x
+         :leaf ...    ;; similar to the simple-tree above
+         :branch ...))
+    (define collect-strings-in-mrec-treelist ((x mrec-treelist-p))
+       :returns (names string-listp)
+       :measure (mrec-treelist-count x)
+       (if (atom x)
+           nil
+         (b* ((names (collect-strings-in-mrec-tree-node (car x)))
+              (names1 (collect-strings-in-mrec-treelist (cdr x)))
+              (names (append names1 names)))
+           names))))
+ })
+
+<p>The general form of defvisitor is:</p>
+
+@({
+ (defvisitor [ event-name ]
+    :type type-name
+    :template template-name
+    other-keyword-args
+    mrec-defines
+    ///
+    post-events)
+ })
+
+<p>One or more additional define forms may be nested inside a defvisitor form;
+this means they will be added to the mutual-recursion with the generated
+visitor functions.  This can be used to specialize the visitor's behavior on
+some field so that when visiting that field the function is called, which then
+calls other visitor functions from the clique.</p>
+
+<p>The available keyword arguments (other than @(':type') and @(':template'))
+are as follows:</p>
+
+<ul>
+
+<li>@(':type-fns'), @(':field-fns'), @(':prod-fns') -- these add additional
+entries to the corresponding arguments of the template; see @(see
+defvisitor-template).  When the defvisitor event finishes, these entries are
+left in the updated template.</li>
+
+<li>@(':fnname-template'), @(':renames') -- these override the corresponding
+arguments of the template, but only for the current defvisitor; i.e., they are
+not stored in the updated template.</li>
+
+<li>@(':omit-types'), @(':include-types') -- when defining visitors for a
+mutually-recursive clique of types, @(':omit-types') may be used to skip
+creation of a visitor for some of the types, or @(':include-types') may be used
+to only create visitors for the listed types.</li>
+
+<li>@(':measure') -- Template for generating the measure for the functions;
+defaults to @(':count').  In the template, @(':count') is replaced by the count
+function for each type visited, and @(':order') is replaced by the current
+order value (see below).  E.g., @('(two-nats-measure :count 0)') is often a
+useful measure template, and @('(two-nats-measure :order :count)') is sometimes
+useful inside @(see defvisitor-multi).</li>
+
+<li>@(':defines-args'), @('define-args') -- Extra keyword arguments provided to
+@('defines') or @(':define') respectively; @('defines-args') is only applicable
+when there is a mutual recursion.</li>
+
+<li>@(':order') specifies the order value for this clique, which is useful when
+combining multiple defvisitor cliques into a single mutual recursion with @(see
+defvisitor-multi).</li>
+</ul>")
+
+
+(defxdoc defvisitors
+  :parents (fty)
+  :short "Generate visitor functions across types using a visitor template."
+  :long "<p>To use defvisitors, first see @(see defvisitor-template) and @(see
+defvisitor).  Defvisitors automates the generation of several defvisitor forms
+that create a system of visitor functions that works on a nest of types.</p>
+
+<p>For example, suppose we have the following types:</p>
+
+@({
+  (defprod employee
+     ((name stringp)
+      (salary natp)
+      (title stringp)))
+
+  (deflist employees :elt-type employee)
+
+  (defprod group
+    ((lead employee)
+     (members employees)
+     (budget natp)
+     (name stringp)
+     (responsibilities string-listp)))
+
+  (defprod division
+    ((head employee)
+     (operations  group)
+     (engineering group)
+     (sales       group)
+     (service     group)
+     (black-ops   group)))
+ })
+
+<p>Suppose we want to total up the salaries of all the employees in a division,
+including the division head, group leads, and group members.  A visitor
+template for this operation might look like this:</p>
+
+@({
+  (defvisitor-template salary-total ((x :object))
+    :returns (total (:join (+ total1 total)
+                     :tmp-var total1
+                     :initial 0)
+                    natp :rule-classes :type-prescription
+                    \"The total salary of all employees\")
+    :type-fns ((employee employee->salary)))
+ })
+
+<p>Now we need visitor functions for the employees, group, and division types, so we can do:</p>
+
+@({
+  (defvisitor :type employees :template salary-total)
+  (defvisitor :type group     :template salary-total)
+  (defvisitor :type division  :template salary-total)
+ })
+
+<p>However, we can automate this more by using defvisitors instead of
+defvisitor.  This doesn't seem worthwhile to get rid of just three defvisitor
+forms, but oftentimes the type hierarchy is much more specialized than this,
+and changes frequently.  Using defvisitors can prevent the need to modify the
+code if you add a type to the hierarchy.  To invoke it:</p>
+
+@({
+ (defvisitors division-salary-total ;; optional event name
+   :types (division)
+   :template salary-total)
+ })
+
+<p>This searches over the field types of the @('division') type and creates a
+graph of the types that need to be visited, then arranges them in dependency
+order and creates the necessary defvisitor forms.</p>
+
+<p>The options for @('defvisitors') are somewhat more limited than for
+@('defvisitor').  The available keyword arguments are as follows:</p>
+
+<ul>
+
+<li>@(':template') -- the name of the visitor template to instantiate.</li>
+
+<li>@(':types'), @(':dep-types') -- controls the top-level types to visit.
+Those listed in @('dep-types') are not themselves visited, but their children
+are.  Note that these are type names, NOT deftypes names as in @(see
+defvisitor).  (For a single type, the type name and deftypes name is likely the
+same, but for a mutually-recursive clique of types, the deftypes name refers to
+the whole clique.)</li>
+
+<li>@(':measure') -- measure form to use for each @('defvisitor') form; this is
+mostly only useful in the context of a @('defvisitor-multi') form.</li>
+
+<li>@(':order-base') -- starting index from which the order indices assigned to
+the deftypes forms are generated; also mostly only useful in the context of a
+@('defvisitor-multi') form.  Defvisitors assigns a different order index to
+each defvisitor form it submits, with earlier forms having lower indices.  When
+the measure is properly formulated in terms of the order, this allows them to
+be used together in a mutual recursion.</li>
+
+<li>@(':debug') -- print some information about the graph traversals.</li>
+
+</ul>")
+
+(defxdoc defvisitor-multi
+  :parents (defvisitors)
+  :short "Put defvisitor, defvisitors, and define forms togeher into a single mutual recursion."
+  :long "<p>In a few cases it is useful to have visitors for several types (or
+perhaps several different kinds of visitors) together in a mutual recursion.
+Here is an example showing how this can work.</p>
+
+@({
+  ;; We have sum of product terms.  Each literal in the sum of products is
+  ;; either a constant or a variable, which refers to another sum of products
+  ;; term via a lookup table.
+  (deftagsum literal
+    (:constant ((value natp)))
+    (:variable ((name symbolp))))
+
+  (defprod product
+    ((first  literal-p)
+     (second literal-p)
+     (third  literal-p)))
+
+  (defprod sum
+    ((left  product-p)
+     (right product-p)))
+
+  ;; Lookup table mapping each variable to a sum-of-products.
+  (defalist sop-env :key-type symbolp :val-type sum-p)
+
+  ;; Suppose we have a lookup table and we want to collect all the dependencies
+  ;; of some expression -- i.e., when we get to a variable we want to collect
+  ;; it, then look up its formula and collect its dependencies too.  If the
+  ;; table doesn't have some strict dependency order, then we might not
+  ;; terminate, so we'll use a recursion limit.
+
+  (defvisitor-template collect-deps ((x :object)
+                                     (env sop-env-p)
+                                     (rec-limit natp))
+    :returns (deps (:join (append deps1 deps)
+                    :tmp-var deps1 :initial nil)
+                    symbol-listp)
+
+    ;; We'll call the function to apply to variable names
+    ;; collect-and-recur-on-var.  Note that this hasn't been defined yet -- it
+    ;; needs to be mutually recursive with the other functions in the clique.
+    :prod-fns ((variable (name collect-and-recur-on-var)))
+
+    :fnname-template <type>-collect-deps)
+
+  ;; A defvisitor-multi form binds together some defvisitor and defvisitors
+  ;; forms into a mutual recursion with some other functions.  Here, we'll just have
+  ;; the one defvisitors form inside.
+  (defvisitor-multi sum-collect-deps
+
+     (defvisitors :template collect-deps :types (sum)
+       ;; Normally this defvisitors form would create a visitor for a literal,
+       ;; then product, then sum.  Inside a defvisitor-multi, it instead puts
+       ;; all of those definitions into one mutual recursion.
+
+       ;; We have to do something special with the measure.  Defvisitors
+       ;; assigns an order to each of the types so that calling from one
+       ;; visitor to another can generally reduce the measure.  Therefore, we
+       ;; only need to decrease the rec-limit when calling from a lower-level
+       ;; type to a higher-level one -- e.g. when we reach a variable and will
+       ;; recur on a sum.
+       :measure (two-nats-measure rec-limit :order)
+
+       ;; Since our lowest-level visitor (literal-collect-deps) is going to
+       ;; call an intermediate function (collect-and-recur-on-var) which then
+       ;; calls our highest-level visitor (sum-collect-deps), it's convenient
+       ;; to set the order of the lowest-level to 1 so that
+       ;; collect-and-recur-on-var can use 0 as the order in its measure.
+       :order-base 1)
+
+     ;; This function goes in the mutual recursion with the others.
+     (define collect-and-recur-on-var ((x symbolp)
+                                       (env sop-env-p)
+                                       (rec-limit natp))
+        :returns (deps symbol-listp)
+        :measure (two-nats-measure rec-limit 0)
+        (b* ((x (mbe :logic (symbol-fix x) :exec x))
+             (lookup (hons-get x (sop-env-fix env)))
+             ((unless lookup) (list x))
+             ((when (zp rec-limit))
+              (cw \"Recursion limit ran out on ~x0~%\" x)
+              (list x)))
+          (cons x (sum-collect-deps (cdr lookup) env (- rec-limit 1))))))
+
+})
+
+<p>A @('defvisitor-multi') form's syntax is as follows:</p>
+@({
+  (defvisitor-multi event-name
+     defvisitor-defvisitors-define-forms
+     keyword-args
+     ///
+     post-events)
+ })
+
+<p>The only keyword arguments currently accepted are @(':defines-args') and
+@(':fixequivs'), which are described in @(see defvisitor).  All the usual
+arguments to defvisitor and defvisitors are accepted, except for these two.  An
+additional difference from non-nested forms is that the nested defvisitor and
+defvisitors forms may not have an event name as the first argument.</p>")
 
 
 #||

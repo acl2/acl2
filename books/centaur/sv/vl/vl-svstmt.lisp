@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "expr")
+(include-book "centaur/vl/mlib/writer" :dir :system) ;; bozo?
 (include-book "svstmt-compile")
 ;; (include-book "vl-fns-called")
 ;; (include-book "vl-paramrefs")
@@ -420,7 +421,11 @@ because... (BOZO)</p>
                          :args (list lhs err))
                   nil nil))
 
-             ((list dynselect-final) (sv::svexlist-rewrite-top (list dynselect-trunc)))
+             ((list dynselect-final)
+              (time$ (sv::svexlist-rewrite-top (list dynselect-trunc))
+                     :mintime 1/2
+                     :msg "vl-procedural-assign->svstmts: rewriting dynamic select ~s0: ~st sec, ~sa bytes~%"
+                     :args (list (vl-pps-expr lhs))))
 
              ((mv err dyn-rhs)
               (sv::svex-resolve-single-assignment
@@ -554,6 +559,7 @@ because... (BOZO)</p>
 
 
 
+
 (define vl-assignstmt->svstmts ((lhs vl-expr-p)
                                 (rhs vl-expr-p)
                                 (blockingp booleanp)
@@ -578,13 +584,18 @@ because... (BOZO)</p>
                 nil))
            ((vl-operandinfo opinfo))
            ((wmv warnings rhssvex)
-            (vl-expr-to-svex-datatyped rhs opinfo.type conf))
+            (vl-expr-to-svex-datatyped rhs lhs opinfo.type conf))
            ((wmv ok warnings svstmts ?shift)
             (vl-procedural-assign->svstmts lhs rhssvex blockingp conf)))
         (mv ok warnings svstmts))
       :vl-concat
-      (b* (((wmv warnings rhssvex ?rhssize)
-            (vl-expr-to-svex-selfdet rhs nil conf))
+      ;; BOZO we don't currently get truncation warnings for this, maybe think
+      ;; about whether we can fix it.
+      (b* (((mv & & lhssize)
+            ;; BOZO really want to discard warnings?
+            (vl-expr-to-svex-selfdet lhs nil conf))
+           ((wmv warnings rhssvex ?rhssize)
+            (vl-expr-to-svex-selfdet rhs lhssize conf))
            ((wmv ok warnings svstmts ?shift)
             (vl-procedural-assign->svstmts
              lhs rhssvex blockingp conf)))
@@ -772,7 +783,8 @@ because... (BOZO)</p>
                       :cond cond
                       :body (append-without-guard body stepstmts))))))
         :vl-blockstmt
-        (b* (((unless (or x.sequentialp (<= (len x.stmts) 1)))
+        (b* (((unless (or (vl-blocktype-equiv x.blocktype :vl-beginend)
+                          (<= (len x.stmts) 1)))
               (fail (warn :type :vl-stmt->svstmts-fail
                           :msg "We don't support fork/join block statements: ~a0."
                           :args (list x))))
@@ -872,6 +884,9 @@ because... (BOZO)</p>
                                           (override vl-expr-p)
                                           (conf vl-svexconf-p
                                                 "for expr"))
+  ;; BOZO this is really subtle/tricky code and we should probably explain what
+  ;; we're trying to do here and what the SystemVerilog rules are at a high
+  ;; level.
   :guard (vl-paramtype-case x :vl-implicitvalueparam)
   :returns (mv (warnings vl-warninglist-p)
                (err (iff (vl-msg-p err) err))
@@ -923,6 +938,8 @@ because... (BOZO)</p>
                            default-car default-cdr not)))
 
 
+(defconst *vl-svstmt-compile-reclimit* 100000)
+
 (define vl-fundecl-to-svex  ((x vl-fundecl-p)
                              (conf vl-svexconf-p
                                  "Svexconf for inside the function decl")
@@ -937,9 +954,12 @@ because... (BOZO)</p>
        ((wmv ok warnings svstmts) (vl-stmt->svstmts x.body conf nil))
        ((unless ok) (mv warnings (svex-x)))
        ((wmv ok warnings svstate)
-        (sv::svstmtlist-compile svstmts (sv::make-svstate) 100000
-                                  nil ;; nb-delayp
-                                  ))
+        (time$ (sv::svstmtlist-compile svstmts (sv::make-svstate) *vl-svstmt-compile-reclimit*
+                                       nil ;; nb-delayp
+                                       )
+               :mintime 1/2
+               :msg "; vl-fundecl-to-svex: compiling ~s0: ~st sec, ~sa bytes"
+               :args (list x.name)))
        ((unless ok) (mv warnings (svex-x)))
        ((sv::svstate svstate))
        (expr (sv::svex-lookup (sv::make-svar :name x.name) svstate.blkst))
@@ -1644,7 +1664,10 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        ((unless ok) (mv warnings nil))
        ;; Only use the nonblocking-delay strategy for flops, not latches
        ((wmv ok warnings st)
-        (sv::svstmtlist-compile svstmts (sv::make-svstate) 100000 nil))
+        (time$ (sv::svstmtlist-compile svstmts (sv::make-svstate) *vl-svstmt-compile-reclimit* nil)
+               :mintime 1/2
+               :msg "; vl-always->svex: compiling statement at ~s0: ~st sec, ~sa bytes~%"
+               :args (list (vl-location-string x.loc))))
        ((unless ok) (mv warnings nil))
 
        ((sv::svstate st) (sv::svstate-clean st))
@@ -1743,3 +1766,49 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
         (vl-alwayslist->svex (cdr x) conf)))
     (mv warnings
         (append-without-guard assigns1 assigns2))))
+
+
+
+
+(define vl-initial-size-warnings ((x vl-initial-p)
+                                  (conf vl-svexconf-p))
+  :short "Generate any sizing warnings for an initial statement."
+  :returns (warnings vl-warninglist-p)
+  (b* (((vl-initial x) (vl-initial-fix x))
+       ;; We don't actually care about the statements, we just want to get
+       ;; things like truncation warnings.  BOZO we might even want to filter
+       ;; out warnings here if there are other kinds of restrictions that the
+       ;; statement compiler is enforcing.
+       ((mv ?ok warnings ?svstmts)
+        (vl-stmt->svstmts x.stmt conf t)))
+    warnings))
+
+(define vl-initiallist-size-warnings ((x vl-initiallist-p)
+                                      (conf vl-svexconf-p))
+  :returns (warnings vl-warninglist-p)
+  (if (atom x)
+      nil
+    (append-without-guard (vl-initial-size-warnings (car x) conf)
+                          (vl-initiallist-size-warnings (cdr x) conf))))
+
+
+(define vl-final-size-warnings ((x vl-final-p)
+                                  (conf vl-svexconf-p))
+  :short "Generate any sizing warnings for an final statement."
+  :returns (warnings vl-warninglist-p)
+  (b* (((vl-final x) (vl-final-fix x))
+       ;; We don't actually care about the statements, we just want to get
+       ;; things like truncation warnings.  BOZO we might even want to filter
+       ;; out warnings here if there are other kinds of restrictions that the
+       ;; statement compiler is enforcing.
+       ((mv ?ok warnings ?svstmts)
+        (vl-stmt->svstmts x.stmt conf t)))
+    warnings))
+
+(define vl-finallist-size-warnings ((x vl-finallist-p)
+                                      (conf vl-svexconf-p))
+  :returns (warnings vl-warninglist-p)
+  (if (atom x)
+      nil
+    (append-without-guard (vl-final-size-warnings (car x) conf)
+                          (vl-finallist-size-warnings (cdr x) conf))))

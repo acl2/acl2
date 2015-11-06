@@ -31,22 +31,23 @@
 (in-package "VL")
 (include-book "../mlib/allnames")
 (include-book "../util/namedb")
-(include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
-(defxdoc addinstnames
+(defxdoc addnames
   :parents (transforms)
-  :short "Name any unnamed gate or module instances, block statements, generates, etc."
+  :short "Name any unnamed gate or module instances, block statements,
+generates, etc."
 
   :long "<p>The names are safely generated using a @(see vl-namefactory-p) and
-will have names such as @('modinst_11') and @('gateinst_46').  We also insert generate blocks around any single base generate elements that are inside if, case, or loop generate forms.</p>")
-
+will have names such as @('modinst_11') and @('gateinst_46').  We also insert
+generate blocks around any single base generate elements that are inside if,
+case, or loop generate forms.</p>")
 
 (define maybe-add-name ((x maybe-stringp)
                         (basename stringp)
                         (namedb vl-namedb-p))
-  :prepwork ((local (Defthm stringp-of-maybe-string-fix
+  :prepwork ((local (defthm stringp-of-maybe-string-fix
                       (iff (stringp (maybe-string-fix x))
                            x)
                       :hints(("Goal" :in-theory (enable maybe-string-fix))))))

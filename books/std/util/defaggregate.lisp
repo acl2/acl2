@@ -43,8 +43,6 @@
 
 (program)
 
-(def-ruleset! tag-reasoning nil)
-
 (defxdoc defaggregate
   :parents (std/util)
   :short "Introduce a record structure, like a @('struct') in C."
@@ -933,11 +931,8 @@ would have had to call @('(student->fullname x)').  For instance:</p>
   (b* ((foo                (da-constructor-name name))
        (foo-p              (da-recognizer-name name))
        (honsed-foo         (da-honsed-constructor-name name))
-       (make-foo-fn        (da-maker-fn-name name))
        (make-foo           (da-maker-name name))
        (make-honsed-foo    (da-honsed-maker-name name))
-       (make-honsed-foo-fn (da-honsed-maker-fn-name name))
-       (change-foo-fn      (da-changer-fn-name name))
        (change-foo         (da-changer-name name))
 
        (see-foo-p           (xdoc::see foo-p))
@@ -966,11 +961,8 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 
        (def-foo                (str::cat "@(def " (xdoc::full-escape-symbol foo) ")"))
        (def-honsed-foo         (str::cat "@(def " (xdoc::full-escape-symbol honsed-foo) ")"))
-       (def-make-foo-fn        (str::cat "@(def " (xdoc::full-escape-symbol make-foo-fn) ")"))
        (def-make-foo           (str::cat "@(def " (xdoc::full-escape-symbol make-foo) ")"))
-       (def-make-honsed-foo-fn (str::cat "@(def " (xdoc::full-escape-symbol make-honsed-foo-fn) ")"))
        (def-make-honsed-foo    (str::cat "@(def " (xdoc::full-escape-symbol make-honsed-foo) ")"))
-       (def-change-foo-fn      (str::cat "@(def " (xdoc::full-escape-symbol change-foo-fn) ")"))
        (def-change-foo         (str::cat "@(def " (xdoc::full-escape-symbol change-foo) ")")))
 
     (list
@@ -1054,8 +1046,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 <p>This is an ordinary @('make-') macro introduced by @(see
                 std::defaggregate).</p>"
 
-                def-make-foo
-                def-make-foo-fn))
+                def-make-foo))
 
      `(defxdoc ,make-honsed-foo
         :parents (,foo-p)
@@ -1078,8 +1069,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 <p>This is an ordinary honsing @('make-') macro introduced by
                 @(see std::defaggregate).</p>"
 
-                def-make-honsed-foo
-                def-make-honsed-foo-fn))
+                def-make-honsed-foo))
 
      `(defxdoc ,change-foo
         :parents (,foo-p)
@@ -1099,8 +1089,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 <p>This is an ordinary @('change-') macro introduced by @(see
                 std::defaggregate).</p>"
 
-                def-change-foo
-                def-change-foo-fn)))))
+                def-change-foo)))))
 
 (defun da-autodoc (name fields honsp parents short long base-pkg state)
   (declare (xargs :guard (formallist-p fields)))
@@ -1387,15 +1376,9 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 ,@(da-make-requirements-of-recognizer name require field-names)))
 
            ,(da-make-binder name all-binder-names)
-
-           ,(da-make-changer-fn name field-names)
            ,(da-make-changer name field-names)
-
-           ,(da-make-maker-fn name field-names field-defaults)
-           ,(da-make-maker name field-names)
-
-           ,(da-make-honsed-maker-fn name field-names field-defaults)
-           ,(da-make-honsed-maker name field-names)
+           ,(da-make-maker name field-names field-defaults)
+           ,(da-make-honsed-maker name field-names field-defaults)
 
            (with-output :stack :pop
              (progn . ,other-events))

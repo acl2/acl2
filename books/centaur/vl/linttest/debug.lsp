@@ -36,12 +36,23 @@
 (break-on-error t)
 (ld "centaur/jared-customization.lsp" :dir :system)
 
+(define vl-pps-exprlist ((x vl-exprlist-p))
+  (if (atom x)
+      nil
+    (cons (vl-pps-expr (Car x))
+          (vl-pps-exprlist (cdr x)))))
+
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./trunc/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./bits/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
   (vl-lint-report lintresult state))
+
+(trace$ vl-tweak-fussy-warning-type)
+(trace$ nats-below-p)
+(trace$ vl-collect-unsized-ints)
+(trace$ vl-expr-interesting-size-atoms)
 
 (defconsts (*loadres* state)
   (b* (((vl-lintconfig config) *lintconfig*)
@@ -54,11 +65,103 @@
                     :include-dirs  config.include-dirs)))
     (vl-load loadconfig)))
 
-(defconsts *lintres*
-  (run-vl-lint-main (vl-loadresult->design *loadres*)
-                    *lintconfig*))
+;;  wire [3:0] andc_minor1 = xx0 & (cond ? xx1 : 0);  // Minor because it fits
+;;
+;; Should have:
+;;  OK: andc_minor1: found minor fussy warning: VL-FUSSY-SIZE-WARNING-2-MINOR
+;;
+;; Actually have::
 
-(vl-lint-report-wrap *lintres* state)
+;; check.rb:104:in `minor': FAIL: andc_minor1: unexpected major fussy warning: (RuntimeError)
+;;      VL-FUSSY-SIZE-WARNING-2 -- Assignment to andc_minor1: arguments to a bitwise & operator have different "self-
+;;      sizes".  The smaller argument will be implicitly widened to match the larger
+;;      argument. Arguments:
+;;      - lhs (width 4): xx0
+;;      - rhs (width 32): cond ? xx1 : 0
+;; 	from check.rb:139:in `<main>'
+
+
+(trace$ (vl-binaryop-selfsize :entry (list 'vl-binaryop-selfsize (vl-pps-expr x) left-size right-size)))
+(trace$ (vl-expr-selfsize :entry (list 'vl-expr-selfsize (vl-pps-expr x))
+                          :exit (list 'vl-expr-selfsize
+                                      (vl-warnings-to-string (car acl2::values))
+                                      (second acl2::values))))
+
+
+(trace$ (vl-maybe-warn-about-implicit-truncation
+         :entry (list 'vl-maybe-warn-about-implicit-truncation
+                      :lhs (and lvalue (vl-pps-expr lvalue))
+                      :lw lw
+                      :rhs (vl-pps-expr expr)
+                      :ew ew)
+         :exit (list 'vl-maybe-warn-about-implicit-truncation
+                     (vl-warnings-to-string (first acl2::values)))))
+
+(trace$ (vl-maybe-warn-about-implicit-extension
+         :entry (list 'vl-maybe-warn-about-implicit-extension
+                      :lhs-size lhs-size
+                      :x-selfsize x-selfsize
+                      :x (vl-pps-expr x))
+         :exit (list 'vl-maybe-warn-about-implicit-extension
+                     (vl-warnings-to-string (first acl2::values)))))
+
+(trace$ (vl-assignstmt->svstmts
+         :entry (list 'vl-assignstmt->svstmts
+                      :lhs (vl-pps-expr lhs)
+                      :rhs (vl-pps-expr rhs)
+                      :blockingp blockingp)
+         :exit (b* (((list ok warnings res) acl2::values))
+                 (list 'vl-assignstmt->svstmts
+                       :ok ok
+                       :warnings (vl-warnings-to-string warnings)
+                       :res res))))
+
+(trace$ (vl-procedural-assign->svstmts
+         :entry (list 'vl-procedural-assign->svstmts
+                      :lhs (vl-pps-expr lhs)
+                      :rhs rhssvex
+                      :blockingp blockingp)
+         :exit (b* (((list ok warnings svstmts shift) acl2::values))
+                 (list 'vl-procedural-assign->svstmts
+                       :ok ok
+                       :warnings (vl-warnings-to-string warnings)
+                       :svstmts svstmts
+                       :shift shift))))
+
+
+(trace$ (vl-collect-toobig-constant-atoms
+         :entry (list 'vl-collect-toobig-constant-atoms
+                      :width width
+                      :exprs (vl-pps-exprlist x))
+         :exit (list 'vl-collect-toobig-constant-atoms
+                     :toobig (vl-pps-exprlist (car acl2::values)))))
+
+(trace$ (vl-expr-interesting-size-atoms
+         :entry (list 'vl-expr-interesting-size-atoms (vl-pps-expr x))
+         :exit (list 'vl-expr-interesting-size-atoms (vl-pps-exprlist (car acl2::values)))))
+
+(trace$ (vl-unsized-atom-p
+         :entry (list 'vl-unsized-atom-p (vl-pps-expr x))))
+
+(trace$ (vl-some-unsized-atom-p
+         :entry (list 'vl-some-unsized-atom-p (vl-pps-exprlist x))))
+
+(trace$ (vl-follow-scopeexpr-fn
+         :entry (list 'vl-follow-scopeexpr
+                      (with-local-ps (vl-pp-scopeexpr x)))
+         :exit (b* (((list err trace ?context tail) acl2::values))
+                 (list 'vl-follow-scopeexpr
+                       :err err
+                       :item (vl-hidstep->item (car trace))
+                       :tail (with-local-ps (vl-pp-hidexpr tail))))))
+
+(defconsts (*lintres* state)
+  (b* ((res (run-vl-lint-main (vl-loadresult->design *loadres*)
+                              *lintconfig*))
+       (state (vl-lint-report-wrap res state)))
+    (mv res state)))
+
+(trace$ duplicated-members)
 
 
 
@@ -297,173 +400,3 @@
 
 
 
-
-
-
-((:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                . :VL-WIRE)
-               NIL NIL)
-  (NIL NIL)
-  (NIL)
-  NIL
-  :VL-LOCATION "./lucid1/temp.v" 5 . 2)
- (:VL-MODULE ((("mh1" NIL)
-               NIL NIL
-               (:VL-VARDECL (("w1_spurious" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                              . :VL-WIRE)
-                             NIL NIL)
-                (NIL NIL)
-                (NIL)
-                NIL
-                :VL-LOCATION "./lucid1/temp.v" 4 . 2)
-               (:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                              . :VL-WIRE)
-                             NIL NIL)
-                (NIL NIL)
-                (NIL)
-                NIL
-                :VL-LOCATION "./lucid1/temp.v" 5 . 2)
-               (:VL-VARDECL (("w1_unused" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                              . :VL-WIRE)
-                             NIL NIL)
-                (NIL NIL)
-                (NIL)
-                NIL
-                :VL-LOCATION "./lucid1/temp.v" 6 . 2)
-               (:VL-VARDECL (("w1_unset" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                              . :VL-WIRE)
-                             NIL NIL)
-                (NIL NIL)
-                (NIL)
-                NIL
-                :VL-LOCATION "./lucid1/temp.v" 7 . 2))
-              (NIL NIL)
-              NIL NIL)
-  ((NIL NIL)
-   NIL NIL
-   :VL-LOCATION "./lucid1/temp.v" 1 . 0)
-  ((:VL-LOCATION "./lucid1/temp.v" 9 . 0)
-   "mh1")
-  (((:VL-LOCATION "./lucid1/temp.v" 3 . 0)
-    .
-    "// These will get set hierarchically in mh2.
-"))
-  NIL)
- :GLOBAL :VL-DESIGN
- ((("VL Syntax 2015-01-12"
-    (:VL-MODULE ((("mh1" NIL)
-                  NIL NIL
-                  (:VL-VARDECL (("w1_spurious" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                                 . :VL-WIRE)
-                                NIL NIL)
-                   (NIL NIL)
-                   (NIL)
-                   NIL
-                   :VL-LOCATION "./lucid1/temp.v" 4 . 2)
-                  (:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                                 . :VL-WIRE)
-                                NIL NIL)
-                   (NIL NIL)
-                   (NIL)
-                   NIL
-                   :VL-LOCATION "./lucid1/temp.v" 5 . 2)
-                  (:VL-VARDECL (("w1_unused" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                                 . :VL-WIRE)
-                                NIL NIL)
-                   (NIL NIL)
-                   (NIL)
-                   NIL
-                   :VL-LOCATION "./lucid1/temp.v" 6 . 2)
-                  (:VL-VARDECL (("w1_unset" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                                 . :VL-WIRE)
-                                NIL NIL)
-                   (NIL NIL)
-                   (NIL)
-                   NIL
-                   :VL-LOCATION "./lucid1/temp.v" 7 . 2))
-                 (NIL NIL)
-                 NIL NIL)
-     ((NIL NIL)
-      NIL NIL
-      :VL-LOCATION "./lucid1/temp.v" 1 . 0)
-     ((:VL-LOCATION "./lucid1/temp.v" 9 . 0)
-      "mh1")
-     (((:VL-LOCATION "./lucid1/temp.v" 3 . 0)
-       .
-       "// These will get set hierarchically in mh2.
-"))
-     NIL)
-    (:VL-MODULE
-     ((("mh2" NIL) NIL NIL)
-      (NIL NIL)
-      ((:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_normal")
-                       NIL))
-                     NIL)
-                    (:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_unset") NIL))
-                     NIL))
-        NIL NIL
-        :VL-LOCATION "./lucid1/temp.v" 16 . 2)
-       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_normal")
-                       NIL))
-                     NIL)
-                    (:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_unset") NIL))
-                     NIL))
-        NIL NIL
-        :VL-LOCATION "./lucid1/temp.v" 17 . 2)
-       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_unused")
-                       NIL))
-                     NIL)
-                    (:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_normal")
-                       NIL))
-                     NIL))
-        NIL NIL
-        :VL-LOCATION "./lucid1/temp.v" 19 . 2)
-       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_unused")
-                       NIL))
-                     NIL)
-                    (:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_normal")
-                       NIL))
-                     NIL))
-        NIL NIL
-        :VL-LOCATION "./lucid1/temp.v" 20 . 2))
-      NIL
-      (:VL-MODINST (("inst1" . "mh1")
-                    NIL
-                    :VL-PARAMARGS-PLAIN NIL)
-       ((:VL-ARGUMENTS-PLAIN NIL))
-       NIL NIL
-       :VL-LOCATION "./lucid1/temp.v" 13 . 6)
-      (:VL-MODINST (("inst2" . "mh1")
-                    NIL
-                    :VL-PARAMARGS-PLAIN NIL)
-       ((:VL-ARGUMENTS-PLAIN NIL))
-       NIL NIL
-       :VL-LOCATION "./lucid1/temp.v" 14 . 6))
-     ((NIL NIL)
-      NIL NIL
-      :VL-LOCATION "./lucid1/temp.v" 11 . 0)
-     ((:VL-LOCATION "./lucid1/temp.v" 22 . 0)
-      "mh2")
-     NIL NIL))
-   NIL)
-  (NIL)
-  NIL)
- ((NIL) NIL)
- (NIL)
- NIL)

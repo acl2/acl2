@@ -541,7 +541,14 @@ name, it may or may not include the package portion of @('name').</li>
 </ul>
 
 <p>You can use these to write your own @('<see>') tags.  You should probably
-<i>never</i> write a @('<see>') tag yourself without using @('@(url ...)').</p>
+<i>never</i> write a @('<see>') tag yourself without using @('@(url ...)').
+Some examples:</p>
+
+<ul>
+<li>@('@(url defxdoc)') expands to @(url defxdoc)</li>
+<li>@('@(sym defxdoc)') expands to @(sym defxdoc)</li>
+<li>@('@(csym defxdoc)') expands to @(csym defxdoc)</li>
+</ul>
 
 <h3>Escaping of @</h3>
 

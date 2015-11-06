@@ -627,30 +627,13 @@ instance:</p>
                   (force (not (vl-atom-p x))))
              (vl-hidexpr-p (second (vl-nonatom->args x)))))
 
-  (local (defthm vl-id-p-of-vl-atomguts-fix
-           (equal (vl-id-p (vl-atomguts-fix x))
-                  (vl-id-p x))
-           :hints(("Goal" :in-theory (e/d (vl-atomguts-fix
-                                           vl-atomguts-p)
-                                          (tag-when-vl-constint-p))
-                   :use ((:instance tag-when-vl-constint-p
-                          (x (vl-constint-fix x))))))))
-
-  (local (defthm vl-hidpiece-p-of-vl-atomguts-fix
-           (equal (vl-hidpiece-p (vl-atomguts-fix x))
-                  (vl-hidpiece-p x))
-           :hints(("Goal" :in-theory (e/d (vl-atomguts-fix
-                                           vl-atomguts-p)
-                                          (tag-when-vl-constint-p))
-                   :use ((:instance tag-when-vl-constint-p
-                          (x (vl-constint-fix x))))))))
-
   (defthm vl-hidexpr-p-of-vl-atom
     (equal (vl-hidexpr-p (make-vl-atom :guts guts
                                        :finalwidth finalwidth
                                        :finaltype finaltype))
-           (or (vl-hidpiece-p guts)
-               (vl-id-p guts)))
+           (let ((guts (vl-atomguts-fix guts)))
+             (or (vl-hidpiece-p guts)
+                 (vl-id-p guts))))
     :hints(("goal" :in-theory (enable vl-hidname-p))))
 
   (defthm vl-hidexpr-p-of-vl-nonatom-dot

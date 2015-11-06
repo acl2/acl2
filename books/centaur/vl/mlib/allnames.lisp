@@ -29,14 +29,11 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
-
 (in-package "VL")
-
 (include-book "scopestack")
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
-
 
 (fty::defalist nameset :key-type stringp)
 
@@ -70,6 +67,12 @@
                         nameset-p)
   :fnname-template <type>-allnames
   :prod-fns
+  ;; BOZO.  Should we be also collecting names from other places?  It might be
+  ;; safer to gether up all names from all expressions, arguments, named
+  ;; parameter actuals, etc.
+
+  ;; BOZO especially what about block names, and also new names for properties,
+  ;; sequences, etc...
   ((vl-interfaceport (name nameset-add))
    (vl-regularport   (name maybe-nameset-add))
    (vl-portdecl      (name nameset-add))
@@ -91,7 +94,8 @@
    (vl-config        (name nameset-add))
    (vl-package       (name nameset-add))
    (vl-interface     (name nameset-add))
-   (vl-program       (name nameset-add))))
+   (vl-program       (name nameset-add))
+   ))
 
 (fty::defvisitors vl-design-allnames
   :template allnames

@@ -384,9 +384,7 @@ bounds."
    (let ((name 'vl-echar)
          (fields '(char loc)))
      `(progn
-        ,(std::da-make-maker-fn name fields nil)
-        ,(std::da-make-maker name fields)
-        ,(std::da-make-changer-fn name fields)
+        ,(std::da-make-maker name fields nil)
         ,(std::da-make-changer name fields)
         ,(std::da-make-binder name fields))))
 

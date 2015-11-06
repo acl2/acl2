@@ -838,7 +838,7 @@ displays.  The module browser's web pages are responsible for defining the
                      (if test-parens (vl-print ")") ps)
                      (vl-print " ? ")
                      (if unspecial-atts (vl-ps-seq (vl-pp-atts unspecial-atts) (vl-print " ")) ps)
-                     (vl-println "")
+                     (vl-println? "")
                      (if then-parens (vl-print "(") ps)
                      (vl-pp-expr x.then)
                      (if then-parens (vl-print ")") ps)
@@ -2573,15 +2573,23 @@ expression into a string."
                  (vl-pp-propcaseitemlist (cdr x))))))
 
 (define vl-pp-propspec ((x vl-propspec-p) &key (ps 'ps))
-  (b* (((vl-propspec x)))
+  (b* (((vl-propspec x))
+       (col (vl-ps->col)))
     (vl-ps-seq (if (consp x.evatoms)
                    (vl-ps-seq (vl-print "@(")
                               (vl-pp-evatomlist x.evatoms)
-                              (vl-print ") "))
+                              (vl-println ")")
+                              (if x.disable
+                                  (vl-indent col)
+                                ps))
                  ps)
                (if x.disable
                    (vl-ps-seq (vl-ps-span "vl_key" (vl-print "disable iff "))
-                              (vl-pp-exprdist x.disable))
+                              (vl-pp-exprdist x.disable)
+                              (vl-println ""))
+                 ps)
+               (if (or x.evatoms x.disable)
+                   (vl-indent (+ (vl-ps->autowrap-ind) 2))
                  ps)
                (vl-pp-propexpr x.prop))))
 
@@ -2665,7 +2673,7 @@ expression into a string."
     (:vl-cover          "cover")
     (:vl-expect         "expect")
     (:vl-restrict       "restrict")
-    (otherwise    (or (impossible) ""))))
+    (otherwise          (or (impossible) ""))))
 
 (define vl-assertdeferral-string ((x vl-assertdeferral-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -2674,7 +2682,27 @@ expression into a string."
     ('nil               "")
     (:vl-defer-0        "#0")
     (:vl-defer-final    "final")
-    (otherwise    (or (impossible) ""))))
+    (otherwise          (or (impossible) ""))))
+
+(define vl-blocktype-startstring ((x vl-blocktype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-blocktype-p)))
+  (case (vl-blocktype-fix x)
+    (:vl-beginend     "begin")
+    (:vl-forkjoin     "fork")
+    (:vl-forkjoinany  "fork")
+    (:vl-forkjoinnone "fork")
+    (otherwise        (or (impossible) ""))))
+
+(define vl-blocktype-endstring ((x vl-blocktype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-blocktype-p)))
+  (case (vl-blocktype-fix x)
+    (:vl-beginend     "end")
+    (:vl-forkjoin     "join")
+    (:vl-forkjoinany  "join_any")
+    (:vl-forkjoinnone "join_none")
+    (otherwise        (or (impossible) ""))))
 
 (define vl-pp-forloop-assigns ((x vl-stmtlist-p) &key (ps 'ps))
   (b* (((when (atom x)) ps)
@@ -2802,7 +2830,7 @@ expression into a string."
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
                  (vl-ps-span "vl_key"
-                             (vl-print (if x.sequentialp "begin " "fork ")))
+                             (vl-print-str (vl-blocktype-startstring x.blocktype)))
                  (if (not x.name)
                      (vl-println "")
                    (vl-ps-seq
@@ -2821,7 +2849,8 @@ expression into a string."
                    (vl-pp-vardecllist-indented x.vardecls))
                  (vl-pp-stmt-indented (vl-pp-stmtlist x.stmts))
                  (vl-pp-stmt-autoindent)
-                 (vl-ps-span "vl_key" (vl-print-str (if x.sequentialp "end" "join")))
+                 (vl-ps-span "vl_key"
+                             (vl-print-str (vl-blocktype-endstring x.blocktype)))
                  (vl-println ""))
 
       :vl-forstmt
@@ -2960,7 +2989,8 @@ expression into a string."
                                           (vl-ps-span "vl_key" (vl-println " else "))
                                           (vl-println "")
                                           (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
-                 (vl-println ";"))))
+                 (vl-println ";")
+                 (vl-println ""))))
 
   (define vl-pp-cassertion ((x vl-cassertion-p) &key (include-name booleanp) (ps 'ps))
     :measure (vl-cassertion-count x)
@@ -2996,7 +3026,8 @@ expression into a string."
                                           (vl-ps-span "vl_key" (vl-println " else "))
                                           (vl-println "")
                                           (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
-                 (vl-println ";"))))
+                 (vl-println ";")
+                 (vl-println ""))))
 
   (define vl-pp-stmtlist ((x vl-stmtlist-p) &key (ps 'ps))
     :measure (vl-stmtlist-count x)
@@ -3407,7 +3438,8 @@ expression into a string."
                    ps)
                  (vl-println "")
                  (vl-pp-genelementlist x.elems)
-                 (vl-println "end"))
+                 (vl-println "end")
+                 (vl-println ""))
       :vl-genarray
       (vl-pp-genarrayblocklist x.blocks x.name)
 
@@ -3500,6 +3532,7 @@ instead of @(see ps).</p>"
                (vl-pp-typedeflist x.typedefs)
                (vl-pp-portdecllist x.portdecls)
                (vl-pp-vardecllist x.vardecls)
+               (vl-println "")
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)
                (vl-pp-assignlist x.assigns)

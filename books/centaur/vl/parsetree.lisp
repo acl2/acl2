@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-10-22")
+  "VL Syntax 2015-10-29")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -738,6 +738,8 @@ these.</p>")
 (defprod vl-propspec
   :parents (property-expressions)
   :short "A single property specification."
+  :tag :vl-propspec
+  :layout :tree
   ((evatoms vl-evatomlist-p
             "The top-level clocking events for this property specification; this
              can just be @('nil') if there is no clocking event.")
@@ -951,14 +953,16 @@ expression-sizing) for details.</p>")
   :hints(("Goal" :induct (len x))))
 
 (define vl-port->name ((x vl-port-p))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (name maybe-stringp :rule-classes :type-prescription)
   (b* ((x (vl-port-fix x)))
     (case (tag x)
       (:vl-regularport   (vl-regularport->name x))
       (:vl-interfaceport (vl-interfaceport->name x))
-      (otherwise         (impossible)))))
+      (otherwise         (progn$ (impossible) "")))))
 
 (define vl-port->loc ((x vl-port-p))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (loc vl-location-p)
   (b* ((x (vl-port-fix x)))
     (case (tag x)
@@ -968,7 +972,6 @@ expression-sizing) for details.</p>")
 
 (defprojection vl-portlist->names ((x vl-portlist-p))
   :parents (vl-portlist-p)
-  :nil-preservingp t
   (vl-port->name x)
   ///
   (defthm string-listp-of-vl-portlist->names
@@ -995,6 +998,7 @@ expression-sizing) for details.</p>")
   :returns (ifports (and (vl-portlist-p ifports)
                          (vl-interfaceportlist-p ifports)))
   :verify-guards nil
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   (mbe :logic
        (b* (((when (atom x))
              nil)
@@ -1043,6 +1047,7 @@ expression-sizing) for details.</p>")
   :returns (ifports (and (vl-portlist-p ifports)
                          (vl-regularportlist-p ifports)))
   :verify-guards nil
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   (mbe :logic
        (b* (((when (atom x))
              nil)
@@ -2018,7 +2023,7 @@ instance, or a direct interface instance (not an interface port)."
   ((instname  maybe-stringp
               :rule-classes :type-prescription
               "Either the name of this instance or @('nil') if the instance has
-               no name.  See also the @(see addinstnames) transform.")
+               no name.  See also the @(see addnames) transform.")
 
    (modname   stringp
               :rule-classes :type-prescription
@@ -2128,7 +2133,7 @@ recognized by @(call vl-gatetype-p).</p>")
                                             t
                                           nil)))))
              "The name of this gate instance, or @('nil') if it has no name;
-              see also the @(see addinstnames) transform.")
+              see also the @(see addnames) transform.")
 
    (range    vl-maybe-range-p
              "When present, indicates that this is an array of instances
@@ -2364,20 +2369,17 @@ respectively.</p>"
    vl-paramdecl
    vl-import))
 
-(defthmd vl-blockitem-possible-tags
-  (implies (vl-blockitem-p x)
-           (or (equal (tag x) :vl-vardecl)
-               (equal (tag x) :vl-paramdecl)
-               (equal (tag x) :vl-import)))
-  :rule-classes :forward-chaining)
-
+;; BOZO maybe deftranssum should prove this automatically
 (defthmd vl-blockitem-fix-possible-tags
   (or (equal (tag (vl-blockitem-fix x)) :vl-vardecl)
       (equal (tag (vl-blockitem-fix x)) :vl-paramdecl)
       (equal (tag (vl-blockitem-fix x)) :vl-import))
-  :hints (("goal" :use ((:instance vl-blockitem-possible-tags
-                         (x (vl-blockitem-fix x))))))
-  :rule-classes ((:forward-chaining :trigger-terms ((tag (vl-blockitem-fix x))))))
+  :rule-classes ((:forward-chaining :trigger-terms ((tag (vl-blockitem-fix x)))))
+  :hints (("goal"
+           :in-theory (enable tag-reasoning)
+           :cases ((vl-blockitem-p (vl-blockitem-fix x))))))
+
+(add-to-ruleset tag-reasoning '(vl-blockitem-fix-possible-tags))
 
 (defthm vl-blockitem-fix-type
   (consp (vl-blockitem-fix x))
@@ -2411,7 +2413,7 @@ respectively.</p>"
                                 (vardecls-acc vl-vardecllist-p)
                                 (paramdecls-acc vl-paramdecllist-p)
                                 (imports-acc vl-importlist-p))
-  :prepwork ((local (in-theory (enable vl-blockitem-fix-possible-tags))))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (mv (vardecls vl-vardecllist-p)
                (paramdecls vl-paramdecllist-p)
                (imports vl-importlist-p))
@@ -2507,6 +2509,15 @@ case statements.</p>")
          <li>@(':vl-defer-0') &mdash; this is a @('#0') deferred assertion.</li>
          <li>@(':vl-defer-final') &mdash; this is a @('final') deferred assertion.</li>
          </ul>")
+
+(defenum vl-blocktype-p
+  (:vl-beginend
+   :vl-forkjoin
+   :vl-forkjoinany
+   :vl-forkjoinnone)
+  :parents (vl-blockstmt)
+  :short "Indicates whether this is a @('begin/end'), @('fork/join'),
+          @('fork/join_any'), or @('fork/join_none') statement.")
 
 (deftypes statements
   :short "Representation of a statement."
@@ -2876,8 +2887,12 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :base-name vl-blockstmt
      :layout :tree
      :short "Representation of begin/end and fork/join blocks."
-     ((sequentialp booleanp :rule-classes :type-prescription)
-      (name        maybe-stringp :rule-classes :type-prescription)
+     ((blocktype   vl-blocktype-p
+                   "Kind of block statement&mdash;@('begin/end'),
+                    @('fork/join'), etc.")
+      (name        maybe-stringp :rule-classes :type-prescription
+                   "E.g., @('foo') in @('foo : begin ... end') or in
+                    @('begin : foo ... end'), if applicable.")
       (imports     vl-importlist-p)
       (paramdecls  vl-paramdecllist-p)
       (vardecls    vl-vardecllist-p)
@@ -2886,7 +2901,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
       (atts        vl-atts-p
                    "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
                     with this statement."))
-     :long "<h4>General Form:</h4>
+     :long "<h4>General Form (from Verilog-2005)</h4>
 
             @({
                  begin [ : <name> <declarations> ]
@@ -2898,16 +2913,10 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                  join
             })
 
-            <p>See Section 9.8.  The difference betwen the two kinds of blocks
+            <p>See Section 9.8.  The difference between the two kinds of blocks
             is that in a @('begin/end') block, statements are to be executed in
             order, whereas in a @('fork/join') block, statements are executed
             simultaneously.</p>
-
-            <p>Blocks that are named can have local declarations, and can be
-            referenced by other statements (e.g., disable statements).  With
-            regards to declarations: \"All variables shall be static; that is,
-            a unique location exists for all variables, and leaving or entering
-            blocks shall not affect the values stored in them.\"</p>
 
             <p>A further remark is that \"Block names give a means of uniquely
             identifying all variables at any simulation time.\" This seems to
@@ -2915,17 +2924,34 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
             module by, e.g., prepending the block name to each variable
             name.</p>
 
-            <p>Note that SystemVerilog adds labels to statements, e.g., you
-            can write</p>
+            <p>With regards to declarations: \"All variables shall be static;
+            that is, a unique location exists for all variables, and leaving or
+            entering blocks shall not affect the values stored in them.\"</p>
+
+            <h4>SystemVerilog-2012 Extensions</h4>
+
+            <p>In Verilog-2005 only blocks that are named can have local
+            declarations.  SystemVerilog drops this restriction and allows
+            declarations even in unnamed blocks.</p>
+
+            <p>SystemVerilog also allows the label to occur before the
+            @('begin') or @('fork') keyword, and, more generally, allows labels
+            to be added to other kinds of statements.  For instance, you can
+            write:</p>
 
             @({
                  update_foo: foo = foo + bar;
             })
 
-            <p>We turn such labels into named begin/end blocks that surround
-            their statement.  Note that it's not legal to label a block both
-            before and after the begin keyword.  See SystemVerilog-2012 Section
-            9.3.5, Statement Labels, on page 178.</p>")
+            <p>We turn labels like this into named begin/end blocks that
+            surround their statement.</p>
+
+            <p>Note that it's not legal to label a block both before and after
+            the begin keyword.  See SystemVerilog-2012 Section 9.3.5, Statement
+            Labels, on page 178.</p>
+
+            <p>SystemVerilog also adds different kinds of @('join') keywords,
+            which we now represent as part of the block's type.</p>")
 
     (:vl-timingstmt
      :base-name vl-timingstmt
@@ -3710,6 +3736,7 @@ initially kept in a big, mixed list.</p>"
                         (vl-modelementlist-p x)))))
 
       (define vl-modelement->loc ((x vl-modelement-p))
+        :prepwork ((local (in-theory (enable tag-reasoning))))
         :returns (loc vl-location-p :hints(("Goal" :in-theory (enable vl-modelement-fix
                                                                       vl-modelement-p
                                                                       tag-reasoning
@@ -3861,17 +3888,21 @@ initially kept in a big, mixed list.</p>"
 
 (encapsulate nil
 
-  (defthm tag-when-vl-genelement-p-forward
-    (implies (vl-genelement-p x)
-             (or (equal (tag x) :vl-genbase)
-                 (equal (tag x) :vl-genloop)
-                 (equal (tag x) :vl-genif)
-                 (equal (tag x) :vl-gencase)
-                 (equal (tag x) :vl-genblock)
-                 (equal (tag x) :vl-genarray)))
-    :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
-    :rule-classes :forward-chaining)
+;; (defthmd tag-when-vl-genelement-p-forward
+;;       (implies (vl-genelement-p x)
+;;                (or (equal (tag x) :vl-genbase)
+;;                    (equal (tag x) :vl-genloop)
+;;                    (equal (tag x) :vl-genif)
+;;                    (equal (tag x) :vl-gencase)
+;;                    (equal (tag x) :vl-genblock)
+;;                    (equal (tag x) :vl-genarray)))
+;;       :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
+;;       :rule-classes :forward-chaining)
 
+  ;; (add-to-ruleset tag-reasoning '(tag-when-vl-genelement-p-forward))
+  
+  ;; Baseline time 44 seconds.
+  ;; Now 15 seconds 
   (deftranssum vl-ctxelement
     ;; Add any tagged product that can be written with ~a and has a loc field.
     (vl-portdecl
@@ -3908,12 +3939,49 @@ initially kept in a big, mixed list.</p>"
                                              vl-genelement-kind
                                              tag)))))
 
+  (defthmd tag-when-vl-ctxelement-p
+    (implies (vl-ctxelement-p x)
+             (or (equal (tag x) :vl-regularport)
+                 (equal (tag x) :vl-interfaceport)
+                 (equal (tag x) :vl-portdecl)
+                 (equal (tag x) :vl-assign)
+                 (equal (tag x) :vl-alias)
+                 (equal (tag x) :vl-vardecl)
+                 (equal (tag x) :vl-paramdecl)
+                 (equal (tag x) :vl-fundecl)
+                 (equal (tag x) :vl-taskdecl)
+                 (equal (tag x) :vl-modinst)
+                 (equal (tag x) :vl-gateinst)
+                 (equal (tag x) :vl-always)
+                 (equal (tag x) :vl-initial)
+                 (equal (tag x) :vl-final)
+                 (equal (tag x) :vl-typedef)
+                 (equal (tag x) :vl-fwdtypedef)
+                 (equal (tag x) :vl-assertion)
+                 (equal (tag x) :vl-cassertion)
+                 (equal (tag x) :vl-property)
+                 (equal (tag x) :vl-sequence)
+                 (equal (tag x) :vl-import)
+                 (equal (tag x) :vl-genblock)
+                 (equal (tag x) :vl-genarray)
+                 (equal (tag x) :vl-genbase)
+                 (equal (tag x) :vl-genif)
+                 (equal (tag x) :vl-gencase)
+                 (equal (tag x) :vl-genloop)
+                 (equal (tag x) :vl-modport)))
+    :rule-classes (:forward-chaining)
+    :hints(("Goal" :in-theory (enable tag-reasoning vl-ctxelement-p))))
+
+  (add-to-ruleset tag-reasoning '(tag-when-vl-ctxelement-p))
+
   (define vl-ctxelement->loc ((x vl-ctxelement-p))
-    :returns (loc vl-location-p :hints(("Goal" :in-theory (enable vl-ctxelement-fix
-                                                                  vl-ctxelement-p
-                                                                  tag-reasoning
-                                                                  (tau-system)))))
-    :guard-hints (("Goal" :do-not-induct t))
+    :returns (loc vl-location-p)
+    :prepwork ((local (in-theory (enable tag-reasoning
+                                         ;; bozo probably don't need this if we add thms about
+                                         ;; tag of vl-ctxelement-fix.  or maybe we want to just
+                                         ;; have it known that a fixing function produces a
+                                         ;; well-typed object, as a forward chaining rule?
+                                         vl-ctxelement-fix))))
     (let ((x (vl-ctxelement-fix X)))
       (case (tag x)
         (:vl-portdecl (vl-portdecl->loc x))
@@ -3943,8 +4011,7 @@ initially kept in a big, mixed list.</p>"
         (:vl-assertion (vl-assertion->loc x))
         (:vl-cassertion (vl-cassertion->loc x))
         (:vl-property (vl-property->loc x))
-        (:vl-sequence (vl-sequence->loc x))
-        ))))
+        (:vl-sequence (vl-sequence->loc x))))))
 
 (defprod vl-context1
   :short "Description of where an expression occurs."
@@ -4266,7 +4333,9 @@ transforms to not modules with this attribute.</p>"
            (implies (and (not (vl-collect-interface-ports x))
                          (vl-portlist-p x))
                     (vl-regularportlist-p x))
-           :hints(("Goal" :induct (len x)))))
+           :hints(("Goal"
+                   :induct (len x)
+                   :in-theory (enable tag-reasoning)))))
 
   (defthm vl-regularportlist-p-when-no-module->ifports
     (implies (not (vl-module->ifports x))

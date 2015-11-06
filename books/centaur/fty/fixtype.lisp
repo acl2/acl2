@@ -198,6 +198,9 @@
 (defun find-fixtype-for-typename (name alist)
   (cdr (assoc name alist)))
 
+(defun find-fixtype (typename alist)
+  (or (find-fixtype-for-typename typename alist)
+      (find-fixtype-for-pred typename alist)))
 
 (defconst *deffixequiv-basic-keywords*
   '(:hints

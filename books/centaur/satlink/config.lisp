@@ -57,7 +57,9 @@ invoke the SAT solver.</p>"
    (remove-temps "Should temporary files (e.g., DIMACS files) be removed after
                   we're done calling SAT?  Usually you will want to remove
                   them, but occasionally they may be useful for debugging, or
-                  for comparing SAT solvers' performance."
+                  for comparing SAT solvers' performance.  Note that these
+                  files are created with @(see oslib::tempfile), see its
+                  documentation for details about their paths and filenames."
                   booleanp :rule-classes :type-prescription)))
 
 (defsection *default-config*
