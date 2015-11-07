@@ -69,7 +69,9 @@ all: cosim-core symlinks
 FAILING_TEST_TARGETS := \
   for-nba/ok \
   task/ok \
-  task2/ok
+  task2/ok \
+  sysfun/ok
+
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))
 TESTCERTS := $(patsubst %,%/ok,$(TESTS))
@@ -135,6 +137,7 @@ cleansim:
 	rm -rf $(OUTDIRS_VCS)
 	rm -rf */INCA_libs
 	rm -rf */csrc
+	rm -rf */simv.daidir
 	rm -f */simv
 	rm -f */irun.history
 	rm -f */ncverilog.log

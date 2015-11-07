@@ -39,6 +39,7 @@
 ||#
 
 (in-package "SV")
+(acl2::set-ld-error-action '(:exit 1) state)
 
 (defconsts (*testname* state)
   (b* ((constval (fgetprop '*testname* 'acl2::const nil (w state)))
@@ -59,7 +60,14 @@
 (assert! *svex-design*)
 
 (defconsts (*input-lines* state)
-  (acl2::read-file-lines (str::cat *testname* "/inputs.data") state))
+  (b* ((twovalued-file (cat *testname* "/twovalued"))
+       ((mv err twovaluedp state)
+        (oslib::path-exists-p twovalued-file))
+       (- (or (not err) (raise "~@0" err)))
+       (inputs (if twovaluedp
+                   "twovalued.data"
+                 "fourvalued.data")))
+    (acl2::read-file-lines inputs state)))
 
 (defconsts (*output-lines-ncv* state)
   (b* (((mv err exists state) (oslib::regular-file-p (str::cat *testname* "/no_ncv")))
