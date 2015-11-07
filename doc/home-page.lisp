@@ -338,12 +338,12 @@ HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <ul>
 
-<li><A HREF=\"~s2\">ACL2+Books Manual</A> <i>(recommended)</i></li>
+<li><A HREF=\"~s2\">ACL2+Books Manual</A> (Version 7.1)</li>
 
-<li><A HREF=\"~s3\">ACL2+Books Manual</A> for
-\"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions</li>
+<li><A HREF=\"~s3\">ACL2+Books Manual</A> (for
+\"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions)</li>
 
-<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A></li>
+<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A> (Version 7.1)</li>
 
 </ul>
 
