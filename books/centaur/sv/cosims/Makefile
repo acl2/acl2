@@ -70,7 +70,34 @@ FAILING_TEST_TARGETS := \
   for-nba/ok \
   task/ok \
   task2/ok \
-  sysfun/ok
+  sysfun/ok \
+  bin_logor/ok \
+  bin_logand/ok \
+  bin_ashr/ok \
+  bin_ashl/ok \
+  bin_shr/ok \
+  bin_shl/ok \
+  bin_pow/ok \
+  bin_wildeq/ok \
+  bin_wildneq/ok \
+  un_plus/ok \
+  un_bitnot/ok \
+  gates_and/ok \
+  gates_or/ok \
+  gates_xor/ok \
+  gates_bufif0/ok \
+  gates_bufif1/ok \
+  gates_notif0/ok \
+  gates_notif1/ok \
+  gates_cmos/ok \
+  gates_pmos/ok \
+  gates_nmos/ok \
+  gates_rpmos/ok \
+  gates_rnmos/ok \
+  gates_pullup/ok \
+  gates_pulldown/ok \
+
+
 
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))
@@ -85,6 +112,7 @@ print_tests :
 
 %/ok : %/outputs.ncv.data %/outputs.vcs.data cosim-core
 	@echo "Making $*/ok"
+	@rm -f $*.ok $*/cosim.out
 	COSIM_TESTDIR=$* $(STARTJOB) -c "./cosim-core < run.lsp &> $*/cosim.out"
 	@! egrep -i "failed|error" $*/cosim.out > /dev/null
 	@mv $*/cosim.out $*/ok
@@ -101,7 +129,7 @@ print_tests :
 	 if [ -e no_ncv ]; then \
 		touch outputs.ncv.data; \
          else \
-		ncverilog spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.ncv.data\"; \
+		ncverilog -sv spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.ncv.data\"; \
 	 fi
 	@ls -l $*/outputs.ncv.data
 

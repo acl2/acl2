@@ -8,6 +8,7 @@ test.vcd
 ucli.key
 cosim-core
 cosim-core.lx86cl64
+cosim-core.ccl
 Makefile-books
 irun.history
 ncvlog_*.err
