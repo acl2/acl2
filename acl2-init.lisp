@@ -265,8 +265,9 @@ implementations.")
 ; but it doesn't currently seem worth the trouble to figure that out.
 #+(and hons (not cltl2))
 (progn
-  (format t "~%ERROR: It is illegal to build a hons-enabled version~%~
-             of ACL2 in this non-ANSI Common Lisp.  See :DOC hons-enabled.~%~%")
+; ACL2(c) deprecated: no longer says "build a hons-enabled version of ACL2".
+  (format t "~%ERROR: It is illegal to build ACL2 in this non-ANSI Common ~
+             Lisp.~%~%")
   (acl2::exit-lisp))
 
 ; Fix a bug in SBCL 1.0.49 (https://bugs.launchpad.net/bugs/795705), thanks to

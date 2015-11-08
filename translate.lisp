@@ -4384,10 +4384,10 @@
 
 ; Warning: Keep this in sync with :DOC declare.
 
-; The declarations when (hons-enabledp state) were found useful by Bob Boyer
-; for in the hons-enabled case, but we do not see a way to support such
-; declarations soundly, so we do not support them.  We also do not support
-; inline or notinline directly, as they are supported adequately (and
+; The declarations dynamic-extent, inline, and notinline were found useful by
+; Bob Boyer in early development of hons-enabled ACL2, but we do not see a way
+; to support such declarations soundly, so we do not support them.  Note that
+; inline and notinline declarations are supported adequately (though
 ; indirectly) by defun-inline and defun-notinline.
 
   `((let ignore ignorable type)
@@ -6444,24 +6444,26 @@
       macro-name)))
 
 (defun corresponding-inline-fn (fn wrld)
-  (let* ((fn$inline (add-suffix fn *inline-suffix*))
-         (formals (getprop fn$inline 'formals
-                           nil
-                           'current-acl2-world
-                           wrld)))
-    (and (equal (macro-args fn wrld) formals)
-         (function-symbolp fn$inline wrld)
-         (equal (getprop fn 'macro-body nil 'current-acl2-world wrld)
-                (fcons-term*
-                 'cons
-                 (kwote fn$inline)
-                 (if formals
-                     (xxxjoin 'cons
-                              (append formals
-                                      (list
-                                       *nil*)))
-                   (list *nil*))))
-         fn$inline)))
+  (let ((macro-body (getprop fn 'macro-body t 'current-acl2-world wrld)))
+    (and (not (eq macro-body t))
+         (let* ((fn$inline (add-suffix fn *inline-suffix*))
+                (formals (getprop fn$inline 'formals
+                                  t
+                                  'current-acl2-world
+                                  wrld)))
+           (and (not (eq formals t))
+                (equal (macro-args fn wrld) formals)
+                (equal macro-body
+                       (fcons-term*
+                        'cons
+                        (kwote fn$inline)
+                        (if formals
+                            (xxxjoin 'cons
+                                     (append formals
+                                             (list
+                                              *nil*)))
+                          (list *nil*))))
+                fn$inline)))))
 
 (mutual-recursion
 
@@ -8632,18 +8634,16 @@
                                   ((eq (getprop fn0 'macro-args t
                                                 'current-acl2-world wrld)
                                        t)
-                                   (assert$
-                                    (not (function-symbolp fn wrld))
-                                    (msg "~x0 is not a function symbol"
-                                         fn)))
+                                   (msg "~x0 is not a macro"
+                                        fn0))
                                   (t (msg "~x0 is a macro, not a function ~
                                            symbol~@1"
-                                          fn
+                                          fn0
                                           (let ((sym (deref-macro-name
-                                                      fn
+                                                      fn0
                                                       (macro-aliases wrld))))
                                             (cond
-                                             ((eq sym fn) "")
+                                             ((eq sym fn0) "")
                                              (t
                                               (msg ".  Note that ~x0 is a ~
                                                     macro-alias for ~x1 (see ~
@@ -8651,7 +8651,7 @@
                                                     macro-aliases-table), so ~
                                                     a solution might be to ~
                                                     replace ~x0 by ~x1"
-                                                   fn sym))))))))))
+                                                   fn0 sym))))))))))
                ((and keyp
                      (let ((val (return-last-lookup key wrld)))
                        (or (null val)

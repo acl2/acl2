@@ -14171,7 +14171,8 @@
 
 ; Currently this function returns nil if name is 'memoize-table except in a
 ; hons-enabled (#+hons) version, because memoize-table has a table guard of nil
-; (actually a hard-error call) in the #-hons version.
+; (actually a hard-error call) in the #-hons version.  Note that starting with
+; Version_7.2, every ACL2 executable is hons-enabled.
 
   (let ((unsupported-str
          "Unsupported operation, ~x0, for updating table ~x1."))

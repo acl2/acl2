@@ -19,7 +19,8 @@
 ; Austin, TX 78712 U.S.A.
 
 ; memoize-raw.lisp -- Raw lisp definitions for memoization functions, only to
-; be included in the hons-enabled ACL2 executables.
+; be included in the hons-enabled ACL2 executables (which is all ACL2
+; executables starting with Version_7.2).
 
 ; The original version of this file was contributed by Bob Boyer and Warren
 ; A. Hunt, Jr.  The design of this system of Hash CONS, function memoization,

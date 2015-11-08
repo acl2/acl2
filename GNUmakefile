@@ -124,11 +124,15 @@ endif
 
 $(info ACL2_WD is $(ACL2_WD))
 
-# The default build for ACL2 includes support for hash cons, function
-# memoization, and applicative hash tables (see :doc hons-and-memoization).  In
-# order to avoid including those features, comment out the following line, or
-# supply "ACL2_HONS=" on the command line, or set environment variable
-# ACL2_HONS to the empty string.
+# ACL2 includes support for hash cons, function memoization, and
+# applicative hash tables (see :doc hons-and-memoization).  In order
+# to avoid including those features, you can try commenting out the
+# following line, or supply "ACL2_HONS=" on the command line, or set
+# environment variable ACL2_HONS to the empty string.  We do not claim
+# to support such builds.  However, you are welcome to try, and there
+# is a reasonable chance that you will succeed in building a usable
+# executable.
+
 ACL2_HONS ?= h
 
 # The variable ACL2_REAL should be defined for the non-standard
@@ -142,7 +146,9 @@ ACL2_HONS ?= h
 # guard-verified functions or writing out arithmetic lemma data to
 # ~/write-arithmetic-goals.lisp.  Variable ACL2_HONS is h by default,
 # but when its value is the empty string, then suffix "c" is
-# generated, to create an ACL2(c) build.
+# generated, to create an ACL2(c) build -- BUT NOTE that after
+# Version_7.1, change ACL2-HONS at your own risk -- it might work, but
+# we no longer claim to support it!
 
 # DO NOT EDIT ACL2_SUFFIX!  Edit the above-mentioned four variables instead.
 
@@ -401,7 +407,7 @@ TAGS:   acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp ${sources}
 	if [ -f TAGS ] ; then chmod 644 TAGS ; fi
 
 # The following remakes TAGS even if TAGS is up to date.  This target can be
-# useful when building a hons or parallel version after a normal version, or
+# useful when building a parallel version after a normal version, or
 # vice-versa.
 .PHONY: TAGS!
 TAGS!:  acl2r
@@ -603,10 +609,6 @@ large: acl2r full init
 .PHONY: large-acl2r
 large-acl2r:
 	$(MAKE) large ACL2_REAL=r
-
-.PHONY: large-acl2h
-large-acl2h:
-	$(MAKE) large ACL2_HONS=h
 
 .PHONY: large-acl2d
 large-acl2d:
@@ -886,23 +888,3 @@ saved_acl2pr: $(ACL2_DEPS)
 	echo "Making ACL2(pr) on $(LISP)"
 	time $(MAKE) LISP=$(LISP) ACL2_PAR=p ACL2_REAL=r
 	ls -lah saved_acl2pr
-
-saved_acl2c: $(ACL2_DEPS)
-	echo "Making ACL2(c) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_HONS=
-	ls -lah saved_acl2c
-
-saved_acl2cp: $(ACL2_DEPS)
-	echo "Making ACL2(cp) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_HONS= ACL2_PAR=p
-	ls -lah saved_acl2cp
-
-saved_acl2cr: $(ACL2_DEPS)
-	echo "Making ACL2(cr) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_HONS= ACL2_REAL=r
-	ls -lah saved_acl2cr
-
-saved_acl2cpr: $(ACL2_DEPS)
-	echo "Making ACL2(cpr) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_HONS= ACL2_PAR=p ACL2_REAL=r
-	ls -lah saved_acl2cpr

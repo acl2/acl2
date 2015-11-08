@@ -15991,6 +15991,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (f-get-global 'current-acl2-world state))
 
 (defun hons-enabledp (state)
+
+; ACL2 is now (starting with Version_7.2) always hons-enabled.  But we keep
+; this function around, as well as other code that supported builds that are
+; not hons-enabled, just in case we want to restore the ability to create such
+; builds.  Anyone who wants to do so should visit every occurrence of
+; "hons-enabled" in these sources.  Indeed, there may be very little necessary,
+; since we intend (at least for awhile) to leave the code in place that allows
+; for hons-enabled builds.  However, some error messages (for example) may
+; change, as in the "illegal to build ... non-ANSI" message in acl2-init.lisp.
+
   (declare (xargs :verify-guards nil ; wait for w
                   :guard (state-p state)))
   (global-val 'hons-enabled (w state)))
