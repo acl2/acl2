@@ -731,13 +731,13 @@ because... (BOZO)</p>
         (b* (((unless (or (eq x.type :vl-blocking)
                           (and nonblockingp
                                (eq x.type :vl-nonblocking))))
-              (fail (warn :type :vl-stmt->svstmts-fail
+              (fail (warn :type :vl-stmt-unsupported
                           :msg "Assignment type not supported: ~a0"
                           :args (list x))))
              (warnings (if x.ctrl
-                           (warn :type :vl-stmt->svstmts-fail
+                           (warn :type :vl-delay-ignored
                                  :msg "Ignoring delay or event control on ~
-                                assignment: ~a0"
+                                       assignment statement: ~a0"
                                  :args (list x))
                          (ok)))
              ((wmv ok warnings res)
@@ -760,9 +760,9 @@ because... (BOZO)</p>
           (mv ok warnings (list (sv::make-svstmt-while :cond cond :body body))))
         :vl-forstmt
         (b* ((warnings (if (consp x.initdecls)
-                           (warn :type :vl-stmt->svstmts-bozo
+                           (warn :type :vl-stmt-unsupported
                                  :msg "Missing support for locally ~
-                                       defined for loop vars: ~a0."
+                                       defined for loop vars: ~a0"
                                  :args (list x))
                          (ok)))
              ((wmv ok1 warnings initstmts1)
@@ -785,14 +785,14 @@ because... (BOZO)</p>
         :vl-blockstmt
         (b* (((unless (or (vl-blocktype-equiv x.blocktype :vl-beginend)
                           (<= (len x.stmts) 1)))
-              (fail (warn :type :vl-stmt->svstmts-fail
-                          :msg "We don't support fork/join block statements: ~a0."
+              (fail (warn :type :vl-stmt-unsupported
+                          :msg "We don't support fork/join block statements: ~a0"
                           :args (list x))))
              (warnings (if (or (consp x.vardecls)
                                (consp x.paramdecls))
-                           (warn :type :vl-stmt->svstmts-bozo
+                           (warn :type :vl-stmt-unsupported
                                  :msg "Missing support for block ~
-                                       statements with local variables: ~a0."
+                                       statements with local variables: ~a0"
                                  :args (list x))
                          (ok)))
              ;; ((wmv ok1 warnings initstmts)
@@ -823,8 +823,8 @@ because... (BOZO)</p>
 
 
         :otherwise
-        (fail (warn :type :vl-stmt->svstmts-fail
-                    :msg "Statement type not supported: ~a0."
+        (fail (warn :type :vl-stmt-unsupported
+                    :msg "Statement type not supported: ~a0"
                     :args (list x))))))
 
   (define vl-stmtlist->svstmts ((x vl-stmtlist-p)

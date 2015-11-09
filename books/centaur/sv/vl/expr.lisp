@@ -1695,7 +1695,7 @@ the way.</li>
                     (mv nil
                         (svex-int (vl-range-size dim.range)))))))
 
-          (t (mv (fatal :type :vl-expr-to-svex-fail
+          (t (mv (fatal :type :vl-expr-unsupported
                         :msg "Unrecognized system function: ~a0"
                         :args (list (vl-expr-fix orig-x)))
                  (svex-x)))))
@@ -2867,8 +2867,8 @@ functions can assume all bits of it are good.</p>"
           (mv (ok) svex))
 
         :vl-inside
-        (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Not yet supported: ~a0"
+        (mv (fatal :type :vl-expr-unsupported
+                   :msg "Inside expressions are not yet supported: ~a0"
                    :args (list x))
             (svex-x))
 
@@ -2897,7 +2897,7 @@ functions can assume all bits of it are good.</p>"
 
                  ((unless (and (not x.typearg)
                                (eql (len x.args) 1)))
-                  (mv (fatal :type :vl-expr-to-svex-fail
+                  (mv (fatal :type :vl-expr-unsupported
                              :msg "Unsupported system call: ~a0"
                              :args (list x))
                       (svex-x)))

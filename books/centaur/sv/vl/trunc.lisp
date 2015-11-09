@@ -321,9 +321,16 @@ expensive or inefficient here.</p>
              (declare (ignorable lhs-size x-selfsize x ss))
              nil))
 
-    (defthm symbolp-of-vl-classify-extension-warning-hook
-      (symbolp (vl-classify-extension-warning-hook lhs-size x-selfsize x ss))
-      :rule-classes :type-prescription)))
+    (defthm keywordp-of-vl-classify-extension-warning-hook
+      (implies (vl-classify-extension-warning-hook lhs-size x-selfsize x ss)
+               (keywordp (vl-classify-extension-warning-hook lhs-size x-selfsize x ss))))))
+
+(local (defthm symbolp-of-vl-classify-extension-warning-hook
+         (symbolp (vl-classify-extension-warning-hook lhs-size x-selfsize x ss))
+         :rule-classes :type-prescription
+         :hints(("Goal"
+                 :in-theory (disable keywordp-of-vl-classify-extension-warning-hook)
+                 :use ((:instance keywordp-of-vl-classify-extension-warning-hook))))))
 
 
 
@@ -355,9 +362,13 @@ minor warning for assignments where the rhs is a constant.</p>"
       ;; any warning here.
       :vl-extint nil
       ;; Plain integers like 0 or 5 probably shouldn't cause any extension
-      ;; warnings.
-      :vl-constint x.val.wasunsized
-      :otherwise t)
+      ;; warnings.  BOZO might also not want to warn about other special
+      ;; cases like 0?
+      :vl-constint (if x.val.wasunsized
+                       nil
+                     :vl-warn-extension)
+      ;; For any other literals go ahead and warn?
+      :otherwise :vl-warn-extension)
     :otherwise
     (b* ((ops    (vl-expr-ops x))
          (minorp (and (or (member-equal :vl-binary-plus ops)

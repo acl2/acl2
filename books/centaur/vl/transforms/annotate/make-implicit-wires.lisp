@@ -955,17 +955,13 @@ it has the same problems with parameters.</p>"
                 (warn :type :vl-tricky-implicit
                       :msg "~a0: wire~s1 ~&2 ~s3 implicitly declared by the ~
                             left-hand side of this assignment.  This is ~
-                            perfectly valid according to the Verilog-2005 ~
-                            standard, but some Verilog tools tools (like ~
-                            Verilog-XL) do not support it, so for better ~
-                            compatibility you may wish to add ~s4."
+                            valid per the Verilog-2005 standard but tools ~
+                            like Verilog-XL do not support it; consider ~
+                            explicit declaration~s1."
                       :args (list item
                                   (if (vl-plural-p imp-lhs) "s" "")
                                   imp-lhs
-                                  (if (vl-plural-p imp-lhs) "are" "is")
-                                  (if (vl-plural-p imp-lhs)
-                                      "explicit declarations for these wires"
-                                    "an explicit declaration of this wire")))))
+                                  (if (vl-plural-p imp-lhs) "are" "is")))))
 
              (decls      (vl-implicitst->decls st))
              (decls      (make-fal (pairlis$ imp-lhs nil) decls))

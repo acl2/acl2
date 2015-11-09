@@ -150,7 +150,7 @@
     (or (if exactp
             (equal output-spec output-impl)
           (4vec-[= output-impl output-spec))
-        (cw "Test failed: input:~%~s0~%output (spec):~%~s1~%output (impl):~%~s2~%~x3~%~x4~%"
+        (cw "Test failed: input:~%~s0~%output (spec):~%~s1~%output (vl/sv):~%~s2~%~x3~%~x4~%"
             input-line output-line
             (let* ((str (sv::vcd-4vec-bitstr output-impl (length output-line)))
                    (padlen (nfix (- 128 (length str))))
