@@ -1816,15 +1816,23 @@ how VL module instances are translated.</p>"
          (b* ((ins (vl-gatetypenames-count-up (1- nargs) 1 "in"))
               (svex-ins (svex-vars-from-names ins))
               (assigns  (list (cons (svex-lhs-from-name "out")
-                                    (sv::make-driver
-                                     :value
-                                     (case type
-                                       (:vl-and  (svcall-join 'sv::bitand svex-ins))
-                                       (:vl-nand (sv::svcall sv::bitnot (svcall-join 'sv::bitand svex-ins)))
-                                       (:vl-or   (svcall-join 'sv::bitor svex-ins))
-                                       (:vl-nor  (sv::svcall sv::bitnot (svcall-join 'sv::bitor svex-ins)))
-                                       (:vl-xor  (svcall-join 'sv::bitxor svex-ins))
-                                       (:vl-xnor (sv::svcall sv::bitnot (svcall-join 'sv::bitxor svex-ins))))))))
+                                    (if (eql (len svex-ins) 1)
+                                        (sv::make-driver
+                                         :value
+                                         (case type
+                                           ((:vl-and :vl-or :vl-xor)
+                                            (sv::svcall sv::unfloat (car svex-ins)))
+                                           ((:vl-nand :vl-nor :vl-xnor)
+                                            (sv::svcall sv::bitnot (car svex-ins)))))
+                                      (sv::make-driver
+                                       :value
+                                       (case type
+                                         (:vl-and  (svcall-join 'sv::bitand svex-ins))
+                                         (:vl-nand (sv::svcall sv::bitnot (svcall-join 'sv::bitand svex-ins)))
+                                         (:vl-or   (svcall-join 'sv::bitor svex-ins))
+                                         (:vl-nor  (sv::svcall sv::bitnot (svcall-join 'sv::bitor svex-ins)))
+                                         (:vl-xor  (svcall-join 'sv::bitxor svex-ins))
+                                         (:vl-xnor (sv::svcall sv::bitnot (svcall-join 'sv::bitxor svex-ins)))))))))
               (portnames (cons "out" ins))
               (portdirs (cons :vl-output (repeat (1- nargs) :vl-input))))
          (mv nil nil assigns portnames portdirs))))

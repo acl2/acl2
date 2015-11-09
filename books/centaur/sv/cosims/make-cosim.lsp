@@ -27,12 +27,12 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
-
 (ld "cert.acl2")
 (in-package "SV")
 (set-deferred-ttag-notes t state)
 (include-book "cosims")
-
+(set-fmt-hard-right-margin 200 state)
+(set-fmt-soft-right-margin 160 state)
 :q
 
 ;; (setf *saved-string* "")

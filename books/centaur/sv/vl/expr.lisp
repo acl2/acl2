@@ -279,7 +279,12 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
                  ((when (svexlist-variable-free-p args))
                   (svex-quote (svex-apply x.fn (svexlist-eval args nil))))
                  (args-eval (svexlist-xeval args))
-                 (res (svex-apply (if (eq x.fn '===) '== x.fn) args-eval)))
+                 (res (svex-apply
+                       (case x.fn
+                         (=== '==)
+                         (==? 'safer-==?)
+                         (otherwise x.fn))
+                       args-eval)))
               (if (4vec-xfree-p res)
                   (svex-quote res)
                 (svex-call x.fn args)))
@@ -305,6 +310,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
       :hints ((and stable-under-simplificationp
                    '(:in-theory (enable svex-eval-when-4vec-xfree-of-minval-apply
                                         svex-eval-when-4vec-xfree-of-minval-apply-===
+                                        svex-eval-when-4vec-xfree-of-minval-apply-==?
                                         eval-when-svexlist-variable-free-p))))
       :flag svex-reduce-consts)
     (defthm svexlist-reduce-consts-correct
@@ -1790,7 +1796,7 @@ the way.</li>
   (b* ((op (vl-unaryop-fix op))
        (body
         (case op
-          (:vl-unary-plus   (sv::svex-fix arg))
+          (:vl-unary-plus   (sv::svcall sv::xdet arg))
           (:vl-unary-minus  (sv::svcall sv::u- arg))
           (:vl-unary-bitnot (sv::svcall sv::bitnot arg))
           (:vl-unary-lognot (sv::svcall sv::bitnot (sv::svcall sv::uor arg)))
@@ -1858,14 +1864,31 @@ the way.</li>
           (:vl-binary-bitor   (sv::svcall sv::bitor  left right))
           (:vl-binary-xor     (sv::svcall sv::bitxor left right))
           (:vl-binary-xnor    (sv::svcall sv::bitnot (sv::svcall sv::bitxor left right)))
+          ;; Shift amounts need to be zero-extended -- right arg is always
+          ;; treated as unsigned per SV spec 11.4.10.
           (:vl-binary-shr     (sv::svcall sv::rsh
-                                            right
-                                            (sv::svcall sv::zerox
-                                                          (svex-int (lnfix left-size))
-                                                          left)))
-          (:vl-binary-shl     (sv::svcall sv::lsh    right left))
-          (:vl-binary-ashr    (sv::svcall sv::rsh    right left))
-          (:vl-binary-ashl    (sv::svcall sv::lsh    right left))
+                                          ;; Weird case: 
+                                          (sv::svcall sv::zerox
+                                                      (svex-int (lnfix right-size))
+                                                      right)
+                                          (sv::svcall sv::zerox
+                                                      (svex-int (lnfix left-size))
+                                                      left)))
+          (:vl-binary-shl     (sv::svcall sv::lsh
+                                          (sv::svcall sv::zerox
+                                                      (svex-int (lnfix right-size))
+                                                      right)
+                                          left))
+          (:vl-binary-ashr    (sv::svcall sv::rsh
+                                          (sv::svcall sv::zerox
+                                                      (svex-int (lnfix right-size))
+                                                      right)
+                                          left))
+          (:vl-binary-ashl    (sv::svcall sv::lsh
+                                          (sv::svcall sv::zerox
+                                                      (svex-int (lnfix right-size))
+                                                      right)
+                                          left))
           (:vl-implies        (sv::svcall sv::bitor
                                             (sv::svcall sv::bitnot
                                                           (sv::svcall sv::uor    left))
@@ -2689,20 +2712,25 @@ functions can assume all bits of it are good.</p>"
         ;; Two categories: either transparent in just the first operand, or both.
         (b* (((wmv warnings left-svex)
               (vl-expr-to-svex-vector x.left size signedness conf))
-             ((wmv warnings right-svex)
+             ((wmv warnings right-svex right-size)
               (if (member x.op '(:vl-binary-power
                                  :vl-binary-shl
                                  :vl-binary-shr
                                  :vl-binary-ashl
                                  :vl-binary-ashr))
                   ;; Transparent only in the first operand.
-                  (b* (((wmv warnings right-svex &)
-                        (vl-expr-to-svex-selfdet x.right nil conf)))
-                    (mv warnings right-svex))
+                  (vl-expr-to-svex-selfdet x.right nil conf)
                 ;; Transparent in both operands.
-                (vl-expr-to-svex-vector x.right size signedness conf)))
+                (b* (((mv warnings right-svex)
+                      (vl-expr-to-svex-vector x.right size signedness conf)))
+                  (mv warnings right-svex size))))
              ((wmv err svex)
-              (vl-binaryop-to-svex x.op left-svex right-svex size size size signedness)))
+              (vl-binaryop-to-svex x.op left-svex right-svex size
+                                   ;; Presumably we don't get here if we don't
+                                   ;; get a size for the right arg.  But in any
+                                   ;; case we've already warned about it.
+                                   (or right-size size)
+                                   size signedness)))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
                          :msg "Failed to convert expression ~a0: ~@1"

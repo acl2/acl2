@@ -152,7 +152,11 @@
           (4vec-[= output-impl output-spec))
         (cw "Test failed: input:~%~s0~%output (spec):~%~s1~%output (impl):~%~s2~%~x3~%~x4~%"
             input-line output-line
-            (sv::vcd-4vec-bitstr output-impl (length output-line))
+            (let* ((str (sv::vcd-4vec-bitstr output-impl (length output-line)))
+                   (padlen (nfix (- 128 (length str))))
+                   (pad (coerce (make-list padlen :initial-element #\0) 'string)))
+              ;; gross hack to make it 128 bits
+              (cat pad str))
             output-spec output-impl))))
 
 (define cosims-compare-stv ((input-lines string-listp)
