@@ -436,7 +436,7 @@ code that is violating guards), it just causes a hard error.</p>"
 
 (defsection impliez
 
-  ;; Added by Alessandro Coglio (coglio@kestre.edu), Kestrel Institute.
+  ;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
   
   :parents (std/basic)
   
