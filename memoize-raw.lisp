@@ -239,7 +239,7 @@
   ;;     Lisp threads, then you really need to do something like this:
   ;;
   ;;        (setq *enable-multithreaded-memoization* t)
-  ;;        (rememoize-all)
+  ;;        (rememoize-all t)
   ;;
   ;;   - You need to be careful to do the rememoize-all AFTER you have already
   ;;     loaded any books that might contain memoized functions.  For instance,
@@ -265,7 +265,7 @@
         (t
          (unwind-protect ; make sure we finish!
              (setq *enable-multithreaded-memoization* flg)
-           (rememoize-all))))
+           (rememoize-all t))))
   flg)
 
 (defg *global-memoize-lock*
@@ -3675,36 +3675,46 @@
                  (access memoize-info-ht-entry v :record-pons-calls)
                  (access memoize-info-ht-entry v :record-time)))))))
 
-(defun-one-output rememoize-all ()
+(defun-one-output rememoize-all (&optional light)
 
 ; Warning: Keep this function in sync with memoize-info.
 
-  (with-global-memoize-lock
-   (let (lst)
-     (mf-maphash (lambda (k v)
-                   (declare (ignore v))
-                   (when (symbolp k)
-                     (push (memoize-info k) lst)))
-                 *memoize-info-ht*)
+; If light is true, then we are simply replacing *memoize-info-ht* with a copy.
+
+  (cond
+   (light
+    (let ((*new-memoize-info-ht* (initial-memoize-info-ht)))
+      (mf-maphash (lambda (k v)
+                    (setf (gethash k *new-memoize-info-ht*) v))
+                  *memoize-info-ht*)
+      (setq *memoize-info-ht* *new-memoize-info-ht*)))
+   (t
+    (with-global-memoize-lock
+     (let (lst)
+       (mf-maphash (lambda (k v)
+                     (declare (ignore v))
+                     (when (symbolp k)
+                       (push (memoize-info k) lst)))
+                   *memoize-info-ht*)
 
 ; Note: memoize-info arranges that (caar x) is the memoized function symbol.
 
-     (loop for x in lst do (unmemoize-fn (caar x)))
-     (setq *memoize-info-ht* (initial-memoize-info-ht))
-     (gc$)
-     (setq *max-symbol-to-fixnum* *initial-max-symbol-to-fixnum*)
-     (loop for x in lst do
+       (loop for x in lst do (unmemoize-fn (caar x)))
+       (setq *memoize-info-ht* (initial-memoize-info-ht))
+       (gc$)
+       (setq *max-symbol-to-fixnum* *initial-max-symbol-to-fixnum*)
+       (loop for x in lst do
 
 ; Warning: Keep the first argument below in sync with memoize-info.
 
-           (progv '(*record-bytes*
-                    *record-calls*
-                    *record-hits*
-                    *record-mht-calls*
-                    *record-pons-calls*
-                    *record-time*)
-                  (cadr x)
-                  (apply 'memoize-fn (car x)))))))
+             (progv '(*record-bytes*
+                      *record-calls*
+                      *record-hits*
+                      *record-mht-calls*
+                      *record-pons-calls*
+                      *record-time*)
+                    (cadr x)
+                    (apply 'memoize-fn (car x)))))))))
 
 (defun profile-fn (fn &rest r &key (condition nil) (inline nil)
                       &allow-other-keys)

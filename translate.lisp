@@ -4785,9 +4785,7 @@
 ; type-test is t.
 
              (let ((term (car term-lst)))
-               (and (nvariablep term)
-                    (not (fquotep term))
-                    (eq (ffn-symb term) 'if)
+               (and (ffn-symb-p term 'if)
                     (equal (fargn term 1) *t*)
                     (equal (fargn term 2) *t*))))
          *t*)
@@ -5660,9 +5658,7 @@
 
   (and (quotep targ1)
        (eq (unquote targ1) 'progn)
-       (nvariablep targ2)
-;      (not (fquotep targ2))
-       (eq (ffn-symb targ2) 'throw-nonexec-error)
+       (ffn-symb-p targ2 'throw-nonexec-error)
        (or (null name)
            (let ((qname (fargn targ2 1)))
              (and (quotep qname)
@@ -5681,9 +5677,7 @@
 ; argument of throw-non-exec-error be (cons v1 (cons v2 ... (cons vk nil)
 ; ...)), where formals is (v1 v2 ... vk).
 
-  (and (nvariablep body)
-;      (not (fquotep body))
-       (eq (ffn-symb body) 'return-last)
+  (and (ffn-symb-p body 'return-last)
        (throw-nonexec-error-p1 (fargn body 1) (fargn body 2) name formals)))
 
 (defun chk-flet-declarations (names decls declare-form ctx)
