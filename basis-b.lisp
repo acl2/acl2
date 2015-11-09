@@ -1018,6 +1018,35 @@
 ;                        (ts-builder-case-listp (cdr args)))))
   (ts-builder-macro (car args) (cdr args)))
 
+(defmacro ffn-symb-p (term sym)
+
+; Term should be a pseudo-termp and sym should be a symbol.
+
+  (cond
+   ((symbolp term)
+    `(and (nvariablep ,term)
+;         (not (fquotep ,term))
+          (eq (ffn-symb ,term) ,sym)))
+
+; If we bind term then in general, we need to bind sym too, even though it only
+; occurs once below.  Consider for example the expansion of (ffn-symb-p x (foo
+; term)), where presumably term is bound above.  We need to avoid capturing the
+; occurrence of term in (foo term), which is solved by binding sym here.  Of
+; course, if sym is of the form (quote v) then this isn't an issue.
+
+   ((and (consp sym)
+         (eq (car sym) 'quote))
+    `(let ((term ,term))
+       (and (nvariablep term)
+;           (not (fquotep term))
+            (eq (ffn-symb term) ,sym))))
+   (t
+    `(let ((term ,term)
+           (sym ,sym))
+       (and (nvariablep term)
+;           (not (fquotep term))
+            (eq (ffn-symb term) sym))))))
+
 (defabbrev strip-not (term)
 
 ; A typical use of this macro is:
@@ -1027,9 +1056,7 @@
 ; is of the form (NOT x) and binding not-flg to NIL and atm to term
 ; otherwise.
 
-  (cond ((and (nvariablep term)
-;             (nquotep term)
-              (eq (ffn-symb term) 'not))
+  (cond ((ffn-symb-p term 'not)
          (mv t (fargn term 1)))
         (t (mv nil term))))
 
@@ -1040,9 +1067,7 @@
 ; for 'equal and not for 'quote or any constructor that might be hidden
 ; inside a quoted term.
 
-  (and (nvariablep term)
-;      (not (fquotep term))
-       (eq (ffn-symb term) 'equal)))
+  (ffn-symb-p term 'equal))
 
 (defabbrev inequalityp (term)
 
@@ -1051,18 +1076,14 @@
 ; for 'equal and not for 'quote or any constructor that might be hidden
 ; inside a quoted term.
 
-  (and (nvariablep term)
-;      (not (fquotep term))
-       (eq (ffn-symb term) '<)))
+  (ffn-symb-p term '<))
 
 (defabbrev consityp (term)
 
 ; Consityp is to cons what equalityp is equal:  it recognizes terms
 ; that are non-evg cons expressions.
 
-  (and (nvariablep term)
-       (not (fquotep term))
-       (eq (ffn-symb term) 'cons)))
+  (ffn-symb-p term 'cons))
 
 (defun print-current-idate (channel state)
   (mv-let (d state)

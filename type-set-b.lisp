@@ -3432,8 +3432,7 @@
    ((null type-alist)
     nil)
    (t (or (let ((term (caar type-alist)))
-            (and (nvariablep term)
-                 (eq (ffn-symb term) equiv)
+            (and (ffn-symb-p term equiv)
                  (or (equal old (fargn term 1))
                      (equal old (fargn term 2)))))
           (subst-type-alist1-check old equiv (cdr type-alist))))))
@@ -3468,8 +3467,7 @@
      new old equiv ttree (cdr type-alist)
      (let ((term (caar type-alist)))
        (cond
-        ((and (nvariablep term)
-              (eq (ffn-symb term) equiv)
+        ((and (ffn-symb-p term equiv)
               (or (equal old (fargn term 1))
                   (equal old (fargn term 2))))
 
@@ -3765,8 +3763,7 @@
 ; alist is a non-quote term.
 
   (cond ((eq alist nil) nil)
-        ((and (not (variablep (caar alist)))
-              (eq (ffn-symb (caar alist)) fn)
+        ((and (ffn-symb-p (caar alist) fn)
               (if (equal (fargn (caar alist) 2) arg2)
                   (equal (fargn (caar alist) 1) arg1)
                 (and (equal (fargn (caar alist) 1) arg2)
@@ -5318,9 +5315,7 @@
 
 (defun normalize-linear-sum-p1 (stripped-term term-to-match)
   (cond ((null stripped-term) nil)
-        ((and (nvariablep term-to-match)
-;             (not (fquotep term-to-match))
-              (eq (ffn-symb term-to-match) 'BINARY-+))
+        ((ffn-symb-p term-to-match 'BINARY-+)
          (normalize-linear-sum-p1 (cdr stripped-term)
                                   (fargn term-to-match 2)))
         (t (null (cdr stripped-term)))))
@@ -5335,9 +5330,7 @@
 ; with terms.
 
   (let ((term ; strip additive constant
-         (cond ((and (nvariablep term-to-match)
-;                    (not (fquotep term-to-match))
-                     (eq (ffn-symb term-to-match) 'BINARY-+)
+         (cond ((and (ffn-symb-p term-to-match 'BINARY-+)
                      (quotep (fargn term-to-match 1)))
                 (fargn term-to-match 2))
                (t term-to-match))))
@@ -5349,9 +5342,7 @@
 
            (normalize-linear-sum-p1 stripped-term term))
           (t ; Stripped-term is a term.
-           (not (and (nvariablep term)
-;                    (not (fquotep term))
-                     (eq (ffn-symb term) 'BINARY-+)))))))
+           (not (ffn-symb-p term 'BINARY-+))))))
 
 (defun type-set-finish-1 (additive-const multiplicative-const stripped-term
                                          ts ttree type-alist)
@@ -7085,9 +7076,7 @@
                     (equivalence-relationp (ffn-symb hyp) wrld)
                     (let ((arg2 (fargn hyp 2)))
                       (and (not (assoc-eq (fargn hyp 1) alist))
-                           (nvariablep arg2)
-                           (not (fquotep arg2))
-                           (eq (ffn-symb arg2) 'double-rewrite)
+                           (ffn-symb-p arg2 'double-rewrite)
                            (not (free-varsp arg2 alist))))))))))
 
 (defmacro adjust-ignore-for-atf (not-flg ignore)
@@ -9305,7 +9294,8 @@
 ; Warning:  Actually x might be a quoted constant here.  But we ask
 ; if the ffn-symb is either NOT or IF and if it is QUOTE we will
 ; fail those tests anyway.  So this is a delicate but legitimate
-; violation of our term abstract data type.
+; violation of our term abstract data type.  Of course, we could use ffn-symb-p
+; here, but then we could be testing nvariablep twice.
 
           (cond ((eq (ffn-symb x) 'NOT)
                  (mv t (fargn x 1)))
@@ -9853,9 +9843,7 @@
 ; ts2 is already contained in *ts-acl2-number*.
 
                                         *ts-integer*)
-                            (nvariablep arg2)
-                            (not (fquotep arg2))
-                            (eq (ffn-symb arg2) 'binary-+)
+                            (ffn-symb-p arg2 'binary-+)
                             (equal (fargn arg2 1) *1*))
 
 ; So the term is of the form (< 0 (+ 1 x)) and we know x is some integer (or a
@@ -9877,9 +9865,7 @@
                                    tsx *ts-zero* ttree)))
                       ((and (equal arg2 *0*)
                             (ts-subsetp ts1 *ts-integer*)
-                            (nvariablep arg1)
-                            (not (fquotep arg1))
-                            (eq (ffn-symb arg1) 'binary-+)
+                            (ffn-symb-p arg1 'binary-+)
                             (equal (fargn arg1 1) *-1*))
                        (mv-let (tsx ttree)
                                (type-set-rec (fargn arg1 2) force-flg
@@ -10434,9 +10420,7 @@
 ;    (improper-consp (cons a1 x)) <-> (not (true-listp x)).
 
   (cond
-   ((and (nvariablep term)
-         (not (fquotep term))
-         (eq (ffn-symb term) 'cons)
+   ((and (ffn-symb-p term 'cons)
          (or (ts= ts *ts-proper-cons*)
              (ts= ts *ts-improper-cons*)))
     (let* ((x (non-cons-cdr term)))
@@ -10665,9 +10649,7 @@
       (cond
        ((eq hitp 'contradiction)
         (mv hitp rest-type-alist rest-ttree))
-       ((and (nvariablep (caar type-alist))
-             (not (fquotep (caar type-alist)))
-             (eq (ffn-symb (caar type-alist)) 'equal)
+       ((and (ffn-symb-p (caar type-alist) 'equal)
              (ts= (cadar type-alist) *ts-t*))
         (let ((arg1 (fargn (caar type-alist) 1))
               (arg2 (fargn (caar type-alist) 2))
@@ -10847,9 +10829,7 @@
 
   (cond ((null type-alist)
          (mv nil xtype-alist nil))
-        ((and (nvariablep (caar type-alist))
-              (not (fquotep (caar type-alist)))
-              (eq (ffn-symb (caar type-alist)) 'IF))
+        ((ffn-symb-p (caar type-alist) 'IF)
 
 ; Through Version_2.5 we retyped IF expressions.  But with the introduction
 ; of assume-true-false-if it became both prohibitively expensive and
@@ -11297,9 +11277,7 @@
 ; it finds and the IF expression found.
 
   (cond ((null args) (mv nil nil))
-        ((and (nvariablep (car args))
-              (not (quotep (car args)))
-              (eq (ffn-symb (car args)) 'if))
+        ((ffn-symb-p (car args) 'if)
          (mv i (car args)))
         (t (first-if (cdr args) (1+ i)))))
 
@@ -11419,9 +11397,7 @@
 ; below.  (Actually, we use the same variable name to hold a different
 ; ttree.)
 
-         ((and (nvariablep t1)
-               (not (fquotep t1))
-               (eq (ffn-symb t1) 'if))
+         ((ffn-symb-p t1 'if)
           (let ((t11 (fargn t1 1))
                 (t12 (fargn t1 2))
                 (t13 (fargn t1 3)))

@@ -21955,9 +21955,7 @@
 ; new-ttree), where lst is a list of binding alists, as for relieve-hyp.  This
 ; function is a No-Change Loser.
 
-  (cond ((and (nvariablep hyp)
-              (not (fquotep hyp))
-              (eq (ffn-symb hyp) 'synp))
+  (cond ((ffn-symb-p hyp 'synp)
          (mv-let
           (wonp failure-reason unify-subst ttree)
           (relieve-hyp-synp rune hyp unify-subst

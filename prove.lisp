@@ -432,9 +432,7 @@
                  ((and (equal geneqv *geneqv-iff*)
                        (equal b *t*)
                        (or (equal c *nil*)
-                           (and (nvariablep c)
-                                (not (fquotep c))
-                                (eq (ffn-symb c) 'HARD-ERROR))))
+                           (ffn-symb-p c 'HARD-ERROR)))
 
 ; Some users keep HARD-ERROR disabled so that they can figure out
 ; which guard proof case they are in.  HARD-ERROR is identically nil
@@ -656,9 +654,7 @@
 
   (cond
    ((equal term (if bool *nil* *t*)) (mv step-limit nil ttree))
-   ((and (nvariablep term)
-         (not (fquotep term))
-         (eq (ffn-symb term) 'if))
+   ((ffn-symb-p term 'if)
     (let ((t1 (fargn term 1))
           (t2 (fargn term 2))
           (t3 (fargn term 3)))
@@ -4317,9 +4313,7 @@
 ; false, given that lit is false.
 
   (mv-let (term const)
-          (cond ((and (nvariablep lit)
-;                     (not (fquotep lit))
-                      (eq (ffn-symb lit) 'not))
+          (cond ((ffn-symb-p lit 'not)
                  (term-equated-to-constant (fargn lit 1)))
                 (t (mv nil nil)))
           (add-literal lit

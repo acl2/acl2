@@ -71,7 +71,8 @@
      (defv *acl2-doc-state* nil)
      (defv *acl2-doc-limit-topic* nil)
      (defv *acl2-doc-topics-ht* nil)
-     (defv *acl2-doc-children-ht* nil)))
+     (defv *acl2-doc-children-ht* nil)
+     (defv *acl2-doc-show-help-message* nil)))
 
 (acl2-doc-init-vars)
 
@@ -360,11 +361,15 @@ then restart the ACL2-Doc browser to view that manual."
   (let ((name (car (cdr entry)))
 	(manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
 			 "ACL2 User's Manual"
-		       "ACL2+Books Manual")))
+		       "ACL2+Books Manual"))
+	(help-msg (if *acl2-doc-show-help-message*
+		      "; type h for help"
+		    "")))
+    (setq *acl2-doc-show-help-message* nil)
     (if (eq (acl2-doc-state-top-name) name)
-	(message "At the top node of the %s"
-		 manual-name)
-      (message "Topic: %s (%s)" name manual-name))))
+	(message "At the top node of the %s%s"
+		 manual-name help-msg)
+      (message "Topic: %s (%s)%s" name manual-name help-msg))))
 
 (defun acl2-doc-where ()
   (interactive)
@@ -517,6 +522,9 @@ then restart the ACL2-Doc browser to view that manual."
 
   (interactive (with-syntax-table lisp-mode-syntax-table
 		 (acl2-doc-completing-read "Go to topic" nil)))
+  (when (not (equal (buffer-name (current-buffer))
+		    *acl2-doc-buffer-name*))
+    (setq *acl2-doc-show-help-message* t))
   (acl2-doc-display name))
 
 (defun acl2-doc-go! ()
@@ -531,12 +539,8 @@ then restart the ACL2-Doc browser to view that manual."
 (defun acl2-doc-top ()
   "Go to the top topic."
   (interactive)
-  (acl2-doc-go (acl2-doc-state-top-name))
-  (let ((manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
-			 "ACL2 User's Manual"
-		       "ACL2+Books Manual")))
-    (message "At the top node of the %s; type h for help"
-	     manual-name)))
+  (setq *acl2-doc-show-help-message* t)
+  (acl2-doc-go (acl2-doc-state-top-name)))
 
 (defun acl2-doc (&optional clear)
 
@@ -549,6 +553,7 @@ typing `:doc acl2-doc' in the ACL2 read-eval-print loop.
 \\{acl2-doc-mode-map}"
 
   (interactive "P")
+  (setq *acl2-doc-show-help-message* t)
   (cond (clear
 	 (acl2-doc-reset nil)
 	 (acl2-doc-top))
@@ -630,12 +635,9 @@ Please report this error to the ACL2 implementors."))))
   "Quit the ACL2-Doc browser."
 
   (interactive)
-  (if (not (equal (buffer-name) *acl2-doc-buffer-name*))
-      (error
-       "Return to %s buffer (e.g., using C-t g) before running acl2-doc-quit"
-       *acl2-doc-buffer-name*))
   (acl2-doc-update-top-history-entry)
-  (quit-window))
+  (while (equal major-mode 'acl2-doc-mode) ; quit acl2-doc-history etc. too
+    (quit-window)))
 
 (defun acl2-doc-initialize (&optional toggle)
 
