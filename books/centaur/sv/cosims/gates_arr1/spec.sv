@@ -38,12 +38,19 @@ module spec (input wire [127:0] in,
   or arr4 [3:0] (out[15:12], ~in[3:0], ~in[0]);
 
   xor arr5 [3:0] (out[19:16],  in[3:0], in[7:4]);
-  xor arr6 [3:0] (out[23:20], ~in[3:0], ~in[7:4]);
+  xor arr6 [3:0] (out[23:20], ~in[3:0], ~in[7:4], in[8]);
 
-  nand arr7 [4] (out[27:24],  in[7:4], in[3:0]);
+  nand arr7 [4] (out[27:24],  in[7:4], in[3:0], in[11:8]);
   nand arr8 [4] (out[31:28], ~in[7:4], ~in[3:0]);
 
   nor arr9 [0:3] (out[35:32],  in[3:0], in[7:4]);
   nor arr10 [0:3] (out[39:36], ~in[3:0], ~in[7:4]);
+
+  not arr11 [4] (out[43:40], in[3:0] + in[7:4]);
+  not arr12 [4] (out[47:44], out[51:48], in[0]);
+
+  buf arr13 [3:0] (out[55:52], in[3:0]);
+  buf arr14 [0:3] (out[59:56], out[63:60], in[3:0]);
+
 
 endmodule // spec
