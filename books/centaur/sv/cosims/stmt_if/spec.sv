@@ -31,21 +31,78 @@
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
-  wire i5, i4, i3, i2, i1;
+  wire a0;
+  wire a1;
+  wire a2;
 
-  assign {i5, i4, i3, i2, i1} = in;
+  reg out_a1;
+  always @(a0 or a1 or a2)
+  begin
+    out_a1 = a0 ? a1 : a2;
+  end
 
-  wire out_xor1, out_xor2, out_xor3, out_xor4, out_xor5, out_xor6;
+  reg out_a2;
+  always @(a0 or a1 or a2)
+  begin
+    if (a0) out_a2 = a1;
+    else out_a2 = a2;
+  end
 
-  xor        (out_xor1, i1);
-  xor myxor  (out_xor2, i2);
-  xor        (out_xor3, i3, i4);
-  xor myxor2 (out_xor4, i4, i5, i3);
-  xor        (out_xor5, i1, i2, i3, i4);
-  xor myxor3 (out_xor6, i1, i2, i3, i4, i5);
+  wire [2:0] b0;
+  wire [2:0] b1;
+  wire [2:0] b2;
+
+  reg [2:0] out_b1;
+  always @(b0 or b1 or b2)
+    out_b1 = b0 ? b1 : b2;
+
+  reg [2:0] out_b2;
+  always @(b0 or b1 or b2)
+    if (b0) out_b2 = b1;
+    else out_b2 = b2;
+
+  reg [1:0] out_b3;  // truncation
+  always @(*)
+  if (b0) out_b3 = b1;
+  else out_b3 = b2;
+
+  reg [3:0] out_b4;  // extension
+  always @* begin
+    if (b0) out_b4 = b1;
+    else out_b4 = b2;
+  end
+
+  logic signed [3:0] c0;
+  logic signed [3:0] c1;
+  logic signed [3:0] c2;
+
+  logic signed [3:0] out_c1;
+  always_comb begin
+    if (c0) out_c1 = c1;
+    else out_c1 = c2;
+  end
+
+  logic signed [3:0] out_c2;
+  always_comb
+    if (c0) out_c2 = c1 + c2;
+    else out_c2 = c1 - c2;
+
+  logic signed [4:0] out_c3;  // extension
+  always_comb
+    if (c0) out_c3 = c1 + c2;
+    else out_c3 = c1 - c2;
+
+  logic signed [1:0] out_c4;  // truncation
+  always_comb
+    if (c0) out_c4 = c1 + c2;
+    else out_c4 = c1 - c2;
+
+  assign { c2, c1, c0, b2, b1, b0, a2, a1, a0 } = in;
 
   assign out = {
-	       out_xor6, out_xor5, out_xor4, out_xor3, out_xor2, out_xor1
-	       };
+	       out_c4, out_c3, out_c2, out_c1,
+	       out_b4, out_b3, out_b2, out_b1,
+               out_a2, out_a1
+       };
 
 endmodule // spec

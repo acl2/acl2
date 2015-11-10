@@ -28,24 +28,17 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-module spec (input logic [127:0] in,
+module spec (input wire [127:0] in,
 	     output wire [127:0] out);
 
-  wire i5, i4, i3, i2, i1;
+  // Aliasing directly from inputs to outputs
 
-  assign {i5, i4, i3, i2, i1} = in;
+  alias out[0] = in[0];
 
-  wire out_xor1, out_xor2, out_xor3, out_xor4, out_xor5, out_xor6;
+  alias in[1] = out[1];
 
-  xor        (out_xor1, i1);
-  xor myxor  (out_xor2, i2);
-  xor        (out_xor3, i3, i4);
-  xor myxor2 (out_xor4, i4, i5, i3);
-  xor        (out_xor5, i1, i2, i3, i4);
-  xor myxor3 (out_xor6, i1, i2, i3, i4, i5);
+  alias in[10:2] = out[10:2];
 
-  assign out = {
-	       out_xor6, out_xor5, out_xor4, out_xor3, out_xor2, out_xor1
-	       };
+  alias out[127:11] = in[127:11];
 
 endmodule // spec

@@ -31,21 +31,20 @@
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
-  wire i5, i4, i3, i2, i1;
+  wire [8:0] a9;
+  wire [3:0] a4;
+  wire a1;
 
-  assign {i5, i4, i3, i2, i1} = in;
+  wire [8:0] b9;
+  wire [3:0] b4;
+  wire b1;
 
-  wire out_xor1, out_xor2, out_xor3, out_xor4, out_xor5, out_xor6;
+  assign { a9, a4, a1 } = in;
 
-  xor        (out_xor1, i1);
-  xor myxor  (out_xor2, i2);
-  xor        (out_xor3, i3, i4);
-  xor myxor2 (out_xor4, i4, i5, i3);
-  xor        (out_xor5, i1, i2, i3, i4);
-  xor myxor3 (out_xor6, i1, i2, i3, i4, i5);
+  alias b9 = a9;
+  alias b4 = a4;
+  alias b1 = a1;
 
-  assign out = {
-	       out_xor6, out_xor5, out_xor4, out_xor3, out_xor2, out_xor1
-	       };
+  assign out = { b9, b4, b1 };
 
 endmodule // spec

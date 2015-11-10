@@ -35,17 +35,17 @@ module spec (input logic [127:0] in,
 
   assign {i5, i4, i3, i2, i1} = in;
 
-  wire out_xor1, out_xor2, out_xor3, out_xor4, out_xor5, out_xor6;
+  wire out_nand1, out_nand2, out_nand3, out_nand4, out_nand5, out_nand6;
 
-  xor        (out_xor1, i1);
-  xor myxor  (out_xor2, i2);
-  xor        (out_xor3, i3, i4);
-  xor myxor2 (out_xor4, i4, i5, i3);
-  xor        (out_xor5, i1, i2, i3, i4);
-  xor myxor3 (out_xor6, i1, i2, i3, i4, i5);
+  nand         (out_nand1, i1);
+  nand mynand  (out_nand2, i2);
+  nand         (out_nand3, i3, i4);
+  nand mynand2 (out_nand4, i3, i4, i5);
+  nand         (out_nand5, i1, i2, i3, i4);
+  nand mynand3 (out_nand6, i1, i2, i3, i4, i5);
 
   assign out = {
-	       out_xor6, out_xor5, out_xor4, out_xor3, out_xor2, out_xor1
+	       out_nand6, out_nand5, out_nand4, out_nand3, out_nand2, out_nand1
 	       };
 
 endmodule // spec

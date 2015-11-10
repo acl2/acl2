@@ -28,24 +28,22 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-module spec (input logic [127:0] in,
+module spec (input wire [127:0] in,
 	     output wire [127:0] out);
 
-  wire i5, i4, i3, i2, i1;
+  and arr1 [3:0] (out[3:0],  in[3:0], in[7:4]);
+  and arr2 [3:0] (out[7:4],  ~in[3:0], ~in[7:4]);
 
-  assign {i5, i4, i3, i2, i1} = in;
+  or arr3 [3:0] (out[11:8],  in[3:0], in[0]);
+  or arr4 [3:0] (out[15:12], ~in[3:0], ~in[0]);
 
-  wire out_xor1, out_xor2, out_xor3, out_xor4, out_xor5, out_xor6;
+  xor arr5 [3:0] (out[19:16],  in[3:0], in[7:4]);
+  xor arr6 [3:0] (out[23:20], ~in[3:0], ~in[7:4]);
 
-  xor        (out_xor1, i1);
-  xor myxor  (out_xor2, i2);
-  xor        (out_xor3, i3, i4);
-  xor myxor2 (out_xor4, i4, i5, i3);
-  xor        (out_xor5, i1, i2, i3, i4);
-  xor myxor3 (out_xor6, i1, i2, i3, i4, i5);
+  nand arr7 [4] (out[27:24],  in[7:4], in[3:0]);
+  nand arr8 [4] (out[31:28], ~in[7:4], ~in[3:0]);
 
-  assign out = {
-	       out_xor6, out_xor5, out_xor4, out_xor3, out_xor2, out_xor1
-	       };
+  nor arr9 [0:3] (out[35:32],  in[3:0], in[7:4]);
+  nor arr10 [0:3] (out[39:36], ~in[3:0], ~in[7:4]);
 
 endmodule // spec
