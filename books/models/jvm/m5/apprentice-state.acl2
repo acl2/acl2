@@ -1,2 +1,0 @@
-(include-book "m5")
-(certify-book "apprentice-state" ? t)

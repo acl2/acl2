@@ -2,13 +2,6 @@
 ; J Strother Moore
 ; February 26, 2003
 
-; cd /u/moore/m5/tolquhon
-; (ld "partial.lisp" :ld-pre-eval-print t)
-
-; Certification:
-; (include-book "utilities")
-; (certify-book "partial" 1)
-
 ; ---------------------------------------------------------------------------
 ; Summary
 
@@ -79,6 +72,7 @@
 (in-package "M5")
 
 (include-book "misc/defpun" :dir :system)
+(include-book "utilities")
 
 (defmacro defpun (g args &rest tail)
   `(acl2::defpun ,g ,args ,@tail))
@@ -492,23 +486,7 @@
 ; Now let's do recursive factorial.   We'll bring in the clocked work
 ; we have already done, just to have the *demo-state* etc.
 
-(include-book "demo")
-
-; Here is the (redundant) definition of the program.
-
-(defconst *fact-def*
-  '("fact:(I)I" (INT) NIL
-    (ILOAD_0)                         ;;;  0
-    (IFLE 12)                         ;;;  1
-    (ILOAD_0)                         ;;;  4
-    (ILOAD_0)                         ;;;  5
-    (ICONST_1)                        ;;;  6
-    (ISUB)                            ;;;  7
-    (INVOKESTATIC "Demo" "fact:(I)I" 1) ;;;  8
-    (IMUL)                            ;;; 11
-    (IRETURN)                         ;;; 12
-    (ICONST_1)                        ;;; 13
-    (IRETURN)))                       ;;; 14
+(include-book "jvm-fact-setup")
 
 ; The following function recognizes the call stack (cs) of a call of
 ; the "fact" method on n0.  The function is not applied to the
@@ -587,14 +565,14 @@
 ; and get back into the program of interest with some weird
 ; environment.  So we have to run until we do a return from the
 ; initial environment.  We make an assertion there -- the top of the
-; stack contains (int-fix (factorial n0)) -- without even knowing what
+; stack contains (int-fix (! n0)) -- without even knowing what
 ; the pc there is.
 
 (defun fact-assertion (th s n0 d0)
   (cond
    ((< (sdepth (call-stack th s)) d0)
     (equal (top (stack (top-frame th s)))
-           (int-fix (factorial n0))))
+           (int-fix (! n0))))
    (t
     (let ((n (nth 0 (locals (top-frame th s)))))
       (and (equal (program (top-frame th s)) (cdddr *fact-def*))
@@ -607,13 +585,13 @@
            (<= n n0)
            (equal (sdepth (call-stack th s)) (+ d0 (- n0 n)))
            (fact-caller-framesp (pop (call-stack th s)) n0 (- n0 n))
-           (equal (int-fix (factorial n0))
-                  (int-fix (* (factorial n)
+           (equal (int-fix (! n0))
+                  (int-fix (* (! n)
                               (stack-product n0 (- n0 n)))))
            (case (pc (top-frame th s))
              (0 t)
              ((12 14) (equal (top (stack (top-frame th s)))
-                             (int-fix (factorial n))))
+                             (int-fix (! n))))
              (otherwise nil)))))))
 
 (defpun fact-inv (th s n0 d0)
@@ -772,7 +750,7 @@
 ; did run long enough to return and hence, the caller's frame is the
 ; top-frame of s1.
 
-; Then the conclusion is that (int-fix (factorial n0)) is on top of
+; Then the conclusion is that (int-fix (! n0)) is on top of
 ; the stack of the caller's frame.
 
 (defthm fact-main
@@ -795,7 +773,7 @@
                   (< (sdepth (call-stack th s1))
                      (sdepth (call-stack th s0))))
              (equal (top (stack (top-frame th s1)))
-                    (int-fix (factorial n0)))))
+                    (int-fix (! n0)))))
 
   :hints (("Goal"
            :do-not-induct t

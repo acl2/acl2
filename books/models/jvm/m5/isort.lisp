@@ -1,16 +1,5 @@
-; (ld "isort.lisp" :ld-pre-eval-print t)
-#|
-
-; Certification instructions:
-
-(include-book "utilities")
-
-(certify-book "isort" 1)
-
-JSM June, 2000
-|#
-
 (in-package "M5")
+(include-book "utilities")
 
 #|
 Here is Isort.java:

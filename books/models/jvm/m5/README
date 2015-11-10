@@ -5,7 +5,7 @@ its bytecode, and the M5 counterpart.
 
 Here is a brief summary of the files:
 
-m5.lisp   
+m5.lisp
  definition of the M5 machine
 
 utilities.lisp
@@ -54,11 +54,14 @@ infinite-fair-schedule.lisp
  except that it takes as input a (finite) schedule and this shows how we
  could define a ``fair M5'')
 
-script.lisp
- a file that will re-certify all these books
+cert.acl2
+apprentice.acl2
+m5.acl2
+  certification instructions for cert.pl script
+
 
 Demo.java
- a recursive factorial method written in Java.  
+ a recursive factorial method written in Java.
 
 Demo.class
  the result of running the Sun java compiler:

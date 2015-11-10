@@ -1,11 +1,5 @@
-#|
-Certification:
-(include-book "universal")
-(certify-book "universal-never-returns" 1)
-J Moore
-Aug 2, 2002
-|#
 (in-package "M5")
+(include-book "universal")
 
 ; Some people leap to the conclusion that because ACL2 is a logic of
 ; total functions we can only deal with total programs.  That is, of

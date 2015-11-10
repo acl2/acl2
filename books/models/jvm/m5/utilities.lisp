@@ -15,16 +15,6 @@
 ; Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
 ; USA.
 
-#|
-; Certification Instructions.
-
-(include-book "m5")
-
-(certify-book "utilities" 1)
-
-J Moore
-|#
-
 (in-package "M5")
 
 ; Here we develop the general theory for proving things about the

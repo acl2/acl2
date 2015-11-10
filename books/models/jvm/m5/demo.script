@@ -52,7 +52,7 @@ The third command will run that bytecode on 5 and print 120.
 
 Now enter your ACL2 shell.
 
-(lookup-method "fact" "Demo" *demo-class-table*)
+(lookup-method "fact:(I)I" "Demo" *demo-class-table*)
 
 will display the M5 bytecode corresponding to the fact method just shown.
 

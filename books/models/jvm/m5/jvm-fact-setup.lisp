@@ -19,14 +19,6 @@
 ; for factorial on M5.
 
 #|
-; Certification Instructions.
-
-(include-book "utilities")
-
-(certify-book "jvm-fact-setup" 1)
-
-J Moore
-
 Here is the Java for a factorial method.
 
 class Demo {
@@ -96,6 +88,7 @@ Below is the output of jvm2acl2 for M5.
 |#
 
 (in-package "M5")
+(include-book "utilities")
 
 (defconst *Demo-class-table-in-tagged-form*
  (make-class-def
@@ -587,39 +580,30 @@ T
   (implies (and (poised-to-invoke-fact th s n)
                 (not (zp n)))
            (equal (run (repeat th 7) s)
-                  (MAKE-STATE
-                   (BIND
-                    TH
-                    (LIST
-                     (PUSH
-                      (MAKE-FRAME 8 (LIST N)
-                                  (PUSH (+ -1 N) (PUSH N NIL))
-                                  '((ILOAD_0)
-                                    (IFLE 12)
-                                    (ILOAD_0)
-                                    (ILOAD_0)
-                                    (ICONST_1)
-                                    (ISUB)
-                                    (INVOKESTATIC "Demo" "fact:(I)I" 1)
-                                    (IMUL)
-                                    (IRETURN)
-                                    (ICONST_1)
-                                    (IRETURN))
-                                  'UNLOCKED
-                                  "Demo")
-                      (PUSH
-                       (MAKE-FRAME
-                        (+ 3
-                           (PC (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S))))))
-                        (LOCALS (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S)))))
-                        (POP (STACK (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S))))))
-                        (PROGRAM (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S)))))
-                        (SYNC-FLG (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S)))))
-                        (CUR-CLASS (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S))))))
-                       (POP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S))))))
-                     'SCHEDULED
-                     (CADDDR (ASSOC-EQUAL TH (THREAD-TABLE S))))
-                    (THREAD-TABLE S))
-                   (HEAP S)
-                   (CLASS-TABLE S))))
+                  (make-state                 ;;; (run (repeat th 7) s)
+                   (bind
+                    th
+                    (make-thread
+                     (push
+                      (make-frame
+                       8
+                       (list n)
+                       (push (+ -1 n)
+                             (push n
+                                   nil))
+                       (method-program *fact-def*)
+                       'UNLOCKED
+                       "Demo")
+                      (push (make-frame (+ 3 (pc (top (call-stack th s))))
+                                        (locals (top (call-stack th s)))
+                                        (pop (stack (top (call-stack th s))))
+                                        (program (top (call-stack th s)))
+                                        (sync-flg (top (call-stack th s)))
+                                        (cur-class (top (call-stack th s))))
+                            (pop (call-stack th s))))
+                     'scheduled
+                     (rref th s))
+                    (thread-table s))
+                   (heap s)
+                   (class-table s))))
   :rule-classes nil)

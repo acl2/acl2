@@ -52,17 +52,12 @@ thus run the "universal program" according to the schedule generated
 by the schedule-generator and then look at the top of thread zero's
 active operand stack.
 
-To recertify:
-
-(include-book "utilities")
-
-(certify-book "universal" 1)
-
 Sun Jun 30 23:21:06 2002
 
 |#
 
 (in-package "M5")
+(include-book "utilities")
 
 (defconst *universal-state*
   '(((0 ((0 NIL NIL

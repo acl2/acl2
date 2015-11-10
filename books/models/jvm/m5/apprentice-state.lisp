@@ -1,9 +1,3 @@
-#|
-(include-book "m5")
-(certify-book "apprentice-state" 1)
-JSM
-|#
-
 (in-package "M5")
 
 ; The material below is the output of jvm2acl2 on Apprentice.java.

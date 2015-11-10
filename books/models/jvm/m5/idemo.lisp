@@ -18,14 +18,6 @@
 ; factorial on M5.
 
 #|
-; Certification Instructions.
-
-(include-book "utilities")
-
-(certify-book "idemo" 1)
-
-J Moore
-
 Here is the Java for an iterative factorial method.
 
 class IDemo {
@@ -62,6 +54,7 @@ Method int ifact(int)
 |#
 
 (in-package "M5")
+(include-book "utilities")
 
 ; Note that we have not shown a main program for our IDemo
 ; class.  We make one up below.  The initial state is only used to
