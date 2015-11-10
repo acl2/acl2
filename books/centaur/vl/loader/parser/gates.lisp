@@ -32,10 +32,10 @@
 (include-book "strengths")
 (include-book "delays")
 (include-book "lvalues")
+(include-book "datatypes") ;; bozo a bit heavy just for unpacked-dimension
 (include-book "../../mlib/expr-tools")
 (include-book "../../mlib/port-tools")
 (local (include-book "../../util/arithmetic"))
-
 
 (local (in-theory (disable acl2::consp-under-iff-when-true-listp
                            member-equal-when-member-equal-of-cdr-under-iff
@@ -213,13 +213,20 @@
 ;   and foo [3:0][4:0] (o, a, b); |    error    |   error      |  error
 ;  -------------------------------+-------------+--------------+------------
 ;
-; But without any discussion of what this stuff means, I think it seems pretty
-; reasonable for VL to not support it for now.  If we find that we need to look
-; into this more, consider the discussion in 23.3.2 Module instantiation
-; syntax, and particularly 23.3.3.5 Unpacked array ports and instances of
-; arrays, where an example of a two-dimensional array of flip-flops is
-; described.
-
+; It seems pretty reasonable for VL not to support multiple dimensions like
+; [3][4] and so forth.
+;
+; I'm don't think the spec is very clear about what single-expression
+; dimensions like [3] are supposed to mean.  But it seems basically reasonable
+; to assume that we're supposed to interpret them like other kinds of unpacked
+; arrays, e.g., see SystemVerilog-2012 page 109, where we're told that [size]
+; is equivalent to [0:size-1] for unpacked arrays.  So we'll try to handle
+; these with the usual vl-parse-unpacked-dimension.
+;
+; If this ever seems incorrect, or we need to look into it more, consider the
+; discussion in 23.3.2 Module instantiation syntax, and particularly 23.3.3.5
+; Unpacked array ports and instances of arrays, where an example of a
+; two-dimensional array of flip-flops is described.
 
 
 ; name_of_gate_instance ::= identifier [ range ]
@@ -237,7 +244,9 @@
        (when (vl-is-token? :vl-idtoken)
          (id := (vl-match))
          (when (vl-is-token? :vl-lbrack)
-           (range := (vl-parse-range)))
+           (range := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                         (vl-parse-range)
+                       (vl-parse-unpacked-dimension))))
          (return (cons (vl-idtoken->name id) range)))
        (return (cons nil nil))))
 

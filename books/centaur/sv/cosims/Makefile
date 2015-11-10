@@ -57,7 +57,7 @@ $(info Done rebuilding makefiles)
 -include Makefile-books
 
 cosim-core: cosims.cert make-cosim.lsp
-	rm -f $(CORE) 
+	rm -f $(CORE)
 	$(STARTJOB) -c "$(ACL2) < make-cosim.lsp &> make-cosim.out"
 
 all: cosim-core symlinks
@@ -71,20 +71,11 @@ FAILING_TEST_TARGETS := \
   task/ok \
   task2/ok \
   sysfun/ok \
-  bin_logor/ok \
-  bin_logand/ok \
-  bin_ashr/ok \
-  bin_ashl/ok \
-  bin_shr/ok \
-  bin_shl/ok \
+  alias1/ok \
+  alias2/ok \
+  alias3/ok \
+  alias4/ok \
   bin_pow/ok \
-  bin_wildeq/ok \
-  bin_wildneq/ok \
-  un_plus/ok \
-  un_bitnot/ok \
-  gates_and/ok \
-  gates_or/ok \
-  gates_xor/ok \
   gates_bufif0/ok \
   gates_bufif1/ok \
   gates_notif0/ok \
@@ -95,8 +86,7 @@ FAILING_TEST_TARGETS := \
   gates_rpmos/ok \
   gates_rnmos/ok \
   gates_pullup/ok \
-  gates_pulldown/ok \
-
+  gates_pulldown/ok
 
 
 SPECFILES := $(wildcard */spec.sv)
