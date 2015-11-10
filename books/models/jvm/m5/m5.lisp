@@ -262,7 +262,7 @@
 
 ; Internal fields in base classes do not contain type descriptors in their names"
 (defun base-class-def ()
-   (list (make-class-decl "java.lang.Object"
+   (list (make-class-decl "java/lang/Object"
                           nil
                           '("monitor" "mcount" "wait-set") ; Internal fields
                           '()
@@ -271,14 +271,14 @@
                              (RETURN)))
                           '(ref -1))
          (make-class-decl "ARRAY"
-                          '("java.lang.Object")
+                          '("java/lang/Object")
                           '(("<array>" . *ARRAY*)) ; Internal field
                           '()
                           '()
                           '()
                           '(ref -1))
-         (make-class-decl "java.lang.Thread"
-                          '("java.lang.Object")
+         (make-class-decl "java/lang/Thread"
+                          '("java/lang/Object")
                           '()
                           '()
                           '()
@@ -290,27 +290,27 @@
                              ())
                             ("<init>:()V" nil
                              (aload_0)
-                             (invokespecial "java.lang.Object" "<init>:()V" 0)
+                             (invokespecial "java/lang/Object" "<init>:()V" 0)
                              (return)))
                           '(ref -1))
-         (make-class-decl "java.lang.String"
-                          '("java.lang.Object")
+         (make-class-decl "java/lang/String"
+                          '("java/lang/Object")
                           '("value:[C")
                           '()
                           '()
                           '(("<init>:()V" nil
                              (aload_0)
-                             (invokespecial "java.lang.Object" "<init>:()V" 0)
+                             (invokespecial "java/lang/Object" "<init>:()V" 0)
                              (return)))
                           '(ref -1))
-         (make-class-decl "java.lang.Class"
-                          '("java.lang.Object")
+         (make-class-decl "java/lang/Class"
+                          '("java/lang/Object")
                           '()
                           '()
                           '()
                           '(("<init>:()V" nil
                              (aload_0)
-                             (invokespecial "java.lang.Object" "<init>:()V" 0)
+                             (invokespecial "java/lang/Object" "<init>:()V" 0)
                              (return)))
                           '(ref -1))))
 
@@ -432,8 +432,8 @@
   (let* ((class (bound? class-name class-table))
         (psupers (class-decl-superclasses class))
         (supers (cons class-name psupers)))
-       (or (in-list "java.lang.Thread" supers)
-           (in-list "java.lang.ThreadGroup" supers))))
+       (or (in-list "java/lang/Thread" supers)
+           (in-list "java/lang/ThreadGroup" supers))))
 
 ; ----------------------------------------------------------------------------
 ; Helper functions for locking and unlocking objects
@@ -449,18 +449,18 @@
 (defun lock-object (th obj-ref heap)
   (let* ((obj-ref-num (cadr obj-ref))
          (instance (binding (cadr obj-ref) heap))
-         (obj-fields (binding "java.lang.Object" instance))
+         (obj-fields (binding "java/lang/Object" instance))
          (new-mcount (+ 1 (binding "mcount" obj-fields)))
          (new-obj-fields
             (bind "monitor" th
                (bind "mcount" new-mcount obj-fields)))
-         (new-object (bind "java.lang.Object" new-obj-fields instance)))
+         (new-object (bind "java/lang/Object" new-obj-fields instance)))
      (bind obj-ref-num new-object heap)))
 
 (defun unlock-object (th obj-ref heap)
   (let* ((obj-ref-num (cadr obj-ref))
          (instance (binding (cadr obj-ref) heap))
-         (obj-fields (binding "java.lang.Object" instance))
+         (obj-fields (binding "java/lang/Object" instance))
          (old-mcount (binding "mcount" obj-fields))
          (new-mcount (ACL2::max 0 (- old-mcount 1)))
          (new-monitor (if (zp new-mcount)
@@ -469,7 +469,7 @@
          (new-obj-fields
             (bind "monitor" new-monitor
                (bind "mcount" new-mcount obj-fields)))
-         (new-object (bind "java.lang.Object" new-obj-fields instance)))
+         (new-object (bind "java/lang/Object" new-obj-fields instance)))
      (bind obj-ref-num new-object heap)))
 
 ; objectLockable? is used to determine if th can unlock instance.  This
@@ -481,14 +481,14 @@
 ; objectUnLockable? determins if a thread can unlock an object (ie if it
 ;  has a lock on that object)
 (defun objectLockable? (instance th)
-  (let* ((obj-fields (binding "java.lang.Object" instance))
+  (let* ((obj-fields (binding "java/lang/Object" instance))
          (monitor (binding "monitor" obj-fields))
          (mcount (binding "mcount" obj-fields)))
     (or (zp mcount)
         (equal monitor th))))
 
 (defun objectUnLockable? (instance th)
-  (let* ((obj-fields (binding "java.lang.Object" instance))
+  (let* ((obj-fields (binding "java/lang/Object" instance))
          (monitor (binding "monitor" obj-fields)))
       (equal monitor th)))
 
@@ -683,13 +683,13 @@
           (build-an-instance (cdr class-names) class-table))))
 
 (defun build-class-data (sfields)
-  (cons "java.lang.Class"
+  (cons "java/lang/Class"
         (build-class-field-bindings
          (cons "<name>" sfields))))
 
 (defun build-a-class-instance (sfields class-table)
     (list (build-class-data sfields)
-          (build-immediate-instance-data "java.lang.Object" class-table)))
+          (build-immediate-instance-data "java/lang/Object" class-table)))
 
 
 ; -----------------------------------------------------------------------------
@@ -1845,7 +1845,7 @@
   (let* ((class-ref (class-decl-heapref
                      (bound? class-name (class-table s))))
          (instance (deref class-ref (heap s))))
-    (field-value "java.lang.Class" field-name-and-type instance)))
+    (field-value "java/lang/Class" field-name-and-type instance)))
 
 (defun execute-GETSTATIC (inst th s)
   (let* ((class-name (arg1 inst))
@@ -1854,7 +1854,7 @@
          (class-ref (class-decl-heapref
                      (bound? class-name (class-table s))))
          (instance (deref class-ref (heap s)))
-         (field-value (field-value "java.lang.Class" field-name-and-type instance)))
+         (field-value (field-value "java/lang/Class" field-name-and-type instance)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
@@ -2452,10 +2452,10 @@
          (tThread (rrefToThread obj-ref (thread-table s))))
     (cond
      ((method-isNative? closest-method)
-      (cond ((and (equal closest-class "java.lang.Thread")
+      (cond ((and (equal closest-class "java/lang/Thread")
                   (equal method-name-and-type "start:()V"))
              (modify tThread s1 :status 'SCHEDULED))
-            ((and (equal closest-class "java.lang.Thread")
+            ((and (equal closest-class "java/lang/Thread")
                   (equal method-name-and-type "stop:()V"))
              (modify tThread s1
                      :status 'UNSCHEDULED))
@@ -2510,29 +2510,29 @@
                      :stack (popn nformals (stack (top-frame th s))))))
     (cond
      ((method-isNative? closest-method)
-      (cond ((and (equal closest-class "java.lang.Double")
+      (cond ((and (equal closest-class "java/lang/Double")
                   (equal method-name-and-type "doubleToRawLongBits:(D)J"))
              (modify th s1
                      :stack (push (long-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((and (equal closest-class "java.lang.Float")
+            ((and (equal closest-class "java/lang/Float")
                   (equal method-name-and-type "floatToRawIntBits:(F)I"))
              (modify th s1
                      :stack (push (int-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((and (equal closest-class "java.lang.Float")
+            ((and (equal closest-class "java/lang/Float")
                   (equal method-name-and-type "intBitsToFloat:(I)F"))
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::sp))
                                   (stack (top-frame th s1)))))
-            ((and (equal closest-class "java.lang.Double")
+            ((and (equal closest-class "java/lang/Double")
                   (equal method-name-and-type "longBitsToDouble:(J)D"))
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::dp))
                                   (stack (top-frame th s1)))))
-            ((and (equal closest-class "java.lang.StrictMath")
+            ((and (equal closest-class "java/lang/StrictMath")
                   (equal method-name-and-type "sqrt:(D)D"))
              (modify th s1
                      :stack (push (fpsqrt (top (stack (top-frame th s)))
@@ -2591,10 +2591,10 @@
          (tThread (rrefToThread obj-ref (thread-table s))))
     (cond
      ((method-isNative? closest-method)
-      (cond ((and (equal closest-class "java.lang.Thread")
+      (cond ((and (equal closest-class "java/lang/Thread")
                   (equal method-name-and-type "start:()V"))
              (modify tThread s1 :status 'SCHEDULED))
-            ((and (equal closest-class "java.lang.Thread")
+            ((and (equal closest-class "java/lang/Thread")
                   (equal method-name-and-type "stop:()V"))
              (modify tThread s1
                      :status 'UNSCHEDULED))
@@ -3138,7 +3138,7 @@
                            (popn 2 (stack (top-frame th s)))
                            (pop (stack (top-frame th s))))
                 :heap (bind (cadr class-ref)
-                            (set-instance-field "java.lang.Class"
+                            (set-instance-field "java/lang/Class"
                                                 field-name-and-type
                                                 value
                                                 instance)
@@ -3635,9 +3635,9 @@
 
 (defun make-string-obj (class cpentry s idx)
   (let* ((new-object (build-an-instance
-                      (cons "java.lang.String"
+                      (cons "java/lang/String"
                             (class-decl-superclasses
-                             (bound? "java.lang.String" (class-table s))))
+                             (bound? "java/lang/String" (class-table s))))
                      (class-table s)))
          (array-address (len (heap s)))
          (new-address (1+ array-address))
@@ -3646,7 +3646,7 @@
                                 (len chars)
                                 chars
                                 (class-table s)))
-         (stuffed-obj (set-instance-field "java.lang.String"
+         (stuffed-obj (set-instance-field "java/lang/String"
                                           "value:[C"
                                           (list 'REF array-address)
                                           new-object))
@@ -3684,7 +3684,7 @@
          (new-object (build-a-class-instance
                       (class-decl-sfields (bound? class new-ct))
                       new-ct))
-         (stuffed-obj (set-instance-field "java.lang.Class"
+         (stuffed-obj (set-instance-field "java/lang/Class"
                                           "<name>"
                                           class
                                           new-object))

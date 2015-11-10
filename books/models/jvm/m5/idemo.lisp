@@ -82,45 +82,45 @@ Method int ifact(int)
            nil))))
 
 (defconst *IDemo-heap*
-  '((0 . (("java.lang.Class"
-           ("<name>" . "java.lang.Object"))
-          ("java.lang.Object"
+  '((0 . (("java/lang/Class"
+           ("<name>" . "java/lang/Object"))
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (1 . (("java.lang.Class"
+    (1 . (("java/lang/Class"
            ("<name>" . "ARRAY"))
-          ("java.lang.Object"
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (2 . (("java.lang.Class"
-           ("<name>" . "java.lang.Thread"))
-          ("java.lang.Object"
+    (2 . (("java/lang/Class"
+           ("<name>" . "java/lang/Thread"))
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (3 . (("java.lang.Class"
-           ("<name>" . "java.lang.String"))
-          ("java.lang.Object"
+    (3 . (("java/lang/Class"
+           ("<name>" . "java/lang/String"))
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (4 . (("java.lang.Class"
-           ("<name>" . "java.lang.Class"))
-          ("java.lang.Object"
+    (4 . (("java/lang/Class"
+           ("<name>" . "java/lang/Class"))
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (5 . (("java.lang.Class"
+    (5 . (("java/lang/Class"
            ("<name>" . "IDemo"))
-          ("java.lang.Object"
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))))
 
 (defconst *IDemo-class-table*
-  '(("java.lang.Object"
+  '(("java/lang/Object"
      NIL
      ("monitor" "mcount" "wait-set")
      NIL
@@ -129,14 +129,14 @@ Method int ifact(int)
        (RETURN)))
      (REF 0))
     ("ARRAY"
-     ("java.lang.Object")
+     ("java/lang/Object")
      (("<array>" . *ARRAY*))
      NIL
      NIL
      NIL
      (REF 1))
-    ("java.lang.Thread"
-     ("java.lang.Object")
+    ("java/lang/Thread"
+     ("java/lang/Object")
      NIL
      NIL
      NIL
@@ -148,37 +148,37 @@ Method int ifact(int)
        ())
       ("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN)))
      (REF 2))
-    ("java.lang.String"
-     ("java.lang.Object")
+    ("java/lang/String"
+     ("java/lang/Object")
      ("value:[C")
      NIL
      NIL
      (("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN)))
      (REF 3))
-    ("java.lang.Class"
-     ("java.lang.Object")
+    ("java/lang/Class"
+     ("java/lang/Object")
      NIL
      NIL
      NIL
      (("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN)))
      (REF 4))
     ("IDemo"
-     ("java.lang.Object")
+     ("java/lang/Object")
      NIL
      NIL
      NIL
      (("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN))
       ("ifact:(I)I" NIL
        (ICONST\_1)

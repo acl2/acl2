@@ -95,14 +95,14 @@ Below is the output of jvm2acl2 for M5.
   (list
     (make-class-decl
      "Demo"
-     '("java.lang.Object")
+     '("java/lang/Object")
      '()
      '("ans:I")
      '()
      (list
       '("<init>:()V" nil
         (aload_0)
-        (invokespecial "java.lang.Object" "<init>:()V" 0)
+        (invokespecial "java/lang/Object" "<init>:()V" 0)
         (return))
       '("fact:(I)I" nil
         (iload_0)
@@ -165,66 +165,66 @@ Below is the output of jvm2acl2 for M5.
           (RETURN))
          UNLOCKED "Demo"))
      SCHEDULED NIL))
- ((0 ("java.lang.Class" ("<name>" . "java.lang.Object"))
-     ("java.lang.Object" ("monitor" . 0)
+ ((0 ("java/lang/Class" ("<name>" . "java/lang/Object"))
+     ("java/lang/Object" ("monitor" . 0)
       ("mcount" . 0)
       ("wait-set" . 0)))
-  (1 ("java.lang.Class" ("<name>" . "ARRAY"))
-     ("java.lang.Object" ("monitor" . 0)
+  (1 ("java/lang/Class" ("<name>" . "ARRAY"))
+     ("java/lang/Object" ("monitor" . 0)
       ("mcount" . 0)
       ("wait-set" . 0)))
-  (2 ("java.lang.Class" ("<name>" . "java.lang.Thread"))
-     ("java.lang.Object" ("monitor" . 0)
+  (2 ("java/lang/Class" ("<name>" . "java/lang/Thread"))
+     ("java/lang/Object" ("monitor" . 0)
       ("mcount" . 0)
       ("wait-set" . 0)))
-  (3 ("java.lang.Class" ("<name>" . "java.lang.String"))
-     ("java.lang.Object" ("monitor" . 0)
+  (3 ("java/lang/Class" ("<name>" . "java/lang/String"))
+     ("java/lang/Object" ("monitor" . 0)
       ("mcount" . 0)
       ("wait-set" . 0)))
-  (4 ("java.lang.Class" ("<name>" . "java.lang.Class"))
-     ("java.lang.Object" ("monitor" . 0)
+  (4 ("java/lang/Class" ("<name>" . "java/lang/Class"))
+     ("java/lang/Object" ("monitor" . 0)
       ("mcount" . 0)
       ("wait-set" . 0)))
-  (5 ("java.lang.Class" ("<name>" . "Demo")
+  (5 ("java/lang/Class" ("<name>" . "Demo")
       ("ans:I" . 0))
-     ("java.lang.Object" ("monitor" . 0)
+     ("java/lang/Object" ("monitor" . 0)
       ("mcount" . 0)
       ("wait-set" . 0))))
- (("java.lang.Object" NIL ("monitor" "mcount" "wait-set")
+ (("java/lang/Object" NIL ("monitor" "mcount" "wait-set")
    NIL NIL (("<init>:()V" NIL (RETURN)))
    (REF 0))
-  ("ARRAY" ("java.lang.Object")
+  ("ARRAY" ("java/lang/Object")
    (("<array>" . *ARRAY*))
    NIL NIL NIL (REF 1))
-  ("java.lang.Thread"
-   ("java.lang.Object")
+  ("java/lang/Thread"
+   ("java/lang/Object")
    NIL NIL NIL
    (("run:()V" NIL (RETURN))
     ("start:()V" NIL NIL)
     ("stop:()V" NIL NIL)
     ("<init>:()V" NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+     (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
      (RETURN)))
    (REF 2))
-  ("java.lang.String"
-   ("java.lang.Object")
+  ("java/lang/String"
+   ("java/lang/Object")
    ("value:[C")
    NIL NIL
    (("<init>:()V" NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+     (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
      (RETURN)))
    (REF 3))
-  ("java.lang.Class" ("java.lang.Object")
+  ("java/lang/Class" ("java/lang/Object")
    NIL NIL NIL
    (("<init>:()V" NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+     (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
      (RETURN)))
    (REF 4))
-  ("Demo" ("java.lang.Object")
+  ("Demo" ("java/lang/Object")
    NIL ("ans:I")
    NIL
    (("<init>:()V" NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+     (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
      (RETURN))
     ("fact:(I)I" NIL
      (ILOAD_0)
@@ -279,46 +279,46 @@ Below is the output of jvm2acl2 for M5.
            nil))))
 
 (defconst *Demo-heap*
-  '((0 . (("java.lang.Class"
-           ("<name>" . "java.lang.Object"))
-          ("java.lang.Object"
+  '((0 . (("java/lang/Class"
+           ("<name>" . "java/lang/Object"))
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (1 . (("java.lang.Class"
+    (1 . (("java/lang/Class"
            ("<name>" . "ARRAY"))
-          ("java.lang.Object"
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (2 . (("java.lang.Class"
-           ("<name>" . "java.lang.Thread"))
-          ("java.lang.Object"
+    (2 . (("java/lang/Class"
+           ("<name>" . "java/lang/Thread"))
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (3 . (("java.lang.Class"
-           ("<name>" . "java.lang.String"))
-          ("java.lang.Object"
+    (3 . (("java/lang/Class"
+           ("<name>" . "java/lang/String"))
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (4 . (("java.lang.Class"
-           ("<name>" . "java.lang.Class"))
-          ("java.lang.Object"
+    (4 . (("java/lang/Class"
+           ("<name>" . "java/lang/Class"))
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))
-    (5 . (("java.lang.Class"
+    (5 . (("java/lang/Class"
            ("<name>" . "Demo")
            ("ans:I" . 0))
-          ("java.lang.Object"
+          ("java/lang/Object"
            ("monitor" . 0)
            ("mcount" . 0)
            ("wait-set" . 0))))))
 
 (defconst *Demo-class-table*
-  '(("java.lang.Object"
+  '(("java/lang/Object"
      NIL
      ("monitor" "mcount" "wait-set")
      NIL
@@ -327,14 +327,14 @@ Below is the output of jvm2acl2 for M5.
        (RETURN)))
      (REF 0))
     ("ARRAY"
-     ("java.lang.Object")
+     ("java/lang/Object")
      (("<array>" . *ARRAY*))
      NIL
      NIL
      NIL
      (REF 1))
-    ("java.lang.Thread"
-     ("java.lang.Object")
+    ("java/lang/Thread"
+     ("java/lang/Object")
      NIL
      NIL
      NIL
@@ -346,37 +346,37 @@ Below is the output of jvm2acl2 for M5.
        ())
       ("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN)))
      (REF 2))
-    ("java.lang.String"
-     ("java.lang.Object")
+    ("java/lang/String"
+     ("java/lang/Object")
      ("value:[C")
      NIL
      NIL
      (("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN)))
      (REF 3))
-    ("java.lang.Class"
-     ("java.lang.Object")
+    ("java/lang/Class"
+     ("java/lang/Object")
      NIL
      NIL
      NIL
      (("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN)))
      (REF 4))
     ("Demo"
-     ("java.lang.Object")
+     ("java/lang/Object")
      NIL
      ("ans:I")
      NIL
      (("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
+       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN))
       ("fact:(I)I" NIL
        (ILOAD\_0)

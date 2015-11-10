@@ -6,14 +6,14 @@
  (make-class-def
   (list
     (make-class-decl "Apprentice"
-                     '("java.lang.Object")
+                     '("java/lang/Object")
                      '()
                      '()
                      '()
                      (list
                         '("<init>:()V" nil
                            (aload_0)
-                           (invokespecial "java.lang.Object" "<init>:()V" 0)
+                           (invokespecial "java/lang/Object" "<init>:()V" 0)
                            (return))
                         '("main:([Ljava/lang/String;)V" nil
                            (new "Container")
@@ -29,29 +29,29 @@
                            (aload_1)
                            (invokevirtual "Job" "setref:(LContainer;)V" 1)
                            (aload_2)
-                           (invokevirtual "java.lang.Thread" "start:()V" 0)
+                           (invokevirtual "java/lang/Thread" "start:()V" 0)
                            (goto LABEL::TAG_0)))
                      '(ref -1))
     (make-class-decl "Container"
-                     '("java.lang.Object")
+                     '("java/lang/Object")
                      '("counter:I")
                      '()
                      '()
                      (list
                         '("<init>:()V" nil
                            (aload_0)
-                           (invokespecial "java.lang.Object" "<init>:()V" 0)
+                           (invokespecial "java/lang/Object" "<init>:()V" 0)
                            (return)))
                      '(ref -1))
     (make-class-decl "Job"
-                     '("java.lang.Thread" "java.lang.Object")
+                     '("java/lang/Thread" "java/lang/Object")
                      '("objref:LContainter;")
                      '()
                      '()
                      (list
                         '("<init>:()V" nil
                            (aload_0)
-                           (invokespecial "java.lang.Thread" "<init>:()V" 0)
+                           (invokespecial "java/lang/Thread" "<init>:()V" 0)
                            (return))
                         '("incr:()LJob;" nil
                            (aload_0)
@@ -104,7 +104,7 @@
      (aload_1)
      (invokevirtual "Job" "setref:(LContainer;)V" 1)
      (aload_2)
-     (invokevirtual "java.lang.Thread" "start:()V" 0)
+     (invokevirtual "java/lang/Thread" "start:()V" 0)
      (goto LABEL::TAG_0)))
 
 (defun Apprentice-ms ()
