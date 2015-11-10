@@ -190,7 +190,8 @@ Method ListProc()
      ("monitor" "mcount" "wait-set")
      NIL
      NIL
-     (("<init>:()V" NIL NIL (RETURN)))
+     (("<init>:()V" NIL
+       (RETURN)))
      (REF 0))
     ("ARRAY"
      ("java.lang.Object")
@@ -204,10 +205,14 @@ Method ListProc()
      NIL
      NIL
      NIL
-     (("run:()V" NIL NIL (RETURN))
-      ("start:()V" NIL NIL NIL)
-      ("stop:()V" NIL NIL NIL)
-      ("<init>:()V" NIL NIL (ALOAD\_0)
+     (("run:()V" NIL
+       (RETURN))
+      ("start:()V" NIL
+       ())
+      ("stop:()V" NIL
+       ())
+      ("<init>:()V" NIL
+       (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
      (REF 2))
@@ -216,7 +221,7 @@ Method ListProc()
      ("value:[C")
      NIL
      NIL
-     (("<init>:()V" NIL NIL
+     (("<init>:()V" NIL
        (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
@@ -226,7 +231,7 @@ Method ListProc()
      NIL
      NIL
      NIL
-     (("<init>:()V" NIL NIL
+     (("<init>:()V" NIL
        (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
@@ -236,11 +241,11 @@ Method ListProc()
      ("car:I" "cdr:Ljava/lang/Object;")
      nil
      nil
-     (("<init>:()V" NIL NIL
+     (("<init>:()V" NIL
        (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN))
-      ("cons:(ILjava/lang/Object;)LCons;" (int java.lang.Object) nil
+      ("cons:(ILjava/lang/Object;)LCons;" nil
        (NEW "Cons")
        (DUP)
        (INVOKESPECIAL "Cons" "<init>:()V" 0)
@@ -258,11 +263,11 @@ Method ListProc()
      nil
      nil
      nil
-     (("<init>:()V" nil nil
+     (("<init>:()V" nil
        (ALOAD\_0)
        (INVOKESPECIAL "Cons" "<init>:()V" 0)
        (RETURN))
-      ("insert:(ILjava/lang/Object;)LCons;" (int java.lang.Object) nil
+      ("insert:(ILjava/lang/Object;)LCons;" nil
         (aload_1)
         (ifnonnull 9)
         (iload_0)
@@ -288,7 +293,7 @@ Method ListProc()
         (invokestatic "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)
         (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
         (areturn))
-      ("isort:(Ljava/lang/Object;)Ljava/Lang/Object;" (java.lang.Object) nil
+      ("isort:(Ljava/lang/Object;)Ljava/Lang/Object;" nil
        (aload_0)
        (ifnonnull 5)
        (aload_0)

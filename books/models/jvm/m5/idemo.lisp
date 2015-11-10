@@ -125,7 +125,8 @@ Method int ifact(int)
      ("monitor" "mcount" "wait-set")
      NIL
      NIL
-     (("<init>:()V" NIL NIL (RETURN)))
+     (("<init>:()V" NIL
+       (RETURN)))
      (REF 0))
     ("ARRAY"
      ("java.lang.Object")
@@ -139,10 +140,14 @@ Method int ifact(int)
      NIL
      NIL
      NIL
-     (("run:()V" NIL NIL (RETURN))
-      ("start:()V" NIL NIL NIL)
-      ("stop:()V" NIL NIL NIL)
-      ("<init>:()V" NIL NIL (ALOAD\_0)
+     (("run:()V" NIL
+       (RETURN))
+      ("start:()V" NIL
+       ())
+      ("stop:()V" NIL
+       ())
+      ("<init>:()V" NIL
+       (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
      (REF 2))
@@ -151,7 +156,7 @@ Method int ifact(int)
      ("value:[C")
      NIL
      NIL
-     (("<init>:()V" NIL NIL
+     (("<init>:()V" NIL
        (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
@@ -161,7 +166,7 @@ Method int ifact(int)
      NIL
      NIL
      NIL
-     (("<init>:()V" NIL NIL
+     (("<init>:()V" NIL
        (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
@@ -171,11 +176,11 @@ Method int ifact(int)
      NIL
      NIL
      NIL
-     (("<init>:()V" NIL NIL
+     (("<init>:()V" NIL
        (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN))
-      ("ifact:(I)I" (INT) NIL
+      ("ifact:(I)I" NIL
        (ICONST\_1)
        (ISTORE\_1)
        (GOTO 11)

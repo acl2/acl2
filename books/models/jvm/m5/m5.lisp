@@ -267,52 +267,52 @@
                           '("monitor" "mcount" "wait-set") ; Internal fields
                           '()
                           '()
-                          '(("<init>:()V" () nil (RETURN)))
-                          '(REF -1))
+                          '(("<init>:()V" nil
+                             (RETURN)))
+                          '(ref -1))
          (make-class-decl "ARRAY"
                           '("java.lang.Object")
                           '(("<array>" . *ARRAY*)) ; Internal field
                           '()
                           '()
                           '()
-                          '(REF -1))
+                          '(ref -1))
          (make-class-decl "java.lang.Thread"
                           '("java.lang.Object")
                           '()
                           '()
                           '()
-                          '(("run:()V" () nil
-                             (RETURN))
-                            ("start:()V" () nil ())
-                            ("stop:()V" () nil ())
-                            ("<init>:()V" ()
-                                      nil
-                                      (aload_0)
-                                      (invokespecial "java.lang.Object" "<init>:()V" 0)
-                                      (return)))
-                          '(REF -1))
+                          '(("run:()V" nil
+                             (return))
+                            ("start:()V" nil
+                             ())
+                            ("stop:()V" nil
+                             ())
+                            ("<init>:()V" nil
+                             (aload_0)
+                             (invokespecial "java.lang.Object" "<init>:()V" 0)
+                             (return)))
+                          '(ref -1))
          (make-class-decl "java.lang.String"
                           '("java.lang.Object")
                           '("value:[C")
                           '()
                           '()
-                          '(("<init>:()V" ()
-                                      nil
-                                      (aload_0)
-                                      (invokespecial "java.lang.Object" "<init>:()V" 0)
-                                      (return)))
-                          '(REF -1))
+                          '(("<init>:()V" nil
+                             (aload_0)
+                             (invokespecial "java.lang.Object" "<init>:()V" 0)
+                             (return)))
+                          '(ref -1))
          (make-class-decl "java.lang.Class"
                           '("java.lang.Object")
                           '()
                           '()
                           '()
-                          '(("<init>:()V" ()
-                                     nil
-                                     (aload_0)
-                                     (invokespecial "java.lang.Object" "<init>:()V" 0)
-                                     (return)))
-                          '(REF -1))))
+                          '(("<init>:()V" nil
+                             (aload_0)
+                             (invokespecial "java.lang.Object" "<init>:()V" 0)
+                             (return)))
+                          '(ref -1))))
 
 (defun make-class-def (list-of-class-decls)
    (append (base-class-def) list-of-class-decls))
@@ -526,7 +526,7 @@
 ; Method definitions will be constructed by expressions such as:
 ; (Note:  all of the symbols below are understood to be in the pkg "JVM".)
 
-; ("move:(II)I" (dx dy) nil
+; ("move:(II)I" nil
 ;   (iload this)
 ;   (iload this)
 ;   (getfield "Point" "x:I")
@@ -544,7 +544,7 @@
 
 ; Provided this method is defined in the class "Point" it can be invoked by
 
-;   (invokevirtual "Point" "move(II)I" 2)
+;   (invokevirtual "Point" "move:(II)I" 2)
 
 ; This assumes that the stack, at the time of invocation, contains an
 ; reference to an object of type "Point" and two numbers, dx and dy.
@@ -563,12 +563,10 @@
 
 (defun method-name-and-type (m)
   (nth 0 m))
-(defun method-formals (m)
-  (nth 1 m))
 (defun method-sync (m)
-  (nth 2 m))
+  (nth 1 m))
 (defun method-program (m)
-  (cdddr m))
+  (cddr m))
 (defun method-isNative? (m)
   (equal '(NIL)
          (method-program m)))
@@ -3602,7 +3600,6 @@
 ;
 (defun assemble_method (method)
   (append (list (method-name-and-type method)
-                (method-formals method)
                 (method-sync method))
           (resolve_basic_block (method-program method))))
 

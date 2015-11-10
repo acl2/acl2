@@ -100,11 +100,11 @@ Below is the output of jvm2acl2 for M5.
      '("ans:I")
      '()
      (list
-      '("<init>:()V" () nil
+      '("<init>:()V" nil
         (aload_0)
         (invokespecial "java.lang.Object" "<init>:()V" 0)
         (return))
-      '("fact:(I)I" (int) nil
+      '("fact:(I)I" nil
         (iload_0)
         (ifle LABEL::TAG_0)
         (iload_0)
@@ -116,7 +116,7 @@ Below is the output of jvm2acl2 for M5.
         (ireturn)
         (LABEL::TAG_0 iconst_1)
         (ireturn))
-      '("main:([Ljava/lang/String;)V" (java.lang.String[]) nil
+      '("main:([Ljava/lang/String;)V" nil
         (iconst_4)
         (istore_1)
         (iload_1)
@@ -125,7 +125,7 @@ Below is the output of jvm2acl2 for M5.
         (invokestatic "Demo" "fact:(I)I" 1)
         (putstatic "Demo" "ans:I")
         (return)))
-     '(REF -1)))))
+     '(ref -1)))))
 
 (defconst *Demo-main*
   '((iconst_4)
@@ -191,7 +191,7 @@ Below is the output of jvm2acl2 for M5.
       ("mcount" . 0)
       ("wait-set" . 0))))
  (("java.lang.Object" NIL ("monitor" "mcount" "wait-set")
-   NIL NIL (("<init>:()V" NIL NIL (RETURN)))
+   NIL NIL (("<init>:()V" NIL (RETURN)))
    (REF 0))
   ("ARRAY" ("java.lang.Object")
    (("<array>" . *ARRAY*))
@@ -199,10 +199,10 @@ Below is the output of jvm2acl2 for M5.
   ("java.lang.Thread"
    ("java.lang.Object")
    NIL NIL NIL
-   (("run:()V" NIL NIL (RETURN))
-    ("start:()V" NIL NIL NIL)
-    ("stop:()V" NIL NIL NIL)
-    ("<init>:()V" NIL NIL (ALOAD_0)
+   (("run:()V" NIL (RETURN))
+    ("start:()V" NIL NIL)
+    ("stop:()V" NIL NIL)
+    ("<init>:()V" NIL (ALOAD_0)
      (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
      (RETURN)))
    (REF 2))
@@ -210,24 +210,24 @@ Below is the output of jvm2acl2 for M5.
    ("java.lang.Object")
    ("value:[C")
    NIL NIL
-   (("<init>:()V" NIL NIL (ALOAD_0)
+   (("<init>:()V" NIL (ALOAD_0)
      (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
      (RETURN)))
    (REF 3))
   ("java.lang.Class" ("java.lang.Object")
    NIL NIL NIL
-   (("<init>:()V" NIL NIL (ALOAD_0)
+   (("<init>:()V" NIL (ALOAD_0)
      (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
      (RETURN)))
    (REF 4))
   ("Demo" ("java.lang.Object")
    NIL ("ans:I")
    NIL
-   (("<init>:()V" NIL NIL (ALOAD_0)
+   (("<init>:()V" NIL (ALOAD_0)
      (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
      (RETURN))
-    ("fact:(I)I" (INT)
-     NIL (ILOAD_0)
+    ("fact:(I)I" NIL
+     (ILOAD_0)
      (IFLE 12)
      (ILOAD_0)
      (ILOAD_0)
@@ -238,8 +238,8 @@ Below is the output of jvm2acl2 for M5.
      (IRETURN)
      (ICONST_1)
      (IRETURN))
-    ("main:([Ljava/lang/String;)V" (|JAVA.LANG.STRING[]|)
-     NIL (ICONST_4)
+    ("main:([Ljava/lang/String;)V" NIL
+     (ICONST_4)
      (ISTORE_1)
      (ILOAD_1)
      (ICONST_1)
@@ -323,7 +323,8 @@ Below is the output of jvm2acl2 for M5.
      ("monitor" "mcount" "wait-set")
      NIL
      NIL
-     (("<init>:()V" NIL NIL (RETURN)))
+     (("<init>:()V" NIL
+       (RETURN)))
      (REF 0))
     ("ARRAY"
      ("java.lang.Object")
@@ -337,10 +338,14 @@ Below is the output of jvm2acl2 for M5.
      NIL
      NIL
      NIL
-     (("run:()V" NIL NIL (RETURN))
-      ("start:()V" NIL NIL NIL)
-      ("stop:()V" NIL NIL NIL)
-      ("<init>:()V" NIL NIL (ALOAD\_0)
+     (("run:()V" NIL
+       (RETURN))
+      ("start:()V" NIL
+       ())
+      ("stop:()V" NIL
+       ())
+      ("<init>:()V" NIL
+       (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
      (REF 2))
@@ -349,7 +354,7 @@ Below is the output of jvm2acl2 for M5.
      ("value:[C")
      NIL
      NIL
-     (("<init>:()V" NIL NIL
+     (("<init>:()V" NIL
        (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
@@ -359,7 +364,7 @@ Below is the output of jvm2acl2 for M5.
      NIL
      NIL
      NIL
-     (("<init>:()V" NIL NIL
+     (("<init>:()V" NIL
        (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
@@ -369,11 +374,11 @@ Below is the output of jvm2acl2 for M5.
      NIL
      ("ans:I")
      NIL
-     (("<init>:()V" NIL NIL
+     (("<init>:()V" NIL
        (ALOAD\_0)
        (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN))
-      ("fact:(I)I" (INT) NIL
+      ("fact:(I)I" NIL
        (ILOAD\_0)
        (IFLE 12)
        (ILOAD\_0)
@@ -385,7 +390,7 @@ Below is the output of jvm2acl2 for M5.
        (IRETURN)
        (ICONST\_1)
        (IRETURN))
-      ("main:([Ljava/lang/String;)V" (|JAVA.LANG.STRING[]|) NIL
+      ("main:([Ljava/lang/String;)V" NIL
        (ICONST\_4)
        (ISTORE\_1)
        (ILOAD\_1)
@@ -505,7 +510,7 @@ T
 ; Proving Fact Correct
 
 (defconst *fact-def*
-  '("fact:(I)I" (INT) NIL
+  '("fact:(I)I" NIL
     (ILOAD_0)                         ;;;  0
     (IFLE 12)                         ;;;  1
     (ILOAD_0)                         ;;;  4

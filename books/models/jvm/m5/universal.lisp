@@ -91,7 +91,8 @@ Sun Jun 30 23:21:06 2002
          ("mcount" . 0)
          ("wait-set" . 0))))
     (("java.lang.Object" NIL ("monitor" "mcount" "wait-set")
-      NIL NIL (("<init>:()V" NIL NIL (RETURN)))
+      NIL NIL (("<init>:()V" NIL
+                (RETURN)))
       (REF 0))
      ("ARRAY" ("java.lang.Object")
       (("<array>" . *ARRAY*))
@@ -99,10 +100,14 @@ Sun Jun 30 23:21:06 2002
      ("java.lang.Thread"
       ("java.lang.Object")
       NIL NIL NIL
-      (("run:()V" NIL NIL (RETURN))
-       ("start:()V" NIL NIL NIL)
-       ("stop:()V" NIL NIL NIL)
-       ("<init>:()V" NIL NIL (ALOAD_0)
+      (("run:()V" NIL
+        (RETURN))
+       ("start:()V" NIL
+        ())
+       ("stop:()V" NIL
+        ())
+       ("<init>:()V" NIL
+        (ALOAD_0)
         (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
         (RETURN)))
       (REF 2))
@@ -110,28 +115,30 @@ Sun Jun 30 23:21:06 2002
       ("java.lang.Object")
       ("value:[C")
       NIL NIL
-      (("<init>:()V" NIL NIL (ALOAD_0)
+      (("<init>:()V" NIL
+        (ALOAD_0)
         (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
         (RETURN)))
       (REF 3))
      ("java.lang.Class" ("java.lang.Object")
       NIL NIL NIL
-      (("<init>:()V" NIL NIL (ALOAD_0)
+      (("<init>:()V" NIL
+        (ALOAD_0)
         (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
         (RETURN)))
       (REF 4))
      ("Universal" ("java.lang.Object")
       NIL NIL NIL
-      (("<init>:()V" NIL NIL (ALOAD_0)
+      (("<init>:()V" NIL
+        (ALOAD_0)
         (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
         (RETURN))
-       ("universal:()I" NIL NIL
+       ("universal:()I" NIL
         (ICONST_0)
         (ICONST_1)
         (IADD)
         (GOTO -2))
-       ("main:([Ljava/lang/String;)V" (|JAVA.LANG.STRING[]|)
-        NIL
+       ("main:([Ljava/lang/String;)V" NIL
         (INVOKESTATIC "Universal" "universal:()I" 0)
         (POP)
         (RETURN)))
@@ -221,7 +228,7 @@ Sun Jun 30 23:21:06 2002
   (and (equal (status th s) 'SCHEDULED)
        (equal (next-inst th s) '(INVOKESTATIC "Universal" "universal:()I" 0))
        (equal (lookup-methodref "universal:()I" "Universal" (class-table s))
-              '("Universal" . ("universal:()I" NIL NIL
+              '("Universal" . ("universal:()I" NIL
                 (ICONST_0)
                 (ICONST_1)
                 (IADD)

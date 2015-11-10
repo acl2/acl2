@@ -11,11 +11,11 @@
                      '()
                      '()
                      (list
-                        '("<init>:()V" () nil
+                        '("<init>:()V" nil
                            (aload_0)
                            (invokespecial "java.lang.Object" "<init>:()V" 0)
                            (return))
-                        '("main:([Ljava/lang/String;)V" (java.lang.String[]) nil
+                        '("main:([Ljava/lang/String;)V" nil
                            (new "Container")
                            (dup)
                            (invokespecial "Container" "<init>:()V" 0)
@@ -31,29 +31,29 @@
                            (aload_2)
                            (invokevirtual "java.lang.Thread" "start:()V" 0)
                            (goto LABEL::TAG_0)))
-                     '(REF -1))
+                     '(ref -1))
     (make-class-decl "Container"
                      '("java.lang.Object")
                      '("counter:I")
                      '()
                      '()
                      (list
-                        '("<init>:()V" () nil
+                        '("<init>:()V" nil
                            (aload_0)
                            (invokespecial "java.lang.Object" "<init>:()V" 0)
                            (return)))
-                     '(REF -1))
+                     '(ref -1))
     (make-class-decl "Job"
                      '("java.lang.Thread" "java.lang.Object")
                      '("objref:LContainter;")
                      '()
                      '()
                      (list
-                        '("<init>:()V" () nil
+                        '("<init>:()V" nil
                            (aload_0)
                            (invokespecial "java.lang.Thread" "<init>:()V" 0)
                            (return))
-                        '("incr:()LJob;" () nil
+                        '("incr:()LJob;" nil
                            (aload_0)
                            (getfield "Job" "objref:LContainter;")
                            (astore_1)
@@ -77,18 +77,18 @@
                            (athrow)
                            (LABEL::TAG_0 aload_0)
                            (areturn))
-                        '("setref:(LContainer;)V" (Container) nil
+                        '("setref:(LContainer;)V" nil
                            (aload_0)
                            (aload_1)
                            (putfield "Job" "objref:LContainter;")
                            (return))
-                        '("run:()V" () nil
+                        '("run:()V" nil
                            (goto LABEL::TAG_0)
                            (LABEL::TAG_0 aload_0)
                            (invokevirtual "Job" "incr:()LJob;" 0)
                            (pop)
                            (goto LABEL::TAG_0)))
-                     '(REF -1)))))
+                     '(ref -1)))))
 
 (defconst *Apprentice-main*
    '((new "Container")

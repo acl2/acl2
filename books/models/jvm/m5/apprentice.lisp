@@ -1989,7 +1989,7 @@ Sun Jul 15 14:17:26 2001
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
            (equal (lookup-methodref "incr:()LJob;" class ct)
-                  '("Job" . ("incr:()LJob;" NIL NIL
+                  '("Job" . ("incr:()LJob;" NIL
                     (ALOAD_0)
                     (GETFIELD "Job" "objref:LContainter;")
                     (ASTORE_1)
@@ -2018,7 +2018,7 @@ Sun Jul 15 14:17:26 2001
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
            (equal (lookup-methodref "run:()V" class ct)
-                  '("Job" . ("run:()V" NIL NIL
+                  '("Job" . ("run:()V" NIL
                     (GOTO 3)
                     (ALOAD_0)
                     (INVOKEVIRTUAL "Job" "incr:()LJob;" 0)
@@ -2646,7 +2646,8 @@ Sun Jul 15 14:17:26 2001
   (11 job3))
  (("java.lang.Object" NIL ("monitor" "mcount" "wait-set")
                       NIL
-                      NIL (("<init>:()V" NIL NIL (RETURN)))
+                      NIL (("<init>:()V" NIL
+                            (RETURN)))
                       (REF 0))
   ("ARRAY" ("java.lang.Object")
            (("<array>" . *ARRAY*))
@@ -2654,10 +2655,11 @@ Sun Jul 15 14:17:26 2001
   ("java.lang.Thread"
        ("java.lang.Object")
        NIL NIL NIL
-       (("run:()V" NIL NIL (RETURN))
-        ("start:()V" NIL NIL NIL)
-        ("stop:()V" NIL NIL NIL)
-        ("<init>:()V" NIL NIL (ALOAD_0)
+       (("run:()V" NIL (RETURN))
+        ("start:()V" NIL NIL)
+        ("stop:()V" NIL NIL)
+        ("<init>:()V" NIL
+                  (ALOAD_0)
                   (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
                   (RETURN)))
        (REF 2))
@@ -2665,24 +2667,24 @@ Sun Jul 15 14:17:26 2001
        ("java.lang.Object")
        ("value:[C")
        NIL NIL
-       (("<init>:()V" NIL NIL (ALOAD_0)
+       (("<init>:()V" NIL (ALOAD_0)
                   (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
                   (RETURN)))
        (REF 3))
   ("java.lang.Class"
        ("java.lang.Object")
        NIL NIL NIL
-       (("<init>:()V" NIL NIL (ALOAD_0)
+       (("<init>:()V" NIL (ALOAD_0)
                   (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
                   (RETURN)))
        (REF 4))
   ("Apprentice" ("java.lang.Object")
                 NIL NIL NIL
-                (("<init>:()V" NIL NIL (ALOAD_0)
+                (("<init>:()V" NIL (ALOAD_0)
                            (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
                            (RETURN))
-                 ("main:([Ljava/lang/String;)V" (|JAVA.LANG.STRING[]|)
-                         NIL (NEW "Container")
+                 ("main:([Ljava/lang/String;)V" NIL
+                         (NEW "Container")
                          (DUP)
                          (INVOKESPECIAL "Container" "<init>:()V" 0)
                          (ASTORE_1)
@@ -2701,17 +2703,20 @@ Sun Jul 15 14:17:26 2001
   ("Container" ("java.lang.Object")
                ("counter:I")
                NIL NIL
-               (("<init>:()V" NIL NIL (ALOAD_0)
+               (("<init>:()V" NIL
+                          (ALOAD_0)
                           (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
                           (RETURN)))
                (REF 6))
   ("Job" ("java.lang.Thread" "java.lang.Object")
          ("objref:LContainter;")
          NIL NIL
-         (("<init>:()V" NIL NIL (ALOAD_0)
+         (("<init>:()V" NIL
+                    (ALOAD_0)
                     (INVOKESPECIAL "java.lang.Thread" "<init>:()V" 0)
                     (RETURN))
-          ("incr:()LJob;" NIL NIL (ALOAD_0)
+          ("incr:()LJob;" NIL
+                  (ALOAD_0)
                   (GETFIELD "Job" "objref:LContainter;")
                   (ASTORE_1)
                   (ALOAD_1)
@@ -2734,12 +2739,13 @@ Sun Jul 15 14:17:26 2001
                   (ATHROW)
                   (ALOAD_0)
                   (ARETURN))
-          ("setref:(LContainer;)V" (CONTAINER)
-                    NIL (ALOAD_0)
+          ("setref:(LContainer;)V" NIL
+                    (ALOAD_0)
                     (ALOAD_1)
                     (PUTFIELD "Job" "objref:LContainter;")
                     (RETURN))
-          ("run:()V" NIL NIL (GOTO 3)
+          ("run:()V" NIL
+                 (GOTO 3)
                  (ALOAD_0)
                  (INVOKEVIRTUAL "Job" "incr:()LJob;" 0)
                  (POP)
