@@ -23,119 +23,104 @@ Here is the Java for a factorial method.
 
 class Demo {
 
-  static int ans;
+    static int ans;
 
-  public static int fact(int n){
-    if (n>0)
-      {return n*fact(n-1);}
-    else return 1;
-  }
+    public static int fact(int n) {
+        if (n>0)
+            return n*fact(n-1);
+        else
+            return 1;
+    }
 
-  public static void main(String[] args){
-  int k = 4;
-  ans = fact(k+1);
-  return;
-  }
- }
+    /* Dummy main method */
+
+    public static void main() {
+        int k = 4;
+        ans = fact(k+1);
+    }
+
+    /* This main method is not simulated */
+    /* because our M5 model does not support the */
+    /* native methods necessary to support IO. */
+
+    public static void main(String[] args) {
+        int n = Integer.parseInt(args[0], 10);
+        System.out.println(fact(n));
+    }
+}
 
 If you put this into Demo.java and run
 
 % javac Demo.java
-% javap -o Demo
+% javap -c Demo
 
 you get the following:
 
-Compiled from Demo.java
-synchronized class Demo extends java.lang.Object
-    /* ACC_SUPER bit set */
-{
-    static int ans;
-    public static int fact(int);
-    public static void main(java.lang.String[]);
-    Demo();
+Compiled from "Demo.java"
+class Demo {
+  static int ans;
+
+  Demo();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  public static int fact(int);
+    Code:
+       0: iload_0
+       1: ifle          13
+       4: iload_0
+       5: iload_0
+       6: iconst_1
+       7: isub
+       8: invokestatic  #2                  // Method fact:(I)I
+      11: imul
+      12: ireturn
+      13: iconst_1
+      14: ireturn
+
+  public static void main();
+    Code:
+       0: iconst_4
+       1: istore_0
+       2: iload_0
+       3: iconst_1
+       4: iadd
+       5: invokestatic  #2                  // Method fact:(I)I
+       8: putstatic     #3                  // Field ans:I
+      11: return
+
+  public static void main(java.lang.String[]);
+    Code:
+       0: aload_0
+       1: iconst_0
+       2: aaload
+       3: bipush        10
+       5: invokestatic  #4                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;I)I
+       8: istore_1
+       9: getstatic     #5                  // Field java/lang/System.out:Ljava/io/PrintStream;
+      12: iload_1
+      13: invokestatic  #2                  // Method fact:(I)I
+      16: invokevirtual #6                  // Method java/io/PrintStream.println:(I)V
+      19: return
 }
 
-Method int fact(int)
-   0 iload_0
-   1 ifle 13
-   4 iload_0
-   5 iload_0
-   6 iconst_1
-   7 isub
-   8 invokestatic #5 <Method int fact(int)>
-  11 imul
-  12 ireturn
-  13 iconst_1
-  14 ireturn
-
-Method void main(java.lang.String[])
-   0 iconst_4
-   1 istore_1
-   2 iload_1
-   3 iconst_1
-   4 iadd
-   5 invokestatic #5 <Method int fact(int)>
-   8 putstatic #4 <Field int ans>
-  11 return
-
-Method Demo()
-   0 aload_0
-   1 invokespecial #3 <Method java.lang.Object()>
-   4 return
-
-Below is the output of jvm2acl2 for M5.
+The output of jvm2acl2 for M5 is in classes/Demo.
 
 |#
 
 (in-package "M5")
 (include-book "utilities")
+(include-book "classes/Demo")
 
 (defconst *Demo-class-table-in-tagged-form*
  (make-class-def
   (list
-    (make-class-decl
-     "Demo"
-     '("java/lang/Object")
-     '()
-     '("ans:I")
-     '()
-     (list
-      '("<init>:()V" nil
-        (aload_0)
-        (invokespecial "java/lang/Object" "<init>:()V" 0)
-        (return))
-      '("fact:(I)I" nil
-        (iload_0)
-        (ifle LABEL::TAG_0)
-        (iload_0)
-        (iload_0)
-        (iconst_1)
-        (isub)
-        (invokestatic "Demo" "fact:(I)I" 1)
-        (imul)
-        (ireturn)
-        (LABEL::TAG_0 iconst_1)
-        (ireturn))
-      '("main:([Ljava/lang/String;)V" nil
-        (iconst_4)
-        (istore_1)
-        (iload_1)
-        (iconst_1)
-        (iadd)
-        (invokestatic "Demo" "fact:(I)I" 1)
-        (putstatic "Demo" "ans:I")
-        (return)))
-     '(ref -1)))))
+    *Demo*)))
 
 (defconst *Demo-main*
-  '((iconst_4)
-    (istore_1)
-    (iload_1)
-    (iconst_1)
-    (iadd)
-    (invokestatic "Demo" "fact:(I)I" 1)
-    (putstatic "Demo" "ans:I")
-    (return)))
+  (method-program (bound? "main:()V" (class-decl-methods *Demo*))))
 
 (defun Demo-ms ()
   (make-state
@@ -156,8 +141,8 @@ Below is the output of jvm2acl2 for M5.
 #|
 (((0 ((0 NIL NIL
          ((ICONST_4)
-          (ISTORE_1)
-          (ILOAD_1)
+          (ISTORE_0)
+          (ILOAD_0)
           (ICONST_1)
           (IADD)
           (INVOKESTATIC "Demo" "fact:(I)I" 1)
@@ -167,87 +152,100 @@ Below is the output of jvm2acl2 for M5.
      SCHEDULED NIL))
  ((0 ("java/lang/Class" ("<name>" . "java/lang/Object"))
      ("java/lang/Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
+                         ("mcount" . 0)
+                         ("wait-set" . 0)))
   (1 ("java/lang/Class" ("<name>" . "ARRAY"))
      ("java/lang/Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
+                         ("mcount" . 0)
+                         ("wait-set" . 0)))
   (2 ("java/lang/Class" ("<name>" . "java/lang/Thread"))
      ("java/lang/Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
+                         ("mcount" . 0)
+                         ("wait-set" . 0)))
   (3 ("java/lang/Class" ("<name>" . "java/lang/String"))
      ("java/lang/Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
+                         ("mcount" . 0)
+                         ("wait-set" . 0)))
   (4 ("java/lang/Class" ("<name>" . "java/lang/Class"))
      ("java/lang/Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
+                         ("mcount" . 0)
+                         ("wait-set" . 0)))
   (5 ("java/lang/Class" ("<name>" . "Demo")
-      ("ans:I" . 0))
+                        ("ans:I" . 0))
      ("java/lang/Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0))))
+                         ("mcount" . 0)
+                         ("wait-set" . 0))))
  (("java/lang/Object" NIL ("monitor" "mcount" "wait-set")
-   NIL NIL (("<init>:()V" NIL (RETURN)))
-   (REF 0))
+                      NIL NIL (("<init>:()V" NIL (RETURN)))
+                      (REF 0))
   ("ARRAY" ("java/lang/Object")
-   (("<array>" . *ARRAY*))
-   NIL NIL NIL (REF 1))
+           (("<array>" . *ARRAY*))
+           NIL NIL NIL (REF 1))
   ("java/lang/Thread"
-   ("java/lang/Object")
-   NIL NIL NIL
-   (("run:()V" NIL (RETURN))
-    ("start:()V" NIL NIL)
-    ("stop:()V" NIL NIL)
-    ("<init>:()V" NIL (ALOAD_0)
-     (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
-     (RETURN)))
-   (REF 2))
+       ("java/lang/Object")
+       NIL NIL NIL
+       (("run:()V" NIL (RETURN))
+        ("start:()V" NIL NIL)
+        ("stop:()V" NIL NIL)
+        ("<init>:()V" NIL (ALOAD_0)
+                      (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+                      (RETURN)))
+       (REF 2))
   ("java/lang/String"
-   ("java/lang/Object")
-   ("value:[C")
-   NIL NIL
-   (("<init>:()V" NIL (ALOAD_0)
-     (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
-     (RETURN)))
-   (REF 3))
-  ("java/lang/Class" ("java/lang/Object")
-   NIL NIL NIL
-   (("<init>:()V" NIL (ALOAD_0)
-     (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
-     (RETURN)))
-   (REF 4))
+       ("java/lang/Object")
+       ("value:[C")
+       NIL NIL
+       (("<init>:()V" NIL (ALOAD_0)
+                      (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+                      (RETURN)))
+       (REF 3))
+  ("java/lang/Class"
+       ("java/lang/Object")
+       NIL NIL NIL
+       (("<init>:()V" NIL (ALOAD_0)
+                      (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+                      (RETURN)))
+       (REF 4))
   ("Demo" ("java/lang/Object")
-   NIL ("ans:I")
-   NIL
-   (("<init>:()V" NIL (ALOAD_0)
-     (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
-     (RETURN))
-    ("fact:(I)I" NIL
-     (ILOAD_0)
-     (IFLE 12)
-     (ILOAD_0)
-     (ILOAD_0)
-     (ICONST_1)
-     (ISUB)
-     (INVOKESTATIC "Demo" "fact:(I)I" 1)
-     (IMUL)
-     (IRETURN)
-     (ICONST_1)
-     (IRETURN))
-    ("main:([Ljava/lang/String;)V" NIL
-     (ICONST_4)
-     (ISTORE_1)
-     (ILOAD_1)
-     (ICONST_1)
-     (IADD)
-     (INVOKESTATIC "Demo" "fact:(I)I" 1)
-     (PUTSTATIC "Demo" "ans:I")
-     (RETURN)))
-   (REF 5))))
+          NIL ("ans:I")
+          NIL
+          (("<init>:()V" NIL (ALOAD_0)
+                         (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+                         (RETURN))
+           ("fact:(I)I" NIL (ILOAD_0)
+                        (IFLE 12)
+                        (ILOAD_0)
+                        (ILOAD_0)
+                        (ICONST_1)
+                        (ISUB)
+                        (INVOKESTATIC "Demo" "fact:(I)I" 1)
+                        (IMUL)
+                        (IRETURN)
+                        (ICONST_1)
+                        (IRETURN))
+           ("main:()V" NIL (ICONST_4)
+                       (ISTORE_0)
+                       (ILOAD_0)
+                       (ICONST_1)
+                       (IADD)
+                       (INVOKESTATIC "Demo" "fact:(I)I" 1)
+                       (PUTSTATIC "Demo" "ans:I")
+                       (RETURN))
+           ("main:([Ljava/lang/String;)V"
+                NIL (ALOAD_0)
+                (ICONST_0)
+                (AALOAD)
+                (BIPUSH 10)
+                (INVOKESTATIC "java/lang/Integer"
+                              "parseInt:(Ljava/lang/String;I)I" 2)
+                (ISTORE_1)
+                (GETSTATIC "java/lang/System"
+                           "out:Ljava/io/PrintStream;")
+                (ILOAD_1)
+                (INVOKESTATIC "Demo" "fact:(I)I" 1)
+                (INVOKEVIRTUAL "java/io/PrintStream" "println:(I)V" 1)
+                (RETURN)))
+          (REF 5))))
 |#
 
 ; But in the paper we discuss it component by component and
@@ -265,8 +263,8 @@ Below is the output of jvm2acl2 for M5.
              nil
              nil
              '((ICONST\_4)
-               (ISTORE\_1)
-               (ILOAD\_1)
+               (ISTORE\_0)
+               (ILOAD\_0)
                (ICONST\_1)
                (IADD)
                (INVOKESTATIC "Demo" "fact:(I)I" 1)
@@ -390,14 +388,26 @@ Below is the output of jvm2acl2 for M5.
        (IRETURN)
        (ICONST\_1)
        (IRETURN))
-      ("main:([Ljava/lang/String;)V" NIL
-       (ICONST\_4)
-       (ISTORE\_1)
-       (ILOAD\_1)
-       (ICONST\_1)
+      ("main:()V" NIL
+       (ICONST_4)
+       (ISTORE_0)
+       (ILOAD_0)
+       (ICONST_1)
        (IADD)
        (INVOKESTATIC "Demo" "fact:(I)I" 1)
        (PUTSTATIC "Demo" "ans:I")
+       (RETURN))
+      ("main:([Ljava/lang/String;)V" NIL
+       (ALOAD_0)
+       (ICONST_0)
+       (AALOAD)
+       (BIPUSH 10)
+       (INVOKESTATIC "java/lang/Integer" "parseInt:(Ljava/lang/String;I)I" 2)
+       (ISTORE_1)
+       (GETSTATIC "java/lang/System" "out:Ljava/io/PrintStream;")
+       (ILOAD_1)
+       (INVOKESTATIC "Demo" "fact:(I)I" 1)
+       (INVOKEVIRTUAL "java/io/PrintStream" "println:(I)V" 1)
        (RETURN)))
      (REF 5))))
 
@@ -510,18 +520,21 @@ T
 ; Proving Fact Correct
 
 (defconst *fact-def*
-  '("fact:(I)I" NIL
-    (ILOAD_0)                         ;;;  0
-    (IFLE 12)                         ;;;  1
-    (ILOAD_0)                         ;;;  4
-    (ILOAD_0)                         ;;;  5
-    (ICONST_1)                        ;;;  6
-    (ISUB)                            ;;;  7
-    (INVOKESTATIC "Demo" "fact:(I)I" 1)    ;;;  8
-    (IMUL)                            ;;; 11
-    (IRETURN)                         ;;; 12
-    (ICONST_1)                        ;;; 13
-    (IRETURN)))                       ;;; 14
+      '("fact:(I)I" nil
+        ; line_number #6
+        (iload_0)                                               ; 0
+        (ifle 12)                                               ; 1 to TAG_0
+        ; line_number #7
+        (iload_0)                                               ; 4
+        (iload_0)                                               ; 5
+        (iconst_1)                                              ; 6
+        (isub)                                                  ; 7
+        (invokestatic "Demo" "fact:(I)I" 1)                     ; 8
+        (imul)                                                  ; 11
+        (ireturn)                                               ; 12
+        ; line_number #9
+        (iconst_1)                                              ; 13 at TAG_0
+        (ireturn)))                                             ; 14
 
 (defun poised-to-invoke-fact (th s n)
   (and (equal (status th s) 'SCHEDULED)
