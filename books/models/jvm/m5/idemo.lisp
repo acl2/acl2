@@ -82,47 +82,23 @@ Method int ifact(int)
            nil))))
 
 (defconst *IDemo-heap*
-  '((0 . (("java/lang/Class"
-           ("<name>" . "java/lang/Object"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (1 . (("java/lang/Class"
-           ("<name>" . "ARRAY"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (2 . (("java/lang/Class"
-           ("<name>" . "java/lang/Thread"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (3 . (("java/lang/Class"
-           ("<name>" . "java/lang/String"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (4 . (("java/lang/Class"
-           ("<name>" . "java/lang/Class"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (5 . (("java/lang/Class"
-           ("<name>" . "IDemo"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))))
+  '((0 . (("java/lang/Class" ("<name>" . "java/lang/Object"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (1 . (("java/lang/Class" ("<name>" . "ARRAY"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (2 . (("java/lang/Class" ("<name>" . "java/lang/Thread"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (3 . (("java/lang/Class" ("<name>" . "java/lang/String"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (4 . (("java/lang/Class" ("<name>" . "java/lang/Class"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (5 . (("java/lang/Class" ("<name>" . "IDemo"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))))
 
 (defconst *IDemo-class-table*
   '(("java/lang/Object"
      NIL
-     ("monitor" "mcount" "wait-set")
+     ()
      NIL
      NIL
      (("<init>:()V" NIL

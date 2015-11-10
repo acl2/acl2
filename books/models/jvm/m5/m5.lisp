@@ -264,7 +264,7 @@
 (defun base-class-def ()
    (list (make-class-decl "java/lang/Object"
                           nil
-                          '("monitor" "mcount" "wait-set") ; Internal fields
+                          '()
                           '()
                           '()
                           '(("<init>:()V" nil
@@ -440,8 +440,8 @@
 
 ; lock-object and unlock-object will obtain a lock on an instance
 ;  of an object, using th as the locking id (a thread owns a lock).  If th
-;  already has a lock on an object, then the mcount of the object is
-;  incremented.  Likewise if you unlock an object with mcount > 0, then
+;  already has a lock on an object, then the <mcount> of the object is
+;  incremented.  Likewise if you unlock an object with <mcount> > 0, then
 ;  the lock will be decremented.  Note:  you must make sure that th can
 ;  and should get the lock, since this function will blindly go ahead and
 ;  get the lock
@@ -450,10 +450,10 @@
   (let* ((obj-ref-num (cadr obj-ref))
          (instance (binding (cadr obj-ref) heap))
          (obj-fields (binding "java/lang/Object" instance))
-         (new-mcount (+ 1 (binding "mcount" obj-fields)))
+         (new-mcount (+ 1 (binding "<mcount>" obj-fields)))
          (new-obj-fields
-            (bind "monitor" th
-               (bind "mcount" new-mcount obj-fields)))
+            (bind "<monitor>" th
+               (bind "<mcount>" new-mcount obj-fields)))
          (new-object (bind "java/lang/Object" new-obj-fields instance)))
      (bind obj-ref-num new-object heap)))
 
@@ -461,35 +461,35 @@
   (let* ((obj-ref-num (cadr obj-ref))
          (instance (binding (cadr obj-ref) heap))
          (obj-fields (binding "java/lang/Object" instance))
-         (old-mcount (binding "mcount" obj-fields))
+         (old-mcount (binding "<mcount>" obj-fields))
          (new-mcount (ACL2::max 0 (- old-mcount 1)))
          (new-monitor (if (zp new-mcount)
                           0
                           th))
          (new-obj-fields
-            (bind "monitor" new-monitor
-               (bind "mcount" new-mcount obj-fields)))
+            (bind "<monitor>" new-monitor
+               (bind "<mcount>" new-mcount obj-fields)))
          (new-object (bind "java/lang/Object" new-obj-fields instance)))
      (bind obj-ref-num new-object heap)))
 
 ; objectLockable? is used to determine if th can unlock instance.  This
-;  occurs when either mcount is zero (nobody has a lock), or mcount is
-;  greater than zero, but monitor is equal to th.  This means that th
+;  occurs when either <mcount> is zero (nobody has a lock), or <mcount> is
+;  greater than zero, but <monitor> is equal to th.  This means that th
 ;  already has a lock on the object, and when the object is locked yet again,
-;  monitor will remain the same, but mcount will be incremented.
+;  <monitor> will remain the same, but <mcount> will be incremented.
 ;
 ; objectUnLockable? determins if a thread can unlock an object (ie if it
 ;  has a lock on that object)
 (defun objectLockable? (instance th)
   (let* ((obj-fields (binding "java/lang/Object" instance))
-         (monitor (binding "monitor" obj-fields))
-         (mcount (binding "mcount" obj-fields)))
+         (monitor (binding "<monitor>" obj-fields))
+         (mcount (binding "<mcount>" obj-fields)))
     (or (zp mcount)
         (equal monitor th))))
 
 (defun objectUnLockable? (instance th)
   (let* ((obj-fields (binding "java/lang/Object" instance))
-         (monitor (binding "monitor" obj-fields)))
+         (monitor (binding "<monitor>" obj-fields)))
       (equal monitor th)))
 
 ; -----------------------------------------------------------------------------
@@ -668,13 +668,15 @@
           (build-class-field-bindings (cdr fields)))))
 
 (defun build-class-object-field-bindings ()
-  '(("monitor" . 0) ("monitor-count" . 0) ("wait-set" . nil)))
+  '(("<monitor>" . 0) ("<mcount>" . 0)))
 
 (defun build-immediate-instance-data (class-name class-table)
   (cons class-name
-      (build-class-field-bindings
-       (class-decl-fields
-        (bound? class-name class-table)))))
+      (if (equal class-name "java/lang/Object")
+          (build-class-object-field-bindings)
+          (build-class-field-bindings
+           (class-decl-fields
+            (bound? class-name class-table))))))
 
 (defun build-an-instance (class-names class-table)
   (if (endp class-names)

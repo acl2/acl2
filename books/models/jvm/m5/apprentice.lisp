@@ -756,14 +756,10 @@ Sun Jul 15 14:17:26 2001
                              except-last-flg)
                         '(("Job" ("objref:LContainter;" . (REF -1)))
                           ("java/lang/Thread")
-                          ("java/lang/Object" ("monitor" . 0)
-                                              ("mcount" . 0)
-                                              ("wait-set" . 0)))
+                          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
                       '(("Job" ("objref:LContainter;" . (REF 8)))
                         ("java/lang/Thread")
-                        ("java/lang/Object" ("monitor" . 0)
-                                            ("mcount" . 0)
-                                            ("wait-set" . 0)))))
+                        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))))
              (good-objrefs (cdr threads)
                            (cdr heap-pairs)
                            except-last-flg))))))
@@ -776,37 +772,21 @@ Sun Jul 15 14:17:26 2001
 (defun standard-heap-prefixp (heap)
   (standard-heap-prefixp1
    '((0 ("java/lang/Class" ("<name>" . "java/lang/Object"))
-        ("java/lang/Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
      (1 ("java/lang/Class" ("<name>" . "ARRAY"))
-        ("java/lang/Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
      (2 ("java/lang/Class" ("<name>" . "java/lang/Thread"))
-        ("java/lang/Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
      (3 ("java/lang/Class" ("<name>" . "java/lang/String"))
-        ("java/lang/Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
      (4 ("java/lang/Class" ("<name>" . "java/lang/Class"))
-        ("java/lang/Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
      (5 ("java/lang/Class" ("<name>" . "Apprentice"))
-        ("java/lang/Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
      (6 ("java/lang/Class" ("<name>" . "Container"))
-        ("java/lang/Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
      (7 ("java/lang/Class" ("<name>" . "Job"))
-        ("java/lang/Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0))))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
    heap))
 
 (defun main-pc (cs)
@@ -842,7 +822,7 @@ Sun Jul 15 14:17:26 2001
 ; Tt is the thread table of a state and heap is the heap.  We
 ; determine whether the heap is consistent with the thread table.  We
 ; assume we know that thread 0 is good wrt the length of heap.  We do
-; not enforce here any of the monitor/mcount invariants on (REF 8) in
+; not enforce here any of the <monitor>/<mcount> invariants on (REF 8) in
 ; the heap, because they are entirely determined by the details of the
 ; Job threads.
 
@@ -1099,8 +1079,8 @@ Sun Jul 15 14:17:26 2001
 
 (defun good-state (s)
   (let ((counter (gf "Container" "counter:I" 8 (heap s)))
-        (monitor (gf "java/lang/Object" "monitor" 8 (heap s)))
-        (mcount (gf "java/lang/Object" "mcount" 8 (heap s))))
+        (monitor (gf "java/lang/Object" "<monitor>" 8 (heap s)))
+        (mcount (gf "java/lang/Object" "<mcount>" 8 (heap s))))
     (and (good-class-table (class-table s))
          (good-thread-table (thread-table s)
                             (- (len (heap s)) 1)
@@ -1631,14 +1611,10 @@ Sun Jul 15 14:17:26 2001
                       (if (and flg2 (equal i (+ 7 j (len heap))))
                           (cons i '(("Job"  ("objref:LContainter;" . (REF -1)))
                                     ("java/lang/Thread")
-                                    ("java/lang/Object" ("monitor" . 0)
-                                     ("mcount" . 0)
-                                     ("wait-set" . 0))))
+                                    ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
                         (cons i '(("Job" ("objref:LContainter;" REF 8))
                                   ("java/lang/Thread")
-                                  ("java/lang/Object" ("monitor" . 0)
-                                   ("mcount" . 0)
-                                   ("wait-set" . 0)))))
+                                  ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))))
                     nil)))
   :hints (("Goal" :in-theory (disable good-incr-frame good-run-frame))))
 
@@ -1653,9 +1629,7 @@ Sun Jul 15 14:17:26 2001
     (bind (- (+ 8 (len heap) j) 1)
           '(("Job" ("objref:LContainter;" REF 8))
             ("java/lang/Thread")
-            ("java/lang/Object" ("monitor" . 0)
-             ("mcount" . 0)
-             ("wait-set" . 0)))
+            ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
           heap)
     nil))
   :rule-classes nil
@@ -1674,9 +1648,7 @@ Sun Jul 15 14:17:26 2001
             (bind delta
                   '(("Job" ("objref:LContainter;" REF 8))
                     ("java/lang/Thread")
-                    ("java/lang/Object" ("monitor" . 0)
-                     ("mcount" . 0)
-                     ("wait-set" . 0)))
+                    ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
                   heap)
             nil))
   :hints (("Goal" :use ((:instance good-objrefs-setref-gen (j 1))))))
@@ -1698,9 +1670,7 @@ Sun Jul 15 14:17:26 2001
             (bind (+ delta (len heap))
                   '(("Job" ("objref:LContainter;" . (REF -1)))
                     ("java/lang/Thread")
-                    ("java/lang/Object" ("monitor" . 0)
-                     ("mcount" . 0)
-                     ("wait-set" . 0)))
+                    ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
                   heap)
             t))
   :hints (("Goal" :in-theory (disable good-incr-frame good-run-frame))))
@@ -1961,7 +1931,7 @@ Sun Jul 15 14:17:26 2001
 ; because th is a variable, it is replaced everywhere by <monitor>.  I
 ; don't want that to happen because its harder for me to read.  So I
 ; shut off object-lockedp after proving this little theorem.
-; Object-lockedp was invented just to hide the (equal th monitor).
+; Object-lockedp was invented just to hide the (equal th <monitor>).
 
 (defthm object-lockedp-opener-1
   (implies (equal th thmon)
@@ -2145,8 +2115,8 @@ Sun Jul 15 14:17:26 2001
                              'SCHEDULED
                              (assoc-equal th (thread-table s))
                              (gf "Container" "counter:I" 8 (heap s))
-                             (gf "java/lang/Object" "monitor" 8 (heap s))
-                             (gf "java/lang/Object" "mcount" 8 (heap s))))
+                             (gf "java/lang/Object" "<monitor>" 8 (heap s))
+                             (gf "java/lang/Object" "<mcount>" 8 (heap s))))
            (good-state (step th s)))
   :rule-classes nil
   :hints
@@ -2164,8 +2134,8 @@ Sun Jul 15 14:17:26 2001
                              'SCHEDULED
                              (assoc-equal th (thread-table s))
                              (gf "Container" "counter:I" 8 (heap s))
-                             (gf "java/lang/Object" "monitor" 8 (heap s))
-                             (gf "java/lang/Object" "mcount" 8 (heap s))))
+                             (gf "java/lang/Object" "<monitor>" 8 (heap s))
+                             (gf "java/lang/Object" "<mcount>" 8 (heap s))))
            (or (equal (counter s) nil)
                (rel (counter s) (counter (step th s)))))
   :rule-classes nil
@@ -2224,8 +2194,8 @@ Sun Jul 15 14:17:26 2001
                       (tt (cdr (thread-table s)))
                       (j 1)
                       (c (gf "Container" "counter:I" 8 (heap s)))
-                      (m (gf "java/lang/Object" "monitor" 8 (heap s)))
-                      (mc (gf "java/lang/Object" "mcount" 8 (heap s)))
+                      (m (gf "java/lang/Object" "<monitor>" 8 (heap s)))
+                      (mc (gf "java/lang/Object" "<mcount>" 8 (heap s)))
                       (flg1
                        (case (main-pc
                               (thread-call-stack
@@ -2270,16 +2240,16 @@ Sun Jul 15 14:17:26 2001
                           'SCHEDULED)
                         (assoc-equal th (thread-table s))
                         (gf "Container" "counter:I" 8 (heap s))
-                        (gf "java/lang/Object" "monitor" 8 (heap s))
-                        (gf "java/lang/Object" "mcount" 8 (heap s))))
+                        (gf "java/lang/Object" "<monitor>" 8 (heap s))
+                        (gf "java/lang/Object" "<mcount>" 8 (heap s))))
   :rule-classes nil
   :hints (("Goal" :use
            (:instance good-threads-all-lemma
                       (tt (cdr (thread-table s)))
                       (j 1)
                       (c (gf "Container" "counter:I" 8 (heap s)))
-                      (m (gf "java/lang/Object" "monitor" 8 (heap s)))
-                      (mc (gf "java/lang/Object" "mcount" 8 (heap s)))
+                      (m (gf "java/lang/Object" "<monitor>" 8 (heap s)))
+                      (mc (gf "java/lang/Object" "<mcount>" 8 (heap s)))
                       (flg1 (and (<= 14 (main-pc
                                          (thread-call-stack
                                           (car (thread-table s)))))
@@ -2609,42 +2579,26 @@ Sun Jul 15 14:17:26 2001
      thread2-scheduled-flg
      thread2-rref))
  ((0 ("java/lang/Class" ("<name>" . "java/lang/Object"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (1 ("java/lang/Class" ("<name>" . "ARRAY"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (2 ("java/lang/Class" ("<name>" . "java/lang/Thread"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (3 ("java/lang/Class" ("<name>" . "java/lang/String"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (4 ("java/lang/Class" ("<name>" . "java/lang/Class"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (5 ("java/lang/Class" ("<name>" . "Apprentice"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (6 ("java/lang/Class" ("<name>" . "Container"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (7 ("java/lang/Class" ("<name>" . "Job"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (8 counter)
   (9 job1)
   (10 job2)
   (11 job3))
- (("java/lang/Object" NIL ("monitor" "mcount" "wait-set")
+ (("java/lang/Object" NIL ()
                       NIL
                       NIL (("<init>:()V" NIL
                             (RETURN)))

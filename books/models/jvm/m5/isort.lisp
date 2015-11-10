@@ -143,51 +143,23 @@ Method ListProc()
             nil)
            'SCHEDULED
            nil)))
-   '((0 . (("java/lang/Class"
-           ("<name>" . "java/lang/Object"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (1 . (("java/lang/Class"
-           ("<name>" . "ARRAY"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (2 . (("java/lang/Class"
-           ("<name>" . "java/lang/Thread"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (3 . (("java/lang/Class"
-           ("<name>" . "java/lang/String"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (4 . (("java/lang/Class"
-           ("<name>" . "java/lang/Class"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (5 . (("java/lang/Class"
-           ("<name>" . "Cons"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (6 . (("java/lang/Class"
-           ("<name>" . "ListProc"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0)))))
+   '((0 . (("java/lang/Class" ("<name>" . "java/lang/Object"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (1 . (("java/lang/Class" ("<name>" . "ARRAY"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (2 . (("java/lang/Class" ("<name>" . "java/lang/Thread"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (3 . (("java/lang/Class" ("<name>" . "java/lang/String"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (4 . (("java/lang/Class" ("<name>" . "java/lang/Class"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (5 . (("java/lang/Class" ("<name>" . "Cons"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (6 . (("java/lang/Class" ("<name>" . "ListProc"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))))
    '(("java/lang/Object"
      NIL
-     ("monitor" "mcount" "wait-set")
+     ()
      NIL
      NIL
      (("<init>:()V" NIL
@@ -349,10 +321,7 @@ Method ListProc()
 ; Construct the heap produced by consing x and y.
   (bind (len heap)
         (list (list "Cons" (cons "car:I" x) (cons "cdr:Ljava/lang/Object;" y))
-              '("java/lang/Object"
-                ("monitor" . 0)
-                ("mcount" . 0)
-                ("wait-set" . 0)))
+              '("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
         heap))
 
 (defun ref-to-cons-obj (x y heap)

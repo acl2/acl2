@@ -151,31 +151,25 @@ The output of jvm2acl2 for M5 is in classes/Demo.
          UNLOCKED "Demo"))
      SCHEDULED NIL))
  ((0 ("java/lang/Class" ("<name>" . "java/lang/Object"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
   (1 ("java/lang/Class" ("<name>" . "ARRAY"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
   (2 ("java/lang/Class" ("<name>" . "java/lang/Thread"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
   (3 ("java/lang/Class" ("<name>" . "java/lang/String"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
   (4 ("java/lang/Class" ("<name>" . "java/lang/Class"))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
   (5 ("java/lang/Class" ("<name>" . "Demo")
                         ("ans:I" . 0))
-     ("java/lang/Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0))))
- (("java/lang/Object" NIL ("monitor" "mcount" "wait-set")
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0))))
+ (("java/lang/Object" NIL NIL
                       NIL NIL (("<init>:()V" NIL (RETURN)))
                       (REF 0))
   ("ARRAY" ("java/lang/Object")
@@ -277,48 +271,23 @@ The output of jvm2acl2 for M5 is in classes/Demo.
            nil))))
 
 (defconst *Demo-heap*
-  '((0 . (("java/lang/Class"
-           ("<name>" . "java/lang/Object"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (1 . (("java/lang/Class"
-           ("<name>" . "ARRAY"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (2 . (("java/lang/Class"
-           ("<name>" . "java/lang/Thread"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (3 . (("java/lang/Class"
-           ("<name>" . "java/lang/String"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (4 . (("java/lang/Class"
-           ("<name>" . "java/lang/Class"))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (5 . (("java/lang/Class"
-           ("<name>" . "Demo")
-           ("ans:I" . 0))
-          ("java/lang/Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))))
+  '((0 . (("java/lang/Class" ("<name>" . "java/lang/Object"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (1 . (("java/lang/Class" ("<name>" . "ARRAY"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (2 . (("java/lang/Class" ("<name>" . "java/lang/Thread"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (3 . (("java/lang/Class" ("<name>" . "java/lang/String"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (4 . (("java/lang/Class" ("<name>" . "java/lang/Class"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (5 . (("java/lang/Class" ("<name>" . "Demo") ("ans:I" . 0))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))))
 
 (defconst *Demo-class-table*
   '(("java/lang/Object"
      NIL
-     ("monitor" "mcount" "wait-set")
+     ()
      NIL
      NIL
      (("<init>:()V" NIL
