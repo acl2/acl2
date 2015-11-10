@@ -18,7 +18,7 @@ method referred to in "Inductive Assertions and Operational Semantics".
 |#
 
 ;; The book is included to get the class file in.
-(include-book "../m5/demo")
+(include-book "models/jvm/m5/demo" :dir :system)
 (include-book "ordinals/ordinals" :dir :system)
 
 ;; Here is the definition of mathematical factorial function, referred to as
