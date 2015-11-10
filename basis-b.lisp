@@ -1020,7 +1020,8 @@
 
 (defmacro ffn-symb-p (term sym)
 
-; Term should be a pseudo-termp and sym should be a symbol.
+; Term and sym should be expressions that evaluate to a pseudo-termp and a
+; symbol, respectively.
 
   (cond
    ((symbolp term)
@@ -1060,30 +1061,30 @@
          (mv t (fargn term 1)))
         (t (mv nil term))))
 
-(defabbrev equalityp (term)
+(defmacro equalityp (term)
 
 ; Note that the fquotep below is commented out.  This function violates
 ; our standard rules on the use of ffn-symb but is ok since we are looking
 ; for 'equal and not for 'quote or any constructor that might be hidden
 ; inside a quoted term.
 
-  (ffn-symb-p term 'equal))
+  `(ffn-symb-p ,term 'equal))
 
-(defabbrev inequalityp (term)
+(defmacro inequalityp (term)
 
 ; Note that the fquotep below is commented out.  This function violates
 ; our standard rules on the use of ffn-symb but is ok since we are looking
 ; for 'equal and not for 'quote or any constructor that might be hidden
 ; inside a quoted term.
 
-  (ffn-symb-p term '<))
+  `(ffn-symb-p ,term '<))
 
-(defabbrev consityp (term)
+(defmacro consityp (term)
 
 ; Consityp is to cons what equalityp is equal:  it recognizes terms
 ; that are non-evg cons expressions.
 
-  (ffn-symb-p term 'cons))
+  `(ffn-symb-p ,term 'cons))
 
 (defun print-current-idate (channel state)
   (mv-let (d state)
@@ -3260,10 +3261,10 @@
 
 #+acl2-loop-only
 (defmacro add-ld-keyword-alias! (key val)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'summary 'event (@ inhibit-output-lst))))
-    (progn (table ld-keyword-aliases ,key ,val)
-           (table ld-keyword-aliases))))
+  `(with-output
+     :off (event summary)
+     (progn (table ld-keyword-aliases ,key ,val)
+            (table ld-keyword-aliases))))
 
 #-acl2-loop-only
 (defmacro add-ld-keyword-alias! (key val)
@@ -3275,10 +3276,10 @@
 
 #+acl2-loop-only
 (defmacro set-ld-keyword-aliases! (alist)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'summary 'event (@ inhibit-output-lst))))
-    (progn (table ld-keyword-aliases nil ',alist :clear)
-           (table ld-keyword-aliases))))
+  `(with-output
+     :off (event summary)
+     (progn (table ld-keyword-aliases nil ',alist :clear)
+            (table ld-keyword-aliases))))
 
 #-acl2-loop-only
 (defmacro set-ld-keyword-aliases! (alist)

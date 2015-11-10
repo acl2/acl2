@@ -20641,10 +20641,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-enforce-redundancy (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :enforce-redundancy ,x)
-           (table acl2-defaults-table :enforce-redundancy))))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :enforce-redundancy ,x)
+            (table acl2-defaults-table :enforce-redundancy))))
 
 #-acl2-loop-only
 (defmacro set-enforce-redundancy (x)
@@ -20664,10 +20664,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-verify-guards-eagerness (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :verify-guards-eagerness ,x)
-           (table acl2-defaults-table :verify-guards-eagerness))))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :verify-guards-eagerness ,x)
+            (table acl2-defaults-table :verify-guards-eagerness))))
 
 #-acl2-loop-only
 (defmacro set-verify-guards-eagerness (x)
@@ -20681,8 +20681,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-compile-fns (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :compile-fns ,x)
             (table acl2-defaults-table :compile-fns))))
 
@@ -20719,8 +20719,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-measure-function (name)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :measure-function ',name)
             (table acl2-defaults-table :measure-function))))
 
@@ -20737,8 +20737,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-well-founded-relation (rel)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :well-founded-relation ',rel)
             (table acl2-defaults-table :well-founded-relation))))
 
@@ -20896,8 +20896,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-bogus-defun-hints-ok (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :bogus-defun-hints-ok ,x)
             (table acl2-defaults-table :bogus-defun-hints-ok))))
 
@@ -20908,8 +20908,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-bogus-mutual-recursion-ok (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :bogus-mutual-recursion-ok ,x)
             (table acl2-defaults-table :bogus-mutual-recursion-ok))))
 
@@ -20950,8 +20950,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-irrelevant-formals-ok (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :irrelevant-formals-ok ,x)
             (table acl2-defaults-table :irrelevant-formals-ok))))
 
@@ -20962,8 +20962,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-ignore-ok (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :ignore-ok ,x)
             (table acl2-defaults-table :ignore-ok))))
 
@@ -20984,10 +20984,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+acl2-loop-only
 (defmacro set-inhibit-warnings! (&rest lst)
   (declare (xargs :guard (string-listp lst)))
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table inhibit-warnings-table nil ',(pairlis$ lst nil) :clear)
-           (value-triple ',lst))))
+  `(with-output
+     :off (event summary)
+     (progn (table inhibit-warnings-table nil ',(pairlis$ lst nil) :clear)
+            (value-triple ',lst))))
 
 (defmacro set-inhibit-warnings (&rest lst)
   `(local (set-inhibit-warnings! ,@lst)))
@@ -21027,10 +21027,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-state-ok (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :state-ok ,x)
-           (table acl2-defaults-table :state-ok))))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :state-ok ,x)
+            (table acl2-defaults-table :state-ok))))
 
 #-acl2-loop-only
 (defmacro set-state-ok (x)
@@ -21043,10 +21043,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-let*-abstractionp (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :let*-abstractionp ,x)
-           (table acl2-defaults-table :let*-abstractionp))))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :let*-abstractionp ,x)
+            (table acl2-defaults-table :let*-abstractionp))))
 
 #-acl2-loop-only
 (defmacro set-let*-abstractionp (x)
@@ -21081,14 +21081,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-backchain-limit (limit)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :backchain-limit
-                  (let ((limit ,limit))
-                    (if (atom limit)
-                        (list limit limit)
-                      limit)))
-           (table acl2-defaults-table :backchain-limit))))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :backchain-limit
+                   (let ((limit ,limit))
+                     (if (atom limit)
+                         (list limit limit)
+                       limit)))
+            (table acl2-defaults-table :backchain-limit))))
 
 #-acl2-loop-only
 (defmacro set-backchain-limit (limit)
@@ -21112,14 +21112,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-default-backchain-limit (limit)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :default-backchain-limit
-                  (let ((limit ,limit))
-                    (if (atom limit)
-                        (list limit limit)
-                      limit)))
-           (table acl2-defaults-table :default-backchain-limit))))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :default-backchain-limit
+                   (let ((limit ,limit))
+                     (if (atom limit)
+                         (list limit limit)
+                       limit)))
+            (table acl2-defaults-table :default-backchain-limit))))
 
 #-acl2-loop-only
 (defmacro set-default-backchain-limit (limit)
@@ -21333,13 +21333,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-rewrite-stack-limit (limit)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :rewrite-stack-limit
-                  ,(if (or (null limit) (equal limit (kwote nil)))
-                       (1- (expt 2 28))
-                     limit))
-           (table acl2-defaults-table :rewrite-stack-limit))))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :rewrite-stack-limit
+                   ,(if (or (null limit) (equal limit (kwote nil)))
+                        (1- (expt 2 28))
+                      limit))
+            (table acl2-defaults-table :rewrite-stack-limit))))
 
 #-acl2-loop-only
 (defmacro set-rewrite-stack-limit (limit)
@@ -21385,14 +21385,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-case-split-limitations (lst)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :case-split-limitations
-                  (let ((lst ,lst))
-                    (cond ((eq lst nil)
-                           '(nil nil))
-                          (t lst))))
-           (table acl2-defaults-table :case-split-limitations))))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :case-split-limitations
+                   (let ((lst ,lst))
+                     (cond ((eq lst nil)
+                            '(nil nil))
+                           (t lst))))
+            (table acl2-defaults-table :case-split-limitations))))
 
 #-acl2-loop-only
 (defmacro set-case-split-limitations (lst)
@@ -21465,8 +21465,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-match-free-default (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :match-free-default ,x)
             (table acl2-defaults-table :match-free-default))))
 
@@ -21689,8 +21689,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-non-linearp (toggle)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :non-linearp ,toggle)
             (table acl2-defaults-table :non-linearp))))
 
@@ -21746,8 +21746,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-tau-auto-mode (toggle)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+  `(with-output
+     :off (event summary)
      (progn (table acl2-defaults-table :tau-auto-modep ,toggle)
             (table acl2-defaults-table :tau-auto-modep))))
 
@@ -21759,13 +21759,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+acl2-loop-only
 (defmacro defttag (tag-name)
   (declare (xargs :guard (symbolp tag-name)))
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table
-                  :ttag
-                  ',(and tag-name
-                         (intern (symbol-name tag-name) "KEYWORD")))
-           (table acl2-defaults-table :ttag))))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table
+                   :ttag
+                   ',(and tag-name
+                          (intern (symbol-name tag-name) "KEYWORD")))
+            (table acl2-defaults-table :ttag))))
 
 #-acl2-loop-only
 (defmacro defttag (&rest args)
@@ -22008,10 +22008,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-default-hints! (lst)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table default-hints-table t ,lst)
-           (table default-hints-table t))))
+  `(with-output
+     :off (event summary)
+     (progn (table default-hints-table t ,lst)
+            (table default-hints-table t))))
 
 #-acl2-loop-only
 (defmacro set-default-hints! (lst)
@@ -22023,13 +22023,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro add-default-hints! (lst &key at-end)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table default-hints-table t
-                  (if ,at-end
-                      (append (default-hints world) ,lst)
-                    (append ,lst (default-hints world))))
-           (table default-hints-table t))))
+  `(with-output
+     :off (event summary)
+     (progn (table default-hints-table t
+                   (if ,at-end
+                       (append (default-hints world) ,lst)
+                     (append ,lst (default-hints world))))
+            (table default-hints-table t))))
 
 #-acl2-loop-only
 (defmacro add-default-hints! (lst)
@@ -22041,11 +22041,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro remove-default-hints! (lst)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table default-hints-table t
-                  (set-difference-equal (default-hints world) ,lst))
-           (table default-hints-table t))))
+  `(with-output
+     :off (event summary)
+     (progn (table default-hints-table t
+                   (set-difference-equal (default-hints world) ,lst))
+            (table default-hints-table t))))
 
 #-acl2-loop-only
 (defmacro remove-default-hints! (lst)
@@ -22302,10 +22302,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-rw-cache-state! (val)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table rw-cache-state-table t ,val)
-           (table rw-cache-state-table t))))
+  `(with-output
+     :off (event summary)
+     (progn (table rw-cache-state-table t ,val)
+            (table rw-cache-state-table t))))
 
 #-acl2-loop-only
 (defmacro set-rw-cache-state! (val)

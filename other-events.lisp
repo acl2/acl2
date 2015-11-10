@@ -3899,9 +3899,7 @@
      #+:non-standard-analysis defthm-std
      #+:non-standard-analysis defun-std
      add-custom-keyword-hint
-     add-default-hints!
      add-include-book-dir add-include-book-dir!
-     add-ld-keyword-alias!
      add-match-free-override
      comp
      defabsstobj
@@ -3915,7 +3913,6 @@
      defstobj
      deftheory
      defthm
-     defttag
      defun
      defuns
      delete-include-book-dir delete-include-book-dir!
@@ -3930,35 +3927,12 @@
      program
      push-untouchable
      regenerate-tau-database
-     remove-default-hints!
      remove-untouchable
      reset-prehistory
-     set-backchain-limit
      set-body
-     set-bogus-defun-hints-ok
-     set-bogus-mutual-recursion-ok
-     set-case-split-limitations
-     set-compile-fns
-     set-default-backchain-limit
-     set-default-hints!
-     set-enforce-redundancy
-     set-ignore-ok
-     set-inhibit-warnings!
-     set-invisible-fns-table
-     set-irrelevant-formals-ok
-     set-let*-abstractionp
-     set-match-free-default
-     set-measure-function
-     set-non-linearp
      set-override-hints-macro
      set-prover-step-limit
-     set-rewrite-stack-limit
      set-ruler-extenders
-     set-rw-cache-state!
-     set-state-ok
-     set-tau-auto-mode
-     set-verify-guards-eagerness
-     set-well-founded-relation
      table
      theory-invariant
      value-triple
