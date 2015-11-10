@@ -168,7 +168,9 @@
         (eq kind :vl-enablestmt)
         (eq kind :vl-disablestmt)
         (eq kind :vl-eventtriggerstmt)
-        (eq kind :vl-returnstmt))))
+        (eq kind :vl-returnstmt)
+        (eq kind :vl-breakstmt)
+        (eq kind :vl-continuestmt))))
 
 (defthm vl-atomicstmt-forward
   (implies (vl-atomicstmt-p x)
@@ -179,7 +181,9 @@
                  (eq kind :vl-enablestmt)
                  (eq kind :vl-disablestmt)
                  (eq kind :vl-eventtriggerstmt)
-                 (eq kind :vl-returnstmt))))
+                 (eq kind :vl-returnstmt)
+                 (eq kind :vl-breakstmt)
+                 (eq kind :vl-continuestmt))))
   :rule-classes :forward-chaining
   :hints(("Goal" :in-theory (enable vl-atomicstmt-p))))
 
@@ -210,6 +214,8 @@
     :vl-blockstmt        x.atts
     :vl-repeatstmt       x.atts
     :vl-timingstmt       x.atts
+    :vl-breakstmt        x.atts
+    :vl-continuestmt     x.atts
     :vl-returnstmt       x.atts
     :vl-assertstmt       x.atts
     :vl-cassertstmt      x.atts))
@@ -600,6 +606,8 @@ directly part of the statement.</p>"
       :vl-deassignstmt     (progn$ (impossible) x)
       :vl-enablestmt       (progn$ (impossible) x)
       :vl-disablestmt      (progn$ (impossible) x)
+      :vl-breakstmt        (progn$ (impossible) x)
+      :vl-continuestmt     (progn$ (impossible) x)
       :vl-returnstmt       (progn$ (impossible) x)
       :vl-eventtriggerstmt (progn$ (impossible) x)))
   ///

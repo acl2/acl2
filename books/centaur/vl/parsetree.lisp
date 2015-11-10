@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-10-29")
+  "VL Syntax 2015-11-10")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -2882,6 +2882,24 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
             vl-vardecllist-p) with initial values to cover the declaration case
             and a @(see vl-stmtlist-p) to cover the assignment case; one or the
             other of these will be empty.</p>")
+
+    (:vl-breakstmt
+     :base-name vl-breakstmt
+     :layout :tree
+     :short "Representation of a @('break') statement."
+     ((atts vl-atts-p
+            "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+             with this statement."))
+     :long "<p>It doesn't get much simpler than a @('break') statement.")
+
+    (:vl-continuestmt
+     :base-name vl-continuestmt
+     :layout :tree
+     :short "Representation of a @('continue') statement."
+     ((atts vl-atts-p
+            "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+             with this statement."))
+     :long "<p>It doesn't get much simpler than a @('continue') statement.")
 
     (:vl-blockstmt
      :base-name vl-blockstmt

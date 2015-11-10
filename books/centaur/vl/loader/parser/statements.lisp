@@ -1408,11 +1408,21 @@
        ((:vl-kwd-do :vl-kwd-foreach)
         (vl-parse-error "BOZO not yet implemented: do and foreach loops."))
 
-       ;; -- jump_statement
+       ;; -- jump_statement ::= 'return' [expression] ';'
+       ;;                     | 'break' ';'
+       ;;                     | 'continue' ';'
        (:vl-kwd-return
         (vl-parse-return-statement atts))
-       ((:vl-kwd-break :vl-kwd-continue)
-        (vl-parse-error "BOZO not yet implemented: break and continue statements."))
+       (:vl-kwd-break
+        (seq tokstream
+             (:= (vl-match))
+             (:= (vl-match-token :vl-semi))
+             (return (make-vl-breakstmt :atts atts))))
+       (:vl-kwd-continue
+        (seq tokstream
+             (:= (vl-match))
+             (:= (vl-match-token :vl-semi))
+             (return (make-vl-continuestmt :atts atts))))
 
        ;; -- par_block
        (:vl-kwd-fork
