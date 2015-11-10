@@ -530,7 +530,7 @@ T
        (equal (next-inst th s) '(invokestatic "Demo" "fact:(I)I" 1))
        (equal n (top (stack (top-frame th s))))
        (intp n)
-       (equal (lookup-class-method "fact:(I)I" "Demo" (class-table s))
+       (equal (lookup-methodref "fact:(I)I" "Demo" (class-table s))
               (cons "Demo" *fact-def*))))
 
 (defun induction-hint (th s n)

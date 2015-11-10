@@ -225,7 +225,7 @@ Sun Jun 30 23:21:06 2002
 (defun poised-to-invoke-universal (th s i)
   (and (equal (status th s) 'SCHEDULED)
        (equal (next-inst th s) '(INVOKESTATIC "Universal" "universal:()I" 0))
-       (equal (lookup-class-method "universal:()I" "Universal" (class-table s))
+       (equal (lookup-methodref "universal:()I" "Universal" (class-table s))
               '("Universal" . ("universal:()I" NIL NIL
                 (ICONST_0)
                 (ICONST_1)

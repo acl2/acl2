@@ -2634,25 +2634,25 @@ J & George
           (bind-formals (- n 1) (pop stack)))))
 
 ; Retirns a cons pair (class . method) if method is found or nil otherwise
-(defun lookup-class-method-in-superclasses (name-and-type classes class-table)
+(defun lookup-methodref-in-superclasses (name-and-type classes class-table)
   (cond ((endp classes) nil)
         (t (let* ((class-name (car classes))
                   (class-decl (bound? class-name class-table))
                   (method (bound? name-and-type (class-decl-methods class-decl))))
              (if method
                  (cons class-name method)
-                (lookup-class-method-in-superclasses name-and-type (cdr classes)
-                                                     class-table))))))
+                (lookup-methodref-in-superclasses name-and-type (cdr classes)
+                                                 class-table))))))
 
-(defun lookup-class-method (name-and-type class-name class-table)
-  (lookup-class-method-in-superclasses name-and-type
-                                       (cons class-name
-                                             (class-decl-superclasses
-                                              (bound? class-name class-table)))
-                                       class-table))
+(defun lookup-methodref (name-and-type class-name class-table)
+  (lookup-methodref-in-superclasses name-and-type
+                                    (cons class-name
+                                          (class-decl-superclasses
+                                           (bound? class-name class-table)))
+                                    class-table))
 
 (defun lookup-method (name-and-type class-name class-table)
-  (cdr (lookup-class-method name-and-type class-name class-table)))
+  (cdr (lookup-methodref name-and-type class-name class-table)))
 
 (defun execute-INVOKESPECIAL (inst th s)
   (let* ((method-name-and-type (arg2 inst))
@@ -2660,12 +2660,12 @@ J & George
          (obj-ref (top (popn nformals (stack (top-frame th s)))))
          (instance (deref obj-ref (heap s)))
          (obj-class-name (arg1 inst))
-         (closest-class-method
-          (lookup-class-method method-name-and-type
-                               obj-class-name
-                               (class-table s)))
-         (closest-class (car closest-class-method))
-         (closest-method (cdr closest-class-method))
+         (closest-methodref
+          (lookup-methodref method-name-and-type
+                            obj-class-name
+                            (class-table s)))
+         (closest-class (car closest-methodref))
+         (closest-method (cdr closest-methodref))
          (prog (method-program closest-method))
          (s1 (modify th s
                      :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -2720,12 +2720,12 @@ J & George
          (nformals (arg3 inst))
          (obj-ref (class-decl-heapref (bound? class (class-table s))))
          (instance (deref obj-ref (heap s)))
-         (closest-class-method
-          (lookup-class-method method-name-and-type
-                               (arg1 inst)
-                               (class-table s)))
-         (closest-class (car closest-class-method))
-         (closest-method (cdr closest-class-method))
+         (closest-methodref
+          (lookup-methodref method-name-and-type
+                            (arg1 inst)
+                            (class-table s)))
+         (closest-class (car closest-methodref))
+         (closest-method (cdr closest-methodref))
          (prog (method-program closest-method))
          (s1 (modify th s
                      :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -2799,12 +2799,12 @@ J & George
          (obj-ref (top (popn nformals (stack (top-frame th s)))))
          (instance (deref obj-ref (heap s)))
          (obj-class-name (class-name-of-ref obj-ref (heap s)))
-         (closest-class-method
-          (lookup-class-method method-name-and-type
-                               obj-class-name
-                               (class-table s)))
-         (closest-class (car closest-class-method))
-         (closest-method (cdr closest-class-method))
+         (closest-methodref
+          (lookup-methodref method-name-and-type
+                            obj-class-name
+                            (class-table s)))
+         (closest-class (car closest-methodref))
+         (closest-method (cdr closest-methodref))
          (prog (method-program closest-method))
          (s1 (modify th s
                      :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -3239,9 +3239,9 @@ J & George
 (defun execute-NEW (inst th s)
   (let* ((class-name (arg1 inst))
          (class-table (class-table s))
-         (closest-class-method (lookup-class-method "run:()V" class-name class-table))
-         (closest-class (car closest-class-method))
-         (closest-method (cdr closest-class-method))
+         (closest-methodref (lookup-methodref "run:()V" class-name class-table))
+         (closest-class (car closest-methodref))
+         (closest-method (cdr closest-methodref))
          (prog (method-program closest-method))
          (new-object (build-an-instance
                       (cons class-name

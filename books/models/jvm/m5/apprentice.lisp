@@ -1985,10 +1985,10 @@ Sun Jul 15 14:17:26 2001
                 (integerp th))
            (assoc-equal th (cdar s))))
 
-(defthm lookup-class-method-incr
+(defthm lookup-methodref-incr
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
-           (equal (lookup-class-method "incr:()LJob;" class ct)
+           (equal (lookup-methodref "incr:()LJob;" class ct)
                   '("Job" . ("incr:()LJob;" NIL NIL
                     (ALOAD_0)
                     (GETFIELD "Job" "objref:LContainter;")
@@ -2014,10 +2014,10 @@ Sun Jul 15 14:17:26 2001
                     (ALOAD_0)
                     (ARETURN))))))
 
-(defthm lookup-class-method-run
+(defthm lookup-methodref-run
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
-           (equal (lookup-class-method "run:()V" class ct)
+           (equal (lookup-methodref "run:()V" class ct)
                   '("Job" . ("run:()V" NIL NIL
                     (GOTO 3)
                     (ALOAD_0)
@@ -2025,7 +2025,7 @@ Sun Jul 15 14:17:26 2001
                     (POP)
                     (GOTO -5))))))
 
-(in-theory (disable lookup-class-method))
+(in-theory (disable lookup-methodref))
 
 (defthm good-threads-step-over-monitorenter-lemma1
   (implies
@@ -2119,12 +2119,12 @@ Sun Jul 15 14:17:26 2001
   (equal (bind i v1 (bind i v2 lst))
          (bind i v1 lst)))
 
-(defthm lookup-class-method-in-good-class-table
+(defthm lookup-methodref-in-good-class-table
   (implies (and (syntaxp (and (quotep class)
                               (quotep method)))
                 (good-class-table ct))
-           (equal (lookup-class-method class method ct)
-                  (lookup-class-method class method (class-table *a0*))))
+           (equal (lookup-methodref class method ct)
+                  (lookup-methodref class method (class-table *a0*))))
   :hints (("Goal" :in-theory (enable good-class-table))))
 
 ; (acl2::divert)

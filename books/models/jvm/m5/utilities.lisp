@@ -195,7 +195,7 @@ J Moore
               (run sched (step th s))))
   :hints (("Goal" :in-theory (disable step))))
 
-;(in-theory (enable top pop push lookup-method lookup-class-method))
+;(in-theory (enable top pop push lookup-method lookup-methodref))
 
 ; Step Stuff
 
