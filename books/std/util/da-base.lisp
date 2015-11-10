@@ -588,12 +588,7 @@ by macros such as @(see fty::deftagsum) and @(fty::deftranssum).</p>"
                          (equal (car obj) 'quote))
                     ;; If the object being changed is never accessed, there's no
                     ;; need to evaluate it.
-                    (if (subsetp kwd-fields (strip-cars alist))
-                        (prog2$
-                         (cw ";; CHANGE-NOTE: ~x0 skipping evaluation of ~x1 ~
-                              since all fields are set.~%" macroname obj)
-                         t)
-                      nil)))
+                    (subsetp kwd-fields (strip-cars alist))))
        (newvar     (if nobind-p
                        obj
                      (acl2::pack (cons macroname obj))))
@@ -601,11 +596,8 @@ by macros such as @(see fty::deftagsum) and @(fty::deftranssum).</p>"
                          (da-changer-fill-in-fields newvar acc-map alist))))
     (if nobind-p
         ctor-call
-      (progn$
-       ;; Eventually remove this printing, but I want to see them for now.
-       (cw ";; CHANGE-NOTE: binding ~x0~%" newvar)
-       `(let ((,newvar ,obj))
-          ,ctor-call)))))
+      `(let ((,newvar ,obj))
+         ,ctor-call))))
 
 (defun da-make-changer (basename fields)
   (let* ((x          (da-x basename))
