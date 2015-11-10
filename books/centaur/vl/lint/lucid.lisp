@@ -1343,6 +1343,14 @@ created when we process their packages, etc.</p>"
         ;; used.  I think for now we'll just ignore them.
         st
 
+        :vl-breakstmt
+        ;; Nothing to do here, I'm pretty sure.
+        st
+
+        :vl-continuestmt
+        ;; Nothing to do here, I'm pretty sure.
+        st
+
         :vl-returnstmt
         (if x.val
             (vl-rhsexpr-lucidcheck x.val ss st ctx)

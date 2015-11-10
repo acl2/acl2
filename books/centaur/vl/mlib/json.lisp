@@ -1124,6 +1124,14 @@ which could not hold such large values.</p>")
                   :id     (vl-jp-expr x.id)
                   :atts   (vl-jp-atts x.atts))
 
+       :vl-breakstmt
+       (jp-object :tag    (jp-sym kind)
+                  :atts   (vl-jp-atts x.atts))
+
+       :vl-continuestmt
+       (jp-object :tag    (jp-sym kind)
+                  :atts   (vl-jp-atts x.atts))
+
        :vl-returnstmt
        (jp-object :tag    (jp-sym kind)
                   :atts   (vl-jp-atts x.atts)

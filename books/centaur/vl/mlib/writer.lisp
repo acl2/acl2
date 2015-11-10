@@ -2779,6 +2779,19 @@ expression into a string."
                              (vl-print "disable "))
                  (vl-pp-scopeexpr x.id)
                  (vl-println " ;"))
+
+      :vl-breakstmt
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-ps-span "vl_key" (vl-print "break "))
+                 (vl-println " ;"))
+
+      :vl-continuestmt
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-ps-span "vl_key" (vl-print "continue "))
+                 (vl-println " ;"))
+
       :vl-returnstmt
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
