@@ -260,16 +260,64 @@
 (defun class-decl-heapref (dcl)
   (nth 6 dcl))
 
-; Internal fields in base classes do not contain type descriptors in their names"
+(defconst *java.lang.Object-fake*
+  (make-class-decl
+    "java/lang/Object"
+    '()
+    '()
+    '()
+    '()
+    '(("<init>:()V" nil
+       (return)))
+    '(ref -1)))
+
+(defconst *java.lang.Thread-fake*
+  (make-class-decl
+    "java/lang/Thread"
+    '("java/lang/Object")
+    '()
+    '()
+    '()
+    '(("run:()V" nil
+       (return))
+      ("start:()V" nil
+       ())
+      ("stop:()V" nil
+       ())
+      ("<init>:()V" nil
+       (aload_0)
+       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (return)))
+    '(ref -1)))
+
+(defconst *java.lang.String-fake*
+  (make-class-decl
+    "java/lang/String"
+    '("java/lang/Object")
+    '("value:[C")
+    '()
+    '()
+    '(("<init>:()V" nil
+       (aload_0)
+       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (return)))
+    '(ref -1)))
+
+(defconst *java.lang.Class-fake*
+  (make-class-decl
+    "java/lang/Class"
+    '("java/lang/Object")
+    '()
+    '()
+    '()
+    '(("<init>:()V" nil
+       (aload_0)
+       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (return)))
+    '(ref -1)))
+
 (defun base-class-def ()
-   (list (make-class-decl "java/lang/Object"
-                          nil
-                          '()
-                          '()
-                          '()
-                          '(("<init>:()V" nil
-                             (RETURN)))
-                          '(ref -1))
+   (list *java.lang.Object-fake*
          (make-class-decl "ARRAY"
                           '("java/lang/Object")
                           '(("<array>" . *ARRAY*)) ; Internal field
@@ -277,45 +325,9 @@
                           '()
                           '()
                           '(ref -1))
-         (make-class-decl "java/lang/Thread"
-                          '("java/lang/Object")
-                          '()
-                          '()
-                          '()
-                          '(("run:()V" nil
-                             (return))
-                            ("start:()V" nil
-                             ())
-                            ("stop:()V" nil
-                             ())
-                            ("<init>:()V" nil
-                             (aload_0)
-                             (invokespecial "java/lang/Object" "<init>:()V" 0)
-                             (return)))
-                          '(ref -1))
-         (make-class-decl "java/lang/String"
-                          '("java/lang/Object")
-                          '("value:[C")
-                          '()
-                          '()
-                          '(("<init>:()V" nil
-                             (aload_0)
-                             (invokespecial "java/lang/Object" "<init>:()V" 0)
-                             (return)))
-                          '(ref -1))
-         (make-class-decl "java/lang/Class"
-                          '("java/lang/Object")
-                          '()
-                          '()
-                          '()
-                          '(("<init>:()V" nil
-                             (aload_0)
-                             (invokespecial "java/lang/Object" "<init>:()V" 0)
-                             (return)))
-                          '(ref -1))))
-
-(defun make-class-def (list-of-class-decls)
-   (append (base-class-def) list-of-class-decls))
+         *java.lang.Thread-fake*
+         *java.lang.String-fake*
+         *java.lang.Class-fake*))
 
 ; -----------------------------------------------------------------------------
 ; A Constant Pool
@@ -2434,35 +2446,27 @@
 (defun lookup-method (name-and-type class-name class-table)
   (cdr (lookup-methodref name-and-type class-name class-table)))
 
-(defun execute-INVOKESPECIAL (inst th s)
-  (let* ((method-name-and-type (arg2 inst))
-         (nformals (arg3 inst))
-         (obj-ref (top (popn nformals (stack (top-frame th s)))))
+(defun invoke-instance-method (nformals class-name method-name-and-type method-decl
+          inst-length th s)
+  (let* ((obj-ref (top (popn nformals (stack (top-frame th s)))))
          (instance (deref obj-ref (heap s)))
-         (obj-class-name (arg1 inst))
-         (closest-methodref
-          (lookup-methodref method-name-and-type
-                            obj-class-name
-                            (class-table s)))
-         (closest-class (car closest-methodref))
-         (closest-method (cdr closest-methodref))
-         (prog (method-program closest-method))
+         (prog (method-program method-decl))
          (s1 (modify th s
-                     :pc (+ (inst-length inst) (pc (top-frame th s)))
+                     :pc (+ inst-length (pc (top-frame th s)))
                      :stack (popn (+ nformals 1)
                                   (stack (top-frame th s)))))
          (tThread (rrefToThread obj-ref (thread-table s))))
     (cond
-     ((method-isNative? closest-method)
-      (cond ((and (equal closest-class "java/lang/Thread")
+     ((method-isNative? method-decl)
+      (cond ((and (equal class-name "java/lang/Thread")
                   (equal method-name-and-type "start:()V"))
              (modify tThread s1 :status 'SCHEDULED))
-            ((and (equal closest-class "java/lang/Thread")
+            ((and (equal class-name "java/lang/Thread")
                   (equal method-name-and-type "stop:()V"))
              (modify tThread s1
                      :status 'UNSCHEDULED))
             (t s)))
-     ((and (method-sync closest-method)
+     ((and (method-sync method-decl)
            (objectLockable? instance th))
       (modify th s1
               :call-stack
@@ -2473,10 +2477,10 @@
                                 nil
                                 prog
                                 'LOCKED
-                                closest-class)
+                                class-name)
                     (call-stack th s1))
               :heap (lock-object th obj-ref (heap s))))
-     ((method-sync closest-method)
+     ((method-sync method-decl)
       s)
      (t
       (modify th s1
@@ -2488,8 +2492,22 @@
                                 nil
                                 prog
                                 'UNLOCKED
-                                closest-class)
+                                class-name)
                     (call-stack th s1)))))))
+
+(defun execute-INVOKESPECIAL (inst th s)
+  (let* ((method-name-and-type (arg2 inst))
+         (nformals (arg3 inst))
+         (class-name (arg1 inst))
+         (class-decl (bound? class-name (class-table s)))
+         (method (bound? method-name-and-type (class-decl-methods class-decl))))
+        (invoke-instance-method nformals
+                                class-name
+                                method-name-and-type
+                                method
+                                (inst-length inst)
+                                th
+                                s)))
 
 ; -----------------------------------------------------------------------------
 ; (INVOKESTATIC "class" "name" n) Instruction
@@ -2498,51 +2516,47 @@
   (let* ((class (arg1 inst))
          (method-name-and-type (arg2 inst))
          (nformals (arg3 inst))
-         (obj-ref (class-decl-heapref (bound? class (class-table s))))
-         (instance (deref obj-ref (heap s)))
-         (closest-methodref
-          (lookup-methodref method-name-and-type
-                            (arg1 inst)
-                            (class-table s)))
-         (closest-class (car closest-methodref))
-         (closest-method (cdr closest-methodref))
-         (prog (method-program closest-method))
+         (class-decl (bound? class (class-table s)))
+         (class-ref (class-decl-heapref class-decl))
+         (class-instance (deref class-ref (heap s)))
+         (method-decl (bound? method-name-and-type (class-decl-methods class-decl)))
+         (prog (method-program method-decl))
          (s1 (modify th s
                      :pc (+ (inst-length inst) (pc (top-frame th s)))
                      :stack (popn nformals (stack (top-frame th s))))))
     (cond
-     ((method-isNative? closest-method)
-      (cond ((and (equal closest-class "java/lang/Double")
+     ((method-isNative? method-decl)
+      (cond ((and (equal class "java/lang/Double")
                   (equal method-name-and-type "doubleToRawLongBits:(D)J"))
              (modify th s1
                      :stack (push (long-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((and (equal closest-class "java/lang/Float")
+            ((and (equal class "java/lang/Float")
                   (equal method-name-and-type "floatToRawIntBits:(F)I"))
              (modify th s1
                      :stack (push (int-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((and (equal closest-class "java/lang/Float")
+            ((and (equal class "java/lang/Float")
                   (equal method-name-and-type "intBitsToFloat:(I)F"))
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::sp))
                                   (stack (top-frame th s1)))))
-            ((and (equal closest-class "java/lang/Double")
+            ((and (equal class "java/lang/Double")
                   (equal method-name-and-type "longBitsToDouble:(J)D"))
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::dp))
                                   (stack (top-frame th s1)))))
-            ((and (equal closest-class "java/lang/StrictMath")
+            ((and (equal class "java/lang/StrictMath")
                   (equal method-name-and-type "sqrt:(D)D"))
              (modify th s1
                      :stack (push (fpsqrt (top (stack (top-frame th s)))
                                            (rtl::dp))
                                   (stack (top-frame th s1)))))
             (t s)))
-     ((and (method-sync closest-method)
-           (objectLockable? instance th))
+     ((and (method-sync method-decl)
+           (objectLockable? class-instance th))
       (modify th s1
               :call-stack
               (push (make-frame 0
@@ -2552,10 +2566,10 @@
                                 nil
                                 prog
                                 'S_LOCKED
-                                closest-class)
+                                class)
                     (call-stack th s1))
-              :heap (lock-object th obj-ref (heap s))))
-     ((method-sync closest-method)
+              :heap (lock-object th class-ref (heap s))))
+     ((method-sync method-decl)
       s)
      (t
       (modify th s1
@@ -2567,7 +2581,7 @@
                                 nil
                                 prog
                                 'UNLOCKED
-                                closest-class)
+                                class)
                     (call-stack th s1)))))))
 
 ; -----------------------------------------------------------------------------
@@ -2577,58 +2591,20 @@
   (let* ((method-name-and-type (arg2 inst))
          (nformals (arg3 inst))
          (obj-ref (top (popn nformals (stack (top-frame th s)))))
-         (instance (deref obj-ref (heap s)))
          (obj-class-name (class-name-of-ref obj-ref (heap s)))
          (closest-methodref
           (lookup-methodref method-name-and-type
                             obj-class-name
                             (class-table s)))
          (closest-class (car closest-methodref))
-         (closest-method (cdr closest-methodref))
-         (prog (method-program closest-method))
-         (s1 (modify th s
-                     :pc (+ (inst-length inst) (pc (top-frame th s)))
-                     :stack (popn (+ nformals 1)
-                                  (stack (top-frame th s)))))
-         (tThread (rrefToThread obj-ref (thread-table s))))
-    (cond
-     ((method-isNative? closest-method)
-      (cond ((and (equal closest-class "java/lang/Thread")
-                  (equal method-name-and-type "start:()V"))
-             (modify tThread s1 :status 'SCHEDULED))
-            ((and (equal closest-class "java/lang/Thread")
-                  (equal method-name-and-type "stop:()V"))
-             (modify tThread s1
-                     :status 'UNSCHEDULED))
-            (t s)))
-     ((and (method-sync closest-method)
-           (objectLockable? instance th))
-      (modify th s1
-              :call-stack
-              (push (make-frame 0
-                                (reverse
-                                 (bind-formals (+ nformals 1)
-                                               (stack (top-frame th s))))
-                                nil
-                                prog
-                                'LOCKED
-                                closest-class)
-                    (call-stack th s1))
-              :heap (lock-object th obj-ref (heap s))))
-     ((method-sync closest-method)
-      s)
-     (t
-      (modify th s1
-              :call-stack
-              (push (make-frame 0
-                                (reverse
-                                 (bind-formals (+ nformals 1)
-                                               (stack (top-frame th s))))
-                                nil
-                                prog
-                                'UNLOCKED
-                                closest-class)
-                    (call-stack th s1)))))))
+         (closest-method (cdr closest-methodref)))
+        (invoke-instance-method nformals
+                                closest-class
+                                method-name-and-type
+                                closest-method
+                                (inst-length inst)
+                                th
+                                s)))
 
 ; -----------------------------------------------------------------------------
 ; (L2D) Instruction - long to double conversion
@@ -3630,6 +3606,178 @@
   (make-state (assemble_thread_table (thread-table s))
               (heap s)
               (assemble_class_table (class-table s))))
+
+; Linking
+
+(defun link-superclasses-loop (list-of-class-decls ans)
+  (if (endp list-of-class-decls)
+      (if (atom ans) ans (reverse ans))
+      (let* ((this-cl (car list-of-class-decls))
+             (thisclass (class-decl-name this-cl))
+             (superclass (car (class-decl-superclasses this-cl)))
+             (super-cl (bound? superclass ans)))
+            (if (bound? thisclass ans)
+                (concatenate 'string "LinkageError: " thisclass) ; Duplicate class
+                (if super-cl
+                    (link-superclasses-loop
+                      (cdr list-of-class-decls)
+                      (cons
+                        (make-class-decl
+                          thisclass
+                          (cons superclass
+                            (class-decl-superclasses super-cl))
+                          (class-decl-fields this-cl)
+                          (class-decl-sfields this-cl)
+                          (class-decl-cp this-cl)
+                          (class-decl-methods this-cl)
+                          '(ref -1))
+                        ans))
+                     (concatenate 'string "NoClassDefFoundError: " superclass))))))
+
+(defun link-superclasses (list-of-class-decls)
+  (let ((first-cl (first list-of-class-decls)))
+       (if (equal (class-decl-name first-cl) "java/lang/Object")
+           (if (class-decl-superclasses first-cl)
+               "ClassFormatError: java/lang/Object"
+               (link-superclasses-loop (cdr list-of-class-decls) (list first-cl)))
+          "NoClassDefFoundError: java/lang/Object")))
+
+(defun resolve-field-in-superclasses (name-and-type classes class-table)
+  (if (endp classes)
+       nil
+      (let* ((class-name (car classes))
+             (class-decl (bound? class-name class-table))
+             (field (bound? name-and-type (class-decl-fields class-decl))))
+            (or field (resolve-field-in-superclasses
+                        name-and-type
+                        (cdr classes)
+                        class-table)))))
+
+(defun resolve-field (class-name name-and-type class-table)
+  (let ((class (bound? class-name class-table)))
+       (if class
+           (let ((resolved-class
+                  (resolve-field-in-superclasses
+                    name-and-type
+                    (cons class-name (class-decl-superclasses class))
+                    class-table)))
+                (or resolved-class
+                    (concatenate 'string "NoSuchFieldError: "
+                               class-name " " name-and-type)))
+           (concatenate 'string "NoClassDefFoundError: " class-name))))
+
+(defun resolve-sfield-in-superclasses (name-and-type classes class-table)
+  (if (endp classes)
+       nil
+      (let* ((class-name (car classes))
+             (class-decl (bound? class-name class-table))
+             (field (bound? name-and-type (class-decl-sfields class-decl))))
+            (or field (resolve-sfield-in-superclasses
+                        name-and-type
+                        (cdr classes)
+                        class-table)))))
+
+(defun resolve-sfield (class-name name-and-type class-table)
+  (let ((class (bound? class-name class-table)))
+       (if class
+           (let ((resolved-class
+                  (resolve-sfield-in-superclasses
+                    name-and-type
+                    (cons class-name (class-decl-superclasses class))
+                    class-table)))
+                (or resolved-class
+                    (concatenate 'string "NoSuchFieldError: "
+                               class-name " " name-and-type)))
+           (concatenate 'string "NoClassDefFoundError: " class-name))))
+
+(defun resolve-method (class-name name-and-type class-table)
+  (let ((class (bound? class-name class-table)))
+       (if class
+           (let ((methodref
+                   (lookup-methodref name-and-type class-name class-table)))
+                (if methodref
+                    (car methodref)
+                    (concatenate 'string "NoSuchMethodError: "
+                                 class-name " "  name-and-type)))
+           (concatenate 'string "NoClassDefFoundError: " class-name))))
+
+(defun link-instr (instr class-table)
+  (case (car instr)
+    (GETFIELD       (list* 'GETFIELD
+                           (resolve-field (cadr instr) (caddr instr) class-table)
+                           (caddr instr)
+                           (cdddr instr)))
+    (GETSTATIC      (list* 'GETSTATIC
+                           (resolve-sfield (cadr instr) (caddr instr) class-table)
+                           (caddr instr)
+                           (cdddr instr)))
+    (INVOKESPECIAL  (list* 'INVOKESPECIAL
+                           (resolve-method (cadr instr) (caddr instr) class-table)
+                           (caddr instr)
+                           (cdddr instr)))
+    (INVOKESTATIC   (list* 'INVOKESTATIC
+                           (resolve-method (cadr instr) (caddr instr) class-table)
+                           (caddr instr)
+                           (cdddr instr)))
+    (INVOKEVIRTUAL  (list* 'INVOKEVIRTUAL
+                           (resolve-method (cadr instr) (caddr instr) class-table)
+                           (caddr instr)
+                           (cdddr instr)))
+    (PUTFIELD       (list* 'PUTFIELD
+                           (resolve-field (cadr instr) (caddr instr) class-table)
+                           (caddr instr)
+                           (cdddr instr)))
+    (PUTSTATIC      (list* 'PUTSTATIC
+                           (resolve-sfield (cadr instr) (caddr instr) class-table)
+                           (caddr instr)
+                           (cdddr instr)))
+    (otherwise instr)))
+
+(defun link-program (instrs class-table)
+  (if (endp instrs)
+      instrs
+      (let ((instr (car instrs)))
+           (cons (if (isLabeledInst? instr)
+                     (cons (car instr)
+                           (link-instr (cdr instr) class-table))
+                     (link-instr instr class-table))
+                 (cdr instrs)))))
+
+(defun link-methods (methods class-table)
+  (if (endp methods)
+      methods
+      (let ((method (car methods)))
+           (cons
+             (list* (method-name-and-type method)
+                    (method-sync method)
+                    (link-program (method-program method) class-table))
+             (cdr methods)))))
+
+(defun link-class-list-loop (class-decls class-table)
+  (if (endp class-decls)
+      class-decls
+      (let ((class (car class-decls)))
+           (cons
+             (make-class-decl
+               (class-decl-name class)
+               (class-decl-superclasses class)
+               (class-decl-fields class)
+               (class-decl-sfields class)
+               (class-decl-cp class)
+               (link-methods (class-decl-methods class) class-table)
+               '(ref -1))
+             (link-class-list-loop (cdr class-decls) class-table)))))
+
+(defun link-class-list (class-table)
+  (link-class-list-loop class-table class-table))
+
+(defun link-class-table (list-of-class-decls)
+  (link-class-list
+    (link-superclasses list-of-class-decls)))
+
+(defun make-class-def (list-of-class-decls)
+   (link-class-table
+     (append (base-class-def) list-of-class-decls)))
 
 ; -----------------------------------------------------------------------------
 ; load_class_library: a utility for populating the heap with Class and

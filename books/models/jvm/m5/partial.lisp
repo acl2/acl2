@@ -576,7 +576,7 @@
    (t
     (let ((n (nth 0 (locals (top-frame th s)))))
       (and (equal (program (top-frame th s)) (method-program *fact-def*))
-           (equal (lookup-method "fact:(I)I" "Demo" (class-table s))
+           (equal (bound? "fact:(I)I" (class-decl-methods (bound? "Demo" (class-table s))))
                   *fact-def*)
            (equal (sync-flg (top-frame th s)) 'UNLOCKED)
            (intp n0)
@@ -763,7 +763,7 @@
                   (equal (program (top-frame th s0))
                          (method-program *fact-def*))
                   (equal (sync-flg (top-frame th s0)) 'unlocked)
-                  (equal (lookup-method "fact:(I)I" "Demo" (class-table s0))
+                  (equal (bound? "fact:(I)I" (class-decl-methods (bound? "Demo" (class-table s0))))
                          *fact-def*)
 
                   (< 1 (sdepth (call-stack th s0)))

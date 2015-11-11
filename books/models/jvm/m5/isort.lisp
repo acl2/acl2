@@ -292,13 +292,13 @@ Method ListProc()
   (bound? "ListProc" (class-table *Isort-state*)))
 
 (defconst *cons-def*
-  (lookup-method "cons:(ILjava/lang/Object;)LCons;" "Cons" (class-table *Isort-state*)))
+  (bound? "cons:(ILjava/lang/Object;)LCons;" (class-decl-methods *Cons-class*)))
 
 (defconst *insert-def*
-  (lookup-method "insert:(ILjava/lang/Object;)LCons;" "ListProc" (class-table *Isort-state*)))
+  (bound? "insert:(ILjava/lang/Object;)LCons;" (class-decl-methods *ListProc-class*)))
 
 (defconst *isort-def*
-  (lookup-method "isort:(Ljava/lang/Object;)Ljava/lang/Object;" "ListProc" (class-table *Isort-state*)))
+  (bound? "isort:(Ljava/lang/Object;)Ljava/lang/Object;" (class-decl-methods *ListProc-class*)))
 
 (defconst *Isort-heap0*
   (heap *Isort-state*))

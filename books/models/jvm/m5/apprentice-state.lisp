@@ -44,7 +44,7 @@
                            (return)))
                      '(ref -1))
     (make-class-decl "Job"
-                     '("java/lang/Thread" "java/lang/Object")
+                     '("java/lang/Thread")
                      '("objref:LContainter;")
                      '()
                      '()

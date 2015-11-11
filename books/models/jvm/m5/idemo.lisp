@@ -232,7 +232,7 @@ Method int ifact(int)
     (ifactorial (- n 1) (int-fix (* n temp)))))
 
 (defconst *ifact-def*
-  (lookup-method "ifact:(I)I" "IDemo" *IDemo-class-table*))
+  (bound? "ifact:(I)I" (class-decl-methods (bound? "IDemo" *IDemo-class-table*))))
 
 (defun poised-at-ifact-loop (th s n)
   (and (equal (status th s) 'SCHEDULED)
@@ -301,7 +301,7 @@ Method int ifact(int)
        (equal (next-inst th s) '(invokestatic "IDemo" "ifact:(I)I" 1))
        (equal n (top (stack (top-frame th s))))
        (intp n)
-       (equal (lookup-method "ifact:(I)I" "IDemo" (class-table s))
+       (equal (bound? "ifact:(I)I" (class-decl-methods (bound? "IDemo" (class-table s))))
               *ifact-def*)))
 
 (defthm ifact-is-correct

@@ -92,8 +92,8 @@ method referred to in "Inductive Assertions and Operational Semantics".
         (t
          (let ((n (nth 0 (locals (top-frame (th) s)))))
            (and (equal (program (top-frame (th) s)) (method-program *fact-def*))
-                (equal (lookup-methodref "fact:(I)I" "Demo" (class-table s))
-                       (cons "Demo" *fact-def*))
+                (equal (bound? "fact:(I)I" (class-decl-methods (bound? "Demo" (class-table s))))
+                       *fact-def*)
                 (equal (sync-flg (top-frame (th) s)) 'UNLOCKED)
                 (intp n0)
                 (intp n)
@@ -157,8 +157,8 @@ method referred to in "Inductive Assertions and Operational Semantics".
                (method-program *fact-def*))
         (equal (status (th) s) 'scheduled)
         (equal (sync-flg (top-frame (th) s)) 'unlocked)
-        (equal (lookup-methodref "fact:(I)I" "Demo" (class-table s))
-               (cons "Demo" *fact-def*))
+        (equal (bound? "fact:(I)I" (class-decl-methods (bound? "Demo" (class-table s))))
+               *fact-def*)
         (equal (sdepth (call-stack (th) s)) d0)))
 
 ;; And of course the postcondition is merely stating that the thing that is
