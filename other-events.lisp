@@ -23187,7 +23187,7 @@
                 (value :invisible))
       (value (f-get-global 'undone-worlds-kill-ring state)))))
 
-(defun reset-prehistory-fn (permanent-p state doc event-form)
+(defun reset-prehistory-fn (permanent-p state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -23196,8 +23196,6 @@
   (with-ctx-summarized
    (cond ((output-in-infixp state)
           event-form)
-         ((null doc)
-          (msg "( RESET-PREHISTORY ~x0)" permanent-p))
          (t
           (msg "( RESET-PREHISTORY ~x0 ...)" permanent-p)))
    (cond ((and (not permanent-p)
@@ -23221,11 +23219,7 @@
          (t
           (let* ((wrld (w state))
                  (event-form (or event-form
-                                 (list* 'reset-prehistory
-                                        permanent-p
-                                        (if doc
-                                            (list :doc doc)
-                                          nil))))
+                                 (list 'reset-prehistory permanent-p)))
                  (next-absolute-command-number
                   (next-absolute-command-number wrld)))
             (er-let*
