@@ -931,7 +931,7 @@
           ;; This automatically checks for SystemVerilog mode.
           (:= (vl-parse-endblock-name (vl-idtoken->name id) "fork/join")))
         (return
-         (b* (((mv vardecls paramdecls imports) (vl-sort-blockitems items)))
+         (b* (((mv vardecls paramdecls imports typedefs) (vl-sort-blockitems items)))
            (make-vl-blockstmt :blocktype (case (vl-token->type join)
                                            (:vl-kwd-join      :vl-forkjoin)
                                            (:vl-kwd-join_any  :vl-forkjoinany)
@@ -941,6 +941,7 @@
                               :vardecls vardecls
                               :paramdecls paramdecls
                               :imports imports
+                              :typedefs typedefs
                               :loaditems items
                               :stmts stmts
                               :atts atts)))))
@@ -981,12 +982,13 @@
            ;; This automatically checks for SystemVerilog mode.
            (:= (vl-parse-endblock-name (vl-idtoken->name id) "begin/end")))
          (return
-          (b* (((mv vardecls paramdecls imports) (vl-sort-blockitems items)))
+          (b* (((mv vardecls paramdecls imports typedefs) (vl-sort-blockitems items)))
             (make-vl-blockstmt :blocktype :vl-beginend
                                :name (and id (vl-idtoken->name id))
                                :vardecls vardecls
                                :paramdecls paramdecls
                                :imports imports
+                               :typedefs typedefs
                                :loaditems items
                                :stmts stmts
                                :atts atts)))))

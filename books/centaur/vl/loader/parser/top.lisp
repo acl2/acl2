@@ -38,7 +38,6 @@
 (include-book "programs")
 (include-book "configs")
 (include-book "imports")
-(include-book "typedefs")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc parser

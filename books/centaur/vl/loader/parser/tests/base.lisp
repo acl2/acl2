@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../utils")
-(include-book "../../lexer/lexer") ;; for make-test-tokens, etc.
+(include-book "../../lexer/top") ;; for make-test-tokens, etc.
 (include-book "../../../parsetree")
 (include-book "../../../mlib/expr-tools")
 

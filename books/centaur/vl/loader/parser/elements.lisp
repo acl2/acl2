@@ -32,12 +32,11 @@
 (include-book "statements")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
 (include-book "nets")       ;; vl-assignlist-p, vl-netdecllist-p
-(include-book "blockitems") ;; vl-vardecllist-p, vl-paramdecllist-p
+(include-book "blockitems") ;; vl-vardecllist-p, vl-paramdecllist-p, typedefs
 (include-book "insts")      ;; vl-modinstlist-p
 (include-book "gates")      ;; vl-gateinstlist-p
 (include-book "functions")  ;; vl-fundecllist-p
 (include-book "modports")
-(include-book "typedefs")
 (include-book "imports")
 (include-book "asserts")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls

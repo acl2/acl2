@@ -35,7 +35,7 @@
 (include-book "../../util/cwtime")
 (include-book "../read-file")
 (include-book "../find-file")
-(include-book "../lexer/lexer") ;; to identify string boundaries, escaped ids, etc.
+(include-book "../lexer/top") ;; to identify string boundaries, escaped ids, etc.
 (local (include-book "../../util/arithmetic"))
 
 ;; stupid speed hacking

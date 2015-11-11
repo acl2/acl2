@@ -237,7 +237,7 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
 
       ;; Functions, Tasks, and Statements are all grouped together into Blockscopes.
       (blockscope   (:import)
-                    vardecl paramdecl)
+                    vardecl paramdecl typedef)
 
       (design       (:import)
                     paramdecl vardecl fundecl taskdecl typedef)
@@ -268,13 +268,11 @@ in it, such as a function, task, or block statement."
   :parents (scopestack)
   :tag :vl-blockscope
   :layout :tree
-  ((imports  vl-importlist-p
-             "Package imports in this scope.")
-   (paramdecls vl-paramdecllist-p
-               "Parameter declarations in this scope.")
-   (vardecls vl-vardecllist-p
-             "Variable declarations in this scope.")
-   (scopetype vl-scopetype-p "Kind of block responsible for this")
+  ((imports    vl-importlist-p    "Package imports in this scope.")
+   (paramdecls vl-paramdecllist-p "Parameter declarations in this scope.")
+   (vardecls   vl-vardecllist-p   "Variable declarations in this scope.")
+   (typedefs   vl-typedeflist-p   "Type declarations in this scope.")
+   (scopetype  vl-scopetype-p     "Kind of block responsible for this")
 
    (name  maybe-stringp :rule-classes :type-prescription
           "Just a debugging aide.  This lets us see the name of this scope when
@@ -287,6 +285,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :typedefs x.typedefs
                         :scopetype :vl-fundecl
                         :name  x.name)))
 
@@ -297,6 +296,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :typedefs x.typedefs
                         :scopetype :vl-taskdecl
                         :name  x.name)))
 
@@ -308,6 +308,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :typedefs x.typedefs
                         :scopetype :vl-blockstmt
                         :name  x.name)))
 

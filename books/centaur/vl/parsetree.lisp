@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-11-10")
+  "VL Syntax 2015-11-11")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -2337,6 +2337,7 @@ endmodule
   :define t
   :forward t)
 
+
 (defprod vl-import
   :tag :vl-import
   :layout :tree
@@ -2353,38 +2354,67 @@ endmodule
    (loc  vl-location-p)
    (atts vl-atts-p)))
 
-(fty::deflist vl-importlist :elt-type vl-import-p
+(fty::deflist vl-importlist
+  :elt-type vl-import-p
   :elementp-of-nil nil)
+
+
+
+(defprod vl-typedef
+  :tag :vl-typedef
+  :short "Representation of a basic type declaration like @('typedef struct ... foo_t;')."
+  ((name     stringp
+             "Name of the type being defined, e.g., @('foo_t').")
+   (type     vl-datatype-p
+             "Type this name is being defined as, e.g., @('struct { ... }').")
+   (atts     vl-atts-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (warnings vl-warninglist-p)
+   (comments vl-commentmap-p)))
+
+(defmacro vl-typedef->loc (x)
+  `(vl-typedef->minloc ,x))
+
+(fty::deflist vl-typedeflist
+  :elt-type vl-typedef-p
+  :elementp-of-nil nil)
+
+(defprojection vl-typedeflist->names ((x vl-typedeflist-p))
+  :parents (vl-typedeflist-p)
+  :returns (names string-listp)
+  (vl-typedef->name x))
 
 
 
 (deftranssum vl-blockitem
   :short "Recognizer for a valid block item."
   :long "<p>@('vl-blockitem-p') is a sum-of-products style type for recognizing
-valid block items.  The valid block item declarations include variable
-declarations and parameter declarations (parameter and localparam), which we
-represent as @(see vl-vardecl-p) and @(see vl-paramdecl-p) objects,
-respectively.</p>"
+valid block items.  These can occur within @('begin/end') and @('fork/join')
+block statements, function declarations, and task declarations.</p>"
   (vl-vardecl
    vl-paramdecl
-   vl-import))
+   vl-import
+   vl-typedef))
 
-;; BOZO maybe deftranssum should prove this automatically
-(defthmd vl-blockitem-fix-possible-tags
-  (or (equal (tag (vl-blockitem-fix x)) :vl-vardecl)
-      (equal (tag (vl-blockitem-fix x)) :vl-paramdecl)
-      (equal (tag (vl-blockitem-fix x)) :vl-import))
-  :rule-classes ((:forward-chaining :trigger-terms ((tag (vl-blockitem-fix x)))))
-  :hints (("goal"
-           :in-theory (enable tag-reasoning)
-           :cases ((vl-blockitem-p (vl-blockitem-fix x))))))
+;; This is automatic now, see TAG-OF-VL-BLOCKITEM-FIX-FORWARD
+;; (defthmd vl-blockitem-fix-possible-tags
+;;   (or (equal (tag (vl-blockitem-fix x)) :vl-vardecl)
+;;       (equal (tag (vl-blockitem-fix x)) :vl-paramdecl)
+;;       (equal (tag (vl-blockitem-fix x)) :vl-import)
+;;       (equal (tag (vl-blockitem-fix x)) :vl-typedef))
+;;   :rule-classes ((:forward-chaining :trigger-terms ((tag (vl-blockitem-fix x)))))
+;;   :hints (("goal"
+;;            :in-theory (enable tag-reasoning)
+;;            :cases ((vl-blockitem-p (vl-blockitem-fix x))))))
+;;
+;; (add-to-ruleset tag-reasoning '(vl-blockitem-fix-possible-tags))
 
-(add-to-ruleset tag-reasoning '(vl-blockitem-fix-possible-tags))
-
-(defthm vl-blockitem-fix-type
-  (consp (vl-blockitem-fix x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :expand ((:with vl-blockitem-fix (vl-blockitem-fix x))))))
+;; I don't think this should be necessary; it's part of the type prescription.
+;; (defthm vl-blockitem-fix-type
+;;   (consp (vl-blockitem-fix x))
+;;   :rule-classes :type-prescription
+;;   :hints(("Goal" :expand ((:with vl-blockitem-fix (vl-blockitem-fix x))))))
 
 (fty::deflist vl-blockitemlist
   :elt-type vl-blockitem-p
@@ -2394,54 +2424,55 @@ respectively.</p>"
   (defthm vl-blockitemlist-p-when-vl-vardecllist-p
     (implies (vl-vardecllist-p x)
              (vl-blockitemlist-p x))
-    :hints(("Goal" :in-theory (enable vl-vardecllist-p
-                                      vl-blockitemlist-p))))
+    :hints(("Goal" :induct (len x))))
+
   (defthm vl-blockitemlist-p-when-vl-paramdecllist-p
     (implies (vl-paramdecllist-p x)
              (vl-blockitemlist-p x))
-    :hints(("Goal" :in-theory (enable vl-paramdecllist-p
-                                      vl-blockitemlist-p))))
+    :hints(("Goal" :induct (len x))))
+
   (defthm vl-blockitemlist-p-when-vl-importlist-p
     (implies (vl-importlist-p x)
              (vl-blockitemlist-p x))
-    :hints(("Goal" :in-theory (enable vl-importlist-p
-                                      vl-blockitemlist-p)))))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-blockitemlist-p-when-vl-typedeflist-p
+    (implies (vl-typedeflist-p x)
+             (vl-blockitemlist-p x))
+    :hints(("Goal" :induct (len x)))))
 
 
 (define vl-sort-blockitems-aux ((x vl-blockitemlist-p)
                                 ;; accumulators
-                                (vardecls-acc vl-vardecllist-p)
+                                (vardecls-acc   vl-vardecllist-p)
                                 (paramdecls-acc vl-paramdecllist-p)
-                                (imports-acc vl-importlist-p))
+                                (imports-acc    vl-importlist-p)
+                                (typedefs-acc   vl-typedeflist-p))
   :prepwork ((local (in-theory (enable tag-reasoning))))
-  :returns (mv (vardecls vl-vardecllist-p)
+  :returns (mv (vardecls   vl-vardecllist-p)
                (paramdecls vl-paramdecllist-p)
-               (imports vl-importlist-p))
+               (imports    vl-importlist-p)
+               (typedefs   vl-typedeflist-p))
   (b* (((when (atom x))
-        (mv (rev (vl-vardecllist-fix vardecls-acc))
+        (mv (rev (vl-vardecllist-fix   vardecls-acc))
             (rev (vl-paramdecllist-fix paramdecls-acc))
-            (rev (vl-importlist-fix imports-acc))))
+            (rev (vl-importlist-fix    imports-acc))
+            (rev (vl-typedeflist-fix   typedefs-acc))))
        (x1 (vl-blockitem-fix (car x)))
-       ((mv vardecls-acc paramdecls-acc imports-acc)
+       ((mv vardecls-acc paramdecls-acc imports-acc typedefs-acc)
         (case (tag x1)
-          (:vl-vardecl   (mv (cons x1 vardecls-acc)
-                             paramdecls-acc
-                             imports-acc))
-          (:vl-paramdecl (mv vardecls-acc
-                             (cons x1 paramdecls-acc)
-                             imports-acc))
-          (otherwise     (mv vardecls-acc
-                             paramdecls-acc
-                             (cons x1 imports-acc))))))
-    (vl-sort-blockitems-aux (cdr x) vardecls-acc paramdecls-acc imports-acc)))
+          (:vl-vardecl   (mv (cons x1 vardecls-acc) paramdecls-acc imports-acc typedefs-acc))
+          (:vl-paramdecl (mv vardecls-acc (cons x1 paramdecls-acc) imports-acc typedefs-acc))
+          (:vl-import    (mv vardecls-acc paramdecls-acc (cons x1 imports-acc) typedefs-acc))
+          (otherwise     (mv vardecls-acc paramdecls-acc imports-acc (cons x1 typedefs-acc))))))
+    (vl-sort-blockitems-aux (cdr x) vardecls-acc paramdecls-acc imports-acc typedefs-acc)))
 
 (define vl-sort-blockitems ((x vl-blockitemlist-p))
-  :returns (mv (vardecls vl-vardecllist-p)
+  :returns (mv (vardecls   vl-vardecllist-p)
                (paramdecls vl-paramdecllist-p)
-               (imports vl-importlist-p))
-  (vl-sort-blockitems-aux x nil nil nil))
-
-
+               (imports    vl-importlist-p)
+               (typedefs   vl-typedeflist-p))
+  (vl-sort-blockitems-aux x nil nil nil nil))
 
 
 (defenum vl-assign-type-p
@@ -2914,7 +2945,11 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
       (imports     vl-importlist-p)
       (paramdecls  vl-paramdecllist-p)
       (vardecls    vl-vardecllist-p)
-      (loaditems   vl-blockitemlist-p)
+      (typedefs    vl-typedeflist-p)
+      (loaditems   vl-blockitemlist-p
+                   "Block items for this block in parse order, before splitting
+                    out into typed lists.  Should not be used except in
+                    shadowcheck.")
       (stmts       vl-stmtlist-p)
       (atts        vl-atts-p
                    "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
@@ -3436,11 +3471,13 @@ flops, and to set up other simulation events.  A simple example would be:</p>
    (paramdecls  vl-paramdecllist-p
                 "Local parameter declarations")
 
+   (typedefs    vl-typedeflist-p
+                "Local type declarations.")
+
    (parsed-blockitems  vl-blockitemlist-p
-                "The declarations within the function, in parse order.  We sort
-                 these out into the imports, vardecls, and paramdecls. It appears
-                 that these may even contain event declarations, parameter declarations,
-                 etc., which seems pretty absurd.")
+                "The declarations within the function, in parse order, before
+                 sorting out into imports, vardecls, paramdecls, and typedefs.
+                 Should only be used by shadowcheck.")
 
    (body       vl-stmt-p
                "The body of the function.  We represent this as an ordinary statement,
@@ -3516,12 +3553,16 @@ extra declarations are created automatically by the loader.</p>")
                  return value (see below); these are marked with
                  @('VL_HIDDEN_DECL_FOR_TASKPORT').")
 
+   (typedefs    vl-typedeflist-p
+                "Local type declarations.")
+
    (paramdecls  vl-paramdecllist-p
                 "Local parameter declarations")
 
    (parsed-blockitems  vl-blockitemlist-p
-               "All the local declarations for the task; we sort these out into
-                the imports, vardecls, and paramdecls above.")
+               "All the local declarations for the task, in parse order,
+                before sorting into imports, vardecls, paramdecls, and
+                typedefs.  Should only be used by shadowcheck.")
 
    (body       vl-stmt-p
                "The statement that gives the actions for this task, i.e., the
@@ -3635,29 +3676,6 @@ be non-sliceable, at least if it's an input.</p>"
 (fty::deflist vl-fwdtypedeflist
   :elt-type vl-fwdtypedef-p
   :elementp-of-nil nil)
-
-(defprod vl-typedef
-  :tag :vl-typedef
-  :short "Representation of a basic type declaration like @('typedef struct ... foo_t;')."
-  ((name stringp)
-   (type vl-datatype-p)
-   (atts vl-atts-p)
-   (minloc vl-location-p)
-   (maxloc vl-location-p)
-   (warnings vl-warninglist-p)
-   (comments vl-commentmap-p)))
-
-(defmacro vl-typedef->loc (x)
-  `(vl-typedef->minloc ,x))
-
-(fty::deflist vl-typedeflist
-  :elt-type vl-typedef-p
-  :elementp-of-nil nil)
-
-(defprojection vl-typedeflist->names ((x vl-typedeflist-p))
-  :parents (vl-typedeflist-p)
-  :returns (names string-listp)
-  (vl-typedef->name x))
 
 (defprod vl-genvar
   :tag :vl-genvar
@@ -4697,10 +4715,6 @@ resulting from parsing some Verilog source code."
    ))
 
 (defoption vl-maybe-design vl-design-p)
-
-
-
-
 
 
 

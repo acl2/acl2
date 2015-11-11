@@ -63,7 +63,7 @@ generated.  This allowed all transforms to expect that every wire should have a
 declaration.  It also allowed us to consider the order of module elements,
 without having to rely on some technique such as the @(see vl-location-p)s
 associated with module elements, which could be unreliable if a module spans
-multiple files, e.g., because of includes.</p>
+multiple files, e.g., because of @(see preprocessor) includes.</p>
 
 <p>When we added support for SystemVerilog @('import') statements, we found
 this approach to be tricky.  In particular, to decide whether we need to add a
@@ -581,7 +581,8 @@ extends @('decls') with the newly declared name."
        ((mv name exprs)
         (case (tag x)
           (:vl-vardecl   (mv (vl-vardecl->name x)   (vl-vardecl-exprs-for-implicit-wires x)))
-          (otherwise     (mv (vl-paramdecl->name x) (vl-paramdecl-allexprs x)))))
+          (:vl-paramdecl (mv (vl-paramdecl->name x) (vl-paramdecl-allexprs x)))
+          (otherwise     (mv (vl-typedef->name x)   (vl-typedef-allexprs x)))))
 
        ;; First, make sure all the names used in expressions like ranges and
        ;; array dimensions have been declared.  Then, add a binding for the

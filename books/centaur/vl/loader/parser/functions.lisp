@@ -164,7 +164,7 @@ information.</p>"
                                           (list (hons-copy "VL_HIDDEN_DECL_FOR_TASKPORT")))
                                    :loc  loc))
        (decls (append port-vars (list ret-var) decls))
-       ((mv vardecls paramdecls imports) (vl-sort-blockitems decls)))
+       ((mv vardecls paramdecls imports typedefs) (vl-sort-blockitems decls)))
     (make-vl-fundecl :name       name
                      :lifetime   lifetime
                      :rettype    rettype
@@ -173,6 +173,7 @@ information.</p>"
                      :vardecls   vardecls
                      :paramdecls paramdecls
                      :imports    imports
+                     :typedefs   typedefs
                      :body       body
                      :atts       atts
                      :loc        loc)))
@@ -192,7 +193,7 @@ variables.  See the description of <i>decls</i> in @(see vl-taskdecl) for more
 information.</p>"
   (b* ((port-vars (vl-make-hidden-variables-for-portdecls ports))
        (decls (append port-vars decls))
-       ((mv vardecls paramdecls imports) (vl-sort-blockitems decls)))
+       ((mv vardecls paramdecls imports typedefs) (vl-sort-blockitems decls)))
     (make-vl-taskdecl :name      name
                       :lifetime  lifetime
                       :portdecls ports
@@ -200,6 +201,7 @@ information.</p>"
                       :vardecls   vardecls
                       :paramdecls paramdecls
                       :imports    imports
+                      :typedefs   typedefs
                       :body      body
                       :atts      atts
                       :loc       loc)))
@@ -1007,7 +1009,7 @@ same direction.\"</blockquote>
   :long "@({
              list_of_tf_variable_identifiers ::= port_identifier { variable_dimension } [ '=' expression ]
                                                  { ',' port_identifier { variable_dimension } [ '=' expression ] }
-})"
+         })"
   :result (vl-tf-parsed-var-idlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -1046,7 +1048,7 @@ same direction.\"</blockquote>
   :long "@({
              tf_port_declaration ::= { attribute_instance } tf_port_direction
                                      [ var ] data_type_or_implicit list_of_tf_variable_identifiers ';'
-})"
+         })"
   :result (vl-portdecllist-p val)
   :guard (vl-atts-p atts)
   :resultp-of-nil t
