@@ -32,7 +32,217 @@
 (include-book "base")
 (include-book "../statements")
 
-;; BOZO no tests at all... :(
+
+(defparser-top vl-parse-statement :resulttype vl-stmt-p)
+
+
+(defaggregate stmttest
+  :tag :stmttest
+  ((input    stringp "The input to parse and lex.")
+   (successp booleanp "Is the test expected to pass?" :default t)
+   (expect    "Pretty statement we expect to get out, in case of success.")
+   (remainder stringp "What we expect to remain in the input stream." :default "")))
+
+(deflist stmttestlist-p (x)
+  (stmttest-p x)
+  :guard t)
+
+
+(define make-stmttest-fail ((x stmttest-p))
+  (change-stmttest x :successp nil))
+
+(defprojection make-stmttests-fail (x)
+  (make-stmttest-fail x)
+  :guard (stmttestlist-p x))
+
+
+(define run-stmttest ((test stmttest-p)
+                      &key
+                      ((config vl-loadconfig-p) '*vl-default-loadconfig*))
+  (b* (((stmttest test) test)
+       (- (cw "Running test ~x0; edition ~s1, strict ~x2~%" test
+              (vl-loadconfig->edition config)
+              (vl-loadconfig->strictp config)))
+
+       (echars (vl-echarlist-from-str test.input))
+       ((mv successp tokens warnings)
+        (vl-lex echars
+                :config config
+                :warnings nil))
+       ((unless successp)
+        (or (not test.successp)
+            (raise "FAILURE: didn't even lex the input successfully.")))
+
+       ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
+       (pstate            (make-vl-parsestate :warnings warnings))
+       ((mv errmsg? val tokens pstate)
+        (vl-parse-statement-top :tokens tokens
+                                :pstate pstate
+                                :config config))
+       (remainder (vl-tokenlist->string-with-spaces tokens))
+       (pretty (and (not errmsg?) (vl-pretty-stmt val)))
+
+       (test-okp
+
+        (and
+         (or (implies test.successp (not errmsg?))
+             (cw "FAILURE: Expected parsing to succeed, but got error ~x0.~%"
+                 errmsg?))
+
+         (or (implies (not test.successp) errmsg?)
+             (cw "FAILURE: Expected parsing to fail, but no error was produced.~%"))
+
+         (or (not test.successp)
+             (equal test.remainder remainder)
+             (cw "FAILURE: Expected remainder ~x0, found ~x1.~%"
+                 test.remainder remainder))
+
+         (or (not test.successp)
+             (equal pretty test.expect)
+             (cw "FAILURE: Expected result ~x0, found ~x1.~%"
+                 test.expect pretty))))
+
+       ((unless test-okp)
+        (cw "*** Test failed: ~x0. ~%" test)
+        (cw "*** Results from vl-parse-statement: ~x0.~%"
+            (list :errmsg    errmsg?
+                  :val       val
+                  :pretty    pretty
+                  :remainder remainder
+                  :pstate    pstate))
+        (raise "Test failed")))
+    t))
+
+(define run-stmttests ((x stmttestlist-p)
+                       &key
+                       ((config vl-loadconfig-p) '*vl-default-loadconfig*))
+  (if (atom x)
+      t
+    (prog2$ (run-stmttest (car x) :config config)
+            (run-stmttests (cdr x) :config config))))
+
+
+(defsection basic-tests
+  ;; We check that these tests will pass on both SystemVerilog-2012 and
+  ;; Verilog-2005.
+
+  (defconst *basic-stmt-tests*
+    (list
+     (make-stmttest :input "foo = bar;"
+                    :expect '((id "foo") := (id "bar")))
+
+     (make-stmttest :input "foo <= bar;"
+                    :expect '((id "foo") :<= (id "bar")))
+
+     (make-stmttest :input "foo = bar ;"
+                    :expect '((id "foo") := (id "bar")))
+
+     (make-stmttest :input "foo < = bar;"
+                    :successp nil)
+
+
+     (make-stmttest :input "$display(\"foo\");"
+                    :expect '(:call "$display" (str "foo")))
+
+     (make-stmttest :input "$bits(foo);"
+                    :expect '(:call "$bits" (id "foo")))
+
+     (make-stmttest :input "factorial(n);"
+                    :expect '(:call "factorial" (id "n")))
+
+     (make-stmttest :input "foo.factorial(n);"
+                    :expect '(:call (:dot "foo" "factorial")
+                              (id "n")))
+
+     (make-stmttest :input "ack(1,2);"
+                    :expect '(:call "ack" 1 2))
+
+     (make-stmttest :input "ack(1,2,);"  ;; bozo this might actually be permitted now?
+                    :successp nil)
+
+     (make-stmttest :input "ack(,1,2);"  ;; bozo this might actually be permitted now?
+                    :successp nil)
+
+     ))
+
+  (make-event (progn$ (run-stmttests *basic-stmt-tests*
+                                     :config (make-vl-loadconfig :edition :system-verilog-2012))
+                      '(value-triple :success)))
+
+  (make-event (progn$ (run-stmttests *basic-stmt-tests*
+                                     :config (make-vl-loadconfig :edition :verilog-2005))
+                      '(value-triple :success))))
+
+
+(defsection system-verilog-only-stmt-tests
+  ;; We check that these pass on SystemVerilog-2012.  We don't check how they
+  ;; behave on Verilog-2005.
+
+  (defconst *system-verilog-only-stmt-tests*
+    (list
+
+     (make-stmttest :input "break;"
+                    :expect '(:break))
+
+     (make-stmttest :input "continue;"
+                    :expect '(:continue))
+
+     (make-stmttest :input "return;"
+                    :expect '(:return nil))
+
+     (make-stmttest :input "return 5;"
+                    :expect '(:return 5))
+
+     ;; bozo things like this should work eventually
+
+     ;; (make-stmttest :input "foo::factorial(n);"
+     ;;                :expect '(:call (:scope "foo" "factorial")
+     ;;                          (id "n")))
+
+     ;; (make-stmttest :input "$bits(integer);"
+     ;;                :expect '(:call "$bits" (str "foo")))
+
+     ))
+
+  (make-event (progn$ (run-stmttests *system-verilog-only-stmt-tests*
+                                     :config (make-vl-loadconfig :edition :system-verilog-2012))
+                      '(value-triple :success))))
+
+
+
+
+(defsection verilog-only-stmt-tests
+  ;; We check that these pass on Verilog-2005.  We don't check how they behave
+  ;; on SystemVerilog-2012.
+
+
+  (defconst *verilog-only-stmt-tests*
+    (list
+
+     (make-stmttest :input "break;"
+                    :expect '(:call "break"))
+
+     (make-stmttest :input "continue;"
+                    :expect '(:call "continue"))
+
+     (make-stmttest :input "return;"
+                    :expect '(:call "return"))
+
+     (make-stmttest :input "return 5;"
+                    :successp nil)
+
+     ))
+
+  (make-event (progn$ (run-stmttests *verilog-only-stmt-tests*
+                                     :config (make-vl-loadconfig :edition :verilog-2005))
+                      '(value-triple :success))))
+
+
+
+
+
+
+
 
 #||
 
