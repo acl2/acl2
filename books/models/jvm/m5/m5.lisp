@@ -3607,7 +3607,27 @@
               (heap s)
               (assemble_class_table (class-table s))))
 
-; Linking
+; -----------------------------------------------------------------------------
+; Linking.
+; Top function of linking is link-class-table.
+; It preprocesses a list of class-decls into linked class-table.
+; The first class-decl in the list must be java/lang/Object .
+; All class-decls in the list must have distinct class-names.
+; All other class-decls must have nonempty direct superclass name and
+; a class-decl of supercalls must precede it in the list.
+; If superclass not found link-class-table returns a string with error message
+; instead of a list.
+; Then link-class-table scans instructions of all methods in the class table
+; and resolves fieldrefs in instructions GETFIELD, GETSTATIC, PUTFIELD, PUTSTATIC
+; and methodrefs in instructions INVOKESPECIAL, INVOKESTATIC, INVOKEVIRTUAL .
+; Only classname in fieldrefs and methodsrefs might be modified, name-and-type
+; is kept unchanged. If class-decl with classname contains field or method whose name-and-type is
+; exactly name-and-type of fieldref or methodref, it remains unchanged.
+; Otherwise it is replaced by a name of closest superclass, where field or
+; method is found. If search fails then classname is replaced by a diagnostic
+; string.
+; Notice that static linking is insufficent for INVOKEVIRTUAL instruction.
+; It seraches for overwriting methods in run-time.
 
 (defun link-superclasses-loop (list-of-class-decls ans)
   (if (endp list-of-class-decls)
