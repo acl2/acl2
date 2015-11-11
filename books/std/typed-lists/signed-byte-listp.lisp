@@ -61,7 +61,7 @@
     :hints(("Goal" :in-theory (enable signed-byte-listp))))
 
   (defthm true-listp-when-signed-byte-listp
-    (implies (signed-byte-listp bytes x)
+    (implies (signed-byte-listp width x)
              (true-listp x))
     :hints(("Goal" :induct (len x)))))
 
