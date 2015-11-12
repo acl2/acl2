@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "datatypes")
-(include-book "lvalues")
+(include-book "assignments")
 (include-book "delays")
 (include-book "strengths")
 (local (include-book "../../util/arithmetic"))
@@ -116,35 +116,9 @@
 
 
 
+; PARSING CONTINUOUS ASSIGNMENTS ----------------------------------------------
 
-
-;                      PARSING CONTINUOUS ASSIGNMENTS
-;
-; continuous_assign ::=
-;    'assign' [drive_strength] [delay3] list_of_net_assignments ';'
-;
-; list_of_net_assignments ::=
-;    net_assignment { ',' net_assignment }
-;
-; net_assignment ::=
-;    lvalue '=' expression
-
-(defparser vl-parse-list-of-net-assignments ()
-  ;; Returns a list of (lvalue . expr) pairs
-  :result (and (alistp val)
-               (vl-exprlist-p (strip-cars val))
-               (vl-exprlist-p (strip-cdrs val)))
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (first := (vl-parse-assignment))
-       (when (vl-is-token? :vl-comma)
-         (:= (vl-match))
-         (rest := (vl-parse-list-of-net-assignments)))
-       (return (cons first rest))))
-
+(local (xdoc::set-default-parents parse-assignments))
 
 (define vl-build-assignments ((loc      vl-location-p)
                               (pairs    (and (alistp pairs)
@@ -153,7 +127,7 @@
                               (strength vl-maybe-gatestrength-p)
                               (delay    vl-maybe-gatedelay-p)
                               (atts     vl-atts-p))
-  :returns (assigns vl-assignlist-p :hyp :fguard)
+  :returns (assigns vl-assignlist-p)
   (if (atom pairs)
       nil
     (cons (make-vl-assign :loc loc
@@ -164,31 +138,97 @@
                           :atts atts)
           (vl-build-assignments loc (cdr pairs) strength delay atts))))
 
-(encapsulate
-  ()
-  (local (in-theory (enable vl-maybe-gatedelay-p vl-maybe-gatestrength-p)))
-  (defparser vl-parse-continuous-assign (atts)
-    :guard (vl-atts-p atts)
-    :result (vl-assignlist-p val)
-    :true-listp t
-    :resultp-of-nil t
-    :fails gracefully
-    :count strong
-    (seq tokstream
-         (assignkwd := (vl-match-token :vl-kwd-assign))
-         (when (vl-is-token? :vl-lparen)
-           (strength := (vl-parse-drive-strength-or-charge-strength)))
-         (when (vl-cstrength-p strength)
-           (return-raw
-            (vl-parse-error "Assign statement illegally contains a charge strength.")))
-         (when (vl-is-token? :vl-pound)
-           (delay := (vl-parse-delay3)))
-         (pairs := (vl-parse-list-of-net-assignments))
-         (:= (vl-match-token :vl-semi))
-         (return (vl-build-assignments (vl-token->loc assignkwd)
-                                       pairs strength delay atts)))))
+(defparser vl-parse-list-of-net-assignments ()
+  :result (and (alistp val)
+               (vl-exprlist-p (strip-cars val))
+               (vl-exprlist-p (strip-cdrs val)))
+  :short "Parses a @('list_of_net_assignments') into a list of @('(lvalue . expr)') pairs."
+  :long "<p>Both Verilog-2005 and SystemVerilog-2012 agree:</p>
+         @({
+              list_of_net_assignments ::= net_assignment { ',' net_assignment }
+         })"
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (first := (vl-parse-net-assignment))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-list-of-net-assignments)))
+       (return (cons first rest))))
 
+(defparser vl-parse-list-of-variable-assignments ()
+  :result (and (alistp val)
+               (vl-exprlist-p (strip-cars val))
+               (vl-exprlist-p (strip-cdrs val)))
+  :short "Parses a @('list_of_variable_assignments') into a list of @('(lvalue . expr)') pairs."
+  :long "<p>Both Verilog-2005 and SystemVerilog-2012 agree:</p>
+         @({
+              list_of_variable_assignments ::= variable_assignment { ',' variable_assignment }
+         })"
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (first := (vl-parse-variable-assignment))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-list-of-net-assignments)))
+       (return (cons first rest))))
 
+(defparser vl-parse-continuous-assign (atts)
+  :short "Parse a @('continuous_assign') into a @(see vl-assignlist-p)."
+  :long "<p>Verilog-2005:</p>
+         @({
+             continuous_assign ::= 'assign' [drive_strength] [delay3] list_of_net_assignments ';'
+         })
+
+         <p>SystemVerilog-2012:</p>
+         @({
+              continuous_assign ::= 'assign' [drive_strength] [delay3] list_of_net_assignments ';'
+                                  | 'assign' [delay_control] list_of_variable_assignments ';'
+         })
+
+         <p>Note that the @('delay_control') here is just a small subset of a @('delay3'):</p>
+
+         @({
+              delay_control ::= '#' delay_value
+                              | '# '(' mintypmax_expression ')'
+
+              delay3 ::= '#' delay_value
+                       | '#' '(' mintypmax_expression [...optional stuff...] ')'
+         })"
+  :guard (vl-atts-p atts)
+  :result (vl-assignlist-p val)
+  :true-listp t
+  :resultp-of-nil t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (assignkwd := (vl-match-token :vl-kwd-assign))
+       (when (vl-is-token? :vl-lparen)
+         (strength := (vl-parse-drive-strength-or-charge-strength)))
+       (when (vl-cstrength-p strength)
+         (return-raw
+          (vl-parse-error "Assign statement illegally contains a charge strength.")))
+       (when (vl-is-token? :vl-pound)
+         (delay := (vl-parse-delay3)))
+       ;; BOZO lazy.  We don't currently try to enforce that variable
+       ;; assignments don't have drive strengths or fancy delays.  If we ever
+       ;; care about that, we could tweak this to be smarter.
+       (pairs := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                     (vl-parse-list-of-net-assignments)
+                   ;; We abuse the fact that any list_of_net_assignments is
+                   ;; also a list_of_variable_assignments, so we don't have to
+                   ;; backtrack and try out both cases.
+                   (vl-parse-list-of-variable-assignments)))
+       (:= (vl-match-token :vl-semi))
+       (return (vl-build-assignments (vl-token->loc assignkwd)
+                                     pairs strength delay atts))))
+
+(local (xdoc::set-default-parents nil))
 
 
 ;                            PARSING NET DECLARATIONS

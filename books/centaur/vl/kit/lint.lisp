@@ -455,6 +455,8 @@ shown.</p>"
        ;; new world of loaditems.  we need to annotate first.
        (design (xf-cwtime (vl-design-drop-user-submodules design config.dropmods)))
 
+       ;; BOZO where did lvaluecheck go??
+
        ;; Taken care of by annotate
        ;; (design (cwtime (vl-design-resolve-ansi-portdecls design)))
        ;; (design (cwtime (vl-design-resolve-nonansi-interfaceports design)))
