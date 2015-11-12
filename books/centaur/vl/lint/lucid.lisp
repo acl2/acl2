@@ -1327,13 +1327,16 @@ created when we process their packages, etc.</p>"
         ;; all with deassignment statements.
         st
 
-        :vl-enablestmt
+        :vl-callstmt
         ;; Typically this should be naming an task.  We'll treat the is as a
         ;; right hand side so that it gets marked as "used".  Arguments to the
         ;; task will also be marked as used.  BOZO this maybe isn't quite right
         ;; -- if the task has outputs then maybe we need to be marking them as
         ;; set instead of used??
         (b* ((st (vl-hidsolo-mark :used nil x.id ss st ctx))
+             (st (if x.typearg
+                     (vl-datatype-lucidcheck x.typearg ss st ctx)
+                   st))
              (st (vl-rhsexprlist-lucidcheck x.args ss st ctx)))
           st)
 

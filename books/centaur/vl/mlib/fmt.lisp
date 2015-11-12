@@ -170,7 +170,7 @@ formerly the \"location directive\" and printed a location.</p>")
                   (mv nil ps)))))
         ((:vl-range)
          (vl-fmt-tilde-a-case vl-range-p vl-pp-range))
-        ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-enablestmt
+        ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-callstmt
           :vl-disablestmt :vl-eventtriggerstmt :vl-casestmt :vl-ifstmt
           :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt
           :vl-forstmt :vl-blockstmt :vl-timingstmt :vl-breakstmt

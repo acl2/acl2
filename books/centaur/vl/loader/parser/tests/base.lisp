@@ -707,10 +707,13 @@
       :vl-deassignstmt (list* (vl-pretty-deassign-type x.type)
                               (vl-pretty-expr x.lvalue)
                               (and x.atts (list :atts (vl-pretty-atts x.atts))))
-      :vl-enablestmt (list* :call
-                            (vl-pretty-scopeexpr x.id)
-                            (append (vl-pretty-exprlist x.args)
-                                    (and x.atts (list :atts (vl-pretty-atts x.atts)))))
+      :vl-callstmt (list* :call
+                          (vl-pretty-scopeexpr x.id)
+                          (append (and x.typearg (list (vl-pretty-datatype x.typearg)))
+                                  (vl-pretty-exprlist x.args)
+                                  (and x.systemp (list :system))
+                                  (and x.voidp (list :void))
+                                  (and x.atts (list :atts (vl-pretty-atts x.atts)))))
       :vl-disablestmt (list* :disable
                              (vl-pretty-scopeexpr x.id)
                              (and x.atts (list :atts (vl-pretty-atts x.atts))))

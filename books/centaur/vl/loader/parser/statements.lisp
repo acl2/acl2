@@ -215,79 +215,371 @@
                                  lvalue atts))))
 
 
-
 (defparser vl-parse-task-enable (atts)
-  :short "Parse a @('task_enable')."
+  :short "Parse a @('task_enable').  Verilog-2005 Only."
   :long "<p>Verilog-2005 Syntax:</p>
          @({
               task_enable ::=
                  hierarchical_task_identifier [ '(' expression { ',' expression } ')' ] ';'
+
+              hierarchical_task_identifier ::= hierarchical_identifier
          })
 
-         <p>SystemVerilog-2012: Bozo, I'm not yet sure what this corresponds to.</p>"
+         <p>In SystemVerilog-2012 this goes away and is replaced by the
+         @('subroutine_call_statement') case.  Per Section 13.3, ``A call to a
+         task is also referred to as a <i>task enable</i> (see Section 13.5 for
+         more details on calling tasks); and Section 13.5 is about subroutine
+         calls and argument passing, and describes the
+         @('subroutine_call_statement'), which has a @('tf_call') production
+         that is very similar to the Verilog-2005 @('task_enable').</p>"
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
+
        (hid := (vl-parse-hierarchical-identifier nil))
        (unless (vl-is-token? :vl-lparen)
          (:= (vl-match-token :vl-semi))
-         (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
-                                     :args nil
-                                     :atts atts)))
+         (return (make-vl-callstmt :id (make-vl-scopeexpr-end :hid hid)
+                                   :typearg nil
+                                   :systemp nil
+                                   :voidp nil
+                                   :args nil
+                                   :atts atts)))
 
        (:= (vl-match)) ;; eat the (
 
-       (when (and (vl-is-token? :vl-rparen)
-                  (not (eq (vl-loadconfig->edition config) :verilog-2005)))
-         ;; Verilog-2005 doesn't support explicit parens with empty argument
-         ;; lists, but SystemVerilog-2012 adds them and other fancy stuff.  We
-         ;; won't yet support the other fancy stuff, but can at least handle
-         ;; empty argument lists very easily.
-         (:= (vl-match))
-         (:= (vl-match-token :vl-semi))
-         (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
-                                     :args nil
-                                     :atts atts)))
+       ;; Old code from when this was also implementing subroutine_call_statement
+       ;; for SystemVerilog-2012.  We no longer use this function in SystemVerilog
+       ;; mode.  We can probably just delete this comment since the Verilog-2005
+       ;; rule definitely requires at least one expression.
+       ;;
+       ;; (when (and (vl-is-token? :vl-rparen)
+       ;;            (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+       ;;   ;; Verilog-2005 doesn't support explicit parens with empty argument
+       ;;   ;; lists, but SystemVerilog-2012 adds them and other fancy stuff.  We
+       ;;   ;; won't yet support the other fancy stuff, but can at least handle
+       ;;   ;; empty argument lists very easily.
+       ;;   (:= (vl-match))
+       ;;   (:= (vl-match-token :vl-semi))
+       ;;   (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
+       ;;                               :args nil
+       ;;                               :atts atts)))
 
        (args := (vl-parse-1+-expressions-separated-by-commas))
        (:= (vl-match-token :vl-rparen))
        (:= (vl-match-token :vl-semi))
-       (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
-                                   :args args
-                                   :atts atts))))
-
+       (return (make-vl-callstmt :id (make-vl-scopeexpr-end :hid hid)
+                                 :typearg nil
+                                 :systemp nil
+                                 :voidp nil
+                                 :args args
+                                 :atts atts))))
 
 
 (defparser vl-parse-system-task-enable (atts)
-  :short "Parse a @('system_task_enable')."
+  :short "Parse a @('system_task_enable').  Verilog-2005 Only."
   :long "<p>Verilog-2005 Syntax:</p>
+
         @({
              system_task_enable ::=
                system_identifier [ '(' [expression] { ',' [expression] } ')' ] ';'
         })
 
-        <p>SystemVerilog-2012: bozo what does this correspond to?</p>"
-  :guard (vl-atts-p atts)
+        <p>In SystemVerilog-2012 this goes away and gets folded into a
+        @('subroutine_call_statement').</p>"
+  :guard (and (vl-atts-p atts)
+              (vl-is-token? :vl-sysidtoken))
   :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
-        (id := (vl-match-token :vl-sysidtoken))
+        (id := (vl-match))
         (when (vl-is-token? :vl-lparen)
           (:= (vl-match))
           (args := (vl-parse-1+-expressions-separated-by-commas))
           (:= (vl-match-token :vl-rparen)))
         (:= (vl-match-token :vl-semi))
         (return
-         (make-vl-enablestmt :id (make-vl-scopeexpr-end
-                                  :hid (make-vl-hidexpr-end
-                                        :name (vl-sysidtoken->name id)))
-                             :args args
-                             :atts atts))))
+         (make-vl-callstmt :id (make-vl-scopeexpr-end
+                                :hid (make-vl-hidexpr-end
+                                      :name (vl-sysidtoken->name id)))
+                           :voidp nil
+                           :typearg nil
+                           :systemp t
+                           :args args
+                           :atts atts))))
+
+
+
+
+; SystemVerilog Subroutine Calls -----------------------------------------------------------
+;
+; QUOTE means literally a quote character here.  I.e.,: '
+;
+;   subroutine_call_statement ::= subroutine_call ';'
+;                               | 'void' QUOTE '(' function_subroutine_call ')' ';'
+;
+;   function_subroutine_call ::= subroutine_call
+;
+;   subroutine_call ::= tf_call
+;                     | system_tf_call
+;                     | method_call
+;                     | 'std::' randomize_call
+;
+; As usual a big mess.  Let's start with tf_call:
+;
+;   tf_call ::= ps_or_hierarchical_tf_identifier { attribute_instance } [ '(' list_of_arguments ')' ]
+;
+;   ps_or_hierarchical_tf_identifier ::= [package_scope] tf_identifier | hierarchical_tf_identifier
+;   hierarchical_tf_identifier ::= hierarchical_identifier
+;   tf_identifier ::= identifier
+;
+;
+; So it looks like we can probably implement this as:
+;
+;     tf_call ::= scoped_hid { attribute_instance } [ '(' list_of_arguments ')' ]
+;
+;
+; Next up, system_tf_call:
+;
+;   system_tf_call ::= system_tf_identifier [ '(' list_of_arguments ')' ]
+;                    | system_tf_identifier [ '(' data_type [ ',' expression ] ')'
+;
+;   system_tf_identifier ::= $[a-zA-Z0-9_$]{[a-zA-Z0-9_$]}
+;
+; So that's pretty easy except for the usual data_type/expression ambiguity
+; thing, but we've dealt with that in lots of places and can probably handle
+; it easily enough by copying one of those.
+;
+;
+; Next up, method_call:
+;
+;   method_call ::= method_call_root '.' method_call_body
+;
+;   method_call_root ::= primary | implicit_class_handle
+;
+;   method_call_body ::= method_identifier {attribute_instance} [ '(' list_of_arguments ')' ]
+;                      | built_in_method_call
+;
+;   built_in_method_call ::= array_manipulation_call
+;                          | randomize_call
+;
+;   array_manipulation_call ::= array_method_name {attribute_instance}
+;                                 [ '(' list_of_arguments ')' ]
+;                                 [ 'with' '(' expression ')' ]
+;
+;   array_method_name ::= method_identifier | 'unique' | 'and' | 'or' | 'xor'
+;
+;   randomize_call ::= 'randomize' {attribute_instance}
+;                        [ '(' [variable_identifier_list | 'null' ] ')' ]
+;                        [ 'with' [ '(' [ identifier_list ] ')' ] constraint_block ]
+;
+; So, wow, that's a pile of stuff that I don't think we want to think about
+; yet.  Let's just not support any of that yet.  Similarly, the final 'std::'
+; randomize_call case is more of the same, and we'll just not support it yet.
+;
+;
+; So for now that leaves us with:
+;
+;   subroutine_call ::= tf_call
+;                     | system_tf_call
+;
+;   tf_call ::= scoped_hid { attribute_instance } [ '(' list_of_arguments ')' ]
+;
+;   system_tf_call ::= system_tf_identifier [ '(' list_of_arguments ')' ]
+;                    | system_tf_identifier [ '(' data_type [ ',' expression ] ')'
+;
+; We'll implement these separately.
+
+(defparser vl-parse-tf-call ()
+  :short "Parse a @('tf_call').  SystemVerilog-2012 Only."
+  :long "<p>Original grammar rules:</p>
+
+         @({
+               tf_call ::= ps_or_hierarchical_tf_identifier
+                              { attribute_instance }
+                              [ '(' list_of_arguments ')' ]
+
+               ps_or_hierarchical_tf_identifier ::= [package_scope] tf_identifier
+                                                  | hierarchical_tf_identifier
+
+               hierarchical_tf_identifier ::= hierarchical_identifier
+               tf_identifier ::= identifier
+         })
+
+         <p>So this is just:</p>
+
+         @({
+              tf_call ::= [package_scope] identifier {attribute_instance} [ '(' list_of_arguments ')' ]
+                        | hierarchical_identifier    {attribute_instance} [ '(' list_of_arguments ')' ]
+         })"
+  :result (vl-stmt-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       ;; This may be slightly too permissive, but is approximately
+       ;;    [package_scope] identifier | hierarchical_identifier
+       (id :s= (vl-parse-scoped-hid))
+       (atts := (vl-parse-0+-attribute-instances))
+       (unless (vl-is-token? :vl-lparen)
+         (return (make-vl-callstmt :id id
+                                   :typearg nil
+                                   :systemp nil
+                                   :voidp nil
+                                   :args nil
+                                   :atts atts)))
+
+       (:= (vl-match)) ;; eat the (
+       (when (vl-is-token? :vl-rparen)
+         ;; No arguments.  Fine.  Eat the )
+         (:= (vl-match))
+         (return (make-vl-callstmt :id id
+                                   :typearg nil
+                                   :systemp nil
+                                   :voidp nil
+                                   :args nil
+                                   :atts atts)))
+
+       ;; BOZO we're supposed to match list_of_arguments, but it's more complex
+       ;; than I want to try to support right now.  (It permits things like
+       ;; blank expressions and named .foo(bar) style connections.)  So for now
+       ;; just require a comma-delimited list.  We'll have to rejigger the
+       ;; representation to support these in the long term.
+       (args := (vl-parse-1+-expressions-separated-by-commas))
+       (:= (vl-match-token :vl-rparen))
+       (return (make-vl-callstmt :id id
+                                 :typearg nil
+                                 :systemp nil
+                                 :voidp nil
+                                 :args args
+                                 :atts atts)))
+  ///
+  (defthm vl-stmt-kind-of-vl-parse-tf-call
+    (b* (((mv err stmt ?tokstream) (vl-parse-tf-call)))
+      (implies (not err)
+               (equal (vl-stmt-kind stmt) :vl-callstmt)))))
+
+
+(defparser vl-parse-system-tf-call ()
+  :short "Parse a @('system_tf_call').  SystemVerilog-2012 only."
+  :long "<p>Original grammar rules:</p>
+
+         @({
+             system_tf_call ::= system_tf_identifier [ '(' list_of_arguments ')' ]
+                              | system_tf_identifier [ '(' data_type [ ',' expression ] ')'
+
+             system_tf_identifier ::= $[a-zA-Z0-9_$]{[a-zA-Z0-9_$]}
+         })"
+  :guard (vl-is-token? :vl-sysidtoken)
+  :result (vl-stmt-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       ;; We assume (via our guard) that we've got a system identifier token
+       ;; here already.
+       (fn := (vl-match-token :vl-sysidtoken))
+       ;; This is very much styled after vl-parse-system-function-call.  We
+       ;; have the usual ambiguity between datatypes and expressions.  At parse
+       ;; time we may not have enough information to disambiguate this, so we
+       ;; prefer expressions and then fix it up in type-disambiguation.
+       (when (vl-is-token? :vl-lparen)
+         (:= (vl-match))
+         (arg1 := (vl-parse-expression-without-failure))
+         (when (not arg1)
+           (typearg := (vl-parse-simple-type)))
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match))
+           (args := (vl-parse-1+-expressions-separated-by-commas)))
+         (:= (vl-match-token :vl-rparen)))
+       (return
+        (let* ((fname (vl-sysidtoken->name fn))
+               (id    (make-vl-scopeexpr-end
+                       :hid (make-vl-hidexpr-end :name fname))))
+          (make-vl-callstmt :id id
+                            :systemp t
+                            :typearg typearg
+                            :args (if arg1 (cons arg1 args) args)
+                            :voidp nil
+                            :atts  nil))))
+  ///
+  (defthm vl-stmt-kind-of-vl-parse-system-tf-call
+    (b* (((mv err stmt ?tokstream) (vl-parse-system-tf-call)))
+      (implies (not err)
+               (equal (vl-stmt-kind stmt) :vl-callstmt)))))
+
+
+(defparser vl-parse-subroutine-call ()
+  :short "Parse a @('subroutine_call').  SystemVerilog-2012 only."
+  :long "<p>Grammar rule:</p>
+
+         @({
+              subroutine_call ::= tf_call
+                                | system_tf_call
+                                | method_call
+                                | 'std::' randomize_call
+         })
+
+         <p>The @('method_call') and @('randomize_call') stuff is elaborate and
+         we don't yet try to support it.</p>"
+  :result (vl-stmt-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (if (vl-is-token? :vl-sysidtoken)
+      (vl-parse-system-tf-call)
+    (vl-parse-tf-call))
+  ///
+  (defthm vl-stmt-kind-of-vl-parse-subroutine-call
+    (b* (((mv err stmt ?tokstream) (vl-parse-subroutine-call)))
+      (implies (not err)
+               (equal (vl-stmt-kind stmt) :vl-callstmt)))))
+
+
+(defparser vl-parse-subroutine-call-statement (atts)
+  :short "Parse a @('subroutine_call_statement').  SystemVerilog-2012 only."
+  :long "<p>Grammar rules.  Note that QUOTE means literally a quote character here.</p>
+
+         @({
+              subroutine_call_statement ::= subroutine_call ';'
+                                          | 'void' QUOTE '(' function_subroutine_call ')' ';'
+
+              function_subroutine_call ::= subroutine_call
+         })"
+  :guard (vl-atts-p atts)
+  :result (vl-stmt-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (if (vl-is-token? :vl-kwd-void)
+      (seq tokstream
+           (:= (vl-match))
+           (:= (vl-match-token :vl-quote))
+           (:= (vl-match-token :vl-lparen))
+           (inner := (vl-parse-subroutine-call))
+           (:= (vl-match-token :vl-rparen))
+           (:= (vl-match-token :vl-semi))
+           (return (b* (((vl-callstmt inner))
+                        ;; Note about attributes.  A subroutine call like
+                        ;; tf_call can have its own attributes inside of it.
+                        ;; Meanwhile, a subroutine_call_statement is an
+                        ;; ordinary statement_item, so it can have attributes
+                        ;; preceding it.  I have no idea what should happen
+                        ;; here, so I'll just append these attributes together.
+                        (atts (append atts inner.atts)))
+                     (change-vl-callstmt inner :voidp t :atts atts))))
+    (seq tokstream
+         (inner := (vl-parse-subroutine-call))
+         (:= (vl-match-token :vl-semi))
+         (return (b* (((vl-callstmt inner))
+                      ;; Same thing for attributes as above.
+                      (atts (append atts inner.atts)))
+                   (change-vl-callstmt inner :atts atts))))))
 
 
 (defparser vl-parse-disable-statement (atts)
@@ -1467,12 +1759,6 @@
              (return (make-vl-cassertstmt :cassertion cassertion
                                           :atts atts))))
 
-       (:vl-sysidtoken
-        ;; BOZO --- This is probably not right.  It should probably be handled
-        ;; as part of subroutine_call_statement.  But for now, as a crutch, I'm
-        ;; going to just leave it in here.
-        (vl-parse-system-task-enable atts))
-
        ;; OK: with all that out of the way, the things we haven't handled yet
        ;; are:
        ;;  -- blocking_assignment handled below.
@@ -1516,7 +1802,7 @@
              ((unless erp)
               (mv erp val tokstream))
              (tokstream (vl-tokstream-restore backup)))
-          (vl-parse-task-enable atts))))))
+          (vl-parse-subroutine-call-statement atts))))))
 
  (defparser vl-parse-statement-aux (atts)
    :short "Wrapper for parsing the rest of a statement after any attributes."
@@ -1732,6 +2018,13 @@
 
         :hints((expand-only-the-flag-function-hint clause state))))))
 
+
+
+(local (defthm l0
+         (implies (and (equal (vl-token->type (first (vl-tokstream->tokens))) type)
+                       (consp (vl-tokstream->tokens)))
+                  (vl-is-token? type))
+         :hints(("Goal" :in-theory (enable vl-is-token?)))))
 
 (defsection result
 

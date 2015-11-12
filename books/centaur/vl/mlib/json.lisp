@@ -1113,9 +1113,10 @@ which could not hold such large values.</p>")
                   :lvalue (vl-jp-expr x.lvalue)
                   :atts   (vl-jp-atts x.atts))
 
-       :vl-enablestmt
+       :vl-callstmt
        (jp-object :tag    (jp-sym kind)
                   :id     (vl-jp-expr x.id)
+                  :
                   :args   (vl-jp-exprlist x.args)
                   :atts   (vl-jp-atts x.atts))
 

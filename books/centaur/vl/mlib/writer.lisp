@@ -2816,19 +2816,30 @@ expression into a string."
                  (vl-pp-expr x.expr)
                  (vl-println " ;"))
 
-      :vl-enablestmt
+      :vl-callstmt
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
-                 (vl-pp-scopeexpr x.id)
-                 ;; Bug fixed 2012-10-22: if there are no arguments, we must not
-                 ;; print even the parens.  (Doing so isn't syntactically legal.)
-                 (if (consp x.args)
-                     (vl-ps-seq
-                      (vl-println? "(")
-                      (vl-pp-exprlist x.args)
-                      (vl-print ")"))
+                 (if x.voidp
+                     (vl-ps-seq (vl-ps-span "vl_key" (vl-print "void"))
+                                (vl-print "'("))
                    ps)
-                 (vl-println " ;"))
+                 ;; We don't have to pay attention to systemp here; if it's a
+                 ;; system function the name will have a leading '$' character
+                 ;; anyway.
+                 (vl-pp-scopeexpr x.id)
+                 ;; In Verilog-2005 a task enable with no arguments must be
+                 ;; written as `foo;`, not `foo();`.  However, in SystemVerilog
+                 ;; it's OK to include the parens, so we no longer are careful
+                 ;; not to do so.
+                 (vl-println? "(")
+                 (if x.typearg
+                     (vl-ps-seq (vl-pp-datatype x.typearg)
+                                (if (consp x.args)
+                                    (vl-println? ", ")
+                                  ps))
+                   ps)
+                 (vl-pp-exprlist x.args)
+                 (vl-println ");"))
 
       :vl-disablestmt
       (vl-ps-seq (vl-pp-stmt-autoindent)

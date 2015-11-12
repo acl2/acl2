@@ -165,7 +165,7 @@
     (or (eq kind :vl-nullstmt)
         (eq kind :vl-assignstmt)
         (eq kind :vl-deassignstmt)
-        (eq kind :vl-enablestmt)
+        (eq kind :vl-callstmt)
         (eq kind :vl-disablestmt)
         (eq kind :vl-eventtriggerstmt)
         (eq kind :vl-returnstmt)
@@ -178,7 +178,7 @@
              (or (eq kind :vl-nullstmt)
                  (eq kind :vl-assignstmt)
                  (eq kind :vl-deassignstmt)
-                 (eq kind :vl-enablestmt)
+                 (eq kind :vl-callstmt)
                  (eq kind :vl-disablestmt)
                  (eq kind :vl-eventtriggerstmt)
                  (eq kind :vl-returnstmt)
@@ -202,7 +202,7 @@
     :vl-nullstmt         x.atts
     :vl-assignstmt       x.atts
     :vl-deassignstmt     x.atts
-    :vl-enablestmt       x.atts
+    :vl-callstmt         x.atts
     :vl-disablestmt      x.atts
     :vl-eventtriggerstmt x.atts
     :vl-casestmt         x.atts
@@ -604,7 +604,7 @@ directly part of the statement.</p>"
       :vl-nullstmt         (progn$ (impossible) x)
       :vl-assignstmt       (progn$ (impossible) x)
       :vl-deassignstmt     (progn$ (impossible) x)
-      :vl-enablestmt       (progn$ (impossible) x)
+      :vl-callstmt         (progn$ (impossible) x)
       :vl-disablestmt      (progn$ (impossible) x)
       :vl-breakstmt        (progn$ (impossible) x)
       :vl-continuestmt     (progn$ (impossible) x)
@@ -875,10 +875,10 @@ process them.</p>"
   :enabled t
   (vl-stmt-case x :vl-assignstmt))
 
-(define vl-enablestmt-p ((x vl-stmt-p))
+(define vl-callstmt-p ((x vl-stmt-p))
   :inline t
   :enabled t
-  (vl-stmt-case x :vl-enablestmt))
+  (vl-stmt-case x :vl-callstmt))
 
 ;; NOTE: Moved vl-blockstmt-p to parsetree because scopsetack needs it.
 

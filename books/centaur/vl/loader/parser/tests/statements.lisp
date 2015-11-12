@@ -142,10 +142,10 @@
 
 
      (make-stmttest :input "$display(\"foo\");"
-                    :expect '(:call "$display" (str "foo")))
+                    :expect '(:call "$display" (str "foo") :system))
 
      (make-stmttest :input "$bits(foo);"
-                    :expect '(:call "$bits" (id "foo")))
+                    :expect '(:call "$bits" (id "foo") :system))
 
      (make-stmttest :input "factorial(n);"
                     :expect '(:call "factorial" (id "n")))
@@ -195,12 +195,15 @@
 
      ;; bozo things like this should work eventually
 
-     ;; (make-stmttest :input "foo::factorial(n);"
-     ;;                :expect '(:call (:scope "foo" "factorial")
-     ;;                          (id "n")))
+     (make-stmttest :input "foo::factorial(n);"
+                    :expect '(:call (:scope "foo" "factorial")
+                              (id "n")))
 
-     ;; (make-stmttest :input "$bits(integer);"
-     ;;                :expect '(:call "$bits" (str "foo")))
+     (make-stmttest :input "$bits(integer);"
+                    :expect '(:call "$bits" (:vl-integer signed) :system))
+
+     (make-stmttest :input "foo(integer);"  ;; no type args for user-defined functions
+                    :successp nil)
 
      ))
 
@@ -231,6 +234,14 @@
      (make-stmttest :input "return 5;"
                     :successp nil)
 
+     (make-stmttest :input "foo::factorial(n);" ;; no scopes in Verilog-2005.
+                    :successp nil)
+
+     (make-stmttest :input "$bits(integer);"  ;; no type args in Verilog-2005.
+                    :successp nil)
+
+     (make-stmttest :input "foo(integer);"  ;; no type args for user-defined functions
+                    :successp nil)
      ))
 
   (make-event (progn$ (run-stmttests *verilog-only-stmt-tests*

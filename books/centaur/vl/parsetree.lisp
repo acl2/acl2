@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-11-11")
+  "VL Syntax 2015-11-11b")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -2691,19 +2691,29 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :long "<p>Deassign and release statements are described in Section 9.3.1
             and 9.3.2.</p>")
 
-    (:vl-enablestmt
-     :short "Representation of an enable statement."
-     :base-name vl-enablestmt
+    (:vl-callstmt
+     :short "Representation of a Verilog-2005 task enable statement, or a
+             SystemVerilog-2012 subroutine call statement."
+     :base-name vl-callstmt
      :layout :tree
-     ((id    vl-scopeexpr-p)
-      (args  vl-exprlist-p)
-      (atts  vl-atts-p
-             "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
-              this statement."))
-     :long "<p>Enable statements have an identifier (which should be either a
-            hierarchial identifier or a system identifier), which we represent
-            as an expression.  They also have a list of arguments, which are
-            expressions.</p>")
+     ((id      vl-scopeexpr-p "The function being called.")
+      (typearg vl-maybe-datatype-p
+               "Most function calls just take expressions as arguments, in
+                which case @('typearg') will be @('nil').  However, certain
+                system functions can take a datatype argument.  For instance,
+                you can write @('$bits(struct { ...})').  In such cases, we put
+                that datatype here.")
+      (args    vl-exprlist-p
+               "The (non-datatype) arguments to the function, in order.")
+      (systemp booleanp
+               "Indicates that this is a system task like @('$display')
+                instead of a user-defined function like @('myclear').")
+      (voidp   booleanp
+               "Indicates that this call was wrapped in @('void '(...)').")
+      (atts    vl-atts-p
+               "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
+                this statement."))
+     :long "<p>This is similar to a @(see vl-call) expression.</p>")
 
     (:vl-disablestmt
      :short "Representation of a disable statement."
