@@ -364,6 +364,15 @@ readability when the function names involved have their own hyphens.  Examples:
  })
 </li>
 
+<li>For rules describing the return-type of a function, we use a similar naming
+convention, using @('of') as a separator.  Example:
+
+ @({
+    (defthm consp-of-cons
+      (consp (cons x y)))
+ })
+</li>
+
 <li>For rules with one simple hypothesis, we add @('-when-hyp') to the
 name.  Examples:
  @({
