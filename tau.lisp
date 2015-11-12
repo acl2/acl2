@@ -848,26 +848,6 @@
 ; The function all-runes-in-ttree, defined below, is typically used by each
 ; event function to recover the supporting runes from a ttree.
 
-(defun all-runes-in-lmi (lmi wrld ans)
-
-; When we collect all the runes "in" lmi we actually expand symbolic lmis,
-; e.g., ASSOC-OF-APP, to the list of all runes based on that symbol.
-
-  (cond ((symbolp lmi)
-         (union-equal (strip-cdrs (getprop lmi 'runic-mapping-pairs nil
-                                           'current-acl2-world wrld))
-                      ans))
-        ((or (eq (car lmi) :instance)
-             (eq (car lmi) :functional-instance))
-         (all-runes-in-lmi (cadr lmi) wrld ans))
-        ((eq (car lmi) :theorem) ans)
-        (t (add-to-set-equal lmi ans))))
-
-(defun all-runes-in-lmi-lst (lmi-lst wrld ans)
-  (cond ((null lmi-lst) ans)
-        (t (all-runes-in-lmi-lst (cdr lmi-lst) wrld
-                                 (all-runes-in-lmi (car lmi-lst) wrld ans)))))
-
 (defun all-runes-in-var-to-runes-alist (alist ans)
   (cond ((null alist) ans)
         (t (all-runes-in-var-to-runes-alist
