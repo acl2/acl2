@@ -1113,9 +1113,21 @@
        ((when (and (cdr type-entry)
                    (not (eq (cdr type-entry) :skip))))
         ;; BOZO I have no idea what :skip means here or if we're handling it correctly.
-        (visitor-transsumtype-remove-already-bound-member-types (cdr typenames) x)))
+        (visitor-transsumtype-remove-already-bound-member-types (cdr typenames) x))
+       )
     (cons (car typenames)
           (visitor-transsumtype-remove-already-bound-member-types (cdr typenames) x))))
+
+(define visitor-transsum-member-types-has-leaf (typenames x)
+  ;; If any of the typenames has a type-fns entry that isn't :skip, we want to consider the transsum a leaftype.
+  (b* (((when (atom typenames)) nil)
+       ((visitorspec x))
+       (type (car typenames))
+       (type-entry (assoc type x.type-fns))
+       ((when (and (cdr type-entry)
+                   (not (eq (cdr type-entry) :skip))))
+        t))
+    (visitor-transsum-member-types-has-leaf (cdr typenames) x)))
 
 (define visitor-transsumtype-collect-member-types (type x wrld)
   :returns (mv subtypes is-leaf-p)
@@ -1123,10 +1135,7 @@
   (b* (((flextranssum type))
        (all-subtypes (flextranssum-memberlist->typenames type.members))
        (new-subtypes (visitor-transsumtype-remove-already-bound-member-types all-subtypes x))
-       (is-leaf-p
-        ;; Transsums are never leaf types.  Hrmn.  But maybe it has to
-        ;; be a leaf if there are no subtypes?
-        (atom new-subtypes)))
+       (is-leaf-p    (visitor-transsum-member-types-has-leaf all-subtypes x)))
     (mv new-subtypes is-leaf-p)))
 
 (define visitor-type-collect-member-types ((typename)

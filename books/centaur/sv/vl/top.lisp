@@ -34,7 +34,7 @@
 (include-book "moddb")
 (include-book "centaur/vl/simpconfig" :dir :system)
 (include-book "centaur/vl/util/gc" :dir :system)
-(include-book "centaur/vl/transforms/always/eliminitial" :dir :system)
+(include-book "centaur/vl/transforms/eliminitial" :dir :system)
 (include-book "centaur/vl/transforms/problem-mods" :dir :system)
 (include-book "centaur/vl/transforms/unparam/top" :dir :system)
 (include-book "centaur/vl/transforms/annotate/top" :dir :system)
@@ -42,6 +42,7 @@
 (include-book "centaur/vl/util/cw-unformatted" :dir :system)
 (include-book "centaur/vl/mlib/print-warnings" :dir :system)
 (include-book "centaur/vl/mlib/remove-bad" :dir :system)
+(include-book "centaur/vl/lint/lvaluecheck" :dir :system)
 (include-book "centaur/vl/transforms/cn-hooks" :dir :system)
 (include-book "centaur/vl/transforms/clean-warnings" :dir :system)
 (local (include-book "centaur/vl/mlib/design-meta" :dir :system))
@@ -81,6 +82,8 @@
        ;; (good          (xf-cwtime (vl-design-expand-functions good)))
        ;; (good          (xf-cwtime (vl-design-clean-params good)))
 
+       ;; BOZO is this something we actually want to do?  What's our philosophy
+       ;; here toward warnings?
        (good          (xf-cwtime (vl-design-lvaluecheck good)))
        ;; (good          (xf-cwtime (vl-design-check-reasonable good)))
        ;; (good          (xf-cwtime (vl-design-check-complete good)))

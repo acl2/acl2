@@ -29,9 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../../parsetree")
-(include-book "../../mlib/blocks")
-(local (include-book "../../util/arithmetic"))
+(include-book "../parsetree")
+(include-book "../mlib/blocks")
+(local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc eliminitial

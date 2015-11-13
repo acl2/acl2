@@ -34,7 +34,7 @@
 (include-book "svstmt-compile")
 ;; (include-book "vl-fns-called")
 ;; (include-book "vl-paramrefs")
-(include-book "centaur/vl/transforms/always/util" :dir :system)
+;; (include-book "centaur/vl/transforms/always/util" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))

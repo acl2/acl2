@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "eventctrl")
 (include-book "blockitems")
-(include-book "lvalues")
+(include-book "assignments")
 (include-book "properties")
 (include-book "../../mlib/stmt-tools")
 (local (include-book "../../util/arithmetic"))
@@ -125,10 +125,10 @@
        (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
          ;; inc_or_dec_operator case
          (op := (vl-match))
-         (var := (vl-parse-lvalue))
+         (var := (vl-parse-variable-lvalue))
          (return (cons var
                        (vl-inc-or-dec-expr var (vl-token->type op)))))
-       (var := (vl-parse-lvalue))
+       (var := (vl-parse-variable-lvalue))
        (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
          ;; inc_or_dec_operator case
          (op := (vl-match))
@@ -150,10 +150,10 @@
 
          @({
              blocking_assignment ::=
-               lvalue '=' [delay_or_event_control] expression
+               variable_lvalue '=' [delay_or_event_control] expression
 
              nonblocking_assignment ::=
-               lvalue '<=' [delay_or_event_control] expression
+               variable_lvalue '<=' [delay_or_event_control] expression
          })
 
          <p>BOZO SystemVerilog-2012 extends @('blocking_assignment') in several
@@ -165,7 +165,7 @@
   :count strong
   (seq tokstream
        (loc := (vl-current-loc))
-       (lvalue := (vl-parse-lvalue))
+       (lvalue := (vl-parse-variable-lvalue))
        (type := (vl-match-some-token '(:vl-equalsign :vl-lte)))
        (when (vl-is-some-token? '(:vl-pound :vl-atsign :vl-kwd-repeat))
          (delay := (vl-parse-delay-or-event-control)))
@@ -181,18 +181,21 @@
   ;; Curiously named production, given that only one can be returned.  In
   ;; SystemVerilog-2012 it gets changed to singular; we should probably rename
   ;; it as well.
-  :long "<p>For Verilog-2005, the grammar looks worse than this, but with our
-         treatment of assignment and lvalue it's just:</p>
+  :long "<p>For Verilog-2005:</p>
 
          @({
-              procedural_continuous_assignments ::= 'assign' assignment
-                                                  | 'deassign' lvalue
-                                                  | 'force' assignment
-                                                  | 'release' lvalue
+              procedural_continuous_assignments ::= 'assign' variable_assignment
+                                                  | 'deassign' variable_lvalue
+                                                  | 'force' variable_assignment
+                                                  | 'force' net_assignment
+                                                  | 'release' variable_lvalue
+                                                  | 'release' net_lvalue
          })
 
-         <p>SystemVerilog-2012 may extend this but we haven't yet looked at
-         whether or how it is extended.</p>"
+         <p>SystemVerilog-2012 is identical.  Note that a @('net_assignment') is
+         a subset of a @('variable_assignment'), and a @('net_lvalue') is a subset
+         of a @('variable_lvalue'), so we just use the variable versions in each
+         case.</p>"
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
@@ -201,14 +204,14 @@
   (seq tokstream
         (when (vl-is-some-token? '(:vl-kwd-assign :vl-kwd-force))
           (type := (vl-match))
-          ((lvalue . expr) := (vl-parse-assignment))
+          ((lvalue . expr) := (vl-parse-variable-assignment))
           (return (vl-assignstmt (if (eq (vl-token->type type) :vl-kwd-assign)
                                      :vl-assign
                                    :vl-force)
                                  lvalue expr nil atts
                                  (vl-token->loc type))))
         (type := (vl-match-some-token '(:vl-kwd-deassign :vl-kwd-release)))
-        (lvalue := (vl-parse-lvalue))
+        (lvalue := (vl-parse-variable-lvalue))
         (return (vl-deassignstmt (if (eq (vl-token->type type) :vl-kwd-deassign)
                                      :vl-deassign
                                    :vl-release)
@@ -815,7 +818,7 @@
   :count strong
   (seq tokstream
        (loc := (vl-current-loc))
-       ((lvalue . expr) := (vl-parse-assignment))
+       ((lvalue . expr) := (vl-parse-variable-assignment))
        (when (vl-is-token? :vl-comma)
          (:= (vl-match))
          (rest := (vl-parse-1+-for-init-assignments)))

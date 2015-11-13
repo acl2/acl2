@@ -57,7 +57,7 @@
   :count strong
   (seq tokstream
         (:= (vl-match-token :vl-equalsign))
-        (rhs1 := (vl-parse-lvalue))
+        (rhs1 := (vl-parse-net-lvalue))
         (when (vl-is-token? :vl-equalsign)
           (rest := (vl-parse-1+-alias-rhses atts lhs loc)))
         (return (cons (make-vl-alias :lhs lhs
@@ -77,7 +77,7 @@
   (seq tokstream
         (loc := (vl-current-loc))
         (:= (vl-match-token :vl-kwd-alias))
-        (lhs := (vl-parse-lvalue))
+        (lhs := (vl-parse-net-lvalue))
         (aliases := (vl-parse-1+-alias-rhses atts lhs loc))
         (:= (vl-match-token :vl-semi))
         (return aliases)))
