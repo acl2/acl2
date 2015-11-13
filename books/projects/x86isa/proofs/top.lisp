@@ -9,7 +9,7 @@
 (include-book "utilities/programmer-level-mode/programmer-level-memory-utils" :ttags :all)
 (include-book "utilities/programmer-level-mode/environment-utils" :ttags :all)
 (include-book "utilities/system-level-mode/physical-memory-utils" :ttags :all)
-(include-book "utilities/system-level-mode/paging-top" :ttags :all)
+(include-book "utilities/system-level-mode/paging-lib/paging-top" :ttags :all)
 (include-book "utilities/system-level-mode/system-level-memory-utils" :ttags :all)
 
 ;; Program proofs:

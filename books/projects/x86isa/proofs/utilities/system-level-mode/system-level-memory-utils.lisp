@@ -2,7 +2,7 @@
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
-(include-book "paging-top")
+(include-book "paging-lib/paging-top")
 ;; [Shilpi]: Why do I need the following book?
 ;; (include-book "../programmer-level-mode/programmer-level-memory-utils")
 

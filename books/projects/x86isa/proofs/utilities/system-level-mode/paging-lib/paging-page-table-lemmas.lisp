@@ -2,13 +2,82 @@
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
-(include-book "paging-basics")
+(include-book "gather-paging-structures")
+(include-book "x86-ia32e-paging-alt")
+(include-book "gather-paging-structures-thms")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
 ;; ======================================================================
 
 ;; ia32e-la-to-pa-page-table:
+
+(skip-proofs
+ (defrule page-table-base-addr-with-xlate-equiv-x86s-0
+   (implies (xlate-equiv-x86s x86-1 x86-2)
+            (equal (mv-nth
+                    0
+                    (page-table-base-addr
+                     lin-addr x86-1))
+                   (mv-nth
+                    0
+                    (page-table-base-addr
+                     lin-addr x86-2))))
+   :in-theory (e/d* (page-table-base-addr)
+                    (not))
+   :rule-classes :congruence))
+
+(skip-proofs
+ (defrule page-table-base-addr-with-xlate-equiv-x86s-1
+   (implies (xlate-equiv-x86s x86-1 x86-2)
+            (equal (mv-nth
+                    1
+                    (page-table-base-addr
+                     lin-addr x86-1))
+                   (mv-nth
+                    1
+                    (page-table-base-addr
+                     lin-addr x86-2))))
+   :in-theory (e/d* (page-table-base-addr)
+                    (not))
+   :rule-classes :congruence))
+
+(defrule mv-nth-1-ia32e-la-to-pa-PT-with-xlate-equiv-x86s
+  (implies (xlate-equiv-x86s x86-1 x86-2)
+           (equal (mv-nth
+                   1
+                   (ia32e-la-to-pa-PT
+                    lin-addr u-s-acc wp smep nxe r-w-x cpl x86-1))
+                  (mv-nth
+                   1
+                   (ia32e-la-to-pa-PT
+                    lin-addr u-s-acc wp smep nxe r-w-x cpl x86-2))))
+  :in-theory (e/d* (ia32e-la-to-pa-page-table
+                    xlate-equiv-entries-at-qword-addresses?)
+                   (not
+                    xlate-equiv-x86s))
+  :rule-classes :congruence)
+
+(defrule xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+  (implies (and (pairwise-disjoint-p (gather-all-paging-structure-qword-addresses x86))
+                (x86p x86))
+           (xlate-equiv-x86s
+            (mv-nth
+             2
+             (ia32e-la-to-pa-PT
+              lin-addr u-s-acc wp smep nxe r-w-x cpl x86))
+            x86))
+  :in-theory (e/d* (ia32e-la-to-pa-page-table
+                    ;; gather-all-paging-structure-qword-addresses
+                    ;; gather-pml4-table-qword-addresses
+                    page-fault-exception
+                    )
+                   ()))
+
+(i-am-here)
+
+;; ======================================================================
 
 (defmacro ia32e-la-to-pa-page-table-entry-components-equal-p-body
   (page-table-entry-1 page-table-entry-2)

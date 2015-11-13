@@ -2,7 +2,7 @@
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
-(include-book "physical-memory-utils")
+(include-book "../physical-memory-utils")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

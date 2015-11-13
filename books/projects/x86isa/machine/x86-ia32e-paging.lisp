@@ -498,6 +498,16 @@
 
 ;; ======================================================================
 
+(local
+ (defthm loghead-and-logsquash
+   (implies (and (equal (loghead n x) 0)
+                 (unsigned-byte-p m x))
+            (equal (bitops::logsquash n x) x))
+   :hints (("Goal"
+            :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                              bitops::ihsext-inductions)
+                             ())))))
+
 (define ia32e-la-to-pa-page-table
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
    (base-addr :type (unsigned-byte #.*physical-address-size*))
@@ -527,6 +537,16 @@
   ;; Manual.
 
   (b* (
+       ;; Fix the inputs of this function without incurring execution
+       ;; overhead.
+       (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (base-addr (mbe :logic (part-install
+                               0
+                               (loghead *physical-address-size* base-addr)
+                               :low 0 :width 12)
+                       :exec base-addr))
+
        ;; First, we get the PTE (page table entry) address. A PTE is
        ;; selected using the physical address defined as follows:
        ;;     Bits 51:12 are from the PDE (base-addr here).
@@ -548,8 +568,8 @@
         ;; Page not present fault:
         (let ((err-no (page-fault-err-no
                        page-present r-w-x cpl
-                       0      ;; rsvd
-                       smep 1 ;; pae
+                       0          ;; rsvd
+                       smep 1     ;; pae
                        nxe)))
           (page-fault-exception lin-addr err-no x86)))
 
@@ -748,6 +768,8 @@
               (the (unsigned-byte 12)
                 (logand 4095 lin-addr)))))
           x86))
+
+
   ///
 
   (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-page-table
@@ -843,6 +865,15 @@
   ;; Manual.
 
   (b* (
+       ;; Fix the inputs of this function without incurring execution
+       ;; overhead.
+       (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (base-addr (mbe :logic (part-install
+                               0
+                               (loghead *physical-address-size* base-addr)
+                               :low 0 :width 12)
+                       :exec base-addr))
        ;; First, we get the PDE (page directory entry) address. A PDE
        ;; is selected using the physical address defined as follows:
        ;;     Bits 51:12 are from the PDPTE (base-addr here).
@@ -1174,6 +1205,16 @@
   ;; Manual.
 
   (b* (
+       ;; Fix the inputs of this function without incurring execution
+       ;; overhead.
+       (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (base-addr (mbe :logic (part-install
+                               0
+                               (loghead *physical-address-size* base-addr)
+                               :low 0 :width 12)
+                       :exec base-addr))
+
        ;; First, we get the PDPTE (page directory pointer table entry)
        ;; address.  A PDPTE is selected using the physical address
        ;; defined as follows:
@@ -1490,6 +1531,17 @@
   ;; Manual.
 
   (b* (
+
+       ;; Fix the inputs of this function without incurring execution
+       ;; overhead.
+       (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (base-addr (mbe :logic (part-install
+                               0
+                               (loghead *physical-address-size* base-addr)
+                               :low 0 :width 12)
+                       :exec base-addr))
+
        ;; First, we get the address of the PML4E.  A PML4E is selected
        ;; using the physical address defined as follows:
        ;;   Bits 51:12 are from CR3.
@@ -1740,7 +1792,9 @@
   ;; protection exception (#GP(0)).  (Or a stack fault (#SS) as
   ;; appropriate?)
 
-  (b* ((cr0
+  (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (cr0
         ;; CR0 is still a 32-bit register in 64-bit mode.
         (n32 (ctri *cr0* x86)))
        (cr4
