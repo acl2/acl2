@@ -3666,12 +3666,13 @@
   (if (endp classes)
        nil
       (let* ((class-name (car classes))
-             (class-decl (bound? class-name class-table))
-             (field (bound? name-and-type (class-decl-fields class-decl))))
-            (or field (resolve-field-in-superclasses
-                        name-and-type
-                        (cdr classes)
-                        class-table)))))
+             (class-decl (bound? class-name class-table)))
+            (if (member-equal name-and-type (class-decl-fields class-decl))
+                class-name
+                (resolve-field-in-superclasses
+                  name-and-type
+                  (cdr classes)
+                  class-table)))))
 
 (defun resolve-field (class-name name-and-type class-table)
   (let ((class (bound? class-name class-table)))
@@ -3690,12 +3691,13 @@
   (if (endp classes)
        nil
       (let* ((class-name (car classes))
-             (class-decl (bound? class-name class-table))
-             (field (bound? name-and-type (class-decl-sfields class-decl))))
-            (or field (resolve-sfield-in-superclasses
-                        name-and-type
-                        (cdr classes)
-                        class-table)))))
+             (class-decl (bound? class-name class-table)))
+            (if (member-equal name-and-type (class-decl-sfields class-decl))
+                class-name
+                (resolve-sfield-in-superclasses
+                  name-and-type
+                  (cdr classes)
+                  class-table)))))
 
 (defun resolve-sfield (class-name name-and-type class-table)
   (let ((class (bound? class-name class-table)))
@@ -3761,7 +3763,7 @@
                      (cons (car instr)
                            (link-instr (cdr instr) class-table))
                      (link-instr instr class-table))
-                 (cdr instrs)))))
+                 (link-program (cdr instrs) class-table)))))
 
 (defun link-methods (methods class-table)
   (if (endp methods)
@@ -3771,7 +3773,7 @@
              (list* (method-name-and-type method)
                     (method-sync method)
                     (link-program (method-program method) class-table))
-             (cdr methods)))))
+             (link-methods (cdr methods) class-table)))))
 
 (defun link-class-list-loop (class-decls class-table)
   (if (endp class-decls)

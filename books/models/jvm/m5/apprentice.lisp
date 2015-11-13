@@ -292,8 +292,38 @@ Sun Jul 15 14:17:26 2001
 |#
 
 (in-package "M5")
+(include-book "classes/Apprentice")
+(include-book "classes/Container")
+(include-book "classes/Job")
 
-(include-book "apprentice-state")
+; The material below is the output of jvm2acl2 on Apprentice.java.
+
+(defconst *Apprentice-class-table*
+ (make-class-def
+  (list
+    *Apprentice*
+    *Container*
+    *Job*)))
+
+(defconst *Apprentice-main*
+  (method-program
+    (bound? "main:([Ljava/lang/String;)V"
+            (class-decl-methods (bound? "Apprentice" *Apprentice-class-table*)))))
+
+(defun Apprentice-ms ()
+  (make-state
+   (make-tt (push (make-frame 0
+                              nil
+                              nil
+                              *Apprentice-main*
+                              'UNLOCKED
+                              nil)
+                  nil))
+   nil
+   *Apprentice-class-table*))
+
+(defun Apprentice ()
+  (m5_load (Apprentice-ms)))
 
 (defconst *a0* (Apprentice))
 
@@ -325,17 +355,16 @@ Sun Jul 15 14:17:26 2001
     (DUP)                                         ;;;  3
     (INVOKESPECIAL "Container" "<init>:()V" 0)    ;;;  4
     (ASTORE_1)                                    ;;;  7
-    (GOTO 3)                                      ;;;  8
-    (NEW "Job")                                   ;;; 11
-    (DUP)                                         ;;; 14
-    (INVOKESPECIAL "Job" "<init>:()V" 0)          ;;; 15
-    (ASTORE_2)                                    ;;; 18
-    (ALOAD_2)                                     ;;; 19
-    (ALOAD_1)                                     ;;; 20
-    (INVOKEVIRTUAL "Job" "setref:(LContainer;)V" 1) ;;; 21
-    (ALOAD_2)                                     ;;; 24
-    (INVOKEVIRTUAL "java/lang/Thread" "start:()V" 0) ;;; 25
-    (GOTO -17)))                                  ;;; 28
+    (NEW "Job")                                   ;;;  8
+    (DUP)                                         ;;; 11
+    (INVOKESPECIAL "Job" "<init>:()V" 0)          ;;; 12
+    (ASTORE_2)                                    ;;; 15
+    (ALOAD_2)                                     ;;; 16
+    (ALOAD_1)                                     ;;; 17
+    (INVOKEVIRTUAL "Job" "setref:(LContainer;)V" 1) ;;; 18
+    (ALOAD_2)                                     ;;; 21
+    (INVOKEVIRTUAL "java/lang/Thread" "start:()V" 0) ;;; 22
+    (GOTO -17)))                                  ;;; 25
 
 (defconst *Container.<init>*
   '((ALOAD_0)                                     ;;;  0
@@ -349,14 +378,14 @@ Sun Jul 15 14:17:26 2001
 
 (defconst *Job.incr*
   '((ALOAD_0)                                     ;;;  0
-    (GETFIELD "Job" "objref:LContainter;")        ;;;  1
-    (ASTORE_1)                                    ;;;  4
-    (ALOAD_1)                                     ;;;  5
+    (GETFIELD "Job" "objref:LContainer;")         ;;;  1
+    (DUP)                                         ;;;  4
+    (ASTORE_1)                                    ;;;  5
     (MONITORENTER)                                ;;;  6
     (ALOAD_0)                                     ;;;  7
-    (GETFIELD "Job" "objref:LContainter;")        ;;;  8
+    (GETFIELD "Job" "objref:LContainer;")         ;;;  8
     (ALOAD_0)                                     ;;; 11
-    (GETFIELD "Job" "objref:LContainter;")        ;;; 12
+    (GETFIELD "Job" "objref:LContainer;")         ;;; 12
     (GETFIELD "Container" "counter:I")            ;;; 15
     (ICONST_1)                                    ;;; 18
     (IADD)                                        ;;; 19
@@ -375,15 +404,14 @@ Sun Jul 15 14:17:26 2001
 (defconst *Job.setref*
   '((ALOAD_0)                                     ;;;  0
     (ALOAD_1)                                     ;;;  1
-    (PUTFIELD "Job" "objref:LContainter;")        ;;;  2
+    (PUTFIELD "Job" "objref:LContainer;")         ;;;  2
     (RETURN)))                                    ;;;  5
 
 (defconst *Job.run*
-  '((GOTO 3)                                      ;;;  0
-    (ALOAD_0)                                     ;;;  3
-    (INVOKEVIRTUAL "Job" "incr:()LJob;" 0)        ;;;  4
-    (POP)                                         ;;;  7
-    (GOTO -5)))                                   ;;;  8
+  '((ALOAD_0)                                     ;;;  0
+    (INVOKEVIRTUAL "Job" "incr:()LJob;" 0)        ;;;  1
+    (POP)                                         ;;;  4
+    (GOTO -5)))                                   ;;;  5
 
 ; Some of these constants are identical, e.g.,
 ; *java.lang.Thread.<init>* is equal to *Container.<init>*.
@@ -431,6 +459,22 @@ Sun Jul 15 14:17:26 2001
       *Job.run*)
      (t nil)))
    (t nil)))
+
+(defun check-program1 (class method)
+  (equal (program1 class method)
+         (method-program (bound? method (class-decl-methods (bound? class (class-table *a0*)))))))
+
+(defthm check-program1-all
+  (and
+    (check-program1 "java.lang.Object" "<init>:()V")
+    (check-program1 "java.lang.Thread" "<init>:()V")
+    (check-program1 "Apprentice" "main:([Ljava/lang/String;)V")
+    (check-program1 "Container" "<init>:()V")
+    (check-program1 "Job" "<init>:()V")
+    (check-program1 "Job" "incr:()LJob;")
+    (check-program1 "Job" "setref:(LContainer;)V")
+    (check-program1 "Job" "run:()V"))
+  :rule-classes ())
 
 (defun programp (frame class method)
   (let ((const (program1 class method)))
@@ -622,39 +666,36 @@ Sun Jul 15 14:17:26 2001
                (equal stack nil)))
        (11 (and (not suspendedp)
                 (equal container '(REF 8))
-                (equal stack nil)))
-       (14 (and (not suspendedp)
-                (equal container '(REF 8))
                 (equal stack `((REF ,i)))))
-       (15 (and (not suspendedp)
+       (12 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal stack `((REF ,i) (REF ,i)))))
-       (18 (and (or (not suspendedp)
-                    (equal suspendedp 18))
+       (15 (and (or (not suspendedp)
+                    (equal suspendedp 15))
                 (equal container '(REF 8))
                 (equal stack `((REF ,i)))))
-       (19 (and (not suspendedp)
+       (16 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack nil)))
-       (20 (and (not suspendedp)
+       (17 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack `((REF ,i)))))
-       (21 (and (not suspendedp)
+       (18 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack `((REF 8) (REF ,i)))))
-       (24 (and (or (not suspendedp)
-                    (equal suspendedp 24))
+       (21 (and (or (not suspendedp)
+                    (equal suspendedp 21))
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack nil)))
-       (25 (and (not suspendedp)
+       (22 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack `((REF ,i)))))
-       (28 (and (not suspendedp)
+       (25 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack nil)))
@@ -692,7 +733,7 @@ Sun Jul 15 14:17:26 2001
                        (not (endp (cddr cs)))
                        (good-Job.<init>-frame (frame2 cs))
                        (not (endp (cdddr cs)))
-                       (good-main-frame i (frame3 cs) 18)))
+                       (good-main-frame i (frame3 cs) 15)))
                  ((programp (frame1 cs) "Container" "<init>:()V")
                   (and (good-java.lang.Object.<init>-frame (frame0 cs))
                        (not (endp (cdr cs)))
@@ -705,7 +746,7 @@ Sun Jul 15 14:17:26 2001
                      (not (endp (cdr cs)))
                      (good-Job.<init>-frame (frame1 cs))
                      (not (endp (cddr cs)))
-                     (good-main-frame i (frame2 cs) 18)))
+                     (good-main-frame i (frame2 cs) 15)))
                ((programp (frame0 cs) "Container" "<init>:()V")
                 (and (good-container.<init>-frame (frame0 cs))
                      (not (endp (cdr cs)))
@@ -713,11 +754,11 @@ Sun Jul 15 14:17:26 2001
                ((programp (frame0 cs) "Job" "<init>:()V")
                 (and (good-Job.<init>-frame (frame0 cs))
                      (not (endp (cdr cs)))
-                     (good-main-frame i (frame1 cs) 18)))
+                     (good-main-frame i (frame1 cs) 15)))
                ((programp (frame0 cs) "Job" "setref:(LContainer;)V")
                 (and (good-Job.setref-frame i (frame0 cs))
                      (not (endp (cdr cs)))
-                     (good-main-frame i (frame1 cs) 24)))
+                     (good-main-frame i (frame1 cs) 21)))
                (t (good-main-frame i (frame0 cs) nil))))))
 
 (defun good-objrefs (threads heap-pairs except-last-flg)
@@ -730,7 +771,7 @@ Sun Jul 15 14:17:26 2001
 
 ; We walk down both threads and heap-pairs.  They must be the same
 ; length.  Let the car of threads be (i call-stack status rref) and
-; let the car of heap-pairs be (j . (("Job" ("objref:LContainter;" . ref0)) ...)).
+; let the car of heap-pairs be (j . (("Job" ("objref:LContainer;" . ref0)) ...)).
 ; Then we insist that
 
 ; * (+ i 8) = j (the thread number is 8 less than the heap address of the
@@ -754,10 +795,10 @@ Sun Jul 15 14:17:26 2001
              (equal obj
                     (if (and (endp (cdr heap-pairs))
                              except-last-flg)
-                        '(("Job" ("objref:LContainter;" . (REF -1)))
+                        '(("Job" ("objref:LContainer;" . (REF -1)))
                           ("java/lang/Thread")
                           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
-                      '(("Job" ("objref:LContainter;" . (REF 8)))
+                      '(("Job" ("objref:LContainer;" . (REF 8)))
                         ("java/lang/Thread")
                         ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))))
              (good-objrefs (cdr threads)
@@ -801,20 +842,20 @@ Sun Jul 15 14:17:26 2001
 
 ; The main frame is suspended waiting for the Job.<init>.
 
-           18)
+           15)
           (t
 ; Otherwise, the only way we could be in Object.<init> is if the main
 ; frame is suspended waiting for Container.<init>.
 
            7)))
         ((programp (frame0 cs) "java/lang/Thread" "<init>:()V")
-         18)
+         15)
         ((programp (frame0 cs) "Container" "<init>:()V")
          7)
         ((programp (frame0 cs) "Job" "<init>:()V")
-         18)
+         15)
         ((programp (frame0 cs) "Job" "setref:(LContainer;)V")
-         24)
+         21)
         (t (pc (frame0 cs)))))
 
 (defun good-heap (tt heap)
@@ -846,11 +887,13 @@ Sun Jul 15 14:17:26 2001
                (null (nthcdr 9 heap))))
        (8 (and (consp (nthcdr 8 heap))
                (equal (car (nth 8 heap)) 8)
-               (null (nthcdr 9 heap))))
-       (11 (and (consp (nthcdr 8 heap))
-                (equal (car (nth 8 heap)) 8)
-                (good-objrefs (cdr tt) (nthcdr 9 heap) nil)))
-       (14 (and (equal (car (nth 8 heap)) 8)
+               (good-objrefs (cdr tt) (nthcdr 9 heap) nil)))
+       (11 (and (equal (car (nth 8 heap)) 8)
+                (consp (nthcdr 9 heap))
+                (good-objrefs (cdr tt)
+                              (nthcdr 9 heap)
+                              t)))
+       (12 (and (equal (car (nth 8 heap)) 8)
                 (consp (nthcdr 9 heap))
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
@@ -860,17 +903,17 @@ Sun Jul 15 14:17:26 2001
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
                               t)))
+       (16 (and (equal (car (nth 8 heap)) 8)
+                (consp (nthcdr 9 heap))
+                (good-objrefs (cdr tt)
+                              (nthcdr 9 heap)
+                              t)))
+       (17 (and (equal (car (nth 8 heap)) 8)
+                (consp (nthcdr 9 heap))
+                (good-objrefs (cdr tt)
+                              (nthcdr 9 heap)
+                              t)))
        (18 (and (equal (car (nth 8 heap)) 8)
-                (consp (nthcdr 9 heap))
-                (good-objrefs (cdr tt)
-                              (nthcdr 9 heap)
-                              t)))
-       (19 (and (equal (car (nth 8 heap)) 8)
-                (consp (nthcdr 9 heap))
-                (good-objrefs (cdr tt)
-                              (nthcdr 9 heap)
-                              t)))
-       (20 (and (equal (car (nth 8 heap)) 8)
                 (consp (nthcdr 9 heap))
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
@@ -879,23 +922,18 @@ Sun Jul 15 14:17:26 2001
                 (consp (nthcdr 9 heap))
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
-                              t)))
-       (24 (and (equal (car (nth 8 heap)) 8)
-                (consp (nthcdr 9 heap))
-                (good-objrefs (cdr tt)
-                              (nthcdr 9 heap)
-; If we are suspended at 24 and frame0 is really the active setref,
+; If we are suspended at 21 and frame0 is really the active setref,
 ; then the flag is t if we're at pc 5 in setref and is nil otherwise.
-; If we are active at 24, the flag is nil.
+; If we are active at 21, the flag is nil.
 
-                              (if (equal (pc frame0) 24) nil
+                              (if (equal (pc frame0) 21) nil
                                 (not (equal (pc frame0) 5))))))
-       (25 (and (equal (car (nth 8 heap)) 8)
+       (22 (and (equal (car (nth 8 heap)) 8)
                 (consp (nthcdr 9 heap))
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
                               nil)))
-       (28 (and (consp (nthcdr 8 heap))
+       (25 (and (consp (nthcdr 8 heap))
                 (equal (car (nth 8 heap)) 8)
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
@@ -933,12 +971,11 @@ Sun Jul 15 14:17:26 2001
        t)
      (case pc
        (0 (and activep (equal stack nil)))
-       (3 (and activep (equal stack nil)))
-       (4 (and activep (equal stack `((REF ,(+ 8 th))))))
-       (7 (if activep
+       (1 (and activep (equal stack `((REF ,(+ 8 th))))))
+       (4 (if activep
               (equal stack `((REF ,(+ 8 th))))
             (equal stack nil)))
-       (8 (and activep (equal stack nil)))
+       (5 (and activep (equal stack nil)))
        (t nil)))))
 
 (defun good-incr-frame (th frame counter monitor mcount)
@@ -965,12 +1002,10 @@ Sun Jul 15 14:17:26 2001
        (4 (and (equal locals `(,self))
                (equal stack '((REF 8)))
                (not (object-lockedp th monitor mcount))))
-       (5 (and (equal locals
-                      `(,self (REF 8)))
-               (equal stack nil)
+       (5 (and (equal locals `(,self))
+               (equal stack '((REF 8) (REF 8)))
                (not (object-lockedp th monitor mcount))))
-       (6 (and (equal locals
-                      `(,self (REF 8)))
+       (6 (and (equal locals `(,self (REF 8)))
                (equal stack '((REF 8)))
                (not (object-lockedp th monitor mcount))))
        (7 (and (equal locals
@@ -1072,10 +1107,10 @@ Sun Jul 15 14:17:26 2001
      (alistp tt)
      (equal (thread-no thread0) 0)
      (good-thread0 thread0 i)
-     (if (<= main-pc 8)
+     (if (< main-pc 8)
          (equal (cdr tt) nil)
          (good-threads 1 (cdr tt) counter monitor mcount
-                       (and (<= 14 main-pc) (< main-pc 28)))))))
+                       (and (<= 11 main-pc) (< main-pc 25)))))))
 
 (defun good-state (s)
   (let ((counter (gf "Container" "counter:I" 8 (heap s)))
@@ -1609,10 +1644,10 @@ Sun Jul 15 14:17:26 2001
                            (<= (+ 8 j) i)
                            (<= i (+ 7 j (len heap))))
                       (if (and flg2 (equal i (+ 7 j (len heap))))
-                          (cons i '(("Job"  ("objref:LContainter;" . (REF -1)))
+                          (cons i '(("Job"  ("objref:LContainer;" . (REF -1)))
                                     ("java/lang/Thread")
                                     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
-                        (cons i '(("Job" ("objref:LContainter;" REF 8))
+                        (cons i '(("Job" ("objref:LContainer;" REF 8))
                                   ("java/lang/Thread")
                                   ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))))
                     nil)))
@@ -1627,7 +1662,7 @@ Sun Jul 15 14:17:26 2001
    (good-objrefs
     tt
     (bind (- (+ 8 (len heap) j) 1)
-          '(("Job" ("objref:LContainter;" REF 8))
+          '(("Job" ("objref:LContainer;" REF 8))
             ("java/lang/Thread")
             ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
           heap)
@@ -1635,7 +1670,7 @@ Sun Jul 15 14:17:26 2001
   :rule-classes nil
   :hints (("Goal" :in-theory (disable good-incr-frame good-run-frame))))
 
-; This lemma establishes that when setref writes to the "objref:LContainter;" field,
+; This lemma establishes that when setref writes to the "objref:LContainer;" field,
 ; we can convert the ``except last'' flag of good-objrefs from t to nil.
 
 (defthm good-objrefs-setref
@@ -1646,7 +1681,7 @@ Sun Jul 15 14:17:26 2001
            (good-objrefs
             tt
             (bind delta
-                  '(("Job" ("objref:LContainter;" REF 8))
+                  '(("Job" ("objref:LContainer;" REF 8))
                     ("java/lang/Thread")
                     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
                   heap)
@@ -1668,7 +1703,7 @@ Sun Jul 15 14:17:26 2001
                         (list 'REF (+ delta (len heap))))
                   tt)
             (bind (+ delta (len heap))
-                  '(("Job" ("objref:LContainter;" . (REF -1)))
+                  '(("Job" ("objref:LContainer;" . (REF -1)))
                     ("java/lang/Thread")
                     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
                   heap)
@@ -1961,14 +1996,14 @@ Sun Jul 15 14:17:26 2001
            (equal (lookup-methodref "incr:()LJob;" class ct)
                   '("Job" . ("incr:()LJob;" NIL
                     (ALOAD_0)
-                    (GETFIELD "Job" "objref:LContainter;")
+                    (GETFIELD "Job" "objref:LContainer;")
+                    (DUP)
                     (ASTORE_1)
-                    (ALOAD_1)
                     (MONITORENTER)
                     (ALOAD_0)
-                    (GETFIELD "Job" "objref:LContainter;")
+                    (GETFIELD "Job" "objref:LContainer;")
                     (ALOAD_0)
-                    (GETFIELD "Job" "objref:LContainter;")
+                    (GETFIELD "Job" "objref:LContainer;")
                     (GETFIELD "Container" "counter:I")
                     (ICONST_1)
                     (IADD)
@@ -1989,7 +2024,6 @@ Sun Jul 15 14:17:26 2001
                 (force (equal class "Job")))
            (equal (lookup-methodref "run:()V" class ct)
                   '("Job" . ("run:()V" NIL
-                    (GOTO 3)
                     (ALOAD_0)
                     (INVOKEVIRTUAL "Job" "incr:()LJob;" 0)
                     (POP)
@@ -2200,8 +2234,8 @@ Sun Jul 15 14:17:26 2001
                        (case (main-pc
                               (thread-call-stack
                                (car (thread-table s))))
-                         (11 nil)
-                         (28 nil)
+                         (8 nil)
+                         (25 nil)
                          (otherwise t))
                        ))
            :in-theory (cons 'good-state (disable good-threads
@@ -2228,13 +2262,13 @@ Sun Jul 15 14:17:26 2001
                 (<= 1 th)
                 (<= th (- (len (heap s)) 9)))
            (good-thread th
-                        (if (and (<= 14 (main-pc
+                        (if (and (<= 11 (main-pc
                                          (thread-call-stack
                                           (car (thread-table s)))))
                                  (< (main-pc
                                      (thread-call-stack
                                       (car (thread-table s))))
-                                    28)
+                                    25)
                                  (equal th (- (len (heap s)) 9)))
                             'UNSCHEDULED
                           'SCHEDULED)
@@ -2250,13 +2284,13 @@ Sun Jul 15 14:17:26 2001
                       (c (gf "Container" "counter:I" 8 (heap s)))
                       (m (gf "java/lang/Object" "<monitor>" 8 (heap s)))
                       (mc (gf "java/lang/Object" "<mcount>" 8 (heap s)))
-                      (flg1 (and (<= 14 (main-pc
+                      (flg1 (and (<= 11 (main-pc
                                          (thread-call-stack
                                           (car (thread-table s)))))
                                  (< (main-pc
                                      (thread-call-stack
                                       (car (thread-table s))))
-                                    28))))
+                                    25))))
            :in-theory (cons 'good-state (disable good-threads
                                                  good-thread
                                                  good-thread0
@@ -2642,7 +2676,6 @@ Sun Jul 15 14:17:26 2001
                          (DUP)
                          (INVOKESPECIAL "Container" "<init>:()V" 0)
                          (ASTORE_1)
-                         (GOTO 3)
                          (NEW "Job")
                          (DUP)
                          (INVOKESPECIAL "Job" "<init>:()V" 0)
@@ -2663,7 +2696,7 @@ Sun Jul 15 14:17:26 2001
                           (RETURN)))
                (REF 6))
   ("Job" ("java/lang/Thread" "java/lang/Object")
-         ("objref:LContainter;")
+         ("objref:LContainer;")
          NIL NIL
          (("<init>:()V" NIL
                     (ALOAD_0)
@@ -2671,14 +2704,14 @@ Sun Jul 15 14:17:26 2001
                     (RETURN))
           ("incr:()LJob;" NIL
                   (ALOAD_0)
-                  (GETFIELD "Job" "objref:LContainter;")
+                  (GETFIELD "Job" "objref:LContainer;")
+                  (DUP)
                   (ASTORE_1)
-                  (ALOAD_1)
                   (MONITORENTER)
                   (ALOAD_0)
-                  (GETFIELD "Job" "objref:LContainter;")
+                  (GETFIELD "Job" "objref:LContainer;")
                   (ALOAD_0)
-                  (GETFIELD "Job" "objref:LContainter;")
+                  (GETFIELD "Job" "objref:LContainer;")
                   (GETFIELD "Container" "counter:I")
                   (ICONST_1)
                   (IADD)
@@ -2696,10 +2729,9 @@ Sun Jul 15 14:17:26 2001
           ("setref:(LContainer;)V" NIL
                     (ALOAD_0)
                     (ALOAD_1)
-                    (PUTFIELD "Job" "objref:LContainter;")
+                    (PUTFIELD "Job" "objref:LContainer;")
                     (RETURN))
           ("run:()V" NIL
-                 (GOTO 3)
                  (ALOAD_0)
                  (INVOKEVIRTUAL "Job" "incr:()LJob;" 0)
                  (POP)

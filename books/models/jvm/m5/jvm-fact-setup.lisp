@@ -230,14 +230,15 @@ The output of jvm2acl2 for M5 is in classes/Demo.
                 (ICONST_0)
                 (AALOAD)
                 (BIPUSH 10)
-                (INVOKESTATIC "java/lang/Integer"
+                (INVOKESTATIC "NoClassDefFoundError: java/lang/Integer"
                               "parseInt:(Ljava/lang/String;I)I" 2)
                 (ISTORE_1)
-                (GETSTATIC "java/lang/System"
+                (GETSTATIC "NoClassDefFoundError: java/lang/System"
                            "out:Ljava/io/PrintStream;")
                 (ILOAD_1)
                 (INVOKESTATIC "Demo" "fact:(I)I" 1)
-                (INVOKEVIRTUAL "java/io/PrintStream" "println:(I)V" 1)
+                (INVOKEVIRTUAL "NoClassDefFoundError: java/io/PrintStream"
+                               "println:(I)V" 1)
                 (RETURN)))
           (REF 5))))
 |#
@@ -371,12 +372,12 @@ The output of jvm2acl2 for M5 is in classes/Demo.
        (ICONST_0)
        (AALOAD)
        (BIPUSH 10)
-       (INVOKESTATIC "java/lang/Integer" "parseInt:(Ljava/lang/String;I)I" 2)
+       (INVOKESTATIC "NoClassDefFoundError: java/lang/Integer" "parseInt:(Ljava/lang/String;I)I" 2)
        (ISTORE_1)
-       (GETSTATIC "java/lang/System" "out:Ljava/io/PrintStream;")
+       (GETSTATIC "NoClassDefFoundError: java/lang/System" "out:Ljava/io/PrintStream;")
        (ILOAD_1)
        (INVOKESTATIC "Demo" "fact:(I)I" 1)
-       (INVOKEVIRTUAL "java/io/PrintStream" "println:(I)V" 1)
+       (INVOKEVIRTUAL "NoClassDefFoundError: java/io/PrintStream" "println:(I)V" 1)
        (RETURN)))
      (REF 5))))
 
