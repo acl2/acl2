@@ -197,6 +197,8 @@ viewing Verilog designs.")
       (:vl-import     (vl-pp-import     x))
       (:vl-fwdtypedef (vl-pp-fwdtypedef x))
       (:vl-vardecl    (vl-pp-vardecl    x))
+      (:vl-dpiimport  (vl-pp-dpiimport  x))
+      (:vl-dpiexport  (vl-pp-dpiexport  x))
       (otherwise      (vl-pp-typedef    x)))))
 
 (define vl-description-summary ((x vl-description-p))
@@ -368,6 +370,8 @@ declaration, ...)."
       (:vl-fwdtypedef nil)
       (:vl-typedef    nil)
       (:vl-vardecl    nil)
+      (:vl-dpiimport  nil)
+      (:vl-dpiexport  nil)
       (otherwise      (impossible)))))
 
 (define vls-data-origname-reportcard ((data vls-data-p))

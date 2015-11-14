@@ -461,6 +461,15 @@ top-level hierarchical identifiers.</p>"
                                          item-ss)
                 trace x)))
 
+         ((when (eq (tag item) :vl-dpiimport))
+          (if (eq kind :end)
+              ;; Plain reference to, e.g., foo.bar.myfun.  Seems OK.
+              (mv nil trace x)
+            ;; Indexed or dotted reference like foo.bar.myfun[3] or
+            ;; foo.bar.myfun[3].baz or foo.bar.myfun.baz, seems too hard.
+            (mv (vl-follow-hidexpr-error (vmsg "hierarchical reference into DPI import") item-ss)
+                trace x)))
+
          ((when (eq (tag item) :vl-modinst))
           (b* (((vl-modinst item))
                (dims    (and item.range (list (vl-range->packeddimension item.range))))

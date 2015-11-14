@@ -33,6 +33,7 @@
 (include-book "../../parsetree")
 (local (include-book "../../util/arithmetic"))
 
+
 ; -----------------------------------------------------------------------------
 ;
 ;                             Package Imports
@@ -49,19 +50,19 @@
   :fails :gracefully
   :count :strong
   (seq tokstream
-        (pkgid := (vl-match-token :vl-idtoken))
-        (:=       (vl-match-token :vl-scope))
-        (when (vl-is-token? :vl-times)
-          (:= (vl-match))
-          (return (make-vl-import :pkg (vl-idtoken->name pkgid)
-                                  :part :vl-import*
-                                  :loc (vl-token->loc pkgid)
-                                  :atts atts)))
-        (what := (vl-match-token :vl-idtoken))
-        (return (make-vl-import :pkg (vl-idtoken->name pkgid)
-                                :part (vl-idtoken->name what)
-                                :loc (vl-token->loc pkgid)
-                                :atts atts))))
+       (pkgid := (vl-match-token :vl-idtoken))
+       (:=       (vl-match-token :vl-scope))
+       (when (vl-is-token? :vl-times)
+         (:= (vl-match))
+         (return (make-vl-import :pkg (vl-idtoken->name pkgid)
+                                 :part :vl-import*
+                                 :loc (vl-token->loc pkgid)
+                                 :atts atts)))
+       (what := (vl-match-token :vl-idtoken))
+       (return (make-vl-import :pkg (vl-idtoken->name pkgid)
+                               :part (vl-idtoken->name what)
+                               :loc (vl-token->loc pkgid)
+                               :atts atts))))
 
 ; package_import_declaration ::=
 ;    'import' package_import_item { ',' package_import_item } ';'
@@ -80,8 +81,16 @@
           (rest := (vl-parse-1+-package-import-items-separated-by-commas atts)))
         (return (cons first rest))))
 
+(define vl-plausible-start-of-package-import-p (&key (tokstream 'tokstream))
+  :enabled t
+  ;; Note that every package_import_item begins with an idtoken.  We check for
+  ;; this idtoken, in addition to the import keyword, to rule out any possible
+  ;; confusion between a package import and a DPI function import.
+  (and (vl-is-token? :vl-kwd-import)
+       (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens)))))
+
 (defparser vl-parse-package-import-declaration (atts)
-  :guard (and (vl-is-token? :vl-kwd-import)
+  :guard (and (vl-plausible-start-of-package-import-p)
               (vl-atts-p atts))
   :result (vl-importlist-p val)
   :resultp-of-nil t
@@ -89,10 +98,10 @@
   :fails :gracefully
   :count :strong
   (seq tokstream
-        (:= (vl-match))
-        (elems := (vl-parse-1+-package-import-items-separated-by-commas atts))
-        (:= (vl-match-token :vl-semi))
-        (return elems)))
+       (:= (vl-match)) ;; eat the import keyword
+       (elems := (vl-parse-1+-package-import-items-separated-by-commas atts))
+       (:= (vl-match-token :vl-semi))
+       (return elems)))
 
 (defparser vl-parse-0+-package-import-declarations ()
   :result (vl-importlist-p val)
@@ -101,7 +110,7 @@
   :fails :gracefully
   :count :weak
   (seq tokstream
-       (unless (vl-is-token? :vl-kwd-import)
+       (unless (vl-plausible-start-of-package-import-p)
          (return nil))
        (first := (vl-parse-package-import-declaration nil))
        (rest := (vl-parse-0+-package-import-declarations))

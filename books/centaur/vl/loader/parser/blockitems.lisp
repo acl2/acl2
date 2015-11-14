@@ -784,7 +784,14 @@ out some duplication and indirection:</p>
           (:= (vl-match-token :vl-semi))
           (return elems))
         (when (vl-is-token? :vl-kwd-import)
-          (return-raw (vl-parse-package-import-declaration atts)))
+          ;; Kind of hacky -- to make sure the guard is satisfied we need to
+          ;; look ahead.  This excessive guard is meant to avoid any possible
+          ;; confusion with DPI imports, but we don't have to worry about DPI
+          ;; imports here.
+          (return-raw (if (vl-plausible-start-of-package-import-p)
+                          (vl-parse-package-import-declaration atts)
+                        (vl-parse-error "Expected package name after import."))))
+
         ;; Otherwise we are in the data_declaration case.
 
         ;; BOZO it's a little ugly to explicitly look for typedefs here,

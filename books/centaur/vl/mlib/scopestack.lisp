@@ -218,15 +218,21 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
     :long "<p>Note that this is only for items, i.e., it's not for definitions,
   ports, packages, etc.</p>"
     '((interface    (:import)
-                    paramdecl vardecl)
+                    paramdecl vardecl dpiimport
+                    ;; NOTE: not dpiexport -- we DO want to include the dpi
+                    ;; imports in the scopestack because they're essentially
+                    ;; being "defined" by the C code.  But exports are just
+                    ;; things we're making available to the C code, which isn't
+                    ;; relevant to much of anything else.
+                    )
       (module       (:import)
-                    paramdecl vardecl fundecl taskdecl typedef
+                    paramdecl vardecl fundecl taskdecl typedef dpiimport
                     (modinst :name instname :maybe-stringp t)
                     (gateinst :maybe-stringp t)
                     (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
                     (interfaceport :acc ifports))
       (genblob      (:import)
-                    vardecl paramdecl fundecl taskdecl typedef
+                    vardecl paramdecl fundecl taskdecl typedef dpiimport
                     (modinst :name instname :maybe-stringp t)
                     (gateinst :maybe-stringp t)
                     (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
@@ -240,9 +246,9 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
                     vardecl paramdecl typedef)
 
       (design       (:import)
-                    paramdecl vardecl fundecl taskdecl typedef)
+                    paramdecl vardecl fundecl taskdecl typedef dpiimport)
       (package      (:import)
-                    paramdecl vardecl fundecl taskdecl typedef)))
+                    paramdecl vardecl fundecl taskdecl typedef dpiimport)))
 
   (defval *vl-scopes->defs*
     :short "Information about the kinds of definitions in each scope."
@@ -1409,7 +1415,8 @@ be very cheap in the single-threaded case.</p>"
                  (equal (tag item) :vl-vardecl)
                  (equal (tag item) :vl-fundecl)
                  (equal (tag item) :vl-taskdecl)
-                 (equal (tag item) :vl-typedef))))
+                 (equal (tag item) :vl-typedef)
+                 (equal (tag item) :vl-dpiimport))))
   :rule-classes ((:forward-chaining))
   :hints(("Goal"
           :use ((:instance tag-when-vl-scopeitem-p-forward
@@ -1612,6 +1619,7 @@ transform that has used scopestacks.</p>"
       (:vl-vardecl       (vl-vardecl->name x))
       (:vl-fundecl       (vl-fundecl->name x))
       (:vl-taskdecl      (vl-taskdecl->name x))
+      (:vl-dpiimport  (vl-dpiimport->name x))
       (otherwise         (vl-typedef->name x)))))
 
 (define vl-scopestack->path-aux ((x vl-scopestack-p) rchars)

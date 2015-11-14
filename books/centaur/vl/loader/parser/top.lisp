@@ -96,6 +96,22 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
 ;  | {attribute_instance} bind_directive
 ;  | config_declaration
 
+(defparser vl-parse-top-level-import (atts)
+  :guard (and (vl-is-token? :vl-kwd-import)
+              (vl-atts-p atts))
+  :result (vl-descriptionlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (vl-plausible-start-of-package-import-p)
+         (imports := (vl-parse-package-import-declaration atts))
+         (return imports))
+       ;; Otherwise maybe it's a DPI import.
+       (dpiimport := (vl-parse-dpi-import atts))
+       (return (list dpiimport))))
+
 (defparser vl-parse-description ()
   ;; Note: we return a list of descriptions because sometimes a 'single'
   ;; construct actually introduces several things.  For instance, an import
@@ -200,8 +216,12 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
           (fns := (vl-parse-function-declaration atts))
           (return fns))
         (when (vl-is-token? :vl-kwd-import)
-          (imports := (vl-parse-package-import-declaration atts))
+          (imports := (vl-parse-top-level-import atts))
           (return imports))
+        (when (vl-is-token? :vl-kwd-export)
+          (dpiexport := (vl-parse-dpi-export atts))
+          (return (list dpiexport)))
+
         (when (vl-is-some-token? '(:vl-kwd-parameter :vl-kwd-localparam))
           (params := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter :vl-kwd-localparam)))
           (:= (vl-match-token :vl-semi))

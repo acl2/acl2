@@ -756,6 +756,22 @@ problem.</p>"
     warnings))
 
 
+(define vl-dpiimport-check-undeclared
+  :short "Check an arbitrary @(see vl-dpiimport) for uses of undeclared names."
+  ((x         vl-dpiimport-p)
+   (st        vl-implicitst-p)
+   (warnings  vl-warninglist-p))
+  :returns (new-warnings vl-warninglist-p)
+  (b* (((vl-dpiimport x) (vl-dpiimport-fix x))
+       ;; Analogous to functions -- check names in return type and parameters
+       (other-names (vl-exprlist-varnames (append (vl-portdecllist-allexprs x.portdecls)
+                                                  (vl-maybe-datatype-allexprs x.rettype))))
+       (warnings    (vl-warn-about-undeclared-wires x other-names st warnings)))
+    ;; There's not anything else here we can check since the import's
+    ;; definition is in some C file somewhere.
+    warnings))
+
+
 (define vl-taskdecl-check-undeclared
   :short "Check an arbitrary @(see vl-taskdecl-p) for uses of undeclared
 names."
@@ -1043,6 +1059,22 @@ it has the same problems with parameters.</p>"
              (newitems (cons x newitems)))
           (mv warnings st implicit newitems)))
 
+       ((when (eq tag :vl-dpiimport))
+        ;; Similar to functions
+        (b* ((warnings (vl-dpiimport-check-undeclared item st warnings))
+             (decls    (vl-implicitst->decls st))
+             (decls    (hons-acons (vl-dpiimport->name item) nil decls))
+             (st       (change-vl-implicitst st :decls decls))
+             (newitems (cons x newitems)))
+          (mv warnings st implicit newitems)))
+
+       ((when (eq tag :vl-dpiexport))
+        ;; Nothing to do here -- it's making something available to C, not
+        ;; declaring anything new.  There aren't any types or expressions
+        ;; for us to check.
+        (b* ((newitems (cons x newitems)))
+          (mv warnings st implicit newitems)))
+
        ((when (member tag '(:vl-assertion :vl-cassertion :vl-sequence :vl-property)))
         ;; BOZO deal with these some day.  Need to do tests to figure
         ;; out what the intended behavior is, then implement it.  Horrible.
@@ -1096,7 +1128,6 @@ it has the same problems with parameters.</p>"
         (mv warnings st implicit newitems)))
     (impossible)
     (mv warnings st implicit newitems)))
-
 
 
 
@@ -1397,7 +1428,8 @@ all of its identifiers.</p>"
                       :typedefs    c.typedefs
                       :assertions  c.assertions
                       :cassertions c.cassertions
-
+                      :dpiimports  c.dpiimports
+                      :dpiexports  c.dpiexports
                       :warnings warnings
                       :parse-temps (and x.parse-temps
                                         (change-vl-parse-temps

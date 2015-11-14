@@ -364,6 +364,11 @@ explicit declarations.</p>")
                    (string-listp (alist-keys acc)))
             :hints(("Goal" :in-theory (enable vl-paramdecllist-alist)))))
 
+   (local (defthm l5
+            (equal (string-listp (alist-keys (vl-dpiimportlist-alist x acc)))
+                   (string-listp (alist-keys acc)))
+            :hints(("Goal" :in-theory (enable vl-dpiimportlist-alist)))))
+
    (defthm string-listp-of-alist-keys-of-vl-package-scope-item-alist
      (equal (string-listp (alist-keys (vl-package-scope-item-alist x acc)))
             (string-listp (alist-keys acc)))
@@ -902,6 +907,15 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
 
+(define vl-shadowcheck-dpiimport ((x vl-dpiimport-p)
+                                  (st       vl-shadowcheck-state-p)
+                                  (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-dpiimport x) (vl-dpiimport-fix x))
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
+    (mv st warnings)))
+
 (define vl-shadowcheck-aux
   :short "Main function for checking for name shadowing."
   ((x        vl-genelementlist-p
@@ -977,6 +991,10 @@ explicit declarations.</p>")
 
        ((when (eq tag :vl-taskdecl))
         (b* (((mv st warnings) (vl-shadowcheck-taskdecl item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-dpiimport))
+        (b* (((mv st warnings) (vl-shadowcheck-dpiimport item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
        ((when (eq tag :vl-import))
@@ -1128,6 +1146,15 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-import (car x) st warnings)))
     (vl-shadowcheck-imports (cdr x) st warnings)))
 
+(define vl-shadowcheck-dpiimports ((x        vl-dpiimportlist-p)
+                                   (st       vl-shadowcheck-state-p)
+                                   (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-dpiimport (car x) st warnings)))
+    (vl-shadowcheck-dpiimports (cdr x) st warnings)))
 
 (define vl-shadowcheck-design ((x vl-design-p))
   :returns (new-x vl-design-p)
@@ -1146,7 +1173,8 @@ explicit declarations.</p>")
                           (vl-paramdecllist->names x.paramdecls)
                           (vl-fundecllist->names x.fundecls)
                           (vl-taskdecllist->names x.taskdecls)
-                          (vl-typedeflist->names x.typedefs)))
+                          (vl-typedeflist->names x.typedefs)
+                          (vl-dpiimportlist->names x.dpiimports)))
        (dupes (duplicated-members itemnames))
        (warnings (if (not dupes)
                      (ok)
@@ -1160,6 +1188,7 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-fundecls         x.fundecls   st warnings))
        ((mv st warnings) (vl-shadowcheck-taskdecls        x.taskdecls  st warnings))
        ((mv st warnings) (vl-shadowcheck-imports          x.imports    st warnings))
+       ((mv st warnings) (vl-shadowcheck-dpiimports       x.dpiimports st warnings))
 
        ((mv st mods) (vl-shadowcheck-modules x.mods st))
 

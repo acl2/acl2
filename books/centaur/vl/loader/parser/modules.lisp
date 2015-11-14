@@ -77,6 +77,8 @@
                                               :vl-cassertion
                                               :vl-property
                                               :vl-sequence
+                                              :vl-dpiimport
+                                              :vl-dpiexport
                                               )))
        (warnings
         (if (not bad-item)
@@ -112,6 +114,8 @@
                     :sequences   c.sequences
                     :assertions  c.assertions
                     :cassertions c.cassertions
+                    :dpiimports  c.dpiimports
+                    :dpiexports  c.dpiexports
                     :atts        atts
                     :minloc      minloc
                     :maxloc      maxloc
