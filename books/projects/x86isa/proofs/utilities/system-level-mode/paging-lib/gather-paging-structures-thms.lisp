@@ -8,116 +8,114 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
+(local (include-book "centaur/gl/gl" :dir :system))
+
 ;; ======================================================================
 
 ;; RoW Theorems with R = gather functions:
 
-;; (defthm gather-pml4-table-qword-addresses-xw-1
-;;   (implies (not (equal fld :ctr))
-;;            (equal (gather-pml4-table-qword-addresses (xw fld index val x86))
-;;                   (gather-pml4-table-qword-addresses x86)))
-;;   :hints (("Goal"
-;;            :cases ((equal fld :ctr))
-;;            :in-theory (e/d* (gather-pml4-table-qword-addresses)
-;;                             ()))))
+(defthm gather-pml4-table-qword-addresses-xw-1
+  (implies (not (equal fld :ctr))
+           (equal (gather-pml4-table-qword-addresses (xw fld index val x86))
+                  (gather-pml4-table-qword-addresses x86)))
+  :hints (("Goal"
+           :cases ((equal fld :ctr))
+           :in-theory (e/d* (gather-pml4-table-qword-addresses)
+                            ()))))
 
-;; (defthm gather-pml4-table-qword-addresses-xw-2
-;;   (implies (and (equal fld :ctr)
-;;                 (not (equal index *cr3*)))
-;;            (equal (gather-pml4-table-qword-addresses (xw fld index val x86))
-;;                   (gather-pml4-table-qword-addresses x86)))
-;;   :hints (("Goal"
-;;            :cases ((equal fld :ctr))
-;;            :in-theory (e/d* (gather-pml4-table-qword-addresses)
-;;                             ()))))
+(defthm gather-pml4-table-qword-addresses-xw-2
+  (implies (and (equal fld :ctr)
+                (not (equal index *cr3*)))
+           (equal (gather-pml4-table-qword-addresses (xw fld index val x86))
+                  (gather-pml4-table-qword-addresses x86)))
+  :hints (("Goal"
+           :cases ((equal fld :ctr))
+           :in-theory (e/d* (gather-pml4-table-qword-addresses)
+                            ()))))
 
-;; (defthm gather-qword-addresses-corresponding-to-1-entry-xw-1
-;;   (implies (and (not (equal fld :mem))
-;;                 (natp n))
-;;            (equal (gather-qword-addresses-corresponding-to-1-entry n (xw fld index val x86))
-;;                   (gather-qword-addresses-corresponding-to-1-entry n x86)))
-;;   :hints (("Goal"
-;;            :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
-;;                             ()))))
+(defthm gather-qword-addresses-corresponding-to-1-entry-xw-1
+  (implies (and (not (equal fld :mem))
+                (natp n))
+           (equal (gather-qword-addresses-corresponding-to-1-entry n (xw fld index val x86))
+                  (gather-qword-addresses-corresponding-to-1-entry n x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
+                            ()))))
 
-;; (defthm gather-qword-addresses-corresponding-to-1-entry-xw-2
-;;   (implies (and (equal fld :mem)
-;;                 (disjoint-p (addr-range 1 index)
-;;                             (addr-range 8 addr))
-;;                 (natp addr))
-;;            (equal (gather-qword-addresses-corresponding-to-1-entry addr (xw :mem index val x86))
-;;                   (gather-qword-addresses-corresponding-to-1-entry addr x86)))
-;;   :hints (("Goal"
-;;            :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
-;;                             (addr-range
-;;                              addr-range-1)))))
+(defthm gather-qword-addresses-corresponding-to-1-entry-xw-2
+  (implies (and (equal fld :mem)
+                (disjoint-p (addr-range 1 index)
+                            (addr-range 8 addr))
+                (natp addr))
+           (equal (gather-qword-addresses-corresponding-to-1-entry addr (xw :mem index val x86))
+                  (gather-qword-addresses-corresponding-to-1-entry addr x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
+                            (addr-range
+                             addr-range-1)))))
 
-;; (defthm gather-qword-addresses-corresponding-to-entries-xw-1
-;;   (implies (and (not (equal fld :mem))
-;;                 (qword-paddr-listp addrs))
-;;            (equal (gather-qword-addresses-corresponding-to-entries addrs (xw fld index val x86))
-;;                   (gather-qword-addresses-corresponding-to-entries addrs x86)))
-;;   :hints (("Goal"
-;;            :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
-;;                             ()))))
+(defthm gather-qword-addresses-corresponding-to-entries-xw-1
+  (implies (and (not (equal fld :mem))
+                (qword-paddr-listp addrs))
+           (equal (gather-qword-addresses-corresponding-to-entries addrs (xw fld index val x86))
+                  (gather-qword-addresses-corresponding-to-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
+                            ()))))
 
-;; ;; TO-DO: gather-qword-addresses-corresponding-to-entries-xw-2
+;; TO-DO: gather-qword-addresses-corresponding-to-entries-xw-2
 
-;; (defthm gather-qword-addresses-corresponding-to-list-of-entries-xw-1
-;;   (implies (and (not (equal fld :mem))
-;;                 (qword-paddr-list-listp addrs))
-;;            (equal (gather-qword-addresses-corresponding-to-list-of-entries addrs (xw fld index val x86))
-;;                   (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
-;;   :hints (("Goal"
-;;            :in-theory (e/d* (gather-qword-addresses-corresponding-to-list-of-entries)
-;;                             ()))))
+(defthm gather-qword-addresses-corresponding-to-list-of-entries-xw-1
+  (implies (and (not (equal fld :mem))
+                (qword-paddr-list-listp addrs))
+           (equal (gather-qword-addresses-corresponding-to-list-of-entries addrs (xw fld index val x86))
+                  (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-list-of-entries)
+                            ()))))
 
-;; ;; TO-DO: gather-qword-addresses-corresponding-to-list-of-entries-xw-2
+;; TO-DO: gather-qword-addresses-corresponding-to-list-of-entries-xw-2
 
-;; (defthm gather-all-paging-structure-qword-addresses-xw-1
-;;   (implies (and (not (equal fld :mem))
-;;                 (not (equal fld :ctr)))
-;;            (equal (gather-all-paging-structure-qword-addresses (xw fld index val x86))
-;;                   (gather-all-paging-structure-qword-addresses x86)))
-;;   :hints (("Goal"
-;;            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
-;;                             ()))))
+(defthm gather-all-paging-structure-qword-addresses-xw-1
+  (implies (and (not (equal fld :mem))
+                (not (equal fld :ctr)))
+           (equal (gather-all-paging-structure-qword-addresses (xw fld index val x86))
+                  (gather-all-paging-structure-qword-addresses x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
+                            ()))))
 
-;; ;; ======================================================================
+;; ======================================================================
 
-;; ;; RoW Theorems with R = xlate-equiv functions
+;; RoW Theorems with R = xlate-equiv functions
 
-;; (defthm xlate-equiv-entries-at-qword-addresses-aux?-with-xw
-;;   (implies (not (equal fld :mem))
-;;            (equal (xlate-equiv-entries-at-qword-addresses-aux?
-;;                    addrs addrs
-;;                    x86
-;;                    (xw fld index val x86))
-;;                   (xlate-equiv-entries-at-qword-addresses-aux?
-;;                    addrs addrs
-;;                    x86
-;;                    x86)))
-;;   :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses-aux?)
-;;                                    ()))))
+(defthm xlate-equiv-entries-at-qword-addresses-aux?-with-xw
+  (implies (not (equal fld :mem))
+           (equal (xlate-equiv-entries-at-qword-addresses-aux?
+                   addrs addrs
+                   x86
+                   (xw fld index val x86))
+                  (xlate-equiv-entries-at-qword-addresses-aux?
+                   addrs addrs
+                   x86
+                   x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses-aux?)
+                                   ()))))
 
-;; (defthm xlate-equiv-entries-at-qword-addresses?-with-xw
-;;   (implies (not (equal fld :mem))
-;;            (equal (xlate-equiv-entries-at-qword-addresses?
-;;                    addrs addrs
-;;                    x86
-;;                    (xw fld index val x86))
-;;                   (xlate-equiv-entries-at-qword-addresses?
-;;                    addrs addrs
-;;                    x86
-;;                    x86)))
-;;   :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?)
-;;                                    ()))))
+(defthm xlate-equiv-entries-at-qword-addresses?-with-xw
+  (implies (not (equal fld :mem))
+           (equal (xlate-equiv-entries-at-qword-addresses?
+                   addrs addrs
+                   x86
+                   (xw fld index val x86))
+                  (xlate-equiv-entries-at-qword-addresses?
+                   addrs addrs
+                   x86
+                   x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?)
+                                   ()))))
 
-;; ;; ======================================================================
-
-;; (i-am-here) ;; From here...
-
-(local (include-book "centaur/gl/gl" :dir :system))
+;; ======================================================================
 
 (define member-list-p (e xs)
   :guard (true-list-listp xs)
@@ -205,6 +203,8 @@
 
 ;; ======================================================================
 
+;; Some general lemmas about the gather functions:
+
 (defthm non-nil-gather-pml4-table-qword-addresses
   (implies (and (equal pml4-table-base-addr
                        (mv-nth 1 (pml4-table-base-addr x86)))
@@ -243,6 +243,145 @@
                              pml4-table-entry-addr
                              gather-pml4-table-qword-addresses)
                             ()))))
+
+(defthm non-nil-gather-qword-addresses-corresponding-to-1-entry
+  (implies (and (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
+                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
+                (physical-address-p
+                 (+ (ash 512 3)
+                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
+                         12))))
+           (gather-qword-addresses-corresponding-to-1-entry paddr x86))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
+                            ()))))
+
+(defthm consp-gather-qword-addresses-corresponding-to-1-entry
+  (implies (and (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
+                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
+                (physical-address-p
+                 (+ (ash 512 3)
+                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
+                         12))))
+           (consp (gather-qword-addresses-corresponding-to-1-entry paddr x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
+                            ())))
+  :rule-classes (:type-prescription :rewrite))
+
+(defthm car-gather-qword-addresses-corresponding-to-1-entry
+  (implies (and (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
+                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
+                (physical-address-p
+                 (+ (ash 512 3)
+                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
+                         12))))
+           (equal (car (gather-qword-addresses-corresponding-to-1-entry paddr x86))
+                  (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
+                       12)))
+  :hints (("Goal"
+           :expand (create-qword-address-list
+                    512
+                    (ash (loghead 40 (logtail 12 (rm-low-64 paddr x86)))
+                         12))
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
+                            ()))))
+
+(defthm consp-gather-qword-addresses-corresponding-to-entries
+  (implies (and (consp paddr-list)
+                (qword-paddr-listp paddr-list)
+                (equal (ia32e-page-tables-slice :p (rm-low-64 (car paddr-list) x86)) 1)
+                (equal (ia32e-page-tables-slice :ps (rm-low-64 (car paddr-list) x86)) 0)
+                (physical-address-p
+                 (+ (ash 512 3)
+                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 (car paddr-list) x86))
+                         12))))
+           (consp
+            (gather-qword-addresses-corresponding-to-entries
+             paddr-list
+             x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
+                            ())))
+  :rule-classes (:type-prescription :rewrite))
+
+(defthm car-gather-qword-addresses-corresponding-to-entries
+  (implies (and (consp paddr-list)
+                (qword-paddr-listp paddr-list)
+                (equal (ia32e-page-tables-slice :p (rm-low-64 (car paddr-list) x86)) 1)
+                (equal (ia32e-page-tables-slice :ps (rm-low-64 (car paddr-list) x86)) 0)
+                (physical-address-p
+                 (+ (ash 512 3)
+                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 (car paddr-list) x86))
+                         12))))
+           (equal
+            (car (gather-qword-addresses-corresponding-to-entries paddr-list x86))
+            (gather-qword-addresses-corresponding-to-1-entry (car paddr-list) x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
+                            ()))))
+
+(defthm gather-qword-addresses-corresponding-to-1-entry-and-to-entries
+  (implies (and (physical-address-p
+                 (+ (ash 512 3)
+                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
+                         12)))
+                (qword-paddr-listp paddrs)
+                (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
+                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
+                (member-p paddr paddrs))
+           (subset-list-p
+            (gather-qword-addresses-corresponding-to-1-entry paddr x86)
+            (gather-qword-addresses-corresponding-to-entries paddrs x86)))
+
+  :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry
+                                    gather-qword-addresses-corresponding-to-entries
+                                    subset-p)
+                                   ()))))
+
+(defthm gather-qword-addresses-corresponding-to-entries-and-to-list-of-entries
+  (implies (and (physical-address-p
+                 (+ (ash 512 3)
+                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
+                         12)))
+                (qword-paddr-list-listp paddrs-list)
+                (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
+                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
+                (member-list-p paddr paddrs-list))
+           (subset-list-p
+            (gather-qword-addresses-corresponding-to-1-entry paddr x86)
+            (gather-qword-addresses-corresponding-to-list-of-entries
+             paddrs-list x86)))
+
+  :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries
+                                    gather-qword-addresses-corresponding-to-list-of-entries
+                                    subset-p)
+                                   ()))))
+
+;; ======================================================================
+
+(define superior-entry-points-to-an-inferior-one-p
+  ((superior-entry-addr :type (unsigned-byte #.*physical-address-size*))
+   (x86))
+  :guard (physical-address-p (+ 7 superior-entry-addr))
+  :enabled t
+  (let* ((superior-entry (rm-low-64 superior-entry-addr x86)))
+    (and
+     ;; Superior entry present.
+     (equal (ia32e-page-tables-slice :p  superior-entry) 1)
+     ;; Page Size = 0, i.e., next level of paging structure is required.
+     (equal (ia32e-page-tables-slice :ps superior-entry) 0)
+     ;; Next level of paging structure fits in the physical memory.
+     (physical-address-p
+      (+
+       (ash 512 3)
+       (ash (ia32e-page-tables-slice :reference-addr superior-entry)
+            12))))))
+
+;; ======================================================================
+
+;; PML4 Table Base and Entry Addresses are present in the output from
+;; gather-all-paging-structure-qword-addresses.
 
 (defthm pml4-table-base-addr-is-a-member-of-gather-pml4-table-qword-addresses
   (implies (physical-address-p (+ (ash 512 3)
@@ -309,86 +448,8 @@
 
 ;; ======================================================================
 
-(defthm non-nil-gather-qword-addresses-corresponding-to-1-entry
-  (implies (and (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
-                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
-                (physical-address-p
-                 (+ (ash 512 3)
-                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
-                         12))))
-           (gather-qword-addresses-corresponding-to-1-entry paddr x86))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
-                            ()))))
-
-(defthm consp-gather-qword-addresses-corresponding-to-1-entry
-  (implies (and (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
-                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
-                (physical-address-p
-                 (+ (ash 512 3)
-                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
-                         12))))
-           (consp (gather-qword-addresses-corresponding-to-1-entry paddr x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
-                            ())))
-  :rule-classes (:type-prescription :rewrite))
-
-(defthm car-gather-qword-addresses-corresponding-to-1-entry
-  (implies (and (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
-                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
-                (physical-address-p
-                 (+ (ash 512 3)
-                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
-                         12))))
-           (equal (car (gather-qword-addresses-corresponding-to-1-entry paddr x86))
-                  (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
-                       12)))
-  :hints (("Goal"
-           :expand (create-qword-address-list
-                    512
-                    (ash (loghead 40 (logtail 12 (rm-low-64 paddr x86)))
-                         12))
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
-                            ()))))
-
-;; ======================================================================
-
-(defthm consp-gather-qword-addresses-corresponding-to-entries
-  (implies (and (consp paddr-list)
-                (qword-paddr-listp paddr-list)
-                (equal (ia32e-page-tables-slice :p (rm-low-64 (car paddr-list) x86)) 1)
-                (equal (ia32e-page-tables-slice :ps (rm-low-64 (car paddr-list) x86)) 0)
-                (physical-address-p
-                 (+ (ash 512 3)
-                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 (car paddr-list) x86))
-                         12))))
-           (consp
-            (gather-qword-addresses-corresponding-to-entries
-             paddr-list
-             x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
-                            ())))
-  :rule-classes (:type-prescription :rewrite))
-
-(defthm car-gather-qword-addresses-corresponding-to-entries
-  (implies (and (consp paddr-list)
-                (qword-paddr-listp paddr-list)
-                (equal (ia32e-page-tables-slice :p (rm-low-64 (car paddr-list) x86)) 1)
-                (equal (ia32e-page-tables-slice :ps (rm-low-64 (car paddr-list) x86)) 0)
-                (physical-address-p
-                 (+ (ash 512 3)
-                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 (car paddr-list) x86))
-                         12))))
-           (equal
-            (car (gather-qword-addresses-corresponding-to-entries paddr-list x86))
-            (gather-qword-addresses-corresponding-to-1-entry (car paddr-list) x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
-                            ()))))
-
-;; ======================================================================
+;; Page Directory Pointer Table Base and Entry Addresses are present
+;; in the output from gather-all-paging-structure-qword-addresses.
 
 (local
  (def-gl-thm page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e-helper-1-1
@@ -416,32 +477,14 @@
    :rule-classes :linear))
 
 (defthm page-dir-ptr-table-base-addr-is-in-a-table-pointed-to-by-a-pml4e
-  (implies (and (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                               x86))
-                   12))))
+  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
+                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p
+                 pml4-table-entry-addr x86))
            (member-p
             (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))
             (gather-qword-addresses-corresponding-to-1-entry
-             (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-             x86)))
+             pml4-table-entry-addr x86)))
   :hints (("Goal"
            :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry
                              page-dir-ptr-table-entry-addr
@@ -449,156 +492,53 @@
                             ()))))
 
 (defthm page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e
-  (implies (and (x86p x86)
+  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
+                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
                 (canonical-address-p lin-addr)
-                (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                               x86))
-                   12))))
+                (x86p x86))
            (member-p
             (page-dir-ptr-table-entry-addr
              lin-addr
              (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
             (gather-qword-addresses-corresponding-to-1-entry
-             (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-             x86)))
+             pml4-table-entry-addr x86)))
   :hints (("Goal"
            :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry
                              page-dir-ptr-table-entry-addr
                              page-dir-ptr-table-base-addr)
                             ()))))
 
-(defthm gather-qword-addresses-corresponding-to-1-entry-and-to-entries
-  (implies (and (physical-address-p
-                 (+ (ash 512 3)
-                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
-                         12)))
-                (qword-paddr-listp paddrs)
-                (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
-                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
-                (member-p paddr paddrs))
-           (subset-list-p
-            (gather-qword-addresses-corresponding-to-1-entry paddr x86)
-            (gather-qword-addresses-corresponding-to-entries paddrs x86)))
-
-  :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry
-                                    gather-qword-addresses-corresponding-to-entries
-                                    gather-pml4-table-qword-addresses
-                                    pml4-table-base-addr
-                                    pml4-table-entry-addr
-                                    subset-p)
-                                   ()))))
-
-(defthm qword-paddrs-for-pml4-table-base-addr-are-a-subset-of-those-for-all-entries
-  (implies (and (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
+(defthm pdpt-qword-paddrs-referred-to-by-pml4-base-addr-are-a-subset-of-those-by-all-pml4es
+  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
                 (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (physical-address-p
-                 (+ (ash 512 3)
-                    (ash (ia32e-page-tables-slice
-                          :reference-addr (rm-low-64 pml4-table-base-addr x86))
-                         12)))
-                (equal (ia32e-page-tables-slice :p (rm-low-64 pml4-table-base-addr x86))
-                       1)
-                (equal (ia32e-page-tables-slice :ps (rm-low-64 pml4-table-base-addr x86))
-                       0))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-base-addr x86))
            (subset-list-p
             (gather-qword-addresses-corresponding-to-1-entry pml4-table-base-addr x86)
             (gather-qword-addresses-corresponding-to-entries
              (gather-pml4-table-qword-addresses x86)
-             x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry
-                             gather-qword-addresses-corresponding-to-entries
-                             gather-pml4-table-qword-addresses
-                             pml4-table-base-addr
-                             pml4-table-entry-addr
-                             subset-p)
-                            ()))))
+             x86))))
 
-(defthm qword-paddrs-for-pml4-table-entry-addr-are-a-subset-of-those-for-all-entries
+(defthm pdpt-qword-paddrs-referred-to-by-a-pml4e-addr-are-a-subset-of-those-by-all-pml4es
   (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
                 (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (canonical-address-p lin-addr)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 pml4-table-base-addr x86))
-                   12)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                               x86))
-                   12))))
+                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
+                (canonical-address-p lin-addr))
            (subset-list-p
-            (gather-qword-addresses-corresponding-to-1-entry
-             (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-             x86)
+            (gather-qword-addresses-corresponding-to-1-entry pml4-table-entry-addr x86)
             (gather-qword-addresses-corresponding-to-entries
-             (gather-pml4-table-qword-addresses x86)
-             x86)))
+             (gather-pml4-table-qword-addresses x86) x86)))
   :hints (("Goal" :in-theory (e/d* () (subset-list-p)))))
 
 (defthm page-dir-ptr-table-base-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies
-   (and (canonical-address-p lin-addr)
-        (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-        (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
-        (equal
-         (ia32e-page-tables-slice
-          :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                        x86))
-         1)
-        (equal
-         (ia32e-page-tables-slice
-          :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                         x86))
-         0)
-        (physical-address-p
-         (+
-          (ash 512 3)
-          (ash
-           (ia32e-page-tables-slice
-            :reference-addr
-            (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                       x86))
-           12))))
-   (member-list-p (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))
-                  (gather-all-paging-structure-qword-addresses x86)))
+  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
+                (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
+                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
+                (canonical-address-p lin-addr))
+           (member-list-p (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))
+                          (gather-all-paging-structure-qword-addresses x86)))
   :hints (("Goal"
            :use ((:instance subset-list-p-and-member-list-p
                             (e (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
@@ -612,34 +552,15 @@
                             (subset-list-p-and-member-list-p)))))
 
 (defthm page-dir-ptr-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies (and (x86p x86)
-                (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
+  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
                 (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
+                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
                 (canonical-address-p lin-addr)
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                               x86))
-                   12))))
-           (member-list-p (page-dir-ptr-table-entry-addr
-                           lin-addr
-                           (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-                          (gather-all-paging-structure-qword-addresses x86)))
+                (x86p x86))
+           (member-list-p
+            (page-dir-ptr-table-entry-addr lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+            (gather-all-paging-structure-qword-addresses x86)))
   :hints (("Goal"
            :use ((:instance subset-list-p-and-member-list-p
                             (e (page-dir-ptr-table-entry-addr
@@ -656,33 +577,19 @@
 
 ;; ======================================================================
 
+;; Page Directory Base and Entry Addresses are present in the output
+;; from gather-all-paging-structure-qword-addresses.
+
 (defthm page-directory-base-addr-is-in-a-table-pointed-to-by-a-pdpte
   (implies (and (equal page-dir-ptr-table-base-addr
                        (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                               x86))
-                   12))))
+                (equal page-dir-ptr-table-entry-addr
+                       (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86))
            (member-p
             (mv-nth 1 (page-directory-base-addr lin-addr x86))
             (gather-qword-addresses-corresponding-to-1-entry
-             (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-             x86)))
+             page-dir-ptr-table-entry-addr x86)))
   :hints (("Goal"
            :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry
                              page-directory-entry-addr
@@ -702,126 +609,30 @@
    :rule-classes :linear))
 
 (defthm page-directory-entry-addr-is-in-a-table-pointed-to-by-a-pdpte
-  (implies (and (x86p x86)
-                (canonical-address-p lin-addr)
-                (equal page-dir-ptr-table-base-addr
+  (implies (and (equal page-dir-ptr-table-base-addr
                        (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                               x86))
-                   12))))
+                (equal page-dir-ptr-table-entry-addr
+                       (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
+                (canonical-address-p lin-addr)
+                (x86p x86))
            (member-p
             (page-directory-entry-addr
-             lin-addr
-             (mv-nth 1 (page-directory-base-addr lin-addr x86)))
-            (gather-qword-addresses-corresponding-to-1-entry
-             (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-             x86)))
+             lin-addr (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+            (gather-qword-addresses-corresponding-to-1-entry page-dir-ptr-table-entry-addr x86)))
   :hints (("Goal"
            :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry
                              page-directory-entry-addr
                              page-directory-base-addr)
                             ()))))
 
-(defthm gather-qword-addresses-corresponding-to-entries-and-to-list-of-entries
-  (implies (and (physical-address-p
-                 (+ (ash 512 3)
-                    (ash (ia32e-page-tables-slice :reference-addr (rm-low-64 paddr x86))
-                         12)))
-                (qword-paddr-list-listp paddrs-list)
-                (equal (ia32e-page-tables-slice :p (rm-low-64 paddr x86)) 1)
-                (equal (ia32e-page-tables-slice :ps (rm-low-64 paddr x86)) 0)
-                (member-list-p paddr paddrs-list))
-           (subset-list-p
-            (gather-qword-addresses-corresponding-to-1-entry paddr x86)
-            (gather-qword-addresses-corresponding-to-list-of-entries
-             paddrs-list x86)))
-
-  :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries
-                                    gather-qword-addresses-corresponding-to-list-of-entries
-                                    gather-pml4-table-qword-addresses
-                                    pml4-table-base-addr
-                                    pml4-table-entry-addr
-                                    subset-p)
-                                   ()))))
-
-(defthm page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e-alt-helper-1
-  (implies (and
-            (equal pml4-table-base-addr
-                   (mv-nth 1 (pml4-table-base-addr x86)))
-            (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-            (canonical-address-p lin-addr)
-            (equal
-             (ia32e-page-tables-slice
-              :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                            x86))
-             1)
-            (equal
-             (ia32e-page-tables-slice
-              :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                             x86))
-             0)
-            (physical-address-p
-             (+
-              (ash 512 3)
-              (ash
-               (ia32e-page-tables-slice
-                :reference-addr
-                (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                           x86))
-               12))))
-           (subset-list-p
-            (gather-qword-addresses-corresponding-to-1-entry
-             (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-             x86)
-            (gather-qword-addresses-corresponding-to-entries
-             (gather-pml4-table-qword-addresses x86)
-             x86)))
-  :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries
-                                    subset-p)
-                                   ()))))
-
 (defthm page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e-alt
-  (implies (and
-            (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-            (x86p x86)
-            (canonical-address-p lin-addr)
-            (equal pml4-table-base-addr
-                   (mv-nth 1 (pml4-table-base-addr x86)))
-            (equal
-             (ia32e-page-tables-slice
-              :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                            x86))
-             1)
-            (equal
-             (ia32e-page-tables-slice
-              :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                             x86))
-             0)
-            (physical-address-p
-             (+
-              (ash 512 3)
-              (ash
-               (ia32e-page-tables-slice
-                :reference-addr
-                (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                           x86))
-               12))))
+  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
+                (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
+                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
+                (canonical-address-p lin-addr)
+                (x86p x86))
            (member-list-p
             (page-dir-ptr-table-entry-addr
              lin-addr
@@ -843,115 +654,48 @@
            :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
                             (subset-list-p-and-member-list-p)))))
 
-(defthm page-directory-base-addr-is-in-gather-all-paging-structure-qword-addresses-helper
-  (implies
-   (and (x86p x86)
-        (canonical-address-p lin-addr)
-        (equal pml4-table-base-addr
-               (mv-nth 1 (pml4-table-base-addr x86)))
-        (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-        (equal
-         (ia32e-page-tables-slice
-          :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                        x86))
-         1)
-        (equal
-         (ia32e-page-tables-slice
-          :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                         x86))
-         0)
-        (physical-address-p
-         (+
-          (ash 512 3)
-          (ash
-           (ia32e-page-tables-slice
-            :reference-addr
-            (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                       x86))
-           12)))
-        (equal page-dir-ptr-table-base-addr
-               (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-        (equal
-         (ia32e-page-tables-slice
-          :p (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                        x86))
-         1)
-        (equal
-         (ia32e-page-tables-slice
-          :ps (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                         x86))
-         0)
-        (physical-address-p
-         (+
-          (ash 512 3)
-          (ash
-           (ia32e-page-tables-slice
-            :reference-addr
-            (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                       x86))
-           12))))
-   (subset-list-p
-    ;; PD qword addresses corresponding to a PDPTE.
-    (gather-qword-addresses-corresponding-to-1-entry
-     (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-     x86)
-    ;; All PD qword addresses.
-    (gather-qword-addresses-corresponding-to-list-of-entries
-     ;; All PDPTE qword addresses.
-     (gather-qword-addresses-corresponding-to-entries
-      (gather-pml4-table-qword-addresses x86)
-      x86)
-     x86)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                   (page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e-alt))
-           :use ((:instance page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e-alt)))))
+;; (defthm page-directory-base-addr-is-in-gather-all-paging-structure-qword-addresses-helper
+;;   (implies
+;;    (and (x86p x86)
+;;         (canonical-address-p lin-addr)
+;;         (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
+;;         (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
+;;         (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+;;         (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
+;;         (equal page-dir-ptr-table-base-addr
+;;                (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+;;         (equal page-dir-ptr-table-entry-addr
+;;                (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+;;         (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86))
+;;    (subset-list-p
+;;     ;; PD qword addresses corresponding to a PDPTE.
+;;     (gather-qword-addresses-corresponding-to-1-entry
+;;      page-dir-ptr-table-entry-addr x86)
+;;     ;; All PD qword addresses.
+;;     (gather-qword-addresses-corresponding-to-list-of-entries
+;;      ;; All PDPTE qword addresses.
+;;      (gather-qword-addresses-corresponding-to-entries
+;;       (gather-pml4-table-qword-addresses x86)
+;;       x86)
+;;      x86)))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* ()
+;;                             (page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e-alt))
+;;            :use ((:instance page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e-alt)))))
 
 (defthm page-directory-base-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies (and (x86p x86)
-                (canonical-address-p lin-addr)
-                (equal pml4-table-base-addr
+  (implies (and (equal pml4-table-base-addr
                        (mv-nth 1 (pml4-table-base-addr x86)))
                 (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                               x86))
-                   12)))
+                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
                 (equal page-dir-ptr-table-base-addr
                        (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                               x86))
-                   12))))
+                (equal page-dir-ptr-table-entry-addr
+                       (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
+                (canonical-address-p lin-addr)
+                (x86p x86))
            (member-list-p (mv-nth 1 (page-directory-base-addr lin-addr x86))
                           (gather-all-paging-structure-qword-addresses x86)))
   :hints (("Goal"
@@ -965,51 +709,18 @@
                             (subset-list-p-and-member-list-p)))))
 
 (defthm page-directory-entry-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies (and (x86p x86)
-                (canonical-address-p lin-addr)
-                (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
+  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
                 (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                               x86))
-                   12)))
+                (equal pml4-table-entry-addr
+                       (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
                 (equal page-dir-ptr-table-base-addr
                        (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                               x86))
-                   12))))
+                (equal page-dir-ptr-table-entry-addr
+                       (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
+                (canonical-address-p lin-addr)
+                (x86p x86))
            (member-list-p
             (page-directory-entry-addr
              lin-addr
@@ -1029,46 +740,32 @@
 
 ;; ======================================================================
 
+;; Page Table Base and Entry Addresses are present in the output from
+;; gather-all-paging-structure-qword-addresses.
+
 (defthm page-table-base-addr-is-in-a-table-pointed-to-by-a-pde
   (implies (and
             (equal page-dir-ptr-table-base-addr
                    (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
             (equal
-             (ia32e-page-tables-slice
-              :ps
-              (rm-low-64
-               (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-               x86))
-             0)
+             page-dir-ptr-table-entry-addr
+             (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
             (equal page-directory-base-addr
                    (mv-nth 1 (page-directory-base-addr lin-addr x86)))
-            (equal
-             (ia32e-page-tables-slice
-              :p
-              (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                         x86))
-             1)
+            (equal page-directory-entry-addr
+                   (page-directory-entry-addr lin-addr page-directory-base-addr))
+            ;; Why don't I need the following hyp?
+            ;; (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
             (equal
              (ia32e-page-tables-slice
               :ps
-              (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                         x86))
+              (rm-low-64 page-dir-ptr-table-entry-addr x86))
              0)
-            (physical-address-p
-             (+
-              (ash 512 3)
-              (ash
-               (ia32e-page-tables-slice
-                :reference-addr
-                (rm-low-64
-                 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                 x86))
-               12))))
+            (superior-entry-points-to-an-inferior-one-p page-directory-entry-addr x86))
            (member-p
             (mv-nth 1 (page-table-base-addr lin-addr x86))
             (gather-qword-addresses-corresponding-to-1-entry
-             (page-directory-entry-addr lin-addr page-directory-base-addr)
-             x86)))
+             page-directory-entry-addr x86)))
   :hints (("Goal"
            :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry
                              page-directory-entry-addr
@@ -1090,43 +787,21 @@
    :rule-classes :linear))
 
 (defthm page-table-entry-addr-is-in-a-table-pointed-to-by-a-pde
-  (implies (and
-            (x86p x86)
-            (canonical-address-p lin-addr)
-
-            (equal page-dir-ptr-table-base-addr
-                   (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-            (equal
-             (ia32e-page-tables-slice
-              :ps
-              (rm-low-64
-               (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-               x86))
-             0)
-            (equal page-directory-base-addr
-                   (mv-nth 1 (page-directory-base-addr lin-addr x86)))
-            (equal
-             (ia32e-page-tables-slice
-              :p
-              (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                         x86))
-             1)
-            (equal
-             (ia32e-page-tables-slice
-              :ps
-              (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                         x86))
-             0)
-            (physical-address-p
-             (+
-              (ash 512 3)
-              (ash
-               (ia32e-page-tables-slice
-                :reference-addr
-                (rm-low-64
-                 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                 x86))
-               12))))
+  (implies (and (equal page-dir-ptr-table-base-addr
+                       (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                (equal page-dir-ptr-table-entry-addr
+                       (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+                ;; Why don't I need the following hyp?
+                ;; (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
+                (equal (ia32e-page-tables-slice
+                        :ps (rm-low-64 page-dir-ptr-table-entry-addr x86)) 0)
+                (equal page-directory-base-addr
+                       (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                (equal page-directory-entry-addr
+                       (page-directory-entry-addr lin-addr page-directory-base-addr))
+                (superior-entry-points-to-an-inferior-one-p page-directory-entry-addr x86)
+                (canonical-address-p lin-addr)
+                (x86p x86))
            (member-p
             (page-table-entry-addr
              lin-addr (mv-nth 1 (page-table-base-addr lin-addr x86)))
@@ -1143,58 +818,26 @@
 
 (defthm page-directory-entry-addr-is-in-a-table-pointed-to-by-a-pdpte-alt
   (implies
-   (and (x86p x86)
-        (canonical-address-p lin-addr)
-        (equal pml4-table-base-addr
-               (mv-nth 1 (pml4-table-base-addr x86)))
-        (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-        (equal
-         (ia32e-page-tables-slice
-          :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                        x86))
-         1)
-        (equal
-         (ia32e-page-tables-slice
-          :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                         x86))
-         0)
-        (physical-address-p
-         (+
-          (ash 512 3)
-          (ash
-           (ia32e-page-tables-slice
-            :reference-addr
-            (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                       x86))
-           12)))
-        (equal page-dir-ptr-table-base-addr
-               (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-        (equal
-         (ia32e-page-tables-slice
-          :p
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr) x86))
-         1)
-        (equal
-         (ia32e-page-tables-slice
-          :ps
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-           x86))
-         0)
-        (physical-address-p
-         (+
-          (ash 512 3)
-          (ash
-           (ia32e-page-tables-slice
-            :reference-addr
-            (rm-low-64
-             (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-             x86))
-           12)))
-        (equal page-directory-base-addr (mv-nth 1 (page-directory-base-addr lin-addr x86))))
+   (and
+    (equal pml4-table-base-addr
+           (mv-nth 1 (pml4-table-base-addr x86)))
+    (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
+    (equal pml4-table-entry-addr
+           (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
+    (equal page-dir-ptr-table-base-addr
+           (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+    (equal page-dir-ptr-table-entry-addr
+           (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+    (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
+    (equal page-directory-base-addr
+           (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+    (equal page-directory-entry-addr
+           (page-directory-entry-addr lin-addr page-directory-base-addr))
+    (canonical-address-p lin-addr)
+    (x86p x86))
    (member-list-p
-    (page-directory-entry-addr lin-addr page-directory-base-addr)
+    page-directory-entry-addr
     (gather-qword-addresses-corresponding-to-list-of-entries
      (gather-qword-addresses-corresponding-to-entries
       (gather-pml4-table-qword-addresses x86)
@@ -1216,74 +859,27 @@
                              gather-qword-addresses-corresponding-to-list-of-entries)
                             (subset-list-p-and-member-list-p)))))
 
-(defthm page-table-base-addr-is-in-gather-all-paging-structure-qword-addresses-helper
+(defthm page-table-addresses-pointed-to-by-a-pde-are-in-those-pointed-to-by-all-pdes
   (implies
-   (and (x86p x86)
-        (canonical-address-p lin-addr)
-        (equal pml4-table-base-addr
+   (and (equal pml4-table-base-addr
                (mv-nth 1 (pml4-table-base-addr x86)))
         (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-        (equal
-         (ia32e-page-tables-slice
-          :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                        x86))
-         1)
-        (equal
-         (ia32e-page-tables-slice
-          :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                         x86))
-         0)
-        (physical-address-p
-         (+
-          (ash 512 3)
-          (ash
-           (ia32e-page-tables-slice
-            :reference-addr
-            (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                       x86))
-           12)))
+        (equal pml4-table-entry-addr
+               (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+        (superior-entry-points-to-an-inferior-one-p
+         pml4-table-entry-addr x86)
         (equal page-dir-ptr-table-base-addr
                (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-        (equal
-         (ia32e-page-tables-slice
-          :p (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                        x86))
-         1)
-        (equal
-         (ia32e-page-tables-slice
-          :ps (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                         x86))
-         0)
-        (physical-address-p
-         (+
-          (ash 512 3)
-          (ash
-           (ia32e-page-tables-slice
-            :reference-addr
-            (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                       x86))
-           12)))
+        (equal page-dir-ptr-table-entry-addr
+               (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+        (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
         (equal page-directory-base-addr
                (mv-nth 1 (page-directory-base-addr lin-addr x86)))
-        (equal
-         (ia32e-page-tables-slice
-          :p (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                        x86))
-         1)
-        (equal
-         (ia32e-page-tables-slice
-          :ps (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                         x86))
-         0)
-        (physical-address-p
-         (+
-          (ash 512 3)
-          (ash
-           (ia32e-page-tables-slice
-            :reference-addr
-            (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                       x86))
-           12))))
+        (equal page-directory-entry-addr
+               (page-directory-entry-addr lin-addr page-directory-base-addr))
+        (superior-entry-points-to-an-inferior-one-p page-directory-entry-addr x86)
+        (canonical-address-p lin-addr)
+        (x86p x86))
    (subset-list-p
     ;; PT qword addresses corresponding to a PDE.
     (gather-qword-addresses-corresponding-to-1-entry
@@ -1299,75 +895,30 @@
        (gather-pml4-table-qword-addresses x86)
        x86)
       x86)
-     x86))))
+     x86)))
+  :hints (("Goal"
+           :in-theory (e/d* ()
+                            (page-directory-entry-addr-is-in-a-table-pointed-to-by-a-pdpte-alt))
+           :use ((:instance page-directory-entry-addr-is-in-a-table-pointed-to-by-a-pdpte-alt)))))
 
 (defthm page-table-base-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies (and (x86p x86)
-                (canonical-address-p lin-addr)
-                (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
+  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
                 (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                               x86))
-                   12)))
+                (equal pml4-table-entry-addr
+                       (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
                 (equal page-dir-ptr-table-base-addr
                        (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                               x86))
-                   12)))
+                (equal page-dir-ptr-table-entry-addr
+                       (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
                 (equal page-directory-base-addr
                        (mv-nth 1 (page-directory-base-addr lin-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                               x86))
-                   12))))
+                (equal page-directory-entry-addr
+                       (page-directory-entry-addr lin-addr page-directory-base-addr))
+                (superior-entry-points-to-an-inferior-one-p page-directory-entry-addr x86)
+                (canonical-address-p lin-addr)
+                (x86p x86))
            (member-list-p (mv-nth 1 (page-table-base-addr lin-addr x86))
                           (gather-all-paging-structure-qword-addresses x86)))
   :hints (("Goal"
@@ -1381,72 +932,24 @@
                             (subset-list-p-and-member-list-p)))))
 
 (defthm page-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies (and (x86p x86)
-                (canonical-address-p lin-addr)
-                (equal pml4-table-base-addr
+  (implies (and (equal pml4-table-base-addr
                        (mv-nth 1 (pml4-table-base-addr x86)))
                 (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
-                               x86))
-                   12)))
+                (equal pml4-table-entry-addr
+                       (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
                 (equal page-dir-ptr-table-base-addr
                        (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
-                               x86))
-                   12)))
+                (equal page-dir-ptr-table-entry-addr
+                       (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+                (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
                 (equal page-directory-base-addr
                        (mv-nth 1 (page-directory-base-addr lin-addr x86)))
-                (equal
-                 (ia32e-page-tables-slice
-                  :p (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                                x86))
-                 1)
-                (equal
-                 (ia32e-page-tables-slice
-                  :ps (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                                 x86))
-                 0)
-                (physical-address-p
-                 (+
-                  (ash 512 3)
-                  (ash
-                   (ia32e-page-tables-slice
-                    :reference-addr
-                    (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
-                               x86))
-                   12))))
+                (equal page-directory-entry-addr
+                       (page-directory-entry-addr lin-addr page-directory-base-addr))
+                (superior-entry-points-to-an-inferior-one-p page-directory-entry-addr x86)
+                (canonical-address-p lin-addr)
+                (x86p x86))
            (member-list-p
             (page-table-entry-addr
              lin-addr
