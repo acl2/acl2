@@ -498,19 +498,18 @@ Sun Jul 15 14:17:26 2001
 ; (program frame) by (program1 class method), which will then compute.
 ; Then index-to-program will compute.
 
-(defthm programp-list
+(defthm programp-make-frame
   (implies (syntaxp (and (quotep program)
                          (quotep class)
                          (quotep method)))
-           (equal (programp (list pc locals stack program sync-flg cur-class)
+           (equal (programp (make-frame pc locals stack program sync-flg cur-class)
                             class
                             method)
                   (let ((const (program1 class method)))
                     (and (equal cur-class
                                 (cond ((equal class "Apprentice") nil)
                                       (t class)))
-                         (equal program const)))))
-  :hints (("Goal" :in-theory (enable program cur-class))))
+                         (equal program const))))))
 
 ; Details: Programp is disabled but I want it to compute if the
 ; program of the frame is a constant.  (Typically class and method are
@@ -541,19 +540,17 @@ Sun Jul 15 14:17:26 2001
                 (equal (cur-class frame1) cur-class)
                 (not (equal class1 class2)))
            (not (programp
-                 (list pc locals stack (PROGRAM frame1) sync-flg cur-class)
+                 (make-frame pc locals stack (PROGRAM frame1) sync-flg cur-class)
                  class2
-                 method2)))
-  :hints (("Goal" :in-theory (enable program cur-class))))
+                 method2))))
 
 (defthm programp-mx-3
   (implies (and (programp frame1 class1 method1)
                 (equal (cur-class frame1) cur-class))
            (programp
-                 (list pc locals stack (PROGRAM frame1) sync-flg cur-class)
+                 (make-frame pc locals stack (PROGRAM frame1) sync-flg cur-class)
                  class1
-                 method1))
-  :hints (("Goal" :in-theory (enable program cur-class))))
+                 method1)))
 
 (defthm programp-mx-4
   (implies (and (programp frame1 class1 method1)
@@ -564,10 +561,9 @@ Sun Jul 15 14:17:26 2001
                 (equal (cur-class frame1) cur-class)
                 (not (equal method1 method2)))
            (not (programp
-                 (list pc locals stack (PROGRAM frame1) sync-flg cur-class)
+                 (make-frame pc locals stack (PROGRAM frame1) sync-flg cur-class)
                  class1
-                 method2)))
-  :hints (("Goal" :in-theory (enable program))))
+                 method2))))
 
 ; Details: It just goes on and on doesn't it?
 
@@ -1141,31 +1137,6 @@ Sun Jul 15 14:17:26 2001
 
 (in-theory (disable acl2::equal-constant-+))
 
-(defthm states
-  (and (equal (thread-table (make-state tt h c)) tt)
-       (equal (heap (make-state tt h c)) h)
-       (equal (class-table (make-state tt h c)) c)))
-
-; I'm not sure if this is needed...
-
-(defthm states2
-  (and (equal (thread-table (list tt h c)) tt)
-       (equal (heap (list tt h c)) h)
-       (equal (class-table (list tt h c)) c)))
-
-(in-theory (disable make-state thread-table heap class-table))
-
-(defthm frames
-  (and
-   (equal (pc (make-frame pc l s prog sync-flg cur-class)) pc)
-   (equal (locals (make-frame pc l s prog sync-flg cur-class)) l)
-   (equal (stack (make-frame pc l s prog sync-flg cur-class)) s)
-   (equal (program (make-frame pc l s prog sync-flg cur-class)) prog)
-   (equal (sync-flg (make-frame pc l s prog sync-flg cur-class)) sync-flg)
-   (equal (cur-class (make-frame pc l s prog sync-flg cur-class)) cur-class)))
-
-(in-theory (disable make-frame pc locals stack program sync-flg cur-class))
-
 (defthm len-bind
   (implies (alistp alist)
            (equal (len (bind x v alist))
@@ -1710,16 +1681,6 @@ Sun Jul 15 14:17:26 2001
             t))
   :hints (("Goal" :in-theory (disable good-incr-frame good-run-frame))))
 
-; This undoes something added to m5.lisp.  I might just remove the disables
-; there.
-
-; This undoes another disable in m5.  Maybe just delete that one.
-
-(in-theory (enable make-state thread-table heap class-table))
-(in-theory (enable make-frame pc locals stack
-                   ;program
-                   sync-flg cur-class))
-
 (defthm good-threads-new-thread
   (implies (and (integerp j)
                 (good-threads j tt c m mc nil)
@@ -1729,20 +1690,20 @@ Sun Jul 15 14:17:26 2001
            (good-threads j
                          (bind (+ j (len heap))
                                (list
-                                `((0
-                                   ((REF ,(+ delta (len heap))))
-                                   NIL
-                                   ,*Job.run*
-                                   UNLOCKED
-                                   "Job"))
-                                'UNSCHEDULED
-                                (list 'REF (+ delta (len heap))))
+;                              (make-thread
+                                 (list
+                                   (make-frame
+                                     0
+                                     `((REF ,(+ delta (len heap))))
+                                     NIL
+                                     *Job.run*
+                                     'UNLOCKED
+                                     "Job"))
+                                  'UNSCHEDULED
+                                  (list 'REF (+ delta (len heap))))
                                tt)
                          c m mc t))
-  :hints (("Goal" :in-theory (disable good-incr-frame
-                                      ;good-run-frame
-                                      ))))
-
+  :hints (("Goal" :in-theory (disable good-incr-frame))))
 
 (defthm rreftothread-good-threads
   (implies (and (good-threads j tt c m mc flg1)
@@ -1774,16 +1735,17 @@ Sun Jul 15 14:17:26 2001
 ; the length of the thread table.
 
 (defthm len-thread-table-len-heap
-  (implies (and (good-threads 1 (cdar s) c m mc flg1)
-                (good-objrefs (cdar s)
-                              (CDDDDR (CDDDDR (CDADR S)))
+  (implies (and (good-threads 1 (cdr (thread-table s)) c m mc flg1)
+                (good-objrefs (cdr (thread-table s))
+                              (CDDDDR (CDDDDR (CDR (heap S))))
                               flg2))
-           (equal (len (cdar s))
-                  (len (CDDDDR (CDDDDR (CDADR S))))))
-  :hints (("Goal" :use ((:instance len-thread-table-len-heap-gen
+           (equal (len (cdr (thread-table s)))
+                  (len (CDDDDR (CDDDDR (CDR (heap S)))))))
+  :hints (("Goal" :in-theory (enable thread-table heap)
+                  :use ((:instance len-thread-table-len-heap-gen
                                    (j 1)
-                                   (tt (cdar s))
-                                   (heap (CDDDDR (CDDDDR (CDADR S)))))))))
+                                   (tt (cdr (thread-table s)))
+                                   (heap (CDDDDR (CDDDDR (CDR (heap S))))))))))
 
 (defthm good-objrefs-new-schedule
   (implies (and (good-threads j tt c m mc flg1)
@@ -1984,11 +1946,11 @@ Sun Jul 15 14:17:26 2001
 ; Free-var below prevents frequent tries.
 
 (defthm assoc-equal-non-nil
-  (implies (and (equal (car (assoc-equal free-th (cdar s))) th)
+  (implies (and (equal (car (assoc-equal free-th (cdr (thread-table s)))) th)
                 (syntaxp (equal free-th th))
                 (equal free-th th)
                 (integerp th))
-           (assoc-equal th (cdar s))))
+           (assoc-equal th (cdr (thread-table s)))))
 
 (defthm lookup-methodref-incr
   (implies (and (equal ct (class-table *a0*))

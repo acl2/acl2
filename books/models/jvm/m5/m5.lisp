@@ -9,6 +9,8 @@
 ; $Id: m5.lisp,v 1.1 2001/07/10 17:37:06 george Exp $
 
 (in-package "M5")
+(include-book "rtl/rel11/lib/excps" :dir :system)
+
 
 ; -----------------------------------------------------------------------------
 ; Utilities
@@ -114,9 +116,6 @@
 ;; might be a little different with respect to NaNs. The M5 model chooses some
 ;; concrete treatment of NaN.
 
-;; We shall include "rtl/rel11/lib/excps" when ACL2(r) can certify it.
-(include-book "rtl/rel11/support/excps" :dir :system)
-
 (defconst *mxcsr*
   (rtl::set-flag (rtl::imsk)
    (rtl::set-flag (rtl::dmsk)
@@ -217,6 +216,13 @@
 (defun thread-table (s) (nth 0 s))
 (defun heap        (s) (nth 1 s))
 (defun class-table (s) (nth 2 s))
+
+(defthm states
+  (and (equal (thread-table (make-state tt h c)) tt)
+       (equal (heap (make-state tt h c)) h)
+       (equal (class-table (make-state tt h c)) c)))
+
+(in-theory (disable make-state thread-table heap class-table))
 
 (defun make-thread (call-stack status rref)
   (list call-stack status rref))
@@ -519,6 +525,18 @@
 (defun sync-flg (frame) (nth 4 frame))
 ; The class in which the current method is defined is the current class (See JLS 2.6).
 (defun cur-class (frame) (nth 5 frame))
+
+(defthm frames
+  (and
+   (equal (pc (make-frame pc l s prog sync-flg cur-class)) pc)
+   (equal (locals (make-frame pc l s prog sync-flg cur-class)) l)
+   (equal (stack (make-frame pc l s prog sync-flg cur-class)) s)
+   (equal (program (make-frame pc l s prog sync-flg cur-class)) prog)
+   (equal (sync-flg (make-frame pc l s prog sync-flg cur-class)) sync-flg)
+   (equal (cur-class (make-frame pc l s prog sync-flg cur-class)) cur-class)))
+
+(in-theory
+ (disable make-frame pc locals stack program sync-flg cur-class))
 
 ; -----------------------------------------------------------------------------
 ; Method Declarations
@@ -2459,10 +2477,12 @@
     (cond
      ((method-isNative? method-decl)
       (cond ((and (equal class-name "java/lang/Thread")
-                  (equal method-name-and-type "start:()V"))
+                  (equal method-name-and-type "start:()V")
+                  tThread)
              (modify tThread s1 :status 'SCHEDULED))
             ((and (equal class-name "java/lang/Thread")
-                  (equal method-name-and-type "stop:()V"))
+                  (equal method-name-and-type "stop:()V")
+                  tThread)
              (modify tThread s1
                      :status 'UNSCHEDULED))
             (t s)))

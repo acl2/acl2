@@ -99,31 +99,6 @@
 
 ; Structures
 
-(defthm states
-  (and (equal (thread-table (make-state tt h c)) tt)
-       (equal (heap (make-state tt h c)) h)
-       (equal (class-table (make-state tt h c)) c)))
-
-(in-theory (disable make-state thread-table heap class-table))
-
-(defthm frames
-  (and
-   (equal (pc (make-frame pc l s prog sync-flg cur-class))
-          pc)
-   (equal (locals (make-frame pc l s prog sync-flg cur-class))
-          l)
-   (equal (stack (make-frame pc l s prog sync-flg cur-class))
-          s)
-   (equal (program (make-frame pc l s prog sync-flg cur-class))
-          prog)
-   (equal (sync-flg (make-frame pc l s prog sync-flg cur-class))
-          sync-flg)
-   (equal (cur-class (make-frame pc l s prog sync-flg cur-class))
-          cur-class)))
-
-(in-theory
- (disable make-frame pc locals stack program sync-flg cur-class))
-
 (defthm stacks
   (and (equal (top (push x s)) x)
        (equal (pop (push x s)) s)))
