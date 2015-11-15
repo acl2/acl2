@@ -120,7 +120,7 @@ class IDemo {
              '((bipush 8)
                (invokestatic "IDemo" "ifact:(I)I" 1)
                (pop)
-               (return)
+               (return))
              'unlocked
              "IDemo")
             nil)
@@ -219,7 +219,7 @@ class IDemo {
        (GOTO -13)
        (ILOAD\_1)
        (IRETURN))
-      ("main:([Ljava/lang/String;)V" ((ARRAY (CLASS "java.lang.String"))) NIL
+      ("main:([Ljava/lang/String;)V" NIL
        (BIPUSH 8)
        (INVOKESTATIC "IDemo" "ifact:(I)I" 1)
        (POP)
