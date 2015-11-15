@@ -176,22 +176,163 @@
     (indexed-alistp (thread-table (step th s))))
   :enable (|indexed-alistp bind when bound?|
            |indexed-alistp bind rrefToThread|)
-  :disable (bound? binding make-thread field-long-or-double
+  :disable (bound? binding
             bits2fp fp2fp fp2int
             fpadd fpcmp fpdiv fpmul fpneg fpsqrt fprem fpsub
-            shl shr iushr lushr
-            truncate abs
-            arg1 arg2 arg3
+            shl shr iushr lushr truncate abs
             next-inst bind-formals)
   :cases ((bound? th (thread-table s)))))
 
+; Moved from apprentice.lisp
+
+(defthm len-bind-weak
+  (<= (len a) (len (bind x v a)))
+  :rule-classes :linear)
+
+(include-book "ordinals/e0-ordinal" :dir :system)
+
+(encapsulate
+ nil
+ (local
+  (defun makemultiarray-fn (fn car-counts cdr-counts s ac)
+    (declare
+     (xargs :measure
+            (if (equal fn 'makemultiarray2)
+                (cons (len (cons car-counts cdr-counts))
+                      (natural-sum (cons car-counts cdr-counts)))
+              (cons (+ 1 (len cdr-counts))
+                    (natural-sum cdr-counts)))
+            :well-founded-relation e0-ord-<))
+
+    (if (equal fn 'makemultiarray2)
+        (if
+         (zp car-counts)
+         (mv (heap s) ac)
+         (mv-let
+          (new-addr new-heap)
+          (makemultiarray-fn 'makemultiarray car-counts cdr-counts s ac)
+          (makemultiarray-fn 'makemultiarray2
+                             (- car-counts 1)
+                             cdr-counts
+                             (make-state (thread-table s)
+                                         new-heap (class-table s))
+                             (cons (list 'ref new-addr) ac))))
+      (if (<= (len cdr-counts) 1)
+          (mv (len (heap s))
+              (bind (len (heap s))
+                    (makearray 't_ref
+                               (car cdr-counts)
+                               (init-array 't_ref (car cdr-counts))
+                               (class-table s))
+                    (heap s)))
+          (mv-let (heap-prime lst-of-refs)
+                  (makemultiarray-fn 'makemultiarray2
+                                     (car cdr-counts)
+                                     (cdr cdr-counts)
+                                     s nil)
+                  (let* ((obj (makearray 't_ref
+                                         (car cdr-counts)
+                                         lst-of-refs (class-table s)))
+                         (new-addr (len heap-prime))
+                         (new-heap (bind new-addr obj heap-prime)))
+                    (mv new-addr new-heap)))))))
+
+ (local
+  (defthm mv-nth-1
+    (equal (mv-nth 1 x) (cadr x))))
+
+ (local
+  (defthm len-makemultiarray-fn
+    (<= (len (heap s))
+        (if (equal fn 'makemultiarray2)
+            (len (car (makemultiarray-fn fn car-counts cdr-counts s ac)))
+          (len (cadr (makemultiarray-fn fn car-counts cdr-counts s ac)))))
+    :rule-classes nil))
+
+ (local
+  (defthm makemultiarray-fn-is-makemultiarray
+    (equal (makemultiarray-fn fn car-counts cdr-counts s ac)
+           (if (equal fn 'makemultiarray2)
+               (makemultiarray2 car-counts cdr-counts s ac)
+             (makemultiarray cdr-counts s)))))
+
+ (defthm makemultiarray-len
+   (and (<= (len (heap s))
+            (len (car (makemultiarray2 car-counts cdr-counts s ac))))
+        (<= (len (heap s))
+            (len (mv-nth 1 (makemultiarray cdr-counts s)))))
+   :rule-classes :linear
+   :hints (("Goal" :use ((:instance len-makemultiarray-fn
+                                    (fn 'makemultiarray2))
+                         (:instance len-makemultiarray-fn
+                                    (fn 'makemultiarray))))))
+
+ (local
+  (defthm indexed-alistp-makemultiarray-fn
+    (implies
+      (indexed-alistp (heap s))
+      (if (equal fn 'makemultiarray2)
+          (indexed-alistp (car (makemultiarray-fn fn car-counts cdr-counts s ac)))
+          (indexed-alistp (cadr (makemultiarray-fn fn car-counts cdr-counts s ac)))))
+    :rule-classes nil))
+
+  (defthm makemultiarray-indexed-alistp
+    (implies
+      (indexed-alistp (heap s))
+      (indexed-alistp (mv-nth 1 (makemultiarray cdr-counts s))))
+   :hints (("Goal" :use ((:instance indexed-alistp-makemultiarray-fn
+                                    (fn 'makemultiarray2))
+                         (:instance indexed-alistp-makemultiarray-fn
+                                    (fn 'makemultiarray)))))))
+
+(local (acl2::defrule |indexed-alistp heap 3|
+  (implies
+    (and
+      (indexed-alistp (thread-table s))
+      (indexed-alistp (heap s)))
+    (indexed-alistp (heap (step th s))))
+  :prep-lemmas (
+    (acl2::defrule lemma1
+      (implies
+        (integerp th)
+        (not (objectUnlockable? nil th)))))
+  :disable (bound? binding
+            objectUnlockable?
+            next-inst bind-formals)
+  :cases ((equal (car (next-inst th s)) 'monitorexit))
+  :hints (
+    ("subgoal 1" :cases ((deref (top (stack (top-frame th s))) (heap s))))
+    ("subgoal 1.2" :cases ((integerp th)))
+    ("subgoal 1.2.2" :in-theory (enable |bound? in indexed-alistp|)))))
+
 (defund wf-state (s)
   (and
-    (indexed-alistp (thread-table s))))
+    (indexed-alistp (thread-table s))
+    (indexed-alistp (heap s))))
 
-(acl2::defrule |wf-state invariant|
+(acl2::defruled |wf-state invariant|
   (implies
     (wf-state s)
     (wf-state (step th s)))
   :enable wf-state
   :disable step)
+
+(acl2::defrule thread-table-len-grows-monotonically
+  (<= (len (heap s))
+      (len (heap (step th s))))
+  :disable (bound? binding
+            bits2fp fp2fp fp2int
+            fpadd fpcmp fpdiv fpmul fpneg fpsqrt fprem fpsub
+            shl shr iushr lushr truncate abs
+            next-inst bind-formals)
+  :rule-classes ())
+
+(acl2::defrule heap-len-grows-monotonically
+  (<= (len (heap s))
+      (len (heap (step th s))))
+  :disable (bound? binding
+            bits2fp fp2fp fp2int
+            fpadd fpcmp fpdiv fpmul fpneg fpsqrt fprem fpsub
+            shl shr iushr lushr truncate abs
+            next-inst bind-formals)
+  :rule-classes ())

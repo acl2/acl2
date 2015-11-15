@@ -502,8 +502,9 @@
   (let* ((obj-fields (binding "java/lang/Object" instance))
          (monitor (binding "<monitor>" obj-fields))
          (mcount (binding "<mcount>" obj-fields)))
-    (or (zp mcount)
-        (equal monitor th))))
+    (and instance
+         (or (zp mcount)
+             (equal monitor th)))))
 
 (defun objectUnLockable? (instance th)
   (let* ((obj-fields (binding "java/lang/Object" instance))
@@ -681,13 +682,13 @@
   (binding field-name-and-type
            (binding class-name instance)))
 
-(defun field-initial-value (field-name-and-type)
+(defund field-initial-value (field-name-and-type)
   (if (or (search ":L" field-name-and-type)  ; object instance
           (search ":[" field-name-and-type)) ; array instance
       '(REF -1)
     0))
 
-(defun field-long-or-double (field-name-and-type)
+(defund field-long-or-double (field-name-and-type)
   (or (search ":J" field-name-and-type)
       (search ":D" field-name-and-type)))
 
@@ -1065,6 +1066,118 @@
     (SWAP                       1)
     (t 1)))
 
+; -----------------------------------------------------------------------------
+; Instruction helpers
+
+(defun set-instance-field (class-name field-name-and-type value instance)
+  (bind class-name
+        (bind field-name-and-type value
+              (binding class-name instance))
+        instance))
+
+(defun bind-formals (n stack)
+  (if (zp n)
+      nil
+    (cons (top stack)
+          (bind-formals (- n 1) (pop stack)))))
+
+; Retirns a cons pair (class . method) if method is found or nil otherwise
+(defun lookup-methodref-in-superclasses (name-and-type classes class-table)
+  (cond ((endp classes) nil)
+        (t (let* ((class-name (car classes))
+                  (class-decl (bound? class-name class-table))
+                  (method (bound? name-and-type (class-decl-methods class-decl))))
+             (if method
+                 (cons class-name method)
+                (lookup-methodref-in-superclasses name-and-type (cdr classes)
+                                                 class-table))))))
+
+(defun lookup-methodref (name-and-type class-name class-table)
+  (lookup-methodref-in-superclasses name-and-type
+                                    (cons class-name
+                                          (class-decl-superclasses
+                                           (bound? class-name class-table)))
+                                    class-table))
+
+(defun lookup-method (name-and-type class-name class-table)
+  (cdr (lookup-methodref name-and-type class-name class-table)))
+
+(defun invoke-instance-method (nformals class-name method-name-and-type method-decl
+          inst-length th s)
+  (let* ((obj-ref (top (popn nformals (stack (top-frame th s)))))
+         (instance (deref obj-ref (heap s)))
+         (prog (method-program method-decl))
+         (s1 (modify th s
+                     :pc (+ inst-length (pc (top-frame th s)))
+                     :stack (popn (+ nformals 1)
+                                  (stack (top-frame th s)))))
+         (tThread (rrefToThread obj-ref (thread-table s))))
+    (cond
+     ((method-isNative? method-decl)
+      (cond ((and (equal class-name "java/lang/Thread")
+                  (equal method-name-and-type "start:()V")
+                  tThread)
+             (modify tThread s1 :status 'SCHEDULED))
+            ((and (equal class-name "java/lang/Thread")
+                  (equal method-name-and-type "stop:()V")
+                  tThread)
+             (modify tThread s1
+                     :status 'UNSCHEDULED))
+            (t s)))
+     ((and (method-sync method-decl)
+           (objectLockable? instance th))
+      (modify th s1
+              :call-stack
+              (push (make-frame 0
+                                (reverse
+                                 (bind-formals (+ nformals 1)
+                                               (stack (top-frame th s))))
+                                nil
+                                prog
+                                'LOCKED
+                                class-name)
+                    (call-stack th s1))
+              :heap (lock-object th obj-ref (heap s))))
+     ((method-sync method-decl)
+      s)
+     (t
+      (modify th s1
+              :call-stack
+              (push (make-frame 0
+                                (reverse
+                                 (bind-formals (+ nformals 1)
+                                               (stack (top-frame th s))))
+                                nil
+                                prog
+                                'UNLOCKED
+                                class-name)
+                    (call-stack th s1)))))))
+
+(defun return-stk (ret-stack th s)
+  (let* ((cs (call-stack th s))
+         (top-frame (top cs))
+         (ret-frame (top (pop cs)))
+         (obj-ref (nth 0 (locals top-frame)))
+         (sync-status (sync-flg top-frame))
+         (class (cur-class top-frame))
+         (ret-ref (class-decl-heapref (bound? class (class-table s))))
+         (new-heap (cond ((and (equal sync-status 'LOCKED)
+                               (deref obj-ref (heap s)))
+                          (unlock-object th obj-ref (heap s)))
+                         ((and (equal sync-status 'S_LOCKED)
+                               (deref ret-ref (heap s)))
+                          (unlock-object th ret-ref (heap s)))
+                         (t (heap s)))))
+    (modify th s
+            :call-stack (push (make-frame
+                                (pc ret-frame)
+                                (locals ret-frame)
+                                ret-stack
+                                (program ret-frame)
+                                (sync-flg ret-frame)
+                                (cur-class ret-frame))
+                               (pop (pop cs)))
+            :heap new-heap)))
 
 ; =============================================================================
 ; JVM INSTRUCTIONS BEGIN HERE
@@ -1088,16 +1201,16 @@
 (defun execute-AASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array (class-table s))
+                            (heap s)))
+       s)))
 
 ; -----------------------------------------------------------------------------
 ; (ACONST_NULL) Instruction
@@ -1152,21 +1265,9 @@
 
 (defun execute-ARETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (stack (top-frame th s))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push val (stack (top-frame th s1))))))
+  (let* ((cs (call-stack th s))
+         (val (top (stack (top cs)))))
+    (return-stk (push val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (ARRAYLENGTH) Instruction
@@ -1225,19 +1326,19 @@
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
          (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s)))
          (element (if (equal (array-type (deref arrayref (heap s)))
                              'T_BYTE)
                       (byte-fix value)
                       (u-fix value 1))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at element
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at element index array (class-table s))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (BIPUSH const) Instruction
@@ -1266,16 +1367,16 @@
 (defun execute-CASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at (char-fix value)
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at (char-fix value) index array (class-table s))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (CHECKCAST) Instruction - check whether object is of given type
@@ -1351,16 +1452,16 @@
 (defun execute-DASTORE (inst th s)
   (let* ((value (top (pop (stack (top-frame th s)))))
          (index (top (pop (pop (stack (top-frame th s))))))
-         (arrayref (top (popn 3 (stack (top-frame th s))))))
+         (arrayref (top (popn 3 (stack (top-frame th s)))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (popn 4 (stack (top-frame th s)))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array (class-table s))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (DCMPG) Instruction - compare double
@@ -1478,21 +1579,9 @@
 
 (defun execute-DRETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (pop (stack (top-frame th s)))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push 0 (push val (stack (top-frame th s1)))))))
+  (let* ((cs (call-stack th s))
+         (val (top (pop (stack (top cs))))))
+    (return-stk (push 0 (push val (stack (top (pop cs))))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (DSTORE idx) Instruction - store double into local variable
@@ -1676,16 +1765,16 @@
 (defun execute-FASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array (class-table s))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (FCMPG) Instruction - compare float
@@ -1803,21 +1892,9 @@
 
 (defun execute-FRETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (stack (top-frame th s))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push val (stack (top-frame th s1))))))
+  (let* ((cs (call-stack th s))
+         (val (top (stack (top cs)))))
+    (return-stk (push val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (FSTORE idx) Instruction - store float into local variable
@@ -2004,16 +2081,16 @@
 (defun execute-IASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array (class-table s))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (ICONST_X) Instruction - push a certain constant onto the stack
@@ -2306,21 +2383,9 @@
 
 (defun execute-IRETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (stack (top-frame th s))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push val (stack (top-frame th s1))))))
+  (let* ((cs (call-stack th s))
+         (val (top (stack (top cs)))))
+    (return-stk (push val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (ISHL) Instruction
@@ -2434,87 +2499,6 @@
 ; -----------------------------------------------------------------------------
 ; (INVOKESPECIAL "class" "name" n) Instruction
 
-(defun class-name-of-ref (ref heap)
-  (car (car (deref ref heap))))
-
-(defun bind-formals (n stack)
-  (if (zp n)
-      nil
-    (cons (top stack)
-          (bind-formals (- n 1) (pop stack)))))
-
-; Retirns a cons pair (class . method) if method is found or nil otherwise
-(defun lookup-methodref-in-superclasses (name-and-type classes class-table)
-  (cond ((endp classes) nil)
-        (t (let* ((class-name (car classes))
-                  (class-decl (bound? class-name class-table))
-                  (method (bound? name-and-type (class-decl-methods class-decl))))
-             (if method
-                 (cons class-name method)
-                (lookup-methodref-in-superclasses name-and-type (cdr classes)
-                                                 class-table))))))
-
-(defun lookup-methodref (name-and-type class-name class-table)
-  (lookup-methodref-in-superclasses name-and-type
-                                    (cons class-name
-                                          (class-decl-superclasses
-                                           (bound? class-name class-table)))
-                                    class-table))
-
-(defun lookup-method (name-and-type class-name class-table)
-  (cdr (lookup-methodref name-and-type class-name class-table)))
-
-(defun invoke-instance-method (nformals class-name method-name-and-type method-decl
-          inst-length th s)
-  (let* ((obj-ref (top (popn nformals (stack (top-frame th s)))))
-         (instance (deref obj-ref (heap s)))
-         (prog (method-program method-decl))
-         (s1 (modify th s
-                     :pc (+ inst-length (pc (top-frame th s)))
-                     :stack (popn (+ nformals 1)
-                                  (stack (top-frame th s)))))
-         (tThread (rrefToThread obj-ref (thread-table s))))
-    (cond
-     ((method-isNative? method-decl)
-      (cond ((and (equal class-name "java/lang/Thread")
-                  (equal method-name-and-type "start:()V")
-                  tThread)
-             (modify tThread s1 :status 'SCHEDULED))
-            ((and (equal class-name "java/lang/Thread")
-                  (equal method-name-and-type "stop:()V")
-                  tThread)
-             (modify tThread s1
-                     :status 'UNSCHEDULED))
-            (t s)))
-     ((and (method-sync method-decl)
-           (objectLockable? instance th))
-      (modify th s1
-              :call-stack
-              (push (make-frame 0
-                                (reverse
-                                 (bind-formals (+ nformals 1)
-                                               (stack (top-frame th s))))
-                                nil
-                                prog
-                                'LOCKED
-                                class-name)
-                    (call-stack th s1))
-              :heap (lock-object th obj-ref (heap s))))
-     ((method-sync method-decl)
-      s)
-     (t
-      (modify th s1
-              :call-stack
-              (push (make-frame 0
-                                (reverse
-                                 (bind-formals (+ nformals 1)
-                                               (stack (top-frame th s))))
-                                nil
-                                prog
-                                'UNLOCKED
-                                class-name)
-                    (call-stack th s1)))))))
-
 (defun execute-INVOKESPECIAL (inst th s)
   (let* ((method-name-and-type (arg2 inst))
          (nformals (arg3 inst))
@@ -2606,6 +2590,9 @@
 
 ; -----------------------------------------------------------------------------
 ; (INVOKEVIRTUAL "class" "name" n) Instruction
+
+(defun class-name-of-ref (ref heap)
+  (car (car (deref ref heap))))
 
 (defun execute-INVOKEVIRTUAL (inst th s)
   (let* ((method-name-and-type (arg2 inst))
@@ -2699,16 +2686,16 @@
 (defun execute-LASTORE (inst th s)
   (let* ((value (top (pop (stack (top-frame th s)))))
          (index (top (pop (pop (stack (top-frame th s))))))
-         (arrayref (top (popn 3 (stack (top-frame th s))))))
+         (arrayref (top (popn 3 (stack (top-frame th s)))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (popn 4 (stack (top-frame th s)))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array (class-table s))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (LCMP) Instruction - compare two longs
@@ -2739,12 +2726,6 @@
 
 ; -----------------------------------------------------------------------------
 ; (LDC) Instruction
-
-(defun set-instance-field (class-name field-name-and-type value instance)
-  (bind class-name
-        (bind field-name-and-type value
-              (binding class-name instance))
-        instance))
 
 (defun execute-LDC (inst th s)
   (let* ((class (cur-class (top-frame th s)))
@@ -2858,21 +2839,9 @@
 
 (defun execute-LRETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (pop (stack (top-frame th s)))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push 0 (push val (stack (top-frame th s1)))))))
+  (let* ((cs (call-stack th s))
+         (val (top (pop (stack (top cs))))))
+    (return-stk (push 0 (push val (stack (top (pop cs))))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (LSHL) Instruction
@@ -3105,6 +3074,7 @@
          (address (cadr (if long-flag
                             (top (popn 2 (stack (top-frame th s))))
                             (top (pop (stack (top-frame th s))))))))
+    (if instance
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
@@ -3115,7 +3085,8 @@
                                                 field-name-and-type
                                                 value
                                                 instance)
-                            (heap s)))))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (PUTSTATIC "class" "field" ?long-flag?) Instruction
@@ -3130,6 +3101,7 @@
                     (top (pop (stack (top-frame th s))))
                     (top (stack (top-frame th s)))))
          (instance (deref class-ref (heap s))))
+    (if instance
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
@@ -3140,7 +3112,8 @@
                                                 field-name-and-type
                                                 value
                                                 instance)
-                            (heap s)))))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (RET) Instruction
@@ -3155,18 +3128,8 @@
 
 (defun execute-RETURN (inst th s)
   (declare (ignore inst))
-  (let* ((obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s)))))
-    (modify th s
-            :call-stack (pop (call-stack th s))
-            :heap new-heap)))
+  (let ((cs (call-stack th s)))
+    (return-stk (stack (top (pop cs))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (SALOAD) Instruction
@@ -3186,16 +3149,16 @@
 (defun execute-SASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at (short-fix value)
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at (short-fix value) index array (class-table s))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (SIPUSH const) Instruction
