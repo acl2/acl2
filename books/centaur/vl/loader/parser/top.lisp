@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "../descriptions")
-(include-book "error")
 (include-book "modules")
 (include-book "udps")
 (include-book "interfaces")
@@ -275,10 +274,21 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
         (mv okp val pstate tokstream))
        (tokstream (vl-tokstream-update-tokens tokens))
        (tokstream (vl-tokstream-update-pstate pstate))
-       ((mv err val tokstream)
+       ((mv err items tokstream)
         (vl-parse-source-text))
-       (pstate (vl-tokstream->pstate))
        ((when err)
-        (vl-report-parse-error err tokens)
-        (mv nil nil pstate tokstream)))
-    (mv t val pstate tokstream)))
+        ;; Warnings are a little subtle here.  Note that above we installed the
+        ;; initial pstate into the tokstream, so any errors that previously
+        ;; were in the parse state are still there.  Also any minor warnings
+        ;; that we wanted to issue during the main act of parsing have already
+        ;; been added.  However, if vl-parse-source-text failed with a
+        ;; vl-parse-error, then the final err it produced has NOT yet been
+        ;; added to the parse state (because in general we don't want to add
+        ;; parse errors as soon as they're encountered, due to backtracking).
+        ;; So add it now.
+        (b* ((tokstream (vl-tokstream-add-warning err))
+             (pstate (vl-tokstream->pstate)))
+          (mv nil nil pstate tokstream)))
+       ;; Else, no parse error and everything is fine.
+       (pstate (vl-tokstream->pstate)))
+    (mv t items pstate tokstream)))
