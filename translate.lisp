@@ -1177,12 +1177,25 @@
                      (untranslate-preprocess-fn ,wrld)
                      ,wrld))
 
+(defun live-state-symbolp (x)
+  (declare (xargs :guard t))
+  (and (symbolp x)
+       (equal (symbol-package-name x)
+              "ACL2_INVISIBLE")
+       (equal (symbol-name x)
+              "The Live State Itself")))
+
 (defun apply-user-stobj-alist-or-kwote (user-stobj-alist lst acc)
 
 ; This function accumulates into acc (eventually reversing the accumulation)
-; the result of replacing each element of lst either with its reverse lookup in
-; user-stobj-alist, if it is a bad-atom (i.e., a stobj -- which it is!), else
-; with the result of quoting that element.
+; the result of replacing each element of lst with:
+
+; - state, if it is *the-live-state*;
+
+; - with its reverse lookup in user-stobj-alist, if it is
+;   a bad-atom (i.e., a stobj); else,
+
+; - with the result of quoting that element.
 
 ; We considered using rassoc-eq in place of rassoc-equal below, but that would
 ; prevent guard verification down the road (unless we change to guard of eq to
@@ -1194,7 +1207,9 @@
         (t (apply-user-stobj-alist-or-kwote
             user-stobj-alist
             (cdr lst)
-            (cons (cond ((bad-atom (car lst))
+            (cons (cond ((live-state-symbolp (car lst))
+			 'state)
+			((bad-atom (car lst))
                          (let ((pair (rassoc-equal (car lst)
                                                    user-stobj-alist)))
                            (cond (pair (car pair))

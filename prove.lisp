@@ -5288,10 +5288,26 @@
             (mv@par step-limit signal clauses ttree new-pspv state)))))
    (cond
     (erp ; from out-of-time or clause-processor failure; treat as 'error signal
-     (mv-let@par (erp val state)
+     (mv-let@par (erp2 val state)
                  (er@par soft ctx "~@0" erp)
-                 (declare (ignore erp val))
-                 (mv@par step-limit 'error nil nil nil nil state)))
+                 (declare (ignore erp2 val))
+                 (pprogn@par
+                  (assert$
+                   (null ttree)
+                   (mv-let@par
+                    (erp3 val state)
+                    (accumulate-ttree-and-step-limit-into-state@par
+                     (add-to-tag-tree! 'abort-cause
+                                       (if (equal erp *interrupt-string*)
+                                           'interrupt
+                                         'time-limit-reached)
+                                       nil)
+                     step-limit
+                     state)
+                    (declare (ignore val))
+                    (assert$ (null erp3)
+                             state)))
+                  (mv@par step-limit 'error nil nil nil nil state))))
     (t
      (pprogn@par ; account for bddnote in case we do not have a hit
       (cond ((and (eq processor 'apply-top-hints-clause)
@@ -9038,6 +9054,7 @@
   (let ((chan (proofs-co state))
         (acc-ttree (f-get-global 'accumulated-ttree state)))
     (pprogn
+     (clear-event-data state)
      (io? summary nil state (chan acc-ttree)
           (pprogn
            (newline chan state)

@@ -6265,6 +6265,9 @@
   "      .............................~%")
 
 (defun show-accumulated-persistence-phrase0 (entry key)
+
+; Warning: Keep this in sync with show-accumulated-persistence-list.
+
   (let* ((xrune (access accp-entry entry :xrune))
          (n-s (access accp-entry entry :n-s))
          (n-f (access accp-entry entry :n-f))
@@ -6539,6 +6542,30 @@
                                       t)
                          (1- n))))
 
+(defun show-accumulated-persistence-list (alist acc)
+
+; Alist has element of the form (x . accp-entry), where x is the key upon which
+; we sorted.
+
+; Warning: Keep this in sync with show-accumulated-persistence-phrase0 (but
+; note that the recursion is based on that of
+; show-accumulated-persistence-phrase1).
+
+  (cond ((endp alist) acc)
+        (t
+         (let* ((entry (cdar alist))
+                (xrune (access accp-entry entry :xrune))
+                (n-s (access accp-entry entry :n-s))
+                (n-f (access accp-entry entry :n-f))
+                (n (+ n-s n-f))
+                (ap-s (access accp-entry entry :ap-s))
+                (ap-f (access accp-entry entry :ap-f))
+                (ap (+ ap-s ap-f)))
+           (show-accumulated-persistence-list
+            (cdr alist)
+            (cons (list ap n (prettyify-xrune xrune))
+                  acc))))))
+
 (defun show-accumulated-persistence-phrase (key/display accp-info)
 
 ; Alist is the accumulated totals alist from the wormhole data field of
@@ -6570,26 +6597,35 @@
                         (sort-xrune-alist-by-rune (car (last totals))
                                                   display)
                         mergep)))
-               (main-phrase
-                (list "" "~@*" "~@*" "~@*"
-                      (show-accumulated-persistence-phrase1
-                       key
-                       (if (eq key :useless)
-                           (show-accumulated-persistence-remove-useless alist
-                                                                        nil)
-                         alist)
-                       mergep
-                       nil))))
+               (alist (if (eq key :useless)
+                          (show-accumulated-persistence-remove-useless alist
+                                                                       nil)
+                        alist))
+               (header-for-results
+                (if (eq display :list)
+                    "List of entries (:frames :tries rune):~|"
+                  "   :frames   :tries    :ratio  rune"))
+               (msg-for-results
+                (if (eq display :list)
+                    (msg "~|~x0~|"
+                         (show-accumulated-persistence-list alist nil))
+                  (msg "~*0~@1"
+                       (list "" "~@*" "~@*" "~@*"
+                             (show-accumulated-persistence-phrase1
+                              key
+                              alist
+                              mergep
+                              nil))
+                       *accp-major-separator*))))
           (cond ((null (cdr totals))
-                 (msg "Accumulated Persistence~@0~|~%   :frames   :tries    ~
-                       :ratio  rune~%~*1~@2"
+                 (msg "Accumulated Persistence~@0~|~%~@1~%~@2"
                       (if xrune-stack
                           "" ; we merged, so don't know just what was useful
                         (msg " (~x0 :tries useful, ~x1 :tries not useful)"
                              (access accp-info accp-info :cnt-s)
                              (access accp-info accp-info :cnt-f)))
-                      main-phrase
-                      *accp-major-separator*))
+                      header-for-results
+                      msg-for-results))
                 (t
                  (msg "Accumulated Persistence~|~%~
                        ***************************************~|~
@@ -6598,7 +6634,7 @@
                        *** Use :frames-a or :tries-a to get more complete ~
                            totals.~|~
                        ***************************************~|~
-                       ~%   :frames   :tries    :ratio  rune~%~*1~@2"
+                       ~%~@1~%~@2"
                       (- (+ (access accp-info accp-info
                                     :cnt-s)
                             (access accp-info accp-info
@@ -6608,8 +6644,8 @@
                                                :stack-s)))
                             (car (last (access accp-info accp-info
                                                :stack-f)))))
-                      main-phrase
-                      *accp-major-separator*))))))))
+                      header-for-results
+                      msg-for-results))))))))
 
 (defmacro show-accumulated-persistence (&optional (sortkey ':frames)
                                                   (display 't))
@@ -6621,7 +6657,7 @@
                                     :useless
                                     :runes))
                        (member-eq display
-                                  '(t nil :raw :merge)))))
+                                  '(t nil :raw :merge :list)))))
 
 ; This function engages is in a little song-and-dance about the entry code for
 ; the accumulated-persistence wormhole.  If the user has requested that we

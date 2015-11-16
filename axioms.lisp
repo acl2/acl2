@@ -23068,6 +23068,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (cond (temp (mv step-limit temp nil nil nil nil))
                           (t (mv step-limit nil x1 x2 x3 x4)))))))
 
+(defconst *interrupt-string*
+  "Aborting due to an interrupt.")
+
 (defun time-limit5-reached-p (msg)
 
 ; Where should we call this function?  We want to strike a balance between
@@ -23105,7 +23108,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (< *acl2-time-limit* (get-internal-time)))
     (setq *next-acl2-oracle-value*
           (if (eql *acl2-time-limit* 0)
-              "Aborting due to an interrupt."
+              *interrupt-string*
             msg))
     (throw 'time-limit5-tag
            (mv (f-get-global 'last-step-limit *the-live-state*)
