@@ -328,7 +328,10 @@ being kept.</p>"
        ;; encountered, e.g., as a barbaric way to override problematic
        ;; definitions.
        (warning (make-vl-warning
-                 :type :vl-multidef-mod
+                 ;; Formerly this was :vl-multidef-mod, but that's not
+                 ;; a good warning name when it's something other than a
+                 ;; module.
+                 :type :vl-warn-multidef
                  :msg "~m0 is defined multiple times.  Keeping the old ~
                        definition (~a1) and ignoring the new one (~a2)."
                  :args (list newname1
@@ -514,18 +517,18 @@ descriptions.</li>
        ((unless successp)
         ;; In practice this should be rare.  See vl-parse-module-declaration:
         ;; We work hard to make sure that parse errors that occur within a
-        ;; module only kill that particular module.
-
-        ;; At any rate, following our convention, we want to add nothing but
-        ;; warnings to the parse state.  That means unwinding and restoring
-        ;; the pstate-backup that we had.
-        (b* ((-      (vl-parsestate-free pstate))
+        ;; module only kill that particular module.  But, in case of top level
+        ;; errors, we might still run into problems.  Following our convention,
+        ;; we want to add nothing but warnings to the parse state.  That means
+        ;; unwinding and restoring the pstate-backup that we had.
+        (b* ((new-warnings (vl-parsestate->warnings pstate))
+             (-      (vl-parsestate-free pstate))
              (pstate (vl-parsestate-restore pstate-backup))
              (w      (make-vl-warning :type :vl-parse-failed
                                       :msg "Parsing failed for ~s0."
                                       :args (list filename)
                                       :fn __function__))
-             (pstate (vl-parsestate-add-warning w pstate))
+             (pstate (vl-parsestate-set-warnings (cons w new-warnings) pstate))
              (st     (change-vl-loadstate st :pstate pstate)))
           (mv st state)))
 
@@ -890,7 +893,7 @@ you might want to attach some other kind of report here.</p>
                (vl-print-warnings floating-warnings)
                (vl-println ""))))
 
-       (multidef-warnings (vl-keep-warnings '(:vl-multidef-mod) regular-warnings))
+       (multidef-warnings (vl-keep-warnings '(:vl-warn-multidef) regular-warnings))
        (- (or (not multidef-warnings)
               (vl-cw-ps-seq
                (vl-ps-update-autowrap-col 68)

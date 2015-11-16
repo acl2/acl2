@@ -39,6 +39,7 @@
 (include-book "modports")
 (include-book "imports")
 (include-book "asserts")
+(include-book "dpi")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -381,8 +382,17 @@ rules:</p>
 
          ((when (eq type1 :vl-kwd-import))
           (seq tokstream
-               (imports := (vl-parse-package-import-declaration atts))
-               (return imports)))
+               (when (vl-plausible-start-of-package-import-p)
+                 (imports := (vl-parse-package-import-declaration atts))
+                 (return imports))
+               ;; Otherwise maybe it's a DPI import.
+               (dpiimport := (vl-parse-dpi-import atts))
+               (return (list dpiimport))))
+
+         ((when (eq type1 :vl-kwd-export))
+          (seq tokstream
+               (dpiexport := (vl-parse-dpi-export atts))
+               (return (list dpiexport))))
 
          ((when (or (eq type1 :vl-kwd-always_ff)
                     (eq type1 :vl-kwd-always_latch)
@@ -434,9 +444,6 @@ rules:</p>
                (tokstream (vl-tokstream-restore backup))
                (tokstream (vl-tokstream-update-position pos)))
             (mv err nil tokstream))))
-
-
-
 
 
       ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's

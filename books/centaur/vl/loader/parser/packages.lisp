@@ -177,6 +177,8 @@
                                                                  ;; :vl-assertion is not allowed and
                                                                  ;; :vl-cassertion is not allowed either.
                                                                  ;; They are assertion_items, not assertion_item_declarations.
+                                                                 :vl-dpiimport
+                                                                 :vl-dpiexport
                                                                  )))
                           (warnings
                            (if (not bad-item)
@@ -196,6 +198,8 @@
                                         :taskdecls c.taskdecls
                                         :typedefs c.typedefs
                                         :imports c.imports
+                                        :dpiimports c.dpiimports
+                                        :dpiexports c.dpiexports
                                         :warnings warnings
                                         :atts atts
                                         ;; bozo timeunits stuff

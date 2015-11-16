@@ -278,7 +278,7 @@ being kept.</p>"
        ;; encountered, e.g., as a barbaric way to override problematic
        ;; definitions.
        (warning (make-vl-warning
-                 :type :vl-multidef-mod
+                 :type :vl-warn-multidef
                  :msg "~m0 is defined multiple times.  Keeping the old ~
                        definition (~a1) and ignoring the new one (~a2)."
                  :args (list newname1
@@ -788,7 +788,7 @@ you might want to attach some other kind of report here.</p>
                (vl-print-warnings floating-warnings)
                (vl-println ""))))
 
-       (multidef-warnings (vl-keep-warnings '(:vl-multidef-mod) regular-warnings))
+       (multidef-warnings (vl-keep-warnings '(:vl-warn-multidef) regular-warnings))
        (- (or (not multidef-warnings)
               (vl-cw-ps-seq
                (vl-ps-update-autowrap-col 68)

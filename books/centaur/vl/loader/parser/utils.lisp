@@ -268,11 +268,25 @@
     (equal (vl-tokstream-restore (vl-tokstream-save) :tokstream anything)
            (vl-tokstream-fix))))
 
+(define vl-add-context-to-parser-warning ((warning vl-warning-p)
+                                          &key (tokstream 'tokstream))
+  :returns (new-warning vl-warning-p)
+  (b* ((tokens  (vl-tokstream->tokens))
+       (context (cat "  Near: \""
+                     (vl-tokenlist->string-with-spaces
+                      (take (min 4 (len tokens))
+                            (list-fix tokens)))
+                     (if (> (len tokens) 4) "..." "")
+                     "\""))
+       (new-msg (cat (vl-warning->msg warning)
+                     (str::strsubst "~" "~~" context))))
+    (change-vl-warning warning :msg new-msg)))
 
 (define vl-tokstream-add-warning ((warning vl-warning-p)
                                   &key (tokstream 'tokstream))
   :returns (new-tokstream)
-  (b* ((pstate (vl-tokstream->pstate))
+  (b* ((warning (vl-add-context-to-parser-warning warning))
+       (pstate (vl-tokstream->pstate))
        (pstate (vl-parsestate-add-warning warning pstate))
        (tokstream (vl-tokstream-update-pstate pstate)))
     tokstream)
@@ -818,19 +832,22 @@ execution) that includes the current location."
    ((function symbolp) '__function__)
    (tokstream 'tokstream))
   :returns
-  (mv (errmsg   vl-warning-p)
+  (mv (errmsg   vl-warning-p
+                "Note that such a warning is not automatically extended with
+                 ``nearby'' context, because for backtracking these are often
+                 ephemeral.")
       (value    "Always just @('nil')." (equal value nil))
       (new-tokstream (equal new-tokstream tokstream)))
-  (b* ((tokens (vl-tokstream->tokens)))
-    (mv (make-vl-warning :type :vl-parse-error
+  (b* ((tokens  (vl-tokstream->tokens))
+       (warning (make-vl-warning :type :vl-parse-error
                          :msg "Parse error at ~a0: ~s1"
                          :args (list (if (consp tokens)
                                          (vl-token->loc (car tokens))
                                        "EOF")
                                      description)
                          :fn function
-                         :fatalp t)
-        nil tokstream))
+                         :fatalp t)))
+    (mv warning nil tokstream))
   ///
   (more-returns (errmsg (iff errmsg t)
                         :name vl-parse-error-0-under-iff)))

@@ -920,6 +920,8 @@ elements.")
     (:vl-genvar        ans) ;; no dependencies
     (:vl-property      (vl-property-immdeps x ans))
     (:vl-sequence      (vl-sequence-immdeps x ans))
+    (:vl-dpiimport     ans) ;; I don't think we care?
+    (:vl-dpiexport     ans) ;; I don't think we care?
     (:vl-assertion     (vl-assertion-top-immdeps x ans))
     (:vl-cassertion    (vl-cassertion-top-immdeps x ans))
     (otherwise         (vl-modport-immdeps x ans))))

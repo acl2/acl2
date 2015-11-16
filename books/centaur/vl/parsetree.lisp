@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-11-11b")
+  "VL Syntax 2015-11-13")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -3687,6 +3687,141 @@ be non-sliceable, at least if it's an input.</p>"
   :elt-type vl-fwdtypedef-p
   :elementp-of-nil nil)
 
+
+
+
+(defenum vl-dpispec-p
+  (:vl-dpi
+   :vl-dpi-c)
+  :parents (vl-dpiimport vl-dpiexport)
+  :short "Representation of the @('\"DPI\"') or @('\"DPI-C\"') specification
+          used in DPI import/exports."
+  :long "<p>This governs low level arcana like how packed array arguments are
+         passed to C.</p>")
+
+(defenum vl-dpiprop-p
+  (nil
+   :vl-dpi-pure
+   :vl-dpi-context)
+  :parents (vl-dpiimport)
+  :short "Representation of @('pure') or @('context') properties."
+  :long "<p>See SystemVerilog-2012 Sections 35.5.2 and 35.5.3.  A DPI imported
+         function (not task) can be declared as @('pure'), which is supposed to
+         be a promise that the C function's result only depends only on its
+         inputs, doesn't do any file IO, doesn't access any global variables,
+         etc.</p>
+
+         <p>Alternately, an imported function or task can be declared as
+         @('context'), which means that it is intended to call exported
+         subroutines that access SystemVerilog data objects besides its
+         arguments.  The simulator may have to take special measures and avoid
+         various optimizations when calling these functions.</p>")
+
+(defprod vl-dpiimport
+  :short "Represents a single import of a C function into SystemVerilog via the
+          Direct Programming Interface."
+  :tag :vl-dpiimport
+  :layout :tree
+  ((name      stringp
+              :rule-classes :type-prescription
+              "The SystemVerilog version of the name (may differ from the C
+               function's name.)")
+   (c-name    stringp
+              :rule-classes :type-prescription
+              "The name of the C function being imported.")
+   (spec      vl-dpispec-p
+              "Indicates whether this function uses the deprecated @('\"DPI\"')
+               or the replacement @('\"DPI-C\"') interface.")
+   (prop      vl-dpiprop-p
+              "Indicates whether the @('pure') or @('context') keywords were
+               provided.")
+   (rettype   vl-maybe-datatype-p
+              "For an imported function, this is the return type.  For a task,
+               it is @('nil'), which lets you distinguish whether this import
+               is for a function or a task.")
+   (portdecls vl-portdecllist-p
+              "The arguments from the function/task prototype.")
+   (atts      vl-atts-p
+              "Any attributes associated with this DPI import.")
+   (loc       vl-location-p
+              "Where this DPI import was found in the source code."))
+
+  :long "<p>SystemVerilog's Direct Programming Interface (DPI) allows for
+         SystemVerilog code to invoke functions that are written in C, and for
+         C programs to invoke SystemVerilog functions/tasks.  (In theory the
+         DPI can also be used to connect to other languages besides C, but
+         we'll just say C here.)</p>
+
+         <p>A DPI @('import') statement is for making C functions available to
+         the SystemVerilog design.  A DPI @('export') goes the other way and we
+         treat them separately; see @(see vl-dpiexport).</p>
+
+         <p>We cannot imagine any way for VL to really comprehend or make any
+         real use of imported C code.  However, we do try to at least parse and
+         represent the actual DPI import statements so that they don't lead to
+         parse errors.  We also regard import statements as real, legitimate
+         scope items that can be looked up in a @(see scopestack), which allows
+         applications like @(see lint) checking to recognize that calls of
+         these functions/tasks are not undefined.</p>")
+
+(fty::deflist vl-dpiimportlist
+  :elt-type vl-dpiimport
+  :elementp-of-nil nil)
+
+(defenum vl-dpifntask-p
+  (:vl-dpi-function
+   :vl-dpi-task)
+  :parents (vl-dpiexport)
+  :short "Indicates whether we are exporting a @('function') or @('task').")
+
+(defprod vl-dpiexport
+  :short "Represents a single export of a SystemVerilog function/task for use
+          in C programs via the Direct Programming Interface."
+  :tag :vl-dpiexport
+  :layout :tree
+  ((name      stringp
+              :rule-classes :type-prescription
+              "The SystemVerilog version of the name (may differ from the C
+               function's name.)")
+   (c-name    stringp
+              :rule-classes :type-prescription
+              "The name of the new C function to create which will correspond
+               to this SystemVerilog function/task.")
+   (spec      vl-dpispec-p
+              "Indicates whether this function uses the deprecated @('\"DPI\"')
+               or the replacement @('\"DPI-C\"') interface.")
+   (fntask    vl-dpifntask-p
+              "Are we exporting a function or a task?")
+   (atts      vl-atts-p
+              "Any attributes associated with this DPI export.")
+   (loc       vl-location-p
+              "Where this DPI export was found in the source code."))
+
+  :long "<p>SystemVerilog's Direct Programming Interface (DPI) allows for
+         SystemVerilog code to invoke functions that are written in C, and for
+         C programs to invoke SystemVerilog functions/tasks.  (In theory the
+         DPI can also be used to connect to other languages besides C, but
+         we'll just say C here.)</p>
+
+         <p>A DPI @('export') statement is for making SystemVerilog tasks and
+         functions available to C programs.  A DPI @('import') goes the other
+         way and we treat them separately; see @(see vl-dpiimport).</p>
+
+         <p>We cannot imagine any way for VL to really comprehend or make any
+         real use of imported C code.  However, we do try to at least parse and
+         represent the actual DPI export statements so that they don't lead to
+         parse errors.</p>
+
+         <p>Aside from parsing, we largely don't care about DPI exports.
+         Unlike DPI imports, we don't treat exports as scope items because if
+         you look up a function @('foo'), you want to find its definition, not
+         the fact that it was exported.</p>")
+
+(fty::deflist vl-dpiexportlist
+  :elt-type vl-dpiexport
+  :elementp-of-nil nil)
+
+
 (defprod vl-genvar
   :tag :vl-genvar
   :short "Representation of a genvar declaration."
@@ -3719,7 +3854,9 @@ be non-sliceable, at least if it's an input.</p>"
       assertion
       cassertion
       property
-      sequence))
+      sequence
+      dpiimport
+      dpiexport))
 
   (local (defun typenames-to-tags (x)
            (declare (xargs :mode :program))
@@ -3934,21 +4071,6 @@ initially kept in a big, mixed list.</p>"
 
 (encapsulate nil
 
-;; (defthmd tag-when-vl-genelement-p-forward
-;;       (implies (vl-genelement-p x)
-;;                (or (equal (tag x) :vl-genbase)
-;;                    (equal (tag x) :vl-genloop)
-;;                    (equal (tag x) :vl-genif)
-;;                    (equal (tag x) :vl-gencase)
-;;                    (equal (tag x) :vl-genblock)
-;;                    (equal (tag x) :vl-genarray)))
-;;       :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
-;;       :rule-classes :forward-chaining)
-
-  ;; (add-to-ruleset tag-reasoning '(tag-when-vl-genelement-p-forward))
-  
-  ;; Baseline time 44 seconds.
-  ;; Now 15 seconds 
   (deftranssum vl-ctxelement
     ;; Add any tagged product that can be written with ~a and has a loc field.
     (vl-portdecl
@@ -3973,7 +4095,9 @@ initially kept in a big, mixed list.</p>"
      vl-assertion
      vl-cassertion
      vl-property
-     vl-sequence))
+     vl-sequence
+     vl-dpiimport
+     vl-dpiexport))
 
   (local (defthm vl-genelement-kind-by-tag-when-vl-ctxelement-p
            (implies (and (vl-ctxelement-p x)
@@ -4014,7 +4138,10 @@ initially kept in a big, mixed list.</p>"
                  (equal (tag x) :vl-genif)
                  (equal (tag x) :vl-gencase)
                  (equal (tag x) :vl-genloop)
-                 (equal (tag x) :vl-modport)))
+                 (equal (tag x) :vl-modport)
+                 (equal (tag x) :vl-dpiimport)
+                 (equal (tag x) :vl-dpiexport)
+                 ))
     :rule-classes (:forward-chaining)
     :hints(("Goal" :in-theory (enable tag-reasoning vl-ctxelement-p))))
 
@@ -4057,7 +4184,9 @@ initially kept in a big, mixed list.</p>"
         (:vl-assertion (vl-assertion->loc x))
         (:vl-cassertion (vl-cassertion->loc x))
         (:vl-property (vl-property->loc x))
-        (:vl-sequence (vl-sequence->loc x))))))
+        (:vl-sequence (vl-sequence->loc x))
+        (:vl-dpiimport (vl-dpiimport->loc x))
+        (:vl-dpiexport (vl-dpiexport->loc x))))))
 
 (defprod vl-context1
   :short "Description of where an expression occurs."
@@ -4223,7 +4352,8 @@ the type information between the variable and port declarations.</p>"
    ;; BOZO possibly add timeunits declarations.
 
    (imports    vl-importlist-p
-               "Import statements for this module, like @('import foo::*').")
+               "Package import statements for this module, like @('import
+                foo::*').")
 
    (ports      vl-portlist-p
                "The module's ports list, i.e., @('a'), @('b'), and @('c') in
@@ -4289,6 +4419,12 @@ the type information between the variable and port declarations.</p>"
 
    (sequences   vl-sequencelist-p
                 "Sequence declarations for the module.")
+
+   (dpiimports  vl-dpiimportlist-p
+                "DPI imports for this module.")
+
+   (dpiexports  vl-dpiexportlist-p
+                "DPI exports for this module.")
 
    (atts       vl-atts-p
                "Any attributes associated with this top-level module.")
@@ -4611,6 +4747,8 @@ e.g., @('(01)') or @('(1?)')."
    (typedefs   vl-typedeflist-p)
    (paramdecls vl-paramdecllist-p)
    (vardecls   vl-vardecllist-p)
+   (dpiimports vl-dpiimportlist-p)
+   (dpiexports vl-dpiexportlist-p)
    (warnings   vl-warninglist-p)
    (minloc     vl-location-p)
    (maxloc     vl-location-p)
@@ -4619,7 +4757,8 @@ e.g., @('(01)') or @('(1?)')."
   :long "<p>BOZO we haven't finished out all the things that can go inside of
 packages.  Eventually there will be new fields here.</p>")
 
-(fty::deflist vl-packagelist :elt-type vl-package-p
+(fty::deflist vl-packagelist
+  :elt-type vl-package-p
   :elementp-of-nil nil)
 
 (defprojection vl-packagelist->names ((x vl-packagelist-p))
@@ -4644,8 +4783,8 @@ packages.  Eventually there will be new fields here.</p>")
    (modports   vl-modportlist-p)
    (generates  vl-genelementlist-p)
    (imports    vl-importlist-p)
-   ;; ...
-
+   (dpiimports vl-dpiimportlist-p)
+   (dpiexports vl-dpiexportlist-p)
    (warnings vl-warninglist-p)
    (minloc   vl-location-p)
    (maxloc   vl-location-p)
@@ -4661,7 +4800,8 @@ packages.  Eventually there will be new fields here.</p>")
 
   :extra-binder-names (ifports))
 
-(fty::deflist vl-interfacelist :elt-type vl-interface-p
+(fty::deflist vl-interfacelist
+  :elt-type vl-interface-p
   :elementp-of-nil nil)
 
 (defprojection vl-interfacelist->names ((x vl-interfacelist-p))
@@ -4696,32 +4836,30 @@ packages.  Eventually there will be new fields here.</p>")
 
 
 
-
-
 (defprod vl-design
   :short "Top level representation of all modules, interfaces, programs, etc.,
 resulting from parsing some Verilog source code."
   :tag :vl-design
   :layout :tree
-  ((version    vl-syntaxversion-p "Version of VL syntax being used."
-               :default *vl-current-syntax-version*)
-   (mods       vl-modulelist-p    "List of all modules.")
-   (udps       vl-udplist-p       "List of user defined primtives.")
-   (interfaces vl-interfacelist-p "List of interfaces.")
-   (programs   vl-programlist-p   "List of all programs.")
-   (packages   vl-packagelist-p   "List of all packages.")
-   (configs    vl-configlist-p    "List of configurations.")
-   (vardecls   vl-vardecllist-p   "Top-level variable declarations.")
-   (taskdecls  vl-taskdecllist-p  "Top-level task declarations.")
-   (fundecls   vl-fundecllist-p   "Top-level function declarations.")
-   (paramdecls vl-paramdecllist-p "Top-level (local and non-local) parameter declarations.")
-   (imports    vl-importlist-p    "Top-level package import statements.")
+  ((version    vl-syntaxversion-p  "Version of VL syntax being used." :default *vl-current-syntax-version*)
+   (mods       vl-modulelist-p     "List of all modules.")
+   (udps       vl-udplist-p        "List of user defined primtives.")
+   (interfaces vl-interfacelist-p  "List of interfaces.")
+   (programs   vl-programlist-p    "List of all programs.")
+   (packages   vl-packagelist-p    "List of all packages.")
+   (configs    vl-configlist-p     "List of configurations.")
+   (vardecls   vl-vardecllist-p    "Top-level variable declarations.")
+   (taskdecls  vl-taskdecllist-p   "Top-level task declarations.")
+   (fundecls   vl-fundecllist-p    "Top-level function declarations.")
+   (paramdecls vl-paramdecllist-p  "Top-level (local and non-local) parameter declarations.")
+   (imports    vl-importlist-p     "Top-level package import statements.")
+   (dpiimports vl-dpiimportlist-p  "Top-level DPI imports.")
+   (dpiexports vl-dpiexportlist-p  "Top-level DPI exports.")
    (fwdtypes   vl-fwdtypedeflist-p "Forward (incomplete) typedefs.")
    (typedefs   vl-typedeflist-p    "Regular (non-forward, complete) typedefs.")
    ;; BOZO lots of things still missing
-   (warnings   vl-warninglist-p   "So-called \"floating\" warnings.")
-   (comments   vl-commentmap-p    "So-called \"floating\" comments.")
-
+   (warnings   vl-warninglist-p    "So-called \"floating\" warnings.")
+   (comments   vl-commentmap-p     "So-called \"floating\" comments.")
    ))
 
 (defoption vl-maybe-design vl-design-p)
