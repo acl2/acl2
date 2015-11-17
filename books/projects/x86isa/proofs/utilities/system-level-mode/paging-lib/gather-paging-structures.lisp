@@ -69,7 +69,7 @@
   :guard (physical-address-p (+ (ash count 3) addr))
 
   :prepwork
-  ((local (include-book "arithmetic-3/top" :dir :system))
+  ((local (include-book "arithmetic-5/top" :dir :system))
 
    (local (in-theory (e/d* (ash unsigned-byte-p) ()))))
 
@@ -91,7 +91,159 @@
 
   (defthm qword-paddr-listp-create-qword-address-list
     (implies (physical-address-p addr)
-             (qword-paddr-listp (create-qword-address-list count addr)))))
+             (qword-paddr-listp (create-qword-address-list count addr))))
+
+  (defthm create-qword-address-list-1
+    (implies (and (physical-address-p (+ 7 addr))
+                  (physical-address-p addr))
+             (equal (create-qword-address-list 1 addr)
+                    (list addr)))
+    :hints (("Goal" :expand (create-qword-address-list 1 addr))))
+
+  (defthm non-nil-create-qword-address-list
+    (implies (and (posp count)
+                  (physical-address-p addr)
+                  (physical-address-p (+ 7 addr)))
+             (create-qword-address-list count addr)))
+
+  (defthm consp-create-qword-address-list
+    (implies (and (physical-address-p addr)
+                  (physical-address-p (+ 7 addr))
+                  (posp count))
+             (consp (create-qword-address-list count addr)))
+    :rule-classes (:type-prescription :rewrite))
+
+  (defthm car-of-create-qword-address-list
+    (implies (and (posp count)
+                  (physical-address-p addr)
+                  (physical-address-p (+ 7 addr)))
+             (equal (car (create-qword-address-list count addr))
+                    addr)))
+
+  (defthm member-p-create-qword-address-list
+    (implies (and (<= addr x)
+                  (< x (+ (ash count 3) addr))
+                  (equal (loghead 3 addr) 0)
+                  (equal (loghead 3 x) 0)
+                  (physical-address-p x)
+                  (physical-address-p addr))
+             (equal (member-p x (create-qword-address-list count addr))
+                    t))
+    :hints (("Goal"
+             :induct (create-qword-address-list count addr)
+             :in-theory (e/d* (loghead) ())))))
+
+(define mult-8-qword-paddr-listp (xs)
+  :enabled t
+  :short "Recognizer for a list of physical addresses that can
+  accommodate a quadword"
+  (if (consp xs)
+      (and (physical-address-p (car xs))
+           (physical-address-p (+ 7 (car xs)))
+           ;; Multiple of 8
+           (equal (loghead 3 (car xs)) 0)
+           (mult-8-qword-paddr-listp (cdr xs)))
+    (equal xs nil))
+
+  ///
+
+  (defthm mult-8-qword-paddr-listp-implies-true-listp
+    (implies (mult-8-qword-paddr-listp xs)
+             (true-listp xs))
+    :rule-classes :forward-chaining)
+
+  (defthm-usb qword-paddrp-element-of-mult-8-qword-paddr-listp
+    :hyp (and (mult-8-qword-paddr-listp xs)
+              (natp m)
+              (< m (len xs)))
+    :bound 52
+    :concl (nth m xs)
+    :gen-linear t
+    :gen-type t)
+
+  (local (include-book "std/lists/nthcdr" :dir :system))
+
+  (defthm nthcdr-mult-8-qword-paddr-listp
+    (implies (mult-8-qword-paddr-listp xs)
+             (mult-8-qword-paddr-listp (nthcdr n xs)))
+    :rule-classes (:rewrite :type-prescription)))
+
+(encapsulate
+ ()
+
+ (local
+  (defthm open-addr-range
+    (implies (natp x)
+             (equal (addr-range 8 x)
+                    (list x (+ 1 x) (+ 2 x) (+ 3 x)
+                          (+ 4 x) (+ 5 x) (+ 6 x) (+ 7 x))))))
+
+ (local
+  (encapsulate
+   ()
+
+   (local (include-book "arithmetic-5/top" :dir :system))
+
+   (defthm multiples-of-8-and-disjointness-of-physical-addresses-helper-1
+     (implies (and (equal (loghead 3 x) 0)
+                   (equal (loghead 3 y) 0)
+                   (posp n)
+                   (<= n 7)
+                   (natp x)
+                   (natp y))
+              (not (equal (+ n x) y)))
+     :hints (("Goal" :in-theory (e/d* (loghead)
+                                      ()))))
+
+   (defthm multiples-of-8-and-disjointness-of-physical-addresses-helper-2
+     (implies (and (equal (loghead 3 x) 0)
+                   (equal (loghead 3 y) 0)
+                   (not (equal x y))
+                   (posp n)
+                   (<= n 7)
+                   (posp m)
+                   (<= m 7)
+                   (natp x)
+                   (natp y))
+              (not (equal (+ n x) (+ m y))))
+     :hints (("Goal" :in-theory (e/d* (loghead)
+                                      ()))))))
+
+ (defthm multiples-of-8-and-disjointness-of-physical-addresses-1
+   (implies (and (equal (loghead 3 addr-1) 0)
+                 (equal (loghead 3 addr-2) 0)
+                 (not (equal addr-2 addr-1))
+                 (natp addr-1)
+                 (natp addr-2))
+            (disjoint-p (addr-range 8 addr-2)
+                        (addr-range 8 addr-1))))
+
+ (defthm multiples-of-8-and-disjointness-of-physical-addresses-2
+   (implies (and (equal (loghead 3 addr-1) 0)
+                 (equal (loghead 3 addr-2) 0)
+                 (not (equal addr-2 addr-1))
+                 (natp addr-1)
+                 (natp addr-2))
+            (disjoint-p (cons addr-2 nil)
+                        (addr-range 8 addr-1)))))
+
+(define mult-8-qword-paddr-list-listp (xs)
+  :enabled t
+  (cond ((atom xs) (eq xs nil))
+        (t (and (mult-8-qword-paddr-listp (car xs))
+                (mult-8-qword-paddr-list-listp (cdr xs)))))
+
+  ///
+
+  (defthm append-of-mult-8-qword-paddr-list-listp
+    (implies (and (mult-8-qword-paddr-list-listp xs)
+                  (mult-8-qword-paddr-list-listp ys))
+             (mult-8-qword-paddr-list-listp (append xs ys))))
+
+  (defthm mult-8-qword-paddr-list-listp-implies-true-list-listp
+    (implies (mult-8-qword-paddr-list-listp xs)
+             (true-list-listp xs))
+    :rule-classes :forward-chaining))
 
 (local (in-theory (e/d* () (unsigned-byte-p))))
 
@@ -263,7 +415,17 @@
        (equal (part-select entry-1 :low 7 :high 63)
               (part-select entry-2 :low 7 :high 63)))
   ///
-  (defequiv xlate-equiv-entries))
+  (defequiv xlate-equiv-entries)
+
+  (defthm xlate-equiv-entries-and-set-accessed-bit
+    (implies (xlate-equiv-entries e1 e2)
+             (xlate-equiv-entries e1 (set-accessed-bit e2)))
+    :hints (("Goal" :in-theory (e/d* (set-accessed-bit) ()))))
+
+  (defthm xlate-equiv-entries-and-set-dirty-bit
+    (implies (xlate-equiv-entries e1 e2)
+             (xlate-equiv-entries e1 (set-dirty-bit e2)))
+    :hints (("Goal" :in-theory (e/d* (set-dirty-bit) ())))))
 
 (define xlate-equiv-entries-at-qword-addresses-aux?
   (list-of-addresses-1 list-of-addresses-2 x86-1 x86-2)

@@ -4,6 +4,7 @@
 (in-package "X86ISA")
 (include-book "std/util/define" :dir :system)
 (include-book "std/lists/rev" :dir :system)
+(include-book "std/lists/flatten" :dir :system)
 
 ;; ===================================================================
 
@@ -332,11 +333,32 @@
 
   (cond ((endp l) t)
         ((member-p (car l) (cdr l)) nil)
-        (t (no-duplicates-p (cdr l)))))
+        (t (no-duplicates-p (cdr l))))
+
+  ///
+
+  (defthm no-duplicates-p-and-append
+    (implies (no-duplicates-p (append a b))
+             (and (no-duplicates-p a)
+                  (no-duplicates-p b)))))
+
+(define no-duplicates-list-p
+  ((l (true-list-listp l)))
+
+  :parents (proof-utilities)
+  :enabled t
+
+  (let* ((all-elements (acl2::flatten l)))
+    (no-duplicates-p all-elements)))
 
 ;; ======================================================================
 
 ;; Misc. theorems:
+
+(defthm disjoint-p-forward-chain-to-member-p
+  (implies (disjoint-p (list i) x)
+           (not (member-p i x)))
+  :rule-classes :forward-chaining)
 
 (defthm cdr-strip-cars-is-strip-cars-cdr
   (equal (cdr (strip-cars x))
@@ -406,6 +428,47 @@
            (equal (cdr (assoc a (acl2::rev (acons a b xs))))
                   b))
   :hints (("Goal" :in-theory (e/d (member-p) ()))))
+
+;; ======================================================================
+
+(define member-list-p (e xs)
+  :guard (true-list-listp xs)
+  :enabled t
+  (if (endp xs)
+      nil
+    (if (member-p e (car xs))
+        t
+      (member-list-p e (cdr xs))))
+
+  ///
+
+  (defthm member-list-p-append
+    (equal (member-list-p e (append xs ys))
+           (or (member-list-p e xs)
+               (member-list-p e ys)))))
+
+(define subset-list-p (xs xss)
+  :guard (and (true-listp xs)
+              (true-list-listp xss))
+  :enabled t
+  (if (endp xss)
+      nil
+    (if (subset-p xs (car xss))
+        t
+      (subset-list-p xs (cdr xss))))
+
+  ///
+
+  (defthm subset-list-p-append
+    (equal (subset-list-p xs (append xss yss))
+           (or (subset-list-p xs xss)
+               (subset-list-p xs yss)))))
+
+(defthm subset-list-p-and-member-list-p
+  (implies (and (member-p e xs)
+                (subset-list-p xs xss))
+           (member-list-p e xss))
+  :hints (("Goal" :in-theory (e/d (subset-p) ()))))
 
 ;; ======================================================================
 

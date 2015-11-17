@@ -180,13 +180,33 @@
   ((entry :type (unsigned-byte 64)))
   :enabled t
   :returns (a-entry (unsigned-byte-p 64 a-entry) :hyp :guard)
-  (!ia32e-page-tables-slice :a 1 entry))
+  (!ia32e-page-tables-slice :a 1 entry)
+
+  ///
+
+  (defthm-usb n64p-set-accessed-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 64
+    :concl (set-accessed-bit val)
+    :hints (("Goal" :in-theory (e/d* (set-accessed-bit) ())))
+    :gen-type t
+    :gen-linear t))
 
 (define set-dirty-bit
   ((entry :type (unsigned-byte 64)))
   :enabled t
   :returns (d-entry (unsigned-byte-p 64 d-entry) :hyp :guard)
-  (!ia32e-page-tables-slice :d 1 entry))
+  (!ia32e-page-tables-slice :d 1 entry)
+
+  ///
+
+  (defthm-usb n64p-set-dirty-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 64
+    :concl (set-dirty-bit val)
+    :hints (("Goal" :in-theory (e/d* (set-dirty-bit) ())))
+    :gen-type t
+    :gen-linear t))
 
 ;; ======================================================================
 

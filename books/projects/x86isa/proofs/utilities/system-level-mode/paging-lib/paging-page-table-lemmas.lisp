@@ -2,9 +2,8 @@
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
-(include-book "gather-paging-structures")
-(include-book "x86-ia32e-paging-alt")
-(include-book "gather-paging-structures-thms")
+(include-book "x86-ia32e-paging-alt" :ttags :all)
+(include-book "gather-paging-structures-thms" :ttags :all)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))

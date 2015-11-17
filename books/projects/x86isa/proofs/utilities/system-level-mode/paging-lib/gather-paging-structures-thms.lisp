@@ -12,194 +12,23 @@
 
 ;; ======================================================================
 
-;; RoW Theorems with R = gather functions:
-
-(defthm gather-pml4-table-qword-addresses-xw-1
-  (implies (not (equal fld :ctr))
-           (equal (gather-pml4-table-qword-addresses (xw fld index val x86))
-                  (gather-pml4-table-qword-addresses x86)))
-  :hints (("Goal"
-           :cases ((equal fld :ctr))
-           :in-theory (e/d* (gather-pml4-table-qword-addresses)
-                            ()))))
-
-(defthm gather-pml4-table-qword-addresses-xw-2
-  (implies (and (equal fld :ctr)
-                (not (equal index *cr3*)))
-           (equal (gather-pml4-table-qword-addresses (xw fld index val x86))
-                  (gather-pml4-table-qword-addresses x86)))
-  :hints (("Goal"
-           :cases ((equal fld :ctr))
-           :in-theory (e/d* (gather-pml4-table-qword-addresses)
-                            ()))))
-
-(defthm gather-qword-addresses-corresponding-to-1-entry-xw-1
-  (implies (and (not (equal fld :mem))
-                (natp n))
-           (equal (gather-qword-addresses-corresponding-to-1-entry n (xw fld index val x86))
-                  (gather-qword-addresses-corresponding-to-1-entry n x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
-                            ()))))
-
-(defthm gather-qword-addresses-corresponding-to-1-entry-xw-2
-  (implies (and (equal fld :mem)
-                (disjoint-p (addr-range 1 index)
-                            (addr-range 8 addr))
-                (natp addr))
-           (equal (gather-qword-addresses-corresponding-to-1-entry addr (xw :mem index val x86))
-                  (gather-qword-addresses-corresponding-to-1-entry addr x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
-                            (addr-range
-                             addr-range-1)))))
-
-(defthm gather-qword-addresses-corresponding-to-entries-xw-1
-  (implies (and (not (equal fld :mem))
-                (qword-paddr-listp addrs))
-           (equal (gather-qword-addresses-corresponding-to-entries addrs (xw fld index val x86))
-                  (gather-qword-addresses-corresponding-to-entries addrs x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
-                            ()))))
-
-;; TO-DO: gather-qword-addresses-corresponding-to-entries-xw-2
-
-(defthm gather-qword-addresses-corresponding-to-list-of-entries-xw-1
-  (implies (and (not (equal fld :mem))
-                (qword-paddr-list-listp addrs))
-           (equal (gather-qword-addresses-corresponding-to-list-of-entries addrs (xw fld index val x86))
-                  (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-qword-addresses-corresponding-to-list-of-entries)
-                            ()))))
-
-;; TO-DO: gather-qword-addresses-corresponding-to-list-of-entries-xw-2
-
-(defthm gather-all-paging-structure-qword-addresses-xw-1
-  (implies (and (not (equal fld :mem))
-                (not (equal fld :ctr)))
-           (equal (gather-all-paging-structure-qword-addresses (xw fld index val x86))
-                  (gather-all-paging-structure-qword-addresses x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
-                            ()))))
-
-;; ======================================================================
-
-;; RoW Theorems with R = xlate-equiv functions
-
-(defthm xlate-equiv-entries-at-qword-addresses-aux?-with-xw
-  (implies (not (equal fld :mem))
-           (equal (xlate-equiv-entries-at-qword-addresses-aux?
-                   addrs addrs
-                   x86
-                   (xw fld index val x86))
-                  (xlate-equiv-entries-at-qword-addresses-aux?
-                   addrs addrs
-                   x86
-                   x86)))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses-aux?)
-                                   ()))))
-
-(defthm xlate-equiv-entries-at-qword-addresses?-with-xw
-  (implies (not (equal fld :mem))
-           (equal (xlate-equiv-entries-at-qword-addresses?
-                   addrs addrs
-                   x86
-                   (xw fld index val x86))
-                  (xlate-equiv-entries-at-qword-addresses?
-                   addrs addrs
-                   x86
-                   x86)))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?)
-                                   ()))))
-
-;; ======================================================================
-
-(define member-list-p (e xs)
-  :guard (true-list-listp xs)
+(define superior-entry-points-to-an-inferior-one-p
+  ((superior-entry-addr :type (unsigned-byte #.*physical-address-size*))
+   (x86))
+  :guard (physical-address-p (+ 7 superior-entry-addr))
   :enabled t
-  (if (endp xs)
-      nil
-    (if (member-p e (car xs))
-        t
-      (member-list-p e (cdr xs))))
-
-  ///
-
-  (defthm member-list-p-append
-    (equal (member-list-p e (append xs ys))
-           (or (member-list-p e xs)
-               (member-list-p e ys)))))
-
-(define subset-list-p (xs xss)
-  :guard (and (true-listp xs)
-              (true-list-listp xss))
-  :enabled t
-  (if (endp xss)
-      nil
-    (if (subset-p xs (car xss))
-        t
-      (subset-list-p xs (cdr xss))))
-
-  ///
-
-  (defthm subset-list-p-append
-    (equal (subset-list-p xs (append xss yss))
-           (or (subset-list-p xs xss)
-               (subset-list-p xs yss)))))
-
-(defthm subset-list-p-and-member-list-p
-  (implies (and (member-p e xs)
-                (subset-list-p xs xss))
-           (member-list-p e xss))
-  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
-
-(defthm create-qword-address-list-1
-  (implies (and (physical-address-p (+ 7 addr))
-                (physical-address-p addr))
-           (equal (create-qword-address-list 1 addr)
-                  (list addr)))
-  :hints (("Goal" :expand (create-qword-address-list 1 addr))))
-
-(defthm non-nil-create-qword-address-list
-  (implies (and (posp count)
-                (physical-address-p addr)
-                (physical-address-p (+ 7 addr)))
-           (create-qword-address-list count addr)))
-
-(defthm consp-create-qword-address-list
-  (implies (and (physical-address-p addr)
-                (physical-address-p (+ 7 addr))
-                (posp count))
-           (consp (create-qword-address-list count addr)))
-  :rule-classes (:type-prescription :rewrite))
-
-(defthm car-of-create-qword-address-list
-  (implies (and (posp count)
-                (physical-address-p addr)
-                (physical-address-p (+ 7 addr)))
-           (equal (car (create-qword-address-list count addr))
-                  addr)))
-
-(encapsulate
- ()
-
- (local (include-book "arithmetic-5/top" :dir :system))
-
- (defthm member-p-create-qword-address-list
-   (implies (and (<= addr x)
-                 (< x (+ (ash count 3) addr))
-                 (equal (loghead 3 addr) 0)
-                 (equal (loghead 3 x) 0)
-                 (physical-address-p x)
-                 (physical-address-p addr))
-            (equal (member-p x (create-qword-address-list count addr))
-                   t))
-   :hints (("Goal"
-            :induct (create-qword-address-list count addr)
-            :in-theory (e/d* (loghead) ())))))
+  (let* ((superior-entry (rm-low-64 superior-entry-addr x86)))
+    (and
+     ;; Superior entry present.
+     (equal (ia32e-page-tables-slice :p  superior-entry) 1)
+     ;; Page Size = 0, i.e., next level of paging structure is required.
+     (equal (ia32e-page-tables-slice :ps superior-entry) 0)
+     ;; Next level of paging structure fits in the physical memory.
+     (physical-address-p
+      (+
+       (ash 512 3)
+       (ash (ia32e-page-tables-slice :reference-addr superior-entry)
+            12))))))
 
 ;; ======================================================================
 
@@ -357,26 +186,6 @@
                                     gather-qword-addresses-corresponding-to-list-of-entries
                                     subset-p)
                                    ()))))
-
-;; ======================================================================
-
-(define superior-entry-points-to-an-inferior-one-p
-  ((superior-entry-addr :type (unsigned-byte #.*physical-address-size*))
-   (x86))
-  :guard (physical-address-p (+ 7 superior-entry-addr))
-  :enabled t
-  (let* ((superior-entry (rm-low-64 superior-entry-addr x86)))
-    (and
-     ;; Superior entry present.
-     (equal (ia32e-page-tables-slice :p  superior-entry) 1)
-     ;; Page Size = 0, i.e., next level of paging structure is required.
-     (equal (ia32e-page-tables-slice :ps superior-entry) 0)
-     ;; Next level of paging structure fits in the physical memory.
-     (physical-address-p
-      (+
-       (ash 512 3)
-       (ash (ia32e-page-tables-slice :reference-addr superior-entry)
-            12))))))
 
 ;; ======================================================================
 
@@ -653,35 +462,6 @@
                                   x86))))
            :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
                             (subset-list-p-and-member-list-p)))))
-
-;; (defthm page-directory-base-addr-is-in-gather-all-paging-structure-qword-addresses-helper
-;;   (implies
-;;    (and (x86p x86)
-;;         (canonical-address-p lin-addr)
-;;         (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
-;;         (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-;;         (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-;;         (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
-;;         (equal page-dir-ptr-table-base-addr
-;;                (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-;;         (equal page-dir-ptr-table-entry-addr
-;;                (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
-;;         (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86))
-;;    (subset-list-p
-;;     ;; PD qword addresses corresponding to a PDPTE.
-;;     (gather-qword-addresses-corresponding-to-1-entry
-;;      page-dir-ptr-table-entry-addr x86)
-;;     ;; All PD qword addresses.
-;;     (gather-qword-addresses-corresponding-to-list-of-entries
-;;      ;; All PDPTE qword addresses.
-;;      (gather-qword-addresses-corresponding-to-entries
-;;       (gather-pml4-table-qword-addresses x86)
-;;       x86)
-;;      x86)))
-;;   :hints (("Goal"
-;;            :in-theory (e/d* ()
-;;                             (page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e-alt))
-;;            :use ((:instance page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e-alt)))))
 
 (defthm page-directory-base-addr-is-in-gather-all-paging-structure-qword-addresses
   (implies (and (equal pml4-table-base-addr
@@ -968,6 +748,400 @@
                             (subset-list-p-and-member-list-p)))))
 
 ;; ======================================================================
+
+;; RoW Theorems with R = gather functions:
+
+(defthm gather-pml4-table-qword-addresses-xw-fld!=ctr
+  (implies (not (equal fld :ctr))
+           (equal (gather-pml4-table-qword-addresses (xw fld index val x86))
+                  (gather-pml4-table-qword-addresses x86)))
+  :hints (("Goal"
+           :cases ((equal fld :ctr))
+           :in-theory (e/d* (gather-pml4-table-qword-addresses)
+                            ()))))
+
+(defthm gather-pml4-table-qword-addresses-xw-fld=ctr
+  (implies (and (equal fld :ctr)
+                (not (equal index *cr3*)))
+           (equal (gather-pml4-table-qword-addresses (xw fld index val x86))
+                  (gather-pml4-table-qword-addresses x86)))
+  :hints (("Goal"
+           :cases ((equal fld :ctr))
+           :in-theory (e/d* (gather-pml4-table-qword-addresses)
+                            ()))))
+
+(defthm gather-qword-addresses-corresponding-to-1-entry-xw-fld!=mem
+  (implies (and (not (equal fld :mem))
+                (natp n))
+           (equal (gather-qword-addresses-corresponding-to-1-entry
+                   n (xw fld index val x86))
+                  (gather-qword-addresses-corresponding-to-1-entry n x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
+                            ()))))
+
+(defthm gather-qword-addresses-corresponding-to-1-entry-xw-fld=mem-disjoint
+  (implies (and (disjoint-p (addr-range 1 index)
+                            (addr-range 8 addr))
+                (natp addr))
+           (equal (gather-qword-addresses-corresponding-to-1-entry
+                   addr (xw :mem index val x86))
+                  (gather-qword-addresses-corresponding-to-1-entry addr x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
+                            (addr-range
+                             addr-range-1)))))
+
+(defthm gather-qword-addresses-corresponding-to-1-entry-wm-low-64
+  (implies (and (disjoint-p (addr-range 8 index)
+                            (addr-range 8 addr))
+                (physical-address-p index)
+                (physical-address-p addr))
+           (equal (gather-qword-addresses-corresponding-to-1-entry
+                   addr (wm-low-64 index val x86))
+                  (gather-qword-addresses-corresponding-to-1-entry addr x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
+                            ()))))
+
+(defthm gather-qword-addresses-corresponding-to-1-entry-xw-fld=mem-superior-entry-addr
+  (implies (and (equal index addr)
+                (or
+                 (equal val (set-accessed-bit (rm-low-64 addr x86)))
+                 (equal val (set-dirty-bit (rm-low-64 addr x86)))
+                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 addr x86)))))
+                (physical-address-p index)
+                (physical-address-p (+ 7 index))
+                (x86p x86))
+           (equal (gather-qword-addresses-corresponding-to-1-entry
+                   addr (wm-low-64 index val x86))
+                  (gather-qword-addresses-corresponding-to-1-entry addr x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry
+                             member-p)
+                            ()))))
+
+(defthm gather-qword-addresses-corresponding-to-entries-xw-fld!=mem
+  (implies (and (not (equal fld :mem))
+                (qword-paddr-listp addrs))
+           (equal (gather-qword-addresses-corresponding-to-entries
+                   addrs (xw fld index val x86))
+                  (gather-qword-addresses-corresponding-to-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries)
+                            ()))))
+
+(defthm gather-qword-addresses-corresponding-to-entries-xw-fld=mem-disjoint
+  (implies (and (not (member-p index addrs))
+                (equal (loghead 3 index) 0)
+                (physical-address-p index)
+                (mult-8-qword-paddr-listp addrs))
+           (equal (gather-qword-addresses-corresponding-to-entries
+                   addrs (xw :mem index val x86))
+                  (gather-qword-addresses-corresponding-to-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries
+                             ifix)
+                            (addr-range
+                             (addr-range))))))
+
+(defthm gather-qword-addresses-corresponding-to-entries-xw-wm-low-64
+  (implies (and (not (member-p index addrs))
+                (equal (loghead 3 index) 0)
+                (physical-address-p index)
+                (mult-8-qword-paddr-listp addrs))
+           (equal (gather-qword-addresses-corresponding-to-entries
+                   addrs (wm-low-64 index val x86))
+                  (gather-qword-addresses-corresponding-to-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries
+                             ifix)
+                            ()))))
+
+(local
+ (defthm gather-qword-addresses-corresponding-to-entries-xw-fld=mem-superior-entry-addr-helper
+   (implies (and (member-p index (cdr addrs))
+                 (no-duplicates-p addrs))
+            (not (equal index (car addrs))))))
+
+(defthm gather-qword-addresses-corresponding-to-entries-xw-fld=mem-superior-entry-addr
+  (implies (and (member-p index addrs)
+                (mult-8-qword-paddr-listp addrs)
+                (no-duplicates-p addrs)
+                (or
+                 (equal val (set-accessed-bit (rm-low-64 index x86)))
+                 (equal val (set-dirty-bit (rm-low-64 index x86)))
+                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                (physical-address-p index)
+                (equal (loghead 3 index) 0)
+                (x86p x86))
+           (equal (gather-qword-addresses-corresponding-to-entries
+                   addrs (wm-low-64 index val x86))
+                  (gather-qword-addresses-corresponding-to-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (member-p gather-qword-addresses-corresponding-to-entries)
+                            ()))))
+
+(defthm gather-qword-addresses-corresponding-to-list-of-entries-xw-fld!=mem
+  (implies (and (not (equal fld :mem))
+                (qword-paddr-list-listp addrs))
+           (equal (gather-qword-addresses-corresponding-to-list-of-entries
+                   addrs (xw fld index val x86))
+                  (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-list-of-entries)
+                            ()))))
+
+(defthm gather-qword-addresses-corresponding-to-list-of-entries-xw-fld=mem-disjoint
+  (implies (and (pairwise-disjoint-p-aux (list index) addrs)
+                (mult-8-qword-paddr-list-listp addrs)
+                (physical-address-p index)
+                (equal (loghead 3 index) 0))
+           (equal (gather-qword-addresses-corresponding-to-list-of-entries
+                   addrs (xw :mem index val x86))
+                  (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-list-of-entries)
+                            ()))))
+
+(defthm gather-qword-addresses-corresponding-to-list-of-entries-xw-wm-low-64
+  (implies (and (pairwise-disjoint-p-aux (list index) addrs)
+                (mult-8-qword-paddr-list-listp addrs)
+                (physical-address-p index)
+                (equal (loghead 3 index) 0))
+           (equal (gather-qword-addresses-corresponding-to-list-of-entries
+                   addrs (wm-low-64 index val x86))
+                  (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-list-of-entries)
+                            ()))))
+
+(local
+ (defthm gather-qword-addresses-corresponding-to-list-of-entries-xw-superior-entry-addr-helper
+   (implies (and (member-list-p index addrs-2)
+                 (true-listp addrs-1)
+                 (true-list-listp addrs-2)
+                 (no-duplicates-list-p (append (list addrs-1) addrs-2)))
+            (not (member-p index addrs-1)))
+   :hints (("Goal" :in-theory (e/d* (member-p
+                                     member-list-p
+                                     acl2::flatten
+                                     no-duplicates-p)
+                                    ())))))
+
+(defthm gather-qword-addresses-corresponding-to-list-of-entries-xw-superior-entry-addr
+  (implies (and (member-list-p index addrs)
+                (mult-8-qword-paddr-list-listp addrs)
+                (no-duplicates-list-p addrs)
+                (or
+                 (equal val (set-accessed-bit (rm-low-64 index x86)))
+                 (equal val (set-dirty-bit (rm-low-64 index x86)))
+                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                (physical-address-p index)
+                (equal (loghead 3 index) 0)
+                (x86p x86))
+           (equal (gather-qword-addresses-corresponding-to-list-of-entries
+                   addrs (wm-low-64 index val x86))
+                  (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-qword-addresses-corresponding-to-list-of-entries)
+                            ()))))
+
+(defthm gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr
+  (implies (and (not (equal fld :mem))
+                (not (equal fld :ctr)))
+           (equal (gather-all-paging-structure-qword-addresses
+                   (xw fld index val x86))
+                  (gather-all-paging-structure-qword-addresses x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
+                            ()))))
+
+(defthm gather-all-paging-structure-qword-addresses-xw-fld=ctr
+  (implies (not (equal index *cr3*))
+           (equal (gather-all-paging-structure-qword-addresses
+                   (xw :ctr index val x86))
+                  (gather-all-paging-structure-qword-addresses x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
+                            ()))))
+
+(defthm gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
+  (implies (and (mult-8-qword-paddr-listp addrs)
+                (equal addrs (gather-all-paging-structure-qword-addresses x86)))
+           (equal (gather-all-paging-structure-qword-addresses (xw :mem index val x86))
+                  addrs))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
+                            ()))))
+
+(defthm gather-all-paging-structure-qword-addresses-xw-wm-low-64
+  (implies (and (mult-8-qword-paddr-listp (gather-all-paging-structure-qword-addresses x86))
+                ;; Needing the following two hyps is dumb.
+                (equal pml4-table-base-addr
+                       (mv-nth 1 (pml4-table-base-addr x86)))
+                (physical-address-p (+ (ash 512 3) pml4-table-base-addr)))
+           (equal (gather-all-paging-structure-qword-addresses
+                   (wm-low-64 index val x86))
+                  (gather-all-paging-structure-qword-addresses x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
+                            ()))))
+
+;; ======================================================================
+
+;; RoW Theorems with R = xlate-equiv functions
+
+(defthm xlate-equiv-entries-at-qword-addresses-aux?-with-xw-fld!=mem
+  (implies (not (equal fld :mem))
+           (equal (xlate-equiv-entries-at-qword-addresses-aux?
+                   addrs addrs
+                   x86
+                   (xw fld index val x86))
+                  (xlate-equiv-entries-at-qword-addresses-aux?
+                   addrs addrs
+                   x86
+                   x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses-aux?)
+                                   ()))))
+
+(defthmd xlate-equiv-entries-at-qword-addresses-aux?-with-wm-low-64-1
+  (implies (and (mult-8-qword-paddr-listp addrs)
+                (no-duplicates-p addrs)
+                (member-p index addrs)
+                (or
+                 (equal val (set-accessed-bit (rm-low-64 index x86)))
+                 (equal val (set-dirty-bit (rm-low-64 index x86)))
+                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                (x86p x86)
+                (xlate-equiv-entries-at-qword-addresses-aux? addrs addrs x86 x86))
+           (xlate-equiv-entries-at-qword-addresses-aux?
+            addrs addrs
+            x86
+            (wm-low-64 index val x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses-aux?
+                                    member-p)
+                                   (xlate-equiv-entries)))))
+
+(defthm xlate-equiv-entries-at-qword-addresses-aux?-with-wm-low-64
+  (implies (and (mult-8-qword-paddr-listp addrs)
+                (no-duplicates-p addrs)
+                (member-p index addrs)
+                (or
+                 (equal val (set-accessed-bit (rm-low-64 index x86)))
+                 (equal val (set-dirty-bit (rm-low-64 index x86)))
+                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                (x86p x86))
+           (equal (xlate-equiv-entries-at-qword-addresses-aux?
+                   addrs addrs
+                   x86
+                   (wm-low-64 index val x86))
+                  (xlate-equiv-entries-at-qword-addresses-aux?
+                   addrs addrs x86 x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses-aux?-with-wm-low-64-1
+                                    xlate-equiv-entries-at-qword-addresses-aux?
+                                    member-p)
+                                   (xlate-equiv-entries)))))
+
+(defthm xlate-equiv-entries-at-qword-addresses-aux?-with-wm-low-64-disjoint
+  (implies (and (mult-8-qword-paddr-listp addrs)
+                (physical-address-p index)
+                (equal (loghead 3 index) 0)
+                (not (member-p index addrs)))
+           (equal (xlate-equiv-entries-at-qword-addresses-aux?
+                   addrs addrs
+                   x86
+                   (wm-low-64 index val x86))
+                  (xlate-equiv-entries-at-qword-addresses-aux?
+                   addrs addrs
+                   x86
+                   x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses-aux?
+                                    member-p)
+                                   (xlate-equiv-entries)))))
+
+(defthm xlate-equiv-entries-at-qword-addresses?-with-xw-fld!=mem
+  (implies (not (equal fld :mem))
+           (equal (xlate-equiv-entries-at-qword-addresses?
+                   addrs addrs
+                   x86
+                   (xw fld index val x86))
+                  (xlate-equiv-entries-at-qword-addresses?
+                   addrs addrs
+                   x86
+                   x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?)
+                                   ()))))
+
+(defthm xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-disjoint
+  (implies (and (mult-8-qword-paddr-list-listp addrs)
+                (not (member-list-p index addrs))
+                (physical-address-p index)
+                (equal (loghead 3 index) 0))
+           (equal (xlate-equiv-entries-at-qword-addresses?
+                   addrs addrs
+                   x86
+                   (wm-low-64 index val x86))
+                  (xlate-equiv-entries-at-qword-addresses?
+                   addrs addrs
+                   x86
+                   x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
+                                    member-p member-list-p)
+                                   (xlate-equiv-entries)))))
+
+(defthmd member-list-p-of-mult-8-qword-paddr-list-listp-fwd-chaining
+  (implies (and (member-list-p index addrs)
+                (mult-8-qword-paddr-list-listp addrs))
+           (and (physical-address-p index)
+                (equal (loghead 3 index) 0)))
+  :hints (("Goal" :in-theory (e/d* (member-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthmd xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-1
+  (implies (and (mult-8-qword-paddr-list-listp addrs)
+                (no-duplicates-list-p addrs)
+                (member-list-p index addrs)
+                (physical-address-p index)
+                (equal (loghead 3 index) 0)
+                (or (equal val (set-accessed-bit (rm-low-64 index x86)))
+                    (equal val (set-dirty-bit (rm-low-64 index x86)))
+                    (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                (x86p x86))
+           (equal
+            (xlate-equiv-entries-at-qword-addresses?
+             addrs addrs x86 (wm-low-64 index val x86))
+            (xlate-equiv-entries-at-qword-addresses?
+             addrs addrs x86 x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
+                             member-p
+                             member-list-p)
+                            (xlate-equiv-entries)))))
+
+(defthm xlate-equiv-entries-at-qword-addresses?-with-wm-low-64
+  (implies (and (mult-8-qword-paddr-list-listp addrs)
+                (no-duplicates-list-p addrs)
+                (member-list-p index addrs)
+                (or (equal val (set-accessed-bit (rm-low-64 index x86)))
+                    (equal val (set-dirty-bit (rm-low-64 index x86)))
+                    (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                (x86p x86))
+           (equal
+            (xlate-equiv-entries-at-qword-addresses?
+             addrs addrs x86 (wm-low-64 index val x86))
+            (xlate-equiv-entries-at-qword-addresses? addrs addrs x86 x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-1
+                             member-list-p-of-mult-8-qword-paddr-list-listp-fwd-chaining)
+                            (member-list-p
+                             no-duplicates-list-p
+                             member-p
+                             physical-address-p)))))
+
+;; ======================================================================
+
+;; (i-am-here)
 
 ;; (gather-all-paging-structure-qword-addresses
 ;;  (wm-low-64
