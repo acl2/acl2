@@ -760,6 +760,13 @@
            :in-theory (e/d* (gather-pml4-table-qword-addresses)
                             ()))))
 
+(defthm gather-pml4-table-qword-addresses-xw-wm-low-64
+  (equal (gather-pml4-table-qword-addresses (wm-low-64 index val x86))
+         (gather-pml4-table-qword-addresses x86))
+  :hints (("Goal"
+           :in-theory (e/d* (gather-pml4-table-qword-addresses)
+                            ()))))
+
 (defthm gather-pml4-table-qword-addresses-xw-fld=ctr
   (implies (and (equal fld :ctr)
                 (not (equal index *cr3*)))
@@ -967,26 +974,209 @@
                             ()))))
 
 (defthm gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
-  (implies (and (mult-8-qword-paddr-listp addrs)
+  (implies (and (mult-8-qword-paddr-list-listp addrs)
+                (pairwise-disjoint-p-aux (list index) addrs)
+                (physical-address-p index)
+                (equal (loghead 3 index) 0)
                 (equal addrs (gather-all-paging-structure-qword-addresses x86)))
            (equal (gather-all-paging-structure-qword-addresses (xw :mem index val x86))
                   addrs))
   :hints (("Goal"
+           :use ((:instance gather-qword-addresses-corresponding-to-list-of-entries-xw-fld=mem-disjoint
+                            (addrs (gather-qword-addresses-corresponding-to-list-of-entries
+                                    (gather-qword-addresses-corresponding-to-entries
+                                     (gather-pml4-table-qword-addresses x86)
+                                     x86)
+                                    (xw :mem index val x86)))
+                            (index index)
+                            (val val)
+                            (x86 (xw :mem index val x86)))
+                 (:instance gather-qword-addresses-corresponding-to-list-of-entries-xw-fld=mem-disjoint
+                            (addrs (gather-qword-addresses-corresponding-to-list-of-entries
+                                    (gather-qword-addresses-corresponding-to-entries
+                                     (gather-pml4-table-qword-addresses x86)
+                                     x86)
+                                    x86))
+                            (index index)
+                            (val val)
+                            (x86 x86))
+                 (:instance gather-qword-addresses-corresponding-to-list-of-entries-xw-fld=mem-disjoint
+                            (addrs (gather-qword-addresses-corresponding-to-entries
+                                    (gather-pml4-table-qword-addresses x86)
+                                    x86))
+                            (index index)
+                            (val val)
+                            (x86 (xw :mem index val x86)))
+                 (:instance gather-qword-addresses-corresponding-to-list-of-entries-xw-fld=mem-disjoint
+                            (addrs (gather-qword-addresses-corresponding-to-entries
+                                    (gather-pml4-table-qword-addresses x86)
+                                    x86))
+                            (index index)
+                            (val val)
+                            (x86 x86)))
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
-                            ()))))
+                            (gather-qword-addresses-corresponding-to-list-of-entries-xw-fld=mem-disjoint)))))
 
-(defthm gather-all-paging-structure-qword-addresses-xw-wm-low-64
-  (implies (and (mult-8-qword-paddr-listp (gather-all-paging-structure-qword-addresses x86))
-                ;; Needing the following two hyps is dumb.
-                (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
-                (physical-address-p (+ (ash 512 3) pml4-table-base-addr)))
+(defthm gather-all-paging-structure-qword-addresses-xw-wm-low-64-disjoint
+  (implies (and (mult-8-qword-paddr-list-listp addrs)
+                (pairwise-disjoint-p-aux (list index) addrs)
+                (physical-address-p index)
+                (equal (loghead 3 index) 0)
+                (equal addrs (gather-all-paging-structure-qword-addresses x86)))
            (equal (gather-all-paging-structure-qword-addresses
                    (wm-low-64 index val x86))
                   (gather-all-paging-structure-qword-addresses x86)))
   :hints (("Goal"
-           :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
-                            ()))))
+           :in-theory (e/d* (gather-all-paging-structure-qword-addresses) ()))))
+
+(local
+ (encapsulate
+  ()
+
+  (defthm no-duplicates-p-member-p-with-append-and-flatten
+    (implies (and (no-duplicates-p (append x (acl2::flatten y)))
+                  (true-listp x)
+                  (true-list-listp y)
+                  (member-list-p i y))
+             (not (member-p i x)))
+    :rule-classes (:forward-chaining :rewrite))
+
+  (defthm no-duplicates-p-member-list-p-with-append-and-flatten
+    (implies (and (no-duplicates-p (acl2::flatten (append x y)))
+                  (true-list-listp x)
+                  (true-list-listp y)
+                  (member-list-p i y))
+             (not (member-list-p i x)))
+    :hints (("Goal" :in-theory (e/d () (acl2::flattenp-of-append))))
+    :rule-classes (:forward-chaining :rewrite))
+
+  (defthm no-duplicates-p-member-list-p-with-append-and-flatten-alt
+    (implies (and (no-duplicates-p (append (acl2::flatten x) (acl2::flatten y)))
+                  (true-list-listp x)
+                  (true-list-listp y)
+                  (member-list-p i y))
+             (not (member-list-p i x)))
+    :hints (("Goal" :in-theory (e/d (member-list-p) ())))
+    :rule-classes (:forward-chaining :rewrite))
+
+  (defthmd no-duplicates-p-and-member-list-p-1-top-helper
+    (implies (and (no-duplicates-p (append x (acl2::flatten (append y z w))))
+                  (or (member-list-p i y)
+                      (member-list-p i z)
+                      (member-list-p i w))
+                  (true-listp x)
+                  (true-list-listp y)
+                  (true-list-listp z)
+                  (true-list-listp w))
+             (not (member-p i x)))
+    :hints (("Goal" :in-theory (e/d* () (acl2::flattenp-of-append)))))
+
+  (defthm no-duplicates-p-and-member-list-p-1-top
+    (implies (and (no-duplicates-p (append x (acl2::flatten y) (acl2::flatten z) (acl2::flatten w)))
+                  (or (member-list-p i y)
+                      (member-list-p i z)
+                      (member-list-p i w))
+                  (true-listp x)
+                  (true-list-listp y)
+                  (true-list-listp z)
+                  (true-list-listp w))
+             (not (member-p i x)))
+    :hints (("Goal" :use ((:instance no-duplicates-p-and-member-list-p-1-top-helper))))
+    :rule-classes (:forward-chaining :rewrite))
+
+  (defthmd no-duplicates-p-and-member-list-p-2-top-helper
+    (implies (and (no-duplicates-p (append x (acl2::flatten (append y z w))))
+                  (or (member-p i x)
+                      (member-list-p i z)
+                      (member-list-p i w))
+                  (true-listp x)
+                  (true-list-listp y)
+                  (true-list-listp z)
+                  (true-list-listp w))
+             (not (member-list-p i y)))
+    :hints (("Goal" :in-theory (e/d* () (acl2::flattenp-of-append)))))
+
+  (defthm no-duplicates-p-and-member-list-p-2-top
+    (implies (and (no-duplicates-p (append x (acl2::flatten y) (acl2::flatten z) (acl2::flatten w)))
+                  (or (member-p i x)
+                      (member-list-p i z)
+                      (member-list-p i w))
+                  (true-listp x)
+                  (true-list-listp y)
+                  (true-list-listp z)
+                  (true-list-listp w))
+             (not (member-list-p i y)))
+    :hints (("Goal" :use ((:instance no-duplicates-p-and-member-list-p-2-top-helper))))
+    :rule-classes (:forward-chaining :rewrite))
+
+  (defthmd no-duplicates-p-and-member-list-p-3-top-helper-1
+    (implies (and (member-list-p i w)
+                  (true-listp x)
+                  (true-list-listp y)
+                  (true-list-listp z)
+                  (true-list-listp w)
+                  (no-duplicates-p (append x (acl2::flatten (append y z w)))))
+             (not (member-list-p i z))))
+
+  (defthmd no-duplicates-p-and-member-list-p-3-top-helper-2
+    (implies (and (no-duplicates-p (append x (acl2::flatten (append y z w))))
+                  (or (member-p i x)
+                      (member-list-p i y)
+                      (member-list-p i w))
+                  (true-listp x)
+                  (true-list-listp y)
+                  (true-list-listp z)
+                  (true-list-listp w))
+             (not (member-list-p i z)))
+    :hints (("Goal" :in-theory (e/d* (no-duplicates-p-and-member-list-p-3-top-helper-1)
+                                     (acl2::flattenp-of-append)))))
+
+  (defthm no-duplicates-p-and-member-list-p-3-top
+    (implies (and (no-duplicates-p (append x (acl2::flatten y) (acl2::flatten z) (acl2::flatten w)))
+                  (or (member-p i x)
+                      (member-list-p i y)
+                      (member-list-p i w))
+                  (true-listp x)
+                  (true-list-listp y)
+                  (true-list-listp z)
+                  (true-list-listp w))
+             (not (member-list-p i z)))
+    :hints (("Goal" :use ((:instance no-duplicates-p-and-member-list-p-3-top-helper-2))))
+    :rule-classes (:forward-chaining :rewrite))
+
+  (defthmd gather-all-paging-structure-qword-addresses-xw-wm-low-64-entry-addr-helper
+    (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                  (mult-8-qword-paddr-list-listp addrs)
+                  (no-duplicates-list-p addrs)
+                  (member-list-p index addrs)
+                  (or (equal val (set-accessed-bit (rm-low-64 index x86)))
+                      (equal val (set-dirty-bit (rm-low-64 index x86)))
+                      (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                  (physical-address-p index)
+                  (equal (loghead 3 index) 0)
+                  (x86p x86))
+             (equal (gather-all-paging-structure-qword-addresses
+                     (wm-low-64 index val x86))
+                    (gather-all-paging-structure-qword-addresses x86)))
+    :hints (("Goal"
+             :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
+                              ()))))))
+
+(defthm gather-all-paging-structure-qword-addresses-xw-wm-low-64-entry-addr
+  (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                (mult-8-qword-paddr-list-listp addrs)
+                (no-duplicates-list-p addrs)
+                (member-list-p index addrs)
+                (or (equal val (set-accessed-bit (rm-low-64 index x86)))
+                    (equal val (set-dirty-bit (rm-low-64 index x86)))
+                    (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                (x86p x86))
+           (equal (gather-all-paging-structure-qword-addresses
+                   (wm-low-64 index val x86))
+                  (gather-all-paging-structure-qword-addresses x86)))
+  :hints (("Goal"
+           :use ((:instance gather-all-paging-structure-qword-addresses-xw-wm-low-64-entry-addr-helper)
+                 (:instance member-list-p-and-mult-8-qword-paddr-list-listp)))))
 
 ;; ======================================================================
 

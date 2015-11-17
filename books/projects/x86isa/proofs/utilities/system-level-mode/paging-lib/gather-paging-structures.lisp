@@ -243,7 +243,24 @@
   (defthm mult-8-qword-paddr-list-listp-implies-true-list-listp
     (implies (mult-8-qword-paddr-list-listp xs)
              (true-list-listp xs))
-    :rule-classes :forward-chaining))
+    :rule-classes :forward-chaining)
+
+  (defthm mult-8-qword-paddr-list-listp-and-append-1
+    (implies (and (mult-8-qword-paddr-list-listp (append x y))
+                  (true-listp x))
+             (mult-8-qword-paddr-list-listp x))
+    :rule-classes (:rewrite :forward-chaining))
+
+  (defthm mult-8-qword-paddr-list-listp-and-append-2
+    (implies (mult-8-qword-paddr-list-listp (append x y))
+             (mult-8-qword-paddr-list-listp y))
+    :rule-classes (:rewrite :forward-chaining))
+
+  (defthmd member-list-p-and-mult-8-qword-paddr-list-listp
+    (implies (and (mult-8-qword-paddr-list-listp addrs)
+                  (member-list-p index addrs))
+             (and (physical-address-p index)
+                  (equal (loghead 3 index) 0)))))
 
 (local (in-theory (e/d* () (unsigned-byte-p))))
 

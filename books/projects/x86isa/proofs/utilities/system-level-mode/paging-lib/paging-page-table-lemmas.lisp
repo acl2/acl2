@@ -10,6 +10,8 @@
 
 ;; ======================================================================
 
+(i-am-here)
+
 ;; ia32e-la-to-pa-page-table:
 
 (skip-proofs
@@ -59,7 +61,14 @@
   :rule-classes :congruence)
 
 (defrule xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
-  (implies (and (pairwise-disjoint-p (gather-all-paging-structure-qword-addresses x86))
+  (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                (pairwise-disjoint-p addrs)
+                (no-duplicates-list-p addrs)
+                (mult-8-qword-paddr-list-listp addrs)
+                (equal pml4-table-base-addr
+                       (mv-nth 1 (pml4-table-base-addr x86)))
+                (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
+                (canonical-address-p lin-addr)
                 (x86p x86))
            (xlate-equiv-x86s
             (mv-nth
@@ -68,13 +77,11 @@
               lin-addr u-s-acc wp smep nxe r-w-x cpl x86))
             x86))
   :in-theory (e/d* (ia32e-la-to-pa-page-table
-                    ;; gather-all-paging-structure-qword-addresses
-                    ;; gather-pml4-table-qword-addresses
-                    page-fault-exception
-                    )
-                   ()))
-
-(i-am-here)
+                    set-accessed-bit
+                    set-dirty-bit
+                    page-fault-exception)
+                   ())
+  :otf-flg t)
 
 ;; ======================================================================
 

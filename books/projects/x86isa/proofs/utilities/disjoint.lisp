@@ -340,7 +340,8 @@
   (defthm no-duplicates-p-and-append
     (implies (no-duplicates-p (append a b))
              (and (no-duplicates-p a)
-                  (no-duplicates-p b)))))
+                  (no-duplicates-p b)))
+    :rule-classes (:forward-chaining :rewrite)))
 
 (define no-duplicates-list-p
   ((l (true-list-listp l)))
@@ -429,6 +430,12 @@
                   b))
   :hints (("Goal" :in-theory (e/d (member-p) ()))))
 
+(defthm pairwise-disjoint-p-aux-and-append
+  (implies (pairwise-disjoint-p-aux a (append x y))
+           (and (pairwise-disjoint-p-aux a x)
+                (pairwise-disjoint-p-aux a y)))
+  :rule-classes (:rewrite :forward-chaining))
+
 ;; ======================================================================
 
 (define member-list-p (e xs)
@@ -469,6 +476,13 @@
                 (subset-list-p xs xss))
            (member-list-p e xss))
   :hints (("Goal" :in-theory (e/d (subset-p) ()))))
+
+(defthm member-list-p-and-pairwise-disjoint-p-aux
+  (implies (and (not (member-list-p i y))
+                (true-list-listp y))
+           (pairwise-disjoint-p-aux (list i) y))
+  :hints (("Goal" :in-theory (e/d (member-list-p) ())))
+  :rule-classes (:forward-chaining :rewrite))
 
 ;; ======================================================================
 
