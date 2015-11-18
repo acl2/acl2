@@ -828,6 +828,17 @@
         ((equal atype-num 11) "[J")
         (t nil)))
 
+(defun identifier-to-type (ident)
+  (cond ((equal ident 'T_BOOLEAN) "[Z")
+        ((equal ident 'T_CHAR) "[C")
+        ((equal ident 'T_FLOAT) "[F")
+        ((equal ident 'T_DOUBLE) "[D")
+        ((equal ident 'T_BYTE) "[B")
+        ((equal ident 'T_SHORT) "[S")
+        ((equal ident 'T_INT) "[I")
+        ((equal ident 'T_LONG) "[J")
+        (t nil)))
+
 (defun identifier-to-atype (ident)
   (cond ((equal ident 'T_BOOLEAN) 4)
         ((equal ident 'T_CHAR) 5)
@@ -3086,7 +3097,7 @@
   (let* ((atype (arg1 inst))
          (count (top (stack (top-frame th s))))
          (addr (len (heap s)))
-         (obj (makearray (atype-to-type atype)
+         (obj (makearray (identifier-to-type atype)
                          count
                          (init-array 0 count)
                          (class-table s))))
@@ -3760,7 +3771,7 @@
         (cdr constants)
         (let ((const (car constants)))
              (if (equal (car const) 'class)
-                 (collect-types-in-classref (cadr const) types)
+                 (collect-types-in-classref (caddr const) types)
                  types)))))
 
 (defun collect-types-in-fields (fields types)
@@ -3772,19 +3783,19 @@
 
 (defun collect-types-in-instr (instr types)
   (case (car instr)
-    (ANEWARRAY      (collect-types-in-classref (array-type-of (cadr instr)) types))
-    (CHECKCAST      (collect-types-in-classref (cadr instr) types))
-    (GETFIELD       (collect-types-in-fieldref (cadr instr) (caddr instr) types))
-    (GETSTATIC      (collect-types-in-fieldref (cadr instr) (caddr instr) types))
-    (INSTANCEOF     (collect-types-in-classref (cadr instr) types))
-    (INVOKESPECIAL  (collect-types-in-methodref (cadr instr) (caddr instr) types))
-    (INVOKESTATIC   (collect-types-in-methodref (cadr instr) (caddr instr) types))
-    (INVOKEVIRTUAL  (collect-types-in-methodref (cadr instr) (caddr instr) types))
-    (MULTINEWARRAY  (collect-types-in-classref (cadr instr) types))
-    (NEW            (collect-types-in-classref (cadr instr) types))
-    (NEWARRAY       (collect-type (atype-to-type (cadr instr)) types))
-    (PUTFIELD       (collect-types-in-fieldref (cadr instr) (caddr instr) types))
-    (PUTSTATIC      (collect-types-in-fieldref (cadr instr) (caddr instr) types))
+    (ANEWARRAY      (collect-types-in-classref (array-type-of (arg1 instr)) types))
+    (CHECKCAST      (collect-types-in-classref (arg1 instr) types))
+    (GETFIELD       (collect-types-in-fieldref (arg1 instr) (arg2 instr) types))
+    (GETSTATIC      (collect-types-in-fieldref (arg1 instr) (arg2 instr) types))
+    (INSTANCEOF     (collect-types-in-classref (arg1 instr) types))
+    (INVOKESPECIAL  (collect-types-in-methodref (arg1 instr) (arg2 instr) types))
+    (INVOKESTATIC   (collect-types-in-methodref (arg1 instr) (arg2 instr) types))
+    (INVOKEVIRTUAL  (collect-types-in-methodref (arg1 instr) (arg2 instr) types))
+    (MULTINEWARRAY  (collect-types-in-classref (arg1 instr) types))
+    (NEW            (collect-types-in-classref (arg1 instr) types))
+    (NEWARRAY       (collect-type (identifier-to-type (arg1 instr)) types))
+    (PUTFIELD       (collect-types-in-fieldref (arg1 instr) (arg2 instr) types))
+    (PUTSTATIC      (collect-types-in-fieldref (arg1 instr) (arg2 instr) types))
     (otherwise types)))
 
 (defun collect-types-in-program (instrs types)
@@ -4137,12 +4148,12 @@
          (new-address (1+ array-address))
          (chars (cddr cpentry))
          (char-array (if (byte-strings-p (options s))
-                         (makearray 'T_BYTE
+                         (makearray "[B"
                                     (* 2 (len chars))
                                     (chars-to-bytes chars
                                                     (is-big-endian (options s)))
                                     (class-table s))
-                         (makearray 'T_CHAR
+                         (makearray "[C"
                                     (len chars)
                                     chars
                                     (class-table s))))
@@ -4151,7 +4162,7 @@
                             "java/lang/String"
                             "value:[B"
                             (list 'REF array-address)
-                            (set-instance-field "java/lang/Stirng"
+                            (set-instance-field "java/lang/String"
                                                 "coder:B"
                                                 1
                                                 new-object))
