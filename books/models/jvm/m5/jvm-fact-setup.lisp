@@ -132,7 +132,8 @@ The output of jvm2acl2 for M5 is in classes/Demo.
                               "Demo")
                   nil))
    nil
-   *Demo-class-table-in-tagged-form*))
+   *Demo-class-table-in-tagged-form*
+   *default-m5-options*))
 
 (defun Demo ()
   (m5_load (Demo-ms)))
@@ -240,7 +241,8 @@ The output of jvm2acl2 for M5 is in classes/Demo.
                 (INVOKEVIRTUAL "NoClassDefFoundError: java/io/PrintStream"
                                "println:(I)V" 1)
                 (RETURN)))
-          (REF 5))))
+          (REF 5)))
+ DEFAULT-M5-OPTIONS)
 |#
 
 ; But in the paper we discuss it component by component and
@@ -384,7 +386,8 @@ The output of jvm2acl2 for M5 is in classes/Demo.
 (defconst *Demo-state*
   (make-state *demo-thread-table*
               *demo-heap*
-              *demo-class-table*))
+              *demo-class-table*
+              *default-m5-options*))
 
 (defthm demo-state-is-demo
   (equal (Demo)
@@ -475,7 +478,8 @@ The output of jvm2acl2 for M5 is in classes/Demo.
                      'SCHEDULED
                      nil)))
              *demo-heap*
-             *demo-class-table*)))))))
+             *demo-class-table*
+             *default-m5-options*)))))))
 ; Allocate additional bignum space
 (si::allocate 'lisp::bignum 400 t)
 T
@@ -544,7 +548,8 @@ T
         (rref th s))
        (thread-table s))
       (heap s)
-      (class-table s))
+      (class-table s)
+      (options s))
      (- n 1))))
 
 ; The make-state in the induction-hint above is equivalent to
@@ -593,5 +598,6 @@ T
                      (rref th s))
                     (thread-table s))
                    (heap s)
-                   (class-table s))))
+                   (class-table s)
+                   (options s))))
   :rule-classes nil)

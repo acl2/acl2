@@ -136,7 +136,8 @@ class ListProc extends Cons {
                               "ListProc")
                   nil))
    nil
-   *ISort-class-table-in-tagged-form*))
+   *ISort-class-table-in-tagged-form*
+   *default-m5-options*))
 
 (defconst *Isort-state*
   (make-state
@@ -291,7 +292,8 @@ class ListProc extends Cons {
        (invokestatic "ListProc" "isort:(Ljava/lang/Object;)Ljava/lang/Object;" 1)
        (invokestatic "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)
        (areturn)))
-     (ref 6)))))
+     (ref 6)))
+   *default-m5-options*))
 
 (defthm isort-state-is-isort
   (equal (m5_load (ISort-ms))
@@ -814,7 +816,8 @@ class ListProc extends Cons {
                    'SCHEDULED
                    nil)))
            *isort-heap0*
-           *isort-class-table*))
+           *isort-class-table*
+           *default-m5-options*))
          (s1
           (run (append (repeat 0 4)
                        (cons-sched 0)
@@ -869,7 +872,9 @@ class ListProc extends Cons {
                           'SCHEDULED
                           nil)))
              (cons-heap x y (heap s0))
-             (class-table s0)))))|#
+             (class-table s0)
+             (options s0)))))
+|#
 
 
 ; We will need this to maintain the ok-refp hyp through inductions.
@@ -963,7 +968,8 @@ class ListProc extends Cons {
         (rref th s))
        (thread-table s))
       (heap s)
-      (class-table s))
+      (class-table s)
+      (options s))
      e
      (hcdr x (heap s))))
    (t (list th s e x))))
@@ -1142,7 +1148,8 @@ class ListProc extends Cons {
         (rref th s))
        (thread-table s))
       (heap s)
-      (class-table s))
+      (class-table s)
+      (options s))
      (hcdr x (heap s))))))
 
 (defthm alistp-isort-heap

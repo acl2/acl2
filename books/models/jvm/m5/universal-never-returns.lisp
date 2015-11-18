@@ -90,7 +90,8 @@
       (CADDDR (ASSOC-EQUAL TH (THREAD-TABLE S))))
      (THREAD-TABLE S))
     (HEAP S)
-    (CLASS-TABLE S))))
+    (CLASS-TABLE S)
+    (OPTIONS S))))
   :hints (("Goal" :in-theory (enable inside-universalp))))
 
 (defthm poised-to-invoke-universal-never-returns

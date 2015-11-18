@@ -98,7 +98,8 @@ class IDemo {
                               "IDemo")
                   nil))
    nil
-   *IDemo-class-table-in-tagged-form*))
+   *IDemo-class-table-in-tagged-form*
+   *default-m5-options*))
 
 (defun IDemo ()
   (m5_load (IDemo-ms)))
@@ -229,7 +230,8 @@ class IDemo {
 (defconst *IDemo-state*
   (make-state *IDemo-thread-table*
               *IDemo-heap*
-              *IDemo-class-table*))
+              *IDemo-class-table*
+              *default-m5-options*))
 
 (defthm idemo-state-is-idemo
   (equal (IDemo)
@@ -325,7 +327,8 @@ class IDemo {
         (rref th s))
        (thread-table s))
       (heap s)
-      (class-table s))
+      (class-table s)
+      (options s))
      (- n 1))))
 
 (defthm ifact-loop-is-correct

@@ -72,7 +72,8 @@
                                "Test")
                    nil))
                  *demo-heap*
-                 *demo-class-table*)))))
+                 *demo-class-table*
+                 *default-m5-options*)))))
 
     (int-fix (* 2 (! (+ 1 k)))))))
 
@@ -96,7 +97,8 @@
                       "Test")
           nil))
    *demo-heap*
-   *demo-class-table*))
+   *demo-class-table*
+   *default-m5-options*))
 
 (defthm symbolic-computation-step1
   (implies

@@ -320,7 +320,8 @@ Sun Jul 15 14:17:26 2001
                               nil)
                   nil))
    nil
-   *Apprentice-class-table*))
+   *Apprentice-class-table*
+   *default-m5-options*))
 
 (defun Apprentice ()
   (m5_load (Apprentice-ms)))

@@ -130,7 +130,8 @@ Sun Jun 30 23:21:06 2002
         (INVOKESTATIC "Universal" "universal:()I" 0)
         (POP)
         (RETURN)))
-      (REF 5)))))
+      (REF 5)))
+    DEFAULT-M5-OPTIONS))
 
 ; Here is the code array of the method "universal":
 

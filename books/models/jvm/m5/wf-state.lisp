@@ -163,13 +163,6 @@
                         (n 0)))
     ("subgoal 1" :in-theory (enable |len bind|)))))
 
-(local (defthm states
-  (and (equal (thread-table (make-state tt h c)) tt)
-       (equal (heap (make-state tt h c)) h)
-       (equal (class-table (make-state tt h c)) c))))
-
-(local (in-theory (disable make-state thread-table heap class-table)))
-
 (local (acl2::defrule |indexed-alistp thread-table|
   (implies
     (indexed-alistp (thread-table s))
@@ -215,7 +208,9 @@
                              (- car-counts 1)
                              cdr-counts
                              (make-state (thread-table s)
-                                         new-heap (class-table s))
+                                         new-heap
+                                         (class-table s)
+                                         (options s))
                              (cons (list 'ref new-addr) ac))))
       (if (<= (len cdr-counts) 1)
           (mv (len (heap s))

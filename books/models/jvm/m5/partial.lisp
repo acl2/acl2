@@ -244,14 +244,14 @@
 ; prove more stuff!
 
 (defthm half-inv-make-state-opener
-  (implies (and (equal s (make-state tt hp ct))
+  (implies (and (equal s (make-state tt hp ct os))
                 (equal pc (pc (top-frame th s)))
                 (syntaxp (quotep pc))
                 (not (equal pc 0))
                 (not (equal pc 2))
                 (not (equal pc 18)))
-           (equal (half-inv th (make-state tt hp ct) n0)
-                  (half-inv th (step th (make-state tt hp ct)) n0))))
+           (equal (half-inv th (make-state tt hp ct os) n0)
+                  (half-inv th (step th (make-state tt hp ct os)) n0))))
 
 ; ---------------------------------------------------------------------------
 ; Proofs
@@ -433,14 +433,14 @@
     (sum-inv th (step th s) n0)))
 
 (defthm sum-inv-make-state-opener
-  (implies (and (equal s (make-state tt hp ct))
+  (implies (and (equal s (make-state tt hp ct os))
                 (equal pc (pc (top-frame th s)))
                 (syntaxp (quotep pc))
                 (not (equal pc 0))
                 (not (equal pc 2))
                 (not (equal pc 18)))
-           (equal (sum-inv th (make-state tt hp ct) n0)
-                  (sum-inv th (step th (make-state tt hp ct)) n0))))
+           (equal (sum-inv th (make-state tt hp ct os) n0)
+                  (sum-inv th (step th (make-state tt hp ct os)) n0))))
 
 (defthm sum-inv-step
   (implies (sum-inv th s n0)

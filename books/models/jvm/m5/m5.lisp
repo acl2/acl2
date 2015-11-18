@@ -211,18 +211,20 @@
 ; -----------------------------------------------------------------------------
 ; States
 
-(defun make-state (thread-table heap class-table)
-  (list thread-table heap class-table))
+(defun make-state (thread-table heap class-table options)
+  (list thread-table heap class-table options))
 (defun thread-table (s) (nth 0 s))
-(defun heap        (s) (nth 1 s))
+(defun heap (s) (nth 1 s))
 (defun class-table (s) (nth 2 s))
+(defun options (s) (nth 3 s))
 
 (defthm states
-  (and (equal (thread-table (make-state tt h c)) tt)
-       (equal (heap (make-state tt h c)) h)
-       (equal (class-table (make-state tt h c)) c)))
+  (and (equal (thread-table (make-state tt h c o)) tt)
+       (equal (heap (make-state tt h c o)) h)
+       (equal (class-table (make-state tt h c o)) c)
+       (equal (options (make-state tt h c o)) o)))
 
-(in-theory (disable make-state thread-table heap class-table))
+(in-theory (disable make-state thread-table heap class-table options))
 
 (defun make-thread (call-stack status rref)
   (list call-stack status rref))
@@ -296,11 +298,26 @@
        (return)))
     '(ref -1)))
 
-(defconst *java.lang.String-fake*
+; Fake java.lang.String with fields like JDK 8
+(defconst *java.lang.String-fake8*
   (make-class-decl
     "java/lang/String"
     '("java/lang/Object")
     '("value:[C")
+    '()
+    '()
+    '(("<init>:()V" nil
+       (aload_0)
+       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (return)))
+    '(ref -1)))
+
+; Fake java.lang.String with fields like JDK 9
+(defconst *java.lang.String-fake9*
+  (make-class-decl
+    "java/lang/String"
+    '("java/lang/Object")
+    '("value:[B" "coder:B")
     '()
     '()
     '(("<init>:()V" nil
@@ -332,8 +349,23 @@
                           '()
                           '(ref -1))
          *java.lang.Thread-fake*
-         *java.lang.String-fake*
+         *java.lang.String-fake8*
          *java.lang.Class-fake*))
+
+(defconst *default-m5-options*
+  'DEFAULT-M5-OPTIONS)
+
+(defund is-big-endian (options)
+  (case options
+    (UTF16-BIG-ENDIAN 1)
+    (UTF16-LITTLE-ENDIAN 0)
+    (otherwise 0)))
+
+(defund byte-strings-p (options)
+  (case options
+    (UTF16-BIG-ENDIAN t)
+    (UTF16-LITTLE-ENDIAN t)
+    (otherwise nil)))
 
 ; -----------------------------------------------------------------------------
 ; A Constant Pool
@@ -670,7 +702,10 @@
           (list 'heap s))
         (if (suppliedp :class-table args)
             (actual :class-table args)
-          (list 'class-table s))))
+          (list 'class-table s))
+        (if (suppliedp :options args)
+            (actual :options args)
+          (list 'options s))))
 
 ; -----------------------------------------------------------------------------
 ; Helper functions related to building instances of objects
@@ -828,7 +863,8 @@
                                  cdr-counts
                                  (make-state (thread-table s)
                                              new-heap
-                                             (class-table s))
+                                             (class-table s)
+                                             (options s))
                                  (cons (list 'REF new-addr) ac)))))
 
   ; makemultiarray :: [counts], s --> addr, new-heap
@@ -2558,6 +2594,11 @@
                      :stack (push (fpsqrt (top (stack (top-frame th s)))
                                            (rtl::dp))
                                   (stack (top-frame th s1)))))
+            ((and (equal class "java/lang/StringUTF16")
+                  (equal method-name-and-type "isBigEndian()Z"))
+             (modify th s1
+                     :stack (push (is-big-endian (options s))
+                                  (stack (top-frame th s1)))))
             (t s)))
      ((and (method-sync method-decl)
            (objectLockable? class-instance th))
@@ -3588,7 +3629,8 @@
 (defun assemble_state (s)
   (make-state (assemble_thread_table (thread-table s))
               (heap s)
-              (assemble_class_table (class-table s))))
+              (assemble_class_table (class-table s))
+              (options s)))
 
 ; -----------------------------------------------------------------------------
 ; Linking.
@@ -3788,6 +3830,17 @@
 ; load_class_library: a utility for populating the heap with Class and
 ;                     String objects
 
+(defund chars-to-bytes (chars is-big-endian)
+  (if (endp chars)
+      nil
+      (if (equal is-big-endian 0)
+          (cons (byte-fix (car chars))
+                (cons (byte-fix (shr (car chars) 8))
+                      (chars-to-bytes (cdr chars) is-big-endian)))
+          (cons (byte-fix (shr (car chars) 8))
+                (cons (byte-fix (car chars))
+                      (chars-to-bytes (cdr chars) is-big-endian))))))
+
 (defun make-string-obj (class cpentry s idx)
   (let* ((new-object (build-an-instance
                       (cons "java/lang/String"
@@ -3797,14 +3850,29 @@
          (array-address (len (heap s)))
          (new-address (1+ array-address))
          (chars (cddr cpentry))
-         (char-array (makearray 'T_CHAR
-                                (len chars)
-                                chars
-                                (class-table s)))
-         (stuffed-obj (set-instance-field "java/lang/String"
-                                          "value:[C"
-                                          (list 'REF array-address)
-                                          new-object))
+         (char-array (if (byte-strings-p (options s))
+                         (makearray 'T_BYTE
+                                    (* 2 (len chars))
+                                    (chars-to-bytes chars
+                                                    (is-big-endian (options s)))
+                                    (class-table s))
+                         (makearray 'T_CHAR
+                                    (len chars)
+                                    chars
+                                    (class-table s))))
+         (stuffed-obj (if (byte-strings-p (options s))
+                          (set-instance-field
+                            "java/lang/String"
+                            "value:[B"
+                            (list 'REF array-address)
+                            (set-instance-field "java/lang/Stirng"
+                                                "coder:B"
+                                                1
+                                                new-object))
+                          (set-instance-field "java/lang/String"
+                                              "value:[C"
+                                              (list 'REF array-address)
+                                              new-object)))
          (new-heap (bind new-address
                          stuffed-obj
                          (bind array-address
@@ -3858,7 +3926,8 @@
                                 new-ct)))
         (make-state (thread-table s)
                     (bind new-address stuffed-obj new-heap)
-                    new-class-table)))
+                    new-class-table
+                    (options s))))
 
 (defun ld_class_lib (classes s)
   (if (endp classes)
