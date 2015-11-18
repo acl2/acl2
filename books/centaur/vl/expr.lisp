@@ -1435,19 +1435,39 @@ and generally makes it easier to write safe expression-processing code.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-  ;; BOZO document these
-
   (deftagsum vl-patternkey
     :measure (two-nats-measure (acl2-count x) 100)
     :parents (vl-pattern)
     :short "A key in an assignment pattern."
     (:expr
-     ;; BOZO This could either be the name of a struct field, or a constant
-     ;; expression (e.g. a parameter name).  But we don't foresee being able to
-     ;; tell this at parse time so we'll leave it to later interpretation.
+     :short "An unambiguous array index pattern key like @('5') or @('foo +
+             bar')."
      ((key vl-expr-p)))
-    (:type ((type vl-datatype-p)))
-    (:default ()))
+    (:structmem
+     :short "A struct member pattern key like @('opcode').  Note that until
+             @(see annotate) is done, this may be a type name which needs to be
+             disambiguated."
+     ((name stringp :rule-classes :type-prescription)))
+    (:type
+     :short "A type pattern key like @('integer') or @('mytype_t')."
+     ((type vl-datatype-p)))
+    (:default
+     :short "The special @('default') pattern key."
+     ())
+    :long "<p>A @('vl-patternkey') represents a single key in an key/value
+           style assignment pattern, such as:</p>
+
+           @({
+                '{ 0: a, 1: b, 2: c, default: 0 }    // assign to some array indices, default others...
+                '{ foo: 3, bar: 5 }                  // assign to struct members by name (maybe)
+                '{ integer: 5, opcode_t: 7 }         // assign to struct members by type (maybe)
+           })
+
+           <p>These kinds of pattern keys are, in general, somewhat ambiguous
+           and difficult to resolve until elaboration time.  To avoid the worst
+           of these ambiguities we impose certain restrictions on the kinds of
+           assignment patterns we support; @(see vl-patternkey-ambiguity) for
+           some notes about this.</p>")
 
   (fty::defalist vl-keyvallist
     :measure (two-nats-measure (acl2-count x) 10)

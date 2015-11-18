@@ -34,7 +34,10 @@
 (in-package "VL")
 (set-debugger-enable t)
 (break-on-error t)
+(set-slow-alist-action :break)
 (ld "centaur/jared-customization.lsp" :dir :system)
+(include-book "centaur/vl/loader/parser/tests/base" :dir :system)
+(with-redef (defconst *vl-shadowcheck-debug* nil))
 
 (define vl-pps-exprlist ((x vl-exprlist-p))
   (if (atom x)
@@ -43,16 +46,22 @@
           (vl-pps-exprlist (cdr x)))))
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./bits/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./sameports/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
   (vl-lint-report lintresult state))
 
+
+
+
 (trace$ vl-tweak-fussy-warning-type)
 (trace$ nats-below-p)
 (trace$ vl-collect-unsized-ints)
 (trace$ vl-expr-interesting-size-atoms)
+
+(trace$ vl-idexpr-p$inline)
+(trace-parser vl-parse-patternkey-fn)
 
 (defconsts (*loadres* state)
   (b* (((vl-lintconfig config) *lintconfig*)
@@ -154,6 +163,8 @@
                        :err err
                        :item (vl-hidstep->item (car trace))
                        :tail (with-local-ps (vl-pp-hidexpr tail))))))
+
+
 
 (defconsts (*lintres* state)
   (b* ((res (run-vl-lint-main (vl-loadresult->design *loadres*)

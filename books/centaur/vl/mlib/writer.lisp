@@ -710,6 +710,7 @@ displays.  The module browser's web pages are responsible for defining the
     :measure (two-nats-measure (vl-patternkey-count x) 10)
     (vl-patternkey-case x
       :expr (vl-pp-expr x.key)
+      :structmem (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.name)))
       :type (vl-pp-datatype x.type)
       :default (vl-print "default")))
 

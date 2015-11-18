@@ -33,57 +33,64 @@
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
-; We might consider unlocalizing some of these and finding them homes, but
-; they're not necessarily that widely useful and, for instance, the modelement
-; rules here might be kind of slow in general.
-
-(local (in-theory (disable (tau-system))))
-
-(local (defthm vl-modelement-p-when-vl-blockitem-p
-         (implies (vl-blockitem-p x)
-                  (vl-modelement-p x))
-         :hints(("Goal" :in-theory (enable vl-blockitem-p vl-modelement-p
-                                           tag-reasoning)))))
-
-(local (defthm vl-modelementlist-p-when-vl-blockitemlist-p
-         (implies (vl-blockitemlist-p x)
-                  (vl-modelementlist-p x))
-         :hints(("Goal" :induct (len x)))))
-
 (defxdoc make-implicit-wires
   :parents (annotate)
-  :short "Add declarations for implicit wires."
+  :short "Create explicit declarations for implicit wires.  This is generally
+the first step after parsing a design."
 
-  :long "<p>Verilog allows wires to be implicitly declared in certain
-cases.</p>
+  :long "<p>Verilog allows wires to be implicitly declared in certain cases.
+For instance, even if @('w') has not yet been declared, you can write things
+like:</p>
+
+@({
+    assign w = &in;
+})
+
+<p>and we are to assume that @('w') is a one-bit wire.  This is mostly
+straightforward but there are some subtleties; see @(see
+implicit-wires-minutia) for more discussion.</p>
+
+<p>Our general approach to handling these wires in VL is to add explicit
+declarations for them.  Having explicit declarations seems like a generally
+good idea.  For instance, it allows us to easily check for conflicting
+declarations with the same name, and to generally assume that when we look
+something up we should get a real declaration for it.</p>
 
 <p>Historically, VL added explicit declarations for these wires as part of the
 @(see loader), even before a proper @(see vl-module-p) structures were
-generated.  This allowed all transforms to expect that every wire should have a
-declaration.  It also allowed us to consider the order of module elements,
-without having to rely on some technique such as the @(see vl-location-p)s
-associated with module elements, which could be unreliable if a module spans
-multiple files, e.g., because of @(see preprocessor) includes.</p>
-
-<p>When we added support for SystemVerilog @('import') statements, we found
+generated, which allowed us to easily consider the order of module elements.
+But when we added support for SystemVerilog @('import') statements, we found
 this approach to be tricky.  In particular, to decide whether we need to add a
 declaration for some particular wire @('foo'), we now need to consider whether
-@('foo') is defined by any imported package.  For this, we really want to be
-able to inspect the whole @(see vl-design) while making implicit wires.</p>
+@('foo') is defined by any imported package.  For this to work, we really want
+to be able to inspect the whole @(see vl-design) while making implicit wires.
+We therefore decided to split making implicit wires out of the parser and into
+a separate transform.</p>
 
-<p>We therefore decided to split making implicit wires out of the parser and
-into a proper transform.  However, we generally expect to run this transform
-very early, perhaps even as the first step after parsing.  Normally this should
-be done as part of the @(see annotate) transform.</p>
+<h3>Note: Special Transform!</h3>
 
-<p>Note that this transform is somewhat unique.  It is the only transform that
-considers the module elements in the order that they occur in the file.  It
-reads this information from the @('loaditems') field of the @(see vl-module).
-As part of this transform, the @('loaditems') field is <b>cleared</b>.  Other
-transforms should never use @('loaditems').</p>
+<p>This transform is unique and we generally expect to run it as the first step
+after parsing.  Normally it is invoked as part of @(see annotate).  It is also
+closely related to @(see shadowcheck)&mdash;indeed, it invokes
+shadowcheck&mdash; and the two should generally be regarded as a single,
+unified transition from just-parsed modules to a more canonical form.</p>
 
+<p>The special thing about @('make-implicit-wires') and @('shadowcheck') is
+that these transforms we need to process module elements in parse order, i.e.,
+the order that things occur in the source files.  In contrast, throughout the
+rest of VL we pay no attention to the parse order and just treat modules as if
+they contain various sets of elements (e.g., assignments, gates, etc.).</p>
 
-<h3>Implicit Wires in the Verilog-2005 Standard</h3>
+<p>The elements are available in parse order in the special @('parse-temps')
+field of the @(see vl-module).  Other transforms should never look at
+@('parse-temps'), but should refer to these typed fields, instead.</p>")
+
+(local (xdoc::set-default-parents make-implicit-wires))
+
+(defxdoc implicit-wires-minutia
+  :short "Some details about implicit wires."
+  :long "<p>Adding implicit wires turns out to be surprisingly subtle.  Here
+are some notes about implicit wires in Verilog-2005.</p>
 
 <p>When a wire is implicitly declared, its type is controlled by the
 @('`default_nettype') compiler directive (Section 19.2).  But VL's @(see
@@ -91,7 +98,9 @@ preprocessor) does not yet support this directive and will cause an error if it
 is used, so for now we can safely assume any implicit wires should just have
 type @('wire').  (We can probably add support @('default_nettype') without too
 much work, since our new approach of going through the module elements
-sequentially means that we have easy access to location information.)</p>
+sequentially means that we have easy access to location information.  On the
+other hand, this is a really subtle directive to be using and we hope nobody
+tries to use it.)</p>
 
 <p>We think wires need to be declared, explicitly or implicitly, before being
 used.  The Verilog-2005 standard seems not to explicitly say whether or not
@@ -104,16 +113,15 @@ identifier has not been <b>declared previously</b> in the scope...</i>.\"</p>
 
 <p>Section 4.5 outlines the conditions under which an implicit wire declaration
 is supposed to be made.  In each case, the implicit declaration is to be added
-to the nearest scope, but it seems like this only matters in the case of
-@('generate') blocks, which we don't currently support.  (You might think that
-it would matter for functions, tasks, and named blocks as well, but it doesn't
-seem possible to use implicit wires in these contexts, see bullet #4 below for
-details).</p>
+to the nearest scope.  It seems like this mostly only matters in the case of
+@('generate') blocks.  You might think that it would matter for functions,
+tasks, and named blocks as well, but it doesn't seem possible to use implicit
+wires in these contexts, see bullet #4 below for details.</p>
 
 <p>Note: I think that throughout Section 4.5, the words <i>port expression
 declaration</i> are a typo that should be <i>port declaration</i>; nowhere else
 in the Verilog-2005 standard do the words <i>port expression declaration</i>
-occur, at least according to Acrobat's find function.)</p>
+occur, at least according to Acrobat's find function.</p>
 
 <h4>Case 1</h4>
 
@@ -144,7 +152,7 @@ means we should infer implicit wires in the ports/terminals of any instance,
 regardless of whether it's a gate/udp/module.</p>
 
 
-<h3>Implicit Wires in Verilog Implementations</h3>
+<h3>Implicit Wires in Verilog Tools</h3>
 
 <p>We developed some tests (see @('test/test-implicit.v')) to see how
 Verilog-XL and NCVerilog handle implicit wires.  Here are our findings.</p>
@@ -159,33 +167,37 @@ right-hand side of an @('assign') statement.  This seems to agree with Case
 
 <p><b>#3</b>.  As expected, NCVerilog allows us to infer implicit nets from the
 left-hand sides of @('assign') elements.  Unfortunately, Verilog-XL complains
-about such wires, which seems to contradict the Verilog-2005 standard.  As a
-compromise, our approach is to mimick NCVerilog and infer the implicit net, but
-warn that some other tools like Verilog-XL may not allow the construct.</p>
+about such wires, which seems to contradict the Verilog-2005 standard.  We
+choose to mimick NCVerilog and infer the implicit net.  Historically we also
+issued warnings that other tools like Verilog-XL may not allow the construct,
+but these warnings seemed to be noise and we eventually decided that it would
+be better not to issue them.</p>
 
 <p>A subtle case is, what if #2 and #3 overlap, i.e., an undeclared wire occurs
-on both the left-hand and right-hand sides?  NCVerilog seems to process the
-left-hand side first, and hence it allows us to infer an implicit wire for
-@('w') when we give it an assignment like @('assign w = w').  This isn't
-entirely contrived; someone might occasionally write things like @('assign {a,
-abar} = {foo, ~a}').</p>
+on both the left-hand and right-hand sides?  This isn't entirely contrived;
+someone might occasionally write things like @('assign {a, abar} = {foo, ~a}').
+NCVerilog seems to process the left-hand side first, and hence it allows us to
+infer an implicit wire for @('w') when we give it an assignment like @('assign
+w = w').</p>
 
 <p><b>#4</b>.  Mostly as expected, neither tool allows undeclared wires on
 either side of an assignment in an always block.  The tools even reject
 implicit wires in procedural continuous assignments, e.g., @('always @(b)
-assign w = a;').  But this seems arguably incorrect: is not a procedural
-continuous assignment also a continuous assignment, whose LHS should therefore
-be able to contain implicit wires?</p>
+assign w = a;').</p>
 
-<p>We mimick these tools and disallow the implicit net, even thought the spec
-might perhaps be interpreted as allowing it, because it allows us to avoid
-certain scoping issues.  In particular, suppose we see a procedural continuous
-assignment statement, @('assign w = ...'), where @('w') is not declared.  If
-this statement occurs in a task or a named block within an initial/always
-statement, should the declaration for @('w') be added to the module or to this
-more local scope?  I'm not sure.  So, the good thing about not inferring
-implicit nets for these assignments is that I don't have to be able to answer
-the question, because I'm not going to infer a net anyway.</p>
+<p>This seems arguably incorrect: is not a procedural continuous assignment
+also a continuous assignment, whose LHS should therefore be able to contain
+implicit wires?  But we mimick these tools and disallow the implicit net, even
+thought the spec might perhaps be interpreted as allowing it.</p>
+
+<p>A nice consequence of disallowing implicit wires here is that it allows us
+to avoid certain scoping questions.  In particular, suppose we see a procedural
+continuous assignment statement, @('assign w = ...'), where @('w') is not
+already declared.  If this statement occurs in a task or a named block within
+an initial/always statement, should the declaration for @('w') be added to the
+module or to this more local scope?  I'm not sure.  So, the good thing about
+not inferring implicit nets for these assignments is that I don't have to be
+able to answer the question, because I'm not going to infer a net anyway.</p>
 
 <p><b>#5</b>.  As expected, neither implementation tolerates undeclared wires
 on either side of assignments in function bodies.  This seems perfectly
@@ -286,7 +298,7 @@ add the wire declarations at the locations in which they are implicitly
 declared, and mark them with the @('VL_IMPLICIT') attribute, which is useful in
 @(see typo-detection).</p>")
 
-(local (xdoc::set-default-parents make-implicit-wires))
+
 
 ; FEATURE-CREEP WARNING.
 ;
@@ -294,23 +306,160 @@ declared, and mark them with the @('VL_IMPLICIT') attribute, which is useful in
 ; illegally redefined wires, compatibility between port and net declarations,
 ; etc.  But after some false starts down this road, I think this is a mistake.
 ;
-; We only need to care about the order of elements to (1) properly handle
-; adding implicit wires, and (2) make sure things are defined before being
-; used.  Other kinds of well-formedness checks, e.g., that make sure nothing is
-; multiply defined, that the ports/netdecls agree, etc., really don't need to
-; consider module element order, so keep them separate!
+; We only need to care about the order of elements to properly handle adding
+; implicit wires.  Other kinds of well-formedness checks, e.g., that make sure
+; nothing is multiply defined, that the ports/netdecls agree, etc., really
+; don't need to consider module element order, so keep them separate!
+;
+; We used to check, here, that names are defined before being used.  That made
+; some amount of sense since that's highly related to parse order.  But we now
+; prefer to relegate this to shadowcheck, where we have full scopestacks and
+; can generally look things up more reliably.
+
+(defines vl-expr-names-for-implicit-nrev
+  :parents (vl-expr-names-for-implicit)
+  :flag-local nil
+
+  (define vl-expr-names-for-implicit-nrev ((x vl-expr-p) nrev)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (vl-expr-case x
+      (:vl-index
+       ;; Want only plain names with no selects/indexing, and don't want to
+       ;; descend into any select/indexing subexpressions.
+       (if (and (vl-idscope-p x.scope)
+                (vl-partselect-case x.part :none)
+                (atom x.indices))
+           (nrev-push (vl-idscope->name x.scope) nrev)
+         (nrev-fix nrev)))
+      ;; The pattern case is subtle.  See particularly vl-patternkey and
+      ;; vl-patternkey-ambiguity.  Historically we had problems with pattern
+      ;; keys like "foo" fooling us into introducing implicit wires.  Now our
+      ;; parser makes sure to treat those as structure names, so we can just
+      ;; fall through to the default here and it works out correctly.
+      (:otherwise
+       (vl-exprlist-names-for-implicit-nrev (vl-expr->subexprs x) nrev))))
+
+  (define vl-exprlist-names-for-implicit-nrev ((x vl-exprlist-p) nrev)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (b* (((when (atom x))
+          (nrev-fix nrev))
+         (nrev (vl-expr-names-for-implicit-nrev (car x) nrev)))
+      (vl-exprlist-names-for-implicit-nrev (cdr x) nrev))))
+
+
+(defines vl-expr-names-for-implicit
+  :short "Collect up wire names that might need to be implicitly declared."
+
+  :long "<p>Experimentation with NCVerilog and VCS reveals that only certain
+names within expressions lead to implicit wires being declared.  Here are some
+findings:</p>
+
+<ul>
+
+<li>If we have a plain name on the left-hand side, like @('assign foo = 0'), then
+we get an implicit wire.</li>
+
+<li>If we instead have something like @('assign foo.bar = 0'), then we're
+referencing something elsewhere and we don't want to create implicit wires
+named @('foo') or @('bar').</li>
+
+<li>Suppose we explicitly declare @('wire [3:0] vec;').  Then both NCVerilog
+and VCS reject @('assign vec[w] = 0') where @('w') is undeclared, instead of
+inferring an implicit wire @('w').  So I think we do not want to collect names
+from <i>within</i> the indices and part-selects.</li>
+
+<li>When @('foo') is not previously declared, both NCVerilog and VCS reject
+@('assign foo[0] = 0').  So I don't think we want to collect names that have
+indexing or part-selects applied to them.</li>
+
+<li>On the other hand, NCVerilog rejects but VCS accepts (with warnings) gates
+such as @('buf mybuf(o, foo[0])'), and seems to infer a wire for @('foo').  We
+will try to mimic NCVerilog's behavior since it is more consistent, and
+<i>not</i> infer wires that are being indexed into.</li>
+
+<li>Within gate connections, NCV and VCS allow implicit wires in many
+expressions, e.g., @('w1 + w2'), @('myfun(w)'), both sides of @('inside')
+expressions, etc.</li>
+
+<li>In submodule connections, NCV allows implicit wires to be inferred inside
+of assignment patterns like @('triple_t'{a:implicit_w1,b:implicit_w2,...}').
+Our version of VCS says this isn't yet implemented.</li>
+
+</ul>"
+
+  (define vl-expr-names-for-implicit ((x vl-expr-p))
+    :returns (names string-listp)
+    :measure (vl-expr-count x)
+    :verify-guards nil
+    (mbe :logic
+         (vl-expr-case x
+           (:vl-index
+            ;; Want only plain names with no selects/indexing, and don't want to
+            ;; descend into any select/indexing subexpressions.
+            (if (and (vl-idscope-p x.scope)
+                     (vl-partselect-case x.part :none)
+                     (atom x.indices))
+                (list (vl-idscope->name x.scope))
+              nil))
+           ;; The pattern case is subtle.  See particularly vl-patternkey and
+           ;; vl-patternkey-ambiguity.  Historically we had problems with pattern
+           ;; keys like "foo" fooling us into introducing implicit wires.  Now our
+           ;; parser makes sure to treat those as structure names, so we can just
+           ;; fall through to the default here and it works out correctly.
+           (:otherwise
+            (vl-exprlist-names-for-implicit (vl-expr->subexprs x))))
+         :exec
+         (with-local-nrev
+           (vl-expr-names-for-implicit-nrev x nrev))))
+
+  (define vl-exprlist-names-for-implicit ((x vl-exprlist-p))
+    :returns (names string-listp)
+    :measure (vl-exprlist-count x)
+    (mbe :logic
+         (if (atom x)
+             nil
+           (append (vl-expr-names-for-implicit (car x))
+                   (vl-exprlist-names-for-implicit (cdr x))))
+         :exec
+         (with-local-nrev
+           (vl-exprlist-names-for-implicit-nrev x nrev))))
+  ///
+
+  (defthm true-listp-of-vl-expr-names-for-implicit
+    (true-listp (vl-expr-names-for-implicit x))
+    :rule-classes :type-prescription)
+
+  (defthm true-listp-of-vl-exprlist-names-for-implicit
+    (true-listp (vl-exprlist-names-for-implicit x))
+    :rule-classes :type-prescription)
+
+  (deffixequiv-mutual vl-expr-names-for-implicit)
+
+  (defthm-vl-expr-names-for-implicit-nrev-flag
+    (defthm vl-expr-names-for-implicit-nrev-removal
+      (equal (vl-expr-names-for-implicit-nrev x nrev)
+             (append nrev (vl-expr-names-for-implicit x)))
+      :flag :expr)
+    (defthm vl-exprlist-names-for-implicit-nrev-removal
+      (equal (vl-exprlist-names-for-implicit-nrev x nrev)
+             (append nrev (vl-exprlist-names-for-implicit x)))
+      :flag :list)
+    :hints(("Goal"
+            :in-theory (enable acl2::rcons)
+            :expand ((vl-expr-names-for-implicit x)
+                     (vl-exprlist-names-for-implicit x)
+                     (vl-expr-names-for-implicit-nrev x nrev)
+                     (vl-exprlist-names-for-implicit-nrev x nrev)))))
+  (verify-guards vl-expr-names-for-implicit))
+
 
 (define vl-make-ordinary-implicit-wires
   :short "Generate net declarations for one-bit implicit wires."
-  ((loc   vl-location-p)
-   (names string-listp))
-  :returns (nets vl-vardecllist-p)
-  :long "<p>We are given @('x'), a string list that should initially contain
-the names of some implicit wires that we are supposed to introduce, and
-@('loc'), a @(see vl-location-p) that should be the @('minloc') for the module.
-We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
-@('x').</p>"
-
+  ((loc   vl-location-p "Location to use for the new declarations.")
+   (names string-listp  "Names of wires to make declarations for."))
+  :returns (nets vl-vardecllist-p "One-bit wire declarations for these names.")
   (if (consp names)
       (cons (make-vl-vardecl :name (car names)
                              :type *vl-plain-old-wire-type*
@@ -324,161 +473,62 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
     (equal (vl-vardecllist->names (vl-make-ordinary-implicit-wires loc names))
            (string-list-fix names))))
 
-(define vl-collect-exprs-for-implicit-wires-from-namedarg
-  :parents (vl-modinst-exprs-for-implicit-wires)
-  ((x vl-namedarg-p))
-  :returns
-  (mv (main  vl-exprlist-p "Expressions where implicit wires are allowed.")
-      (other vl-exprlist-p "Expressions where implicit wires are not allowed."))
+
+(define vl-collect-exprs-for-implicit-wires-from-namedarg ((x vl-namedarg-p))
+  :returns (exprs vl-exprlist-p "Expressions where implicit wires are allowed.")
   (b* (((vl-namedarg x))
        ((when x.nameonly-p)
         ;; SystemVerilog name-only style arguments like .foo are not allowed to
-        ;; introduce implicit wires, so put them into the "other" wires.
-        (mv nil (vl-maybe-expr-allexprs x.expr))))
-    (mv (vl-maybe-expr-allexprs x.expr) nil))
+        ;; introduce implicit wires.
+        nil))
+    (vl-maybe-expr-allexprs x.expr))
   ///
-  (defmvtypes vl-collect-exprs-for-implicit-wires-from-namedarg (true-listp true-listp))
+  (more-returns (exprs true-listp :rule-classes :type-prescription)))
 
-  (defthm vl-collect-exprs-for-implicit-wires-from-namedarg-complete
-    ;; Just to make sure we keep this up to date if we ever change
-    ;; vl-namedarg-allexprs
-    (b* (((mv main other)
-          (vl-collect-exprs-for-implicit-wires-from-namedarg x)))
-      (set-equiv (append main other)
-                 (vl-namedarg-allexprs x)))
-    :hints(("Goal" :in-theory (enable set-equiv vl-namedarg-allexprs)))))
-
-(define vl-collect-exprs-for-implicit-wires-from-namedargs
-  :parents (vl-modinst-exprs-for-implicit-wires)
-  ((x vl-namedarglist-p))
-  :returns
-  (mv (main  vl-exprlist-p "Expressions where implicit wires are allowed.")
-      (other vl-exprlist-p "Expressions where implicit wires are not allowed."))
-  (b* (((when (atom x))
-        (mv nil nil))
-       ((mv main1 other1) (vl-collect-exprs-for-implicit-wires-from-namedarg (car x)))
-       ((mv main2 other2) (vl-collect-exprs-for-implicit-wires-from-namedargs (cdr x))))
-    (mv (append main1 main2)
-        (append other1 other2)))
+(define vl-collect-exprs-for-implicit-wires-from-namedargs ((x vl-namedarglist-p))
+  :returns (exprs vl-exprlist-p "Expressions where implicit wires are allowed.")
+  (if (atom x)
+      nil
+    (append (vl-collect-exprs-for-implicit-wires-from-namedarg (car x))
+            (vl-collect-exprs-for-implicit-wires-from-namedargs (cdr x))))
   ///
-  (defmvtypes vl-collect-exprs-for-implicit-wires-from-namedargs (true-listp true-listp))
+  (more-returns (exprs true-listp :rule-classes :type-prescription)))
 
-  (local (defthm l1
-           (b* (((mv main other)
-                 (vl-collect-exprs-for-implicit-wires-from-namedarg x)))
-             (set-equiv (vl-namedarg-allexprs x)
-                        (append main other)))))
-
-  (local (in-theory (disable vl-collect-exprs-for-implicit-wires-from-namedarg-complete)))
-
-  (defthm vl-collect-exprs-for-implicit-wires-from-namedargs-complete
-    ;; Just to make sure we keep this up to date if we ever change
-    ;; vl-namedarglist-allexprs
-    (b* (((mv main other)
-          (vl-collect-exprs-for-implicit-wires-from-namedargs x)))
-      (set-equiv (append main other)
-                 (vl-namedarglist-allexprs x)))
-    :hints(("Goal"
-            :induct (len x)
-            :in-theory (enable set-equiv vl-namedarglist-allexprs)))))
-
-(define vl-collect-exprs-for-implicit-wires-from-portargs
-  :parents (vl-modinst-exprs-for-implicit-wires)
-  ((x vl-arguments-p))
-  :returns
-  (mv (main  vl-exprlist-p "Expressions where implicit wires are allowed.")
-      (other vl-exprlist-p "Expressions where implicit wires are not allowed."))
+(define vl-collect-exprs-for-implicit-wires-from-portargs ((x vl-arguments-p))
+  :returns (exprs vl-exprlist-p "Expressions where implicit wires are allowed.")
   (vl-arguments-case x
     (:vl-arguments-named
      (vl-collect-exprs-for-implicit-wires-from-namedargs x.args))
     (:vl-arguments-plain
      ;; If using plain arguments, there are no .name style arguments, so
      ;; everything is allowed to have implicit wires.
-     (mv (vl-plainarglist-allexprs x.args)
-         nil)))
+     (vl-plainarglist-allexprs x.args)))
   ///
-  (defmvtypes vl-collect-exprs-for-implicit-wires-from-portargs (true-listp true-listp))
+  (more-returns (exprs true-listp :rule-classes :type-prescription)))
 
-  (defthm vl-collect-exprs-for-implicit-wires-from-portargs-complete
-    ;; Just to make sure we keep this up to date if we ever change
-    ;; vl-arguments-allexprs
-    (b* (((mv main other)
-          (vl-collect-exprs-for-implicit-wires-from-portargs x)))
-      (set-equiv (append main other)
-                 (vl-arguments-allexprs x)))
-    :hints(("Goal"
-            :in-theory (enable set-equiv vl-arguments-allexprs)))))
-
-(define vl-modinst-exprs-for-implicit-wires
-  :short "Get the expressions from a module instance, for making implicit wires."
-  ((x vl-modinst-p))
-  :returns
-  (mv (main vl-exprlist-p
-            "The expressions from the modinst's port list, where implicit wires
-             are allowed.")
-      (other vl-exprlist-p
-             "The other expressions in the module instance (its range,
-              parameter list, etc.) where implicit wires aren't allowed."))
-  (b* (((vl-modinst x) x)
-       ((mv main other)
-        (vl-collect-exprs-for-implicit-wires-from-portargs x.portargs)))
-    (mv main (append other
-                     (vl-maybe-range-allexprs x.range)
-                     (vl-paramargs-allexprs x.paramargs)
-                     (vl-maybe-gatedelay-allexprs x.delay))))
+(define vl-modinst-exprs-for-implicit-wires ((x vl-modinst-p))
+  :returns (exprs vl-exprlist-p "Expressions where implicit wires are allowed.")
+  (b* (((vl-modinst x) x))
+    (vl-collect-exprs-for-implicit-wires-from-portargs x.portargs))
   ///
-  (defmvtypes vl-modinst-exprs-for-implicit-wires (true-listp true-listp))
+  (more-returns (exprs true-listp :rule-classes :type-prescription)))
 
-  (defthm vl-modinst-exprs-for-implicit-wires-complete
-    ;; Just to make sure we keep ths up to date if we ever change
-    ;; vl-modinst-allexprs
-    (let ((ret (vl-modinst-exprs-for-implicit-wires x)))
-      (set-equiv (append (mv-nth 0 ret)
-                         (mv-nth 1 ret))
-                 (vl-modinst-allexprs x)))
-    :hints(("Goal" :in-theory (enable set-equiv vl-modinst-allexprs)))))
-
-(define vl-gateinst-exprs-for-implicit-wires
+(define vl-gateinst-exprs-for-implicit-wires ((x vl-gateinst-p))
   :short "Gets the expressions from a gate instance, for making implicit wires."
-  ((x vl-gateinst-p))
-  :returns
-  (mv (main vl-exprlist-p
-            "The expressions from the gateinst's port list, where implicit
-             wires are allowed.")
-      (other vl-exprlist-p
-             "The other expressions in the gate instance (its range, delay)
-             where implicit wires aren't allowed."))
+  :returns (exprs vl-exprlist-p "Expressions where implicit wires are allowed.")
   (b* (((vl-gateinst x) x))
-    (mv (vl-plainarglist-allexprs x.args)
-        (append (vl-maybe-range-allexprs x.range)
-                (vl-maybe-gatedelay-allexprs x.delay))))
+    (vl-plainarglist-allexprs x.args))
   ///
-  (defmvtypes vl-gateinst-exprs-for-implicit-wires (true-listp true-listp))
-  (defthm vl-gateinst-exprs-for-implicit-wires-complete
-    ;; Just to make sure we keep ths up to date if we ever change
-    ;; vl-gateinst-allexprs
-    (let ((ret (vl-gateinst-exprs-for-implicit-wires x)))
-      (set-equiv (append (mv-nth 0 ret)
-                             (mv-nth 1 ret))
-                     (vl-gateinst-allexprs x)))
-    :hints(("Goal" :in-theory (enable set-equiv vl-gateinst-allexprs)))))
+  (more-returns (exprs true-listp :rule-classes :type-prescription)))
 
-
-(define vl-vardecl-exprs-for-implicit-wires
-  :short "Gets the expressions from a variable declaration, for making implicit
-wires.  We omit the expressions inside the datatype."
-  ((x vl-vardecl-p))
-  :returns (exprs vl-exprlist-p)
-  (b* (((vl-vardecl x) x))
-    (append (vl-maybe-expr-allexprs x.initval)
-            (vl-maybe-gatedelay-allexprs x.delay))))
 
 
 (defprod vl-implicitst
   :short "State for the @(see make-implicit-wires) transform."
   :tag nil
   :layout :tree
-  ((portdecls "Fast alist binding names of declared port names to anything."
+  ((portdecls "Fast alist binding names of declared port names to their
+               declarations."
               vl-portdecl-alist-p)
    (decls     "Fast alist binding names of declared non-port names to anything.
                These names can be the names of wires, instances, functions, etc.,
@@ -494,14 +544,14 @@ wires.  We omit the expressions inside the datatype."
 
 (define vl-remove-declared-wires
   :short "Filter names to remove wires that are already declared.  We remove
-the names of any port declarations, ordinary declarations, global names, and
-imported names."
+          the names of any port declarations, ordinary declarations, global
+          names, and imported names."
   ((names string-listp)
    (st    vl-implicitst-p))
   :returns
   (implicit string-listp
             "Subset of @('names') that don't have declarations already,
-             e.g., names that we don't want to add local declarations for.")
+             e.g., names that we want to add implicit declarations for.")
   :hooks ((:fix :hints (("goal" :induct (vl-remove-declared-wires names st)
                          :in-theory (disable (:d vl-remove-declared-wires)))
                         (and stable-under-simplificationp
@@ -521,37 +571,20 @@ imported names."
         (vl-remove-declared-wires (cdr names) st)))
     (cons name1 (vl-remove-declared-wires (cdr names) st))))
 
-(define vl-warn-about-undeclared-wires
-  :short "Add fatal warnings about names that are used but not declared."
-  ((ctx       vl-modelement-p "Where we saw these names.")
-   (names     string-listp    "The names we saw.")
-   (st        vl-implicitst-p)
-   (warnings  vl-warninglist-p))
-  :returns (new-warnings vl-warninglist-p)
-  (b* ((ctx        (vl-modelement-fix ctx))
-       (undeclared (mergesort (vl-remove-declared-wires names st)))
-       ((when (atom undeclared))
-        (ok)))
-    (fatal :type :vl-warn-undeclared
-           :msg (if (atom (cdr undeclared))
-                    "~a0: identifier ~w1 is used but not yet declared."
-                  "~a0: identifiers ~&2 are used but not yet declared.")
-           :args (list ctx (car undeclared) undeclared))))
-
-(define vl-import-check-undeclared ((x vl-import-p)
-                                    (st vl-implicitst-p)
-                                    (warnings vl-warninglist-p))
-  :returns
-  (mv (new-warnings vl-warninglist-p)
-      (new-st       vl-implicitst-p))
+(define vl-import-update-implicit ((x        vl-import-p)
+                                   (st       vl-implicitst-p)
+                                   (warnings vl-warninglist-p))
+  :returns (mv (new-warnings vl-warninglist-p)
+               (new-st vl-implicitst-p))
   (b* (((vl-import x) (vl-import-fix x))
-       (package  (vl-scopestack-find-package x.pkg (vl-implicitst->ss st)))
+       ((vl-implicitst st))
+       (package  (vl-scopestack-find-package x.pkg st.ss))
        (warnings (if package
                      (ok)
                    (fatal :type :vl-bad-import
                           :msg "~a0: trying to import from undefined package ~s1."
                           :args (list x x.pkg))))
-       (imports  (vl-implicitst->imports st))
+       (imports  st.imports)
        (imports  (if (eq x.part :vl-import*)
                      ;; Add all the names from the package onto imports.
                      (hons-shrink-alist
@@ -561,689 +594,346 @@ imported names."
                       (and package
                            (vl-package-scope-item-alist-top package))
                       imports)
-                   (hons-acons (the string x.part) t imports)))
-       (st       (change-vl-implicitst st :imports imports)))
+                   ;; Import of a single name.
+                   (hons-acons (the string x.part) nil imports)))
+       (st   (change-vl-implicitst st :imports imports)))
     (mv warnings st)))
 
-(define vl-blockitem-check-undeclared
-  :short "Check for undeclared wires in an arbitrary @(see vl-blockitem-p), and
-extends @('decls') with the newly declared name."
-
-  ((x         vl-blockitem-p "Arbitrary block item to process.")
-   (st        vl-implicitst-p)
-   (warnings  vl-warninglist-p))
-  :returns
-  (mv (new-warnings vl-warninglist-p)
-      (new-st       vl-implicitst-p))
+(define vl-blockitem-update-implicit ((x        vl-blockitem-p)
+                                      (st       vl-implicitst-p)
+                                      (warnings vl-warninglist-p))
+  :returns (mv (new-warnings vl-warninglist-p)
+               (new-st       vl-implicitst-p))
   (b* ((x (vl-blockitem-fix x))
        ((when (eq (tag x) :vl-import))
-        (vl-import-check-undeclared x st warnings))
-       ((mv name exprs)
-        (case (tag x)
-          (:vl-vardecl   (mv (vl-vardecl->name x)   (vl-vardecl-exprs-for-implicit-wires x)))
-          (:vl-paramdecl (mv (vl-paramdecl->name x) (vl-paramdecl-allexprs x)))
-          (otherwise     (mv (vl-typedef->name x)   (vl-typedef-allexprs x)))))
+        (vl-import-update-implicit x st warnings))
+       (name (case (tag x)
+               (:vl-vardecl   (vl-vardecl->name x))
+               (:vl-paramdecl (vl-paramdecl->name x))
+               (otherwise     (vl-typedef->name x))))
+       (decls (hons-acons name nil (vl-implicitst->decls st)))
+       (st    (change-vl-implicitst st :decls decls)))
+    (mv (ok) st)))
 
-       ;; First, make sure all the names used in expressions like ranges and
-       ;; array dimensions have been declared.  Then, add a binding for the
-       ;; declaration.  Doing it in this order lets us catch garbage like
-       ;; reg [r:0] r.
-       (used-names (vl-exprlist-varnames exprs))
-       (warnings   (vl-warn-about-undeclared-wires x used-names st warnings))
-       (decls      (hons-acons name nil (vl-implicitst->decls st)))
-       (st         (change-vl-implicitst st :decls decls)))
-    (mv warnings st)))
-
-(define vl-blockitemlist-check-undeclared
-  :short "Extends @(see vl-blockitem-check-undeclared) across a @(see
-vl-blockitemlist-p)."
-  ((x        vl-blockitemlist-p)
-   (st       vl-implicitst-p)
-   (warnings vl-warninglist-p))
-  :returns (mv (warnings vl-warninglist-p)
-               (st       vl-implicitst-p))
-  (b* (((when (atom x))
-        (mv (ok) (vl-implicitst-fix st)))
-       ((mv warnings st)
-        (vl-blockitem-check-undeclared (car x) st warnings)))
-    (vl-blockitemlist-check-undeclared (cdr x) st warnings)))
-
-(defines vl-stmt-check-undeclared
-  :short "Check an arbitrary @(see vl-stmt-p) for uses of undeclared names."
-
-  :long "<p>Most statements are totally straightforward; we just need to make
-sure that all identifiers used anywhere within them have been declared.</p>
-
-<p>Named blocks are the only complication.  They have their own scope and can
-have their own declarations and imports, which come before their
-sub-statements.  So, if we see a named block, we basically fork the decls and
-imports to create a local namespace, add all of the local declarations to it,
-and then check all the sub-statements in this extended namespace.</p>"
-
-  (define vl-stmt-check-undeclared
-    ((ctx       vl-modelement-p "Where this statement occurs.")
-     (x         vl-stmt-p       "The statement to process.")
-     (st        vl-implicitst-p)
-     (warnings  vl-warninglist-p))
-    :returns (new-warnings vl-warninglist-p)
-    :measure (vl-stmt-count x)
-    :verify-guards nil
-    (b* ((x (vl-stmt-fix x))
-
-         ((when (vl-atomicstmt-p x))
-          (b* ((used-names (vl-exprlist-varnames (vl-stmt-allexprs x)))
-               (warnings   (vl-warn-about-undeclared-wires ctx used-names st warnings)))
-            warnings))
-
-         ((when (eq (vl-stmt-kind x) :vl-blockstmt))
-          (b* (((vl-blockstmt x) x)
-               ((vl-implicitst st) st)
-               ;; Initially the local-decls will just be the current decls
-               ;; we've seen, since things in the module's scope can still be
-               ;; referenced from within the named block.
-               (local-decls (hons-shrink-alist st.decls nil))
-               (local-imports (hons-shrink-alist st.imports nil))
-               (local-st    (change-vl-implicitst st :decls local-decls :imports local-imports))
-               ;; Add in all local declarations.
-               ((mv warnings local-st) (vl-blockitemlist-check-undeclared x.loaditems local-st warnings))
-               ;; Check all the sub-statements in the extended scope.
-               (warnings (vl-stmtlist-check-undeclared ctx x.stmts local-st warnings)))
-            ;; Note that a named block doesn't have any other kinds of
-            ;; expressions (i.e., x.ctrl and x.exprs are necessarily empty).
-            ;; So, there's nothing to check other than the statements, and
-            ;; hence we're already done and can now throw away the local scope.
-            (fast-alist-free (vl-implicitst->decls local-st))
-            warnings))
-
-         ;; No other statement has its own scope, but some kinds of statements
-         ;; (e.g., case statements, for loops, timing statements) have their
-         ;; own expressions, so we need to check those.
-
-         ;; We don't use vl-stmt-allexprs here because it also grabs the exprs
-         ;; for sub-statements, which could be incorrect because a sub-block
-         ;; statement of course needs to be checked w.r.t. its local scope.
-         ;; So, we instead use this ugly sort of way to grab only the local
-         ;; expressions.  We don't have to collect from x.decls since this
-         ;; isn't a block statement.
-         (local-exprs (append (vl-maybe-delayoreventcontrol-allexprs
-                               (vl-compoundstmt->ctrl x))
-                              (vl-compoundstmt->exprs x)))
-         (local-names (vl-exprlist-varnames local-exprs))
-         (warnings    (vl-warn-about-undeclared-wires ctx local-names st warnings)))
-
-      ;; Finally check the substatements.
-      (vl-stmtlist-check-undeclared ctx (vl-compoundstmt->stmts x) st warnings)))
-
-    (define vl-stmtlist-check-undeclared ((ctx      vl-modelement-p)
-                                          (x        vl-stmtlist-p)
+(define vl-blockitemlist-update-implicit ((x        vl-blockitemlist-p)
                                           (st       vl-implicitst-p)
                                           (warnings vl-warninglist-p))
-      :returns (new-warnings vl-warninglist-p)
-      :measure (vl-stmtlist-count x)
-      (b* (((when (atom x))
-            (ok))
-           (warnings (vl-stmt-check-undeclared ctx (car x) st warnings)))
-        (vl-stmtlist-check-undeclared ctx (cdr x) st warnings)))
+  :returns (mv (new-warnings vl-warninglist-p)
+               (new-st       vl-implicitst-p))
+  (b* (((when (atom x))
+        (mv (ok) (vl-implicitst-fix st)))
+       ((mv warnings st) (vl-blockitem-update-implicit (car x) st warnings))
+       ((mv warnings st) (vl-blockitemlist-update-implicit (cdr x) st warnings)))
+    (mv warnings st)))
 
-    ///
-    (verify-guards vl-stmt-check-undeclared)
-    (deffixequiv-mutual vl-stmt-check-undeclared))
-
-
-(define vl-fundecl-check-undeclared
-  :short "Check an arbitrary @(see vl-fundecl-p) for uses of undeclared names."
-
-  :long "<p>Function declarations are tricky because they can have their own
-declarations and hence we need to treat them basically like a named block
-statement.</p>
-
-<p>BOZO a problem with our approach is that paramterized function inputs won't
-exactly work, e.g., for</p>
-
-@({
-function foo ;
-  parameter p = 4;
-  input [p-1:0] in;
-  ...
-endfunction
-})
-
-<p>We will think that @('p') is undeclared when we see @('in'), because we
-aren't maintaining the mixed order of inputs and parameters.</p>
-
-<p>Well, this is a pretty obscure, so I don't want to fix it until it becomes a
-problem.</p>"
-
-  ((x         vl-fundecl-p)
-   (st        vl-implicitst-p)
-   (warnings  vl-warninglist-p))
-  :returns (new-warnings vl-warninglist-p)
-  (b* ((x (vl-fundecl-fix x))
-       ((vl-fundecl x) x)
-
-       ;; Check for undeclared names in the non-local parts (the inputs and
-       ;; return value range.)  It's not quite right to do the inputs here, as
-       ;; described above, but in practice it shouldn't be much of a problem.
-       (other-names (vl-exprlist-varnames (append (vl-portdecllist-allexprs x.portdecls)
-                                                  (vl-datatype-allexprs x.rettype))))
-       (warnings    (vl-warn-about-undeclared-wires x other-names st warnings))
-
-       ;; Now make a local scope and add the local declarations, as in named
-       ;; block statements.
-       (local-decls (hons-shrink-alist (vl-implicitst->decls st) nil))
-       (local-imports (hons-shrink-alist (vl-implicitst->imports st) nil))
-       (local-st    (change-vl-implicitst st :decls local-decls :imports local-imports))
-
-       ;; Now check/add the block items.  As we do this, we're acting like the
-       ;; inputs haven't been declared yet.  That's not quite right, but it
-       ;; should be practically pretty reasonable since it's not valid to refer
-       ;; to an input in the other declarations.
-       ((mv warnings local-st)
-        (vl-blockitemlist-check-undeclared x.parsed-blockitems local-st warnings))
-
-       ;; Okay, now add the inputs to the local scope, since it's valid to
-       ;; refer to them in the body.  Also add in the function's name since it
-       ;; can be a valid return value.
-       (local-decls  (vl-implicitst->decls local-st))
-       (local-decls  (make-fal (pairlis$ (vl-portdecllist->names x.portdecls) nil) local-decls))
-       (local-decls  (hons-acons x.name nil local-decls))
-       (local-st     (change-vl-implicitst local-st :decls local-decls))
-
-       ;; The local scope is constructed, check the function's body.
-       (warnings (vl-stmt-check-undeclared x x.body local-st warnings)))
-    ;; That's it, all done with the local scope.
-    (fast-alist-free local-decls)
-    warnings))
-
-
-(define vl-dpiimport-check-undeclared
-  :short "Check an arbitrary @(see vl-dpiimport) for uses of undeclared names."
-  ((x         vl-dpiimport-p)
-   (st        vl-implicitst-p)
-   (warnings  vl-warninglist-p))
-  :returns (new-warnings vl-warninglist-p)
-  (b* (((vl-dpiimport x) (vl-dpiimport-fix x))
-       ;; Analogous to functions -- check names in return type and parameters
-       (other-names (vl-exprlist-varnames (append (vl-portdecllist-allexprs x.portdecls)
-                                                  (vl-maybe-datatype-allexprs x.rettype))))
-       (warnings    (vl-warn-about-undeclared-wires x other-names st warnings)))
-    ;; There's not anything else here we can check since the import's
-    ;; definition is in some C file somewhere.
-    warnings))
-
-
-(define vl-taskdecl-check-undeclared
-  :short "Check an arbitrary @(see vl-taskdecl-p) for uses of undeclared
-names."
-  :long "<p>This is nearly identical to @(see vl-fundecl-check-undeclared) and
-it has the same problems with parameters.</p>"
-
-  ((x         vl-taskdecl-p)
-   (st        vl-implicitst-p)
-   (warnings  vl-warninglist-p))
-  :returns (new-warnings vl-warninglist-p)
-  (b* ((x (vl-taskdecl-fix x))
-       ((vl-taskdecl x) x)
-
-       ;; Check for undeclared names in the task's visible ports.  It's not
-       ;; quite right to do the ports here if they have parameters, as
-       ;; described above, but in practice it shouldn't be much of a problem.
-       (other-names (vl-exprlist-varnames (vl-portdecllist-allexprs x.portdecls)))
-       (warnings    (vl-warn-about-undeclared-wires x other-names st warnings))
-
-       ;; Now make a local scope and add the local declarations, as in named
-       ;; block statements.
-       (local-decls (hons-shrink-alist (vl-implicitst->decls st) nil))
-       (local-imports (hons-shrink-alist (vl-implicitst->imports st) nil))
-       (local-st    (change-vl-implicitst st :decls local-decls :imports local-imports))
-
-       ;; Now check/add the block items.  As we do this, we're acting like the
-       ;; ports haven't been declared yet.  That's not quite right, but it
-       ;; should be practically pretty reasonable since it's not valid to refer
-       ;; to a port in the other declarations.
-       ((mv warnings local-st)
-        (vl-blockitemlist-check-undeclared x.parsed-blockitems local-st warnings))
-
-       ;; Okay, now add the ports to the local scope, since it's valid to
-       ;; refer to them in the body.
-       (local-decls (vl-implicitst->decls local-st))
-       (local-decls (make-fal (pairlis$ (vl-portdecllist->names x.portdecls) nil) local-decls))
-       (local-st    (change-vl-implicitst local-st :decls local-decls))
-
-       ;; The local scope is constructed, check the task's body.
-       (warnings (vl-stmt-check-undeclared x x.body local-st warnings)))
-
-    ;; That's it, all done with the local scope.
-    (fast-alist-free local-decls)
-    warnings))
-
-
-(local (defthm crock
-         (implies (vl-importpart-p x)
-                  (equal (stringp x)
-                         (not (equal x :vl-import*))))
-         :hints(("Goal" :in-theory (enable vl-importpart-p)))))
-
-
-(define vl-implicitsts-restore-fast-alists ((st vl-implicitst-p)
-                                            (new-st vl-implicitst-p))
-  :short "Assuming new-st is a modified version of st, restores any changed fast
-          alists in st and frees them in new-st. Side effects only."
-  (b* (((vl-implicitst st))
-       ((vl-implicitst new-st)))
-    (or (eql (len st.portdecls) (len new-st.portdecls))
-        (progn$ (fast-alist-free new-st.portdecls)
-                (make-fast-alist st.portdecls)))
-    (or (eql (len st.decls) (len new-st.decls))
-        (progn$ (fast-alist-free new-st.decls)
-                (make-fast-alist st.decls)))
-    (or (eql (len st.imports) (len new-st.imports))
-        (progn$ (fast-alist-free new-st.imports)
-                (make-fast-alist st.imports)))))
-
-(define vl-make-implicit-wires-elem
+(define vl-genelement-make-implicit-wires
   :short "Make implicit wires for a single modelement."
   ((x        vl-genelement-p
              "Base genelement to process.")
    (st       vl-implicitst-p)
-   (implicit vl-vardecllist-p
-             "Accumulator for new variable declarations to add.")
    (newitems vl-genelementlist-p
              "Accumulator for rewriting X and inserting implicit variable
               declarations right where they occur.")
-   (warnings vl-warninglist-p
-             "An ordinary @(see warnings) accumulator, which we may extend with
-              fatal warnings (e.g., for undeclared identifiers) or non-fatal warnings
-              (e.g., for compatibility warnings like <i>Verilog-XL doesn't
-              infer an implicit wire here.</i>)."))
-
+   (warnings vl-warninglist-p))
   :guard (vl-genelement-case x :vl-genbase)
-
-  :returns (mv (new-warnings vl-warninglist-p)
-               (st           vl-implicitst-p)
-               (implicit     vl-vardecllist-p)
-               (newitems     vl-genelementlist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (st       vl-implicitst-p)
+               (newitems vl-genelementlist-p))
 
   :prepwork ((local (defthm vl-blockitem-p-when-vl-vardecl-p-no-limit
                       (implies (vl-vardecl-p x)
                                (vl-blockitem-p x))))
-             (local (in-theory (disable vl-blockitem-p-when-vl-vardecl-p)))
              (local (defthm vl-blockitem-p-when-vl-paramdecl-p-no-limit
                       (implies (vl-paramdecl-p x)
                                (vl-blockitem-p x))))
-             (local (in-theory (disable vl-blockitem-p-when-vl-paramdecl-p)))
-             (local (in-theory (disable acl2::consp-under-iff-when-true-listp))))
+             (local (defthm vl-blockitem-p-when-vl-import-p-no-limit
+                      (implies (vl-import-p x)
+                               (vl-blockitem-p x))))
+             (local (in-theory (disable vl-blockitem-p-when-vl-vardecl-p
+                                        vl-blockitem-p-when-vl-paramdecl-p
+                                        vl-blockitem-p-when-vl-import-p
+                                        acl2::consp-under-iff-when-true-listp))))
 
   :guard-hints ((and stable-under-simplificationp
                      '(:use ((:instance vl-modelement-p-when-invalid-tag (x (vl-genbase->item x))))
                        :in-theory (disable vl-modelement-p-when-invalid-tag))))
 
-
-
-  (b* ((warnings (vl-warninglist-fix warnings))
-       (st (vl-implicitst-fix st))
-       (implicit (vl-vardecllist-fix implicit))
+  (b* ((x        (vl-genelement-fix x))
+       (st       (vl-implicitst-fix st))
        (newitems (vl-genelementlist-fix newitems))
-       (x (vl-genelement-fix x))
 
        (item (vl-genbase->item x))
        (tag  (tag item))
 
+       ;; Note: recall the FEATURE-CREEP WARNING above.  We are too dumb to do
+       ;; anything yet except track what is declared and add implicit wires as
+       ;; needed.  Do not try to notice uses of undeclared wires, warn about
+       ;; multiply declared things, etc., because it's too hard until more has
+       ;; been resolved.
+
        ((when (or (eq tag :vl-interfaceport)
-                  (eq tag :vl-regularport)))
-        ;; We shouldn't see any ports.
-        (raise "We shouldn't see ports here.")
-        (mv warnings st implicit newitems))
+                  (eq tag :vl-regularport)
+                  (eq tag :vl-modport)))
+        (b* ((warnings (fatal :type :vl-programming-error
+                              :msg "~a0: unexpected kind of module item."
+                              :args (list item)))
+             (st       (change-vl-implicitst st))
+             (newitems (cons x newitems)))
+          (mv warnings st newitems)))
 
        ((when (eq tag :vl-portdecl))
-        ;; We have to first make sure that there aren't undeclared
-        ;; identifiers being used in the range, then record that a
-        ;; declaration was made.  Doing it in this order lets us catch
-        ;; garbage like input [in:0] in;
-        (b* ((declname (vl-portdecl->name item))
-
-             ;; BOZO this seems kind of bogus.  Shouldn't we be checking these things?
-
-             ;; Note: We run into trouble here when ports are declared as
-             ;; user-defined types, i.e. "input foo_t foo" -- we don't want to
-             ;; count foo_t as an undeclared id.  Thinking about it more, it
-             ;; doesn't seem like this is the right place to be checking for
-             ;; this anyway, so just don't.
-             ;; (varnames  (vl-exprlist-varnames (vl-portdecl-allexprs item)))
-             ;; (warnings  (vl-warn-about-undeclared-wires item varnames st warnings))
-
-             (st (change-vl-implicitst st
-                                       :portdecls
-                                       (hons-acons declname item (vl-implicitst->portdecls st))))
-             (newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
+        (b* ((declname  (vl-portdecl->name item))
+             (portdecls (hons-acons declname item (vl-implicitst->portdecls st)))
+             (st        (change-vl-implicitst st :portdecls portdecls))
+             (newitems  (cons x newitems)))
+          (mv (ok) st newitems)))
 
        ((when (or (eq tag :vl-vardecl)
-                  (eq tag :vl-paramdecl)))
-        (b* (((mv warnings st)
-              (vl-blockitem-check-undeclared item st warnings))
+                  (eq tag :vl-paramdecl)
+                  (eq tag :vl-import)))
+        (b* (((mv warnings st) (vl-blockitem-update-implicit item st warnings))
              (newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
+          (mv warnings st newitems)))
 
-       ;; Module and gate instances are relatively simple.  First, make sure
-       ;; all the identifiers in their non-port expressions (like ranges and
-       ;; parameter arguments) are declared.  Then, gather all identifiers
-       ;; in their port arguments, and add declarations for any of them that
-       ;; are not declared.
-
-       ((mv inst-p loc main-exprs other-exprs maybe-name)
-        (case tag
-          (:vl-modinst
-           (b* ((loc              (vl-modinst->loc item))
-                ((mv main other)  (vl-modinst-exprs-for-implicit-wires item)))
-             (mv t loc main other (vl-modinst->instname item))))
-          (:vl-gateinst
-           (b* ((loc              (vl-gateinst->loc item))
-                ((mv main other)  (vl-gateinst-exprs-for-implicit-wires item)))
-             (mv t loc main other (vl-gateinst->name item))))
-          (otherwise
-           (mv nil nil nil nil nil))))
-
-       ((when inst-p)
-        (b* ((other-names (vl-exprlist-varnames other-exprs))
-             (main-names  (vl-exprlist-varnames main-exprs))
-             (warnings    (vl-warn-about-undeclared-wires item other-names st warnings))
-             (imp-names   (mergesort (vl-remove-declared-wires main-names st)))
+       ((when (or (eq tag :vl-modinst)
+                  (eq tag :vl-gateinst)))
+        (b* (((mv loc port-exprs maybe-name)
+              (if (eq tag :vl-modinst)
+                  (mv (vl-modinst->loc item)
+                      (vl-modinst-exprs-for-implicit-wires item)
+                      (vl-modinst->instname item))
+                (mv (vl-gateinst->loc item)
+                    (vl-gateinst-exprs-for-implicit-wires item)
+                    (vl-gateinst->name item))))
+             (port-names  (vl-exprlist-names-for-implicit port-exprs))
+             (imp-names   (mergesort (vl-remove-declared-wires port-names st)))
              (imp-nets    (vl-make-ordinary-implicit-wires loc imp-names))
              (decls       (vl-implicitst->decls st))
              (decls       (make-fal (pairlis$ imp-names nil) decls))
-             (decls       (if maybe-name (hons-acons maybe-name t decls) decls))
+             (decls       (if maybe-name (hons-acons maybe-name nil decls) decls))
              (st          (change-vl-implicitst st :decls decls))
-             (implicit    (append imp-nets implicit))
              (newitems    (append (vl-modelementlist->genelements imp-nets) newitems))
              (newitems    (cons x newitems)))
-          (mv warnings st implicit newitems)))
-
-       ;; Assignments are a little complicated to add compatibility
-       ;; warnings, but it still isn't too bad.
+          (mv (ok) st newitems)))
 
        ((when (eq tag :vl-assign))
-        (b* (((vl-assign item) item)
-             (lhs-names        (vl-expr-varnames item.lvalue))
-             (imp-lhs          (mergesort (vl-remove-declared-wires lhs-names st)))
-             (warnings
-              (if (not imp-lhs)
-                  warnings
-                (warn :type :vl-tricky-implicit
-                      :msg "~a0: wire~s1 ~&2 ~s3 implicitly declared by the ~
-                            left-hand side of this assignment.  This is ~
-                            valid per the Verilog-2005 standard but tools ~
-                            like Verilog-XL do not support it; consider ~
-                            explicit declaration~s1."
-                      :args (list item
-                                  (if (vl-plural-p imp-lhs) "s" "")
-                                  imp-lhs
-                                  (if (vl-plural-p imp-lhs) "are" "is")))))
-
-             (decls      (vl-implicitst->decls st))
-             (decls      (make-fal (pairlis$ imp-lhs nil) decls))
-             (st         (change-vl-implicitst st :decls decls))
-
-             (imp-nets   (vl-make-ordinary-implicit-wires item.loc imp-lhs))
-             (implicit   (append imp-nets implicit))
-             (newitems   (append (vl-modelementlist->genelements imp-nets) newitems))
-             (newitems   (cons x newitems))
-             ;; Okay, all done adding implicit nets for the LHS.  Now make sure
-             ;; all the other expressions are using declared ids.
-
-             ;; BOZO it seems weird that we do this AFTER adding implicit nets?
-             (other-names (vl-exprlist-varnames (cons item.expr (vl-maybe-gatedelay-allexprs item.delay))))
-             (warnings    (vl-warn-about-undeclared-wires item other-names st warnings)))
-          (mv warnings st implicit newitems)))
-
-       ((when (eq tag :vl-alias))
-        (b* (((vl-alias item) item)
-             (lhs-names        (vl-expr-varnames item.lhs))
-             (rhs-names        (vl-expr-varnames item.rhs))
-             (imp-names        (mergesort (vl-remove-declared-wires (append lhs-names rhs-names) st)))
-             (warnings
-              (if (not imp-names)
-                  warnings
-                (warn :type :vl-tricky-implicit
-                      :msg "~a0: wire~s1 ~&2 ~s3 implicitly declared by this ~
-                            alias declaration."
-                      :args (list item
-                                  (if (vl-plural-p imp-names) "s" "")
-                                  imp-names
-                                  (if (vl-plural-p imp-names) "are" "is")))))
-
+        (b* (((vl-assign item))
+             (lhs-names  (vl-expr-names-for-implicit item.lvalue))
+             (imp-names  (mergesort (vl-remove-declared-wires lhs-names st)))
+             (imp-nets   (vl-make-ordinary-implicit-wires item.loc imp-names))
              (decls      (vl-implicitst->decls st))
              (decls      (make-fal (pairlis$ imp-names nil) decls))
              (st         (change-vl-implicitst st :decls decls))
-             (imp-nets   (vl-make-ordinary-implicit-wires item.loc imp-names))
-             (implicit   (append imp-nets implicit))
              (newitems   (append (vl-modelementlist->genelements imp-nets) newitems))
              (newitems   (cons x newitems)))
-          (mv warnings st implicit newitems)))
+          (mv (ok) st newitems)))
+
+       ((when (eq tag :vl-alias))
+        (b* (((vl-alias item) item)
+             (lhs-names (vl-expr-names-for-implicit item.lhs))
+             (rhs-names (vl-expr-names-for-implicit item.rhs))
+             (imp-names (mergesort (vl-remove-declared-wires (append lhs-names rhs-names) st)))
+             (imp-nets  (vl-make-ordinary-implicit-wires item.loc imp-names))
+             ;; BOZO should we bother warning about this?
+             (warnings  (if (not imp-names)
+                            (ok)
+                          (warn :type :vl-tricky-implicit
+                                :msg "~a0: wire~s1 ~&2 ~s3 implicitly ~
+                                      declared by this alias declaration."
+                                :args (list item
+                                            (if (vl-plural-p imp-names) "s" "")
+                                            imp-names
+                                            (if (vl-plural-p imp-names) "are" "is")))))
+             (decls     (vl-implicitst->decls st))
+             (decls     (make-fal (pairlis$ imp-names nil) decls))
+             (st        (change-vl-implicitst st :decls decls))
+             (newitems  (append (vl-modelementlist->genelements imp-nets) newitems))
+             (newitems  (cons x newitems)))
+          (mv warnings st newitems)))
 
        ((when (or (eq tag :vl-initial)
                   (eq tag :vl-final)
-                  (eq tag :vl-always)))
-        ;; Statements are tricky because of named blocks, but we've already
-        ;; dealt with how to handle them, and they can't introduce any
-        ;; implicit wires, so this is easy.
-        (b* ((stmt     (cond ((eq tag :vl-initial)
-                              (vl-initial->stmt item))
-                             ((eq tag :vl-final)
-                              (vl-final->stmt item))
-                             (t
-                              (vl-always->stmt item))))
-             (warnings (vl-stmt-check-undeclared item stmt st warnings))
-             (newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
-
-       ((when (eq tag :vl-fundecl))
-        ;; Functions are tricky because they have their own scope, but we've
-        ;; already dealt with how to handle them, and they can't introduce
-        ;; any implicit wires, so this is easy.
-        (b* ((warnings (vl-fundecl-check-undeclared item st warnings))
-             (decls    (vl-implicitst->decls st))
-             (decls    (hons-acons (vl-fundecl->name item) nil decls))
-             (st       (change-vl-implicitst st :decls decls))
-             (newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
-
-       ((when (eq tag :vl-taskdecl))
-        ;; Tasks are tricky because they have their own scope, but we've
-        ;; already dealt with how to handle them, and they can't introduce
-        ;; any implicit wires, so this is easy.
-        (b* ((warnings (vl-taskdecl-check-undeclared item st warnings))
-             (decls    (vl-implicitst->decls st))
-             (decls    (hons-acons (vl-taskdecl->name item) nil decls))
-             (st       (change-vl-implicitst st :decls decls))
-             (newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
-
-       ((when (eq tag :vl-dpiimport))
-        ;; Similar to functions
-        (b* ((warnings (vl-dpiimport-check-undeclared item st warnings))
-             (decls    (vl-implicitst->decls st))
-             (decls    (hons-acons (vl-dpiimport->name item) nil decls))
-             (st       (change-vl-implicitst st :decls decls))
-             (newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
-
-       ((when (eq tag :vl-dpiexport))
-        ;; Nothing to do here -- it's making something available to C, not
-        ;; declaring anything new.  There aren't any types or expressions
-        ;; for us to check.
+                  (eq tag :vl-always)
+                  (eq tag :vl-dpiexport)))
+        ;; These don't declare any names, nothing to do.
         (b* ((newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
+          (mv (ok) st newitems)))
 
-       ((when (member tag '(:vl-assertion :vl-cassertion :vl-sequence :vl-property)))
-        ;; BOZO deal with these some day.  Need to do tests to figure
-        ;; out what the intended behavior is, then implement it.  Horrible.
-        (b* ((newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
-
-       ((when (eq tag :vl-import))
-        (b* (((vl-import item))
-             (package  (vl-scopestack-find-package item.pkg (vl-implicitst->ss st)))
-             (warnings (if package
-                           (ok)
-                         (fatal :type :vl-bad-import
-                                :msg "~a0: trying to import from undefined package ~s1."
-                                :args (list item item.pkg))))
-             (imports  (vl-implicitst->imports st))
-             (imports  (if (eq item.part :vl-import*)
-                           ;; Add all the names from the package onto imports.
-                           (hons-shrink-alist
-                            ;; If the package wasn't found and we tried to
-                            ;; import foo::* from it, we've already caused a
-                            ;; fatal warning, so it's okay to fudge here.
-                            (and package
-                                 (vl-package-scope-item-alist-top package))
-                            imports)
-                         (hons-acons (the string item.part) t imports)))
-             (st       (change-vl-implicitst st :imports imports))
+       ((when (or (eq tag :vl-fundecl)
+                  (eq tag :vl-taskdecl)
+                  (eq tag :vl-dpiimport)
+                  (eq tag :vl-assertion)
+                  (eq tag :vl-cassertion)
+                  (eq tag :vl-property)
+                  (eq tag :vl-sequence)
+                  (eq tag :vl-typedef)
+                  (eq tag :vl-fwdtypedef)
+                  (eq tag :vl-genvar)))
+        ;; These have their own names but there's no additional implicit wires to
+        ;; be introduced by them, so just extend decls.
+        (b* ((name     (case tag
+                         (:vl-fundecl    (vl-fundecl->name item))
+                         (:vl-taskdecl   (vl-taskdecl->name item))
+                         (:vl-dpiimport  (vl-dpiimport->name item))
+                         (:vl-assertion  (vl-assertion->name item))
+                         (:vl-cassertion (vl-cassertion->name item))
+                         (:vl-property   (vl-property->name item))
+                         (:vl-sequence   (vl-sequence->name item))
+                         (:vl-typedef    (vl-typedef->name item))
+                         (:vl-fwdtypedef (vl-fwdtypedef->name item))
+                         (:vl-genvar     (vl-genvar->name item))))
+             (decls    (hons-acons name nil (vl-implicitst->decls st)))
+             (st       (change-vl-implicitst st :decls decls))
              (newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
+          (mv (ok) st newitems))))
 
-       ((when (member tag '(:vl-typedef :vl-fwdtypedef)))
-        ;; We aren't processing datatypes in e.g. vardecls, so we'll ignore the type.
-        (b* ((name (if (eq tag :vl-typedef)
-                       (vl-typedef->name item)
-                     (vl-fwdtypedef->name item)))
-             (decls      (hons-acons name nil (vl-implicitst->decls st)))
-             (st         (change-vl-implicitst st :decls decls))
-             (newitems   (cons x newitems)))
-          (mv warnings st implicit newitems)))
-
-       ((when (member tag '(:vl-modport
-                            ;; :vl-typedef
-                            ;; :vl-fwdtypedef
-                            )))
-        (b* ((warnings (fatal :type :vl-unexpected-modelement
-                              :msg "~a0: unexpected kind of module item."
-                              :args (list item)))
-             (newitems (cons x newitems)))
-          (mv warnings st implicit newitems)))
-       ((when (eq tag :vl-genvar))
-        ;; Ignore genvars
-        (mv warnings st implicit newitems)))
     (impossible)
-    (mv warnings st implicit newitems)))
+    (mv (ok) st newitems)))
 
+
+
+(define vl-implicitsts-restore-fast-alists ((st     vl-implicitst-p)
+                                            (new-st vl-implicitst-p))
+  :short "Assuming new-st is a modified version of st, restores any changed
+          fast alists in st and frees them in new-st.  Side effects only."
+  (b* (((vl-implicitst st))
+       ((vl-implicitst new-st)))
+    ;; I once wanted to use fast-alist-len here, but that doesn't work: if the
+    ;; st has had its fast alists stolen, then we (of course) can't call
+    ;; fast-alist-len on them.
+    (or (same-lengthp st.portdecls new-st.portdecls)
+        (progn$ (fast-alist-free new-st.portdecls)
+                (make-fast-alist st.portdecls)))
+    (or (same-lengthp st.decls new-st.decls)
+        (progn$ (fast-alist-free new-st.decls)
+                (make-fast-alist st.decls)))
+    (or (same-lengthp st.imports new-st.imports)
+        (progn$ (fast-alist-free new-st.imports)
+                (make-fast-alist st.imports)))))
+
+
+; We might consider unlocalizing some of these and finding them homes, but
+; they're not necessarily that widely useful and, for instance, the modelement
+; rules here might be kind of slow in general.
+
+;; (local (in-theory (disable (tau-system))))
+
+;; (local (defthm vl-modelement-p-when-vl-blockitem-p
+;;          (implies (vl-blockitem-p x)
+;;                   (vl-modelement-p x))
+;;          :hints(("Goal" :in-theory (enable vl-blockitem-p vl-modelement-p
+;;                                            tag-reasoning)))))
+
+;; (local (defthm vl-modelementlist-p-when-vl-blockitemlist-p
+;;          (implies (vl-blockitemlist-p x)
+;;                   (vl-modelementlist-p x))
+;;          :hints(("Goal" :induct (len x)))))
 
 
 (defines vl-make-implicit-wires-aux
   :verify-guards nil
-  (define vl-make-implicit-wires-generate ((x vl-genelement-p)
-                                           (st vl-implicitst-p)
-                                           (warnings vl-warninglist-p))
-    :short "Make implicit wires for a generate statement."
-    :long "<p>If you implicitly declare a wire within some generate statement,
-it isn't visible within any other context before elaboration.  So we'll collect
-the implicit declarations for each particular generate block, without leaking them into the outer context.</p>
 
-<p>This function should be called from outside (including
-vl-make-implicit-wires-aux) on non-genbase elements.  However, recursive calls
-may be on genbases, which are then assumed to be stand-alone elements that are
-in a generate construct by themselves.</p>"
+  (define vl-make-implicit-wires-generate
+    :short "Make implicit wires for a generate statement."
+    ((x        vl-genelement-p)
+     (st       vl-implicitst-p)
+     (warnings vl-warninglist-p))
     :returns (mv (new-warnings vl-warninglist-p)
-                 (new-x vl-genelement-p "containing the new implicit declarations."))
+                 (new-x        vl-genelement-p "Extended with implicit declarations."))
+    :long "<p>Per SystemVerilog-2012 Section 6.10: wires that are implicitly
+           declared within a generate block are local to that generate block.
+           So we collect the implicit declarations for each particular generate
+           block without leaking them into the outer context.</p>
+
+           <p>This function should be called from outside (including
+           vl-make-implicit-wires-aux) on non-genbase elements.  However,
+           recursive calls may be on genbases, which are then assumed to be
+           stand-alone elements that are in a generate construct by
+           themselves.</p>"
     :measure (vl-genelement-count x)
     (vl-genelement-case x
+
       :vl-genloop
-      ;; Bind the loop index var in the state first.
       (b* (((vl-implicitst st))
-           (new-decls (hons-acons x.var x.var st.decls))
-           (st1 (change-vl-implicitst st :decls new-decls))
-           ((mv warnings new-body)
-            (vl-make-implicit-wires-generate x.body st1 warnings)))
-        (fast-alist-free new-decls)
-        (make-fast-alist st.decls)
-        (mv warnings (change-vl-genloop x :body new-body)))
+           ;; Bind the loop index var in the state first.
+           (new-decls              (hons-acons x.var nil st.decls))
+           (local-st               (change-vl-implicitst st :decls new-decls))
+           ((mv warnings new-body) (vl-make-implicit-wires-generate x.body local-st warnings))
+           (-                      (vl-implicitsts-restore-fast-alists st local-st))
+           (new-x                  (change-vl-genloop x :body new-body)))
+        (mv warnings new-x))
+
       :vl-genif
-      (b* (((mv warnings new-then)
-            (vl-make-implicit-wires-generate x.then st warnings))
-           ((mv warnings new-else)
-            (vl-make-implicit-wires-generate x.else st warnings)))
-        (mv warnings (change-vl-genif x :then new-then :else new-else)))
+      (b* (((mv warnings new-then) (vl-make-implicit-wires-generate x.then st warnings))
+           ((mv warnings new-else) (vl-make-implicit-wires-generate x.else st warnings))
+           (new-x                  (change-vl-genif x :then new-then :else new-else)))
+        (mv warnings new-x))
+
       :vl-gencase
-      (b* (((mv warnings new-cases)
-            (vl-make-implicit-wires-gencaselist x.cases st warnings))
-           ((mv warnings new-default)
-            (vl-make-implicit-wires-generate x.default st warnings)))
-        (mv warnings (change-vl-gencase x :cases new-cases :default new-default)))
+      (b* (((mv warnings new-cases)   (vl-make-implicit-wires-gencaselist x.cases st warnings))
+           ((mv warnings new-default) (vl-make-implicit-wires-generate x.default st warnings))
+           (new-x                     (change-vl-gencase x :cases new-cases :default new-default)))
+        (mv warnings new-x))
+
       :vl-genblock
-      (b* (((mv warnings new-st ?implicits new-elems)
-            (vl-make-implicit-wires-aux x.elems st nil nil warnings))
-           ;; Restore the stolen fast alists from new-st to st.
-           (- (vl-implicitsts-restore-fast-alists st new-st)))
-        (mv warnings (change-vl-genblock x :elems new-elems)))
+      (b* (((mv warnings new-st new-elems) (vl-make-implicit-wires-aux x.elems st nil warnings))
+           (- (vl-implicitsts-restore-fast-alists st new-st))
+           (new-x (change-vl-genblock x :elems new-elems)))
+        (mv warnings new-x))
+
       :vl-genbase
-      (b* (((mv warnings new-st ?implicits new-elems)
-            (vl-make-implicit-wires-elem x st nil nil warnings))
-           (- (vl-implicitsts-restore-fast-alists st new-st)))
-        (mv warnings (make-vl-genblock :elems new-elems :loc (vl-modelement->loc x.item))))
+      (b* (((mv warnings new-st new-elems) (vl-genelement-make-implicit-wires x st nil warnings))
+           (- (vl-implicitsts-restore-fast-alists st new-st))
+           (new-x (make-vl-genblock :elems new-elems :loc (vl-modelement->loc x.item))))
+        (mv warnings new-x))
+
       :otherwise
-      (mv (warn :type :vl-unexpected-generate
+      (mv (warn :type :vl-programming-error
                 :msg "~a0: Didn't expect to see this kind of generate element yet."
                 :args (list (vl-genelement-fix x)))
           (vl-genelement-fix x))))
 
-  (define vl-make-implicit-wires-gencaselist ((x vl-gencaselist-p)
-                                              (st vl-implicitst-p)
+  (define vl-make-implicit-wires-gencaselist ((x        vl-gencaselist-p)
+                                              (st       vl-implicitst-p)
                                               (warnings vl-warninglist-p))
     :returns (mv (new-warnings vl-warninglist-p)
-                 (new-x vl-gencaselist-p "containing the new implicit declarations."))
+                 (new-x        vl-gencaselist-p "Extended with implicit declarations."))
     :measure (vl-gencaselist-count x)
     (b* ((x (vl-gencaselist-fix x))
          ((when (atom x)) (mv (vl-warninglist-fix warnings) nil))
-         ((mv warnings new-elem)
-          (vl-make-implicit-wires-generate (cdar x) st warnings))
-         ((mv warnings new-rest)
-          (vl-make-implicit-wires-gencaselist (cdr x) st warnings)))
-      (mv warnings (cons (cons (caar x) new-elem) new-rest))))
-
-
+         ((mv warnings new-elem) (vl-make-implicit-wires-generate (cdar x) st warnings))
+         ((mv warnings new-rest) (vl-make-implicit-wires-gencaselist (cdr x) st warnings))
+         (new-x (cons (cons (caar x) new-elem) new-rest)))
+      (mv warnings new-x)))
 
   (define vl-make-implicit-wires-aux
     :short "Main function for adding implicit wires."
-    ((x        vl-genelementlist-p
-               "Module elements to process, should be in the same order in which they
-              were parsed.")
+    ((x        vl-genelementlist-p "Elements to process in parse order.")
      (st       vl-implicitst-p)
-     (implicit vl-vardecllist-p
-               "Accumulator for new variable declarations to add.")
      (newitems vl-genelementlist-p
                "Accumulator for rewriting X and inserting implicit variable
-              declarations right where they occur.")
-     (warnings vl-warninglist-p
-               "An ordinary @(see warnings) accumulator, which we may extend with
-              fatal warnings (e.g., for undeclared identifiers) or non-fatal warnings
-              (e.g., for compatibility warnings like <i>Verilog-XL doesn't
-              infer an implicit wire here.</i>)."))
-
+                declarations right where they occur.")
+     (warnings vl-warninglist-p))
     :returns (mv (new-warnings vl-warninglist-p)
-                 (st           vl-implicitst-p)
-                 (implicit     vl-vardecllist-p)
+                 (new-st       vl-implicitst-p)
                  (newitems     vl-genelementlist-p))
-
     :measure (vl-genelementlist-count x)
 
-    :long "<p>Note that to keep this code simple, we don't try to defend against
-multiply declared names here.</p>
+    :long "<p>Note that to keep this code simple, we don't try to defend
+           against multiply declared names here.</p>
 
-<p>We don't try to add any port declarations here, because we have to sort of
-get through the whole module to make sure there isn't an explicit declaration
-later on.  We handle that in @(see vl-make-implicit-wires-main).</p>"
-
+           <p>We don't try to add any port declarations here, because we have
+           to sort of get through the whole module to make sure there isn't an
+           explicit declaration later on.  We handle that in @(see
+           vl-make-implicit-wires-main).</p>"
 
     (b* ((x        (vl-genelementlist-fix x))
          (st       (vl-implicitst-fix st))
          (warnings (vl-warninglist-fix warnings))
-         (implicit (vl-vardecllist-fix implicit))
          (newitems (vl-genelementlist-fix newitems))
 
          ((when (atom x))
-          (mv warnings st implicit newitems))
+          (mv warnings st newitems))
 
          (elem (car x))
 
@@ -1251,106 +941,82 @@ later on.  We handle that in @(see vl-make-implicit-wires-main).</p>"
           (b* (((mv warnings new-elem)
                 (vl-make-implicit-wires-generate elem st warnings))
                (newitems (cons new-elem newitems)))
-            (vl-make-implicit-wires-aux (cdr x) st implicit newitems warnings)))
+            (vl-make-implicit-wires-aux (cdr x) st newitems warnings)))
 
-         ((mv warnings st implicit newitems)
-          (vl-make-implicit-wires-elem elem st implicit newitems warnings)))
-      (vl-make-implicit-wires-aux (cdr x) st implicit newitems warnings)))
+         ((mv warnings st newitems)
+          (vl-genelement-make-implicit-wires elem st newitems warnings)))
+      (vl-make-implicit-wires-aux (cdr x) st newitems warnings)))
   ///
   (verify-guards vl-make-implicit-wires-aux)
   (deffixequiv-mutual vl-make-implicit-wires-aux))
 
 
 (define vl-make-port-implicit-wires
-  :short "@(call vl-make-port-implicit-wires) generates variable declarations
-for ports that don't have corresponding variable declarations."
-  ((items vl-genelementlist-p "List of genelements.")
-   (decls     "Alist binding names declared in the module to @('nil')."))
-
-  :hooks nil ;; bozo wtf kind of crazy thing is this trying to prove?
-  :verbosep t
-
-  :returns
-  (mv (implicit vl-vardecllist-p
-                "A list of new variable declarations, one for each port declaration
-             without a corresponding ordinary declaration.")
-      (new-items vl-genelementlist-p))
-
-  :long "<p>BOZO what about scalaredp, vectoredp, cstrength, delay?  I think we
-don't care, but it might be good to look into this again.</p>"
-
+  :short "Generate variable declarations for ports that don't have
+          corresponding variable declarations."
+  ((items vl-genelementlist-p
+          "Items to process in <b>reverse</b> parse order, with implicit
+           wire declarations already added in.")
+   (decls "Alist binding all the non-port names that are (ever) declared
+           in the module to anything.  This lets us tell, when we get to
+           a port declaration, whether we need to add a corresponding
+           net declaration for it.")
+   (newitems vl-genelementlist-p
+             "Accumulator for our new items (reverse of items order, i.e.,
+              back into parse order.)"))
+  :returns (newitems vl-genelementlist-p
+                     "Parse order, with port-implicit decls added.")
   (b* (((when (atom items))
-        (mv nil nil))
+        (vl-genelementlist-fix newitems))
 
-       ((mv rest-implicit rest-items)
-        (vl-make-port-implicit-wires (cdr items) decls))
+       (item (vl-genelement-fix (car items)))
 
-       ((unless (vl-genelement-case (car items) :vl-genbase))
-        (mv rest-implicit (cons (vl-genelement-fix (car items)) rest-items)))
+       ((unless (and (vl-genelement-case item :vl-genbase)
+                     (eq (tag (vl-genbase->item item)) :vl-portdecl)))
+        ;; Don't care about anything except portdecls.
+        (vl-make-port-implicit-wires (cdr items) decls (cons item newitems)))
 
-       (item (vl-genbase->item (car items)))
-
-       ((unless (eq (tag item) :vl-portdecl))
-        ;; Bad alist convention
-        (mv rest-implicit (cons (vl-genelement-fix (car items)) rest-items)))
-
-       ((vl-portdecl portdecl) item)
+       ((vl-portdecl portdecl) (vl-genbase->item item))
        ((when (hons-get portdecl.name decls))
-        ;; Already declared, nothing to add.
-        (mv rest-implicit (cons (vl-genelement-fix (car items)) rest-items)))
+        ;; There's a corresponding declaration for this port declaration
+        ;; somewhere else in the module, so there's nothing we need to add.
+        (vl-make-port-implicit-wires (cdr items) decls (cons item newitems)))
 
-       (new-decl (make-vl-vardecl :name    portdecl.name
-                                  :type    portdecl.type
-                                  :atts    (cons '("VL_PORT_IMPLICIT") portdecl.atts)
-                                  :loc     portdecl.loc)))
-    (mv (cons new-decl rest-implicit)
-        (cons (vl-genelement-fix (car items))
-              (cons (make-vl-genbase :item new-decl)
-                    rest-items)))))
+       ;; Else, we do want to create a corresponding net declaration.  BOZO
+       ;; what about scalaredp, vectoredp, cstrength, delay?  I think we don't
+       ;; care, but it might be good to double check this.
+       (new-decl (make-vl-genbase
+                  :item (make-vl-vardecl :name    portdecl.name
+                                         :type    portdecl.type
+                                         :atts    (cons '("VL_PORT_IMPLICIT") portdecl.atts)
+                                         :loc     portdecl.loc))))
+    (vl-make-port-implicit-wires (cdr items) decls (list* item new-decl newitems))))
 
 (define vl-make-implicit-wires-main
-  :short "Augment a list of module elements with declarations for any implicit
-nets, and make sure that every identifier being used has a declaration."
-
-  ((loaditems vl-genelementlist-p
-              "All of the module elements from a single module, in the order they
-               were parsed.")
-   (ifports   vl-interfaceportlist-p
-              "Interface ports for the module (we implicitly declare them first).")
-   (ss       vl-scopestack-p)
-   (warnings vl-warninglist-p
-             "An ordinary @(see warnings) accumulator, which may be extended
-              with fatal and/or nonfatal warnings."))
+  :short "Top level routine for adding implicit wires to a module's load items."
+  ((loaditems vl-genelementlist-p    "Module elements in parse order.")
+   (ifports   vl-interfaceportlist-p "Interface ports for the module (we implicitly declare them first).")
+   (ss        vl-scopestack-p        "Partial scopestack with info for superior scopes.")
+   (warnings  vl-warninglist-p       "Ordinary @(see warnings) accumulator."))
   :returns
-  (mv (implicit  vl-vardecllist-p    "Declarations for implicit wires.")
-      (newitems  vl-genelementlist-p "Extended loaditems (with implicit wires added).")
+  (mv (newitems  vl-genelementlist-p "Extended @('loaditems') with implicit wires added.")
       (warnings  vl-warninglist-p    "Possibly extended @(see warnings)."))
-
-  :long "<p>We try to add declarations for any implicit wires.  Unless there is
-a fatal warning, the resulting module element list will have declarations for
-all of its identifiers.</p>"
-
-    (b* ((ifports (vl-interfaceportlist-fix ifports))
-         (st (make-vl-implicitst :decls     (make-fast-alist
-                                             (pairlis$ (vl-portlist->names ifports)
-                                                       (list-fix ifports)))
-                                 :portdecls nil
-                                 :imports   nil
-                                 :ss        ss))
-         (newitems        nil)
-         (normal-implicit nil)
-         ((mv warnings st normal-implicit newitems)
-          (vl-make-implicit-wires-aux loaditems st normal-implicit newitems warnings))
-         ;; BOZO would be nice to use nreverse here
-         (newitems (rev newitems))
-         ((vl-implicitst st))
-         ((mv port-implicit newitems)
-          (vl-make-port-implicit-wires newitems st.decls))
-         (- (fast-alist-free st.portdecls))
-         (- (fast-alist-free st.decls))
-         (- (fast-alist-free st.imports))
-         (all-implicit (append-without-guard normal-implicit port-implicit)))
-      (mv all-implicit newitems warnings)))
+  (b* ((ifports (vl-interfaceportlist-fix ifports))
+       (decls   (make-fast-alist (pairlis$ (vl-portlist->names ifports) (list-fix ifports))))
+       (st      (make-vl-implicitst :decls     decls
+                                    :portdecls nil
+                                    :imports   nil
+                                    :ss        ss))
+       (newitems nil)
+       ;; Add regular implicit wires.  This reverses the items.
+       ((mv warnings st newitems) (vl-make-implicit-wires-aux loaditems st newitems warnings))
+       ;; Add port implicit wires.  This reverses them again so they're back in parse order.
+       ((vl-implicitst st))
+       (newitems (vl-make-port-implicit-wires newitems st.decls nil))
+       (- (fast-alist-free st.portdecls))
+       (- (fast-alist-free st.decls))
+       (- (fast-alist-free st.imports)))
+    (mv newitems warnings)))
 
 ;; (trace$ #!vl (vl-make-implicit-wires-main
 ;;               :entry (list 'vl-module-make-implicit-wires-main
@@ -1373,43 +1039,21 @@ all of its identifiers.</p>"
 ;;                                                            (len warnings)))))))))
 
 
-(define vl-module-make-implicit-wires ((x       vl-module-p)
-                                       (ss      vl-scopestack-p))
+(define vl-module-make-implicit-wires ((x  vl-module-p)
+                                       (ss vl-scopestack-p))
   :returns (new-x vl-module-p)
   (b* (((vl-module x))
        (x.loaditems (and x.parse-temps
                          (append (vl-modelementlist->genelements
                                   (vl-parse-temps->paramports x.parse-temps))
                                  (vl-parse-temps->loaditems x.parse-temps))))
-       ((mv ?implicit newitems warnings)
+       ((mv newitems warnings)
         (vl-make-implicit-wires-main x.loaditems x.ifports ss x.warnings))
-       ;; (bad-item (vl-genelementlist-findbad newitems
-       ;;                                      '(:vl-generate
-       ;;                                        ;; :vl-port    -- not allowed, they were parsed separately
-       ;;                                        :vl-portdecl
-       ;;                                        :vl-assign
-       ;;                                        :vl-alias
-       ;;                                        :vl-vardecl
-       ;;                                        :vl-paramdecl
-       ;;                                        :vl-fundecl
-       ;;                                        :vl-taskdecl
-       ;;                                        :vl-modinst
-       ;;                                        :vl-gateinst
-       ;;                                        :vl-always
-       ;;                                        :vl-initial
-       ;;                                        :vl-typedef
-       ;;                                        :vl-import
-       ;;                                        ;; :vl-fwdtypedef -- doesn't seem like these should be ok
-       ;;                                        ;; :vl-modport    -- definitely not ok
-       ;;                                        :vl-genvar
-       ;;                                        )))
-       ;; (warnings (if (not bad-item)
-       ;;               warnings
-       ;;             (fatal :type :vl-bad-module-item
-       ;;                    :msg "~a0: a module may not contain ~x1s."
-       ;;                    :args (list bad-item (tag bad-item)))))
-
-       ((vl-genblob c) (vl-sort-genelements newitems)))
+       ((vl-genblob c) (vl-sort-genelements newitems))
+       (parse-temps (and x.parse-temps
+                         (change-vl-parse-temps x.parse-temps
+                                                :paramports nil
+                                                :loaditems newitems))))
     (change-vl-module x
                       :portdecls   c.portdecls
                       :assigns     c.assigns
@@ -1430,12 +1074,8 @@ all of its identifiers.</p>"
                       :cassertions c.cassertions
                       :dpiimports  c.dpiimports
                       :dpiexports  c.dpiexports
-                      :warnings warnings
-                      :parse-temps (and x.parse-temps
-                                        (change-vl-parse-temps
-                                         x.parse-temps
-                                         :paramports nil
-                                         :loaditems newitems)))))
+                      :warnings    warnings
+                      :parse-temps parse-temps)))
 
 
 (defprojection vl-modulelist-make-implicit-wires ((x  vl-modulelist-p)
@@ -1455,3 +1095,243 @@ all of its identifiers.</p>"
 
     ;; Part 2 -- Check for tricky shadowing, sane imports, etc.
     (vl-shadowcheck-design new-x)))
+
+
+
+
+
+
+
+;; (defines vl-stmt-check-undeclared
+;;   :short "Check an arbitrary @(see vl-stmt-p) for uses of undeclared names."
+
+;;   :long "<p>Most statements are totally straightforward; we just need to make
+;; sure that all identifiers used anywhere within them have been declared.</p>
+
+;; <p>Named blocks are the only complication.  They have their own scope and can
+;; have their own declarations and imports, which come before their
+;; sub-statements.  So, if we see a named block, we basically fork the decls and
+;; imports to create a local namespace, add all of the local declarations to it,
+;; and then check all the sub-statements in this extended namespace.</p>"
+
+;;   (define vl-stmt-check-undeclared
+;;     ((ctx       vl-modelement-p "Where this statement occurs.")
+;;      (x         vl-stmt-p       "The statement to process.")
+;;      (st        vl-implicitst-p)
+;;      (warnings  vl-warninglist-p))
+;;     :returns (new-warnings vl-warninglist-p)
+;;     :measure (vl-stmt-count x)
+;;     :verify-guards nil
+;;     (b* ((x (vl-stmt-fix x))
+
+;;          ((when (vl-atomicstmt-p x))
+;;           (b* ((used-names (vl-exprlist-varnames (vl-stmt-allexprs x)))
+;;                (warnings   (vl-warn-about-undeclared-wires ctx used-names st warnings)))
+;;             warnings))
+
+;;          ((when (vl-stmt-case x :vl-blockstmt))
+;;           (b* (((vl-blockstmt x) x)
+;;                ((vl-implicitst st) st)
+;;                ;; Initially the local-decls will just be the current decls
+;;                ;; we've seen, since things in the module's scope can still be
+;;                ;; referenced from within the named block.
+;;                (local-decls   (hons-shrink-alist st.decls nil))
+;;                (local-imports (hons-shrink-alist st.imports nil))
+;;                (local-st      (change-vl-implicitst st :decls local-decls :imports local-imports))
+;;                ;; Add in all local declarations.
+;;                ((mv warnings local-st) (vl-blockitemlist-check-undeclared x.loaditems local-st warnings))
+;;                ;; Check all the sub-statements in the extended scope.
+;;                (warnings (vl-stmtlist-check-undeclared ctx x.stmts local-st warnings)))
+;;             ;; Note that a named block doesn't have any other kinds of
+;;             ;; expressions (i.e., x.ctrl and x.exprs are necessarily empty).
+;;             ;; So, there's nothing to check other than the statements, and
+;;             ;; hence we're already done and can now throw away the local scope.
+;;             (fast-alist-free (vl-implicitst->decls local-st))
+;;             (fast-alist-free (vl-implicitst->imports local-st))
+;;             warnings))
+
+;;          ((when (vl-stmt-case x :vl-forstmt))
+;;           (b* (((vl-forstmt x))
+;;                ((vl-implicitst st) st)
+;;                ;; Basically similar to the blockstmt case: create a new scope...
+;;                (local-decls   (hons-shrink-alist st.decls nil))
+;;                (local-imports (hons-shrink-alist st.imports nil))
+;;                (local-st      (change-vl-implicitst st :decls local-decls :imports local-imports))
+;;                ;; Add in local declarations for things like for(int i = 0; ...).
+;;                ;; We abuse the fact that vardecls are blockitems to just reuse our
+;;                ;; blockitem handler.
+;;                ((mv warnings local-st) (vl-blockitemlist-check-undeclared x.initdecls local-st warnings))
+;;                ;; Now check the rest of the for statement components in the extended
+;;                ;; scope.
+;;                (warnings (vl-stmtlist-check-undeclared ctx x.initassigns local-st warnings))
+;;                (warnings (vl-warn-about-undeclared-wires ctx (vl-expr-varnames x.test) local-st warnings))
+;;                (warnings (vl-stmtlist-check-undeclared ctx x.stepforms local-st warnings))
+;;                (warnings (vl-stmt-check-undeclared ctx x.body local-st warnings)))
+;;             ;; All done with the local scope.
+;;             (fast-alist-free (vl-implicitst->decls local-st))
+;;             (fast-alist-free (vl-implicitst->imports local-st))
+;;             warnings))
+
+;;          ;; No other statement has its own scope, but some kinds of statements
+;;          ;; (e.g., case statements, assignments, timing statements) have their
+;;          ;; own expressions, so we need to check those.
+
+;;          ;; We don't use vl-stmt-allexprs here because it also grabs the exprs
+;;          ;; for sub-statements, which could be incorrect because a sub-block
+;;          ;; statement of course needs to be checked w.r.t. its local scope.
+;;          ;; So, we instead use this ugly sort of way to grab only the local
+;;          ;; expressions.  We don't have to collect from x.decls since this
+;;          ;; isn't a block statement.
+;;          (local-exprs (append (vl-maybe-delayoreventcontrol-allexprs
+;;                                (vl-compoundstmt->ctrl x))
+;;                               (vl-compoundstmt->exprs x)))
+;;          (local-names (vl-exprlist-varnames local-exprs))
+;;          (warnings    (vl-warn-about-undeclared-wires ctx local-names st warnings)))
+
+;;       ;; Finally check the substatements.
+;;       (vl-stmtlist-check-undeclared ctx (vl-compoundstmt->stmts x) st warnings)))
+
+;;     (define vl-stmtlist-check-undeclared ((ctx      vl-modelement-p)
+;;                                           (x        vl-stmtlist-p)
+;;                                           (st       vl-implicitst-p)
+;;                                           (warnings vl-warninglist-p))
+;;       :returns (new-warnings vl-warninglist-p)
+;;       :measure (vl-stmtlist-count x)
+;;       (b* (((when (atom x))
+;;             (ok))
+;;            (warnings (vl-stmt-check-undeclared ctx (car x) st warnings)))
+;;         (vl-stmtlist-check-undeclared ctx (cdr x) st warnings)))
+
+;;     ///
+;;     (verify-guards vl-stmt-check-undeclared)
+;;     (deffixequiv-mutual vl-stmt-check-undeclared))
+
+
+
+;; (define vl-fundecl-check-undeclared
+;;   :short "Check an arbitrary @(see vl-fundecl-p) for uses of undeclared names."
+
+;;   :long "<p>Function declarations are tricky because they can have their own
+;; declarations and hence we need to treat them basically like a named block
+;; statement.</p>
+
+;; <p>BOZO a problem with our approach is that paramterized function inputs won't
+;; exactly work, e.g., for</p>
+
+;; @({
+;; function foo ;
+;;   parameter p = 4;
+;;   input [p-1:0] in;
+;;   ...
+;; endfunction
+;; })
+
+;; <p>We will think that @('p') is undeclared when we see @('in'), because we
+;; aren't maintaining the mixed order of inputs and parameters.</p>
+
+;; <p>Well, this is a pretty obscure, so I don't want to fix it until it becomes a
+;; problem.</p>"
+
+;;   ((x         vl-fundecl-p)
+;;    (st        vl-implicitst-p)
+;;    (warnings  vl-warninglist-p))
+;;   :returns (new-warnings vl-warninglist-p)
+;;   (b* ((x (vl-fundecl-fix x))
+;;        ((vl-fundecl x) x)
+
+;;        ;; Check for undeclared names in the non-local parts (the inputs and
+;;        ;; return value range.)  It's not quite right to do the inputs here, as
+;;        ;; described above, but in practice it shouldn't be much of a problem.
+;;        (other-names (vl-exprlist-varnames (append (vl-portdecllist-allexprs x.portdecls)
+;;                                                   (vl-datatype-allexprs x.rettype))))
+;;        (warnings    (vl-warn-about-undeclared-wires x other-names st warnings))
+
+;;        ;; Now make a local scope and add the local declarations, as in named
+;;        ;; block statements.
+;;        (local-decls (hons-shrink-alist (vl-implicitst->decls st) nil))
+;;        (local-imports (hons-shrink-alist (vl-implicitst->imports st) nil))
+;;        (local-st    (change-vl-implicitst st :decls local-decls :imports local-imports))
+
+;;        ;; Now check/add the block items.  As we do this, we're acting like the
+;;        ;; inputs haven't been declared yet.  That's not quite right, but it
+;;        ;; should be practically pretty reasonable since it's not valid to refer
+;;        ;; to an input in the other declarations.
+;;        ((mv warnings local-st)
+;;         (vl-blockitemlist-check-undeclared x.parsed-blockitems local-st warnings))
+
+;;        ;; Okay, now add the inputs to the local scope, since it's valid to
+;;        ;; refer to them in the body.  Also add in the function's name since it
+;;        ;; can be a valid return value.
+;;        (local-decls  (vl-implicitst->decls local-st))
+;;        (local-decls  (make-fal (pairlis$ (vl-portdecllist->names x.portdecls) nil) local-decls))
+;;        (local-decls  (hons-acons x.name nil local-decls))
+;;        (local-st     (change-vl-implicitst local-st :decls local-decls))
+
+;;        ;; The local scope is constructed, check the function's body.
+;;        (warnings (vl-stmt-check-undeclared x x.body local-st warnings)))
+;;     ;; That's it, all done with the local scope.
+;;     (fast-alist-free local-decls)
+;;     warnings))
+
+
+;; (define vl-dpiimport-check-undeclared
+;;   :short "Check an arbitrary @(see vl-dpiimport) for uses of undeclared names."
+;;   ((x         vl-dpiimport-p)
+;;    (st        vl-implicitst-p)
+;;    (warnings  vl-warninglist-p))
+;;   :returns (new-warnings vl-warninglist-p)
+;;   (b* (((vl-dpiimport x) (vl-dpiimport-fix x))
+;;        ;; Analogous to functions -- check names in return type and parameters
+;;        (other-names (vl-exprlist-varnames (append (vl-portdecllist-allexprs x.portdecls)
+;;                                                   (vl-maybe-datatype-allexprs x.rettype))))
+;;        (warnings    (vl-warn-about-undeclared-wires x other-names st warnings)))
+;;     ;; There's not anything else here we can check since the import's
+;;     ;; definition is in some C file somewhere.
+;;     warnings))
+
+
+;; (define vl-taskdecl-check-undeclared
+;;   :short "Check an arbitrary @(see vl-taskdecl-p) for uses of undeclared
+;; names."
+;;   :long "<p>This is nearly identical to @(see vl-fundecl-check-undeclared) and
+;; it has the same problems with parameters.</p>"
+
+;;   ((x         vl-taskdecl-p)
+;;    (st        vl-implicitst-p)
+;;    (warnings  vl-warninglist-p))
+;;   :returns (new-warnings vl-warninglist-p)
+;;   (b* ((x (vl-taskdecl-fix x))
+;;        ((vl-taskdecl x) x)
+
+;;        ;; Check for undeclared names in the task's visible ports.  It's not
+;;        ;; quite right to do the ports here if they have parameters, as
+;;        ;; described above, but in practice it shouldn't be much of a problem.
+;;        (other-names (vl-exprlist-varnames (vl-portdecllist-allexprs x.portdecls)))
+;;        (warnings    (vl-warn-about-undeclared-wires x other-names st warnings))
+
+;;        ;; Now make a local scope and add the local declarations, as in named
+;;        ;; block statements.
+;;        (local-decls (hons-shrink-alist (vl-implicitst->decls st) nil))
+;;        (local-imports (hons-shrink-alist (vl-implicitst->imports st) nil))
+;;        (local-st    (change-vl-implicitst st :decls local-decls :imports local-imports))
+
+;;        ;; Now check/add the block items.  As we do this, we're acting like the
+;;        ;; ports haven't been declared yet.  That's not quite right, but it
+;;        ;; should be practically pretty reasonable since it's not valid to refer
+;;        ;; to a port in the other declarations.
+;;        ((mv warnings local-st)
+;;         (vl-blockitemlist-check-undeclared x.parsed-blockitems local-st warnings))
+
+;;        ;; Okay, now add the ports to the local scope, since it's valid to
+;;        ;; refer to them in the body.
+;;        (local-decls (vl-implicitst->decls local-st))
+;;        (local-decls (make-fal (pairlis$ (vl-portdecllist->names x.portdecls) nil) local-decls))
+;;        (local-st    (change-vl-implicitst local-st :decls local-decls))
+
+;;        ;; The local scope is constructed, check the task's body.
+;;        (warnings (vl-stmt-check-undeclared x x.body local-st warnings)))
+
+;;     ;; That's it, all done with the local scope.
+;;     (fast-alist-free local-decls)
+;;     warnings))
+
