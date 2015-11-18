@@ -157,7 +157,7 @@ class ListProc extends Cons {
            nil)))
    '((0 . (("java/lang/Class" ("<name>" . "java/lang/Object"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
-    (1 . (("java/lang/Class" ("<name>" . "ARRAY"))
+    (1 . (("java/lang/Class" ("<name>" . "[C"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
     (2 . (("java/lang/Class" ("<name>" . "java/lang/Thread"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
@@ -171,15 +171,15 @@ class ListProc extends Cons {
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))))
    '(("java/lang/Object"
      nil
-     ()
+     nil
      nil
      nil
      (("<init>:()V" nil
        (return)))
      (ref  0))
-    ("ARRAY"
+    ("[C"
      ("java/lang/Object")
-     (("<array>" . *ARRAY*))
+     nil
      nil
      nil
      nil

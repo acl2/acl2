@@ -187,7 +187,7 @@
 (encapsulate
  nil
  (local
-  (defun makemultiarray-fn (fn car-counts cdr-counts s ac)
+  (defun makemultiarray-fn (fn type car-counts cdr-counts s ac)
     (declare
      (xargs :measure
             (if (equal fn 'makemultiarray2)
@@ -203,8 +203,9 @@
          (mv (heap s) ac)
          (mv-let
           (new-addr new-heap)
-          (makemultiarray-fn 'makemultiarray car-counts cdr-counts s ac)
+          (makemultiarray-fn 'makemultiarray type car-counts cdr-counts s ac)
           (makemultiarray-fn 'makemultiarray2
+                             type
                              (- car-counts 1)
                              cdr-counts
                              (make-state (thread-table s)
@@ -215,17 +216,19 @@
       (if (<= (len cdr-counts) 1)
           (mv (len (heap s))
               (bind (len (heap s))
-                    (makearray 't_ref
+                    (makearray type
                                (car cdr-counts)
-                               (init-array 't_ref (car cdr-counts))
+                               (init-array (array-initial-value type)
+                                           (car cdr-counts))
                                (class-table s))
                     (heap s)))
           (mv-let (heap-prime lst-of-refs)
                   (makemultiarray-fn 'makemultiarray2
+                                     (element-type type)
                                      (car cdr-counts)
                                      (cdr cdr-counts)
                                      s nil)
-                  (let* ((obj (makearray 't_ref
+                  (let* ((obj (makearray type
                                          (car cdr-counts)
                                          lst-of-refs (class-table s)))
                          (new-addr (len heap-prime))
@@ -240,22 +243,22 @@
   (defthm len-makemultiarray-fn
     (<= (len (heap s))
         (if (equal fn 'makemultiarray2)
-            (len (car (makemultiarray-fn fn car-counts cdr-counts s ac)))
-          (len (cadr (makemultiarray-fn fn car-counts cdr-counts s ac)))))
+            (len (car (makemultiarray-fn fn type car-counts cdr-counts s ac)))
+          (len (cadr (makemultiarray-fn fn type car-counts cdr-counts s ac)))))
     :rule-classes nil))
 
  (local
   (defthm makemultiarray-fn-is-makemultiarray
-    (equal (makemultiarray-fn fn car-counts cdr-counts s ac)
+    (equal (makemultiarray-fn fn type car-counts cdr-counts s ac)
            (if (equal fn 'makemultiarray2)
-               (makemultiarray2 car-counts cdr-counts s ac)
-             (makemultiarray cdr-counts s)))))
+               (makemultiarray2 type car-counts cdr-counts s ac)
+             (makemultiarray type cdr-counts s)))))
 
  (defthm makemultiarray-len
    (and (<= (len (heap s))
-            (len (car (makemultiarray2 car-counts cdr-counts s ac))))
+            (len (car (makemultiarray2 type car-counts cdr-counts s ac))))
         (<= (len (heap s))
-            (len (mv-nth 1 (makemultiarray cdr-counts s)))))
+            (len (mv-nth 1 (makemultiarray type cdr-counts s)))))
    :rule-classes :linear
    :hints (("Goal" :use ((:instance len-makemultiarray-fn
                                     (fn 'makemultiarray2))
@@ -267,20 +270,20 @@
     (implies
       (indexed-alistp (heap s))
       (if (equal fn 'makemultiarray2)
-          (indexed-alistp (car (makemultiarray-fn fn car-counts cdr-counts s ac)))
-          (indexed-alistp (cadr (makemultiarray-fn fn car-counts cdr-counts s ac)))))
+          (indexed-alistp (car (makemultiarray-fn fn type car-counts cdr-counts s ac)))
+          (indexed-alistp (cadr (makemultiarray-fn fn type car-counts cdr-counts s ac)))))
     :rule-classes nil))
 
   (defthm makemultiarray-indexed-alistp
     (implies
       (indexed-alistp (heap s))
-      (indexed-alistp (mv-nth 1 (makemultiarray cdr-counts s))))
+      (indexed-alistp (mv-nth 1 (makemultiarray type cdr-counts s))))
    :hints (("Goal" :use ((:instance indexed-alistp-makemultiarray-fn
                                     (fn 'makemultiarray2))
                          (:instance indexed-alistp-makemultiarray-fn
                                     (fn 'makemultiarray)))))))
 
-(local (acl2::defrule |indexed-alistp heap 3|
+(local (acl2::defrule |indexed-alistp heap|
   (implies
     (and
       (indexed-alistp (thread-table s))

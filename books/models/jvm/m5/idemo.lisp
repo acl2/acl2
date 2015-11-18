@@ -131,33 +131,44 @@ class IDemo {
 (defconst *IDemo-heap*
   '((0 . (("java/lang/Class" ("<name>" . "java/lang/Object"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
-    (1 . (("java/lang/Class" ("<name>" . "ARRAY"))
+    (1 . (("java/lang/Class" ("<name>" . "[Ljava/lang/Object;"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
-    (2 . (("java/lang/Class" ("<name>" . "java/lang/Thread"))
+    (2 . (("java/lang/Class" ("<name>" . "[C"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
-    (3 . (("java/lang/Class" ("<name>" . "java/lang/String"))
+    (3 . (("java/lang/Class" ("<name>" . "java/lang/Thread"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
-    (4 . (("java/lang/Class" ("<name>" . "java/lang/Class"))
+    (4 . (("java/lang/Class" ("<name>" . "java/lang/String"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
-    (5 . (("java/lang/Class" ("<name>" . "IDemo"))
+    (5 . (("java/lang/Class" ("<name>" . "[Ljava/lang/String;"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (6 . (("java/lang/Class" ("<name>" . "java/lang/Class"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (7 . (("java/lang/Class" ("<name>" . "IDemo"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))))
 
 (defconst *IDemo-class-table*
   '(("java/lang/Object"
      NIL
-     ()
+     NIL
      NIL
      NIL
      (("<init>:()V" NIL
        (RETURN)))
      (REF 0))
-    ("ARRAY"
+    ("[Ljava/lang/Object;"
      ("java/lang/Object")
-     (("<array>" . *ARRAY*))
+     NIL
      NIL
      NIL
      NIL
      (REF 1))
+    ("[C"
+     ("java/lang/Object")
+     NIL
+     NIL
+     NIL
+     NIL
+     (REF 2))
     ("java/lang/Thread"
      ("java/lang/Object")
      NIL
@@ -173,7 +184,7 @@ class IDemo {
        (ALOAD\_0)
        (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN)))
-     (REF 2))
+     (REF 3))
     ("java/lang/String"
      ("java/lang/Object")
      ("value:[C")
@@ -183,7 +194,14 @@ class IDemo {
        (ALOAD\_0)
        (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN)))
-     (REF 3))
+     (REF 4))
+    ("[Ljava/lang/String;"
+     ("[Ljava/lang/Object;" "java/lang/Object")
+     NIL
+     NIL
+     NIL
+     NIL
+     (REF 5))
     ("java/lang/Class"
      ("java/lang/Object")
      NIL
@@ -193,7 +211,7 @@ class IDemo {
        (ALOAD\_0)
        (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
        (RETURN)))
-     (REF 4))
+     (REF 6))
     ("IDemo"
      ("java/lang/Object")
      NIL
@@ -225,7 +243,7 @@ class IDemo {
        (INVOKESTATIC "IDemo" "ifact:(I)I" 1)
        (POP)
        (RETURN)))
-     (REF 5))))
+     (REF 7))))
 
 (defconst *IDemo-state*
   (make-state *IDemo-thread-table*

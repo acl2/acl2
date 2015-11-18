@@ -68,7 +68,7 @@ Sun Jun 30 23:21:06 2002
         SCHEDULED NIL))
     ((0 ("java/lang/Class" ("<name>" . "java/lang/Object"))
         ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
-     (1 ("java/lang/Class" ("<name>" . "ARRAY"))
+     (1 ("java/lang/Class" ("<name>" . "[C"))
         ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
      (2 ("java/lang/Class" ("<name>" . "java/lang/Thread"))
         ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
@@ -82,8 +82,8 @@ Sun Jun 30 23:21:06 2002
       NIL NIL (("<init>:()V" NIL
                 (RETURN)))
       (REF 0))
-     ("ARRAY" ("java/lang/Object")
-      (("<array>" . *ARRAY*))
+     ("[C" ("java/lang/Object")
+      NIL
       NIL NIL NIL (REF 1))
      ("java/lang/Thread"
       ("java/lang/Object")

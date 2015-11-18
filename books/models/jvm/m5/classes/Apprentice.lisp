@@ -21,23 +21,23 @@
         (invokespecial "java/lang/Object" "<init>:()V" 0)       ; 1
         (return)                                                ; 4
        )
-      '("main:([Ljava/lang/String;)V" nil
+      '("main:()V" nil
         ; line_number #29
         (new "Container")                                       ; 0
         (dup)                                                   ; 3
         (invokespecial "Container" "<init>:()V" 0)              ; 4
-        (astore_1)                                              ; 7
+        (astore_0)                                              ; 7
         ; line_number #32
         (new "Job")                                             ; 8
         (dup)                                                   ; 11
         (invokespecial "Job" "<init>:()V" 0)                    ; 12
-        (astore_2)                                              ; 15
+        (astore_1)                                              ; 15
         ; line_number #33
-        (aload_2)                                               ; 16
-        (aload_1)                                               ; 17
+        (aload_1)                                               ; 16
+        (aload_0)                                               ; 17
         (invokevirtual "Job" "setref:(LContainer;)V" 1)         ; 18
         ; line_number #34
-        (aload_2)                                               ; 21
+        (aload_1)                                               ; 21
         (invokevirtual "Job" "start:()V" 0)                     ; 22
         ; line_number #35
         (goto -17)                                              ; 25

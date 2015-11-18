@@ -35,7 +35,7 @@ class Job extends Thread {
 }
 
 class Apprentice {
-    public static void main(String[] args) {
+    public static void main(/*String[] args*/) {
 
         Container container = new Container();
 
@@ -307,7 +307,8 @@ Sun Jul 15 14:17:26 2001
 
 (defconst *Apprentice-main*
   (method-program
-    (bound? "main:([Ljava/lang/String;)V"
+    (bound? "main:()V"
+;    (bound? "main:([Ljava/lang/String;)V"
             (class-decl-methods (bound? "Apprentice" *Apprentice-class-table*)))))
 
 (defun Apprentice-ms ()
@@ -355,6 +356,22 @@ Sun Jul 15 14:17:26 2001
   '((NEW "Container")                             ;;;  0
     (DUP)                                         ;;;  3
     (INVOKESPECIAL "Container" "<init>:()V" 0)    ;;;  4
+    (ASTORE_0)                                    ;;;  7
+    (NEW "Job")                                   ;;;  8
+    (DUP)                                         ;;; 11
+    (INVOKESPECIAL "Job" "<init>:()V" 0)          ;;; 12
+    (ASTORE_1)                                    ;;; 15
+    (ALOAD_1)                                     ;;; 16
+    (ALOAD_0)                                     ;;; 17
+    (INVOKEVIRTUAL "Job" "setref:(LContainer;)V" 1) ;;; 18
+    (ALOAD_1)                                     ;;; 21
+    (INVOKEVIRTUAL "java/lang/Thread" "start:()V" 0) ;;; 22
+    (GOTO -17)))                                  ;;; 25
+#|
+(defconst *Apprentice.main*
+  '((NEW "Container")                             ;;;  0
+    (DUP)                                         ;;;  3
+    (INVOKESPECIAL "Container" "<init>:()V" 0)    ;;;  4
     (ASTORE_1)                                    ;;;  7
     (NEW "Job")                                   ;;;  8
     (DUP)                                         ;;; 11
@@ -366,7 +383,7 @@ Sun Jul 15 14:17:26 2001
     (ALOAD_2)                                     ;;; 21
     (INVOKEVIRTUAL "java/lang/Thread" "start:()V" 0) ;;; 22
     (GOTO -17)))                                  ;;; 25
-
+|#
 (defconst *Container.<init>*
   '((ALOAD_0)                                     ;;;  0
     (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0) ;;;  1
@@ -440,7 +457,8 @@ Sun Jul 15 14:17:26 2001
      (t nil)))
    ((equal class "Apprentice")
     (cond
-     ((equal method "main:([Ljava/lang/String;)V")
+     ((equal method "main:()V")
+;     ((equal method "main:([Ljava/lang/String;)V")
       *Apprentice.main*)
      (t nil)))
    ((equal class "Container")
@@ -469,7 +487,8 @@ Sun Jul 15 14:17:26 2001
   (and
     (check-program1 "java.lang.Object" "<init>:()V")
     (check-program1 "java.lang.Thread" "<init>:()V")
-    (check-program1 "Apprentice" "main:([Ljava/lang/String;)V")
+    (check-program1 "Apprentice" "main:()V")
+;    (check-program1 "Apprentice" "main:([Ljava/lang/String;)V")
     (check-program1 "Container" "<init>:()V")
     (check-program1 "Job" "<init>:()V")
     (check-program1 "Job" "incr:()LJob;")
@@ -643,10 +662,13 @@ Sun Jul 15 14:17:26 2001
          (locals    (locals frame))
          (stack     (stack frame))
          (flg       (sync-flg frame))
-         (container (nth 1 locals))
-         (job       (nth 2 locals)))
+         (container (nth 0 locals))
+         (job       (nth 1 locals)))
+;         (container (nth 1 locals))
+;         (job       (nth 2 locals)))
     (and
-     (programp frame "Apprentice" "main:([Ljava/lang/String;)V")
+     (programp frame "Apprentice" "main:()V")
+;     (programp frame "Apprentice" "main:([Ljava/lang/String;)V")
      (equal flg 'UNLOCKED)
      (case pc
        (0 (and (not suspendedp)
@@ -811,7 +833,7 @@ Sun Jul 15 14:17:26 2001
   (standard-heap-prefixp1
    '((0 ("java/lang/Class" ("<name>" . "java/lang/Object"))
         ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
-     (1 ("java/lang/Class" ("<name>" . "ARRAY"))
+     (1 ("java/lang/Class" ("<name>" . "[C"))
         ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
      (2 ("java/lang/Class" ("<name>" . "java/lang/Thread"))
         ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
@@ -2488,7 +2510,7 @@ Sun Jul 15 14:17:26 2001
      thread2-rref))
  ((0 ("java/lang/Class" ("<name>" . "java/lang/Object"))
      ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
-  (1 ("java/lang/Class" ("<name>" . "ARRAY"))
+  (1 ("java/lang/Class" ("<name>" . "[C"))
      ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (2 ("java/lang/Class" ("<name>" . "java/lang/Thread"))
      ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
@@ -2511,8 +2533,8 @@ Sun Jul 15 14:17:26 2001
                       NIL (("<init>:()V" NIL
                             (RETURN)))
                       (REF 0))
-  ("ARRAY" ("java/lang/Object")
-           (("<array>" . *ARRAY*))
+  ("[C" ("java/lang/Object")
+           NIL
            NIL NIL NIL (REF 1))
   ("java/lang/Thread"
        ("java/lang/Object")
@@ -2545,7 +2567,8 @@ Sun Jul 15 14:17:26 2001
                 (("<init>:()V" NIL (ALOAD_0)
                            (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
                            (RETURN))
-                 ("main:([Ljava/lang/String;)V" NIL
+                 ("main:()V" NIL
+;                 ("main:([Ljava/lang/String;)V" NIL
                          (NEW "Container")
                          (DUP)
                          (INVOKESPECIAL "Container" "<init>:()V" 0)

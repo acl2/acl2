@@ -341,13 +341,6 @@
 
 (defun base-class-def ()
    (list *java.lang.Object-fake*
-         (make-class-decl "ARRAY"
-                          '("java/lang/Object")
-                          '(("<array>" . *ARRAY*)) ; Internal field
-                          '()
-                          '()
-                          '()
-                          '(ref -1))
          *java.lang.Thread-fake*
          *java.lang.String-fake8*
          *java.lang.Class-fake*))
@@ -763,33 +756,38 @@
 ; -----------------------------------------------------------------------------
 ; Arrays
 
-(defun value-of (obj)
-  (cdr obj))
+;(defun value-of (obj)
+;  (cdr obj))
 
-(defun superclasses-of (class ct)
-  (class-decl-superclasses (bound? class ct)))
+;(defun superclasses-of (class ct)
+;  (class-decl-superclasses (bound? class ct)))
 
-(defun array-content (array)
-  (value-of (field-value "ARRAY" "<array>" array)))
+;(defun array-content (array)
+;  (value-of (field-value "ARRAY" "<array>" array)))
 
 (defun array-type (array)
-  (nth 0 (array-content array)))
+  (car (nth 0 array)))
+;  (nth 0 (array-content array)))
 
 (defun array-bound (array)
-  (nth 1 (array-content array)))
+  (nth 1 array))
+;  (nth 1 (array-content array)))
 
 (defun array-data (array)
-  (nth 2 (array-content array)))
+  (nth 2 array))
+;  (nth 2 (array-content array)))
 
 (defun element-at (index array)
   (nth index (array-data array)))
 
 (defun makearray (type bound data class-table)
-  (cons (list "ARRAY"
-              (cons "<array>" (cons '*array* (list type bound data))))
-        (build-an-instance
-         (superclasses-of "ARRAY" class-table)
-         class-table)))
+  (declare (ignore class-table))
+  (list (list type) bound data))
+;  (cons (list "ARRAY"
+;              (cons "<array>" (cons '*array* (list type bound data))))
+;        (build-an-instance
+;         (superclasses-of "ARRAY" class-table)
+;         class-table)))
 
 (defun set-element-at (value index array class-table)
   (makearray (array-type array)
@@ -819,6 +817,17 @@
         ((equal atype-num 11) 'T_LONG)
         (t nil)))
 
+(defun atype-to-type (atype-num)
+  (cond ((equal atype-num 4) "[Z")
+        ((equal atype-num 5) "[C")
+        ((equal atype-num 6) "[F")
+        ((equal atype-num 7) "[D")
+        ((equal atype-num 8) "[B")
+        ((equal atype-num 9) "[S")
+        ((equal atype-num 10) "[I")
+        ((equal atype-num 11) "[J")
+        (t nil)))
+
 (defun identifier-to-atype (ident)
   (cond ((equal ident 'T_BOOLEAN) 4)
         ((equal ident 'T_CHAR) 5)
@@ -830,15 +839,24 @@
         ((equal ident 'T_LONG) 11)
         (t nil)))
 
-(defun default-value1 (type)
-  (if (primitive-type type)
-      0
-      nil))
+; "[C" -> "[[C"
+(defund array-type-of (element-type)
+  (concatenate 'string "[" element-type))
 
-(defun init-array (type count)
+; "[[C" -> "[C"
+(defund element-type (array-type)
+  (subseq array-type 1 (length array-type)))
+
+(defund array-initial-value (array-type)
+  (case (char array-type 1)
+    (#\[ '(ref -1))
+    (#\L '(ref -1))
+    (otherwise 0)))
+
+(defun init-array (initial-value count)
   (if (zp count)
       nil
-      (cons (default-value1 type) (init-array type (- count 1)))))
+      (cons initial-value (init-array initial-value (- count 1)))))
 
 ; The following measure is due to J
 (defun natural-sum (lst)
@@ -850,7 +868,7 @@
 (mutual-recursion
 
   ; makemultiarray2 :: num, counts, s, ac --> [refs]
-  (defun makemultiarray2 (car-counts cdr-counts s ac)
+  (defun makemultiarray2 (type car-counts cdr-counts s ac)
     (declare (xargs :measure (acl2::llist
                               (len (cons car-counts cdr-counts))
                               (natural-sum (cons car-counts cdr-counts)))
@@ -858,8 +876,9 @@
     (if (zp car-counts)
         (mv (heap s) ac)
         (mv-let (new-addr new-heap)
-                (makemultiarray cdr-counts s)
-                (makemultiarray2 (- car-counts 1)
+                (makemultiarray type cdr-counts s)
+                (makemultiarray2 type
+                                 (- car-counts 1)
                                  cdr-counts
                                  (make-state (thread-table s)
                                              new-heap
@@ -868,7 +887,7 @@
                                  (cons (list 'REF new-addr) ac)))))
 
   ; makemultiarray :: [counts], s --> addr, new-heap
-  (defun makemultiarray (counts s)
+  (defun makemultiarray (type counts s)
     (declare (xargs :measure (acl2::llist (+ 1 (len counts))
                                           (natural-sum counts))
                     :well-founded-relation acl2::l<))
@@ -877,19 +896,21 @@
         ; "Base case"  Handles initializing the final dimension
         (mv (len (heap s))
             (bind (len (heap s))
-                  (makearray 'T_REF
+                  (makearray type
                              (car counts)
-                             (init-array 'T_REF (car counts))
+                             (init-array (array-initial-value type)
+                                         (car counts))
                              (class-table s))
                   (heap s)))
 
         ; "Recursive Case"
         (mv-let (heap-prime lst-of-refs)
-                (makemultiarray2 (car counts)
+                (makemultiarray2 (element-type type)
+                                 (car counts)
                                  (cdr counts)
                                  s
                                  nil)
-                (let* ((obj (makearray 'T_REF
+                (let* ((obj (makearray type
                                        (car counts)
                                        lst-of-refs
                                        (class-table s)))
@@ -1281,12 +1302,12 @@
 ; (ANEWARRAY) Instruction
 
 (defun execute-ANEWARRAY (inst th s)
-  (let* ((type 'T_REF)
+  (let* ((type (arg1 inst))
          (count (top (stack (top-frame th s))))
          (addr (len (heap s)))
-         (obj (makearray type
+         (obj (makearray (array-type-of type)
                          count
-                         (init-array type count)
+                         (init-array '(ref -1) count)
                          (class-table s))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -1347,7 +1368,7 @@
          (arrayref (top (pop (stack (top-frame th s)))))
          (array (deref arrayref (heap s)))
          (element (if (equal (array-type array)
-                             'T_BOOLEAN)
+                             "[Z") ; boolean[]
                       (ubyte-fix (element-at index array))
                       (byte-fix (element-at index array)))))
         (modify th s
@@ -1364,7 +1385,7 @@
          (arrayref (top (pop (pop (stack (top-frame th s))))))
          (array (deref arrayref (heap s)))
          (element (if (equal (array-type (deref arrayref (heap s)))
-                             'T_BYTE)
+                             "[B") ; byte[]
                       (byte-fix value)
                       (u-fix value 1))))
     (if array
@@ -3009,10 +3030,11 @@
 ; (MULTIANEWARRAY) Instruction
 
 (defun execute-MULTIANEWARRAY (inst th s)
-  (let* ((dimentions (arg1 inst))
+  (let* ((type (arg1 inst))
+         (dimentions (arg2 inst))
          (counts (reverse (take dimentions (stack (top-frame th s))))))
         (mv-let (addr new-heap)
-                (makemultiarray counts s)
+                (makemultiarray type counts s)
             (modify th s
                     :pc (+ (inst-length inst) (pc (top-frame th s)))
                     :stack (push (list 'REF addr)
@@ -3061,12 +3083,12 @@
 ; (NEWARRAY) Instruction
 
 (defun execute-NEWARRAY (inst th s)
-  (let* ((type (arg1 inst))
+  (let* ((atype (arg1 inst))
          (count (top (stack (top-frame th s))))
          (addr (len (heap s)))
-         (obj (makearray type
+         (obj (makearray (atype-to-type atype)
                          count
-                         (init-array type count)
+                         (init-array 0 count)
                          (class-table s))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -3636,12 +3658,18 @@
 ; Linking.
 ; Top function of linking is link-class-table.
 ; It preprocesses a list of class-decls into linked class-table.
+;
 ; The first class-decl in the list must be java/lang/Object .
 ; All class-decls in the list must have distinct class-names.
 ; All other class-decls must have nonempty direct superclass name and
 ; a class-decl of supercalls must precede it in the list.
 ; If superclass not found link-class-table returns a string with error message
-; instead of a list.
+; instead of a class-table.
+;
+; After superclasses chains are ready the linking preprocessor searches for all
+; references of array types in classfiles and builds automatically all
+; mentioned array types together with their superclasses chains.
+;
 ; Then link-class-table scans instructions of all methods in the class table
 ; and resolves fieldrefs in instructions GETFIELD, GETSTATIC, PUTFIELD, PUTSTATIC
 ; and methodrefs in instructions INVOKESPECIAL, INVOKESTATIC, INVOKEVIRTUAL .
@@ -3653,6 +3681,173 @@
 ; string.
 ; Notice that static linking is insufficent for INVOKEVIRTUAL instruction.
 ; It seraches for overwriting methods in run-time.
+
+(defun classref->type (classref)
+  (if (equal (char classref 0) #\[)
+      classref
+      (concatenate 'string "L" classref ";")))
+
+(defun make-array-type (elem-type count)
+  (if (zp count)
+      elem-type
+      (make-array-type (array-type-of elem-type) (1- count))))
+
+(defun name-and-type->type (name-and-type)
+  (subseq name-and-type
+          (1+ (position #\: name-and-type))
+          (length name-and-type)))
+
+(defun unpack-param-types-loop (params i st j ans)
+  (declare (xargs :measure (if (natp j) (nfix (- (length params) j)) 0)))
+  (cond ((or (not (natp j)) (>= j (length params)))
+         (reverse ans))
+        ((and (not st) (equal (char params j) #\[))
+         (unpack-param-types-loop params i nil (1+ j) ans))
+        ((and (not st) (equal (char params j) #\L))
+         (unpack-param-types-loop params i t (1+ j) ans))
+        ((or (not st) (equal (char params j) #\;))
+         (unpack-param-types-loop params (1+ j) nil (1+ j)
+                                  (cons (subseq params i (1+ j)) ans)))
+        (t (unpack-param-types-loop params i t (1+ j) ans))))
+
+(defun unpack-param-types (params)
+  (unpack-param-types-loop params 0 nil 0 nil))
+
+(defun unpack-method-type (type)
+  (let ((pos (position #\) type)))
+       (cons (subseq type (1+ pos) (length type))
+             (unpack-param-types (subseq type 1 pos)))))
+
+; Functions below collect types from classrefs, fieldsrefs, methodrefs among classtable
+
+(defun collect-type (type types)
+  (if (member-equal type types) types (cons type types)))
+
+(defun collect-types-in-list (type-list types)
+  (if (endp type-list)
+      types
+      (collect-types-in-list
+        (cdr type-list)
+        (collect-type (car type-list) types))))
+
+(defun collect-types-in-classref (classref types)
+  (collect-type (classref->type classref) types))
+
+(defun collect-types-in-fieldref (class name-and-type types)
+  (collect-type
+    (classref->type class)
+    (collect-type (name-and-type->type name-and-type)
+                  types)))
+
+(defun collect-types-in-methodref (class name-and-type types)
+  (collect-type
+    (classref->type class)
+    (collect-types-in-list
+      (unpack-method-type (name-and-type->type name-and-type))
+      types)))
+
+(defun collect-types-in-superclasses (superclasses types)
+  (if (endp superclasses)
+      types
+      (collect-types-in-superclasses
+        (cdr superclasses)
+        (collect-types-in-classref (car superclasses) types))))
+
+(defun collect-types-in-constant-pool (constants types)
+  (if (endp constants)
+      types
+      (collect-types-in-constant-pool
+        (cdr constants)
+        (let ((const (car constants)))
+             (if (equal (car const) 'class)
+                 (collect-types-in-classref (cadr const) types)
+                 types)))))
+
+(defun collect-types-in-fields (fields types)
+  (if (endp fields)
+      types
+      (collect-types-in-fields
+        (cdr fields)
+        (collect-type (name-and-type->type (car fields)) types))))
+
+(defun collect-types-in-instr (instr types)
+  (case (car instr)
+    (ANEWARRAY      (collect-types-in-classref (array-type-of (cadr instr)) types))
+    (CHECKCAST      (collect-types-in-classref (cadr instr) types))
+    (GETFIELD       (collect-types-in-fieldref (cadr instr) (caddr instr) types))
+    (GETSTATIC      (collect-types-in-fieldref (cadr instr) (caddr instr) types))
+    (INSTANCEOF     (collect-types-in-classref (cadr instr) types))
+    (INVOKESPECIAL  (collect-types-in-methodref (cadr instr) (caddr instr) types))
+    (INVOKESTATIC   (collect-types-in-methodref (cadr instr) (caddr instr) types))
+    (INVOKEVIRTUAL  (collect-types-in-methodref (cadr instr) (caddr instr) types))
+    (MULTINEWARRAY  (collect-types-in-classref (cadr instr) types))
+    (NEW            (collect-types-in-classref (cadr instr) types))
+    (NEWARRAY       (collect-type (atype-to-type (cadr instr)) types))
+    (PUTFIELD       (collect-types-in-fieldref (cadr instr) (caddr instr) types))
+    (PUTSTATIC      (collect-types-in-fieldref (cadr instr) (caddr instr) types))
+    (otherwise types)))
+
+(defun collect-types-in-program (instrs types)
+  (if (endp instrs)
+      types
+      (collect-types-in-program
+        (cdr instrs)
+        (collect-types-in-instr
+          (let ((instr (car instrs)))
+               (if (isLabeledInst? instr) (cdr instr) instr))
+          types))))
+
+(defun collect-types-in-methods (methods types)
+  (if (endp methods)
+      types
+      (collect-types-in-methods
+        (cdr methods)
+        (let ((method (car methods)))
+              (collect-types-in-list
+                (unpack-method-type (name-and-type->type (method-name-and-type method)))
+                (collect-types-in-program
+                  (method-program method)
+                  types))))))
+
+(defun collect-types-in-classes (classes types)
+  (if (endp classes)
+      types
+      (collect-types-in-classes
+        (cdr classes)
+        (let ((class (car classes)))
+             (collect-types-in-classref
+               (class-decl-name class)
+               (collect-types-in-superclasses
+                 (class-decl-superclasses class)
+                 (collect-types-in-constant-pool
+                   (class-decl-cp class)
+                   (collect-types-in-fields
+                      (class-decl-fields class)
+                      (collect-types-in-fields
+                        (class-decl-sfields class)
+                        (collect-types-in-methods
+                          (class-decl-methods class)
+                          types))))))))))
+
+; arrays is a map form elem-type to its maximal array dimension
+
+(defun collect-arrays-loop (types arrays)
+  (if (endp types)
+      arrays
+      (collect-arrays-loop
+        (cdr types)
+        (let ((type (car types)))
+             (if (equal (char type 0) #\[)
+                 (let* ((pos (search "[" type :from-end t))
+                        (elem (subseq type (1+ pos) (length type)))
+                        (dim (binding elem arrays)))
+                       (if (and pos (or (not dim) (>= pos dim)))
+                           (bind elem (1+ pos) arrays)
+                           arrays))
+                 arrays)))))
+
+(defun collect-arrays (list-of-class-decls)
+  (collect-arrays-loop (collect-types-in-classes list-of-class-decls nil) nil))
 
 (defun link-superclasses-loop (list-of-class-decls ans)
   (if (endp list-of-class-decls)
@@ -3679,12 +3874,103 @@
                         ans))
                      (concatenate 'string "NoClassDefFoundError: " superclass))))))
 
+(defun propagate-superclasses-in-arrays (superclasses dim arrays)
+  (if (endp superclasses)
+       arrays
+       (propagate-superclasses-in-arrays
+         (cdr superclasses)
+         dim
+         (let* ((supertype (classref->type (car superclasses)))
+                (old-dim (nfix (binding supertype arrays))))
+               (bind supertype (max dim old-dim) arrays)))))
+
+(defun propagate-superarrays (class-table arrays)
+  (if (endp class-table)
+      arrays
+      (propagate-superarrays
+        (cdr class-table)
+        (let* ((class (car class-table))
+               (class-name (class-decl-name class))
+               (superclasses (class-decl-superclasses class))
+               (dim (binding (classref->type class-name)
+                             arrays)))
+                (if (posp dim)
+                    (propagate-superclasses-in-arrays superclasses dim arrays)
+                    arrays)))))
+
+(defun append-array-decls (elem-type superelem-type dim class-table)
+  (if (posp dim)
+      (let ((class-table (if (> dim 1)
+                             (append-array-decls elem-type
+                                                 superelem-type
+                                                 (1- dim)
+                                                 class-table)
+                             class-table)))
+           (cons (make-class-decl
+                   (make-array-type elem-type dim)
+                   (let ((superclass
+                           (cond (superelem-type
+                                  (make-array-type superelem-type dim))
+                                 ((> dim 1)
+                                  (make-array-type "Ljava/lang/Object;" (1- dim)))
+                                 (t "java/lang/Object"))))
+                        (cons superclass
+                              (class-decl-superclasses (bound? superclass class-table))))
+                   ()
+                   ()
+                   ()
+                   ()
+                   '(ref -1))
+                 class-table))
+       class-table))
+
+(defun make-arrays-loop (class-table arrays ans)
+  (if (endp class-table)
+      (reverse ans)
+      (make-arrays-loop
+        (cdr class-table)
+        arrays
+        (let* ((class (car class-table))
+               (class-name (class-decl-name class))
+               (superclass-name (car (class-decl-superclasses class)))
+               (elem-type (classref->type class-name))
+               (superelem-type (classref->type superclass-name))
+               (dim (binding elem-type arrays)))
+              (append-array-decls elem-type superelem-type dim (cons class ans))))))
+
+(defun make-basic-array-decls (elems arrays class-table)
+  (if (endp elems)
+      class-table
+      (make-basic-array-decls
+        (cdr elems)
+        arrays
+        (append-array-decls
+          (car elems)
+          nil
+          (binding (car elems) arrays)
+          class-table))))
+
+(defun make-arrays (class-table arrays)
+  (let ((arrays (propagate-superarrays class-table arrays)))
+       (make-arrays-loop
+         (cdr class-table)
+         arrays
+         (make-basic-array-decls
+           '("Ljava/lang/Object;" "Z" "B" "C" "S" "I" "J" "F" "D")
+           arrays
+           (list (car class-table))))))
+
 (defun link-superclasses (list-of-class-decls)
   (let ((first-cl (first list-of-class-decls)))
        (if (equal (class-decl-name first-cl) "java/lang/Object")
            (if (class-decl-superclasses first-cl)
                "ClassFormatError: java/lang/Object"
-               (link-superclasses-loop (cdr list-of-class-decls) (list first-cl)))
+               (let ((class-table (link-superclasses-loop
+                                   (cdr list-of-class-decls)
+                                   (list first-cl))))
+                    (if (consp class-table)
+                         (make-arrays class-table (collect-arrays list-of-class-decls))
+                         class-table)))
           "NoClassDefFoundError: java/lang/Object")))
 
 (defun resolve-field-in-superclasses (name-and-type classes class-table)
