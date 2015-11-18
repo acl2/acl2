@@ -31,15 +31,15 @@
 
  <p>where @('event-form') is an embeddable event (see @(see events)); @('v') is
  @('nil'), @(':minimal'), @(':normal'), or @('t'); and @('m') is a positive
- rational number not exceeding 1.  The value returned is an error triple @('(mv
- erp runes state)') &mdash; see @(see error-triples) &mdash; where @('erp') is
- typically @('nil') and @('runes') is a list of @(see rune)s that can be @(see
- disable)d for the indicated @('event-form'), such that the event is admitted
- with fewer prover steps.  (See @(see set-prover-step-limit) for a discussion
- of prover steps.)  For example, if the list of runes returned for an event
- form is @('((:definition f1) (:rewrite thm1))'), then the proof of that event
- form was performed successively &mdash; and with fewer steps &mdash; when
- first evaluating the event @('(in-theory (disable (:definition f1) (:rewrite
+ rational number not exceeding 1.  The value returned is an @(see error-triple)
+ @('(mv erp runes state)'), where @('erp') is typically @('nil') and @('runes')
+ is a list of @(see rune)s that can be @(see disable)d for the indicated
+ @('event-form'), such that the event is admitted with fewer prover
+ steps.  (See @(see set-prover-step-limit) for a discussion of prover steps.)
+ For example, if the list of runes returned for an event form is
+ @('((:definition f1) (:rewrite thm1))'), then the proof of that event form was
+ performed successively &mdash; and with fewer steps &mdash; when first
+ evaluating the event @('(in-theory (disable (:definition f1) (:rewrite
  thm1)))').</p>
 
  <p>We now describe the two keyword arguments in turn, and in doing so, we
