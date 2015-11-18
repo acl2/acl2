@@ -221,12 +221,15 @@
    :g-bindings `((lin-addr (:g-number ,(gl-int 0 2 65)))
                  (x        (:g-number ,(gl-int 1 2 65))))))
 
+(define pml4-table-entry-addr-found-p (lin-addr x86)
+  :non-executable t
+  :enabled t
+  (and (canonical-address-p lin-addr)
+       (physical-address-p (+ (ash 512 3) (mv-nth 1 (pml4-table-base-addr x86))))))
+
 (defthm pml4-table-entry-addr-is-a-member-of-gather-pml4-table-qword-addresses
-  (implies (and (canonical-address-p lin-addr)
-                (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
-                (physical-address-p (+ (ash 512 3) pml4-table-base-addr)))
-           (member-p (pml4-table-entry-addr lin-addr pml4-table-base-addr)
+  (implies (pml4-table-entry-addr-found-p lin-addr x86)
+           (member-p (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86)))
                      (gather-pml4-table-qword-addresses x86)))
   :hints (("Goal"
            :in-theory (e/d* (pml4-table-base-addr
@@ -245,11 +248,8 @@
                             ()))))
 
 (defthm pml4-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies (and (canonical-address-p lin-addr)
-                (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
-                (physical-address-p (+ (ash 512 3) pml4-table-base-addr)))
-           (member-list-p (pml4-table-entry-addr lin-addr pml4-table-base-addr)
+  (implies (pml4-table-entry-addr-found-p lin-addr x86)
+           (member-list-p (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86)))
                           (gather-all-paging-structure-qword-addresses x86)))
   :hints (("Goal"
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
@@ -360,13 +360,23 @@
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
                             (subset-list-p-and-member-list-p)))))
 
+(define page-dir-ptr-table-entry-addr-found-p
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   x86)
+  :non-executable t
+  :enabled t
+  (and (pml4-table-entry-addr-found-p lin-addr x86)
+       (superior-entry-points-to-an-inferior-one-p
+        (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86)))
+        x86)
+       (x86p x86))
+  ///
+  (defthm page-dir-ptr-table-entry-addr-found-p-implies-pml4-table-entry-addr-found-p
+    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+             (pml4-table-entry-addr-found-p lin-addr x86))))
+
 (defthm page-dir-ptr-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
-                (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
-                (canonical-address-p lin-addr)
-                (x86p x86))
+  (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
            (member-list-p
             (page-dir-ptr-table-entry-addr lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
             (gather-all-paging-structure-qword-addresses x86)))
@@ -376,7 +386,7 @@
                                 lin-addr
                                 (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))))
                             (xs (gather-qword-addresses-corresponding-to-1-entry
-                                 (pml4-table-entry-addr lin-addr pml4-table-base-addr)
+                                 (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86)))
                                  x86))
                             (xss (gather-qword-addresses-corresponding-to-entries
                                   (gather-pml4-table-qword-addresses x86)
@@ -488,19 +498,22 @@
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
                             (subset-list-p-and-member-list-p)))))
 
+(define page-directory-entry-addr-found-p
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   x86)
+  :non-executable t
+  :enabled t
+  (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+       (superior-entry-points-to-an-inferior-one-p
+        (page-dir-ptr-table-entry-addr lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+        x86))
+  ///
+  (defthm page-directory-entry-addr-found-p-implies-page-dir-ptr-table-entry-addr-found-p
+    (implies (page-directory-entry-addr-found-p lin-addr x86)
+             (page-dir-ptr-table-entry-addr-found-p lin-addr x86))))
+
 (defthm page-directory-entry-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
-                (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (equal pml4-table-entry-addr
-                       (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
-                (equal page-dir-ptr-table-base-addr
-                       (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-                (equal page-dir-ptr-table-entry-addr
-                       (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
-                (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
-                (canonical-address-p lin-addr)
-                (x86p x86))
+  (implies (page-directory-entry-addr-found-p lin-addr x86)
            (member-list-p
             (page-directory-entry-addr
              lin-addr
@@ -512,7 +525,9 @@
                                 lin-addr
                                 (mv-nth 1 (page-directory-base-addr lin-addr x86))))
                             (xs (gather-qword-addresses-corresponding-to-1-entry
-                                 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
+                                 (page-dir-ptr-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
                                  x86))
                             (xss (gather-all-paging-structure-qword-addresses x86))))
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
@@ -711,25 +726,22 @@
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
                             (subset-list-p-and-member-list-p)))))
 
+(define page-table-entry-addr-found-p
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   x86)
+  :non-executable t
+  :enabled t
+  (and (page-directory-entry-addr-found-p lin-addr x86)
+       (superior-entry-points-to-an-inferior-one-p
+        (page-directory-entry-addr lin-addr (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+        x86))
+  ///
+  (defthm page-table-entry-addr-found-p-implies-page-directory-entry-addr-found-p
+    (implies (page-table-entry-addr-found-p lin-addr x86)
+             (page-directory-entry-addr-found-p lin-addr x86))))
+
 (defthm page-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
-  (implies (and (equal pml4-table-base-addr
-                       (mv-nth 1 (pml4-table-base-addr x86)))
-                (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (equal pml4-table-entry-addr
-                       (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-                (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
-                (equal page-dir-ptr-table-base-addr
-                       (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-                (equal page-dir-ptr-table-entry-addr
-                       (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
-                (superior-entry-points-to-an-inferior-one-p page-dir-ptr-table-entry-addr x86)
-                (equal page-directory-base-addr
-                       (mv-nth 1 (page-directory-base-addr lin-addr x86)))
-                (equal page-directory-entry-addr
-                       (page-directory-entry-addr lin-addr page-directory-base-addr))
-                (superior-entry-points-to-an-inferior-one-p page-directory-entry-addr x86)
-                (canonical-address-p lin-addr)
-                (x86p x86))
+  (implies (page-table-entry-addr-found-p lin-addr x86)
            (member-list-p
             (page-table-entry-addr
              lin-addr
@@ -741,7 +753,8 @@
                                 lin-addr
                                 (mv-nth 1 (page-table-base-addr lin-addr x86))))
                             (xs (gather-qword-addresses-corresponding-to-1-entry
-                                 (page-directory-entry-addr lin-addr page-directory-base-addr)
+                                 (page-directory-entry-addr
+                                  lin-addr (mv-nth 1 (page-directory-base-addr lin-addr x86)))
                                  x86))
                             (xss (gather-all-paging-structure-qword-addresses x86))))
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
@@ -1331,68 +1344,10 @@
 
 ;; ======================================================================
 
-;; (i-am-here)
+(in-theory (e/d* ()
+                 (pml4-table-entry-addr-found-p
+                  page-dir-ptr-table-entry-addr-found-p
+                  page-directory-entry-addr-found-p
+                  page-table-entry-addr-found-p)))
 
-;; (gather-all-paging-structure-qword-addresses
-;;  (wm-low-64
-;;   (page-table-entry-addr
-;;    (logext 48 lin-addr)
-;;    (bitops::logsquash
-;;     12
-;;     (loghead 52
-;;              (mv-nth 1
-;;                      (page-table-base-addr lin-addr x86)))))
-;;   (set-accessed-bit
-;;    (rm-low-64
-;;     (page-table-entry-addr
-;;      (logext 48 lin-addr)
-;;      (bitops::logsquash
-;;       12
-;;       (loghead 52
-;;                (mv-nth 1
-;;                        (page-table-base-addr lin-addr x86)))))
-;;     x86))
-;;   x86))
-
-;; (xlate-equiv-entries-at-qword-addresses?
-;;  (gather-all-paging-structure-qword-addresses
-;;   (wm-low-64
-;;    (page-table-entry-addr
-;;     (logext 48 lin-addr)
-;;     (bitops::logsquash
-;;      12
-;;      (loghead 52
-;;               (mv-nth 1
-;;                       (page-table-base-addr lin-addr x86)))))
-;;    (set-accessed-bit
-;;     (rm-low-64
-;;      (page-table-entry-addr
-;;       (logext 48 lin-addr)
-;;       (bitops::logsquash
-;;        12
-;;        (loghead 52
-;;                 (mv-nth 1
-;;                         (page-table-base-addr lin-addr x86)))))
-;;      x86))
-;;    x86))
-;;  (gather-all-paging-structure-qword-addresses x86)
-;;  (wm-low-64
-;;   (page-table-entry-addr
-;;    (logext 48 lin-addr)
-;;    (bitops::logsquash
-;;     12
-;;     (loghead 52
-;;              (mv-nth 1
-;;                      (page-table-base-addr lin-addr x86)))))
-;;   (set-accessed-bit
-;;    (rm-low-64
-;;     (page-table-entry-addr
-;;      (logext 48 lin-addr)
-;;      (bitops::logsquash
-;;       12
-;;       (loghead 52
-;;                (mv-nth 1
-;;                        (page-table-base-addr lin-addr x86)))))
-;;     x86))
-;;   x86)
-;;  x86)
+;; ======================================================================

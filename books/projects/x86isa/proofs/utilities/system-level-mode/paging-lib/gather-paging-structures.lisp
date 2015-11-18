@@ -5,6 +5,31 @@
 (include-book "paging-basics")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+
+;; ======================================================================
+
+;; Some misc. arithmetic lemmas:
+
+(defthmd logtail-bigger
+  (implies (and (equal (logtail m e1) (logtail m e2))
+                (integerp e2)
+                (natp n)
+                (<= m n))
+           (equal (logtail n e1) (logtail n e2)))
+  :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                    bitops::ihsext-recursive-redefs)
+                                   ()))))
+
+(defthmd logtail-bigger-and-logbitp
+  (implies (and (equal (logtail m e1) (logtail m e2))
+                (integerp e2)
+                (natp n)
+                (<= m n))
+           (equal (logbitp n e1) (logbitp n e2)))
+  :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                    bitops::ihsext-recursive-redefs)
+                                   ()))))
 
 ;; ======================================================================
 
@@ -442,7 +467,27 @@
   (defthm xlate-equiv-entries-and-set-dirty-bit
     (implies (xlate-equiv-entries e1 e2)
              (xlate-equiv-entries e1 (set-dirty-bit e2)))
-    :hints (("Goal" :in-theory (e/d* (set-dirty-bit) ())))))
+    :hints (("Goal" :in-theory (e/d* (set-dirty-bit) ()))))
+
+  (defthmd xlate-equiv-entries-and-loghead
+    (implies (and (xlate-equiv-entries e1 e2)
+                  (syntaxp (quotep n))
+                  (natp n)
+                  (<= n 5))
+             (equal (loghead n e1) (loghead n e2)))
+    :hints (("Goal" :use ((:instance loghead-smaller-equality
+                                     (x e1) (y e2) (n 5) (m n))))))
+
+  (defthmd xlate-equiv-entries-and-logtail
+    (implies (and (xlate-equiv-entries e1 e2)
+                  (unsigned-byte-p 64 e1)
+                  (unsigned-byte-p 64 e2)
+                  (syntaxp (quotep n))
+                  (natp n)
+                  (<= 7 n))
+             (equal (logtail n e1) (logtail n e2)))
+    :hints (("Goal" :use ((:instance logtail-bigger
+                                     (n n) (m 7)))))))
 
 (define xlate-equiv-entries-at-qword-addresses-aux?
   (list-of-addresses-1 list-of-addresses-2 x86-1 x86-2)
@@ -537,66 +582,82 @@
              (e/d*
               ()
               (xlate-equiv-entries-at-qword-addresses?-transitive-if-qword-paddr-list-listp))
-             :use ((:instance xlate-equiv-entries-at-qword-addresses?-transitive-if-qword-paddr-list-listp))))))
+             :use ((:instance xlate-equiv-entries-at-qword-addresses?-transitive-if-qword-paddr-list-listp)))))
 
+  (defthm xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
+    (implies (and (xlate-equiv-entries-at-qword-addresses?
+                   addrs addrs x86-1 x86-2)
+                  (member-list-p index addrs))
+             (xlate-equiv-entries (rm-low-64 index x86-1)
+                                  (rm-low-64 index x86-2)))
+    :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
+                                      xlate-equiv-entries-at-qword-addresses-aux?
+                                      member-list-p
+                                      member-p)
+                                     (xlate-equiv-entries))))))
 
-;; (define xlate-equiv-x86s (x86-1 x86-2)
-;;   :non-executable t
-;;   :enabled t
-;;   :long "<p>Two x86 states are @('xlate-equiv-x86s') if their paging
-;;   structures are equal, modulo the accessed and dirty bits (See @(see
-;;   xlate-equiv-entries)). Each of the two states' paging structures
-;;   must satisfy @(see pairwise-disjoint-p).</p>"
+(define xlate-equiv-x86s (x86-1 x86-2)
+  :non-executable t
+  :enabled t
+  :long "<p>Two x86 states are @('xlate-equiv-x86s') if their paging
+  structures are equal, modulo the accessed and dirty bits (See @(see
+  xlate-equiv-entries)). Each of the two states' paging structures
+  must satisfy @(see pairwise-disjoint-p).</p>"
 
-;;   (if (and (x86p x86-1)
-;;            (pairwise-disjoint-p (gather-all-paging-structure-qword-addresses x86-1)))
+  (if (x86p x86-1)
 
-;;       (and (x86p x86-2)
-;;            (pairwise-disjoint-p (gather-all-paging-structure-qword-addresses x86-2))
-;;            (equal (len (gather-all-paging-structure-qword-addresses x86-1))
-;;                   (len (gather-all-paging-structure-qword-addresses x86-2)))
-;;            (xlate-equiv-entries-at-qword-addresses?
-;;             (gather-all-paging-structure-qword-addresses x86-1)
-;;             (gather-all-paging-structure-qword-addresses x86-2)
-;;             x86-1 x86-2))
+      (if (x86p x86-2)
 
-;;     (not (and (x86p x86-2)
-;;               (pairwise-disjoint-p (gather-all-paging-structure-qword-addresses x86-2)))))
+          (if (equal (ctri *cr3* x86-1) (ctri *cr3* x86-2))
 
-;;   ///
+              (if (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-1))
 
-;;   (defequiv xlate-equiv-x86s))
+                  (if (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-2))
 
-;; (define xlate-equiv-x86s (x86-1 x86-2)
-;;   :non-executable t
-;;   :enabled t
-;;   :long "<p>Two x86 states are @('xlate-equiv-x86s') if their paging
-;;   structures are equal, modulo the accessed and dirty bits (See @(see
-;;   xlate-equiv-entries)). Each of the two states' paging structures
-;;   must satisfy @(see pairwise-disjoint-p).</p>"
+                      (if (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-1))
 
-;;   (if (and (x86p x86-1)
-;;            (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-1))
-;;            (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-1)))
+                          (if (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-2))
 
-;;       (and (x86p x86-2)
-;;            (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-2))
-;;            (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-2))
-;;            (equal (len (gather-all-paging-structure-qword-addresses x86-1))
-;;                   (len (gather-all-paging-structure-qword-addresses x86-2)))
-;;            (equal (ctri *cr3* x86-1)
-;;                   (ctri *cr3* x86-2))
-;;            (xlate-equiv-entries-at-qword-addresses?
-;;             (gather-all-paging-structure-qword-addresses x86-1)
-;;             (gather-all-paging-structure-qword-addresses x86-2)
-;;             x86-1 x86-2))
+                              (if (equal (gather-all-paging-structure-qword-addresses x86-1)
+                                         (gather-all-paging-structure-qword-addresses x86-2))
 
-;;     (not (and (x86p x86-2)
-;;               (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-2))
-;;               (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-2)))))
+                                  (xlate-equiv-entries-at-qword-addresses?
+                                   (gather-all-paging-structure-qword-addresses x86-1)
+                                   (gather-all-paging-structure-qword-addresses x86-2)
+                                   x86-1 x86-2)
 
-;;   ///
+                                nil)
 
-;;   (defequiv xlate-equiv-x86s))
+                            nil)
+
+                        (not (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-2))))
+
+                    nil)
+
+                (not (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-2))))
+
+            nil)
+
+        nil)
+
+    (not (x86p x86-2)))
+
+  ///
+
+  (local
+   (defthm xlate-equiv-x86s-is-transitive-helper
+     (implies (and (xlate-equiv-x86s x y)
+                   (xlate-equiv-x86s y z))
+              (xlate-equiv-x86s x z))
+     :hints (("Goal" :use
+              ((:instance
+                xlate-equiv-entries-at-qword-addresses?-transitive-if-qword-paddr-list-listp-equal
+                (a (gather-all-paging-structure-qword-addresses x))
+                (b (gather-all-paging-structure-qword-addresses y))
+                (c (gather-all-paging-structure-qword-addresses z))))))))
+
+  (defequiv xlate-equiv-x86s
+    :hints (("Goal" :in-theory (e/d* () (xlate-equiv-x86s-is-transitive-helper))
+             :use ((:instance xlate-equiv-x86s-is-transitive-helper))))))
 
 ;; =====================================================================

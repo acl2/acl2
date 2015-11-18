@@ -43,7 +43,10 @@
   (defthm loghead-12-of-mv-nth-1-pml4-table-base-addr=0
     (implies (x86p x86)
              (equal (loghead 12 (mv-nth 1 (pml4-table-base-addr x86)))
-                    0))))
+                    0)))
+
+  (defthm pml4-table-base-addr-error
+    (equal (mv-nth 0 (pml4-table-base-addr x86)) nil)))
 
 (define page-dir-ptr-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -157,7 +160,12 @@
     (implies (and (canonical-address-p lin-addr)
                   (x86p x86))
              (equal (loghead 12 (mv-nth 1 (page-table-base-addr lin-addr x86)))
-                    0))))
+                    0)))
+
+  (defthm logand--4096-of-page-table-base-addr
+    (equal (logand -4096 (mv-nth 1 (page-table-base-addr lin-addr x86)))
+           (mv-nth 1 (page-table-base-addr lin-addr x86)))
+    :hints (("Goal" :in-theory (e/d* (page-table-base-addr) ())))))
 
 ;; ======================================================================
 
