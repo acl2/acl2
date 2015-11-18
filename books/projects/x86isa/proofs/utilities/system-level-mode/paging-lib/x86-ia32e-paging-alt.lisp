@@ -24,7 +24,6 @@
 ;; Base addresses of paging structures:
 
 (define pml4-table-base-addr (x86)
-
   (b* ((cr3 (ctri *cr3* x86))
        ;; PML4 Table:
        (pml4-base-addr (ash (cr3-slice :cr3-pdb cr3) 12)))
@@ -49,7 +48,6 @@
 (define page-dir-ptr-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    (x86))
-
   (b* ( ;; PML4 Table:
        ((mv & pml4-base-addr)
         (pml4-table-base-addr x86))
@@ -83,7 +81,6 @@
 (define page-directory-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    (x86))
-
   (b* ( ;; Page-Directory Directory Pointer Table:
        ((mv & ptr-table-base-addr)
         (page-dir-ptr-table-base-addr lin-addr x86))
@@ -124,7 +121,6 @@
 (define page-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    (x86))
-
   (b* ( ;; Page Directory:
        ((mv flg page-directory-base-addr)
         (page-directory-base-addr lin-addr x86))
@@ -176,8 +172,14 @@
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
    (x86))
+  :non-executable t
   :enabled t
-  (b* (((mv flg base-addr)
+
+  (b* ((x86 (mbe :logic (if (x86p x86)
+                            x86
+                          (create-x86))
+                 :exec x86))
+       ((mv flg base-addr)
         (page-table-base-addr lin-addr x86))
        ((when flg)
         (mv flg 0 x86)))
@@ -192,8 +194,13 @@
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
    (x86))
+  :non-executable t
   :enabled t
-  (b* (((mv flg base-addr)
+  (b* ((x86 (mbe :logic (if (x86p x86)
+                            x86
+                          (create-x86))
+                 :exec x86))
+       ((mv flg base-addr)
         (page-directory-base-addr lin-addr x86))
        ((when flg)
         (mv flg 0 x86)))
@@ -208,8 +215,13 @@
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
    (x86))
+  :non-executable t
   :enabled t
-  (b* (((mv flg base-addr)
+  (b* ((x86 (mbe :logic (if (x86p x86)
+                            x86
+                          (create-x86))
+                 :exec x86))
+       ((mv flg base-addr)
         (page-dir-ptr-table-base-addr lin-addr x86))
        ((when flg)
         (mv flg 0 x86)))
@@ -224,8 +236,13 @@
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
    (x86))
+  :non-executable t
   :enabled t
-  (b* (((mv flg base-addr)
+  (b* ((x86 (mbe :logic (if (x86p x86)
+                            x86
+                          (create-x86))
+                 :exec x86))
+       ((mv flg base-addr)
         (pml4-table-base-addr x86))
        ((when flg)
         (mv flg 0 x86)))
