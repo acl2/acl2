@@ -13095,6 +13095,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (print-circle-files . t) ; set to nil for #+gcl in LP
     (print-clause-ids . nil)
     (print-escape . t)
+    (print-gv-defaults . nil)
     (print-length . nil)
     (print-level . nil)
     (print-lines . nil)
@@ -20002,6 +20003,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     acl2-sources-dir
     including-uncertified-p
     check-invariant-risk ; set- function ensures proper values
+    print-gv-defaults
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,

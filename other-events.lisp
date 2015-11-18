@@ -23583,7 +23583,108 @@
         (t (cons (list (caar alist) (cdar alist))
                  (alist-to-doublets (cdr alist))))))
 
-(defun print-gv1 (fn-guard-stobjsin-args state)
+(defun add-suffix-to-fn (sym suffix)
+
+; We add a suffix to sym to create a legal function symbol.  Thus, we avoid
+; creating a name in the "COMMON-LISP" package, since ACL2 won't allow such a
+; name to be a function symbol.
+
+  (if (equal (symbol-package-name sym)
+             *main-lisp-package-name*)
+      (intern (concatenate 'string (symbol-name sym) suffix)
+              "ACL2")
+    (add-suffix sym suffix)))
+
+(mutual-recursion
+
+(defun fsubcor-var (vars terms form)
+
+; This analogue of subcor-var uses fcons-term instead of cons-term, in order to
+; avoid losing the structure of form.  For example, (fsubcor-var (x) ('3)
+; (consp x)) evaluates to (consp '3) rather than to nil.
+
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
+                              (equal (length vars) (length terms))
+                              (pseudo-termp form))))
+  (cond ((variablep form)
+         (subcor-var1 vars terms form))
+        ((fquotep form) form)
+        (t (fcons-term (ffn-symb form)
+                       (fsubcor-var-lst vars terms (fargs form))))))
+
+(defun fsubcor-var-lst (vars terms forms)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
+                              (equal (length vars) (length terms))
+                              (pseudo-term-listp forms))))
+  (cond ((endp forms) nil)
+        (t (cons (fsubcor-var vars terms (car forms))
+                 (fsubcor-var-lst vars terms (cdr forms))))))
+
+)
+
+(defun print-gv-form (guard-fn guard tguard vars args ignorable substitute ctx
+                               state)
+
+; If tguard is non-nil, then guard is nil and should be created by
+; untranslating tguard (perhaps after substitution).  Args are always in
+; translated form.
+
+  (let ((wrld (w state)))
+    (cond
+     (substitute
+      (er-let* ((tguard (if (null tguard)
+                            (translate guard '(nil) nil t ctx wrld state)
+                          (value tguard))))
+        (value (untranslate (fsubcor-var vars args tguard) t wrld))))
+     (t
+      (let ((guard (if tguard
+                       (untranslate tguard t wrld)
+                     guard)))
+        (value `(flet ((,guard-fn
+                        ,vars
+                        ,@(and ignorable
+                               `((declare (ignorable ,@vars))))
+                        ,guard))
+                  (,guard-fn ,@(untranslate-lst args nil wrld)))))))))
+
+(defun print-gv-conjunct (guard-fn formals conjuncts args index
+                                   len-all-conjuncts fn substitute ctx state)
+  (cond
+   ((endp conjuncts)
+    (er soft ctx
+        "It is surprising that ~x0 yields no conjunct of the guard of ~x1 ~
+         that evaluates to ~x2.  Sorry!  Try ~x0 without the :conjunct ~
+         keyword argument."
+        'print-gv
+        fn
+        nil))
+   (t (let* ((conjunct (car conjuncts))
+             (alist (restrict-alist-to-all-vars (pairlis$ formals args)
+                                                conjunct))
+             (f1 (strip-cars alist))
+             (a1 (strip-cdrs alist)))
+        (er-let* ((form (print-gv-form guard-fn
+                                       nil      ; guard
+                                       conjunct ; tguard
+                                       f1 a1 nil substitute ctx state)))
+          (mv-let (erp stobjs-out/replaced-val state)
+            (trans-eval form ctx state t)
+            (cond (erp
+                   (value (msg "Evaluation causes an error:~|~x0"
+                               conjunct)))
+                  ((cdr stobjs-out/replaced-val)
+                   (print-gv-conjunct guard-fn formals (cdr conjuncts) args
+                                      (1+ index)
+                                      len-all-conjuncts fn substitute ctx
+                                      state))
+                  (t
+                   (value (msg "Showing guard conjunct (#~x0 of ~x1) that ~
+                                evaluates to nil:~|~%~x2."
+                               index len-all-conjuncts form))))))))))
+
+(defun print-gv1 (fn-guard-stobjsin-args conjunct substitute ctx state)
   (let* ((wrld (w state))
          (fn (nth 0 fn-guard-stobjsin-args))
          (guard (nth 1 fn-guard-stobjsin-args))
@@ -23592,34 +23693,41 @@
                 (nth 3 fn-guard-stobjsin-args)
                 nil))
          (formals (formals fn wrld))
-         (guard-fn (add-suffix fn "{GUARD}")))
+         (guard-fn (add-suffix-to-fn fn "{GUARD}")))
 
 ; Note: (nth 2 fn-guard-stobjsin-args) is the stobjs-in of fn, but we don't
 ; need it.
 
-    `(flet ((,guard-fn
-             ,formals
-             (declare (ignorable ,@formals))
-             ,guard))
-       (,guard-fn ,@args))))
+    (if conjunct
+        (let ((conjuncts (flatten-ands-in-lit (guard fn nil wrld))))
+          (print-gv-conjunct guard-fn formals conjuncts args 1
+                             (length conjuncts) fn substitute ctx state))
+      (print-gv-form guard-fn guard nil formals args t substitute ctx state))))
 
-(defun print-gv-fn (evisc-tuple state)
+(defun print-gv-fn (evisc-tuple conjunct substitute state)
   (prog2$
    (wormhole 'ev-fncall-guard-er-wormhole
              '(lambda (whs)
                 (set-wormhole-entry-code whs :ENTER))
              nil
-             `(pprogn
+             `(er-progn
                (let ((info ; see save-ev-fncall-guard-er
                       (wormhole-data (f-get-global 'wormhole-status state))))
-                 (cond (info
-                        (fms "~x0~|~%"
-                             (list (cons #\0
-                                         (print-gv1 info state)))
-                             (standard-co state) state ',evisc-tuple))
+                 (cond ((null info)
+                        (pprogn
+                         (fms "There is no guard violation to debug.~|~%"
+                              nil (standard-co state) state nil)
+                         (value nil)))
                        (t
-                        (fms "There is no guard violation to debug.~|~%"
-                             nil (standard-co state) state nil))))
+                        (er-let* ((val (print-gv1 info ',conjunct ',substitute
+                                                  'print-gv state)))
+                          (pprogn
+                           (fms ,(if conjunct
+                                     "~@0~|~%"
+                                   "~x0~|~%")
+                                (list (cons #\0 val))
+                                (standard-co state) state ',evisc-tuple)
+                           (value nil))))))
                (value :q))
              :ld-prompt  nil
              :ld-missing-input-ok nil
@@ -23633,13 +23741,92 @@
              :ld-verbose nil)
    (value :invisible)))
 
-(defmacro print-gv (&key (evisc-tuple
-                          '(evisc-tuple nil ; print-level
-                                        nil ; print-length
-                                        (world-evisceration-alist state nil)
-                                        nil ; hiding-cars
-                                        )))
-  `(print-gv-fn ,evisc-tuple state))
+(defun set-print-gv-defaults-fn (state evisc-tuple evisc-tuple-p
+                                       conjunct conjunct-p
+                                       substitute substitute-p)
+  (declare (xargs :guard t :mode :program))
+  (cond
+   ((and (null evisc-tuple-p)
+         (null conjunct-p)
+         (null substitute-p)) ; optimization, really
+    (value (f-get-global 'print-gv-defaults state)))
+   (t
+    (let ((ctx 'set-print-gv-defaults))
+      (cond ((not (or (null evisc-tuple)
+                      (eq evisc-tuple :restore)
+                      (standard-evisc-tuplep evisc-tuple)))
+             (er soft ctx
+                 "Illegal evisc-tuple: ~x0"
+                 evisc-tuple))
+            ((not (or (booleanp conjunct)
+                      (eq conjunct :restore)))
+             (er soft ctx
+                 "Illegal value for :conjunct (must be Boolean): ~x0"
+                 conjunct))
+            ((not (or (booleanp substitute)
+                      (eq substitute :restore)))
+             (er soft ctx
+                 "Illegal value for :conjunct (must be Boolean): ~x0"
+                 substitute))
+            (t (let* ((alist (f-get-global 'print-gv-defaults state))
+                      (alist (cond ((not evisc-tuple-p)
+                                    alist)
+                                   ((eq evisc-tuple :restore)
+                                    (delete-assoc-eq :evisc-tuple alist))
+                                   (t
+                                    (put-assoc-eq :evisc-tuple evisc-tuple alist))))
+                      (alist (cond ((not conjunct-p)
+                                    alist)
+                                   ((eq conjunct :restore)
+                                    (delete-assoc-eq :conjunct alist))
+                                   (t
+                                    (put-assoc-eq :conjunct conjunct alist))))
+                      (alist (cond ((not substitute-p)
+                                    alist)
+                                   ((eq substitute :restore)
+                                    (delete-assoc-eq :substitute alist))
+                                   (t
+                                    (put-assoc-eq :substitute substitute
+                                                  alist)))))
+                 (pprogn (f-put-global 'print-gv-defaults alist state)
+                         (value alist)))))))))
+
+(defmacro set-print-gv-defaults (&key (evisc-tuple 'nil evisc-tuple-p)
+                                      (conjunct 'nil conjunct-p)
+                                      (substitute 'nil substitute-p))
+  `(set-print-gv-defaults-fn state
+                             ,evisc-tuple ,evisc-tuple-p
+                             ,conjunct ,conjunct-p
+                             ,substitute ,substitute-p))
+
+(defmacro print-gv-evisc-tuple ()
+  '(evisc-tuple nil                     ; print-level
+                nil                     ; print-length
+                (world-evisceration-alist state nil)
+                nil ; hiding-cars
+                ))
+
+(defmacro print-gv-default (key)
+  (declare (xargs :guard (member-eq key ; avoid capture
+                                    '(:evisc-tuple
+                                      :conjunct
+                                      :substitute))))
+  (let* ((name (symbol-name key))
+         (key-p (intern (concatenate 'string name "-P") "ACL2"))
+         (default (if (eq key :evisc-tuple)
+                      '(print-gv-evisc-tuple)
+                    nil)))
+    `(cond (,key-p ,(intern name "ACL2"))
+           (t '(let ((pair (assoc-eq ,key (f-get-global 'print-gv-defaults state))))
+                 (if pair (cdr pair) ,default))))))
+
+(defmacro print-gv (&key (evisc-tuple 'nil evisc-tuple-p)
+                         (conjunct 'nil conjunct-p)
+                         (substitute 'nil substitute-p))
+  `(print-gv-fn ,(print-gv-default :evisc-tuple)
+                ,(print-gv-default :conjunct)
+                ,(print-gv-default :substitute)
+                state))
 
 (defun disable-iprint-ar (state)
   (cond ((iprint-enabledp state)

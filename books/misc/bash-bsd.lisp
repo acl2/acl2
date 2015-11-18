@@ -171,7 +171,7 @@ goals produced by ACL2's simplification process.  That is, ACL2 might
 reasonably be expected to produce these goals when simplifying <tt>term</tt>
 during a proof attempt.  In particular, if the result is <tt>nil</tt>, then
 <tt>term</tt> is a theorem.  More accurately: <tt>(bash term)</tt> returns an
-<see topic=@(url ERROR-TRIPLES)>error triple</see>, <tt>(mv nil val
+<see topic=@(url ERROR-TRIPLE)>error triple</see>, <tt>(mv nil val
 state)</tt>, where <tt>val</tt> is a list of terms, in
 untranslated (user-level) form, whose provability implies the provability of
 the input term.  If ACL2 cannot simplify the input term (e.g., if there is a
