@@ -35,6 +35,28 @@
                                     bitops::ihsext-recursive-redefs)
                                    ()))))
 
+(defthm xlate-equiv-entries-and-loghead
+  (implies (and (xlate-equiv-entries e1 e2)
+                (syntaxp (quotep n))
+                (natp n)
+                (<= n 5))
+           (equal (loghead n e1) (loghead n e2)))
+  :hints (("Goal" :use ((:instance loghead-smaller-equality
+                                   (x e1) (y e2) (n 5) (m n)))))
+  :rule-classes (:forward-chaining :rewrite))
+
+(defthm xlate-equiv-entries-and-logtail
+  (implies (and (xlate-equiv-entries e1 e2)
+                (unsigned-byte-p 64 e1)
+                (unsigned-byte-p 64 e2)
+                (syntaxp (quotep n))
+                (natp n)
+                (<= 7 n))
+           (equal (logtail n e1) (logtail n e2)))
+  :hints (("Goal" :use ((:instance logtail-bigger
+                                   (n n) (m 7)))))
+  :rule-classes (:forward-chaining :rewrite))
+
 (define xlate-equiv-x86s (x86-1 x86-2)
   ;; Move to gather-paging-structures.lisp.
   :non-executable t
@@ -548,28 +570,108 @@
                   physical-address-p))
            :use (:instance xlate-equiv-x86s-and-page-table-base-addr-address))))
 
+(defthm xlate-equiv-x86s-and-page-table-entry-addr-value
+  (implies (and
+            (x86p x86-1)
+            (x86p x86-2)
+            (equal (xr :ctr *cr3* x86-1)
+                   (xr :ctr *cr3* x86-2))
+            (equal (gather-all-paging-structure-qword-addresses x86-1)
+                   (gather-all-paging-structure-qword-addresses x86-2))
+            (xlate-equiv-entries-at-qword-addresses?
+             (gather-all-paging-structure-qword-addresses x86-1)
+             (gather-all-paging-structure-qword-addresses x86-2)
+             x86-1 x86-2)
+            (canonical-address-p lin-addr)
+            (equal pml4-table-base-addr
+                   (mv-nth 1 (pml4-table-base-addr x86-1)))
+            (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
+            (equal pml4-table-entry-addr
+                   (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+            (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86-1)
+            (equal page-dir-ptr-table-base-addr
+                   (mv-nth 1
+                           (page-dir-ptr-table-base-addr lin-addr x86-1)))
+            (equal
+             page-dir-ptr-table-entry-addr
+             (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+            (superior-entry-points-to-an-inferior-one-p
+             page-dir-ptr-table-entry-addr x86-1)
+            (equal page-directory-base-addr
+                   (mv-nth 1
+                           (page-directory-base-addr lin-addr x86-1)))
+            (equal page-directory-entry-addr
+                   (page-directory-entry-addr lin-addr page-directory-base-addr))
+            (superior-entry-points-to-an-inferior-one-p
+             page-directory-entry-addr x86-1))
+           (xlate-equiv-entries
+            (rm-low-64
+             (page-table-entry-addr
+              lin-addr (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
+             x86-1)
+            (rm-low-64
+             (page-table-entry-addr
+              lin-addr (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+             x86-2)))
+  :hints (("Goal"
+           :use ((:instance xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
+                            (index (page-table-entry-addr lin-addr (mv-nth 1 (page-table-base-addr lin-addr x86-2))))
+                            (addrs (gather-all-paging-structure-qword-addresses x86-2)))
+                 (:instance page-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
+                            (x86 x86-1)))
+           :in-theory
+           (e/d* ()
+                 (xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
+                  page-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
+                  xlate-equiv-x86s
+                  xlate-equiv-x86s-and-page-directory-entry-addr-address
+                  xlate-equiv-x86s-and-page-table-base-addr-address
+                  canonical-address-p
+                  physical-address-p)))))
+
 (i-am-here)
 
 (defrule mv-nth-1-ia32e-la-to-pa-PT-with-xlate-equiv-x86s
-  (implies (and (xlate-equiv-x86s x86-1 x86-2)
-                ;; Fold these hyps inside ia32e-la-to-pa-PT to make this a congruence rule...
-                (x86p x86-2)
-                (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-2))
-                (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-2))
-                (not (mv-nth 0 (page-table-base-addr lin-addr x86-1)))
-                (not (mv-nth 0 (page-table-base-addr lin-addr x86-2))))
-           (equal (mv-nth
-                   1
-                   (ia32e-la-to-pa-PT
-                    lin-addr u-s-acc wp smep nxe r-w-x cpl x86-1))
-                  (mv-nth
-                   1
-                   (ia32e-la-to-pa-PT
-                    lin-addr u-s-acc wp smep nxe r-w-x cpl x86-2))))
-  :in-theory (e/d* (ia32e-la-to-pa-page-table
-                    xlate-equiv-entries-at-qword-addresses?)
-                   (not
-                    bitops::logand-with-negated-bitmask))
+  (implies
+   (and (xlate-equiv-x86s x86-1 x86-2)
+        (x86p x86-1)
+        (x86p x86-2)
+        (equal (xr :ctr *cr3* x86-1)
+               (xr :ctr *cr3* x86-2))
+        (equal (gather-all-paging-structure-qword-addresses x86-1)
+               (gather-all-paging-structure-qword-addresses x86-2))
+        (xlate-equiv-entries-at-qword-addresses?
+         (gather-all-paging-structure-qword-addresses x86-1)
+         (gather-all-paging-structure-qword-addresses x86-2)
+         x86-1 x86-2)
+        (canonical-address-p lin-addr)
+        (equal pml4-table-base-addr
+               (mv-nth 1 (pml4-table-base-addr x86-1)))
+        (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
+        (equal pml4-table-entry-addr
+               (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+        (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86-1)
+        (equal page-dir-ptr-table-base-addr
+               (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86-1)))
+        (equal page-dir-ptr-table-entry-addr
+               (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+        (superior-entry-points-to-an-inferior-one-p
+         page-dir-ptr-table-entry-addr x86-1))
+   (equal (mv-nth
+           1
+           (ia32e-la-to-pa-PT
+            lin-addr u-s-acc wp smep nxe r-w-x cpl x86-1))
+          (mv-nth
+           1
+           (ia32e-la-to-pa-PT
+            lin-addr u-s-acc wp smep nxe r-w-x cpl x86-2))))
+  :use ((:instance xlate-equiv-x86s-and-page-table-entry-addr-value))
+  :in-theory (e/d* (ia32e-la-to-pa-page-table)
+                   (xlate-equiv-x86s-and-page-table-entry-addr-value
+                    xlate-equiv-entries
+                    bitops::logand-with-negated-bitmask
+                    xlate-equiv-entries-and-loghead
+                    xlate-equiv-entries-and-logtail))
   ;; :rule-classes :congruence
   ;; :otf-flg t
   )
