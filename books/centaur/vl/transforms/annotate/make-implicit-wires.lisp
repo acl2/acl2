@@ -353,7 +353,8 @@ declared, and mark them with the @('VL_IMPLICIT') attribute, which is useful in
   :short "Collect up wire names that might need to be implicitly declared."
 
   :long "<p>Experimentation with NCVerilog and VCS reveals that only certain
-names within expressions lead to implicit wires being declared.  Here are some
+names within expressions lead to implicit wires being declared.  See especially
+the @('vl/linttest/implicit') tests for a test suite of sorts.  Here are some
 findings:</p>
 
 <ul>
@@ -365,23 +366,26 @@ we get an implicit wire.</li>
 referencing something elsewhere and we don't want to create implicit wires
 named @('foo') or @('bar').</li>
 
+<li>When @('foo') is not previously declared, both NCVerilog and VCS reject
+@('assign foo[0] = 0').  So I don't think we want to collect names that have
+indexing or part-selects applied to them.  On the other hand, NCVerilog rejects
+but VCS accepts (with warnings) gates such as @('buf mybuf(o, foo[0])'), and
+seems to infer a wire for @('foo').  We will try to mimic NCVerilog's behavior
+since it is more consistent, and <i>not</i> infer wires that are being indexed
+into.</li>
+
 <li>Suppose we explicitly declare @('wire [3:0] vec;').  Then both NCVerilog
 and VCS reject @('assign vec[w] = 0') where @('w') is undeclared, instead of
 inferring an implicit wire @('w').  So I think we do not want to collect names
-from <i>within</i> the indices and part-selects.</li>
-
-<li>When @('foo') is not previously declared, both NCVerilog and VCS reject
-@('assign foo[0] = 0').  So I don't think we want to collect names that have
-indexing or part-selects applied to them.</li>
-
-<li>On the other hand, NCVerilog rejects but VCS accepts (with warnings) gates
-such as @('buf mybuf(o, foo[0])'), and seems to infer a wire for @('foo').  We
-will try to mimic NCVerilog's behavior since it is more consistent, and
-<i>not</i> infer wires that are being indexed into.</li>
+from <i>within</i> the indices and part-selects.  However, distressingly, NCV
+and VCS both accept @('buf myand2(o, vec[w]);'), so what is the rule?  I think
+it seems most sensible to not infer implicit wires within the index
+expressions.</li>
 
 <li>Within gate connections, NCV and VCS allow implicit wires in many
 expressions, e.g., @('w1 + w2'), @('myfun(w)'), both sides of @('inside')
-expressions, etc.</li>
+expressions, etc.  (These kinds of expressions aren't allowed in the LHS of
+assignments, so we don't worry about them there.)</li>
 
 <li>In submodule connections, NCV allows implicit wires to be inferred inside
 of assignment patterns like @('triple_t'{a:implicit_w1,b:implicit_w2,...}').

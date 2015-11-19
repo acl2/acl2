@@ -32,6 +32,10 @@ module sub (output out, input in);
   assign out = in;
 endmodule
 
+function logic myfun (input logic [2:0] bar) ;
+  myfun = bar;
+endfunction
+
 logic top_g1;
 logic top_m1;
 logic top_a1;
@@ -46,9 +50,64 @@ module subtriple (output triple_t out, input triple_t in) ;
   assign out = in;
 endmodule
 
+package pkg1;
+
+  parameter pkg1_decl1 = 1;
+  parameter pkg1_decl2 = 2;
+
+endpackage
+
+import pkg1::*;
+
+module subnames (output subname_out1, input subname_in1);
+  assign subname_out1 = subname_in1;
+endmodule
+
 module m0 () ;
 
   wire w1_declared = 0;
+
+  // Implicit wires in assignments
+  assign a1_implicit = w1_declared;
+  assign {a2_implicit,a3_implicit} = 0;
+  //+VL  assign top_a1 = a4_undeclared;
+  assign a5_implicit = a5_implicit;
+  assign {a6_implicit,a7_implicit} = {a7_implicit,a6_implicit};
+
+  wire [3:0] vec;
+
+  // VCS says this is an error because a8_undeclared is an undeclared
+  // identifier.
+  //
+  // NCV rejects this saying that a8_undeclared is an illegal operand for
+  // constant expression.  But it is definitely inferring an implicit wire,
+  // because when we add "parameter a8_undeclared = 0" afterwards, we get an
+  // error about a8_undeclared being redeclared.
+  //
+  // Let's mimic VCS and treat this as undeclared.
+
+  //+VL assign vec[a8_undeclared] = 0;
+
+  // parameter a8_undeclared = 0;
+
+
+  // NCV says this is an illegal operand for a constant expression.  By the
+  // same parameter trick, we can see that it infers a wire for a9_implicit.
+  //
+  // VCS says this is an illegal structural left hand side.  By the same
+  // parameter trick, we can tell that it also infers an implicit wire.
+  //
+  // Let's mimic them and infer a wire here.
+
+  //+VL assign {a9_implicit,vec[a9_implicit]} = 0;
+
+  // parameter a9_implicit = 0;
+
+  // NCV and VCS reject this, saying it's not declared.
+  parameter index = 0;
+  //+VL assign a10_undeclared[index] = 0;
+
+
 
   // Some implicit gate stuff
   buf(g1_implicit, w1_declared);
@@ -56,6 +115,44 @@ module m0 () ;
   and(w1_declared, g4_implicit + g5_implicit);
   buf mybuf [1:0] ({g6_implicit,g7_implicit}, 2'b0);
   buf(top_g1, g8_implicit);
+  buf(o, myfun(g9_implicit));
+  buf(o, {4{g10_implicit}});
+
+  // NCV says this is an illegal operand for constant expression
+  // VCS complains that the multiplier needs to be a known constant value, but
+  // also says: "implicit wire g11_implicit does not have any driver", so it
+  // seems like it's inferring a wire here.
+  //+VL buf(o, {g11_implicit{1'b0}});
+
+  // NCV and VCS agree that these are implicit wires
+  buf(o, a inside {0, g12_implicit, 1});
+  buf(o, g13_implicit inside {0, 1});
+
+  // VCS and NCV reject this saying that g14_implicit isn't a valid constant
+  // expression.  We infer a wire for it and then complain later that we
+  // failed to resolve the slice size.  That seems fine.
+  //+VL buf(o, {<< g14_implicit {0, 1}});
+
+  // VCS says streaming operators as gate expressions isn't supported yet
+  // NCV is fine with this, says g15 is implicit.
+  `ifndef VCS
+  buf(o, {<< int {0, g15_implicit}});
+  `endif
+
+  `ifndef INCA
+  // NCV rejects this and says it's an undeclared identifier.
+  // VCS accepts this and infers an implicit wire for g16_undeclared, with the
+  // usual warnings.
+  // We think NCV's behavior is more consistent with the treatment of indexed
+  // and part-selected expressions on the LHS of assignments such as a8_undeclared
+  // above, so we will treat this as an undeclared identifier.
+  and myand(o, g16_undeclared[0] + 1);
+  `endif
+
+  // Distressingly, NCV and VCS accept this and infer an implicit wire for
+  // g17_undeclared.  This seems very inconsistent with the behavior above in
+  // a8_undeclared.
+  and myand2(o, vec[g17_undeclared]);
 
   // NCV and VCS allow this, even though s1 isn't declared until later.
   wire subref1 = s1.in;
@@ -80,12 +177,6 @@ module m0 () ;
 
   // BOZO maybe add array pattern
 
-  // Implicit wires in assignments
-  assign a1_implicit = w1_declared;
-  assign {a2_implicit,a3_implicit} = 0;
-  //+VL  assign top_a1 = a4_undeclared;
-  assign a5_implicit = a5_implicit;
-  assign {a6_implicit,a7_implicit} = {a7_implicit,a6_implicit};
 
   // Implicit wires in aliases
   alias al_implicit1 = w1_declared;
@@ -101,8 +192,6 @@ endmodule
 
 module m1 () ;
 
-  wire [3:0] vec;
-
   // VCS and NCV reject this, saying that w1_undeclared is undeclared.
   //+VL assign vec[w1_undeclared] = 0;
 
@@ -112,65 +201,130 @@ module m1 () ;
   // NCV and VCS reject this, saying that w3_undeclared is undeclared.
   //+VL assign w3_undeclared[0] = 0;
 
+  // Type casts are tricky
+  wire w4_unset;
+  wire w5_unused = triple_t'(w4_unset);
 
-  function logic myfun (input logic [2:0] bar) ;
-    myfun = bar;
-  endfunction
+  // NCV and VCS reject this, saying undeclared_t is undeclared.
+  //+VL wire xxx4 = undeclared_t'(w4_unset);
 
-//  buf(o, myfun(y));
+  wire w6_unused = pkg1_decl1;
 
-//  buf(o, {foo{bar}});
-
-//  buf(o, a inside {b, c, d});
-
-//  buf(o, {<< w {a,b,c}});
-
-
-
-
-
-
-// More things to test --
-  // .name style connections to submodule are not allowed to introduce implicit wires
-  // .* style connections should not add implicit wires
-
-// all the stuff below
-  
-  // NCV and VCS reject this:
-  //  assign vec[d] = 0;
-
-  // NCV and VCS reject this:
-  // assign {d,vec[d]} = 0;
-
-  // NCV says d is implicitly declared and then redeclared
-  // VCS says it's not implicitly declared
-  //  assign vec[d] = 0;
-  //  parameter d = 0;
-
-  // NCV and VCS reject this, saying vec2 isn't declared yet
-  // parameter d = 0;
-  // assign vec2[d] = 0;
-
-  // VCS says these aren't declared yet, NCV says this isn't a legal net_lvalue anyway
-  // assign {>>{e, f, g}} = 0;
-
-  // NCV and VCS both allow this but warn that w1/w2 aren't driven
-  //and myand(o, w1 + w2);
-
-  // NCV rejects this but VCS accepts it (with warnings)
-  //and myand(o, w1[0] + w2[0]);
-
-  // NCV rejects this but VCS accepts it (with warnings)
-//  and myand(o, w1[w2]);
-
-
-// undeclared variables in blocks
-  // corner cases:
-  //   reg [r:0-1] r;
-  // etc.
-
-
-// all kinds of port-implicitness stuff
+  wire w7_unused = pkg1::pkg1_decl2;
 
 endmodule
+
+
+module m2 () ;
+
+  // .name style connections to submodule are not allowed to introduce implicit wires
+
+  // NCV complains that subname_in1 is undeclared.
+
+  // VCS complains that subname_in1 is undeclared and also issues a warning
+  // about there being too few port connections to the module (which just
+  // seems silly).
+
+  wire subname_out1;
+  //+VL subnames mysubnames_dotnames (.subname_out1, .subname_in1);
+
+endmodule
+
+
+module m3 () ;
+
+  // .* style connections should not add implicit wires
+
+  // VCS gives a proper error about subname_out1 and subname_in1 being
+  // undeclared.
+
+  // NCV only gives us warnings and doesn't treat this as an error.
+
+  `ifndef VCS
+  subnames mysubnames_dotstar (.*);
+  `endif
+
+endmodule
+
+
+module m4 () ;
+
+  // Tricky case.  If we use .* connections, do the wires have to be declared
+  // before that instance?
+
+  // VCS seems to think it's OK to declare them afterward.
+  // NCV seems to think so too.
+
+  // I'm not sure whether this should work or not according to the standard.
+  // Fortunately, VL doesn't check that .* connections are defined until after
+  // introducing implicit wires, so this to work like the commercial tools.
+
+  subnames mysubnames_later (.*);
+
+  wire subname_out1, subname_in1;
+
+
+endmodule
+
+
+module m5 () ;
+
+  // Like m4, but let's try to introduce them implicitly instead of explicitly.
+
+  // Still works on NCV.
+  // Still works on VCS.
+
+  // So this suggests that these tools, like VL, are checking .* connections
+  // some time after introducing implicit wires.
+
+  subnames mysubnames_later (.*);
+  buf(subname_out1, subname_in1);
+
+endmodule
+
+
+
+// Huh.  I wonder if this makes any sense with respect to scoping.
+
+module messy (output messy_out, input messy_in) ;
+  assign messy_out = messy_in;
+endmodule
+
+logic messy_in = 1'b0;
+
+module m6 ();
+
+  messy mymessy(.*);
+
+  wire messy_out;
+  wire messy_in = 1'b1;
+
+  initial begin
+    #10;
+    // NCV and VCS say that this is 1.
+    $display("m6: messy_out is %d", messy_out);
+  end
+
+endmodule
+
+module m7 () ;
+
+  messy mymessy(.*);
+  wire messy_out;
+
+  initial begin
+    #10;
+    // VCS says that this is 0.
+    // NCV says this is Z.
+    // Well, this just seems like a NCV bug.
+    $display("m7: messy_out is %d", messy_out);
+  end
+
+endmodule
+
+
+
+
+// OK, I think we've beat this to death enough.  If we get ambitious, we could
+// add a lot of checks of how port implicit wires are handled.
 

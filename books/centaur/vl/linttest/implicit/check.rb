@@ -38,21 +38,21 @@ outlaw_warning_global("VL-PARSE-FAILED")
 def normal(modname, wirename)
   outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
   outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
-  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
   outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
 end
 
 def unused(modname, wirename)
-  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
   match_warning(modname, "VL-LUCID-UNUSED", wirename)
   outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
   outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
 end
 
 def unset(modname, wirename)
-  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
   match_warning(modname, "VL-LUCID-UNSET", wirename)
   outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
   outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
 end
 
@@ -60,7 +60,7 @@ def spurious(modname, wirename)
   match_warning(modname, "VL-LUCID-SPURIOUS", wirename)
   outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
   outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
-  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
 end
 
 def undeclared(modname, wirename)
@@ -73,6 +73,19 @@ normal(:sub, "in")
 
 normal(:m0, "w1_declared")
 
+unused(:m0, "a1_implicit")
+unused(:m0, "a2_implicit")
+unused(:m0, "a3_implicit")
+unused(:"Design Root", "top_a1")
+undeclared(:m0, "a4_undeclared")
+normal(:m0, "a5_implicit")  # BOZO maybe check for selfassign
+normal(:m0, "a6_implicit")
+normal(:m0, "a7_implicit")
+undeclared(:m0, "a8_undeclared")
+normal(:m0, "a9_implicit")  # looks both set and used (as an index) by the assignment
+undeclared(:m0, "a10_undeclared")
+
+
 unused(:m0, "g1_implicit")
 unset(:m0, "g2_implicit")
 unset(:m0, "g3_implicit")
@@ -82,6 +95,15 @@ unused(:m0, "g6_implicit")
 unused(:m0, "g7_implicit")
 unused(:"Design Root", "top_g1")
 unset(:m0, "g8_implicit")
+unset(:m0, "g9_implicit")
+unset(:m0, "g10_implicit")
+unset(:m0, "g11_implicit")
+unset(:m0, "g12_implicit")
+unset(:m0, "g13_implicit")
+unset(:m0, "g14_implicit")
+unset(:m0, "g15_implicit")
+undeclared(:m0, "g16_undeclared")
+undeclared(:m0, "g17_undeclared")
 
 unset(:m0, "m1_implicit")
 unused(:m0, "m2_implicit")
@@ -94,12 +116,6 @@ unset(:m0, "m6_implicit")
 unset(:m0, "m7_implicit")
 unset(:m0, "m8_implicit")
 
-unused(:m0, "a1_implicit")
-unused(:m0, "a2_implicit")
-unused(:m0, "a3_implicit")
-unused(:"Design Root", "top_a1")
-undeclared(:m0, "a4_undeclared")
-normal(:m0, "a5_implicit")  # BOZO maybe check for selfassign
 
 spurious(:m0, "al_implicit1")
 spurious(:m0, "al_implicit2")
@@ -114,6 +130,37 @@ undeclared(:m1, "w1_undeclared")
 undeclared(:m1, "w2_undeclared")
 undeclared(:m1, "w3_undeclared")
 
+unset(:m1, "w4_unset")
+unused(:m1, "w5_unused")
+outlaw_warning(:m1, "VL-WARN-UNDECLARED", "triple_t")
 
+undeclared(:m1, "undeclared_t")
+
+unused(:m1, "w6_unused")
+unused(:m1, "w7_unused")
+outlaw_warning(:m1, "VL-WARN-UNDECLARED", "pkg1_decl1")
+outlaw_warning(:m1, "VL-WARN-UNDECLARED", "pkg1_decl2")
+
+normal(:pkg1, "pkg1_decl1")
+normal(:pkg1, "pkg1_decl2")
+
+undeclared(:m2, "subname_in1")
+
+## These warnings are different only because they're checked later in
+## argresolve instead of earlier in make-implicit
+match_warning(:m3, "VL-BAD-INSTANCE", "subname_in1")
+match_warning(:m3, "VL-BAD-INSTANCE", "subname_out1")
+
+unset(:m4, "subname_in1")
+unused(:m4, "subname_out1")
+
+unset(:m5, "subname_in1")
+unused(:m5, "subname_out1")
+
+normal(:m6, "messy_out")
+normal(:m6, "messy_in")
+
+normal(:m7, "messy_out")
+normal(:m7, "messy_in")
 
 test_passed()
