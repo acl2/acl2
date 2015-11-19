@@ -798,8 +798,6 @@
                                      xlate-equiv-x86s-and-page-table-base-addr-address
                                      xlate-equiv-x86s-and-page-table-entry-addr-address))))))
 
-(i-am-here)
-
 (defrule xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
   (implies
    (and (page-table-entry-addr-found-p lin-addr x86)
@@ -818,8 +816,8 @@
                    (bitops::logand-with-negated-bitmask
                     xlate-equiv-x86s-and-page-table-base-addr-error
                     xlate-equiv-x86s-and-page-table-entry-addr-address
-                    xlate-equiv-x86s-and-page-table-base-addr-address))
-  :otf-flg t)
+                    xlate-equiv-x86s-and-page-table-base-addr-address)))
+
 
 (i-am-here)
 

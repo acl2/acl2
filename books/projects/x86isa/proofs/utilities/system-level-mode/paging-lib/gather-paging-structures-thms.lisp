@@ -829,7 +829,7 @@
                 (or
                  (equal val (set-accessed-bit (rm-low-64 addr x86)))
                  (equal val (set-dirty-bit (rm-low-64 addr x86)))
-                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 addr x86)))))
+                 (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 addr x86)))))
                 (physical-address-p index)
                 (physical-address-p (+ 7 index))
                 (x86p x86))
@@ -891,7 +891,7 @@
                 (or
                  (equal val (set-accessed-bit (rm-low-64 index x86)))
                  (equal val (set-dirty-bit (rm-low-64 index x86)))
-                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                 (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86)))))
                 (physical-address-p index)
                 (equal (loghead 3 index) 0)
                 (x86p x86))
@@ -956,7 +956,7 @@
                 (or
                  (equal val (set-accessed-bit (rm-low-64 index x86)))
                  (equal val (set-dirty-bit (rm-low-64 index x86)))
-                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                 (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86)))))
                 (physical-address-p index)
                 (equal (loghead 3 index) 0)
                 (x86p x86))
@@ -1164,7 +1164,7 @@
                   (member-list-p index addrs)
                   (or (equal val (set-accessed-bit (rm-low-64 index x86)))
                       (equal val (set-dirty-bit (rm-low-64 index x86)))
-                      (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                      (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86)))))
                   (physical-address-p index)
                   (equal (loghead 3 index) 0)
                   (x86p x86))
@@ -1182,7 +1182,7 @@
                 (member-list-p index addrs)
                 (or (equal val (set-accessed-bit (rm-low-64 index x86)))
                     (equal val (set-dirty-bit (rm-low-64 index x86)))
-                    (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                    (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86)))))
                 (x86p x86))
            (equal (gather-all-paging-structure-qword-addresses
                    (wm-low-64 index val x86))
@@ -1215,7 +1215,7 @@
                 (or
                  (equal val (set-accessed-bit (rm-low-64 index x86)))
                  (equal val (set-dirty-bit (rm-low-64 index x86)))
-                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                 (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86)))))
                 (x86p x86)
                 (xlate-equiv-entries-at-qword-addresses-aux? addrs addrs x86 x86))
            (xlate-equiv-entries-at-qword-addresses-aux?
@@ -1233,7 +1233,7 @@
                 (or
                  (equal val (set-accessed-bit (rm-low-64 index x86)))
                  (equal val (set-dirty-bit (rm-low-64 index x86)))
-                 (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                 (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86)))))
                 (x86p x86))
            (equal (xlate-equiv-entries-at-qword-addresses-aux?
                    addrs addrs
@@ -1309,7 +1309,7 @@
                 (equal (loghead 3 index) 0)
                 (or (equal val (set-accessed-bit (rm-low-64 index x86)))
                     (equal val (set-dirty-bit (rm-low-64 index x86)))
-                    (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                    (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86)))))
                 (x86p x86))
            (equal
             (xlate-equiv-entries-at-qword-addresses?
@@ -1328,7 +1328,7 @@
                 (member-list-p index addrs)
                 (or (equal val (set-accessed-bit (rm-low-64 index x86)))
                     (equal val (set-dirty-bit (rm-low-64 index x86)))
-                    (equal val (set-accessed-bit (set-dirty-bit (rm-low-64 index x86)))))
+                    (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86)))))
                 (x86p x86))
            (equal
             (xlate-equiv-entries-at-qword-addresses?
