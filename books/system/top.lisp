@@ -34,6 +34,7 @@
 (include-book "legal-variablep")
 (include-book "merge-sort-term-order")
 (include-book "termp")
+(include-book "mattk")
 
 ; The following is commented out only because we aren't currently motivated to
 ; its functions in ACL2 system constant *system-verify-guards-alist*.  Perhaps

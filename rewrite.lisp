@@ -10983,6 +10983,11 @@
 ; of full-range that correspond (positionally) to members of
 ; full-domain that belong to sub-domain.
 
+  (declare (xargs :guard (and (symbol-listp full-domain)
+                              (true-listp sub-domain)
+                              (true-listp full-range)
+                              (eql (length full-domain)
+                                   (length full-range)))))
   (if (endp full-domain)
       nil
     (if (member-eq (car full-domain) sub-domain)
@@ -11005,6 +11010,11 @@
 ;
 ; Note that the irrelevant formal y has been eliminated.
 
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (pseudo-termp body)
+                              (true-listp actuals)
+                              (eql (length formals)
+                                   (length actuals)))))
   (let ((vars (all-vars body)))
     (cond
      ((null vars)
@@ -11012,7 +11022,7 @@
      ((equal formals actuals)
       body)
      ((set-difference-eq vars formals)
-      (er hard 'make-lambda-application
+      (er hard? 'make-lambda-application
           "Unexpected unbound vars ~x0"
           (set-difference-eq vars formals)))
      (t
