@@ -2651,8 +2651,9 @@
             ((and (equal class "java/lang/Double")
                   (equal method-name-and-type "doubleToRawLongBits:(D)J"))
              (modify th s1
-                     :stack (push (long-fix (top (stack (top-frame th s))))
-                                  (stack (top-frame th s1)))))
+                     :stack (push 0
+                                  (push (long-fix (top (pop (stack (top-frame th s)))))
+                                        (stack (top-frame th s1))))))
             ((and (equal class "java/lang/Float")
                   (equal method-name-and-type "floatToRawIntBits:(F)I"))
              (modify th s1
@@ -2667,9 +2668,10 @@
             ((and (equal class "java/lang/Double")
                   (equal method-name-and-type "longBitsToDouble:(J)D"))
              (modify th s1
-                     :stack (push (bits2fp (top (stack (top-frame th s)))
-                                           (rtl::dp))
-                                  (stack (top-frame th s1)))))
+                     :stack (push 0
+                                  (push (bits2fp (top (pop (stack (top-frame th s))))
+                                                 (rtl::dp))
+                                        (stack (top-frame th s1))))))
             ((and (equal class "java/lang/StrictMath")
                   (equal method-name-and-type "sqrt:(D)D"))
              (modify th s1
