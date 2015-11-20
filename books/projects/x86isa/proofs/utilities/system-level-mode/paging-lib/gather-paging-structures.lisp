@@ -11,6 +11,16 @@
 
 ;; Some misc. arithmetic lemmas:
 
+(defthmd loghead-smaller-and-logbitp
+  (implies (and (equal (loghead n e1) (loghead n e2))
+                (natp n)
+                (natp m)
+                (< m n))
+           (equal (logbitp m e1) (logbitp m e2)))
+  :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                    bitops::ihsext-recursive-redefs)
+                                   ()))))
+
 (defthmd logtail-bigger
   (implies (and (equal (logtail m e1) (logtail m e2))
                 (integerp e2)
