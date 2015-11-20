@@ -360,6 +360,10 @@
     (UTF16-LITTLE-ENDIAN t)
     (otherwise nil)))
 
+(defund desired-assertion-status (options)
+  (declare (ignore options))
+  0)
+
 ; -----------------------------------------------------------------------------
 ; A Constant Pool
 ;
@@ -406,10 +410,11 @@
 (defun retrieve-cp (class-name class-table)
   (class-decl-cp (bound? class-name class-table)))
 
-(defun update-ct-string-ref (class idx newval ct)
+(defun update-ct-ref (class idx newval ct)
   (let* ((class-entry (bound? class ct))
-         (oldstrval (cddr (nth idx (retrieve-cp class ct))))
-         (newstrentry (list* 'STRING newval oldstrval))
+         (cpentry (nth idx (retrieve-cp class ct)))
+         (oldstrval (cddr cpentry))
+         (newstrentry (list* (car cpentry) newval oldstrval))
          (new-cp (update-nth idx
                               newstrentry
                               (class-decl-cp class-entry)))
@@ -706,9 +711,18 @@
 (defun deref (ref heap)
   (binding (cadr ref) heap))
 
+(defun obj-class (obj)
+  (caar obj))
+
 (defun field-value (class-name field-name-and-type instance)
   (binding field-name-and-type
            (binding class-name instance)))
+
+(defun set-instance-field (class-name field-name-and-type value instance)
+  (bind class-name
+        (bind field-name-and-type value
+              (binding class-name instance))
+        instance))
 
 (defund field-initial-value (field-name-and-type)
   (if (or (search ":L" field-name-and-type)  ; object instance
@@ -743,57 +757,75 @@
     (cons (build-immediate-instance-data (car class-names) class-table)
           (build-an-instance (cdr class-names) class-table))))
 
-(defun build-class-data (sfields)
-  (cons "java/lang/Class"
-        (build-class-field-bindings
-         (cons "<name>" sfields))))
+; Layout in a heap of a Class object
+; (("java/lang/Class"
+;   ("<sfields>" (sf1 . sv1) ... (sfn . svn)) ; static fields of class "class.name"
+;   ("<name>" . "class.name")
+;   (cf1 . cv1) ; instance fields of "java.lang.Class"
+;   ...
+;   (cfm . cvm))
+;  ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
 
-(defun build-a-class-instance (sfields class-table)
-    (list (build-class-data sfields)
-          (build-immediate-instance-data "java/lang/Object" class-table)))
+(defun static-field-value (class-name field-name-and-type s)
+  (let* ((class-ref (class-decl-heapref
+                     (bound? class-name (class-table s))))
+         (instance (deref class-ref (heap s)))
+         (sfields (cadar instance)))
+    (binding field-name-and-type (cdr sfields))))
 
+(defun set-static-field (field-name-and-type value instance)
+  (let ((sfields (cadar instance)))
+    (cons
+      (list*
+        (obj-class instance)
+        (cons (car sfields)
+              (bind field-name-and-type value (cdr sfields)))
+        (cddar instance))
+      (cdr instance))))
+
+(defun build-a-class-instance (class class-table)
+  (let ((new-object (build-an-instance '("java/lang/Class" "java/lang/Object")
+                                       class-table)))
+       (cons
+         (list*
+           (obj-class new-object)
+           (cons "<sfields>"
+                 (build-class-field-bindings
+                   (class-decl-sfields (bound? class class-table))))
+           (cons "<name>"
+                 class)
+           (cdar new-object))
+         (cdr new-object))))
 
 ; -----------------------------------------------------------------------------
 ; Arrays
 
-;(defun value-of (obj)
-;  (cdr obj))
-
-;(defun superclasses-of (class ct)
-;  (class-decl-superclasses (bound? class ct)))
-
-;(defun array-content (array)
-;  (value-of (field-value "ARRAY" "<array>" array)))
+; Layout in a heap of array object int[] = {101, 102, 103 }
+; (("[I" 3 101 102 103)
+;  ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
 
 (defun array-type (array)
-  (car (nth 0 array)))
-;  (nth 0 (array-content array)))
+  (caar array))
 
 (defun array-bound (array)
-  (nth 1 array))
-;  (nth 1 (array-content array)))
+  (cadar array))
 
 (defun array-data (array)
-  (nth 2 array))
-;  (nth 2 (array-content array)))
+  (cddar array))
 
 (defun element-at (index array)
   (nth index (array-data array)))
 
 (defun makearray (type bound data class-table)
   (declare (ignore class-table))
-  (list (list type) bound data))
-;  (cons (list "ARRAY"
-;              (cons "<array>" (cons '*array* (list type bound data))))
-;        (build-an-instance
-;         (superclasses-of "ARRAY" class-table)
-;         class-table)))
+  (list (list* type bound data)
+        (cons "java/lang/Object" (build-class-object-field-bindings))))
 
-(defun set-element-at (value index array class-table)
-  (makearray (array-type array)
-             (array-bound array)
-             (update-nth index value (array-data array))
-             class-table))
+(defun set-element-at (value index array)
+  (list* (list* (array-type array)
+                (array-bound array)
+                (update-nth index value (array-data array)))
+         (cdr array)))
 
 (defun primitive-type (type)
   (cond ((equal type 'T_BYTE) t)
@@ -1137,12 +1169,6 @@
 ; -----------------------------------------------------------------------------
 ; Instruction helpers
 
-(defun set-instance-field (class-name field-name-and-type value instance)
-  (bind class-name
-        (bind field-name-and-type value
-              (binding class-name instance))
-        instance))
-
 (defun bind-formals (n stack)
   (if (zp n)
       nil
@@ -1182,7 +1208,24 @@
          (tThread (rrefToThread obj-ref (thread-table s))))
     (cond
      ((method-isNative? method-decl)
-      (cond ((and (equal class-name "java/lang/Thread")
+      (cond ((and (equal class-name "java/lang/Object")
+                  (equal method-name-and-type "getClass:()Ljava/lang/Class;"))
+             (modify th s1
+                     :stack (push (class-decl-heapref
+                                    (bound? (obj-class instance) (class-table s)))
+                                  (stack (top-frame th s1)))))
+            ((and (equal class-name "java/lang/Object")
+                  (equal method-name-and-type "hashCode:()I"))
+             (modify th s1
+                     :stack (push (int-fix (cadr obj-ref))
+                                  (stack (top-frame th s1)))))
+            ((and (equal class-name "java/lang/Object")
+                  (equal method-name-and-type "clone:()Ljava/lang/Object;"))
+             (modify th s1
+                     :stack (push (list 'ref (len (heap s)))
+                                  (stack (top-frame th s)))
+                     :heap (bind (len (heap s)) instance (heap s))))
+            ((and (equal class-name "java/lang/Thread")
                   (equal method-name-and-type "start:()V")
                   tThread)
              (modify tThread s1 :status 'SCHEDULED))
@@ -1276,7 +1319,7 @@
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value index array (class-table s))
+                            (set-element-at value index array)
                             (heap s)))
        s)))
 
@@ -1404,7 +1447,7 @@
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at element index array (class-table s))
+                            (set-element-at element index array)
                             (heap s)))
         s)))
 
@@ -1442,7 +1485,7 @@
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at (char-fix value) index array (class-table s))
+                            (set-element-at (char-fix value) index array)
                             (heap s)))
         s)))
 
@@ -1527,7 +1570,7 @@
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (popn 4 (stack (top-frame th s)))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value index array (class-table s))
+                            (set-element-at value index array)
                             (heap s)))
         s)))
 
@@ -1840,7 +1883,7 @@
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value index array (class-table s))
+                            (set-element-at value index array)
                             (heap s)))
         s)))
 
@@ -2018,20 +2061,11 @@
 ; -----------------------------------------------------------------------------
 ; (GETSTATIC "class" "field" ?long-flag?) Instruction
 
-(defun static-field-value (class-name field-name-and-type s)
-  (let* ((class-ref (class-decl-heapref
-                     (bound? class-name (class-table s))))
-         (instance (deref class-ref (heap s))))
-    (field-value "java/lang/Class" field-name-and-type instance)))
-
 (defun execute-GETSTATIC (inst th s)
   (let* ((class-name (arg1 inst))
          (field-name-and-type (arg2 inst))
          (long-flag (or (arg3 inst) (field-long-or-double field-name-and-type)))
-         (class-ref (class-decl-heapref
-                     (bound? class-name (class-table s))))
-         (instance (deref class-ref (heap s)))
-         (field-value (field-value "java/lang/Class" field-name-and-type instance)))
+         (field-value (static-field-value class-name field-name-and-type s)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
@@ -2156,7 +2190,7 @@
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value index array (class-table s))
+                            (set-element-at value index array)
                             (heap s)))
         s)))
 
@@ -2412,7 +2446,7 @@
 (defun execute-INSTANCEOF (inst th s)
   (let* ((ref (top (stack (top-frame th s))))
          (obj (deref ref (heap s)))
-         (obj-class (caar obj))
+         (obj-class (obj-class obj))
          (obj-supers (cons obj-class (class-decl-superclasses
                       (bound? obj-class (class-table s)))))
          (value (if (nullrefp ref)
@@ -2598,7 +2632,23 @@
                      :stack (popn nformals (stack (top-frame th s))))))
     (cond
      ((method-isNative? method-decl)
-      (cond ((and (equal class "java/lang/Double")
+      (cond ((and (equal class "java/lang/Object")
+                  (equal method-name-and-type "registerNatives:()V"))
+             s1)
+            ((and (equal class "java/lang/Class")
+                  (equal method-name-and-type "registerNatives:()V"))
+             s1)
+            ((and (equal class "java/lang/Class")
+                  (equal method-name-and-type "getPrimitiveClass:(Ljava/lang/String;)Ljava/lang/Class;"))
+             (modify th s1
+                     :stack (push '(ref -1)      ; TODO return primitive class instead of null
+                                  (stack (top-frame th s1)))))
+            ((and (equal class "java/lang/Class")
+                  (equal method-name-and-type "desiredAssertionStatus0:(Ljava/lang/Class;)Z"))
+             (modify th s1
+                     :stack (push (desired-assertion-status (options s))
+                                  (stack (top-frame th s1)))))
+            ((and (equal class "java/lang/Double")
                   (equal method-name-and-type "doubleToRawLongBits:(D)J"))
              (modify th s1
                      :stack (push (long-fix (top (stack (top-frame th s))))
@@ -2766,7 +2816,7 @@
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (popn 4 (stack (top-frame th s)))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value index array (class-table s))
+                            (set-element-at value index array)
                             (heap s)))
         s)))
 
@@ -2819,7 +2869,7 @@
          (value (cadr entry)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push value (stack (top-frame th s))))))
+                :stack (push 0 (push value (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LDIV) Instruction
@@ -3182,10 +3232,9 @@
                            (popn 2 (stack (top-frame th s)))
                            (pop (stack (top-frame th s))))
                 :heap (bind (cadr class-ref)
-                            (set-instance-field "java/lang/Class"
-                                                field-name-and-type
-                                                value
-                                                instance)
+                            (set-static-field field-name-and-type
+                                              value
+                                              instance)
                             (heap s)))
         s)))
 
@@ -3230,7 +3279,7 @@
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at (short-fix value) index array (class-table s))
+                            (set-element-at (short-fix value) index array)
                             (heap s)))
         s)))
 
@@ -4175,64 +4224,69 @@
                          (bind array-address
                                char-array
                                (heap s)))))
-        (modify th s
+        (modify 0 s
                 :heap new-heap
-                :class-table (update-ct-string-ref
+                :class-table (update-ct-ref
                               class
                               idx
                               (list 'REF new-address)
                               (class-table s)))))
 
-
-(defun resolve-string-constants (class cp s idx)
+(defun resolve-constants (class cp s idx)
   (cond ((endp cp) s)
         ((equal (caar cp) 'STRING)
-         (resolve-string-constants class
-                                   (cdr cp)
-                                   (make-string-obj class (car cp) s idx)
-                                   (+ idx 1)))
-        (t (resolve-string-constants class (cdr cp) s (+ idx 1)))))
+         (resolve-constants class
+                            (cdr cp)
+                            (make-string-obj class (car cp) s idx)
+                            (+ idx 1)))
+        ((equal (caar cp) 'CLASS)
+         (let ((ct (update-ct-ref class
+                                  idx
+                                  (class-decl-heapref (bound? (caddar cp) (class-table s)))
+                                  (class-table s))))
+           (resolve-constants
+             class
+             (cdr cp)
+             (modify 0 s :class-table ct)
+             (+ idx 1))))
+        (t (resolve-constants class (cdr cp) s (+ idx 1)))))
 
-
-(defun gen_class_obj (class s)
-  (let* ((new-state (resolve-string-constants class
-                                             (retrieve-cp class (class-table s))
-                                             s
-                                             0))
-         (new-heap (heap new-state))
-         (new-ct (class-table new-state))
-         (new-object (build-a-class-instance
-                      (class-decl-sfields (bound? class new-ct))
-                      new-ct))
-         (stuffed-obj (set-instance-field "java/lang/Class"
-                                          "<name>"
-                                          class
-                                          new-object))
-         (new-address (len new-heap))
-         (old-class-ent (bound? class new-ct))
-         (new-class-ent
-          (make-class-decl (class-decl-name old-class-ent)
-                           (class-decl-superclasses old-class-ent)
-                           (class-decl-fields old-class-ent)
-                           (class-decl-sfields old-class-ent)
-                           (class-decl-cp old-class-ent)
-                           (class-decl-methods old-class-ent)
-                           (list 'REF new-address)))
-         (new-class-table (bind class
-                                (cdr new-class-ent)
-                                new-ct)))
-        (make-state (thread-table s)
-                    (bind new-address stuffed-obj new-heap)
-                    new-class-table
-                    (options s))))
-
-(defun ld_class_lib (classes s)
+(defun gen-class-objs (classes s)
   (if (endp classes)
       s
-      (ld_class_lib (cdr classes) (gen_class_obj (car classes) s))))
+      (let* ((class-decl (car classes))
+             (class (class-decl-name class-decl))
+             (new-object (build-a-class-instance class (class-table s)))
+             (new-address (len (heap s)))
+             (new-class-decl
+               (make-class-decl (class-decl-name class-decl)
+                                (class-decl-superclasses class-decl)
+                                (class-decl-fields class-decl)
+                                (class-decl-sfields class-decl)
+                                (class-decl-cp class-decl)
+                                (class-decl-methods class-decl)
+                                (list 'REF new-address))))
+        (gen-class-objs
+          (cdr classes)
+          (make-state (thread-table s)
+                      (bind new-address new-object (heap s))
+                      (bind class (cdr new-class-decl) (class-table s))
+                      (options s))))))
+
+(defun resolve-constants-all (classes s)
+  (if (endp classes)
+      s
+      (let ((class-decl (car classes)))
+        (resolve-constants-all
+          (cdr classes)
+          (resolve-constants (class-decl-name class-decl)
+                             (class-decl-cp class-decl)
+                             s
+                             0)))))
 
 (defun load_class_library (s)
-  (ld_class_lib (strip-cars (class-table s)) s))
+  (let ((s1 (gen-class-objs (class-table s) s)))
+    (resolve-constants-all (class-table s1) s1)))
 
 ; -----------------------------------------------------------------------------
 ; m5_load: both load and resolve a given state
