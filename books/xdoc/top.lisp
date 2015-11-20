@@ -155,8 +155,8 @@
        (progn
          (colon-xdoc-init)
          (make-event
-          (b* (((mv all-xdoc-topics state)
-                (with-guard-checking t (all-xdoc-topics state)))
+          (b* (((mv & all-xdoc-topics state)
+                (with-guard-checking-error-triple t (all-xdoc-topics state)))
                ((mv & & state) (colon-xdoc-fn ',name all-xdoc-topics state)))
             (value '(value-triple :invisible))))))))
 

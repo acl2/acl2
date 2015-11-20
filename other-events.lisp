@@ -28391,14 +28391,14 @@
   (declare (ignore state))
   #-acl2-loop-only
   (with-open-file
-   (stream filename :direction :input :if-does-not-exist nil)
-   (and stream
-        (let ((len (file-length stream)))
-          (and (< len *read-file-into-string-bound*)
-               (let ((fwd (file-write-date filename)))
-                 (or (check-against-read-file-alist filename fwd)
-                     (push (cons filename fwd)
-                           *read-file-alist*))
+    (stream filename :direction :input :if-does-not-exist nil)
+    (and stream
+         (let ((len (file-length stream)))
+           (and (< len *read-file-into-string-bound*)
+                (let ((fwd (file-write-date filename)))
+                  (or (check-against-read-file-alist filename fwd)
+                      (push (cons filename fwd)
+                            *read-file-alist*))
 
 ; The following #-acl2-loop-only code, minus the WHEN clause, is based on code
 ; found at http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was
@@ -28408,38 +28408,45 @@
 
 ; The URL above says ``You can do anything you like with the code.''
 
-                 (let ((seq (make-string len)))
-                   (declare (type string seq))
-                   (read-sequence seq stream)
-                   (when (not (eql fwd (file-write-date filename)))
-                     (error "Illegal attempt to call ~s concurrently with ~
-                             some write to that file!~%See :DOC ~
-                             read-file-into-string."
-                            'read-file-into-string))
-                   seq))))))
+                  (let ((seq (make-string len)))
+                    (declare (type string seq))
+                    (read-sequence seq stream)
+                    (when (not (eql fwd (file-write-date filename)))
+                      (error "Illegal attempt to call ~s concurrently with ~
+                              some write to that file!~%See :DOC ~
+                              read-file-into-string."
+                             'read-file-into-string))
+                    seq))))))
   #+acl2-loop-only
   (let* ((st (coerce-state-to-object state)))
-    (with-local-state
-     (mv-let
-      (val state)
-      (let ((state (coerce-object-to-state st)))
-        (mv-let
-         (chan state)
-         (open-input-channel filename :character state)
-         (cond ((null chan)
-                (mv nil state))
-               (t (mv-let
-                   (val state)
-                   (read-file-into-string1 chan state nil
-                                           *read-file-into-string-bound*)
-                   (pprogn (ec-call ; guard verification here seems unimportant
-                            (close-input-channel chan state))
-                           (mv val state)))))))
-      val))))
+    (mv-let
+      (erp val)
+      (with-local-state
+       (mv-let
+         (erp val state)
+         (let ((state (coerce-object-to-state st)))
+           (mv-let
+             (chan state)
+             (open-input-channel filename :character state)
+             (cond
+              ((null chan)
+               (mv nil nil state))
+              (t (state-global-let*
+                  ((guard-checking-on t))
+                  (mv-let
+                    (val state)
+                    (read-file-into-string1 chan state nil
+                                            *read-file-into-string-bound*)
+                    (pprogn
+                     (ec-call ; guard verification here seems unimportant
+                      (close-input-channel chan state))
+                     (mv nil val state))))))))
+         (mv erp val)))
+      (declare (ignore erp))
+      val)))
 )
 
 (defun read-file-into-string (filename state)
   (declare (xargs :stobjs state :guard (stringp filename)))
   (and (mbt (stringp filename))
-       (with-guard-checking t
-                            (read-file-into-string2 filename state))))
+       (read-file-into-string2 filename state)))
