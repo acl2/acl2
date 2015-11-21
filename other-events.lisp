@@ -26761,9 +26761,12 @@
 ; channel-to-string generates a with-local-state call, which should not change
 ; state!
 
-; If variable outside-loop-p (which is evaluated) is true, then this form is
-; suitable for execution in raw Lisp; otherwise, it is suitable for evaluation
-; in the ACL2 logic.
+; If variable outside-loop-p (which is evaluated) is true, then evaluation of
+; this form might be done more efficiently -- but it must be suitable for
+; execution outside the loop or, if inside the loop, then without the
+; evaluation of state-global-let* (or any other use of the
+; *acl2-unwind-protect-stack*) for any state global modified by
+; fmt-control-bindings.
 
 ; Note that fmt-controls and iprint-action are evaluated, but channel-var and
 ; extra-var are not evaluated.

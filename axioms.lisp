@@ -14366,33 +14366,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defmacro state-free-global-let* (bindings body)
 
-; Warning: Keep in sync with the #-acl2-loop-only code for acl2-unwind-protect.
-; We omit comments here; see state-global-let*.
+; This variant of state-global-let* is only for use in raw Lisp.  See also
+; state-free-global-let*-safe for a safer, but probably less efficient,
+; alternative.  That alternative must be used inside the ACL2 loop when any
+; call of state-global-let* (or similar call of acl2-unwind-protect could bind
+; a variable of bindings during the evaluation of body.  Otherwise, the wrong
+; value will be stored in *acl2-unwind-protect-stack*, causing the wrong value
+; to be restored after an abort during that evaluation.
 
-; This variant of state-global-let* is only for use in raw Lisp.
-
-; This macro is used to bind state globals that may have raw-Lisp side effects.
-; It provides a nice alternative to state-global-let* when we want to avoid
-; involving the acl2-unwind-protect mechanism, for example during parallel
-; evaluation.  It also gives us a way to bind very select state globals in a
-; more careful way when in the ACL2 loop (at least -- Parallelism wart -- when
-; not #-acl2-par).  For example, if we avoiid the branch below even when inside
-; the ACL2 loop, we get the following unfortunate behavior, as we did through
-; Version_7.1.
-
-;   (set-debugger-enable t)
-;   (defun foo (x) (declare (xargs :mode :program)) (car x))
-;   (with-guard-checking :all
-;                        (state-global-let*
-;                         ((guard-checking-on nil))
-;                         (value (foo 3))))
-;   :q ; return from hard Lisp break
-;   (@ guard-checking-on) ; :all, but should be t
-
-; WARNING: If this raw Lisp variant of state-global-let* is used when state is
-; accessible in body, then the value read for a variable bound in bindings may
-; not be justified in the logic.  So state should not be accessible in body
-; unless you (think you) know what you are doing!
+; WARNING: If this macro is used when accessible in body, then the value read
+; for a variable bound in bindings may not be justified in the logic.  So state
+; should not be accessible in body unless you (think you) know what you are
+; doing!
 
 ; Comment for #+acl2-par: When using state-free-global-let* inside functions
 ; that might execute in parallel (for example, functions that occur inside the
@@ -14400,6 +14385,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; inherit these variables' values from their parent threads.  See how we
 ; handled safe-mode and gc-on in macro mt-future for examples of how to cause
 ; such inheritance to occur.
+
+  (cond
+   ((null bindings) body)
+   (t (let (bs syms)
+        (dolist (binding bindings)
+          (let ((sym (global-symbol (car binding))))
+            (push (list sym (cadr binding))
+                  bs)
+            (push sym syms)))
+        `(let* ,(nreverse bs)
+           (declare (special ,@(nreverse syms)))
+           ,body)))))
+
+#-acl2-loop-only
+(defmacro state-free-global-let*-safe (bindings body)
+
+; Warning: Keep in sync with the #-acl2-loop-only code for acl2-unwind-protect.
+; We omit comments here; see state-global-let*.
+
+; This variant of state-global-let* is only for use in raw Lisp.  See also
+; state-free-global-let* for a more efficient alternative that can be used in
+; some situations.
+
+; WARNING: If this macro is used when accessible in body, then the value read
+; for a variable bound in bindings may not be justified in the logic.  So state
+; should not be accessible in body unless you (think you) know what you are
+; doing!
 
   `(if #-acl2-par *acl2-unwind-protect-stack* #+acl2-par nil
        (let* ((state *the-live-state*)
@@ -14411,15 +14423,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           "state-free-global-let*"
           (check-vars-not-free (state-global-let*-cleanup-lst) ,body)
           (progn ,@(state-global-let*-cleanup bindings 0))))
-       ,(let (bs syms)
-          (dolist (binding bindings)
-            (let ((sym (global-symbol (car binding))))
-              (push (list sym (cadr binding))
-                    bs)
-              (push sym syms)))
-          `(let* ,(nreverse bs)
-             (declare (special ,@(nreverse syms)))
-             ,body))))
+       (state-free-global-let* ,bindings ,body)))
 
 ; With state-global-let* defined, we may now define a few more primitives and
 ; finish some unfinished business.

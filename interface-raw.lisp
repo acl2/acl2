@@ -4975,7 +4975,7 @@
 ; described in the Essay on Hash Table Support for Compilation.
 
            (null *hcomp-book-ht*))
-       (state-free-global-let*
+       (state-free-global-let*-safe
         ((connected-book-directory directory-name))
         (let* ((os-file (pathname-unix-to-os full-book-name state))
                (ofile (convert-book-name-to-compiled-name os-file state))
