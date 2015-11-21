@@ -2675,9 +2675,10 @@
             ((and (equal class "java/lang/StrictMath")
                   (equal method-name-and-type "sqrt:(D)D"))
              (modify th s1
-                     :stack (push (fpsqrt (top (stack (top-frame th s)))
-                                           (rtl::dp))
-                                  (stack (top-frame th s1)))))
+                     :stack (push 0
+                                  (push (fpsqrt (top (stack (top-frame th s)))
+                                                (rtl::dp))
+                                        (stack (top-frame th s1))))))
             ((and (equal class "java/lang/StringUTF16")
                   (equal method-name-and-type "isBigEndian()Z"))
              (modify th s1
