@@ -606,7 +606,21 @@
                                       member-p)
                                      (xlate-equiv-entries))))))
 
+(define good-paging-structures-x86p (x86)
+  (and (x86p x86)
+       (let* ((paging-addresses (gather-all-paging-structure-qword-addresses x86)))
+         (and (mult-8-qword-paddr-list-listp paging-addresses)
+              (no-duplicates-list-p paging-addresses))))
+  ///
+
+  (defthm good-paging-structures-x86p-implies-x86p
+    (implies (good-paging-structures-x86p x86)
+             (x86p x86))
+    :hints (("Goal" :in-theory (e/d* (good-paging-structures-x86p) ())))))
+
 (define xlate-equiv-x86s (x86-1 x86-2)
+  :guard (and (x86p x86-1)
+              (x86p x86-2))
   :non-executable t
   :enabled t
   :long "<p>Two x86 states are @('xlate-equiv-x86s') if their paging
@@ -614,43 +628,23 @@
   xlate-equiv-entries)). Each of the two states' paging structures
   must satisfy @(see pairwise-disjoint-p).</p>"
 
-  (if (x86p x86-1)
+  (if (good-paging-structures-x86p x86-1)
 
-      (if (x86p x86-2)
+      (if (good-paging-structures-x86p x86-2)
 
-          (if (equal (ctri *cr3* x86-1) (ctri *cr3* x86-2))
+          (let* ((paging-qword-addresses-1
+                  (gather-all-paging-structure-qword-addresses x86-1))
+                 (paging-qword-addresses-2
+                  (gather-all-paging-structure-qword-addresses x86-2)))
 
-              (if (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-1))
-
-                  (if (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-2))
-
-                      (if (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-1))
-
-                          (if (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-2))
-
-                              (if (equal (gather-all-paging-structure-qword-addresses x86-1)
-                                         (gather-all-paging-structure-qword-addresses x86-2))
-
-                                  (xlate-equiv-entries-at-qword-addresses?
-                                   (gather-all-paging-structure-qword-addresses x86-1)
-                                   (gather-all-paging-structure-qword-addresses x86-2)
-                                   x86-1 x86-2)
-
-                                nil)
-
-                            nil)
-
-                        (not (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86-2))))
-
-                    nil)
-
-                (not (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86-2))))
-
-            nil)
+            (and (equal (ctri *cr3* x86-1) (ctri *cr3* x86-2))
+                 (equal paging-qword-addresses-1 paging-qword-addresses-2)
+                 (xlate-equiv-entries-at-qword-addresses?
+                  paging-qword-addresses-1 paging-qword-addresses-2 x86-1 x86-2)))
 
         nil)
 
-    (not (x86p x86-2)))
+    (not (good-paging-structures-x86p x86-2)))
 
   ///
 
