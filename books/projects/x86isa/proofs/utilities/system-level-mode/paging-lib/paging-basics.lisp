@@ -91,6 +91,8 @@
        (execute-disable (ia32e-page-tables-slice :xd entry)))
 
     (and
+     (canonical-address-p lin-addr)
+     (physical-address-p page-table-base-addr)
      ;; 4K-aligned --- the base address is
      ;; the 40 bits wide address obtained
      ;; from the referencing PDE, shifted
@@ -185,6 +187,9 @@
        (page-size (ia32e-page-tables-slice :ps  entry)))
 
     (and
+     (canonical-address-p lin-addr)
+     (physical-address-p page-directory-base-addr)
+     (equal (loghead 12 page-directory-base-addr) 0)
      (equal (ia32e-page-tables-slice :p entry) 1)
      (not
       (or (and (equal page-size 1)
@@ -295,6 +300,9 @@
        (page-size (ia32e-page-tables-slice :ps  entry)))
 
     (and
+     (canonical-address-p lin-addr)
+     (physical-address-p ptr-table-base-addr)
+     (equal (loghead 12 ptr-table-base-addr) 0)
      (equal (ia32e-page-tables-slice :p entry) 1)
      (not (and (equal page-size 1)
                (not (equal (part-select entry :low 13 :high 29) 0))))
@@ -398,6 +406,9 @@
        (page-size (ia32e-page-tables-slice :ps  entry)))
 
     (and
+     (canonical-address-p lin-addr)
+     (physical-address-p pml4-base-addr)
+     (equal (loghead 12 pml4-base-addr) 0)
      (equal (ia32e-page-tables-slice :p entry) 1)
      (not (or (not (equal page-size 0))
               (and (equal nxe 0)
