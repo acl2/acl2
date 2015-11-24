@@ -29,7 +29,6 @@
 (include-book "subst-expr")
 (include-book "subst-var")
 (include-book "convert-normalized-term-to-pairs")
-(include-book "gather-dcls")
 (include-book "meta-extract")
 (include-book "legal-variablep")
 (include-book "merge-sort-term-order")
