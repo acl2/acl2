@@ -4,12 +4,11 @@
 (in-package "X86ISA")
 
 (include-book "gather-paging-structures" :ttags :all)
+(include-book "clause-processors/find-subterms" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "centaur/gl/gl" :dir :system))
-
-;; ======================================================================
 
 (local
  (def-gl-thm 4K-aligned-physical-address-helper
@@ -83,6 +82,11 @@
 
   (defthm logand--4096-of-pml4-table-base-addr
     (equal (logand -4096 (mv-nth 1 (pml4-table-base-addr x86)))
+           (mv-nth 1 (pml4-table-base-addr x86))))
+
+  (defthm logand-positive-of-pml4-table-base-addr
+    (equal (logand 18446744073709547520
+                   (loghead 52 (mv-nth 1 (pml4-table-base-addr x86))))
            (mv-nth 1 (pml4-table-base-addr x86)))))
 
 (define pml4-table-entry-addr-found-p (lin-addr x86)
@@ -90,7 +94,12 @@
   :enabled t
   (and (canonical-address-p lin-addr)
        (physical-address-p (+ (ash 512 3) (mv-nth 1 (pml4-table-base-addr x86))))
-       (good-paging-structures-x86p x86)))
+       (good-paging-structures-x86p x86))
+  ///
+
+  (defthm pml4-table-entry-addr-found-p-implies-good-paging-structures-x86p
+    (implies (pml4-table-entry-addr-found-p lin-addr x86)
+             (good-paging-structures-x86p x86))))
 
 (define page-dir-ptr-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -130,6 +139,11 @@
 
   (defthm logand--4096-of-page-dir-ptr-table-base-addr
     (equal (logand -4096 (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+           (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))))
+
+  (defthm logand-positive-of-page-dir-ptr-table-base-addr
+    (equal (logand 18446744073709547520
+                   (loghead 52 (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))))
            (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))))
 
 (define page-dir-ptr-table-entry-addr-found-p
@@ -150,7 +164,13 @@
   (defthm page-dir-ptr-table-entry-addr-found-p-and-page-dir-ptr-table-base-addr-no-error
     (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
              (not (mv-nth 0 (page-dir-ptr-table-base-addr lin-addr x86))))
-    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ())))))
+    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ()))))
+
+  (defthm page-dir-ptr-table-entry-addr-found-p-implies-good-paging-structures-x86p
+    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+             (good-paging-structures-x86p x86))
+    :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr-found-p)
+                                     ())))))
 
 (define page-directory-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -198,6 +218,11 @@
 
   (defthm logand--4096-of-page-directory-base-addr
     (equal (logand -4096 (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+           (mv-nth 1 (page-directory-base-addr lin-addr x86))))
+
+  (defthm logand-positive-of-page-directory-base-addr
+    (equal (logand 18446744073709547520
+                   (loghead 52 (mv-nth 1 (page-directory-base-addr lin-addr x86))))
            (mv-nth 1 (page-directory-base-addr lin-addr x86)))))
 
 (define page-directory-entry-addr-found-p
@@ -217,7 +242,11 @@
   (defthm page-directory-entry-addr-found-p-and-page-directory-base-addr-no-error
     (implies (page-directory-entry-addr-found-p lin-addr x86)
              (not (mv-nth 0 (page-directory-base-addr lin-addr x86))))
-    :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ())))))
+    :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ()))))
+
+  (defthm page-directory-entry-addr-found-p-implies-good-paging-structures-x86p
+    (implies (page-directory-entry-addr-found-p lin-addr x86)
+             (good-paging-structures-x86p x86))))
 
 (define page-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -265,6 +294,11 @@
 
   (defthm logand--4096-of-page-table-base-addr
     (equal (logand -4096 (mv-nth 1 (page-table-base-addr lin-addr x86)))
+           (mv-nth 1 (page-table-base-addr lin-addr x86))))
+
+  (defthm logand-positive-of-page-table-base-addr
+    (equal (logand 18446744073709547520
+                   (loghead 52 (mv-nth 1 (page-table-base-addr lin-addr x86))))
            (mv-nth 1 (page-table-base-addr lin-addr x86)))))
 
 (define page-table-entry-addr-found-p
@@ -285,7 +319,48 @@
     (implies (page-table-entry-addr-found-p lin-addr x86)
              (not (mv-nth 0 (page-table-base-addr lin-addr x86))))
     :hints (("Goal" :in-theory (e/d* (page-table-base-addr)
+                                     ()))))
+
+  (defthm page-table-entry-addr-found-p-implies-good-paging-structures-x86p
+    (implies (page-table-entry-addr-found-p lin-addr x86)
+             (good-paging-structures-x86p x86))
+    :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p)
                                      ())))))
+
+(defun find-x86-binding-from-entry-found-p-aux (calls)
+  (if (endp calls)
+      nil
+    (b* ((call (car calls))
+         (x86 (third call)))
+        (append `((x86 . ,x86))
+                (find-x86-binding-from-entry-found-p-aux (cdr calls))))))
+
+(defun find-x86-binding-from-entry-found-p (mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((calls (acl2::find-calls-of-fns-lst
+               '(page-table-entry-addr-found-p
+                 page-directory-entry-addr-found-p
+                 page-dir-ptr-table-entry-addr-found-p
+                 pml4-table-entry-addr-found-p)
+               (acl2::mfc-clause mfc))))
+      (find-x86-binding-from-entry-found-p-aux
+       calls)))
+
+(defthmd entry-found-p-and-lin-addr
+  (implies (and (bind-free (find-x86-binding-from-entry-found-p mfc state) (x86))
+                (or (page-table-entry-addr-found-p lin-addr x86)
+                    (page-directory-entry-addr-found-p lin-addr x86)
+                    (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+                    (pml4-table-entry-addr-found-p lin-addr x86)))
+           (equal (logext 48 lin-addr) lin-addr))
+  :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p
+                                    page-directory-entry-addr-found-p
+                                    page-dir-ptr-table-entry-addr-found-p
+                                    pml4-table-entry-addr-found-p)
+                                   ()))))
+
+(local (in-theory (e/d (entry-found-p-and-lin-addr) ())))
 
 ;; ======================================================================
 
@@ -308,18 +383,18 @@
             (page-table-base-addr lin-addr x86)))
           (ia32e-la-to-pa-page-table
            lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl x86))
-    (mv t 0 x86)))
+    (mv t 0 x86))
 
-(defrule mv-nth-0-no-error-ia32e-la-to-pa-page-table
-  (implies (ia32e-la-to-pa-page-table-entry-validp
-            lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86)
-           (equal (mv-nth
-                   0
-                   (ia32e-la-to-pa-page-table
-                    lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86))
-                  nil))
-  :in-theory (e/d (ia32e-la-to-pa-page-table)
-                  (bitops::logand-with-negated-bitmask)))
+  ///
+
+  (defthmd ia32e-la-to-pa-PT-and-ia32e-la-to-pa-page-table
+    ;; Sanity check for ia32e-la-to-pa-PT.
+    (implies (and (page-table-entry-addr-found-p lin-addr x86)
+                  (equal base-addr (mv-nth 1 (page-table-base-addr lin-addr x86))))
+             (equal (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86)
+                    (ia32e-la-to-pa-page-table lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl x86)))))
+
+;; ----------------------------------------------------------------------
 
 (define ia32e-la-to-pa-PD
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -331,46 +406,78 @@
    (x86))
   :non-executable t
   :enabled t
+  :guard-hints (("Goal" :in-theory (e/d* () (acl2::member-of-cons member-equal))))
   (if (page-directory-entry-addr-found-p lin-addr x86)
+
       (b* (((mv & base-addr)
-            (page-directory-base-addr lin-addr x86)))
-          (ia32e-la-to-pa-page-directory
-           lin-addr base-addr wp smep nxe r-w-x cpl x86))
-    (mv t 0 x86)))
+            (page-directory-base-addr lin-addr x86))
+           (p-entry-addr
+            (page-directory-entry-addr lin-addr base-addr))
+           (entry (rm-low-64 p-entry-addr x86)))
 
-(defrule mv-nth-0-no-error-ia32e-la-to-pa-page-directory
-  (implies (ia32e-la-to-pa-page-directory-entry-validp
-            lin-addr page-directory-base-addr wp smep nxe r-w-x cpl x86)
-           (equal (mv-nth
-                   0
-                   (ia32e-la-to-pa-page-directory
-                    lin-addr page-directory-base-addr wp smep nxe r-w-x cpl x86))
-                  nil))
-  :in-theory (e/d (ia32e-la-to-pa-page-directory)
-                  (bitops::logand-with-negated-bitmask)))
+          (if (equal (ia32e-page-tables-slice :ps entry) 1)
+              ;; 2MB page
+              (ia32e-la-to-pa-page-directory
+               lin-addr base-addr wp smep nxe r-w-x cpl x86)
+            ;; 4K page
+            (b* (((mv fault-flg val x86)
+                  (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+                 ((when fault-flg)
+                  (mv 'Page-Fault val x86))
+                 ;; No errors at this level.
+                 ((mv flg address x86)
+                  (ia32e-la-to-pa-PT
+                   lin-addr (ia32e-page-tables-slice :u/s entry)
+                   wp smep nxe r-w-x cpl x86))
+                 ((when flg)
+                  ;; Error, so do not update accessed bit.
+                  (mv flg 0 x86))
 
-(defthm ia32e-la-to-pa-PD-and-ia32e-la-to-pa-page-table
-  (implies (and (page-table-entry-addr-found-p lin-addr x86)
-                (not (mv-nth 0 (ia32e-la-to-pa-page-directory
-                                lin-addr
-                                (mv-nth 1 (page-directory-base-addr lin-addr x86))
-                                wp smep nxe r-w-x cpl x86)))
-                (equal
-                 u-s-acc
-                 (ia32e-page-tables-slice
-                  :u/s (rm-low-64 (page-directory-entry-addr
-                                   lin-addr
-                                   (mv-nth 1 (page-directory-base-addr lin-addr x86)))
-                                  x86))))
-           (equal (mv-nth 1 (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86))
-                  (mv-nth 1 (ia32e-la-to-pa-page-table
-                             lin-addr
-                             (mv-nth 1 (page-table-base-addr lin-addr x86))
-                             u-s-acc wp smep nxe r-w-x cpl x86))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory
-                                    page-table-base-addr)
-                                   (bitops::logand-with-negated-bitmask)))))
+                 ;; Get accessed bit.  Dirty bit is ignored when PDE
+                 ;; references the PT.
+                 (accessed        (ia32e-page-tables-slice :a entry))
+                 ;; Update accessed bit, if needed.
+                 (entry (if (equal accessed 0)
+                            (set-accessed-bit entry)
+                          entry))
+                 ;; Update x86, if needed.
+                 (x86 (if (equal accessed 0)
+                          (wm-low-64 p-entry-addr entry x86)
+                        x86)))
+                (mv nil address x86))))
 
+    (mv t 0 x86))
+
+  ///
+
+  (defthmd ia32e-la-to-pa-PD-and-ia32e-la-to-pa-page-directory-only-2M-pages
+    ;; Sanity check for ia32e-la-to-pa-PD.
+    (implies (and (page-directory-entry-addr-found-p lin-addr x86)
+                  (equal base-addr (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                  (equal entry (rm-low-64 (page-directory-entry-addr lin-addr base-addr) x86))
+                  (equal (ia32e-page-tables-slice :ps entry) 1))
+             (equal (ia32e-la-to-pa-PD
+                     lin-addr wp smep nxe r-w-x cpl x86)
+                    (ia32e-la-to-pa-page-directory
+                     lin-addr base-addr wp smep nxe r-w-x cpl x86))))
+
+  (defthmd ia32e-la-to-pa-PD-and-ia32e-la-to-pa-page-directory-2M-and-4K-pages
+    ;; Sanity check for ia32e-la-to-pa-PD.
+    (implies (and (page-table-entry-addr-found-p lin-addr x86)
+                  (equal page-directory-base-addr
+                         (mv-nth 1 (page-directory-base-addr lin-addr x86))))
+             (equal (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86)
+                    (ia32e-la-to-pa-page-directory
+                     lin-addr page-directory-base-addr wp smep nxe r-w-x cpl x86)))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory
+                                      page-table-base-addr
+                                      ia32e-la-to-pa-PT)
+                                     (page-directory-entry-addr-found-p
+                                      page-table-entry-addr-found-p
+                                      ia32e-la-to-pa-page-table
+                                      bitops::logand-with-negated-bitmask))))))
+
+;; ----------------------------------------------------------------------
 
 (define ia32e-la-to-pa-PDPT
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -382,38 +489,112 @@
    (x86))
   :non-executable t
   :enabled t
+  :guard-hints (("Goal" :in-theory (e/d* () (acl2::member-of-cons member-equal))))
   (if (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+
       (b* (((mv & base-addr)
-            (page-dir-ptr-table-base-addr lin-addr x86)))
-          (ia32e-la-to-pa-page-dir-ptr-table
-           lin-addr base-addr wp smep nxe r-w-x cpl x86))
-    (mv t 0 x86)))
+            (page-dir-ptr-table-base-addr lin-addr x86))
+           (p-entry-addr
+            (page-dir-ptr-table-entry-addr lin-addr base-addr))
+           (entry (rm-low-64 p-entry-addr x86)))
+          (if (equal (ia32e-page-tables-slice :ps entry) 1)
+              ;; 1GB page
+              (ia32e-la-to-pa-page-dir-ptr-table
+               lin-addr base-addr wp smep nxe r-w-x cpl x86)
+            ;; 2M or 4K page
+            (b* (((mv fault-flg val x86)
+                  (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+                 ((when fault-flg)
+                  (mv 'Page-Fault val x86))
+                 ;; No errors at this level.
+                 ((mv flg address x86)
+                  (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86))
+                 ((when flg)
+                  ;; Error, so do not update accessed bit.
+                  (mv flg 0 x86))
 
-(defrule mv-nth-0-no-error-ia32e-la-to-pa-page-dir-ptr-table
-  (implies (ia32e-la-to-pa-page-dir-ptr-table-entry-validp
-            lin-addr page-dir-ptr-table-base-addr wp smep nxe r-w-x cpl x86)
-           (equal (mv-nth
-                   0
-                   (ia32e-la-to-pa-page-dir-ptr-table
-                    lin-addr page-dir-ptr-table-base-addr wp smep nxe r-w-x cpl x86))
-                  nil))
-  :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
-                  (bitops::logand-with-negated-bitmask)))
+                 ;; Get accessed bit.  Dirty bit is ignored when PDE
+                 ;; references the PT.
+                 (accessed        (ia32e-page-tables-slice :a entry))
+                 ;; Update accessed bit, if needed.
+                 (entry (if (equal accessed 0)
+                            (set-accessed-bit entry)
+                          entry))
+                 ;; Update x86, if needed.
+                 (x86 (if (equal accessed 0)
+                          (wm-low-64 p-entry-addr entry x86)
+                        x86)))
+                (mv nil address x86))))
 
-(defthm ia32e-la-to-pa-PDPT-and-ia32e-la-to-pa-page-directory
-  (implies (and (page-directory-entry-addr-found-p lin-addr x86)
-                (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
-                                lin-addr
-                                (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))
-                                wp smep nxe r-w-x cpl x86))))
-           (equal (mv-nth 1 (ia32e-la-to-pa-PDPT lin-addr wp smep nxe r-w-x cpl x86))
-                  (mv-nth 1 (ia32e-la-to-pa-page-directory
-                             lin-addr
-                             (mv-nth 1 (page-directory-base-addr lin-addr x86))
-                             wp smep nxe r-w-x cpl x86))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
-                                    page-directory-base-addr)
-                                   (bitops::logand-with-negated-bitmask)))))
+
+    (mv t 0 x86))
+
+  ///
+
+  (defthmd ia32e-la-to-pa-PDPT-and-ia32e-la-to-pa-page-dir-ptr-table-only-1G-pages
+    ;; Sanity check for ia32e-la-to-pa-PDPT.
+    (implies (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+                  (equal base-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                  (equal entry (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86))
+                  (equal (ia32e-page-tables-slice :ps entry) 1))
+             (equal (ia32e-la-to-pa-PDPT
+                     lin-addr wp smep nxe r-w-x cpl x86)
+                    (ia32e-la-to-pa-page-dir-ptr-table
+                     lin-addr base-addr wp smep nxe r-w-x cpl x86))))
+
+  (defthmd ia32e-la-to-pa-PDPT-and-ia32e-la-to-pa-page-dir-ptr-table-2M-pages
+    ;; Sanity check for ia32e-la-to-pa-PDPT.
+    (implies (and (page-directory-entry-addr-found-p lin-addr x86)
+                  (equal page-dir-ptr-table-base-addr
+                         (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                  (equal page-directory-base-addr
+                         (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                  (equal page-directory-entry
+                         (rm-low-64
+                          (page-directory-entry-addr lin-addr page-directory-base-addr)
+                          x86))
+                  (equal (ia32e-page-tables-slice :ps page-directory-entry) 1))
+             (equal (ia32e-la-to-pa-PDPT lin-addr wp smep nxe r-w-x cpl x86)
+                    (ia32e-la-to-pa-page-dir-ptr-table
+                     lin-addr page-dir-ptr-table-base-addr wp smep nxe r-w-x cpl x86)))
+    :hints (("Goal"
+             :use ((:instance ia32e-la-to-pa-PD-and-ia32e-la-to-pa-page-directory-only-2M-pages
+                              (base-addr
+                               (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                              (entry (rm-low-64 (page-directory-entry-addr
+                                                 lin-addr
+                                                 (mv-nth 1 (page-directory-base-addr lin-addr x86))) x86))))
+             :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
+                               page-directory-base-addr)
+                              (ia32e-la-to-pa-PT
+                               ia32e-la-to-pa-PD
+                               page-dir-ptr-table-entry-addr-found-p
+                               page-directory-entry-addr-found-p
+                               page-table-entry-addr-found-p
+                               bitops::logand-with-negated-bitmask)))))
+
+  (defthmd ia32e-la-to-pa-PDPT-and-ia32e-la-to-pa-page-dir-ptr-table-4K-pages
+    ;; Sanity check for ia32e-la-to-pa-PDPT.
+    (implies (and (page-table-entry-addr-found-p lin-addr x86)
+                  (equal page-dir-ptr-table-base-addr
+                         (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))))
+             (equal (ia32e-la-to-pa-PDPT lin-addr wp smep nxe r-w-x cpl x86)
+                    (ia32e-la-to-pa-page-dir-ptr-table
+                     lin-addr page-dir-ptr-table-base-addr wp smep nxe r-w-x cpl x86)))
+    :hints (("Goal"
+             :use ((:instance ia32e-la-to-pa-PD-and-ia32e-la-to-pa-page-directory-2M-and-4K-pages
+                              (page-directory-base-addr
+                               (mv-nth 1 (page-directory-base-addr lin-addr x86)))))
+             :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
+                               page-directory-base-addr)
+                              (ia32e-la-to-pa-PT
+                               ia32e-la-to-pa-PD
+                               page-dir-ptr-table-entry-addr-found-p
+                               page-directory-entry-addr-found-p
+                               page-table-entry-addr-found-p
+                               bitops::logand-with-negated-bitmask))))))
+
+;; ----------------------------------------------------------------------
 
 (define ia32e-la-to-pa-PML4T
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -425,37 +606,121 @@
    (x86))
   :non-executable t
   :enabled t
+  :guard-hints (("Goal" :in-theory (e/d* () (acl2::member-of-cons member-equal))))
+
   (if (pml4-table-entry-addr-found-p lin-addr x86)
+
       (b* (((mv & base-addr)
-            (pml4-table-base-addr x86)))
-          (ia32e-la-to-pa-pml4-table
-           lin-addr base-addr wp smep nxe r-w-x cpl x86))
-    (mv t 0 x86)))
+            (pml4-table-base-addr x86))
+           (p-entry-addr
+            (pml4-table-entry-addr lin-addr base-addr))
+           (entry (rm-low-64 p-entry-addr x86))
+           ((mv fault-flg val x86)
+            (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+           ((when fault-flg)
+            (mv 'Page-Fault val x86))
+           ((mv flag address x86)
+            (ia32e-la-to-pa-PDPT lin-addr wp smep nxe r-w-x cpl x86))
+           ((when flag)
+            (mv flag 0 x86))
 
-(defrule mv-nth-0-no-error-ia32e-la-to-pa-pml4-table
-  (implies (ia32e-la-to-pa-pml4-table-entry-validp
-            lin-addr pml4-table-base-addr wp smep nxe r-w-x cpl x86)
-           (equal (mv-nth
-                   0
-                   (ia32e-la-to-pa-pml4-table
-                    lin-addr pml4-table-base-addr wp smep nxe r-w-x cpl x86))
-                  nil))
-  :in-theory (e/d (ia32e-la-to-pa-pml4-table)
-                  (bitops::logand-with-negated-bitmask)))
+           (accessed (ia32e-page-tables-slice :a entry))
+           (entry (if (equal accessed 0)
+                      (set-accessed-bit entry)
+                    entry))
+           ;; Update x86, if needed.
+           (x86 (if (equal accessed 0)
+                    (wm-low-64 p-entry-addr entry x86)
+                  x86)))
+          (mv nil address x86))
 
-(defthm ia32e-la-to-pa-PML4T-and-ia32e-la-to-pa-page-dir-ptr-table
-  (implies (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-                (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
-                                lin-addr
-                                (mv-nth 1 (pml4-table-base-addr x86))
-                                wp smep nxe r-w-x cpl x86))))
-           (equal (mv-nth 1 (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86))
-                  (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
-                             lin-addr
-                             (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))
-                             wp smep nxe r-w-x cpl x86))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-pml4-table
-                                    page-dir-ptr-table-base-addr)
-                                   (bitops::logand-with-negated-bitmask)))))
+    (mv t 0 x86))
+
+  ///
+
+  (defthmd ia32e-la-to-pa-PML4T-and-ia32e-la-to-pa-pml4-table-1G-pages
+    ;; Sanity check for ia32e-la-to-pa-PML4T.
+    (implies (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+                  (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
+                  (equal page-dir-ptr-table-base-addr
+                         (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                  (equal
+                   page-dir-ptr-table-entry
+                   (rm-low-64
+                    (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
+                    x86))
+                  (equal (ia32e-page-tables-slice :ps page-dir-ptr-table-entry) 1))
+             (equal (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86)
+                    (ia32e-la-to-pa-pml4-table
+                     lin-addr pml4-table-base-addr wp smep nxe r-w-x cpl x86)))
+    :hints (("Goal"
+             :use ((:instance ia32e-la-to-pa-PDPT-and-ia32e-la-to-pa-page-dir-ptr-table-only-1G-pages
+                              (base-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                              (entry (rm-low-64 (page-dir-ptr-table-entry-addr
+                                                 lin-addr
+                                                 (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                                                x86))))
+             :in-theory (e/d* (ia32e-la-to-pa-pml4-table
+                               page-dir-ptr-table-base-addr)
+                              (ia32e-la-to-pa-PT
+                               ia32e-la-to-pa-PD
+                               ia32e-la-to-pa-PDPT
+                               pml4-table-entry-addr-found-p
+                               page-dir-ptr-table-entry-addr-found-p
+                               page-directory-entry-addr-found-p
+                               page-table-entry-addr-found-p
+                               bitops::logand-with-negated-bitmask)))))
+
+  (defthmd ia32e-la-to-pa-PML4T-and-ia32e-la-to-pa-pml4-table-2M-pages
+    ;; Sanity check for ia32e-la-to-pa-PML4T.
+    (implies (and (page-directory-entry-addr-found-p lin-addr x86)
+                  (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
+                  (equal page-dir-ptr-table-base-addr
+                         (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                  (equal page-directory-base-addr
+                         (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                  (equal page-directory-entry
+                         (rm-low-64
+                          (page-directory-entry-addr lin-addr page-directory-base-addr)
+                          x86))
+                  (equal (ia32e-page-tables-slice :ps page-directory-entry) 1))
+             (equal (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86)
+                    (ia32e-la-to-pa-pml4-table
+                     lin-addr pml4-table-base-addr wp smep nxe r-w-x cpl x86)))
+    :hints (("Goal"
+             :use ((:instance ia32e-la-to-pa-PDPT-and-ia32e-la-to-pa-page-dir-ptr-table-2M-pages))
+             :in-theory (e/d* (ia32e-la-to-pa-pml4-table
+                               page-dir-ptr-table-base-addr)
+                              (ia32e-la-to-pa-PT
+                               ia32e-la-to-pa-PD
+                               ia32e-la-to-pa-PDPT
+                               pml4-table-entry-addr-found-p
+                               page-dir-ptr-table-entry-addr-found-p
+                               page-directory-entry-addr-found-p
+                               page-table-entry-addr-found-p
+                               bitops::logand-with-negated-bitmask)))))
+
+  (defthmd ia32e-la-to-pa-PML4T-and-ia32e-la-to-pa-pml4-table-4K-pages
+    ;; Sanity check for ia32e-la-to-pa-PML4T.
+    (implies (and (page-table-entry-addr-found-p lin-addr x86)
+                  (equal pml4-table-base-addr
+                         (mv-nth 1 (pml4-table-base-addr x86))))
+             (equal (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86)
+                    (ia32e-la-to-pa-pml4-table
+                     lin-addr pml4-table-base-addr wp smep nxe r-w-x cpl x86)))
+    :hints (("Goal"
+             :use ((:instance ia32e-la-to-pa-PDPT-and-ia32e-la-to-pa-page-dir-ptr-table-4K-pages
+                              (page-dir-ptr-table-base-addr
+                               (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))))
+             :in-theory (e/d* (ia32e-la-to-pa-pml4-table
+                               page-dir-ptr-table-base-addr)
+                              (ia32e-la-to-pa-PT
+                               ia32e-la-to-pa-PD
+                               ia32e-la-to-pa-PDPT
+                               pml4-table-entry-addr-found-p
+                               page-dir-ptr-table-entry-addr-found-p
+                               page-directory-entry-addr-found-p
+                               page-table-entry-addr-found-p
+                               bitops::logand-with-negated-bitmask))))))
 
 ;; ======================================================================

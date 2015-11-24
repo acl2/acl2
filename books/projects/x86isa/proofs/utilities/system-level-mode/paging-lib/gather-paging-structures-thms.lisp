@@ -235,13 +235,6 @@
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
                             ()))))
 
-
-(defthm pml4-table-entry-addr-found-p-implies-good-paging-structures-x86p
-  (implies (pml4-table-entry-addr-found-p lin-addr x86)
-           (good-paging-structures-x86p x86))
-  :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr-found-p)
-                                   ()))))
-
 ;; Relationship of PML4 Table with xlate-equiv-x86s:
 
 (defthm xlate-equiv-x86s-and-pml4-table-base-addr-address
@@ -428,13 +421,6 @@
                                   x86))))
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
                             (subset-list-p-and-member-list-p)))))
-
-(defthm page-dir-ptr-table-entry-addr-found-p-implies-good-paging-structures-x86p
-  (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-           (good-paging-structures-x86p x86))
-  :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p
-                                    pml4-table-entry-addr-found-p)
-                                   ()))))
 
 ;; Relationship of PDPT with xlate-equiv-x86s:
 
@@ -673,12 +659,6 @@
                             (xss (gather-all-paging-structure-qword-addresses x86))))
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
                             (subset-list-p-and-member-list-p)))))
-
-(defthm page-directory-entry-addr-found-p-implies-good-paging-structures-x86p
-  (implies (page-directory-entry-addr-found-p lin-addr x86)
-           (good-paging-structures-x86p x86))
-  :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr-found-p)
-                                   ()))))
 
 ;; Relationship of PD with xlate-equiv-x86s:
 
@@ -1041,12 +1021,6 @@
                             (xss (gather-all-paging-structure-qword-addresses x86))))
            :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
                             (subset-list-p-and-member-list-p)))))
-
-(defthm page-table-entry-addr-found-p-implies-good-paging-structures-x86p
-  (implies (page-table-entry-addr-found-p lin-addr x86)
-           (good-paging-structures-x86p x86))
-  :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p)
-                                   ()))))
 
 ;; Relationship of PT with xlate-equiv-x86s:
 
