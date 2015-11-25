@@ -8,6 +8,10 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "centaur/gl/gl" :dir :system))
 
+(local (in-theory (e/d (entry-found-p-and-lin-addr
+                        entry-found-p-and-good-paging-structures-x86p)
+                       ())))
+
 ;; ======================================================================
 
 (local
@@ -16,6 +20,37 @@
    :concl (equal (logand 18446744073709547520 (ash (loghead 40 (logtail 12 x)) 12))
                  (ash (loghead 40 (logtail 12 x)) 12))
    :g-bindings `((x (:g-number ,(gl-int 0 1 65))))))
+
+(defthm mv-nth-2-page-table-entry-no-page-fault-p-value-no-error
+  (implies (not (mv-nth 0 (page-table-entry-no-page-fault-p
+                           lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86)))
+           (equal
+            (mv-nth 2 (page-table-entry-no-page-fault-p
+                       lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
+            x86))
+  :hints (("Goal" :in-theory (e/d* (page-table-entry-no-page-fault-p) ()))))
+
+(defthm gather-all-paging-structure-qword-addresses-page-table-entry-no-page-fault-p
+  (equal (gather-all-paging-structure-qword-addresses
+          (mv-nth 2 (page-table-entry-no-page-fault-p
+                     lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86)))
+         (gather-all-paging-structure-qword-addresses x86))
+  :hints (("Goal" :in-theory (e/d* (page-table-entry-no-page-fault-p
+                                    page-fault-exception)
+                                   ()))))
+
+(defthm xlate-equiv-entries-at-qword-addresses?-page-table-entry-no-page-fault-p
+  (equal
+   (xlate-equiv-entries-at-qword-addresses?
+    addrs addrs x86
+    (mv-nth 2 (page-table-entry-no-page-fault-p
+               lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86)))
+   (xlate-equiv-entries-at-qword-addresses? addrs addrs x86 x86))
+  :hints (("Goal"
+           :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
+                             page-table-entry-no-page-fault-p
+                             page-fault-exception)
+                            ()))))
 
 (defthmd ia32e-la-to-pa-PT-with-xlate-equiv-x86s
   ;; TO-DO: Speed this up.
@@ -40,9 +75,11 @@
   :hints (("Goal"
            :in-theory (e/d* (ia32e-la-to-pa-PT
                              ia32e-la-to-pa-page-table
-                             entry-found-p-and-lin-addr
+                             ;; I should prove useful lemmas about the
+                             ;; following two functions to speed this
+                             ;; theorem up.
                              PAGE-TABLE-ENTRY-NO-PAGE-FAULT-P
-                             page-fault-exception)
+                             PAGE-FAULT-EXCEPTION)
                             (xlate-equiv-x86s
                              xlate-equiv-x86s-and-page-table-entry-addr-value
                              xlate-equiv-x86s-and-page-table-base-addr-address
@@ -177,37 +214,18 @@
   :hints (("Goal" :use ((:instance ia32e-la-to-pa-PT-with-xlate-equiv-x86s))))
   :rule-classes :congruence)
 
-(local
- (defthm page-table-entry-addr-found-p-and-mult-8-qword-paddr-list-listp
-   (implies (page-table-entry-addr-found-p lin-addr x86)
-            (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86)))
-   :hints (("goal"
-            :in-theory (e/d* (good-paging-structures-x86p)
-                             (page-table-entry-addr-found-p-implies-good-paging-structures-x86p))
-            :use ((:instance page-table-entry-addr-found-p-implies-good-paging-structures-x86p))))))
-
-(local
- (defthm page-table-entry-addr-found-p-and-no-duplicates-list-listp
-   (implies (page-table-entry-addr-found-p lin-addr x86)
-            (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86)))
-   :hints (("Goal"
-            :in-theory (e/d* (good-paging-structures-x86p)
-                             (page-table-entry-addr-found-p-implies-good-paging-structures-x86p))
-            :use ((:instance page-table-entry-addr-found-p-implies-good-paging-structures-x86p))))))
-
 (defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
   (xlate-equiv-x86s
    (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))
    x86)
   :hints (("Goal"
+           :use ((:instance entry-found-p-and-good-paging-structures-x86p))
            :in-theory (e/d* (ia32e-la-to-pa-page-table
-                             PAGE-TABLE-ENTRY-NO-PAGE-FAULT-P
-                             page-fault-exception
-                             entry-found-p-and-lin-addr
                              good-paging-structures-x86p)
                             (bitops::logand-with-negated-bitmask
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              xlate-equiv-x86s-and-page-table-base-addr-address
+                             entry-found-p-and-good-paging-structures-x86p
                              no-duplicates-list-p)))))
 
 (defthm two-page-table-walks-ia32e-la-to-pa-PT
@@ -246,28 +264,6 @@
 (in-theory (e/d* () (ia32e-la-to-pa-PT)))
 
 ;; ======================================================================
-
-;; Now rewriting page-table to PT so that all we see while reasoning,
-;; when page-table-entry-addr-found-p is true, is the PT function and
-;; not the page-table function:
-
-;; (defthm ia32e-la-to-pa-page-table-in-terms-of-ia32e-la-to-pa-PT
-;;   (implies (and (page-table-entry-addr-found-p lin-addr x86)
-;;                 (equal base-addr (mv-nth 1 (page-table-base-addr lin-addr x86))))
-;;            (and
-;;             (equal (mv-nth
-;;                     0
-;;                     (ia32e-la-to-pa-page-table lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl x86))
-;;                    (mv-nth
-;;                     0
-;;                     (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86)))
-;;             (equal (mv-nth
-;;                     1
-;;                     (ia32e-la-to-pa-page-table lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl x86))
-;;                    (mv-nth
-;;                     1
-;;                     (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))))))
-
 
 ;; (defthm page-table-entry-addr-found-p-after-a-page-walk
 ;;   (implies (and (page-table-entry-addr-found-p lin-addr-1 x86)

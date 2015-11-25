@@ -31,8 +31,7 @@
 
 ;; ======================================================================
 
-;; Base address and conditions for finding an entry of a paging data
-;; structure:
+;; Base addresses:
 
 (define superior-entry-points-to-an-inferior-one-p
   ((superior-entry-addr :type (unsigned-byte #.*physical-address-size*))
@@ -50,7 +49,14 @@
       (+
        (ash 512 3)
        (ash (ia32e-page-tables-slice :reference-addr superior-entry)
-            12))))))
+            12)))))
+
+  ///
+
+  (defthm superior-entry-points-to-an-inferior-one-p-xw
+    (implies (not (equal fld :mem))
+             (equal (superior-entry-points-to-an-inferior-one-p addr (xw fld index val x86))
+                    (superior-entry-points-to-an-inferior-one-p addr x86)))))
 
 (define pml4-table-base-addr (x86)
   (if (good-paging-structures-x86p x86)
@@ -87,19 +93,15 @@
   (defthm logand-positive-of-pml4-table-base-addr
     (equal (logand 18446744073709547520
                    (loghead 52 (mv-nth 1 (pml4-table-base-addr x86))))
-           (mv-nth 1 (pml4-table-base-addr x86)))))
+           (mv-nth 1 (pml4-table-base-addr x86))))
 
-(define pml4-table-entry-addr-found-p (lin-addr x86)
-  :non-executable t
-  :enabled t
-  (and (canonical-address-p lin-addr)
-       (physical-address-p (+ (ash 512 3) (mv-nth 1 (pml4-table-base-addr x86))))
-       (good-paging-structures-x86p x86))
-  ///
-
-  (defthm pml4-table-entry-addr-found-p-implies-good-paging-structures-x86p
-    (implies (pml4-table-entry-addr-found-p lin-addr x86)
-             (good-paging-structures-x86p x86))))
+  (defthm pml4-table-base-addr-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (mv-nth 1 (pml4-table-base-addr (xw fld index val x86)))
+                    (mv-nth 1 (pml4-table-base-addr x86))))))
 
 (define page-dir-ptr-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -145,32 +147,6 @@
     (equal (logand 18446744073709547520
                    (loghead 52 (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))))
            (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))))
-
-(define page-dir-ptr-table-entry-addr-found-p
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   x86)
-  :non-executable t
-  :enabled t
-  (and (pml4-table-entry-addr-found-p lin-addr x86)
-       (superior-entry-points-to-an-inferior-one-p
-        (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86)))
-        x86)
-       (x86p x86))
-  ///
-  (defthm page-dir-ptr-table-entry-addr-found-p-implies-pml4-table-entry-addr-found-p
-    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-             (pml4-table-entry-addr-found-p lin-addr x86)))
-
-  (defthm page-dir-ptr-table-entry-addr-found-p-and-page-dir-ptr-table-base-addr-no-error
-    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-             (not (mv-nth 0 (page-dir-ptr-table-base-addr lin-addr x86))))
-    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ()))))
-
-  (defthm page-dir-ptr-table-entry-addr-found-p-implies-good-paging-structures-x86p
-    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-             (good-paging-structures-x86p x86))
-    :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr-found-p)
-                                     ())))))
 
 (define page-directory-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -225,29 +201,6 @@
                    (loghead 52 (mv-nth 1 (page-directory-base-addr lin-addr x86))))
            (mv-nth 1 (page-directory-base-addr lin-addr x86)))))
 
-(define page-directory-entry-addr-found-p
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   x86)
-  :non-executable t
-  :enabled t
-  (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-       (superior-entry-points-to-an-inferior-one-p
-        (page-dir-ptr-table-entry-addr lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-        x86))
-  ///
-  (defthm page-directory-entry-addr-found-p-implies-page-dir-ptr-table-entry-addr-found-p
-    (implies (page-directory-entry-addr-found-p lin-addr x86)
-             (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
-
-  (defthm page-directory-entry-addr-found-p-and-page-directory-base-addr-no-error
-    (implies (page-directory-entry-addr-found-p lin-addr x86)
-             (not (mv-nth 0 (page-directory-base-addr lin-addr x86))))
-    :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ()))))
-
-  (defthm page-directory-entry-addr-found-p-implies-good-paging-structures-x86p
-    (implies (page-directory-entry-addr-found-p lin-addr x86)
-             (good-paging-structures-x86p x86))))
-
 (define page-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    (x86))
@@ -301,6 +254,56 @@
                    (loghead 52 (mv-nth 1 (page-table-base-addr lin-addr x86))))
            (mv-nth 1 (page-table-base-addr lin-addr x86)))))
 
+;; ======================================================================
+
+;;  Conditions for finding an entry of a paging data structure:
+
+(define pml4-table-entry-addr-found-p (lin-addr x86)
+  :non-executable t
+  :enabled t
+  (and (canonical-address-p lin-addr)
+       (physical-address-p (+ (ash 512 3) (mv-nth 1 (pml4-table-base-addr x86))))
+       (good-paging-structures-x86p x86)))
+
+(define page-dir-ptr-table-entry-addr-found-p
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   x86)
+  :non-executable t
+  :enabled t
+  (and (pml4-table-entry-addr-found-p lin-addr x86)
+       (superior-entry-points-to-an-inferior-one-p
+        (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86)))
+        x86)
+       (x86p x86))
+  ///
+  (defthm page-dir-ptr-table-entry-addr-found-p-implies-pml4-table-entry-addr-found-p
+    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+             (pml4-table-entry-addr-found-p lin-addr x86)))
+
+  (defthm page-dir-ptr-table-entry-addr-found-p-and-page-dir-ptr-table-base-addr-no-error
+    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+             (not (mv-nth 0 (page-dir-ptr-table-base-addr lin-addr x86))))
+    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ())))))
+
+(define page-directory-entry-addr-found-p
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   x86)
+  :non-executable t
+  :enabled t
+  (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+       (superior-entry-points-to-an-inferior-one-p
+        (page-dir-ptr-table-entry-addr lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+        x86))
+  ///
+  (defthm page-directory-entry-addr-found-p-implies-page-dir-ptr-table-entry-addr-found-p
+    (implies (page-directory-entry-addr-found-p lin-addr x86)
+             (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
+
+  (defthm page-directory-entry-addr-found-p-and-page-directory-base-addr-no-error
+    (implies (page-directory-entry-addr-found-p lin-addr x86)
+             (not (mv-nth 0 (page-directory-base-addr lin-addr x86))))
+    :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ())))))
+
 (define page-table-entry-addr-found-p
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    x86)
@@ -319,23 +322,21 @@
     (implies (page-table-entry-addr-found-p lin-addr x86)
              (not (mv-nth 0 (page-table-base-addr lin-addr x86))))
     :hints (("Goal" :in-theory (e/d* (page-table-base-addr)
-                                     ()))))
-
-  (defthm page-table-entry-addr-found-p-implies-good-paging-structures-x86p
-    (implies (page-table-entry-addr-found-p lin-addr x86)
-             (good-paging-structures-x86p x86))
-    :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p)
                                      ())))))
 
-(defun find-x86-binding-from-entry-found-p-aux (calls)
+(defun find-binding-from-entry-found-p-aux (var calls)
   (if (endp calls)
       nil
     (b* ((call (car calls))
-         (x86 (third call)))
-        (append `((x86 . ,x86))
-                (find-x86-binding-from-entry-found-p-aux (cdr calls))))))
+         (var-val (if (equal var 'lin-addr)
+                      (second call)
+                    (if (equal var 'x86)
+                        (third call)
+                      nil))))
+        (append `((,var . ,var-val))
+                (find-binding-from-entry-found-p-aux var (cdr calls))))))
 
-(defun find-x86-binding-from-entry-found-p (mfc state)
+(defun find-binding-from-entry-found-p (var mfc state)
   (declare (xargs :stobjs (state) :mode :program)
            (ignorable state))
   (b* ((calls (acl2::find-calls-of-fns-lst
@@ -344,11 +345,10 @@
                  page-dir-ptr-table-entry-addr-found-p
                  pml4-table-entry-addr-found-p)
                (acl2::mfc-clause mfc))))
-      (find-x86-binding-from-entry-found-p-aux
-       calls)))
+      (find-binding-from-entry-found-p-aux var calls)))
 
 (defthmd entry-found-p-and-lin-addr
-  (implies (and (bind-free (find-x86-binding-from-entry-found-p mfc state) (x86))
+  (implies (and (bind-free (find-binding-from-entry-found-p 'x86 mfc state) (x86))
                 (or (page-table-entry-addr-found-p lin-addr x86)
                     (page-directory-entry-addr-found-p lin-addr x86)
                     (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
@@ -360,11 +360,31 @@
                                     pml4-table-entry-addr-found-p)
                                    ()))))
 
-(local (in-theory (e/d (entry-found-p-and-lin-addr) ())))
+(defthmd entry-found-p-and-good-paging-structures-x86p
+  (implies (and (bind-free (find-binding-from-entry-found-p 'lin-addr mfc state) (lin-addr))
+                (or (page-table-entry-addr-found-p lin-addr x86)
+                    (page-directory-entry-addr-found-p lin-addr x86)
+                    (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+                    (pml4-table-entry-addr-found-p lin-addr x86)))
+           (good-paging-structures-x86p x86))
+  :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p
+                                    page-directory-entry-addr-found-p
+                                    page-dir-ptr-table-entry-addr-found-p
+                                    pml4-table-entry-addr-found-p)
+                                   ()))))
+
+(local (in-theory (e/d (entry-found-p-and-lin-addr
+                        entry-found-p-and-good-paging-structures-x86p)
+                       ())))
 
 ;; ======================================================================
 
 ;; Alternate interfaces to paging structure traversal functions:
+
+;; (i-am-here)
+
+;; page-table-base-addr and xw
+;; page-table-entry-addr-found-p and xw
 
 (define ia32e-la-to-pa-PT
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -392,7 +412,71 @@
     (implies (and (page-table-entry-addr-found-p lin-addr x86)
                   (equal base-addr (mv-nth 1 (page-table-base-addr lin-addr x86))))
              (equal (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86)
-                    (ia32e-la-to-pa-page-table lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl x86)))))
+                    (ia32e-la-to-pa-page-table lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl x86))))
+
+  (local (in-theory (e/d () (page-table-entry-addr-found-p))))
+
+  (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-PT
+    :hyp t
+    :bound *physical-address-size*
+    :concl (mv-nth 1
+                   (ia32e-la-to-pa-PT
+                    lin-addr u-s-acc wp smep nxe r-w-x cpl
+                    x86))
+    :gen-linear t
+    :gen-type t)
+
+  (defthm x86p-mv-nth-2-ia32e-la-to-pa-PT
+    (implies (x86p x86)
+             (x86p
+              (mv-nth 2
+                      (ia32e-la-to-pa-PT
+                       lin-addr u-s-acc wp smep nxe r-w-x cpl
+                       x86)))))
+
+  (defthm xr-ia32e-la-to-pa-PT
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-PT
+                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                 x86)))
+                    (xr fld index x86))))
+
+  ;; (defthm ia32e-la-to-pa-PT-xw-values
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (and (equal (mv-nth 0
+  ;;                                (ia32e-la-to-pa-PT
+  ;;                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
+  ;;                                 (xw fld index value x86)))
+  ;;                        (mv-nth 0
+  ;;                                (ia32e-la-to-pa-PT
+  ;;                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
+  ;;                                 x86)))
+  ;;                 (equal (mv-nth 1
+  ;;                                (ia32e-la-to-pa-PT
+  ;;                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
+  ;;                                 (xw fld index value x86)))
+  ;;                        (mv-nth 1
+  ;;                                (ia32e-la-to-pa-PT
+  ;;                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
+  ;;                                 x86))))))
+
+  ;; (defthm ia32e-la-to-pa-PT-xw-state
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (equal (mv-nth 2
+  ;;                           (ia32e-la-to-pa-PT
+  ;;                            lin-addr u-s-acc wp smep nxe r-w-x cpl
+  ;;                            (xw fld index value x86)))
+  ;;                   (xw fld index value
+  ;;                       (mv-nth 2
+  ;;                               (ia32e-la-to-pa-PT
+  ;;                                lin-addr u-s-acc wp smep nxe r-w-x cpl
+  ;;                                x86))))))
+  )
 
 ;; ----------------------------------------------------------------------
 
