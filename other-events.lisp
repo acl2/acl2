@@ -9433,18 +9433,14 @@
     (state-global-let*
      ((inhibit-output-lst (cons 'error
                                 (f-get-global 'inhibit-output-lst state))))
-     (let ((saved-w (w state)))
-       (pprogn
-        (set-w! w state)
-        (mv-let
-         (erp val state)
-         (defpkg-items-rec new-kpa old-kpa
-           (f-get-global 'system-books-dir state)
-           ctx w state nil)
-         (assert$
-          (null erp)
-          (pprogn (set-w! saved-w state)
-                  (value val))))))))
+     (mv-let
+       (erp val state)
+       (defpkg-items-rec new-kpa old-kpa
+         (f-get-global 'system-books-dir state)
+         ctx w state nil)
+       (assert$
+        (null erp)
+        (value val)))))
    (t (value nil))))
 
 (defun new-defpkg-list2 (imports all-defpkg-items acc seen)
