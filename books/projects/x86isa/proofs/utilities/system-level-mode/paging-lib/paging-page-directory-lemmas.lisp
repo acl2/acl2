@@ -105,6 +105,17 @@
                   (:instance page-directory-entry-addr-found-p-and-xlate-equiv-x86s
                              (x86-1 x86-2)
                              (x86-2 x86-1))
+                  (:instance xlate-equiv-entries-open
+                             (e1 (rm-low-64
+                                  (page-directory-entry-addr
+                                   lin-addr
+                                   (mv-nth 1 (page-directory-base-addr lin-addr x86-2)))
+                                  x86-1))
+                             (e2 (rm-low-64
+                                  (page-directory-entry-addr
+                                   lin-addr
+                                   (mv-nth 1 (page-directory-base-addr lin-addr x86-2)))
+                                  x86-2)))
                   ;; (:instance page-table-entry-addr-found-p-and-xlate-equiv-x86s)
                   ;; xlate-equiv-entries-and-loghead
                   (:instance xlate-equiv-entries-and-loghead
@@ -278,6 +289,17 @@
                              (x86-1 x86-2)
                              (x86-2 x86-1))
                   ;; (:instance page-table-entry-addr-found-p-and-xlate-equiv-x86s)
+                  (:instance xlate-equiv-entries-open
+                             (e1 (rm-low-64
+                                  (page-directory-entry-addr
+                                   lin-addr
+                                   (mv-nth 1 (page-directory-base-addr lin-addr x86-2)))
+                                  x86-1))
+                             (e2 (rm-low-64
+                                  (page-directory-entry-addr
+                                   lin-addr
+                                   (mv-nth 1 (page-directory-base-addr lin-addr x86-2)))
+                                  x86-2)))
                   ;; xlate-equiv-entries-and-loghead
                   (:instance xlate-equiv-entries-and-loghead
                              (e1 (rm-low-64
@@ -556,85 +578,75 @@
                              member-p
                              physical-address-p)))))
 
-(skip-proofs
- (defthm xlate-equiv-entries-at-qword-addresses?-wm-low-64-with-different-x86s
-   (implies (and (mult-8-qword-paddr-list-listp addrs)
-                 (no-duplicates-list-p addrs)
-                 (member-list-p index addrs)
-                 (or (equal val (set-accessed-bit (rm-low-64 index x86-2)))
-                     (equal val (set-dirty-bit (rm-low-64 index x86-2)))
-                     (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86-2)))))
-                 (x86p x86-1)
-                 (x86p x86-2))
-            (equal
-             (xlate-equiv-entries-at-qword-addresses?
-              addrs addrs
-              (wm-low-64 index val x86-1)
-              x86-2)
-             (xlate-equiv-entries-at-qword-addresses? addrs addrs x86-1 x86-2)))
-   :hints (("Goal"
-            ;; :use ((:instance xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
-            ;;                  (addrs addrs)
-            ;;                  (x86-1 x86-1)
-            ;;                  (x86-2 x86-2)))
-            :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
-                              xlate-equiv-entries-at-qword-addresses-aux?)
-                             ( ;; xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
-                              ;; xlate-equiv-entries
-                              ))))))
 
-;; Maybe something like this instead, to take advantage of
-;; xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT?
+;; (skip-proofs
+;;  (defthm xlate-equiv-entries-at-qword-addresses?-wm-low-64-with-different-x86s
+;;    ;; x86-2: Original x86
+;;    ;; x86-1: E.g.: mv-nth-2-ia32e-la-to-pa-PT with x86
+;;    (implies (and (mult-8-qword-paddr-list-listp addrs)
+;;                  (no-duplicates-list-p addrs)
+;;                  (member-list-p index addrs)
+;;                  (equal val (set-accessed-bit (rm-low-64 index x86-2)))
+;;                  ;; (or (equal val (set-accessed-bit (rm-low-64 index x86-2)))
+;;                  ;;     (equal val (set-dirty-bit (rm-low-64 index x86-2)))
+;;                  ;;     (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86-2)))))
+;;                  (xlate-equiv-x86s x86-1 x86-2))
+;;             (equal
+;;              (xlate-equiv-entries-at-qword-addresses?
+;;               addrs addrs
+;;               x86-2
+;;               (wm-low-64 index val x86-1))
+;;              (xlate-equiv-entries-at-qword-addresses? addrs addrs x86-2 x86-1)))
+;;    :hints (("Goal"
+;;             :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
+;;                               xlate-equiv-entries-at-qword-addresses-aux?)
+;;                              ())))))
 
-(defthm xlate-equiv-entries-at-qword-addresses?-wm-low-64-with-different-x86s
-  ;; x86-2: Original x86
-  ;; x86-1: E.g.: mv-nth-2-ia32e-la-to-pa-PT with x86
-  (implies (and (mult-8-qword-paddr-list-listp addrs)
-                (no-duplicates-list-p addrs)
-                (member-list-p index addrs)
-                (equal val (set-accessed-bit (rm-low-64 index x86-2)))
-                ;; (or (equal val (set-accessed-bit (rm-low-64 index x86-2)))
-                ;;     (equal val (set-dirty-bit (rm-low-64 index x86-2)))
-                ;;     (equal val (set-dirty-bit (set-accessed-bit (rm-low-64 index x86-2)))))
-                (xlate-equiv-x86s x86-1 x86-2))
-           (equal
-            (xlate-equiv-entries-at-qword-addresses?
-             addrs addrs
-             (wm-low-64 index val x86-1)
-             x86-2)
-            (xlate-equiv-entries-at-qword-addresses? addrs addrs x86-1 x86-2)))
-  :hints (("Goal"
-           :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
-                             xlate-equiv-entries-at-qword-addresses-aux?)
+;; (skip-proofs
+;;  (defthm gather-all-paging-structure-qword-addresses-wm-low-64-mv-nth-2-ia32e-la-to-pa-PT
+;;    (implies (and (page-directory-entry-addr-found-p lin-addr x86)
+;;                  (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86))
+;;                  (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86))
+;;                  (x86p x86)
+;;                  (equal index
+;;                         (page-directory-entry-addr
+;;                          lin-addr
+;;                          (mv-nth 1 (page-directory-base-addr lin-addr x86))))
+;;                  (equal val (set-accessed-bit (rm-low-64 index x86))))
+;;             (equal (gather-all-paging-structure-qword-addresses
+;;                     (wm-low-64
+;;                      index val
+;;                      (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))))
+;;                    (gather-all-paging-structure-qword-addresses x86)))
+;;    :hints (("Goal"
+;;             :use ((:instance entry-found-p-and-good-paging-structures-x86p))
+;;             :in-theory (e/d* (page-table-entry-no-page-fault-p
+;;                               good-paging-structures-x86p
+;;                               entry-found-p-and-lin-addr
+;;                               page-fault-exception
+;;                               ia32e-la-to-pa-PT
+;;                               ia32e-la-to-pa-page-table)
+;;                              (bitops::logand-with-negated-bitmask
+;;                               page-directory-entry-addr-found-p))))))
+
+(defthm gather-all-paging-structure-qword-addresses-with-xlate-equiv-x86s
+  (implies (and (good-paging-structures-x86p x86)
+                (xlate-equiv-x86s x86 x86-equiv))
+           (equal (gather-all-paging-structure-qword-addresses x86-equiv)
+                  (gather-all-paging-structure-qword-addresses x86)))
+  :hints
+  (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses) ()))))
+
+(defthm xlate-equiv-x86s-and-xlate-equiv-entries-at-qword-addresses?
+  (implies (and (good-paging-structures-x86p x86)
+                (xlate-equiv-x86s x86 x86-equiv)
+                (equal addrs (gather-all-paging-structure-qword-addresses x86)))
+           (xlate-equiv-entries-at-qword-addresses?
+            addrs addrs x86 x86-equiv))
+  :hints
+  (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
+                             good-paging-structures-x86p)
                             ()))))
-
-(skip-proofs
- (defthm gather-all-paging-structure-qword-addresses-wm-low-64-mv-nth-2-ia32e-la-to-pa-PT
-   (implies (and (page-directory-entry-addr-found-p lin-addr x86)
-                 (mult-8-qword-paddr-list-listp (gather-all-paging-structure-qword-addresses x86))
-                 (no-duplicates-list-p (gather-all-paging-structure-qword-addresses x86))
-                 (x86p x86)
-                 (equal index
-                        (page-directory-entry-addr
-                         lin-addr
-                         (mv-nth 1 (page-directory-base-addr lin-addr x86))))
-                 (equal val (set-accessed-bit (rm-low-64 index x86))))
-            (equal (gather-all-paging-structure-qword-addresses
-                    (wm-low-64
-                     index val
-                     (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))))
-                   (gather-all-paging-structure-qword-addresses x86)))
-   :hints (("Goal"
-            :use ((:instance entry-found-p-and-good-paging-structures-x86p))
-            :in-theory (e/d* (page-table-entry-no-page-fault-p
-                              good-paging-structures-x86p
-                              entry-found-p-and-lin-addr
-                              page-fault-exception
-                              ia32e-la-to-pa-PT
-                              ia32e-la-to-pa-page-table)
-                             (bitops::logand-with-negated-bitmask
-                              page-directory-entry-addr-found-p))))))
-
 
 
 (defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PD
@@ -661,7 +673,8 @@
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              xlate-equiv-x86s-and-page-table-base-addr-address
                              no-duplicates-list-p
-                             gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa-PT))))
+                             gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa-PT
+                             gather-all-paging-structure-qword-addresses-with-xlate-equiv-x86s))))
   :otf-flg t)
 
 (defthm two-page-table-walks-ia32e-la-to-pa-PD

@@ -88,6 +88,17 @@
                              bitops::logand-with-negated-bitmask
                              bitops::logior-equal-0))
            :use ((:instance xlate-equiv-x86s-and-page-table-entry-addr-value)
+                 (:instance xlate-equiv-entries-open
+                            (e1 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                                 x86-2)))
                  (:instance page-table-entry-addr-found-p-and-xlate-equiv-x86s
                             (x86-1 x86-1)
                             (x86-2 x86-2))
@@ -218,7 +229,7 @@
   (xlate-equiv-x86s
    (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))
    x86)
-  :hints (("Goal"
+  :hints (("Goal" :do-not '(preprocess)
            :use ((:instance entry-found-p-and-good-paging-structures-x86p))
            :in-theory (e/d* (ia32e-la-to-pa-page-table
                              good-paging-structures-x86p)

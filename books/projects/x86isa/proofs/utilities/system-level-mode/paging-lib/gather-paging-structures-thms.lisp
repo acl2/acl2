@@ -13,6 +13,14 @@
                         entry-found-p-and-good-paging-structures-x86p)
                        ())))
 
+(defthmd xlate-equiv-entries-open
+  (implies (and (xlate-equiv-entries e1 e2)
+                (unsigned-byte-p 64 e1)
+                (unsigned-byte-p 64 e2))
+           (and (equal (loghead 5 e1) (loghead 5 e2))
+                (equal (logtail 7 e1) (logtail 7 e2))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries) ()))))
+
 ;; ======================================================================
 
 ;; Some general lemmas about the gather functions:
@@ -434,7 +442,8 @@
            (equal (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86-1))
                   (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86-2))))
   :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr
-                                    good-paging-structures-x86p)
+                                    good-paging-structures-x86p
+                                    xlate-equiv-entries)
                                    (xlate-equiv-x86s-and-pml4-table-entry-addr-address
                                     xlate-equiv-x86s-and-pml4-table-base-addr-address
                                     xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
@@ -529,7 +538,8 @@
                                  (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86-2)))
                                  x86-2))
                             (n 12)))
-           :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p)
+           :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p
+                             xlate-equiv-entries)
                             (physical-address-p
                              xlate-equiv-x86s-and-pml4-table-entry-addr-value
                              pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
@@ -672,8 +682,7 @@
            (equal (mv-nth 1 (page-directory-base-addr lin-addr x86-1))
                   (mv-nth 1 (page-directory-base-addr lin-addr x86-2))))
   :hints (("Goal" :in-theory
-           (e/d* (page-directory-base-addr
-                  xlate-equiv-x86s)
+           (e/d* (page-directory-base-addr)
                  (xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
                   xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
                   page-dir-ptr-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
@@ -681,6 +690,17 @@
                   canonical-address-p
                   physical-address-p))
            :use ((:instance xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address)
+                 (:instance xlate-equiv-entries-open
+                            (e1 (rm-low-64
+                                 (page-dir-ptr-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-dir-ptr-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86-1)))
+                                 x86-2)))
                  (:instance page-dir-ptr-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
                             (x86 x86-1))
                  (:instance xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
@@ -770,6 +790,15 @@
   :hints (("Goal"
            :use ((:instance page-dir-ptr-table-entry-addr-found-p-and-xlate-equiv-x86s)
                  (:instance xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-value)
+                 (:instance xlate-equiv-entries-open
+                            (e1 (rm-low-64
+                                 (page-dir-ptr-table-entry-addr
+                                  lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-dir-ptr-table-entry-addr
+                                  lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86-2)))
+                                 x86-2)))
                  (:instance logtail-bigger-and-logbitp
                             (e1 (rm-low-64
                                  (page-dir-ptr-table-entry-addr
@@ -1034,8 +1063,7 @@
            (equal (mv-nth 0 (page-directory-base-addr lin-addr x86-1))
                   (mv-nth 0 (page-directory-base-addr lin-addr x86-2))))
   :hints (("Goal" :in-theory
-           (e/d* (page-directory-base-addr
-                  xlate-equiv-x86s)
+           (e/d* (page-directory-base-addr)
                  (xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
                   xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
                   page-dir-ptr-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
@@ -1043,6 +1071,17 @@
                   canonical-address-p
                   physical-address-p))
            :use ((:instance xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address)
+                 (:instance xlate-equiv-entries-open
+                            (e1 (rm-low-64
+                                 (page-dir-ptr-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-dir-ptr-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86-1)))
+                                 x86-2)))
                  (:instance page-dir-ptr-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
                             (x86 x86-1))
                  (:instance xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
@@ -1083,8 +1122,7 @@
            (equal (mv-nth 1 (page-table-base-addr lin-addr x86-1))
                   (mv-nth 1 (page-table-base-addr lin-addr x86-2))))
   :hints (("Goal" :in-theory
-           (e/d* (page-table-base-addr
-                  xlate-equiv-x86s)
+           (e/d* (page-table-base-addr)
                  (xlate-equiv-x86s-and-page-directory-entry-addr-address
                   xlate-equiv-x86s-and-page-directory-base-addr-address
                   page-directory-entry-addr-is-in-gather-all-paging-structure-qword-addresses
@@ -1095,6 +1133,17 @@
                  (:instance xlate-equiv-x86s-and-page-directory-base-addr-error)
                  (:instance page-directory-entry-addr-is-in-gather-all-paging-structure-qword-addresses
                             (x86 x86-1))
+                 (:instance xlate-equiv-entries-open
+                            (e1 (rm-low-64
+                                 (page-directory-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-directory-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-directory-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-directory-base-addr lin-addr x86-2)))
+                                 x86-2)))
                  (:instance xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
                             (index (page-directory-entry-addr
                                     lin-addr
@@ -1187,6 +1236,22 @@
   :hints (("Goal"
            :use ((:instance page-directory-entry-addr-found-p-and-xlate-equiv-x86s)
                  (:instance xlate-equiv-x86s-and-page-directory-entry-addr-value)
+                 (:instance xlate-equiv-entries-open
+                            (e1 (rm-low-64
+                                 (page-directory-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-directory-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-directory-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-directory-base-addr lin-addr x86-2)))
+                                 x86-2)))
+                 (:instance xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
+                            (index (page-directory-entry-addr
+                                    lin-addr
+                                    (mv-nth 1 (page-directory-base-addr lin-addr x86-1))))
+                            (addrs (gather-all-paging-structure-qword-addresses x86-1)))
                  (:instance logtail-bigger-and-logbitp
                             (e1 (rm-low-64
                                  (page-directory-entry-addr
@@ -1227,6 +1292,7 @@
                              xlate-equiv-x86s-and-page-directory-entry-addr-address
                              xlate-equiv-x86s-and-page-table-base-addr-address
                              xlate-equiv-x86s-and-page-table-entry-addr-address
+                             unsigned-byte-p
                              bitops::logand-with-negated-bitmask)))))
 
 ;; ======================================================================
