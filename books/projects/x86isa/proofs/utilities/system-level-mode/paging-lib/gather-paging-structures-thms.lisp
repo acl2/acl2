@@ -1297,6 +1297,27 @@
 
 ;; ======================================================================
 
+(defthmd gather-all-paging-structure-qword-addresses-with-xlate-equiv-x86s
+  (implies (and (good-paging-structures-x86p x86)
+                (xlate-equiv-x86s x86 x86-equiv))
+           (equal (gather-all-paging-structure-qword-addresses x86-equiv)
+                  (gather-all-paging-structure-qword-addresses x86)))
+  :hints
+  (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses) ()))))
+
+(defthmd xlate-equiv-x86s-and-xlate-equiv-entries-at-qword-addresses?
+  (implies (and (good-paging-structures-x86p x86)
+                (xlate-equiv-x86s x86 x86-equiv)
+                (equal addrs (gather-all-paging-structure-qword-addresses x86)))
+           (xlate-equiv-entries-at-qword-addresses?
+            addrs addrs x86 x86-equiv))
+  :hints
+  (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
+                             good-paging-structures-x86p)
+                            ()))))
+
+;; ======================================================================
+
 (in-theory (e/d* ()
                  (pml4-table-entry-addr-found-p
                   page-dir-ptr-table-entry-addr-found-p

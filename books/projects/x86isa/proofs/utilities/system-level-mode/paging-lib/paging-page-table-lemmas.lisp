@@ -276,6 +276,38 @@
 
 ;; ======================================================================
 
+;; The following come in useful when reasoning about higher paging
+;; structure traversals...
+
+(defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa-PT
+  (implies ;; (page-directory-entry-addr-found-p lin-addr x86)
+   ;; (page-table-entry-addr-found-p lin-addr x86)
+   (good-paging-structures-x86p x86)
+   (equal (gather-all-paging-structure-qword-addresses
+           (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86)))
+          (gather-all-paging-structure-qword-addresses x86)))
+  :hints (("Goal"
+           :use ((:instance
+                  gather-all-paging-structure-qword-addresses-with-xlate-equiv-x86s
+                  (x86-equiv (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))))))))
+
+(defthm xlate-equiv-entries-at-qword-addresses?-mv-nth-2-ia32e-la-to-pa-PT
+  (implies (and (good-paging-structures-x86p x86)
+                (equal addrs (gather-all-paging-structure-qword-addresses x86)))
+           (equal (xlate-equiv-entries-at-qword-addresses?
+                   addrs addrs
+                   x86
+                   (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86)))
+                  (xlate-equiv-entries-at-qword-addresses? addrs addrs x86 x86)))
+  :hints (("Goal"
+           :use ((:instance xlate-equiv-x86s-and-xlate-equiv-entries-at-qword-addresses?
+                            (addrs addrs)
+                            (x86 x86)
+                            (x86-equiv
+                             (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))))))))
+
+;; ======================================================================
+
 ;; (defthm page-table-entry-addr-found-p-after-a-page-walk
 ;;   (implies (and (page-table-entry-addr-found-p lin-addr-1 x86)
 ;;                 (page-table-entry-addr-found-p lin-addr-2 x86)
