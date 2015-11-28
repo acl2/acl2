@@ -291,10 +291,6 @@ a bleeding edge zip.</p>")
                                      vls-loader-thread: ~a~%"
                                    condition))))))
 
-
-#+hons
-(acl2::mf-multiprocessing t)
-
 ;; BOZO do not do this.
 (defun acl2::bad-lisp-objectp (x)
   ;; Unsound hack to make loading faster and avoid stack overflows.  It seems
@@ -516,6 +512,21 @@ a bleeding edge zip.</p>")
   (defun start-fn (port public-dir root-dir)
     (cw "Setting *vls-root* = ~x0~%" root-dir)
     (setq *vls-root* root-dir)
+    ;; Since the server is multithreaded and lots of VL functions use hons and
+    ;; memoization, we need to enable multithreaded memoization support.
+    ;;
+    ;; We used to do this whenever server-raw.lsp was loaded, but that meant
+    ;; that the whole VL executable was built with multithreaded memoization
+    ;; enabled, which could slow-down single-threaded things (e.g., linting).
+    ;; Deferring this until server start slows down starting up the server, but
+    ;; it seems unlikely that we care about that.
+    ;;
+    ;; I don't think we care about turning this off.  Better to just leave it
+    ;; on instead of turning it off in stop.  After all, if you're starting and
+    ;; stopping the server, you're probably just hacking on it, and you'd rather
+    ;; just leave multithreaded memoization enabled instead of paying the price
+    ;; of rememoizing everything all the time.
+    (acl2::mf-multiprocessing t t)
     (maybe-start-support-threads)
     (when vl-server
       (stop))

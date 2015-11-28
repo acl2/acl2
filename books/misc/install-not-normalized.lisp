@@ -377,9 +377,9 @@ This comment motivates the macro install-not-normalized, defined below.
  })
 
  <p>Evaluation of the form above generates a @(tsee defthm) event whose name is
- @(tsee thm-name) &mdash; by default, the result of adding the suffix
- \"$IS-BODY\" to @('fn'), which is a function symbol.  That event is of the
- form @('(equal (fn x1 ... xn) <body>)'), where @('(x1 ... xn)') is the list of
+ @('thm-name') &mdash; by default, the result of adding the suffix \"$IS-BODY\"
+ to @('fn'), which is a function symbol.  That event is of the form
+ @('(equal (fn x1 ... xn) <body>)'), where @('(x1 ... xn)') is the list of
  formal parameters of @('fn') and @('<body>') is the body of @('fn').  If
  @(':hints') or @(':rule-classes') are supplied, they will be attached to the
  generated @('defthm') form.</p>

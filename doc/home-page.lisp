@@ -262,10 +262,11 @@ href=\"#documentation\">documentation</a>.</li>
 
 <li><b>Extensions.</b><br>The ACL2 distribution includes the following
 extensions, which were developed by the individuals shown.  <b>NOTE:</b>Not
-included in this list is ACL2(h), because it is now the default build of ACL2:
-that is, ACL2 is <a href=\"~sm\">hons-enabled</a> by default.  Thanks to Bob
-Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords for their
-contributions; see the <a href=\"~sk\">acknowledgments</a>.
+included in this list is what was formerly known as \"ACL2(h)\", because it is
+now the default build of ACL2: that is, ACL2 builds are now <a
+href=\"~sm\">hons-enabled</a>.  Thanks to Bob Boyer, Warren A. Hunt, Jr., Jared
+Davis, and Sol Swords for their contributions; see the <a
+href=\"~sk\">acknowledgments</a>.
 
   <UL>
   <LI><A HREF=\"~sl\">ACL2(r)</A><BR>
@@ -338,12 +339,12 @@ HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <ul>
 
-<li><A HREF=\"~s2\">ACL2+Books Manual</A> <i>(recommended)</i></li>
+<li><A HREF=\"~s2\">ACL2+Books Manual</A> (Version 7.1)</li>
 
-<li><A HREF=\"~s3\">ACL2+Books Manual</A> for
-\"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions</li>
+<li><A HREF=\"~s3\">ACL2+Books Manual</A> (for
+\"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions)</li>
 
-<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A></li>
+<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A> (Version 7.1)</li>
 
 </ul>
 

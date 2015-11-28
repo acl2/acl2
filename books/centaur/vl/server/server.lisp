@@ -197,6 +197,8 @@ viewing Verilog designs.")
       (:vl-import     (vl-pp-import     x))
       (:vl-fwdtypedef (vl-pp-fwdtypedef x))
       (:vl-vardecl    (vl-pp-vardecl    x))
+      (:vl-dpiimport  (vl-pp-dpiimport  x))
+      (:vl-dpiexport  (vl-pp-dpiexport  x))
       (otherwise      (vl-pp-typedef    x)))))
 
 (define vl-description-summary ((x vl-description-p))
@@ -286,6 +288,11 @@ viewing Verilog designs.")
   (b* ((desctypes (vl-descalist->descriptions/types (vls-data->orig-descalist data))))
     (vls-success :json (bridge::json-encode desctypes))))
 
+(local (defthm vl-module-p-by-tag-when-vl-description-p-unlimited
+         (implies (and (vl-description-p x)
+                       (eq (tag x) :vl-module))
+                  (vl-module-p x))))
+
 (define-vls-html vls-describe (origname what data)
   (b* (((vls-data data))
        (desc (cdr (hons-assoc-equal origname data.orig-descalist)))
@@ -363,6 +370,8 @@ declaration, ...)."
       (:vl-fwdtypedef nil)
       (:vl-typedef    nil)
       (:vl-vardecl    nil)
+      (:vl-dpiimport  nil)
+      (:vl-dpiexport  nil)
       (otherwise      (impossible)))))
 
 (define vls-data-origname-reportcard ((data vls-data-p))

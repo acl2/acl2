@@ -204,9 +204,12 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 
 
              ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt
-               :vl-enablestmt :vl-disablestmt :vl-eventtriggerstmt
+               :vl-callstmt :vl-disablestmt :vl-eventtriggerstmt
                :vl-casestmt :vl-ifstmt :vl-foreverstmt :vl-waitstmt
-               :vl-whilestmt :vl-forstmt :vl-blockstmt :vl-repeatstmt :vl-timingstmt)
+               :vl-repeatstmt :vl-whilestmt :vl-forstmt
+               :vl-breakstmt :vl-continuestmt :vl-blockstmt
+               :vl-timingstmt :vl-returnstmt :vl-assertstmt
+               :vl-cassertstmt)
               (and (vl-stmt-p x)
                    (vl-lint-atts-say-ignore (vl-stmt->atts x) mwtype)))
 

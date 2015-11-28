@@ -48,7 +48,7 @@ module test ();
      $dumpfile("test.vcd");
      $dumpvars();
      clk = 0;
-     $readmemb("inputs.data", inputs);
+     $readmemb(`infile, inputs);
      for (i=0; i<nCycles; i++) begin
        in = inputs[i];
        #2;

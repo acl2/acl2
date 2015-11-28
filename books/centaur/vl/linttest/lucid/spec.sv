@@ -483,18 +483,25 @@ module trickyscope;
 
   // This once caused a scopestack/shadowcheck mismatch
 
-  integer d;
+  integer loopvar1;
   always_comb
   begin
-    for (int d=0; d < 4 ; d=d+1)
+    for (int loopvar1=0; loopvar1 < 4 ; loopvar1=loopvar1+1)
     begin
-      $display("Hello");
+      $display("Hello %d", loopvar1);
     end
   end
 
   logic [16-1:0] counter_unused;
   assign counter_unused = 0;
 
+  integer loopvar2;
+
+  always_comb
+  for(int loopvar3 = 0; loopvar2 < 4; loopvar2=10)
+  begin
+    $display("Didnt use loopvar3.");
+  end
 
 endmodule
 
@@ -508,5 +515,26 @@ module minuscolon ;
   assign normal1[7 -: 4] = normal2[7 -: 4];
   assign normal1[9:8] = normal2[9:8];
   assign normal1[10] = normal2[10];
+
+endmodule
+
+
+typedef struct {
+  opcode_t opcode;
+  logic [3:0]  arg1;
+  logic [3:0]  arg2;
+} instruction2_t;
+
+module pattern;
+
+  instruction2_t myinst;
+
+  initial begin
+    myinst = instruction2_t'{
+              opcode: 0,
+              arg1: 1,
+              arg2: 2
+             };
+  end
 
 endmodule

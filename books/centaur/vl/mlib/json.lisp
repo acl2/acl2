@@ -1113,15 +1113,24 @@ which could not hold such large values.</p>")
                   :lvalue (vl-jp-expr x.lvalue)
                   :atts   (vl-jp-atts x.atts))
 
-       :vl-enablestmt
+       :vl-callstmt
        (jp-object :tag    (jp-sym kind)
                   :id     (vl-jp-expr x.id)
+                  :
                   :args   (vl-jp-exprlist x.args)
                   :atts   (vl-jp-atts x.atts))
 
        :vl-disablestmt
        (jp-object :tag    (jp-sym kind)
                   :id     (vl-jp-expr x.id)
+                  :atts   (vl-jp-atts x.atts))
+
+       :vl-breakstmt
+       (jp-object :tag    (jp-sym kind)
+                  :atts   (vl-jp-atts x.atts))
+
+       :vl-continuestmt
+       (jp-object :tag    (jp-sym kind)
                   :atts   (vl-jp-atts x.atts))
 
        :vl-returnstmt
@@ -1178,7 +1187,7 @@ which could not hold such large values.</p>")
 
        :vl-blockstmt
        (jp-object :tag        (jp-sym kind)
-                  :sequential (jp-bool x.sequentialp)
+                  :blocktype  (jp-sym x.blocktype)
                   :name       (jp-maybe-string x.name)
                   :imports    (vl-jp-importlist x.imports)
                   :paramdecls (vl-jp-paramdecllist x.paramdecls)

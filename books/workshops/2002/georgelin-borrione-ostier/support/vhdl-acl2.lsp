@@ -867,7 +867,7 @@ Vhdl_Acl2> "
 
                                             ((a b state)
 					     (if (equal dec 'y)
-						 (thm-fn new_expr state '(("Goal" :in-theory (disable nth update-nth))) nil nil)
+						 (thm-fn new_expr state '(("Goal" :in-theory (disable nth update-nth))) nil)
 					       (ld `((thm ,new_expr :hints (("Goal" :in-theory (disable nth update-nth)))))
 			                          :standard-co "log.output"
 						  :proofs-co  "log-proofs")))

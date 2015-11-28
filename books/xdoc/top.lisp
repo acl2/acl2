@@ -128,21 +128,21 @@
 (defmacro colon-xdoc-init ()
   '(with-output :off (summary event observation prove proof-tree)
      (make-event
-      (if (not (acl2::colon-xdoc-initialized state))
+      (if (acl2::colon-xdoc-initialized state)
+          '(value-triple :invisible)
         `(progn
            (include-book ;; newlines to fool dependency scanner
             "xdoc/defxdoc-raw" :dir :system :ttags :all)
            (include-book
             "xdoc/topics" :dir :system)
            (include-book
-            "system/doc/acl2-doc" :dir :system)
+            "system/doc/acl2-doc-wrap" :dir :system)
            (include-book
-            "xdoc/display" :dir :system)
+            "xdoc/display" :dir :system :ttags :all)
            (encapsulate ()
-            (local (xdoc-quiet)) ;; Suppress warnings when just using :xdoc (or :doc)
-            (local (set-inhibit-warnings "Documentation")))
-           (table xdoc 'colon-xdoc-support-loaded t))
-        '(value-triple :invisible)))))
+             (local (xdoc-quiet)) ;; Suppress warnings when just using :xdoc (or :doc)
+             (local (set-inhibit-warnings "Documentation")))
+           (table xdoc 'colon-xdoc-support-loaded t))))))
 
 (defmacro xdoc (name)
   (declare (xargs :guard (or (symbolp name)
@@ -155,8 +155,9 @@
        (progn
          (colon-xdoc-init)
          (make-event
-          (b* (((mv all-xdoc-topics state)
-                (with-guard-checking t (all-xdoc-topics state)))
+          (b* (((mv & all-xdoc-topics state)
+                (acl2::with-guard-checking-error-triple
+                 t (all-xdoc-topics state)))
                ((mv & & state) (colon-xdoc-fn ',name all-xdoc-topics state)))
             (value '(value-triple :invisible))))))))
 

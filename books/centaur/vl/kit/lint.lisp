@@ -47,14 +47,15 @@
 (include-book "../lint/duperhs")
 (include-book "../lint/leftright")
 (include-book "../lint/oddexpr")
-(include-book "../lint/portcheck")
 (include-book "../lint/qmarksize-check")
 (include-book "../lint/selfassigns")
 (include-book "../lint/skip-detect")
+(include-book "../lint/logicassign")
 
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
-(include-book "centaur/vl/transforms/annotate/top" :dir :system)
+(include-book "../transforms/annotate/top")
+(include-book "../transforms/addnames")
 
 ;(include-book "../transforms/assign-trunc")
 ;(include-book "../transforms/blankargs")
@@ -448,14 +449,21 @@ shown.</p>"
   :returns (result vl-lintresult-p :hyp :fguard)
 
   (b* (((vl-lintconfig config) config)
-       (design (cwtime (vl-design-drop-user-submodules design config.dropmods)))
+       (design (vl-annotate-design design))
 
-       (design (cwtime (vl-design-resolve-ansi-portdecls design)))
-       (design (cwtime (vl-design-resolve-nonansi-interfaceports design)))
-       (design (cwtime (vl-design-add-enumname-declarations design)))
-       (design (cwtime (vl-design-make-implicit-wires design)))
-       (design (cwtime (vl-design-portdecl-sign design)))
-       (design (cwtime (vl-design-udp-elim design)))
+       ;; We originally did this before annotate, but that doesn't work in the
+       ;; new world of loaditems.  we need to annotate first.
+       (design (xf-cwtime (vl-design-drop-user-submodules design config.dropmods)))
+
+       ;; BOZO where did lvaluecheck go??
+
+       ;; Taken care of by annotate
+       ;; (design (cwtime (vl-design-resolve-ansi-portdecls design)))
+       ;; (design (cwtime (vl-design-resolve-nonansi-interfaceports design)))
+       ;; (design (cwtime (vl-design-add-enumname-declarations design)))
+       ;; (design (cwtime (vl-design-make-implicit-wires design)))
+       ;; (design (cwtime (vl-design-portdecl-sign design)))
+       ;; (design (cwtime (vl-design-udp-elim design)))
 
        ;; BOZO I have no idea why we're doing this.
        ;; Old comments:
@@ -469,30 +477,36 @@ shown.</p>"
        ;; mods0, so do that now:
        (design0 (vl-design-remove-unnecessary-modules config.topmods design))
 
+       (design (xf-cwtime (vl-design-duplicate-detect design)))
 
-       (design (cwtime (vl-design-duplicate-detect design)))
-       (design (cwtime (vl-design-portcheck design)))
-       (design (cwtime (vl-design-argresolve design)))
-       (design (cwtime (vl-design-type-disambiguate design)))
-       (design (cwtime (vl-design-origexprs design)))
-       (design (cwtime (vl-design-oddexpr-check design)))
+       ;; Note: don't want to addnames before duplicate-detect, because it
+       ;; would name unnamed duplicated blocks in different ways.
+       (design (xf-cwtime (vl-design-addnames design)))
+
+       ;; all done in annotate now:
+       ;; (design (cwtime (vl-design-portcheck design)))
+       ;; (design (cwtime (vl-design-argresolve design)))
+       ;; (design (cwtime (vl-design-type-disambiguate design)))
+
+       (design (xf-cwtime (vl-design-oddexpr-check design)))
 
        ;; this goes away (design (cwtime (vl-design-resolve-indexing design)))
 
        ;; Pre-unparameterization Lucidity Check.
-       (design (cwtime (vl-design-lucid design
+       (design (xf-cwtime (vl-design-lucid design
                                         ;; This is a good time to check parameter uses
                                         :paramsp t
                                         ;; This is a bad time to check generates
                                         :generatesp nil)))
 
-       (design (cwtime (vl-design-check-namespace design)))
-       (design (cwtime (vl-design-check-case design)))
-       (design (cwtime (vl-design-duperhs-check design)))
-       (design (cwtime (vl-design-condcheck design)))
-       (design (cwtime (vl-design-leftright-check design)))
-       (design (cwtime (vl-design-dupeinst-check design)))
-       (design (cwtime (vl-centaur-seqcheck-hook design)))
+       (design (xf-cwtime (vl-design-check-namespace design)))
+       (design (xf-cwtime (vl-design-check-case design)))
+       (design (xf-cwtime (vl-design-duperhs-check design)))
+       (design (xf-cwtime (vl-design-condcheck design)))
+       (design (xf-cwtime (vl-design-leftright-check design)))
+       (design (xf-cwtime (vl-design-dupeinst-check design)))
+       (design (xf-cwtime (vl-centaur-seqcheck-hook design)))
+       (design (xf-cwtime (vl-design-logicassign design)))
 
 
 
@@ -503,7 +517,7 @@ shown.</p>"
        ;;(design (cwtime (vl-design-follow-hids design)))
        ;; (design (cwtime (vl-design-clean-params design)))
        ;; (design (cwtime (vl-design-check-good-paramdecls design)))
-       (design (cwtime (vl-design-elaborate design)))
+       (design (xf-cwtime (vl-design-elaborate design)))
 
        ;; these are part of elaboration now
        ;;(design (cwtime (vl-design-rangeresolve design)))
@@ -513,14 +527,14 @@ shown.</p>"
         ;; Running another dupeinst check here, after unparameterization, may
         ;; create redundant warnings, but it may also help to catch things that
         ;; become duplicates after unparameterization.
-        (cwtime (vl-design-dupeinst-check design)))
+        (xf-cwtime (vl-design-dupeinst-check design)))
 
        ;; Post-unparameterization Lucidity Check -- this is a bad time for
        ;; checking parameters (because they've been eliminated) but it's a
        ;; much better time to do bit-level analysis, because things like
        ;; foo[width-1:0] should hopefully be resolved now.  Also we can
        ;; sensibly check generates now.
-       (design (cwtime (vl-design-lucid design
+       (design (xf-cwtime (vl-design-lucid design
                                         :paramsp nil
                                         :generatesp t)))
 
@@ -541,9 +555,9 @@ shown.</p>"
        ;;  ;; are we even doing this?
        ;;  (cwtime (vl-design-elim-unused-vars design)))
 
-       (design (cwtime (vl-design-check-selfassigns design)))
-       (design (cwtime (vl-design-qmarksize-check design)))
-       (sd-probs (cwtime (sd-analyze-design design0)))
+       (design (xf-cwtime (vl-design-check-selfassigns design)))
+       (design (xf-cwtime (vl-design-qmarksize-check design)))
+       (sd-probs (xf-cwtime (sd-analyze-design design0)))
 
 ;; Not sure we care abotu this for anything
        ;; (design (cwtime (vl-design-lint-stmt-rewrite design)))
@@ -562,10 +576,10 @@ shown.</p>"
        ;;                   (len lost) lost))
        ;;           design))
 
-       ((mv reportcard ?modalist) (cwtime (vl-design->svex-modalist design)))
-       (design (cwtime (vl-apply-reportcard design reportcard)))
+       ((mv reportcard ?modalist) (xf-cwtime (vl-design->svex-modalist design)))
+       (design (xf-cwtime (vl-apply-reportcard design reportcard)))
 
-       (design (cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
+       (design (xf-cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 
 
        ;; [Jared] -- Trying to NOT do oprewrite anymore.  Our sizing warnings
@@ -594,12 +608,12 @@ shown.</p>"
        ;; NOTE: use design0, not design, if you ever want this to finish. :)
 
 
-       (design   (cwtime (vl-design-clean-warnings design)))
-       (design   (cwtime (vl-design-suppress-lint-warnings design)))
-       (design   (cwtime (vl-design-lint-ignoreall design config.ignore)))
-       (design   (cwtime (vl-lint-apply-quiet config.quiet design)))
-       (sd-probs (cwtime (vl-delete-sd-problems-for-modnames config.quiet sd-probs)))
-       (reportcard  (cwtime (vl-design-origname-reportcard design))))
+       (design   (xf-cwtime (vl-design-clean-warnings design)))
+       (design   (xf-cwtime (vl-design-suppress-lint-warnings design)))
+       (design   (xf-cwtime (vl-design-lint-ignoreall design config.ignore)))
+       (design   (xf-cwtime (vl-lint-apply-quiet config.quiet design)))
+       (sd-probs (xf-cwtime (vl-delete-sd-problems-for-modnames config.quiet sd-probs)))
+       (reportcard  (xf-cwtime (vl-design-origname-reportcard design))))
 
     (make-vl-lintresult :design design
                         :design0 design0
@@ -772,7 +786,9 @@ shown.</p>"
         :vl-warn-instances-same
         :vl-warn-case-sensitive-names
         :vl-warn-same-rhs
-        :vl-const-expr))
+        :vl-const-expr
+        :vl-warn-vardecl-assign
+        ))
 
 (defconst *smell-minor-warnings*
   (list :vl-warn-partselect-same

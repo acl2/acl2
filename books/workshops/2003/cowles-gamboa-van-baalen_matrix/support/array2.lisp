@@ -583,9 +583,11 @@ To use at UW:
   array2-functions
   '(array2p aset2 aref2 compress2 header dimensions maximum-length
     default)
-  :doc "A theory of all functions specific to 2-dimensional arrays.
-        This theory must be DISABLEd in order for the lemmas
-        exported by the array2 book to be applicable.")
+; Matt K. mod 10/30/2015: :doc is no longer supported for deftheory.
+; :doc "A theory of all functions specific to 2-dimensional arrays.
+;       This theory must be DISABLEd in order for the lemmas
+;       exported by the array2 book to be applicable."
+  )
 
 (deftheory
   array2-lemmas
@@ -605,7 +607,9 @@ To use at UW:
   array2-disabled-lemmas
   '(aref2-aset2-equal
     aref2-aset2-not-equal)
-  :doc "A theory of all rules exported DISABLEd by the array2 book.
-        Note that in order for these rules to be applicable you
-        will first need to (DISABLE ARRAY2-FUNCTIONS).")
+; Matt K. mod 10/30/2015: :doc is no longer supported for deftheory.
+; :doc "A theory of all rules exported DISABLEd by the array2 book.
+;       Note that in order for these rules to be applicable you
+;       will first need to (DISABLE ARRAY2-FUNCTIONS)."
+  )
 

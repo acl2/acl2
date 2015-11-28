@@ -165,10 +165,12 @@
     (or (eq kind :vl-nullstmt)
         (eq kind :vl-assignstmt)
         (eq kind :vl-deassignstmt)
-        (eq kind :vl-enablestmt)
+        (eq kind :vl-callstmt)
         (eq kind :vl-disablestmt)
         (eq kind :vl-eventtriggerstmt)
-        (eq kind :vl-returnstmt))))
+        (eq kind :vl-returnstmt)
+        (eq kind :vl-breakstmt)
+        (eq kind :vl-continuestmt))))
 
 (defthm vl-atomicstmt-forward
   (implies (vl-atomicstmt-p x)
@@ -176,10 +178,12 @@
              (or (eq kind :vl-nullstmt)
                  (eq kind :vl-assignstmt)
                  (eq kind :vl-deassignstmt)
-                 (eq kind :vl-enablestmt)
+                 (eq kind :vl-callstmt)
                  (eq kind :vl-disablestmt)
                  (eq kind :vl-eventtriggerstmt)
-                 (eq kind :vl-returnstmt))))
+                 (eq kind :vl-returnstmt)
+                 (eq kind :vl-breakstmt)
+                 (eq kind :vl-continuestmt))))
   :rule-classes :forward-chaining
   :hints(("Goal" :in-theory (enable vl-atomicstmt-p))))
 
@@ -198,7 +202,7 @@
     :vl-nullstmt         x.atts
     :vl-assignstmt       x.atts
     :vl-deassignstmt     x.atts
-    :vl-enablestmt       x.atts
+    :vl-callstmt         x.atts
     :vl-disablestmt      x.atts
     :vl-eventtriggerstmt x.atts
     :vl-casestmt         x.atts
@@ -210,6 +214,8 @@
     :vl-blockstmt        x.atts
     :vl-repeatstmt       x.atts
     :vl-timingstmt       x.atts
+    :vl-breakstmt        x.atts
+    :vl-continuestmt     x.atts
     :vl-returnstmt       x.atts
     :vl-assertstmt       x.atts
     :vl-cassertstmt      x.atts))
@@ -598,8 +604,10 @@ directly part of the statement.</p>"
       :vl-nullstmt         (progn$ (impossible) x)
       :vl-assignstmt       (progn$ (impossible) x)
       :vl-deassignstmt     (progn$ (impossible) x)
-      :vl-enablestmt       (progn$ (impossible) x)
+      :vl-callstmt         (progn$ (impossible) x)
       :vl-disablestmt      (progn$ (impossible) x)
+      :vl-breakstmt        (progn$ (impossible) x)
+      :vl-continuestmt     (progn$ (impossible) x)
       :vl-returnstmt       (progn$ (impossible) x)
       :vl-eventtriggerstmt (progn$ (impossible) x)))
   ///
@@ -711,7 +719,9 @@ provide a :ctrl when there is one, etc.</p>
 
   (defmacro change-vl-compoundstmt (x &rest args)
     (change-vl-compoundstmt-fn x
-                               (std::da-changer-args-to-alist args '(:stmts :exprs :ctrl :vardecls :paramdecls))))
+                               (std::da-changer-args-to-alist 'change-vl-compoundstmt
+                                                              args
+                                                              '(:stmts :exprs :ctrl :vardecls :paramdecls))))
 
   (local (defthm test0
            (equal (change-vl-compoundstmt x)
@@ -865,10 +875,10 @@ process them.</p>"
   :enabled t
   (vl-stmt-case x :vl-assignstmt))
 
-(define vl-enablestmt-p ((x vl-stmt-p))
+(define vl-callstmt-p ((x vl-stmt-p))
   :inline t
   :enabled t
-  (vl-stmt-case x :vl-enablestmt))
+  (vl-stmt-case x :vl-callstmt))
 
 ;; NOTE: Moved vl-blockstmt-p to parsetree because scopsetack needs it.
 

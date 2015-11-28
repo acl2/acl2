@@ -110,7 +110,7 @@
             "Bad result: ~x0~%" (list warnings size)))))))
 
 
-(defines vl-interesting-size-values
+(defines vl-interesting-size-atoms
   :parents (vl-tweak-fussy-warning-type)
   :short "Heuristic for tweaking fussy size warnings."
   :long "<p>Our basic goal is to gather all the atoms throughout an expression
@@ -129,71 +129,114 @@ only meant as a heuristic for generating more useful warnings.</p>"
                                         acl2::member-of-cons
                                         ))))
 
-  (define vl-expr-interesting-size-values ((x vl-expr-p))
+  (define vl-expr-interesting-size-atoms ((x vl-expr-p))
     :measure (vl-expr-count x)
     :verify-guards nil
-    :returns (vals vl-valuelist-p)
+    :returns (vals vl-exprlist-p)
     (vl-expr-case x
-      :vl-literal (list x.val)
-      :vl-binary (case x.op
-                   ((:vl-binary-power
-                     :vl-binary-shr
-                     :vl-binary-shl
-                     :vl-binary-ashr
-                     :vl-binary-ashl)
-                    (vl-expr-interesting-size-values x.left))
-                   ((:vl-binary-plus
-                     :vl-binary-minus
-                     :vl-binary-times
-                     :vl-binary-div
-                     :vl-binary-rem
-                     :vl-binary-bitand
-                     :vl-binary-bitor
-                     :vl-binary-xor
-                     :vl-binary-xnor)
-                    (append (vl-expr-interesting-size-values x.left)
-                            (vl-expr-interesting-size-values x.right))))
-      :vl-unary (case x.op
-                  ((:vl-unary-plus
-                    :vl-unary-minus
-                    :vl-unary-bitnot)
-                   (vl-expr-interesting-size-values x.arg)))
-      :vl-concat (vl-exprlist-interesting-size-values x.parts)
-      :vl-multiconcat (vl-exprlist-interesting-size-values x.parts)
-      :otherwise nil))
+      :vl-literal (list (vl-expr-fix x))
+      :vl-index   (list (vl-expr-fix x))
+      :vl-unary
+      (case x.op
+        ((:vl-unary-plus :vl-unary-minus :vl-unary-bitnot)
+         ;; These are "transparent" to sizing, so yes, go inside
+         ;; and get the interesting atoms in the argument.
+         (vl-expr-interesting-size-atoms x.arg))
+        ((:vl-unary-lognot :vl-unary-bitand :vl-unary-nand
+          :vl-unary-bitor :vl-unary-nor :vl-unary-xor
+          :vl-unary-xnor)
+         ;; These all just generate 1-bit results, so anything
+         ;; inside of them is not interesting to sizing.
+         nil)
+        ((:vl-unary-preinc :vl-unary-predec
+          :vl-unary-postinc :vl-unary-postdec)
+         ;; I think we want to go through these.
+         (vl-expr-interesting-size-atoms x.arg))
+        (otherwise (impossible)))
+      :vl-binary
+      (case x.op
+        ((:vl-binary-logand :vl-binary-logor
+          :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+          :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+          :vl-binary-wildeq :vl-binary-wildneq
+          :vl-implies :vl-equiv)
+         ;; These always generate one-bit results, so there's no
+         ;; reason to go into their args.
+         nil)
+        ((:vl-binary-plus :vl-binary-minus
+          :vl-binary-times :vl-binary-div :vl-binary-rem
+          :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor
+          )
+         ;; Both arguments affect sizing,
+         (append (vl-expr-interesting-size-atoms x.left)
+                 (vl-expr-interesting-size-atoms x.right)))
+        ((:vl-binary-power :vl-binary-shr :vl-binary-shl
+          :vl-binary-ashr :vl-binary-ashl)
+         ;; Only the first argument affects the self-size.
+         (vl-expr-interesting-size-atoms x.left))
+        ((:vl-binary-assign
+          :vl-binary-plusassign :vl-binary-minusassign
+          :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+          :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+          :vl-binary-shlassign :vl-binary-shrassign
+          :vl-binary-ashlassign :vl-binary-ashrassign)
+         ;; Only the left hand side affects the size.
+         (vl-expr-interesting-size-atoms x.left))
+        (otherwise (impossible)))
 
-  (define vl-exprlist-interesting-size-values ((x vl-exprlist-p))
+      :vl-qmark
+      ;; Size of the condition is irrelevant.
+      (append (vl-expr-interesting-size-atoms x.then)
+              (vl-expr-interesting-size-atoms x.else))
+
+      :vl-concat
+      (vl-exprlist-interesting-size-atoms x.parts)
+
+      :vl-multiconcat
+      ;; This probably doesn't make a whole lot of sense.
+      (vl-exprlist-interesting-size-atoms x.parts)
+
+      :vl-mintypmax nil
+      :vl-call      nil
+      :vl-stream    nil
+      :vl-cast      nil ;; bozo?
+      :vl-inside    nil
+      :vl-tagged    nil ;; bozo?
+      :vl-pattern   nil
+      :vl-special   nil))
+
+  (define vl-exprlist-interesting-size-atoms ((x vl-exprlist-p))
     :measure (vl-exprlist-count x)
-    :returns (vals vl-valuelist-p)
+    :returns (vals vl-exprlist-p)
     (if (atom x)
         nil
-      (append (vl-expr-interesting-size-values (car x))
-              (vl-exprlist-interesting-size-values (Cdr x)))))
+      (append (vl-expr-interesting-size-atoms (car x))
+              (vl-exprlist-interesting-size-atoms (cdr x)))))
   ///
-  (defrule true-listp-of-vl-expr-interesting-size-values
-    (true-listp (vl-expr-interesting-size-values x))
+  (defrule true-listp-of-vl-expr-interesting-size-atoms
+    (true-listp (vl-expr-interesting-size-atoms x))
     :rule-classes :type-prescription)
-
-  (defrule true-listp-of-vl-exprlist-interesting-size-values
-    (true-listp (vl-exprlist-interesting-size-values x))
+  (defrule true-listp-of-vl-exprlist-interesting-size-atoms
+    (true-listp (vl-exprlist-interesting-size-atoms x))
     :rule-classes :type-prescription)
+  (verify-guards vl-expr-interesting-size-atoms
+    :hints(("Goal" :in-theory (enable (:e tau-system) member-equal))))
+  (deffixequiv-mutual vl-interesting-size-atoms))
 
-  (verify-guards vl-expr-interesting-size-values)
 
-  (deffixequiv-mutual vl-interesting-size-values))
-
-
-(define vl-collect-unsized-ints ((x vl-valuelist-p))
+(define vl-collect-unsized-ints ((x vl-exprlist-p))
   :parents (vl-tweak-fussy-warning-type)
   :returns (sub-x vl-exprlist-p)
-  (b* (((when (atom x)) nil)
-       (x1 (car x))
-       (keep (vl-value-case x1
-               :vl-constint x1.wasunsized
+  (b* (((when (atom x))
+        nil)
+       (x1 (vl-expr-fix (car x)))
+       (keep (vl-expr-case x1
+               :vl-literal (vl-value-case x1.val
+                             :vl-constint x1.val.wasunsized
+                             :otherwise nil)
                :otherwise nil)))
     (if keep
-        (cons (make-vl-literal :val x1)
-              (vl-collect-unsized-ints (cdr x)))
+        (cons x1 (vl-collect-unsized-ints (cdr x)))
       (vl-collect-unsized-ints (cdr x))))
   ///
   (defret vl-exprlist-resolved-p-of-vl-collect-unsized-ints
@@ -304,7 +347,7 @@ details.</p>"
        ;; Collect up interesting unsized ints in the 32-bit expression.  If it
        ;; has unsized ints, they're probably the reason it's 32 bits.  After
        ;; collecting them, see if they fit into the size of the other expr.
-       (atoms         (vl-expr-interesting-size-values expr-32))
+       (atoms         (vl-expr-interesting-size-atoms expr-32))
        (unsized       (vl-collect-unsized-ints atoms))
        (unsized-fit-p (nats-below-p (ash 1 size-other)
                                     (vl-exprlist-resolved->vals unsized)))

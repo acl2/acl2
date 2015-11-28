@@ -210,7 +210,30 @@
                :vl-blockstmt (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
                :vl-forstmt (vl-scopestack-push (vl-forstmt->blockscope x) ss)
                :otherwise ss)))
-      (vl-stmt-type-disambiguate-aux x ss))))
+      (vl-stmt-case x
+        :vl-callstmt
+        ;; The first argument might be a datatype.
+        (b* ((arg-to-disambiguate (and (not x.typearg)
+                                       (consp x.args)
+                                       (car x.args)))
+             ((unless arg-to-disambiguate)
+              (vl-stmt-type-disambiguate-aux x ss))
+             (warnings nil)
+             ((wmv warnings type)
+              (vl-expr-to-datatype arg-to-disambiguate ss))
+             ((unless type)
+              ;; It wasn't a type, so there's nothing special to do.
+              (vl-stmt-type-disambiguate-aux x ss))
+             ;; Move arg1 over to become the typearg.
+             ((wmv warnings id) (vl-scopeexpr-type-disambiguate x.id ss))
+             ((wmv warnings other-args) (vl-exprlist-type-disambiguate (cdr x.args) ss))
+             (new-x (change-vl-callstmt x
+                                        :id id
+                                        :typearg type
+                                        :args other-args)))
+          (mv warnings new-x))
+        :otherwise
+        (vl-stmt-type-disambiguate-aux x ss)))))
 
 (fty::defvisitors vl-fundecl-type-disambiguate-deps
   :template type-disambiguate
@@ -362,7 +385,4 @@
         (vl-design-type-disambiguate-aux x ss))
        ((vl-design new-x)))
     (change-vl-design new-x :warnings (append-without-guard warnings new-x.warnings))))
-
-
-
 

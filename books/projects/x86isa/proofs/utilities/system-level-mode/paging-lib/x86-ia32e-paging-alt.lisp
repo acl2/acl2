@@ -381,11 +381,6 @@
 
 ;; Alternate interfaces to paging structure traversal functions:
 
-;; (i-am-here)
-
-;; page-table-base-addr and xw
-;; page-table-entry-addr-found-p and xw
-
 (define ia32e-la-to-pa-PT
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
    (u-s-acc   :type (unsigned-byte  1))
@@ -443,6 +438,11 @@
                                  lin-addr u-s-acc wp smep nxe r-w-x cpl
                                  x86)))
                     (xr fld index x86))))
+
+  ;; Need lemmas about
+  ;; page-table-base-addr and xw
+  ;; page-table-entry-addr-found-p and xw
+  ;; before I can prove the following two theorems.
 
   ;; (defthm ia32e-la-to-pa-PT-xw-values
   ;;   (implies (and (not (equal fld :mem))
@@ -559,7 +559,79 @@
                                      (page-directory-entry-addr-found-p
                                       page-table-entry-addr-found-p
                                       ia32e-la-to-pa-page-table
-                                      bitops::logand-with-negated-bitmask))))))
+                                      bitops::logand-with-negated-bitmask)))))
+
+  (local (in-theory (e/d ()
+                         (ia32e-la-to-pa-PT
+                          page-directory-entry-addr-found-p))))
+
+  (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-PD
+    :hyp t
+    :bound *physical-address-size*
+    :concl (mv-nth 1
+                   (ia32e-la-to-pa-PD
+                    lin-addr wp smep nxe r-w-x cpl
+                    x86))
+    :gen-linear t
+    :gen-type t)
+
+  (defthm x86p-mv-nth-2-ia32e-la-to-pa-PD
+    (implies (x86p x86)
+             (x86p
+              (mv-nth 2
+                      (ia32e-la-to-pa-PD
+                       lin-addr wp smep nxe r-w-x cpl
+                       x86)))))
+
+  (defthm xr-ia32e-la-to-pa-PD
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-PD
+                                 lin-addr wp smep nxe r-w-x cpl
+                                 x86)))
+                    (xr fld index x86))))
+
+
+  ;; Need lemmas about
+  ;; page-directory-base-addr and xw
+  ;; page-directory-entry-addr-found-p and xw
+  ;; before I can prove the following two theorems.
+
+  ;; (defthm ia32e-la-to-pa-PD-xw-values
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (and (equal (mv-nth 0
+  ;;                                (ia32e-la-to-pa-PD
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 (xw fld index value x86)))
+  ;;                        (mv-nth 0
+  ;;                                (ia32e-la-to-pa-PD
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 x86)))
+  ;;                 (equal (mv-nth 1
+  ;;                                (ia32e-la-to-pa-PD
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 (xw fld index value x86)))
+  ;;                        (mv-nth 1
+  ;;                                (ia32e-la-to-pa-PD
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 x86))))))
+
+  ;; (defthm ia32e-la-to-pa-PD-xw-state
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (equal (mv-nth 2
+  ;;                           (ia32e-la-to-pa-PD
+  ;;                            lin-addr wp smep nxe r-w-x cpl
+  ;;                            (xw fld index value x86)))
+  ;;                   (xw fld index value
+  ;;                       (mv-nth 2
+  ;;                               (ia32e-la-to-pa-PD
+  ;;                                lin-addr wp smep nxe r-w-x cpl
+  ;;                                x86))))))
+  )
 
 ;; ----------------------------------------------------------------------
 
@@ -676,7 +748,79 @@
                                page-dir-ptr-table-entry-addr-found-p
                                page-directory-entry-addr-found-p
                                page-table-entry-addr-found-p
-                               bitops::logand-with-negated-bitmask))))))
+                               bitops::logand-with-negated-bitmask)))))
+
+  (local (in-theory (e/d ()
+                         (ia32e-la-to-pa-PD
+                          page-dir-ptr-table-entry-addr-found-p))))
+
+  (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-PDPT
+    :hyp t
+    :bound *physical-address-size*
+    :concl (mv-nth 1
+                   (ia32e-la-to-pa-PDPT
+                    lin-addr wp smep nxe r-w-x cpl
+                    x86))
+    :gen-linear t
+    :gen-type t)
+
+  (defthm x86p-mv-nth-2-ia32e-la-to-pa-PDPT
+    (implies (x86p x86)
+             (x86p
+              (mv-nth 2
+                      (ia32e-la-to-pa-PDPT
+                       lin-addr wp smep nxe r-w-x cpl
+                       x86)))))
+
+  (defthm xr-ia32e-la-to-pa-PDPT
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-PDPT
+                                 lin-addr wp smep nxe r-w-x cpl
+                                 x86)))
+                    (xr fld index x86))))
+
+
+  ;; Need lemmas about
+  ;; page-dir-ptr-table-base-addr and xw
+  ;; page-dir-ptr-table-entry-addr-found-p and xw
+  ;; before I can prove the following two theorems.
+
+  ;; (defthm ia32e-la-to-pa-PDPT-xw-values
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (and (equal (mv-nth 0
+  ;;                                (ia32e-la-to-pa-PDPT
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 (xw fld index value x86)))
+  ;;                        (mv-nth 0
+  ;;                                (ia32e-la-to-pa-PDPT
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 x86)))
+  ;;                 (equal (mv-nth 1
+  ;;                                (ia32e-la-to-pa-PDPT
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 (xw fld index value x86)))
+  ;;                        (mv-nth 1
+  ;;                                (ia32e-la-to-pa-PDPT
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 x86))))))
+
+  ;; (defthm ia32e-la-to-pa-PDPT-xw-state
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (equal (mv-nth 2
+  ;;                           (ia32e-la-to-pa-PDPT
+  ;;                            lin-addr wp smep nxe r-w-x cpl
+  ;;                            (xw fld index value x86)))
+  ;;                   (xw fld index value
+  ;;                       (mv-nth 2
+  ;;                               (ia32e-la-to-pa-PDPT
+  ;;                                lin-addr wp smep nxe r-w-x cpl
+  ;;                                x86))))))
+  )
 
 ;; ----------------------------------------------------------------------
 
@@ -805,6 +949,80 @@
                                page-dir-ptr-table-entry-addr-found-p
                                page-directory-entry-addr-found-p
                                page-table-entry-addr-found-p
-                               bitops::logand-with-negated-bitmask))))))
+                               bitops::logand-with-negated-bitmask)))))
+
+  (local (in-theory (e/d ()
+                         (ia32e-la-to-pa-PDPT
+                          pml4-table-entry-addr-found-p))))
+
+  (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-PML4T
+    :hyp t
+    :bound *physical-address-size*
+    :concl (mv-nth 1
+                   (ia32e-la-to-pa-PML4T
+                    lin-addr wp smep nxe r-w-x cpl
+                    x86))
+    :gen-linear t
+    :gen-type t)
+
+  (defthm x86p-mv-nth-2-ia32e-la-to-pa-PML4T
+    (implies (x86p x86)
+             (x86p
+              (mv-nth 2
+                      (ia32e-la-to-pa-PML4T
+                       lin-addr wp smep nxe r-w-x cpl
+                       x86))))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     ((:meta acl2::mv-nth-cons-meta))))))
+
+  (defthm xr-ia32e-la-to-pa-PML4T
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-PML4T
+                                 lin-addr wp smep nxe r-w-x cpl
+                                 x86)))
+                    (xr fld index x86))))
+
+
+  ;; Need lemmas about
+  ;; pml4-table-base-addr and xw
+  ;; pml4-table-entry-addr-found-p and xw
+  ;; before I can prove the following two theorems.
+
+  ;; (defthm ia32e-la-to-pa-PML4T-xw-values
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (and (equal (mv-nth 0
+  ;;                                (ia32e-la-to-pa-PML4T
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 (xw fld index value x86)))
+  ;;                        (mv-nth 0
+  ;;                                (ia32e-la-to-pa-PML4T
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 x86)))
+  ;;                 (equal (mv-nth 1
+  ;;                                (ia32e-la-to-pa-PML4T
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 (xw fld index value x86)))
+  ;;                        (mv-nth 1
+  ;;                                (ia32e-la-to-pa-PML4T
+  ;;                                 lin-addr wp smep nxe r-w-x cpl
+  ;;                                 x86))))))
+
+  ;; (defthm ia32e-la-to-pa-PML4T-xw-state
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (equal (mv-nth 2
+  ;;                           (ia32e-la-to-pa-PML4T
+  ;;                            lin-addr wp smep nxe r-w-x cpl
+  ;;                            (xw fld index value x86)))
+  ;;                   (xw fld index value
+  ;;                       (mv-nth 2
+  ;;                               (ia32e-la-to-pa-PML4T
+  ;;                                lin-addr wp smep nxe r-w-x cpl
+  ;;                                x86))))))
+  )
 
 ;; ======================================================================

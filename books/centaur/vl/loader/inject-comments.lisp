@@ -303,6 +303,8 @@ and max, gathering their comments.</p>"
       (:vl-paramdecl  (vl-paramdecl->loc x))
       (:vl-import     (vl-import->loc x))
       (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (:vl-dpiimport  (vl-dpiimport->loc x))
+      (:vl-dpiexport  (vl-dpiexport->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->maxloc ((x vl-description-p))
@@ -324,6 +326,8 @@ and max, gathering their comments.</p>"
       (:vl-paramdecl  (vl-paramdecl->loc x))
       (:vl-import     (vl-import->loc x))
       (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (:vl-dpiimport  (vl-dpiimport->loc x))
+      (:vl-dpiexport  (vl-dpiexport->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->comments ((x vl-description-p))

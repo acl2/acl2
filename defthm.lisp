@@ -496,9 +496,7 @@
                (cdr hyps)
                (cons (fargn (car hyps) 1) bound-vars)
                wrld))
-             ((and (nvariablep (car hyps))
-                   (not (fquotep (car hyps)))
-                   (eq (ffn-symb (car hyps)) 'synp)
+             ((and (ffn-symb-p (car hyps) 'synp)
                    (not (equal (fargn (car hyps) 1) *nil*))) ; not syntaxp hyp
               (cond
                ((equal (fargn (car hyps) 1) *t*)
@@ -795,7 +793,7 @@
 (defun forced-hyps (lst)
   (cond ((null lst) nil)
         ((and (nvariablep (car lst))
-              (not (fquotep (car lst)))
+;             (not (fquotep (car lst)))
               (or (eq (ffn-symb (car lst)) 'force)
                   (eq (ffn-symb (car lst)) 'case-split)))
          (cons (car lst) (forced-hyps (cdr lst))))
@@ -807,7 +805,7 @@
     nil)
    (t (mv-let (not-flg atm)
               (strip-not (if (and (nvariablep (car hyps))
-                                  (not (fquotep (car hyps)))
+;                                 (not (fquotep (car hyps)))
                                   (or (eq (ffn-symb (car hyps)) 'force)
                                       (eq (ffn-symb (car hyps)) 'case-split)))
                              (fargn (car hyps) 1)
@@ -1057,10 +1055,7 @@
                     (let* ((equiv (ffn-symb hyp))
                            (var (fargn hyp 1))
                            (term0 (fargn hyp 2))
-                           (term (if (and (nvariablep term0)
-                                          (not (fquotep term0))
-                                          (eq (ffn-symb term0)
-                                              'double-rewrite))
+                           (term (if (ffn-symb-p term0 'double-rewrite)
                                      (fargn term0 1)
                                    term0))
                            (new-geneqv (cadr (geneqv-lst equiv
@@ -6644,9 +6639,7 @@
 (defun chk-acceptable-type-set-inverter-rule (name ts term ctx ens wrld state)
   (let* ((vars (all-vars term)))
     (cond
-     ((not (and (nvariablep term)
-                (not (fquotep term))
-                (eq (ffn-symb term) 'equal)
+     ((not (and (ffn-symb-p term 'equal)
                 (equal vars '(X))
                 (equal (all-vars (fargn term 1))
                        (all-vars (fargn term 2)))))
@@ -7998,7 +7991,7 @@
                                 x))
                            (t (let* ((first-hyp
                                       (if (and (nvariablep (car hyps))
-                                               (not (fquotep (car hyps)))
+;                                              (not (fquotep (car hyps)))
                                                (or (eq (ffn-symb (car hyps))
                                                        'force)
                                                    (eq (ffn-symb (car hyps))
@@ -8006,9 +7999,7 @@
                                           (fargn (car hyps) 1)
                                         (car hyps)))
                                      (trigger-term
-                                      (if (and (nvariablep first-hyp)
-                                               (not (fquotep first-hyp))
-                                               (eq (ffn-symb first-hyp) 'not))
+                                      (if (ffn-symb-p first-hyp 'not)
                                           (fargn first-hyp 1)
                                         first-hyp)))
                                 (pprogn
@@ -8029,9 +8020,7 @@
               (hyps concl)
               (unprettyify-tp (remove-guard-holders corollary))
               (declare (ignore hyps))
-              (let ((pat (cond ((and (not (variablep concl))
-                                     (not (fquotep concl))
-                                     (eq (ffn-symb concl) 'implies))
+              (let ((pat (cond ((ffn-symb-p concl 'implies)
                                 (find-type-prescription-pat (fargn concl 2)
                                                             ens wrld))
                                (t (find-type-prescription-pat concl ens
@@ -10866,12 +10855,11 @@
   (let ((supporters (instantiable-ancestors (all-fnnames tterm) wrld nil)))
     (value supporters)))
 
-(defun defaxiom-fn (name term state rule-classes doc event-form)
+(defun defaxiom-fn (name term state rule-classes event-form)
 
 ; Important Note: Don't change the formals of this function without reading the
 ; *initial-event-defmacros* discussion in axioms.lisp.
 
-  (declare (ignore doc))
   (when-logic
    "DEFAXIOM"
    (with-ctx-summarized
@@ -11082,7 +11070,6 @@
                         instructions
                         hints
                         otf-flg
-                        doc
                         event-form
                         #+:non-standard-analysis std-p)
   (with-ctx-summarized
@@ -11109,9 +11096,6 @@
                                             nil)
                                           (if otf-flg
                                               (list :otf-flg otf-flg)
-                                            nil)
-                                          (if doc
-                                              (list :doc doc)
                                             nil)))))
            (ld-skip-proofsp (ld-skip-proofsp state)))
        (pprogn
@@ -11233,7 +11217,6 @@
                        instructions
                        hints
                        otf-flg
-                       doc
                        event-form
                        #+:non-standard-analysis std-p)
 
@@ -11247,24 +11230,22 @@
      instructions
      hints
      otf-flg
-     doc
      event-form
      #+:non-standard-analysis std-p)))
 
-(defmacro thm (term &key hints otf-flg doc)
+(defmacro thm (term &key hints otf-flg)
   (list 'thm-fn
         (list 'quote term)
         'state
         (list 'quote hints)
-        (list 'quote otf-flg)
-        (list 'quote doc)))
+        (list 'quote otf-flg)))
 
-(defun thm-fn (term state hints otf-flg doc)
+(defun thm-fn (term state hints otf-flg)
   (er-progn
    (with-ctx-summarized
     (if (output-in-infixp state)
-        (list* 'THM term (if (or hints otf-flg doc) '(irrelevant) nil))
-        "( THM ...)")
+        (list* 'THM term (if (or hints otf-flg) '(irrelevant) nil))
+      "( THM ...)")
     (let ((wrld (w state))
           (ens (ens state)))
       (er-let* ((hints (translate-hints+ 'thm

@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 # VL Verilog Toolkit
 # Copyright (C) 2008-2014 Centaur Technology
 #

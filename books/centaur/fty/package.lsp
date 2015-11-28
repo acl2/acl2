@@ -35,7 +35,14 @@
   (append *std-pkg-symbols*
           '(std::def-primitive-aggregate
              std::extract-keywords
-             std::getarg)
+             std::getarg
+             str::cat
+             str::revappend-chars
+             str::rchars-to-string
+             enable*
+             disable*
+             e/d*
+             )
           #!ACL2
           '(a b c d e f g h i j k l m n o p q r s t u v w x y z
 
@@ -48,6 +55,5 @@
               equivalence
               congruence
               hints
-
               )))
 

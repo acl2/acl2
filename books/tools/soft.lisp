@@ -1467,7 +1467,10 @@
           :quant-ok t
           :rewrite ,rewrite
           :witness-dcls (,wit-dcl)
-          ,@options)
+; Matt K. mod: avoid duplicate keywords.
+          ,@(strip-keyword-list
+             '(:strengthen :quant-ok :rewrite :witness-dcls)
+             options))
         ,@table-event
         (value-triple (check-qrewrite-rule-funvars ',fun ',quant (w state))))))
 

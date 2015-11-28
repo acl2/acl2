@@ -372,7 +372,6 @@
   (and (leafp cst)
        (if (quotep (trm cst))
            (not (cst-nilp cst))
-         (and (nvariablep (trm cst))
 
 ; Consider other types here besides cons, e.g., that of numbers.  We may want
 ; to pass in a list of functions that have been checked to have type-sets that
@@ -380,7 +379,7 @@
 ; below against such a list.  This list of function symbols could be determined
 ; easily from the list of all function symbols in op-alist.
 
-              (eq (ffn-symb (trm cst)) 'cons)))))
+         (ffn-symb-p (trm cst) 'cons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; II. OP-ALIST ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -428,9 +427,7 @@
          (let ((test (fargn x 1))
                (tbr (fargn x 2))
                (fbr (fargn x 3)))
-           (and (not (variablep test))
-                (not (fquotep test))
-                (eq (ffn-symb test) 'equal)
+           (and (ffn-symb-p test 'equal)
                 (let ((v (fargn test 1)))
                   (and (variablep v)
                        (let ((b (fargn test 2)))
@@ -564,9 +561,7 @@
                               "We had thought we had a rewrite rule with :lhs ~
                                being a call of ~x0, but the :lhs is ~x1."
                               fn lhs))
-                      (nvariablep rhs)
-                      (not (fquotep rhs))
-                      (eq (ffn-symb rhs) fn)
+                      (ffn-symb-p rhs fn)
                       (variablep (fargn lhs 1))
                       (variablep (fargn lhs 2))
                       (not (eq (fargn lhs 1) (fargn lhs 2)))

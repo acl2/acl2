@@ -799,12 +799,22 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 4vec-=== bool->vec)))))
 
 
-(define a4vec-wildeq-bit ((au "aig")
+(define and4 (a b c d)
+  (and a b c d)
+  ///
+  (defthm and4-forward
+    (implies (and4 a b c d)
+             (and a b c d))
+    :rule-classes :forward-chaining))
+
+
+
+(define a4vec-wildeq-safe-bit ((au "aig")
                           (al)
                           (bu)
                           (bl))
-  :returns (mv (wildeq-p-upper "aig")
-               (wildeq-p-lower "aig"))
+  :returns (mv (wildeq-safe-p-upper "aig")
+               (wildeq-safe-p-lower "aig"))
   (b* ((bz (aig-and (aig-not bu) bl))
        ((when (eq bz t))
         ;; If B is definitely Z then we return true.
@@ -842,8 +852,8 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
          bz ;; Ans is T, so lower set
          )))
   ///
-  (defthmd a4vec-wildeq-bit-eval
-    (b* (((mv upper lower) (a4vec-wildeq-bit a.upper a.lower b.upper b.lower)))
+  (defthmd a4vec-wildeq-safe-bit-eval
+    (b* (((mv upper lower) (a4vec-wildeq-safe-bit a.upper a.lower b.upper b.lower)))
       (and (equal (aig-eval upper env)
                   (or (iff (aig-eval a.upper env)
                            (aig-eval b.upper env))
@@ -875,17 +885,218 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                                        acl2::aig-eval-xor))))))
 
 
+(define a4vec-wildeq-safe-aux ((a.upper "aig list")
+                          (a.lower "aig list")
+                          (b.upper "aig list")
+                          (b.lower "aig list"))
+  :measure (+ (len b.upper) (len b.lower) (len a.upper) (len a.lower))
+  :returns (mv (wildeq-safe-p-upper "aig")
+               (wildeq-safe-p-lower "aig"))
+  :hints(("Goal" :in-theory (enable and4)))
+  :guard-hints (("goal" :in-theory (enable and4)))
+  (b* (((mv buf bur buend) (gl::first/rest/end b.upper))
+       ((mv blf blr blend) (gl::first/rest/end b.lower))
+       ;; ((when (and buend blend (eq buf nil) (eq blf t)))
+       ;;  ;; Ends in Zs out to infinity.
+       ;;  (mv t t))
+       ((mv auf aur auend) (gl::first/rest/end a.upper))
+       ((mv alf alr alend) (gl::first/rest/end a.lower))
 
+       ((mv upper1 lower1) (a4vec-wildeq-safe-bit auf alf buf blf))
+       ((when (mbe :logic (and4 buend blend auend alend)
+                   :exec (and buend blend auend alend)))
+        (mv upper1 lower1)))
+    (mbe :logic
+         (b* (((mv upper-rest lower-rest)
+               (a4vec-wildeq-safe-aux aur alr bur blr)))
+           (mv (aig-and upper1 upper-rest)
+               (aig-and lower1 lower-rest)))
+         :exec
+         (b* (((when (and (eq upper1 nil) (eq lower1 nil)))
+               ;; short circuit
+               (mv nil nil))
+              ((mv upper-rest lower-rest)
+               (a4vec-wildeq-safe-aux aur alr bur blr)))
+           (mv (aig-and upper1 upper-rest)
+               (aig-and lower1 lower-rest)))))
 
-
-
-(define and4 (a b c d)
-  (and a b c d)
   ///
-  (defthm and4-forward
-    (implies (and4 a b c d)
-             (and a b c d))
-    :rule-classes :forward-chaining))
+  ;; (local (defthm 4vec-wildeq-safe-expand
+  ;;          (equal (4vec-wildeq-safe (4vec (aig-list->s a.upper env)
+  ;;                                    (aig-list->s a.lower env))
+  ;;                              (4vec (aig-list->s b.upper env)
+  ;;                                    (aig-list->s b.lower env)))
+  ;;                 (
+
+  (local (defthm aig-list->s-when-endp
+           (implies (gl::s-endp x)
+                    (equal (aig-list->s x env)
+                           (bool->vec (aig-eval (car x) env))))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defthm s-endp-when-singleton
+           (gl::s-endp (list x))
+           :hints(("Goal" :in-theory (enable gl::s-endp)))))
+
+  (local (defthm a4vec-wildeq-safe-bit-correct
+           (b* (((mv upper lower) (a4vec-wildeq-safe-bit a b c d)))
+             (and (iff (aig-eval upper env)
+                       (equal -1 (4vec->upper
+                                  (4vec-wildeq-safe (4vec (bool->vec (aig-eval a env))
+                                                     (bool->vec (aig-eval b env)))
+                                               (4vec (bool->vec (aig-eval c env))
+                                                     (bool->vec (aig-eval d env)))))))
+                  (iff (aig-eval lower env)
+                       (equal -1 (4vec->lower
+                                  (4vec-wildeq-safe (4vec (bool->vec (aig-eval a env))
+                                                     (bool->vec (aig-eval b env)))
+                                               (4vec (bool->vec (aig-eval c env))
+                                                     (bool->vec (aig-eval d env)))))))))
+           :hints(("Goal" :in-theory (e/d (4vec-wildeq-safe
+                                           4vec-bitxor 3vec-bitnot
+                                           3vec-bitor 3vec-reduction-and
+                                           a4vec-wildeq-safe-bit-eval bool->vec)
+                                          (not xor iff))))))
+
+
+
+
+  (local (defthmd 4vec-wildeq-safe-expand
+           (equal (4vec-wildeq-safe (4vec a b) (4vec c d))
+                  (4vec (bool->vec
+                         (and (equal -1 (4vec->upper (4vec-wildeq-safe (4vec (bool->vec (logbitp 0 a))
+                                                                        (bool->vec (logbitp 0 b)))
+                                                                  (4vec (bool->vec (logbitp 0 c))
+                                                                        (bool->vec (logbitp 0 d))))))
+                              (equal -1 (4vec->upper (4vec-wildeq-safe (4vec (logcdr a)
+                                                                        (logcdr b))
+                                                                  (4vec (logcdr c)
+                                                                        (logcdr d)))))))
+                        (bool->vec
+                         (and (equal -1 (4vec->lower (4vec-wildeq-safe (4vec (bool->vec (logbitp 0 a))
+                                                                        (bool->vec (logbitp 0 b)))
+                                                                  (4vec (bool->vec (logbitp 0 c))
+                                                                        (bool->vec (logbitp 0 d))))))
+                              (equal -1 (4vec->lower (4vec-wildeq-safe (4vec (logcdr a)
+                                                                        (logcdr b))
+                                                                  (4vec (logcdr c)
+                                                                        (logcdr d)))))))))
+           :hints(("Goal" :in-theory (enable 4vec-wildeq-safe 3vec-bitnot 4vec-bitxor
+                                             3vec-bitor 3vec-reduction-and bool->vec
+                                             bitops::logand**
+                                             bitops::logxor**
+                                             bitops::logior**
+                                             bitops::lognot**
+                                             bitops::logbitp**)))))
+
+  (local (defthm logbitp-0-of-aig-list->s
+           (equal (logbitp 0 (aig-list->s x env))
+                  (aig-eval (car x) env))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defthm logcdr-of-aig-list->s
+           (equal (logcdr (aig-list->s x env))
+                  (aig-list->s (gl::scdr x) env))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defcong iff equal (bool->vec x) 1))
+
+  (local (defthm bool->vec-equal-neg-1
+           (iff (equal -1 (bool->vec a))
+                a)))
+
+  (defthm a4vec-wildeq-safe-aux-correct
+    (b* (((mv ans.upper ans.lower) (a4vec-wildeq-safe-aux a.upper a.lower b.upper b.lower)))
+      (equal (a4vec-eval (a4vec (list ans.upper) (list ans.lower)) env)
+             (4vec-wildeq-safe (4vec (aig-list->s a.upper env)
+                                (aig-list->s a.lower env))
+                          (4vec (aig-list->s b.upper env)
+                                (aig-list->s b.lower env)))))
+    :hints (("Goal" :induct (a4vec-wildeq-safe-aux a.upper a.lower b.upper b.lower)
+             :do-not '(generalize fertilize eliminate-destructors))
+            (and stable-under-simplificationp
+                 '(:use ((:instance 4vec-wildeq-safe-expand
+                          (a (aig-list->s a.upper env))
+                          (b (aig-list->s a.lower env))
+                          (c (aig-list->s b.upper env))
+                          (d (aig-list->s b.lower env)))))))))
+
+
+(define a4vec-wildeq-safe ((a a4vec-p) (b a4vec-p))
+  :short "Symbolic version of @(see 4vec-wildeq-safe)."
+  :returns (res a4vec-p)
+  ;; BOZO we could probably benefit from a fused version of this that could
+  ;; better exploit laziness.
+  (b* (((a4vec a))
+       ((a4vec b))
+       ((mv ans.upper ans.lower)
+        (a4vec-wildeq-safe-aux a.upper a.lower b.upper b.lower)))
+    (a4vec (list ans.upper) (list ans.lower)))
+  ///
+  (defthm a4vec-wildeq-safe-correct
+    (equal (a4vec-eval (a4vec-wildeq-safe a b) env)
+           (4vec-wildeq-safe (a4vec-eval a env)
+                        (a4vec-eval b env)))
+    :hints(("Goal" :in-theory (enable 4vec-wildeq-safe 4vec-bitxor-redef 2vec)))))
+
+
+
+(define a4vec-wildeq-bit ((au "aig")
+                          (al)
+                          (bu)
+                          (bl))
+  :returns (mv (wildeq-p-upper "aig")
+               (wildeq-p-lower "aig"))
+  (b* ((bxz (aig-xor bl bu))
+       ((when (eq bxz t))
+        ;; If B is definitely X or Z then we return true.
+        (mv t t))
+       (axz (aig-xor au al))
+       ((when (eq axz t))
+        ;; If A is definitely X or Z:
+        ;;  if B is X or Z, then we still return true
+        ;;  otherwise we return X.
+        (mv t bxz))
+       (a=b (aig-iff au bu)))
+    (mv (aig-or
+         ;; We're taking care of the cases where A or B are X or Z
+         ;; elsewhere, so it suffices to just compare the uppers.
+         a=b
+
+         bxz ;; Ans is T, so upper set.
+         axz ;; Ans is X, so upper set
+         )
+        (aig-or
+         ;; Lower is true iff answer is 1, which is the case if B is x or z, or if a=b.
+         bxz
+         (aig-and a=b
+                  (aig-not axz)))))
+  ///
+  (defthmd a4vec-wildeq-bit-eval
+    (b* (((mv ?upper ?lower) (a4vec-wildeq-bit a.upper a.lower b.upper b.lower)))
+      (and (equal (aig-eval upper env)
+                  (or (iff (aig-eval a.upper env)
+                           (aig-eval b.upper env))
+                      (xor (aig-eval b.upper env)
+                           (aig-eval b.lower env))
+                      (xor (aig-eval a.upper env)
+                           (aig-eval a.lower env))))
+           (equal (aig-eval lower env)
+                  (or (xor (aig-eval b.upper env)
+                           (aig-eval b.lower env))
+                      (and (iff (aig-eval a.upper env)
+                                (aig-eval b.upper env))
+                           (iff (aig-eval a.lower env)
+                                (aig-eval b.lower env)))))
+           ))
+    :hints ((and stable-under-simplificationp
+                 '(:use ((:instance acl2::aig-eval-xor
+                           (x b.lower)
+                           (y b.upper) (env env))
+                         (:instance acl2::aig-eval-xor
+                          (x a.upper) (y a.lower) (env env)))
+                   :in-theory (disable ;; acl2::aig-eval-and
+                                       acl2::aig-eval-xor))))))
 
 
 (define a4vec-wildeq-aux ((a.upper "aig list")
@@ -1041,6 +1252,8 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (4vec-wildeq (a4vec-eval a env)
                         (a4vec-eval b env)))
     :hints(("Goal" :in-theory (enable 4vec-wildeq 4vec-bitxor-redef 2vec)))))
+
+
 
 
 (define a4vec-symwildeq ((a a4vec-p) (b a4vec-p))

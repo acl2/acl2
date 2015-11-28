@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "progutils")
 (include-book "../util/print")
-(include-book "../loader/preprocessor/preprocessor")
+(include-book "../loader/preprocessor/top")
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)

@@ -413,27 +413,27 @@ types.</p>"
                        (fatal :type :vl-bad-instance
                               :msg "Can't instantiate without assignment ~
                                     for type parameter ~a1."
-                              :msg (list nil decl))
+                              :args (list nil decl))
                        decl decl-conf))
                   ((unless (vl-datatype-resolved-p decl.type.default))
                    (mv nil
                        (fatal :type :vl-bad-instance
                               :msg "Default type for parameter ~a1 not resolved."
-                              :msg (list nil decl))
+                              :args (list nil decl))
                        decl decl-conf)))
                (mv t (ok) (change-vl-paramdecl decl :type decl.type) decl-conf)))
             ((when (vl-paramvalue-case override :expr))
              (mv nil
                  (fatal :type :vl-bad-instance
                         :msg "Overriding type parameter ~a1 with expression ~a2."
-                        :msg (list nil decl (vl-paramvalue-expr->expr override)))
+                        :args (list nil decl (vl-paramvalue-expr->expr override)))
                  decl decl-conf))
             (type (vl-paramvalue-type->type override))
             ((unless (vl-datatype-resolved-p type))
              (mv nil
                  (fatal :type :vl-bad-instance
                         :msg "Override type ~a1 for parameter ~a2 not resolved."
-                        :msg (list nil type decl))
+                        :args (list nil type decl))
                  decl decl-conf)))
          (mv t warnings (change-vl-paramdecl
                          decl :type (change-vl-typeparam decl.type :default type))

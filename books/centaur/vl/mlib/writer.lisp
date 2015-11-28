@@ -32,7 +32,7 @@
 (include-book "find")
 (include-book "stmt-tools")
 (include-book "scopestack")
-(include-book "../loader/lexer/lexer") ; yucky, for simple-id-tail-p, etc.
+(include-book "../loader/lexer/chartypes") ; yucky, for simple-id-tail-p, etc.
 (include-book "../util/print")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -710,6 +710,7 @@ displays.  The module browser's web pages are responsible for defining the
     :measure (two-nats-measure (vl-patternkey-count x) 10)
     (vl-patternkey-case x
       :expr (vl-pp-expr x.key)
+      :structmem (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.name)))
       :type (vl-pp-datatype x.type)
       :default (vl-print "default")))
 
@@ -838,7 +839,7 @@ displays.  The module browser's web pages are responsible for defining the
                      (if test-parens (vl-print ")") ps)
                      (vl-print " ? ")
                      (if unspecial-atts (vl-ps-seq (vl-pp-atts unspecial-atts) (vl-print " ")) ps)
-                     (vl-println "")
+                     (vl-println? "")
                      (if then-parens (vl-print "(") ps)
                      (vl-pp-expr x.then)
                      (if then-parens (vl-print ")") ps)
@@ -1691,6 +1692,57 @@ expression into a string."
      (vl-println? " = ")
      (vl-pp-expr x.rhs)
      (vl-println " ;"))))
+
+
+
+(define vl-fwdtypedefkind-string ((x vl-fwdtypedefkind-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints(("Goal" :in-theory (enable vl-fwdtypedefkind-p)))
+  (case (vl-fwdtypedefkind-fix x)
+    (:vl-enum            "enum")
+    (:vl-struct          "struct")
+    (:vl-union           "union")
+    (:vl-class           "class")
+    (:vl-interfaceclass  "interfaceclass")
+    (otherwise           (or (impossible) ""))))
+
+(define vl-pp-fwdtypedef ((x vl-fwdtypedef-p) &key (ps 'ps))
+  (b* (((vl-fwdtypedef x) x))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key"
+                           (vl-print "typedef ")
+                           (vl-print-str (vl-fwdtypedefkind-string x.kind)))
+               (vl-print " ")
+               (vl-print-wirename x.name)
+               (vl-println " ;"))))
+
+(define vl-pp-fwdtypedeflist ((x vl-fwdtypedeflist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-fwdtypedef (car x))
+               (vl-pp-fwdtypedeflist (cdr x)))))
+
+(define vl-pp-typedef ((x vl-typedef-p) &key (ps 'ps))
+  (b* (((vl-typedef x) x))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key"
+                           (vl-print "typedef "))
+               (vl-pp-datatype x.type)
+               (vl-print " ")
+               (vl-print-wirename x.name)
+               (let ((udims (vl-datatype->udims x.type)))
+                 (if (consp udims)
+                     (vl-ps-seq (vl-print " ")
+                                (vl-pp-packeddimensionlist udims))
+                   ps))
+               ;; BOZO add dimensions
+               (vl-println " ;"))))
+
+(define vl-pp-typedeflist ((x vl-typedeflist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-typedef (car x))
+               (vl-pp-typedeflist (cdr x)))))
 
 
 (define vl-pp-plainarg ((x vl-plainarg-p) &key (ps 'ps))
@@ -2573,15 +2625,23 @@ expression into a string."
                  (vl-pp-propcaseitemlist (cdr x))))))
 
 (define vl-pp-propspec ((x vl-propspec-p) &key (ps 'ps))
-  (b* (((vl-propspec x)))
+  (b* (((vl-propspec x))
+       (col (vl-ps->col)))
     (vl-ps-seq (if (consp x.evatoms)
                    (vl-ps-seq (vl-print "@(")
                               (vl-pp-evatomlist x.evatoms)
-                              (vl-print ") "))
+                              (vl-println ")")
+                              (if x.disable
+                                  (vl-indent col)
+                                ps))
                  ps)
                (if x.disable
                    (vl-ps-seq (vl-ps-span "vl_key" (vl-print "disable iff "))
-                              (vl-pp-exprdist x.disable))
+                              (vl-pp-exprdist x.disable)
+                              (vl-println ""))
+                 ps)
+               (if (or x.evatoms x.disable)
+                   (vl-indent (+ (vl-ps->autowrap-ind) 2))
                  ps)
                (vl-pp-propexpr x.prop))))
 
@@ -2636,6 +2696,13 @@ expression into a string."
                (vl-pp-import (car x))
                (vl-pp-importlist-indented (cdr x)))))
 
+(define vl-pp-typedeflist-indented ((x vl-typedeflist-p)
+                                    &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (vl-pp-typedef (car x))
+               (vl-pp-typedeflist-indented (cdr x)))))
 
 (define vl-casetype-string ((x vl-casetype-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -2665,7 +2732,7 @@ expression into a string."
     (:vl-cover          "cover")
     (:vl-expect         "expect")
     (:vl-restrict       "restrict")
-    (otherwise    (or (impossible) ""))))
+    (otherwise          (or (impossible) ""))))
 
 (define vl-assertdeferral-string ((x vl-assertdeferral-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -2674,7 +2741,27 @@ expression into a string."
     ('nil               "")
     (:vl-defer-0        "#0")
     (:vl-defer-final    "final")
-    (otherwise    (or (impossible) ""))))
+    (otherwise          (or (impossible) ""))))
+
+(define vl-blocktype-startstring ((x vl-blocktype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-blocktype-p)))
+  (case (vl-blocktype-fix x)
+    (:vl-beginend     "begin")
+    (:vl-forkjoin     "fork")
+    (:vl-forkjoinany  "fork")
+    (:vl-forkjoinnone "fork")
+    (otherwise        (or (impossible) ""))))
+
+(define vl-blocktype-endstring ((x vl-blocktype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-blocktype-p)))
+  (case (vl-blocktype-fix x)
+    (:vl-beginend     "end")
+    (:vl-forkjoin     "join")
+    (:vl-forkjoinany  "join_any")
+    (:vl-forkjoinnone "join_none")
+    (otherwise        (or (impossible) ""))))
 
 (define vl-pp-forloop-assigns ((x vl-stmtlist-p) &key (ps 'ps))
   (b* (((when (atom x)) ps)
@@ -2730,19 +2817,30 @@ expression into a string."
                  (vl-pp-expr x.expr)
                  (vl-println " ;"))
 
-      :vl-enablestmt
+      :vl-callstmt
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
-                 (vl-pp-scopeexpr x.id)
-                 ;; Bug fixed 2012-10-22: if there are no arguments, we must not
-                 ;; print even the parens.  (Doing so isn't syntactically legal.)
-                 (if (consp x.args)
-                     (vl-ps-seq
-                      (vl-println? "(")
-                      (vl-pp-exprlist x.args)
-                      (vl-print ")"))
+                 (if x.voidp
+                     (vl-ps-seq (vl-ps-span "vl_key" (vl-print "void"))
+                                (vl-print "'("))
                    ps)
-                 (vl-println " ;"))
+                 ;; We don't have to pay attention to systemp here; if it's a
+                 ;; system function the name will have a leading '$' character
+                 ;; anyway.
+                 (vl-pp-scopeexpr x.id)
+                 ;; In Verilog-2005 a task enable with no arguments must be
+                 ;; written as `foo;`, not `foo();`.  However, in SystemVerilog
+                 ;; it's OK to include the parens, so we no longer are careful
+                 ;; not to do so.
+                 (vl-println? "(")
+                 (if x.typearg
+                     (vl-ps-seq (vl-pp-datatype x.typearg)
+                                (if (consp x.args)
+                                    (vl-println? ", ")
+                                  ps))
+                   ps)
+                 (vl-pp-exprlist x.args)
+                 (vl-println ");"))
 
       :vl-disablestmt
       (vl-ps-seq (vl-pp-stmt-autoindent)
@@ -2751,6 +2849,19 @@ expression into a string."
                              (vl-print "disable "))
                  (vl-pp-scopeexpr x.id)
                  (vl-println " ;"))
+
+      :vl-breakstmt
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-ps-span "vl_key" (vl-print "break "))
+                 (vl-println " ;"))
+
+      :vl-continuestmt
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-ps-span "vl_key" (vl-print "continue "))
+                 (vl-println " ;"))
+
       :vl-returnstmt
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
@@ -2802,7 +2913,7 @@ expression into a string."
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
                  (vl-ps-span "vl_key"
-                             (vl-print (if x.sequentialp "begin " "fork ")))
+                             (vl-print-str (vl-blocktype-startstring x.blocktype)))
                  (if (not x.name)
                      (vl-println "")
                    (vl-ps-seq
@@ -2813,15 +2924,21 @@ expression into a string."
                  (if (not x.imports)
                      ps
                    (vl-pp-importlist-indented x.imports))
+                 ;; BOZO order here may be incorrect.  Maybe need to do something to
+                 ;; smartly reorder these using location data.
                  (if (not x.paramdecls)
                      ps
                    (vl-pp-paramdecllist-indented x.paramdecls))
+                 (if (not x.typedefs)
+                     ps
+                   (vl-pp-typedeflist-indented x.typedefs))
                  (if (not x.vardecls)
                      ps
                    (vl-pp-vardecllist-indented x.vardecls))
                  (vl-pp-stmt-indented (vl-pp-stmtlist x.stmts))
                  (vl-pp-stmt-autoindent)
-                 (vl-ps-span "vl_key" (vl-print-str (if x.sequentialp "end" "join")))
+                 (vl-ps-span "vl_key"
+                             (vl-print-str (vl-blocktype-endstring x.blocktype)))
                  (vl-println ""))
 
       :vl-forstmt
@@ -2960,7 +3077,8 @@ expression into a string."
                                           (vl-ps-span "vl_key" (vl-println " else "))
                                           (vl-println "")
                                           (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
-                 (vl-println ";"))))
+                 (vl-println ";")
+                 (vl-println ""))))
 
   (define vl-pp-cassertion ((x vl-cassertion-p) &key (include-name booleanp) (ps 'ps))
     :measure (vl-cassertion-count x)
@@ -2996,7 +3114,8 @@ expression into a string."
                                           (vl-ps-span "vl_key" (vl-println " else "))
                                           (vl-println "")
                                           (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
-                 (vl-println ";"))))
+                 (vl-println ";")
+                 (vl-println ""))))
 
   (define vl-pp-stmtlist ((x vl-stmtlist-p) &key (ps 'ps))
     :measure (vl-stmtlist-count x)
@@ -3108,8 +3227,11 @@ expression into a string."
                (vl-print-wirename x.name)
                (vl-println ";")
                (vl-pp-portdecllist x.portdecls)
+               ;; BOZO this order might not be right, maybe need something
+               ;; smarter that takes locations into account
                (vl-pp-importlist x.imports)
                (vl-pp-paramdecllist x.paramdecls)
+               (vl-pp-typedeflist x.typedefs)
                (vl-pp-vardecllist x.vardecls)
                (vl-print "  ")
                (vl-pp-stmt x.body)
@@ -3140,8 +3262,11 @@ expression into a string."
                (vl-print-wirename x.name)
                (vl-println ";")
                (vl-pp-portdecllist x.portdecls)
+               ;; BOZO this order might not be right, maybe need something
+               ;; smarter that takes locations into account
                (vl-pp-importlist x.imports)
                (vl-pp-paramdecllist x.paramdecls)
+               (vl-pp-typedeflist x.typedefs)
                (vl-pp-vardecllist x.vardecls)
                (vl-print "  ")
                (vl-pp-stmt x.body)
@@ -3156,57 +3281,6 @@ expression into a string."
     (vl-ps-seq (vl-pp-taskdecl (car x))
                (vl-println "")
                (vl-pp-taskdecllist (cdr x)))))
-
-
-
-(define vl-fwdtypedefkind-string ((x vl-fwdtypedefkind-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-fwdtypedefkind-p)))
-  (case (vl-fwdtypedefkind-fix x)
-    (:vl-enum            "enum")
-    (:vl-struct          "struct")
-    (:vl-union           "union")
-    (:vl-class           "class")
-    (:vl-interfaceclass  "interfaceclass")
-    (otherwise           (or (impossible) ""))))
-
-(define vl-pp-fwdtypedef ((x vl-fwdtypedef-p) &key (ps 'ps))
-  (b* (((vl-fwdtypedef x) x))
-    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
-               (vl-ps-span "vl_key"
-                           (vl-print "typedef ")
-                           (vl-print-str (vl-fwdtypedefkind-string x.kind)))
-               (vl-print " ")
-               (vl-print-wirename x.name)
-               (vl-println " ;"))))
-
-(define vl-pp-fwdtypedeflist ((x vl-fwdtypedeflist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-fwdtypedef (car x))
-               (vl-pp-fwdtypedeflist (cdr x)))))
-
-(define vl-pp-typedef ((x vl-typedef-p) &key (ps 'ps))
-  (b* (((vl-typedef x) x))
-    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
-               (vl-ps-span "vl_key"
-                           (vl-print "typedef "))
-               (vl-pp-datatype x.type)
-               (vl-print " ")
-               (vl-print-wirename x.name)
-               (let ((udims (vl-datatype->udims x.type)))
-                 (if (consp udims)
-                     (vl-ps-seq (vl-print " ")
-                                (vl-pp-packeddimensionlist udims))
-                   ps))
-               ;; BOZO add dimensions
-               (vl-println " ;"))))
-
-(define vl-pp-typedeflist ((x vl-typedeflist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-typedef (car x))
-               (vl-pp-typedeflist (cdr x)))))
 
 
 
@@ -3330,6 +3404,93 @@ expression into a string."
     (vl-ps-seq (vl-pp-sequence (car x))
                (vl-pp-sequencelist (cdr x)))))
 
+(define vl-dpispec->string ((x vl-dpispec-p))
+  (case (vl-dpispec-fix x)
+    (:vl-dpi   "\"DPI\"")
+    (:vl-dpi-c "\"DPI-C\"")
+    (otherwise (progn$ (impossible) ""))))
+
+(define vl-dpiprop->string ((x vl-dpiprop-p))
+  (case (vl-dpiprop-fix x)
+    ((nil)           "")
+    (:vl-dpi-context "context")
+    (:vl-dpi-pure    "pure")
+    (otherwise       (progn$ (impossible) ""))))
+
+(define vl-pp-dpiimport ((x vl-dpiimport-p) &key (ps 'ps))
+  (b* (((vl-dpiimport x)))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "  import "))
+               ;; "DPI" or "DPI-C"
+               (vl-ps-span "vl_str" (vl-print-str (vl-dpispec->string x.spec)))
+               (vl-print " ")
+               ;; context or pure, if applicable:
+               (if x.prop
+                   (vl-ps-span "vl_key"
+                               (vl-print-str (vl-dpiprop->string x.prop))
+                               (vl-print " "))
+                 ps)
+               ;; [ c_identifier '=' ], if different than SV name:
+               (if (not (equal x.c-name x.name))
+                   (vl-ps-seq (vl-ps-span "vl_id" (vl-print-str x.c-name))
+                              (vl-print " = "))
+                 ps)
+               ;; function and return type or task:
+               (if x.rettype
+                   (vl-ps-seq (vl-ps-span "vl_key" (vl-print "function "))
+                              (vl-pp-datatype x.rettype))
+                 (vl-ps-span "vl_key" (vl-print "task ")))
+               ;; SV name:
+               (vl-ps-span "vl_id"
+                           (vl-print-str (vl-maybe-escape-identifier x.name))
+                           (vl-print " "))
+               (vl-print "(")
+               (if x.portdecls
+                   (vl-ps-span "vl_cmt"
+                               (vl-print " /* bozo print ports */ "))
+                 ps)
+               (vl-print ")")
+               (vl-println ";"))))
+
+(define vl-pp-dpiimportlist ((x vl-dpiimportlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-dpiimport (car x))
+               (vl-pp-dpiimportlist (cdr x)))))
+
+(define vl-dpifntask->string ((x vl-dpifntask-p))
+  (case (vl-dpifntask-fix x)
+    (:vl-dpi-function "function")
+    (:vl-dpi-task     "task")
+    (otherwise        (progn$ (impossible) ""))))
+
+(define vl-pp-dpiexport ((x vl-dpiexport-p) &key (ps 'ps))
+  (b* (((vl-dpiexport x)))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "  export "))
+               ;; "DPI" or "DPI-C"
+               (vl-ps-span "vl_str" (vl-print-str (vl-dpispec->string x.spec)))
+               (vl-print " ")
+               ;; [ c_identifier '=' ], if different than SV name:
+               (if (not (equal x.c-name x.name))
+                   (vl-ps-seq (vl-ps-span "vl_id" (vl-print-str x.c-name))
+                              (vl-print " = "))
+                 ps)
+               ;; function or task
+               (vl-ps-span "vl_key" (vl-print-str (vl-dpifntask->string x.fntask)))
+               (vl-print " ")
+               ;; SV name
+               (vl-ps-span "vl_id"
+                           (vl-print-str (vl-maybe-escape-identifier x.name))
+                           (vl-print " "))
+               (vl-println ";"))))
+
+(define vl-pp-dpiexportlist ((x vl-dpiexportlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-dpiexport (car x))
+               (vl-pp-dpiexportlist (cdr x)))))
+
 
 (define vl-pp-modelement ((x vl-modelement-p) &key (ps 'ps))
   (let ((x (vl-modelement-fix x)))
@@ -3354,6 +3515,8 @@ expression into a string."
       (:vl-genvar     (vl-pp-genvar x))
       (:vl-property   (vl-pp-property x))
       (:vl-sequence   (vl-pp-sequence x))
+      (:vl-dpiimport  (vl-pp-dpiimport x))
+      (:vl-dpiexport  (vl-pp-dpiexport x))
       (:vl-assertion  (vl-pp-assertion x :include-name t))
       (:vl-cassertion (vl-pp-cassertion x :include-name t))
       (OTHERWISE (progn$ (impossible) ps)))))
@@ -3407,7 +3570,8 @@ expression into a string."
                    ps)
                  (vl-println "")
                  (vl-pp-genelementlist x.elems)
-                 (vl-println "end"))
+                 (vl-println "end")
+                 (vl-println ""))
       :vl-genarray
       (vl-pp-genarrayblocklist x.blocks x.name)
 
@@ -3500,6 +3664,9 @@ instead of @(see ps).</p>"
                (vl-pp-typedeflist x.typedefs)
                (vl-pp-portdecllist x.portdecls)
                (vl-pp-vardecllist x.vardecls)
+               (vl-println "")
+               (vl-pp-dpiimportlist x.dpiimports)
+               (vl-pp-dpiexportlist x.dpiexports)
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)
                (vl-pp-assignlist x.assigns)
@@ -3531,6 +3698,8 @@ instead of @(see ps).</p>"
                (vl-pp-paramdecllist x.paramdecls)
                (vl-pp-portdecllist x.portdecls)
                (vl-pp-vardecllist x.vardecls)
+               (vl-pp-dpiimportlist x.dpiimports)
+               (vl-pp-dpiexportlist x.dpiexports)
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)
                (vl-pp-assignlist x.assigns)

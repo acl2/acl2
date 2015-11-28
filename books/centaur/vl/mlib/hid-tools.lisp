@@ -216,6 +216,8 @@ encountered along a HID.")
   :returns (prefix-hid vl-hidexpr-p)
   :measure (vl-hidexpr-count outer)
   :verify-guards nil
+  :short "Given a hid and a suffix, such as @('a.b.c.d') and @('c.d'), return the
+          hid without the suffix, i.e. @('a.b')."
   (vl-hidexpr-case outer
     :end (vl-hidexpr-fix outer) ;; must be the inner one since it's the last
     :dot (if (vl-hidexpr-equiv inner outer)
@@ -394,7 +396,8 @@ top-level hierarchical identifiers.</p>"
                                      (vl-interface-p x))
                                  (vl-scope-p x))))
                (local (in-theory (disable double-containment
-                                          tag-reasoning)))
+                                          ;tag-reasoning
+                                          )))
 
                (local (defthm vl-maybe-expr-p-of-car-exprlist
                         (implies (vl-exprlist-p x)
@@ -456,6 +459,15 @@ top-level hierarchical identifiers.</p>"
                                               "hierarchical reference into function"
                                             "hierarchical reference into task"))
                                          item-ss)
+                trace x)))
+
+         ((when (eq (tag item) :vl-dpiimport))
+          (if (eq kind :end)
+              ;; Plain reference to, e.g., foo.bar.myfun.  Seems OK.
+              (mv nil trace x)
+            ;; Indexed or dotted reference like foo.bar.myfun[3] or
+            ;; foo.bar.myfun[3].baz or foo.bar.myfun.baz, seems too hard.
+            (mv (vl-follow-hidexpr-error (vmsg "hierarchical reference into DPI import") item-ss)
                 trace x)))
 
          ((when (eq (tag item) :vl-modinst))

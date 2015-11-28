@@ -168,12 +168,12 @@ Otherwise @('x'') will be the name of a newly generated, equivalent wire.</p>"
                                        :signedp (eq type :vl-signed)
                                        :pdims   (list (vl-make-n-bit-range width))))
 
-         (tmp-decl   (make-vl-vardecl :loc     (vl-modelement-loc elem)
+         (tmp-decl   (make-vl-vardecl :loc     (vl-modelement->loc elem)
                                       :name    tmp-name
                                       :type    tmp-type
                                       :nettype :vl-wire
                                       :atts    *vl-tmp-wire-atts*))
-         (tmp-assign (make-vl-assign :loc (vl-modelement-loc elem)
+         (tmp-assign (make-vl-assign :loc (vl-modelement->loc elem)
                                      :lvalue tmp-expr
                                      :expr rhs-expr))
          (delta      (change-vl-delta delta

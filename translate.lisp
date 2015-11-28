@@ -1177,12 +1177,25 @@
                      (untranslate-preprocess-fn ,wrld)
                      ,wrld))
 
+(defun live-state-symbolp (x)
+  (declare (xargs :guard t))
+  (and (symbolp x)
+       (equal (symbol-package-name x)
+              "ACL2_INVISIBLE")
+       (equal (symbol-name x)
+              "The Live State Itself")))
+
 (defun apply-user-stobj-alist-or-kwote (user-stobj-alist lst acc)
 
 ; This function accumulates into acc (eventually reversing the accumulation)
-; the result of replacing each element of lst either with its reverse lookup in
-; user-stobj-alist, if it is a bad-atom (i.e., a stobj -- which it is!), else
-; with the result of quoting that element.
+; the result of replacing each element of lst with:
+
+; - state, if it is *the-live-state*;
+
+; - with its reverse lookup in user-stobj-alist, if it is
+;   a bad-atom (i.e., a stobj); else,
+
+; - with the result of quoting that element.
 
 ; We considered using rassoc-eq in place of rassoc-equal below, but that would
 ; prevent guard verification down the road (unless we change to guard of eq to
@@ -1194,7 +1207,9 @@
         (t (apply-user-stobj-alist-or-kwote
             user-stobj-alist
             (cdr lst)
-            (cons (cond ((bad-atom (car lst))
+            (cons (cond ((live-state-symbolp (car lst))
+			 'state)
+			((bad-atom (car lst))
                          (let ((pair (rassoc-equal (car lst)
                                                    user-stobj-alist)))
                            (cond (pair (car pair))
@@ -3356,9 +3371,6 @@
                                preprocess-fn wrld)
                  (untranslate1 (fargn (fargn term 1) 1) nil untrans-tbl
                                preprocess-fn wrld)))
-          ((eq (ffn-symb term) 'not)
-           (dumb-negate-lit (untranslate1 (fargn term 1) t untrans-tbl
-                                          preprocess-fn wrld)))
           ((member-eq (ffn-symb term) '(implies iff))
            (fcons-term* (ffn-symb term)
                         (untranslate1 (fargn term 1) t untrans-tbl preprocess-fn
@@ -4054,6 +4066,30 @@
                    (car form)
                    (macro-args (car form) wrld)))))
 
+(table duplicate-keys-action-table nil nil
+       :guard
+       (and (symbolp key)
+            (member val '(:error :warning nil))))
+
+(defmacro set-duplicate-keys-action! (key action)
+  `(with-output
+     :off (event summary)
+     (progn (table duplicate-keys-action-table ',key ',action)
+            (value-triple ',action))))
+
+(defmacro set-duplicate-keys-action (key action)
+  `(local (set-duplicate-keys-action! ,key ,action)))
+
+(defun duplicate-keys-action (key wrld)
+  (let ((pair (assoc-eq key (table-alist 'duplicate-keys-action-table wrld))))
+    (cond (pair (cdr pair))
+          (t ; default
+
+; We make :error the default in order to help users to identify quickly
+; potential dumb bugs involving a duplicated keyword in a macro call.
+
+           :error))))
+
 (defun bind-macro-args-keys1 (args actuals allow-flg alist form wrld
                                    state-vars)
 
@@ -4088,30 +4124,42 @@
                                 (cons (cons (caddr (car args))
                                             (not (null tl)))
                                       alist))
-                               (t alist))))
+                               (t alist)))
+                  (name (car form))
+                  (duplicate-keys-action
+                   (and (assoc-keyword key (cddr tl))
+                        (duplicate-keys-action name wrld)))
+                  (er-or-warn-string
+                   "The keyword argument ~x0 occurs twice in ~x1.  This ~
+                    situation is explicitly allowed in Common Lisp (see ~
+                    CLTL2, page 80) but it often suggests a mistake was ~
+                    made.~@2  See :DOC set-duplicate-keys-action."))
              (prog2$
-              (cond ((assoc-keyword key (cddr tl))
-                     (warning$-cw1 *macro-expansion-ctx* "Duplicate-Keys"
-                                   "The keyword argument ~x0 occurs twice in ~
-                                    ~x1.  This situation is explicitly ~
-                                    allowed in Common Lisp (see CLTL2, page ~
-                                    80) but it often suggests a mistake was ~
-                                    made.  The leftmost value for ~x0 is used."
-                                   key form))
-                    (t nil))
-              (bind-macro-args-keys1
-               (cdr args)
-               (remove-keyword key actuals)
-               allow-flg
-               (cons (cons formal
-                           (cond (tl (cadr tl))
-                                 ((atom (car args))
-                                  nil)
-                                 ((> (length (car args)) 1)
-                                  (cadr (cadr (car args))))
-                                 (t nil)))
-                     alist)
-               form wrld state-vars))))))
+              (and (eq duplicate-keys-action :warning)
+                   (warning$-cw1 *macro-expansion-ctx* "Duplicate-Keys"
+                                 er-or-warn-string
+                                 key
+                                 form
+                                 "  The leftmost value for ~x0 is used."))
+              (cond
+               ((eq duplicate-keys-action :error)
+                (er-cmp *macro-expansion-ctx*
+                        er-or-warn-string
+                        key form ""))
+               (t
+                (bind-macro-args-keys1
+                 (cdr args)
+                 (remove-keyword key actuals)
+                 allow-flg
+                 (cons (cons formal
+                             (cond (tl (cadr tl))
+                                   ((atom (car args))
+                                    nil)
+                                   ((> (length (car args)) 1)
+                                    (cadr (cadr (car args))))
+                                   (t nil)))
+                       alist)
+                 form wrld state-vars))))))))
 
 (defun bind-macro-args-keys (args actuals alist form wrld state-vars)
   (er-progn-cmp
@@ -4351,10 +4399,10 @@
 
 ; Warning: Keep this in sync with :DOC declare.
 
-; The declarations when (hons-enabledp state) were found useful by Bob Boyer
-; for in the hons-enabled case, but we do not see a way to support such
-; declarations soundly, so we do not support them.  We also do not support
-; inline or notinline directly, as they are supported adequately (and
+; The declarations dynamic-extent, inline, and notinline were found useful by
+; Bob Boyer in early development of hons-enabled ACL2, but we do not see a way
+; to support such declarations soundly, so we do not support them.  Note that
+; inline and notinline declarations are supported adequately (though
 ; indirectly) by defun-inline and defun-notinline.
 
   `((let ignore ignorable type)
@@ -4752,9 +4800,7 @@
 ; type-test is t.
 
              (let ((term (car term-lst)))
-               (and (nvariablep term)
-                    (not (fquotep term))
-                    (eq (ffn-symb term) 'if)
+               (and (ffn-symb-p term 'if)
                     (equal (fargn term 1) *t*)
                     (equal (fargn term 2) *t*))))
          *t*)
@@ -4784,11 +4830,11 @@
         (t (cons (fcons-term* 'mv-nth (list 'quote i) var)
                  (mv-nth-list var (1+ i) maximum)))))
 
-(defabbrev translate-bind (x val bindings)
+(defmacro translate-bind (x val bindings)
 
 ; Used only in translation.  Binds x to val on bindings.
 
-  (cons (cons x val) bindings))
+  `(cons (cons ,x ,val) ,bindings))
 
 (defun translate-deref (x bindings)
 
@@ -5250,8 +5296,6 @@
 ;   + -           ; guarded
     or and list
 ;   local
-;   defdoc
-
     with-live-state
     ))
 
@@ -5629,9 +5673,7 @@
 
   (and (quotep targ1)
        (eq (unquote targ1) 'progn)
-       (nvariablep targ2)
-;      (not (fquotep targ2))
-       (eq (ffn-symb targ2) 'throw-nonexec-error)
+       (ffn-symb-p targ2 'throw-nonexec-error)
        (or (null name)
            (let ((qname (fargn targ2 1)))
              (and (quotep qname)
@@ -5650,9 +5692,7 @@
 ; argument of throw-non-exec-error be (cons v1 (cons v2 ... (cons vk nil)
 ; ...)), where formals is (v1 v2 ... vk).
 
-  (and (nvariablep body)
-;      (not (fquotep body))
-       (eq (ffn-symb body) 'return-last)
+  (and (ffn-symb-p body 'return-last)
        (throw-nonexec-error-p1 (fargn body 1) (fargn body 2) name formals)))
 
 (defun chk-flet-declarations (names decls declare-form ctx)
@@ -6413,24 +6453,26 @@
       macro-name)))
 
 (defun corresponding-inline-fn (fn wrld)
-  (let* ((fn$inline (add-suffix fn *inline-suffix*))
-         (formals (getprop fn$inline 'formals
-                           nil
-                           'current-acl2-world
-                           wrld)))
-    (and (equal (macro-args fn wrld) formals)
-         (function-symbolp fn$inline wrld)
-         (equal (getprop fn 'macro-body nil 'current-acl2-world wrld)
-                (fcons-term*
-                 'cons
-                 (kwote fn$inline)
-                 (if formals
-                     (xxxjoin 'cons
-                              (append formals
-                                      (list
-                                       *nil*)))
-                   (list *nil*))))
-         fn$inline)))
+  (let ((macro-body (getprop fn 'macro-body t 'current-acl2-world wrld)))
+    (and (not (eq macro-body t))
+         (let* ((fn$inline (add-suffix fn *inline-suffix*))
+                (formals (getprop fn$inline 'formals
+                                  t
+                                  'current-acl2-world
+                                  wrld)))
+           (and (not (eq formals t))
+                (equal (macro-args fn wrld) formals)
+                (equal macro-body
+                       (fcons-term*
+                        'cons
+                        (kwote fn$inline)
+                        (if formals
+                            (xxxjoin 'cons
+                                     (append formals
+                                             (list
+                                              *nil*)))
+                          (list *nil*))))
+                fn$inline)))))
 
 (mutual-recursion
 
@@ -7828,7 +7870,6 @@
                       defaxiom
                       defchoose
                       defconst
-                      defdoc
                       deflabel
                       defstobj defabsstobj
                       deftheory
@@ -7989,7 +8030,7 @@
                                       (cadr x) ans msg))
                           ((or (consp msg)
                                (stringp msg))
-                           (trans-er+ x ctx "~@0" msg))
+                           (trans-er ctx "~@0" msg))
                           (t (trans-value ans)))))))))))
    ((eq (car x) 'with-local-stobj)
 
@@ -8602,18 +8643,16 @@
                                   ((eq (getprop fn0 'macro-args t
                                                 'current-acl2-world wrld)
                                        t)
-                                   (assert$
-                                    (not (function-symbolp fn wrld))
-                                    (msg "~x0 is not a function symbol"
-                                         fn)))
+                                   (msg "~x0 is not a macro"
+                                        fn0))
                                   (t (msg "~x0 is a macro, not a function ~
                                            symbol~@1"
-                                          fn
+                                          fn0
                                           (let ((sym (deref-macro-name
-                                                      fn
+                                                      fn0
                                                       (macro-aliases wrld))))
                                             (cond
-                                             ((eq sym fn) "")
+                                             ((eq sym fn0) "")
                                              (t
                                               (msg ".  Note that ~x0 is a ~
                                                     macro-alias for ~x1 (see ~
@@ -8621,7 +8660,7 @@
                                                     macro-aliases-table), so ~
                                                     a solution might be to ~
                                                     replace ~x0 by ~x1"
-                                                   fn sym))))))))))
+                                                   fn0 sym))))))))))
                ((and keyp
                      (let ((val (return-last-lookup key wrld)))
                        (or (null val)

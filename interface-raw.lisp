@@ -4975,7 +4975,7 @@
 ; described in the Essay on Hash Table Support for Compilation.
 
            (null *hcomp-book-ht*))
-       (state-free-global-let*
+       (state-free-global-let*-safe
         ((connected-book-directory directory-name))
         (let* ((os-file (pathname-unix-to-os full-book-name state))
                (ofile (convert-book-name-to-compiled-name os-file state))
@@ -7102,7 +7102,6 @@
            defaxiom
            defconst
            defconstant
-           defdoc
            defg
            define-@par-macros
            define-atomically-modifiable-counter
@@ -7133,6 +7132,7 @@
            memoize
            push
            reset-future-parallelism-variables
+           set-duplicate-keys-action
            set-guard-msg
            set-invisible-fns-table
            set-tau-auto-mode
@@ -8498,9 +8498,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; Warning: Keep the following "compile on the fly" readtime conditional in sync
 ; with the one in initialize-state-globals.  Here, we avoid loading the
 ; compiled file when compiling a certified book, because all functions are
-; already compiled.  Thus, the code dealing with hons-enabledp below is
-; irrelevant as long as under-the-hood hons/memoize code is only used in CCL
-; (or SBCL) builds.
+; already compiled.
 
      #-(or ccl sbcl)
      (let ((*compiling-certified-file*
@@ -8516,7 +8514,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                              collect (cons (car pair)
                                            (symbol-function (car pair)))))))
        (load-compiled ofile t)
-       (loop for pair in alist ; nil if not hons-enabledp
+       (loop for pair in alist
              when (not (eq (symbol-function (car pair))
                            (cdr pair)))
              do (setf (symbol-function (car pair))

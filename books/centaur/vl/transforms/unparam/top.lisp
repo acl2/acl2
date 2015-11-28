@@ -330,7 +330,8 @@ with, we can safely remove @('plus') from our module list.</p>")
           :vl-implicitvalueparam (vl-unparam-newname-exprstring x1.type.default)
           :vl-explicitvalueparam (vl-unparam-newname-exprstring x1.type.default)
           :vl-typeparam (if x1.type.default
-                            (with-local-ps (vl-pp-datatype x1.type.default))
+                            (acl2::substitute #\_ #\Space
+                                              (with-local-ps (vl-pp-datatype x1.type.default)))
                           "NULL"))))
     (vl-ps-seq (vl-print "$")
                (vl-print-str name-part)
@@ -576,6 +577,8 @@ introduced.</p>"
                                                  :sequences sequences
                                                  :assertions assertions
                                                  :cassertions cassertions
+                                                 :dpiimports dpiimports
+                                                 :dpiexports dpiexports
                                                  :ports ports
                                                  :scopetype scopetype
                                                  :name name))

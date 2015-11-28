@@ -18,7 +18,7 @@
 (defun smt-symsim (expr hyps hints state)
   (mv-let
    (erp tuples-lst state)
-   (tool-fn expr hyps t 'iff state hints 'try nil nil 'smt-symsim)
+   (tool-fn expr hyps t 'iff state hints 'try nil nil t 'smt-symsim)
    (cond
     (erp
      (mv expr state))

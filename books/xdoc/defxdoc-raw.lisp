@@ -45,9 +45,6 @@
   (declare (xargs :stobjs state :verify-guards t))
   (prog2$
    (er hard? 'all-xdoc-topics "all-xdoc-topics not yet defined.")
-   (mv-let (err val state)
-     (read-acl2-oracle state)
-     (declare (ignore err))
-     (mv val state))))
+   (read-acl2-oracle state)))
 
 (acl2::include-raw "defxdoc-raw-impl.lsp")

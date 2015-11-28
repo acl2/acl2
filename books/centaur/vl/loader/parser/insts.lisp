@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "expressions")
-(include-book "lvalues")
+(include-book "assignments")
 (include-book "delays")
 (include-book "strengths")
 (include-book "datatypes")
@@ -562,7 +562,7 @@ tests at the bottom of this file.</p>")
 ; udp_instantiation ::= identifier [drive_strength] [delay2] udp_instance { ',' udp_instance } ';'
 ;
 ; udp_instance ::=
-;    [name_of_udp_instance] '(' lvalue ',' expression { ',' expression } ')'
+;    [name_of_udp_instance] '(' net_lvalue ',' expression { ',' expression } ')'
 ;
 ; name_of_udp_instance ::= identifier [range]
 
@@ -582,7 +582,7 @@ tests at the bottom of this file.</p>")
           (when (vl-is-token? :vl-lbrack)
             (range := (vl-parse-range))))
         (:= (vl-match-token :vl-lparen))
-        (lvalue := (vl-parse-lvalue))
+        (lvalue := (vl-parse-net-lvalue))
         (:= (vl-match-token :vl-comma))
         (exprs := (vl-parse-1+-expressions-separated-by-commas))
         (:= (vl-match-token :vl-rparen))

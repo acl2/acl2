@@ -432,3 +432,25 @@ code that is violating guards), it just causes a hard error.</p>"
   (defun impossible ()
     (declare (xargs :guard nil))
     (er hard 'impossible "Provably impossible")))
+
+
+(defsection impliez
+
+  ;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+  
+  :parents (std/basic)
+  
+  :short "Logical implication defined via @(tsee if)."
+
+  :long
+  "<p>Since @(tsee implies) is a function,
+  guards in the consequent must be verified
+  without assuming the antecedent.
+  @('impliez') is a macro that expands to an @(tsee if),
+  so guards in the consequent can be verified
+  assuming the antecedent.</p>"
+
+  "<p>@(def impliez)</p>"
+
+  (defmacro impliez (p q)
+    `(if ,p ,q t)))

@@ -848,26 +848,6 @@
 ; The function all-runes-in-ttree, defined below, is typically used by each
 ; event function to recover the supporting runes from a ttree.
 
-(defun all-runes-in-lmi (lmi wrld ans)
-
-; When we collect all the runes "in" lmi we actually expand symbolic lmis,
-; e.g., ASSOC-OF-APP, to the list of all runes based on that symbol.
-
-  (cond ((symbolp lmi)
-         (union-equal (strip-cdrs (getprop lmi 'runic-mapping-pairs nil
-                                           'current-acl2-world wrld))
-                      ans))
-        ((or (eq (car lmi) :instance)
-             (eq (car lmi) :functional-instance))
-         (all-runes-in-lmi (cadr lmi) wrld ans))
-        ((eq (car lmi) :theorem) ans)
-        (t (add-to-set-equal lmi ans))))
-
-(defun all-runes-in-lmi-lst (lmi-lst wrld ans)
-  (cond ((null lmi-lst) ans)
-        (t (all-runes-in-lmi-lst (cdr lmi-lst) wrld
-                                 (all-runes-in-lmi (car lmi-lst) wrld ans)))))
-
 (defun all-runes-in-var-to-runes-alist (alist ans)
   (cond ((null alist) ans)
         (t (all-runes-in-var-to-runes-alist
@@ -7395,9 +7375,7 @@
         (inequality-fns '(< >)))
     (mv-let
      (sign atm)
-     (if (and (nvariablep term)
-              (not (fquotep term))
-              (eq (ffn-symb term) 'NOT))
+     (if (ffn-symb-p term 'NOT)
          (mv nil (fargn term 1))
          (mv t term))
      (case-match atm
@@ -8154,9 +8132,10 @@
   (cond
    ((endp pairs) nil)
    ((and (null (car (car pairs)))
-         (nvariablep (cdr (car pairs)))
-         (eq (ffn-symb (cdr (car pairs))) 'in-tau-intervalp)
-         (member-equal (cons nil (cons 'tau-intervalp (cddr (cdr (car pairs))))) pairs0))
+         (ffn-symb-p (cdr (car pairs)) 'in-tau-intervalp)
+         (member-equal (cons nil (cons 'tau-intervalp
+                                       (cddr (cdr (car pairs)))))
+                       pairs0))
     (cdr (car pairs)))
    (t (find-subject-bounder-link-term (cdr pairs) pairs0))))
 
@@ -8331,9 +8310,7 @@
 ; (mv-nth 'j (fn x1 ... xk y1 ...)).
 
   (cond
-   ((and (nvariablep term)
-         (not (fquotep term))
-         (eq (ffn-symb term) 'implies))
+   ((ffn-symb-p term 'implies)
     (let* ((hyp-pairs (unprettyify (fargn term 1)))
            (concl-pairs (unprettyify (fargn term 2)))
            (link-term (find-subject-bounder-link-term concl-pairs concl-pairs)))
@@ -9333,13 +9310,9 @@
 ; WARNING:  (EQUAL A B) and (NOT (EQUAL B A)) are *not* complementaryp, by
 ; this definition!
 
-  (or (and (nvariablep lit1)
-           (not (fquotep lit1))
-           (eq (ffn-symb lit1) 'not)
+  (or (and (ffn-symb-p lit1 'not)
            (equal (fargn lit1 1) lit2))
-      (and (nvariablep lit2)
-           (not (fquotep lit2))
-           (eq (ffn-symb lit2) 'not)
+      (and (ffn-symb-p lit2 'not)
            (equal (fargn lit2 1) lit1))))
 
 ; Note on Terminology: Below we use the expression ``ancestor literal'' which
@@ -10753,9 +10726,7 @@
 ; instantiation of any part of body except that leaf.
 
   (cond
-   ((or (variablep body)
-        (fquotep body)
-        (not (eq (ffn-symb body) 'IF)))
+   ((not (ffn-symb-p body 'IF))
 
 ; If we are at a leaf of the big switch, we instantiate the body and we
 ; report hitp = t.  Otherwise, we report hitp = nil.  We are at a leaf
@@ -10863,13 +10834,9 @@
         ((equal lit (car clause)) '+)
         ((let ((lit1 lit)
                (lit2 (car clause)))
-           (or (and (nvariablep lit1)
-                    (not (fquotep lit1))
-                    (eq (ffn-symb lit1) 'not)
+           (or (and (ffn-symb-p lit1 'not)
                     (equal (fargn lit1 1) lit2))
-               (and (nvariablep lit2)
-                    (not (fquotep lit2))
-                    (eq (ffn-symb lit2) 'not)
+               (and (ffn-symb-p lit2 'not)
                     (equal (fargn lit2 1) lit1))))
            '-)
         (t (smart-member-equal-+- lit (cdr clause)))))

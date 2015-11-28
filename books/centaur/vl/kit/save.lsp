@@ -33,6 +33,7 @@
 (in-package "VL")
 (include-book "top")
 (set-deferred-ttag-notes t state)
+(set-slow-alist-action :break)
 (set-gag-mode :goals)
 
 ; Initialize xdoc stuff so all of its books are pre-loaded and we're ready to

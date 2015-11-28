@@ -778,6 +778,17 @@ exists.</p>"
              '(:vl-times :vl-arrow :vl-equalsign)
              (cdr (vl-tokstream->tokens))))))
 
+(define vl-initial-patternkey-from-expr ((expr vl-expr-p))
+  :returns (key vl-patternkey-p)
+  ;; See vl-patternkey and vl-patternkey-ambiguity.  When we parse a simple
+  ;; identifier, we want to immediately turn it into a structure member.  This
+  ;; might not be quite right: it could also be a type name.  But we can't tell
+  ;; that at parse time.  We further disambiguate between structure members and
+  ;; types later, when we have enough information about the defined types.
+  (if (vl-idexpr-p expr)
+      (make-vl-patternkey-structmem :name (vl-idexpr->name expr))
+    (make-vl-patternkey-expr :key expr)))
+
 (defparsers parse-expressions
   :parents (parser)
   :short "Parser for Verilog and SystemVerilog expressions."
@@ -958,14 +969,10 @@ values.</p>"
 
   (defparser vl-parse-patternkey ()
     :measure (two-nats-measure (vl-tokstream-measure) 380)
-    ;; Either default, a type, an index expression, or the name of a struct
-    ;; field.  BOZO We currently parse the index expression and struct field
-    ;; both as just an expression -- the struct field will just be an ID.
-    ;; Furthermore, we don't know how to tell the difference between an
-    ;; expression and a type.  For now we'll parse it as an expression first
-    ;; and then fall bak on a type.  It seems reasonable that we could later
-    ;; reinterpret an expression as a datatype name.
+    ;; Very tricky and subtle and ambiguous.  See the documentation for
+    ;; vl-patternkey and vl-patternkey-ambiguity.
     (b* (((when (vl-is-token? :vl-kwd-default))
+          ;; Unambiguous and nice.
           (seq tokstream
                (:= (vl-match))
                (return (make-vl-patternkey-default))))
@@ -974,8 +981,10 @@ values.</p>"
          ((mv err expr tokstream)
           (vl-parse-expression))
          ((unless err)
-          (mv err (make-vl-patternkey-expr :key expr) tokstream))
+          (mv err (vl-initial-patternkey-from-expr expr) tokstream))
          (tokstream (vl-tokstream-restore backup)))
+      ;; Only other possibility is that it's a core type name which isn't
+      ;; a valid expression.
       (seq tokstream
            (type := (vl-parse-simple-type))
            (return (make-vl-patternkey-type :type type)))))
@@ -1701,7 +1710,7 @@ identifier, so we convert it into a hidpiece.</p>"
                 (seq tokstream
                      (key :w= (vl-parse-patternkey))
                      (return key)))
-            (mv nil (make-vl-patternkey-expr :key first-expr) tokstream)))
+            (mv nil (vl-initial-patternkey-from-expr first-expr) tokstream)))
          ((when err) (mv err nil tokstream)))
       (seq tokstream
            (when (vl-is-token? :vl-colon)

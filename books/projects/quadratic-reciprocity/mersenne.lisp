@@ -1,4 +1,14 @@
-(in-package "ACL2")
+;; David M. Russinoff
+;; david@russinoff.com
+;; http://www.russinoff.com
+
+(in-package "RTL")
+
+(include-book "support/mersenne")
+
+(set-enforce-redundancy t)
+(set-inhibit-warnings "theory") ; avoid warning in the next event
+(local (in-theory nil))
 
 ;; This book illustrates a simple application of the theory of quadratic
 ;; residues to the Mersenne prime problem.  We show that certain Mersenne
@@ -30,14 +40,14 @@
 (defthm mersenne-19
     (primep (m 19)))
 
-;;[Time: .4 seconds]
+;;[Time: 0.14 seconds]
 
 (maybe-skip
 (defthm mersenne-31
     (primep (m 31)))
 )
 
-;;[Time: 65 minutes]
+;;[Time: 14 minutes]
 
 ;; The timing of mersenne-31 suggests that the computation of mersenne-61
 ;; is intractable:
@@ -45,28 +55,28 @@
 ;;(defthm mersenne-61
 ;;    (primep (m 61)))
 
-;;[Time: a billion hours?]
+;;[Time: 14 billion minutes?]
 
 ;; Naturally, we can handle larger composites than primes:
 
 (defthm mersenne-23
     (not (primep (m 23))))
 
-;;[Time: .02 seconds]
+;;[Time: .00 seconds]
 
 (maybe-skip
 (defthm mersenne-67
     (not (primep (m 67))))
 )
 
-;;[Time: 288 seconds]
+;;[Time: 115 seconds]
 
 (maybe-skip
 (defthm mersenne-999671
     (not (primep (m 999671))))
 )
 
-;;[Time: 165 minutes]
+;;[Time: 19 minutes]
 
 ;;(defthm mersenne-19876271
 ;;    (not (primep (m 19876271))))
@@ -94,47 +104,9 @@
 
 (comp t)
 
-(defthm least-divisor-rewrite-lemma-1
-    (implies (and (integerp n)
-		  (integerp k)
-		  (< 1 k)
-		  (<= k n)
-		  (<= (* (least-divisor k n) (least-divisor k n)) n))
-	     (equal (least-divisor k n)
-		    (least-divisor-2 k n)))
-  :rule-classes ()
-  :hints (("Subgoal *1/7" :use (least-divisor-divides))
-	  ("Subgoal *1/1" :use (least-divisor-divides))))
-
-(defthm least-divisor-rewrite-lemma-2
-    (implies (and (integerp n)
-		  (> n 1)
-		  (not (= n (least-divisor 2 n))))
-	     (<= (* (least-divisor 2 n) (least-divisor 2 n)) n))
-  :rule-classes ()
-  :hints (("Goal" :in-theory (enable divides)
-		  :use ((:instance least-divisor-divides (k 2))
-			(:instance least-divisor-is-least (k 2) (d (/ n (least-divisor 2 n))))
-			(:instance *-weakly-monotonic (x (least-divisor 2 n)) (y 1) (y+ (/ n (least-divisor 2 n))))
-			(:instance *-weakly-monotonic (x (least-divisor 2 n)) (y+ 1) (y (/ n (least-divisor 2 n))))))))
-
-(defthm least-divisor-rewrite-lemma-3
-    (implies (and (integerp n)
-		  (integerp k)
-		  (< 1 k)
-		  (<= k n)
-		  (= n (least-divisor k n)))
-	     (= n (least-divisor-2 k n)))
-  :rule-classes ()
-  :hints (("Goal" :use (least-divisor-divides
-			(:instance least-divisor-is-least (d (least-divisor-2 2 n)))))))
-
 (defthm least-divisor-rewrite
     (equal (least-divisor 2 n)
-	   (least-divisor-2 2 n))
-  :hints (("Goal" :use (least-divisor-rewrite-lemma-2
-			(:instance least-divisor-rewrite-lemma-3 (k 2))
-			(:instance least-divisor-rewrite-lemma-1 (k 2))))))
+	   (least-divisor-2 2 n)))
 
 ;; In order to arrange that the more efficient variant is executed, we must
 ;; disable the executable counterparts of primep and least-proper-divisor
@@ -155,7 +127,7 @@
     (primep (m 61)))
 )
 
-;;[Time: 54  minutes]
+;;[Time: 18  minutes]
 
 ;; However, the above optimization does not help at all in the composite case.
 ;; In the special case where mod(p,4) = 3 and 2*p+1 is prime, the following
@@ -168,55 +140,40 @@
 		  (= (mod p 4) 3)
 		  (primep (1+ (* 2 p))))
 	     (divides (1+ (* 2 p)) (m p)))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance second-supplement (p (1+ (* 2 p))))
-			(:instance euler-criterion (m 2) (p (1+ (* 2 p))))
-			(:instance mod-sum (a 1) (b (* 2 p)) (n 8))
-			(:instance mod-prod (k 2) (m p) (n 4))
-			(:instance divides-leq (x (1+ (* 2 p))) (y 2))
-			(:instance divides-mod-equal (a (expt 2 p)) (b 1) (n (1+ (* 2 p))))))))
+  :rule-classes ())
 
 ;; With the exception of p = 3 (in which case Mp = 2*p+1), Mp is composite
 ;; for any p satisfying the hypothesis of theorem-103:
-
-(defthm expt-2-p-bnd
-    (implies (and (integerp p)
-		  (> p 3))
-	     (> (expt 2 p) (* 2 (1+ p))))
-  :rule-classes ())
 
 (defthm theorem-103-corollary
     (implies (and (primep p)
 		  (= (mod p 4) 3)
 		  (> p 3)
 		  (primep (1+ (* 2 p))))
-	     (not (primep (m p))))
-  :hints (("Goal" :use (theorem-103
-			expt-2-p-bnd
-			(:instance primep-no-divisor (p (1- (expt 2 p))) (d (1+ (* 2 p))))))))
+	     (not (primep (m p)))))
 
 ;; In order to arrange for theorem-103-corollary to be used as a
 ;; rewrite rule, we must disable the logical expansion of both
 ;; primep and m.  We must also re-enable the executable counterpart
 ;; of primep to allow the computation of primep(p) and primep(2*p+1):
 
-(in-theory (disable primep m (m)))
-(in-theory (enable (primep)))
+(local-in-theory (disable primep m (m)))
+(local-in-theory (enable (primep)))
 
 (defthm mersenne-23-revisited
     (not (primep (m 23))))
 
-;;[Time: .01 seconds]
+;;[Time: .00 seconds]
 
 (defthm mersenne-999671-revisited
     (not (primep (m 999671))))
 
-;;[Time: .01 seconds]
+;;[Time: .00 seconds]
 
 (maybe-skip
 (defthm mersenne-19876271
     (not (primep (m 19876271))))
 )
 
-;;[Time: 47 seconds]
+;;[Time: 27 seconds]
 

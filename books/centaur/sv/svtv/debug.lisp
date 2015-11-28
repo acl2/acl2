@@ -349,6 +349,8 @@ nextstate and update functions given a timing diagram.</p>
        (nphases (max (svtv-max-length ins)
                      (max (svtv-max-length overrides)
                           (svtv-max-length outs))))
+       (overrides (svtv-expand-lines overrides nphases))
+
        ((mv updates next-states)
         (b* (((when (and (eq debugdata.status :composed)
                          (equal debugdata.overrides overrides)))
@@ -356,7 +358,6 @@ nextstate and update functions given a timing diagram.</p>
               ;; don't need to compose assigns/delays again, which is an
               ;; expensive part of the operation.
               (mv debugdata.updates debugdata.nextstates))
-             (overrides (svtv-expand-lines overrides nphases))
 
              ;; Each override has a unique test variable (determining if the override
              ;; happens in a given phase) and override value variable.  This
@@ -491,6 +492,7 @@ nextstate and update functions given a timing diagram.</p>
                                              states)))
 
        ((with-fast inalist))
+
        (ins (svtv-expand-lines debugdata.ins debugdata.nphases))
        ((mv ovlines ?ovs) (svtv-lines->overrides debugdata.overrides 0))
        ;; Run the sequence of steps, recording value changes at each step and

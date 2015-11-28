@@ -79,8 +79,9 @@ certifiable books should use @('.lsp')</li>
 
 <h4>Rationale</h4>
 
-<p>These conventions allow build systems like @(see cert.pl) to automatically
-distinguish between what should be certified and what should not.</p>
+<p>These conventions allow build systems like @(see build::cert.pl) to
+automatically distinguish between what should be certified and what should
+not.</p>
 
 <p>Once a user is familiar with these conventions, they act as a signal about
 what files are likely to be of interest.</p>")
@@ -130,6 +131,8 @@ of packages:</p>
 <dd>
 @({
     ;; load other packages needed to define our new packages...
+    ;; note that we only include portcullis files, that define
+    ;; the packages, not the libraries which those files support
     (include-book \"lib1/portcullis\" :dir :system)
     (include-book \"lib2/portcullis\" :dir :system)
 
@@ -189,7 +192,7 @@ convention that improves consistency and discoverability.</p>
 
 <ul>
 <li>The @('.lsp') extension helps Emacs realize the package file is a Lisp file</li>
-<li>It also helps @(see cert.pl) know it is not a certifiable book.</li>
+<li>It also helps @(see build::cert.pl) know it is not a certifiable book.</li>
 </ul>
 
 <p>The empty portcullis book is a useful trick.  Including this book, rather
@@ -358,6 +361,15 @@ readability when the function names involved have their own hyphens.  Examples:
     (defthm true-listp-of-append
       (equal (true-listp (append x y))
              (true-listp y)))
+ })
+</li>
+
+<li>For rules describing the return-type of a function, we use a similar naming
+convention, using @('of') as a separator.  Example:
+
+ @({
+    (defthm consp-of-cons
+      (consp (cons x y)))
  })
 </li>
 

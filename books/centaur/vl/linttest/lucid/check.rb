@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 # VL 2014 -- VL Verilog Toolkit, 2014 Edition
 # Copyright (C) 2008-2015 Centaur Technology
 #
@@ -41,6 +43,7 @@ def unset(modname, wirename)
   # as both unset and spurious.
   match_warning(modname, "VL-LUCID-UNSET", wirename)
   outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
+  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
 def unused(modname, wirename)
@@ -49,18 +52,21 @@ def unused(modname, wirename)
   # both unused and spurious.
   match_warning(modname, "VL-LUCID-UNUSED", wirename)
   outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
+  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
 def spurious(modname, wirename)
   match_warning(modname, "VL-LUCID-SPURIOUS", wirename)
   outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
   outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
+  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
 def normal(modname, wirename)
   outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
   outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
   outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
+  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
 # We no longer expect to support top-level unset parameters
@@ -242,8 +248,23 @@ unused(:useprim, "w1_unused ")
 spurious(:useprim, "w1_spurious ")
 
 unused(:trickyscope, "counter_unused ")
+normal(:trickyscope, "loopvar1")
+
+# BOZO this should get flagged as unused
+normal(:trickyscope, "loopvar3")
+
+# BOZO this should get flagged as unset, probably?
+normal(:trickyscope, "loopvar2")
+
 
 unset(:minuscolon, "normal2")
 unused(:minuscolon, "normal1")
+
+
+normal(:"Design Root", "Type instruction2_t ")
+unused(:pattern, "myinst")
+normal(:pattern, "opcode")
+normal(:pattern, "arg1")
+normal(:pattern, "arg2")
 
 test_passed()

@@ -30,6 +30,7 @@
 
 #!ACL2 (in-package "ACL2")
 (include-book "std/portcullis" :dir :system)
+(include-book "build/portcullis" :dir :system)
 
 (defpkg "TOURS"
   (union-eq acl2::*standard-acl2-imports*

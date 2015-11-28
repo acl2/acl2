@@ -254,6 +254,10 @@
 ; maybe actually report correct times
 (assign get-internal-time-as-realtime t)
 
+#!ACL2
+(defmacro hostname ()
+  `(getenv$ "HOSTNAME" state))
+
 
 ;; #!ACL2
 ;; (defmacro s (&rest args)

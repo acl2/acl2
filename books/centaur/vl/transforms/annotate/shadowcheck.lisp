@@ -36,7 +36,6 @@
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 
-
 (defconst *vl-shadowcheck-debug*
   ;; Can be redefined to enable some debugging messages.
   nil)
@@ -49,7 +48,8 @@
 
 (defxdoc shadowcheck
   :parents (make-implicit-wires)
-  :short "Sanity check to prevent tricky kinds of global name shadowing."
+  :short "Sanity check to detect undeclared identifiers, name clashes, and
+tricky kinds of global name shadowing that we don't support."
 
   :long "<p>In some Verilog tools, top-level and imported declarations can
 sometimes be shadowed by local declarations for only part of a module.  For
@@ -119,8 +119,6 @@ explicit declarations.</p>")
                      (iff (cdr (hons-assoc-equal name scope))
                           (hons-assoc-equal name scope)))
             :hints(("Goal" :induct (len scope)))))))
-
-
 
 (fty::deflist vl-lexscopes
   :elt-type vl-lexscope-p
@@ -364,6 +362,11 @@ explicit declarations.</p>")
                    (string-listp (alist-keys acc)))
             :hints(("Goal" :in-theory (enable vl-paramdecllist-alist)))))
 
+   (local (defthm l5
+            (equal (string-listp (alist-keys (vl-dpiimportlist-alist x acc)))
+                   (string-listp (alist-keys acc)))
+            :hints(("Goal" :in-theory (enable vl-dpiimportlist-alist)))))
+
    (defthm string-listp-of-alist-keys-of-vl-package-scope-item-alist
      (equal (string-listp (alist-keys (vl-package-scope-item-alist x acc)))
             (string-listp (alist-keys acc)))
@@ -525,7 +528,7 @@ explicit declarations.</p>")
         ;; quite right if we need to be allowed to refer to things that we
         ;; aren't consider items, like $bits(foo_t) or similar.
         (mv st
-            (fatal :type :vl-undeclared-identifier
+            (fatal :type :vl-warn-undeclared
                    :msg "~a0: reference to undeclared identifier ~s1.~%"
                    :args (list ctx name))))
        ((vl-lexscope-entry entry))
@@ -534,7 +537,7 @@ explicit declarations.</p>")
                    (not entry.direct-pkg)
                    (>= (len entry.wildpkgs) 2)))
         (mv st
-            (fatal :type :vl-illegal-import
+            (fatal :type :vl-bad-import
                    :msg "~a0: the name ~s1 is imported by multiple wildcard ~
                          imports: ~&2."
                    :args (list ctx name entry.wildpkgs))))
@@ -589,7 +592,7 @@ explicit declarations.</p>")
         ;; Lexically we think it's imported from foo::bar.  Scopestack also
         ;; thinks it comes from a package.
         (b* (((unless (equal entry.direct-pkg pkg-name))
-              (mv st (fatal :type :vl-import-conflict
+              (mv st (fatal :type :vl-tricky-scope
                             :msg "~a0: scopestack thinks ~s1 is imported from ~
                                   ~s2, but lexically it is directly imported from ~s3."
                             :args (list ctx name pkg-name entry.direct-pkg)))))
@@ -609,7 +612,7 @@ explicit declarations.</p>")
        (lex-pkg (and (mbt (equal (len entry.wildpkgs) 1)) ;; because we checked above
                      (first entry.wildpkgs)))
        ((unless (equal lex-pkg pkg-name))
-        (mv st (fatal :type :vl-import-conflict
+        (mv st (fatal :type :vl-tricky-scope
                       :msg "~a0: scopestack thinks ~s1 is imported from ~s2, ~
                             but lexically it is wildly imported from ~s3."
                       :args (list ctx name pkg-name lex-pkg)))))
@@ -629,13 +632,118 @@ explicit declarations.</p>")
         (vl-shadowcheck-reference-name (car names) ctx st warnings)))
     (vl-shadowcheck-reference-names (cdr names) ctx st warnings)))
 
+
+
+(defines vl-expr-names-for-shadowcheck-nrev
+  :parents (vl-expr-names-for-shadowcheck)
+  :flag-local nil
+
+;; Intuitive goal: collect up all the names that are referenced by an
+;; expression, so that we can make sure that when we look them up in the
+;; scopestack, we find the same thing as in the lexscopes.  For example, if the
+;; expression is a + b, then we want to collect the names "a" and "b".
+;;
+;; Complicating this, what if our expression is foo.bar + b?  This might be
+;; referring to a top-level module foo, or it might refer to a submodule of the
+;; current module.  It seems that hierarchical identifiers are generally
+;; resolved non-lexically, i.e., we may look at the whole local scope and
+;; finding things that occur afterward; also foo might refer to a top-level
+;; module or be some upward hierarchical reference.  So, at least for now,
+;; don't collect hierarchical names for checking shadowing.
+
+  (define vl-expr-names-for-shadowcheck-nrev ((x vl-expr-p) nrev)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (b* ((nrev (nrev-fix nrev))
+         ;; If it's a simple name then collect it.
+         (nrev (vl-expr-case x
+                 :vl-index
+                 (if (vl-idscope-p x.scope)
+                     (nrev-push (vl-idscope->name x.scope) nrev)
+                   nrev)
+                 :otherwise
+                 nrev)))
+      ;; Now get all subexpressions.  We want to do this even in the index
+      ;; case, to make sure we get index expressions used in the HID as
+      ;; well.
+      (vl-exprlist-names-for-shadowcheck-nrev (vl-expr->subexprs x) nrev)))
+
+  (define vl-exprlist-names-for-shadowcheck-nrev ((x vl-exprlist-p) nrev)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (b* (((when (atom x))
+          (nrev-fix nrev))
+         (nrev (vl-expr-names-for-shadowcheck-nrev (car x) nrev)))
+      (vl-exprlist-names-for-shadowcheck-nrev (cdr x) nrev))))
+
+
+(defines vl-expr-names-for-shadowcheck
+
+  (define vl-expr-names-for-shadowcheck ((x vl-expr-p))
+    :returns (names string-listp)
+    :measure (vl-expr-count x)
+    :verify-guards nil
+    (mbe :logic
+         (append (vl-expr-case x
+                   :vl-index
+                   (if (vl-idscope-p x.scope)
+                       (list (vl-idscope->name x.scope))
+                     nil)
+                   :otherwise
+                   nil)
+                 (vl-exprlist-names-for-shadowcheck (vl-expr->subexprs x)))
+         :exec
+         (with-local-nrev
+           (vl-expr-names-for-shadowcheck-nrev x nrev))))
+
+  (define vl-exprlist-names-for-shadowcheck ((x vl-exprlist-p))
+    :returns (names string-listp)
+    :measure (vl-exprlist-count x)
+    (mbe :logic
+         (if (atom x)
+             nil
+           (append (vl-expr-names-for-shadowcheck (car x))
+                   (vl-exprlist-names-for-shadowcheck (cdr x))))
+         :exec
+         (with-local-nrev
+           (vl-exprlist-names-for-shadowcheck-nrev x nrev))))
+  ///
+
+  (defthm true-listp-of-vl-expr-names-for-shadowcheck
+    (true-listp (vl-expr-names-for-shadowcheck x))
+    :rule-classes :type-prescription)
+
+  (defthm true-listp-of-vl-exprlist-names-for-shadowcheck
+    (true-listp (vl-exprlist-names-for-shadowcheck x))
+    :rule-classes :type-prescription)
+
+  (deffixequiv-mutual vl-expr-names-for-shadowcheck)
+
+  (defthm-vl-expr-names-for-shadowcheck-nrev-flag
+    (defthm vl-expr-names-for-shadowcheck-nrev-removal
+      (equal (vl-expr-names-for-shadowcheck-nrev x nrev)
+             (append nrev (vl-expr-names-for-shadowcheck x)))
+      :flag :expr)
+    (defthm vl-exprlist-names-for-shadowcheck-nrev-removal
+      (equal (vl-exprlist-names-for-shadowcheck-nrev x nrev)
+             (append nrev (vl-exprlist-names-for-shadowcheck x)))
+      :flag :list)
+    :hints(("Goal"
+            :in-theory (enable acl2::rcons)
+            :expand ((vl-expr-names-for-shadowcheck x)
+                     (vl-exprlist-names-for-shadowcheck x)
+                     (vl-expr-names-for-shadowcheck-nrev x nrev)
+                     (vl-exprlist-names-for-shadowcheck-nrev x nrev)))))
+  (verify-guards vl-expr-names-for-shadowcheck))
+
+
 (define vl-shadowcheck-portdecl ((x        vl-portdecl-p)
                                  (st       vl-shadowcheck-state-p)
                                  (warnings vl-warninglist-p))
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-portdecl x)  (vl-portdecl-fix x))
-       (varnames         (mergesort (vl-exprlist-varnames (vl-portdecl-allexprs x))))
+       (varnames         (mergesort (vl-exprlist-names-for-shadowcheck (vl-portdecl-allexprs x))))
        ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
@@ -646,7 +754,7 @@ explicit declarations.</p>")
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-vardecl x)   (vl-vardecl-fix x))
-       (varnames         (mergesort (vl-exprlist-varnames (vl-vardecl-allexprs x))))
+       (varnames         (mergesort (vl-exprlist-names-for-shadowcheck (vl-vardecl-allexprs x))))
        ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
@@ -657,7 +765,7 @@ explicit declarations.</p>")
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-typedef x)   (vl-typedef-fix x))
-       (varnames         (mergesort (vl-exprlist-varnames (vl-typedef-allexprs x))))
+       (varnames         (mergesort (vl-exprlist-names-for-shadowcheck (vl-typedef-allexprs x))))
        ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
@@ -668,7 +776,7 @@ explicit declarations.</p>")
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-paramdecl x) (vl-paramdecl-fix x))
-       (varnames         (mergesort (vl-exprlist-varnames (vl-paramdecl-allexprs x))))
+       (varnames         (mergesort (vl-exprlist-names-for-shadowcheck (vl-paramdecl-allexprs x))))
        ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
@@ -680,9 +788,10 @@ explicit declarations.</p>")
                (warnings vl-warninglist-p))
   (b* ((x (vl-blockitem-fix x)))
     (case (tag x)
-      (:vl-vardecl (vl-shadowcheck-vardecl x st warnings))
-      (:vl-import  (vl-shadowcheck-import  x st warnings))
-      (otherwise   (vl-shadowcheck-paramdecl x st warnings)))))
+      (:vl-vardecl   (vl-shadowcheck-vardecl   x st warnings))
+      (:vl-import    (vl-shadowcheck-import    x st warnings))
+      (:vl-paramdecl (vl-shadowcheck-paramdecl x st warnings))
+      (otherwise     (vl-shadowcheck-typedef   x st warnings)))))
 
 (define vl-shadowcheck-blockitemlist ((x        vl-blockitemlist-p)
                                       (st       vl-shadowcheck-state-p)
@@ -701,7 +810,7 @@ explicit declarations.</p>")
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* ((x                (vl-assign-fix x))
-       (varnames         (mergesort (vl-exprlist-varnames (vl-assign-allexprs x))))
+       (varnames         (mergesort (vl-exprlist-names-for-shadowcheck (vl-assign-allexprs x))))
        ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings)))
     (mv st warnings)))
 
@@ -711,7 +820,7 @@ explicit declarations.</p>")
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-gateinst x)  (vl-gateinst-fix x))
-       (varnames         (mergesort (vl-exprlist-varnames (vl-gateinst-allexprs x))))
+       (varnames         (mergesort (vl-exprlist-names-for-shadowcheck (vl-gateinst-allexprs x))))
        ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
        ((mv st warnings) (if x.name
                              (vl-shadowcheck-declare-name x.name x st warnings)
@@ -724,7 +833,7 @@ explicit declarations.</p>")
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-modinst x)   (vl-modinst-fix x))
-       (varnames         (mergesort (vl-exprlist-varnames (vl-modinst-allexprs x))))
+       (varnames         (mergesort (vl-exprlist-names-for-shadowcheck (vl-modinst-allexprs x))))
        ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
        ((mv st warnings) (if x.instname
                              (vl-shadowcheck-declare-name x.instname x st warnings)
@@ -737,7 +846,7 @@ explicit declarations.</p>")
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* ((x                (vl-alias-fix x))
-       (varnames         (mergesort (vl-exprlist-varnames (vl-alias-allexprs x))))
+       (varnames         (mergesort (vl-exprlist-names-for-shadowcheck (vl-alias-allexprs x))))
        ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings)))
     (mv st warnings)))
 
@@ -757,7 +866,7 @@ explicit declarations.</p>")
          ((when (vl-atomicstmt-p x))
           ;; No atomic statements have their own scopes or can introduce any
           ;; declarations, so this is straightforward:
-          (b* ((varnames (mergesort (vl-exprlist-varnames (vl-stmt-allexprs x)))))
+          (b* ((varnames (mergesort (vl-exprlist-names-for-shadowcheck (vl-stmt-allexprs x)))))
             (vl-shadowcheck-reference-names varnames x st warnings)))
 
          ((when (eq (vl-stmt-kind x) :vl-forstmt))
@@ -766,7 +875,7 @@ explicit declarations.</p>")
                (st (vl-shadowcheck-push-scope (vl-forstmt->blockscope x) st))
                ((mv st warnings) (vl-shadowcheck-blockitemlist x.initdecls st warnings))
                (local-exprs (vl-compoundstmt->exprs x))
-               (local-names (vl-exprlist-varnames local-exprs))
+               (local-names (vl-exprlist-names-for-shadowcheck local-exprs))
                ((mv st warnings) (vl-shadowcheck-reference-names local-names x st warnings))
                ((mv st warnings) (vl-shadowcheck-stmtlist (vl-compoundstmt->stmts x) ctx st warnings))
                (st (vl-shadowcheck-pop-scope st)))
@@ -788,7 +897,7 @@ explicit declarations.</p>")
          ;; sub-statements, which need to be checked only in the sub-scope.
          (local-exprs (append (vl-maybe-delayoreventcontrol-allexprs (vl-compoundstmt->ctrl x))
                               (vl-compoundstmt->exprs x)))
-         (local-names (vl-exprlist-varnames local-exprs))
+         (local-names (vl-exprlist-names-for-shadowcheck local-exprs))
          ((mv st warnings) (vl-shadowcheck-reference-names local-names x st warnings)))
       ;; Recursively check sub-statements.
       (vl-shadowcheck-stmtlist (vl-compoundstmt->stmts x) ctx st warnings)))
@@ -839,7 +948,6 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-stmt x.stmt x st warnings)))
     (mv st warnings)))
 
-
 (define vl-shadowcheck-portdecllist ((x        vl-portdecllist-p)
                                      (st       vl-shadowcheck-state-p)
                                      (warnings vl-warninglist-p))
@@ -860,8 +968,8 @@ explicit declarations.</p>")
        ;; BOZO this isn't quite right for the same reasons as in vl-fundecl-check-undeclared.
        (- (vl-shadowcheck-debug "  >> shadowcheck in function ~s0.~%" x.name))
        (- (vl-shadowcheck-debug "  >> checking externally used names in ports, return value~%"))
-       (other-names (vl-exprlist-varnames (append (vl-portdecllist-allexprs x.portdecls)
-                                                  (vl-datatype-allexprs x.rettype))))
+       (other-names (vl-exprlist-names-for-shadowcheck (append (vl-portdecllist-allexprs x.portdecls)
+                                                               (vl-datatype-allexprs x.rettype))))
        ((mv st warnings) (vl-shadowcheck-reference-names other-names x st warnings))
 
        (- (vl-shadowcheck-debug "  >> declaring function name, ~x0.~%" x.name))
@@ -890,7 +998,7 @@ explicit declarations.</p>")
                (warnings vl-warninglist-p))
   (b* (((vl-taskdecl x)   (vl-taskdecl-fix x))
 
-       (other-names      (vl-exprlist-varnames (vl-portdecllist-allexprs x.portdecls)))
+       (other-names      (vl-exprlist-names-for-shadowcheck (vl-portdecllist-allexprs x.portdecls)))
        ((mv st warnings) (vl-shadowcheck-reference-names other-names x st warnings))
 
        (st (vl-shadowcheck-push-scope (vl-taskdecl->blockscope x) st))
@@ -899,6 +1007,15 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
        (st (vl-shadowcheck-pop-scope st))
 
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-dpiimport ((x        vl-dpiimport-p)
+                                  (st       vl-shadowcheck-state-p)
+                                  (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-dpiimport x) (vl-dpiimport-fix x))
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
 
@@ -931,9 +1048,15 @@ explicit declarations.</p>")
 
        ((when (or (eq tag :vl-interfaceport)
                   (eq tag :vl-regularport)))
-        ;; We shouldn't see any ports.
-        (raise "We shouldn't see ports here.")
-        (vl-shadowcheck-aux (cdr x) st warnings))
+        (b* ((warnings (fatal :type :vl-programming-error
+                              :msg "We shouldn't see ports here, but found ~a0.~%"
+                              :args (list item))))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-genvar))
+        (b* (((vl-genvar item))
+             ((mv st warnings) (vl-shadowcheck-declare-name item.name item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
 
        ((when (eq tag :vl-portdecl))
         (b* (((mv st warnings) (vl-shadowcheck-portdecl item st warnings)))
@@ -979,12 +1102,20 @@ explicit declarations.</p>")
         (b* (((mv st warnings) (vl-shadowcheck-taskdecl item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
+       ((when (eq tag :vl-dpiimport))
+        (b* (((mv st warnings) (vl-shadowcheck-dpiimport item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
        ((when (eq tag :vl-import))
         (b* (((mv st warnings) (vl-shadowcheck-import item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
        ((when (eq tag :vl-typedef))
         (b* (((mv st warnings) (vl-shadowcheck-typedef item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-alias))
+        (b* (((mv st warnings) (vl-shadowcheck-alias item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
        ((when (eq tag :vl-assertion))
@@ -1004,7 +1135,7 @@ explicit declarations.</p>")
         (vl-shadowcheck-aux (cdr x) st warnings))
 
        ;; BOZO implement everything else
-       (warnings (fatal :type :vl-unexpected-modelement
+       (warnings (fatal :type :vl-programming-error
                         :msg "~a0: unexpected kind of module item."
                         :args (list item))))
     (vl-shadowcheck-aux (cdr x) st warnings)))
@@ -1124,6 +1255,15 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-import (car x) st warnings)))
     (vl-shadowcheck-imports (cdr x) st warnings)))
 
+(define vl-shadowcheck-dpiimports ((x        vl-dpiimportlist-p)
+                                   (st       vl-shadowcheck-state-p)
+                                   (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-dpiimport (car x) st warnings)))
+    (vl-shadowcheck-dpiimports (cdr x) st warnings)))
 
 (define vl-shadowcheck-design ((x vl-design-p))
   :returns (new-x vl-design-p)
@@ -1142,7 +1282,8 @@ explicit declarations.</p>")
                           (vl-paramdecllist->names x.paramdecls)
                           (vl-fundecllist->names x.fundecls)
                           (vl-taskdecllist->names x.taskdecls)
-                          (vl-typedeflist->names x.typedefs)))
+                          (vl-typedeflist->names x.typedefs)
+                          (vl-dpiimportlist->names x.dpiimports)))
        (dupes (duplicated-members itemnames))
        (warnings (if (not dupes)
                      (ok)
@@ -1150,12 +1291,13 @@ explicit declarations.</p>")
                           :msg "Name clash among globals: ~&0."
                           :args (list dupes))))
 
-       ((mv st warnings) (vl-shadowcheck-declare-typedefs x.typedefs st warnings))
-       ((mv st warnings) (vl-shadowcheck-vardecls   x.vardecls st warnings))
-       ((mv st warnings) (vl-shadowcheck-paramdecls x.paramdecls st warnings))
-       ((mv st warnings) (vl-shadowcheck-fundecls   x.fundecls st warnings))
-       ((mv st warnings) (vl-shadowcheck-taskdecls  x.taskdecls st warnings))
-       ((mv st warnings) (vl-shadowcheck-imports    x.imports st warnings))
+       ((mv st warnings) (vl-shadowcheck-declare-typedefs x.typedefs   st warnings))
+       ((mv st warnings) (vl-shadowcheck-vardecls         x.vardecls   st warnings))
+       ((mv st warnings) (vl-shadowcheck-paramdecls       x.paramdecls st warnings))
+       ((mv st warnings) (vl-shadowcheck-fundecls         x.fundecls   st warnings))
+       ((mv st warnings) (vl-shadowcheck-taskdecls        x.taskdecls  st warnings))
+       ((mv st warnings) (vl-shadowcheck-imports          x.imports    st warnings))
+       ((mv st warnings) (vl-shadowcheck-dpiimports       x.dpiimports st warnings))
 
        ((mv st mods) (vl-shadowcheck-modules x.mods st))
 

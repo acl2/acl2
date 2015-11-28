@@ -378,15 +378,15 @@ encoding.</p>"
               (cw "Found info for defaggregate ~x0.~%" type)
               (mv (std::agginfo->tag agginfo)
                   (std::agginfo->efields agginfo)))
-             (suminfo (fty::get-flexsum-info elem world))
-             ((unless suminfo)
+             ((mv & type) (fty::search-deftypes-table elem (fty::get-flextypes world)))
+             ((unless (and type
+                           (equal (tag type) :sum)
+                           (equal (len (fty::flexsum->prods type)) 1)))
               (mv (raise "Type ~x0 doesn't look like a known defaggregate/defprod?~%" type)
                   nil))
-             ((fty::suminfo suminfo))
-             (prod (car (fty::flexsum->prods suminfo.sum)))
-             (efields (convert-flexprod-fields-into-eformals
-                       (fty::flexprod->fields prod)))
-             (tag (car (fty::suminfo->tags suminfo))))
+             (prod    (car (fty::flexsum->prods type)))
+             (efields (convert-flexprod-fields-into-eformals (fty::flexprod->fields prod)))
+             (tag     (fty::flexprod->kind prod)))
           (mv tag efields)))
 
        (- (cw "Inferred tag ~x0.~%" tag))

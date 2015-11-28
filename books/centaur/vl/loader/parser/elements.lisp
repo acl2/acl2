@@ -32,14 +32,14 @@
 (include-book "statements")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
 (include-book "nets")       ;; vl-assignlist-p, vl-netdecllist-p
-(include-book "blockitems") ;; vl-vardecllist-p, vl-paramdecllist-p
+(include-book "blockitems") ;; vl-vardecllist-p, vl-paramdecllist-p, typedefs
 (include-book "insts")      ;; vl-modinstlist-p
 (include-book "gates")      ;; vl-gateinstlist-p
 (include-book "functions")  ;; vl-fundecllist-p
 (include-book "modports")
-(include-book "typedefs")
 (include-book "imports")
 (include-book "asserts")
+(include-book "dpi")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -47,6 +47,7 @@
 
 
 (defparser vl-parse-1+-alias-rhses (atts lhs loc)
+  ;; Match '=' net_lvalue { '=' net_lvalue }
   :guard (and (vl-atts-p atts)
               (vl-expr-p lhs)
               (vl-location-p loc))
@@ -57,17 +58,17 @@
   :count strong
   (seq tokstream
         (:= (vl-match-token :vl-equalsign))
-        (rhs1 := (vl-parse-lvalue))
+        (rhs1 := (vl-parse-net-lvalue))
         (when (vl-is-token? :vl-equalsign)
           (rest := (vl-parse-1+-alias-rhses atts lhs loc)))
         (return (cons (make-vl-alias :lhs lhs
-                                       :rhs rhs1
-                                       :atts atts
-                                       :loc loc)
+                                     :rhs rhs1
+                                     :atts atts
+                                     :loc loc)
                       rest))))
 
-
 (defparser vl-parse-alias (atts)
+  ;; net_alias ::= 'alias' net_lvalue '=' net_lvalue { '=' net_lvalue } ';'
   :guard (vl-atts-p atts)
   :result (vl-aliaslist-p val)
   :true-listp t
@@ -77,12 +78,10 @@
   (seq tokstream
         (loc := (vl-current-loc))
         (:= (vl-match-token :vl-kwd-alias))
-        (lhs := (vl-parse-lvalue))
+        (lhs := (vl-parse-net-lvalue))
         (aliases := (vl-parse-1+-alias-rhses atts lhs loc))
+        (:= (vl-match-token :vl-semi))
         (return aliases)))
-
-
-
 
 
 
@@ -383,8 +382,17 @@ rules:</p>
 
          ((when (eq type1 :vl-kwd-import))
           (seq tokstream
-               (imports := (vl-parse-package-import-declaration atts))
-               (return imports)))
+               (when (vl-plausible-start-of-package-import-p)
+                 (imports := (vl-parse-package-import-declaration atts))
+                 (return imports))
+               ;; Otherwise maybe it's a DPI import.
+               (dpiimport := (vl-parse-dpi-import atts))
+               (return (list dpiimport))))
+
+         ((when (eq type1 :vl-kwd-export))
+          (seq tokstream
+               (dpiexport := (vl-parse-dpi-export atts))
+               (return (list dpiexport))))
 
          ((when (or (eq type1 :vl-kwd-always_ff)
                     (eq type1 :vl-kwd-always_latch)
@@ -436,9 +444,6 @@ rules:</p>
                (tokstream (vl-tokstream-restore backup))
                (tokstream (vl-tokstream-update-position pos)))
             (mv err nil tokstream))))
-
-
-
 
 
       ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
@@ -561,6 +566,12 @@ the one modelement, it consolidates them into an unnamed @('begin/end') block.</
                  (blkname := (vl-match-token :vl-idtoken)))
                (elts := (vl-parse-genelements-until :vl-kwd-end))
                (:= (vl-match-token :vl-kwd-end))
+               (when blkname
+                 ;; SystemVerilog-2012 extends generate_block with [ ':'
+                 ;; generate_block_identifier ] at the end.  We don't
+                 ;; have to check for SystemVerilog-2012 mode since
+                 ;; that's baked into vl-parse-endblock-name.
+                 (:= (vl-parse-endblock-name (vl-idtoken->name blkname) "begin/end")))
                (return (make-vl-genblock :name (and blkname
                                                     (vl-idtoken->name blkname))
                                          :elems elts

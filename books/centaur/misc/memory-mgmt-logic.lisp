@@ -139,11 +139,12 @@ physical memory, you may wish to reserve no more than about 6 GB for the
 heap.</p>
 
 
-<h3>Interaction with @(see cert.pl)</h3>
+<h3>Interaction with @(see build::cert.pl)</h3>
 
-<p>The @(see cert.pl) build system scans for calls of @('set-max-mem') and uses
-them to infer how much memory a book will need.  This information may be useful
-for scheduling jobs when carrying out distributed builds on a cluster.</p>
+<p>The @(see build::cert.pl) build system scans for calls of @('set-max-mem')
+and uses them to infer how much memory a book will need.  This information may
+be useful for scheduling jobs when carrying out distributed builds on a
+cluster.</p>
 
 <p>Note that this parsing is done by a simple Perl script, so you can't just
 use an arbitrary Lisp expression here.  Explicitly supported expressions

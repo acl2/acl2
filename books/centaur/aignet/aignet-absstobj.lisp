@@ -759,9 +759,7 @@ Logically, @('(stype-count :nxst aignet)')</p> ")
   :short "Number of AND gate nodes in an aignet"
   :long "
 <p>
-Logically, @('(stype-count :gate aignet)')</p> "
-  :short ""
-  :long "")
+Logically, @('(stype-count :gate aignet)')</p> ")
 
 (defxdoc fanin-litp
   :parents (aignet-logic)

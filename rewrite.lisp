@@ -2371,9 +2371,7 @@
 
 (defun member-complement-term2 (fn lhs rhs cl)
   (cond ((null cl) nil)
-        ((and (nvariablep (car cl))
-              (not (fquotep (car cl)))
-              (eq (ffn-symb (car cl)) 'not)
+        ((and (ffn-symb-p (car cl) 'not)
               (comm-equal fn lhs rhs (fargn (car cl) 1)))
          cl)
         (t (member-complement-term2 fn lhs rhs (cdr cl)))))
@@ -2384,9 +2382,7 @@
 ; This fn is equivalent to (member-equal `(not ,lit) cl).
 
   (cond ((null cl) nil)
-        ((and (nvariablep (car cl))
-              (not (fquotep (car cl)))
-              (eq (ffn-symb (car cl)) 'not)
+        ((and (ffn-symb-p (car cl) 'not)
               (equal lit (fargn (car cl) 1)))
          cl)
         (t (member-complement-term1 lit (cdr cl)))))
@@ -2826,8 +2822,7 @@
          (cond ((equal term (cadr assumptions)) 'f)
                (t (if-interp-assumed-value3 term (cddr assumptions)))))
         ((equal (car assumptions) term) 't)
-        ((and (not (variablep (car assumptions)))
-              (eq (ffn-symb (car assumptions)) 'INTEGERP)
+        ((and (ffn-symb-p (car assumptions) 'INTEGERP)
               (equal (fargn term 1) (fargn (car assumptions) 1)))
          't)
         (t (if-interp-assumed-value3 term (cdr assumptions)))))
@@ -2841,8 +2836,7 @@
   (cond ((null assumptions) nil)
         ((eq (car assumptions) :not)
          (cond ((equal term (cadr assumptions)) 'f)
-               ((and (not (variablep (cadr assumptions)))
-                     (eq (ffn-symb (cadr assumptions)) 'RATIONALP)
+               ((and (ffn-symb-p (cadr assumptions) 'RATIONALP)
                      (equal (fargn term 1) (fargn (cadr assumptions) 1)))
                 'f)
                (t (if-interp-assumed-value4 term (cddr assumptions)))))
@@ -2944,8 +2938,7 @@
 ; of (NOT (EQUAL x 'const2)) when x is known to be a different 'const1.  To see
 ; the simple case of this function, skip to the T clause of this cond.
 
-           (cond ((and (nvariablep test)
-                       (eq (ffn-symb test) 'equal)
+           (cond ((and (ffn-symb-p test 'equal)
                        (or (quotep (fargn test 1))
                            (quotep (fargn test 2))))
                   (cond ((quotep (fargn test 1))
@@ -2997,8 +2990,7 @@
                    known-constants)))))
         (t
          (let ((test (car assumptions)))
-           (cond ((and (nvariablep test)
-                       (eq (ffn-symb test) 'equal)
+           (cond ((and (ffn-symb-p test 'equal)
                        (or (quotep (fargn test 1))
                            (quotep (fargn test 2))))
                   (cond
@@ -3156,16 +3148,13 @@
                         (quotep (cadr ac)))
                    *nil*)
                   ((and (equal (car ac) *t*)
-                        (nvariablep (cadr ac))
-;                       (not (fquotep (cadr ac)))
-                        (eq (ffn-symb (cadr ac)) 'equal))
+                        (ffn-symb-p (cadr ac) 'equal))
 
 ; Note:  (equal t (equal a b)) = (equal a b).
 
                    (cadr ac))
                   ((and (equal (cadr ac) *t*)
-                        (nvariablep (car ac))
-                        (eq (ffn-symb (car ac)) 'equal))
+                        (ffn-symb-p (car ac) 'equal))
                    (car ac))
                   (t (fcons-term fn ac))))
 
@@ -3238,9 +3227,7 @@
         (t (ret-stack (cdr lst) (cdr stack)))))
 
 (defun extra-info-lit-p (lit)
-  (and (nvariablep lit)
-;      (not (fquotep lit))
-       (eq (ffn-symb lit) 'not)
+  (and (ffn-symb-p lit 'not)
        (let ((atm (fargn lit 1)))
          (and (nvariablep atm)
               (eq (ffn-symb atm) *extra-info-fn*)))))
@@ -3619,9 +3606,7 @@
 
   (declare (xargs :guard (pseudo-termp term)))
   (cond
-   ((and (nvariablep term)
-         (not (fquotep term))
-         (eq (ffn-symb term) 'if)
+   ((and (ffn-symb-p term 'if)
          (equal (fargn term 3) *nil*))
 
 ; Term is of the form (if p q 'nil).  We will strip the branches of each in
@@ -4176,8 +4161,7 @@
                (cond (rune
                       (mv *t* (push-lemma rune ttree)))
                      (t (mv term ttree)))))))
-   ((and (nvariablep term)
-         (eq (ffn-symb term) 'if))
+   ((ffn-symb-p term 'if)
 
 ; Is this case important?  It doesn't seem so, and we were tempted to delete it
 ; when we modified find-rewriting-equivalence after Version_3.0.1 to look for
@@ -4187,8 +4171,7 @@
 ; compatibility.
 
     (mv term ttree))
-   ((and (nvariablep term)
-         (eq (ffn-symb term) 'hide)
+   ((and (ffn-symb-p term 'hide)
          (let ((e (fargn term 1)))
            (case-match e
              (('rewrite-equiv (equiv x x))
@@ -4919,9 +4902,7 @@
 ; an if-tautology.  This function can be made as fancy as you want, as long as
 ; it recognizes theorems.
 
-  (cond ((and (nvariablep term)
-              (not (fquotep term))
-              (eq (ffn-symb term) 'implies)
+  (cond ((and (ffn-symb-p term 'implies)
               (equal (fargn term 1) (fargn term 2)))
          t)
         (t (if-tautologyp
@@ -9409,8 +9390,66 @@
 
 (defun extend-unify-subst (alist unify-subst)
 
-; We attempt to keep all terms in quote-normal form, which explains the
-; modification of val just below.
+; We attempt to keep all terms in quote-normal form, which explains the use of
+; sublis-var-lst below.  There are also three related calls, all of the form
+; (sublis-var nil X), in rewrite-with-lemma.
+
+; We wondered if for large problems, the cost of exploring large terms might
+; not be worth the benefit of maintaining quote-normal form, so we tried
+; replacing the pairlis$ call below with, simply, alist.  However, we found
+; relatively little benefit, as we now describe.
+
+; Below are timings from 4 different configurations.  In all cases, we
+; abstained from doing anything else on the laptop during the run.  So the
+; differences you see are real, up to GC time.  All the runs were conducted
+; sequentially in the same image.
+; 
+; The first configuration, A, is as reported in the Stateman paper (by J Moore)
+; at the 2015 ACL2 Workshop.  The relevant fact is that sublis-var1 is memoized
+; when the substitution is nil and the term has a HIDE on it.  Three runs were
+; done to see if the time would stabilize.  The time reported in the paper was
+; 275 seconds.
+; 
+; ; A runs:
+; ; 388.94 seconds realtime, 382.18 seconds runtime
+; ; 265.68 seconds realtime, 262.71 seconds runtime
+; ; 274.68 seconds realtime, 272.27 seconds runtime
+; 
+; The next configuration is the same as A except that here, sublis-var1 is not
+; memoized.  So here you see the extra cost of the sublis-var nil calls.
+; 
+; ; B runs:
+; ; 485.81 seconds realtime, 482.91 seconds runtime
+; ; 494.81 seconds realtime, 491.70 seconds runtime
+; 
+; The next configuration is with the change described above, as follows: we
+; replaced the pairlis$ call with the variable, alist, and replaced each
+; (sublis-var nil X) call in rewrite-with-lemma by the corresponding X.  Note
+; that sublis-var is not memoized here either.
+; 
+; ; C runs:
+; ; 281.10 seconds realtime, 278.37 seconds runtime
+; ; 284.11 seconds realtime, 281.30 seconds runtime
+; 
+; So eliminating the call has about the same effect on time as memoizing it.
+; 
+; The final experiment leaves memoization on (for sublis-var1 with nil
+; substitution and a term beginning with HIDE) but also includes the
+; modifications described above, that is, to avoid the (sublis-var nil ...)
+; call in this function and the three such calls in rewrite-with-lemma.
+
+; D runs:
+; 273.10 seconds realtime, 270.52 seconds runtime
+; 299.00 seconds realtime, 277.31 seconds runtime
+
+; This suggests that memoizing sublis-var as Stateman does and eliminating
+; these sublis-var calls is marginally worse than just memoizing sublis-var (as
+; in A).  That seems rather unlikely, so we are willing to conclude that the
+; differences are just noise.  So we have decided to keep these four calls of
+; sublis-var-lst or sublis-var, which will avoid the potential pain of
+; modifying some books to accommodate their removal.  (Actually no regression
+; books as of early November 2015 needed to be modified; but other user books
+; might need to be.)
 
   (append (pairlis$ (strip-cars alist)
                     (sublis-var-lst nil (strip-cdrs alist)))
@@ -10358,8 +10397,7 @@
 ; In the case of a synp hypothesis, our possible restriction of unify-subst is
 ; based on the variables occurring free in the term that is to be evaluated.
 
-                         (cond ((and (nvariablep hyp)
-                                     (eq (ffn-symb hyp) 'synp))
+                         (cond ((ffn-symb-p hyp 'synp)
                                 (let ((qterm (fargn hyp 3)))
                                   (assert$ (quotep qterm)
                                            (unquote qterm))))
@@ -10945,6 +10983,11 @@
 ; of full-range that correspond (positionally) to members of
 ; full-domain that belong to sub-domain.
 
+  (declare (xargs :guard (and (symbol-listp full-domain)
+                              (true-listp sub-domain)
+                              (true-listp full-range)
+                              (eql (length full-domain)
+                                   (length full-range)))))
   (if (endp full-domain)
       nil
     (if (member-eq (car full-domain) sub-domain)
@@ -10967,6 +11010,11 @@
 ;
 ; Note that the irrelevant formal y has been eliminated.
 
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (pseudo-termp body)
+                              (true-listp actuals)
+                              (eql (length formals)
+                                   (length actuals)))))
   (let ((vars (all-vars body)))
     (cond
      ((null vars)
@@ -10974,7 +11022,7 @@
      ((equal formals actuals)
       body)
      ((set-difference-eq vars formals)
-      (er hard 'make-lambda-application
+      (er hard? 'make-lambda-application
           "Unexpected unbound vars ~x0"
           (set-difference-eq vars formals)))
      (t
@@ -11681,9 +11729,7 @@
    3
    (signed-byte 30)
    (cond
-    ((and (nvariablep test)
-          (not (fquotep test))
-          (eq (ffn-symb test) 'if)
+    ((and (ffn-symb-p test 'if)
           (equal (fargn test 2) *nil*)
           (equal (fargn test 3) *t*))
 
@@ -12296,9 +12342,7 @@
   (the-mv
    6
    (signed-byte 30)
-   (cond ((and (nvariablep hyp0)
-               (not (fquotep hyp0))
-               (eq (ffn-symb hyp0) 'synp))
+   (cond ((ffn-symb-p hyp0 'synp)
           (mv-let (wonp failure-reason unify-subst ttree)
                   (relieve-hyp-synp rune hyp0 unify-subst rdepth type-alist wrld
                                     state fnstack ancestors backchain-limit
@@ -12729,7 +12773,7 @@
 
         (let* ((hyp (car hyps))
                (forcep1 (and (nvariablep hyp)
-                             (not (fquotep hyp))
+;                            (not (fquotep hyp))
                              (or (eq (ffn-symb hyp) 'force)
                                  (eq (ffn-symb hyp) 'case-split))))
                (forcer-fn (and forcep1 (ffn-symb hyp)))
@@ -13398,9 +13442,7 @@
                        (t
                         (mv-let
                          (extra-evaled-hyp val)
-                         (cond ((and (nvariablep val)
-;                                (not (fquotep val))
-                                     (eq (ffn-symb val) 'if)
+                         (cond ((and (ffn-symb-p val 'if)
                                      (equal (fargn val 3) term))
                                 (mv (fargn val 1) (fargn val 2)))
                                (t (mv *t* val)))
@@ -13517,13 +13559,13 @@
                                          (hyps0 (flatten-ands-in-lit
 
 ; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).
+; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
 
                                                  (sublis-var nil evaled-hyp)))
                                          (extra-hyps (flatten-ands-in-lit
 
 ; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).
+; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
 
                                                       (sublis-var nil
                                                                   extra-evaled-hyp)))
@@ -13619,8 +13661,9 @@
                                            t
                                            (rewrite-entry (rewrite
 
-; Note: The sublis-var below normalizes the explicit constant
-; constructors in val, e.g., (cons '1 '2) becomes '(1 . 2).
+; Note: The sublis-var below normalizes the explicit constant constructors in
+; val, e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in
+; extend-unify-subst.
 
                                                            (sublis-var nil val)
 
@@ -14393,7 +14436,7 @@
     (not-flg atm)
     (strip-not term)
     (cond ((and (nvariablep atm)
-                (not (fquotep atm))
+;               (not (fquotep atm))
                 (or (eq (ffn-symb atm) '<)
                     (eq (ffn-symb atm) 'equal)))
            (let ((rcnst1 (if (access rewrite-constant rcnst :nonlinearp)

@@ -1816,15 +1816,23 @@ how VL module instances are translated.</p>"
          (b* ((ins (vl-gatetypenames-count-up (1- nargs) 1 "in"))
               (svex-ins (svex-vars-from-names ins))
               (assigns  (list (cons (svex-lhs-from-name "out")
-                                    (sv::make-driver
-                                     :value
-                                     (case type
-                                       (:vl-and  (svcall-join 'sv::bitand svex-ins))
-                                       (:vl-nand (sv::svcall sv::bitnot (svcall-join 'sv::bitand svex-ins)))
-                                       (:vl-or   (svcall-join 'sv::bitor svex-ins))
-                                       (:vl-nor  (sv::svcall sv::bitnot (svcall-join 'sv::bitor svex-ins)))
-                                       (:vl-xor  (svcall-join 'sv::bitxor svex-ins))
-                                       (:vl-xnor (sv::svcall sv::bitnot (svcall-join 'sv::bitxor svex-ins))))))))
+                                    (if (eql (len svex-ins) 1)
+                                        (sv::make-driver
+                                         :value
+                                         (case type
+                                           ((:vl-and :vl-or :vl-xor)
+                                            (sv::svcall sv::unfloat (car svex-ins)))
+                                           ((:vl-nand :vl-nor :vl-xnor)
+                                            (sv::svcall sv::bitnot (car svex-ins)))))
+                                      (sv::make-driver
+                                       :value
+                                       (case type
+                                         (:vl-and  (svcall-join 'sv::bitand svex-ins))
+                                         (:vl-nand (sv::svcall sv::bitnot (svcall-join 'sv::bitand svex-ins)))
+                                         (:vl-or   (svcall-join 'sv::bitor svex-ins))
+                                         (:vl-nor  (sv::svcall sv::bitnot (svcall-join 'sv::bitor svex-ins)))
+                                         (:vl-xor  (svcall-join 'sv::bitxor svex-ins))
+                                         (:vl-xnor (sv::svcall sv::bitnot (svcall-join 'sv::bitxor svex-ins)))))))))
               (portnames (cons "out" ins))
               (portdirs (cons :vl-output (repeat (1- nargs) :vl-input))))
          (mv nil nil assigns portnames portdirs))))
@@ -2124,7 +2132,7 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
        ((unless lhs-type) (mv warnings nil))
        ((wmv warnings delay :ctx x) (vl-maybe-gatedelay->delay x.delay))
        ((wmv warnings svex-rhs :ctx x)
-        (vl-expr-to-svex-datatyped x.expr lhs-type conf))
+        (vl-expr-to-svex-datatyped x.expr x.lvalue lhs-type conf))
        ;; BOZO deal with drive strengths
        ((when (not delay))
         (mv warnings (list (cons lhs (sv::make-driver :value svex-rhs)))))
@@ -3070,6 +3078,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
        ((wmv warnings always-assigns)
         (vl-alwayslist->svex x.alwayses blobconf))
+       ((wmv warnings) (vl-initiallist-size-warnings x.initials blobconf))
+       ((wmv warnings) (vl-finallist-size-warnings x.finals blobconf))
 
        ;; (delays (sv::delay-svarlist->delays (append-without-guard delayvars always-delayvars)))
 

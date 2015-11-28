@@ -218,15 +218,21 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
     :long "<p>Note that this is only for items, i.e., it's not for definitions,
   ports, packages, etc.</p>"
     '((interface    (:import)
-                    paramdecl vardecl)
+                    paramdecl vardecl dpiimport
+                    ;; NOTE: not dpiexport -- we DO want to include the dpi
+                    ;; imports in the scopestack because they're essentially
+                    ;; being "defined" by the C code.  But exports are just
+                    ;; things we're making available to the C code, which isn't
+                    ;; relevant to much of anything else.
+                    )
       (module       (:import)
-                    paramdecl vardecl fundecl taskdecl typedef
+                    paramdecl vardecl fundecl taskdecl typedef dpiimport
                     (modinst :name instname :maybe-stringp t)
                     (gateinst :maybe-stringp t)
                     (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
                     (interfaceport :acc ifports))
       (genblob      (:import)
-                    vardecl paramdecl fundecl taskdecl typedef
+                    vardecl paramdecl fundecl taskdecl typedef dpiimport
                     (modinst :name instname :maybe-stringp t)
                     (gateinst :maybe-stringp t)
                     (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
@@ -237,12 +243,12 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
 
       ;; Functions, Tasks, and Statements are all grouped together into Blockscopes.
       (blockscope   (:import)
-                    vardecl paramdecl)
+                    vardecl paramdecl typedef)
 
       (design       (:import)
-                    paramdecl vardecl fundecl taskdecl typedef)
+                    paramdecl vardecl fundecl taskdecl typedef dpiimport)
       (package      (:import)
-                    paramdecl vardecl fundecl taskdecl typedef)))
+                    paramdecl vardecl fundecl taskdecl typedef dpiimport)))
 
   (defval *vl-scopes->defs*
     :short "Information about the kinds of definitions in each scope."
@@ -268,13 +274,11 @@ in it, such as a function, task, or block statement."
   :parents (scopestack)
   :tag :vl-blockscope
   :layout :tree
-  ((imports  vl-importlist-p
-             "Package imports in this scope.")
-   (paramdecls vl-paramdecllist-p
-               "Parameter declarations in this scope.")
-   (vardecls vl-vardecllist-p
-             "Variable declarations in this scope.")
-   (scopetype vl-scopetype-p "Kind of block responsible for this")
+  ((imports    vl-importlist-p    "Package imports in this scope.")
+   (paramdecls vl-paramdecllist-p "Parameter declarations in this scope.")
+   (vardecls   vl-vardecllist-p   "Variable declarations in this scope.")
+   (typedefs   vl-typedeflist-p   "Type declarations in this scope.")
+   (scopetype  vl-scopetype-p     "Kind of block responsible for this")
 
    (name  maybe-stringp :rule-classes :type-prescription
           "Just a debugging aide.  This lets us see the name of this scope when
@@ -287,6 +291,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :typedefs x.typedefs
                         :scopetype :vl-fundecl
                         :name  x.name)))
 
@@ -297,6 +302,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :typedefs x.typedefs
                         :scopetype :vl-taskdecl
                         :name  x.name)))
 
@@ -308,6 +314,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :typedefs x.typedefs
                         :scopetype :vl-blockstmt
                         :name  x.name)))
 
@@ -1408,7 +1415,8 @@ be very cheap in the single-threaded case.</p>"
                  (equal (tag item) :vl-vardecl)
                  (equal (tag item) :vl-fundecl)
                  (equal (tag item) :vl-taskdecl)
-                 (equal (tag item) :vl-typedef))))
+                 (equal (tag item) :vl-typedef)
+                 (equal (tag item) :vl-dpiimport))))
   :rule-classes ((:forward-chaining))
   :hints(("Goal"
           :use ((:instance tag-when-vl-scopeitem-p-forward
@@ -1611,6 +1619,7 @@ transform that has used scopestacks.</p>"
       (:vl-vardecl       (vl-vardecl->name x))
       (:vl-fundecl       (vl-fundecl->name x))
       (:vl-taskdecl      (vl-taskdecl->name x))
+      (:vl-dpiimport  (vl-dpiimport->name x))
       (otherwise         (vl-typedef->name x)))))
 
 (define vl-scopestack->path-aux ((x vl-scopestack-p) rchars)

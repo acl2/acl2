@@ -1583,7 +1583,7 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
   ;; BOZO can probably strengthen the equivalences
   (deffixequiv 4vec-rev-blocks))
 
-(define 4vec-wildeq ((a 4vec-p) (b 4vec-p))
+(define 4vec-wildeq-safe ((a 4vec-p) (b 4vec-p))
   :short "True if for every pair of corresponding bits of a and b, either they
           are equal or the bit from b is Z."
   :returns (res 4vec-p)
@@ -1592,9 +1592,35 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
        (zmask (logand (lognot b.upper) b.lower))) ;; b is z
     (3vec-reduction-and (3vec-bitor eq (2vec zmask))))
   ///
-  (deffixequiv 4vec-wildeq
+  (deffixequiv 4vec-wildeq-safe
     :args ((a 3vec)
            (b 4vec))))
+
+(define 4vec-wildeq ((a 4vec-p) (b 4vec-p))
+  :short "True if for every pair of corresponding bits of a and b, either they
+          are equal or the bit from b is X or Z."
+  :long "<p>This is the Verilog semantics for the @('==?') operator. Like ===,
+this violates monotonicity, i.e. it doesn't respect the idea that X represents
+an unknown.</p>"
+  :returns (res 4vec-p)
+  (b* ((eq (3vec-bitnot (4vec-bitxor a b))) ;; 4vec-bitxor-redef
+       ((4vec b))
+       (zxmask (logxor b.upper b.lower))) ;; b is z or x
+    (3vec-reduction-and (3vec-bitor eq (2vec zxmask))))
+  ///
+  (local (defthm logxor-of-3vec-fix
+           (equal (logxor (logand l u)
+                          (logior l u))
+                  (logxor l u))
+           :hints ((logbitp-reasoning)
+                   (and stable-under-simplificationp
+                        '(:in-theory (enable bool->bit))))))
+
+  (deffixequiv 4vec-wildeq
+    :args ((a 3vec)
+           (b 3vec))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable 3vec-fix))))))
 
 (define 4vec-symwildeq ((a 4vec-p) (b 4vec-p))
   :short "Symmetric wildcard equality: true if for every pair of corresponding

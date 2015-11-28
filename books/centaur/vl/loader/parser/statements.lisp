@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "eventctrl")
 (include-book "blockitems")
-(include-book "lvalues")
+(include-book "assignments")
 (include-book "properties")
 (include-book "../../mlib/stmt-tools")
 (local (include-book "../../util/arithmetic"))
@@ -125,10 +125,10 @@
        (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
          ;; inc_or_dec_operator case
          (op := (vl-match))
-         (var := (vl-parse-lvalue))
+         (var := (vl-parse-variable-lvalue))
          (return (cons var
                        (vl-inc-or-dec-expr var (vl-token->type op)))))
-       (var := (vl-parse-lvalue))
+       (var := (vl-parse-variable-lvalue))
        (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
          ;; inc_or_dec_operator case
          (op := (vl-match))
@@ -150,10 +150,10 @@
 
          @({
              blocking_assignment ::=
-               lvalue '=' [delay_or_event_control] expression
+               variable_lvalue '=' [delay_or_event_control] expression
 
              nonblocking_assignment ::=
-               lvalue '<=' [delay_or_event_control] expression
+               variable_lvalue '<=' [delay_or_event_control] expression
          })
 
          <p>BOZO SystemVerilog-2012 extends @('blocking_assignment') in several
@@ -165,7 +165,7 @@
   :count strong
   (seq tokstream
        (loc := (vl-current-loc))
-       (lvalue := (vl-parse-lvalue))
+       (lvalue := (vl-parse-variable-lvalue))
        (type := (vl-match-some-token '(:vl-equalsign :vl-lte)))
        (when (vl-is-some-token? '(:vl-pound :vl-atsign :vl-kwd-repeat))
          (delay := (vl-parse-delay-or-event-control)))
@@ -181,18 +181,21 @@
   ;; Curiously named production, given that only one can be returned.  In
   ;; SystemVerilog-2012 it gets changed to singular; we should probably rename
   ;; it as well.
-  :long "<p>For Verilog-2005, the grammar looks worse than this, but with our
-         treatment of assignment and lvalue it's just:</p>
+  :long "<p>For Verilog-2005:</p>
 
          @({
-              procedural_continuous_assignments ::= 'assign' assignment
-                                                  | 'deassign' lvalue
-                                                  | 'force' assignment
-                                                  | 'release' lvalue
+              procedural_continuous_assignments ::= 'assign' variable_assignment
+                                                  | 'deassign' variable_lvalue
+                                                  | 'force' variable_assignment
+                                                  | 'force' net_assignment
+                                                  | 'release' variable_lvalue
+                                                  | 'release' net_lvalue
          })
 
-         <p>SystemVerilog-2012 may extend this but we haven't yet looked at
-         whether or how it is extended.</p>"
+         <p>SystemVerilog-2012 is identical.  Note that a @('net_assignment') is
+         a subset of a @('variable_assignment'), and a @('net_lvalue') is a subset
+         of a @('variable_lvalue'), so we just use the variable versions in each
+         case.</p>"
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
@@ -201,93 +204,385 @@
   (seq tokstream
         (when (vl-is-some-token? '(:vl-kwd-assign :vl-kwd-force))
           (type := (vl-match))
-          ((lvalue . expr) := (vl-parse-assignment))
+          ((lvalue . expr) := (vl-parse-variable-assignment))
           (return (vl-assignstmt (if (eq (vl-token->type type) :vl-kwd-assign)
                                      :vl-assign
                                    :vl-force)
                                  lvalue expr nil atts
                                  (vl-token->loc type))))
         (type := (vl-match-some-token '(:vl-kwd-deassign :vl-kwd-release)))
-        (lvalue := (vl-parse-lvalue))
+        (lvalue := (vl-parse-variable-lvalue))
         (return (vl-deassignstmt (if (eq (vl-token->type type) :vl-kwd-deassign)
                                      :vl-deassign
                                    :vl-release)
                                  lvalue atts))))
 
 
-
 (defparser vl-parse-task-enable (atts)
-  :short "Parse a @('task_enable')."
+  :short "Parse a @('task_enable').  Verilog-2005 Only."
   :long "<p>Verilog-2005 Syntax:</p>
          @({
               task_enable ::=
                  hierarchical_task_identifier [ '(' expression { ',' expression } ')' ] ';'
+
+              hierarchical_task_identifier ::= hierarchical_identifier
          })
 
-         <p>SystemVerilog-2012: Bozo, I'm not yet sure what this corresponds to.</p>"
+         <p>In SystemVerilog-2012 this goes away and is replaced by the
+         @('subroutine_call_statement') case.  Per Section 13.3, ``A call to a
+         task is also referred to as a <i>task enable</i> (see Section 13.5 for
+         more details on calling tasks); and Section 13.5 is about subroutine
+         calls and argument passing, and describes the
+         @('subroutine_call_statement'), which has a @('tf_call') production
+         that is very similar to the Verilog-2005 @('task_enable').</p>"
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
+
        (hid := (vl-parse-hierarchical-identifier nil))
        (unless (vl-is-token? :vl-lparen)
          (:= (vl-match-token :vl-semi))
-         (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
-                                     :args nil
-                                     :atts atts)))
+         (return (make-vl-callstmt :id (make-vl-scopeexpr-end :hid hid)
+                                   :typearg nil
+                                   :systemp nil
+                                   :voidp nil
+                                   :args nil
+                                   :atts atts)))
 
        (:= (vl-match)) ;; eat the (
 
-       (when (and (vl-is-token? :vl-rparen)
-                  (not (eq (vl-loadconfig->edition config) :verilog-2005)))
-         ;; Verilog-2005 doesn't support explicit parens with empty argument
-         ;; lists, but SystemVerilog-2012 adds them and other fancy stuff.  We
-         ;; won't yet support the other fancy stuff, but can at least handle
-         ;; empty argument lists very easily.
-         (:= (vl-match))
-         (:= (vl-match-token :vl-semi))
-         (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
-                                     :args nil
-                                     :atts atts)))
+       ;; Old code from when this was also implementing subroutine_call_statement
+       ;; for SystemVerilog-2012.  We no longer use this function in SystemVerilog
+       ;; mode.  We can probably just delete this comment since the Verilog-2005
+       ;; rule definitely requires at least one expression.
+       ;;
+       ;; (when (and (vl-is-token? :vl-rparen)
+       ;;            (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+       ;;   ;; Verilog-2005 doesn't support explicit parens with empty argument
+       ;;   ;; lists, but SystemVerilog-2012 adds them and other fancy stuff.  We
+       ;;   ;; won't yet support the other fancy stuff, but can at least handle
+       ;;   ;; empty argument lists very easily.
+       ;;   (:= (vl-match))
+       ;;   (:= (vl-match-token :vl-semi))
+       ;;   (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
+       ;;                               :args nil
+       ;;                               :atts atts)))
 
        (args := (vl-parse-1+-expressions-separated-by-commas))
        (:= (vl-match-token :vl-rparen))
        (:= (vl-match-token :vl-semi))
-       (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
-                                   :args args
-                                   :atts atts))))
-
+       (return (make-vl-callstmt :id (make-vl-scopeexpr-end :hid hid)
+                                 :typearg nil
+                                 :systemp nil
+                                 :voidp nil
+                                 :args args
+                                 :atts atts))))
 
 
 (defparser vl-parse-system-task-enable (atts)
-  :short "Parse a @('system_task_enable')."
+  :short "Parse a @('system_task_enable').  Verilog-2005 Only."
   :long "<p>Verilog-2005 Syntax:</p>
+
         @({
              system_task_enable ::=
                system_identifier [ '(' [expression] { ',' [expression] } ')' ] ';'
         })
 
-        <p>SystemVerilog-2012: bozo what does this correspond to?</p>"
-  :guard (vl-atts-p atts)
+        <p>In SystemVerilog-2012 this goes away and gets folded into a
+        @('subroutine_call_statement').</p>"
+  :guard (and (vl-atts-p atts)
+              (vl-is-token? :vl-sysidtoken))
   :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
-        (id := (vl-match-token :vl-sysidtoken))
+        (id := (vl-match))
         (when (vl-is-token? :vl-lparen)
           (:= (vl-match))
           (args := (vl-parse-1+-expressions-separated-by-commas))
           (:= (vl-match-token :vl-rparen)))
         (:= (vl-match-token :vl-semi))
         (return
-         (make-vl-enablestmt :id (make-vl-scopeexpr-end
-                                  :hid (make-vl-hidexpr-end
-                                        :name (vl-sysidtoken->name id)))
-                             :args args
-                             :atts atts))))
+         (make-vl-callstmt :id (make-vl-scopeexpr-end
+                                :hid (make-vl-hidexpr-end
+                                      :name (vl-sysidtoken->name id)))
+                           :voidp nil
+                           :typearg nil
+                           :systemp t
+                           :args args
+                           :atts atts))))
+
+
+
+
+; SystemVerilog Subroutine Calls -----------------------------------------------------------
+;
+; QUOTE means literally a quote character here.  I.e.,: '
+;
+;   subroutine_call_statement ::= subroutine_call ';'
+;                               | 'void' QUOTE '(' function_subroutine_call ')' ';'
+;
+;   function_subroutine_call ::= subroutine_call
+;
+;   subroutine_call ::= tf_call
+;                     | system_tf_call
+;                     | method_call
+;                     | 'std::' randomize_call
+;
+; As usual a big mess.  Let's start with tf_call:
+;
+;   tf_call ::= ps_or_hierarchical_tf_identifier { attribute_instance } [ '(' list_of_arguments ')' ]
+;
+;   ps_or_hierarchical_tf_identifier ::= [package_scope] tf_identifier | hierarchical_tf_identifier
+;   hierarchical_tf_identifier ::= hierarchical_identifier
+;   tf_identifier ::= identifier
+;
+;
+; So it looks like we can probably implement this as:
+;
+;     tf_call ::= scoped_hid { attribute_instance } [ '(' list_of_arguments ')' ]
+;
+;
+; Next up, system_tf_call:
+;
+;   system_tf_call ::= system_tf_identifier [ '(' list_of_arguments ')' ]
+;                    | system_tf_identifier [ '(' data_type [ ',' expression ] ')'
+;
+;   system_tf_identifier ::= $[a-zA-Z0-9_$]{[a-zA-Z0-9_$]}
+;
+; So that's pretty easy except for the usual data_type/expression ambiguity
+; thing, but we've dealt with that in lots of places and can probably handle
+; it easily enough by copying one of those.
+;
+;
+; Next up, method_call:
+;
+;   method_call ::= method_call_root '.' method_call_body
+;
+;   method_call_root ::= primary | implicit_class_handle
+;
+;   method_call_body ::= method_identifier {attribute_instance} [ '(' list_of_arguments ')' ]
+;                      | built_in_method_call
+;
+;   built_in_method_call ::= array_manipulation_call
+;                          | randomize_call
+;
+;   array_manipulation_call ::= array_method_name {attribute_instance}
+;                                 [ '(' list_of_arguments ')' ]
+;                                 [ 'with' '(' expression ')' ]
+;
+;   array_method_name ::= method_identifier | 'unique' | 'and' | 'or' | 'xor'
+;
+;   randomize_call ::= 'randomize' {attribute_instance}
+;                        [ '(' [variable_identifier_list | 'null' ] ')' ]
+;                        [ 'with' [ '(' [ identifier_list ] ')' ] constraint_block ]
+;
+; So, wow, that's a pile of stuff that I don't think we want to think about
+; yet.  Let's just not support any of that yet.  Similarly, the final 'std::'
+; randomize_call case is more of the same, and we'll just not support it yet.
+;
+;
+; So for now that leaves us with:
+;
+;   subroutine_call ::= tf_call
+;                     | system_tf_call
+;
+;   tf_call ::= scoped_hid { attribute_instance } [ '(' list_of_arguments ')' ]
+;
+;   system_tf_call ::= system_tf_identifier [ '(' list_of_arguments ')' ]
+;                    | system_tf_identifier [ '(' data_type [ ',' expression ] ')'
+;
+; We'll implement these separately.
+
+(defparser vl-parse-tf-call ()
+  :short "Parse a @('tf_call').  SystemVerilog-2012 Only."
+  :long "<p>Original grammar rules:</p>
+
+         @({
+               tf_call ::= ps_or_hierarchical_tf_identifier
+                              { attribute_instance }
+                              [ '(' list_of_arguments ')' ]
+
+               ps_or_hierarchical_tf_identifier ::= [package_scope] tf_identifier
+                                                  | hierarchical_tf_identifier
+
+               hierarchical_tf_identifier ::= hierarchical_identifier
+               tf_identifier ::= identifier
+         })
+
+         <p>So this is just:</p>
+
+         @({
+              tf_call ::= [package_scope] identifier {attribute_instance} [ '(' list_of_arguments ')' ]
+                        | hierarchical_identifier    {attribute_instance} [ '(' list_of_arguments ')' ]
+         })"
+  :result (vl-stmt-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       ;; This may be slightly too permissive, but is approximately
+       ;;    [package_scope] identifier | hierarchical_identifier
+       (id :s= (vl-parse-scoped-hid))
+       (atts := (vl-parse-0+-attribute-instances))
+       (unless (vl-is-token? :vl-lparen)
+         (return (make-vl-callstmt :id id
+                                   :typearg nil
+                                   :systemp nil
+                                   :voidp nil
+                                   :args nil
+                                   :atts atts)))
+
+       (:= (vl-match)) ;; eat the (
+       (when (vl-is-token? :vl-rparen)
+         ;; No arguments.  Fine.  Eat the )
+         (:= (vl-match))
+         (return (make-vl-callstmt :id id
+                                   :typearg nil
+                                   :systemp nil
+                                   :voidp nil
+                                   :args nil
+                                   :atts atts)))
+
+       ;; BOZO we're supposed to match list_of_arguments, but it's more complex
+       ;; than I want to try to support right now.  (It permits things like
+       ;; blank expressions and named .foo(bar) style connections.)  So for now
+       ;; just require a comma-delimited list.  We'll have to rejigger the
+       ;; representation to support these in the long term.
+       (args := (vl-parse-1+-expressions-separated-by-commas))
+       (:= (vl-match-token :vl-rparen))
+       (return (make-vl-callstmt :id id
+                                 :typearg nil
+                                 :systemp nil
+                                 :voidp nil
+                                 :args args
+                                 :atts atts)))
+  ///
+  (defthm vl-stmt-kind-of-vl-parse-tf-call
+    (b* (((mv err stmt ?tokstream) (vl-parse-tf-call)))
+      (implies (not err)
+               (equal (vl-stmt-kind stmt) :vl-callstmt)))))
+
+
+(defparser vl-parse-system-tf-call ()
+  :short "Parse a @('system_tf_call').  SystemVerilog-2012 only."
+  :long "<p>Original grammar rules:</p>
+
+         @({
+             system_tf_call ::= system_tf_identifier [ '(' list_of_arguments ')' ]
+                              | system_tf_identifier [ '(' data_type [ ',' expression ] ')'
+
+             system_tf_identifier ::= $[a-zA-Z0-9_$]{[a-zA-Z0-9_$]}
+         })"
+  :guard (vl-is-token? :vl-sysidtoken)
+  :result (vl-stmt-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       ;; We assume (via our guard) that we've got a system identifier token
+       ;; here already.
+       (fn := (vl-match-token :vl-sysidtoken))
+       ;; This is very much styled after vl-parse-system-function-call.  We
+       ;; have the usual ambiguity between datatypes and expressions.  At parse
+       ;; time we may not have enough information to disambiguate this, so we
+       ;; prefer expressions and then fix it up in type-disambiguation.
+       (when (vl-is-token? :vl-lparen)
+         (:= (vl-match))
+         (arg1 := (vl-parse-expression-without-failure))
+         (when (not arg1)
+           (typearg := (vl-parse-simple-type)))
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match))
+           (args := (vl-parse-1+-expressions-separated-by-commas)))
+         (:= (vl-match-token :vl-rparen)))
+       (return
+        (let* ((fname (vl-sysidtoken->name fn))
+               (id    (make-vl-scopeexpr-end
+                       :hid (make-vl-hidexpr-end :name fname))))
+          (make-vl-callstmt :id id
+                            :systemp t
+                            :typearg typearg
+                            :args (if arg1 (cons arg1 args) args)
+                            :voidp nil
+                            :atts  nil))))
+  ///
+  (defthm vl-stmt-kind-of-vl-parse-system-tf-call
+    (b* (((mv err stmt ?tokstream) (vl-parse-system-tf-call)))
+      (implies (not err)
+               (equal (vl-stmt-kind stmt) :vl-callstmt)))))
+
+
+(defparser vl-parse-subroutine-call ()
+  :short "Parse a @('subroutine_call').  SystemVerilog-2012 only."
+  :long "<p>Grammar rule:</p>
+
+         @({
+              subroutine_call ::= tf_call
+                                | system_tf_call
+                                | method_call
+                                | 'std::' randomize_call
+         })
+
+         <p>The @('method_call') and @('randomize_call') stuff is elaborate and
+         we don't yet try to support it.</p>"
+  :result (vl-stmt-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (if (vl-is-token? :vl-sysidtoken)
+      (vl-parse-system-tf-call)
+    (vl-parse-tf-call))
+  ///
+  (defthm vl-stmt-kind-of-vl-parse-subroutine-call
+    (b* (((mv err stmt ?tokstream) (vl-parse-subroutine-call)))
+      (implies (not err)
+               (equal (vl-stmt-kind stmt) :vl-callstmt)))))
+
+
+(defparser vl-parse-subroutine-call-statement (atts)
+  :short "Parse a @('subroutine_call_statement').  SystemVerilog-2012 only."
+  :long "<p>Grammar rules.  Note that QUOTE means literally a quote character here.</p>
+
+         @({
+              subroutine_call_statement ::= subroutine_call ';'
+                                          | 'void' QUOTE '(' function_subroutine_call ')' ';'
+
+              function_subroutine_call ::= subroutine_call
+         })"
+  :guard (vl-atts-p atts)
+  :result (vl-stmt-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (if (vl-is-token? :vl-kwd-void)
+      (seq tokstream
+           (:= (vl-match))
+           (:= (vl-match-token :vl-quote))
+           (:= (vl-match-token :vl-lparen))
+           (inner := (vl-parse-subroutine-call))
+           (:= (vl-match-token :vl-rparen))
+           (:= (vl-match-token :vl-semi))
+           (return (b* (((vl-callstmt inner))
+                        ;; Note about attributes.  A subroutine call like
+                        ;; tf_call can have its own attributes inside of it.
+                        ;; Meanwhile, a subroutine_call_statement is an
+                        ;; ordinary statement_item, so it can have attributes
+                        ;; preceding it.  I have no idea what should happen
+                        ;; here, so I'll just append these attributes together.
+                        (atts (append atts inner.atts)))
+                     (change-vl-callstmt inner :voidp t :atts atts))))
+    (seq tokstream
+         (inner := (vl-parse-subroutine-call))
+         (:= (vl-match-token :vl-semi))
+         (return (b* (((vl-callstmt inner))
+                      ;; Same thing for attributes as above.
+                      (atts (append atts inner.atts)))
+                   (change-vl-callstmt inner :atts atts))))))
 
 
 (defparser vl-parse-disable-statement (atts)
@@ -523,7 +818,7 @@
   :count strong
   (seq tokstream
        (loc := (vl-current-loc))
-       ((lvalue . expr) := (vl-parse-assignment))
+       ((lvalue . expr) := (vl-parse-variable-assignment))
        (when (vl-is-token? :vl-comma)
          (:= (vl-match))
          (rest := (vl-parse-1+-for-init-assignments)))
@@ -886,87 +1181,109 @@
                                   :atts atts))))
 
 
-; par_block ::=
-;
-; In Verilog-2005:
-;
-;   'fork' [ ':' identifier { block_item_declaration } ]
-;      { statement }
-;   'join'
-;
-; SystemVerilog-2012 extends this to:
-;
-;   'fork' [ ':' identifier ]
-;      { block_item_declaration } ]
-;      { statement_or_null }
-;   'join'
 
 
  (defparser vl-parse-par-block (atts)
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 0)
+   :short "Parse a @('par_block') into a @(see vl-blockstmt)."
+   :long "<p>Verilog-2005:</p>
+          @({
+               par_block ::= 'fork' [ ':' identifier { block_item_declaration } ]
+                                 { statement }
+                              'join'
+          })
+
+          <p>SystemVerilog-2012 changes this to allow declarations even on
+          unnamed forks, to allow additional kinds of join keywords, and to
+          allow end-block names.</p>
+
+          @({
+               par_block ::= 'fork' [ ':' identifier ]
+                                 { block_item_declaration }
+                                 { statement_or_null }
+                             join_keyword [ ':' identifier ]
+
+               join_keyword ::= 'join' | 'join_any' | 'join_none'
+          })"
    (seq tokstream
-         (:= (vl-match-token :vl-kwd-fork))
-         (when (vl-is-token? :vl-colon)
-           (:= (vl-match))
-           (id := (vl-match-token :vl-idtoken)))
+        (:= (vl-match-token :vl-kwd-fork))
+        (when (vl-is-token? :vl-colon)
+          (:= (vl-match))
+          (id := (vl-match-token :vl-idtoken)))
 
-         (when (or id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
-           (items := (vl-parse-0+-block-item-declarations)))
+        (when (or id
+                  (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+          ;; SystemVerilog allows declarations even if there is no ID.
+          (items := (vl-parse-0+-block-item-declarations)))
 
-         (stmts := (vl-parse-statements-until-join))
-         (:= (vl-match-token :vl-kwd-join))
-         (when (and id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
-           (:= (vl-parse-endblock-name (vl-idtoken->name id) "fork/join")))
+        (stmts := (vl-parse-statements-until-join))
 
-         (return
-          (b* (((mv vardecls paramdecls imports) (vl-sort-blockitems items)))
-            (make-vl-blockstmt :sequentialp nil
-                               :name (and id (vl-idtoken->name id))
-                               :vardecls vardecls
-                               :paramdecls paramdecls
-                               :imports imports
-                               :loaditems items
-                               :stmts stmts
-                               :atts atts)))))
-
-
-; seq_block ::=
-;
-; In Verilog-2005:
-;
-;    'begin' [ ':' identifier { block_item_declaration } ]
-;       { statement }
-;    'end'
-;
-; SystemVerilog-2012 extends this to:
-;
-;  begin [ : block_identifier ]
-;      { block_item_declaration }
-;      { statement_or_null }
-;  end [ : block_identifier ]
+        (join := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                     (vl-match-token ':vl-kwd-join)
+                   (vl-match-some-token '(:vl-kwd-join :vl-kwd-join_any :vl-kwd-join_none))))
+        (when id
+          ;; This automatically checks for SystemVerilog mode.
+          (:= (vl-parse-endblock-name (vl-idtoken->name id) "fork/join")))
+        (return
+         (b* (((mv vardecls paramdecls imports typedefs) (vl-sort-blockitems items)))
+           (make-vl-blockstmt :blocktype (case (vl-token->type join)
+                                           (:vl-kwd-join      :vl-forkjoin)
+                                           (:vl-kwd-join_any  :vl-forkjoinany)
+                                           (:vl-kwd-join_none :vl-forkjoinnone)
+                                           (otherwise (impossible)))
+                              :name (and id (vl-idtoken->name id))
+                              :vardecls vardecls
+                              :paramdecls paramdecls
+                              :imports imports
+                              :typedefs typedefs
+                              :loaditems items
+                              :stmts stmts
+                              :atts atts)))))
 
  (defparser vl-parse-seq-block (atts)
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 0)
+   :short "Parse a @('seq_block') into a @(see vl-blockstmt)."
+   :long "<p>Verilog-2005:</p>
+          @({
+               seq_block ::= 'begin' [ ':' identifier { block_item_declaration } ]
+                                { statement }
+                             'end'
+          })
+
+          <p>SystemVerilog-2012 extends this so that even unnamed blocks can
+          have declarations, and adds end-block names.</p>
+
+          @({
+               seq_block ::= 'begin' [ ':' identifier ]
+                                { block_item_declaration }
+                                { statement_or_null }
+                             'end' [ ':' identifier ]
+          })"
+
    (seq tokstream
          (:= (vl-match-token :vl-kwd-begin))
          (when (vl-is-token? :vl-colon)
            (:= (vl-match))
            (id := (vl-match-token :vl-idtoken)))
-         (when (or id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+         (when (or id
+                   (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+           ;; SystemVerilog allows declarations even if there is no ID.
            (items := (vl-parse-0+-block-item-declarations)))
          (stmts := (vl-parse-statements-until-end))
          (:= (vl-match-token :vl-kwd-end))
-         (when (and id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+         (when id
+           ;; This automatically checks for SystemVerilog mode.
            (:= (vl-parse-endblock-name (vl-idtoken->name id) "begin/end")))
          (return
-          (b* (((mv vardecls paramdecls imports) (vl-sort-blockitems items)))
-            (make-vl-blockstmt :sequentialp t
+          (b* (((mv vardecls paramdecls imports typedefs) (vl-sort-blockitems items)))
+            (make-vl-blockstmt :blocktype :vl-beginend
                                :name (and id (vl-idtoken->name id))
                                :vardecls vardecls
                                :paramdecls paramdecls
                                :imports imports
+                               :typedefs typedefs
                                :loaditems items
                                :stmts stmts
                                :atts atts)))))
@@ -1388,11 +1705,21 @@
        ((:vl-kwd-do :vl-kwd-foreach)
         (vl-parse-error "BOZO not yet implemented: do and foreach loops."))
 
-       ;; -- jump_statement
+       ;; -- jump_statement ::= 'return' [expression] ';'
+       ;;                     | 'break' ';'
+       ;;                     | 'continue' ';'
        (:vl-kwd-return
         (vl-parse-return-statement atts))
-       ((:vl-kwd-break :vl-kwd-continue)
-        (vl-parse-error "BOZO not yet implemented: break and continue statements."))
+       (:vl-kwd-break
+        (seq tokstream
+             (:= (vl-match))
+             (:= (vl-match-token :vl-semi))
+             (return (make-vl-breakstmt :atts atts))))
+       (:vl-kwd-continue
+        (seq tokstream
+             (:= (vl-match))
+             (:= (vl-match-token :vl-semi))
+             (return (make-vl-continuestmt :atts atts))))
 
        ;; -- par_block
        (:vl-kwd-fork
@@ -1434,12 +1761,6 @@
              (cassertion := (vl-parse-expect-property-statement))
              (return (make-vl-cassertstmt :cassertion cassertion
                                           :atts atts))))
-
-       (:vl-sysidtoken
-        ;; BOZO --- This is probably not right.  It should probably be handled
-        ;; as part of subroutine_call_statement.  But for now, as a crutch, I'm
-        ;; going to just leave it in here.
-        (vl-parse-system-task-enable atts))
 
        ;; OK: with all that out of the way, the things we haven't handled yet
        ;; are:
@@ -1484,7 +1805,7 @@
              ((unless erp)
               (mv erp val tokstream))
              (tokstream (vl-tokstream-restore backup)))
-          (vl-parse-task-enable atts))))))
+          (vl-parse-subroutine-call-statement atts))))))
 
  (defparser vl-parse-statement-aux (atts)
    :short "Wrapper for parsing the rest of a statement after any attributes."
@@ -1540,7 +1861,7 @@
              (:otherwise
               ;; We are just going to wrap this statement in a new, named block.
               (mv nil
-                  (make-vl-blockstmt :sequentialp t
+                  (make-vl-blockstmt :blocktype :vl-beginend
                                      :name blockid.name
                                      ;; In case it's an assertion, it's maybe nice
                                      ;; to have the block id in the assertion itself
@@ -1573,9 +1894,9 @@
  (defparser vl-parse-statements-until-join ()
    :measure (two-nats-measure (vl-tokstream-measure) 110)
    ;; Returns a list of vl-stmt-p's.
-   ;; Tries to read until the keyword "join"
+   ;; Tries to read until join, join_any, or join_none.
    (seq tokstream
-         (when (vl-is-token? :vl-kwd-join)
+         (when (vl-is-some-token? '(:vl-kwd-join :vl-kwd-join_any :vl-kwd-join_none))
            (return nil))
          (first :s= (vl-parse-statement))
          (rest := (vl-parse-statements-until-join))
@@ -1700,6 +2021,13 @@
 
         :hints((expand-only-the-flag-function-hint clause state))))))
 
+
+
+(local (defthm l0
+         (implies (and (equal (vl-token->type (first (vl-tokstream->tokens))) type)
+                       (consp (vl-tokstream->tokens)))
+                  (vl-is-token? type))
+         :hints(("Goal" :in-theory (enable vl-is-token?)))))
 
 (defsection result
 
