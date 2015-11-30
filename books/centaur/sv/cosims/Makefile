@@ -70,7 +70,6 @@ FAILING_TEST_TARGETS := \
   for-nba/ok \
   task/ok \
   task2/ok \
-  sysfun/ok \
   alias1/ok \
   alias2/ok \
   alias3/ok \
