@@ -710,6 +710,7 @@ displays.  The module browser's web pages are responsible for defining the
     :measure (two-nats-measure (vl-patternkey-count x) 10)
     (vl-patternkey-case x
       :expr (vl-pp-expr x.key)
+      :structmem (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.name)))
       :type (vl-pp-datatype x.type)
       :default (vl-print "default")))
 
@@ -3403,6 +3404,93 @@ expression into a string."
     (vl-ps-seq (vl-pp-sequence (car x))
                (vl-pp-sequencelist (cdr x)))))
 
+(define vl-dpispec->string ((x vl-dpispec-p))
+  (case (vl-dpispec-fix x)
+    (:vl-dpi   "\"DPI\"")
+    (:vl-dpi-c "\"DPI-C\"")
+    (otherwise (progn$ (impossible) ""))))
+
+(define vl-dpiprop->string ((x vl-dpiprop-p))
+  (case (vl-dpiprop-fix x)
+    ((nil)           "")
+    (:vl-dpi-context "context")
+    (:vl-dpi-pure    "pure")
+    (otherwise       (progn$ (impossible) ""))))
+
+(define vl-pp-dpiimport ((x vl-dpiimport-p) &key (ps 'ps))
+  (b* (((vl-dpiimport x)))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "  import "))
+               ;; "DPI" or "DPI-C"
+               (vl-ps-span "vl_str" (vl-print-str (vl-dpispec->string x.spec)))
+               (vl-print " ")
+               ;; context or pure, if applicable:
+               (if x.prop
+                   (vl-ps-span "vl_key"
+                               (vl-print-str (vl-dpiprop->string x.prop))
+                               (vl-print " "))
+                 ps)
+               ;; [ c_identifier '=' ], if different than SV name:
+               (if (not (equal x.c-name x.name))
+                   (vl-ps-seq (vl-ps-span "vl_id" (vl-print-str x.c-name))
+                              (vl-print " = "))
+                 ps)
+               ;; function and return type or task:
+               (if x.rettype
+                   (vl-ps-seq (vl-ps-span "vl_key" (vl-print "function "))
+                              (vl-pp-datatype x.rettype))
+                 (vl-ps-span "vl_key" (vl-print "task ")))
+               ;; SV name:
+               (vl-ps-span "vl_id"
+                           (vl-print-str (vl-maybe-escape-identifier x.name))
+                           (vl-print " "))
+               (vl-print "(")
+               (if x.portdecls
+                   (vl-ps-span "vl_cmt"
+                               (vl-print " /* bozo print ports */ "))
+                 ps)
+               (vl-print ")")
+               (vl-println ";"))))
+
+(define vl-pp-dpiimportlist ((x vl-dpiimportlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-dpiimport (car x))
+               (vl-pp-dpiimportlist (cdr x)))))
+
+(define vl-dpifntask->string ((x vl-dpifntask-p))
+  (case (vl-dpifntask-fix x)
+    (:vl-dpi-function "function")
+    (:vl-dpi-task     "task")
+    (otherwise        (progn$ (impossible) ""))))
+
+(define vl-pp-dpiexport ((x vl-dpiexport-p) &key (ps 'ps))
+  (b* (((vl-dpiexport x)))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "  export "))
+               ;; "DPI" or "DPI-C"
+               (vl-ps-span "vl_str" (vl-print-str (vl-dpispec->string x.spec)))
+               (vl-print " ")
+               ;; [ c_identifier '=' ], if different than SV name:
+               (if (not (equal x.c-name x.name))
+                   (vl-ps-seq (vl-ps-span "vl_id" (vl-print-str x.c-name))
+                              (vl-print " = "))
+                 ps)
+               ;; function or task
+               (vl-ps-span "vl_key" (vl-print-str (vl-dpifntask->string x.fntask)))
+               (vl-print " ")
+               ;; SV name
+               (vl-ps-span "vl_id"
+                           (vl-print-str (vl-maybe-escape-identifier x.name))
+                           (vl-print " "))
+               (vl-println ";"))))
+
+(define vl-pp-dpiexportlist ((x vl-dpiexportlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-dpiexport (car x))
+               (vl-pp-dpiexportlist (cdr x)))))
+
 
 (define vl-pp-modelement ((x vl-modelement-p) &key (ps 'ps))
   (let ((x (vl-modelement-fix x)))
@@ -3427,6 +3515,8 @@ expression into a string."
       (:vl-genvar     (vl-pp-genvar x))
       (:vl-property   (vl-pp-property x))
       (:vl-sequence   (vl-pp-sequence x))
+      (:vl-dpiimport  (vl-pp-dpiimport x))
+      (:vl-dpiexport  (vl-pp-dpiexport x))
       (:vl-assertion  (vl-pp-assertion x :include-name t))
       (:vl-cassertion (vl-pp-cassertion x :include-name t))
       (OTHERWISE (progn$ (impossible) ps)))))
@@ -3575,6 +3665,8 @@ instead of @(see ps).</p>"
                (vl-pp-portdecllist x.portdecls)
                (vl-pp-vardecllist x.vardecls)
                (vl-println "")
+               (vl-pp-dpiimportlist x.dpiimports)
+               (vl-pp-dpiexportlist x.dpiexports)
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)
                (vl-pp-assignlist x.assigns)
@@ -3606,6 +3698,8 @@ instead of @(see ps).</p>"
                (vl-pp-paramdecllist x.paramdecls)
                (vl-pp-portdecllist x.portdecls)
                (vl-pp-vardecllist x.vardecls)
+               (vl-pp-dpiimportlist x.dpiimports)
+               (vl-pp-dpiexportlist x.dpiexports)
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)
                (vl-pp-assignlist x.assigns)

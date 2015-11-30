@@ -59,4 +59,9 @@ std::deflist).</p>"
     (equal (pseudo-term-listp (make-list-ac n x ac))
            (and (pseudo-term-listp ac)
                 (or (pseudo-termp x)
-                    (zp n))))))
+                    (zp n)))))
+
+  (defthm pseudo-term-listp-when-symbol-listp
+    ;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+    (implies (symbol-listp syms)
+             (pseudo-term-listp syms))))

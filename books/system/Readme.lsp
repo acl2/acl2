@@ -4,23 +4,38 @@
 .:
 Makefile
 Readme.lsp
+cantor-pairing-bijective.lisp
 compare-out-files.lisp
 convert-normalized-term-to-pairs.lisp
+dead-source-code.lisp
+deps-pcert.lisp
 extend-pathname.lisp
 f-put-global.lisp
-gather-dcls.lisp
+fancy-string-reader-test.lisp
 hl-addr-combine.lisp
-io.lisp
+hl-nat-combine-onto.acl2
+hl-nat-combine-onto.lisp
+legal-variablep.lisp
+merge-sort-term-order.lisp
 meta-extract.lisp
+optimize-check-aux.lisp
+optimize-check.lisp
+origin.acl2
+origin.lisp
 pseudo-good-worldp.lisp
 pseudo-termp-lemmas.lisp
+random.lisp
 subcor-var.lisp
 sublis-var.lisp
 subst-expr.lisp
 subst-var.lisp
+termp.lisp
 too-many-ifs.acl2
 too-many-ifs.lisp
+toothbrush-deps.lisp
 top.lisp
+untranslate-car-cdr.lisp
+update-state.lisp
 verified-termination-and-guards.lisp
 worldp-check.acl2
 worldp-check.lisp
@@ -28,20 +43,7 @@ worldp-check.lisp
  )
  (:TITLE "System Books")
  (:AUTHOR/S
-  "Jared Davis for:
-     hl-addr-combine.lisp
-     extend-pathname.lisp
-   David Rager for:
-     gather-dcls.lisp
-     pseudo-termp-lemmas.lisp
-     subcor-var.lisp
-     subst-expr.lisp
-     subst-var.lisp
-     verified-termination-and-guards.lisp
-   Sol Swords for:
-     f-put-global.lisp
-     io.lisp
-   Matt Kaufmann and/or J Moore for the rest")
+  "See individual files")
  (:Keywords "Logical World")
  (:ABSTRACT
 
@@ -60,13 +62,5 @@ place to verify the guards of :logic mode system functions."
  (:PERMISSION
 
 "
-This program is free software; you can redistribute it and/ormodify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version. This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-details.You should have received a copy of the GNU General Public License along
-with this program; if not, write to the Free Software Foundation, Inc., 51
-Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA."
+See individual books for copyright and license information."
 ))

@@ -577,6 +577,8 @@ introduced.</p>"
                                                  :sequences sequences
                                                  :assertions assertions
                                                  :cassertions cassertions
+                                                 :dpiimports dpiimports
+                                                 :dpiexports dpiexports
                                                  :ports ports
                                                  :scopetype scopetype
                                                  :name name))

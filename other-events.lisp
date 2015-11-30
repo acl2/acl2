@@ -9433,18 +9433,14 @@
     (state-global-let*
      ((inhibit-output-lst (cons 'error
                                 (f-get-global 'inhibit-output-lst state))))
-     (let ((saved-w (w state)))
-       (pprogn
-        (set-w! w state)
-        (mv-let
-         (erp val state)
-         (defpkg-items-rec new-kpa old-kpa
-           (f-get-global 'system-books-dir state)
-           ctx w state nil)
-         (assert$
-          (null erp)
-          (pprogn (set-w! saved-w state)
-                  (value val))))))))
+     (mv-let
+       (erp val state)
+       (defpkg-items-rec new-kpa old-kpa
+         (f-get-global 'system-books-dir state)
+         ctx w state nil)
+       (assert$
+        (null erp)
+        (value val)))))
    (t (value nil))))
 
 (defun new-defpkg-list2 (imports all-defpkg-items acc seen)
@@ -21350,6 +21346,38 @@
                     :ld-error-action :error))
                (value :invisible))))
 
+(defun with-brr-ens-fn (form state)
+  (let ((caller 'with-brr-ens))
+    (cond ((eq (f-get-global 'wormhole-name state) 'brr)
+           (state-global-let*
+            ((global-enabled-structure
+              (access rewrite-constant
+                      (get-brr-local 'rcnst state)
+                      :current-enabled-structure)))
+            (mv-let (erp stobjs-out/replaced-val state)
+              (trans-eval form caller state t)
+              (cond
+               (erp ; error was presumably already printed above
+                (silent-error state))
+               (t (let ((stobjs-out (car stobjs-out/replaced-val))
+                        (val (cdr stobjs-out/replaced-val)))
+                    (cond
+                     ((equal stobjs-out *error-triple-sig*)
+                      (value (cadr val)))
+                     ((equal stobjs-out '(nil))
+                      (value val))
+                     (t (er soft caller
+                            "Illegal output signature for ~x0: ~x1"
+                            caller
+                            stobjs-out)))))))))
+          (t (er soft caller
+                 "It is illegal to call ~x0 unless you are under ~
+                  break-rewrite and you are not."
+                 caller)))))
+
+(defmacro with-brr-ens (form)
+  `(with-brr-ens-fn ',form state))
+
 (defmacro trace! (&rest fns)
   (let ((form
          `(with-ubt!
@@ -23583,7 +23611,108 @@
         (t (cons (list (caar alist) (cdar alist))
                  (alist-to-doublets (cdr alist))))))
 
-(defun print-gv1 (fn-guard-stobjsin-args state)
+(defun add-suffix-to-fn (sym suffix)
+
+; We add a suffix to sym to create a legal function symbol.  Thus, we avoid
+; creating a name in the "COMMON-LISP" package, since ACL2 won't allow such a
+; name to be a function symbol.
+
+  (if (equal (symbol-package-name sym)
+             *main-lisp-package-name*)
+      (intern (concatenate 'string (symbol-name sym) suffix)
+              "ACL2")
+    (add-suffix sym suffix)))
+
+(mutual-recursion
+
+(defun fsubcor-var (vars terms form)
+
+; This analogue of subcor-var uses fcons-term instead of cons-term, in order to
+; avoid losing the structure of form.  For example, (fsubcor-var (x) ('3)
+; (consp x)) evaluates to (consp '3) rather than to nil.
+
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
+                              (equal (length vars) (length terms))
+                              (pseudo-termp form))))
+  (cond ((variablep form)
+         (subcor-var1 vars terms form))
+        ((fquotep form) form)
+        (t (fcons-term (ffn-symb form)
+                       (fsubcor-var-lst vars terms (fargs form))))))
+
+(defun fsubcor-var-lst (vars terms forms)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
+                              (equal (length vars) (length terms))
+                              (pseudo-term-listp forms))))
+  (cond ((endp forms) nil)
+        (t (cons (fsubcor-var vars terms (car forms))
+                 (fsubcor-var-lst vars terms (cdr forms))))))
+
+)
+
+(defun print-gv-form (guard-fn guard tguard vars args ignorable substitute ctx
+                               state)
+
+; If tguard is non-nil, then guard is nil and should be created by
+; untranslating tguard (perhaps after substitution).  Args are always in
+; translated form.
+
+  (let ((wrld (w state)))
+    (cond
+     (substitute
+      (er-let* ((tguard (if (null tguard)
+                            (translate guard '(nil) nil t ctx wrld state)
+                          (value tguard))))
+        (value (untranslate (fsubcor-var vars args tguard) t wrld))))
+     (t
+      (let ((guard (if tguard
+                       (untranslate tguard t wrld)
+                     guard)))
+        (value `(flet ((,guard-fn
+                        ,vars
+                        ,@(and ignorable
+                               `((declare (ignorable ,@vars))))
+                        ,guard))
+                  (,guard-fn ,@(untranslate-lst args nil wrld)))))))))
+
+(defun print-gv-conjunct (guard-fn formals conjuncts args index
+                                   len-all-conjuncts fn substitute ctx state)
+  (cond
+   ((endp conjuncts)
+    (er soft ctx
+        "It is surprising that ~x0 yields no conjunct of the guard of ~x1 ~
+         that evaluates to ~x2.  Sorry!  Try ~x0 without the :conjunct ~
+         keyword argument."
+        'print-gv
+        fn
+        nil))
+   (t (let* ((conjunct (car conjuncts))
+             (alist (restrict-alist-to-all-vars (pairlis$ formals args)
+                                                conjunct))
+             (f1 (strip-cars alist))
+             (a1 (strip-cdrs alist)))
+        (er-let* ((form (print-gv-form guard-fn
+                                       nil      ; guard
+                                       conjunct ; tguard
+                                       f1 a1 nil substitute ctx state)))
+          (mv-let (erp stobjs-out/replaced-val state)
+            (trans-eval form ctx state t)
+            (cond (erp
+                   (value (msg "Evaluation causes an error:~|~x0"
+                               conjunct)))
+                  ((cdr stobjs-out/replaced-val)
+                   (print-gv-conjunct guard-fn formals (cdr conjuncts) args
+                                      (1+ index)
+                                      len-all-conjuncts fn substitute ctx
+                                      state))
+                  (t
+                   (value (msg "Showing guard conjunct (#~x0 of ~x1) that ~
+                                evaluates to nil:~|~%~x2."
+                               index len-all-conjuncts form))))))))))
+
+(defun print-gv1 (fn-guard-stobjsin-args conjunct substitute ctx state)
   (let* ((wrld (w state))
          (fn (nth 0 fn-guard-stobjsin-args))
          (guard (nth 1 fn-guard-stobjsin-args))
@@ -23592,34 +23721,41 @@
                 (nth 3 fn-guard-stobjsin-args)
                 nil))
          (formals (formals fn wrld))
-         (guard-fn (add-suffix fn "{GUARD}")))
+         (guard-fn (add-suffix-to-fn fn "{GUARD}")))
 
 ; Note: (nth 2 fn-guard-stobjsin-args) is the stobjs-in of fn, but we don't
 ; need it.
 
-    `(flet ((,guard-fn
-             ,formals
-             (declare (ignorable ,@formals))
-             ,guard))
-       (,guard-fn ,@args))))
+    (if conjunct
+        (let ((conjuncts (flatten-ands-in-lit (guard fn nil wrld))))
+          (print-gv-conjunct guard-fn formals conjuncts args 1
+                             (length conjuncts) fn substitute ctx state))
+      (print-gv-form guard-fn guard nil formals args t substitute ctx state))))
 
-(defun print-gv-fn (evisc-tuple state)
+(defun print-gv-fn (evisc-tuple conjunct substitute state)
   (prog2$
    (wormhole 'ev-fncall-guard-er-wormhole
              '(lambda (whs)
                 (set-wormhole-entry-code whs :ENTER))
              nil
-             `(pprogn
+             `(er-progn
                (let ((info ; see save-ev-fncall-guard-er
                       (wormhole-data (f-get-global 'wormhole-status state))))
-                 (cond (info
-                        (fms "~x0~|~%"
-                             (list (cons #\0
-                                         (print-gv1 info state)))
-                             (standard-co state) state ',evisc-tuple))
+                 (cond ((null info)
+                        (pprogn
+                         (fms "There is no guard violation to debug.~|~%"
+                              nil (standard-co state) state nil)
+                         (value nil)))
                        (t
-                        (fms "There is no guard violation to debug.~|~%"
-                             nil (standard-co state) state nil))))
+                        (er-let* ((val (print-gv1 info ',conjunct ',substitute
+                                                  'print-gv state)))
+                          (pprogn
+                           (fms ,(if conjunct
+                                     "~@0~|~%"
+                                   "~x0~|~%")
+                                (list (cons #\0 val))
+                                (standard-co state) state ',evisc-tuple)
+                           (value nil))))))
                (value :q))
              :ld-prompt  nil
              :ld-missing-input-ok nil
@@ -23633,13 +23769,92 @@
              :ld-verbose nil)
    (value :invisible)))
 
-(defmacro print-gv (&key (evisc-tuple
-                          '(evisc-tuple nil ; print-level
-                                        nil ; print-length
-                                        (world-evisceration-alist state nil)
-                                        nil ; hiding-cars
-                                        )))
-  `(print-gv-fn ,evisc-tuple state))
+(defun set-print-gv-defaults-fn (state evisc-tuple evisc-tuple-p
+                                       conjunct conjunct-p
+                                       substitute substitute-p)
+  (declare (xargs :guard t :mode :program))
+  (cond
+   ((and (null evisc-tuple-p)
+         (null conjunct-p)
+         (null substitute-p)) ; optimization, really
+    (value (f-get-global 'print-gv-defaults state)))
+   (t
+    (let ((ctx 'set-print-gv-defaults))
+      (cond ((not (or (null evisc-tuple)
+                      (eq evisc-tuple :restore)
+                      (standard-evisc-tuplep evisc-tuple)))
+             (er soft ctx
+                 "Illegal evisc-tuple: ~x0"
+                 evisc-tuple))
+            ((not (or (booleanp conjunct)
+                      (eq conjunct :restore)))
+             (er soft ctx
+                 "Illegal value for :conjunct (must be Boolean): ~x0"
+                 conjunct))
+            ((not (or (booleanp substitute)
+                      (eq substitute :restore)))
+             (er soft ctx
+                 "Illegal value for :conjunct (must be Boolean): ~x0"
+                 substitute))
+            (t (let* ((alist (f-get-global 'print-gv-defaults state))
+                      (alist (cond ((not evisc-tuple-p)
+                                    alist)
+                                   ((eq evisc-tuple :restore)
+                                    (delete-assoc-eq :evisc-tuple alist))
+                                   (t
+                                    (put-assoc-eq :evisc-tuple evisc-tuple alist))))
+                      (alist (cond ((not conjunct-p)
+                                    alist)
+                                   ((eq conjunct :restore)
+                                    (delete-assoc-eq :conjunct alist))
+                                   (t
+                                    (put-assoc-eq :conjunct conjunct alist))))
+                      (alist (cond ((not substitute-p)
+                                    alist)
+                                   ((eq substitute :restore)
+                                    (delete-assoc-eq :substitute alist))
+                                   (t
+                                    (put-assoc-eq :substitute substitute
+                                                  alist)))))
+                 (pprogn (f-put-global 'print-gv-defaults alist state)
+                         (value alist)))))))))
+
+(defmacro set-print-gv-defaults (&key (evisc-tuple 'nil evisc-tuple-p)
+                                      (conjunct 'nil conjunct-p)
+                                      (substitute 'nil substitute-p))
+  `(set-print-gv-defaults-fn state
+                             ,evisc-tuple ,evisc-tuple-p
+                             ,conjunct ,conjunct-p
+                             ,substitute ,substitute-p))
+
+(defmacro print-gv-evisc-tuple ()
+  '(evisc-tuple nil                     ; print-level
+                nil                     ; print-length
+                (world-evisceration-alist state nil)
+                nil ; hiding-cars
+                ))
+
+(defmacro print-gv-default (key)
+  (declare (xargs :guard (member-eq key ; avoid capture
+                                    '(:evisc-tuple
+                                      :conjunct
+                                      :substitute))))
+  (let* ((name (symbol-name key))
+         (key-p (intern (concatenate 'string name "-P") "ACL2"))
+         (default (if (eq key :evisc-tuple)
+                      '(print-gv-evisc-tuple)
+                    nil)))
+    `(cond (,key-p ,(intern name "ACL2"))
+           (t '(let ((pair (assoc-eq ,key (f-get-global 'print-gv-defaults state))))
+                 (if pair (cdr pair) ,default))))))
+
+(defmacro print-gv (&key (evisc-tuple 'nil evisc-tuple-p)
+                         (conjunct 'nil conjunct-p)
+                         (substitute 'nil substitute-p))
+  `(print-gv-fn ,(print-gv-default :evisc-tuple)
+                ,(print-gv-default :conjunct)
+                ,(print-gv-default :substitute)
+                state))
 
 (defun disable-iprint-ar (state)
   (cond ((iprint-enabledp state)
@@ -26574,9 +26789,12 @@
 ; channel-to-string generates a with-local-state call, which should not change
 ; state!
 
-; If variable outside-loop-p (which is evaluated) is true, then this form is
-; suitable for execution in raw Lisp; otherwise, it is suitable for evaluation
-; in the ACL2 logic.
+; If variable outside-loop-p (which is evaluated) is true, then evaluation of
+; this form might be done more efficiently -- but it must be suitable for
+; execution outside the loop or, if inside the loop, then without the
+; evaluation of state-global-let* (or any other use of the
+; *acl2-unwind-protect-stack*) for any state global modified by
+; fmt-control-bindings.
 
 ; Note that fmt-controls and iprint-action are evaluated, but channel-var and
 ; extra-var are not evaluated.
@@ -28204,14 +28422,14 @@
   (declare (ignore state))
   #-acl2-loop-only
   (with-open-file
-   (stream filename :direction :input :if-does-not-exist nil)
-   (and stream
-        (let ((len (file-length stream)))
-          (and (< len *read-file-into-string-bound*)
-               (let ((fwd (file-write-date filename)))
-                 (or (check-against-read-file-alist filename fwd)
-                     (push (cons filename fwd)
-                           *read-file-alist*))
+    (stream filename :direction :input :if-does-not-exist nil)
+    (and stream
+         (let ((len (file-length stream)))
+           (and (< len *read-file-into-string-bound*)
+                (let ((fwd (file-write-date filename)))
+                  (or (check-against-read-file-alist filename fwd)
+                      (push (cons filename fwd)
+                            *read-file-alist*))
 
 ; The following #-acl2-loop-only code, minus the WHEN clause, is based on code
 ; found at http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was
@@ -28221,38 +28439,45 @@
 
 ; The URL above says ``You can do anything you like with the code.''
 
-                 (let ((seq (make-string len)))
-                   (declare (type string seq))
-                   (read-sequence seq stream)
-                   (when (not (eql fwd (file-write-date filename)))
-                     (error "Illegal attempt to call ~s concurrently with ~
-                             some write to that file!~%See :DOC ~
-                             read-file-into-string."
-                            'read-file-into-string))
-                   seq))))))
+                  (let ((seq (make-string len)))
+                    (declare (type string seq))
+                    (read-sequence seq stream)
+                    (when (not (eql fwd (file-write-date filename)))
+                      (error "Illegal attempt to call ~s concurrently with ~
+                              some write to that file!~%See :DOC ~
+                              read-file-into-string."
+                             'read-file-into-string))
+                    seq))))))
   #+acl2-loop-only
   (let* ((st (coerce-state-to-object state)))
-    (with-local-state
-     (mv-let
-      (val state)
-      (let ((state (coerce-object-to-state st)))
-        (mv-let
-         (chan state)
-         (open-input-channel filename :character state)
-         (cond ((null chan)
-                (mv nil state))
-               (t (mv-let
-                   (val state)
-                   (read-file-into-string1 chan state nil
-                                           *read-file-into-string-bound*)
-                   (pprogn (ec-call ; guard verification here seems unimportant
-                            (close-input-channel chan state))
-                           (mv val state)))))))
-      val))))
+    (mv-let
+      (erp val)
+      (with-local-state
+       (mv-let
+         (erp val state)
+         (let ((state (coerce-object-to-state st)))
+           (mv-let
+             (chan state)
+             (open-input-channel filename :character state)
+             (cond
+              ((null chan)
+               (mv nil nil state))
+              (t (state-global-let*
+                  ((guard-checking-on t))
+                  (mv-let
+                    (val state)
+                    (read-file-into-string1 chan state nil
+                                            *read-file-into-string-bound*)
+                    (pprogn
+                     (ec-call ; guard verification here seems unimportant
+                      (close-input-channel chan state))
+                     (mv nil val state))))))))
+         (mv erp val)))
+      (declare (ignore erp))
+      val)))
 )
 
 (defun read-file-into-string (filename state)
   (declare (xargs :stobjs state :guard (stringp filename)))
   (and (mbt (stringp filename))
-       (with-guard-checking t
-                            (read-file-into-string2 filename state))))
+       (read-file-into-string2 filename state)))

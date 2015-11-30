@@ -182,9 +182,10 @@
   (define vl-pretty-patternkey ((x vl-patternkey-p))
     :measure (vl-patternkey-count x)
     (vl-patternkey-case x
-      (:expr (vl-pretty-expr x.key))
-      (:type (vl-pretty-datatype x.type))
-      (:default :vl-default)))
+      (:expr      (vl-pretty-expr x.key))
+      (:structmem (list :structmem x.name))
+      (:type      (vl-pretty-datatype x.type))
+      (:default   :vl-default)))
 
   (define vl-pretty-slicesize ((x vl-slicesize-p))
     :measure (vl-slicesize-count x)

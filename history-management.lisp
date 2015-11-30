@@ -1949,17 +1949,7 @@
 
 (defun get-event-data (key state)
 
-; This function returns an alist with the following keys, reflecting
-; information printed in summaries.
-
-; form
-; hint-events
-; namex [0, a single name, or a list of names; see access-event-tuple-namex]
-; prover-steps-counted
-; rules
-; splitter-rules (case-split immed-forced if-intro)
-; time = (prove print proof-tree other)
-; warnings
+; See :DOC get-event-data.
 
   (cdr (assoc key (f-get-global 'last-event-data state))))
 
@@ -2825,6 +2815,12 @@
                            (car (get-timer 'proof-tree-time state))
                            (car (get-timer 'other-time state)))
                      state)
+     (let ((abort-causes
+            (tagged-objects 'abort-cause
+                            (f-get-global 'accumulated-ttree state))))
+       (if abort-causes
+           (put-event-data 'abort-causes abort-causes state)
+         state))
      (cond
       ((ld-skip-proofsp state)
        (pprogn (if (or erp noop-flg)

@@ -29,15 +29,13 @@
 (include-book "subst-expr")
 (include-book "subst-var")
 (include-book "convert-normalized-term-to-pairs")
-(include-book "gather-dcls")
 (include-book "meta-extract")
 (include-book "legal-variablep")
 (include-book "merge-sort-term-order")
 (include-book "termp")
 
 ; The following is commented out only because we aren't currently motivated to
-; its functions in ACL2 system constant *system-verify-guards-alist*.  Perhaps
-; that would be easy to do, but note that guards would need to be verified for
-; functions defined in untranslate-car-cdr.lisp.
+; put its functions into ACL2 system constant *system-verify-guards-alist*,
+; which would require guards to be verified for functions in that book.
 
 ; (include-book "untranslate-car-cdr")

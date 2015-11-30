@@ -1562,6 +1562,23 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list fundecllist :element fundecl)
 
+(def-vl-lucidcheck dpiimport
+  :body
+  (b* (((vl-dpiimport x))
+       (ctx (vl-lucid-ctx ss x))
+       ;; We mark the function as set to act like it's been defined by the
+       ;; C program.
+       (st (vl-lucid-mark-simple :set x.name ss st ctx))
+       (st (if x.rettype
+               (vl-datatype-lucidcheck x.rettype ss st ctx)
+             st))
+       ;; BOZO -- we don't look at the ports.  This might require inventing a
+       ;; pretend scope or something horrible.
+       )
+    st))
+
+(def-vl-lucidcheck-list dpiimportlist :element dpiimport)
+
 (def-vl-lucidcheck taskdecl
   :body
   (b* (((vl-taskdecl x))
@@ -1719,6 +1736,7 @@ created when we process their packages, etc.</p>"
        (st (vl-alwayslist-lucidcheck    x.alwayses   ss st))
        (st (vl-initiallist-lucidcheck   x.initials   ss st))
        (st (vl-fundecllist-lucidcheck   x.fundecls   ss st))
+       (st (vl-dpiimportlist-lucidcheck x.dpiimports ss st))
        (st (vl-taskdecllist-lucidcheck  x.taskdecls  ss st))
        (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
        (st (vl-vardecllist-lucidcheck   x.vardecls   ss st))
@@ -1778,6 +1796,7 @@ created when we process their packages, etc.</p>"
        (st (vl-modulelist-lucidcheck x.mods ss st))
        (st (vl-fundecllist-lucidcheck x.fundecls ss st))
        (st (vl-taskdecllist-lucidcheck x.taskdecls ss st))
+       (st (vl-dpiimportlist-lucidcheck x.dpiimports ss st))
        (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
        (st (vl-vardecllist-lucidcheck x.vardecls ss st))
        (st (vl-typedeflist-lucidcheck x.typedefs ss st))
@@ -2727,6 +2746,17 @@ doesn't have to recreate the default heuristics.</p>"
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Function ~w0 is never used. (~s1)"
                                 :args (list (vl-fundecl->name key.item)
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                :fn __function__
+                                :fatalp nil)))
+         (vl-extend-reportcard topname w reportcard)))
+
+      (:vl-dpiimport
+       (b* (((when (vl-lucid-some-solo-occp val.used))
+             reportcard)
+            (w (make-vl-warning :type :vl-lucid-unused
+                                :msg "DPI imported function ~w0 is never used. (~s1)"
+                                :args (list (vl-dpiimport->name key.item)
                                             (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
                                 :fatalp nil)))

@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "../descriptions")
-(include-book "error")
 (include-book "modules")
 (include-book "udps")
 (include-book "interfaces")
@@ -95,6 +94,22 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
 ;  | {attribute_instance} package_item
 ;  | {attribute_instance} bind_directive
 ;  | config_declaration
+
+(defparser vl-parse-top-level-import (atts)
+  :guard (and (vl-is-token? :vl-kwd-import)
+              (vl-atts-p atts))
+  :result (vl-descriptionlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (vl-plausible-start-of-package-import-p)
+         (imports := (vl-parse-package-import-declaration atts))
+         (return imports))
+       ;; Otherwise maybe it's a DPI import.
+       (dpiimport := (vl-parse-dpi-import atts))
+       (return (list dpiimport))))
 
 (defparser vl-parse-description ()
   ;; Note: we return a list of descriptions because sometimes a 'single'
@@ -200,8 +215,12 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
           (fns := (vl-parse-function-declaration atts))
           (return fns))
         (when (vl-is-token? :vl-kwd-import)
-          (imports := (vl-parse-package-import-declaration atts))
+          (imports := (vl-parse-top-level-import atts))
           (return imports))
+        (when (vl-is-token? :vl-kwd-export)
+          (dpiexport := (vl-parse-dpi-export atts))
+          (return (list dpiexport)))
+
         (when (vl-is-some-token? '(:vl-kwd-parameter :vl-kwd-localparam))
           (params := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter :vl-kwd-localparam)))
           (:= (vl-match-token :vl-semi))
@@ -255,10 +274,21 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
         (mv okp val pstate tokstream))
        (tokstream (vl-tokstream-update-tokens tokens))
        (tokstream (vl-tokstream-update-pstate pstate))
-       ((mv err val tokstream)
+       ((mv err items tokstream)
         (vl-parse-source-text))
-       (pstate (vl-tokstream->pstate))
        ((when err)
-        (vl-report-parse-error err tokens)
-        (mv nil nil pstate tokstream)))
-    (mv t val pstate tokstream)))
+        ;; Warnings are a little subtle here.  Note that above we installed the
+        ;; initial pstate into the tokstream, so any errors that previously
+        ;; were in the parse state are still there.  Also any minor warnings
+        ;; that we wanted to issue during the main act of parsing have already
+        ;; been added.  However, if vl-parse-source-text failed with a
+        ;; vl-parse-error, then the final err it produced has NOT yet been
+        ;; added to the parse state (because in general we don't want to add
+        ;; parse errors as soon as they're encountered, due to backtracking).
+        ;; So add it now.
+        (b* ((tokstream (vl-tokstream-add-warning err))
+             (pstate (vl-tokstream->pstate)))
+          (mv nil nil pstate tokstream)))
+       ;; Else, no parse error and everything is fine.
+       (pstate (vl-tokstream->pstate)))
+    (mv t items pstate tokstream)))

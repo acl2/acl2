@@ -89,7 +89,7 @@
         state)))
 
 (defun json-xdoc-topic (name state)
-  (b* (((mv topics state)    (xdoc::all-xdoc-topics state))
+  (b* (((mv ? topics state)  (xdoc::all-xdoc-topics state))
        (topics-fal           (xdoc::topics-fal topics))
        (topic                (cdr (hons-get name topics-fal)))
        ((unless topic)

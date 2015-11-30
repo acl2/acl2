@@ -19,7 +19,7 @@
 ;; ===================================================================
 
 (defxdoc remove-hyps
-  :parents (debugging)
+  :parents (proof-automation debugging)
   :short "Macro for defining a theorem with a minimal set of hypotheses"
   :long "<p>Suppose E is an admissible event of the form @('(defthm
   name (implies hyps ...))').  Then submitting instead the form @('(remove-hyps

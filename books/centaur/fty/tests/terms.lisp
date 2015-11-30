@@ -1074,7 +1074,7 @@
 
 ;; (local (include-book "xdoc/save" :dir :system))
 ;; (local (make-event
-;;         (b* (((mv all-xdoc-topics state) (xdoc::all-xdoc-topics state))
+;;         (b* (((mv ? all-xdoc-topics state) (xdoc::all-xdoc-topics state))
 ;;              (redef-report (xdoc::redef-errors (set::mergesort all-xdoc-topics)))
 ;;              (- (or (not redef-report)
 ;;                     (cw "Redefined topics report: ~x0.~%" redef-report)))

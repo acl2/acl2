@@ -2019,6 +2019,7 @@ the way.</li>
                             nil
                           (vmsg "Key ~a0 not in valid range" key.key))
                       (vmsg "Key ~a0 not resolved" key.key))
+              :structmem (vmsg "Struct member name key ~a0 not valid for array patterns." key.name)
               :type (vmsg "Datatype key ~a0 not valid for array patterns" key.type)
               :default nil)))
     (or err
@@ -2133,13 +2134,13 @@ the way.</li>
     :hints(("Goal" :in-theory (enable vl-svex-keyvallist-vars)))))
 
 
-(define vl-simple-idexpr-name ((x vl-expr-p))
-  :returns (name (iff (stringp name) name))
-  (vl-expr-case x
-    :vl-index (and (vl-partselect-case x.part :none)
-                   (atom x.indices)
-                   (vl-simple-id-name x.scope))
-    :otherwise nil))
+;; (define vl-simple-idexpr-name ((x vl-expr-p))
+;;   :returns (name (iff (stringp name) name))
+;;   (vl-expr-case x
+;;     :vl-index (and (vl-partselect-case x.part :none)
+;;                    (atom x.indices)
+;;                    (vl-simple-id-name x.scope))
+;;     :otherwise nil))
 
 (define vl-check-struct-assignpat-keys ((pairs vl-keyvallist-p)
                                         (membs vl-structmemberlist-p))
@@ -2149,19 +2150,27 @@ the way.</li>
        ((when (atom pairs)) nil)
        (key (caar pairs))
        (err (vl-patternkey-case key
-              :expr (b* ((name (vl-simple-idexpr-name key.key))
-                         ((unless name)
-                          (vmsg "Bad expression for struct assignment pattern key: ~a0" key.key))
-                         ((unless (vl-find-structmember name membs))
-                          (vmsg "Not a field name: ~a0" key.key)))
-                      nil)
+              ;; We used to leave these as expressions, but now they should be
+              ;; structmem fields, so we shouldn't see any complex expressions
+              ;; being mixed in.
+              ;; :expr (b* ((name (vl-simple-idexpr-name key.key))
+              ;;            ((unless name)
+              ;;             (vmsg "Bad expression for struct assignment pattern key: ~a0" key.key))
+              ;;            ((unless (vl-find-structmember name membs))
+              ;;             (vmsg "Not a field name: ~a0" key.key)))
+              ;;         nil)
+              :expr
+              (vmsg "Array indexing key ~a0 not valid for struct patterns" key.key)
+              :structmem
+              (if (vl-find-structmember key.name membs)
+                  nil
+                (vmsg "Not a field name: ~a0" key.name))
               :type
               ;; BOZO could support these someday
               (vmsg "Datatype key ~a0 not valid for struct patterns" key.type)
               :default nil)))
     (or err
         (vl-check-struct-assignpat-keys (cdr pairs) membs))))
-
 
 (define vl-keyval-default-lookup ((x vl-keyvallist-p))
   :measure (len (vl-keyvallist-fix x))
@@ -2187,8 +2196,10 @@ the way.</li>
        ((when (atom x)) nil)
        (key (caar x))
        ((when (vl-patternkey-case key
-                :expr (equal (vl-simple-idexpr-name key.key)
-                             (string-fix name))
+                ;; From back when things were expressions:
+                ;; :expr (equal (vl-simple-idexpr-name key.key)
+                ;;              (string-fix name))
+                :structmem (equal key.name (string-fix name))
                 :otherwise nil))
         (cdar x)))
     (vl-keyval-member-lookup name (cdr x)))

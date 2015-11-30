@@ -328,7 +328,10 @@ being kept.</p>"
        ;; encountered, e.g., as a barbaric way to override problematic
        ;; definitions.
        (warning (make-vl-warning
-                 :type :vl-multidef-mod
+                 ;; Formerly this was :vl-multidef-mod, but that's not
+                 ;; a good warning name when it's something other than a
+                 ;; module.
+                 :type :vl-warn-multidef
                  :msg "~m0 is defined multiple times.  Keeping the old ~
                        definition (~a1) and ignoring the new one (~a2)."
                  :args (list newname1
@@ -514,18 +517,18 @@ descriptions.</li>
        ((unless successp)
         ;; In practice this should be rare.  See vl-parse-module-declaration:
         ;; We work hard to make sure that parse errors that occur within a
-        ;; module only kill that particular module.
-
-        ;; At any rate, following our convention, we want to add nothing but
-        ;; warnings to the parse state.  That means unwinding and restoring
-        ;; the pstate-backup that we had.
-        (b* ((-      (vl-parsestate-free pstate))
+        ;; module only kill that particular module.  But, in case of top level
+        ;; errors, we might still run into problems.  Following our convention,
+        ;; we want to add nothing but warnings to the parse state.  That means
+        ;; unwinding and restoring the pstate-backup that we had.
+        (b* ((new-warnings (vl-parsestate->warnings pstate))
+             (-      (vl-parsestate-free pstate))
              (pstate (vl-parsestate-restore pstate-backup))
              (w      (make-vl-warning :type :vl-parse-failed
                                       :msg "Parsing failed for ~s0."
                                       :args (list filename)
                                       :fn __function__))
-             (pstate (vl-parsestate-add-warning w pstate))
+             (pstate (vl-parsestate-set-warnings (cons w new-warnings) pstate))
              (st     (change-vl-loadstate st :pstate pstate)))
           (mv st state)))
 
@@ -605,14 +608,44 @@ descriptions.</li>
        ((mv filename warnings state)
         (vl-find-basename/extension name config.search-exts config.search-path
                                     warnings state))
-       ((unless filename)
-        (b* ((warnings (warn :type :vl-warn-find-failed
-                             :msg "Unable to find a file for ~s0."
-                             :args (list name))))
-          (mv (vl-loadstate-set-warnings warnings)
-              state)))
+       (st (vl-loadstate-set-warnings warnings))
 
-       (st (vl-loadstate-set-warnings warnings)))
+       ((unless filename)
+        ;; Historically we issued a warning here that said we were unable to
+        ;; find a file for this module.  However, this could lead to incorrect
+        ;; warnings.  For example, consider the following case:
+        ;;
+        ;;    mylib/mymod.sv:
+        ;;       module mymod_helper ... endmodule;
+        ;;       module mymod ... endmodule;
+        ;;
+        ;;    top.sv:
+        ;;
+        ;;       module top ;
+        ;;         mymod_helper foo (...);
+        ;;         mymod bar (...);
+        ;;       endmodule
+        ;;
+        ;; If we start by loading top.sv, then we'll find that we're missing
+        ;; both definitions for mymod_helper and mymod and we'll go looking for
+        ;; them.  At this point:
+        ;;
+        ;;   - If we happen to choose to look for mymod first, we'll load them
+        ;;     both and everything will be fine.
+        ;;
+        ;;   - If we instead look for mymod_helper first, we won't find any
+        ;;     file named mymod_helper.sv, so we'll give up and issue a
+        ;;     warning.  But then we'll go look for mymod, find mymod.sv, and
+        ;;     load mymod and mymod_helper.  So everything ends up being just
+        ;;     fine and we still end up with all the modules loaded.  But we're
+        ;;     also left with a stupid warning that incorrectly says we didn't
+        ;;     find mymod_helper.
+        ;;
+        ;; To avoid this, we need to (1) not issue any warnings here, and
+        ;; instead (2) only issue warnings about modules we didn't find at the
+        ;; end of flushing out the design.  Well, luckily we're already doing
+        ;; this, see the vl-search-failed warning below.
+        (mv st state)))
 
     (vl-load-file filename st state))
   ///
@@ -890,7 +923,7 @@ you might want to attach some other kind of report here.</p>
                (vl-print-warnings floating-warnings)
                (vl-println ""))))
 
-       (multidef-warnings (vl-keep-warnings '(:vl-multidef-mod) regular-warnings))
+       (multidef-warnings (vl-keep-warnings '(:vl-warn-multidef) regular-warnings))
        (- (or (not multidef-warnings)
               (vl-cw-ps-seq
                (vl-ps-update-autowrap-col 68)

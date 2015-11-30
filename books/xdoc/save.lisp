@@ -86,7 +86,7 @@
      (remove-untouchable acl2::writes-okp nil)
      ;; b* should have been included by the above includes
      (make-event
-      (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
+      (b* (((mv ? all-xdoc-topics state) (all-xdoc-topics state))
            (- (cw "(len all-xdoc-topics): ~x0~%" (len all-xdoc-topics)))
            (redef-report
             ;; To support special cases (for instance, "locally" including a

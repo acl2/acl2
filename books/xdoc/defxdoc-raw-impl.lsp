@@ -68,7 +68,6 @@ documentation added by @('defxdoc').</p>")
 (defun all-xdoc-topics (state)
   (if (not (acl2::live-state-p state))
       (prog2$ (er hard? 'all-xdoc-topics "all-xdoc-topics requires a live state.")
-              (mv nil state))
-    (mv (append *raw-xdoc-list*
-                (get-xdoc-table (w state)))
-        state)))
+              (value nil))
+    (value (append *raw-xdoc-list*
+                   (get-xdoc-table (w state))))))

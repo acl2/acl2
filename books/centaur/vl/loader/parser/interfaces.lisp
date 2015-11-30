@@ -99,6 +99,8 @@ interface_ansi_header ::=
                                               :vl-modport
                                               ;; :vl-assertion -- I don't think these are ok?
                                               ;; :vl-cassertion -- I don't think these are ok?
+                                              :vl-dpiimport
+                                              :vl-dpiexport
                                               )))
        (warnings
         (if (not bad-item)
@@ -117,6 +119,8 @@ interface_ansi_header ::=
                         :modports   c.modports
                         :generates  c.generates
                         :imports    c.imports
+                        :dpiimports c.dpiimports
+                        :dpiexports c.dpiexports
                         :atts       atts
                         :minloc     minloc
                         :maxloc     maxloc
