@@ -21346,6 +21346,38 @@
                     :ld-error-action :error))
                (value :invisible))))
 
+(defun with-brr-ens-fn (form state)
+  (let ((caller 'with-brr-ens))
+    (cond ((eq (f-get-global 'wormhole-name state) 'brr)
+           (state-global-let*
+            ((global-enabled-structure
+              (access rewrite-constant
+                      (get-brr-local 'rcnst state)
+                      :current-enabled-structure)))
+            (mv-let (erp stobjs-out/replaced-val state)
+              (trans-eval form caller state t)
+              (cond
+               (erp ; error was presumably already printed above
+                (silent-error state))
+               (t (let ((stobjs-out (car stobjs-out/replaced-val))
+                        (val (cdr stobjs-out/replaced-val)))
+                    (cond
+                     ((equal stobjs-out *error-triple-sig*)
+                      (value (cadr val)))
+                     ((equal stobjs-out '(nil))
+                      (value val))
+                     (t (er soft caller
+                            "Illegal output signature for ~x0: ~x1"
+                            caller
+                            stobjs-out)))))))))
+          (t (er soft caller
+                 "It is illegal to call ~x0 unless you are under ~
+                  break-rewrite and you are not."
+                 caller)))))
+
+(defmacro with-brr-ens (form)
+  `(with-brr-ens-fn ',form state))
+
 (defmacro trace! (&rest fns)
   (let ((form
          `(with-ubt!

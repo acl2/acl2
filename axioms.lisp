@@ -20136,6 +20136,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     including-uncertified-p
     check-invariant-risk ; set- function ensures proper values
     print-gv-defaults
+    global-enabled-structure
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,
