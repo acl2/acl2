@@ -587,6 +587,7 @@ field conveying useful information. </li>
   (define x86-operand-to-xmm/mem
 
     ((operand-size :type (member 4 8 16))
+     (aligned            booleanp)
      (operand      :type (integer 0 *))
      (v-addr       :type (signed-byte #.*max-linear-address-size*))
      (rex-byte     :type (unsigned-byte 8))
@@ -607,6 +608,9 @@ field conveying useful information. </li>
                                   operand x86)))
             (mv nil x86)))
 
+         ((when (and aligned (not (equal (and v-addr #xF) 0))))
+          (mv t x86))
+
          ((mv flg x86)
           (wm-size operand-size v-addr operand x86)))
         (mv flg x86))
@@ -616,6 +620,7 @@ field conveying useful information. </li>
     (defthm x86p-x86-operand-to-xmm/mem
       (implies (force (x86p x86))
                (x86p (mv-nth 1 (x86-operand-to-xmm/mem operand-size
+                                                       aligned
                                                        operand v-addr
                                                        rex-byte r/m mod
                                                        x86))))

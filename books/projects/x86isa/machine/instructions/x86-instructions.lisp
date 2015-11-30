@@ -341,10 +341,206 @@ Digital Random Number Generator Guide</a> for more details.</p>"
       x86))
 
 ;; ======================================================================
-;; INSTRUCTION: CMPSS/CMPSD
+;; INSTRUCTION: MOVSS/MOVSD/MOVUPS/MOVUPD/MOVAPS/MOVAPD
 ;; ======================================================================
 
-;; Floating-Point Instruction:
+(def-inst x86-movss/movsd/movups/movupd/movaps/movapd-Op/En-RM
+
+  :parents (two-byte-opcodes fp-opcodes)
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'MOVUPS #x0F11 '(:nil nil)
+                                      'x86-movss/movsd/movups/movupd/movaps/movapd-Op/En-RM)
+    (add-to-implemented-opcodes-table 'MOVAPS #x0F29 '(:nil nil)
+                                      'x86-movss/movsd/movups/movupd/movaps/movapd-Op/En-RM))
+
+  :short "Move scalar single/double precision floating-point values"
+
+  :long
+  "<h3>Op/En = MR: \[OP XMM/M, XMM/M\]</h3>
+  F3 0F 10: MOVSS xmm2, xmm1/m32<br/>
+  F2 0F 10: MOVSD xmm2, xmm1/m64<br/>
+     0F 10: MOVUPS xmm2, xmm1/m128<br/>
+  66 0F 10: MOVUPD xmm2, xmm1/m128<br/>
+     0F 28: MOVAPS xmm2, xmm1/m128<br/>
+  66 0F 28: MOVAPD xmm2, xmm1/m128<br/>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((ctx 'x86-movss/movsd/movups/movupd/movaps/movapd-Op/En-RM)
+
+       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
+       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
+       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?)
+        (!!ms-fresh :lock-prefix prefixes))
+       (p2 (the (unsigned-byte 8) (prefixes-slice :group-2-prefix prefixes)))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes-slice :group-4-prefix prefixes)))
+
+       ((the (member 4 8 16) operand-size)
+        (cond ((and (equal opcode #x10)
+                    (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
+               8)
+              ((and (equal opcode #x10)
+                    (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
+               4)
+              (t 16)))
+       ((mv flg0 xmm/mem (the (unsigned-byte 3) increment-RIP-by) ?v-addr x86)
+        (if (= mod #b11)
+          (mv nil (xmmi-size operand-size (reg-index reg rex-byte #.*r*) x86) 0 0 x86)
+          (x86-operand-from-modr/m-and-sib-bytes  ; TODO implement alignement check in MOVAPS
+           #.*xmm-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86)))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
+        (+ temp-rip increment-RIP-by))
+       ((when (mbe :logic (not (canonical-address-p temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :virtual-memory-error temp-rip))
+       ;; If the instruction goes beyond 15 bytes, stop. Change to an
+       ;; exception later.
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+       ;; Update the x86 state:
+       (x86 (!xmmi-size operand-size (reg-index reg rex-byte #.*r*) xmm/mem x86))
+       (x86 (!rip temp-rip x86)))
+      x86))
+
+(def-inst x86-movss/movsd/movups/movupd/movaps/movapd-Op/En-MR
+
+  :parents (two-byte-opcodes fp-opcodes)
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'MOVUPS #x0F11 '(:nil nil)
+                                      'x86-movss/movsd/movups/movupd/movaps/movapd-Op/En-MR)
+    (add-to-implemented-opcodes-table 'MOVAPS #x0F29 '(:nil nil)
+                                      'x86-movss/movsd/movups/movupd/movaps/movapd-Op/En-MR))
+
+  :short "Move scalar single/double precision floating-point values"
+
+  :long
+  "<h3>Op/En = MR: \[OP XMM/M, XMM/M\]</h3>
+  F3 0F 11: MOVSS xmm2/m32, xmm1<br/>
+  F2 0F 11: MOVSD xmm2/m64, xmm1<br/>
+     0F 11: MOVUPS xmm2/m128, xmm1<br/>
+  66 0F 11: MOVUPD xmm2/m128, xmm1<br/>
+     0F 29: MOVAPS xmm2/m128, xmm1<br/>
+  66 0F 29: MOVAPD xmm2/m128, xmm1<br/>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+  (b* ((ctx 'x86-movss/movsd/movups/movupd/movaps/movapd-Op/En-MR)
+       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
+       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+       (lock (eql #.*lock*
+                  (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock)
+        (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (member 4 8 16) operand-size)
+        (cond ((and (equal opcode #x11)
+                    (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
+               8)
+              ((and (equal opcode #x11)
+                    (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
+               4)
+              (t 16)))
+
+       ((the (unsigned-byte 4) xmm-index)
+        (reg-index reg rex-byte #.*r*))
+       (xmm
+        (xmmi-size operand-size xmm-index x86))
+
+       (p2 (prefixes-slice :group-2-prefix prefixes))
+
+       (p4? (eql #.*addr-size-override*
+                 (prefixes-slice :group-4-prefix prefixes)))
+
+       ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
+        (if (equal mod #b11)
+            (mv nil 0 0 x86)
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+       ((when flg0)
+        (!!ms-fresh :x86-effective-addr-error flg0))
+       ((mv flg1 v-addr)
+        (case p2
+          (0 (mv nil v-addr))
+          ;; I don't really need to check whether FS and GS base are
+          ;; canonical or not.  On the real machine, if the MSRs
+          ;; containing these bases are assigned non-canonical
+          ;; addresses, an exception is raised.
+          (#.*fs-override*
+           (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
+                  (fs-base (n64-to-i64 nat-fs-base)))
+             (if (not (canonical-address-p fs-base))
+                 (mv 'Non-Canonical-FS-Base fs-base)
+               (mv nil (+ fs-base v-addr)))))
+          (#.*gs-override*
+           (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
+                  (gs-base (n64-to-i64 nat-gs-base)))
+             (if (not (canonical-address-p gs-base))
+                 (mv 'Non-Canonical-GS-Base gs-base)
+               (mv nil (+ gs-base v-addr)))))
+          (t (mv 'Unidentified-P2 v-addr))))
+       ((when flg1)
+        (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
+       ((when (not (canonical-address-p v-addr)))
+        (!!ms-fresh :v-addr-not-canonical v-addr))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
+        (+ temp-rip increment-RIP-by))
+
+       ((when (mbe :logic (not (canonical-address-p temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :virtual-memory-error temp-rip))
+       ;; If the instruction goes beyond 15 bytes, stop. Change to an
+       ;; exception later.
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+       ;; Update the x86 state:
+       ((mv flg2 x86)
+        (x86-operand-to-xmm/mem operand-size (equal opcode #x29) xmm v-addr rex-byte
+                                r/m mod x86))
+       ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
+       ((when flg2)
+        (!!ms-fresh :x86-operand-to-reg/mem flg2))
+       (x86 (!rip temp-rip x86)))
+      x86))
+
+
+;; ======================================================================
+;; INSTRUCTION: CMPSS/CMPSD
+;; ======================================================================
 
 (def-inst x86-cmpss/cmpsd-Op/En-RMI
 
