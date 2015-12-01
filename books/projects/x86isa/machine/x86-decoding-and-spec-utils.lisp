@@ -386,10 +386,13 @@ field conveying useful information. </li>
 
   (define x86-operand-from-modr/m-and-sib-bytes
 
-    ((reg-type      :type (unsigned-byte  1) "@('reg-type') is @('*rgf-access*') for GPRs, and @('*xmm-access*') for XMMs.")
+    ((reg-type      :type (unsigned-byte  1)
+                    "@('reg-type') is @('*rgf-access*') for GPRs, and @('*xmm-access*') for XMMs.")
      (operand-size  :type (member 1 2 4 6 8 10 16))
-     (p2            :type (unsigned-byte  8) "Segment Override Prefix")
-     (p4?           :type (or t nil)         "Address-Size Override Prefix Present?")
+     (p2            :type (unsigned-byte  8)
+                    "Segment Override Prefix")
+     (p4?           :type (or t nil)
+                    "Address-Size Override Prefix Present?")
      (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
      (rex-byte      :type (unsigned-byte 8))
      (r/m           :type (unsigned-byte 3))
@@ -545,7 +548,6 @@ field conveying useful information. </li>
                            num-imm-bytes x86))))))
 
   (define x86-operand-to-reg/mem
-
     ((operand-size :type (member 1 2 4 6 8 10 16))
      (operand      :type (integer 0 *))
      (v-addr       :type (signed-byte #.*max-linear-address-size*))
@@ -587,6 +589,7 @@ field conveying useful information. </li>
   (define x86-operand-to-xmm/mem
 
     ((operand-size :type (member 4 8 16))
+     (aligned      booleanp)
      (operand      :type (integer 0 *))
      (v-addr       :type (signed-byte #.*max-linear-address-size*))
      (rex-byte     :type (unsigned-byte 8))
@@ -607,6 +610,10 @@ field conveying useful information. </li>
                                   operand x86)))
             (mv nil x86)))
 
+         ;; [Aligned check contributed by Dmitry Nadezhin, thanks!]
+         ((when (and aligned (not (equal (and v-addr #xF) 0))))
+          (mv t x86))
+
          ((mv flg x86)
           (wm-size operand-size v-addr operand x86)))
         (mv flg x86))
@@ -615,10 +622,12 @@ field conveying useful information. </li>
 
     (defthm x86p-x86-operand-to-xmm/mem
       (implies (force (x86p x86))
-               (x86p (mv-nth 1 (x86-operand-to-xmm/mem operand-size
-                                                       operand v-addr
-                                                       rex-byte r/m mod
-                                                       x86))))
+               (x86p
+                (mv-nth 1 (x86-operand-to-xmm/mem
+                           operand-size aligned
+                           operand v-addr
+                           rex-byte r/m mod
+                           x86))))
       :hints (("Goal" :in-theory (e/d () (force (force))))))))
 
 ;; ======================================================================

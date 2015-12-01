@@ -13,80 +13,28 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
+(local
+ (defthm lemma-1
+   (implies (and (unsigned-byte-p 128 x)
+                 (unsigned-byte-p 128 y))
+            (< (logxor x y)
+               (expt 2 128)))
+   :hints (("Goal"
+            :in-theory (disable unsigned-byte-p-of-logxor)
+            :use (:instance unsigned-byte-p-of-logxor
+                            (n 128))))
+   :rule-classes :linear))
+
 ; =============================================================================
 ; INSTRUCTION: SSE/SSE2 Logical Instructions
 ; =============================================================================
 
-(encapsulate
- ()
+(def-inst x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 
- (local
-  (defthm lemma-1
-    (implies (and (unsigned-byte-p 128 x)
-                  (unsigned-byte-p 128 y))
-             (< (logxor x y)
-                (expt 2 128)))
-    :hints (("Goal"
-             :in-theory (disable unsigned-byte-p-of-logxor)
-             :use (:instance unsigned-byte-p-of-logxor
-                             (n 128))))
-    :rule-classes :linear))
+  :parents (two-byte-opcodes fp-opcodes)
 
- (def-inst x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-
-   :parents (two-byte-opcodes fp-opcodes)
-   :implemented
-   (progn
-     (add-to-implemented-opcodes-table 'ANDPS #x0F54
-                                       '(:nil nil)
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-     (add-to-implemented-opcodes-table 'ANDNPS #x0F55
-                                       '(:nil nil)
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-     (add-to-implemented-opcodes-table 'ORPS #x0F56
-                                       '(:nil nil)
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-     (add-to-implemented-opcodes-table 'XORPS #x0F57
-                                       '(:nil nil)
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-     (add-to-implemented-opcodes-table 'ANDPD #x0F54
-                                       '(:misc
-                                         (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-     (add-to-implemented-opcodes-table 'ANDNPD #x0F55
-                                       '(:misc
-                                         (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-     (add-to-implemented-opcodes-table 'ORPD #x0F56
-                                       '(:misc
-                                         (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-     (add-to-implemented-opcodes-table 'XORPD #x0F57
-                                       '(:misc
-                                         (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-     (add-to-implemented-opcodes-table 'PAND #x0FDB
-                                       '(:misc
-                                         (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-     (add-to-implemented-opcodes-table 'PANDN #x0FDF
-                                       '(:misc
-                                         (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-     (add-to-implemented-opcodes-table 'POR #x0FEB
-                                       '(:misc
-                                         (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-     (add-to-implemented-opcodes-table 'PXOR #x0FEF
-                                       '(:misc
-                                         (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                       'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM))
-
-   :long
-   "<h3>Op/En = RM: \[OP XMM, XMM/M\]</h3>
+  :long
+  "<h3>Op/En = RM: \[OP XMM, XMM/M\]</h3>
      0F 54: ANDPS  xmm1, xmm2/m128<br/>
      0F 55: ANDNPS xmm1, xmm2/m128<br/>
      0F 56: ORPS   xmm1, xmm2/m128<br/>
@@ -102,79 +50,127 @@
   66 0F EB: POR   xmm1, xmm2/m128<br/>
   66 0F EF: PXOR  xmm1, xmm2/m128<br/>"
 
-   :operation t
+  :operation t
 
-   :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86))
 
-   :body
-   (b* ((ctx 'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-        (lock (eql #.*lock*
-                   (prefixes-slice :group-1-prefix prefixes)))
-        ((when lock)
-         (!!ms-fresh :lock-prefix prefixes))
+  :body
+  (b* ((ctx 'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
+       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock)
+        (!!ms-fresh :lock-prefix prefixes))
 
-        ((the (unsigned-byte 4) xmm-index)
-         (reg-index reg rex-byte #.*r*))
+       ((the (unsigned-byte 4) xmm-index)
+        (reg-index reg rex-byte #.*r*))
 
-        ((the (unsigned-byte 128) xmm)
-         (xmmi-size 16 xmm-index x86))
+       ((the (unsigned-byte 128) xmm)
+        (xmmi-size 16 xmm-index x86))
 
-        (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :group-2-prefix prefixes))
 
-        (p4? (eql #.*addr-size-override*
-                  (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override*
+                 (prefixes-slice :group-4-prefix prefixes)))
 
-        ((mv flg0
-             (the (unsigned-byte 128) xmm/mem)
-             (the (integer 0 4) increment-RIP-by)
-             (the (signed-byte 64) ?v-addr) x86)
-         (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 16
-                                                p2 p4? temp-rip
-                                                rex-byte r/m mod sib 0 x86))
+       ((mv flg0
+            (the (unsigned-byte 128) xmm/mem)
+            (the (integer 0 4) increment-RIP-by)
+            (the (signed-byte 64) ?v-addr) x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
-        ((when flg0)
-         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-         (+ temp-rip increment-RIP-by))
+       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
+        (+ temp-rip increment-RIP-by))
 
-        ((when (mbe :logic (not (canonical-address-p temp-rip))
-                    :exec (<= #.*2^47*
-                              (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                temp-rip))))
-         (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((when (mbe :logic (not (canonical-address-p temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-         (-
-          (the (signed-byte #.*max-linear-address-size*)
-            temp-rip)
-          (the (signed-byte #.*max-linear-address-size*)
-            start-rip)))
-        ((when (< 15 addr-diff))
-         (!!ms-fresh :instruction-length addr-diff))
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
-        ;; Raise an error if v-addr is not 16-byte aligned.
-        ;; In case the second operand is an XMM register, v-addr = 0.
-        ((when (not (eql (mod v-addr 16) 0)))
-         (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
+       ;; Raise an error if v-addr is not 16-byte aligned.
+       ;; In case the second operand is an XMM register, v-addr = 0.
+       ((when (not (eql (mod v-addr 16) 0)))
+        (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
 
-        (result (case operation
-                  (#.*OP-AND* (logand xmm xmm/mem))
-                  (#.*OP-ANDN* (logand (lognot xmm) xmm/mem))
-                  (#.*OP-OR* (logior xmm xmm/mem))
-                  (#.*OP-XOR* (logxor xmm xmm/mem))
-                  ;; Should not reach here.
-                  (otherwise 0)))
+       (result (case operation
+                 (#.*OP-AND*  (logand xmm xmm/mem))
+                 (#.*OP-ANDN* (logand (lognot xmm) xmm/mem))
+                 (#.*OP-OR*   (logior xmm xmm/mem))
+                 (#.*OP-XOR*  (logxor xmm xmm/mem))
+                 ;; Should not reach here.
+                 (otherwise 0)))
 
-        ;; Update the x86 state:
-        (x86 (!xmmi-size 16 xmm-index result x86))
+       ;; Update the x86 state:
+       (x86 (!xmmi-size 16 xmm-index result x86))
 
-        (x86 (!rip temp-rip x86)))
-       x86)))
+       (x86 (!rip temp-rip x86)))
+      x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'ANDPS #x0F54
+                                      '(:nil nil)
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+    (add-to-implemented-opcodes-table 'ANDNPS #x0F55
+                                      '(:nil nil)
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+    (add-to-implemented-opcodes-table 'ORPS #x0F56
+                                      '(:nil nil)
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+    (add-to-implemented-opcodes-table 'XORPS #x0F57
+                                      '(:nil nil)
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+
+    (add-to-implemented-opcodes-table 'ANDPD #x0F54
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+    (add-to-implemented-opcodes-table 'ANDNPD #x0F55
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+
+    (add-to-implemented-opcodes-table 'ORPD #x0F56
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+    (add-to-implemented-opcodes-table 'XORPD #x0F57
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+
+    (add-to-implemented-opcodes-table 'PAND #x0FDB
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+    (add-to-implemented-opcodes-table 'PANDN #x0FDF
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+    (add-to-implemented-opcodes-table 'POR #x0FEB
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+    (add-to-implemented-opcodes-table 'PXOR #x0FEF
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)))
 
 ;; ======================================================================
 ;; INSTRUCTION: SSE/SSE2 Comparison Instructions
@@ -182,21 +178,7 @@
 
 (def-inst x86-cmpss/cmpsd-Op/En-RMI
 
-  ;; Shilpi to Cuong: Put as many type decl. as necessary --- look at
-  ;; (disassemble$ x86-cmpss/cmpsd-Op/En-RMI) to figure out where you
-  ;; need them.
-
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMPSS #x0FC2
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cmpss/cmpsd-Op/En-RMI)
-    (add-to-implemented-opcodes-table 'CMPSD #x0FC2
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cmpss/cmpsd-Op/En-RMI))
 
   :short "Compare scalar single/double precision floating-point values"
 
@@ -214,8 +196,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -225,8 +206,7 @@
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (xmm
-        (xmmi-size operand-size xmm-index x86))
+       (xmm (xmmi-size operand-size xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
@@ -234,9 +214,8 @@
                  (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* operand-size
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 1 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -291,15 +270,22 @@
        (x86 (!xmmi-size operand-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'CMPSS #x0FC2
+                                      '(:misc
+                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cmpss/cmpsd-Op/En-RMI)
+    (add-to-implemented-opcodes-table 'CMPSD #x0FC2
+                                      '(:misc
+                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cmpss/cmpsd-Op/En-RMI)))
 
 (def-inst x86-cmpps-Op/En-RMI
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (add-to-implemented-opcodes-table 'CMPPS #x0FC2
-                                    '(:nil nil)
-                                    'x86-cmpps-Op/En-RMI)
 
   :short "Compare packed single-precision floating-point values"
 
@@ -314,8 +300,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -333,9 +318,8 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 16
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 1 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -352,7 +336,7 @@
 
        ((mv flg1 (the (unsigned-byte 8) imm) x86)
         (rm-size 1 (the (signed-byte #.*max-linear-address-size*)
-                        temp-rip) :x x86))
+                     temp-rip) :x x86))
 
        ((when flg1)
         (!!ms-fresh :rm-size-error flg1))
@@ -382,31 +366,31 @@
 
        (xmm0 (mbe :logic (part-select xmm :low 0 :high 31)
                   :exec  (the (unsigned-byte 32)
-                              (logand #uxFFFF_FFFF xmm))))
+                           (logand #uxFFFF_FFFF xmm))))
        (xmm/mem0 (mbe :logic (part-select xmm/mem :low 0 :high 31)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF xmm/mem))))
+                               (logand #uxFFFF_FFFF xmm/mem))))
 
        (xmm1 (mbe :logic (part-select xmm :low 32 :high 63)
                   :exec  (the (unsigned-byte 32)
-                              (logand #uxFFFF_FFFF (ash xmm -32)))))
+                           (logand #uxFFFF_FFFF (ash xmm -32)))))
        (xmm/mem1 (mbe :logic (part-select xmm/mem :low 32 :high 63)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF (ash xmm/mem -32)))))
+                               (logand #uxFFFF_FFFF (ash xmm/mem -32)))))
 
        (xmm2 (mbe :logic (part-select xmm :low 64 :high 95)
                   :exec  (the (unsigned-byte 32)
-                              (logand #uxFFFF_FFFF (ash xmm -64)))))
+                           (logand #uxFFFF_FFFF (ash xmm -64)))))
        (xmm/mem2 (mbe :logic (part-select xmm/mem :low 64 :high 95)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF (ash xmm/mem -64)))))
+                               (logand #uxFFFF_FFFF (ash xmm/mem -64)))))
 
        (xmm3 (mbe :logic (part-select xmm :low 96 :high 127)
                   :exec  (the (unsigned-byte 32)
-                              (logand #uxFFFF_FFFF (ash xmm -96)))))
+                           (logand #uxFFFF_FFFF (ash xmm -96)))))
        (xmm/mem3 (mbe :logic (part-select xmm/mem :low 96 :high 127)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF (ash xmm/mem -96)))))
+                               (logand #uxFFFF_FFFF (ash xmm/mem -96)))))
 
        (mxcsr (the (unsigned-byte 32) (mxcsr x86)))
 
@@ -447,7 +431,7 @@
        (result (merge-4-u32s result3 result2 result1 result0))
 
        (mxcsr (the (unsigned-byte 32)
-                   (logior mxcsr0 mxcsr1 mxcsr2 mxcsr3)))
+                (logior mxcsr0 mxcsr1 mxcsr2 mxcsr3)))
 
        ;; Update the x86 state:
        (x86 (!mxcsr mxcsr x86))
@@ -455,16 +439,16 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (add-to-implemented-opcodes-table 'CMPPS #x0FC2
+                                    '(:nil nil)
+                                    'x86-cmpps-Op/En-RMI))
 
 (def-inst x86-cmppd-Op/En-RMI
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (add-to-implemented-opcodes-table 'CMPPD #x0FC2
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-cmppd-Op/En-RMI)
 
   :short "Compare packed double-precision floating-point values"
 
@@ -479,8 +463,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -498,9 +481,8 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 16
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 1 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -512,12 +494,12 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                                  temp-rip))))
+                               temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((mv flg1 (the (unsigned-byte 8) imm) x86)
         (rm-size 1 (the (signed-byte #.*max-linear-address-size*)
-                        temp-rip) :x x86))
+                     temp-rip) :x x86))
 
        ((when flg1)
         (!!ms-fresh :rm-size-error flg1))
@@ -528,15 +510,15 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                                  temp-rip))))
+                               temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
          (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
+           temp-rip)
          (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
+           start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
@@ -547,17 +529,17 @@
 
        (xmm0 (mbe :logic (part-select xmm :low 0 :high 63)
                   :exec  (the (unsigned-byte 64)
-                              (logand #uxFFFF_FFFF_FFFF_FFFF xmm))))
+                           (logand #uxFFFF_FFFF_FFFF_FFFF xmm))))
        (xmm/mem0 (mbe :logic (part-select xmm/mem :low 0 :high 63)
                       :exec  (the (unsigned-byte 64)
-                                  (logand #uxFFFF_FFFF_FFFF_FFFF xmm/mem))))
+                               (logand #uxFFFF_FFFF_FFFF_FFFF xmm/mem))))
 
        (xmm1 (mbe :logic (part-select xmm :low 64 :high 127)
                   :exec  (the (unsigned-byte 64)
-                              (logand #uxFFFF_FFFF_FFFF_FFFF (ash xmm -64)))))
+                           (logand #uxFFFF_FFFF_FFFF_FFFF (ash xmm -64)))))
        (xmm/mem1 (mbe :logic (part-select xmm/mem :low 64 :high 127)
                       :exec  (the (unsigned-byte 64)
-                                  (logand #uxFFFF_FFFF_FFFF_FFFF (ash xmm/mem -64)))))
+                               (logand #uxFFFF_FFFF_FFFF_FFFF (ash xmm/mem -64)))))
 
        (mxcsr (the (unsigned-byte 32) (mxcsr x86)))
 
@@ -582,7 +564,7 @@
        (result (merge-2-u64s result1 result0))
 
        (mxcsr (the (unsigned-byte 32)
-                   (logior mxcsr0 mxcsr1)))
+                (logior mxcsr0 mxcsr1)))
 
        ;; Update the x86 state:
        (x86 (!mxcsr mxcsr x86))
@@ -590,39 +572,28 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (add-to-implemented-opcodes-table 'CMPPD #x0FC2
+                                    '(:misc
+                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                    'x86-cmppd-Op/En-RMI))
 
 (def-inst x86-comis?/ucomis?-Op/En-RM
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'COMISS #x0F2F
-                                      '(:nil nil)
-                                      'x86-comis?/ucomis?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UCOMISS #x0F2E
-                                      '(:nil nil)
-                                      'x86-comis?/ucomis?-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'COMISD #x0F2F
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-comis?/ucomis?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UCOMISD #x0F2E
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-comis?/ucomis?-Op/En-RM))
 
   :short "Order/Unordered compare scalar single/double precision floating-point
   values and set EFLAGS"
 
   :long
   "<h3>Op/En = RM: \[OP XMM, XMM/M\]</h3>
-     0F 2F: COMISS  xmm1, xmm2/m32<br/>
      0F 2E: UCOMISS xmm1, xmm2/m32<br/>
+     0F 2F: COMISS  xmm1, xmm2/m32<br/>
 
-  66 0F 2F: COMISD  xmm1, xmm2/m64<br/>
-  66 0F 2E: UCOMISD xmm1, xmm2/m64<br/>"
+  66 0F 2E: UCOMISD xmm1, xmm2/m64<br/>
+  66 0F 2F: COMISD  xmm1, xmm2/m64<br/>"
 
   :operation t
 
@@ -635,8 +606,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -646,8 +616,7 @@
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (xmm
-        (xmmi-size operand-size xmm-index x86))
+       (xmm (xmmi-size operand-size xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
@@ -655,9 +624,8 @@
                  (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* operand-size
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -728,6 +696,24 @@
              x86))))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'COMISS #x0F2F
+                                      '(:nil nil)
+                                      'x86-comis?/ucomis?-Op/En-RM)
+    (add-to-implemented-opcodes-table 'UCOMISS #x0F2E
+                                      '(:nil nil)
+                                      'x86-comis?/ucomis?-Op/En-RM)
+
+    (add-to-implemented-opcodes-table 'COMISD #x0F2F
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-comis?/ucomis?-Op/En-RM)
+    (add-to-implemented-opcodes-table 'UCOMISD #x0F2E
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-comis?/ucomis?-Op/En-RM)))
 
 ;; ======================================================================

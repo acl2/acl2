@@ -42,49 +42,6 @@
 (def-inst x86-cvts?2si/cvtts?2si-Op/En-RM
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CVTTSS2SI #x0F2C
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTTSS2SI #x0F2C
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice
-  :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSS2SI #x0F2D
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSS2SI #x0F2D
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice
-  :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'CVTTSD2SI #x0F2C
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTTSD2SI #x0F2C
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice
-                                      :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSD2SI #x0F2D
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSD2SI #x0F2D
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice
-                                      :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM))
 
   :short "Convert scalar single/double precision FP value to integer"
 
@@ -115,8 +72,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -135,9 +91,8 @@
                  (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* xmm/mem-size
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* xmm/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -177,34 +132,51 @@
        (x86 (!rgfi-size reg-size rgf-index result rex-byte x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'CVTTSS2SI #x0F2C
+                                      '(:misc
+                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
+    (add-to-implemented-opcodes-table 'CVTTSS2SI #x0F2C
+                                      '(:misc
+                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+                                        (logbitp #.*w* rex-byte))
+                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
+    (add-to-implemented-opcodes-table 'CVTTSD2SI #x0F2C
+                                      '(:misc
+                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
+    (add-to-implemented-opcodes-table 'CVTTSD2SI #x0F2C
+                                      '(:misc
+                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+                                        (logbitp #.*w* rex-byte))
+                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
+
+    (add-to-implemented-opcodes-table 'CVTSS2SI #x0F2D
+                                      '(:misc
+                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
+    (add-to-implemented-opcodes-table 'CVTSS2SI #x0F2D
+                                      '(:misc
+                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+                                        (logbitp #.*w* rex-byte))
+                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
+    (add-to-implemented-opcodes-table 'CVTSD2SI #x0F2D
+                                      '(:misc
+                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
+    (add-to-implemented-opcodes-table 'CVTSD2SI #x0F2D
+                                      '(:misc
+                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+                                        (logbitp #.*w* rex-byte))
+                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)))
 
 (def-inst x86-cvtsi2s?-Op/En-RM
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CVTSI2SS #x0F2A
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvtsi2s?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSI2SS #x0F2A
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice
-                                                                :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvtsi2s?-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'CVTSI2SD #x0F2A
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvtsi2s?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSI2SD #x0F2A
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice
-                                                                :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvtsi2s?-Op/En-RM))
 
   :short "Convert integer to scalar single/double precision FP value"
 
@@ -225,8 +197,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -245,9 +216,8 @@
                  (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0 reg/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*rgf-access* reg/mem-size
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -291,21 +261,35 @@
        (x86 (!xmmi-size xmm-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'CVTSI2SS #x0F2A
+                                      '(:misc
+                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cvtsi2s?-Op/En-RM)
+    (add-to-implemented-opcodes-table 'CVTSI2SS #x0F2A
+                                      '(:misc
+                                        (eql #.*mandatory-f3h* (prefixes-slice
+                                                                :group-1-prefix prefixes))
+                                        (logbitp #.*w* rex-byte))
+                                      'x86-cvtsi2s?-Op/En-RM)
+
+    (add-to-implemented-opcodes-table 'CVTSI2SD #x0F2A
+                                      '(:misc
+                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cvtsi2s?-Op/En-RM)
+    (add-to-implemented-opcodes-table 'CVTSI2SD #x0F2A
+                                      '(:misc
+                                        (eql #.*mandatory-f2h* (prefixes-slice
+                                                                :group-1-prefix prefixes))
+                                        (logbitp #.*w* rex-byte))
+                                      'x86-cvtsi2s?-Op/En-RM)))
 
 (def-inst x86-cvts?2s?-Op/En-RM
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CVTSS2SD #x0F5A
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2s?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSD2SS #x0F5A
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2s?-Op/En-RM))
 
   :short "Convert scalar single/double precision FP value to scalar
   double/single FP value"
@@ -324,8 +308,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -344,9 +327,8 @@
                  (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* xmm/mem-size
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* xmm/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -386,15 +368,22 @@
        (x86 (!xmmi-size xmm-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'CVTSS2SD #x0F5A
+                                      '(:misc
+                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cvts?2s?-Op/En-RM)
+    (add-to-implemented-opcodes-table 'CVTSD2SS #x0F5A
+                                      '(:misc
+                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
+                                      'x86-cvts?2s?-Op/En-RM)))
 
 (def-inst x86-cvtps2pd-Op/En-RM
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (add-to-implemented-opcodes-table 'CVTPS2PD #x0F5A
-                                    '(:nil nil)
-                                    'x86-cvtps2pd-Op/En-RM)
 
   :short "Convert packed single-precision FP values to packed double-precision
   FP values"
@@ -410,8 +399,10 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       ;; [Shilpi]: The Intel manual doesn't mention that a lock
+       ;; prefix causes an exception for this opcode. Should the
+       ;; following be removed then?
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -427,9 +418,8 @@
             (the (unsigned-byte 64) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 8
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 8 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -455,11 +445,11 @@
 
        (xmm/mem0 (mbe :logic (part-select xmm/mem :low 0 :high 31)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF xmm/mem))))
+                               (logand #uxFFFF_FFFF xmm/mem))))
 
        (xmm/mem1 (mbe :logic (part-select xmm/mem :low 32 :high 63)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF (ash xmm/mem -32)))))
+                               (logand #uxFFFF_FFFF (ash xmm/mem -32)))))
 
        (mxcsr (the (unsigned-byte 32) (mxcsr x86)))
 
@@ -482,7 +472,7 @@
        (result (merge-2-u64s result1 result0))
 
        (mxcsr (the (unsigned-byte 32)
-                   (logior mxcsr0 mxcsr1)))
+                (logior mxcsr0 mxcsr1)))
 
        ;; Update the x86 state:
        (x86 (!mxcsr mxcsr x86))
@@ -490,16 +480,15 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+  :implemented
+  (add-to-implemented-opcodes-table 'CVTPS2PD #x0F5A
+                                    '(:nil nil)
+                                    'x86-cvtps2pd-Op/En-RM))
 
 (def-inst x86-cvtpd2ps-Op/En-RM
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (add-to-implemented-opcodes-table 'CVTPD2PS #x0F5A
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-cvtpd2ps-Op/En-RM)
 
   :short "Convert packed double-precision FP values to packed single-precision
   FP values"
@@ -517,8 +506,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -534,9 +522,8 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 16
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -567,11 +554,11 @@
 
        (xmm/mem0 (mbe :logic (part-select xmm/mem :low 0 :high 63)
                       :exec  (the (unsigned-byte 64)
-                                  (logand #uxFFFF_FFFF_FFFF_FFFF xmm/mem))))
+                               (logand #uxFFFF_FFFF_FFFF_FFFF xmm/mem))))
 
        (xmm/mem1 (mbe :logic (part-select xmm/mem :low 64 :high 127)
                       :exec  (the (unsigned-byte 64)
-                                  (logand #uxFFFF_FFFF_FFFF_FFFF (ash xmm/mem -64)))))
+                               (logand #uxFFFF_FFFF_FFFF_FFFF (ash xmm/mem -64)))))
 
        (mxcsr (the (unsigned-byte 32) (mxcsr x86)))
 
@@ -594,7 +581,7 @@
        (result (merge-2-u32s result1 result0))
 
        (mxcsr (the (unsigned-byte 32)
-                   (logior mxcsr0 mxcsr1)))
+                (logior mxcsr0 mxcsr1)))
 
        ;; Update the x86 state:
        (x86 (!mxcsr mxcsr x86))
@@ -604,6 +591,12 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+  :implemented
+  (add-to-implemented-opcodes-table 'CVTPD2PS #x0F5A
+                                    '(:misc
+                                      (eql #.*mandatory-66h*
+                                           (prefixes-slice :group-3-prefix prefixes)))
+                                    'x86-cvtpd2ps-Op/En-RM))
 
 ;; ======================================================================

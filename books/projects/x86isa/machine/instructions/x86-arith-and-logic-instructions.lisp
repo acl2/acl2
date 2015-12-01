@@ -476,13 +476,15 @@
     (add-to-implemented-opcodes-table 'ADD #x83 '(:reg 0)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
 
-    (add-to-implemented-opcodes-table 'OR #x80 '(:reg 2)
+    ;; [Shilpi]: Thanks to Dmitry Nadezhin for spotting typos in the
+    ;; :reg field for the OR opcode.
+    (add-to-implemented-opcodes-table 'OR #x80 '(:reg 1)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x81 '(:reg 2)
+    (add-to-implemented-opcodes-table 'OR #x81 '(:reg 1)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x82 '(:reg 2)
+    (add-to-implemented-opcodes-table 'OR #x82 '(:reg 1)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x83 '(:reg 2)
+    (add-to-implemented-opcodes-table 'OR #x83 '(:reg 1)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
 
     (add-to-implemented-opcodes-table 'ADC #x80 '(:reg 2)

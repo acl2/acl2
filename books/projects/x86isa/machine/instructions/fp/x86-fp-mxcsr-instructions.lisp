@@ -18,14 +18,6 @@
 (def-inst x86-ldmxcsr/stmxcsr-Op/En-M
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'LDMXCSR #x0FAE
-                                      '(:misc (eql (mrm-reg modr/m) 2))
-                                      'x86-ldmxcsr/stmxcsr-Op/En-M)
-    (add-to-implemented-opcodes-table 'STMXCSR #x0FAE
-                                      '(:misc (eql (mrm-reg modr/m) 3))
-                                      'x86-ldmxcsr/stmxcsr-Op/En-M))
 
   :short "Load/Store MXCSR register"
 
@@ -41,8 +33,10 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       ;; [Shilpi]: The Intel manual doesn't mention that a lock
+       ;; prefix causes an exception for this opcode. Should the
+       ;; following be removed then?
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -104,6 +98,15 @@
            x86)))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'LDMXCSR #x0FAE
+                                      '(:misc (eql (mrm-reg modr/m) 2))
+                                      'x86-ldmxcsr/stmxcsr-Op/En-M)
+    (add-to-implemented-opcodes-table 'STMXCSR #x0FAE
+                                      '(:misc (eql (mrm-reg modr/m) 3))
+                                      'x86-ldmxcsr/stmxcsr-Op/En-M)))
 
 ;; ======================================================================

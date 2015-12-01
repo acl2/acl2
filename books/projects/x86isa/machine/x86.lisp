@@ -249,19 +249,19 @@
          : (MOVUPS xmm1 xmm2/m128)"
      (cond
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-movss/movsd-Op/En-RM #.*OP-DP* start-rip temp-rip prefixes rex-byte
-                                 opcode modr/m sib x86))
+       (x86-movss/movsd-Op/En-RM
+        #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-movss/movsd-Op/En-RM #.*OP-SP* start-rip temp-rip prefixes rex-byte
-                                 opcode modr/m sib x86))
+       (x86-movss/movsd-Op/En-RM
+        #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-movups/movupd/movdqu-Op/En-RM start-rip temp-rip prefixes rex-byte
-                                          opcode modr/m sib x86))
+       (x86-movups/movupd/movdqu-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
       (t
-       (x86-movups/movupd/movdqu-Op/En-RM start-rip temp-rip prefixes rex-byte
-                                          opcode modr/m sib x86))))
+       (x86-movups/movupd/movdqu-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x11
      "F2h: (MOVSD xmm2/m64 xmm1);
@@ -269,43 +269,42 @@
       66h: (MOVUPD xmm2/m128 xmm1);
          : (MOVUPS xmm2/m128 xmm1)"
      (cond
-
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-movss/movsd-Op/En-MR #.*OP-DP* start-rip temp-rip prefixes rex-byte
-                                 opcode modr/m sib x86))
+       (x86-movss/movsd-Op/En-MR
+        #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-movss/movsd-Op/En-MR #.*OP-SP* start-rip temp-rip prefixes rex-byte
-                                 opcode modr/m sib x86))
+       (x86-movss/movsd-Op/En-MR
+        #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-movups/movupd/movdqu-Op/En-MR start-rip temp-rip prefixes rex-byte
-                                          opcode modr/m sib x86))
+       (x86-movups/movupd/movdqu-Op/En-MR
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
       (t
-       (x86-movups/movupd/movdqu-Op/En-MR start-rip temp-rip prefixes rex-byte
-                                          opcode modr/m sib x86))))
+       (x86-movups/movupd/movdqu-Op/En-MR
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x12
      "66h: (MOVLPD xmm m64);
          : (MOVLPS xmm m64)"
      (cond
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-movlps/movlpd-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))
+       (x86-movlps/movlpd-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
       (t
-       (x86-movlps/movlpd-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))))
+       (x86-movlps/movlpd-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x13
      "66h: (MOVLPD m64 xmm);
          : (MOVLPS m64 xmm)"
      (cond
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-movlps/movlpd-Op/En-MR start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))
+       (x86-movlps/movlpd-Op/En-MR
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
       (t
-       (x86-movlps/movlpd-Op/En-MR start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))))
+       (x86-movlps/movlpd-Op/En-MR
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x14
      "66h: (UNPCKLPD xmm1 xmm2/m128);
@@ -313,12 +312,12 @@
      (cond
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-unpck?pd-Op/En-RM #.*LOW-PACK* start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86))
+       (x86-unpck?pd-Op/En-RM
+        #.*LOW-PACK* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
-       (x86-unpck?ps-Op/En-RM #.*LOW-PACK* start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86))))
+       (x86-unpck?ps-Op/En-RM
+        #.*LOW-PACK* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x15
      "66h: (UNPCKHPD xmm1 xmm2/m128);
@@ -326,12 +325,12 @@
      (cond
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-unpck?pd-Op/En-RM #.*HIGH-PACK* start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86))
+       (x86-unpck?pd-Op/En-RM
+        #.*HIGH-PACK* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
-       (x86-unpck?ps-Op/En-RM #.*HIGH-PACK* start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86))))
+       (x86-unpck?ps-Op/En-RM
+        #.*HIGH-PACK* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x16
      "66h: (MOVHPD xmm m64);
@@ -339,12 +338,12 @@
      (cond
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-movhps/movhpd-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))
+       (x86-movhps/movhpd-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
-       (x86-movhps/movhpd-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))))
+       (x86-movhps/movhpd-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x17
      "66h: (MOVHPD m64 xmm);
@@ -352,12 +351,12 @@
      (cond
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-movhps/movhpd-Op/En-MR start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))
+       (x86-movhps/movhpd-Op/En-MR
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
-       (x86-movhps/movhpd-Op/En-MR start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))))
+       (x86-movhps/movhpd-Op/En-MR
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
 
     (#x28
@@ -366,12 +365,12 @@
      (cond
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-movaps/movapd-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))
+       (x86-movaps/movapd-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
-       (x86-movaps/movapd-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))))
+       (x86-movaps/movapd-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x29
      "66h: (MOVAPD xmm2/m128 xmm1);
@@ -379,24 +378,24 @@
      (cond
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-movaps/movapd-Op/En-MR start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))
+       (x86-movaps/movapd-Op/En-MR
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
-       (x86-movaps/movapd-Op/En-MR start-rip temp-rip prefixes rex-byte opcode
-                                   modr/m sib x86))))
+       (x86-movaps/movapd-Op/En-MR
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x2A
      "F2h: (CVTSI2SD xmm r/m);
       F3h: (CVTSI2SS xmm r/m)"
      (cond
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-cvtsi2s?-Op/En-RM #.*OP-DP* start-rip temp-rip prefixes rex-byte
-                              opcode modr/m sib x86))
+       (x86-cvtsi2s?-Op/En-RM
+        #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-cvtsi2s?-Op/En-RM #.*OP-SP* start-rip temp-rip prefixes rex-byte
-                              opcode modr/m sib x86))
+       (x86-cvtsi2s?-Op/En-RM
+        #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
@@ -411,12 +410,12 @@
      (cond
 
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-cvts?2si/cvtts?2si-Op/En-RM #.*OP-DP* t start-rip temp-rip prefixes rex-byte
-                                        opcode modr/m sib x86))
+       (x86-cvts?2si/cvtts?2si-Op/En-RM
+        #.*OP-DP* t start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-cvts?2si/cvtts?2si-Op/En-RM #.*OP-SP* t start-rip temp-rip prefixes rex-byte
-                                        opcode modr/m sib x86))
+       (x86-cvts?2si/cvtts?2si-Op/En-RM
+        #.*OP-SP* t start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
@@ -429,12 +428,12 @@
      (cond
 
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-cvts?2si/cvtts?2si-Op/En-RM #.*OP-DP* nil start-rip temp-rip prefixes rex-byte
-                                        opcode modr/m sib x86))
+       (x86-cvts?2si/cvtts?2si-Op/En-RM
+        #.*OP-DP* nil start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-cvts?2si/cvtts?2si-Op/En-RM #.*OP-SP* nil start-rip temp-rip prefixes rex-byte
-                                        opcode modr/m sib x86))
+       (x86-cvts?2si/cvtts?2si-Op/En-RM
+        #.*OP-SP* nil start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
@@ -449,13 +448,11 @@
      (cond
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-comis?/ucomis?-Op/En-RM
-        #.*OP-UCOMI* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-UCOMI* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-comis?/ucomis?-Op/En-RM
-        #.*OP-UCOMI* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-UCOMI* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x2F
      "66h: (COMISD xmm1 xmm2/m64);
@@ -491,18 +488,15 @@
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
        (x86-sqrts?-Op/En-RM
-        #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-sqrtpd-Op/En-RM
-        start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-sqrtps-Op/En-RM
-        start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x54
      "66h: (ANDPD xmm1 xmm2/m128);
@@ -511,13 +505,11 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x55
      "66h: (ANDNPD xmm1 xmm2/m128);
@@ -526,13 +518,11 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-ANDN* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-ANDN* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-ANDN* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-ANDN* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x56
      "66h: (ORPD xmm1 xmm2/m128);
@@ -541,13 +531,11 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x57
      "66h: (XORPD xmm1 xmm2/m128);
@@ -556,13 +544,11 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x58
      "F2h: (ADDSD xmm1 xmm2/m64);
@@ -573,23 +559,19 @@
 
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-ADD* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-ADD* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-ADD* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-ADD* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
-        #.*OP-ADD* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-ADD* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
-        #.*OP-ADD* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-ADD* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x59
      "F2h: (MULSD xmm1 xmm2/m64);
@@ -600,23 +582,19 @@
 
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-MUL* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-MUL* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-MUL* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-MUL* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
-        #.*OP-MUL* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-MUL* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
-        #.*OP-MUL* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-MUL* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x5A
      "F2h: (CVTSD2SS xmm1 xmm2/m64);
@@ -637,13 +615,11 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-cvtpd2ps-Op/En-RM
-        start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-cvtps2pd-Op/En-RM
-        start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x5C
      "F2h: (SUBSD xmm1 xmm2/m64);
@@ -654,23 +630,19 @@
 
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-SUB* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-SUB* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-SUB* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-SUB* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
-        #.*OP-SUB* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-SUB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
-        #.*OP-SUB* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-SUB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x5D
      "F2h: (MINSD xmm1 xmm2/m64);
@@ -681,23 +653,19 @@
 
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-MIN* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-MIN* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-MIN* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-MIN* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
-        #.*OP-MIN* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-MIN* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
-        #.*OP-MIN* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-MIN* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x5E
      "F2h: (DIVSD xmm1 xmm2/m64);
@@ -708,23 +676,19 @@
 
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-DIV* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-DIV* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-DIV* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-DIV* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
-        #.*OP-DIV* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-DIV* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
-        #.*OP-DIV* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-DIV* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x5F
      "F2h: (MAXSD xmm1 xmm2/m64);
@@ -735,23 +699,19 @@
 
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-MAX* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-MAX* #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
        (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
-        #.*OP-MAX* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-MAX* #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
-        #.*OP-MAX* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-MAX* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
-        #.*OP-MAX* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))))
+        #.*OP-MAX* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#x6F
      "F3h: (MOVDQU xmm1 xmm2/m128)"
@@ -759,15 +719,12 @@
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
 
-       (x86-movups/movupd/movdqu-Op/En-RM start-rip temp-rip prefixes rex-byte
-                                          opcode modr/m sib x86))
+       (x86-movups/movupd/movdqu-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
-        (list 'Mandatory-prefixes
-              (ms x86)
-              start-rip temp-rip prefixes rex-byte opcode)
-        x86))))
+        (list 'Mandatory-prefixes (ms x86) start-rip temp-rip prefixes rex-byte opcode) x86))))
 
     (#x74
      "66h: (PCMPEQB xmm1 xmm2/m128)"
@@ -775,8 +732,7 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-pcmpeqb-Op/En-RM
-        start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
@@ -844,8 +800,18 @@
 
     (#xAE
      "(LDMXCSR/STMXCSR m32)"
-     (x86-ldmxcsr/stmxcsr-Op/En-M start-rip temp-rip prefixes rex-byte opcode
-                                  modr/m sib x86))
+     (case (mrm-reg modr/m)
+       (2 ;; LDMXCSR
+        (x86-ldmxcsr/stmxcsr-Op/En-M
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
+       (3 ;; STMXCSR
+        (x86-ldmxcsr/stmxcsr-Op/En-M
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
+       (t
+        (x86-step-unimplemented
+         (cons (ms x86)
+               (list start-rip temp-rip prefixes rex-byte opcode))
+         x86))))
 
     (#xAF
      "(IMUL Gv Ev)"
@@ -877,13 +843,13 @@
 
     (#xBC
      "(BSF r16/32/64 r/m16/32/64)"
-     (x86-bsf-Op/En-RM start-rip temp-rip prefixes rex-byte
-                       opcode modr/m sib x86))
+     (x86-bsf-Op/En-RM
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xBE #xBF)
      "BE:(MOVSXD Gv Eb); BF:(MOVSXD Gv Ew)"
-     (x86-two-byte-movsxd start-rip temp-rip prefixes rex-byte opcode
-                          modr/m sib x86))
+     (x86-two-byte-movsxd
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
 
 
@@ -895,20 +861,20 @@
      (cond
 
       ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-cmpss/cmpsd-Op/En-RMI #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode
-                                  modr/m sib x86))
+       (x86-cmpss/cmpsd-Op/En-RMI
+        #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
-       (x86-cmpss/cmpsd-Op/En-RMI #.*OP-SP* start-rip temp-rip prefixes rex-byte
-                                  opcode modr/m sib x86))
+       (x86-cmpss/cmpsd-Op/En-RMI
+        #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-cmppd-Op/En-RMI start-rip temp-rip prefixes rex-byte opcode modr/m
-                            sib x86))
+       (x86-cmppd-Op/En-RMI
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
-       (x86-cmpps-Op/En-RMI start-rip temp-rip prefixes rex-byte opcode modr/m
-                            sib x86))))
+       (x86-cmpps-Op/En-RMI
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#xC6
      "66h: (SHUFPD xmm1 xmm2/m128 imm8);
@@ -916,12 +882,12 @@
      (cond
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-shufpd-Op/En-RMI start-rip temp-rip prefixes rex-byte opcode modr/m
-                             sib x86))
+       (x86-shufpd-Op/En-RMI
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
-       (x86-shufps-Op/En-RMI start-rip temp-rip prefixes rex-byte opcode modr/m
-                             sib x86))))
+       (x86-shufps-Op/En-RMI
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
     (#xC7
      "Group 9: Opcode-extension: ModR/M.reg and ModR/M.mod
@@ -948,8 +914,8 @@
      (cond
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
-       (x86-pmovmskb-Op/En-RM start-rip temp-rip prefixes rex-byte opcode modr/m
-                              sib x86))
+       (x86-pmovmskb-Op/En-RM
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
@@ -964,15 +930,11 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
-        (list 'Mandatory-prefixes
-              (ms x86)
-              start-rip temp-rip prefixes rex-byte opcode)
-        x86))))
+        (list 'Mandatory-prefixes (ms x86) start-rip temp-rip prefixes rex-byte opcode) x86))))
 
     (#xDF
      "66h: (PANDN xmm1 xmm2/m128)"
@@ -980,15 +942,11 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-ANDN* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-ANDN* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
-        (list 'Mandatory-prefixes
-              (ms x86)
-              start-rip temp-rip prefixes rex-byte opcode)
-        x86))))
+        (list 'Mandatory-prefixes (ms x86) start-rip temp-rip prefixes rex-byte opcode) x86))))
 
     (#xEB
      "66h: (POR xmm1 xmm2/m128)"
@@ -996,15 +954,11 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
-        (list 'Mandatory-prefixes
-              (ms x86)
-              start-rip temp-rip prefixes rex-byte opcode)
-        x86))))
+        (list 'Mandatory-prefixes (ms x86) start-rip temp-rip prefixes rex-byte opcode) x86))))
 
     (#xEF
      "66h: (PXOR xmm1 xmm2/m128)"
@@ -1012,15 +966,11 @@
 
       ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
        (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
-        #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m
-        sib x86))
+        #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
       (t
        (x86-step-unimplemented
-        (list 'Mandatory-prefixes
-              (ms x86)
-              start-rip temp-rip prefixes rex-byte opcode)
-        x86))))
+        (list 'Mandatory-prefixes (ms x86) start-rip temp-rip prefixes rex-byte opcode) x86))))
 
     (otherwise
      "Unimplemented"
@@ -2673,9 +2623,9 @@
      general-protection exception is generated if the limit on
      instruction length is violated.</em></p>
 
-  <p>If we encounter two or more prefixes from a single prefix group,
-  we halt our interpreter.  However, we can tolerate redundant
-  prefixes.</p>"
+  <p>If our interpreter encounters two or more prefixes from a single
+  prefix group, we halt after raising an error.  However, we can
+  tolerate redundant prefixes.</p>"
 
 
   :prepwork
@@ -3212,8 +3162,8 @@ semantic function.</p>"
        ((when flg6)
         (!!ms-fresh :virtual-address-error temp-rip)))
 
-      (top-level-opcode-execute start-rip temp-rip prefixes rex-byte
-                                opcode/escape-byte modr/m sib x86))
+      (top-level-opcode-execute
+       start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
 
   ///
 

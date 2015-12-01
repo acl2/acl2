@@ -25,16 +25,16 @@
   (case n
     (0 (mbe :logic (part-select x :low 0 :high 31)
             :exec  (the (unsigned-byte 32)
-                        (logand #uxFFFF_FFFF x))))
+                     (logand #uxFFFF_FFFF x))))
     (1 (mbe :logic (part-select x :low 32 :high 63)
             :exec  (the (unsigned-byte 32)
-                        (logand #uxFFFF_FFFF (ash x -32)))))
+                     (logand #uxFFFF_FFFF (ash x -32)))))
     (2 (mbe :logic (part-select x :low 64 :high 95)
             :exec  (the (unsigned-byte 32)
-                        (logand #uxFFFF_FFFF (ash x -64)))))
+                     (logand #uxFFFF_FFFF (ash x -64)))))
     (otherwise (mbe :logic (part-select x :low 96 :high 127)
                     :exec  (the (unsigned-byte 32)
-                                (logand #uxFFFF_FFFF (ash x -96)))))))
+                             (logand #uxFFFF_FFFF (ash x -96)))))))
 
 (define extract-64-bits ((x (n128p x))
                          (n (n01p n)))
@@ -44,19 +44,15 @@
   (case n
     (0 (mbe :logic (part-select x :low 0 :high 63)
             :exec  (the (unsigned-byte 64)
-                        (logand #uxFFFF_FFFF_FFFF_FFFF x))))
+                     (logand #uxFFFF_FFFF_FFFF_FFFF x))))
     (otherwise (mbe :logic (part-select x :low 64 :high 127)
                     :exec  (the (unsigned-byte 64)
-                                (logand #uxFFFF_FFFF_FFFF_FFFF
-                                        (ash x -64)))))))
+                             (logand #uxFFFF_FFFF_FFFF_FFFF
+                                     (ash x -64)))))))
 
 (def-inst x86-shufps-Op/En-RMI
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (add-to-implemented-opcodes-table 'SHUFPS #x0FC6
-                                    '(:nil nil)
-                                    'x86-shufps-Op/En-RMI)
 
   :short "Shuffle packed single-precision floating-point values"
 
@@ -71,69 +67,70 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-		  (prefixes-slice :group-1-prefix prefixes)))
+       ;; [Shilpi]: The Intel manual doesn't mention that a lock
+       ;; prefix causes an exception for this opcode. Should the
+       ;; following be removed then?
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-	(!!ms-fresh :lock-prefix prefixes))
+        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
-	(reg-index reg rex-byte #.*r*))
+        (reg-index reg rex-byte #.*r*))
 
        ((the (unsigned-byte 128) xmm)
-	(xmmi-size 16 xmm-index x86))
+        (xmmi-size 16 xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
        (p4? (eql #.*addr-size-override*
-		 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-	(x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 16
-					       p2 p4? temp-rip
-					       rex-byte r/m mod sib 1 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
 
        ((when flg0)
-	(!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-	(+ temp-rip increment-RIP-by))
+        (+ temp-rip increment-RIP-by))
 
        ((when (mbe :logic (not (canonical-address-p temp-rip))
-		   :exec (<= #.*2^47*
-			     (the (signed-byte
-				   #.*max-linear-address-size+1*)
-			       temp-rip))))
-	(!!ms-fresh :temp-rip-not-canonical temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((mv flg1 (the (unsigned-byte 8) imm) x86)
-	(rm-size 1 (the (signed-byte #.*max-linear-address-size*)
-                        temp-rip) :x x86))
+        (rm-size 1 (the (signed-byte #.*max-linear-address-size*)
+                     temp-rip) :x x86))
 
        ((when flg1)
-	(!!ms-fresh :rm-size-error flg1))
+        (!!ms-fresh :rm-size-error flg1))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-	(1+ temp-rip))
+        (1+ temp-rip))
        ((when (mbe :logic (not (canonical-address-p temp-rip))
-		   :exec (<= #.*2^47*
-			     (the (signed-byte
-				   #.*max-linear-address-size+1*)
-			       temp-rip))))
-	(!!ms-fresh :temp-rip-not-canonical temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-	(-
-	 (the (signed-byte #.*max-linear-address-size*)
-	   temp-rip)
-	 (the (signed-byte #.*max-linear-address-size*)
-	   start-rip)))
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
        ((when (< 15 addr-diff))
-	(!!ms-fresh :instruction-length addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
-       ;; Raise an error if v-addr is not 16-byte aligned. 
+       ;; Raise an error if v-addr is not 16-byte aligned.
        ;; In case the second operand is an XMM register, v-addr = 0.
        ;; Although this requirement is not specified in the Intel manual, I got
        ;; a segmentation fault when trying with non 16-byte aligned addresses
@@ -143,16 +140,16 @@
 
        (imm0 (mbe :logic (part-select imm :low 0 :high 1)
                   :exec  (the (unsigned-byte 2)
-                              (logand #x3 imm))))
+                           (logand #x3 imm))))
        (imm1 (mbe :logic (part-select imm :low 2 :high 3)
                   :exec  (the (unsigned-byte 2)
-                              (logand #x3 (ash imm -2)))))
+                           (logand #x3 (ash imm -2)))))
        (imm2 (mbe :logic (part-select imm :low 4 :high 5)
                   :exec  (the (unsigned-byte 2)
-                              (logand #x3 (ash imm -4)))))
+                           (logand #x3 (ash imm -4)))))
        (imm3 (mbe :logic (part-select imm :low 6 :high 7)
                   :exec  (the (unsigned-byte 2)
-                              (logand #x3 (ash imm -6)))))
+                           (logand #x3 (ash imm -6)))))
 
        (dword0 (extract-32-bits xmm imm0))
        (dword1 (extract-32-bits xmm imm1))
@@ -166,16 +163,16 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (add-to-implemented-opcodes-table 'SHUFPS #x0FC6
+                                    '(:nil nil)
+                                    'x86-shufps-Op/En-RMI))
 
 (def-inst x86-shufpd-Op/En-RMI
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (add-to-implemented-opcodes-table 'SHUFPD #x0FC6
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-shufpd-Op/En-RMI)
 
   :short "Shuffle packed double-precision floating-point values"
 
@@ -190,69 +187,70 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-		  (prefixes-slice :group-1-prefix prefixes)))
+       ;; [Shilpi]: The Intel manual doesn't mention that a lock
+       ;; prefix causes an exception for this opcode. Should the
+       ;; following be removed then?
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-	(!!ms-fresh :lock-prefix prefixes))
+        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
-	(reg-index reg rex-byte #.*r*))
+        (reg-index reg rex-byte #.*r*))
 
        ((the (unsigned-byte 128) xmm)
-	(xmmi-size 16 xmm-index x86))
+        (xmmi-size 16 xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
        (p4? (eql #.*addr-size-override*
-		 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-	(x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 16
-					       p2 p4? temp-rip
-					       rex-byte r/m mod sib 1 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
 
        ((when flg0)
-	(!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-	(+ temp-rip increment-RIP-by))
+        (+ temp-rip increment-RIP-by))
 
        ((when (mbe :logic (not (canonical-address-p temp-rip))
-		   :exec (<= #.*2^47*
-			     (the (signed-byte
-				   #.*max-linear-address-size+1*)
-			       temp-rip))))
-	(!!ms-fresh :temp-rip-not-canonical temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((mv flg1 (the (unsigned-byte 8) imm) x86)
-	(rm-size 1 (the (signed-byte #.*max-linear-address-size*)
-                        temp-rip) :x x86))
+        (rm-size 1 (the (signed-byte #.*max-linear-address-size*)
+                     temp-rip) :x x86))
 
        ((when flg1)
-	(!!ms-fresh :rm-size-error flg1))
+        (!!ms-fresh :rm-size-error flg1))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-	(1+ temp-rip))
+        (1+ temp-rip))
        ((when (mbe :logic (not (canonical-address-p temp-rip))
-		   :exec (<= #.*2^47*
-			     (the (signed-byte
-				   #.*max-linear-address-size+1*)
-			       temp-rip))))
-	(!!ms-fresh :temp-rip-not-canonical temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-	(-
-	 (the (signed-byte #.*max-linear-address-size*)
-	   temp-rip)
-	 (the (signed-byte #.*max-linear-address-size*)
-	   start-rip)))
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
        ((when (< 15 addr-diff))
-	(!!ms-fresh :instruction-length addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
-       ;; Raise an error if v-addr is not 16-byte aligned. 
+       ;; Raise an error if v-addr is not 16-byte aligned.
        ;; In case the second operand is an XMM register, v-addr = 0.
        ;; Although this requirement is not specified in the Intel manual, I got
        ;; a segmentation fault when trying with non 16-byte aligned addresses
@@ -272,19 +270,17 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (add-to-implemented-opcodes-table 'SHUFPD #x0FC6
+                                    '(:misc
+                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                    'x86-shufpd-Op/En-RMI))
 
 (def-inst x86-unpck?ps-Op/En-RM
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'UNPCKLPS #x0F14
-                                      '(:nil nil)
-                                      'x86-unpck?ps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UNPCKHPS #x0F15
-                                      '(:nil nil)
-                                      'x86-unpck?ps-Op/En-RM))
 
   :short "Unpack and interleave low/high packed single-precision floating-point
   values"
@@ -296,62 +292,77 @@
 
   :high/low t
 
-  :guard-debug t
-
   :returns (x86 x86p :hyp (x86p x86))
+
+  :prepwork
+  ;; This is one of those cases where without this dumb lemma
+  ;; logtail-96-of-usb-128, the guard proof succeeds if :guard-debug t
+  ;; is provided.
+  ((local
+    (defthm-usb logtail-96-of-usb-128
+      :hyp (unsigned-byte-p 128 x)
+      :bound 32
+      :concl (logtail 96 x)
+      :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                        bitops::ihsext-inductions)
+                                       (unsigned-byte-p))))
+      :gen-linear t
+      :hints-l (("Goal" :in-theory (e/d* ()
+                                         (unsigned-byte-p-of-logtail)))))))
 
   :body
   (b* ((ctx 'x86-unpck?ps-Op/En-RM)
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-		  (prefixes-slice :group-1-prefix prefixes)))
+       ;; [Shilpi]: The Intel manual doesn't mention that a lock
+       ;; prefix causes an exception for this opcode. Should the
+       ;; following be removed then?
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-	(!!ms-fresh :lock-prefix prefixes))
+        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
-	(reg-index reg rex-byte #.*r*))
+        (reg-index reg rex-byte #.*r*))
 
        ((the (unsigned-byte 128) xmm)
-	(xmmi-size 16 xmm-index x86))
+        (xmmi-size 16 xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
        (p4? (eql #.*addr-size-override*
-		 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-	(x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 16
-					       p2 p4? temp-rip
-					       rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
-	(!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-	(+ temp-rip increment-RIP-by))
+        (+ temp-rip increment-RIP-by))
 
        ((when (mbe :logic (not (canonical-address-p temp-rip))
-		   :exec (<= #.*2^47*
-			     (the (signed-byte
-				   #.*max-linear-address-size+1*)
-			       temp-rip))))
-	(!!ms-fresh :temp-rip-not-canonical temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-	(-
-	 (the (signed-byte #.*max-linear-address-size*)
-	   temp-rip)
-	 (the (signed-byte #.*max-linear-address-size*)
-	   start-rip)))
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
        ((when (< 15 addr-diff))
-	(!!ms-fresh :instruction-length addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
-       ;; Raise an error if v-addr is not 16-byte aligned. 
+       ;; Raise an error if v-addr is not 16-byte aligned.
        ;; In case the second operand is an XMM register, v-addr = 0.
        ((when (not (eql (mod v-addr 16) 0)))
         (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
@@ -359,34 +370,34 @@
        (dword0 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm :low 64 :high 95)
                         :exec  (the (unsigned-byte 32)
-                                    (logand #uxFFFF_FFFF (ash xmm -64))))
+                                 (logand #uxFFFF_FFFF (ash xmm -64))))
                  (mbe :logic (part-select xmm :low 0 :high 31)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF xmm)))))
+                               (logand #uxFFFF_FFFF xmm)))))
 
        (dword1 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm/mem :low 64 :high 95)
                         :exec  (the (unsigned-byte 32)
-                                    (logand #uxFFFF_FFFF (ash xmm/mem -64))))
+                                 (logand #uxFFFF_FFFF (ash xmm/mem -64))))
                  (mbe :logic (part-select xmm/mem :low 0 :high 31)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF xmm/mem)))))
+                               (logand #uxFFFF_FFFF xmm/mem)))))
 
        (dword2 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm :low 96 :high 127)
                         :exec  (the (unsigned-byte 32)
-                                    (logand #uxFFFF_FFFF (ash xmm -96))))
+                                 (logand #uxFFFF_FFFF (ash xmm -96))))
                  (mbe :logic (part-select xmm :low 32 :high 63)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF (ash xmm -32))))))
+                               (logand #uxFFFF_FFFF (ash xmm -32))))))
 
        (dword3 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm/mem :low 96 :high 127)
                         :exec  (the (unsigned-byte 32)
-                                    (logand #uxFFFF_FFFF (ash xmm/mem -96))))
+                                 (logand #uxFFFF_FFFF (ash xmm/mem -96))))
                  (mbe :logic (part-select xmm/mem :low 32 :high 63)
                       :exec  (the (unsigned-byte 32)
-                                  (logand #uxFFFF_FFFF (ash xmm/mem -32))))))
+                               (logand #uxFFFF_FFFF (ash xmm/mem -32))))))
 
        (result (merge-4-u32s dword3 dword2 dword1 dword0))
 
@@ -394,21 +405,19 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'UNPCKLPS #x0F14
+                                      '(:nil nil)
+                                      'x86-unpck?ps-Op/En-RM)
+    (add-to-implemented-opcodes-table 'UNPCKHPS #x0F15
+                                      '(:nil nil)
+                                      'x86-unpck?ps-Op/En-RM)))
 
 (def-inst x86-unpck?pd-Op/En-RM
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'UNPCKLPD #x0F14
-                                      '(:misc
-					(eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-unpck?pd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UNPCKHPD #x0F15
-                                      '(:misc
-					(eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-unpck?pd-Op/En-RM))
 
   :short "Unpack and interleave low/high packed double-precision floating-point
   values"
@@ -420,62 +429,77 @@
 
   :high/low t
 
-  :guard-debug t
-
   :returns (x86 x86p :hyp (x86p x86))
+
+  :prepwork
+  ;; This is one of those cases where without this dumb lemma
+  ;; x86-unpck?pd-Op/En-RM, the guard proof succeeds if :guard-debug t
+  ;; is provided.
+  ((local
+    (defthm-usb logtail-64-of-usb-128
+      :hyp (unsigned-byte-p 128 x)
+      :bound 64
+      :concl (logtail 64 x)
+      :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                        bitops::ihsext-inductions)
+                                       (unsigned-byte-p))))
+      :gen-linear t
+      :hints-l (("Goal" :in-theory (e/d* ()
+                                         (unsigned-byte-p-of-logtail)))))))
 
   :body
   (b* ((ctx 'x86-unpck?pd-Op/En-RM)
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-		  (prefixes-slice :group-1-prefix prefixes)))
+       ;; [Shilpi]: The Intel manual doesn't mention that a lock
+       ;; prefix causes an exception for this opcode. Should the
+       ;; following be removed then?
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-	(!!ms-fresh :lock-prefix prefixes))
+        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
-	(reg-index reg rex-byte #.*r*))
+        (reg-index reg rex-byte #.*r*))
 
        ((the (unsigned-byte 128) xmm)
-	(xmmi-size 16 xmm-index x86))
+        (xmmi-size 16 xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
        (p4? (eql #.*addr-size-override*
-		 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-	(x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 16
-					       p2 p4? temp-rip
-					       rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
-	(!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-	(+ temp-rip increment-RIP-by))
+        (+ temp-rip increment-RIP-by))
 
        ((when (mbe :logic (not (canonical-address-p temp-rip))
-		   :exec (<= #.*2^47*
-			     (the (signed-byte
-				   #.*max-linear-address-size+1*)
-                                  temp-rip))))
-	(!!ms-fresh :temp-rip-not-canonical temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-	(-
-	 (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-	 (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
        ((when (< 15 addr-diff))
-	(!!ms-fresh :instruction-length addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
-       ;; Raise an error if v-addr is not 16-byte aligned. 
+       ;; Raise an error if v-addr is not 16-byte aligned.
        ;; In case the second operand is an XMM register, v-addr = 0.
        ((when (not (eql (mod v-addr 16) 0)))
         (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
@@ -483,20 +507,20 @@
        (qword0 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm :low 64 :high 127)
                         :exec  (the (unsigned-byte 64)
-                                    (logand #uxFFFF_FFFF_FFFF_FFFF
-                                            (ash xmm -64))))
+                                 (logand #uxFFFF_FFFF_FFFF_FFFF
+                                         (ash xmm -64))))
                  (mbe :logic (part-select xmm :low 0 :high 63)
                       :exec  (the (unsigned-byte 64)
-                                  (logand #uxFFFF_FFFF_FFFF_FFFF xmm)))))
+                               (logand #uxFFFF_FFFF_FFFF_FFFF xmm)))))
 
        (qword1 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm/mem :low 64 :high 127)
                         :exec  (the (unsigned-byte 64)
-                                    (logand #uxFFFF_FFFF_FFFF_FFFF
-                                            (ash xmm/mem -64))))
+                                 (logand #uxFFFF_FFFF_FFFF_FFFF
+                                         (ash xmm/mem -64))))
                  (mbe :logic (part-select xmm/mem :low 0 :high 63)
                       :exec  (the (unsigned-byte 64)
-                                  (logand #uxFFFF_FFFF_FFFF_FFFF xmm/mem)))))
+                               (logand #uxFFFF_FFFF_FFFF_FFFF xmm/mem)))))
 
        (result (merge-2-u64s qword1 qword0))
 
@@ -504,6 +528,17 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+      x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'UNPCKLPD #x0F14
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-unpck?pd-Op/En-RM)
+    (add-to-implemented-opcodes-table 'UNPCKHPD #x0F15
+                                      '(:misc
+                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
+                                      'x86-unpck?pd-Op/En-RM)))
 
 ;; ======================================================================

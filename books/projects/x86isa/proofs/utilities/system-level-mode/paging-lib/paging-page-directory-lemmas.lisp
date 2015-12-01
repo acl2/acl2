@@ -542,11 +542,10 @@
 ;; structure traversals...
 
 (defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa-PD
-  (implies ;; (page-directory-entry-addr-found-p lin-addr x86)
-   (good-paging-structures-x86p x86)
-   (equal (gather-all-paging-structure-qword-addresses
-           (mv-nth 2 (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86)))
-          (gather-all-paging-structure-qword-addresses x86)))
+  (implies (good-paging-structures-x86p x86)
+           (equal (gather-all-paging-structure-qword-addresses
+                   (mv-nth 2 (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86)))
+                  (gather-all-paging-structure-qword-addresses x86)))
   :hints (("Goal"
            :use ((:instance
                   gather-all-paging-structure-qword-addresses-with-xlate-equiv-x86s
