@@ -9,6 +9,20 @@
 
 ;; ======================================================================
 
+(defsection paging-basics
+  :parents (reasoning-about-page-tables)
+
+  :short "Gather physical addresses where paging data structures are located"
+
+  :long "<p>WORK IN PROGRESS...</p>
+
+<p>This doc topic will be updated in later commits...</p>"
+  )
+
+(local (xdoc::set-default-parents paging-basics))
+
+;; ======================================================================
+
 ;; Some helper rules:
 
 (local (in-theory (e/d* () (greater-logbitp-of-unsigned-byte-p not))))
