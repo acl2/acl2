@@ -6435,20 +6435,12 @@
 ; better idea would be to connect the goal stack to the comment window
 ; and actually display it so that persistence became visual again.
 
-
 ; The uses of acl2-loop-only below are simply to give us a debugging
 ; tool for stack overflows.  When a stack overflow occurs, set :brr t.
 ; Then provoke the overflow.  Exit from the break and from LP.  In raw
 ; lisp type
 ; (cw-gstack)
 ; to see the gstack near the point of overflow.
-
-; In addition, if one then reenters LP and does
-; :monitor (:rewrite car-cons) t
-; :q
-; then one can do
-; (brkpt1 '(:rewrite car-cons) nil nil nil nil nil *deep-gstack* *the-live-state*)
-; to walk around the stack.
 
 ; Furthermore, one can interrupt ACL2 anytime with ctrl-c and do
 ; (cw-gstack)
@@ -7734,7 +7726,7 @@
           (t result))))
 
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
-                     gstack state)
+                     gstack rcnst state)
 
 ; #+ACL2-PAR note: since we lock the use of wormholes, brr might be usable
 ; within the parallelized waterfall.  However, since locks can serialize
@@ -7773,6 +7765,7 @@
                      (unify-subst . ,unify-subst)
                      (type-alist . ,type-alist)
                      (ancestors . ,ancestors)
+                     (rcnst . ,rcnst)
                      (initial-ttree . ,initial-ttree))))
      '(pprogn
        (push-brr-stack-frame state)
@@ -13727,7 +13720,7 @@
                              (null (brkpt1 lemma term unify-subst
                                            type-alist ancestors
                                            ttree
-                                           gstack state)))
+                                           gstack rcnst state)))
                         (cond
                          ((null (loop-stopperp
                                  (access rewrite-rule lemma :heuristic-info)
@@ -13972,7 +13965,7 @@
                (cond
                 ((and unify-ans
                       (null (brkpt1 rule term unify-subst type-alist ancestors
-                                    ttree gstack state)))
+                                    ttree gstack rcnst state)))
                  (with-accumulated-persistence
                   (access rewrite-rule rule :rune)
                   ((the (signed-byte 30) step-limit) term-out ttree)
@@ -14581,7 +14574,7 @@
              (null (brkpt1 lemma term unify-subst
                            type-alist ancestors
                            nil ; ttree
-                           gstack state)))
+                           gstack rcnst state)))
         (let ((rune (access linear-lemma lemma :rune)))
           (with-accumulated-persistence
            rune

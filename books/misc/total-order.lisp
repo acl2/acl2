@@ -1,11 +1,15 @@
-; Copyright (C) 2014, Regents of the University of Texas
+; Copyright (C) 2013, Regents of the University of Texas
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This total order book, put together by Matt Kaufmann, is culled from events
 ; contributed by Pete Manolios and also benefits from contributions by Rob
 ; Sumners.
 
+; Modified 2013-01-15 by Jared Davis to add FAST- functions and correctness
+; proofs, for compatibility with the GPL'd total-order book.
+
 (in-package "ACL2")
+
 (include-book "xdoc/top" :dir :system)
 
 ; Jared added the definitions of fast-lexorder and fast-<< in order to speed up
@@ -440,10 +444,3 @@ a Total Order to ACL2</a>.</i> ACL2 Workshop, 2002.</p>
 
 (verify-guards <<
   :hints(("Goal" :in-theory (enable <<))))
-
-
-
-;; This include-book ensures that the definitions above are compatible with
-;; those from total-order-bsd.  DO NOT MOVE IT TO THE TOP OF THE FILE, or the
-;; definitions here will be redundant and hence won't show up in the xdoc.
-(local (include-book "total-order-bsd"))
