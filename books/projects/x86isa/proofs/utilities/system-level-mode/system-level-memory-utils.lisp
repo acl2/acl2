@@ -17,21 +17,35 @@
 
 (local (xdoc::set-default-parents system-level-memory-utils))
 
+(local (in-theory (e/d* (entry-found-p-and-good-paging-structures-x86p
+			 entry-found-p-and-lin-addr)
+			())))
+
 ;; ======================================================================
 
 ;; [Shilpi]: RoW with rb and wb will be obtained when
 ;; paging-lib/paging-top.lisp is ready.
 
-;; [Shilpi]: I need to defined a well-formed page tables predicate...
+;; [Shilpi]: I need to define a well-formed page tables predicate...
+;; I also need to re-define rm08/rb and wm08/wb in terms of the alt
+;; traversal functions...
 
-;; (defthm rm08-wm08
-;;   (implies (and (x86p x86)
-;;                 ;; Well-Formed Page Tables Hypothesis Here...
-;;                 )
-;;            (equal (mv-nth 1 (rm08 addr1 r-x (mv-nth 1 (wm08 addr2 val x86))))
-;;                   (mv-nth 1 (rm08 addr1 r-x x86)))
-;;            :hints (("Goal" :in-theory (e/d* (rm08 wm08)
-;;                                             ())))))
+;; (defthm rm08-wm08-disjoint-in-system-level-mode
+;;   (implies (and (not (programmer-level-mode x86))
+;;		(disjoint-p (addr-range 8 addr-1)
+;;			    (addr-range 8 addr-2))
+;;		(paging-entries-found-p addr-1 x86)
+;;		(paging-entries-found-p addr-2 x86)
+;;		(pairwise-disjoint-p-aux
+;;		 ;; The write isn't being done to the page tables.
+;;		 (list addr-2)
+;;		 (gather-all-paging-structure-qword-addresses x86)))
+;;	   (equal (mv-nth 1 (rm08 addr-1 r-x (mv-nth 1 (wm08 addr-2 val x86))))
+;;		  (mv-nth 1 (rm08 addr-1 r-x x86))))
+;;   :hints (("Goal"
+;;	   :in-theory (e/d* (rm08-and-rm08-mapped
+;;			     wm08-and-wm08-mapped)
+;;			    (signed-byte-p)))))
 
 
 ;; The events below are similar to those in
