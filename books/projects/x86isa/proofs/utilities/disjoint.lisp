@@ -4,6 +4,7 @@
 (in-package "X86ISA")
 (include-book "std/util/define" :dir :system)
 (include-book "std/lists/rev" :dir :system)
+(include-book "std/lists/flatten" :dir :system)
 
 ;; ===================================================================
 
@@ -61,8 +62,9 @@
    (y (true-listp y)))
 
   :parents (proof-utilities)
-  :short "@('disjoint-p') recognizes whether @('x') and @('y') are
-  disjoint lists."
+  :long "<p>@('disjoint-p') returns @('t') if @(see true-listp)-satisfying
+  inputs @('x') and @('y') have no element in common. Otherwise, @('nil') is
+  returned.</p>"
   :enabled t
 
   (if (endp x)
@@ -128,11 +130,16 @@
                          (disjoint-p a c))))))
 
 (define pairwise-disjoint-p-aux
+  ;; Need a better name for this.
+  ;; Think of this function as perm-member --- x is not a perm-member of l iff
+  ;; this predicate returns t.
   ((x true-listp)
    (l true-list-listp))
   :parents (proof-utilities)
-  :short "@('pairwise-disjoint-p-aux') recognizes whether a true-list
-  @('x') is disjoint from every sub-list in a true-list-list @('l')."
+  :long "<p>@('pairwise-disjoint-p-aux') returns @('t') if the @(see
+  true-listp)-satisfying input @('x') is disjoint from every element in @(see
+  true-list-listp)-satisfying input @('l'). Otherwise, it returns
+  @('nil').</p>"
   :guard t
   :enabled t
 
@@ -145,8 +152,9 @@
 (define pairwise-disjoint-p
   ((l true-list-listp))
   :parents (proof-utilities)
-  :short "@('pairwise-disjoint-p') recognizes whether all the
-  sub-lists in the true-list-list @('l') are pairwise disjoint."
+  :long "<p>@('pairwise-disjoint-p') returns @('t') if every two different
+  elements of the @(see true-list-listp)-satisfying input @('l') are
+  disjoint. Otherwise, @('nil') is returned.</p>"
   :guard t
   :enabled t
 
@@ -160,9 +168,9 @@
   ((xs true-list-listp)
    (ys true-list-listp))
   :parents (proof-utilities)
-  :short "@('true-list-list-disjoint-p') recognizes whether a
-  true-list-list @('xs') is disjoint from another true-list-list
-  @('ys')."
+  :long "<p>@('true-list-list-disjoint-p') returns @('t') if the @(see
+  true-list-listp)-satisfying inputs @('xs') and @('ys') are
+  disjoint. Otherwise, @('nil') is returned.</p>"
   :guard t
   :enabled t
 
@@ -325,11 +333,33 @@
 
   (cond ((endp l) t)
         ((member-p (car l) (cdr l)) nil)
-        (t (no-duplicates-p (cdr l)))))
+        (t (no-duplicates-p (cdr l))))
+
+  ///
+
+  (defthm no-duplicates-p-and-append
+    (implies (no-duplicates-p (append a b))
+             (and (no-duplicates-p a)
+                  (no-duplicates-p b)))
+    :rule-classes (:forward-chaining :rewrite)))
+
+(define no-duplicates-list-p
+  ((l (true-list-listp l)))
+
+  :parents (proof-utilities)
+  :enabled t
+
+  (let* ((all-elements (acl2::flatten l)))
+    (no-duplicates-p all-elements)))
 
 ;; ======================================================================
 
 ;; Misc. theorems:
+
+(defthm disjoint-p-forward-chain-to-member-p
+  (implies (disjoint-p (list i) x)
+           (not (member-p i x)))
+  :rule-classes :forward-chaining)
 
 (defthm cdr-strip-cars-is-strip-cars-cdr
   (equal (cdr (strip-cars x))
@@ -399,6 +429,60 @@
            (equal (cdr (assoc a (acl2::rev (acons a b xs))))
                   b))
   :hints (("Goal" :in-theory (e/d (member-p) ()))))
+
+(defthm pairwise-disjoint-p-aux-and-append
+  (implies (pairwise-disjoint-p-aux a (append x y))
+           (and (pairwise-disjoint-p-aux a x)
+                (pairwise-disjoint-p-aux a y)))
+  :rule-classes (:rewrite :forward-chaining))
+
+;; ======================================================================
+
+(define member-list-p (e xs)
+  :guard (true-list-listp xs)
+  :enabled t
+  (if (endp xs)
+      nil
+    (if (member-p e (car xs))
+        t
+      (member-list-p e (cdr xs))))
+
+  ///
+
+  (defthm member-list-p-append
+    (equal (member-list-p e (append xs ys))
+           (or (member-list-p e xs)
+               (member-list-p e ys)))))
+
+(define subset-list-p (xs xss)
+  :guard (and (true-listp xs)
+              (true-list-listp xss))
+  :enabled t
+  (if (endp xss)
+      nil
+    (if (subset-p xs (car xss))
+        t
+      (subset-list-p xs (cdr xss))))
+
+  ///
+
+  (defthm subset-list-p-append
+    (equal (subset-list-p xs (append xss yss))
+           (or (subset-list-p xs xss)
+               (subset-list-p xs yss)))))
+
+(defthm subset-list-p-and-member-list-p
+  (implies (and (member-p e xs)
+                (subset-list-p xs xss))
+           (member-list-p e xss))
+  :hints (("Goal" :in-theory (e/d (subset-p) ()))))
+
+(defthm member-list-p-and-pairwise-disjoint-p-aux
+  (implies (and (not (member-list-p i y))
+                (true-list-listp y))
+           (pairwise-disjoint-p-aux (list i) y))
+  :hints (("Goal" :in-theory (e/d (member-list-p) ())))
+  :rule-classes (:forward-chaining :rewrite))
 
 ;; ======================================================================
 
