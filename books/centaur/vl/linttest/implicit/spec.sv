@@ -440,13 +440,11 @@ module m14;
   endfunction
 `endif
 
-// BOZO vl parse errors here...
-
-//   // As expected NCV and VCS are fine with this:
-//   typedef logic task1type_t;
-//   task task1 (output task1type_t out);
-//     out = 0;
-//   endtask
+  // // As expected NCV and VCS are fine with this:
+  // typedef logic task1type_t;
+  // task task1 (output task1type_t out);
+  //   out = 0;
+  // endtask
 
 // `ifdef VL
 //   // NCV and VCS reject this, saying that task2type_t isn't defined.
@@ -473,7 +471,7 @@ module m14;
   // endtask
 
 
-//   // NCV and VCS reject this, saying that task5type_t isn't defined.
+  // NCV and VCS reject this, saying that task5type_t isn't defined.
 // `ifdef VL
 //   task task5;
 //     output task5type_t out;

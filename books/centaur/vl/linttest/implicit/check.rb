@@ -171,4 +171,29 @@ normal(:m6, "messy_in")
 normal(:m7, "messy_out")
 normal(:m7, "messy_in")
 
+## bozo shadowcheck isn't getting this yet.  maybe we aren't checking
+## user-defined type names at all?
+
+## undeclared(:m9, "m9type_t")
+## undeclared(:m10, "m10type_t")
+## undeclared(:m11, "m11type_t")
+
+normal(:m12, "m12type_t")
+unused(:m12, "in")
+
+normal(:m13, "m13type_t")
+unused(:m13, "in")
+
+normal(:m14, "fun1type_t")
+
+## bozo we aren't getting this right?
+# undeclared(:m14, "fun2type_t")
+
+undeclared(:m14, "fun3width")
+
+## bozo 
+## normal(:m14, "fun4width")
+undeclared(:m14, "fun5width")
+
+
 test_passed()
