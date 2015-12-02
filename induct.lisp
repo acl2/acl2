@@ -2612,7 +2612,7 @@
 
 )
 
-(defun induct-msg/lose (pool-name induct-hint-val state)
+(defun induct-msg/lose (pool-name induct-hint-val pspv state)
 
 ; We print the message that no induction was suggested.
 
@@ -2631,7 +2631,6 @@
               (cons #\?
                     (and induct-hint-val ; optimization
                          (let* ((wrld (w state))
-                                (ens (ens state))
                                 (all-fns (all-fnnames induct-hint-val))
                                 (rec-fns (rec-fnnames induct-hint-val wrld)))
                            (cond
@@ -2649,14 +2648,16 @@
                               defined recursively, so they cannot suggest ~
                               induction schemes.)")
                             ((and (all-variablep (fargs induct-hint-val))
-                                  (not (enabled-runep
-                                        (list :induction (car rec-fns))
-                                        ens
-                                        wrld))
-                                  (not (enabled-runep
-                                        (list :definition (car rec-fns))
-                                        ens
-                                        wrld)))
+                                  (let ((ens (ens-from-pspv pspv)))
+                                    (and
+                                     (not (enabled-runep
+                                           (list :induction (car rec-fns))
+                                           ens
+                                           wrld))
+                                     (not (enabled-runep
+                                           (list :definition (car rec-fns))
+                                           ens
+                                           wrld)))))
                              (msg "  (Note that ~x0 (including its :induction ~
                                    rune) is disabled, so it cannot suggest an ~
                                    induction scheme.  Consider providing an ~
@@ -3104,8 +3105,9 @@
 ; 'lose signal.
 
            (pprogn (io? prove nil state
-                        (induct-hint-val pool-name)
-                        (induct-msg/lose pool-name induct-hint-val state))
+                        (induct-hint-val pool-name new-pspv)
+                        (induct-msg/lose pool-name induct-hint-val new-pspv
+                                         state))
                    (mv 'lose nil pspv state))))))))))
 
 ; We now define the elimination of irrelevance.  Logically this ought

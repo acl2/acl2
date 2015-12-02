@@ -7,15 +7,32 @@
 ;; M. Russinoff (david@russinoff.com).
 
 (in-package "X86ISA")
-
-(include-book "../x86-state-field-thms"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-
+(include-book "utilities" :dir :utils)
 (include-book "tools/with-supporters" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (in-theory (e/d (bitops::ash-1-removal) (logbitp))))
+
+;; ======================================================================
+;; Misc. arithmetic theorems:
+
+(local
+ (defthm constant-upper-bound-of-logior-for-naturals
+   (implies (and (bind-free
+                  (and (quotep k)
+                       (let* ((k0 (unquote k)) (n (power-of-2 k0 0)))
+                         (and (eql k0 (expt 2 n))
+                              (list (cons 'n (kwote n)))))))
+                 (eql k (expt 2 n))
+                 (< x k)
+                 (< y k)
+                 (natp x)
+                 (natp y)
+                 (posp n))
+            (< (logior x y) k))
+   :hints
+   (("Goal" :use bitops::upper-bound-of-logior-for-naturals))))
 
 ;; ======================================================================
 
@@ -180,9 +197,6 @@
 
 (in-theory (disable fp-decode))
 
-;; Shilpi: Here, I stopped converting stuff to use
-;; defthm-usb/defthm-sb.  Maybe I'll convert the rest later on.
-
 (defn sse-daz (kind exp frac daz)
   (if (and daz (eq kind 'denormal))
       (mv 'zero 0 0)
@@ -241,8 +255,7 @@
 (in-theory (disable fp-to-rat))
 
 (ACL2::with-supporters
- (local
-  (include-book "rtl/rel9/lib/reps" :dir :system))
+ (local (include-book "rtl/rel9/lib/reps" :dir :system))
 
  :names (ACL2::FORMAL-+ ACL2::CAT-SIZE ACL2::CAT)
 
@@ -1008,7 +1021,7 @@
   (declare (xargs :guard (and (integerp sign1) (integerp sign2)
                               (posp exp-width) (posp frac-width)
                               (integerp operation)))
-           (type (integer 0 9) operation))
+           (type (integer 0 36) operation))
   (let ((invalid (or (eq kind1 'snan)
                      (eq kind2 'snan)
                      (and (or (eq kind1 'qnan) (eq kind1 'indef)
@@ -1096,7 +1109,7 @@
   (declare (xargs :guard (and (integerp operation)
                               (integerp op1) (integerp op2) (natp mxcsr)
                               (posp exp-width) (posp frac-width)))
-           (type (integer 0 9) operation))
+           (type (integer 0 36) operation))
   (b* (((mv kind1 sign1 exp1 ?implicit1 frac1)
         (fp-decode op1 exp-width frac-width))
        ((mv kind2 sign2 exp2 ?implicit2 frac2)
@@ -1709,7 +1722,7 @@
                               (n32p op1)
                               (n32p op2)
                               (n32p mxcsr)))
-           (type (integer 0 9) operation)
+           (type (integer 0 36) operation)
            (type (unsigned-byte 32) op1 op2)
            (type (unsigned-byte 32) mxcsr))
   (b* (((mv flg result mxcsr)
@@ -2035,7 +2048,7 @@
                               (n64p op1)
                               (n64p op2)
                               (n32p mxcsr)))
-           (type (integer 0 9) operation)
+           (type (integer 0 36) operation)
            (type (unsigned-byte 64) op1 op2)
            (type (unsigned-byte 32) mxcsr))
   (b* (((mv flg result mxcsr)

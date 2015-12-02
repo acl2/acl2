@@ -8030,7 +8030,7 @@
                                       (cadr x) ans msg))
                           ((or (consp msg)
                                (stringp msg))
-                           (trans-er+ x ctx "~@0" msg))
+                           (trans-er ctx "~@0" msg))
                           (t (trans-value ans)))))))))))
    ((eq (car x) 'with-local-stobj)
 

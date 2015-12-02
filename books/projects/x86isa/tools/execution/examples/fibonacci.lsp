@@ -4,7 +4,9 @@
 
 (include-book "../top" :ttags :all)
 
-;; ======================================================================i
+;; (include-book "centaur/memoize/old/profile" :dir :system)
+
+;; ======================================================================
 
 #||
 
@@ -1768,7 +1770,7 @@ int main (int argc, char *argv[], char *env[])
 (run-fib 24 x86)
 (run-fib 27 x86)
 (run-fib 30 x86)
-;; (run-fib 33 x86) ;; ~148s
+;; (run-fib 33 x86) ;; ~200s
 ;; (run-fib 36 x86) ;; ~630s
 ;; (run-fib 39 x86) ;; ~2673s
 

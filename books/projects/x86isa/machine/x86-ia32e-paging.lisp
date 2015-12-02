@@ -19,6 +19,16 @@
   :short "Specification of IA-32e Paging"
   )
 
+(defthm loghead-zero-smaller
+  (implies (and (equal (loghead n x) 0)
+                (natp n)
+                (<= m n))
+           (equal (loghead m x) 0))
+  :hints (("Goal" :in-theory (e/d*
+                              (acl2::ihsext-recursive-redefs
+                               acl2::ihsext-inductions)
+                              ()))))
+
 ;; ======================================================================
 
 (define good-lin-addr-p (lin-addr x86)
@@ -120,9 +130,7 @@
 
   :parents (ia32e-paging)
 
-  :returns (mv lst-exceptions
-               zero
-               (x86 x86p :hyp :guard))
+  :returns (mv flg zero (x86 x86p :hyp :guard))
 
   ;; From Section 4.7 (Page Fault Exceptions), Vol. 3A of the Intel
   ;; Manual:
@@ -135,9 +143,14 @@
   (b* ((old-faults (fault x86))
        (new-faults (cons (list :page-fault err-no addr) old-faults))
        (x86 (!fault new-faults x86)))
-      (mv (list :page-fault-exception err-no addr)
-          0
-          x86))
+      ;; [Shilpi]: I replaced (list :page-fault-exception err-no addr)
+      ;; with t below because in the old world, the flag would differ
+      ;; for every error, thereby disallowing dealing with all
+      ;; page-faulting situations in one case, which slowed reasoning
+      ;; down. There's no loss of information because the fault field
+      ;; contains the error number and the address at which a fault
+      ;; occurred.
+      (mv t 0 x86))
   ///
 
   (defthm mv-nth-0-page-fault-exception
@@ -165,6 +178,38 @@
                     (xw fld index value (mv-nth 2 (page-fault-exception addr err-no x86))))))
 
   )
+
+(define set-accessed-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (a-entry (unsigned-byte-p 64 a-entry) :hyp :guard)
+  (!ia32e-page-tables-slice :a 1 entry)
+
+  ///
+
+  (defthm-usb n64p-set-accessed-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 64
+    :concl (set-accessed-bit val)
+    :hints (("Goal" :in-theory (e/d* (set-accessed-bit) ())))
+    :gen-type t
+    :gen-linear t))
+
+(define set-dirty-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (d-entry (unsigned-byte-p 64 d-entry) :hyp :guard)
+  (!ia32e-page-tables-slice :d 1 entry)
+
+  ///
+
+  (defthm-usb n64p-set-dirty-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 64
+    :concl (set-dirty-bit val)
+    :hints (("Goal" :in-theory (e/d* (set-dirty-bit) ())))
+    :gen-type t
+    :gen-linear t))
 
 ;; ======================================================================
 
@@ -203,9 +248,7 @@
                 (logior (logand 18446744073709547527 base-addr)
                         (ash x 3)))
              *mem-size-in-bytes*))
-   :hints (("Goal" :in-theory (e/d (loghead) ()))))
-
- )
+   :hints (("Goal" :in-theory (e/d (loghead) ())))))
 
 (encapsulate
  ()
@@ -237,6 +280,12 @@
 
    ///
 
+   (defthm natp-page-table-entry-addr
+     (implies (natp base-addr)
+              (natp (page-table-entry-addr lin-addr base-addr)))
+     :hints (("Goal" :in-theory (e/d* (page-table-entry-addr) nil)))
+     :rule-classes (:rewrite :type-prescription))
+
    (defthm-usb *physical-address-size*p-page-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
                (signed-byte-p   *max-linear-address-size* lin-addr))
@@ -249,8 +298,12 @@
                                       not))))
      :hints-l (("Goal" :in-theory (e/d ()
                                        (page-table-entry-addr))))
-     :gen-linear t
-     :gen-type t)
+     :gen-linear t)
+
+   (defthm page-table-entry-addr-is-a-multiple-of-8
+     (implies (equal (loghead 12 base-addr) 0)
+              (equal (loghead 3 (page-table-entry-addr lin-addr base-addr))
+                     0)))
 
    (defthm-usb adding-7-to-page-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
@@ -295,6 +348,12 @@
 
    ///
 
+   (defthm natp-page-directory-entry-addr
+     (implies (natp base-addr)
+              (natp (page-directory-entry-addr lin-addr base-addr)))
+     :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr) nil)))
+     :rule-classes (:rewrite :type-prescription))
+
    (defthm-usb *physical-address-size*p-page-directory-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
                (signed-byte-p   *max-linear-address-size* lin-addr))
@@ -307,8 +366,12 @@
                                       not))))
      :hints-l (("Goal" :in-theory (e/d ()
                                        (page-directory-entry-addr))))
-     :gen-linear t
-     :gen-type t)
+     :gen-linear t)
+
+   (defthm page-directory-entry-addr-is-a-multiple-of-8
+     (implies (equal (loghead 12 base-addr) 0)
+              (equal (loghead 3 (page-directory-entry-addr lin-addr base-addr))
+                     0)))
 
    (defthm-usb adding-7-to-page-directory-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
@@ -348,6 +411,12 @@
 
    ///
 
+   (defthm natp-page-dir-ptr-table-entry-addr
+     (implies (natp base-addr)
+              (natp (page-dir-ptr-table-entry-addr lin-addr base-addr)))
+     :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr) nil)))
+     :rule-classes (:rewrite :type-prescription))
+
    (defthm-usb *physical-address-size*p-page-dir-ptr-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
                (signed-byte-p   *max-linear-address-size* lin-addr))
@@ -360,8 +429,12 @@
                                       not))))
      :hints-l (("Goal" :in-theory (e/d ()
                                        (page-dir-ptr-table-entry-addr))))
-     :gen-linear t
-     :gen-type t)
+     :gen-linear t)
+
+   (defthm page-dir-ptr-table-entry-addr-is-a-multiple-of-8
+     (implies (equal (loghead 12 base-addr) 0)
+              (equal (loghead 3 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                     0)))
 
    (defthm-usb adding-7-to-page-dir-ptr-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
@@ -404,6 +477,12 @@
 
    ///
 
+   (defthm natp-pml4-table-entry-addr
+     (implies (natp base-addr)
+              (natp (pml4-table-entry-addr lin-addr base-addr)))
+     :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr) nil)))
+     :rule-classes (:rewrite :type-prescription))
+
    (defthm-usb *physical-address-size*p-pml4-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
                (signed-byte-p   *max-linear-address-size* lin-addr))
@@ -416,8 +495,12 @@
                                       not))))
      :hints-l (("Goal" :in-theory (e/d ()
                                        (pml4-table-entry-addr))))
-     :gen-linear t
-     :gen-type t)
+     :gen-linear t)
+
+   (defthm pml4-table-entry-addr-is-a-multiple-of-8
+     (implies (equal (loghead 12 base-addr) 0)
+              (equal (loghead 3 (pml4-table-entry-addr lin-addr base-addr))
+                     0)))
 
    (defthm-usb adding-7-to-pml4-table-entry-addr
      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
@@ -428,60 +511,36 @@
      :gen-linear t
      :gen-type t
      :hints-l (("Goal" :in-theory (e/d ()
-                                       (pml4-table-entry-addr))))))
-
- )
+                                       (pml4-table-entry-addr)))))))
 
 (in-theory (e/d () (adding-7-to-shifted-bits)))
 
 ;; ======================================================================
 
-(define ia32e-la-to-pa-page-table
-  ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
-   (base-addr :type (unsigned-byte #.*physical-address-size*))
+(local
+ (defthm loghead-and-logsquash
+   (implies (and (equal (loghead n x) 0)
+                 (unsigned-byte-p m x))
+            (equal (bitops::logsquash n x) x))
+   :hints (("Goal"
+            :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                              bitops::ihsext-inductions)
+                             ())))))
+
+(define page-table-entry-no-page-fault-p
+  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+   (entry    :type (unsigned-byte 64))
    (u-s-acc   :type (unsigned-byte  1))
    (wp        :type (unsigned-byte  1))
    (smep      :type (unsigned-byte  1))
    (nxe       :type (unsigned-byte  1))
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
-   (x86))
+   x86)
+  :inline t
+  :returns (mv flg val (x86 x86p :hyp (x86p x86)))
 
-  :parents (ia32e-paging)
-
-  :guard (and (canonical-address-p lin-addr)
-              ;; 4K-aligned --- the base address is
-              ;; the 40 bits wide address obtained
-              ;; from the referencing PDE, shifted
-              ;; left by 12.
-              (equal (loghead 12 base-addr) 0))
-  :guard-hints (("Goal" :in-theory (e/d ()
-                                        (unsigned-byte-p
-                                         signed-byte-p
-                                         member-equal
-                                         not))))
-
-  ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
-  ;; Manual.
-
-  (b* (
-       ;; First, we get the PTE (page table entry) address. A PTE is
-       ;; selected using the physical address defined as follows:
-       ;;     Bits 51:12 are from the PDE (base-addr here).
-       ;;     Bits 11:3 are bits 20:12 of the linear address.
-       ;;     Bits 2:0 are all 0.
-
-       (p-entry-addr
-        (the (unsigned-byte #.*physical-address-size*)
-          (page-table-entry-addr lin-addr base-addr)))
-
-       ;;  [Shilpi]: Removed nested paging specification at this
-       ;;  point.
-
-       ;; Now we can read the PTE.
-       (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
-
-       (page-present (ia32e-page-tables-slice :p entry))
+  (b* ((page-present (ia32e-page-tables-slice :p entry))
        ((when (equal page-present 0))
         ;; Page not present fault:
         (let ((err-no (page-fault-err-no
@@ -531,7 +590,6 @@
                                      (ash entry (- 63)))))
                          0))))
              1 0)))
-
        ((when (equal rsvd 1))
         ;; Reserved bits fault:
         (let ((err-no (page-fault-err-no page-present
@@ -632,7 +690,115 @@
                                          smep
                                          1 ;; pae
                                          nxe)))
-          (page-fault-exception lin-addr err-no x86)))
+          (page-fault-exception lin-addr err-no x86))))
+      (mv nil 0 x86))
+
+  ///
+
+  (local (in-theory (e/d (page-fault-exception) ())))
+
+  (defthm mv-nth-1-page-table-entry-no-page-fault-p-value
+    (equal (mv-nth 1
+                   (page-table-entry-no-page-fault-p
+                    lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
+           0))
+
+  (defthm xr-page-table-entry-no-page-fault-p
+    (implies (not (equal fld :fault))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (page-table-entry-no-page-fault-p
+                                 lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86)))
+                    (xr fld index x86))))
+
+  (defthm page-table-entry-no-page-fault-p-xw-values
+    (implies (not (equal fld :fault))
+             (and (equal (mv-nth 0
+                                 (page-table-entry-no-page-fault-p
+                                  lin-addr entry u-s-acc wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (page-table-entry-no-page-fault-p
+                                  lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86)))
+                  (equal (mv-nth 1
+                                 (page-table-entry-no-page-fault-p
+                                  lin-addr entry u-s-acc wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (page-table-entry-no-page-fault-p
+                                  lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))))))
+
+  (defthm page-table-entry-no-page-fault-p-xw-state
+    (implies (not (equal fld :fault))
+             (equal (mv-nth 2
+                            (page-table-entry-no-page-fault-p
+                             lin-addr entry u-s-acc wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (page-table-entry-no-page-fault-p
+                                 lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86)))))))
+
+(define ia32e-la-to-pa-page-table
+  ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
+   (base-addr :type (unsigned-byte #.*physical-address-size*))
+   (u-s-acc   :type (unsigned-byte  1))
+   (wp        :type (unsigned-byte  1))
+   (smep      :type (unsigned-byte  1))
+   (nxe       :type (unsigned-byte  1))
+   (r-w-x     :type (member  :r :w :x))
+   (cpl       :type (unsigned-byte  2))
+   (x86))
+
+  :parents (ia32e-paging)
+
+  :guard (and (canonical-address-p lin-addr)
+              ;; 4K-aligned --- the base address is
+              ;; the 40 bits wide address obtained
+              ;; from the referencing PDE, shifted
+              ;; left by 12.
+              (equal (loghead 12 base-addr) 0))
+  :guard-hints (("Goal" :in-theory (e/d ()
+                                        (unsigned-byte-p
+                                         signed-byte-p
+                                         member-equal
+                                         not))))
+
+  ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
+  ;; Manual.
+
+  (b* (
+       ;; Fix the inputs of this function without incurring execution
+       ;; overhead.
+       (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (base-addr (mbe :logic (part-install
+                               0
+                               (loghead *physical-address-size* base-addr)
+                               :low 0 :width 12)
+                       :exec base-addr))
+
+       ;; First, we get the PTE (page table entry) address. A PTE is
+       ;; selected using the physical address defined as follows:
+       ;;     Bits 51:12 are from the PDE (base-addr here).
+       ;;     Bits 11:3 are bits 20:12 of the linear address.
+       ;;     Bits 2:0 are all 0.
+
+       (p-entry-addr
+        (the (unsigned-byte #.*physical-address-size*)
+          (page-table-entry-addr lin-addr base-addr)))
+
+       ;;  [Shilpi]: Removed nested paging specification at this
+       ;;  point.
+
+       ;; Now we can read the PTE.
+       (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
+
+       ((mv fault-flg val x86)
+        (page-table-entry-no-page-fault-p
+         lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
+       ((when fault-flg)
+        (mv 'Page-Fault val x86))
 
        ;; No errors, so we proceed with the address translation.
 
@@ -641,11 +807,13 @@
        (dirty           (ia32e-page-tables-slice :d entry))
        ;; Compute accessed and dirty bits:
        (entry (if (equal accessed 0)
-                  (!ia32e-page-tables-slice :a 1 entry)
+                  (mbe :logic (set-accessed-bit entry)
+                       :exec (!ia32e-page-tables-slice :a 1 entry))
                 entry))
        (entry (if (and (equal dirty 0)
                        (equal r-w-x :w))
-                  (!ia32e-page-tables-slice :d 1 entry)
+                  (mbe :logic (set-dirty-bit entry)
+                       :exec (!ia32e-page-tables-slice :d 1 entry))
                 entry))
        ;; Update x86 (to reflect accessed and dirty bits change), if needed:
        (x86 (if (or (equal accessed 0)
@@ -654,7 +822,9 @@
                 (wm-low-64 p-entry-addr entry x86)
               x86)))
 
-      ;; Return address of 4KB page frame and the modified x86 state.
+      ;; Return physical address and the modified x86 state.  Note that the
+      ;; base address of the 4K frame would be just (ash
+      ;; (ia32e-pte-4K-page-slice :pte-page entry) 12).
       (mv nil
 
           (mbe
@@ -682,6 +852,8 @@
               (the (unsigned-byte 12)
                 (logand 4095 lin-addr)))))
           x86))
+
+
   ///
 
   (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-page-table
@@ -748,52 +920,21 @@
                                  lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl
                                  x86)))))))
 
+;; ----------------------------------------------------------------------
 
-(define ia32e-la-to-pa-page-directory
-  ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
-   (base-addr :type (unsigned-byte #.*physical-address-size*))
+(define paging-entry-no-page-fault-p
+  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+   (entry    :type (unsigned-byte 64))
    (wp        :type (unsigned-byte  1))
    (smep      :type (unsigned-byte  1))
    (nxe       :type (unsigned-byte  1))
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
-   (x86))
+   x86)
+  :inline t
+  :returns (mv flg val (x86 x86p :hyp (x86p x86)))
 
-  :parents (ia32e-paging)
-
-  :guard (and (canonical-address-p lin-addr)
-              ;; 4K-aligned --- the base address is
-              ;; the 40 bits wide address obtained
-              ;; from the referencing PDE, shifted
-              ;; left by 12.
-              (equal (loghead 12 base-addr) 0))
-  :guard-hints (("Goal" :in-theory (e/d ()
-                                        (unsigned-byte-p
-                                         signed-byte-p
-                                         member-equal
-                                         not))))
-
-  ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
-  ;; Manual.
-
-  (b* (
-       ;; First, we get the PDE (page directory entry) address. A PDE
-       ;; is selected using the physical address defined as follows:
-       ;;     Bits 51:12 are from the PDPTE (base-addr here).
-       ;;     Bits 11:3 are bits 29:21 of the linear address.
-       ;;     Bits 2:0 are all 0.
-
-       (p-entry-addr
-        (the (unsigned-byte #.*physical-address-size*)
-          (page-directory-entry-addr lin-addr base-addr)))
-
-       ;;  [Shilpi]: Removed nested paging specification at this
-       ;;  point.
-
-       ;; Now we can read the PTE.
-       (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
-
-       (page-present (ia32e-page-tables-slice :p entry))
+  (b* ((page-present (ia32e-page-tables-slice :p entry))
        ((when (equal page-present 0))
         ;; Page not present fault:
         (let ((err-no (page-fault-err-no
@@ -843,8 +984,7 @@
                             (and (equal nxe 0)
                                  (not (equal (ia32e-page-tables-slice :xd entry) 0))))
                         1
-                      0))
-        )
+                      0)))
        ((when (equal rsvd 1))
         ;; Reserved bits fault.
         (let ((err-no (page-fault-err-no
@@ -933,10 +1073,116 @@
                        1 ; pae
                        nxe)))
           (page-fault-exception lin-addr err-no x86))))
+      (mv nil 0 x86))
+
+  ///
+
+  (local (in-theory (e/d (page-fault-exception) ())))
+
+  (defthm mv-nth-1-paging-entry-no-page-fault-p-value
+    (equal (mv-nth 1
+                   (paging-entry-no-page-fault-p
+                    lin-addr entry wp smep nxe r-w-x cpl x86))
+           0))
+
+  (defthm xr-paging-entry-no-page-fault-p
+    (implies (not (equal fld :fault))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (paging-entry-no-page-fault-p
+                                 lin-addr entry wp smep nxe r-w-x cpl x86)))
+                    (xr fld index x86))))
+
+  (defthm paging-entry-no-page-fault-p-xw-values
+    (implies (not (equal fld :fault))
+             (and (equal (mv-nth 0
+                                 (paging-entry-no-page-fault-p
+                                  lin-addr entry wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (paging-entry-no-page-fault-p
+                                  lin-addr entry wp smep nxe r-w-x cpl x86)))
+                  (equal (mv-nth 1
+                                 (paging-entry-no-page-fault-p
+                                  lin-addr entry wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (paging-entry-no-page-fault-p
+                                  lin-addr entry wp smep nxe r-w-x cpl x86))))))
+
+  (defthm paging-entry-no-page-fault-p-xw-state
+    (implies (not (equal fld :fault))
+             (equal (mv-nth 2
+                            (paging-entry-no-page-fault-p
+                             lin-addr entry wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (paging-entry-no-page-fault-p
+                                 lin-addr entry wp smep nxe r-w-x cpl x86)))))))
+
+
+(define ia32e-la-to-pa-page-directory
+  ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
+   (base-addr :type (unsigned-byte #.*physical-address-size*))
+   (wp        :type (unsigned-byte  1))
+   (smep      :type (unsigned-byte  1))
+   (nxe       :type (unsigned-byte  1))
+   (r-w-x     :type (member  :r :w :x))
+   (cpl       :type (unsigned-byte  2))
+   (x86))
+
+  :parents (ia32e-paging)
+
+  :guard (and (canonical-address-p lin-addr)
+              ;; 4K-aligned --- the base address is
+              ;; the 40 bits wide address obtained
+              ;; from the referencing PDE, shifted
+              ;; left by 12.
+              (equal (loghead 12 base-addr) 0))
+  :guard-hints (("Goal" :in-theory (e/d ()
+                                        (unsigned-byte-p
+                                         signed-byte-p
+                                         member-equal
+                                         not))))
+
+  ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
+  ;; Manual.
+
+  (b* (
+       ;; Fix the inputs of this function without incurring execution
+       ;; overhead.
+       (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (base-addr (mbe :logic (part-install
+                               0
+                               (loghead *physical-address-size* base-addr)
+                               :low 0 :width 12)
+                       :exec base-addr))
+       ;; First, we get the PDE (page directory entry) address. A PDE
+       ;; is selected using the physical address defined as follows:
+       ;;     Bits 51:12 are from the PDPTE (base-addr here).
+       ;;     Bits 11:3 are bits 29:21 of the linear address.
+       ;;     Bits 2:0 are all 0.
+
+       (p-entry-addr
+        (the (unsigned-byte #.*physical-address-size*)
+          (page-directory-entry-addr lin-addr base-addr)))
+
+       ;;  [Shilpi]: Removed nested paging specification at this
+       ;;  point.
+
+       ;; Now we can read the PTE.
+       (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
+
+       ((mv fault-flg val x86)
+        (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+       ((when fault-flg)
+        (mv 'Page-Fault val x86)))
 
       ;; No errors at this level, so we proceed with the translation:
 
-      (if (equal page-size 1)
+      (if (equal (ia32e-page-tables-slice :ps entry) 1)
           ;; 2MB page
           (b* (
                ;; Get accessed and dirty bits:
@@ -945,11 +1191,13 @@
 
                ;; Compute accessed and dirty bits:
                (entry (if (equal accessed 0)
-                          (!ia32e-pde-2MB-page-slice :pde-a 1 entry)
+                          (mbe :logic (set-accessed-bit entry)
+                               :exec (!ia32e-pde-2MB-page-slice :pde-a 1 entry))
                         entry))
                (entry (if (and (equal dirty 0)
                                (equal r-w-x :w))
-                          (!ia32e-pde-2MB-page-slice :pde-d 1 entry)
+                          (mbe :logic (set-dirty-bit entry)
+                               :exec (!ia32e-pde-2MB-page-slice :pde-d 1 entry))
                         entry))
                ;; Update x86 (to reflect accessed and dirty bits change), if needed:
                (x86 (if (or (equal accessed 0)
@@ -989,8 +1237,9 @@
                   (the (unsigned-byte #.*physical-address-size*) p-addr)
                   x86)
               (ia32e-la-to-pa-page-table
-               lin-addr page-table-base-addr user-supervisor wp smep
-               nxe r-w-x cpl x86))
+               lin-addr page-table-base-addr
+               (ia32e-page-tables-slice :u/s entry)
+               wp smep nxe r-w-x cpl x86))
 
              ((when flag)
               ;; Error, so do not update accessed bit.
@@ -1001,7 +1250,8 @@
              (accessed        (ia32e-page-tables-slice :a entry))
              ;; Update accessed bit, if needed.
              (entry (if (equal accessed 0)
-                        (!ia32e-page-tables-slice :a 1 entry)
+                        (mbe :logic (set-accessed-bit entry)
+                             :exec (!ia32e-page-tables-slice :a 1 entry))
                       entry))
              ;; Update x86, if needed.
              (x86 (if (equal accessed 0)
@@ -1075,6 +1325,7 @@
                                  lin-addr base-addr wp smep nxe r-w-x cpl
                                  x86)))))))
 
+;; ----------------------------------------------------------------------
 
 (define ia32e-la-to-pa-page-dir-ptr-table
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -1105,6 +1356,16 @@
   ;; Manual.
 
   (b* (
+       ;; Fix the inputs of this function without incurring execution
+       ;; overhead.
+       (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (base-addr (mbe :logic (part-install
+                               0
+                               (loghead *physical-address-size* base-addr)
+                               :low 0 :width 12)
+                       :exec base-addr))
+
        ;; First, we get the PDPTE (page directory pointer table entry)
        ;; address.  A PDPTE is selected using the physical address
        ;; defined as follows:
@@ -1122,136 +1383,14 @@
        ;; Now we can read the PDPTE.
        (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
 
-       (page-present  (ia32e-page-tables-slice :p entry))
-       ((when (equal page-present 0))
-        ;; Page not present fault:
-        (let ((err-no (page-fault-err-no page-present r-w-x cpl
-                                         0 ;; rsvd
-                                         smep
-                                         1 ;; pae
-                                         nxe)))
-          (page-fault-exception lin-addr err-no x86)))
-
-       ;; We now extract the rest of the relevant bit fields from the
-       ;; entry.  Note that we ignore those fields having to do with
-       ;; the cache or TLB, since we are not modeling caches yet.
-       (read-write      (ia32e-page-tables-slice :r/w entry))
-       (user-supervisor (ia32e-page-tables-slice :u/s entry))
-       (execute-disable (ia32e-page-tables-slice :xd  entry))
-
-       (page-size       (ia32e-page-tables-slice :ps  entry))
-
-       (rsvd
-        ;; At this point, we know that the page is present.  We also
-        ;; assume that 1GB pages are supported (something that the
-        ;; CPUID tells us), and so the PS flag is not reserved.
-        (mbe
-         :logic
-         (if (and (equal page-size 1)
-                  (not (equal (part-select entry :low 13 :high 29) 0)))
-             1
-           0)
-         :exec
-         (if (and (equal page-size 1)
-                  (not (equal
-                        (the (unsigned-byte 51)
-                          (logand (the (unsigned-byte 17) (1- (ash 1 17)))
-                                  (the (unsigned-byte 51) (ash entry -13))))
-                        0)))
-             1
-           0))
-        )
-       ((when (equal rsvd 1))
-        ;; Reserved bits fault
-        (let ((err-no (page-fault-err-no
-                       page-present r-w-x cpl rsvd smep
-                       1 ;; pae
-                       nxe)))
-          (page-fault-exception lin-addr err-no x86)))
-
-       ((when (or
-               ;; Read fault:
-               (and (equal r-w-x :r)
-                    (if (< cpl 3)
-                        ;; In supervisor mode (CPL < 3), data may be
-                        ;; read from any linear address with a valid
-                        ;; translation.
-                        nil
-                      ;; In user mode (CPL = 3), Data may be read from
-                      ;; any linear address with a valid translation
-                      ;; for which the U/S flag (bit 2) is 1 in every
-                      ;; paging-structure entry controlling the trans-
-                      ;; lation.
-                      (equal user-supervisor 0)))
-               ;; Write fault:
-               (and (equal r-w-x :w)
-                    (if (< cpl 3)
-                        ;; in supervisor mode (CPL < 3): If CR0.WP = 0,
-                        ;; data may be written to any linear address
-                        ;; with a valid translation.  If CR0.WP = 1,
-                        ;; data may be written to any linear address
-                        ;; with a valid translation for which the R/W
-                        ;; flag (bit 1) is 1 in every paging-structure
-                        ;; entry controlling the translation.
-                        (and (equal wp 1)
-                             (equal read-write 0))
-                      ;; in user mode (CPL = 3), Data may be written to
-                      ;; any linear address with a valid translation
-                      ;; for which both the R/W flag and the U/S flag
-                      ;; are 1 in every paging-structure entry
-                      ;; controlling the translation.
-                      (or (equal user-supervisor 0)
-                          (equal read-write 0))))
-               ;; Instructions fetch fault
-               (and (equal r-w-x :x)
-                    (if (< cpl 3)
-                        ;; In supervisor mode (CPL < 3):
-                        ;;
-                        ;; 1) if IA32_EFER.NXE = 0:  If CR0.WP = 0, data
-                        ;; may be written to any linear address with a
-                        ;; valid translation.  If CR0.WP = 1, data may
-                        ;; be written to any linear address with a
-                        ;; valid translation for which the R/W flag
-                        ;; (bit 1) is 1 in every paging-structure entry
-                        ;; controlling the translation.
-                        ;;
-                        ;; 2) if IA32_EFER.NXE = 1: If CR4.SMEP = 0,
-                        ;; instructions may be fetched from any linear
-                        ;; address with a valid translation for which
-                        ;; the XD flag (bit 63) is 0 in every
-                        ;; paging-structure entry controlling the
-                        ;; translation.  If CR4.SMEP = 1, instructions
-                        ;; may be fetched from any linear address with
-                        ;; a valid translation for which (1) the U/S
-                        ;; flag is 0 in at least one of the
-                        ;; paging-structure entries controlling the
-                        ;; translation; and (2) the XD flag is 0 in
-                        ;; every paging-structure entry controlling the
-                        ;; translation.
-                        (and (equal nxe 1)
-                             (equal execute-disable 1))
-                      ;; in user mode (CPL = 3): If IA32_EFER.NXE = 0,
-                      ;; instructions may be fetched from any linear
-                      ;; address with a valid translation for which the
-                      ;; U/S flag is 1 in every paging-structure entry
-                      ;; controlling the translation.  If IA32_EFER.NXE
-                      ;; = 1, instructions may be fetched from any
-                      ;; linear address with a valid translation for
-                      ;; which the U/S flag is 1 and the XD flag is 0
-                      ;; in every paging-structure entry controlling
-                      ;; the translation.
-                      (or (equal user-supervisor 0)
-                          (and (equal nxe 1)
-                               (equal execute-disable 1)))))))
-        (let ((err-no (page-fault-err-no
-                       page-present r-w-x cpl rsvd smep
-                       1 ;; pae
-                       nxe)))
-          (page-fault-exception lin-addr err-no x86))))
+       ((mv fault-flg val x86)
+        (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+       ((when fault-flg)
+        (mv 'Page-Fault val x86)))
 
       ;; No errors at this level, so we proceed with the translation.
 
-      (if (equal page-size 1)
+      (if (equal (ia32e-page-tables-slice :ps entry) 1)
           ;; 1GB page
           (b* (
                ;; Get accessed and dirty bits:
@@ -1259,11 +1398,13 @@
                (dirty           (ia32e-pdpte-1GB-page-slice :pdpte-d entry))
                ;; Compute accessed and dirty bits:
                (entry (if (equal accessed 0)
-                          (!ia32e-pdpte-1GB-page-slice :pdpte-a 1 entry)
+                          (mbe :logic (set-accessed-bit entry)
+                               :exec (!ia32e-pdpte-1GB-page-slice :pdpte-a 1 entry))
                         entry))
                (entry (if (and (equal dirty 0)
                                (equal r-w-x :w))
-                          (!ia32e-pdpte-1GB-page-slice :pdpte-d 1 entry)
+                          (mbe :logic (set-dirty-bit entry)
+                               :exec (!ia32e-pdpte-1GB-page-slice :pdpte-d 1 entry))
                         entry))
                ;; Update x86 (to reflect accessed and dirty bits change), if needed:
                (x86 (if (or (equal accessed 0)
@@ -1315,7 +1456,8 @@
              (accessed        (ia32e-page-tables-slice :a entry))
              ;; Update accessed bit, if needed.
              (entry (if (equal accessed 0)
-                        (!ia32e-page-tables-slice :a 1 entry)
+                        (mbe :logic (set-accessed-bit entry)
+                             :exec (!ia32e-page-tables-slice :a 1 entry))
                       entry))
              ;; Update x86, if needed.
              (x86 (if (equal accessed 0)
@@ -1388,6 +1530,7 @@
                                  lin-addr base-addr wp smep nxe r-w-x cpl
                                  x86)))))))
 
+;; ----------------------------------------------------------------------
 
 (define ia32e-la-to-pa-pml4-table
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -1418,6 +1561,17 @@
   ;; Manual.
 
   (b* (
+
+       ;; Fix the inputs of this function without incurring execution
+       ;; overhead.
+       (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (base-addr (mbe :logic (part-install
+                               0
+                               (loghead *physical-address-size* base-addr)
+                               :low 0 :width 12)
+                       :exec base-addr))
+
        ;; First, we get the address of the PML4E.  A PML4E is selected
        ;; using the physical address defined as follows:
        ;;   Bits 51:12 are from CR3.
@@ -1430,121 +1584,10 @@
        ;; Now, we can read the PML4E.
        (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
 
-       (page-present (ia32e-page-tables-slice :p entry))
-       ((when (equal page-present 0))
-        ;; Page not present fault.
-        (let ((err-no (page-fault-err-no page-present r-w-x cpl
-                                         0 ;; rsvd
-                                         smep
-                                         1 ;; pae
-                                         nxe)))
-          (page-fault-exception lin-addr err-no x86)))
-
-       ;; We now extract the rest of the relevant bit fields from the
-       ;; entry.  Note that we ignore those fields having to do with
-       ;; the cache or TLB, since we are not modeling caches yet.
-       (read-write      (ia32e-page-tables-slice :r/w entry))
-       (user-supervisor (ia32e-page-tables-slice :u/s entry))
-       (execute-disable (ia32e-page-tables-slice :xd  entry))
-
-       (rsvd
-        (mbe
-         :logic
-         (if (or (not (equal (ia32e-page-tables-slice :ps entry) 0))
-                 (and (equal nxe 0)
-                      (not (equal execute-disable 0))))
-             1 0)
-         :exec
-         (if (or (not (equal (ia32e-page-tables-slice :ps entry) 0))
-                 (and (equal nxe 0)
-                      (not (equal execute-disable 0))))
-             1 0))
-        )
-       ((when (equal rsvd 1))
-        ;; Reserved bits fault
-        (let ((err-no (page-fault-err-no page-present r-w-x cpl rsvd smep
-                                         1 ;; pae
-                                         nxe)))
-          (page-fault-exception lin-addr err-no x86)))
-
-       ((when (or
-               ;; Read fault:
-               (and (equal r-w-x :r)
-                    (if (< cpl 3)
-                        ;; In supervisor mode (CPL < 3), data may be
-                        ;; read from any linear address with a valid
-                        ;; translation.
-                        nil
-                      ;; in user mode (CPL = 3), Data may be read from
-                      ;; any linear address with a valid translation
-                      ;; for which the U/S flag (bit 2) is 1 in every
-                      ;; paging-structure entry controlling the trans-
-                      ;; lation.
-                      (equal user-supervisor 0)))
-               ;; Write fault:
-               (and (equal r-w-x :w)
-                    (if (< cpl 3)
-                        ;; In supervisor mode (CPL < 3): If CR0.WP = 0,
-                        ;; data may be written to any linear address
-                        ;; with a valid translation.  If CR0.WP = 1,
-                        ;; data may be written to any linear address
-                        ;; with a valid translation for which the R/W
-                        ;; flag (bit 1) is 1 in every paging-structure
-                        ;; entry controlling the translation.
-                        (and (equal wp 1)
-                             (equal read-write 0))
-                      ;; in user mode (CPL = 3), Data may be written to
-                      ;; any linear address with a valid translation
-                      ;; for which both the R/W flag and the U/S flag
-                      ;; are 1 in every paging-structure entry
-                      ;; controlling the translation.
-                      (or (equal user-supervisor 0)
-                          (equal read-write 0))))
-               ;; Instructions fetch fault:
-               (and (equal r-w-x :x)
-                    (if (< cpl 3)
-                        ;; in supervisor mode (CPL < 3):
-                        ;;
-                        ;; 1) if IA32_EFER.NXE = 0:  If CR0.WP = 0, data
-                        ;; may be written to any linear address with a
-                        ;; valid translation.  If CR0.WP = 1, data may
-                        ;; be written to any linear address with a
-                        ;; valid translation for which the R/W flag
-                        ;; (bit 1) is 1 in every paging-structure entry
-                        ;; controlling the translation.
-                        ;;
-                        ;; 2) if IA32_EFER.NXE = 1: If CR4.SMEP = 0,
-                        ;; instructions may be fetched from any linear
-                        ;; address with a valid translation for which
-                        ;; the XD flag (bit 63) is 0 in every
-                        ;; paging-structure entry controlling the
-                        ;; translation.  If CR4.SMEP = 1, instructions
-                        ;; may be fetched from any linear address with
-                        ;; a valid translation for which (1) the U/S
-                        ;; flag is 0 in at least one of the
-                        ;; paging-structure entries controlling the
-                        ;; translation; and (2) the XD flag is 0 in
-                        ;; every paging-structure entry controlling the
-                        ;; translation.
-                        (and (equal nxe 1)
-                             (equal execute-disable 1))
-                      ;; In user mode (CPL = 3): If IA32_EFER.NXE = 0,
-                      ;; instructions may be fetched from any linear
-                      ;; address with a valid translation for which the
-                      ;; U/S flag is 1 in every paging-structure entry
-                      ;; controlling the translation.  If IA32_EFER.NXE
-                      ;; = 1, instructions may be fetched from any
-                      ;; linear address with a valid translation for
-                      ;; which the U/S flag is 1 and the XD flag is 0
-                      ;; in every paging-structure entry controlling
-                      ;; the translation.
-                      (or (equal user-supervisor 0)
-                          (and (equal nxe 1)
-                               (equal execute-disable 1)))))))
-        (let ((err-no (page-fault-err-no page-present r-w-x cpl rsvd smep
-                                         1 ;; pae
-                                         nxe)))
-          (page-fault-exception lin-addr err-no x86)))
+       ((mv fault-flg val x86)
+        (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+       ((when fault-flg)
+        (mv 'Page-Fault val x86))
 
        ;; No errors at this level, so we proceed with the translation.
        ;; We go to the next level of page table structure, i.e., PDPT.
@@ -1566,7 +1609,8 @@
        (accessed        (ia32e-page-tables-slice :a entry))
        ;; Update accessed bit, if needed.
        (entry (if (equal accessed 0)
-                  (!ia32e-page-tables-slice :a 1 entry)
+                  (mbe :logic (set-accessed-bit entry)
+                       :exec (!ia32e-page-tables-slice :a 1 entry))
                 entry))
        ;; Update x86, if needed.
        (x86 (if (equal accessed 0)
@@ -1641,6 +1685,7 @@
                                  lin-addr base-addr wp smep nxe r-w-x cpl
                                  x86)))))))
 
+;; ----------------------------------------------------------------------
 
 (define ia32e-la-to-pa
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
@@ -1667,7 +1712,9 @@
   ;; protection exception (#GP(0)).  (Or a stack fault (#SS) as
   ;; appropriate?)
 
-  (b* ((cr0
+  (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                      :exec lin-addr))
+       (cr0
         ;; CR0 is still a 32-bit register in 64-bit mode.
         (n32 (ctri *cr0* x86)))
        (cr4
@@ -1750,6 +1797,7 @@
                                                 x86)))))
     :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
+;; ======================================================================
 
 (local
  (defthm loghead-equality-monotone
@@ -2333,5 +2381,9 @@
   (if (mbt (canonical-address-p lin-addr))
       (ia32e-la-to-pa lin-addr r-w-x cpl x86)
     (mv (list :ia32e-paging-invalid-linear-address lin-addr) 0 x86)))
+
+;; ======================================================================
+
+(in-theory (e/d* () (set-accessed-bit set-dirty-bit)))
 
 ;; ======================================================================

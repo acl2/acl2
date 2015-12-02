@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -581,7 +581,7 @@
                              sal/shl-spec
                              sal/shl-spec-64
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -1056,7 +1056,7 @@
                              sal/shl-spec
                              sal/shl-spec-64
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -1428,7 +1428,7 @@
                              sal/shl-spec
                              sal/shl-spec-64
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -1943,7 +1943,7 @@
                                     sal/shl-spec
                                     sal/shl-spec-64
 
-                                    opcode-execute
+                                    top-level-opcode-execute
                                     !rgfi-size
                                     x86-operand-to-reg/mem
                                     wr64
@@ -2635,7 +2635,7 @@
                      X86)))))
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64

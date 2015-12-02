@@ -9433,18 +9433,14 @@
     (state-global-let*
      ((inhibit-output-lst (cons 'error
                                 (f-get-global 'inhibit-output-lst state))))
-     (let ((saved-w (w state)))
-       (pprogn
-        (set-w! w state)
-        (mv-let
-         (erp val state)
-         (defpkg-items-rec new-kpa old-kpa
-           (f-get-global 'system-books-dir state)
-           ctx w state nil)
-         (assert$
-          (null erp)
-          (pprogn (set-w! saved-w state)
-                  (value val))))))))
+     (mv-let
+       (erp val state)
+       (defpkg-items-rec new-kpa old-kpa
+         (f-get-global 'system-books-dir state)
+         ctx w state nil)
+       (assert$
+        (null erp)
+        (value val)))))
    (t (value nil))))
 
 (defun new-defpkg-list2 (imports all-defpkg-items acc seen)
@@ -21350,6 +21346,38 @@
                     :ld-error-action :error))
                (value :invisible))))
 
+(defun with-brr-ens-fn (form state)
+  (let ((caller 'with-brr-ens))
+    (cond ((eq (f-get-global 'wormhole-name state) 'brr)
+           (state-global-let*
+            ((global-enabled-structure
+              (access rewrite-constant
+                      (get-brr-local 'rcnst state)
+                      :current-enabled-structure)))
+            (mv-let (erp stobjs-out/replaced-val state)
+              (trans-eval form caller state t)
+              (cond
+               (erp ; error was presumably already printed above
+                (silent-error state))
+               (t (let ((stobjs-out (car stobjs-out/replaced-val))
+                        (val (cdr stobjs-out/replaced-val)))
+                    (cond
+                     ((equal stobjs-out *error-triple-sig*)
+                      (value (cadr val)))
+                     ((equal stobjs-out '(nil))
+                      (value val))
+                     (t (er soft caller
+                            "Illegal output signature for ~x0: ~x1"
+                            caller
+                            stobjs-out)))))))))
+          (t (er soft caller
+                 "It is illegal to call ~x0 unless you are under ~
+                  break-rewrite and you are not."
+                 caller)))))
+
+(defmacro with-brr-ens (form)
+  `(with-brr-ens-fn ',form state))
+
 (defmacro trace! (&rest fns)
   (let ((form
          `(with-ubt!
@@ -26761,9 +26789,12 @@
 ; channel-to-string generates a with-local-state call, which should not change
 ; state!
 
-; If variable outside-loop-p (which is evaluated) is true, then this form is
-; suitable for execution in raw Lisp; otherwise, it is suitable for evaluation
-; in the ACL2 logic.
+; If variable outside-loop-p (which is evaluated) is true, then evaluation of
+; this form might be done more efficiently -- but it must be suitable for
+; execution outside the loop or, if inside the loop, then without the
+; evaluation of state-global-let* (or any other use of the
+; *acl2-unwind-protect-stack*) for any state global modified by
+; fmt-control-bindings.
 
 ; Note that fmt-controls and iprint-action are evaluated, but channel-var and
 ; extra-var are not evaluated.
@@ -28391,14 +28422,14 @@
   (declare (ignore state))
   #-acl2-loop-only
   (with-open-file
-   (stream filename :direction :input :if-does-not-exist nil)
-   (and stream
-        (let ((len (file-length stream)))
-          (and (< len *read-file-into-string-bound*)
-               (let ((fwd (file-write-date filename)))
-                 (or (check-against-read-file-alist filename fwd)
-                     (push (cons filename fwd)
-                           *read-file-alist*))
+    (stream filename :direction :input :if-does-not-exist nil)
+    (and stream
+         (let ((len (file-length stream)))
+           (and (< len *read-file-into-string-bound*)
+                (let ((fwd (file-write-date filename)))
+                  (or (check-against-read-file-alist filename fwd)
+                      (push (cons filename fwd)
+                            *read-file-alist*))
 
 ; The following #-acl2-loop-only code, minus the WHEN clause, is based on code
 ; found at http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was
@@ -28408,38 +28439,45 @@
 
 ; The URL above says ``You can do anything you like with the code.''
 
-                 (let ((seq (make-string len)))
-                   (declare (type string seq))
-                   (read-sequence seq stream)
-                   (when (not (eql fwd (file-write-date filename)))
-                     (error "Illegal attempt to call ~s concurrently with ~
-                             some write to that file!~%See :DOC ~
-                             read-file-into-string."
-                            'read-file-into-string))
-                   seq))))))
+                  (let ((seq (make-string len)))
+                    (declare (type string seq))
+                    (read-sequence seq stream)
+                    (when (not (eql fwd (file-write-date filename)))
+                      (error "Illegal attempt to call ~s concurrently with ~
+                              some write to that file!~%See :DOC ~
+                              read-file-into-string."
+                             'read-file-into-string))
+                    seq))))))
   #+acl2-loop-only
   (let* ((st (coerce-state-to-object state)))
-    (with-local-state
-     (mv-let
-      (val state)
-      (let ((state (coerce-object-to-state st)))
-        (mv-let
-         (chan state)
-         (open-input-channel filename :character state)
-         (cond ((null chan)
-                (mv nil state))
-               (t (mv-let
-                   (val state)
-                   (read-file-into-string1 chan state nil
-                                           *read-file-into-string-bound*)
-                   (pprogn (ec-call ; guard verification here seems unimportant
-                            (close-input-channel chan state))
-                           (mv val state)))))))
-      val))))
+    (mv-let
+      (erp val)
+      (with-local-state
+       (mv-let
+         (erp val state)
+         (let ((state (coerce-object-to-state st)))
+           (mv-let
+             (chan state)
+             (open-input-channel filename :character state)
+             (cond
+              ((null chan)
+               (mv nil nil state))
+              (t (state-global-let*
+                  ((guard-checking-on t))
+                  (mv-let
+                    (val state)
+                    (read-file-into-string1 chan state nil
+                                            *read-file-into-string-bound*)
+                    (pprogn
+                     (ec-call ; guard verification here seems unimportant
+                      (close-input-channel chan state))
+                     (mv nil val state))))))))
+         (mv erp val)))
+      (declare (ignore erp))
+      val)))
 )
 
 (defun read-file-into-string (filename state)
   (declare (xargs :stobjs state :guard (stringp filename)))
   (and (mbt (stringp filename))
-       (with-guard-checking t
-                            (read-file-into-string2 filename state))))
+       (read-file-into-string2 filename state)))

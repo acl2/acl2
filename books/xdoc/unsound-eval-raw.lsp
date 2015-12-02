@@ -47,8 +47,9 @@
          ;; seems, trans-eval will just do whatever the default guard checking
          ;; mode is.  And, in some make-events, it appears that guard checking
          ;; gets disabled somehow.
-         (with-guard-checking t
-                              (trans-eval sexpr 'unsound-eval state t)))
+         (with-guard-checking-error-triple
+          t
+          (trans-eval sexpr 'unsound-eval state t)))
         ((when err)
          (mv (msg "Failed to evaluate ~x0; trans eval failed? ~x1." sexpr err)
              nil state))

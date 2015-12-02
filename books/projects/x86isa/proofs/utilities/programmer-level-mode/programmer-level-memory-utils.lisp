@@ -3,8 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "x86-row-wow-thms"
-              :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
+(include-book "x86-row-wow-thms" :ttags :all :dir :proof-utils)
 (include-book "general-memory-utils" :ttags :all :dir :proof-utils)
 (include-book "clause-processors/find-subterms" :dir :system)
 

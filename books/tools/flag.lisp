@@ -358,13 +358,22 @@ one such form may affect what you might think of as the proof of another.</p>
 (defun get-formals (fn world)
   (getprop fn 'formals :none 'current-acl2-world world))
 
-(defun get-body (fn world)
-  ;; This gets the original, normalized or non-normalized body based on what
-  ;; the user typed for the :normalize xarg.  The use of "last" skips past
-  ;; any other :definition rules that have been added since then.
-  (access def-body
-          (car (last (getprop fn 'def-bodies nil 'current-acl2-world world)))
-          :concl))
+(defun get-body (fn latest-def world)
+  ;; If latest-def is nil (the default for make-flag), this gets the original,
+  ;; normalized or non-normalized body based on what the user typed for the
+  ;; :normalize xarg.  The use of "last" skips past any other :definition rules
+  ;; that have been added since then.
+  ;; !! If latest-def is t, we should perhaps cause an error if the :hyps field
+  ;; is non-nil.
+  (let* ((bodies (getprop fn 'def-bodies nil 'current-acl2-world world))
+         (body (if latest-def
+                   (car bodies)
+                 (car (last bodies)))))
+    (if (access def-body body :hyp)
+        (er hard 'get-body
+            "Attempt to call get-body on a body with a non-nil hypothesis, ~x0"
+            (access def-body body :hyp))
+      (access def-body body :concl))))
 
 (defun get-measure (fn world)
   (access justification
@@ -450,7 +459,7 @@ one such form may affect what you might think of as the proof of another.</p>
 
 (defun make-flag-body-aux (flag-var fn-name formals alist full-alist world)
   (if (consp alist)
-      (let* ((orig-body (get-body (caar alist) world))
+      (let* ((orig-body (get-body (caar alist) nil world))
              (new-body (mangle-body orig-body fn-name full-alist formals world)))
         (cond ((consp (cdr alist))
                (cons `((equal ,flag-var ',(cdar alist)) ,new-body)
