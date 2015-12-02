@@ -1898,7 +1898,7 @@
    (seq tokstream
          (when (vl-is-some-token? '(:vl-kwd-join :vl-kwd-join_any :vl-kwd-join_none))
            (return nil))
-         (first :s= (vl-parse-statement))
+         (first :s= (vl-parse-statement-or-null))
          (rest := (vl-parse-statements-until-join))
          (return (cons first rest))))
 
@@ -1909,7 +1909,7 @@
    (seq tokstream
          (when (vl-is-token? :vl-kwd-end)
            (return nil))
-         (first :s= (vl-parse-statement))
+         (first :s= (vl-parse-statement-or-null))
          (rest := (vl-parse-statements-until-end))
          (return (cons first rest)))))
 
