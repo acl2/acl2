@@ -1278,6 +1278,12 @@ explicit declarations.</p>")
        ;; program order?  But some simulators allow you to refer to things that
        ;; are defined later, for instance, NCVerilog allows you to write foo::w
        ;; before defining package foo.
+
+       ;; BOZO yes, I think we eventually will want to do this in program order
+       ;; instead of in this ad-hoc way we're doing it below.  Unfortunately
+       ;; that'll require rejiggering the end of vl-load, and also all the
+       ;; transforms in annotate up until here.  At this point we don't even
+       ;; have things in program order.
        (itemnames (append (vl-vardecllist->names x.vardecls)
                           (vl-paramdecllist->names x.paramdecls)
                           (vl-fundecllist->names x.fundecls)
@@ -1291,12 +1297,15 @@ explicit declarations.</p>")
                           :msg "Name clash among globals: ~&0."
                           :args (list dupes))))
 
+       ;; Dumb hack: doing the imports first seems less wrong than doing it any
+       ;; other way.  As long as there aren't clashes between the global namespace
+       ;; and the imported packages, we may be just about OK.
+       ((mv st warnings) (vl-shadowcheck-imports          x.imports    st warnings))
        ((mv st warnings) (vl-shadowcheck-declare-typedefs x.typedefs   st warnings))
        ((mv st warnings) (vl-shadowcheck-vardecls         x.vardecls   st warnings))
        ((mv st warnings) (vl-shadowcheck-paramdecls       x.paramdecls st warnings))
        ((mv st warnings) (vl-shadowcheck-fundecls         x.fundecls   st warnings))
        ((mv st warnings) (vl-shadowcheck-taskdecls        x.taskdecls  st warnings))
-       ((mv st warnings) (vl-shadowcheck-imports          x.imports    st warnings))
        ((mv st warnings) (vl-shadowcheck-dpiimports       x.dpiimports st warnings))
 
        ((mv st mods) (vl-shadowcheck-modules x.mods st))

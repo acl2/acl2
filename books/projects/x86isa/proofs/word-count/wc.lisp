@@ -1,15 +1,13 @@
 ;; AUTHOR:
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
-;; This whole book is a work in progress, even though the proof of correctness
-;; of wc and its memory analysis is complete. There are a lot of
-;; similar-looking theorems here that I plan to generate and prove
-;; automatically in the future.
+;;  There are a lot of similar-looking theorems here that I plan to
+;; generate and prove automatically in the future.
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-memory-utils" :dir :proof-utils :ttags :all)
-(include-book "environment-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/environment-utils" :dir :proof-utils :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
 ;; Including the WC program binary and other misc. stuff:
 (include-book "wc-addr-byte")
@@ -517,7 +515,7 @@
                              imul-spec-32
                              gpr-sub-spec-4
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -1111,7 +1109,7 @@
                              imul-spec-32
                              gpr-sub-spec-4
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -1472,7 +1470,7 @@
                                   (READ-X86-FILE-DES 0 X86))
                                  X86)))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -2049,7 +2047,7 @@
                                   (READ-X86-FILE-DES 0 X86))
                                  X86)))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -2701,7 +2699,7 @@
                 '(0 0 0 0)))
               X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -3777,7 +3775,7 @@
                 '(0 0 0 0)))
               X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -4606,7 +4604,7 @@
                 '(0 0 0 0)))
               X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -5434,7 +5432,7 @@
               (whatever-rflags-are-for-other-char-state-out x86-new)
               0 X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -6059,7 +6057,7 @@
               (whatever-rflags-are-for-other-char-state-in X86-NEW)
               0 X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4

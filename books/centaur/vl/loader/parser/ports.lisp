@@ -1464,7 +1464,19 @@ seen.</p>"
          :hints(("Goal" :in-theory (enable vl-is-token?)))))
 
 
-
+(defparser vl-parse-datatype-only-if-followed-by-id ()
+  :result (vl-maybe-datatype-p val)
+  :resultp-of-nil t
+  :fails never
+  :count strong-on-value
+  (b* ((backup (vl-tokstream-save))
+       ((mv err val tokstream)
+        (vl-parse-datatype))
+       ((when (and (not err)
+                   (vl-is-token? :vl-idtoken)))
+        (mv err val tokstream))
+       (tokstream (vl-tokstream-restore backup)))
+    (mv nil nil tokstream)))
 
 (defparser vl-parse-port-declaration-head-2012 ()
   :short "Matches @('net_port_type') or @('variable_port_type').  Assumes that
@@ -1527,18 +1539,22 @@ second @('net_port_type') case.</p>
          ;; (2) variable_port_type ::= 'var'                                    "empty implicit case"
          ;;
          ;; In the empty case, we expect that an identifier (the port name)
-         ;; follows.  However, a data_type can also be an identifier!
-         ;;
-         ;; To disambiguate, we'll backtrack based on whether we find the right
-         ;; kind of token after we finish parsing a datatype.  If it's an identi
-         (when (and (vl-is-token? :vl-idtoken)
-                    (not (vl-parsestate-is-user-defined-type-p
-                          (vl-idtoken->name (car (vl-tokstream->tokens)))
-                          (vl-tokstream->pstate))))
-           ;; Identifier that is not a known type.  We must be in the empty
-           ;; implicit case then, i.e., this is a plain old "var" port.
-           (return (make-vl-parsed-portdecl-head :nettype nil
-                                                 :var-p t)))
+         ;; follows.  However, a data_type can also start with an identifier
+         ;; and can even just be an identifier!  So we have to be extra careful
+         ;; in this case.
+         (when (vl-is-token? :vl-idtoken)
+           (type := (vl-parse-datatype-only-if-followed-by-id))
+           (return
+            (if type
+                ;; Found (and matched) a datatype followed by an ID.  So we're
+                ;; in the explicit case.
+                (make-vl-parsed-portdecl-head :nettype nil
+                                              :var-p t
+                                              :type type)
+              ;; No datatype, so we just have var ID, i.e., we're in the empty
+              ;; implicit case.  We haven't eaten the ID.
+              (make-vl-parsed-portdecl-head :nettype nil
+                                            :var-p t))))
 
          ;; The only remaining possibility is that we have:
          ;; (1) variable_port_type ::= 'var' data_type                          "explicit case"
@@ -1576,16 +1592,18 @@ second @('net_port_type') case.</p>
        ;; (1) net_port_type  ::= [net_type] data_type                         "explicit case"
        ;; (2) net_port_type  ::= [net_type]                                   "empty implicit case"
        ;;
-       ;; Similar to the 'var' case, we disambiguate by looking for an idtoken
-       ;; that is not a data type.  (That's the only valid way to be in the
-       ;; empty implicit case.)
-       (when (and (vl-is-token? :vl-idtoken)
-                  (not (vl-parsestate-is-user-defined-type-p
-                        (vl-idtoken->name (car (vl-tokstream->tokens)))
-                        (vl-tokstream->pstate))))
-         ;; Empty implicit case.
-         (return (make-vl-parsed-portdecl-head :nettype nettype
-                                               :var-p nil)))
+       ;; Similar to the 'var' case above.
+       (when (vl-is-token? :vl-idtoken)
+         (type := (vl-parse-datatype-only-if-followed-by-id))
+         (return
+          (if type
+              ;; Explicit type case
+              (make-vl-parsed-portdecl-head :nettype nettype
+                                            :var-p nil
+                                            :type type)
+            ;; Empty implicit case
+            (make-vl-parsed-portdecl-head :nettype nettype
+                                          :var-p nil))))
 
        ;; The only remaining possibility is that we must have:
        ;; (1) net_port_type  ::= [net_type] data_type                         "explicit case"

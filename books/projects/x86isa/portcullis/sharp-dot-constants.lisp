@@ -166,6 +166,16 @@
 (defconst *OP-SP* 0)
 (defconst *OP-DP* 1)
 
+;; Single/Double FP conversions:
+
+(defconst *SP-TO-DP* 0)
+(defconst *DP-TO-SP* 1)
+
+;; SIMD packs:
+
+(defconst *LOW-PACK*  0)
+(defconst *HIGH-PACK* 1)
+
 ;; IDs: Comparison Instructions
 
 (defconst *OP-CMPEQ*      0)
@@ -354,6 +364,11 @@
 (defconst *max-linear-address-size*  48)
 (defconst *max-linear-address-size+1* (1+ *max-linear-address-size*))
 (defconst *max-linear-address-size+2* (+ 2 *max-linear-address-size*))
+(defconst *max-linear-address-size+3* (+ 3 *max-linear-address-size*))
+(defconst *max-linear-address-size+4* (+ 4 *max-linear-address-size*))
+(defconst *max-linear-address-size+5* (+ 5 *max-linear-address-size*))
+(defconst *max-linear-address-size+6* (+ 6 *max-linear-address-size*))
+(defconst *max-linear-address-size+7* (+ 7 *max-linear-address-size*))
 (defconst *max-linear-address-size-1* (1- *max-linear-address-size*))
 (defconst *2^max-linear-address-size-1* (expt 2 *max-linear-address-size-1*))
 (defconst *-2^max-linear-address-size-1* (- *2^max-linear-address-size-1*))
@@ -394,7 +409,7 @@
 
   0)
 
-(defconst *initial-mem-array-pages* 10) ; arbitrary
+(defconst *initial-mem-array-pages* 2) ; arbitrary
 
 (defconst *2^x-byte-pseudo-page*
   ;; Log size of pseudo page; i.e.; for 128MB pseudo pages, this is 27

@@ -18,13 +18,6 @@
 ;; Some helper theorems to speed up checkpoints involving (un)signed-byte-p:
 
 (local
- (defthm member-equal-and-integers
-   (implies (and (<= operation 8)
-                 (<= 0 operation)
-                 (integerp operation))
-            (member-equal operation '(0 2 4 6 8 1 3 5 7)))))
-
-(local
  (defthm signed-byte-p-49-thm-1
    (implies (and (signed-byte-p 48 (+ a b))
                  (signed-byte-p 48 c)
@@ -105,6 +98,13 @@
             (unsigned-byte-p 64 (mv-nth 1 (rm08 lin-addr r-w-x x86))))
    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
 
+(local
+ (defthm member-equal-and-integers
+   (implies (and (<= operation 8)
+                 (<= 0 operation)
+                 (integerp operation))
+            (member-equal operation '(0 2 4 6 8 1 3 5 7)))))
+
 (local (in-theory (e/d* ()
                         (member-equal
                          signed-byte-p
@@ -142,6 +142,8 @@
   84, 85: TEST     p   z s   \(o and c cleared, a undefined\)<br/>"
 
   :operation t
+  :guard (and (natp operation)
+              (<= operation 8))
   :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory (e/d* ()
                                                  (unsigned-byte-p
@@ -294,7 +296,9 @@
   3A, 3B: CMP   c p a z s o <br/>"
 
   :operation t
-  :guard (not (equal operation #.*OP-TEST*))
+  :guard (and (not (equal operation #.*OP-TEST*))
+              (natp operation)
+              (<= operation 8))
 
   :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory (e/d* ()
@@ -441,6 +445,8 @@
   F6-F7 (000): TEST    p   z s   \(o and c cleared, a undefined\)<br/>"
 
   :operation t
+  :guard (and (natp operation)
+              (<= operation 8))
   :guard-hints (("Goal" :in-theory (e/d (n08-to-i08
                                          n16-to-i16
                                          n32-to-i32
@@ -470,13 +476,15 @@
     (add-to-implemented-opcodes-table 'ADD #x83 '(:reg 0)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
 
-    (add-to-implemented-opcodes-table 'OR #x80 '(:reg 2)
+    ;; [Shilpi]: Thanks to Dmitry Nadezhin for spotting typos in the
+    ;; :reg field for the OR opcode.
+    (add-to-implemented-opcodes-table 'OR #x80 '(:reg 1)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x81 '(:reg 2)
+    (add-to-implemented-opcodes-table 'OR #x81 '(:reg 1)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x82 '(:reg 2)
+    (add-to-implemented-opcodes-table 'OR #x82 '(:reg 1)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x83 '(:reg 2)
+    (add-to-implemented-opcodes-table 'OR #x83 '(:reg 1)
                                       'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
 
     (add-to-implemented-opcodes-table 'ADC #x80 '(:reg 2)
@@ -682,6 +690,8 @@
   A8, A9: TEST         p   z s   \(o and c cleared, a undefined\)<br/>"
 
   :operation t
+  :guard (and (natp operation)
+              (<= operation 8))
   :prepwork ((local (in-theory (e/d* () (commutativity-of-+)))))
   :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory (e/d* ()

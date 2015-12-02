@@ -1892,7 +1892,7 @@
          (return ret)))
 
  (defparser vl-parse-statements-until-join ()
-   :measure (two-nats-measure (vl-tokstream-measure) 110)
+   :measure (two-nats-measure (vl-tokstream-measure) 160)
    ;; Returns a list of vl-stmt-p's.
    ;; Tries to read until join, join_any, or join_none.
    (seq tokstream
@@ -1903,7 +1903,7 @@
          (return (cons first rest))))
 
  (defparser vl-parse-statements-until-end ()
-   :measure (two-nats-measure (vl-tokstream-measure) 110)
+   :measure (two-nats-measure (vl-tokstream-measure) 160)
    ;; Returns a list of vl-stmt-p's.
    ;; Tries to read until the keyword "end"
    (seq tokstream

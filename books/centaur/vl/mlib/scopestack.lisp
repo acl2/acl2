@@ -285,6 +285,38 @@ in it, such as a function, task, or block statement."
            we want to print scopes, etc.")))
 
 (define vl-fundecl->blockscope ((x vl-fundecl-p))
+  ;; The One True Way to process a Function:
+  ;;
+  ;;  1. Process the return type (in the outer scope).
+  ;;  2. Push the function onto the scopestack.
+  ;;  3. Process the rest of the function (including the ports) in the inner scope.
+  ;;
+  ;; You might worry that this isn't correct in general, and you would be
+  ;; right.  Consider something like:
+  ;;
+  ;;    typedef logic [1:0] mytype_t;
+  ;;
+  ;;    function foo (input mytype_t A);
+  ;;      typedef logic [3:0] mytype_t;
+  ;;      ...
+  ;;    endfunction
+  ;;
+  ;; Here, the type of input A should be the [1:0] version of mytype_t from the
+  ;; outer scope.  But according to the One True Way, we'll push the inner
+  ;; scope before processing the ports, so we'd find the [3:0] version instead!
+  ;;
+  ;; But stop worrying.  Shadowcheck is responsible for making sure that this
+  ;; can't happen.  If someone writes the above, then Shadowcheck will flag it
+  ;; with a fatal warning saying that the scoping is too tricky for us to get
+  ;; right.  So throughout the rest of VL, our official position is that the
+  ;; ports are to be processed in the inner scope.  This allows us to support
+  ;; reasonable functions like:
+  ;;
+  ;;     function bar;
+  ;;       typedef logic mytype_t;
+  ;;       input mytype_t a;
+  ;;       ...
+  ;;    endfunction
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
   (b* (((vl-fundecl x)))
@@ -296,6 +328,14 @@ in it, such as a function, task, or block statement."
                         :name  x.name)))
 
 (define vl-taskdecl->blockscope ((x vl-taskdecl-p))
+  ;; The One True Way to process a Task:
+  ;;
+  ;;   1. Push the task onto the scopestack.
+  ;;   2. Process it.
+  ;;
+  ;; See the comments in vl-fundecl->blockscope.  Again, Shadowcheck is
+  ;; responsible for rejecting any tasks whose scoping is so tricky that the
+  ;; above is not correct.
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
   (b* (((vl-taskdecl x)))
@@ -307,6 +347,12 @@ in it, such as a function, task, or block statement."
                         :name  x.name)))
 
 (define vl-blockstmt->blockscope ((x vl-stmt-p))
+  ;; The One True Way to process a Block Statement:
+  ;;
+  ;;   1. Push the block statement onto the scopestack.
+  ;;   2. Process it.
+  ;;
+  ;; See the comments in vl-fundecl->blockscope for more information.
   :guard (vl-stmt-case x :vl-blockstmt)
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
@@ -319,11 +365,13 @@ in it, such as a function, task, or block statement."
                         :name  x.name)))
 
 (define vl-forstmt->blockscope ((x vl-stmt-p))
-  :guard (vl-stmt-case x :vl-forstmt)
-  :returns (scope vl-blockscope-p)
-  :parents (vl-blockscope vl-scopestack-push)
-  ;; Note.   We have officially decided that for statemetns are scopes and should
-  ;; be pushed onto the scopestack.  Something like this:
+  ;; The One True Way to process a For Statement:
+  ;;
+  ;;   1. Push it onto the scopestack.
+  ;;   2. Process it.
+  ;;
+  ;; Note that this means that something like this involves 2 scopes; an outer
+  ;; scope for I and an inner scope for J.
   ;;
   ;;    for(int i = 0; i < 10; ++i)
   ;;      begin
@@ -331,19 +379,22 @@ in it, such as a function, task, or block statement."
   ;;       ...
   ;;      end
   ;;
-  ;; Therefore involves 2 scopes, an outer scope for I and an inner scope for J.
-  ;; We should push both scopes.
+  ;; So we need to push a scope when we enter the for loop, and then later push
+  ;; another scope when we enter the begin/end block.
   ;;
-  ;; Note furthermore that VCS and NCVerilog agree that
+  ;; Note that VCS and NCVerilog agree that:
   ;;
   ;; for (int i=0; i<10; i++)
   ;;   begin
   ;;     int i = 15;
-  ;;     $display("i: %x", i);
+  ;;     $display("i: %d", i);
   ;;   end
   ;;
-  ;; Should print i: F ten times.  That seems like it can only happen if there
+  ;; Should print i: 15 ten times.  That seems like it can only happen if there
   ;; are indeed two separate scopes in play here.
+  :guard (vl-stmt-case x :vl-forstmt)
+  :returns (scope vl-blockscope-p)
+  :parents (vl-blockscope vl-scopestack-push)
   (b* (((vl-forstmt x)))
     (make-vl-blockscope :vardecls x.initdecls
                         :scopetype :vl-forstmt)))
@@ -1187,6 +1238,18 @@ be very cheap in the single-threaded case.</p>"
     :otherwise (vl-scopestack-fix x)))
 
 (define vl-scopestack-push ((scope vl-scope-p) (x vl-scopestack-p))
+  ;; The One True Way to process a Module.
+  ;;
+  ;;   1. Push the module onto the scopestack.
+  ;;   2. Process it.
+  ;;
+  ;; That is, you should NOT try to process anything (e.g., the ports or
+  ;; parameters) outside of the module's scope.
+  ;;
+  ;; This may seem wrong to you, but see the comments in vl-fundecl->blockscope
+  ;; and note that Shadowcheck is responsible for making sure that any module
+  ;; for which this wouldn't work correctly gets flagged with fatal warnings
+  ;; that say the scoping is too tricky.
   :returns (x1 vl-scopestack-p)
   (progn$
    ;; [Jared] I'm curious about whether we ever do this.  If so it might screw
