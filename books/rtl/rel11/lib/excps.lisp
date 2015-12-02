@@ -112,9 +112,11 @@
         0
       (if (binary-undefined-p op a f b f)
           (set-flag (ibit) 0)
-        (if (or (denormp a f) (denormp b f))
-            (set-flag (dbit) 0)
-          0)))))
+        (if (and (eql op 'div) (zerp b f))
+            (set-flag (zbit) 0)
+          (if (or (denormp a f) (denormp b f))
+              (set-flag (dbit) 0)
+            0))))))
 
 (defun sse-binary-pre-comp-val (op a b f)
   (if (nanp a f)
@@ -123,7 +125,9 @@
         (qnanize b f)
       (if (binary-undefined-p op a f b f)
           (indef f)
-        ()))))
+        (if (and (eql op 'div) (zerp b f))
+            (iencode (logxor (sgnf a f) (sgnf b f)) f)
+          ())))))
 
 (defun sse-binary-pre-comp (op a b mxcsr f)
   (let* ((daz (bitn mxcsr (daz)))
@@ -372,15 +376,17 @@
         0
       (if (binary-undefined-p op a af b bf)
           (set-flag (ibit) 0)
-        (if (or (denormp a af) (pseudop a af) (denormp b bf) (pseudop b bf))
-            (set-flag (dbit) 0)
-          0)))))
+        (if (and (eql op 'div) (zerp b bf))
+            (set-flag (zbit) 0)
+          (if (or (denormp a af) (pseudop a af) (denormp b bf) (pseudop b bf))
+              (set-flag (dbit) 0)
+            0))))))
 
 (defun convert-nan-to-ep (x f)
   (cat (sgnf x f)
        1
        (1- (expt 2 15))
-       16
+       15
        1
        1
        (manf x f)
@@ -405,7 +411,9 @@
           (qnanize bep (ep))
         (if (binary-undefined-p op a af b bf)
             (indef (ep))
-          ())))))
+          (if (and (eql op 'div) (zerp b bf))
+              (iencode (logxor (sgnf a af) (sgnf b bf)) (ep))
+            ()))))))
 
 (defun x87-binary-pre-comp (op a af b bf)
     (mv (x87-binary-pre-comp-val op a af b bf) (x87-binary-pre-comp-excp op a af b bf)))
