@@ -28,6 +28,13 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+
+// This started out as a test of implicit wire handling.  Since then it's grown
+// to do a lot of testing of scoping and knowing when things are declared or
+// undeclared.
+
+//+VL `define VL 1
+
 module sub (output out, input in);
   assign out = in;
 endmodule
@@ -50,14 +57,33 @@ module subtriple (output triple_t out, input triple_t in) ;
   assign out = in;
 endmodule
 
+// VCS and NCV both complain that this is not declared yet.
+// BOZO VL doesn't get this right yet.  Fixing it will be harder
+// than fixing most other stuff.
+
+//+VL parameter undeclared_param1 = pkg1_decl1;
+
+`ifndef VCS
+// NCVerilog is able to resolve this even though pkg1 hasn't been declared yet.
+// VCS complains here and says pkg1 is undeclared.
+parameter unused_param2 = pkg1::pkg1_decl2;
+`endif
+
+parameter pkg1_decl3 = 4;
+
 package pkg1;
 
   parameter pkg1_decl1 = 1;
   parameter pkg1_decl2 = 2;
+  parameter pkg1_decl3 = 3;
 
 endpackage
 
 import pkg1::*;
+
+parameter derived_param1 = pkg1_decl1;
+parameter derived_param2 = pkg1::pkg1_decl2;
+
 
 module subnames (output subname_out1, input subname_in1);
   assign subname_out1 = subname_in1;
@@ -322,9 +348,138 @@ module m7 () ;
 
 endmodule
 
+module m8 () ;
+
+  task mytask;
+    parameter filename = "check.rb";
+    integer fd;
+    begin
+      $display("file is %s", filename);
+      fd = $fopen(filename);
+      $fclose(fd);
+    end
+  endtask
+
+endmodule
 
 
 
-// OK, I think we've beat this to death enough.  If we get ambitious, we could
-// add a lot of checks of how port implicit wires are handled.
+// Some testing of scopes for ports.
 
+// VCS and NCV agree that these types are not defined and hence all of these
+// modules are not OK:
+
+`ifdef VL
+
+module m9 (input m9type_t in) ;
+  typedef logic m9type_t;
+endmodule
+
+module m10 (input m10type_t in) ;
+  parameter type m10type_t = logic;
+endmodule
+
+module m11 (in);
+  input m11type_t in;
+  parameter type m11type_t = logic;
+endmodule
+
+`endif
+
+// However... VCS and NCV also also agree that the following are all just fine.
+// So this is pretty tricky.  For port scoping we can make use of parameters
+// only that come before the ports.
+
+module m12 #(parameter type m12type_t = logic)
+  (input m12type_t in) ;
+endmodule
+
+module m13 (in);
+  parameter type m13type_t = logic;
+  input m13type_t in;
+endmodule
+
+
+module m14;
+
+  // As expected VCS and NCV are fine with this.
+  typedef logic fun1type_t;
+  function fun1type_t fun1 ;
+    fun1 = 0;
+  endfunction
+
+  // NCV and VCS say that fun2type_t is not defined.  So it seems like the
+  // return type is scoped outside the function.
+`ifdef VL
+  function fun2type_t fun2 ;
+    typedef logic fun2type_t;
+    fun2 = 0;
+  endfunction
+
+  // NCV and VCS say fun3width isn't declared.  So again it seems like the
+  // return type is scoped outside the function.
+  function logic[fun3width:0] fun3 ;
+    parameter fun3width = 1;
+    fun3 = 0;
+  endfunction
+`endif
+
+  // NCV and VCS both accept the following.
+  function fun4 ;
+    parameter fun4width = 3;
+    input [fun4width:0]   in;
+    fun4 = in;
+  endfunction
+
+`ifdef VL
+  // NCV and VCS both reject this, saying fun5width is not declared.
+  function fun5 ;
+    input [fun5width:0]   in;
+    parameter fun5width = 3;
+    fun5 = in;
+  endfunction
+`endif
+
+// BOZO vl parse errors here...
+
+//   // As expected NCV and VCS are fine with this:
+//   typedef logic task1type_t;
+//   task task1 (output task1type_t out);
+//     out = 0;
+//   endtask
+
+// `ifdef VL
+//   // NCV and VCS reject this, saying that task2type_t isn't defined.
+//   task task2 (output task2type_t out);
+//     typedef logic task2type_t;
+//     out = 0;
+//   endtask
+
+//   // NCV and VCS reject this, saying that task2width isn't defined.
+//   task task3 (output [task3width:0] out);
+//     parameter task3width = 3;
+//     out = 0;
+//   endtask
+
+// `endif
+
+// BOZO parse errors here...
+
+  // // NCV and VCS both accept the following
+  // task task4;
+  //   typedef logic task4type_t;
+  //   output task4type_t out;
+  //   out = 0;
+  // endtask
+
+
+//   // NCV and VCS reject this, saying that task5type_t isn't defined.
+// `ifdef VL
+//   task task5;
+//     output task5type_t out;
+//     typedef logic task5type_t;
+//     out = 0;
+//   endtask
+// `endif
+
+endmodule

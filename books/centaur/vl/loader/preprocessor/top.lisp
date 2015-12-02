@@ -2382,8 +2382,10 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                   defines filemap acc echars state))
 
              ((mv okp contents state)
-              (cwtime (vl-read-file (string-fix realfile))
-                      :mintime 1/2))
+              (time$ (vl-read-file (string-fix realfile))
+                     :msg "; ~s0: read: ~st sec, ~sa bytes~%"
+                     :args (list realfile)
+                     :mintime (vl-loadconfig->mintime config)))
              ((unless okp)
               (mv (cw "Preprocessor error (~s0): unable to read ~s1."
                       (vl-location-string (vl-echar->loc echar1)) realfile)

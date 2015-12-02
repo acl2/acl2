@@ -71,6 +71,14 @@ end
 normal(:sub, "out")
 normal(:sub, "in")
 
+## BOZO fixing this will be harder.
+## undeclared(:"Design Root", "undeclared_param1");
+unused(:"Design Root", "unused_param2");
+
+unused(:"Design Root", "derived_param1");
+unused(:"Design Root", "derived_param2");
+
+
 normal(:m0, "w1_declared")
 
 unused(:m0, "a1_implicit")

@@ -37,7 +37,8 @@
 (set-slow-alist-action :break)
 (ld "centaur/jared-customization.lsp" :dir :system)
 (include-book "centaur/vl/loader/parser/tests/base" :dir :system)
-(with-redef (defconst *vl-shadowcheck-debug* nil))
+(with-redef (defconst *vl-shadowcheck-debug* t))
+(vl-trace-warnings)
 
 (define vl-pps-exprlist ((x vl-exprlist-p))
   (if (atom x)
@@ -46,7 +47,7 @@
           (vl-pps-exprlist (cdr x)))))
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./sameports/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./temp/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
@@ -157,7 +158,8 @@
 
 (trace$ (vl-follow-scopeexpr-fn
          :entry (list 'vl-follow-scopeexpr
-                      (with-local-ps (vl-pp-scopeexpr x)))
+                      :expr (with-local-ps (vl-pp-scopeexpr x))
+                      :ss-path (vl-scopestack->path ss))
          :exit (b* (((list err trace ?context tail) acl2::values))
                  (list 'vl-follow-scopeexpr
                        :err err
@@ -248,7 +250,7 @@
 
 (vl-design->packages (vl-loadresult->design *loadres*))
 
-(vl-trace-warnings)
+
 
 
 ;; Lucid Tracing
