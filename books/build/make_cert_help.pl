@@ -64,7 +64,7 @@
 use warnings;
 use strict;
 use File::Spec;
-use File::Path qw(make_path);
+use File::Path 2.07 qw(make_path);
 # problematic to get this from cpan on msys
 # use File::Which qw(which);
 use FindBin qw($RealBin);
