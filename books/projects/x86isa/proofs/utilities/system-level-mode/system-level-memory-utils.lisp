@@ -18,34 +18,83 @@
 (local (xdoc::set-default-parents system-level-memory-utils))
 
 (local (in-theory (e/d* (entry-found-p-and-good-paging-structures-x86p
-			 entry-found-p-and-lin-addr)
-			())))
+                         entry-found-p-and-lin-addr)
+                        ())))
 
 ;; ======================================================================
 
-;; [Shilpi]: RoW with rb and wb will be obtained when
-;; paging-lib/paging-top.lisp is ready.
+(i-am-here)
 
-;; [Shilpi]: I need to define a well-formed page tables predicate...
-;; I also need to re-define rm08/rb and wm08/wb in terms of the alt
-;; traversal functions...
+(defthm ia32e-entries-found-la-to-pa-and-xw-mem-disjoint
+  ;; [Shilpi]: Maybe I need something like this first?
+  (implies (and (paging-entries-found-p addr-1 x86)
+                (paging-entries-found-p addr-2 x86)
+                (disjoint-p
+                 ;; The physical addresses corresponding to addr-1 and
+                 ;; the physical address addr-2 are disjoint.
+                 (addr-range 8 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86)))
+                 (addr-range 8 addr-2))
+                (pairwise-disjoint-p-aux
+                 ;; Physical address addr-2 does not contain paging
+                 ;; structure content.  This means that the
+                 ;; translation-governing entries for addr-1 cannot be
+                 ;; affected by the write to addr-2.
+                 (addr-range 8 addr-2)
+                 (gather-all-paging-structure-qword-addresses x86)))
+           (equal (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl (xw :mem addr-2 val x86)))
+                  (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl x86)))))
 
-;; (defthm rm08-wm08-disjoint-in-system-level-mode
-;;   (implies (and (not (programmer-level-mode x86))
-;;		(disjoint-p (addr-range 8 addr-1)
-;;			    (addr-range 8 addr-2))
-;;		(paging-entries-found-p addr-1 x86)
-;;		(paging-entries-found-p addr-2 x86)
-;;		(pairwise-disjoint-p-aux
-;;		 ;; The write isn't being done to the page tables.
-;;		 (list addr-2)
-;;		 (gather-all-paging-structure-qword-addresses x86)))
-;;	   (equal (mv-nth 1 (rm08 addr-1 r-x (mv-nth 1 (wm08 addr-2 val x86))))
-;;		  (mv-nth 1 (rm08 addr-1 r-x x86))))
-;;   :hints (("Goal"
-;;	   :in-theory (e/d* (rm08-and-rm08-mapped
-;;			     wm08-and-wm08-mapped)
-;;			    (signed-byte-p)))))
+(defthm mv-nth-2-ia32e-entries-found-la-to-pa-and-xw-mem-disjoint
+  ;; [Shilpi]: Maybe I need something like this first?
+  (implies (and (paging-entries-found-p addr-1 x86)
+                (paging-entries-found-p addr-2 x86)
+                (disjoint-p
+                 ;; The physical addresses corresponding to addr-1 and
+                 ;; the physical address addr-2 are disjoint.
+                 (addr-range 8 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86)))
+                 (addr-range 8 addr-2))
+                (pairwise-disjoint-p-aux
+                 ;; Physical address addr-2 does not contain paging
+                 ;; structure content.  This means that the
+                 ;; translation-governing entries for addr-1 cannot be
+                 ;; affected by the write to addr-2.
+                 (addr-range 8 addr-2)
+                 (gather-all-paging-structure-qword-addresses x86)))
+           (equal (xw :mem addr-2 val (mv-nth 2 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl x86)))
+                  (mv-nth 2 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl (xw :mem addr-2 val x86))))))
+
+(defthm rm08-wm08-disjoint-in-system-level-mode
+  (implies (and (not (programmer-level-mode x86))
+                (paging-entries-found-p addr-1 x86)
+                (paging-entries-found-p addr-2 x86)
+                (equal cpl
+                       (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (disjoint-p
+                 ;; The physical addresses corresponding to addr-1 and
+                 ;; addr-2 are disjoint.
+                 (addr-range 8 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86)))
+                 (addr-range 8 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2  :w cpl x86))))
+                (pairwise-disjoint-p-aux
+                 ;; The write isn't being done to the page tables ---
+                 ;; this means that the translation-governing entries
+                 ;; for addr-1 cannot be affected by the write.
+                 (addr-range 8 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2  :w cpl x86)))
+                 (gather-all-paging-structure-qword-addresses x86)))
+           (equal (mv-nth 1 (rm08 addr-1 r-x (mv-nth 1 (wm08 addr-2 val x86))))
+                  (mv-nth 1 (rm08 addr-1 r-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (rm08-and-rm08-mapped
+                             wm08-and-wm08-mapped
+                             ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             wm08-mapped
+                             rm08-mapped
+                             rm08
+                             wm08
+                             ;; rm08
+                             ;; wm08
+                             )
+                            (signed-byte-p))))
+  :otf-flg t)
 
 
 ;; The events below are similar to those in
