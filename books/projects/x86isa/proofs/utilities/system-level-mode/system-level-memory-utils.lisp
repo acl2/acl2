@@ -23,6 +23,8 @@
 
 ;; ======================================================================
 
+#||
+
 (i-am-here)
 
 (defthm ia32e-entries-found-la-to-pa-and-xw-mem-disjoint
@@ -95,6 +97,8 @@
                              )
                             (signed-byte-p))))
   :otf-flg t)
+
+||#
 
 
 ;; The events below are similar to those in
