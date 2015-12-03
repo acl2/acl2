@@ -5203,7 +5203,7 @@
 
 (defconst *xargs-keywords*
 
-; Keep this in sync with deflabel XARGS.
+; Keep this in sync with :doc xargs.
 
   '(:guard :guard-hints :guard-debug
            :hints :measure :measure-debug

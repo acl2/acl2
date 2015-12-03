@@ -10025,7 +10025,7 @@
   (print-info-for-rules
    (info-for-rules (actual-props wrld-segment nil nil)
                    numes
-                   (ens state)
+                   (ens-maybe-brr state)
                    wrld)
    (standard-co state)
    state))
@@ -10127,7 +10127,7 @@
                      name)))))))
 
 (defmacro disabledp (name)
-  `(disabledp-fn ,name (ens state) (w state)))
+  `(disabledp-fn ,name (ens-maybe-brr state) (w state)))
 
 (defun access-x-rule-rune (x rule)
 

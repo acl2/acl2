@@ -2546,6 +2546,8 @@
 
 (defun current-theory-fn (logical-name wrld)
 
+; Warning: Keep this in sync with union-current-theory-fn.
+
 ; We return the theory that was enabled in the world created by the
 ; event that introduced logical-name.
 
@@ -2603,16 +2605,21 @@
 
 (defun union-current-theory-fn (lst2 wrld)
 
+; Warning: Keep this in sync with current-theory-fn.
+
 ; This function returns, with an optimized computation, the value
 ; (union-theories-fn (current-theory :here) lst2 t wrld).
 
   (check-theory
    lst2 wrld 'union-current-theory-fn
-   (let ((w ; as in current-theory-fn, we apply decode-logical-name
-          (scan-to-event wrld)))
+   (let* ((wrld1 ; as in current-theory-fn, we apply decode-logical-name
+           (scan-to-event wrld))
+          (redefined (collect-redefined wrld nil))
+          (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
+                                 *acl2-property-unbound* wrld1)))
      (union-augmented-theories-fn1+
-      (current-theory1-augmented w nil nil)
-      (current-theory1 w nil nil)
+      (current-theory1-augmented wrld2 nil nil)
+      (current-theory1 wrld2 nil nil)
       (augment-theory lst2 wrld)
       nil))))
 
@@ -20283,7 +20290,7 @@
                            (list (cons #\0 fn))
                            (standard-co state) state nil)
                       (print-info-for-rules
-                       (info-for-lemmas lemmas t (ens state) wrld)
+                       (info-for-lemmas lemmas t (ens-maybe-brr state) wrld)
                        (standard-co state) state)))
              (t (er soft 'show-bodies
                     "There are no definitional bodies for ~x0."
@@ -21345,38 +21352,6 @@
                     :ld-post-eval-print nil
                     :ld-error-action :error))
                (value :invisible))))
-
-(defun with-brr-ens-fn (form state)
-  (let ((caller 'with-brr-ens))
-    (cond ((eq (f-get-global 'wormhole-name state) 'brr)
-           (state-global-let*
-            ((global-enabled-structure
-              (access rewrite-constant
-                      (get-brr-local 'rcnst state)
-                      :current-enabled-structure)))
-            (mv-let (erp stobjs-out/replaced-val state)
-              (trans-eval form caller state t)
-              (cond
-               (erp ; error was presumably already printed above
-                (silent-error state))
-               (t (let ((stobjs-out (car stobjs-out/replaced-val))
-                        (val (cdr stobjs-out/replaced-val)))
-                    (cond
-                     ((equal stobjs-out *error-triple-sig*)
-                      (value (cadr val)))
-                     ((equal stobjs-out '(nil))
-                      (value val))
-                     (t (er soft caller
-                            "Illegal output signature for ~x0: ~x1"
-                            caller
-                            stobjs-out)))))))))
-          (t (er soft caller
-                 "It is illegal to call ~x0 unless you are under ~
-                  break-rewrite and you are not."
-                 caller)))))
-
-(defmacro with-brr-ens (form)
-  `(with-brr-ens-fn ',form state))
 
 (defmacro trace! (&rest fns)
   (let ((form
@@ -22566,14 +22541,14 @@
              (t state)))
      (show-meta-lemmas1 (cdr lemmas) rule-id term wrld ens state)))))
 
-(defun show-meta-lemmas (term rule-id state)
+(defun show-meta-lemmas (term rule-id ens state)
   (cond ((and (nvariablep term)
               (not (fquotep term))
               (not (flambdap (ffn-symb term))))
          (let ((wrld (w state)))
            (show-meta-lemmas1 (getprop (ffn-symb term) 'lemmas nil
                                        'current-acl2-world wrld)
-                              rule-id term wrld (ens state) state)))
+                              rule-id term wrld ens state)))
         (t state)))
 
 (defun decoded-type-set-from-tp-rule (tp unify-subst wrld ens)
@@ -22691,7 +22666,7 @@
               (standard-co state) state nil))))
 
 (defun pl2-fn (form rule-id caller state)
-  (let ((ens (ens state)))
+  (let ((ens (ens-maybe-brr state)))
     (er-let*
      ((term (translate form t t nil caller (w state) state)))
      (cond
@@ -22743,7 +22718,7 @@
                       (show-rewrites-linears-fn
                        'show-linears rule-id nil ens term nil nil nil :none t
                        state)
-                      (show-meta-lemmas term rule-id state)
+                      (show-meta-lemmas term rule-id ens state)
                       (show-type-prescription-rules term rule-id nil nil
                                                     ens state)
                       (value :invisible)))))))))))
@@ -22752,7 +22727,7 @@
   (cond
    ((symbolp name)
     (let* ((wrld (w state))
-           (ens (ens state))
+           (ens (ens-maybe-brr state))
            (name (deref-macro-name name (macro-aliases wrld))))
       (cond
        ((function-symbolp name wrld)
