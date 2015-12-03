@@ -756,7 +756,8 @@ then a semicolon or left-paren).</p>"
   :fails gracefully
   :count strong-on-value
   (seq tokstream
-       (when (vl-is-token? :vl-kwd-endfunction)
+       ;; Hack so we can reuse this in tasks.
+       (when (vl-is-some-token? '(:vl-kwd-endfunction :vl-kwd-endtask))
          (return nil))
        (stmt1 := (vl-parse-statement-or-null))
        (rest := (vl-parse-function-statements-aux))
@@ -1085,22 +1086,21 @@ same direction.\"</blockquote>
                                                         (eq (vl-token->type signing) :vl-kwd-signed))
                                           :pdims   (vl-ranges->packeddimensions ranges)))))
 
-       ;; Otherwise, usual ambiguity between data types and identifiers...
+       ;; Otherwise, usual ambiguity between data types and identifiers.
+       ;; As with ports, we know this is followed by an identifier.
 
-       (when (and (vl-is-token? :vl-idtoken)
-                  (not (vl-parsestate-is-user-defined-type-p
-                        (vl-idtoken->name (car (vl-tokstream->tokens)))
-                        (vl-tokstream->pstate))))
-         ;; Not a datatype, so pure implicit case.
+       (when (vl-is-token? :vl-idtoken)
+         (type := (vl-parse-datatype-only-if-followed-by-id))
          (ids := (vl-parse-list-of-tf-variable-identifiers))
          (:= (vl-match-token :vl-semi))
          (return (vl-make-tf-ports-from-parsed-ids
                   ids
                   :atts atts
                   :dir (cdr (assoc (vl-token->type dir) *vl-directions-kwd-alist*))
-                  :type (make-vl-coretype :name :vl-logic
-                                          :signedp nil
-                                          :pdims nil))))
+                  :type (or type
+                            (make-vl-coretype :name :vl-logic
+                                              :signedp nil
+                                              :pdims nil)))))
 
        ;; Else we'd better have a real datatype.
        (type := (vl-parse-datatype))
@@ -1173,28 +1173,31 @@ statement.</p>"
   :fails gracefully
   :count strong
   :long "@({
+             function_declaration ::= 'function' [ lifetime ] function_body_declaration
 
-     function_declaration ::= 'function' [ lifetime ] function_body_declaration
+             function_body_declaration ::=
 
-     function_body_declaration ::=
+               function_data_type_or_implicit                                                           ; Variant 1
+                 [ interface_identifier '.' | class_scope ] identifier ';'
+                 { tf_item_declaration }
+                 { function_statement_or_null }
+               'endfunction' [ ':' identifier ]
 
-       function_data_type_or_implicit                                                           ; Variant 1
-         [ interface_identifier '.' | class_scope ] identifier ';'
-         { tf_item_declaration }
-         { function_statement_or_null }
-       'endfunction' [ ':' identifier ]
+              | function_data_type_or_implicit
+                  [ interface_identifier '.' | class_scope ] identifier '(' [tf_port_list] ')' ';'      ; Variant 2
+                  { block_item_declaration }
+                  { function_statement_or_null }
+                'endfunction' [ ':' identifier ]
+         })
 
-      | function_data_type_or_implicit
-          [ interface_identifier '.' | class_scope ] identifier '(' [tf_port_list] ')' ';'      ; Variant 2
-          { block_item_declaration }
-          { function_statement_or_null }
-        'endfunction' [ ':' identifier ]
-})
+         <p>As is often the case with data_type_or_implicit forms, we need to
+         backtrack to figure out whether an identifier is a datatype or the
+         function name with an empty implicit datatype.  We do this in @(see
+         vl-parse-function-data-type-and-name).</p>
 
-<p>As is often the case with data_type_or_implicit forms, we need to backtrack
-to figure out whether an identifier is a datatype or the function name with an
-empty implicit datatype.  We do this in @(see
-vl-parse-function-data-type-and-name).</p>"
+         <p>BOZO we don't yet handle the interface identifier / class scope
+         stuff, but instead just expect the function name to be a regular
+         identifier.</p>"
 
   (seq tokstream
        (:= (vl-match-token :vl-kwd-function))
@@ -1243,7 +1246,6 @@ vl-parse-function-data-type-and-name).</p>"
                                                  :atts       atts
                                                  :loc        (vl-token->loc name))))))
 
-
 (defparser vl-parse-task-declaration-2012 (atts)
   :guard (vl-atts-p atts)
   :result (vl-taskdecllist-p val)
@@ -1251,9 +1253,78 @@ vl-parse-function-data-type-and-name).</p>"
   :resultp-of-nil t
   :fails gracefully
   :count strong
+  :long "@({
+              task_declaration ::= 'task' [lifetime] task_body_declaration
+
+              task_body_declaration ::=
+
+                  [ interface_identifier '.' | class_scope ] task_identifier ';'                         ;; Variant 1
+                      {tf_item_declaration}
+                      {statement_or_null}
+                  'endtask' [ ':' task_identifier ]
+
+                | [ interface_identifier '.' | class_scope ] task_identifier '(' [tf_port_list] ')' ';'  ;; Variant 2
+                      {block_item_declaration}
+                      {statement_or_null}
+                  'endtask' [ ':' task_identifier ]
+         })
+
+         <p>BOZO we don't yet handle the interface_identifier/class-scope stuff
+         but instead just expect the task name to be a regular identifier.</p>"
+
+;Everything through the first semicolon is just like in functions.
+; We have done {tf_item_declaration} above in vl-parse-0+-tf-item-declarations
+; We definitely have statement_or_null already.
+; We have {block_item_declaration} in (vl-parse-0+-block-item-declarations)
+; So I think this is going to basically just be the same as for functions.
+
   (seq tokstream
-       (ans := (vl-parse-task-declaration-2005 atts))
-       (return ans)))
+       (:= (vl-match-token :vl-kwd-task))
+       (lifetime := (vl-maybe-parse-lifetime))
+       ;; BOZO eventually handle [ interface_identifier '.' | class_scope ] here.
+       (name := (vl-match-token :vl-idtoken))
+
+       (when (vl-is-token? :vl-semi)
+         ;; Variant 1.  We need to match:
+         ;;      { tf_item_declaration }
+         ;;      { statement_or_null }
+         ;;   'endtask' [ ':' identifier ]
+         (:= (vl-match)) ;; eat the semicolon
+         (items := (vl-parse-0+-tf-item-declarations))
+         (body := (vl-parse-function-statements)) ;; yep, this does the right thing
+         (:= (vl-match-token :vl-kwd-endtask))
+         (:= (vl-parse-endblock-name (vl-idtoken->name name) "task/endtask"))
+         (return (b* (((mv portdecls blockitems)
+                       (vl-filter-portdecl-or-blockitem-list items)))
+                   (list (vl-make-taskdecl-for-parser :name      (vl-idtoken->name name)
+                                                      :lifetime  lifetime
+                                                      :ports     portdecls
+                                                      :decls     blockitems
+                                                      :body      body
+                                                      :atts      atts
+                                                      :loc       (vl-token->loc name))))))
+
+       ;; Variant 2.  We need to match:
+       ;;   '(' [tf_port_list] ')' ';'
+       ;;       { block_item_declaration }
+       ;;       { statement_or_null }
+       ;;   'endtask' [ ':' identifier ]
+       (:= (vl-match-token :vl-lparen))
+       (unless (vl-is-token? :vl-rparen) ;; the tf_port_list is optional
+         (portdecls := (vl-parse-tf-port-list)))
+       (:= (vl-match-token :vl-rparen))
+       (:= (vl-match-token :vl-semi))
+       (decls   := (vl-parse-0+-block-item-declarations))
+       (body    := (vl-parse-function-statements))
+       (:= (vl-match-token :vl-kwd-endtask))
+       (:= (vl-parse-endblock-name (vl-idtoken->name name) "task/endtask"))
+       (return (list (vl-make-taskdecl-for-parser :name       (vl-idtoken->name name)
+                                                  :lifetime   lifetime
+                                                  :ports      portdecls
+                                                  :decls      decls
+                                                  :body       body
+                                                  :atts       atts
+                                                  :loc        (vl-token->loc name))))))
 
 
 
