@@ -299,6 +299,8 @@
 
 ;; ======================================================================
 
+;; (i-am-here)
+
 ;; Base addresses and structure traversals:
 ;; [Shilpi]: Do I even need these?
 
@@ -350,8 +352,6 @@
 
 ;; ======================================================================
 
-;; (i-am-here)
-
 (defthm open-qword-paddr-list-list-pairwise-disjoint-p-aux-and-disjoint-p
   (implies (and
             (pairwise-disjoint-p-aux (list index) (open-qword-paddr-list-list addrs))
@@ -376,6 +376,14 @@
 
 ;; PML4 Table:
 
+(defthm pml4-table-base-addr-and-xw
+  (implies (and (not (equal fld :mem))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index val x86)))
+           (equal (mv-nth 1 (pml4-table-base-addr (xw fld index val x86)))
+                  (mv-nth 1 (pml4-table-base-addr x86)))))
+
 (defthm pml4-table-base-addr-and-xw-mem-disjoint-from-paging-structures
   (implies (and (pairwise-disjoint-p-aux
                  (list index)
@@ -387,6 +395,16 @@
            (equal (pml4-table-base-addr (xw :mem index val x86))
                   (pml4-table-base-addr x86)))
   :hints (("Goal" :in-theory (e/d* (pml4-table-base-addr)
+                                   ()))))
+
+(defthm pml4-table-entry-addr-found-p-and-xw
+  (implies (and (not (equal fld :mem))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index val x86)))
+           (equal (pml4-table-entry-addr-found-p lin-addr (xw fld index val x86))
+                  (pml4-table-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr-found-p)
                                    ()))))
 
 (defthm pml4-table-entry-addr-found-p-and-xw-mem-disjoint-from-paging-structures
@@ -424,6 +442,16 @@
            (equal (page-dir-ptr-table-base-addr lin-addr (xw :mem index val x86))
                   (page-dir-ptr-table-base-addr lin-addr x86)))
   :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr)
+                                   ()))))
+
+(defthm page-dir-ptr-table-entry-addr-found-p-and-xw
+  (implies (and (not (equal fld :mem))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index val x86)))
+           (equal (page-dir-ptr-table-entry-addr-found-p lin-addr (xw fld index val x86))
+                  (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p)
                                    ()))))
 
 (defthm page-dir-ptr-table-entry-addr-found-p-and-xw-mem-disjoint-from-paging-structures
@@ -464,6 +492,16 @@
   :hints (("Goal" :in-theory (e/d* (page-directory-base-addr)
                                    ()))))
 
+(defthm page-directory-entry-addr-found-p-and-xw
+  (implies (and (not (equal fld :mem))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index val x86)))
+           (equal (page-directory-entry-addr-found-p lin-addr (xw fld index val x86))
+                  (page-directory-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr-found-p)
+                                   ()))))
+
 (defthm page-directory-entry-addr-found-p-and-xw-mem-disjoint-from-paging-structures
   (implies (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
                 (pairwise-disjoint-p-aux
@@ -501,6 +539,16 @@
   :hints (("Goal" :in-theory (e/d* (page-table-base-addr)
                                    ()))))
 
+(defthm page-table-entry-addr-found-p-and-xw
+  (implies (and (not (equal fld :mem))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index val x86)))
+           (equal (page-table-entry-addr-found-p lin-addr (xw fld index val x86))
+                  (page-table-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p)
+                                   ()))))
+
 (defthm page-table-entry-addr-found-p-and-xw-mem-disjoint-from-paging-structures
   (implies (and (page-directory-entry-addr-found-p lin-addr x86)
                 (pairwise-disjoint-p-aux
@@ -533,6 +581,57 @@
 
 ;; Page traversals (R) and XW (W) RoW Theorems:
 
+;; Page Table:
+
+(defthm ia32e-la-to-pa-PT-xw-value
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (and (equal (mv-nth 0
+                               (ia32e-la-to-pa-PT
+                                lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                (xw fld index value x86)))
+                       (mv-nth 0
+                               (ia32e-la-to-pa-PT
+                                lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                x86)))
+                (equal (mv-nth 1
+                               (ia32e-la-to-pa-PT
+                                lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                (xw fld index value x86)))
+                       (mv-nth 1
+                               (ia32e-la-to-pa-PT
+                                lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
+                                    paging-entries-found-p)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
+
+(defthm ia32e-la-to-pa-PT-xw-state
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (equal (mv-nth 2
+                          (ia32e-la-to-pa-PT
+                           lin-addr u-s-acc wp smep nxe r-w-x cpl
+                           (xw fld index value x86)))
+                  (xw fld index value
+                      (mv-nth 2
+                              (ia32e-la-to-pa-PT
+                               lin-addr u-s-acc wp smep nxe r-w-x cpl
+                               x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
+                                    paging-entries-found-p)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
+
 (defthm ia32e-la-to-pa-PT-xw-mem-disjoint-from-paging-structures
   (implies (and (page-directory-entry-addr-found-p lin-addr x86)
                 (pairwise-disjoint-p-aux
@@ -560,6 +659,56 @@
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
                                     ia32e-la-to-pa-page-table)
                                    (bitops::logand-with-negated-bitmask)))))
+;; Page Directory:
+
+(defthm ia32e-la-to-pa-PD-xw-value
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (and (equal (mv-nth 0
+                               (ia32e-la-to-pa-PD
+                                lin-addr wp smep nxe r-w-x cpl
+                                (xw fld index value x86)))
+                       (mv-nth 0
+                               (ia32e-la-to-pa-PD
+                                lin-addr wp smep nxe r-w-x cpl
+                                x86)))
+                (equal (mv-nth 1
+                               (ia32e-la-to-pa-PD
+                                lin-addr wp smep nxe r-w-x cpl
+                                (xw fld index value x86)))
+                       (mv-nth 1
+                               (ia32e-la-to-pa-PD
+                                lin-addr wp smep nxe r-w-x cpl
+                                x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PD
+                                    paging-entries-found-p)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
+
+(defthm ia32e-la-to-pa-PD-xw-state
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (equal (mv-nth 2
+                          (ia32e-la-to-pa-PD
+                           lin-addr wp smep nxe r-w-x cpl
+                           (xw fld index value x86)))
+                  (xw fld index value
+                      (mv-nth 2
+                              (ia32e-la-to-pa-PD
+                               lin-addr wp smep nxe r-w-x cpl
+                               x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PD
+                                    paging-entries-found-p)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
 
 (defthm ia32e-la-to-pa-PD-xw-mem-disjoint-from-paging-structures
   (implies (and (page-directory-entry-addr-found-p lin-addr x86)
@@ -589,12 +738,59 @@
                                     ia32e-la-to-pa-page-directory)
                                    (bitops::logand-with-negated-bitmask)))))
 
-#||
+;; Page Directory Pointer Table:
 
-(i-am-here)
+(defthm ia32e-la-to-pa-PDPT-xw-value
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (and (equal (mv-nth 0
+                               (ia32e-la-to-pa-PDPT
+                                lin-addr wp smep nxe r-w-x cpl
+                                (xw fld index value x86)))
+                       (mv-nth 0
+                               (ia32e-la-to-pa-PDPT
+                                lin-addr wp smep nxe r-w-x cpl
+                                x86)))
+                (equal (mv-nth 1
+                               (ia32e-la-to-pa-PDPT
+                                lin-addr wp smep nxe r-w-x cpl
+                                (xw fld index value x86)))
+                       (mv-nth 1
+                               (ia32e-la-to-pa-PDPT
+                                lin-addr wp smep nxe r-w-x cpl
+                                x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PDPT
+                                    paging-entries-found-p)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
+
+(defthm ia32e-la-to-pa-PDPT-xw-state
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (equal (mv-nth 2
+                          (ia32e-la-to-pa-PDPT
+                           lin-addr wp smep nxe r-w-x cpl
+                           (xw fld index value x86)))
+                  (xw fld index value
+                      (mv-nth 2
+                              (ia32e-la-to-pa-PDPT
+                               lin-addr wp smep nxe r-w-x cpl
+                               x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PDPT
+                                    paging-entries-found-p)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
 
 (defthm ia32e-la-to-pa-PDPT-xw-mem-disjoint-from-paging-structures
-  (implies (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+  (implies (and (paging-entries-found-p lin-addr x86)
                 (pairwise-disjoint-p-aux
                  (list index)
                  (open-qword-paddr-list-list
@@ -618,11 +814,63 @@
                                 lin-addr wp smep nxe r-w-x cpl
                                 x86)))))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PDPT
-                                    ia32e-la-to-pa-page-dir-ptr-table)
-                                   (bitops::logand-with-negated-bitmask)))))
+                                    ia32e-la-to-pa-page-dir-ptr-table
+                                    paging-entries-found-p)
+                                   (bitops::logand-with-negated-bitmask
+                                    unsigned-byte-p
+                                    signed-byte-p)))))
+
+;; PML4 Table:
+
+(defthm ia32e-la-to-pa-PML4T-xw-value
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (and (equal (mv-nth 0
+                               (ia32e-la-to-pa-PML4T
+                                lin-addr wp smep nxe r-w-x cpl
+                                (xw fld index value x86)))
+                       (mv-nth 0
+                               (ia32e-la-to-pa-PML4T
+                                lin-addr wp smep nxe r-w-x cpl
+                                x86)))
+                (equal (mv-nth 1
+                               (ia32e-la-to-pa-PML4T
+                                lin-addr wp smep nxe r-w-x cpl
+                                (xw fld index value x86)))
+                       (mv-nth 1
+                               (ia32e-la-to-pa-PML4T
+                                lin-addr wp smep nxe r-w-x cpl
+                                x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PML4T)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
+
+(defthm ia32e-la-to-pa-PML4T-xw-state
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (equal (mv-nth 2
+                          (ia32e-la-to-pa-PML4T
+                           lin-addr wp smep nxe r-w-x cpl
+                           (xw fld index value x86)))
+                  (xw fld index value
+                      (mv-nth 2
+                              (ia32e-la-to-pa-PML4T
+                               lin-addr wp smep nxe r-w-x cpl
+                               x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PML4T)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
 
 (defthm ia32e-la-to-pa-PML4T-xw-mem-disjoint-from-paging-structures
-  (implies (and (pml4-table-entry-addr-found-p lin-addr x86)
+  (implies (and (paging-entries-found-p lin-addr x86)
                 (pairwise-disjoint-p-aux
                  (list index)
                  (open-qword-paddr-list-list
@@ -645,9 +893,40 @@
                                (ia32e-la-to-pa-PML4T
                                 lin-addr wp smep nxe r-w-x cpl
                                 x86)))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PML4T
-                                    ia32e-la-to-pa-pml4-table)
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PML4T)
                                    (bitops::logand-with-negated-bitmask)))))
+
+;; Top-level Paging Translation Function:
+
+(defthm ia32e-entries-found-la-to-pa-xw-value
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (not (equal fld :msr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (and (equal (mv-nth 0 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl (xw fld index value x86)))
+                       (mv-nth 0 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))
+                (equal (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl (xw fld index value x86)))
+                       (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-entries-found-la-to-pa)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
+
+(defthm ia32e-entries-found-la-to-pa-xw-state
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (not (equal fld :mem))
+                (not (equal fld :fault))
+                (not (equal fld :ctr))
+                (not (equal fld :msr))
+                (x86p x86)
+                (x86p (xw fld index value x86)))
+           (equal (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl (xw fld index value x86)))
+                  (xw fld index value (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-entries-found-la-to-pa)
+                                   (bitops::logand-with-negated-bitmask
+                                    force (force))))))
 
 (defthm ia32e-entries-found-la-to-pa-xw-mem-disjoint-from-paging-structures
   (implies (and (paging-entries-found-p lin-addr x86)
@@ -675,60 +954,5 @@
                                 x86)))))
   :hints (("Goal" :in-theory (e/d* (ia32e-entries-found-la-to-pa)
                                    (bitops::logand-with-negated-bitmask)))))
-
-(defthm ia32e-la-to-pa-PT-xw-values
-  (implies (and (not (equal fld :mem))
-                (not (equal fld :fault))
-                (x86p x86)
-                (x86p (xw fld index val x86)))
-           (and (equal (mv-nth 0
-                               (ia32e-la-to-pa-PT
-                                lin-addr u-s-acc wp smep nxe r-w-x cpl
-                                (xw fld index value x86)))
-                       (mv-nth 0
-                               (ia32e-la-to-pa-PT
-                                lin-addr u-s-acc wp smep nxe r-w-x cpl
-                                x86)))
-                (equal (mv-nth 1
-                               (ia32e-la-to-pa-PT
-                                lin-addr u-s-acc wp smep nxe r-w-x cpl
-                                (xw fld index value x86)))
-                       (mv-nth 1
-                               (ia32e-la-to-pa-PT
-                                lin-addr u-s-acc wp smep nxe r-w-x cpl
-                                x86)))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
-                                    ia32e-la-to-pa-page-table
-                                    page-table-base-addr
-                                    page-directory-base-addr
-                                    page-dir-ptr-table-base-addr
-                                    pml4-table-base-addr)
-                                   (bitops::logand-with-negated-bitmask)))))
-
-(defthm ia32e-la-to-pa-PT-xw-state
-  (implies (and (not (equal fld :mem))
-                (not (equal fld :fault))
-                (x86p x86)
-                (x86p (xw fld index val x86)))
-           (equal (mv-nth 2
-                          (ia32e-la-to-pa-PT
-                           lin-addr u-s-acc wp smep nxe r-w-x cpl
-                           (xw fld index val x86)))
-                  (xw fld index value
-                      (mv-nth 2
-                              (ia32e-la-to-pa-PT
-                               lin-addr u-s-acc wp smep nxe r-w-x cpl
-                               x86)))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
-                                    ia32e-la-to-pa-page-table
-                                    page-table-base-addr
-                                    page-directory-base-addr
-                                    page-dir-ptr-table-base-addr
-                                    pml4-table-base-addr
-                                    page-table-entry-no-page-fault-p
-                                    page-fault-exception)
-                                   (bitops::logand-with-negated-bitmask)))))
-
-||#
 
 ;; ======================================================================
