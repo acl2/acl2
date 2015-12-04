@@ -381,7 +381,21 @@
   (defthm open-qword-paddr-list-list-and-append
     (equal (open-qword-paddr-list-list (append xs ys))
            (append (open-qword-paddr-list-list xs)
-                   (open-qword-paddr-list-list ys)))))
+                   (open-qword-paddr-list-list ys))))
+
+  (defthm open-qword-paddr-list-list-pairwise-disjoint-p-aux-and-disjoint-p
+    (implies (and
+              (pairwise-disjoint-p-aux (list index) (open-qword-paddr-list-list addrs))
+              (member-list-p entry-addr addrs))
+             (disjoint-p (list index) (addr-range 8 entry-addr)))
+    :hints (("Goal" :in-theory (e/d* (pairwise-disjoint-p-aux)
+                                     ()))))
+
+  (defthm open-qword-paddr-list-list-pairwise-disjoint-p-aux-and-member-p
+    (implies (and (pairwise-disjoint-p-aux (list index) (open-qword-paddr-list-list addrs))
+                  (member-list-p entry-addr addrs))
+             (not (member-p index (addr-range 8 entry-addr))))
+    :hints (("Goal" :in-theory (e/d* (pairwise-disjoint-p-aux) ())))))
 
 (local (in-theory (e/d* () (unsigned-byte-p))))
 

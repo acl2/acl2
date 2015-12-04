@@ -27,50 +27,11 @@
 
 (i-am-here)
 
-(defthm ia32e-entries-found-la-to-pa-and-xw-mem-disjoint
-  ;; [Shilpi]: Maybe I need something like this first?
-  (implies (and (paging-entries-found-p addr-1 x86)
-                (paging-entries-found-p addr-2 x86)
-                (disjoint-p
-                 ;; The physical addresses corresponding to addr-1 and
-                 ;; the physical address addr-2 are disjoint.
-                 (addr-range 8 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86)))
-                 (addr-range 8 addr-2))
-                (pairwise-disjoint-p-aux
-                 ;; Physical address addr-2 does not contain paging
-                 ;; structure content.  This means that the
-                 ;; translation-governing entries for addr-1 cannot be
-                 ;; affected by the write to addr-2.
-                 (addr-range 8 addr-2)
-                 (gather-all-paging-structure-qword-addresses x86)))
-           (equal (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl (xw :mem addr-2 val x86)))
-                  (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl x86)))))
-
-(defthm mv-nth-2-ia32e-entries-found-la-to-pa-and-xw-mem-disjoint
-  ;; [Shilpi]: Maybe I need something like this first?
-  (implies (and (paging-entries-found-p addr-1 x86)
-                (paging-entries-found-p addr-2 x86)
-                (disjoint-p
-                 ;; The physical addresses corresponding to addr-1 and
-                 ;; the physical address addr-2 are disjoint.
-                 (addr-range 8 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86)))
-                 (addr-range 8 addr-2))
-                (pairwise-disjoint-p-aux
-                 ;; Physical address addr-2 does not contain paging
-                 ;; structure content.  This means that the
-                 ;; translation-governing entries for addr-1 cannot be
-                 ;; affected by the write to addr-2.
-                 (addr-range 8 addr-2)
-                 (gather-all-paging-structure-qword-addresses x86)))
-           (equal (xw :mem addr-2 val (mv-nth 2 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl x86)))
-                  (mv-nth 2 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl (xw :mem addr-2 val x86))))))
-
 (defthm rm08-wm08-disjoint-in-system-level-mode
   (implies (and (not (programmer-level-mode x86))
                 (paging-entries-found-p addr-1 x86)
                 (paging-entries-found-p addr-2 x86)
-                (equal cpl
-                       (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
                 (disjoint-p
                  ;; The physical addresses corresponding to addr-1 and
                  ;; addr-2 are disjoint.
