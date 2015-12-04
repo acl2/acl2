@@ -12103,14 +12103,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro maximum-positive-32-bit-integer ()
   *maximum-positive-32-bit-integer*)
 
-(defmacro maximum-positive-32-bit-integer-minus-1 ()
+(defmacro minimum-negative-32-bit-integer ()
   (+ (- *maximum-positive-32-bit-integer*) -1))
 
 (defun 32-bit-integerp (x)
   (declare (xargs :guard t))
   (and (integerp x)
        (<= x (maximum-positive-32-bit-integer))
-       (>= x (maximum-positive-32-bit-integer-minus-1))))
+       (>= x (minimum-negative-32-bit-integer))))
 
 (defthm 32-bit-integerp-forward-to-integerp
   (implies (32-bit-integerp x)

@@ -5748,9 +5748,12 @@
 ; a ``caller.''
 
 ; Acl2-defaults-table is either a legal alist value for acl2-defaults-table or
-; else is :do-not-install.  If the former, then that alist is installed as the
-; acl2-defaults-table (if it is not already there) after executing the events
-; in ev-lst.
+; else is one of :do-not-install or :do-not-install!.  If an alist, then we may
+; install a suitable acl2-defaults-table before executing the events in ev-lst,
+; and the given acl2-defaults-table is installed as the acl2-defaults-table (if
+; it is not already there) after executing those events.  But the latter of
+; these is skipped if acl2-defaults-table is :do-not-install, and both are
+; skipped if acl2-defaults-table is :do-not-install!.
 
 ; The name ee-entry stands for ``embedded-event-lst'' entry.  It is consed onto
 ; the embedded-event-lst for the duration of the processing of ev-lst.  The
@@ -5883,7 +5886,9 @@
 ; allow defstobj array resizing, for the resizing and length field functions.
 ; But for simplicity, we always lay them down for defstobj and defabsstobj.
 
-                 (cond ((eq caller 'include-book)
+                 (cond ((eq acl2-defaults-table :do-not-install!)
+                        (value nil))
+                       ((eq caller 'include-book)
 
 ; The following is equivalent to (logic), without the PROGN (value :invisible).
 ; The PROGN is illegal in Common Lisp code because its ACL2 semantics differs
@@ -5952,7 +5957,8 @@
                                     (t state))
                               (mv erp val state)))
                         (t (er-progn
-                            (if (eq acl2-defaults-table :do-not-install)
+                            (if (member-eq acl2-defaults-table
+                                           '(:do-not-install :do-not-install!))
                                 (value nil)
                               (maybe-install-acl2-defaults-table
                                acl2-defaults-table state))
@@ -8115,7 +8121,9 @@
                           (post-pass-1-ttags-seen
                            (global-val 'ttags-seen wrld2))
                           (post-pass-1-proof-supporters-alist
-                           (global-val 'proof-supporters-alist wrld2)))
+                           (global-val 'proof-supporters-alist wrld2))
+                          (post-pass-1-cert-replay
+                           (global-val 'cert-replay wrld2)))
                      (pprogn
                       (print-encapsulate-msg2 insigs ev-lst state)
                       (er-progn
@@ -8213,8 +8221,30 @@
                                                    wrld8
                                                    (global-val
                                                     'pcert-books
-                                                    wrld3))))
-                                      wrld9)
+                                                    wrld3)))
+                                           (wrld10
+                                            (if (and post-pass-1-cert-replay
+                                                     (not (global-val
+                                                           'cert-replay
+                                                           wrld3)))
+
+; The 'cert-replay world global supports the possible avoidance of rolling back
+; the world after the first pass of certify-book, before doing the local
+; incompatibility check using include-book.  At one time we think we only
+; intended to set cert-replay when locally including books, and we didn't set
+; it here.  That led to a bug in handling hidden defpkg events: see the Essay
+; on Hidden Packages for relevant background, and see community books directory
+; misc/hidden-defpkg-checks/ for an example of a soundness bug in Version_7.1,
+; which is fixed by the global-set of 'cert-replay just below.
+
+; Perhaps we could take care of this in encapsulate-fix-known-package-alist,
+; which is called above; but the present approach, relying on the values of
+; 'cert-replay at various stages, seems most direct.
+
+                                                (global-set 'cert-replay t
+                                                            wrld9)
+                                              wrld9)))
+                                      wrld10)
                                     state)))))))))))))))))
 
            (t ; (ld-skip-proofsp state) = 'include-book
@@ -12964,7 +12994,13 @@
 ; (include-book "bar").  So, instead we directly set the 'table-alist property
 ; of 'acl2-defaults-table directory for the install-event call below.
 
-                                   :do-not-install
+; Moreover, if we are doing the include-book pass of a certify-book command,
+; then we also do not allow process-embedded-events-to set the ACL2 defaults
+; table at the beginning.
+
+                                   (if behalf-of-certify-flg
+                                       :do-not-install!
+                                     :do-not-install)
                                    skip-proofsp
                                    (cadr (car ev-lst))
                                    (list 'include-book full-book-name)
@@ -15901,7 +15937,14 @@
                                                       nil))
                                                     (t
                                                      (get-declaim-list
-                                                       state)))))))
+                                                      state))))))
+                                                (ignore
+                                                 (cond
+                                                  (index/old-wrld
+                                                   (maybe-install-acl2-defaults-table
+                                                    saved-acl2-defaults-table
+                                                    state))
+                                                  (t (value nil)))))
                                         (let* ((wrld2 (w state))
                                                (new-defpkg-list
                                                 (new-defpkg-list
