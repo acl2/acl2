@@ -1640,7 +1640,19 @@
                   (x86p x86)
                   (x86p (xw fld index val x86)))
              (equal (good-paging-structures-x86p (xw fld index val x86))
-                    (good-paging-structures-x86p x86)))))
+                    (good-paging-structures-x86p x86))))
+
+  (defthm good-paging-structures-x86p-and-xw-mem-disjoint-from-paging-structures
+    (implies (and (pairwise-disjoint-p-aux
+                   (list index)
+                   (open-qword-paddr-list-list
+                    (gather-all-paging-structure-qword-addresses x86)))
+                  (good-paging-structures-x86p x86)
+                  (physical-address-p index)
+                  (unsigned-byte-p 8 val))
+             (good-paging-structures-x86p (xw :mem index val x86)))
+    :hints (("Goal" :in-theory (e/d* (good-paging-structures-x86p)
+                                     ())))))
 
 (define xlate-equiv-x86s (x86-1 x86-2)
   :parents (reasoning-about-page-tables)

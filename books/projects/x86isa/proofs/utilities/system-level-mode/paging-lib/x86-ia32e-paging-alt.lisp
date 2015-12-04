@@ -125,7 +125,7 @@ function. We intend to use these functions only for reasoning.</p>" )
            ;; Page-Dir-Ptr Directory Pointer Table:
            (ptr-table-base-addr
             (ash (ia32e-pml4e-slice :pml4e-pdpt pml4-entry) 12)))
-          (mv nil ptr-table-base-addr))
+        (mv nil ptr-table-base-addr))
     (mv t 0))
 
   ///
@@ -153,7 +153,16 @@ function. We intend to use these functions only for reasoning.</p>" )
   (defthm logand-positive-of-page-dir-ptr-table-base-addr
     (equal (logand 18446744073709547520
                    (loghead 52 (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))))
-           (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))))
+           (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))))
+
+  (defthm page-dir-ptr-table-base-addr-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (page-dir-ptr-table-base-addr lin-addr (xw fld index val x86))
+                    (page-dir-ptr-table-base-addr lin-addr x86)))
+    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ())))))
 
 (define page-directory-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -177,7 +186,7 @@ function. We intend to use these functions only for reasoning.</p>" )
            (page-directory-base-addr
             (ash (ia32e-pdpte-pg-dir-slice :pdpte-pd ptr-table-entry) 12)))
 
-          (mv nil page-directory-base-addr))
+        (mv nil page-directory-base-addr))
 
     (mv t 0))
 
@@ -206,7 +215,16 @@ function. We intend to use these functions only for reasoning.</p>" )
   (defthm logand-positive-of-page-directory-base-addr
     (equal (logand 18446744073709547520
                    (loghead 52 (mv-nth 1 (page-directory-base-addr lin-addr x86))))
-           (mv-nth 1 (page-directory-base-addr lin-addr x86)))))
+           (mv-nth 1 (page-directory-base-addr lin-addr x86))))
+
+  (defthm page-directory-base-addr-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (page-directory-base-addr lin-addr (xw fld index val x86))
+                    (page-directory-base-addr lin-addr x86)))
+    :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ())))))
 
 (define page-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -231,7 +249,7 @@ function. We intend to use these functions only for reasoning.</p>" )
            ;; 4K pages
            (page-table-base-addr
             (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry) 12)))
-          (mv nil page-table-base-addr))
+        (mv nil page-table-base-addr))
     (mv t 0))
 
   ///
@@ -259,7 +277,16 @@ function. We intend to use these functions only for reasoning.</p>" )
   (defthm logand-positive-of-page-table-base-addr
     (equal (logand 18446744073709547520
                    (loghead 52 (mv-nth 1 (page-table-base-addr lin-addr x86))))
-           (mv-nth 1 (page-table-base-addr lin-addr x86)))))
+           (mv-nth 1 (page-table-base-addr lin-addr x86))))
+
+  (defthm page-table-base-addr-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (page-table-base-addr lin-addr (xw fld index val x86))
+                    (page-table-base-addr lin-addr x86)))
+    :hints (("Goal" :in-theory (e/d* (page-table-base-addr) ())))))
 
 ;; ======================================================================
 
@@ -270,7 +297,15 @@ function. We intend to use these functions only for reasoning.</p>" )
   :enabled t
   (and (canonical-address-p lin-addr)
        (physical-address-p (+ (ash 512 3) (mv-nth 1 (pml4-table-base-addr x86))))
-       (good-paging-structures-x86p x86)))
+       (good-paging-structures-x86p x86))
+  ///
+  (defthm pml4-table-entry-addr-found-p-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (pml4-table-entry-addr-found-p lin-addr (xw fld index val x86))
+                    (pml4-table-entry-addr-found-p lin-addr x86)))))
 
 (define page-dir-ptr-table-entry-addr-found-p
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -290,7 +325,17 @@ function. We intend to use these functions only for reasoning.</p>" )
   (defthm page-dir-ptr-table-entry-addr-found-p-and-page-dir-ptr-table-base-addr-no-error
     (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
              (not (mv-nth 0 (page-dir-ptr-table-base-addr lin-addr x86))))
-    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ())))))
+    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ()))))
+
+  (defthm page-dir-ptr-table-entry-addr-found-p-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (page-dir-ptr-table-entry-addr-found-p lin-addr (xw fld index val x86))
+                    (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
+    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p)
+                                     ())))))
 
 (define page-directory-entry-addr-found-p
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -309,7 +354,17 @@ function. We intend to use these functions only for reasoning.</p>" )
   (defthm page-directory-entry-addr-found-p-and-page-directory-base-addr-no-error
     (implies (page-directory-entry-addr-found-p lin-addr x86)
              (not (mv-nth 0 (page-directory-base-addr lin-addr x86))))
-    :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ())))))
+    :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ()))))
+
+  (defthm page-directory-entry-addr-found-p-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (page-directory-entry-addr-found-p lin-addr (xw fld index val x86))
+                    (page-directory-entry-addr-found-p lin-addr x86)))
+    :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr-found-p)
+                                     ())))))
 
 (define page-table-entry-addr-found-p
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -329,6 +384,16 @@ function. We intend to use these functions only for reasoning.</p>" )
     (implies (page-table-entry-addr-found-p lin-addr x86)
              (not (mv-nth 0 (page-table-base-addr lin-addr x86))))
     :hints (("Goal" :in-theory (e/d* (page-table-base-addr)
+                                     ()))))
+
+  (defthm page-table-entry-addr-found-p-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (page-table-entry-addr-found-p lin-addr (xw fld index val x86))
+                    (page-table-entry-addr-found-p lin-addr x86)))
+    :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p)
                                      ())))))
 
 (define paging-entries-found-p
@@ -426,8 +491,8 @@ function. We intend to use these functions only for reasoning.</p>" )
   (if (page-table-entry-addr-found-p lin-addr x86)
       (b* (((mv & base-addr)
             (page-table-base-addr lin-addr x86)))
-          (ia32e-la-to-pa-page-table
-           lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl x86))
+        (ia32e-la-to-pa-page-table
+         lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl x86))
     (mv t 0 x86))
 
   ///
@@ -469,44 +534,54 @@ function. We intend to use these functions only for reasoning.</p>" )
                                  x86)))
                     (xr fld index x86))))
 
-  ;; Need lemmas about
-  ;; page-table-base-addr and xw
-  ;; page-table-entry-addr-found-p and xw
-  ;; before I can prove the following two theorems.
+  (defthm ia32e-la-to-pa-PT-xw-value
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (and (equal (mv-nth 0
+                                 (ia32e-la-to-pa-PT
+                                  lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (ia32e-la-to-pa-PT
+                                  lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                  x86)))
+                  (equal (mv-nth 1
+                                 (ia32e-la-to-pa-PT
+                                  lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (ia32e-la-to-pa-PT
+                                  lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                  x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
+                                      paging-entries-found-p)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force))))))
 
-  ;; (defthm ia32e-la-to-pa-PT-xw-values
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (and (equal (mv-nth 0
-  ;;                                (ia32e-la-to-pa-PT
-  ;;                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
-  ;;                                 (xw fld index value x86)))
-  ;;                        (mv-nth 0
-  ;;                                (ia32e-la-to-pa-PT
-  ;;                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
-  ;;                                 x86)))
-  ;;                 (equal (mv-nth 1
-  ;;                                (ia32e-la-to-pa-PT
-  ;;                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
-  ;;                                 (xw fld index value x86)))
-  ;;                        (mv-nth 1
-  ;;                                (ia32e-la-to-pa-PT
-  ;;                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
-  ;;                                 x86))))))
-
-  ;; (defthm ia32e-la-to-pa-PT-xw-state
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (equal (mv-nth 2
-  ;;                           (ia32e-la-to-pa-PT
-  ;;                            lin-addr u-s-acc wp smep nxe r-w-x cpl
-  ;;                            (xw fld index value x86)))
-  ;;                   (xw fld index value
-  ;;                       (mv-nth 2
-  ;;                               (ia32e-la-to-pa-PT
-  ;;                                lin-addr u-s-acc wp smep nxe r-w-x cpl
-  ;;                                x86))))))
-  )
+  (defthm ia32e-la-to-pa-PT-xw-state
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (equal (mv-nth 2
+                            (ia32e-la-to-pa-PT
+                             lin-addr u-s-acc wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (ia32e-la-to-pa-PT
+                                 lin-addr u-s-acc wp smep nxe r-w-x cpl
+                                 x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
+                                      paging-entries-found-p)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force)))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -529,36 +604,36 @@ function. We intend to use these functions only for reasoning.</p>" )
             (page-directory-entry-addr lin-addr base-addr))
            (entry (rm-low-64 p-entry-addr x86)))
 
-          (if (equal (ia32e-page-tables-slice :ps entry) 1)
-              ;; 2MB page
-              (ia32e-la-to-pa-page-directory
-               lin-addr base-addr wp smep nxe r-w-x cpl x86)
-            ;; 4K page
-            (b* (((mv fault-flg val x86)
-                  (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
-                 ((when fault-flg)
-                  (mv 'Page-Fault val x86))
-                 ;; No errors at this level.
-                 ((mv flg address x86)
-                  (ia32e-la-to-pa-PT
-                   lin-addr (ia32e-page-tables-slice :u/s entry)
-                   wp smep nxe r-w-x cpl x86))
-                 ((when flg)
-                  ;; Error, so do not update accessed bit.
-                  (mv flg 0 x86))
+        (if (equal (ia32e-page-tables-slice :ps entry) 1)
+            ;; 2MB page
+            (ia32e-la-to-pa-page-directory
+             lin-addr base-addr wp smep nxe r-w-x cpl x86)
+          ;; 4K page
+          (b* (((mv fault-flg val x86)
+                (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+               ((when fault-flg)
+                (mv 'Page-Fault val x86))
+               ;; No errors at this level.
+               ((mv flg address x86)
+                (ia32e-la-to-pa-PT
+                 lin-addr (ia32e-page-tables-slice :u/s entry)
+                 wp smep nxe r-w-x cpl x86))
+               ((when flg)
+                ;; Error, so do not update accessed bit.
+                (mv flg 0 x86))
 
-                 ;; Get accessed bit.  Dirty bit is ignored when PDE
-                 ;; references the PT.
-                 (accessed        (ia32e-page-tables-slice :a entry))
-                 ;; Update accessed bit, if needed.
-                 (entry (if (equal accessed 0)
-                            (set-accessed-bit entry)
-                          entry))
-                 ;; Update x86, if needed.
-                 (x86 (if (equal accessed 0)
-                          (wm-low-64 p-entry-addr entry x86)
-                        x86)))
-                (mv nil address x86))))
+               ;; Get accessed bit.  Dirty bit is ignored when PDE
+               ;; references the PT.
+               (accessed        (ia32e-page-tables-slice :a entry))
+               ;; Update accessed bit, if needed.
+               (entry (if (equal accessed 0)
+                          (set-accessed-bit entry)
+                        entry))
+               ;; Update x86, if needed.
+               (x86 (if (equal accessed 0)
+                        (wm-low-64 p-entry-addr entry x86)
+                      x86)))
+            (mv nil address x86))))
 
     (mv t 0 x86))
 
@@ -623,45 +698,54 @@ function. We intend to use these functions only for reasoning.</p>" )
                                  x86)))
                     (xr fld index x86))))
 
+  (defthm ia32e-la-to-pa-PD-xw-value
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (and (equal (mv-nth 0
+                                 (ia32e-la-to-pa-PD
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (ia32e-la-to-pa-PD
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  x86)))
+                  (equal (mv-nth 1
+                                 (ia32e-la-to-pa-PD
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (ia32e-la-to-pa-PD
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PD
+                                      paging-entries-found-p)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force))))))
 
-  ;; Need lemmas about
-  ;; page-directory-base-addr and xw
-  ;; page-directory-entry-addr-found-p and xw
-  ;; before I can prove the following two theorems.
-
-  ;; (defthm ia32e-la-to-pa-PD-xw-values
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (and (equal (mv-nth 0
-  ;;                                (ia32e-la-to-pa-PD
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 (xw fld index value x86)))
-  ;;                        (mv-nth 0
-  ;;                                (ia32e-la-to-pa-PD
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 x86)))
-  ;;                 (equal (mv-nth 1
-  ;;                                (ia32e-la-to-pa-PD
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 (xw fld index value x86)))
-  ;;                        (mv-nth 1
-  ;;                                (ia32e-la-to-pa-PD
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 x86))))))
-
-  ;; (defthm ia32e-la-to-pa-PD-xw-state
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (equal (mv-nth 2
-  ;;                           (ia32e-la-to-pa-PD
-  ;;                            lin-addr wp smep nxe r-w-x cpl
-  ;;                            (xw fld index value x86)))
-  ;;                   (xw fld index value
-  ;;                       (mv-nth 2
-  ;;                               (ia32e-la-to-pa-PD
-  ;;                                lin-addr wp smep nxe r-w-x cpl
-  ;;                                x86))))))
-  )
+  (defthm ia32e-la-to-pa-PD-xw-state
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (equal (mv-nth 2
+                            (ia32e-la-to-pa-PD
+                             lin-addr wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (ia32e-la-to-pa-PD
+                                 lin-addr wp smep nxe r-w-x cpl
+                                 x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PD
+                                      paging-entries-found-p)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force)))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -683,34 +767,34 @@ function. We intend to use these functions only for reasoning.</p>" )
            (p-entry-addr
             (page-dir-ptr-table-entry-addr lin-addr base-addr))
            (entry (rm-low-64 p-entry-addr x86)))
-          (if (equal (ia32e-page-tables-slice :ps entry) 1)
-              ;; 1GB page
-              (ia32e-la-to-pa-page-dir-ptr-table
-               lin-addr base-addr wp smep nxe r-w-x cpl x86)
-            ;; 2M or 4K page
-            (b* (((mv fault-flg val x86)
-                  (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
-                 ((when fault-flg)
-                  (mv 'Page-Fault val x86))
-                 ;; No errors at this level.
-                 ((mv flg address x86)
-                  (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86))
-                 ((when flg)
-                  ;; Error, so do not update accessed bit.
-                  (mv flg 0 x86))
+        (if (equal (ia32e-page-tables-slice :ps entry) 1)
+            ;; 1GB page
+            (ia32e-la-to-pa-page-dir-ptr-table
+             lin-addr base-addr wp smep nxe r-w-x cpl x86)
+          ;; 2M or 4K page
+          (b* (((mv fault-flg val x86)
+                (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+               ((when fault-flg)
+                (mv 'Page-Fault val x86))
+               ;; No errors at this level.
+               ((mv flg address x86)
+                (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86))
+               ((when flg)
+                ;; Error, so do not update accessed bit.
+                (mv flg 0 x86))
 
-                 ;; Get accessed bit.  Dirty bit is ignored when PDE
-                 ;; references the PT.
-                 (accessed        (ia32e-page-tables-slice :a entry))
-                 ;; Update accessed bit, if needed.
-                 (entry (if (equal accessed 0)
-                            (set-accessed-bit entry)
-                          entry))
-                 ;; Update x86, if needed.
-                 (x86 (if (equal accessed 0)
-                          (wm-low-64 p-entry-addr entry x86)
-                        x86)))
-                (mv nil address x86))))
+               ;; Get accessed bit.  Dirty bit is ignored when PDE
+               ;; references the PT.
+               (accessed        (ia32e-page-tables-slice :a entry))
+               ;; Update accessed bit, if needed.
+               (entry (if (equal accessed 0)
+                          (set-accessed-bit entry)
+                        entry))
+               ;; Update x86, if needed.
+               (x86 (if (equal accessed 0)
+                        (wm-low-64 p-entry-addr entry x86)
+                      x86)))
+            (mv nil address x86))))
 
 
     (mv t 0 x86))
@@ -813,44 +897,54 @@ function. We intend to use these functions only for reasoning.</p>" )
                     (xr fld index x86))))
 
 
-  ;; Need lemmas about
-  ;; page-dir-ptr-table-base-addr and xw
-  ;; page-dir-ptr-table-entry-addr-found-p and xw
-  ;; before I can prove the following two theorems.
+  (defthm ia32e-la-to-pa-PDPT-xw-value
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (and (equal (mv-nth 0
+                                 (ia32e-la-to-pa-PDPT
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (ia32e-la-to-pa-PDPT
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  x86)))
+                  (equal (mv-nth 1
+                                 (ia32e-la-to-pa-PDPT
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (ia32e-la-to-pa-PDPT
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PDPT
+                                      paging-entries-found-p)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force))))))
 
-  ;; (defthm ia32e-la-to-pa-PDPT-xw-values
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (and (equal (mv-nth 0
-  ;;                                (ia32e-la-to-pa-PDPT
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 (xw fld index value x86)))
-  ;;                        (mv-nth 0
-  ;;                                (ia32e-la-to-pa-PDPT
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 x86)))
-  ;;                 (equal (mv-nth 1
-  ;;                                (ia32e-la-to-pa-PDPT
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 (xw fld index value x86)))
-  ;;                        (mv-nth 1
-  ;;                                (ia32e-la-to-pa-PDPT
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 x86))))))
-
-  ;; (defthm ia32e-la-to-pa-PDPT-xw-state
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (equal (mv-nth 2
-  ;;                           (ia32e-la-to-pa-PDPT
-  ;;                            lin-addr wp smep nxe r-w-x cpl
-  ;;                            (xw fld index value x86)))
-  ;;                   (xw fld index value
-  ;;                       (mv-nth 2
-  ;;                               (ia32e-la-to-pa-PDPT
-  ;;                                lin-addr wp smep nxe r-w-x cpl
-  ;;                                x86))))))
-  )
+  (defthm ia32e-la-to-pa-PDPT-xw-state
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (equal (mv-nth 2
+                            (ia32e-la-to-pa-PDPT
+                             lin-addr wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (ia32e-la-to-pa-PDPT
+                                 lin-addr wp smep nxe r-w-x cpl
+                                 x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PDPT
+                                      paging-entries-found-p)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force)))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -890,7 +984,7 @@ function. We intend to use these functions only for reasoning.</p>" )
            (x86 (if (equal accessed 0)
                     (wm-low-64 p-entry-addr entry x86)
                   x86)))
-          (mv nil address x86))
+        (mv nil address x86))
 
     (mv t 0 x86))
 
@@ -1015,45 +1109,52 @@ function. We intend to use these functions only for reasoning.</p>" )
                                  x86)))
                     (xr fld index x86))))
 
+  (defthm ia32e-la-to-pa-PML4T-xw-value
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (and (equal (mv-nth 0
+                                 (ia32e-la-to-pa-PML4T
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (ia32e-la-to-pa-PML4T
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  x86)))
+                  (equal (mv-nth 1
+                                 (ia32e-la-to-pa-PML4T
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (ia32e-la-to-pa-PML4T
+                                  lin-addr wp smep nxe r-w-x cpl
+                                  x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PML4T)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force))))))
 
-  ;; Need lemmas about
-  ;; pml4-table-base-addr and xw
-  ;; pml4-table-entry-addr-found-p and xw
-  ;; before I can prove the following two theorems.
-
-  ;; (defthm ia32e-la-to-pa-PML4T-xw-values
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (and (equal (mv-nth 0
-  ;;                                (ia32e-la-to-pa-PML4T
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 (xw fld index value x86)))
-  ;;                        (mv-nth 0
-  ;;                                (ia32e-la-to-pa-PML4T
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 x86)))
-  ;;                 (equal (mv-nth 1
-  ;;                                (ia32e-la-to-pa-PML4T
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 (xw fld index value x86)))
-  ;;                        (mv-nth 1
-  ;;                                (ia32e-la-to-pa-PML4T
-  ;;                                 lin-addr wp smep nxe r-w-x cpl
-  ;;                                 x86))))))
-
-  ;; (defthm ia32e-la-to-pa-PML4T-xw-state
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (equal (mv-nth 2
-  ;;                           (ia32e-la-to-pa-PML4T
-  ;;                            lin-addr wp smep nxe r-w-x cpl
-  ;;                            (xw fld index value x86)))
-  ;;                   (xw fld index value
-  ;;                       (mv-nth 2
-  ;;                               (ia32e-la-to-pa-PML4T
-  ;;                                lin-addr wp smep nxe r-w-x cpl
-  ;;                                x86))))))
-  )
+  (defthm ia32e-la-to-pa-PML4T-xw-state
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (equal (mv-nth 2
+                            (ia32e-la-to-pa-PML4T
+                             lin-addr wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (ia32e-la-to-pa-PML4T
+                                 lin-addr wp smep nxe r-w-x cpl
+                                 x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PML4T)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force)))))))
 
 ;; ======================================================================
 
@@ -1079,7 +1180,7 @@ function. We intend to use these functions only for reasoning.</p>" )
        (wp        (cr0-slice :cr0-wp cr0))
        (smep      (cr4-slice :cr4-smep cr4))
        (nxe       (ia32_efer-slice :ia32_efer-nxe ia32-efer)))
-      (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86))
+    (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86))
 
   ///
 
@@ -1129,40 +1230,35 @@ function. We intend to use these functions only for reasoning.</p>" )
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  ;; (defthm ia32e-entries-found-la-to-pa-xw-values
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault))
-  ;;                 (not (equal fld :ctr))
-  ;;                 (not (equal fld :msr)))
-  ;;            (and (equal (mv-nth 0
-  ;;                                (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl
-  ;;                                                              (xw fld index value
-  ;;                                                                  x86)))
-  ;;                        (mv-nth 0
-  ;;                                (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl
-  ;;                                                              x86)))
-  ;;                 (equal (mv-nth 1
-  ;;                                (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl
-  ;;                                                              (xw fld index value x86)))
-  ;;                        (mv-nth 1
-  ;;                                (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl
-  ;;                                                              x86))))))
+  (defthm ia32e-entries-found-la-to-pa-xw-value
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (not (equal fld :msr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (and (equal (mv-nth 0 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl (xw fld index value x86)))
+                         (mv-nth 0 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))
+                  (equal (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl (xw fld index value x86)))
+                         (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-entries-found-la-to-pa)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force))))))
 
-  ;; (defthm ia32e-entries-found-la-to-pa-xw-state
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault))
-  ;;                 (not (equal fld :ctr))
-  ;;                 (not (equal fld :msr)))
-  ;;            (equal (mv-nth 2
-  ;;                           (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl
-  ;;                                                         (xw fld index value x86)))
-  ;;                   (xw fld index value
-  ;;                       (mv-nth 2
-  ;;                               (ia32e-entries-found-la-to-pa
-  ;;                                lin-addr r-w-x cpl x86)))))
-  ;;   :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-  )
+  (defthm ia32e-entries-found-la-to-pa-xw-state
+    (implies (and (paging-entries-found-p lin-addr x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (not (equal fld :msr))
+                  (x86p x86)
+                  (x86p (xw fld index value x86)))
+             (equal (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-entries-found-la-to-pa)
+                                     (bitops::logand-with-negated-bitmask
+                                      force (force)))))))
 
 ;; ======================================================================
 
