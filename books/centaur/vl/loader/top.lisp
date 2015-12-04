@@ -161,7 +161,9 @@ option on your @(see vl-loadconfig).</p>")
               "Top-level descriptions (modules, packages, interfaces, etc.)  we
                have loaded so far.  These descriptions have been only minimally
                transformed, and are intended to capture the actual source code
-               in the files on disk.")
+               in the files on disk.  These are always kept in the reverse
+               order that they are encountered (i.e., accumulator style), which
+               is important for lexical scoping.")
 
    (descalist  t
                "Fast alist of description names, for fast lookups."
@@ -282,7 +284,7 @@ warning that maybe something is amiss with file loading.</p>")
 
 (define vl-load-merge-descriptions
   :short "Merge newly found Verilog descriptions with previously loaded
-descriptions, warning about any multiply defined descriptions."
+          descriptions, warning about any multiply defined descriptions."
   ((new        vl-descriptionlist-p)
    (old        vl-descriptionlist-p)
    (descalist  (equal descalist (vl-make-descalist old)))
@@ -292,11 +294,11 @@ descriptions, warning about any multiply defined descriptions."
                               :hyp (equal descalist (vl-make-descalist old)))
                (reportcard vl-reportcard-p))
   :long "<p>As a simple rule, we always keep the first definition of any
-description we encounter.  This function is responsible for enforcing this
-rule: we merge some newly parsed descriptions in with the already-parsed
-descriptions.  If there are any name clashes, the original definition wins, and
-we add a warning to the @('reportcard') to say that the original definition is
-being kept.</p>"
+         description we encounter.  This function is responsible for enforcing
+         this rule: we merge some newly parsed descriptions in with the
+         already-parsed descriptions.  If there are any name clashes, the
+         original definition wins, and we add a warning to the @('reportcard')
+         to say that the original definition is being kept.</p>"
   :hooks (:fix)
   :prepwork ((local (in-theory (enable vl-make-descalist))))
   (b* ((old        (vl-descriptionlist-fix old))
@@ -509,6 +511,7 @@ descriptions.</li>
        (pstate-backup pstate)
 
        ((mv successp descs pstate)
+        ;; Note that these descriptions are returned in parse order.
         (time$ (vl-parse cleaned pstate st.config)
                :msg "; ~s0: parse: ~st sec, ~sa bytes~%"
                :args (list filename)
@@ -536,13 +539,15 @@ descriptions.</li>
        ;; extended, etc.
 
        (descs
+        ;; Note that this preserves the order of descs.
         (time$ (vl-descriptionlist-inject-comments descs comment-map)
                :msg "; ~s0: comment: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime st.config.mintime))
 
        ;; Try to associate low-level, "early" warnings (e.g., from the lexer)
-       ;; with the appropriate modules.
+       ;; with the appropriate modules.  Note that this preserves the order of
+       ;; descs.
        ((mv descs pstate)
         (b* ((warnings (vl-parsestate->warnings pstate))
              ((mv descs warnings)
@@ -550,7 +555,9 @@ descriptions.</li>
              (pstate (change-vl-parsestate pstate :warnings warnings)))
           (mv descs pstate)))
 
-       ;; Merge new descriptions into previous descriptions.
+       ;; Merge new descriptions into previous descriptions.  Note that this
+       ;; (modulo dropping later descriptions) revappends the descs onto
+       ;; sc.descs.
        ((mv descs descalist reportcard)
         (time$ (vl-load-merge-descriptions descs st.descs st.descalist st.reportcard)
                :msg "; ~s0: merge: ~st sec, ~sa bytes~%"

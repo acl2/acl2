@@ -247,6 +247,8 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
 ; But we don't support this timeunit declaration yet.
 
 (defparser vl-parse-source-text ()
+  ;; Note that for proper scoping it's important that this return the
+  ;; descriptions in parse order.
   :result (vl-descriptionlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -275,6 +277,7 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
        (tokstream (vl-tokstream-update-tokens tokens))
        (tokstream (vl-tokstream-update-pstate pstate))
        ((mv err items tokstream)
+        ;; Note that items are returned in parse order.
         (vl-parse-source-text))
        ((when err)
         ;; Warnings are a little subtle here.  Note that above we installed the

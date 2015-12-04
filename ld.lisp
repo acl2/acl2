@@ -2616,30 +2616,6 @@
         (value fn)))))))
 
 #-acl2-loop-only
-(defun getpid$ ()
-
-; This function is intended to return the process id.  But it may return nil
-; instead, depending on the underlying lisp platform.
-
-  (let ((fn
-         #+allegro 'excl::getpid
-         #+gcl 'si::getpid
-         #+sbcl 'sb-unix::unix-getpid
-         #+cmu 'unix::unix-getpid
-         #+clisp (or (let ((fn0 (find-symbol "PROCESS-ID" "SYSTEM")))
-                       (and (fboundp fn0) ; CLISP 2.34
-                            fn0))
-                     (let ((fn0 (find-symbol "PROGRAM-ID" "SYSTEM")))
-                       (and (fboundp fn0) ; before CLISP 2.34
-                            fn0)))
-         #+ccl 'ccl::getpid
-         #+lispworks 'system::getpid
-         #-(or allegro gcl sbcl cmu clisp ccl lispworks) nil))
-    (and fn
-         (fboundp fn)
-         (funcall fn))))
-
-#-acl2-loop-only
 (defun-one-output tmp-filename (dir suffix)
 
 ; Warning: If this function is changed, look at its call in save-gprof.lsp.

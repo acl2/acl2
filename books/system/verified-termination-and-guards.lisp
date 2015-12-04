@@ -72,6 +72,7 @@
 (verify-termination >=-len) ; and guards
 (verify-termination all->=-len) ; and guards
 (verify-termination strip-cadrs) ; and guards
+(verify-termination alist-to-doublets) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; The following section was written by David L. Rager.

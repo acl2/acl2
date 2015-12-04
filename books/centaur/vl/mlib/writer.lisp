@@ -613,10 +613,10 @@ displays.  The module browser's web pages are responsible for defining the
   (define vl-pp-hidindex ((x vl-hidindex-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-hidindex-count x) 10)
     (b* (((vl-hidindex x)))
-      (vl-ps-seq (vl-ps-span "vl_id"
-                             (vl-print-str (if (eq x.name :vl-$root)
-                                               "$root"
-                                             x.name)))
+      (vl-ps-seq (if (eq x.name :vl-$root)
+                     (vl-ps-span "vl_key"
+                                 (vl-print "$root"))
+                   (vl-print-wirename x.name))
                  (vl-pp-indexlist x.indices))))
 
   (define vl-pp-hidexpr ((x vl-hidexpr-p) &key (ps 'ps))

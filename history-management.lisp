@@ -6025,11 +6025,23 @@
       (make-ldds-command-block1 (cdr wrld1) cmd-ldd 1 fullp nil ens wrld ans))
      (t (make-ldds-command-block1 wrld1 cmd-ldd 1 fullp nil ens wrld ans)))))
 
+(defun ens-maybe-brr (state)
+
+; We want history commands to show the "appropriate" enabled status.  For the
+; user inside break-rewrite, "appropriate" suggests using the enabled structure
+; at the current point in the proof.
+
+  (or (and (eq (f-get-global 'wormhole-name state) 'brr)
+           (access rewrite-constant
+                   (get-brr-local 'rcnst state)
+                   :current-enabled-structure))
+      (ens state)))
+
 (defun pcb-pcb!-fn (cd fullp state)
   (io? history nil (mv erp val state)
        (cd fullp)
        (let ((wrld (w state))
-             (ens (ens state)))
+             (ens (ens-maybe-brr state)))
          (er-let* ((cmd-wrld (er-decode-cd cd wrld :pcb state)))
                   (pprogn
                    (print-ldds
@@ -6054,7 +6066,7 @@
          (er-let* ((cmd-wrld (er-decode-cd cd wrld :pc state)))
                   (pprogn
                    (print-ldd
-                    (make-command-ldd nil t cmd-wrld (ens state) wrld)
+                    (make-command-ldd nil t cmd-wrld (ens-maybe-brr state) wrld)
                     (standard-co state)
                     state)
                    (value :invisible))))))
@@ -6071,7 +6083,7 @@
   (io? history nil (mv erp val state)
        (cd1 markp cd2)
        (let ((wrld (w state))
-             (ens (ens state)))
+             (ens (ens-maybe-brr state)))
          (er-let*
           ((cmd-wrld1 (er-decode-cd cd1 wrld :ps state))
            (cmd-wrld2 (er-decode-cd cd2 wrld :ps state)))
@@ -6216,11 +6228,11 @@
    ((equal (pe-event-form (cddar ev-wrld) wrld)
            (access-command-tuple-form (cddar cmd-wrld)))
     (print-ldd
-     (make-command-ldd nil t cmd-wrld (ens state) wrld)
+     (make-command-ldd nil t cmd-wrld (ens-maybe-brr state) wrld)
      channel state))
    (t
     (let ((indent (print-ldd-formula-column state))
-          (ens (ens state)))
+          (ens (ens-maybe-brr state)))
       (pprogn
        (print-ldd
         (make-command-ldd nil nil cmd-wrld ens wrld)

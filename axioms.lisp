@@ -12103,14 +12103,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro maximum-positive-32-bit-integer ()
   *maximum-positive-32-bit-integer*)
 
-(defmacro maximum-positive-32-bit-integer-minus-1 ()
+(defmacro minimum-negative-32-bit-integer ()
   (+ (- *maximum-positive-32-bit-integer*) -1))
 
 (defun 32-bit-integerp (x)
   (declare (xargs :guard t))
   (and (integerp x)
        (<= x (maximum-positive-32-bit-integer))
-       (>= x (maximum-positive-32-bit-integer-minus-1))))
+       (>= x (minimum-negative-32-bit-integer))))
 
 (defthm 32-bit-integerp-forward-to-integerp
   (implies (32-bit-integerp x)
@@ -18849,172 +18849,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (read-acl2-oracle state)
           (declare (ignore erp))
           (mv val state)))
-
-#-acl2-loop-only
-(defun read-file-by-lines (file &optional delete-after-reading)
-  (let ((acc nil)
-        (eof '(nil))
-        missing-newline-p)
-    (with-open-file
-     (s file :direction :input)
-     (loop (multiple-value-bind (line temp)
-               (read-line s nil eof)
-             (cond ((eq line eof)
-                    (return acc))
-                   (t
-                    (setq missing-newline-p temp)
-                    (setq acc
-                          (if acc
-                              (concatenate 'string acc (string #\Newline) line)
-                            line)))))))
-    (when delete-after-reading
-      (delete-file file))
-    (if missing-newline-p
-        acc
-      (concatenate 'string acc (string #\Newline)))))
-
-#-acl2-loop-only
-(defun system-call+ (string arguments)
-
-; Warning: Keep this in sync with system-call.
-
-  (let* (exit-code ; assigned below
-         #+(or gcl clisp)
-         (tmp-file (format nil
-                           "~a/tmp~s"
-                           (or (f-get-global 'tmp-dir *the-live-state*)
-                               "/tmp")
-                           (getpid$)))
-         no-error
-         (output-string
-          (our-ignore-errors
-           (prog1
-               #+gcl ; does wildcard expansion
-             (progn (setq exit-code
-                          (si::system
-                           (let ((result string))
-                             (dolist
-                               (x arguments)
-                               (setq result (concatenate 'string result " " x)))
-                             (concatenate 'string result " > " tmp-file))))
-                    (read-file-by-lines tmp-file t))
-             #+lispworks ; does wildcard expansion (see comment below)
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (system::call-system-showing-output
-
-; It was tempting to use (cons string arguments).  This would cause the given
-; command, string, to be applied to the given arguments, without involving the
-; shell.  But then a command such as "ls" would not work; one would have to
-; provide a string such as "/bin/ls".  So instead of using a list here, we use
-; a string, which according to the LispWorks manual will invoke the shell,
-; which will find commands (presumably including built-ins and also using the
-; user's path).
-
-                      (let ((result string))
-                        (dolist
-                          (x arguments)
-                          (setq result (concatenate 'string result " " x)))
-                        result)
-                      :output-stream s
-                      :prefix ""
-                      :show-cmd nil
-                      :kill-process-on-abort t))
-               #+windows ; process is returned above, not exit code
-               (setq exit-code nil))
-             #+allegro ; does wildcard expansion
-             (multiple-value-bind
-                 (stdout-lines stderr-lines exit-status)
-                 (excl.osi::command-output
-                  (let ((result string))
-                    (dolist
-                      (x arguments)
-                      (setq result (concatenate 'string result " " x)))
-                    result))
-               (declare (ignore stderr-lines))
-               (setq exit-code exit-status)
-               (let ((acc nil))
-                 (loop for line in stdout-lines
-                       do
-                       (setq acc
-                             (if acc
-                                 (concatenate 'string
-                                              acc
-                                              (string #\Newline)
-                                              line)
-                               line)))
-                 acc))
-             #+cmu
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (let (temp)
-                       (if (ignore-errors
-                             (progn
-                               (setq temp
-                                     (ext:process-exit-code
-                                      (common-lisp-user::run-program
-                                       string arguments
-                                       :output s)))
-                               1))
-                           temp
-                         1))))
-             #+sbcl
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (let (temp)
-                       (if (ignore-errors
-                             (progn
-                               (setq temp
-                                     (sb-ext:process-exit-code
-                                      (sb-ext:run-program string arguments
-                                                          :output s
-                                                          :search t)))
-                               1))
-                           temp
-                         1))))
-             #+clisp
-             (progn (setq exit-code
-                          (or (ext:run-program string
-                                               :arguments arguments
-                                               :output tmp-file)
-                              0))
-                    (read-file-by-lines tmp-file t))
-             #+ccl
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (let* ((proc
-                             (ccl::run-program string arguments
-                                               :output s
-                                               :wait t))
-                            (status (multiple-value-list
-                                     (ccl::external-process-status proc))))
-                       (if (not (and (consp status)
-                                     (eq (car status) :EXITED)
-                                     (consp (cdr status))
-                                     (integerp (cadr status))))
-                           1 ; just some non-zero exit code here
-                         (cadr status)))))
-             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
-             (declare (ignore string arguments))
-             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
-             (error "SYSTEM-CALL is not yet defined in this Lisp.")
-             (setq no-error t)))))
-    (values (cond ((integerp exit-code)
-                   exit-code)
-                  ((null exit-code)
-                   (if no-error 0 1))
-                  (t (format t
-                             "WARNING: System-call produced non-integer, ~
-                              non-nil exit code:~%~a~%"
-                             exit-code)
-                     0))
-            (if (stringp output-string)
-                output-string
-              ""))))
 
 (encapsulate
  ()
