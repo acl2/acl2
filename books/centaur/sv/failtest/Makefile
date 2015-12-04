@@ -1,7 +1,5 @@
-#!/usr/bin/env ruby
-
-# VL Verilog Toolkit
-# Copyright (C) 2008-2015 Centaur Technology
+# SV - Symbolic Vector Hardware Analysis Framework
+# Copyright (C) 2014-2015 Centaur Technology
 #
 # Contact:
 #   Centaur Technology Formal Verification Group
@@ -30,34 +28,55 @@
 #
 # Original author: Jared Davis <jared@centtech.com>
 
-require_relative '../utils'
+.PHONY: all clean
+all:
 
-def fine(modname, wirename)
-  outlaw_warning(modname, "VL-PROGRAMMING-ERROR", wirename)
-  outlaw_warning(modname, "VL-ILLEGAL-IMPORT", wirename)
-  outlaw_warning(modname, "VL-IMPORT-CONFLICT", wirename)
-  outlaw_warning(modname, "VL-TRICKY-SCOPE", wirename)
-end
 
-def tricky(modname, wirename)
-  match_warning(modname, "VL-TRICKY-SCOPE", wirename)
-  outlaw_warning(modname, "VL-PROGRAMMING-ERROR", wirename)
-  outlaw_warning(modname, "VL-ILLEGAL-IMPORT", wirename)
-  outlaw_warning(modname, "VL-IMPORT-CONFLICT", wirename)
-end
+STARTJOB  ?= bash
+COSIM_DIR := $(PWD)/../cosims
+CORE      := $(COSIM_DIR)/cosim-core
 
-fine(:m0, "clk")
-fine(:m0, "shadowed_p1")
-fine(:m0, "fine_w1")
-fine(:m0, "fine_r2")
+SPEC_FILES := $(wildcard *.v)
+TESTNAMES  := $(patsubst %.v, %, $(SPEC_FILES))
+VOK_FILES  := $(patsubst %.v, %.vok,  $(SPEC_FILES))
+SVOK_FILES := $(patsubst %.v, %.svok, $(SPEC_FILES))
 
-fine(:m1, "clk")
-tricky(:m1, "shadowed_p1")
-fine(:m1, "whatever")
+$(CORE):
+	cd $(COSIM_DIR); $(MAKE) cosim-core
+	ls -lah $(COSIM_DIR)/cosim-core
 
-fine(:m2, "m2in1")
-fine(:m2, "m2var1")
-fine(:m2, "m2var2")
-fine(:m2, "m2var3")
+%.vok: %.v $(CORE)
+	@echo "Making $*.ok"
+	@rm -f $*.vok
+	@ACL2_CUSTOMIZATION=NONE TESTNAME=$* EDITION=VERILOG-2005 \
+          $(STARTJOB) -c "$(CORE) < run.lsp &> $*.vok.log"
+	@ls -l $*.vok
 
-test_passed()
+%.svok: %.v $(CORE)
+	@echo "Making $*.svok"
+	@rm -f $*.svok
+	@ACL2_CUSTOMIZATION=NONE TESTNAME=$* EDITION=SYSTEM-VERILOG-2012 \
+          $(STARTJOB) -c "$(CORE) < run.lsp &> $*.svok.log"
+	@ls -l $*.svok
+
+all: $(VOK_FILES) $(SVOK_FILES)
+
+clean:
+	rm -f *.vok *.svok *.log
+	rm -rf csrc INCA_libs simv.daidir
+	rm -f simv ucli.key
+
+
+# [Jared] hack so you can just write "make ansi1" or similar, adapted
+# from vl linttests
+
+.PHONY: $(TESTNAMES)
+
+define mkTestTarget
+$(1): $(1).vok $(1).svok
+endef
+
+$(foreach test, $(TESTNAMES), $(eval $(call mkTestTarget, $(test))))
+
+
+
