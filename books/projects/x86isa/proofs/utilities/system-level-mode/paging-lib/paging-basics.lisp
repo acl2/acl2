@@ -12,7 +12,8 @@
 (defsection paging-basics
   :parents (reasoning-about-page-tables)
 
-  :short "Gather physical addresses where paging data structures are located"
+  :short "Definitions of translation-governing addresses for paging
+  structure entries"
 
   :long "<p>WORK IN PROGRESS...</p>
 
@@ -513,9 +514,6 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 
 ;; ======================================================================
 
-;; Rules that state when two paging entries are equal; this depends on
-;; the appropriate parts of the linear address being equal.
-
 (defthmd loghead-smaller-equality
   (implies (and (equal (loghead n x) (loghead n y))
                 (natp n)
@@ -525,64 +523,6 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
   (("Goal"
     :in-theory (e/d* (acl2::ihsext-recursive-redefs acl2::ihsext-inductions)
                      nil))))
-
-(defruled equality-of-page-table-entry-addr
-  (implies (equal (part-select lin-addr-1 :low 12 :high 20)
-                  (part-select lin-addr-2 :low 12 :high 20))
-           (equal (page-table-entry-addr lin-addr-1 page-table-base-addr)
-                  (page-table-entry-addr lin-addr-2 page-table-base-addr)))
-  :use ((:instance loghead-smaller-equality
-                   (x (logtail 12 lin-addr-1))
-                   (y (logtail 12 lin-addr-2))
-                   (n 40)
-                   (m 9)))
-  :in-theory (e/d (page-table-entry-addr)
-                  (unsigned-byte-p
-                   signed-byte-p)))
-
-(defruled equality-of-page-directory-entry-addr
-  (implies (equal (part-select lin-addr-1 :low 21 :high 29)
-                  (part-select lin-addr-2 :low 21 :high 29))
-           (equal (page-directory-entry-addr lin-addr-1 page-directory-base-addr)
-                  (page-directory-entry-addr lin-addr-2 page-directory-base-addr)))
-  :use ((:instance loghead-smaller-equality
-                   (x (logtail 12 lin-addr-1))
-                   (y (logtail 12 lin-addr-2))
-                   (n 40)
-                   (m 9)))
-  :in-theory (e/d (page-directory-entry-addr)
-                  (unsigned-byte-p
-                   signed-byte-p)))
-
-(defruled equality-of-page-dir-ptr-table-entry-addr
-  (implies (equal (part-select lin-addr-1 :low 30 :high 38)
-                  (part-select lin-addr-2 :low 30 :high 38))
-           (equal (page-dir-ptr-table-entry-addr lin-addr-1 ptr-table-base-addr)
-                  (page-dir-ptr-table-entry-addr lin-addr-2 ptr-table-base-addr)))
-  :use ((:instance loghead-smaller-equality
-                   (x (logtail 12 lin-addr-1))
-                   (y (logtail 12 lin-addr-2))
-                   (n 40)
-                   (m 9)))
-  :in-theory (e/d (page-dir-ptr-table-entry-addr)
-                  (unsigned-byte-p
-                   signed-byte-p)))
-
-(defruled equality-of-pml4-table-entry-addr
-  (implies (equal (part-select lin-addr-1 :low 39 :high 47)
-                  (part-select lin-addr-2 :low 39 :high 47))
-           (equal (pml4-table-entry-addr lin-addr-1 pml4-table-base-addr)
-                  (pml4-table-entry-addr lin-addr-2 pml4-table-base-addr)))
-  :use ((:instance loghead-smaller-equality
-                   (x (logtail 12 lin-addr-1))
-                   (y (logtail 12 lin-addr-2))
-                   (n 40)
-                   (m 9)))
-  :in-theory (e/d (pml4-table-entry-addr)
-                  (unsigned-byte-p
-                   signed-byte-p)))
-
-;; ======================================================================
 
 (defthm logbitp-n-of-set-accessed-bit
   (implies (and (syntaxp (quotep n))
