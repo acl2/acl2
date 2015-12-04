@@ -3703,6 +3703,28 @@
                arg1)
               (t nil))))))
 
+(defun find-subsumer-replacement-rec (cl l len-cl)
+  (declare (xargs :guard (and (pseudo-term-listp cl)
+                              (pseudo-term-list-listp l)
+                              (equal len-cl (length cl)))))
+
+; See find-subsumer-replacement.
+
+  (cond ((null l) (mv nil nil))
+        ((> (len (car l)) len-cl)
+
+; Although in principle it seems that (car l) could "almost subsume" cl (in the
+; sense of arg1-almost-subsumes-arg2 below), we rather expect that to be rare,
+; since "almost subsume" is a sort of subset relation.
+
+         (find-subsumer-replacement-rec cl (cdr l) len-cl))
+        (t (let ((here (arg1-almost-subsumes-arg2 (car l) cl)))
+             (cond ((eq here 'subsumed) (mv here (car l)))
+                   (t (mv-let (rst cl0)
+                        (find-subsumer-replacement-rec cl (cdr l) len-cl)
+                        (cond ((eq rst 'subsumed) (mv rst cl0))
+                              (t (mv (or here rst) nil))))))))))
+
 (defun find-subsumer-replacement (cl l)
   (declare (xargs :guard (and (pseudo-term-listp cl)
                               (pseudo-term-list-listp l))))
@@ -3714,13 +3736,7 @@
 ; means that somewhere in l we found a clause that when resolved with cl
 ; produces a resolvent that subsumes cl.
 
-  (cond ((null l) (mv nil nil))
-        (t (let ((here (arg1-almost-subsumes-arg2 (car l) cl)))
-             (cond ((eq here 'subsumed) (mv here (car l)))
-                   (t (mv-let (rst cl0)
-                              (find-subsumer-replacement cl (cdr l))
-                              (cond ((eq rst 'subsumed) (mv rst cl0))
-                                    (t (mv (or here rst) nil))))))))))
+  (find-subsumer-replacement-rec cl l (length cl)))
 
 (defun remove-one-complement (lit cl)
   (declare (xargs :guard (and (pseudo-termp lit)
