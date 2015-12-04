@@ -1,0 +1,21 @@
+-------------------------------------------------------------------------------
+
+                          SV + VL Failure Tests
+
+-------------------------------------------------------------------------------
+
+This directory contains various test cases that VL+SV should fail to
+"successfully" translate.  Many of these tests were originally part of the
+VL2014 failtests directory, which had the same goal, and we adopt the same
+conventions here.
+
+Each test here should define a parameter-free module named "top" that has a
+problem (or that instantiates a module that has a problem).
+
+The Makefile tries to translate each file, in isolation, using the VL/SV flow,
+in both Verilog and SystemVerilog modes.  We try to ensure that the top module
+was not successfully translated, by which we mean: either the translation fails
+completely in some spectacular way, or we at least get a fatal warning in the
+top module.
+
+-------------------------------------------------------------------------------
