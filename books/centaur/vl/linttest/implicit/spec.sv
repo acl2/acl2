@@ -440,44 +440,60 @@ module m14;
   endfunction
 `endif
 
-  // // As expected NCV and VCS are fine with this:
-  // typedef logic task1type_t;
-  // task task1 (output task1type_t out);
-  //   out = 0;
-  // endtask
+  // As expected NCV and VCS are fine with this:
+  typedef logic task1type_t;
+  task task1 (output task1type_t out);
+    out = 0;
+  endtask
 
-// `ifdef VL
-//   // NCV and VCS reject this, saying that task2type_t isn't defined.
-//   task task2 (output task2type_t out);
-//     typedef logic task2type_t;
-//     out = 0;
-//   endtask
+`ifdef VL
+  // NCV and VCS reject this, saying that task2type_t isn't defined.
+  task task2 (output task2type_t out);
+    typedef logic task2type_t;
+    out = 0;
+  endtask
 
-//   // NCV and VCS reject this, saying that task2width isn't defined.
-//   task task3 (output [task3width:0] out);
-//     parameter task3width = 3;
-//     out = 0;
-//   endtask
+  // NCV and VCS reject this, saying that task3width isn't defined.
+  task task3 (output [task3width:0] out);
+    parameter task3width = 3;
+    out = 0;
+  endtask
 
-// `endif
+`endif
 
-// BOZO parse errors here...
-
-  // // NCV and VCS both accept the following
-  // task task4;
-  //   typedef logic task4type_t;
-  //   output task4type_t out;
-  //   out = 0;
-  // endtask
+  // NCV and VCS both accept the following
+  task task4;
+    typedef logic task4type_t;
+    output task4type_t out;
+    out = 0;
+  endtask
 
 
   // NCV and VCS reject this, saying that task5type_t isn't defined.
-// `ifdef VL
-//   task task5;
-//     output task5type_t out;
-//     typedef logic task5type_t;
-//     out = 0;
-//   endtask
-// `endif
+`ifdef VL
+  task task5;
+    output task5type_t out;
+    typedef logic task5type_t;
+    out = 0;
+  endtask
+`endif
+
+
+  // NCVerilog and VCS both accept this, saying that fun6 of -1 is 15.
+  function logic [3:0] fun6 ;
+    input [$bits(fun6)-1:0] in;
+    fun6 = in;
+  endfunction
+
+  // NCVerilog and VCS both accept this, saying that fun7 of -1 is 15.
+  function logic [3:0] fun7(input [$bits(fun7)-1:0] in);
+    fun7 = in;
+  endfunction
+
+  initial begin
+    #10;
+    $display("fun6 of -1 is %d", fun6(-1));
+    $display("fun7 of -1 is %d", fun7(-1));
+  end
 
 endmodule
