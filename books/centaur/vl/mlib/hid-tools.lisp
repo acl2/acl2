@@ -1715,6 +1715,23 @@ if unresolved dimensions are present.</p>"
   (deffixequiv-mutual vl-datatype-size))
 
 
+(defines vl-datatype-has-usertypes
+  (define vl-datatype-has-usertypes ((x vl-datatype-p))
+    :measure (Vl-datatype-count x)
+    (vl-datatype-case x
+      :vl-coretype nil
+      :vl-struct (vl-structmemberlist-has-usertypes x.members)
+      :vl-union (vl-structmemberlist-has-usertypes x.members)
+      :vl-enum (vl-datatype-has-usertypes x.basetype)
+      :vl-usertype t))
+  (define vl-structmemberlist-has-usertypes ((x vl-structmemberlist-p))
+    :measure (vl-structmemberlist-count x)
+    (if (atom x)
+        nil
+      (or (vl-datatype-has-usertypes (vl-structmember->type (car x)))
+          (vl-structmemberlist-has-usertypes (cdr x))))))
+
+
 (define vl-maybe-usertype-resolve ((x vl-datatype-p))
   :guard (vl-datatype-resolved-p x)
   :returns (new-x vl-datatype-p)

@@ -2270,6 +2270,16 @@ declaration."
             introduce named constants without polluting the @('`define')
             namespace.)")
 
+   (overriddenp booleanp
+                :rule-classes :type-prescription
+                "For non-local module parameters, this may get set to T during
+                 unparameterization, signifying that the parameter was overridden
+                 in a module instantiation.  The \"default\" values recorded in
+                 the paramtype are then actually the overridden values.  We sometimes
+                 need to know whether it was overridden or not to know which scope
+                 (that of the instance or of the instantiated module) names are
+                 relative to.")
+
    (type   vl-paramtype-p
            "Indicates the type and default value of the parameter, and also
             distinguishes between implicit/explicit value parameters and type

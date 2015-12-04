@@ -279,8 +279,13 @@ types.</p>"
 #|
 (trace$ #!vl (Vl-override-parameter
               :entry (list 'vl-override-parameter
-                           (with-local-ps (vl-pp-paramdecl decl)))
+                           (with-local-ps (vl-pp-paramdecl decl))
+                           (if override
+                               (with-local-ps
+                                 (vl-pp-paramvalue override))
+                             nil))
               :exit (list 'vl-override-parameter
+                          (vl-paramdecl->overriddenp (nth 2 values))
                           (with-local-ps (vl-pp-paramdecl (nth 2 values)))
                           (with-local-ps (vl-print-warnings
                                           (butlast (nth 1 values) (len warnings)))))))
@@ -436,7 +441,9 @@ types.</p>"
                         :args (list nil type decl))
                  decl decl-conf)))
          (mv t warnings (change-vl-paramdecl
-                         decl :type (change-vl-typeparam decl.type :default type))
+                         decl
+                         :type (change-vl-typeparam decl.type :default type)
+                         :overriddenp t)
              decl-conf)))
 
 
@@ -483,9 +490,11 @@ types.</p>"
             ;; (new-type (change-vl-explicitvalueparam decl.type :default coerced-expr))
             ;; (new-decl (change-vl-paramdecl decl :type new-type))
             (new-decl (change-vl-paramdecl
-                       decl :type (change-vl-explicitvalueparam
-                                   decl.type
-                                   :default coerced-expr)))
+                       decl
+                       :type (change-vl-explicitvalueparam
+                              decl.type
+                              :default coerced-expr)
+                       :overriddenp (and override t)))
             )
          (vl-unparam-debug "successfully overriding value parameter ~a1 with ~a2.~%"
                            nil decl coerced-expr)
@@ -531,7 +540,9 @@ types.</p>"
             ;; right type.  So, rewrite the parameter declaration to install
             ;; the right value.
             (new-decl (change-vl-paramdecl
-                       decl :type (make-vl-explicitvalueparam :type datatype :default coerced-expr))))
+                       decl
+                       :type (make-vl-explicitvalueparam :type datatype :default coerced-expr)
+                       :overriddenp (and override t))))
          (vl-unparam-debug "successfully overriding ~a1 with ~a2.~%"
                            nil decl coerced-expr)
          (mv t (ok) new-decl decl-conf))))))

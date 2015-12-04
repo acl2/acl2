@@ -920,8 +920,10 @@ be very cheap in the single-threaded case.</p>"
       (:vl-blockscope (vl-blockscope->name x))
       (:vl-package    (vl-package->name x))
       (:vl-scopeinfo  (vl-scopeinfo->name x))
+      ;; bozo does this make sense?
+      (:vl-design     "Design Root")
       ;; Don't know a name for a scopeinfo
-      (otherwise      nil))))
+      (otherwise      (impossible)))))
 
 
 
@@ -1684,6 +1686,29 @@ transform that has used scopestacks.</p>"
       (:vl-taskdecl      (vl-taskdecl->name x))
       (:vl-dpiimport  (vl-dpiimport->name x))
       (otherwise         (vl-typedef->name x)))))
+
+
+(define vl-scopestack->hashkey ((x vl-scopestack-p))
+  :short "Produce a honsed, hopefully-unique hash key for this scope."
+  :long "<p>Uses the names of the scopes, so: if any scope is not named, it
+causes a hard error; and if the name of each scope isn't unique within its
+parent scope, then the hash key won't be unique.</p>
+
+<p>Running @(see vl-design-addnames) before using this should ensure that
+scopes are named, and the names generated should be unique.</p>"
+  :returns (key)
+  :measure (vl-scopestack-count x)
+  (vl-scopestack-case x
+    :null nil
+    :global (hons :root nil)
+    :local (b* ((super (vl-scopestack->hashkey x.super)))
+             (hons (or (vl-scope->name x.top)
+                       (raise "Unnamed scope under ~x0: ~x1~%"
+                              (rev super)
+                              x.top))
+                   super))))
+
+
 
 (define vl-scopestack->path-aux ((x vl-scopestack-p) rchars)
   :measure (vl-scopestack-count x)
