@@ -175,10 +175,10 @@ undeclared(:m9, "m9type_t")
 undeclared(:m10, "m10type_t")
 undeclared(:m11, "m11type_t")
 
-normal(:m12, "m12type_t")
+normal(:m12, " m12type_t")
 unused(:m12, "in")
 
-normal(:m13, "m13type_t")
+normal(:m13, " m13type_t")
 unused(:m13, "in")
 
 normal(:m14, "fun1type_t")
