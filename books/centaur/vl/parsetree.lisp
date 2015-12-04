@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-11-13")
+  "VL Syntax 2015-12-03")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -3437,6 +3437,31 @@ flops, and to set up other simulation events.  A simple example would be:</p>
 ;;   :returns (names string-listp)
 ;;   (vl-taskport->name x))
 
+(deftranssum vl-portdecl-or-blockitem
+  (vl-portdecl-p
+   vl-blockitem-p)
+  :parents (shadowcheck)
+  :short "Goofy structure for representing the loaditems of functions/tasks.")
+
+(fty::deflist vl-portdecl-or-blockitem-list
+  :elt-type vl-portdecl-or-blockitem
+  :parents (shadowcheck)
+  ///
+  (local (in-theory (enable vl-portdecl-or-blockitem-p)))
+
+  (defthm vl-portdecl-or-blockitem-list-p-when-vl-portdecllist-p
+    (implies (vl-portdecllist-p x)
+             (vl-portdecl-or-blockitem-list-p x))
+    :hints(("Goal"
+            :induct (len x)
+            :in-theory (enable tag-reasoning))))
+
+  (defthm vl-portdecl-or-blockitem-list-p-when-vl-blockitemlist-p
+    (implies (vl-blockitemlist-p x)
+             (vl-portdecl-or-blockitem-list-p x))
+    :hints(("Goal" :induct (len x)))))
+
+
 (defprod vl-fundecl
   :short "Representation of a single Verilog function."
   :tag :vl-fundecl
@@ -3484,10 +3509,11 @@ flops, and to set up other simulation events.  A simple example would be:</p>
    (typedefs    vl-typedeflist-p
                 "Local type declarations.")
 
-   (parsed-blockitems  vl-blockitemlist-p
-                "The declarations within the function, in parse order, before
-                 sorting out into imports, vardecls, paramdecls, and typedefs.
-                 Should only be used by shadowcheck.")
+   (loaditems   vl-portdecl-or-blockitem-list-p
+                "Owned by @(see shadowcheck); do not use elsewhere.
+                 Declarations within the function, in parse order, before
+                 sorting out into imports, vardecls, paramdecls, and
+                 typedefs.")
 
    (body       vl-stmt-p
                "The body of the function.  We represent this as an ordinary statement,
@@ -3569,10 +3595,10 @@ extra declarations are created automatically by the loader.</p>")
    (paramdecls  vl-paramdecllist-p
                 "Local parameter declarations")
 
-   (parsed-blockitems  vl-blockitemlist-p
-               "All the local declarations for the task, in parse order,
-                before sorting into imports, vardecls, paramdecls, and
-                typedefs.  Should only be used by shadowcheck.")
+   (loaditems   vl-portdecl-or-blockitem-list-p
+                "Owned by @(see shadowcheck); do not use elsewhere.
+                 Declarations within the task, in parse order, before sorting
+                 out into imports, vardecls, paramdecls, and typedefs.")
 
    (body       vl-stmt-p
                "The statement that gives the actions for this task, i.e., the

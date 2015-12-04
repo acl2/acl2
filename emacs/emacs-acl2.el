@@ -837,6 +837,8 @@ beginning of the string that was processed."
 (put 'pattern-match-list       'lisp-indent-function 'defun)
 (put 'VERIFY-GUARDS  'lisp-indent-function 'defun)
 (put 'verify-guards  'lisp-indent-function 'defun)
+(put 'VERIFY-TERMINATION  'lisp-indent-function 'defun)
+(put 'verify-termination  'lisp-indent-function 'defun)
 (put 'WITH-ACL2-CHANNELS-BOUND 'lisp-indent-function 'defun)
 (put 'with-acl2-channels-bound 'lisp-indent-function 'defun)
 (put 'WITH-FAST-ALIST      'lisp-indent-function 'defun)

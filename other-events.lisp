@@ -2546,6 +2546,8 @@
 
 (defun current-theory-fn (logical-name wrld)
 
+; Warning: Keep this in sync with union-current-theory-fn.
+
 ; We return the theory that was enabled in the world created by the
 ; event that introduced logical-name.
 
@@ -2603,16 +2605,21 @@
 
 (defun union-current-theory-fn (lst2 wrld)
 
+; Warning: Keep this in sync with current-theory-fn.
+
 ; This function returns, with an optimized computation, the value
 ; (union-theories-fn (current-theory :here) lst2 t wrld).
 
   (check-theory
    lst2 wrld 'union-current-theory-fn
-   (let ((w ; as in current-theory-fn, we apply decode-logical-name
-          (scan-to-event wrld)))
+   (let* ((wrld1 ; as in current-theory-fn, we apply decode-logical-name
+           (scan-to-event wrld))
+          (redefined (collect-redefined wrld nil))
+          (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
+                                 *acl2-property-unbound* wrld1)))
      (union-augmented-theories-fn1+
-      (current-theory1-augmented w nil nil)
-      (current-theory1 w nil nil)
+      (current-theory1-augmented wrld2 nil nil)
+      (current-theory1 wrld2 nil nil)
       (augment-theory lst2 wrld)
       nil))))
 
@@ -5741,9 +5748,12 @@
 ; a ``caller.''
 
 ; Acl2-defaults-table is either a legal alist value for acl2-defaults-table or
-; else is :do-not-install.  If the former, then that alist is installed as the
-; acl2-defaults-table (if it is not already there) after executing the events
-; in ev-lst.
+; else is one of :do-not-install or :do-not-install!.  If an alist, then we may
+; install a suitable acl2-defaults-table before executing the events in ev-lst,
+; and the given acl2-defaults-table is installed as the acl2-defaults-table (if
+; it is not already there) after executing those events.  But the latter of
+; these is skipped if acl2-defaults-table is :do-not-install, and both are
+; skipped if acl2-defaults-table is :do-not-install!.
 
 ; The name ee-entry stands for ``embedded-event-lst'' entry.  It is consed onto
 ; the embedded-event-lst for the duration of the processing of ev-lst.  The
@@ -5876,7 +5886,9 @@
 ; allow defstobj array resizing, for the resizing and length field functions.
 ; But for simplicity, we always lay them down for defstobj and defabsstobj.
 
-                 (cond ((eq caller 'include-book)
+                 (cond ((eq acl2-defaults-table :do-not-install!)
+                        (value nil))
+                       ((eq caller 'include-book)
 
 ; The following is equivalent to (logic), without the PROGN (value :invisible).
 ; The PROGN is illegal in Common Lisp code because its ACL2 semantics differs
@@ -5945,7 +5957,8 @@
                                     (t state))
                               (mv erp val state)))
                         (t (er-progn
-                            (if (eq acl2-defaults-table :do-not-install)
+                            (if (member-eq acl2-defaults-table
+                                           '(:do-not-install :do-not-install!))
                                 (value nil)
                               (maybe-install-acl2-defaults-table
                                acl2-defaults-table state))
@@ -8108,7 +8121,9 @@
                           (post-pass-1-ttags-seen
                            (global-val 'ttags-seen wrld2))
                           (post-pass-1-proof-supporters-alist
-                           (global-val 'proof-supporters-alist wrld2)))
+                           (global-val 'proof-supporters-alist wrld2))
+                          (post-pass-1-cert-replay
+                           (global-val 'cert-replay wrld2)))
                      (pprogn
                       (print-encapsulate-msg2 insigs ev-lst state)
                       (er-progn
@@ -8206,8 +8221,30 @@
                                                    wrld8
                                                    (global-val
                                                     'pcert-books
-                                                    wrld3))))
-                                      wrld9)
+                                                    wrld3)))
+                                           (wrld10
+                                            (if (and post-pass-1-cert-replay
+                                                     (not (global-val
+                                                           'cert-replay
+                                                           wrld3)))
+
+; The 'cert-replay world global supports the possible avoidance of rolling back
+; the world after the first pass of certify-book, before doing the local
+; incompatibility check using include-book.  At one time we think we only
+; intended to set cert-replay when locally including books, and we didn't set
+; it here.  That led to a bug in handling hidden defpkg events: see the Essay
+; on Hidden Packages for relevant background, and see community books directory
+; misc/hidden-defpkg-checks/ for an example of a soundness bug in Version_7.1,
+; which is fixed by the global-set of 'cert-replay just below.
+
+; Perhaps we could take care of this in encapsulate-fix-known-package-alist,
+; which is called above; but the present approach, relying on the values of
+; 'cert-replay at various stages, seems most direct.
+
+                                                (global-set 'cert-replay t
+                                                            wrld9)
+                                              wrld9)))
+                                      wrld10)
                                     state)))))))))))))))))
 
            (t ; (ld-skip-proofsp state) = 'include-book
@@ -12957,7 +12994,13 @@
 ; (include-book "bar").  So, instead we directly set the 'table-alist property
 ; of 'acl2-defaults-table directory for the install-event call below.
 
-                                   :do-not-install
+; Moreover, if we are doing the include-book pass of a certify-book command,
+; then we also do not allow process-embedded-events-to set the ACL2 defaults
+; table at the beginning.
+
+                                   (if behalf-of-certify-flg
+                                       :do-not-install!
+                                     :do-not-install)
                                    skip-proofsp
                                    (cadr (car ev-lst))
                                    (list 'include-book full-book-name)
@@ -15894,7 +15937,14 @@
                                                       nil))
                                                     (t
                                                      (get-declaim-list
-                                                       state)))))))
+                                                      state))))))
+                                                (ignore
+                                                 (cond
+                                                  (index/old-wrld
+                                                   (maybe-install-acl2-defaults-table
+                                                    saved-acl2-defaults-table
+                                                    state))
+                                                  (t (value nil)))))
                                         (let* ((wrld2 (w state))
                                                (new-defpkg-list
                                                 (new-defpkg-list
@@ -20283,7 +20333,7 @@
                            (list (cons #\0 fn))
                            (standard-co state) state nil)
                       (print-info-for-rules
-                       (info-for-lemmas lemmas t (ens state) wrld)
+                       (info-for-lemmas lemmas t (ens-maybe-brr state) wrld)
                        (standard-co state) state)))
              (t (er soft 'show-bodies
                     "There are no definitional bodies for ~x0."
@@ -21345,38 +21395,6 @@
                     :ld-post-eval-print nil
                     :ld-error-action :error))
                (value :invisible))))
-
-(defun with-brr-ens-fn (form state)
-  (let ((caller 'with-brr-ens))
-    (cond ((eq (f-get-global 'wormhole-name state) 'brr)
-           (state-global-let*
-            ((global-enabled-structure
-              (access rewrite-constant
-                      (get-brr-local 'rcnst state)
-                      :current-enabled-structure)))
-            (mv-let (erp stobjs-out/replaced-val state)
-              (trans-eval form caller state t)
-              (cond
-               (erp ; error was presumably already printed above
-                (silent-error state))
-               (t (let ((stobjs-out (car stobjs-out/replaced-val))
-                        (val (cdr stobjs-out/replaced-val)))
-                    (cond
-                     ((equal stobjs-out *error-triple-sig*)
-                      (value (cadr val)))
-                     ((equal stobjs-out '(nil))
-                      (value val))
-                     (t (er soft caller
-                            "Illegal output signature for ~x0: ~x1"
-                            caller
-                            stobjs-out)))))))))
-          (t (er soft caller
-                 "It is illegal to call ~x0 unless you are under ~
-                  break-rewrite and you are not."
-                 caller)))))
-
-(defmacro with-brr-ens (form)
-  `(with-brr-ens-fn ',form state))
 
 (defmacro trace! (&rest fns)
   (let ((form
@@ -22566,14 +22584,14 @@
              (t state)))
      (show-meta-lemmas1 (cdr lemmas) rule-id term wrld ens state)))))
 
-(defun show-meta-lemmas (term rule-id state)
+(defun show-meta-lemmas (term rule-id ens state)
   (cond ((and (nvariablep term)
               (not (fquotep term))
               (not (flambdap (ffn-symb term))))
          (let ((wrld (w state)))
            (show-meta-lemmas1 (getprop (ffn-symb term) 'lemmas nil
                                        'current-acl2-world wrld)
-                              rule-id term wrld (ens state) state)))
+                              rule-id term wrld ens state)))
         (t state)))
 
 (defun decoded-type-set-from-tp-rule (tp unify-subst wrld ens)
@@ -22691,7 +22709,7 @@
               (standard-co state) state nil))))
 
 (defun pl2-fn (form rule-id caller state)
-  (let ((ens (ens state)))
+  (let ((ens (ens-maybe-brr state)))
     (er-let*
      ((term (translate form t t nil caller (w state) state)))
      (cond
@@ -22743,7 +22761,7 @@
                       (show-rewrites-linears-fn
                        'show-linears rule-id nil ens term nil nil nil :none t
                        state)
-                      (show-meta-lemmas term rule-id state)
+                      (show-meta-lemmas term rule-id ens state)
                       (show-type-prescription-rules term rule-id nil nil
                                                     ens state)
                       (value :invisible)))))))))))
@@ -22752,7 +22770,7 @@
   (cond
    ((symbolp name)
     (let* ((wrld (w state))
-           (ens (ens state))
+           (ens (ens-maybe-brr state))
            (name (deref-macro-name name (macro-aliases wrld))))
       (cond
        ((function-symbolp name wrld)
