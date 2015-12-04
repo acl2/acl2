@@ -55,4 +55,9 @@ fine(:m1, "clk")
 tricky(:m1, "shadowed_p1")
 fine(:m1, "whatever")
 
+fine(:m2, "m2in1")
+fine(:m2, "m2var1")
+fine(:m2, "m2var2")
+fine(:m2, "m2var3")
+
 test_passed()

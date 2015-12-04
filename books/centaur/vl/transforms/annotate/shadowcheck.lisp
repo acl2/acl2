@@ -551,15 +551,6 @@ explicit declarations.</p>")
                          in the lexical scope, so how could that happen? ~x2."
                    :args (list ctx name entry))))
 
-       (ss-level  (vl-scopestack-nesting-level scopestack-at-import))
-       (lex-level (len tail))
-       ((unless (equal ss-level lex-level))
-        (mv st
-            (fatal :type :vl-tricky-scope
-                   :msg "~a0: the name ~s1 has complex scoping that we do not ~
-                         support.  Lexical level ~x2, scopestack level ~x3."
-                   :args (list ctx name lex-level ss-level))))
-
        ((unless pkg-name)
         ;; Scopestack doesn't think this is imported from a package.
         (b* (((unless entry.decl)
@@ -570,9 +561,24 @@ explicit declarations.</p>")
                                   be imported from a package, but there is a ~
                                   subsequent declaration (~a2) which makes ~
                                   scoping confusing."
-                            :args (list ctx name item)))))
-          ;; We have a local declaration for it, so we don't think it's
-          ;; imported either.  Looks like a match.
+                            :args (list ctx name item))))
+
+             ;; Nobody thinks this is imported from a package.  That means
+             ;; it comes from the local scope or some superior scope.  Make
+             ;; sure that scopestack and lexscope agree on which scope it
+             ;; is coming from, i.e., scopestack isn't getting it from the
+             ;; local scope while lexscope is looking above.  ("Shadowed")
+             (ss-level  (vl-scopestack-nesting-level scopestack-at-import))
+             (lex-level (len tail))
+             ((unless (equal ss-level lex-level))
+              (mv st
+                  (fatal :type :vl-tricky-scope
+                         :msg "~a0: the name ~s1 has complex scoping that we ~
+                               do not support.  Lexical level ~x2, scopestack ~
+                               level ~x3."
+                         :args (list ctx name lex-level ss-level)))))
+
+          ;; Looks like a match.
           (mv st (ok))))
 
        ;; Scopestack thinks the item comes from a package.
