@@ -69,6 +69,7 @@
             lnfix
             lifix
             lbfix
+            any-p
             maybe-natp
             maybe-natp-fix
             maybe-stringp

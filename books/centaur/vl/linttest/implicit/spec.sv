@@ -453,7 +453,7 @@ module m14;
     out = 0;
   endtask
 
-  // NCV and VCS reject this, saying that task2width isn't defined.
+  // NCV and VCS reject this, saying that task3width isn't defined.
   task task3 (output [task3width:0] out);
     parameter task3width = 3;
     out = 0;
@@ -477,5 +477,23 @@ module m14;
     out = 0;
   endtask
 `endif
+
+
+  // NCVerilog and VCS both accept this, saying that fun6 of -1 is 15.
+  function logic [3:0] fun6 ;
+    input [$bits(fun6)-1:0] in;
+    fun6 = in;
+  endfunction
+
+  // NCVerilog and VCS both accept this, saying that fun7 of -1 is 15.
+  function logic [3:0] fun7(input [$bits(fun7)-1:0] in);
+    fun7 = in;
+  endfunction
+
+  initial begin
+    #10;
+    $display("fun6 of -1 is %d", fun6(-1));
+    $display("fun7 of -1 is %d", fun7(-1));
+  end
 
 endmodule

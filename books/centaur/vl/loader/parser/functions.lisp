@@ -60,40 +60,11 @@
         (t
          (vl-portdecl-fix (car x)))))
 
-(define vl-portdecl-or-blockitem-p (x)
-  :short "Used temporarily in function/task parsing."
-  (or (vl-portdecl-p x)
-      (vl-blockitem-p x)))
-
-(local (defthm vl-portdecl-p-when-vl-portdecl-or-blockitem-p
-         (implies (vl-portdecl-or-blockitem-p x)
-                  (equal (vl-portdecl-p x)
-                         (eq (tag x) :vl-portdecl)))
-         :hints(("Goal" :in-theory (enable vl-portdecl-or-blockitem-p
-                                           vl-blockitem-p)))))
-
-(deflist vl-portdecl-or-blockitem-list-p (x)
-  (vl-portdecl-or-blockitem-p x)
-  :guard t
-  :elementp-of-nil nil
-  :parents nil
-  ///
-  (local (in-theory (enable vl-portdecl-or-blockitem-p)))
-
-  (defthm vl-portdecl-or-blockitem-list-p-when-vl-portdecllist-p
-    (implies (vl-portdecllist-p x)
-             (vl-portdecl-or-blockitem-list-p x))
-    :hints(("Goal" :in-theory (enable tag-reasoning))))
-
-  (defthm vl-portdecl-or-blockitem-list-p-when-vl-blockitemlist-p
-    (implies (vl-blockitemlist-p x)
-             (vl-portdecl-or-blockitem-list-p x))))
-
 (define vl-filter-portdecl-or-blockitem-list
   :short "Split out port declarations from other block items."
   ((x vl-portdecl-or-blockitem-list-p))
-  :returns (mv (portdecls vl-portdecllist-p :hyp :fguard)
-               (blockitems vl-blockitemlist-p :hyp :fguard))
+  :returns (mv (portdecls vl-portdecllist-p)
+               (blockitems vl-blockitemlist-p))
   :prepwork ((local (in-theory (enable vl-portdecl-or-blockitem-p
                                        tag-reasoning))))
   (b* (((when (atom x))
@@ -101,8 +72,10 @@
        ((mv cdr-portdecls cdr-blockitems)
         (vl-filter-portdecl-or-blockitem-list (cdr x)))
        ((when (eq (tag (car x)) :vl-portdecl))
-        (mv (cons (car x) cdr-portdecls) cdr-blockitems)))
-    (mv cdr-portdecls (cons (car x) cdr-blockitems))))
+        (mv (cons (vl-portdecl-fix (car x)) cdr-portdecls)
+            cdr-blockitems)))
+    (mv cdr-portdecls
+        (cons (vl-blockitem-fix (car x)) cdr-blockitems))))
 
 (define vl-build-taskports
   :short "Build port declarations for a task/function declaration."
@@ -150,6 +123,7 @@ variable declaration plays well with @(see scopestack) and similar.</p>"
         (rettype    vl-datatype-p)
         (inputs     vl-portdecllist-p)
         (decls      vl-blockitemlist-p)
+        (loaditems  vl-portdecl-or-blockitem-list-p)
         (body       vl-stmt-p)
         (atts       vl-atts-p)
         (loc        vl-location-p))
@@ -169,7 +143,7 @@ information.</p>"
                      :lifetime   lifetime
                      :rettype    rettype
                      :portdecls  inputs
-                     :parsed-blockitems decls
+                     :loaditems  loaditems
                      :vardecls   vardecls
                      :paramdecls paramdecls
                      :imports    imports
@@ -184,6 +158,7 @@ information.</p>"
         (lifetime   vl-lifetime-p)
         (ports      vl-portdecllist-p)
         (decls      vl-blockitemlist-p)
+        (loaditems  vl-portdecl-or-blockitem-list-p)
         (body       vl-stmt-p)
         (atts       vl-atts-p)
         (loc        vl-location-p))
@@ -194,18 +169,17 @@ information.</p>"
   (b* ((port-vars (vl-make-hidden-variables-for-portdecls ports))
        (decls (append port-vars decls))
        ((mv vardecls paramdecls imports typedefs) (vl-sort-blockitems decls)))
-    (make-vl-taskdecl :name      name
-                      :lifetime  lifetime
-                      :portdecls ports
-                      :parsed-blockitems decls
+    (make-vl-taskdecl :name       name
+                      :lifetime   lifetime
+                      :portdecls  ports
+                      :loaditems  loaditems
                       :vardecls   vardecls
                       :paramdecls paramdecls
                       :imports    imports
                       :typedefs   typedefs
-                      :body      body
-                      :atts      atts
-                      :loc       loc)))
-
+                      :body       body
+                      :atts       atts
+                      :loc        loc)))
 
 
 
@@ -429,6 +403,7 @@ try to resume parsing after a problematic function."
   :fails gracefully
   :count strong
   :prepwork ((local (in-theory (disable not))))
+  :guard-debug t
 
 :long "<p>Relevant grammar rules:</p>
 
@@ -484,6 +459,7 @@ try to resume parsing after a problematic function."
                                                              :rettype    rettype
                                                              :inputs     inputs
                                                              :decls      blockitems
+                                                             :loaditems  decls
                                                              :body       stmt
                                                              :atts       atts
                                                              :loc        (vl-token->loc function))))
@@ -505,11 +481,13 @@ try to resume parsing after a problematic function."
                                                      " has direction "
                                                      (symbol-name (vl-portdecl->dir non-input)))))
                           ;; (consp inputs) is automatic from vl-parse-taskport-list.
+                          (loaditems (append inputs blockitems))
                           (ret (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
                                                            :lifetime   (if automatic :vl-automatic nil)
                                                            :rettype    rettype
                                                            :inputs     inputs
                                                            :decls      blockitems
+                                                           :loaditems  loaditems
                                                            :body       stmt
                                                            :atts       atts
                                                            :loc        (vl-token->loc function))))
@@ -596,13 +574,14 @@ try to resume parsing after a problematic function."
                       (return
                        (b* (((mv ports blockitems)
                              (vl-filter-portdecl-or-blockitem-list decls))
-                            (ans (vl-make-taskdecl-for-parser :name     (vl-idtoken->name name)
-                                                              :lifetime (if automatic :vl-automatic nil)
-                                                              :ports    ports
-                                                              :decls    blockitems
-                                                              :body     stmt
-                                                              :atts     atts
-                                                              :loc      (vl-token->loc task))))
+                            (ans (vl-make-taskdecl-for-parser :name      (vl-idtoken->name name)
+                                                              :lifetime  (if automatic :vl-automatic nil)
+                                                              :ports     ports
+                                                              :decls     blockitems
+                                                              :loaditems decls
+                                                              :body      stmt
+                                                              :atts      atts
+                                                              :loc       (vl-token->loc task))))
                          (list ans))))
 
                     ;; Variant 2.
@@ -615,13 +594,14 @@ try to resume parsing after a problematic function."
                     (stmt       := (vl-parse-statement-or-null))
                     (:= (vl-match-token :vl-kwd-endtask))
                     (return
-                     (list (vl-make-taskdecl-for-parser :name     (vl-idtoken->name name)
-                                                        :lifetime (if automatic :vl-automatic nil)
-                                                        :ports    ports
-                                                        :decls    blockitems
-                                                        :body     stmt
-                                                        :atts     atts
-                                                        :loc      (vl-token->loc task))))))
+                     (list (vl-make-taskdecl-for-parser :name      (vl-idtoken->name name)
+                                                        :lifetime  (if automatic :vl-automatic nil)
+                                                        :ports     ports
+                                                        :decls     blockitems
+                                                        :loaditems (append ports blockitems)
+                                                        :body      stmt
+                                                        :atts      atts
+                                                        :loc       (vl-token->loc task))))))
 
               ((unless err)
                (mv nil val tokstream)))
@@ -1222,6 +1202,7 @@ statement.</p>"
                                                      :rettype   (vl-datatype-or-implicit->type rettype)
                                                      :inputs    portdecls
                                                      :decls     blockitems
+                                                     :loaditems items
                                                      :body      body
                                                      :atts      atts
                                                      :loc       (vl-token->loc name))))))
@@ -1242,6 +1223,7 @@ statement.</p>"
                                                  :rettype    (vl-datatype-or-implicit->type rettype)
                                                  :inputs     portdecls
                                                  :decls      decls
+                                                 :loaditems  (append portdecls decls)
                                                  :body       body
                                                  :atts       atts
                                                  :loc        (vl-token->loc name))))))
@@ -1300,6 +1282,7 @@ statement.</p>"
                                                       :lifetime  lifetime
                                                       :ports     portdecls
                                                       :decls     blockitems
+                                                      :loaditems items
                                                       :body      body
                                                       :atts      atts
                                                       :loc       (vl-token->loc name))))))
@@ -1322,6 +1305,7 @@ statement.</p>"
                                                   :lifetime   lifetime
                                                   :ports      portdecls
                                                   :decls      decls
+                                                  :loaditems  (append portdecls decls)
                                                   :body       body
                                                   :atts       atts
                                                   :loc        (vl-token->loc name))))))
