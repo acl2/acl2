@@ -69,6 +69,7 @@ This comment motivates the macro install-not-normalized, defined below.
     `((defthm ,defthm-name
         (equal (,name ,@formals)
                ,body)
+        :hints (("Goal" :by ,name))
         :rule-classes ((:definition :install-body t
                                     ,@(and clique
                                            (list :clique
