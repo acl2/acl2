@@ -1379,6 +1379,12 @@ explicit declarations.</p>")
                                (st vl-shadowcheck-state-p))
   :returns (mv (st    vl-shadowcheck-state-p)
                (new-x vl-module-p))
+  ;; BOZO this probably isn't correctly handling ports yet.
+  ;; To fix:
+  ;;   - Add some tests to linttest/implicit and or linttest/shadowcheck
+  ;;   - Review how the parser creates loaditems and parse-temps; I don't think
+  ;;     we're even getting everything in one coherent order yet
+  ;;   - Figure out the whole ansi portdecl resolution affects all of this
   (b* (((vl-module x)    (vl-module-fix x))
        (x.loaditems (and x.parse-temps (vl-parse-temps->loaditems x.parse-temps)))
        (- (vl-shadowcheck-debug "*** Shadowcheck module ~s0 ***~%" x.name))
@@ -1403,7 +1409,34 @@ explicit declarations.</p>")
     (mv st (cons car rest))))
 
 
+(define vl-shadowcheck-interface ((x  vl-interface-p)
+                                  (st vl-shadowcheck-state-p))
+  :returns (mv (st    vl-shadowcheck-state-p)
+               (new-x vl-interface-p))
+  ;; BOZO copied from interfaces, probably has the same problems and needs
+  ;; the same fixes.
+  (b* (((vl-interface x) (vl-interface-fix x))
+       (x.loaditems (and x.parse-temps (vl-parse-temps->loaditems x.parse-temps)))
+       (- (vl-shadowcheck-debug "*** Shadowcheck interface ~s0 ***~%" x.name))
+       (warnings         x.warnings)
+       (st               (vl-shadowcheck-push-scope x st))
+       ((mv st warnings) (vl-shadowcheck-ports x.ports st warnings))
+       ((mv st warnings) (vl-shadowcheck-aux x.loaditems st warnings))
+       (st               (vl-shadowcheck-pop-scope st))
+       (new-x            (change-vl-interface x
+                                              :warnings warnings
+                                              :parse-temps nil)))
+    (mv st new-x)))
 
+(define vl-shadowcheck-interfaces ((x  vl-interfacelist-p)
+                                (st vl-shadowcheck-state-p))
+  :returns (mv (st    vl-shadowcheck-state-p)
+               (new-x vl-interfacelist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) nil))
+       ((mv st car)  (vl-shadowcheck-interface (car x) st))
+       ((mv st rest) (vl-shadowcheck-interfaces (cdr x) st)))
+    (mv st (cons car rest))))
 
 
 (define vl-shadowcheck-vardecls ((x        vl-vardecllist-p)
@@ -1520,11 +1553,13 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-taskdecls        x.taskdecls  st warnings))
        ((mv st warnings) (vl-shadowcheck-dpiimports       x.dpiimports st warnings))
 
-       ((mv st mods) (vl-shadowcheck-modules x.mods st))
+       ((mv st mods)       (vl-shadowcheck-modules x.mods st))
+       ((mv st interfaces) (vl-shadowcheck-interfaces x.interfaces st))
 
        (?st (vl-shadowcheck-pop-scope st))
        (-   (vl-scopestacks-free)))
     (change-vl-design x
                       :mods mods
+                      :interfaces interfaces
                       :warnings warnings)))
 
