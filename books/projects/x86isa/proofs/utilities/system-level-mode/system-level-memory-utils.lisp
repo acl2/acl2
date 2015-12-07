@@ -18,40 +18,61 @@
 (local (xdoc::set-default-parents system-level-memory-utils))
 
 (local (in-theory (e/d* (entry-found-p-and-good-paging-structures-x86p
-			 entry-found-p-and-lin-addr)
-			())))
+                         entry-found-p-and-lin-addr)
+                        ())))
 
 ;; ======================================================================
 
-;; [Shilpi]: RoW with rb and wb will be obtained when
-;; paging-lib/paging-top.lisp is ready.
+(local
+ (defthm good-paging-structures-x86p-implies-mult-8-qword-paddr-list-listp-paging-structure-addrs
+   (implies (good-paging-structures-x86p X86)
+            (mult-8-qword-paddr-list-listp
+             (gather-all-paging-structure-qword-addresses x86)))
+   :hints (("Goal" :in-theory (e/d* (good-paging-structures-x86p) ())))))
 
-;; [Shilpi]: I need to define a well-formed page tables predicate...
-;; I also need to re-define rm08/rb and wm08/wb in terms of the alt
-;; traversal functions...
+(defthm rm08-wm08-disjoint-in-system-level-mode
+  (implies (and (not (programmer-level-mode x86))
+                (paging-entries-found-p addr-1 x86)
+                (paging-entries-found-p addr-2 x86)
+                (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (not
+                 ;; The physical addresses corresponding to addr-1 and
+                 ;; addr-2 are different.
+                 (equal (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86))
+                        (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86))))
+                (pairwise-disjoint-p-aux
+                 ;; The read isn't being done from the page tables.
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86)))
+                 (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 ;; The write isn't being done to the page tables ---
+                 ;; this means that the translation-governing entries
+                 ;; for addr-1 cannot be affected by the write.
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (unsigned-byte-p 8 val))
+           (equal (mv-nth 1 (rm08 addr-1 r-x (mv-nth 1 (wm08 addr-2 val x86))))
+                  (mv-nth 1 (rm08 addr-1 r-x x86))))
+  :hints (("Goal"
+           :use ((:instance gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
+                            (addrs (gather-all-paging-structure-qword-addresses x86))
+                            (index (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+                            (val val)
+                            (x86 x86)))
+           :in-theory (e/d* (rm08-and-rm08-mapped
+                             wm08-and-wm08-mapped
+                             ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             wm08-mapped
+                             rm08-mapped
+                             rm08
+                             wm08)
+                            (signed-byte-p
+                             unsigned-byte-p
+                             gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)))))
 
-;; (defthm rm08-wm08-disjoint-in-system-level-mode
-;;   (implies (and (not (programmer-level-mode x86))
-;;		(disjoint-p (addr-range 8 addr-1)
-;;			    (addr-range 8 addr-2))
-;;		(paging-entries-found-p addr-1 x86)
-;;		(paging-entries-found-p addr-2 x86)
-;;		(pairwise-disjoint-p-aux
-;;		 ;; The write isn't being done to the page tables.
-;;		 (list addr-2)
-;;		 (gather-all-paging-structure-qword-addresses x86)))
-;;	   (equal (mv-nth 1 (rm08 addr-1 r-x (mv-nth 1 (wm08 addr-2 val x86))))
-;;		  (mv-nth 1 (rm08 addr-1 r-x x86))))
-;;   :hints (("Goal"
-;;	   :in-theory (e/d* (rm08-and-rm08-mapped
-;;			     wm08-and-wm08-mapped)
-;;			    (signed-byte-p)))))
+;; ======================================================================
 
-
-;; The events below are similar to those in
-;; programmer-level-memory-utils.lisp.
-
-;; Theorems about rb and wb:
 
 ;; (defthm rm08-wm08-different-physical-addresses-no-overlapping-walks
 
