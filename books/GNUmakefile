@@ -1406,20 +1406,37 @@ special: $(BOOKS_SPECIAL_OUT)
 
 # VL Toolkit
 
-centaur/vl/bin/vl: centaur/vl/kit/top.cert
-	@echo "Making VL Verilog Toolkit"
-	@cd centaur/vl/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
-	@ls -la centaur/vl/bin/vl
+.PHONY: vl vl2014 vl_linttest sv_failtest
+
+vl: centaur/vl/bin/vl \
+    centaur/sv/cosims/cosim-core \
+    vl_linttest \
+    sv_failtest
+
+vl2014: centaur/vl2014/bin/vl2014
 
 centaur/vl2014/bin/vl2014: centaur/vl2014/kit/top.cert
 	@echo "Making VL Verilog Toolkit, 2014 Edition"
 	@cd centaur/vl2014/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
 	@ls -la centaur/vl2014/bin/vl2014
 
+centaur/vl/bin/vl: centaur/vl/kit/top.cert
+	@echo "Making VL Verilog Toolkit"
+	@cd centaur/vl/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
+	@ls -la centaur/vl/bin/vl
 
-.PHONY: vl vl2014
-vl: centaur/vl/bin/vl
-vl2014: centaur/vl2014/bin/vl2014
+centaur/sv/cosims/cosim-core: centaur/sv/cosims/cosims.cert centaur/sv/cosims/make-cosim.lsp
+	@echo "Making SV Cosims Tester"
+	@cd centaur/sv/cosims; $(MAKE) cosim-core
+	@ls -la centaur/sv/cosims/cosim-core
+
+vl_linttest : centaur/vl/bin/vl
+	@echo "Making VL linttests"
+	@cd centaur/vl/linttest; $(MAKE)
+
+sv_failtest : centaur/sv/cosims/cosim-core
+	@echo "Making SV failtests"
+	@cd centaur/sv/failtest; $(MAKE)
 
 
 .PHONY: clean_vl

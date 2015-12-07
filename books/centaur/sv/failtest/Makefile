@@ -46,7 +46,7 @@ $(CORE):
 	ls -lah $(COSIM_DIR)/cosim-core
 
 %.vok: %.v $(CORE)
-	@echo "Making $*.ok"
+	@echo "Making $*.vok"
 	@rm -f $*.vok
 	@ACL2_CUSTOMIZATION=NONE TESTNAME=$* EDITION=VERILOG-2005 \
           $(STARTJOB) -c "$(CORE) < run.lsp &> $*.vok.log"

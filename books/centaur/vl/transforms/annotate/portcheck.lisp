@@ -58,7 +58,9 @@ many names internally, for instance:</p>
      endmodule
 })
 
-<p>So, in general, we need to gather the names from the port expressions.</p>")
+<p>So, in general, we need to gather the names from the port expressions.
+While we're at it, we also check for any duplicated port names and issue
+various stylistic warnings about complicated ports.</p>")
 
 (local (xdoc::set-default-parents portcheck))
 
@@ -175,7 +177,16 @@ many names internally, for instance:</p>
                      warnings
                    (fatal :type :vl-port-mismatch
                           :msg "Missing port declarations for ~&0."
-                          :args (list (difference port-names decl-names))))))
+                          :args (list (difference port-names decl-names)))))
+
+       (external-names (vl-portlist->names x.ports))
+       (dupes          (duplicated-members (remove nil external-names)))
+       (warnings       (if (not dupes)
+                           warnings
+                         (fatal :type :vl-bad-ports
+                                :msg "Duplicate port names: ~&0."
+                                :args (list dupes)))))
+
     (change-vl-module x :warnings warnings)))
 
 (defprojection vl-modulelist-portcheck ((x vl-modulelist-p))
