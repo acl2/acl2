@@ -66,6 +66,10 @@ module spec (input logic [127:0] in,
   //
   // For VL/SV we have decided to follow the VCS behavior, but we also want to
   // issue warnings about this case.
+  //
+  // Note that both NCV and VCS seem to prohibit connecting incorrectly sized
+  // wires to gate array instances, so we don't try to check anything like that
+  // here.  See also failtest/gates3.v and failtest/gates4.v.
 
   wire       a1, b1, c1;
   wire [1:0] a2, b2, c2;

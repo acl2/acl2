@@ -1,3 +1,7 @@
 *.svok
 *.vok
 *.log
+simv.*
+ncverilog.history
+csrc
+INCA_libs

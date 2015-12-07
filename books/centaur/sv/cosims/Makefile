@@ -86,7 +86,11 @@ FAILING_TEST_TARGETS := \
   gates_rpmos/ok \
   gates_rnmos/ok \
   gates_pullup/ok \
-  gates_pulldown/ok
+  gates_pulldown/ok \
+  inst_size1/ok \
+  inst_size2/ok \
+  inst_size3/ok \
+  inst_size4/ok
 
 
 SPECFILES := $(wildcard */spec.sv)
@@ -157,7 +161,7 @@ cleansim:
 	rm -rf */csrc
 	rm -rf */simv.daidir
 	rm -f */simv
-	rm -f */irun.history
+	rm -f */irun.history */ncverilog.history
 	rm -f */ncverilog.log
 	rm -f */test.vcd
 	rm -f */ucli.key
