@@ -2,6 +2,8 @@ INCA_libs
 csrc
 simv
 simv.daidir
+simv.cst
 ucli.key
 irun.history
 ncvlog_*.err
+.joblist
