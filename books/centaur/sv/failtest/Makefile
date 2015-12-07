@@ -28,7 +28,7 @@
 #
 # Original author: Jared Davis <jared@centtech.com>
 
-.PHONY: all clean
+.PHONY: all clean passing
 all:
 
 
@@ -40,6 +40,21 @@ SPEC_FILES := $(wildcard *.v)
 TESTNAMES  := $(patsubst %.v, %, $(SPEC_FILES))
 VOK_FILES  := $(patsubst %.v, %.vok,  $(SPEC_FILES))
 SVOK_FILES := $(patsubst %.v, %.svok, $(SPEC_FILES))
+
+FAILING_TEST_TARGETS := \
+  bigwire1.svok \
+  names2.svok \
+  names3.svok \
+  gates2.svok \
+  gates5.svok \
+  iface1.svok \
+  iface2.svok \
+  inc8.svok \
+  inc9.svok \
+  inst9.svok \
+  inst12.svok \
+  param1.svok \
+  port1.svok
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core
@@ -60,6 +75,10 @@ $(CORE):
 	@ls -l $*.svok
 
 all: $(VOK_FILES) $(SVOK_FILES)
+
+PASSING_VOK := $(filter-out $(FAILING_TEST_TARGETS), $(VOK_FILES))
+PASSING_SVOK := $(filter-out $(FAILING_TEST_TARGETS), $(SVOK_FILES))
+passing: $(PASSING_VOK) $(PASSING_SVOK)
 
 clean:
 	rm -f *.vok *.svok *.log

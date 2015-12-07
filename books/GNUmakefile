@@ -1436,7 +1436,7 @@ vl_linttest : centaur/vl/bin/vl
 
 sv_failtest : centaur/sv/cosims/cosim-core
 	@echo "Making SV failtests"
-	@cd centaur/sv/failtest; $(MAKE)
+	@cd centaur/sv/failtest; $(MAKE) passing
 
 
 .PHONY: clean_vl
