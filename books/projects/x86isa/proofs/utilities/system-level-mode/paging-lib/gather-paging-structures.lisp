@@ -1093,10 +1093,10 @@
                               ()))))
 
   (defthm gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
-    (implies (and (mult-8-qword-paddr-list-listp addrs)
+    (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                  (mult-8-qword-paddr-list-listp addrs)
                   (pairwise-disjoint-p-aux (list index) (open-qword-paddr-list-list addrs))
-                  (physical-address-p index)
-                  (equal addrs (gather-all-paging-structure-qword-addresses x86)))
+                  (physical-address-p index))
              (equal (gather-all-paging-structure-qword-addresses (xw :mem index val x86))
                     addrs))
     :hints (("Goal"
@@ -1136,11 +1136,11 @@
                               (gather-qword-addresses-corresponding-to-list-of-entries-xw-fld=mem-disjoint)))))
 
   (defthm gather-all-paging-structure-qword-addresses-wm-low-64-disjoint
-    (implies (and (mult-8-qword-paddr-list-listp addrs)
+    (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                  (mult-8-qword-paddr-list-listp addrs)
                   (pairwise-disjoint-p-aux (list index) addrs)
                   (physical-address-p index)
-                  (equal (loghead 3 index) 0)
-                  (equal addrs (gather-all-paging-structure-qword-addresses x86)))
+                  (equal (loghead 3 index) 0))
              (equal (gather-all-paging-structure-qword-addresses
                      (wm-low-64 index val x86))
                     (gather-all-paging-structure-qword-addresses x86)))
@@ -1717,7 +1717,7 @@
 
 (defthm gather-all-paging-structure-qword-addresses-wm-low-64-different-x86-disjoint
   (implies (and (xlate-equiv-x86s x86 x86-equiv)
-                (good-paging-structures-x86p x86)
+                (good-paging-structures-x86p x86)           
                 (equal addrs (gather-all-paging-structure-qword-addresses x86))
                 (pairwise-disjoint-p-aux (list index) addrs)
                 (mult-8-qword-paddr-list-listp addrs)

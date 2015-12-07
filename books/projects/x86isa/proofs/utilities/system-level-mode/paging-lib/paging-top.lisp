@@ -450,8 +450,7 @@
                  (list index)
                  (open-qword-paddr-list-list
                   (gather-all-paging-structure-qword-addresses x86)))
-                (physical-address-p index)
-                (unsigned-byte-p 8 val))
+                (physical-address-p index))
            (equal (xr :mem index
                       (mv-nth 2
                               (ia32e-la-to-pa-PT
@@ -521,8 +520,7 @@
                  (list index)
                  (open-qword-paddr-list-list
                   (gather-all-paging-structure-qword-addresses x86)))
-                (physical-address-p index)
-                (unsigned-byte-p 8 val))
+                (physical-address-p index))
            (equal (xr :mem index
                       (mv-nth 2
                               (ia32e-la-to-pa-PD
@@ -614,8 +612,7 @@
                  (list index)
                  (open-qword-paddr-list-list
                   (gather-all-paging-structure-qword-addresses x86)))
-                (physical-address-p index)
-                (unsigned-byte-p 8 val))
+                (physical-address-p index))
            (equal (xr :mem index
                       (mv-nth 2
                               (ia32e-la-to-pa-PDPT
@@ -699,8 +696,7 @@
                  (list index)
                  (open-qword-paddr-list-list
                   (gather-all-paging-structure-qword-addresses x86)))
-                (physical-address-p index)
-                (unsigned-byte-p 8 val))
+                (physical-address-p index))
            (equal (xr :mem index
                       (mv-nth 2 (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86)))
                   (xr :mem index x86)))
@@ -773,8 +769,7 @@
                  (list index)
                  (open-qword-paddr-list-list
                   (gather-all-paging-structure-qword-addresses x86)))
-                (physical-address-p index)
-                (unsigned-byte-p 8 val))
+                (physical-address-p index))
            (equal (xr :mem index (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))
                   (xr :mem index x86)))
   :hints (("Goal"

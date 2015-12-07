@@ -1308,9 +1308,9 @@
   (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses) ()))))
 
 (defthmd xlate-equiv-x86s-and-xlate-equiv-entries-at-qword-addresses?
-  (implies (and (good-paging-structures-x86p x86)
-		(xlate-equiv-x86s x86 x86-equiv)
-		(equal addrs (gather-all-paging-structure-qword-addresses x86)))
+  (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                (good-paging-structures-x86p x86)
+		(xlate-equiv-x86s x86 x86-equiv))
 	   (xlate-equiv-entries-at-qword-addresses?
 	    addrs addrs x86 x86-equiv))
   :hints

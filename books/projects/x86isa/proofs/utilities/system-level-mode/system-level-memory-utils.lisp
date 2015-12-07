@@ -5,6 +5,7 @@
 (include-book "paging-lib/paging-top")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/gl/gl" :dir :system))
 
 ;; ======================================================================
 
@@ -60,11 +61,7 @@
                             (index (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
                             (val val)
                             (x86 x86)))
-           :in-theory (e/d* (rm08-and-rm08-mapped
-                             wm08-and-wm08-mapped
-                             ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-                             wm08-mapped
-                             rm08-mapped
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
                              rm08
                              wm08)
                             (signed-byte-p
@@ -73,126 +70,390 @@
 
 ;; ======================================================================
 
+;; Relating top-level memory accessors and updaters with rb and wb in
+;; system-level mode:
 
-;; (defthm rm08-wm08-different-physical-addresses-no-overlapping-walks
+(defthm rb-and-rm08-in-the-system-level-mode
+  (implies (and (not (programmer-level-mode x86))
+                (paging-entries-found-p lin-addr x86))
+           (equal (rm08 lin-addr r-x x86)
+                  (b* (((mv flg bytes x86)
+                        (rb (create-canonical-address-list 1 lin-addr) r-x x86))
+                       (result (combine-bytes bytes)))
+                    (mv flg result x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             rm08
+                             rb)
+                            (signed-byte-p
+                             unsigned-byte-p)))))
 
-;;   ;; Remember that translation-governing-addresses does not include
-;;   ;; the linear address or the physical address.  It just has the
-;;   ;; addresses of the paging entries that govern the translation of
-;;   ;; that linear address.
+(defthm wb-and-wm08-in-the-system-level-mode
+  (implies (and (not (programmer-level-mode x86))
+                (paging-entries-found-p lin-addr x86)
+                (unsigned-byte-p 8 byte))
+           (equal (wm08 lin-addr byte x86)
+                  (wb (create-addr-bytes-alist
+                       (create-canonical-address-list 1 lin-addr)
+                       (list byte))
+                      x86)))
+  :hints (("Goal"
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             wm08
+                             wb)
+                            (signed-byte-p
+                             unsigned-byte-p)))))
 
-;;   (implies
-;;    (and
+(defthm rb-and-rm16-in-system-level-mode
+  (implies (and ;; (not (programmer-level-mode x86))
+            (paging-entries-found-p lin-addr x86)
+            (paging-entries-found-p (1+ lin-addr) x86)
+            (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
 
-;;     ;; If I eliminate the (not (programmer-level-mode x86))
-;;     ;; hypothesis, then i'd have to include the (not (equal
-;;     ;; addr1 addr2)) hypothesis.
+            ;; No page faults occur during the translation of (+ 1
+            ;; lin-addr).
+            ;; (not (mv-nth 0 (ia32e-la-to-pa      lin-addr  r-w-x cpl x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa (+ 1 lin-addr) r-w-x cpl x86)))
 
-;;     (not (programmer-level-mode x86))
-;;     (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+            ;; Physical address corresponding to lin-addr does not
+            ;; contain any paging information.
+            (pairwise-disjoint-p-aux
+             (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))
+             (open-qword-paddr-list-list
+              (gather-all-paging-structure-qword-addresses x86)))
+            ;; (pairwise-disjoint-p-aux
+            ;;  (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 1 lin-addr) r-w-x cpl x86)))
+            ;;  (open-qword-paddr-list-list
+            ;;   (gather-all-paging-structure-qword-addresses x86)))
+            )
+           (equal (rm16 lin-addr r-w-x x86)
+                  (b* (((mv flg bytes x86)
+                        (rb (create-canonical-address-list 2 lin-addr) r-w-x x86))
+                       (result (combine-bytes bytes)))
+                    (mv flg result x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             rm16
+                             rm08)
+                            (signed-byte-p
+                             unsigned-byte-p
+                             bitops::logior-equal-0
+                             rb-and-rm08-in-the-system-level-mode
+                             (:meta acl2::mv-nth-cons-meta))))))
 
-;;     ;; Page walks for addr1 and addr2 have disjoint
-;;     ;; translation-governing-addresses.
+(defthm wb-and-wm16-in-system-level-mode
+  (implies (and ;; (not (programmer-level-mode x86))
+            (paging-entries-found-p lin-addr x86)
+            (paging-entries-found-p (1+ lin-addr) x86)
+            (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
 
-;;     ;; This is the hypothesis I'd like to remove from this theorem.
-;;     ;; The other hypotheses rule out rm08 and wm08 operating on
-;;     ;; addresses where the paging data structures are stored.
+            ;; No page faults occur during the translation of (+ 1 lin-addr).
+            ;; (not (mv-nth 0 (ia32e-la-to-pa      lin-addr  :w cpl x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa (+ 1 lin-addr) :w cpl x86)))
 
-;;     (pairwise-disjoint-p
-;;      (append (translation-governing-addresses addr2 x86)
-;;              (translation-governing-addresses addr1 x86)))
+            ;; Physical address corresponding to lin-addr does not
+            ;; contain any paging infowmation.
+            (pairwise-disjoint-p-aux
+             (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr :w cpl x86)))
+             (open-qword-paddr-list-list
+              (gather-all-paging-structure-qword-addresses x86)))
+            ;; (pairwise-disjoint-p-aux
+            ;;  (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 1 lin-addr) :w cpl x86)))
+            ;;  (open-qword-paddr-list-list
+            ;;   (gather-all-paging-structure-qword-addresses x86)))
+            )
+           (equal (wm16 lin-addr word x86)
+                  (b* (((mv flg x86)
+                        (wb (create-addr-bytes-alist
+                             (create-canonical-address-list 2 lin-addr)
+                             (byte-ify 2 word))
+                            x86)))
+                    (mv flg x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             wm16
+                             wm08
+                             byte-ify)
+                            (signed-byte-p
+                             unsigned-byte-p
+                             bitops::logior-equal-0
+                             wb-and-wm08-in-the-system-level-mode
+                             (:meta acl2::mv-nth-cons-meta))))))
 
-;;     ;; Physical address corresponding to addr2 is disjoint from all
-;;     ;; the translation-governing-addresses of addr1.
-;;     (pairwise-disjoint-p-aux
-;;      (addr-range 1 (mv-nth 1 (ia32e-la-to-pa addr2 :w cpl x86)))
-;;      (translation-governing-addresses addr1 x86))
 
-;;     ;; Physical address corresponding to addr1 is disjoint from all
-;;     ;; the translation-governing-addresses of addr1.
-;;     (pairwise-disjoint-p-aux
-;;      (addr-range 1 (mv-nth 1 (ia32e-la-to-pa addr1 r-x cpl x86)))
-;;      (translation-governing-addresses addr1 x86))
+(local
+ (def-gl-thm rm32-rb-system-level-mode-proof-helper
+   :hyp (and (n08p a)
+             (n08p b)
+             (n08p c)
+             (n08p d))
+   :concl (equal (logior a (ash b 8) (ash (logior c (ash d 8)) 16))
+                 (logior a (ash (logior b (ash (logior c (ash d 8)) 8)) 8)))
+   :g-bindings
+   (gl::auto-bindings
+    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)))
+   :rule-classes :linear))
 
-;;     ;; Physical address corresponding to addr1 is disjoint from all
-;;     ;; the translation-governing-addresses of addr2.
-;;     (pairwise-disjoint-p-aux
-;;      (addr-range 1 (mv-nth 1 (ia32e-la-to-pa addr1 r-x cpl x86)))
-;;      (translation-governing-addresses addr2 x86))
+(local (in-theory (e/d () (rm32-rb-system-level-mode-proof-helper))))
 
-;;     ;; Physical addresses corresponding to addr1 and addr2 are
-;;     ;; unequal.
-;;     (disjoint-p (addr-range 1 (mv-nth 1 (ia32e-la-to-pa addr2 :w cpl x86)))
-;;                 (addr-range 1 (mv-nth 1 (ia32e-la-to-pa addr1 r-x cpl x86))))
+(defthm rb-and-rm32-in-system-level-mode
+  (implies (and ;; (not (programmer-level-mode x86))
+            (paging-entries-found-p      lin-addr  x86)
+            (paging-entries-found-p (+ 1 lin-addr) x86)
+            (paging-entries-found-p (+ 2 lin-addr) x86)
+            (paging-entries-found-p (+ 3 lin-addr) x86)
+            (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa (+ 1 lin-addr) r-w-x cpl x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa (+ 2 lin-addr) r-w-x cpl x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa (+ 3 lin-addr) r-w-x cpl x86)))
+            ;; Physical address corresponding to lin-addr does not
+            ;; contain any paging information.
+            (pairwise-disjoint-p-aux
+             (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))
+             (open-qword-paddr-list-list
+              (gather-all-paging-structure-qword-addresses x86)))
+            (pairwise-disjoint-p-aux
+             (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 1 lin-addr) r-w-x cpl x86)))
+             (open-qword-paddr-list-list
+              (gather-all-paging-structure-qword-addresses x86)))
+            (pairwise-disjoint-p-aux
+             (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 2 lin-addr) r-w-x cpl x86)))
+             (open-qword-paddr-list-list
+              (gather-all-paging-structure-qword-addresses x86))))
+           (equal (rm32 lin-addr r-w-x x86)
+                  (b* (((mv flg bytes x86)
+                        (rb (create-canonical-address-list 4 lin-addr) r-w-x x86))
+                       (result (combine-bytes bytes)))
+                    (mv flg result x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             rm32
+                             rm08
+                             rm32-rb-system-level-mode-proof-helper)
+                            (signed-byte-p
+                             unsigned-byte-p
+                             bitops::logior-equal-0
+                             rb-and-rm08-in-the-system-level-mode
+                             (:meta acl2::mv-nth-cons-meta))))))
 
-;;     (ia32e-la-to-pa-validp addr1 r-x cpl x86)
-;;     (ia32e-la-to-pa-validp addr2 :w cpl x86)
-;;     (canonical-address-p addr2)
-;;     (x86p x86))
+(defthm wb-and-wm32-in-system-level-mode
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (paging-entries-found-p (+ 1 lin-addr) x86)
+                (paging-entries-found-p (+ 2 lin-addr) x86)
+                (paging-entries-found-p (+ 3 lin-addr) x86)
+                (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 1 lin-addr) :w cpl x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 2 lin-addr) :w cpl x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 3 lin-addr) :w cpl x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr :w cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 1 lin-addr) :w cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 2 lin-addr) :w cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86))))
+           (equal (wm32 lin-addr dword x86)
+                  (b* (((mv flg x86)
+                        (wb (create-addr-bytes-alist
+                             (create-canonical-address-list 4 lin-addr)
+                             (byte-ify 4 dword))
+                            x86)))
+                    (mv flg x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             wm32
+                             wm08
+                             byte-ify
+                             rm32-rb-system-level-mode-proof-helper)
+                            (signed-byte-p
+                             unsigned-byte-p
+                             bitops::logior-equal-0
+                             wb-and-wm08-in-the-system-level-mode
+                             (:meta acl2::mv-nth-cons-meta))))))
 
-;;    (equal (mv-nth 1 (rm08 addr1 r-x (mv-nth 1 (wm08 addr2 val x86))))
-;;           (mv-nth 1 (rm08 addr1 r-x x86))))
-;;   :hints (("Goal" :in-theory (e/d (rm08 wm08)
-;;                                   (ia32e-la-to-pa-validp
-;;                                    translation-governing-addresses
-;;                                    pml4-table-entry-validp-to-page-dir-ptr-entry-validp
-;;                                    addr-range-1
-;;                                    mv-nth-1-no-error-ia32e-la-to-pa
-;;                                    mv-nth-2-no-error-ia32e-la-to-pa)))))
+(local
+ (def-gl-thm rb-and-rvm64-helper
+   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+             (n08p e) (n08p f) (n08p g) (n08p h))
+   :concl (equal
+           (logior a (ash b 8)
+                   (ash (logior c (ash d 8)) 16)
+                   (ash (logior e (ash f 8) (ash (logior g (ash h 8)) 16)) 32))
+           (logior a
+                   (ash (logior
+                         b
+                         (ash (logior
+                               c
+                               (ash (logior
+                                     d
+                                     (ash (logior
+                                           e
+                                           (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 8)) 8))
+                              8))
+                        8)))
+   :g-bindings
+   (gl::auto-bindings
+    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8)))
+   :rule-classes :linear))
+
+(local (in-theory (e/d () (rb-and-rvm64-helper))))
+
+(defthm rb-and-rm64-in-system-level-mode
+  (implies (and (not (programmer-level-mode x86))
+                (paging-entries-found-p      lin-addr  x86)
+                (paging-entries-found-p (+ 1 lin-addr) x86)
+                (paging-entries-found-p (+ 2 lin-addr) x86)
+                (paging-entries-found-p (+ 3 lin-addr) x86)
+                (paging-entries-found-p (+ 4 lin-addr) x86)
+                (paging-entries-found-p (+ 5 lin-addr) x86)
+                (paging-entries-found-p (+ 6 lin-addr) x86)
+                (paging-entries-found-p (+ 7 lin-addr) x86)
+                (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+
+                ;; No page faults occur during the translation of lin-addr
+                ;; to (+ 7 lin-addr).
+                (not (mv-nth 0 (ia32e-la-to-pa      lin-addr  r-w-x cpl x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 1 lin-addr) r-w-x cpl x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 2 lin-addr) r-w-x cpl x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 3 lin-addr) r-w-x cpl x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 4 lin-addr) r-w-x cpl x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 5 lin-addr) r-w-x cpl x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 6 lin-addr) r-w-x cpl x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa (+ 7 lin-addr) r-w-x cpl x86)))
+
+                ;; Physical address corresponding to lin-addr does not
+                ;; contain any paging information.
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 1 lin-addr) r-w-x cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 2 lin-addr) r-w-x cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 3 lin-addr) r-w-x cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 4 lin-addr) r-w-x cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 5 lin-addr) r-w-x cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 6 lin-addr) r-w-x cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 7 lin-addr) r-w-x cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86))))
+           (equal (rm64 lin-addr r-w-x x86)
+                  (b* (((mv flg bytes x86)
+                        (rb (create-canonical-address-list 8 lin-addr) r-w-x x86))
+                       (result (combine-bytes bytes)))
+                    (mv flg result x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             rb-and-rvm64-helper
+                             rm64 rm08)
+                            (signed-byte-p
+                             unsigned-byte-p
+                             bitops::logior-equal-0
+                             rb-and-rm08-in-the-system-level-mode
+                             (:meta acl2::mv-nth-cons-meta))))))
+
+;; (i-am-here)
+
+;; (defthm wb-and-wm64-in-system-level-mode
+;;   (implies (and
+;;             (not (programmer-level-mode x86))
+;;             (paging-entries-found-p      lin-addr  x86)
+;;             (paging-entries-found-p (+ 1 lin-addr) x86)
+;;             (paging-entries-found-p (+ 2 lin-addr) x86)
+;;             (paging-entries-found-p (+ 3 lin-addr) x86)
+;;             (paging-entries-found-p (+ 4 lin-addr) x86)
+;;             (paging-entries-found-p (+ 5 lin-addr) x86)
+;;             (paging-entries-found-p (+ 6 lin-addr) x86)
+;;             (paging-entries-found-p (+ 7 lin-addr) x86)
+;;             (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+
+;;             ;; No page faults occur during the translation of lin-addr
+;;             ;; to (+ 7 lin-addr).
+;;             (not (mv-nth 0 (ia32e-la-to-pa      lin-addr  :w cpl x86)))
+;;             (not (mv-nth 0 (ia32e-la-to-pa (+ 1 lin-addr) :w cpl x86)))
+;;             (not (mv-nth 0 (ia32e-la-to-pa (+ 2 lin-addr) :w cpl x86)))
+;;             (not (mv-nth 0 (ia32e-la-to-pa (+ 3 lin-addr) :w cpl x86)))
+;;             (not (mv-nth 0 (ia32e-la-to-pa (+ 4 lin-addr) :w cpl x86)))
+;;             (not (mv-nth 0 (ia32e-la-to-pa (+ 5 lin-addr) :w cpl x86)))
+;;             (not (mv-nth 0 (ia32e-la-to-pa (+ 6 lin-addr) :w cpl x86)))
+;;             (not (mv-nth 0 (ia32e-la-to-pa (+ 7 lin-addr) :w cpl x86)))
+
+;;             ;; Physical address corresponding to lin-addr does not
+;;             ;; contain any paging infowmation.
+;;             ;; (pairwise-disjoint-p-aux
+;;             ;;  (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr :w cpl x86)))
+;;             ;;  (open-qword-paddr-list-list
+;;             ;;   (gather-all-paging-structure-qword-addresses x86)))
+;;             (pairwise-disjoint-p-aux
+;;              (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 1 lin-addr) :w cpl x86)))
+;;              (open-qword-paddr-list-list
+;;               (gather-all-paging-structure-qword-addresses x86)))
+;;             (pairwise-disjoint-p-aux
+;;              (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 2 lin-addr) :w cpl x86)))
+;;              (open-qword-paddr-list-list
+;;               (gather-all-paging-structure-qword-addresses x86)))
+;;             (pairwise-disjoint-p-aux
+;;              (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 3 lin-addr) :w cpl x86)))
+;;              (open-qword-paddr-list-list
+;;               (gather-all-paging-structure-qword-addresses x86)))
+;;             (pairwise-disjoint-p-aux
+;;              (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 4 lin-addr) :w cpl x86)))
+;;              (open-qword-paddr-list-list
+;;               (gather-all-paging-structure-qword-addresses x86)))
+;;             (pairwise-disjoint-p-aux
+;;              (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 5 lin-addr) :w cpl x86)))
+;;              (open-qword-paddr-list-list
+;;               (gather-all-paging-structure-qword-addresses x86)))
+;;             (pairwise-disjoint-p-aux
+;;              (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 6 lin-addr) :w cpl x86)))
+;;              (open-qword-paddr-list-list
+;;               (gather-all-paging-structure-qword-addresses x86)))
+;;             (pairwise-disjoint-p-aux
+;;              (list (mv-nth 1 (ia32e-entries-found-la-to-pa (+ 7 lin-addr) :w cpl x86)))
+;;              (open-qword-paddr-list-list
+;;               (gather-all-paging-structure-qword-addresses x86))))
+;;            (equal (wm64 lin-addr qword x86)
+;;                   (b* (((mv flg bytes x86)
+;;                         (wb (create-addr-bytes-alist
+;;                              (create-canonical-address-list 8 lin-addr)
+;;                              (byte-ify 8 qword))
+;;                             x86))
+;;                        (result (combine-bytes bytes)))
+;;                     (mv flg result x86))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+;;                              rb-and-rvm64-helper
+;;                              wm64
+;;                              wm08
+;;                              byte-ify)
+;;                             (signed-byte-p
+;;                              unsigned-byte-p
+;;                              bitops::logior-equal-0
+;;                              wb-and-wm08-in-the-system-level-mode
+;;                              (:meta acl2::mv-nth-cons-meta))))))
 
 ;; ======================================================================
-
-;; Relating top-level memory accessors and updaters with rb in system-level
-;; mode:
-
-;; (defthm rb-and-rm16-in-system-level-mode
-;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;                 (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
-;;                 (ia32e-la-to-pa-validp (1+ lin-addr) r-w-x cpl x86)
-
-;;                 ;; See the lemmas:
-;;                 ;; mv-nth-0-no-error-ia32e-la-to-pa and
-;;                 ;; validity-preserved-same-x86-state-disjoint-addresses-top-level-thm
-;;                 ;; to know why we need the following hypothesis.
-
-;;                 ;; Of course, this is a stupid hypothesis for this theorem
-;;                 ;; because the translation-governing-addresses of lin-addr and
-;;                 ;; (1+ lin-addr) might definitely overlap. I need more work in
-;;                 ;; paging-utils.lisp to prove more general version(s) of
-;;                 ;; validity-preserved-same-x86-state-disjoint-addresses-top-level-thm.
-
-;;                 ;; Instead, I'd like to have the following hyps. here:
-;;                 ;; (pairwise-disjoint-p
-;;                 ;;  (translation-governing-addresses lin-addr x86))
-;;                 ;; (pairwise-disjoint-p
-;;                 ;;  (translation-governing-addresses (+ 1 lin-addr) x86))
-;;                 ;; Of course, these two are true only if lin-addr and
-;;                 ;; 1+lin-addr fall within the same page. I might need
-;;                 ;; other hyps in an OR to capture other cases.
-;;                 (pairwise-disjoint-p
-;;                  (append (translation-governing-addresses lin-addr x86)
-;;                          (translation-governing-addresses (+ 1 lin-addr) x86)))
-
-
-;;                 ;; See the lemma
-;;                 ;; disjoint-memi-read-mv-nth-2-no-error-ia32e-la-to-pa
-;;                 ;; to know why we need the following hypothesis.
-;;                 (pairwise-disjoint-p-aux
-;;                  (list (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-;;                  (translation-governing-addresses (+ 1 lin-addr) x86))
-
-;;                 (not (programmer-level-mode x86))
-;;                 (canonical-address-p lin-addr)
-;;                 (canonical-address-p (1+ lin-addr))
-;;                 (x86p x86))
-;;            (equal (rm16 lin-addr r-w-x x86)
-;;                   (b* (((mv flg bytes x86)
-;;                         (rb (create-canonical-address-list 2 lin-addr) r-w-x x86))
-;;                        (result (combine-bytes bytes)))
-;;                       (mv flg result x86))))
-;;   :hints (("Goal" :in-theory (e/d* (rm08 rb rm16 rvm16)
-;;                                    (mv-nth-1-no-error-ia32e-la-to-pa
-;;                                     mv-nth-2-no-error-ia32e-la-to-pa
-;;                                     pairwise-disjoint-p
-;;                                     translation-governing-addresses
-;;                                     ia32e-la-to-pa-validp)))))

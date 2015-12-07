@@ -305,8 +305,8 @@
                   (x86-equiv (mv-nth 2 (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86))))))))
 
 (defthm xlate-equiv-entries-at-qword-addresses?-mv-nth-2-ia32e-la-to-pa-PML4T
-  (implies (and (good-paging-structures-x86p x86)
-                (equal addrs (gather-all-paging-structure-qword-addresses x86)))
+  (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                (good-paging-structures-x86p x86))
            (equal (xlate-equiv-entries-at-qword-addresses?
                    addrs addrs
                    x86
