@@ -32,6 +32,7 @@
 (include-book "expr")
 (include-book "centaur/vl/mlib/writer" :dir :system) ;; bozo?
 (include-book "svstmt-compile")
+(include-book "centaur/fty/visitor" :dir :system)
 ;; (include-book "vl-fns-called")
 ;; (include-book "vl-paramrefs")
 ;; (include-book "centaur/vl/transforms/always/util" :dir :system)
@@ -654,21 +655,33 @@ because... (BOZO)</p>
                                  (conf vl-svexconf-p))
   :returns (mv (ok)
                (warnings vl-warninglist-p)
+               (locals (and (sv::svarlist-p locals)
+                            (sv::svarlist-addr-p locals))
+                       :hints(("Goal" :in-theory (enable sv::svar-addr-p))))
                (res (and (sv::svstmtlist-p res)
                          (sv::svarlist-addr-p
                           (sv::svstmtlist-vars res)))))
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
   (b* ((warnings nil)
-       ((when (atom x)) (mv t (ok) nil))
+       ((when (atom x)) (mv t (ok) nil nil))
        (x1 (vl-vardecl-fix (car x)))
-       ((mv ok warnings rest)
+       ((mv ok warnings rest-locals rest-stmts)
         (vl-vardecllist->svstmts (cdr x) conf))
-       ((unless ok) (mv nil warnings rest))
+       ((unless ok) (mv nil warnings rest-locals rest-stmts))
        ((vl-vardecl x1) x1)
-       ;; skip if there's no initial value given
-       ((unless x1.initval) (mv ok warnings rest))
+       (locals (cons
+                (sv::make-svar
+                 :name (sv::make-address :path (sv::make-path-wire :name x1.name)
+                                         :scope 0))
+                rest-locals))
+       ;; only make a local if there's no initial value given
+       ((unless x1.initval)
+        (mv ok warnings locals nil))
 
-       (lhs (vl-idexpr x1.name)))
-    (vl-assignstmt->svstmts lhs x1.initval t conf)))
+       (lhs (vl-idexpr x1.name))
+       ((wmv ok warnings assign)
+        (vl-assignstmt->svstmts lhs x1.initval t conf)))
+    (mv ok warnings locals (append-without-guard assign rest-stmts))))
 
 (local (in-theory (disable member append
                            sv::svarlist-addr-p-when-subsetp-equal
@@ -759,13 +772,13 @@ because... (BOZO)</p>
               (vl-stmt->svstmts x.body conf nonblockingp)))
           (mv ok warnings (list (sv::make-svstmt-while :cond cond :body body))))
         :vl-forstmt
-        (b* ((warnings (if (consp x.initdecls)
-                           (warn :type :vl-stmt-unsupported
-                                 :msg "Missing support for locally ~
-                                       defined for loop vars: ~a0"
-                                 :args (list x))
-                         (ok)))
-             ((wmv ok1 warnings initstmts1)
+        (b* (;; (warnings (if (consp x.initdecls)
+             ;;               (warn :type :vl-stmt-unsupported
+             ;;                     :msg "Missing support for locally ~
+             ;;                           defined for loop vars: ~a0"
+             ;;                     :args (list x))
+             ;;             (ok)))
+             ((wmv ok1 warnings locals initstmts1)
               (vl-vardecllist->svstmts x.initdecls conf))
              ((wmv ok2 warnings initstmts2)
               (vl-stmtlist->svstmts x.initassigns conf nonblockingp))
@@ -777,31 +790,38 @@ because... (BOZO)</p>
               (vl-stmt->svstmts x.body conf nonblockingp)))
           (mv (and ok1 ok2 ok3 ok4)
               warnings
-              (append-without-guard
-               initstmts1 initstmts2
-               (list (sv::make-svstmt-while
-                      :cond cond
-                      :body (append-without-guard body stepstmts))))))
+              (list
+               (sv::make-svstmt-scope
+                :locals locals
+                :body
+                (append-without-guard
+                 initstmts1 initstmts2
+                 (list (sv::make-svstmt-while
+                        :cond cond
+                        :body (append-without-guard body stepstmts))))))))
         :vl-blockstmt
         (b* (((unless (or (vl-blocktype-equiv x.blocktype :vl-beginend)
                           (<= (len x.stmts) 1)))
               (fail (warn :type :vl-stmt-unsupported
                           :msg "We don't support fork/join block statements: ~a0"
                           :args (list x))))
-             (warnings (if (or (consp x.vardecls)
-                               (consp x.paramdecls))
-                           (warn :type :vl-stmt-unsupported
-                                 :msg "Missing support for block ~
-                                       statements with local variables: ~a0"
-                                 :args (list x))
-                         (ok)))
-             ;; ((wmv ok1 warnings initstmts)
-             ;;  (vl-vardecllist->svstmts x.vardecls conf))
+             ;; (warnings (if (or (consp x.vardecls)
+             ;;                   (consp x.paramdecls))
+             ;;               (warn :type :vl-stmt-unsupported
+             ;;                     :msg "Missing support for block ~
+             ;;                           statements with local variables: ~a0"
+             ;;                     :args (list x))
+             ;;             (ok)))
+             ((wmv ok1 warnings locals initstmts)
+              (vl-vardecllist->svstmts x.vardecls conf))
              ((wmv ok2 warnings bodystmts)
               (vl-stmtlist->svstmts x.stmts conf nonblockingp)))
-          (mv (and ok2)
+          (mv (and ok1 ok2)
               warnings
-              bodystmts))
+              (list
+               (sv::make-svstmt-scope
+                :locals locals
+                :body (append-without-guard initstmts bodystmts)))))
 
         :vl-casestmt
         (b* ((caseexprs (cons x.test (vl-caselist->caseexprs x.caselist)))
@@ -878,6 +898,66 @@ because... (BOZO)</p>
 
 
 
+;; (define vl-vardecls-to-assigns ((x vl-vardecllist-p))
+;;   :returns (assigns vl-stmtlist-p)
+;;   (b* (((when (atom x)) nil)
+;;        ((vl-vardecl x1) (car x))
+;;        ((unless x1.initval)
+;;         (vl-vardecls-to-assigns (cdr x))))
+;;     (cons (make-vl-assignstmt :lvalue (vl-idexpr x1.name)
+;;                               :type :vl-blocking
+;;                               :expr x1.initval
+;;                               :loc x1.loc)
+;;           (vl-vardecls-to-assigns (cdr x)))))
+
+;; (define vl-vardecls-remove-initvals ((x vl-vardecllist-p))
+;;   :returns (new-x vl-vardecllist-p)
+;;   (b* (((when (atom x)) nil)
+;;        ((vl-vardecl x1) (car x)))
+;;     (cons (change-vl-vardecl x1 :initval nil)
+;;           (vl-vardecls-remove-initvals (cdr x)))))
+
+
+
+;; (fty::defvisitor-template fix-vardecls ((x :object))
+;;   :type-fns ((vl-stmt vl-stmt-fix-vardecls))
+;;   :renames ((vl-stmt vl-stmt-fix-vardecls-aux))
+;;   :returns (mv (new-x :update)
+;;                (vardecls (:join (append-without-guard vardecls1 vardecls)
+;;                           :tmp-var vardecls1
+;;                           :initial nil)
+;;                          vl-vardecllist-p))
+;;     :fnname-template <type>-fix-vardecls)
+
+;; (fty::defvisitor-multi vl-stmt-fix-vardecls
+;;   (fty::defvisitors
+;;     :measure (two-nats-measure :count 0)
+;;     :template fix-vardecls
+;;     :types (vl-stmt))
+
+;;   (define vl-stmt-fix-vardecls ((x vl-stmt-p))
+;;     :returns (mv (new-x vl-stmt-p)
+;;                  (vardecls vl-vardecllist-p))
+;;     :measure (two-nats-measure (vl-stmt-count x) 1)
+;;     (b* (((mv x sub-vardecls) (vl-stmt-fix-vardecls-aux x)))
+;;       (vl-stmt-case x
+;;         :vl-blockstmt
+;;         (b* ((own-vardecls (vl-vardecls-remove-initvals x.vardecls))
+;;              (assigns (vl-vardecls-to-assigns x.vardecls)))
+;;           (mv (change-vl-blockstmt x
+;;                                    :vardecls nil
+;;                                    :stmts (append-without-guard assigns x.stmts))
+;;               (append-without-guard own-vardecls sub-vardecls)))
+;;         :vl-forstmt
+;;         (b* ((own-vardecls (vl-vardecls-remove-initvals x.initdecls))
+;;              (assigns (vl-vardecls-to-assigns x.initdecls)))
+;;           (mv (change-vl-forstmt x
+;;                                  :initdecls nil
+;;                                  :initassigns (append-without-guard assigns x.initassigns))
+;;               (append-without-guard own-vardecls sub-vardecls)))
+;;         :otherwise (mv x sub-vardecls)))))
+
+
 
 
 (define vl-implicitvalueparam-final-type ((x vl-paramtype-p)
@@ -940,9 +1020,93 @@ because... (BOZO)</p>
 
 (defconst *vl-svstmt-compile-reclimit* 100000)
 
+(fty::defvisitor-template strip-nullstmts ((x :object))
+  :type-fns ((vl-stmtlist vl-stmtlist-strip-nullstmts))
+  :returns (new-x :update)
+  :fnname-template <type>-strip-nullstmts)
+
+(fty::defvisitor-multi vl-stmt-strip-nullstmts
+  (fty::defvisitors
+    :template strip-nullstmts
+    :types (vl-stmt))
+
+  (define vl-stmtlist-strip-nullstmts ((x vl-stmtlist-p))
+    :returns (new-x vl-stmtlist-p)
+    :measure (vl-stmtlist-count x)
+    (if (atom x)
+        nil
+      (b* ((x1 (car x)))
+        (if (vl-stmt-case x1 :vl-nullstmt)
+            (vl-stmtlist-strip-nullstmts (cdr x))
+          (cons (vl-stmt-strip-nullstmts x1)
+                (vl-stmtlist-strip-nullstmts (cdr x))))))))
+
+
+(defines vl-stmt-fix-trivial-return
+  (define vl-stmt-fix-trivial-return ((x vl-stmt-p "Body of function, initially,
+                                                  or some last statement of a last
+                                                  subblock")
+                                      (fnname stringp "Name of the function"))
+    :returns (fixed-body vl-stmt-p)
+    :short "In cases where it's OK to do so, change return statements to assignments
+          to the function name."
+    :long "<p>In SystemVerilog, there are two ways to return a value from a
+function.  The way we mainly support is to assign the value to the implicit
+output variable given by the name of the function.  This is easy for us to deal
+with because it doesn't affect the control flow of the function.  However,
+another way is using a return statement, which is harder for us to deal with
+because it is like a @('goto') as well as an assignment to the output
+variable.</p>
+
+<p>However, if the return occurs as the last statement in the function (which
+is often the case), then the two forms are equivalent.  This function replaces
+a final return statement with an assignment to the output variable.</p>"
+    :measure (vl-stmt-count x)
+    :prepwork ((local (defthm vl-stmt-count-of-car-last
+                        (implies (consp x)
+                                 (< (vl-stmt-count (car (last x)))
+                                    (vl-stmtlist-count x)))
+                        :rule-classes :linear)))
+    :verify-guards nil
+    (b* ((x (vl-stmt-fix x)))
+      (vl-stmt-case x
+        :vl-returnstmt (if x.val
+                           (make-vl-assignstmt
+                            :type :vl-blocking
+                            :lvalue (vl-idexpr fnname)
+                            :expr x.val
+                            :loc *vl-fakeloc*)
+                         x)
+        :vl-ifstmt (change-vl-ifstmt
+                    x
+                    :truebranch (vl-stmt-fix-trivial-return x.truebranch fnname)
+                    :falsebranch (vl-stmt-fix-trivial-return x.falsebranch fnname))
+        :vl-casestmt
+        (change-vl-casestmt
+         x
+         :default (vl-stmt-fix-trivial-return x.default fnname)
+         :caselist (vl-caselist-fix-trivial-return x.caselist fnname))
+        :vl-blockstmt
+        (b* (((when (atom x.stmts)) x)
+             (last (vl-stmt-fix-trivial-return (car (last x.stmts)) fnname)))
+          (change-vl-blockstmt x :stmts (append-without-guard (butlast x.stmts 1) (list last))))
+        :otherwise x)))
+  (define vl-caselist-fix-trivial-return ((x vl-caselist-p)
+                                          (fnname stringp))
+    :measure (vl-caselist-count x)
+    :returns (fixed-caselist vl-caselist-p)
+    (b* ((x (vl-caselist-fix x))
+         ((when (Atom x)) nil))
+      (cons (cons (caar x)
+                  (vl-stmt-fix-trivial-return (cdar x) fnname))
+            (vl-caselist-fix-trivial-return (cdr x) fnname))))
+  ///
+  (verify-guards vl-stmt-fix-trivial-return))
+
+
 (define vl-fundecl-to-svex  ((x vl-fundecl-p)
                              (conf vl-svexconf-p
-                                 "Svexconf for inside the function decl")
+                                   "Svexconf for inside the function decl")
                              ;; (fntable sv::svex-alist-p)
                              ;; (paramtable sv::svex-alist-p)
                              )
@@ -950,6 +1114,8 @@ because... (BOZO)</p>
                (svex sv::svex-p))
   (b* (((vl-fundecl x) (vl-fundecl-fix x))
        (warnings nil)
+       (x.body (vl-stmt-fix-trivial-return (vl-stmt-strip-nullstmts x.body) x.name))
+
        ;; nonblocking assignments not allowed
        ((wmv ok warnings svstmts) (vl-stmt->svstmts x.body conf nil))
        ((unless ok) (mv warnings (svex-x)))
@@ -962,7 +1128,7 @@ because... (BOZO)</p>
                :args (list x.name)))
        ((unless ok) (mv warnings (svex-x)))
        ((sv::svstate svstate))
-       (expr (sv::svex-lookup (sv::make-svar :name x.name) svstate.blkst))
+       (expr (sv::svstack-lookup (sv::make-svar :name x.name) svstate.blkst))
        (- (sv::svstate-free svstate))
        ((unless expr)
         (mv (warn :type :vl-fundecl-to-svex-fail
@@ -1672,7 +1838,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
        ((sv::svstate st) (sv::svstate-clean st))
 
-
+       (- (sv::svstack-free st.blkst))
+       (st.blkst (make-fast-alist (sv::svstack-to-svex-alist st.blkst)))
        (blk-written-vars (sv::svex-alist-keys st.blkst))
        (nb-written-vars  (sv::svex-alist-keys st.nonblkst))
 
