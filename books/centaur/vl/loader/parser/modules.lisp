@@ -84,8 +84,8 @@
         (if (not bad-item)
             warnings
           (fatal :type :vl-bad-module-item
-                 :msg "~a0: a module may not contain ~x1s."
-                 :args (list bad-item (tag bad-item)))))
+                 :msg "~a0: a module may not contain ~s1s."
+                 :args (list bad-item (vl-genelement->short-kind-string bad-item)))))
 
        ((vl-genblob c) (vl-sort-genelements items))
        ;; ((mv warnings c.portdecls c.vardecls)

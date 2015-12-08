@@ -829,6 +829,50 @@ the one modelement, it consolidates them into an unnamed @('begin/end') block.</
 
 
 
+(define vl-modelement->short-kind-string ((x vl-modelement-p))
+  :parents (vl-modelement)
+  :short "Human-readable description of what kind of module element this is."
+  :returns (str stringp :rule-classes :type-prescription)
+  (case (tag x)
+    ;; Try to make sure these get properly pluralized by tacking on an "s"
+    (:vl-portdecl   "port declaration")
+    (:vl-assign     "continuous assignment")
+    (:vl-alias      "alias declaration")
+    (:vl-vardecl    "variable declaration")
+    (:vl-paramdecl  "parameter declaration")
+    (:vl-fundecl    "function declaration")
+    (:vl-taskdecl   "task declaration")
+    (:vl-modinst    "module instance")
+    (:vl-gateinst   "gate instance")
+    (:vl-always     "always statement")
+    (:vl-initial    "initial statement")
+    (:vl-final      "final statement")
+    (:vl-typedef    "typedef")
+    (:vl-fwdtypedef "forward typedef")
+    (:vl-import     "package import")
+    (:vl-modport    "modport declaration")
+    (:vl-genvar     "genvar declaration")
+    (:vl-assertion  "immediate assertion")
+    (:vl-cassertion "concurrent assertion")
+    (:vl-property   "property declaration")
+    (:vl-sequence   "sequence declaration")
+    (:vl-dpiimport  "DPI import")
+    (:vl-dpiexport  "DPI export")
+    (otherwise      (progn$ (impossible)
+                            "invalid"))))
+
+(define vl-genelement->short-kind-string ((x vl-genelement-p))
+  :parents (vl-genelement)
+  :short "Human-readable description of what kind of module element this is."
+  :returns (str stringp :rule-classes :type-prescription)
+  (vl-genelement-case x
+    :vl-genbase (vl-modelement->short-kind-string x.item)
+    ;; Try to make sure these get properly pluralized by tacking on an "s"
+    :vl-genloop "generate loop"
+    :vl-genif "generate if statement"
+    :vl-gencase "generate case statement"
+    :vl-genblock "generate"
+    :vl-genarray "generate loop"))
 
 (defines vl-genelement-findbad
   :parents (vl-genelement)

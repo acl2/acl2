@@ -28,7 +28,6 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-
 // This started out as a test of implicit wire handling.  Since then it's grown
 // to do a lot of testing of scoping and knowing when things are declared or
 // undeclared.
@@ -497,3 +496,22 @@ module m14;
   end
 
 endmodule
+
+
+interface i1;
+
+  wire w1_declared = 0;
+
+  // Implicit wires in assignments
+  assign a1_implicit = w1_declared;
+  assign {a2_implicit,a3_implicit} = 0;
+  //+VL  assign top_a1 = a4_undeclared;
+  assign a5_implicit = a5_implicit;
+  assign {a6_implicit,a7_implicit} = {a7_implicit,a6_implicit};
+
+// need modports in here
+
+endinterface
+
+
+

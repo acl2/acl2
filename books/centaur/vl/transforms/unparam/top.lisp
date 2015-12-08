@@ -1305,7 +1305,7 @@ for each usertype is stored in the res field.</p>"
 
 
 
-#|
+#||
 (trace$ #!vl (vl-create-unparameterized-module
               :entry (list 'vl-create-unparameterized-module
                            (vl-module->name x)
@@ -1314,7 +1314,7 @@ for each usertype is stored in the res field.</p>"
                       (list 'vl-create-unparameterized-module
                             (with-local-ps (vl-pp-module mod global-ss))
                             keylist))))
-|#
+||#
 
 (define vl-create-unparameterized-module
   ((x vl-module-p)
@@ -1322,11 +1322,9 @@ for each usertype is stored in the res field.</p>"
    (final-paramdecls vl-paramdecllist-p)
    (ledger   vl-unparam-ledger-p)
    (global-ss vl-scopestack-p "Scopestack for design scope"))
-
   :returns (mv (okp)
                (new-mod vl-module-p)
-               (keylist vl-unparam-instkeylist-p
-                         "signatures for this module")
+               (keylist vl-unparam-instkeylist-p "signatures for this module")
                (ledger vl-unparam-ledger-p))
   (b* ((name (string-fix name))
        (x (change-vl-module x :name name
@@ -1344,8 +1342,7 @@ for each usertype is stored in the res field.</p>"
        (warnings x.warnings)
 
        (blob (vl-module->genblob x))
-       ((wmv ok warnings keylist new-blob conf ledger
-             :ctx name)
+       ((wmv ok warnings keylist new-blob conf ledger :ctx name)
         (vl-genblob-resolve-aux blob conf ledger nil))
        (- (vl-svexconf-free conf))
        (mod (vl-genblob->module new-blob x))
@@ -1362,9 +1359,9 @@ for each usertype is stored in the res field.</p>"
    (final-paramdecls vl-paramdecllist-p)
    (ledger   vl-unparam-ledger-p)
    (global-ss vl-scopestack-p "Scopestack for design scope"))
-
   :returns (mv (okp)
                (new-mod vl-interface-p)
+               (keylist vl-unparam-instkeylist-p "signatures for this interface")
                (ledger vl-unparam-ledger-p))
   (b* ((name (string-fix name))
        (x (change-vl-interface x :name name
@@ -1375,15 +1372,15 @@ for each usertype is stored in the res field.</p>"
        (warnings x.warnings)
 
        (blob (vl-interface->genblob x))
-       ((wmv ok warnings ?keylist new-blob conf ledger
-             :ctx name) (vl-genblob-resolve-aux blob conf ledger nil))
+       ((wmv ok warnings keylist new-blob conf ledger :ctx name)
+        (vl-genblob-resolve-aux blob conf ledger nil))
        (- (vl-svexconf-free conf))
        (mod (vl-genblob->interface new-blob x))
        (mod (change-vl-interface mod :warnings warnings))
        ((unless ok)
         ;; (cw "not ok~%")
-        (mv nil mod ledger)))
-    (mv ok mod ledger)))
+        (mv nil mod nil ledger)))
+    (mv ok mod keylist ledger)))
 
 
 (fty::defalist vl-unparam-donelist :key-type vl-unparam-instkey)
@@ -1392,6 +1389,9 @@ for each usertype is stored in the res field.</p>"
 (defines vl-unparameterize-main
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
                       (implies (vl-module-p x)
+                               (vl-scope-p x))))
+             (local (defthm vl-scope-p-when-vl-interface-p-strong
+                      (implies (vl-interface-p x)
                                (vl-scope-p x))))
              (local (defthm len-equal-0
                       (equal (equal (len x) 0)
@@ -1449,19 +1449,18 @@ for each usertype is stored in the res field.</p>"
                      :args (list sig.modname))
               nil nil donelist ledger))
 
-         ((when (eq (tag mod) :vl-interface))
-          (b* (((mv ok new-iface ledger)
-                (vl-create-unparameterized-interface mod sig.newname sig.final-params ledger global-ss)))
-            (mv (and ok t)
-                warnings nil (list new-iface) donelist ledger)))
-
          ((mv mod-ok new-mod sigalist ledger)
-          (vl-create-unparameterized-module mod sig.newname sig.final-params ledger global-ss))
+          (if (eq (tag mod) :vl-interface)
+              (vl-create-unparameterized-interface mod sig.newname sig.final-params ledger global-ss)
+            (vl-create-unparameterized-module mod sig.newname sig.final-params ledger global-ss)))
 
          ((mv unparams-ok warnings new-mods new-ifaces donelist ledger)
           (vl-unparameterize-main-list sigalist donelist (1- depthlimit) ledger global-ss)))
       (mv (and mod-ok unparams-ok)
-          warnings (cons new-mod new-mods) new-ifaces donelist ledger)))
+          warnings
+          (if (eq (tag mod) :vl-module) (cons new-mod new-mods) new-mods)
+          (if (eq (tag mod) :vl-interface) (cons new-mod new-ifaces) new-ifaces)
+          donelist ledger)))
 
   (define vl-unparameterize-main-list ((keys vl-unparam-instkeylist-p)
                                        (donelist vl-unparam-donelist-p)
@@ -1536,36 +1535,39 @@ for each usertype is stored in the res field.</p>"
                            vl-unparameterize-main-list))))))
 
 
-
-
-(define vl-module-default-signature ((modname stringp)
-                                     (conf     vl-svexconf-p "design level")
-                                     (warnings vl-warninglist-p)
-                                     (ledger vl-unparam-ledger-p))
+(define vl-toplevel-default-signature ((modname stringp)
+                                       (conf     vl-svexconf-p "design level")
+                                       (warnings vl-warninglist-p)
+                                       (ledger vl-unparam-ledger-p))
   :returns (mv (ok)
                (instkey (implies ok (vl-unparam-instkey-p instkey)))
                (warnings vl-warninglist-p)
                (ledger vl-unparam-ledger-p))
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
                       (implies (vl-module-p x)
+                               (vl-scope-p x))))
+             (local (defthm vl-scope-p-when-vl-interface-p-strong
+                      (implies (vl-interface-p x)
                                (vl-scope-p x)))))
   (b* ((modname (string-fix modname))
        (ledger (vl-unparam-ledger-fix ledger))
        ((vl-svexconf conf))
        (x (vl-scopestack-find-definition modname conf.ss))
-       ((unless (and x (eq (tag x) :vl-module)))
+       ((unless (and x
+                     (or (eq (tag x) :vl-module)
+                         (eq (tag x) :vl-interface))))
         (mv nil nil
             (fatal :type :vl-unparam-fail
-                   :msg "Programming error: top-level module ~s0 not found"
+                   :msg "Programming error: top-level module/interface ~s0 not found"
                    :args (list modname))
             ledger))
 
+       (paramdecls (if (eq (tag x) :vl-module)
+                       (vl-module->paramdecls x)
+                     (vl-interface->paramdecls x)))
+
        ((mv ok warnings mod-conf final-paramdecls)
-        (vl-scope-finalize-params x
-                                  (vl-module->paramdecls x)
-                                  (make-vl-paramargs-named)
-                                  warnings
-                                  conf.ss conf))
+        (vl-scope-finalize-params x paramdecls (make-vl-paramargs-named) warnings conf.ss conf))
        ((unless ok) (mv nil nil warnings ledger))
 
        ;; BOZO We might want to change this so that top-level modules never get
@@ -1575,19 +1577,19 @@ for each usertype is stored in the res field.</p>"
 
     (mv t instkey warnings ledger)))
 
-
-(define vl-modulelist-default-signatures ((names string-listp)
-                                          (conf vl-svexconf-p "design level")
-                                          (warnings vl-warninglist-p)
-                                          (ledger vl-unparam-ledger-p))
+(define vl-toplevel-default-signatures ((names string-listp)
+                                        (conf vl-svexconf-p "design level")
+                                        (warnings vl-warninglist-p)
+                                        (ledger vl-unparam-ledger-p))
   :returns (mv (instkeys vl-unparam-instkeylist-p)
                (warnings vl-warninglist-p)
                (ledger vl-unparam-ledger-p))
   (if (atom names)
-      (mv nil (vl-warninglist-fix warnings)
+      (mv nil
+          (vl-warninglist-fix warnings)
           (vl-unparam-ledger-fix ledger))
-    (b* (((mv ok instkey warnings ledger) (vl-module-default-signature (car names) conf warnings ledger))
-         ((mv instkeys warnings ledger) (vl-modulelist-default-signatures (cdr names) conf warnings ledger)))
+    (b* (((mv ok instkey warnings ledger) (vl-toplevel-default-signature (car names) conf warnings ledger))
+         ((mv instkeys warnings ledger) (vl-toplevel-default-signatures (cdr names) conf warnings ledger)))
       (mv (if ok
               (cons instkey instkeys)
             instkeys)
@@ -1737,7 +1739,11 @@ scopestacks.</p>"
        (ss (vl-scopestack-init new-x))
        (conf (make-vl-svexconf :ss ss))
 
-       (topmods (vl-modulelist-toplevel x.mods))
+       (topmods
+        ;; [Jared] for linting it's nice to also keep top-level interfaces
+        ;; around; even if they aren't instantiated we'd rather get their
+        ;; warnings.
+        (vl-design-toplevel x))
 
        ;; Make a ledger with initially empty instkeymap and namefactory
        ;; containing the top-level definitions' names -- modules, UDPs,
@@ -1751,7 +1757,7 @@ scopestacks.</p>"
        ;; just throw away the whole design if someone is trying to check a
        ;; parameterized module.
        ((mv top-sigs warnings ledger)
-        (vl-modulelist-default-signatures topmods conf warnings ledger))
+        (vl-toplevel-default-signatures topmods conf warnings ledger))
        (- (vl-svexconf-free conf))
 
        ((wmv ?ok warnings new-mods new-ifaces donelist ledger)

@@ -195,4 +195,17 @@ normal(:m14, "task4type_t")
 undeclared(:m14, "task5type_t")
 
 
+
+normal(:i1, "w1_declared")
+
+unused(:i1, "a1_implicit")
+unused(:i1, "a2_implicit")
+unused(:i1, "a3_implicit")
+undeclared(:i1, "a4_undeclared")
+normal(:i1, "a5_implicit")  # BOZO maybe check for selfassign
+normal(:i1, "a6_implicit")
+normal(:i1, "a7_implicit")
+
+
+
 test_passed()

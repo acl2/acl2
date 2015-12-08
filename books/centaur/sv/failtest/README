@@ -33,7 +33,15 @@ assignexpr5.v -- assignment expression in gate instance (vcs crash)
 
 bigwire1.v -- negative indices in wire bounds
 
-fnparamorder.v -- shadowing too hard in function
+fn1.v -- shadowing too hard in function
+fn2.v -- function input names duplicated (ansi syntax)
+fn2b.v -- function input names duplicated (classic syntax)
+fn3.v -- function input name same as function name (ansi syntax)
+fn3b.v -- function input name same as function name (classic syntax)
+fn4.v -- two (identical) functions with the same name
+fn5.v -- two (different) functions with the same name
+fn6.v -- function references undefined variable in rhs
+fn7.v -- function references undefined variable on lhs
 
 gates1.v -- zeroary not-gate
 gates2.v -- wide port connected to not gate output
@@ -47,9 +55,10 @@ iface3.v -- no subsequent declaration of legacy-style port in interface
 iface4.v -- no direction on subsequent declaration of legacy-style port in interface
 iface5.v -- name clash in modport port declarations (same direction)
 iface6.v -- name clash in modport port declarations (different direction)
-iface7.v -- undeclared name in modport declarations
+iface7.v -- undeclared name in simple modport declarations
 iface8.v -- modport port declarations reference wires declared later (ncv allows, vcs disallows)
 iface9.v -- name clash between modport name and wire name
+iface10.v -- undeclared name in modport expression, i.e., "bar" in .foo(bar)
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type

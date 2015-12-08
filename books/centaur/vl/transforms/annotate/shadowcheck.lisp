@@ -943,6 +943,16 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
 
+(define vl-shadowcheck-modport ((x        vl-modport-p)
+                                (st       vl-shadowcheck-state-p)
+                                (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-modport x)   (vl-modport-fix x))
+       ((mv st warnings) (vl-shadowcheck-exprlist (vl-modport-allexprs x) x st warnings))
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
+    (mv st warnings)))
+
 (define vl-shadowcheck-typedef ((x        vl-typedef-p)
                                 (st       vl-shadowcheck-state-p)
                                 (warnings vl-warninglist-p))
@@ -1353,6 +1363,10 @@ explicit declarations.</p>")
         (b* (((mv st warnings) (vl-shadowcheck-alias item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
+       ((when (eq tag :vl-modport))
+        (b* (((mv st warnings) (vl-shadowcheck-modport item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
        ((when (eq tag :vl-assertion))
         ;; BOZO figure out what we want to do here.
         (vl-shadowcheck-aux (cdr x) st warnings))
@@ -1578,9 +1592,9 @@ explicit declarations.</p>")
        (-   (vl-scopestacks-free))
 
        (new-x (change-vl-design x
-                       :mods mods
-                       :interfaces interfaces
-                       :warnings warnings)))
+                                :mods mods
+                                :interfaces interfaces
+                                :warnings warnings)))
 
     ;; All done with parse temps, delete them so that the design is
     ;; smaller/cleaner and more regular, and to hopefully prevent inappropriate

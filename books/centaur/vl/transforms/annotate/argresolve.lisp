@@ -879,12 +879,33 @@ instances in the module.</p>"
   :returns (new-x vl-modulelist-p)
   (vl-module-argresolve x ss))
 
+(define vl-interface-argresolve
+  :short "Apply the @(see argresolve) transformation to a @(see vl-interface-p)."
+  :long "<p>This is just glue-code to apply @(see vl-modinst-argresolve) to all
+of the interface instances, and @(see vl-gateinst-dirassign) to all of the gate
+instances in the interface.</p>"
+  ((x  vl-interface-p)
+   (ss vl-scopestack-p))
+  :returns (new-x vl-interface-p)
+  (b* (((mv warnings genblob)
+        (vl-genblob-argresolve (vl-interface->genblob x) ss (vl-interface->warnings x)))
+       (x-warn (change-vl-interface x :warnings warnings)))
+    (vl-genblob->interface genblob x-warn)))
+
+(defprojection vl-interfacelist-argresolve ((x    vl-interfacelist-p)
+                                            (ss   vl-scopestack-p))
+  :returns (new-x vl-interfacelist-p)
+  (vl-interface-argresolve x ss))
+
 (define vl-design-argresolve
   :short "Top-level @(see argresolve) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (((vl-design x) x)
-       (ss   (vl-scopestack-init x))
-       (mods (vl-modulelist-argresolve x.mods ss)))
+       (ss         (vl-scopestack-init x))
+       (mods       (vl-modulelist-argresolve x.mods ss))
+       (interfaces (vl-interfacelist-argresolve x.interfaces ss)))
     (vl-scopestacks-free)
-    (change-vl-design x :mods mods)))
+    (change-vl-design x
+                      :mods mods
+                      :interfaces interfaces)))

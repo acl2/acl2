@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-12-04")
+  "VL Syntax 2015-12-08")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -4803,8 +4803,6 @@ packages.  Eventually there will be new fields here.</p>")
   (vl-package->name x))
 
 
-
-
 (defprod vl-interface
   :short "Representation of a single @('interface')."
   :tag :vl-interface
@@ -4812,29 +4810,73 @@ packages.  Eventually there will be new fields here.</p>")
   ((name stringp
          :rule-classes :type-prescription
          "The name of this interface as a string.")
-   (ports      vl-portlist-p)
-   (portdecls  vl-portdecllist-p)
-   (paramdecls vl-paramdecllist-p)
-   (vardecls   vl-vardecllist-p)
-   (modports   vl-modportlist-p)
-   (generates  vl-genelementlist-p)
-   (imports    vl-importlist-p)
-   (dpiimports vl-dpiimportlist-p)
-   (dpiexports vl-dpiexportlist-p)
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (origname stringp :rule-classes :type-prescription)
-   (comments vl-commentmap-p)
+
+   ;; Still various missing things, e.g., program_instantiation,
+   ;; bind_directive, let statements, elaboration system tasks, timeunit stuff,
+   ;; clocking stuff, default disable stuff...
+
+   (imports     vl-importlist-p)
+   (ports       vl-portlist-p)       ;; allowed via interface_*_header
+   (portdecls   vl-portdecllist-p)   ;; allowed via headers or directly via interface_item
+
+   (modports    vl-modportlist-p)    ;; allowed via interface_or_generate_item -> modport_declaration
+   ;; interface_or_generate_item ::= module_common_item
+   ;;                                ::= module_or_generate_item_declaration
+   ;;                                    ::= package_or_generate_item_declaration
+
+   (vardecls    vl-vardecllist-p)    ;; allowed via package_or_generate_item
+   (paramdecls  vl-paramdecllist-p)  ;; allowed via package_or_generate_item
+   (fundecls    vl-fundecllist-p)    ;; allowed via package_or_generate_item
+   (taskdecls   vl-taskdecllist-p)   ;; allowed via package_or_generate_item
+   (typedefs    vl-typedeflist-p)    ;; allowed via package_or_generate_item (data_declaration)
+   (dpiimports  vl-dpiimportlist-p)  ;; allowed via package_or_generate_item
+   (dpiexports  vl-dpiexportlist-p)  ;; allowed via package_or_generate_item
+   (properties  vl-propertylist-p)   ;; allowed via package_or_generate_item (assertion_item_declaration)
+   (sequences   vl-sequencelist-p)   ;; allowed via package_or_generate_item (assertion_item_declaration)
+
+   ;; interface_or_generate_item ::= module_common_item
+   (modinsts    vl-modinstlist-p)    ;; allowed via module_common_item (interface_instantiation)
+   (assigns     vl-assignlist-p)     ;; allowed via module_common_item (continuous_assign)
+   (aliases     vl-aliaslist-p)      ;; allowed via module_common_item (net_alias)
+   (assertions  vl-assertionlist-p)  ;; allowed via module_common_item (assertion_item)
+   (cassertions vl-cassertionlist-p) ;; allowed via module_common_item (assertion_item)
+   (alwayses    vl-alwayslist-p)     ;; allowed via module_common_item (always_construct)
+   (initials    vl-initiallist-p)    ;; allowed via module_common_item (ijnitial_construct)
+   (finals      vl-finallist-p)      ;; allowed via module_common_item (final_construct)
+   (generates   vl-genelementlist-p) ;; allowed via module_common_item (loop_generate, conditional_generate, ...)
+   (genvars     vl-genvarlist-p)     ;; allowed via module_or_generate_item_declaration (genvar_declaration)
+
+   (warnings    vl-warninglist-p)
+   (minloc      vl-location-p)
+   (maxloc      vl-location-p)
+   (atts        vl-atts-p)
+   (origname    stringp :rule-classes :type-prescription)
+   (comments    vl-commentmap-p)
 
    (parse-temps  vl-maybe-parse-temps-p
                  "Temporary stuff recorded by the parser, used to generate real
                   interface contents."))
 
-  :long "BOZO incomplete stub -- we don't really support interfaces yet."
-
   :extra-binder-names (ifports))
+
+(define vl-interface->ifports
+  :short "Collect just the interface ports for a interface."
+  ((x vl-interface-p))
+  :returns (ports (vl-interfaceportlist-p ports))
+  (vl-collect-interface-ports (vl-interface->ports x))
+  ///
+  (local (defthm vl-regularportlist-p-when-no-interface-ports
+           (implies (and (not (vl-collect-interface-ports x))
+                         (vl-portlist-p x))
+                    (vl-regularportlist-p x))
+           :hints(("Goal"
+                   :induct (len x)
+                   :in-theory (enable tag-reasoning)))))
+
+  (defthm vl-regularportlist-p-when-no-interface->ifports
+    (implies (not (vl-interface->ifports x))
+             (vl-regularportlist-p (vl-interface->ports x)))
+    :hints(("Goal" :in-theory (enable vl-interface->ifports)))))
 
 (fty::deflist vl-interfacelist
   :elt-type vl-interface-p

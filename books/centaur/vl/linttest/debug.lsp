@@ -47,7 +47,7 @@
           (vl-pps-exprlist (cdr x)))))
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./shadowcheck/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./implicit/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
@@ -70,7 +70,34 @@
        (state (vl-lint-report-wrap res state)))
     (mv res state)))
 
+(trace$ (vl-lucid-dissect
+         :entry (list 'vl-lucid-dissect '<st>)
+         :exit (b* ((reportcard acl2::value))
+                 (list 'vl-lucid-dissect
+                       (with-local-ps (vl-print-reportcard reportcard))))))
 
+(trace$ vl-apply-reportcard 
+
+(vl-pps-modulelist (vl-design->mods (vl-loadresult->design *loadres*)))
+(top-level (with-local-ps (vl-pp-interfacelist (vl-design->interfaces (vl-loadresult->design *loadres*)) nil)))
+
+(vl-interface->parse-temps
+ (vl-find-interface "i1" (vl-design->interfaces (vl-loadresult->design *loadres*))))
+
+
+
+
+
+
+(trace$ (vl-make-implicit-wires-aux
+         :entry (list 'vl-make-implicit-wires-aux
+                      (with-local-ps (vl-cw "~a0~%" x))
+                      st
+                      (vl-warnings-to-string warnings))
+         :exit
+         (list 'vl-make-implicit-wires-aux
+               (vl-warnings-to-string (first values))
+               (with-local-ps (vl-cw "~a0~%" (second values))))))
 
 
 (define vl-debug-lexscope-entry ((x vl-lexscope-entry-p))
@@ -108,6 +135,8 @@
 
 (trace$ (vl-lexscopes-find
          :entry (list 'vl-lexscopes-find name :scopes (vl-debug-lexscopes scopes))))
+
+
 
 
 

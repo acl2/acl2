@@ -389,16 +389,8 @@ created when we process their packages, etc.</p>"
                                    (ss vl-scopestack-p)
                                    (db vl-luciddb-p))
   :returns (new-db vl-luciddb-p)
-  (b* ((x  (vl-interface-fix x))
-       (ss (vl-scopestack-push x ss))
-       (db (vl-scope-luciddb-init x ss db))
-
-       ;; BOZO I thought interfaces were supposed to be able to have
-       ;; functions and tasks??
-       ;(db (vl-fundecllist-luciddb-init x.fundecls ss db))
-       ;(db (vl-taskdecllist-luciddb-init x.taskdecls ss db))
-       )
-    ;; BOZO missing generates
+  (b* ((genblob (vl-interface->genblob x))
+       (db (vl-genblob-luciddb-init genblob ss db)))
     db))
 
 (define vl-interfacelist-luciddb-init ((x  vl-interfacelist-p)
@@ -702,9 +694,10 @@ created when we process their packages, etc.</p>"
       :null x
       :global x
       :local
-      (vl-scopestack-push (if (eq (tag x.top) :vl-module)
-                              (vl-module->genblob x.top)
-                            x.top)
+      (vl-scopestack-push (case (tag x.top)
+                            (:vl-module (vl-module->genblob x.top))
+                            (:vl-interface (vl-interface->genblob x.top))
+                            (otherwise x.top))
                           (vl-normalize-scopestack x.super))))
   ///
   (verify-guards vl-normalize-scopestack))
@@ -1774,14 +1767,8 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck interface
   :body
-  (b* (((vl-interface x))
-       (ss (vl-scopestack-push x ss))
-       (st (vl-portdecllist-lucidcheck  x.portdecls  ss st))
-       (st (vl-vardecllist-lucidcheck   x.vardecls   ss st))
-       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
-       ;; bozo do something with modports?
-       ;; bozo generates
-       )
+  (b* ((genblob (vl-interface->genblob x))
+       (st (vl-genblob-lucidcheck genblob ss st)))
     st))
 
 (def-vl-lucidcheck-list interfacelist :element interface)
