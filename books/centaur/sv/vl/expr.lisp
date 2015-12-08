@@ -543,6 +543,7 @@ e.g. bitselects, partselects, and nonconstant array selects.</p>"
               (:vl-genarrayblock (mv nil 1))
               (:vl-fundecl         (mv nil 1))
               (:vl-anonymous-scope (mv nil 1))
+              (:vl-blockstmt (mv nil 1))
               ;; Perhaps someday we'll need to add something about
               ;; statememts/functions/tasks here, but for the moment all that
               ;; is taken care of elsewhere (and complicated scoping stuff

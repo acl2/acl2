@@ -60,9 +60,16 @@
                (new-x :update)
                (new-conf (:acc conf :fix (vl-svexconf-fix conf))
                          vl-svexconf-p))
-
+    :renames ((vl-fundecl vl-fundecl-elaborate-aux)
+              (vl-expr vl-expr-elaborate-aux)
+              (vl-datatype vl-datatype-elaborate-aux)
+              (vl-stmt   vl-stmt-elaborate-aux)
+              (vl-package vl-package-elaborate-aux)
+              (vl-design vl-design-elaborate-aux))
     :type-fns ((vl-datatype vl-datatype-elaborate-fn)
-               (vl-expr     vl-expr-elaborate-fn))
+               (vl-fundecl vl-fundecl-elaborate-fn)
+               (vl-expr     vl-expr-elaborate-fn)
+               (vl-stmt     vl-stmt-elaborate-fn))
     :prod-fns ((vl-hidindex  (indices vl-indexlist-resolve-constants-fn))
                (vl-range     (msb vl-index-resolve-if-constant-fn)
                              (lsb vl-index-resolve-if-constant-fn))
@@ -74,8 +81,16 @@
                (vl-casttype-size (size vl-index-resolve-if-constant-fn))
                (vl-slicesize-expr (expr vl-index-resolve-if-constant-fn))
                (vl-arrayrange-index (expr vl-index-resolve-if-constant-fn))
-               ;; skip these fields because they won't be done right automatically
-               )
+               ;; these all need different scopes
+               (vl-genloop (continue :skip)
+                           (nextval :skip)
+                           (body :skip))
+               (vl-genif   (then :skip)
+                           (else :skip))
+               (vl-gencase (default :skip))
+               (vl-genblock (elems :skip))
+               (vl-genarray (blocks :skip))
+               (vl-gencaselist (:val :skip)))
     :field-fns ((atts :skip)
                 (mods :skip)
                 (interfaces :skip)
@@ -120,8 +135,6 @@
     :type expressions-and-datatypes
     :measure (acl2::nat-list-measure
               (list reclimit :order :count 0))
-    :renames ((vl-expr vl-expr-elaborate-aux)
-              (vl-datatype vl-datatype-elaborate-aux))
 
     :short "Resolve constant expressions, parameter values, and datatypes."
     :long "
@@ -205,6 +218,7 @@ expression with @(see vl-expr-to-svex).</p>
 
 ")
 
+
   (fty::defvisitors :template elaborate
     :dep-types (vl-fundecl)
     :order-base 1
@@ -213,11 +227,88 @@ expression with @(see vl-expr-to-svex).</p>
     ;; BOZO Block and loop statements should perhaps also get their own scopes pushed
     )
 
+  (fty::defvisitors :template elaborate
+    :types (vl-stmt vl-stmtlist)
+    :order-base 1
+    :measure (acl2::nat-list-measure
+              (list reclimit :order :count 0))
+    )
+
+
+  (define vl-stmt-elaborate ((x vl-stmt-p)
+                             (conf vl-svexconf-p)
+                             &key ((reclimit natp) '1000))
+    :guard-debug t
+    :measure (acl2::nat-list-measure
+              (list reclimit
+                    17 ;; this happens to be the order of
+                       ;; vl-stmt-elaborate-aux.  Not sure how to do this
+                       ;; besides hardcode it.
+                    (vl-stmt-count x) 1))
+    :measure-debug t
+    :returns (mv (ok)
+                 (warnings vl-warninglist-p)
+                 (new-x vl-stmt-p)
+                 (new-conf vl-svexconf-p))
+    (b* (((vl-svexconf conf) (vl-svexconf-fix conf))
+         (warnings nil))
+      (vl-stmt-case x
+        :vl-blockstmt
+        (b* ((blkconf (make-vl-svexconf :ss (vl-scopestack-push
+                                             (vl-blockstmt->blockscope x)
+                                             conf.ss)))
+             ((wmv ok1 warnings paramdecls blkconf)
+              (vl-paramdecllist-elaborate x.paramdecls blkconf :reclimit reclimit))
+             ((wmv ok2 warnings typedefs blkconf)
+              (vl-typedeflist-elaborate x.typedefs blkconf :reclimit reclimit))
+             ((wmv ok3 warnings vardecls blkconf)
+              (vl-vardecllist-elaborate x.vardecls blkconf :reclimit reclimit))
+             ((wmv ok4 warnings stmts blkconf)
+              (vl-stmtlist-elaborate x.stmts blkconf :reclimit reclimit)))
+          (vl-svexconf-free blkconf)
+          (mv (and ok1 ok2 ok3 ok4)
+              warnings
+              (change-vl-blockstmt x
+                                   :paramdecls paramdecls
+                                   :vardecls vardecls
+                                   :typedefs typedefs
+                                   :stmts stmts)
+              conf))
+        :vl-forstmt
+        (b* ((blkconf (make-vl-svexconf :ss (vl-scopestack-push
+                                             (vl-forstmt->blockscope x)
+                                             conf.ss)))
+             ((wmv ok1 warnings initdecls blkconf)
+              (vl-vardecllist-elaborate x.initdecls blkconf :reclimit reclimit))
+             ((wmv ok2 warnings initassigns blkconf)
+              (vl-stmtlist-elaborate x.initassigns blkconf :reclimit reclimit))
+             ((wmv ok3 warnings test blkconf)
+              (vl-expr-elaborate x.test blkconf :reclimit reclimit))
+             ((wmv ok4 warnings stepforms blkconf)
+              (vl-stmtlist-elaborate x.stepforms blkconf :reclimit reclimit))
+             ((wmv ok5 warnings body blkconf)
+              (vl-stmt-elaborate x.body blkconf :reclimit reclimit)))
+          (vl-svexconf-free blkconf)
+          (mv (and ok1 ok2 ok3 ok4 ok5)
+              warnings
+              (change-vl-forstmt x
+                                 :initdecls initdecls
+                                 :initassigns initassigns
+                                 :test test
+                                 :stepforms stepforms
+                                 :body body)
+              conf))
+        :otherwise
+        (vl-stmt-elaborate-aux x conf :reclimit reclimit))))                                   
+             
+                                             
+         
+
+
+
 
   (fty::defvisitor :template elaborate
     :type vl-fundecl
-    :renames ((vl-fundecl vl-fundecl-elaborate-aux))
-    :type-fns ((vl-fundecl vl-fundecl-elaborate-fn))
     :order 100
     :measure (acl2::nat-list-measure
               (list reclimit :order :count 0)))
@@ -946,17 +1037,7 @@ expression with @(see vl-expr-to-svex).</p>
 (fty::defvisitor vl-genelement-elaborate
   :template elaborate
   :type vl-genelement
-  :omit-types (vl-genarrayblock vl-genarrayblocklist)
-  ;; these all need different scopes
-  :prod-fns ((vl-genloop (continue :skip)
-                         (nextval :skip)
-                         (body :skip))
-             (vl-genif   (then :skip)
-                         (else :skip))
-             (vl-gencase (default :skip))
-             (vl-genblock (elems :skip))
-             (vl-genarray (blocks :skip))
-             (vl-gencaselist (:val :skip))))
+  :omit-types (vl-genarrayblock vl-genarrayblocklist))
 
 
 (fty::defvisitors vl-genblob-elaborate
@@ -969,11 +1050,9 @@ expression with @(see vl-expr-to-svex).</p>
 
 (fty::defvisitor vl-design-elaborate-aux
   :template elaborate
-  :type vl-design
-  :renames ((vl-design vl-design-elaborate-aux)))
+  :type vl-design)
 
 (fty::defvisitor vl-package-elaborate-aux
   :template elaborate
-  :type vl-package
-  :renames ((vl-package vl-package-elaborate-aux)))
+  :type vl-package)
 

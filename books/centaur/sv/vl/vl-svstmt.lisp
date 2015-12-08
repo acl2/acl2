@@ -33,6 +33,7 @@
 (include-book "centaur/vl/mlib/writer" :dir :system) ;; bozo?
 (include-book "svstmt-compile")
 (include-book "centaur/fty/visitor" :dir :system)
+(include-book "elaborate")
 ;; (include-book "vl-fns-called")
 ;; (include-book "vl-paramrefs")
 ;; (include-book "centaur/vl/transforms/always/util" :dir :system)
@@ -778,17 +779,23 @@ because... (BOZO)</p>
              ;;                           defined for loop vars: ~a0"
              ;;                     :args (list x))
              ;;             (ok)))
+             (blkconf (make-vl-svexconf :ss (vl-scopestack-push
+                                             (vl-forstmt->blockscope x)
+                                             (vl-svexconf->ss conf))))
+             ((wmv ok0 warnings x blkconf)
+              ;; use aux to defeat scoping, we want the blkconf from inside the scope.
+              (vl-stmt-elaborate-aux x blkconf))
              ((wmv ok1 warnings locals initstmts1)
-              (vl-vardecllist->svstmts x.initdecls conf))
+              (vl-vardecllist->svstmts x.initdecls blkconf))
              ((wmv ok2 warnings initstmts2)
-              (vl-stmtlist->svstmts x.initassigns conf nonblockingp))
+              (vl-stmtlist->svstmts x.initassigns blkconf nonblockingp))
              ((wmv warnings cond ?type ?size)
-              (vl-expr-to-svex-untyped x.test conf))
+              (vl-expr-to-svex-untyped x.test blkconf))
              ((wmv ok3 warnings stepstmts)
-              (vl-stmtlist->svstmts x.stepforms conf nonblockingp))
+              (vl-stmtlist->svstmts x.stepforms blkconf nonblockingp))
              ((wmv ok4 warnings body)
-              (vl-stmt->svstmts x.body conf nonblockingp)))
-          (mv (and ok1 ok2 ok3 ok4)
+              (vl-stmt->svstmts x.body blkconf nonblockingp)))
+          (mv (and ok0 ok1 ok2 ok3 ok4)
               warnings
               (list
                (sv::make-svstmt-scope
@@ -812,10 +819,16 @@ because... (BOZO)</p>
              ;;                           statements with local variables: ~a0"
              ;;                     :args (list x))
              ;;             (ok)))
+             (blkconf (make-vl-svexconf :ss (vl-scopestack-push
+                                             (vl-blockstmt->blockscope x)
+                                             (vl-svexconf->ss conf))))
+             ((wmv ok0 warnings x blkconf)
+              ;; use aux to defeat scoping, we want the blkconf from inside the scope.
+              (vl-stmt-elaborate-aux x blkconf))
              ((wmv ok1 warnings locals initstmts)
-              (vl-vardecllist->svstmts x.vardecls conf))
+              (vl-vardecllist->svstmts x.vardecls blkconf))
              ((wmv ok2 warnings bodystmts)
-              (vl-stmtlist->svstmts x.stmts conf nonblockingp)))
+              (vl-stmtlist->svstmts x.stmts blkconf nonblockingp)))
           (mv (and ok1 ok2)
               warnings
               (list

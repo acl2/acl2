@@ -39,7 +39,7 @@
 ||#
 
 (in-package "SV")
-(acl2::set-ld-error-action '(:exit 1) state)
+; (acl2::set-ld-error-action '(:exit 1) state)
 
 (defconsts (*testname* state)
   (b* ((constval (fgetprop '*testname* 'acl2::const nil (w state)))
