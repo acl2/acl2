@@ -43,11 +43,8 @@ SVOK_FILES := $(patsubst %.v, %.svok, $(SPEC_FILES))
 
 FAILING_TEST_TARGETS := \
   bigwire1.svok \
-  names2.svok \
-  names3.svok \
   gates2.svok \
   gates5.svok \
-  iface1.svok \
   iface9.svok \
   inc8.svok \
   inc9.svok \
@@ -56,12 +53,6 @@ FAILING_TEST_TARGETS := \
   iface4.svok \
   param1.svok \
   port1.svok \
-  fn2.vok fn2.svok \
-  fn2b.vok fn2b.svok \
-  fn3.vok fn3.svok \
-  fn3b.vok fn3b.svok \
-  fn4.vok fn4.svok \
-  fn5.vok fn5.svok
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core
@@ -90,7 +81,7 @@ passing: $(PASSING_VOK) $(PASSING_SVOK)
 clean:
 	rm -f *.vok *.svok *.log
 	rm -rf csrc INCA_libs simv.daidir
-	rm -f simv ucli.key
+	rm -f simv ucli.key *.history
 
 
 # [Jared] hack so you can just write "make ansi1" or similar, adapted
