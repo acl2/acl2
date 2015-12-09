@@ -53,6 +53,8 @@ FAILING_TEST_TARGETS := \
   iface4.svok \
   param1.svok \
   port1.svok \
+  iface10b.svok \
+  iface10c.svok \
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core

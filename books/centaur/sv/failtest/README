@@ -59,6 +59,11 @@ iface7.v -- undeclared name in simple modport declarations
 iface8.v -- modport port declarations reference wires declared later (ncv allows, vcs disallows)
 iface9.v -- name clash between modport name and wire name
 iface10.v -- undeclared name in modport expression, i.e., "bar" in .foo(bar)
+iface10b.v -- similar, but the wire *is* declared in some outer scope (still not ok)
+iface10c.v -- similar, but simpler port syntax
+iface11.v -- interface tries to instantiate submodule
+iface12.v -- interface tries to instantiate udp (not sure if legal, ncv allows, vcs prohibits)
+iface13.v -- interface tries to instantiate gate (not sure if legal, but ncv/vcs prohibit)
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type

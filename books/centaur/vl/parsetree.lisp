@@ -4835,7 +4835,13 @@ packages.  Eventually there will be new fields here.</p>")
    (sequences   vl-sequencelist-p)   ;; allowed via package_or_generate_item (assertion_item_declaration)
 
    ;; interface_or_generate_item ::= module_common_item
-   (modinsts    vl-modinstlist-p)    ;; allowed via module_common_item (interface_instantiation)
+   (modinsts    vl-modinstlist-p     ;; allowed via module_common_item (interface_instantiation)
+                "Note: interfaces are not allowed to have submodule instances
+                 (SystemVerilog-2012 section 25.3, page 713).  However, they
+                 are allowed to have interface instances.  We check in @(see
+                 basicsanity) that modinsts within each interface do indeed
+                 refer to interfaces.")
+                  
    (assigns     vl-assignlist-p)     ;; allowed via module_common_item (continuous_assign)
    (aliases     vl-aliaslist-p)      ;; allowed via module_common_item (net_alias)
    (assertions  vl-assertionlist-p)  ;; allowed via module_common_item (assertion_item)

@@ -1,9 +1,11 @@
+logic baaz;
+
 interface simplebus ;
 
   logic [2:0] bar;
   logic [3:0] baz;
 
-  modport master (input bar, output .whoo(baaz)); // oops, baaz not declared in the current interface
+  modport master (input bar, output .whoo(baaz)); // oops, baaz not declared
 
 endinterface
 

@@ -33,13 +33,20 @@
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
-(defsection portcheck
+(defsection basicsanity
   :parents (annotate)
-  :short "Trivial check to make sure that each module's ports satisfy basic
-well-formedness conditions and agree with its port declarations and to issue
-style warnings for tricky ports."
+  :short "Basic sanity checking of various constructs."
 
-  :long "<p>In this check, we try to identify cases like:</p>
+  :long "<p>This is a set of basic but rather ad-hoc sanity checks that don't
+really fit into other places.  It is carried out as part of @(see annotate).
+Some of the things we do here...</p>
+
+
+<h5>Port sanity checking</h5>
+
+<p>We check that ports satisfy basic well-formedness conditions and agree with
+its port declarations and to issue style warnings for tricky ports.  This is
+meant to identify cases such as:</p>
 
 @({
      module foo (o, a, b);              |   module bar (o, a, b);
@@ -59,10 +66,35 @@ many names internally, for instance:</p>
 })
 
 <p>So, in general, we need to gather the names from the port expressions.
-While we're at it, we also check for any duplicated port names and issue
-various stylistic warnings about complicated ports.</p>")
+While we're at it we may issue various port style warnings.</p>
 
-(local (xdoc::set-default-parents portcheck))
+
+<h5>Port and modport name clashes</h5>
+
+<p>Most name clash checking for real scopes is done by @(see shadowcheck), but
+things like the external port names for a module, e.g., the @('a1') and @('a2')
+in</p>
+
+@({
+     module foo (.a1(b1), .a2(b2)) ;
+      ...
+     endmodule
+})
+
+<p>aren't separate from other scopes, so we check them here.  We similarly
+check the external names listed by modports.</p>
+
+
+<h5>Interface instances</h5>
+
+<p>SystemVerilog 25.3 (page 713) prohibits interfaces from instantiating
+submodules, but interfaces <i>are</i> allowed to instantiate other interfaces.
+Since we can't tell until after parsing whether a particular instance refers to
+a module, interface, or user-defined primitive and use the same representation
+for all of these, we check here that any such instances really do refer to
+interfaces.</p>")
+
+(local (xdoc::set-default-parents basicsanity))
 
 (define vl-port-check-wellformed ((x vl-port-p))
   :returns (warnings vl-warninglist-p)
@@ -151,7 +183,7 @@ various stylistic warnings about complicated ports.</p>")
        (warnings (vl-port-check-style (car x) warnings)))
     (vl-portlist-check-style (cdr x) warnings)))
 
-(define vl-module-portcheck ((x vl-module-p))
+(define vl-module-basicsanity ((x vl-module-p))
   :returns (new-x vl-module-p "New version of @('x'), with at most some added warnings.")
   (b* (((vl-module x) x)
 
@@ -189,9 +221,9 @@ various stylistic warnings about complicated ports.</p>")
 
     (change-vl-module x :warnings warnings)))
 
-(defprojection vl-modulelist-portcheck ((x vl-modulelist-p))
+(defprojection vl-modulelist-basicsanity ((x vl-modulelist-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-portcheck x))
+  (vl-module-basicsanity x))
 
 
 (defprojection vl-modport-portlist->names ((x vl-modport-portlist-p))
@@ -220,9 +252,78 @@ various stylistic warnings about complicated ports.</p>")
        (warnings (vl-modport-portcheck (car x) warnings)))
     (vl-modportlist-portcheck (cdr x) warnings)))
 
-(define vl-interface-portcheck ((x vl-interface-p))
+
+
+(define vl-interface-check-modinst-is-subinterface
+  ((x        vl-modinst-p "Modinst to check, occurs within an interface.")
+   (ss       vl-scopestack-p)
+   (warnings vl-warninglist-p))
+  :returns (new-warnings vl-warninglist-p)
+  (b* (((vl-modinst x) (vl-modinst-fix x))
+       (def (vl-scopestack-find-definition x.modname ss))
+       ((unless def)
+        (fatal :type :vl-bad-instance
+               :msg "~a0 refers to undefined interface ~m1."
+               :args (list x x.modname)))
+       ((unless (mbe :logic (vl-interface-p def)
+                     :exec (eq (tag def) :vl-interface)))
+        (fatal :type :vl-bad-instance
+               :msg "~a0: can't instantiate ~s1 within an interface ~
+                     (interfaces can instantiate other interfaces, but can't ~
+                     have ~s2 instances.)"
+               :args (list x x.modname
+                           (case (tag def)
+                             (:vl-module    "submodule")
+                             (:vl-udp       "primitive")
+                             ;; bozo not sure this is not ok -- currently we
+                             ;; don't really have any support for programs so
+                             ;; let's just rule it out, too.
+                             (:vl-program   "program")
+                             (otherwise (impossible)))))))
+    ;; Else, looks like an interface, so that seems good.
+    (ok))
+  :prepwork ((local (in-theory (enable tag-reasoning)))
+
+             (local (defthm l0
+                      (implies (vl-scopedef-p x)
+                               (or (equal (tag x) :vl-interface)
+                                   (equal (tag x) :vl-module)
+                                   (equal (tag x) :vl-udp)
+                                   (equal (tag x) :vl-program)))
+                      :rule-classes :forward-chaining
+                      :hints(("Goal" :in-theory (enable vl-scopedef-p)))))
+
+             (local (defthm l1
+                      (let ((x (vl-scopestack-find-definition name ss)))
+                        (implies x
+                                 (or (equal (tag x) :vl-interface)
+                                     (equal (tag x) :vl-module)
+                                     (equal (tag x) :vl-udp)
+                                     (equal (tag x) :vl-program))))
+                      :rule-classes :forward-chaining
+                      :hints(("goal" :use ((:instance l0 (x (vl-scopestack-find-definition name ss))))))))
+
+             (local (defthm l2
+                      (let ((x (vl-scopestack-find-definition name ss)))
+                        (implies x
+                                 (equal (vl-interface-p x)
+                                        (eq (tag x) :vl-interface))))))))
+
+(define vl-interface-check-modinsts-are-subinterfaces ((x        vl-modinstlist-p)
+                                                       (ss       vl-scopestack-p)
+                                                       (warnings vl-warninglist-p))
+  :returns (new-warnings vl-warninglist-p)
+  (b* (((when (atom x))
+        (ok))
+       (warnings (vl-interface-check-modinst-is-subinterface (car x) ss warnings)))
+    (vl-interface-check-modinsts-are-subinterfaces (cdr x) ss warnings)))
+
+
+(define vl-interface-basicsanity ((x vl-interface-p)
+                                  (ss vl-scopestack-p))
   :returns (new-x vl-interface-p "New version of @('x'), with at most some added warnings.")
-  (b* (((vl-interface x) x)
+  (b* (((vl-interface x) (vl-interface-fix x))
+       (ss (vl-scopestack-push x ss))
 
        (bad-warnings (vl-portlist-check-wellformed x.ports))
        ((when bad-warnings)
@@ -256,20 +357,24 @@ various stylistic warnings about complicated ports.</p>")
                                 :msg "Duplicate port names: ~&0."
                                 :args (list dupes))))
 
-       (warnings (vl-modportlist-portcheck x.modports warnings)))
+       (warnings (vl-modportlist-portcheck x.modports warnings))
+       (warnings (vl-interface-check-modinsts-are-subinterfaces x.modinsts ss warnings)))
 
     (change-vl-interface x :warnings warnings)))
 
-(defprojection vl-interfacelist-portcheck ((x vl-interfacelist-p))
+(defprojection vl-interfacelist-basicsanity ((x  vl-interfacelist-p)
+                                             (ss vl-scopestack-p))
   :returns (new-x vl-interfacelist-p)
-  (vl-interface-portcheck x))
+  (vl-interface-basicsanity x ss))
 
-
-(define vl-design-portcheck ((x vl-design-p))
+(define vl-design-basicsanity ((x vl-design-p))
   :returns (new-x vl-design-p)
-  :short "Top-level @(see portcheck) check."
-  (b* (((vl-design x) x))
-    (change-vl-design x
-                      :mods (vl-modulelist-portcheck x.mods)
-                      :interfaces (vl-interfacelist-portcheck x.interfaces))))
+  :short "Top-level @(see basicsanity) check."
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (new-x (change-vl-design x
+                                :mods (vl-modulelist-basicsanity x.mods)
+                                :interfaces (vl-interfacelist-basicsanity x.interfaces ss))))
+    (vl-scopestacks-free)
+    new-x))
 

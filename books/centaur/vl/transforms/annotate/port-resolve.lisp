@@ -623,7 +623,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
 ;; and remove the vardecl.  Remove the interfaceports from the loaditems and
 ;; vardecls.  Go through the ports and replace the interfaceports.
 
-;; 4. This is done in lint/portcheck.lisp.
+;; 4. This is done in basicsanity
 
 
 
