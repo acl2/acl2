@@ -499,11 +499,6 @@ shown.</p>"
                                         ;; This is a bad time to check generates
                                         :generatesp nil)))
 
-       (- (vl-cw-ps-seq
-           (vl-cw "Reportcard after first lucid check: ~%~%")
-           (vl-print-reportcard (vl-design-reportcard design) :elide nil)))
-
-
        (design (xf-cwtime (vl-design-check-namespace design)))
        (design (xf-cwtime (vl-design-check-case design)))
        (design (xf-cwtime (vl-design-duperhs-check design)))
