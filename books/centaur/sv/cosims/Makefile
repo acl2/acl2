@@ -90,7 +90,10 @@ FAILING_TEST_TARGETS := \
   inst_size1/ok \
   inst_size2/ok \
   inst_size3/ok \
-  inst_size4/ok
+  inst_size4/ok \
+  iface_basic3/ok \
+  iface_subiface/ok \
+  udp_wide1/ok
 
 
 SPECFILES := $(wildcard */spec.sv)
