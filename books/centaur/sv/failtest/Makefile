@@ -49,7 +49,6 @@ FAILING_TEST_TARGETS := \
   inc9.svok \
   inst9.svok \
   inst12.svok \
-  iface4.svok \
   param1.svok \
   port1.svok
 

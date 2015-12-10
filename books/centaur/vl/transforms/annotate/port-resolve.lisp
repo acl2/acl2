@@ -576,6 +576,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
                                     x.temps
                                     :loaditems
                                     (append-without-guard
+                                     (vl-modelementlist->genelements portdecls)
                                      (vl-modelementlist->genelements vardecls)
                                      x.temps.loaditems)))))
 

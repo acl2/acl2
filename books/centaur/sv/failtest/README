@@ -66,6 +66,7 @@ iface12.v -- interface tries to instantiate udp (not sure if legal, ncv allows, 
 iface13.v -- interface tries to instantiate gate (not sure if legal, but ncv/vcs prohibit)
 iface14.v -- modport with insane port expression .foo(a+b) (vcs accepts it??)
 iface15.v -- modport tries to connect to parameter instead of variable
+iface16.v -- interface with mismatched "endinterface : oops"
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type
@@ -112,6 +113,9 @@ inst10.v -- illegal attempt to make an "inout var ..." port (classic port syntax
 inst11.v -- 2-element instance array with port of size 3 (can't be cleanly split)
 inst12.v -- array of 0 submodule instances
 
+mod1.v -- module with modport declaration
+mod2.v -- module foo with mismatched "endmodule : oops"
+
 names1.v -- redeclare wire with same name
 names2.v -- buf gate with same name as previous wire
 names3.v -- submodule instance with same name as previous wire
@@ -140,7 +144,6 @@ port10.v -- too many positional ports (I guess this is redundant with inst2.v)
 port11.v -- instantiate undefiend submodule
 port12.v -- too few named port connections to submodule
 port13.v -- nested concatenations (which aren't allowed) in port expression
-
 
 pp1.v -- try to use undefined preprocessor macro
 

@@ -1,6 +1,6 @@
 interface simplebus (foo); // oops, no direction for FOO
 
-  logic foo;       // not good enough, need an ANSI-style declaration
+  logic foo;       // not good enough, need an actual port declaration
   logic [2:0] bar;
 
 endinterface
