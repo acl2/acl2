@@ -48,9 +48,9 @@ function. We intend to use these functions only for reasoning.</p>" )
   (let* ((superior-entry (rm-low-64 superior-entry-addr x86)))
     (and
      ;; Superior entry present.
-     (equal (ia32e-page-tables-slice :p  superior-entry) 1)
+     (equal (page-present superior-entry) 1)
      ;; Page Size = 0, i.e., next level of paging structure is required.
-     (equal (ia32e-page-tables-slice :ps superior-entry) 0)
+     (equal (page-size superior-entry) 0)
      ;; Next level of paging structure fits in the physical memory.
      (physical-address-p
       (+
@@ -176,7 +176,7 @@ function. We intend to use these functions only for reasoning.</p>" )
             (page-dir-ptr-table-entry-addr lin-addr ptr-table-base-addr))
            (ptr-table-entry (rm-low-64 ptr-table-entry-addr x86))
 
-           (pdpte-ps? (equal (ia32e-page-tables-slice :ps ptr-table-entry) 1))
+           (pdpte-ps? (equal (page-size ptr-table-entry) 1))
 
            ;; 1G pages:
            ((when pdpte-ps?)
@@ -241,7 +241,7 @@ function. We intend to use these functions only for reasoning.</p>" )
             (page-directory-entry-addr lin-addr page-directory-base-addr))
            (page-directory-entry (rm-low-64 page-directory-entry-addr x86))
 
-           (pde-ps? (equal (ia32e-page-tables-slice :ps page-directory-entry) 1))
+           (pde-ps? (equal (page-size page-directory-entry) 1))
            ((when pde-ps?)
             (mv t 0))
 
@@ -411,7 +411,7 @@ function. We intend to use these functions only for reasoning.</p>" )
         (PD-entry
          (rm-low-64 PD-entry-addr x86)))
        (and (page-directory-entry-addr-found-p lin-addr x86)
-            (equal (ia32e-page-tables-slice :ps PD-entry) 1)))
+            (equal (page-size PD-entry) 1)))
    ;; 1 GB Pages
    (b* ((PDPT-base-addr
          (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
@@ -419,7 +419,7 @@ function. We intend to use these functions only for reasoning.</p>" )
          (page-dir-ptr-table-entry-addr lin-addr PDPT-base-addr))
         (PDPT-entry (rm-low-64 PDPT-entry-addr x86)))
        (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-            (equal (ia32e-page-tables-slice :ps PDPT-entry) 1)))))
+            (equal (page-size PDPT-entry) 1)))))
 
 (defun find-binding-from-entry-found-p-aux (var calls)
   (if (endp calls)
@@ -604,7 +604,7 @@ function. We intend to use these functions only for reasoning.</p>" )
             (page-directory-entry-addr lin-addr base-addr))
            (entry (rm-low-64 p-entry-addr x86)))
 
-        (if (equal (ia32e-page-tables-slice :ps entry) 1)
+        (if (equal (page-size entry) 1)
             ;; 2MB page
             (ia32e-la-to-pa-page-directory
              lin-addr base-addr wp smep nxe r-w-x cpl x86)
@@ -616,7 +616,7 @@ function. We intend to use these functions only for reasoning.</p>" )
                ;; No errors at this level.
                ((mv flg address x86)
                 (ia32e-la-to-pa-PT
-                 lin-addr (ia32e-page-tables-slice :u/s entry)
+                 lin-addr (page-user-supervisor entry)
                  wp smep nxe r-w-x cpl x86))
                ((when flg)
                 ;; Error, so do not update accessed bit.
@@ -644,7 +644,7 @@ function. We intend to use these functions only for reasoning.</p>" )
     (implies (and (page-directory-entry-addr-found-p lin-addr x86)
                   (equal base-addr (mv-nth 1 (page-directory-base-addr lin-addr x86)))
                   (equal entry (rm-low-64 (page-directory-entry-addr lin-addr base-addr) x86))
-                  (equal (ia32e-page-tables-slice :ps entry) 1))
+                  (equal (page-size entry) 1))
              (equal (ia32e-la-to-pa-PD
                      lin-addr wp smep nxe r-w-x cpl x86)
                     (ia32e-la-to-pa-page-directory
@@ -767,7 +767,7 @@ function. We intend to use these functions only for reasoning.</p>" )
            (p-entry-addr
             (page-dir-ptr-table-entry-addr lin-addr base-addr))
            (entry (rm-low-64 p-entry-addr x86)))
-        (if (equal (ia32e-page-tables-slice :ps entry) 1)
+        (if (equal (page-size entry) 1)
             ;; 1GB page
             (ia32e-la-to-pa-page-dir-ptr-table
              lin-addr base-addr wp smep nxe r-w-x cpl x86)
@@ -806,7 +806,7 @@ function. We intend to use these functions only for reasoning.</p>" )
     (implies (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
                   (equal base-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
                   (equal entry (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86))
-                  (equal (ia32e-page-tables-slice :ps entry) 1))
+                  (equal (page-size entry) 1))
              (equal (ia32e-la-to-pa-PDPT
                      lin-addr wp smep nxe r-w-x cpl x86)
                     (ia32e-la-to-pa-page-dir-ptr-table
@@ -823,7 +823,7 @@ function. We intend to use these functions only for reasoning.</p>" )
                          (rm-low-64
                           (page-directory-entry-addr lin-addr page-directory-base-addr)
                           x86))
-                  (equal (ia32e-page-tables-slice :ps page-directory-entry) 1))
+                  (equal (page-size page-directory-entry) 1))
              (equal (ia32e-la-to-pa-PDPT lin-addr wp smep nxe r-w-x cpl x86)
                     (ia32e-la-to-pa-page-dir-ptr-table
                      lin-addr page-dir-ptr-table-base-addr wp smep nxe r-w-x cpl x86)))
@@ -1001,7 +1001,7 @@ function. We intend to use these functions only for reasoning.</p>" )
                    (rm-low-64
                     (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
                     x86))
-                  (equal (ia32e-page-tables-slice :ps page-dir-ptr-table-entry) 1))
+                  (equal (page-size page-dir-ptr-table-entry) 1))
              (equal (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86)
                     (ia32e-la-to-pa-pml4-table
                      lin-addr pml4-table-base-addr wp smep nxe r-w-x cpl x86)))
@@ -1035,7 +1035,7 @@ function. We intend to use these functions only for reasoning.</p>" )
                          (rm-low-64
                           (page-directory-entry-addr lin-addr page-directory-base-addr)
                           x86))
-                  (equal (ia32e-page-tables-slice :ps page-directory-entry) 1))
+                  (equal (page-size page-directory-entry) 1))
              (equal (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86)
                     (ia32e-la-to-pa-pml4-table
                      lin-addr pml4-table-base-addr wp smep nxe r-w-x cpl x86)))

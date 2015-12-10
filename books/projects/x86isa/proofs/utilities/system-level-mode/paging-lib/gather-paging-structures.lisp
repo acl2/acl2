@@ -463,15 +463,15 @@
                         (if (equal (car (second e2-equiv)) 'set-dirty-bit)
                             (second (second e2-equiv))
                           (second e2-equiv))))
-                      `((e1 . ,e1-equiv)
-                        (e2 . ,e2))))
+                    `((e1 . ,e1-equiv)
+                      (e2 . ,e2))))
                  ((equal (first e2-equiv) 'set-dirty-bit)
                   (b* ((e2
                         (if (equal (car (second e2-equiv)) 'set-accessed-bit)
                             (second (second e2-equiv))
                           (second (second e2-equiv)))))
-                      `((e1 . ,e1-equiv)
-                        (e2 . ,e2))))
+                    `((e1 . ,e1-equiv)
+                      (e2 . ,e2))))
                  (t
                   `((e1 . ,e1-equiv)
                     (e2 . ,e2-equiv)))))
@@ -484,15 +484,15 @@
                         (if (equal (car (second e1-equiv)) 'set-dirty-bit)
                             (second (second e1-equiv))
                           (second e1-equiv))))
-                      `((e2 . ,e2-equiv)
-                        (e1 . ,e1))))
+                    `((e2 . ,e2-equiv)
+                      (e1 . ,e1))))
                  ((equal (first e1-equiv) 'set-dirty-bit)
                   (b* ((e1
                         (if (equal (car (second e1-equiv)) 'set-accessed-bit)
                             (second (second e1-equiv))
                           (second e1-equiv))))
-                      `((e2 . ,e2-equiv)
-                        (e1 . ,e1))))
+                    `((e2 . ,e2-equiv)
+                      (e1 . ,e1))))
                  (t
                   `((e2 . ,e2-equiv)
                     (e1 . ,e1-equiv)))))))
@@ -534,7 +534,55 @@
                   (<= 7 n))
              (equal (logtail n e1) (logtail n e2)))
     :hints (("Goal" :use ((:instance logtail-bigger
-                                     (n n) (m 7)))))))
+                                     (n n) (m 7))))))
+
+  (defthmd xlate-equiv-entries-and-page-present
+    (implies (xlate-equiv-entries e1 e2)
+             (equal (page-present e1) (page-present e2)))
+    :hints (("Goal"
+             :use ((:instance xlate-equiv-entries-and-loghead
+                              (e1 e1) (e2 e2) (n 1)))
+             :in-theory (e/d* (page-present) ()))))
+
+  (defthmd xlate-equiv-entries-and-page-size
+    (implies (and (xlate-equiv-entries e1 e2)
+                  (unsigned-byte-p 64 e1)
+                  (unsigned-byte-p 64 e2))
+             (equal (page-size e1) (page-size e2)))
+    :hints (("Goal"
+             :use ((:instance logtail-bigger-and-logbitp
+                              (e1 e1) (e2 e2) (m 7) (n 7)))
+             :in-theory (e/d* (page-size) ()))))
+
+  (defthmd xlate-equiv-entries-and-page-read-write
+    (implies (and (xlate-equiv-entries e1 e2)
+                  (unsigned-byte-p 64 e1)
+                  (unsigned-byte-p 64 e2))
+             (equal (page-read-write e1) (page-read-write e2)))
+    :hints (("Goal"
+             :use ((:instance loghead-smaller-and-logbitp
+                              (e1 e1) (e2 e2) (m 1) (n 5)))
+             :in-theory (e/d* (page-read-write) ()))))
+
+  (defthmd xlate-equiv-entries-and-page-user-supervisor
+    (implies (and (xlate-equiv-entries e1 e2)
+                  (unsigned-byte-p 64 e1)
+                  (unsigned-byte-p 64 e2))
+             (equal (page-user-supervisor e1) (page-user-supervisor e2)))
+    :hints (("Goal"
+             :use ((:instance loghead-smaller-and-logbitp
+                              (e1 e1) (e2 e2) (m 2) (n 5)))
+             :in-theory (e/d* (page-user-supervisor) ()))))
+
+  (defthmd xlate-equiv-entries-and-page-execute-disable
+    (implies (and (xlate-equiv-entries e1 e2)
+                  (unsigned-byte-p 64 e1)
+                  (unsigned-byte-p 64 e2))
+             (equal (page-execute-disable e1) (page-execute-disable e2)))
+    :hints (("Goal"
+             :use ((:instance logtail-bigger-and-logbitp
+                              (e1 e1) (e2 e2) (m 7) (n 63)))
+             :in-theory (e/d* (page-execute-disable) ())))))
 
 ;; ======================================================================
 
@@ -601,8 +649,8 @@
   (b* ((superior-structure-entry
         (rm-low-64 superior-structure-paddr x86)))
     (if (and
-         (equal (ia32e-page-tables-slice :p  superior-structure-entry) 1)
-         (equal (ia32e-page-tables-slice :ps superior-structure-entry) 0))
+         (equal (page-present  superior-structure-entry) 1)
+         (equal (page-size superior-structure-entry) 0))
         ;; Gather the qword addresses of a paging structure only if a
         ;; superior structure points to it, i.e., the
         ;; superior-structure-entry should be present (P=1) and it
@@ -668,19 +716,12 @@
     :hints (("Goal"
              :in-theory (e/d* (member-p)
                               (xlate-equiv-entries))
-             :use ((:instance xlate-equiv-entries-and-loghead
+             :use ((:instance xlate-equiv-entries-and-page-present
                               (e1 val)
-                              (e2 (rm-low-64 addr x86))
-                              (n 1))
-                   (:instance logtail-bigger-and-logbitp
+                              (e2 (rm-low-64 addr x86)))
+                   (:instance xlate-equiv-entries-and-page-size
                               (e1 val)
-                              (e2 (rm-low-64 addr x86))
-                              (n 7)
-                              (m 7))
-                   (:instance xlate-equiv-entries-and-logtail
-                              (e1 val)
-                              (e2 (rm-low-64 addr x86))
-                              (n 7))
+                              (e2 (rm-low-64 addr x86)))
                    (:instance xlate-equiv-entries-and-logtail
                               (e1 val)
                               (e2 (rm-low-64 addr x86))
@@ -695,19 +736,12 @@
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
     :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
                                      (unsigned-byte-p))
-             :use ((:instance xlate-equiv-entries-and-loghead
+             :use ((:instance xlate-equiv-entries-and-page-size
                               (e1 (rm-low-64 addr x86-equiv))
-                              (e2 (rm-low-64 addr x86))
-                              (n 1))
-                   (:instance logtail-bigger-and-logbitp
+                              (e2 (rm-low-64 addr x86)))
+                   (:instance xlate-equiv-entries-and-page-present
                               (e1 (rm-low-64 addr x86-equiv))
-                              (e2 (rm-low-64 addr x86))
-                              (n 7)
-                              (m 7))
-                   (:instance xlate-equiv-entries-and-logtail
-                              (e1 (rm-low-64 addr x86-equiv))
-                              (e2 (rm-low-64 addr x86))
-                              (n 7))
+                              (e2 (rm-low-64 addr x86)))
                    (:instance xlate-equiv-entries-and-logtail
                               (e1 (rm-low-64 addr x86-equiv))
                               (e2 (rm-low-64 addr x86))
@@ -750,19 +784,12 @@
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
     :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
                                      ())
-             :use ((:instance xlate-equiv-entries-and-loghead
+             :use ((:instance xlate-equiv-entries-and-page-size
                               (e1 val)
-                              (e2 (rm-low-64 addr x86))
-                              (n 1))
-                   (:instance logtail-bigger-and-logbitp
+                              (e2 (rm-low-64 addr x86)))
+                   (:instance xlate-equiv-entries-and-page-present
                               (e1 val)
-                              (e2 (rm-low-64 addr x86))
-                              (n 7)
-                              (m 7))
-                   (:instance xlate-equiv-entries-and-logtail
-                              (e1 val)
-                              (e2 (rm-low-64 addr x86))
-                              (n 7))
+                              (e2 (rm-low-64 addr x86)))
                    (:instance xlate-equiv-entries-and-logtail
                               (e1 val)
                               (e2 (rm-low-64 addr x86))

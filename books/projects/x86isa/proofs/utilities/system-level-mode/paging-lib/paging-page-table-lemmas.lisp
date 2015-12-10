@@ -10,7 +10,8 @@
 
 (local (in-theory (e/d (entry-found-p-and-lin-addr
                         entry-found-p-and-good-paging-structures-x86p)
-                       ())))
+                       (unsigned-byte-p
+                        signed-byte-p))))
 
 ;; ======================================================================
 
@@ -52,8 +53,121 @@
                              page-fault-exception)
                             ()))))
 
+(defthmd page-table-entry-no-page-fault-p-with-xlate-equiv-x86s
+  (implies (and
+            (equal e-1
+                   (rm-low-64
+                    (page-table-entry-addr
+                     lin-addr
+                     (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
+                    x86-1))
+            (equal e-2
+                   (rm-low-64
+                    (page-table-entry-addr
+                     lin-addr
+                     (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                    x86-2))
+            (xlate-equiv-x86s x86-1 x86-2)
+            (page-table-entry-addr-found-p lin-addr x86-1))
+           (and
+            (equal (mv-nth
+                    0
+                    (page-table-entry-no-page-fault-p
+                     lin-addr e-1 u-s-acc wp smep nxe r-w-x cpl x86-1))
+                   (mv-nth
+                    0
+                    (page-table-entry-no-page-fault-p
+                     lin-addr e-2 u-s-acc wp smep nxe r-w-x cpl x86-2)))
+            (equal (mv-nth
+                    1
+                    (page-table-entry-no-page-fault-p
+                     lin-addr e-1 u-s-acc wp smep nxe r-w-x cpl x86-1))
+                   (mv-nth
+                    1
+                    (page-table-entry-no-page-fault-p
+                     lin-addr e-2 u-s-acc wp smep nxe r-w-x cpl x86-2)))))
+  :hints (("Goal"
+           :in-theory (e/d* (page-table-entry-no-page-fault-p
+                             page-fault-exception)
+                            (xlate-equiv-x86s
+                             xlate-equiv-x86s-and-page-table-entry-addr-value
+                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-entry-addr-address
+                             page-table-entry-addr-found-p-and-xlate-equiv-x86s
+                             bitops::logand-with-negated-bitmask
+                             bitops::logior-equal-0
+                             not))
+           :use ((:instance xlate-equiv-x86s-and-page-table-entry-addr-value)
+                 (:instance xlate-equiv-x86s-and-page-table-base-addr-address)
+                 (:instance xlate-equiv-entries-and-page-present
+                            (e1 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                                 x86-2)))
+                 (:instance xlate-equiv-entries-and-page-size
+                            (e1 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                                 x86-2)))
+                 (:instance xlate-equiv-entries-and-page-read-write
+                            (e1 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                                 x86-2)))
+                 (:instance xlate-equiv-entries-and-page-user-supervisor
+                            (e1 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                                 x86-2)))
+                 (:instance xlate-equiv-entries-and-page-execute-disable
+                            (e1 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                                 x86-2)))
+                 (:instance xlate-equiv-entries-and-logtail
+                            (e1 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
+                                 x86-1))
+                            (e2 (rm-low-64
+                                 (page-table-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                                 x86-2))
+                            (n 52))))))
+
 (defthmd ia32e-la-to-pa-PT-with-xlate-equiv-x86s
-  ;; TO-DO: Speed this up.
   (implies (xlate-equiv-x86s x86-1 x86-2)
            (and
             (equal (mv-nth
@@ -74,31 +188,31 @@
                      lin-addr u-s-acc wp smep nxe r-w-x cpl x86-2)))))
   :hints (("Goal"
            :in-theory (e/d* (ia32e-la-to-pa-PT
-                             ia32e-la-to-pa-page-table
-                             ;; I should prove useful lemmas about the
-                             ;; following two functions to speed this
-                             ;; theorem up.
-                             PAGE-TABLE-ENTRY-NO-PAGE-FAULT-P
-                             PAGE-FAULT-EXCEPTION)
+                             ia32e-la-to-pa-page-table)
                             (xlate-equiv-x86s
                              xlate-equiv-x86s-and-page-table-entry-addr-value
                              xlate-equiv-x86s-and-page-table-base-addr-address
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              page-table-entry-addr-found-p-and-xlate-equiv-x86s
                              bitops::logand-with-negated-bitmask
-                             bitops::logior-equal-0))
-           :use ((:instance xlate-equiv-x86s-and-page-table-entry-addr-value)
-                 (:instance xlate-equiv-entries-open
-                            (e1 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-1))
-                            (e2 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-2)))
+                             bitops::logior-equal-0
+                             not))
+           :use ((:instance page-table-entry-no-page-fault-p-with-xlate-equiv-x86s
+                            (x86-1 x86-1)
+                            (x86-2 x86-2)
+                            (e-1
+                             (rm-low-64
+                              (page-table-entry-addr
+                               lin-addr
+                               (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
+                              x86-1))
+                            (e-2
+                             (rm-low-64
+                              (page-table-entry-addr
+                               lin-addr
+                               (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                              x86-2)))
+                 (:instance xlate-equiv-x86s-and-page-table-entry-addr-value)
                  (:instance page-table-entry-addr-found-p-and-xlate-equiv-x86s
                             (x86-1 x86-1)
                             (x86-2 x86-2))
@@ -106,98 +220,18 @@
                             (x86-1 x86-2)
                             (x86-2 x86-1))
                  (:instance xlate-equiv-x86s-and-page-table-base-addr-address)
-                 ;; xlate-equiv-entries-and-loghead
-                 (:instance xlate-equiv-entries-and-loghead
-                            (e1 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-1))
-                            (e2 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-2))
-                            (n 1))
-                 ;; xlate-equiv-entries-and-logtail
                  (:instance xlate-equiv-entries-and-logtail
                             (e1 (rm-low-64
                                  (page-table-entry-addr
                                   lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
+                                  (mv-nth 1 (page-table-base-addr lin-addr x86-1)))
                                  x86-1))
                             (e2 (rm-low-64
                                  (page-table-entry-addr
                                   lin-addr
                                   (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
                                  x86-2))
-                            (n 12))
-                 (:instance xlate-equiv-entries-and-logtail
-                            (e1 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-1))
-                            (e2 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-2))
-                            (n 52))
-                 ;; loghead-smaller-and-logbitp
-                 (:instance loghead-smaller-and-logbitp
-                            (e1 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-1))
-                            (e2 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-2))
-                            (m 1)
-                            (n 5))
-                 (:instance loghead-smaller-and-logbitp
-                            (e1 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-1))
-                            (e2 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-2))
-                            (m 2)
-                            (n 5))
-                 ;; logtail-bigger-and-logbitp
-                 (:instance logtail-bigger-and-logbitp
-                            (e1 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-1))
-                            (e2 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-2))
-                            (m 7)
-                            (n 52))
-                 (:instance logtail-bigger-and-logbitp
-                            (e1 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-1))
-                            (e2 (rm-low-64
-                                 (page-table-entry-addr
-                                  lin-addr
-                                  (mv-nth 1 (page-table-base-addr lin-addr x86-2)))
-                                 x86-2))
-                            (m 7)
-                            (n 63))))))
+                            (n 12))))))
 
 (defthm mv-nth-0-ia32e-la-to-pa-PT-with-xlate-equiv-x86s
   (implies (xlate-equiv-x86s x86-1 x86-2)

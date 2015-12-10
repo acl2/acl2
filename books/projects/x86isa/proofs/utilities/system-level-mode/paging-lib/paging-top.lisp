@@ -9,7 +9,8 @@
 
 (local (in-theory (e/d (entry-found-p-and-lin-addr
                         entry-found-p-and-good-paging-structures-x86p)
-                       ())))
+                       (unsigned-byte-p
+                        signed-byte-p))))
 
 ;; ======================================================================
 
@@ -26,25 +27,6 @@
 (local (xdoc::set-default-parents reasoning-about-page-tables))
 
 ;; ======================================================================
-
-(defthmd not-good-paging-structures-x86p-and-ia32e-la-to-pa-PML4T
-  (implies (not (good-paging-structures-x86p x86))
-           (and (equal (mv-nth
-                        0
-                        (ia32e-la-to-pa-PML4T
-                         lin-addr wp smep nxe r-w-x cpl x86))
-                       t)
-                (equal (mv-nth
-                        1
-                        (ia32e-la-to-pa-PML4T
-                         lin-addr wp smep nxe r-w-x cpl x86))
-                       0)
-                (equal (mv-nth
-                        2
-                        (ia32e-la-to-pa-PML4T
-                         lin-addr wp smep nxe r-w-x cpl x86))
-                       x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PML4T) ()))))
 
 (defthmd xlate-equiv-x86s-open-for-ctr-and-msr
   (implies (and (xlate-equiv-x86s x86-1 x86-2)
@@ -262,6 +244,7 @@
             (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr-2 r-w-x cpl x86))))
   :hints (("Goal"
            :in-theory (e/d* (paging-entries-found-p
+                             page-size
                              xlate-equiv-entries)
                             (xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-value
                              xlate-equiv-x86s-and-page-directory-entry-addr-value
@@ -529,12 +512,10 @@
                   (xr :mem index x86)))
   :hints (("Goal"
            :use ((:instance xr-ia32e-la-to-pa-PT-mem-disjoint-from-paging-structures-state
-                            (u-s-acc (bool->bit
-                                      (logbitp
-                                       2
-                                       (rm-low-64 (page-directory-entry-addr
-                                                   lin-addr
-                                                   (mv-nth 1 (page-directory-base-addr lin-addr x86))) x86))))))
+                            (u-s-acc (page-user-supervisor
+                                      (rm-low-64 (page-directory-entry-addr
+                                                  lin-addr
+                                                  (mv-nth 1 (page-directory-base-addr lin-addr x86))) x86)))))
            :in-theory (e/d* (ia32e-la-to-pa-PD
                              ia32e-la-to-pa-page-directory
                              pairwise-disjoint-p-aux)
@@ -587,14 +568,12 @@
                            (xw :mem index val x86)))))
   :hints (("Goal"
            :use ((:instance ia32e-la-to-pa-PT-xw-mem-disjoint-from-paging-structures-state
-                            (u-s-acc (bool->bit
-                                      (logbitp
-                                       2
-                                       (rm-low-64
-                                        (page-directory-entry-addr
-                                         lin-addr
-                                         (mv-nth 1 (page-directory-base-addr lin-addr x86)))
-                                        x86))))))
+                            (u-s-acc (page-user-supervisor
+                                      (rm-low-64
+                                       (page-directory-entry-addr
+                                        lin-addr
+                                        (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                                       x86)))))
            :in-theory (e/d* (ia32e-la-to-pa-PD
                              ia32e-la-to-pa-page-directory
                              pairwise-disjoint-p-aux

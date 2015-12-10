@@ -188,14 +188,14 @@
           lin-addr entry wp smep nxe r-w-x cpl x86))
         ((when fault-flg)
          nil))
-       (if (equal (ia32e-page-tables-slice :ps entry) 0)
-           ;; 4K pages
-           (b* ((page-table-base-addr
-                 (ash (ia32e-page-tables-slice :reference-addr entry) 12))
-                (u-s-acc (ia32e-page-tables-slice :u/s entry)))
-               (page-table-entry-validp
-                lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86))
-         t))))
+     (if (equal (page-size entry) 0)
+         ;; 4K pages
+         (b* ((page-table-base-addr
+               (ash (ia32e-page-tables-slice :reference-addr entry) 12))
+              (u-s-acc (page-user-supervisor entry)))
+           (page-table-entry-validp
+            lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86))
+       t))))
 
 (defthm x86-unchanged-if-no-error-in-paging-entry-no-page-fault-p
   (implies (not (mv-nth
@@ -218,7 +218,9 @@
                    (ia32e-la-to-pa-page-directory
                     lin-addr base-addr wp smep nxe r-w-x cpl x86))
                   nil))
-  :in-theory (e/d (ia32e-la-to-pa-page-directory)
+  :in-theory (e/d (ia32e-la-to-pa-page-directory
+                   page-size
+                   page-user-supervisor)
                   (bitops::logand-with-negated-bitmask
                    page-table-entry-validp
                    unsigned-byte-p
@@ -243,7 +245,7 @@
         (page-directory-entry-addr lin-addr page-directory-base-addr))
        (page-directory-entry (rm-low-64 page-directory-entry-addr x86))
 
-       (pde-ps? (equal (ia32e-page-tables-slice :ps page-directory-entry) 1))
+       (pde-ps? (equal (page-size page-directory-entry) 1))
        ((when pde-ps?)
         (list (addr-range 8 page-directory-entry-addr)))
 
@@ -254,9 +256,9 @@
         (translation-governing-addresses-for-page-table
          lin-addr page-table-base-addr x86)))
 
-      (append
-       (list (addr-range 8 page-directory-entry-addr))
-       page-table-addresses)))
+    (append
+     (list (addr-range 8 page-directory-entry-addr))
+     page-table-addresses)))
 
 ;; Page Directory Pointer Table:
 
@@ -285,21 +287,21 @@
        (physical-address-p ptr-table-base-addr)
        (equal (loghead 12 ptr-table-base-addr) 0)
        (b*
-        ((ptr-table-entry-addr
-          (page-dir-ptr-table-entry-addr lin-addr ptr-table-base-addr))
-         (entry (rm-low-64 ptr-table-entry-addr x86))
-         ((mv fault-flg & &)
-          (paging-entry-no-page-fault-p
-           lin-addr entry wp smep nxe r-w-x cpl x86))
-         ((when fault-flg)
-          nil))
-        (if (equal (ia32e-page-tables-slice :ps  entry) 0)
-            ;; 4K or 2M pages
-            (page-directory-entry-validp
-             lin-addr
-             (ash (ia32e-page-tables-slice :reference-addr entry) 12)
-             wp smep nxe r-w-x cpl x86)
-          t))))
+           ((ptr-table-entry-addr
+             (page-dir-ptr-table-entry-addr lin-addr ptr-table-base-addr))
+            (entry (rm-low-64 ptr-table-entry-addr x86))
+            ((mv fault-flg & &)
+             (paging-entry-no-page-fault-p
+              lin-addr entry wp smep nxe r-w-x cpl x86))
+            ((when fault-flg)
+             nil))
+         (if (equal (page-size  entry) 0)
+             ;; 4K or 2M pages
+             (page-directory-entry-validp
+              lin-addr
+              (ash (ia32e-page-tables-slice :reference-addr entry) 12)
+              wp smep nxe r-w-x cpl x86)
+           t))))
 
 (defrule mv-nth-0-no-error-ia32e-la-to-pa-page-dir-ptr-table
   (implies (page-dir-ptr-table-entry-validp
@@ -309,7 +311,8 @@
                    (ia32e-la-to-pa-page-dir-ptr-table
                     lin-addr base-addr wp smep nxe r-w-x cpl x86))
                   nil))
-  :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
+  :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table
+                   page-size)
                   (bitops::logand-with-negated-bitmask
                    page-table-entry-validp
                    unsigned-byte-p
@@ -332,7 +335,7 @@
         (page-dir-ptr-table-entry-addr lin-addr ptr-table-base-addr))
        (page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
 
-       (pdpte-ps? (equal (ia32e-page-tables-slice :ps page-dir-ptr-table-entry) 1))
+       (pdpte-ps? (equal (page-size page-dir-ptr-table-entry) 1))
 
        ;; 1G pages:
        ((when pdpte-ps?)
@@ -346,8 +349,8 @@
         (translation-governing-addresses-for-page-directory
          lin-addr page-directory-base-addr x86)))
 
-      (append (list (addr-range 8 page-dir-ptr-table-entry-addr))
-              page-directory-addresses)))
+    (append (list (addr-range 8 page-dir-ptr-table-entry-addr))
+            page-directory-addresses)))
 
 
 ;; PML4 Table:
