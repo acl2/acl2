@@ -181,7 +181,8 @@ if it were part of the current file.
      Cert_param directives control various things about how the file
 gets certified, such as whether it uses provisional certification
 (pcert), acl2x expansion (acl2x), and skip-proofs during acl2x
-expansion (acl2xskip).
+expansion (acl2xskip).  See the \"cert_param\" xdoc topic for various
+other variables that can be set.
 
 See the documentation topic BOOKS-CERTIFICATION for supported uses of
 cert.pl.

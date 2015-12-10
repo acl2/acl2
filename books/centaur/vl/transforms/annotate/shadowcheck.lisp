@@ -46,6 +46,27 @@
      nil))
 
 
+(defsection deltemps
+  :parents (shadowcheck)
+  :short "Delete the @('loaditems') and @('parse-temps') fields from parsed
+  structures.  This is a final cleaning step in @(see shadowcheck).")
+
+(local (xdoc::set-default-parents deltemps))
+
+(fty::defvisitor-template deltemps ((x :object))
+  :returns (new-x :update)
+  :prod-fns ((vl-blockstmt (loaditems (lambda (x) (declare (ignore x)) nil)))
+             (vl-fundecl   (loaditems (lambda (x) (declare (ignore x)) nil)))
+             (vl-taskdecl  (loaditems (lambda (x) (declare (ignore x)) nil)))
+             (vl-module    (parse-temps (lambda (x) (declare (ignore x)) nil)))
+             (vl-interface (parse-temps (lambda (x) (declare (ignore x)) nil))))
+  :fnname-template <type>-deltemps)
+
+(fty::defvisitors vl-design-deltemps
+  :template deltemps
+  :types (vl-design))
+
+
 (defxdoc shadowcheck
   :parents (make-implicit-wires)
   :short "Sanity check to detect undeclared identifiers, name clashes, and
@@ -66,10 +87,10 @@ instance,</p>
 })
 
 <p>Throughout VL we generally abstract away from the parse order and expect to
-be able to traverse scopes in a simple set-like way.  This approach makes
-supporting this kind of lexical shadowing a challenge.  To avoid any problems
-due to this kind of shadowing, we implement a special check to prohibit globals
-from being used before they are locally declared.</p>
+be able to traverse scopes in a simple set-like way; see @(see scopestack).
+This approach makes supporting this kind of lexical shadowing a challenge.  To
+avoid any problems due to this kind of shadowing, we implement a special check
+to prohibit globals from being used before they are locally declared.</p>
 
 <p>This checking depends on the parse order.  It occurs as part of the @(see
 make-implicit-wires) transform.  Note that we do this checking after we have
@@ -84,7 +105,10 @@ explicit declarations.</p>")
   :layout :tree
   :short "Information about a single name in a lexical scope."
   ((decl       any-p
-               "The actual declaration of this name.")
+               "Non-nil indicates that there has been (at least one) explicit
+                declaration of this name in this scope.  In this case,
+                @('decl') is the corresponding declaration; it might be a @(see
+                vl-portdecl), a @(see vl-vardecl), a @(see vl-fundecl), etc.")
    (direct-pkg maybe-stringp
                :rule-classes :type-prescription
                "When non-nil, this entry is directly import from the package
@@ -110,7 +134,7 @@ explicit declarations.</p>")
                           (scope vl-lexscope-p))
   :returns (entry (iff (vl-lexscope-entry-p entry) entry))
   :parents (vl-lexscope)
-  :short "Look up a name in a lexical scope."
+  :short "Look up a name in a (single) lexical scope."
   :inline t
   (cdr (hons-get (string-fix name) (vl-lexscope-fix scope)))
   :prepwork
@@ -144,7 +168,6 @@ explicit declarations.</p>")
        ((cons head tail) scopes))
     (fast-alist-free head)
     tail))
-
 
 (define vl-lexscopes-find ((name   stringp)
                            (scopes vl-lexscopes-p))
@@ -551,15 +574,6 @@ explicit declarations.</p>")
                          in the lexical scope, so how could that happen? ~x2."
                    :args (list ctx name entry))))
 
-       (ss-level  (vl-scopestack-nesting-level scopestack-at-import))
-       (lex-level (len tail))
-       ((unless (equal ss-level lex-level))
-        (mv st
-            (fatal :type :vl-tricky-scope
-                   :msg "~a0: the name ~s1 has complex scoping that we do not ~
-                         support.  Lexical level ~x2, scopestack level ~x3."
-                   :args (list ctx name lex-level ss-level))))
-
        ((unless pkg-name)
         ;; Scopestack doesn't think this is imported from a package.
         (b* (((unless entry.decl)
@@ -570,9 +584,24 @@ explicit declarations.</p>")
                                   be imported from a package, but there is a ~
                                   subsequent declaration (~a2) which makes ~
                                   scoping confusing."
-                            :args (list ctx name item)))))
-          ;; We have a local declaration for it, so we don't think it's
-          ;; imported either.  Looks like a match.
+                            :args (list ctx name item))))
+
+             ;; Nobody thinks this is imported from a package.  That means
+             ;; it comes from the local scope or some superior scope.  Make
+             ;; sure that scopestack and lexscope agree on which scope it
+             ;; is coming from, i.e., scopestack isn't getting it from the
+             ;; local scope while lexscope is looking above.  ("Shadowed")
+             (ss-level  (vl-scopestack-nesting-level scopestack-at-import))
+             (lex-level (len tail))
+             ((unless (equal ss-level lex-level))
+              (mv st
+                  (fatal :type :vl-tricky-scope
+                         :msg "~a0: the name ~s1 has complex scoping that we ~
+                               do not support.  Lexical level ~x2, scopestack ~
+                               level ~x3."
+                         :args (list ctx name lex-level ss-level)))))
+
+          ;; Looks like a match.
           (mv st (ok))))
 
        ;; Scopestack thinks the item comes from a package.
@@ -911,6 +940,16 @@ explicit declarations.</p>")
   (b* (((vl-vardecl x)   (vl-vardecl-fix x))
        ((mv st warnings) (vl-shadowcheck-datatype x.type x st warnings))
        ((mv st warnings) (vl-shadowcheck-exprlist (vl-vardecl-allexprs x) x st warnings))
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-modport ((x        vl-modport-p)
+                                (st       vl-shadowcheck-state-p)
+                                (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-modport x)   (vl-modport-fix x))
+       ((mv st warnings) (vl-shadowcheck-exprlist (vl-modport-allexprs x) x st warnings))
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
 
@@ -1324,6 +1363,10 @@ explicit declarations.</p>")
         (b* (((mv st warnings) (vl-shadowcheck-alias item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
+       ((when (eq tag :vl-modport))
+        (b* (((mv st warnings) (vl-shadowcheck-modport item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
        ((when (eq tag :vl-assertion))
         ;; BOZO figure out what we want to do here.
         (vl-shadowcheck-aux (cdr x) st warnings))
@@ -1373,6 +1416,12 @@ explicit declarations.</p>")
                                (st vl-shadowcheck-state-p))
   :returns (mv (st    vl-shadowcheck-state-p)
                (new-x vl-module-p))
+  ;; BOZO this probably isn't correctly handling ports yet.
+  ;; To fix:
+  ;;   - Add some tests to linttest/implicit and or linttest/shadowcheck
+  ;;   - Review how the parser creates loaditems and parse-temps; I don't think
+  ;;     we're even getting everything in one coherent order yet
+  ;;   - Figure out the whole ansi portdecl resolution affects all of this
   (b* (((vl-module x)    (vl-module-fix x))
        (x.loaditems (and x.parse-temps (vl-parse-temps->loaditems x.parse-temps)))
        (- (vl-shadowcheck-debug "*** Shadowcheck module ~s0 ***~%" x.name))
@@ -1381,9 +1430,7 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-ports x.ports st warnings))
        ((mv st warnings) (vl-shadowcheck-aux x.loaditems st warnings))
        (st               (vl-shadowcheck-pop-scope st))
-       (new-x            (change-vl-module x
-                                           :warnings warnings
-                                           :parse-temps nil)))
+       (new-x            (change-vl-module x :warnings warnings)))
     (mv st new-x)))
 
 (define vl-shadowcheck-modules ((x  vl-modulelist-p)
@@ -1396,8 +1443,32 @@ explicit declarations.</p>")
        ((mv st rest) (vl-shadowcheck-modules (cdr x) st)))
     (mv st (cons car rest))))
 
+(define vl-shadowcheck-interface ((x  vl-interface-p)
+                                  (st vl-shadowcheck-state-p))
+  :returns (mv (st    vl-shadowcheck-state-p)
+               (new-x vl-interface-p))
+  ;; BOZO copied from interfaces, probably has the same problems and needs
+  ;; the same fixes.
+  (b* (((vl-interface x) (vl-interface-fix x))
+       (x.loaditems (and x.parse-temps (vl-parse-temps->loaditems x.parse-temps)))
+       (- (vl-shadowcheck-debug "*** Shadowcheck interface ~s0 ***~%" x.name))
+       (warnings         x.warnings)
+       (st               (vl-shadowcheck-push-scope x st))
+       ((mv st warnings) (vl-shadowcheck-ports x.ports st warnings))
+       ((mv st warnings) (vl-shadowcheck-aux x.loaditems st warnings))
+       (st               (vl-shadowcheck-pop-scope st))
+       (new-x            (change-vl-interface x :warnings warnings)))
+    (mv st new-x)))
 
-
+(define vl-shadowcheck-interfaces ((x  vl-interfacelist-p)
+                                (st vl-shadowcheck-state-p))
+  :returns (mv (st    vl-shadowcheck-state-p)
+               (new-x vl-interfacelist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) nil))
+       ((mv st car)  (vl-shadowcheck-interface (car x) st))
+       ((mv st rest) (vl-shadowcheck-interfaces (cdr x) st)))
+    (mv st (cons car rest))))
 
 
 (define vl-shadowcheck-vardecls ((x        vl-vardecllist-p)
@@ -1514,11 +1585,18 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-taskdecls        x.taskdecls  st warnings))
        ((mv st warnings) (vl-shadowcheck-dpiimports       x.dpiimports st warnings))
 
-       ((mv st mods) (vl-shadowcheck-modules x.mods st))
+       ((mv st mods)       (vl-shadowcheck-modules x.mods st))
+       ((mv st interfaces) (vl-shadowcheck-interfaces x.interfaces st))
 
        (?st (vl-shadowcheck-pop-scope st))
-       (-   (vl-scopestacks-free)))
-    (change-vl-design x
-                      :mods mods
-                      :warnings warnings)))
+       (-   (vl-scopestacks-free))
 
+       (new-x (change-vl-design x
+                                :mods mods
+                                :interfaces interfaces
+                                :warnings warnings)))
+
+    ;; All done with parse temps, delete them so that the design is
+    ;; smaller/cleaner and more regular, and to hopefully prevent inappropriate
+    ;; uses of these fields.
+    (vl-design-deltemps new-x)))

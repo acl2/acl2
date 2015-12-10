@@ -103,7 +103,8 @@
                (new-x :update))
   :fnname-template <type>-type-disambiguate
   :type-fns ((vl-fundecl vl-fundecl-type-disambiguate)
-             (vl-taskdecl vl-taskdecl-type-disambiguate)))
+             (vl-taskdecl vl-taskdecl-type-disambiguate)
+             (vl-paramvalue vl-paramvalue-type-disambiguate)))
 
 (local (in-theory (disable cons-equal
                            acl2::true-listp-append
@@ -239,6 +240,33 @@
         :otherwise
         (vl-stmt-type-disambiguate-aux x ss)))))
 
+
+(fty::defvisitors vl-paramvalue-type-disambiguate-deps
+  :template type-disambiguate
+  :dep-types (vl-paramvalue))
+
+(define vl-paramvalue-type-disambiguate ((x vl-paramvalue-p)
+                                         (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-paramvalue-p))
+  (vl-paramvalue-case x
+    :type (b* (((mv warnings type)
+                (vl-datatype-type-disambiguate x.type ss)))
+            (mv warnings (change-vl-paramvalue-type x :type type)))
+    :expr (b* (((mv warnings expr)
+                (vl-expr-type-disambiguate x.expr ss))
+               ((wmv warnings type)
+                (vl-expr-to-datatype expr ss)))
+            (mv warnings
+                (if type
+                    (make-vl-paramvalue-type :type type)
+                  (change-vl-paramvalue-expr x :expr expr))))))
+    
+    
+    
+
+
+
 (fty::defvisitors vl-fundecl-type-disambiguate-deps
   :template type-disambiguate
   :dep-types (vl-fundecl vl-taskdecl))
@@ -361,8 +389,8 @@
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-module-p))
     :measure 1
-    ;; BOZO are we doing this right?  Port types need to probably be checked
-    ;; in the superior scope...
+    ;; Note: this obeys the One True Way to Process a Module described in
+    ;; vl-scopestack-push.
     (b* ((ss (vl-scopestack-push (vl-module-fix x) ss))
          ((mv warnings new-x)
           (vl-module-type-disambiguate-aux x ss))
@@ -382,12 +410,12 @@
   :measure 0
 
   (define vl-interface-type-disambiguate ((x vl-interface-p)
-                                       (ss vl-scopestack-p))
-    ;; BOZO are we doing this right?  Port types need to probably be checked
-    ;; in the superior scope...
+                                          (ss vl-scopestack-p))
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-interface-p))
     :measure 1
+    ;; Note: this obeys the One True Way to Process a Module described in
+    ;; vl-scopestack-push.
     (b* ((ss (vl-scopestack-push (vl-interface-fix x) ss))
          ((mv warnings new-x)
           (vl-interface-type-disambiguate-aux x ss))

@@ -560,8 +560,10 @@ these extra @('defpkg') commands that can't go directly into the book.</p>
 
 <p>If you are using only packages from existing libraries, these should be
 dealt with automatically by the build system, which loads the portculli of all
-included books before certifying a book.  However, if you are defining a new
-package, you need to know how to put it in your book's portcullis.</p>
+included books before certifying a book.  (To defeat this mechanism, add a
+comment containing \"no_port\" at the end of the line of each include-book
+whose portculli you don't want.) However, if you are defining a new package,
+you need to know how to put it in your book's portcullis.</p>
 
 <p>The most basic way to tell @('cert.pl') how to certify a file like
 @('mybook.lisp') is to put the @('defpkg') form into a corresponding file,

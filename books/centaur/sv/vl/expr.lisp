@@ -625,7 +625,13 @@ ignored.</p>"
                 (sv::make-address :scope :root
                                     :path (sv::make-path-scope
                                            :namespace (vl-module->name x.mod)
-                                           :subpath path)))))
+                                           :subpath path)))
+    :interface (mv (vmsg "Module-scoped variables aren't yet supported")
+                   (sv::make-address :scope :root
+                                     :path (sv::make-path-scope
+                                            :namespace (vl-interface->name x.iface)
+                                            :subpath path)))
+    ))
 
 (define vl-seltrace-type ((x vl-seltrace-p)
                           (base-type vl-datatype-p))

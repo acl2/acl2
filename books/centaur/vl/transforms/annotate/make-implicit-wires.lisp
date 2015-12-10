@@ -676,8 +676,7 @@ Our version of VCS says this isn't yet implemented.</li>
        ;; been resolved.
 
        ((when (or (eq tag :vl-interfaceport)
-                  (eq tag :vl-regularport)
-                  (eq tag :vl-modport)))
+                  (eq tag :vl-regularport)))
         (b* ((warnings (fatal :type :vl-programming-error
                               :msg "~a0: unexpected kind of module item."
                               :args (list item)))
@@ -772,7 +771,8 @@ Our version of VCS says this isn't yet implemented.</li>
                   (eq tag :vl-sequence)
                   (eq tag :vl-typedef)
                   (eq tag :vl-fwdtypedef)
-                  (eq tag :vl-genvar)))
+                  (eq tag :vl-genvar)
+                  (eq tag :vl-modport)))
         ;; These have their own names but there's no additional implicit wires to
         ;; be introduced by them, so just extend decls.
         (b* ((name     (case tag
@@ -785,7 +785,8 @@ Our version of VCS says this isn't yet implemented.</li>
                          (:vl-sequence   (vl-sequence->name item))
                          (:vl-typedef    (vl-typedef->name item))
                          (:vl-fwdtypedef (vl-fwdtypedef->name item))
-                         (:vl-genvar     (vl-genvar->name item))))
+                         (:vl-genvar     (vl-genvar->name item))
+                         (:vl-modport    (vl-modport->name item))))
              (decls    (hons-acons name nil (vl-implicitst->decls st)))
              (st       (change-vl-implicitst st :decls decls))
              (newitems (cons x newitems)))
@@ -1053,48 +1054,59 @@ Our version of VCS says this isn't yet implemented.</li>
                                  (vl-parse-temps->loaditems x.parse-temps))))
        ((mv newitems warnings)
         (vl-make-implicit-wires-main x.loaditems x.ifports ss x.warnings))
-       ((vl-genblob c) (vl-sort-genelements newitems))
        (parse-temps (and x.parse-temps
                          (change-vl-parse-temps x.parse-temps
                                                 :paramports nil
                                                 :loaditems newitems))))
-    (change-vl-module x
-                      :portdecls   c.portdecls
-                      :assigns     c.assigns
-                      :aliases     c.aliases
-                      :vardecls    c.vardecls
-                      :paramdecls  c.paramdecls
-                      :fundecls    c.fundecls
-                      :taskdecls   c.taskdecls
-                      :modinsts    c.modinsts
-                      :gateinsts   c.gateinsts
-                      :alwayses    c.alwayses
-                      :initials    c.initials
-                      :generates   c.generates
-                      :genvars     c.genvars
-                      :imports     c.imports
-                      :typedefs    c.typedefs
-                      :assertions  c.assertions
-                      :cassertions c.cassertions
-                      :dpiimports  c.dpiimports
-                      :dpiexports  c.dpiexports
-                      :warnings    warnings
-                      :parse-temps parse-temps)))
-
+    (change-vl-module (vl-genblob->module (vl-sort-genelements newitems) x)
+                      :ports x.ports
+                      :parse-temps parse-temps
+                      :warnings warnings)))
 
 (defprojection vl-modulelist-make-implicit-wires ((x  vl-modulelist-p)
                                                   (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
   (vl-module-make-implicit-wires x ss))
 
+
+(define vl-interface-make-implicit-wires ((x  vl-interface-p)
+                                       (ss vl-scopestack-p))
+  ;; Just styled after vl-module-make-implicit-wires
+  :returns (new-x vl-interface-p)
+  (b* (((vl-interface x))
+       (x.loaditems (and x.parse-temps
+                         (append (vl-modelementlist->genelements
+                                  (vl-parse-temps->paramports x.parse-temps))
+                                 (vl-parse-temps->loaditems x.parse-temps))))
+       (ifports (vl-collect-interface-ports x.ports))
+       ((mv newitems warnings)
+        (vl-make-implicit-wires-main x.loaditems ifports ss x.warnings))
+       (parse-temps (and x.parse-temps
+                         (change-vl-parse-temps x.parse-temps
+                                                :paramports nil
+                                                :loaditems newitems))))
+    (change-vl-interface (vl-genblob->interface (vl-sort-genelements newitems) x)
+                         :ports x.ports
+                         :parse-temps parse-temps
+                         :warnings warnings)))
+
+(defprojection vl-interfacelist-make-implicit-wires ((x  vl-interfacelist-p)
+                                                     (ss vl-scopestack-p))
+  :returns (new-x vl-interfacelist-p)
+  (vl-interface-make-implicit-wires x ss))
+
+
 (define vl-design-make-implicit-wires ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (((vl-design x))
 
        ;; Part 1 -- Introduce implicit wires
-       (ss    (vl-scopestack-init x))
-       (mods  (vl-modulelist-make-implicit-wires x.mods ss))
-       (new-x (change-vl-design x :mods mods))
+       (ss         (vl-scopestack-init x))
+       (mods       (vl-modulelist-make-implicit-wires x.mods ss))
+       (interfaces (vl-interfacelist-make-implicit-wires x.interfaces ss))
+       (new-x      (change-vl-design x
+                                     :mods mods
+                                     :interfaces interfaces))
        (-     (vl-scopestacks-free)))
 
     ;; Part 2 -- Check for tricky shadowing, sane imports, etc.

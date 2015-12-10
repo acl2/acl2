@@ -196,18 +196,15 @@
        ;; Annotate and simplify the design, to some extent.  This does
        ;; unparametrization and expr sizing, but not e.g. expr splitting or
        ;; occforming.
-
-       (x (vl-annotate-design x))
-
+       (x (cwtime (vl-annotate-design x)))
        ;; [Jared] I pulled addnames out of annotate because it interfered with
        ;; certain linter checks.  (In particular for detecting duplicate things
        ;; we don't really want to be adding names to unnamed blocks, etc.)
-       (x (xf-cwtime (vl-design-addnames x)))
+       (x (cwtime (vl-design-addnames x)))
 
-       (x (vl-remove-unnecessary-elements topmods x))
+       (x (cwtime (vl-remove-unnecessary-elements topmods x)))
 
-       ((mv good bad)
-        (vl::xf-cwtime (vl-simplify-svex x config)))
+       ((mv good bad) (cwtime (vl-simplify-svex x config)))
        ((vl-design good) good)
        (bad-mods (difference (mergesort topmods)
                              (mergesort (vl-modulelist->names good.mods))))
@@ -231,10 +228,17 @@
                                               (change-vl-design good :mods good.mods)))
 
        ;; Translate the VL module hierarchy into an isomorphic SVEX module hierarchy.
-       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1))))
+       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1)))
+       ;; The reportcard can't have any warnings about bad, because it's only being
+       ;; generated from a subset of good.  So, just apply it to good.
+       (good (vl-apply-reportcard good reportcard)))
+    (cw "~%")
+    (cw-unformatted "--- VL->SV Translation Report -------------------------------------------------")
+    (cw "~%")
     (cw-unformatted (vl-reportcard-to-string reportcard))
-    (mv nil
-        modalist good bad))
+    (cw-unformatted "-------------------------------------------------------------------------------")
+    (cw "~%~%")
+    (mv nil modalist good bad))
   ///
   (defret modalist-addr-p-of-vl-to-svex-main
     (sv::svarlist-addr-p (sv::modalist-vars modalist))))

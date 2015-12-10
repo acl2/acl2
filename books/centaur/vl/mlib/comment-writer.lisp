@@ -400,11 +400,10 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
 
 
 
-
-
-
-
-(define vl-make-item-map-for-ppc-interface ((x vl-interface-p) &key (ps 'ps))
+(define vl-make-item-map-for-ppc-interface
+  ((x vl-interface-p)
+   (ss vl-scopestack-p "Already extended with @('x').")
+   &key (ps 'ps))
   ;; This is based on vl-make-item-map-for-ppc-module.
   ;; See the comments there for an explanation.
   :returns (mv (map vl-commentmap-p) ps)
@@ -413,21 +412,38 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
        (col    (vl-ps->col))
        (misc   (vl-ps->misc))
        (imap nil)
-       ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
+       ;; bozo imports
+
        ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
-       ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
        ((mv imap ps) (vl-modportlist-ppmap x.modports imap))
-       ;; BOZO add generates
-       ;; ((mv imap ps) (vl-generatelist-ppmap x.generates imap))
+
+       ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
+       ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
+       ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap))
+       ((mv imap ps) (vl-taskdecllist-ppmap x.taskdecls imap))
+       ;; bozo typedefs
+       ;; bozo dpiimports/dpiexports
+       ((mv imap ps) (vl-propertylist-ppmap x.properties imap))
+       ((mv imap ps) (vl-sequencelist-ppmap x.sequences imap))
+       ((mv imap ps) (vl-modinstlist-ppmap x.modinsts ss imap))
+       ((mv imap ps) (vl-assignlist-ppmap x.assigns imap))
+       ;; bozo aliases
+       ((mv imap ps) (vl-assertionlist-ppmap x.assertions imap))
+       ((mv imap ps) (vl-cassertionlist-ppmap x.cassertions imap))
+       ((mv imap ps) (vl-alwayslist-ppmap x.alwayses imap))
+       ((mv imap ps) (vl-initiallist-ppmap x.initials imap))
+       ((mv imap ps) (vl-finallist-ppmap x.finals imap))
+       ;; bozo generates, genvars
        (imap (rev imap))
        (ps   (vl-ps-update-rchars rchars))
        (ps   (vl-ps-update-col col))
        (ps   (vl-ps-update-misc misc)))
     (mv imap ps)))
 
-(define vl-ppc-interface ((x vl-interface-p) &key (ps 'ps))
-  (b* (((vl-interface x))
-       ((mv imap ps) (vl-make-item-map-for-ppc-interface x))
+(define vl-ppc-interface ((x vl-interface-p) (ss vl-scopestack-p)  &key (ps 'ps))
+  (b* (((vl-interface x) (vl-interface-fix x))
+       (ss (vl-scopestack-push x ss))
+       ((mv imap ps) (vl-make-item-map-for-ppc-interface x ss))
        (comments     (vl-add-newlines-after-block-comments x.comments))
        (comments     (if (vl-ps->htmlp)
                          (vl-html-encode-commentmap comments (vl-ps->tabsize))
@@ -457,11 +473,11 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
                (vl-ps-span "vl_key" (vl-println "endinterface"))
                (vl-println ""))))
 
-(define vl-ppc-interfacelist ((x vl-interfacelist-p) &key (ps 'ps))
+(define vl-ppc-interfacelist ((x vl-interfacelist-p) (ss vl-scopestack-p) &key (ps 'ps))
   (if (atom x)
       ps
-    (vl-ps-seq (vl-ppc-interface (car x))
-               (vl-ppc-interfacelist (cdr x)))))
+    (vl-ps-seq (vl-ppc-interface (car x) ss)
+               (vl-ppc-interfacelist (cdr x) ss))))
 
 (define vl-ppc-package ((x vl-package-p) &key (ps 'ps))
   (b* (((vl-package x)))

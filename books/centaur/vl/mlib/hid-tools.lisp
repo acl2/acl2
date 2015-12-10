@@ -700,11 +700,12 @@ top-level hierarchical identifiers.</p>"
               :induct (vl-follow-hidexpr-aux x trace ss :strictp strictp :origx origx))))))
 
 (deftagsum vl-scopecontext
-  (:local ((levels natp :rule-classes :type-prescription
-                   "How many levels up from the current scope was the item found")))
-  (:root  ())
-  (:package ((pkg vl-package-p)))
-  (:module  ((mod vl-module-p))))
+  (:local     ((levels natp :rule-classes :type-prescription
+                       "How many levels up from the current scope was the item found")))
+  (:root      ())
+  (:package   ((pkg vl-package-p)))
+  (:module    ((mod vl-module-p)))
+  (:interface ((iface vl-interface-p))))
 
 (deftagsum vl-select
   (:field ((name stringp "The name of the field we're selecting")))
@@ -777,6 +778,20 @@ top-level hierarchical identifiers.</p>"
          :hints(("Goal" :in-theory (enable vl-scopestack-find-item/context
                                            vl-scopestack-nesting-level)))
          :rule-classes :linear))
+
+(local (defthm top-level-design-elements-are-modules-or-interfaces
+         (implies (and (member-equal name (vl-design-toplevel design))
+                       (not (member-equal name (vl-modulelist->names (vl-design->mods design)))))
+                  (member-equal name (vl-interfacelist->names (vl-design->interfaces design))))
+         :hints(("Goal" :in-theory (enable vl-design-toplevel)))))
+
+(local (defthm vl-scope-p-when-vl-interface-p-unbounded
+         (implies (vl-interface-p x)
+                  (vl-scope-p x))))
+
+(local (defthm vl-scope-p-when-vl-module-p-unbounded
+         (implies (vl-module-p x)
+                  (vl-scope-p x))))
 
 (define vl-follow-hidexpr
   :short "Follow a HID to find the associated declaration."
@@ -913,8 +928,7 @@ instance, in this case the @('tail') would be
         (mv (vl-follow-hidexpr-error "item not found" ss)
             trace nil x))
 
-       (mods     (vl-design->mods design))
-       (toplevel (vl-modulelist-toplevel mods))
+       (toplevel (vl-design-toplevel design))
        ((unless (member-equal name1 toplevel))
         (mv (vl-follow-hidexpr-error "item not found" ss)
             trace nil x))
@@ -925,8 +939,9 @@ instance, in this case the @('tail') would be
         (mv (vl-follow-hidexpr-error "array indices into top level module" ss)
             trace nil x))
 
-       (mod     (vl-find-module name1 mods))
-       (mod-ss  (vl-scopestack-init design))
+       (topdef     (or (vl-find-module name1 (vl-design->mods design))
+                       (vl-find-interface name1 (vl-design->interfaces design))))
+       (topdef-ss  (vl-scopestack-init design))
 
        ;; BOZO how should the fact that we have followed a top-level hierarchical
        ;; identifier present itself in the trace?  We would like to perhaps add a
@@ -941,13 +956,15 @@ instance, in this case the @('tail') would be
        ;; record this sort of thing.  For now, out of sheer pragmatism, I think
        ;; it seems pretty reasonable to just not bother to record the first
        ;; step.
-       (next-ss (vl-scopestack-push mod mod-ss))
+       (next-ss (vl-scopestack-push topdef topdef-ss))
 
        ((mv err trace tail)
         (vl-follow-hidexpr-aux rest trace next-ss
                                :strictp strictp))
 
-       (context (make-vl-scopecontext-module :mod mod)))
+       (context (if (eq (tag topdef) :vl-module)
+                    (make-vl-scopecontext-module :mod topdef)
+                  (make-vl-scopecontext-interface :iface topdef))))
     (mv err trace context tail))
   ///
   (defret consp-of-vl-follow-hidexpr.trace
@@ -969,8 +986,6 @@ instance, in this case the @('tail') would be
     (implies (not err)
              (vl-subhid-p tail x))
     :hints(("Goal" :in-theory (enable vl-subhid-p)))))
-
-
 
 
 
@@ -1713,6 +1728,23 @@ if unresolved dimensions are present.</p>"
 
   (verify-guards vl-datatype-size)
   (deffixequiv-mutual vl-datatype-size))
+
+
+(defines vl-datatype-has-usertypes
+  (define vl-datatype-has-usertypes ((x vl-datatype-p))
+    :measure (Vl-datatype-count x)
+    (vl-datatype-case x
+      :vl-coretype nil
+      :vl-struct (vl-structmemberlist-has-usertypes x.members)
+      :vl-union (vl-structmemberlist-has-usertypes x.members)
+      :vl-enum (vl-datatype-has-usertypes x.basetype)
+      :vl-usertype t))
+  (define vl-structmemberlist-has-usertypes ((x vl-structmemberlist-p))
+    :measure (vl-structmemberlist-count x)
+    (if (atom x)
+        nil
+      (or (vl-datatype-has-usertypes (vl-structmember->type (car x)))
+          (vl-structmemberlist-has-usertypes (cdr x))))))
 
 
 (define vl-maybe-usertype-resolve ((x vl-datatype-p))

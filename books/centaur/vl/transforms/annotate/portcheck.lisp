@@ -53,12 +53,14 @@ style warnings for tricky ports."
 many names internally, for instance:</p>
 
 @({
-     module baz (o, a, .foo({b, c}), d) ;
+     module baz (o, a, .foo( {b, c} ), d) ;
        ...
      endmodule
 })
 
-<p>So, in general, we need to gather the names from the port expressions.</p>")
+<p>So, in general, we need to gather the names from the port expressions.
+While we're at it, we also check for any duplicated port names and issue
+various stylistic warnings about complicated ports.</p>")
 
 (local (xdoc::set-default-parents portcheck))
 
@@ -175,16 +177,99 @@ many names internally, for instance:</p>
                      warnings
                    (fatal :type :vl-port-mismatch
                           :msg "Missing port declarations for ~&0."
-                          :args (list (difference port-names decl-names))))))
+                          :args (list (difference port-names decl-names)))))
+
+       (external-names (vl-portlist->names x.ports))
+       (dupes          (duplicated-members (remove nil external-names)))
+       (warnings       (if (not dupes)
+                           warnings
+                         (fatal :type :vl-bad-ports
+                                :msg "Duplicate port names: ~&0."
+                                :args (list dupes)))))
+
     (change-vl-module x :warnings warnings)))
 
 (defprojection vl-modulelist-portcheck ((x vl-modulelist-p))
   :returns (new-x vl-modulelist-p)
   (vl-module-portcheck x))
 
+
+(defprojection vl-modport-portlist->names ((x vl-modport-portlist-p))
+  :returns (names string-listp)
+  (vl-modport-port->name x))
+
+(define vl-modport-portcheck ((x        vl-modport-p)
+                              (warnings vl-warninglist-p))
+  :returns (new-warnings vl-warninglist-p)
+  (b* (((vl-modport x) (vl-modport-fix x))
+       (external-names (vl-modport-portlist->names x.ports))
+       (dupes (duplicated-members external-names))
+       ((when dupes)
+        (fatal :type :vl-bad-modport
+               :msg "~a0: Duplicated modport port names: ~&1."
+               :args (list x dupes))))
+    ;; BOZO probably other things to check.  We probably want to make sure all
+    ;; of the internal port expressions are of known names, for instance.
+    (ok)))
+
+(define vl-modportlist-portcheck ((x        vl-modportlist-p)
+                                  (warnings vl-warninglist-p))
+  :returns (new-warnings vl-warninglist-p)
+  (b* (((when (atom x))
+        (ok))
+       (warnings (vl-modport-portcheck (car x) warnings)))
+    (vl-modportlist-portcheck (cdr x) warnings)))
+
+(define vl-interface-portcheck ((x vl-interface-p))
+  :returns (new-x vl-interface-p "New version of @('x'), with at most some added warnings.")
+  (b* (((vl-interface x) x)
+
+       (bad-warnings (vl-portlist-check-wellformed x.ports))
+       ((when bad-warnings)
+        ;; There are already fatal warnings with the ports.  We aren't going to
+        ;; do any additional checking.
+        (change-vl-interface x :warnings (append bad-warnings x.warnings)))
+
+       (warnings x.warnings)
+       (warnings (vl-portlist-check-style x.ports warnings))
+
+       (decl-names (mergesort (vl-portdecllist->names x.portdecls)))
+       (port-names (mergesort (vl-portlist->internalnames x.ports)))
+
+       (warnings (if (subset decl-names port-names)
+                     warnings
+                   (fatal :type :vl-port-mismatch
+                          :msg "Port declarations for non-ports: ~&0."
+                          :args (list (difference decl-names port-names)))))
+
+       (warnings (if (subset port-names decl-names)
+                     warnings
+                   (fatal :type :vl-port-mismatch
+                          :msg "Missing port declarations for ~&0."
+                          :args (list (difference port-names decl-names)))))
+
+       (external-names (vl-portlist->names x.ports))
+       (dupes          (duplicated-members (remove nil external-names)))
+       (warnings       (if (not dupes)
+                           warnings
+                         (fatal :type :vl-bad-ports
+                                :msg "Duplicate port names: ~&0."
+                                :args (list dupes))))
+
+       (warnings (vl-modportlist-portcheck x.modports warnings)))
+
+    (change-vl-interface x :warnings warnings)))
+
+(defprojection vl-interfacelist-portcheck ((x vl-interfacelist-p))
+  :returns (new-x vl-interfacelist-p)
+  (vl-interface-portcheck x))
+
+
 (define vl-design-portcheck ((x vl-design-p))
   :returns (new-x vl-design-p)
   :short "Top-level @(see portcheck) check."
   (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-portcheck x.mods))))
+    (change-vl-design x
+                      :mods (vl-modulelist-portcheck x.mods)
+                      :interfaces (vl-interfacelist-portcheck x.interfaces))))
 
