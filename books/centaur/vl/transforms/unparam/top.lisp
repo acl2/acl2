@@ -668,6 +668,37 @@ for each usertype is stored in the res field.</p>"
     (hons-assoc-equal instkey (vl-unparam-ledger->instkeymap ledger))))
 
 
+(define vl-unparam-add-to-ledger-without-renaming
+  :short "Generate an instkey for an unparameterized module and add it to the ledger
+          without munging the name to reflect unparameterization."
+  ((origname stringp              "Original name of the module, e.g., @('my_adder').")
+   (paramdecls vl-paramdecllist-p "Final, overridden paramdecls for the module.")
+   (ledger     vl-unparam-ledger-p  "Ledger for disambiguating generated module names")
+   (inst-ss         vl-scopestack-p "Scopestack for the instantiating context")
+   (mod-ss          vl-scopestack-p "Scopestack for the instantiated module"))
+  :returns (mv (instkey vl-unparam-instkey-p "Instance key uniquely identifying
+                                              the module/parameter combo.")
+               (ledger vl-unparam-ledger-p "Updated ledger whose instkeymap
+                                                binds the instkey."))
+  (b* (((vl-unparam-ledger ledger) (vl-unparam-ledger-fix ledger))
+       (origname (string-fix origname))
+       (instkey (vl-unparam-inst->instkey origname paramdecls inst-ss mod-ss))
+       (existing (cdr (hons-get instkey ledger.instkeymap)))
+       ((when existing)
+        ;; This module has already been named -- just return the existing name.
+        (mv instkey ledger))
+       (signature (make-vl-unparam-signature :modname origname
+                                             :newname origname
+                                             :final-params paramdecls))
+       (instkeymap (hons-acons instkey signature ledger.instkeymap)))
+
+    (mv instkey (change-vl-unparam-ledger ledger
+                                          :instkeymap instkeymap)))
+  ///
+  (defret vl-unparam-add-to-ledger-without-renaming-binds-instkey
+    (hons-assoc-equal instkey (vl-unparam-ledger->instkeymap ledger))))
+
+
 (define vl-unparam-inst
   :parents (unparameterization)
   :short "Compute the final parameter values for a single module instance."
@@ -1570,10 +1601,9 @@ for each usertype is stored in the res field.</p>"
         (vl-scope-finalize-params x paramdecls (make-vl-paramargs-named) warnings conf.ss conf))
        ((unless ok) (mv nil nil warnings ledger))
 
-       ;; BOZO We might want to change this so that top-level modules never get
-       ;; name-mangled.
-       ((mv instkey ledger) (vl-unparam-add-to-ledger modname final-paramdecls ledger conf.ss
-                                                      (vl-svexconf->ss mod-conf))))
+       ((mv instkey ledger) (vl-unparam-add-to-ledger-without-renaming
+                             modname final-paramdecls ledger conf.ss
+                             (vl-svexconf->ss mod-conf))))
 
     (mv t instkey warnings ledger)))
 
@@ -1596,7 +1626,14 @@ for each usertype is stored in the res field.</p>"
           warnings ledger))))
 
 
+#|
+(trace$ #!Vl (vl-package-elaborate
+              :entry (list 'vl-package-elaborate
+                           (with-local-ps (vl-pp-package x)))
+              :exit (list 'vl-package-elaborate
+                           (with-local-ps (vl-pp-package (nth 2 values))))))
 
+||#
 (define vl-package-elaborate ((x        vl-package-p)
                               (conf     vl-svexconf-p
                                         "design level")

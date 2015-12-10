@@ -52,7 +52,11 @@
                  "Maximum number of iterations to unroll for loops, etc., when
                   rewriting statements.  This is just a safety valve."
                  :rule-classes :type-prescription
-                 :default 1000)))
+                 :default 1000)
+
+   (already-annotated booleanp
+                      "Denotes that we've already annotated the design and shouldn't
+                       do it again.")))
 
 (defconst *vl-default-simpconfig*
   (make-vl-simpconfig))
