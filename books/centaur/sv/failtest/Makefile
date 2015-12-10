@@ -45,16 +45,13 @@ FAILING_TEST_TARGETS := \
   bigwire1.svok \
   gates2.svok \
   gates5.svok \
-  iface9.svok \
   inc8.svok \
   inc9.svok \
   inst9.svok \
   inst12.svok \
   iface4.svok \
   param1.svok \
-  port1.svok \
-  iface10b.svok \
-  iface10c.svok \
+  port1.svok
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core

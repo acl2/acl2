@@ -228,6 +228,7 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
                     ;; no gateinsts in interfaces
                     (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
                     (interfaceport :acc ifports)
+                    modport
                     )
       (module       (:import)
                     paramdecl vardecl fundecl taskdecl typedef dpiimport
@@ -1506,7 +1507,8 @@ be very cheap in the single-threaded case.</p>"
                  (equal (tag item) :vl-fundecl)
                  (equal (tag item) :vl-taskdecl)
                  (equal (tag item) :vl-typedef)
-                 (equal (tag item) :vl-dpiimport))))
+                 (equal (tag item) :vl-dpiimport)
+                 (equal (tag item) :vl-modport))))
   :rule-classes ((:forward-chaining))
   :hints(("Goal"
           :use ((:instance tag-when-vl-scopeitem-p-forward
@@ -1686,7 +1688,6 @@ transform that has used scopestacks.</p>"
 
 
 ; Scopestack debugging
-
 (define vl-scopeitem->name ((x vl-scopeitem-p))
   :returns (name maybe-stringp :rule-classes :type-prescription)
   :prepwork
@@ -1709,7 +1710,8 @@ transform that has used scopestacks.</p>"
       (:vl-vardecl       (vl-vardecl->name x))
       (:vl-fundecl       (vl-fundecl->name x))
       (:vl-taskdecl      (vl-taskdecl->name x))
-      (:vl-dpiimport  (vl-dpiimport->name x))
+      (:vl-dpiimport     (vl-dpiimport->name x))
+      (:vl-modport       (vl-modport->name x))
       (otherwise         (vl-typedef->name x)))))
 
 

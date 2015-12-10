@@ -230,28 +230,69 @@ interfaces.</p>")
   :returns (names string-listp)
   (vl-modport-port->name x))
 
+(define vl-modport-port-check-wellformed ((x             vl-modport-port-p)
+                                          (ctx           vl-modport-p)
+                                          (warnings      vl-warninglist-p)
+                                          (internalnames string-listp))
+  :returns (mv (warnings vl-warninglist-p)
+               (internalnames string-listp))
+  (b* ((internalnames (string-list-fix internalnames))
+       ((vl-modport-port x) (vl-modport-port-fix x))
+       ((unless x.expr)
+        (mv (ok) internalnames))
+       ((unless (vl-portexpr-p x.expr))
+        (mv (fatal :type :vl-bad-port
+                   :msg "~a0: ill-formed expression for modport port: ~a1."
+                   :args (list (vl-modport-fix ctx) x))
+            internalnames)))
+    (mv (ok) (append (vl-portexpr->internalnames x.expr) internalnames))))
+
+(define vl-modport-portlist-check-wellformed ((x             vl-modport-portlist-p)
+                                              (ctx           vl-modport-p)
+                                              (warnings      vl-warninglist-p)
+                                              (internalnames string-listp))
+  :returns (mv (warnings vl-warninglist-p)
+               (internalnames string-listp))
+  (b* (((when (atom x))
+        (mv (ok) (string-list-fix internalnames)))
+       ((mv warnings internalnames)
+        (vl-modport-port-check-wellformed (car x) ctx warnings internalnames)))
+    (vl-modport-portlist-check-wellformed (cdr x) ctx warnings internalnames)))
+
 (define vl-modport-portcheck ((x        vl-modport-p)
+                              (oknames  string-listp "Names of local wires, etc., that are OK in modport expressions.")
                               (warnings vl-warninglist-p))
+  :guard (setp oknames)
   :returns (new-warnings vl-warninglist-p)
-  (b* (((vl-modport x) (vl-modport-fix x))
+  (b* ((oknames (string-list-fix oknames))
+       ((vl-modport x) (vl-modport-fix x))
        (external-names (vl-modport-portlist->names x.ports))
        (dupes (duplicated-members external-names))
        ((when dupes)
         (fatal :type :vl-bad-modport
                :msg "~a0: Duplicated modport port names: ~&1."
-               :args (list x dupes))))
-    ;; BOZO probably other things to check.  We probably want to make sure all
-    ;; of the internal port expressions are of known names, for instance.
+               :args (list x dupes)))
+       ((mv warnings internalnames)
+        (vl-modport-portlist-check-wellformed x.ports x warnings nil))
+       (internalnames (mergesort internalnames))
+       (badnames (difference internalnames oknames))
+       ((when badnames)
+        (fatal :type :vl-bad-modport
+               :msg "~a0: Modport refers to unknown name~s1: ~&2."
+               :args (list x
+                           (if (vl-plural-p badnames) "s" "")
+                           badnames))))
     (ok)))
 
 (define vl-modportlist-portcheck ((x        vl-modportlist-p)
+                                  (oknames  string-listp)
                                   (warnings vl-warninglist-p))
+  :guard (setp oknames)
   :returns (new-warnings vl-warninglist-p)
   (b* (((when (atom x))
         (ok))
-       (warnings (vl-modport-portcheck (car x) warnings)))
-    (vl-modportlist-portcheck (cdr x) warnings)))
-
+       (warnings (vl-modport-portcheck (car x) oknames warnings)))
+    (vl-modportlist-portcheck (cdr x) oknames warnings)))
 
 
 (define vl-interface-check-modinst-is-subinterface
@@ -357,7 +398,14 @@ interfaces.</p>")
                                 :msg "Duplicate port names: ~&0."
                                 :args (list dupes))))
 
-       (warnings (vl-modportlist-portcheck x.modports warnings))
+       (oknames
+        ;; VCS and NCVerilog both seem to let interface ports to be used in the
+        ;; modport expressions.  But I don't think other local names (typedefs,
+        ;; parameters, etc.) make any sense here.
+        (mergesort (append (vl-portdecllist->names x.portdecls)
+                           (vl-vardecllist->names x.vardecls))))
+
+       (warnings (vl-modportlist-portcheck x.modports oknames warnings))
        (warnings (vl-interface-check-modinsts-are-subinterfaces x.modinsts ss warnings)))
 
     (change-vl-interface x :warnings warnings)))

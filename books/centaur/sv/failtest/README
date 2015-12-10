@@ -64,6 +64,8 @@ iface10c.v -- similar, but simpler port syntax
 iface11.v -- interface tries to instantiate submodule
 iface12.v -- interface tries to instantiate udp (not sure if legal, ncv allows, vcs prohibits)
 iface13.v -- interface tries to instantiate gate (not sure if legal, but ncv/vcs prohibit)
+iface14.v -- modport with insane port expression .foo(a+b) (vcs accepts it??)
+iface15.v -- modport tries to connect to parameter instead of variable
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type
