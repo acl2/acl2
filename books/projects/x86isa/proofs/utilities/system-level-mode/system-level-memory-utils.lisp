@@ -912,22 +912,143 @@
 ;;                                   no-page-faults-during-translation-p
 ;;                                   mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)))))
 
+;; (defthm rm08-after-ia32e-entries-found-la-to-pa
+;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                 (paging-entries-found-p lin-addr-1 x86)
+;;                 (paging-entries-found-p lin-addr-2 x86)
+;;                 (not (programmer-level-mode x86))
+;;                 (pairwise-disjoint-p-aux
+;;                  (list
+;;                   (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr-2 r-w-x-2 cpl x86)))
+;;                  (open-qword-paddr-list-list
+;;                   (gather-all-paging-structure-qword-addresses x86))))
+;;            (equal
+;;             (mv-nth
+;;              1
+;;              (rm08
+;;               lin-addr-2 r-w-x-2
+;;               (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr-1 r-w-x-1 cpl x86))))
+;;             (mv-nth 1 (rm08 lin-addr-2 r-w-x-2 x86))))
+;;   :hints
+;;   (("Goal" :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+;;                              rm08)
+;;                             (force (force))))))
+
+;; (thm
+;;  ;; rb-1-after-ia32e-entries-found-la-to-pa needs WoW of
+;;  ;; ia32e-entries-found-la-to-pa...  This is a checkpoint in the proof
+;;  ;; of rb-1-after-ia32e-entries-found-la-to-pa.
+;;  (IMPLIES
+;;   (AND
+;;    (CONSP L-ADDRS-2)
+;;    (NOT (MV-NTH 0 (RM08 (CAR L-ADDRS-2) R-W-X-2 X86)))
+;;    (PAGING-ENTRIES-FOUND-P LIN-ADDR-1 X86)
+;;    (PAGING-ENTRIES-FOUND-P (CAR L-ADDRS-2)
+;;                            X86)
+;;    (ALL-PAGING-ENTRIES-FOUND-P (CDR L-ADDRS-2)
+;;                                X86)
+;;    (NOT (XR :PROGRAMMER-LEVEL-MODE 0 X86))
+;;    (PAIRWISE-DISJOINT-P-AUX
+;;     (LIST
+;;      (MV-NTH 1
+;;              (IA32E-ENTRIES-FOUND-LA-TO-PA (CAR L-ADDRS-2)
+;;                                            R-W-X-2
+;;                                            (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
+;;                                            X86)))
+;;     (OPEN-QWORD-PADDR-LIST-LIST
+;;      (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+;;    (MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
+;;     (CDR L-ADDRS-2)
+;;     R-W-X-2
+;;     (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
+;;     X86)
+;;    (EQUAL
+;;     (MV-NTH
+;;      1
+;;      (RB-1 (CDR L-ADDRS-2)
+;;            R-W-X-2
+;;            (MV-NTH 2
+;;                    (IA32E-ENTRIES-FOUND-LA-TO-PA
+;;                     LIN-ADDR-1 R-W-X-1
+;;                     (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
+;;                     (MV-NTH 2 (RM08 (CAR L-ADDRS-2) R-W-X-2 X86))))
+;;            (APPEND ACC-2
+;;                    (LIST (MV-NTH 1
+;;                                  (RM08 (CAR L-ADDRS-2) R-W-X-2 X86))))))
+;;     (MV-NTH
+;;      1
+;;      (RB-1 (CDR L-ADDRS-2)
+;;            R-W-X-2
+;;            (MV-NTH 2 (RM08 (CAR L-ADDRS-2) R-W-X-2 X86))
+;;            (APPEND ACC-2
+;;                    (LIST (MV-NTH 1
+;;                                  (RM08 (CAR L-ADDRS-2) R-W-X-2 X86))))))))
+;;   (EQUAL
+;;    (MV-NTH
+;;     1
+;;     (RB-1
+;;      L-ADDRS-2 R-W-X-2
+;;      (MV-NTH 2
+;;              (IA32E-ENTRIES-FOUND-LA-TO-PA LIN-ADDR-1 R-W-X-1
+;;                                            (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
+;;                                            X86))
+;;      ACC-2))
+;;    (MV-NTH 1
+;;            (RB-1 (CDR L-ADDRS-2)
+;;                  R-W-X-2
+;;                  (MV-NTH 2 (RM08 (CAR L-ADDRS-2) R-W-X-2 X86))
+;;                  (APPEND ACC-2
+;;                          (LIST (MV-NTH 1
+;;                                        (RM08 (CAR L-ADDRS-2)
+;;                                              R-W-X-2 X86))))))))
+;;  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+;;                                    rm08)
+;;                                   ())
+;;           :expand (RB-1
+;;                    L-ADDRS-2 R-W-X-2
+;;                    (MV-NTH 2
+;;                            (IA32E-ENTRIES-FOUND-LA-TO-PA LIN-ADDR-1 R-W-X-1
+;;                                                          (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
+;;                                                          X86))
+;;                    ACC-2))))
+
+;; (skip-proofs
+;;  (defthm rb-1-after-ia32e-entries-found-la-to-pa
+;;    (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                  (paging-entries-found-p lin-addr-1 x86)
+;;                  (all-paging-entries-found-p l-addrs-2 x86)
+;;                  (not (programmer-level-mode x86))
+;;                  (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;                   l-addrs-2 r-w-x-2 cpl x86))
+;;             (equal (mv-nth 1
+;;                            (rb-1
+;;                             l-addrs-2 r-w-x-2
+;;                             (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr-1 r-w-x-1 cpl x86))
+;;                             acc-2))
+;;                    (mv-nth 1 (rb-1 l-addrs-2 r-w-x-2 x86 acc-2))))
+;;    :hints
+;;    (("Goal"
+;;      :induct (rb-1 l-addrs-2 r-w-x-2 x86 acc-2)
+;;      :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+;;                       (force
+;;                        rb-1-accumulator-thm
+;;                        (force)))))))
+
 ;; (defthm rb-rb-split-reads-in-system-level-mode
-;;   (implies (and (equal l-addrs (create-canonical-address-list (+ k j) addr))
-;;                 (not (xr :programmer-level-mode 0 x86))
+;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                 (canonical-address-listp l-addrs-1)
+;;                 (canonical-address-listp l-addrs-2)
+;;                 (equal l-addrs (append l-addrs-1 l-addrs-2))
+;;                 (not (programmer-level-mode x86))
 ;;                 (all-paging-entries-found-p l-addrs x86)
 ;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs r-w-x cpl x86)
-;;                 (no-page-faults-during-translation-p l-addrs r-w-x cpl x86)
-;;                 (natp j)
-;;                 (natp k))
-;;            (equal (mv-nth 1 (rb (create-canonical-address-list (+ k j) addr) r-w-x x86))
-;;                   (append (mv-nth 1 (rb (create-canonical-address-list k addr) r-w-x x86))
-;;                           (mv-nth 1 (rb (create-canonical-address-list j (+ k addr)) r-w-x x86)))))
+;;                 (no-page-faults-during-translation-p l-addrs r-w-x cpl x86))
+;;            (equal (mv-nth 1 (rb l-addrs r-w-x x86))
+;;                   (append (mv-nth 1 (rb l-addrs-1 r-w-x x86))
+;;                           (mv-nth 1 (rb l-addrs-2 r-w-x x86)))))
 ;;   :hints (("Goal" :in-theory (e/d* (rm08
 ;;                                     ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
 ;;                                    ((:meta acl2::mv-nth-cons-meta))))))
-
-
 
 ;; (defthm rb-and-rm64-in-system-level-mode-new
 ;;   ;; Shouldn't rely on open-create-canonical-address-list.
