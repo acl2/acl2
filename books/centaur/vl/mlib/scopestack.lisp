@@ -217,31 +217,34 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
     :short "Information about the kinds of items in each scope."
     :long "<p>Note that this is only for items, i.e., it's not for definitions,
   ports, packages, etc.</p>"
-    '((interface    (:import)
-                    paramdecl vardecl fundecl taskdecl typedef dpiimport
-                    ;; NOTE: not dpiexport -- we DO want to include the dpi
-                    ;; imports in the scopestack because they're essentially
-                    ;; being "defined" by the C code.  But exports are just
-                    ;; things we're making available to the C code, which isn't
-                    ;; relevant to much of anything else.
-                    (modinst :name instname :maybe-stringp t)
-                    ;; no gateinsts in interfaces
-                    (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
-                    (interfaceport :acc ifports)
-                    modport
-                    )
-      (module       (:import)
-                    paramdecl vardecl fundecl taskdecl typedef dpiimport
-                    (modinst :name instname :maybe-stringp t)
-                    (gateinst :maybe-stringp t)
-                    (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
-                    (interfaceport :acc ifports))
-      (genblob      (:import)
-                    vardecl paramdecl fundecl taskdecl typedef dpiimport
-                    (modinst :name instname :maybe-stringp t)
-                    (gateinst :maybe-stringp t)
-                    (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
-                    (interfaceport :acc ifports))
+    '((interface (:import)
+                 ;; NOTE: if you add more things here, you also need to extend genblob!
+                 paramdecl vardecl fundecl taskdecl typedef dpiimport
+                 (modinst :name instname :maybe-stringp t)
+                 ;; no gateinsts in interfaces
+                 (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
+                 (interfaceport :acc ifports)
+                 modport
+                 ;; We don't include the dpi exports here because, unlike
+                 ;; imports which are "defined" by the C code, exports are just
+                 ;; things we're making available to the C code, which isn't
+                 ;; relevant to much of anything else.
+                 )
+      (module (:import)
+              ;; NOTE: if you add more things here, you also need to extend genblob!
+              paramdecl vardecl fundecl taskdecl typedef dpiimport
+              (modinst :name instname :maybe-stringp t)
+              (gateinst :maybe-stringp t)
+              (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
+              (interfaceport :acc ifports))
+      (genblob (:import)
+               vardecl paramdecl fundecl taskdecl typedef dpiimport
+               (modinst :name instname :maybe-stringp t)
+               (gateinst :maybe-stringp t)
+               (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
+               (interfaceport :acc ifports)
+               modport
+               )
 
       ;; fwdtypedefs could be included here, but we hope to have resolved them all
       ;;             to proper typedefs by the end of loading, so we omit them.
@@ -249,7 +252,6 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
       ;; Functions, Tasks, and Statements are all grouped together into Blockscopes.
       (blockscope   (:import)
                     vardecl paramdecl typedef)
-
       (design       (:import)
                     paramdecl vardecl fundecl taskdecl typedef dpiimport)
       (package      (:import)

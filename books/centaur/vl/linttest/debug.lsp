@@ -47,7 +47,7 @@
           (vl-pps-exprlist (cdr x)))))
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./implicit/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./temp/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
@@ -70,11 +70,65 @@
        (state (vl-lint-report-wrap res state)))
     (mv res state)))
 
+(trace$ (vl-genblob-luciddb-init
+         :entry (list 'vl-genblob-luciddb-init (vl-genblob->name x)
+                      :ss (vl-scopestack->path ss)
+                      :db (with-local-ps (vl-pp-luciddb db)))
+         :exit (list 'vl-genblob-luciddb-init
+                     (with-local-ps (vl-pp-luciddb value)))))
+
+(trace$ (vl-luciddb-init
+         :entry (list 'vl-luciddb-init '<design>)
+         :exit (list 'vl-luciddb-init
+                     (with-local-ps (vl-pp-luciddb value)))))
+
+  :short "Construct the initial @(see lucid) database for a design."
+  ((x vl-design-p))
+  :returns (db vl-luciddb-p)
+
+(trace$ (vl-lucid-dissect-database
+         :entry (list 'vl-lucid-dissect-database
+                      (with-local-ps (vl-pp-luciddb db)))
+         :exit (b* ((reportcard acl2::value))
+                 (list 'vl-lucid-dissect-database
+                       (with-local-ps (vl-print-reportcard reportcard :elide nil))))))
+
+(trace$ (vl-lucid-dissect-pair
+         :entry (list 'vl-lucid-dissect-pair
+                      (with-local-ps (vl-pp-lucidkey key))
+                      (with-local-ps (vl-pp-lucidval val)))
+         :exit (b* ((reportcard acl2::value))
+                 (list 'vl-lucid-dissect-pair
+                       (with-local-ps (vl-print-reportcard reportcard :elide nil))))))
+
+
 (trace$ (vl-lucid-dissect
          :entry (list 'vl-lucid-dissect '<st>)
          :exit (b* ((reportcard acl2::value))
                  (list 'vl-lucid-dissect
-                       (with-local-ps (vl-print-reportcard reportcard))))))
+                       (with-local-ps (vl-print-reportcard reportcard :elide nil))))))
+
+(trace$ (vl-apply-reportcard
+         :entry (list 'vl-apply-reportcard
+                      '<design>
+                      (with-local-ps (vl-print-reportcard reportcard :elide nil)))
+         :exit (list 'vl-apply-reportcard
+                     :new-interfaces
+                     (vl-design->interfaces acl2::value))))
+
+(trace$ (vl-lint-print-warnings-fn
+         :entry (list 'vl-lint-print-warnings
+                      :filename filename
+                      :label label
+                      :types types
+                      :reportcard (with-local-ps (vl-print-reportcard reportcard :elide nil)))
+         :exit (list 'vl-lint-print-warnings)))
+
+(trace$ (vl-interfacelist-gather-reportcard
+         :entry (list 'vl-interfacelist-gather-reportcard x
+                      :acc (with-local-ps (vl-print-reportcard reportcard :elide nil)))
+         :exit (with-local-ps (vl-print-reportcard acl2::value :elide nil))))
+                      
 
 (trace$ vl-apply-reportcard 
 
