@@ -261,7 +261,7 @@ elements.")
                     (vl-immdeps-add-item name ans))))
     :colon
     (if (stringp x.first)
-        (vl-immdeps-add-item x.first ans)
+        (vl-immdeps-add-pkgdep x.first ans)
       ;; BOZO think about other scopes.
       ;; local:: is just something to do with randomize, I don't think we care yet.
       ;; $unit:: is sort of very ambiguous, we might want to treat it as top-level
@@ -277,20 +277,6 @@ elements.")
                                    ((ctx acl2::any-p) 'ctx))
   :returns (ans1 (:acc ans :fix (vl-immdeps-fix ans)) vl-immdeps-p)
   :field-fns ((atts :skip))
-  :prod-fns ((vl-special     (type :skip))
-             (vl-literal     (type :skip))
-             (vl-index       (type :skip))
-             (vl-unary       (type :skip))
-             (vl-binary      (type :skip))
-             (vl-qmark       (type :skip))
-             (vl-mintypmax   (type :skip))
-             (vl-concat      (type :skip))
-             (vl-multiconcat (type :skip))
-             (vl-call        (type :skip))
-             (vl-cast        (type :skip))
-             (vl-inside      (type :skip))
-             (vl-tagged      (type :skip))
-             (vl-pattern     (type :skip)))
   :fnname-template <type>-immdeps)
 
 ;; Not dealing with anything that might add a scope yet.
