@@ -179,36 +179,6 @@
 
   )
 
-(define set-accessed-bit
-  ((entry :type (unsigned-byte 64)))
-  :enabled t
-  :returns (a-entry (unsigned-byte-p 64 a-entry) :hyp :guard)
-  (!ia32e-page-tables-slice :a 1 entry)
-
-  ///
-
-  (defthm-usb n64p-set-accessed-bit
-    :hyp (unsigned-byte-p 64 val)
-    :bound 64
-    :concl (set-accessed-bit val)
-    :gen-type t
-    :gen-linear t))
-
-(define set-dirty-bit
-  ((entry :type (unsigned-byte 64)))
-  :enabled t
-  :returns (d-entry (unsigned-byte-p 64 d-entry) :hyp :guard)
-  (!ia32e-page-tables-slice :d 1 entry)
-
-  ///
-
-  (defthm-usb n64p-set-dirty-bit
-    :hyp (unsigned-byte-p 64 val)
-    :bound 64
-    :concl (set-dirty-bit val)
-    :gen-type t
-    :gen-linear t))
-
 (define page-present
   ((entry :type (unsigned-byte 64)))
   :enabled t
@@ -281,6 +251,66 @@
     :hyp (unsigned-byte-p 64 val)
     :bound 1
     :concl (page-execute-disable val)
+    :gen-type t
+    :gen-linear t))
+
+(define accessed-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (bit (unsigned-byte-p 1 bit) :hyp :guard)
+  (ia32e-page-tables-slice :a entry)
+
+  ///
+
+  (defthm-usb n01p-accessed-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 1
+    :concl (accessed-bit val)
+    :gen-type t
+    :gen-linear t))
+
+(define dirty-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (bit (unsigned-byte-p 1 bit) :hyp :guard)
+  (ia32e-page-tables-slice :d entry)
+
+  ///
+
+  (defthm-usb n01p-dirty-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 1
+    :concl (dirty-bit val)
+    :gen-type t
+    :gen-linear t))
+
+(define set-accessed-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (a-entry (unsigned-byte-p 64 a-entry) :hyp :guard)
+  (!ia32e-page-tables-slice :a 1 entry)
+
+  ///
+
+  (defthm-usb n64p-set-accessed-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 64
+    :concl (set-accessed-bit val)
+    :gen-type t
+    :gen-linear t))
+
+(define set-dirty-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (d-entry (unsigned-byte-p 64 d-entry) :hyp :guard)
+  (!ia32e-page-tables-slice :d 1 entry)
+
+  ///
+
+  (defthm-usb n64p-set-dirty-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 64
+    :concl (set-dirty-bit val)
     :gen-type t
     :gen-linear t))
 
@@ -879,8 +909,10 @@
        ;; No errors, so we proceed with the address translation.
 
        ;; Get accessed and dirty bits:
-       (accessed        (ia32e-page-tables-slice :a entry))
-       (dirty           (ia32e-page-tables-slice :d entry))
+       (accessed        (mbe :logic (accessed-bit entry)
+                             :exec (ia32e-page-tables-slice :a entry)))
+       (dirty           (mbe :logic (dirty-bit entry)
+                             :exec (ia32e-page-tables-slice :d entry)))
        ;; Compute accessed and dirty bits:
        (entry (if (equal accessed 0)
                   (mbe :logic (set-accessed-bit entry)
@@ -1330,7 +1362,8 @@
 
            ;; Get accessed bit.  Dirty bit is ignored when PDE
            ;; references the PT.
-           (accessed        (ia32e-page-tables-slice :a entry))
+           (accessed        (mbe :logic (accessed-bit entry)
+                                 :exec (ia32e-page-tables-slice :a entry)))
            ;; Update accessed bit, if needed.
            (entry (if (equal accessed 0)
                       (mbe :logic (set-accessed-bit entry)
@@ -1537,7 +1570,8 @@
 
              ;; Get accessed bit. Dirty bit is ignored when PDPTE
              ;; references the PD.
-             (accessed        (ia32e-page-tables-slice :a entry))
+             (accessed        (mbe :logic (accessed-bit entry)
+                                   :exec (ia32e-page-tables-slice :a entry)))
              ;; Update accessed bit, if needed.
              (entry (if (equal accessed 0)
                         (mbe :logic (set-accessed-bit entry)
@@ -1690,7 +1724,8 @@
 
        ;; Get accessed bit. Dirty bit is ignored when PDPTE
        ;; references the PDPT.
-       (accessed        (ia32e-page-tables-slice :a entry))
+       (accessed        (mbe :logic (accessed-bit entry)
+                             :exec (ia32e-page-tables-slice :a entry)))
        ;; Update accessed bit, if needed.
        (entry (if (equal accessed 0)
                   (mbe :logic (set-accessed-bit entry)

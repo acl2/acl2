@@ -26,13 +26,6 @@
 ;; ======================================================================
 
 (local
- (defthm good-paging-structures-x86p-implies-mult-8-qword-paddr-list-listp-paging-structure-addrs
-   (implies (good-paging-structures-x86p x86)
-            (mult-8-qword-paddr-list-listp
-             (gather-all-paging-structure-qword-addresses x86)))
-   :hints (("Goal" :in-theory (e/d* (good-paging-structures-x86p) ())))))
-
-(local
  (defthm open-create-canonical-address-list
    (implies (and (canonical-address-p lin-addr)
                  (posp n)
@@ -728,77 +721,12 @@
 
 ;; Page Traversal WoW Theorems:
 
-;; (defthm ia32e-la-to-pa-PT-state-WoW-no-page-fault
-;;   (implies (and (page-table-entry-addr-found-p lin-addr-1 x86)
-;;                 (page-table-entry-addr-found-p lin-addr-2 x86)
-;;                 (not
-;;                  (mv-nth 0
-;;                          (page-table-entry-no-page-fault-p
-;;                           lin-addr-1
-;;                           (rm-low-64
-;;                            (page-table-entry-addr
-;;                             lin-addr-1
-;;                             (mv-nth 1 (page-table-base-addr lin-addr-1 x86)))
-;;                            x86)
-;;                           u-s-acc-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)))
-;;                 (not
-;;                  (mv-nth
-;;                   0
-;;                   (page-table-entry-no-page-fault-p
-;;                    lin-addr-2
-;;                    (rm-low-64
-;;                     (page-table-entry-addr
-;;                      lin-addr-2
-;;                      (mv-nth 1 (page-table-base-addr lin-addr-2 x86)))
-;;                     x86)
-;;                    u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-;;            (equal
-;;             (mv-nth
-;;              2
-;;              (ia32e-la-to-pa-PT
-;;               lin-addr-1 u-s-acc-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
-;;               (mv-nth
-;;                2
-;;                (ia32e-la-to-pa-PT
-;;                 lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-;;             (mv-nth
-;;              2
-;;              (ia32e-la-to-pa-PT
-;;               lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2
-;;               (mv-nth
-;;                2
-;;                (ia32e-la-to-pa-PT
-;;                 lin-addr-1 u-s-acc-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86))))))
-;;   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
-;;                                     ia32e-la-to-pa-page-table
-;;                                     ;; PAGE-TABLE-ENTRY-NO-PAGE-FAULT-P
-;;                                     ;; PAGE-FAULT-EXCEPTION
-;;                                     )
-;;                                    (bitops::logand-with-negated-bitmask)))))
-
-
-
-;; (defthm ia32e-entries-found-la-to-pa-state-WoW
-;;   (implies (and (paging-entries-found-p lin-addr-1 x86)
-;;                 (paging-entries-found-p lin-addr-2 x86))
-;;            (equal
-;;             (mv-nth
-;;              2
-;;              (ia32e-entries-found-la-to-pa
-;;               lin-addr-1 r-w-x-1 cpl-1
-;;               (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-;;             (mv-nth
-;;              2
-;;              (ia32e-entries-found-la-to-pa
-;;               lin-addr-2 r-w-x-2 cpl-2
-;;               (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86))))))
-;;   :hints (("Goal" :in-theory (e/d* (ia32e-entries-found-la-to-pa
-;;                                     paging-entries-found-p)
-;;                                    (bitops::logand-with-negated-bitmask)))))
-
 ;; (defthm rm08-rm08-WoW-in-the-system-level-mode
 ;;   ;; Need similar WoW thms for paging traversal functions...
 ;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                 ;; A hyp about physical addresses corresponding to
+;;                 ;; lin-addr-1 and lin-addr-2 being unequal...
+;;                 ...
 ;;                 (paging-entries-found-p lin-addr-1 x86)
 ;;                 (paging-entries-found-p lin-addr-2 x86)
 ;;                 (not (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl x86))))

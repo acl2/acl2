@@ -292,7 +292,47 @@
 
 ;; ======================================================================
 
-;; *-base-addr/*-entry-addr-found-p and xw :mem RoW Theorems:
+;; *-base-addr/*-entry-addr-found-p and xw :mem/wm-low-64 RoW Theorems
+;; ---- where the writes are disjoint from paging structures:
+
+(local
+ (defthm pairwise-disjoint-p-aux-and-disjoint-p-with-addr-range-8-lemma
+   (implies
+    (and (pairwise-disjoint-p-aux
+          (addr-range 8 index)
+          (open-qword-paddr-list-list addrs))
+         (member-list-p addr addrs))
+    (disjoint-p (addr-range 8 index)
+                (addr-range 8 addr)))
+   :hints (("Goal" :in-theory (e/d* (pairwise-disjoint-p-aux
+                                     member-list-p
+                                     member-p)
+                                    ())))))
+
+(local
+ (defthm member-list-p-and-disjoint-p-with-addr-range-8-lemma
+   (implies
+    (and (member-list-p index addrs)
+         (member-list-p addr  addrs)
+         (not (equal index addr))
+         (mult-8-qword-paddr-list-listp addrs))
+    (disjoint-p (addr-range 8 index)
+                (addr-range 8 addr)))
+   :hints (("Goal" :in-theory (e/d* (disjoint-p
+                                     member-list-p
+                                     member-p)
+                                    ())))))
+
+(defthm good-paging-structures-x86p-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (good-paging-structures-x86p x86)
+                (physical-address-p index))
+           (good-paging-structures-x86p (wm-low-64 index val x86)))
+  :hints (("Goal" :in-theory (e/d* (good-paging-structures-x86p)
+                                   ()))))
 
 ;; PML4 Table:
 
@@ -309,6 +349,18 @@
   :hints (("Goal" :in-theory (e/d* (pml4-table-base-addr)
                                    ()))))
 
+(defthm pml4-table-base-addr-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index)
+                (good-paging-structures-x86p x86))
+           (equal (pml4-table-base-addr (wm-low-64 index val x86))
+                  (pml4-table-base-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (pml4-table-base-addr)
+                                   ()))))
+
 (defthm pml4-table-entry-addr-found-p-and-xw-mem-disjoint-from-paging-structures
   (implies (and (pairwise-disjoint-p-aux
                  (list index)
@@ -318,6 +370,18 @@
                 (physical-address-p index)
                 (unsigned-byte-p 8 val))
            (equal (pml4-table-entry-addr-found-p lin-addr (xw :mem index val x86))
+                  (pml4-table-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr-found-p)
+                                   ()))))
+
+(defthm pml4-table-entry-addr-found-p-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (good-paging-structures-x86p x86)
+                (physical-address-p index))
+           (equal (pml4-table-entry-addr-found-p lin-addr (wm-low-64 index val x86))
                   (pml4-table-entry-addr-found-p lin-addr x86)))
   :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr-found-p)
                                    ()))))
@@ -337,6 +401,17 @@
   :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr)
                                    ()))))
 
+(defthm page-dir-ptr-table-base-addr-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index)
+                (pml4-table-entry-addr-found-p lin-addr x86))
+           (equal (page-dir-ptr-table-base-addr lin-addr (wm-low-64 index val x86))
+                  (page-dir-ptr-table-base-addr lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ()))))
+
 (defthm page-dir-ptr-table-entry-addr-found-p-and-xw-mem-disjoint-from-paging-structures
   (implies (and (pml4-table-entry-addr-found-p lin-addr x86)
                 (pairwise-disjoint-p-aux
@@ -346,6 +421,18 @@
                 (physical-address-p index)
                 (unsigned-byte-p 8 val))
            (equal (page-dir-ptr-table-entry-addr-found-p lin-addr (xw :mem index val x86))
+                  (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p)
+                                   ()))))
+
+(defthm page-dir-ptr-table-entry-addr-found-p-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (pml4-table-entry-addr-found-p lin-addr x86)
+                (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index))
+           (equal (page-dir-ptr-table-entry-addr-found-p lin-addr (wm-low-64 index val x86))
                   (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
   :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p)
                                    ()))))
@@ -366,6 +453,17 @@
   :hints (("Goal" :in-theory (e/d* (page-directory-base-addr)
                                    ()))))
 
+(defthm page-directory-base-addr-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index)
+                (page-dir-ptr-table-entry-addr-found-p lin-addr x86))
+           (equal (page-directory-base-addr lin-addr (wm-low-64 index val x86))
+                  (page-directory-base-addr lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ()))))
+
 (defthm page-directory-entry-addr-found-p-and-xw-mem-disjoint-from-paging-structures
   (implies (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
                 (pairwise-disjoint-p-aux
@@ -375,6 +473,18 @@
                 (physical-address-p index)
                 (unsigned-byte-p 8 val))
            (equal (page-directory-entry-addr-found-p lin-addr (xw :mem index val x86))
+                  (page-directory-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr-found-p)
+                                   ()))))
+
+(defthm page-directory-entry-addr-found-p-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+                (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index))
+           (equal (page-directory-entry-addr-found-p lin-addr (wm-low-64 index val x86))
                   (page-directory-entry-addr-found-p lin-addr x86)))
   :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr-found-p)
                                    ()))))
@@ -394,6 +504,17 @@
   :hints (("Goal" :in-theory (e/d* (page-table-base-addr)
                                    ()))))
 
+(defthm page-table-base-addr-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index)
+                (page-directory-entry-addr-found-p lin-addr x86))
+           (equal (page-table-base-addr lin-addr (wm-low-64 index val x86))
+                  (page-table-base-addr lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (page-table-base-addr) ()))))
+
 (defthm page-table-entry-addr-found-p-and-xw-mem-disjoint-from-paging-structures
   (implies (and (page-directory-entry-addr-found-p lin-addr x86)
                 (pairwise-disjoint-p-aux
@@ -403,6 +524,18 @@
                 (physical-address-p index)
                 (unsigned-byte-p 8 val))
            (equal (page-table-entry-addr-found-p lin-addr (xw :mem index val x86))
+                  (page-table-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p)
+                                   ()))))
+
+(defthm page-table-entry-addr-found-p-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (page-directory-entry-addr-found-p lin-addr x86)
+                (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index))
+           (equal (page-table-entry-addr-found-p lin-addr (wm-low-64 index val x86))
                   (page-table-entry-addr-found-p lin-addr x86)))
   :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p)
                                    ()))))
@@ -420,6 +553,297 @@
            (paging-entries-found-p lin-addr (xw :mem index val x86)))
   :hints (("Goal" :in-theory (e/d* (paging-entries-found-p)
                                    ()))))
+
+(defthm paging-entries-found-p-and-wm-low-64-disjoint-from-paging-structures
+  (implies (and (paging-entries-found-p lin-addr x86)
+                (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index))
+           (paging-entries-found-p lin-addr (wm-low-64 index val x86)))
+  :hints (("Goal" :in-theory (e/d* (paging-entries-found-p)
+                                   ()))))
+
+;; ======================================================================
+
+;; *-base-addr/*-entry-addr-found-p and xw :mem/wm-low-64 RoW Theorems
+;; *---- where the writes are to a paging entry:
+
+(defthm good-paging-structures-x86p-and-wm-low-64-entry-addr
+  (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                (member-list-p index addrs)
+                (xlate-equiv-entries val (rm-low-64 index x86))
+                (unsigned-byte-p 64 val)
+                (x86p (wm-low-64 index val x86))
+                (good-paging-structures-x86p x86))
+           (good-paging-structures-x86p (wm-low-64 index val x86)))
+  :hints (("Goal" :in-theory (e/d* (good-paging-structures-x86p)
+                                   ()))))
+
+;; PML4 Table:
+
+(defthm pml4-table-base-addr-and-wm-low-64-entry-addr
+  (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                (member-list-p index addrs)
+                (xlate-equiv-entries val (rm-low-64 index x86))
+                (unsigned-byte-p 64 val)
+                (x86p (wm-low-64 index val x86))
+                (good-paging-structures-x86p x86))
+           (equal (pml4-table-base-addr (wm-low-64 index val x86))
+                  (pml4-table-base-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (pml4-table-base-addr)
+                                   ()))))
+
+(defthm pml4-table-entry-addr-found-p-and-wm-low-64-entry-addr
+  (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
+                (member-list-p index addrs)
+                (xlate-equiv-entries val (rm-low-64 index x86))
+                (unsigned-byte-p 64 val)
+                (x86p (wm-low-64 index val x86))
+                (good-paging-structures-x86p x86))
+           (equal (pml4-table-entry-addr-found-p lin-addr (wm-low-64 index val x86))
+                  (pml4-table-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr-found-p)
+                                   ()))))
+
+;; Page Directory Pointer Table:
+
+(defthm page-dir-ptr-table-base-addr-and-wm-low-64-entry-addr
+  (implies (and
+            (equal addrs (gather-all-paging-structure-qword-addresses x86))
+            (member-list-p index addrs)
+            (xlate-equiv-entries val (rm-low-64 index x86))
+            (unsigned-byte-p 64 val)
+            (pml4-table-entry-addr-found-p lin-addr x86))
+           (equal (page-dir-ptr-table-base-addr lin-addr (wm-low-64 index val x86))
+                  (page-dir-ptr-table-base-addr lin-addr x86)))
+  :hints (("Goal"
+           :use ((:instance member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                            (index index)
+                            (addr (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86))))
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance member-list-p-and-mult-8-qword-paddr-list-listp
+                            (index index)
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance xlate-equiv-entries-and-logtail
+                            (e1 val)
+                            (e2 (rm-low-64 (pml4-table-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (pml4-table-base-addr x86)))
+                                           x86))
+                            (n 12)))
+           :in-theory (e/d* (page-dir-ptr-table-base-addr)
+                            (member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                             member-list-p-and-mult-8-qword-paddr-list-listp)))))
+
+(defthm page-dir-ptr-table-entry-addr-found-p-and-wm-low-64-entry-addr
+  (implies (and
+            (equal addrs (gather-all-paging-structure-qword-addresses x86))
+            (member-list-p index addrs)
+            (xlate-equiv-entries val (rm-low-64 index x86))
+            (unsigned-byte-p 64 val)
+            (pml4-table-entry-addr-found-p lin-addr x86))
+           (equal (page-dir-ptr-table-entry-addr-found-p lin-addr (wm-low-64 index val x86))
+                  (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal"
+           :use ((:instance member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                            (index index)
+                            (addr (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86))))
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance member-list-p-and-mult-8-qword-paddr-list-listp
+                            (index index)
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance xlate-equiv-entries-and-page-present
+                            (e1 val)
+                            (e2 (rm-low-64 (pml4-table-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (pml4-table-base-addr x86)))
+                                           x86)))
+                 (:instance xlate-equiv-entries-and-page-size
+                            (e1 val)
+                            (e2 (rm-low-64 (pml4-table-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (pml4-table-base-addr x86)))
+                                           x86)))
+                 (:instance xlate-equiv-entries-and-logtail
+                            (e1 val)
+                            (e2 (rm-low-64 (pml4-table-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (pml4-table-base-addr x86)))
+                                           x86))
+                            (n 12)))
+           :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p)
+                            (member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                             member-list-p-and-mult-8-qword-paddr-list-listp)))))
+
+;; Page Directory:
+
+(defthm page-directory-base-addr-and-wm-low-64-entry-addr
+  (implies (and
+            (equal addrs (gather-all-paging-structure-qword-addresses x86))
+            (member-list-p index addrs)
+            (xlate-equiv-entries val (rm-low-64 index x86))
+            (unsigned-byte-p 64 val)
+            (page-dir-ptr-table-entry-addr-found-p lin-addr x86))
+           (equal (page-directory-base-addr lin-addr (wm-low-64 index val x86))
+                  (page-directory-base-addr lin-addr x86)))
+  :hints (("Goal"
+           :use ((:instance member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                            (index index)
+                            (addr (page-dir-ptr-table-entry-addr
+                                   lin-addr
+                                   (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))))
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance member-list-p-and-mult-8-qword-paddr-list-listp
+                            (index index)
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance xlate-equiv-entries-and-logtail
+                            (e1 val)
+                            (e2 (rm-low-64 (page-dir-ptr-table-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                                           x86))
+                            (n 12))
+                 (:instance xlate-equiv-entries-and-page-size
+                            (e1 val)
+                            (e2 (rm-low-64 (page-dir-ptr-table-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                                           x86))))
+           :in-theory (e/d* (page-directory-base-addr)
+                            (member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                             member-list-p-and-mult-8-qword-paddr-list-listp)))))
+
+(defthm page-directory-entry-addr-found-p-and-wm-low-64-entry-addr
+  (implies (and
+            (equal addrs (gather-all-paging-structure-qword-addresses x86))
+            (member-list-p index addrs)
+            (xlate-equiv-entries val (rm-low-64 index x86))
+            (unsigned-byte-p 64 val)
+            (page-dir-ptr-table-entry-addr-found-p lin-addr x86))
+           (equal (page-directory-entry-addr-found-p lin-addr (wm-low-64 index val x86))
+                  (page-directory-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal"
+           :use ((:instance member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                            (index index)
+                            (addr (page-dir-ptr-table-entry-addr
+                                   lin-addr
+                                   (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86))))
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance member-list-p-and-mult-8-qword-paddr-list-listp
+                            (index index)
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance xlate-equiv-entries-and-page-present
+                            (e1 val)
+                            (e2 (rm-low-64 (page-dir-ptr-table-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                                           x86)))
+                 (:instance xlate-equiv-entries-and-page-size
+                            (e1 val)
+                            (e2 (rm-low-64 (page-dir-ptr-table-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                                           x86)))
+                 (:instance xlate-equiv-entries-and-logtail
+                            (e1 val)
+                            (e2 (rm-low-64 (page-dir-ptr-table-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+                                           x86))
+                            (n 12)))
+           :in-theory (e/d* (page-directory-entry-addr-found-p)
+                            (member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                             member-list-p-and-mult-8-qword-paddr-list-listp)))))
+
+;; Page Table:
+
+(defthm page-table-base-addr-and-wm-low-64-entry-addr
+  (implies (and
+            (equal addrs (gather-all-paging-structure-qword-addresses x86))
+            (member-list-p index addrs)
+            (xlate-equiv-entries val (rm-low-64 index x86))
+            (unsigned-byte-p 64 val)
+            (page-directory-entry-addr-found-p lin-addr x86))
+           (equal (page-table-base-addr lin-addr (wm-low-64 index val x86))
+                  (page-table-base-addr lin-addr x86)))
+  :hints (("Goal"
+           :use ((:instance member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                            (index index)
+                            (addr (page-directory-entry-addr
+                                   lin-addr
+                                   (mv-nth 1 (page-directory-base-addr lin-addr x86))))
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance member-list-p-and-mult-8-qword-paddr-list-listp
+                            (index index)
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance xlate-equiv-entries-and-logtail
+                            (e1 val)
+                            (e2 (rm-low-64 (page-directory-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                                           x86))
+                            (n 12))
+                 (:instance xlate-equiv-entries-and-page-present
+                            (e1 val)
+                            (e2 (rm-low-64
+                                 (page-directory-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                                 x86)))
+                 (:instance xlate-equiv-entries-and-page-size
+                            (e1 val)
+                            (e2 (rm-low-64
+                                 (page-directory-entry-addr
+                                  lin-addr
+                                  (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                                 x86))))
+           :in-theory (e/d* (page-table-base-addr)
+                            (member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                             member-list-p-and-mult-8-qword-paddr-list-listp)))))
+
+(defthm page-table-entry-addr-found-p-and-wm-low-64-entry-addr
+  (implies (and
+            (equal addrs (gather-all-paging-structure-qword-addresses x86))
+            (member-list-p index addrs)
+            (xlate-equiv-entries val (rm-low-64 index x86))
+            (unsigned-byte-p 64 val)
+            (page-directory-entry-addr-found-p lin-addr x86))
+           (equal (page-table-entry-addr-found-p lin-addr (wm-low-64 index val x86))
+                  (page-table-entry-addr-found-p lin-addr x86)))
+  :hints (("Goal"
+           :use ((:instance member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                            (index index)
+                            (addr (page-directory-entry-addr
+                                   lin-addr
+                                   (mv-nth 1 (page-directory-base-addr lin-addr x86))))
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance member-list-p-and-mult-8-qword-paddr-list-listp
+                            (index index)
+                            (addrs (gather-all-paging-structure-qword-addresses x86)))
+                 (:instance xlate-equiv-entries-and-page-present
+                            (e1 val)
+                            (e2 (rm-low-64 (page-directory-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                                           x86)))
+                 (:instance xlate-equiv-entries-and-page-size
+                            (e1 val)
+                            (e2 (rm-low-64 (page-directory-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                                           x86)))
+                 (:instance xlate-equiv-entries-and-logtail
+                            (e1 val)
+                            (e2 (rm-low-64 (page-directory-entry-addr
+                                            lin-addr
+                                            (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                                           x86))
+                            (n 12)))
+           :in-theory (e/d* (page-table-entry-addr-found-p)
+                            (member-list-p-and-disjoint-p-with-addr-range-8-lemma
+                             member-list-p-and-mult-8-qword-paddr-list-listp)))))
 
 ;; ======================================================================
 

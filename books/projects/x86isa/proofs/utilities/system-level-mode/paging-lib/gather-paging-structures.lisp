@@ -1639,6 +1639,11 @@
               (no-duplicates-list-p paging-addresses))))
   ///
 
+  (defthm good-paging-structures-x86p-implies-mult-8-qword-paddr-list-listp-paging-structure-addrs
+    (implies (good-paging-structures-x86p x86)
+             (mult-8-qword-paddr-list-listp
+              (gather-all-paging-structure-qword-addresses x86))))
+
   (defthm good-paging-structures-x86p-implies-x86p
     (implies (good-paging-structures-x86p x86)
              (x86p x86))
