@@ -620,4 +620,3 @@
 (assert-guard-verified another-guard-test-5)
 (assert-guard-verified another-guard-test-6)
 
-
