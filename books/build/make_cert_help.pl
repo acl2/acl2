@@ -571,7 +571,8 @@ $instrs .= "(acl2::in-package \"ACL2\")\n";
 $instrs .= "#+acl2-hons (profile-fn 'prove)\n";
 $instrs .= "#+acl2-hons (profile-fn 'certify-book-fn)\n";
 $instrs .= "(acl2::lp)\n";
-#    $instrs .= "(set-debugger-enable :bt)\n";
+# We used to comment this out, but maybe it's better to leave this enabled by default?
+$instrs .= "(set-debugger-enable :bt)\n";
 $instrs .= "(acl2::in-package \"ACL2\")\n\n";
 $instrs .= "(set-ld-error-action (quote (:exit 1)) state)\n";
 $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");

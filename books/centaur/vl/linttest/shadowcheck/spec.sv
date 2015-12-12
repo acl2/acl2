@@ -58,12 +58,32 @@ module m1 ;
 
 endmodule
 
+package pkg1 ;
+
+  typedef logic pkg1type1_t;
+  typedef logic pkg1type2_t;
+
+endpackage
+
+import pkg1::pkg1type1_t;
+
+module m2 (input pkg1type1_t m2in1);
+
+  import pkg1::*;
+
+  pkg1type1_t m2var1;
+  pkg1::pkg1type1_t m2var2;
+  pkg1::pkg1type2_t m2var3;
 
 
-// BOZO we should probably have a lot more tests here:
+endmodule
 
+
+
+// BOZO we should probably have a lot more tests here (but note that the
+// implicit linttest is also pretty closely related and covers some of this.):
+//
 //  - Shadowing in other kinds of contexts, including at least:
 //      generates, block statements, for loops, generate loops, functions, tasks
 //
 //  - Symbols being imported from other packages, import clashes, shadowing due to tricky imports, etc
-

@@ -471,9 +471,11 @@ directly with ACL2.</p>
 ;;;;;;; Tool 2
 
 (defmacro tool2 (term hyps
-                      &key hints equiv (prove-assumptions 't) inhibit-output)
+                      &key
+                      hints equiv (prove-assumptions 't) inhibit-output
+                      (must-rewrite-flg 't))
   `(tool2-fn ',term ',hyps ',equiv state ',hints ',prove-assumptions
-             ',inhibit-output t t))
+             ',inhibit-output t t ,must-rewrite-flg))
 
 (defun tool2-print (print-flg runes rewritten-term state)
   (cond
@@ -832,7 +834,7 @@ directly with ACL2.</p>
 
 (defun tool2-fn
   (term hyps equiv state hints prove-assumptions inhibit-output translate-flg
-        print-flg)
+        print-flg must-rewrite-flg)
 
 ; Returns error triple with value (list* runes rewritten-term assumptions).
 ; But assumptions is nil if prove-assumptions is nil (we don't collect them) or
@@ -841,20 +843,20 @@ directly with ACL2.</p>
 ; DARON: there was a bunch of duplicated code here, so I simplified tool2-fn to
 ; call tool2-fn0. Note that the signature of tool2-fn is still the same. By
 ; default it sets the must-rewrite-flg to T, which gives it the same behavior
-; as before.
+; as before.  (Matt K. mod: Now must-rewrite-flg is passed explicitly here.)
 
   (let ((ctx 'TOOL2)
         (wrld (w state))
         (ens (ens state)))
     (tool2-fn0 term hyps equiv ctx ens wrld state hints prove-assumptions
-               inhibit-output translate-flg print-flg t)))
+               inhibit-output translate-flg print-flg must-rewrite-flg)))
 
 
 ;;;;;;; Hooking them together
 
 (defun tool2-fn-lst
   (term runes hyps-lst assns equiv state hints prove-assumptions inhibit-output
-        print-flg)
+        print-flg must-rewrite-flg)
 
 ; Returns the result of mapping tool2-fn over the list hyps-lst, pairing each
 ; result with the corresponding member of hyps-lst.  Assumes hyps-lst is
@@ -868,16 +870,18 @@ directly with ACL2.</p>
     (mv-let
      (erp x state)
      (tool2-fn term (car hyps-lst) equiv state hints prove-assumptions
-               inhibit-output nil print-flg)
+               inhibit-output nil print-flg must-rewrite-flg)
      (cond
       (erp
        (tool2-fn-lst term runes (cdr hyps-lst) assns equiv state
-                     hints prove-assumptions inhibit-output print-flg))
+                     hints prove-assumptions inhibit-output print-flg
+                     must-rewrite-flg))
       (t
        (er-let*
         ((rst (tool2-fn-lst term runes (cdr hyps-lst) assns equiv
                             state
-                            hints prove-assumptions inhibit-output print-flg)))
+                            hints prove-assumptions inhibit-output print-flg
+                            must-rewrite-flg)))
         (value (cons (list* (union-equal runes (car x))
                             (car hyps-lst)
                             (cadr x)
@@ -886,7 +890,7 @@ directly with ACL2.</p>
 
 (defun simplify-hyps
   (remaining-hyps rewritten-previous-hyps-rev runes assns equiv state hints
-                  prove-assumptions inhibit-output print-flg)
+                  prove-assumptions inhibit-output print-flg must-rewrite-flg)
 
 ; Returns the result of mapping tool2-fn over each hyp in remaining-hyps, where
 ; the hyps in rewritten-previous-hyps-rev and (cdr remaining-hyps) are assumed.
@@ -901,17 +905,17 @@ directly with ACL2.</p>
                      (revappend rewritten-previous-hyps-rev
                                 (cdr remaining-hyps))
                      equiv state hints prove-assumptions
-                     inhibit-output nil print-flg)))
+                     inhibit-output nil print-flg must-rewrite-flg)))
        (simplify-hyps (cdr remaining-hyps)
                       (cons (cadr x) rewritten-previous-hyps-rev)
                       (union-equal (car x) runes)
                       (union-equal (cddr x) assns)
                       equiv state hints prove-assumptions inhibit-output
-                      print-flg)))))
+                      print-flg must-rewrite-flg)))))
 
 (defun tool-fn
   (term hyps simplify-hyps-p equiv state hints prove-assumptions inhibit-output
-        print-flg ctx)
+        print-flg must-rewrite-flg ctx)
 
 ; Term and hyps are in translated form.  Returns a list of tuples
 ; (list* runes hyps rewritten-term assumptions).
@@ -920,7 +924,8 @@ directly with ACL2.</p>
              (cond
               ((eq simplify-hyps-p :no-split)
                (simplify-hyps hyps nil nil nil equiv state hints
-                              prove-assumptions inhibit-output print-flg))
+                              prove-assumptions inhibit-output print-flg
+                              must-rewrite-flg))
               ((eq simplify-hyps-p t)
                (tool1-fn hyps state hints prove-assumptions inhibit-output
                          nil print-flg))
@@ -948,7 +953,7 @@ directly with ACL2.</p>
                                  (cadr runes-hyps-assns)
                                  (cddr runes-hyps-assns)
                                  equiv state hints prove-assumptions
-                                 inhibit-output print-flg)))
+                                 inhibit-output print-flg must-rewrite-flg)))
                (cond
                 ((not (= (length x) (length (cadr runes-hyps-assns))))
                  (er soft ctx
@@ -1189,7 +1194,7 @@ happens.</p>
           (er-let*
            ((x (tool-fn (fargn concl 1) hyps simplify-hyps-p (ffn-symb concl)
                         state hints prove-assumptions inhibit-output print-flg
-                        ctx)))
+                        t ctx)))
            (value (defthm-?-fn-forms1-lst name 0 x (ffn-symb concl)
                     (fargn concl 1) hints wrld))))
          (t (er soft ctx
@@ -1359,7 +1364,7 @@ simulate\".)  Try these, as well as the examples shown above.</p>
     (tuples-lst (tool-fn tterm thyps simplify-hyps-p 'equal state
                          hints prove-assumptions
                          inhibit-output
-                         print-flg (cons 'symsim-fn term))))
+                         print-flg t (cons 'symsim-fn term))))
    (pprogn (if print-flg
                (symsim-fn-print-lst tuples-lst 1 (length tuples-lst) wrld
                                     state)

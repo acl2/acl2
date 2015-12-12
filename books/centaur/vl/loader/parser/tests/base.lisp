@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../utils")
-(include-book "../../lexer/lexer") ;; for make-test-tokens, etc.
+(include-book "../../lexer/top") ;; for make-test-tokens, etc.
 (include-book "../../../parsetree")
 (include-book "../../../mlib/expr-tools")
 
@@ -182,9 +182,10 @@
   (define vl-pretty-patternkey ((x vl-patternkey-p))
     :measure (vl-patternkey-count x)
     (vl-patternkey-case x
-      (:expr (vl-pretty-expr x.key))
-      (:type (vl-pretty-datatype x.type))
-      (:default :vl-default)))
+      (:expr      (vl-pretty-expr x.key))
+      (:structmem (list :structmem x.name))
+      (:type      (vl-pretty-datatype x.type))
+      (:default   :vl-default)))
 
   (define vl-pretty-slicesize ((x vl-slicesize-p))
     :measure (vl-slicesize-count x)
@@ -512,6 +513,286 @@
     (:vl-eventcontrol       (vl-pretty-eventcontrol x))
     (:vl-repeateventcontrol (vl-pretty-repeateventcontrol x))))
 
+
+
+
+(local (defthm vl-distweighttype-p-forward
+         (implies (vl-distweighttype-p x)
+                  (or (equal x :vl-weight-each)
+                      (equal x :vl-weight-total)))
+         :rule-classes :forward-chaining))
+
+(local (defthm vl-distitem->type-forward
+         (implies (vl-distweighttype-p x)
+                  (or (equal x :vl-weight-each)
+                      (equal x :vl-weight-total)))
+         :rule-classes :forward-chaining))
+
+(define vl-pretty-distitem ((x vl-distitem-p))
+  (b* (((vl-distitem x)))
+    (append (list (vl-pretty-expr x.left))
+            (and x.right
+                 (list (vl-pretty-expr x.right)))
+            (case x.type
+              (:vl-weight-each  '(:=))
+              (:vl-weight-total '(:/)))
+            (list (vl-pretty-expr x.weight)))))
+
+(defprojection vl-pretty-distlist ((x vl-distlist-p))
+  (vl-pretty-distitem x))
+
+(define vl-pretty-exprdist ((x vl-exprdist-p))
+  (b* (((vl-exprdist x))
+       ((unless (consp x.dist))
+        (vl-pretty-expr x.expr)))
+    (list* :dist
+           (vl-pretty-expr x.expr)
+           (vl-pretty-distlist x.dist))))
+
+(define vl-pretty-exprdistlist ((x vl-exprdistlist-p))
+  (if (atom x)
+      nil
+    (cons (vl-pretty-exprdist (car x))
+          (vl-pretty-exprdistlist (cdr x)))))
+
+(define vl-pretty-repetition ((x vl-repetition-p))
+  (b* (((vl-repetition x)))
+    (list* (case x.type
+             (:vl-repetition-consecutive    :[*])
+             (:vl-repetition-goto           :[->])
+             (:vl-repetition-nonconsecutive :[=]))
+           (vl-pretty-expr x.left)
+           (if x.right
+               (list (vl-pretty-expr x.right))
+             nil))))
+
+(defines vl-pretty-propexpr
+
+  (define vl-pretty-propexpr ((x vl-propexpr-p))
+    :measure (vl-propexpr-count x)
+    (vl-propexpr-case x
+      (:vl-propcore (vl-pretty-exprdist x.guts))
+      (:vl-propinst (list* :inst
+                           (vl-pretty-scopeexpr x.ref)
+                           (vl-pretty-propactuallist x.args)))
+      (:vl-propthen (list :then
+                          (vl-pretty-propexpr x.left)
+                          (vl-pretty-range x.delay)
+                          (vl-pretty-propexpr x.right)))
+      (:vl-proprepeat (list :repeat
+                            (vl-pretty-propexpr x.seq)
+                            (vl-pretty-repetition x.reps)))
+      (:vl-propassign (list* :assign
+                             (vl-pretty-propexpr x.seq)
+                             (vl-pretty-exprlist x.items)))
+      (:vl-propthroughout (list :throughout
+                                (vl-pretty-exprdist x.left)
+                                (vl-pretty-propexpr x.right)))
+      (:vl-propclock (list :clock
+                           (vl-pretty-evatomlist x.trigger)
+                           (vl-pretty-propexpr x.then)))
+      (:vl-propunary (list (case x.op
+                             (:vl-prop-firstmatch :firstmatch)
+                             (:vl-prop-not        :not)
+                             (:vl-prop-strong     :strong)
+                             (:vl-prop-weak       :weak))
+                           (vl-pretty-propexpr x.arg)))
+      (:vl-propbinary (list (case x.op
+                              (:vl-prop-and           :and)
+                              (:vl-prop-intersect     :intersect)
+                              (:vl-prop-or            :or)
+                              (:vl-prop-within        :within)
+                              (:vl-prop-iff           :iff)
+                              (:vl-prop-until         :until)
+                              (:vl-prop-suntil        :s_until)
+                              (:vl-prop-untilwith     :until_with)
+                              (:vl-prop-suntilwith    :s_until_with)
+                              (:vl-prop-word-implies  :implies)
+                              (:vl-prop-thin-implies  :->)
+                              (:vl-prop-fat-implies   :=>)
+                              (:vl-prop-thin-follows  :#-#)
+                              (:vl-prop-fat-follows   :#=#))
+                            (vl-pretty-propexpr x.left)
+                            (vl-pretty-propexpr x.right)))
+      (:vl-propalways (list (if x.strongp :s_always :always)
+                            (vl-pretty-maybe-range x.range)
+                            (vl-pretty-propexpr x.prop)))
+      (:vl-propeventually (list (if x.strongp :s_eventually :eventually)
+                                (vl-pretty-maybe-range x.range)
+                                (vl-pretty-propexpr x.prop)))
+      (:vl-propaccept (list (case x.op
+                              (:vl-prop-accepton      :accept_on)
+                              (:vl-prop-syncaccepton  :sync_accept_on)
+                              (:vl-prop-rejecton      :reject_on)
+                              (:vl-prop-syncrejecton  :sync_reject_on))
+                            (vl-pretty-exprdist x.condition)
+                            (vl-pretty-propexpr x.prop)))
+      (:vl-propnexttime (list (if x.strongp :s_nexttime :nexttime)
+                              (vl-pretty-maybe-expr x.expr)
+                              (vl-pretty-propexpr x.prop)))
+      (:vl-propif (list :if
+                        (vl-pretty-exprdist x.condition)
+                        (vl-pretty-propexpr x.then)
+                        (vl-pretty-propexpr x.else)))
+      (:vl-propcase (list* :case
+                          (vl-pretty-exprdist x.condition)
+                          (vl-pretty-propcaseitemlist x.cases)))))
+
+  (define vl-pretty-propactual ((x vl-propactual-p))
+    :measure (vl-propactual-count x)
+    (vl-propactual-case x
+      (:blank (list :blank x.name))
+      (:event (list :event x.name '<- (vl-pretty-evatomlist x.evatoms)))
+      (:prop  (list :prop x.name '<- (vl-pretty-propexpr x.prop)))))
+
+  (define vl-pretty-propactuallist ((x vl-propactuallist-p))
+    :measure (vl-propactuallist-count x)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-propactual (car x))
+            (vl-pretty-propactuallist (cdr x)))))
+
+  (define vl-pretty-propcaseitem ((x vl-propcaseitem-p))
+    :measure (vl-propcaseitem-count x)
+    (b* (((vl-propcaseitem x)))
+      (list :case
+            (vl-pretty-exprdistlist x.match)
+            :-->
+            (vl-pretty-propexpr x.prop))))
+
+  (define vl-pretty-propcaseitemlist ((x vl-propcaseitemlist-p))
+    :measure (vl-propcaseitemlist-count x)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-propcaseitem (car x))
+            (vl-pretty-propcaseitemlist (cdr x))))))
+
+
+(define vl-pretty-propspec ((x vl-propspec-p))
+  (b* (((vl-propspec x)))
+    (append (list :propspec (vl-pretty-evatomlist x.evatoms))
+            (and x.disable (list :disable (vl-pretty-exprdist x.disable)))
+            (list (vl-pretty-propexpr x.prop)))))
+
+
+(define vl-pretty-assign-type ((x vl-assign-type-p))
+  (case x
+    (:vl-blocking    :=)
+    (:vl-nonblocking :<=)
+    (:vl-assign      :assign)
+    (:vl-force       :force)))
+
+(define vl-pretty-deassign-type ((x vl-deassign-type-p))
+  (case x
+    (:vl-deassign :deassign)
+    (:vl-release  :release)))
+
+(define vl-pretty-blocktype ((x vl-blocktype-p))
+  (case x
+    (:vl-beginend     :begin)
+    (:vl-forkjoin     :fork)
+    (:vl-forkjoinany  :fork-join-any)
+    (:vl-forkjoinnone :fork-join-none)))
+
+(defines vl-pretty-stmt
+
+  (define vl-pretty-stmt ((x vl-stmt-p))
+    :measure (vl-stmt-count x)
+    (vl-stmt-case x
+      :vl-nullstmt :null
+      :vl-assignstmt (list* (vl-pretty-expr x.lvalue)
+                            (vl-pretty-assign-type x.type)
+                            (vl-pretty-expr x.expr)
+                            (append (and x.ctrl (list :ctrl (vl-pretty-delayoreventcontrol x.ctrl))
+                                    (and x.atts (list :atts (vl-pretty-atts x.atts))))))
+      :vl-deassignstmt (list* (vl-pretty-deassign-type x.type)
+                              (vl-pretty-expr x.lvalue)
+                              (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-callstmt (list* :call
+                          (vl-pretty-scopeexpr x.id)
+                          (append (and x.typearg (list (vl-pretty-datatype x.typearg)))
+                                  (vl-pretty-exprlist x.args)
+                                  (and x.systemp (list :system))
+                                  (and x.voidp (list :void))
+                                  (and x.atts (list :atts (vl-pretty-atts x.atts)))))
+      :vl-disablestmt (list* :disable
+                             (vl-pretty-scopeexpr x.id)
+                             (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-eventtriggerstmt (list* :trigger
+                                  (vl-pretty-expr x.id)
+                                  (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-casestmt :bozo-case-statements
+      :vl-ifstmt (list* :if (vl-pretty-expr x.condition)
+                        :then (vl-pretty-stmt x.truebranch)
+                        :else (vl-pretty-stmt x.falsebranch)
+                        (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-foreverstmt (list* :forever
+                             (vl-pretty-stmt x.body)
+                             (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-waitstmt (list* :wait
+                          (vl-pretty-expr x.condition)
+                          (vl-pretty-stmt x.body)
+                          (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-repeatstmt (list* :repeat
+                            (vl-pretty-expr x.condition)
+                            (vl-pretty-stmt x.body)
+                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-whilestmt (list* :while
+                           (vl-pretty-expr x.condition)
+                           (vl-pretty-stmt x.body)
+                           (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-forstmt (list* :for :bozo-for-loops)
+      :vl-breakstmt (list* :break
+                           (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-continuestmt (list* :continue
+                              (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-blockstmt (list* (vl-pretty-blocktype x.blocktype)
+                           :name x.name
+                           :bozo-declaration-stuff
+                           :stmts (vl-pretty-stmtlist x.stmts)
+                           (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-timingstmt (list* :timing
+                            (vl-pretty-delayoreventcontrol x.ctrl)
+                            (vl-pretty-stmt x.body)
+                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-returnstmt (list* :return
+                            (vl-pretty-maybe-expr x.val)
+                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-assertstmt (list :assert
+                           (vl-pretty-assertion x.assertion)
+                           (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-cassertstmt (list :cassert
+                            (vl-pretty-cassertion x.cassertion)
+                            (and x.atts (list :atts (vl-pretty-atts x.atts))))))
+
+  (define vl-pretty-assertion ((x vl-assertion-p))
+    :measure (vl-assertion-count x)
+    (b* (((vl-assertion x)))
+      (list :assert
+            x.type
+            x.name
+            :deferral x.deferral
+            :condition (vl-pretty-expr x.condition)
+            :success (vl-pretty-stmt x.success)
+            :failure (vl-pretty-stmt x.failure))))
+
+  (define vl-pretty-cassertion ((x vl-cassertion-p))
+    :measure (vl-cassertion-count x)
+    (b* (((vl-cassertion x)))
+      (list* :cassert
+             x.type
+             x.name
+             :sequencep x.sequencep
+             :condition (vl-pretty-propspec x.condition)
+             :success (vl-pretty-stmt x.success)
+             :failure (vl-pretty-stmt x.failure))))
+
+  (define vl-pretty-stmtlist ((x vl-stmtlist-p))
+    :measure (vl-stmtlist-count x)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-stmt (car x))
+            (vl-pretty-stmtlist (cdr x))))))
 
 
 ;; A very useful tracing mechanism for debugging:

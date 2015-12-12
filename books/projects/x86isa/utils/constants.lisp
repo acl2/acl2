@@ -600,17 +600,28 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   ;; This constant defines the common bit-fields for page table
   ;; structure entries.
 
-  '((:p        0  1) ;; Page present
-    (:r/w      1  1) ;; Read/Write
-    (:u/s      2  1) ;; User/supervisor
-    (:pwt      3  1) ;; Page-level Write-Through
-    (:pcd      4  1) ;; Page-level Cache-Disable
-    (:a        5  1) ;; Accessed
-    (:d        6  1) ;; Dirty
-    (:ps       7  1) ;; Page size
-    (0         8 55) ;; These bits can be accessed via the specific
-                     ;; layout constants.
-    (:xd      63  1) ;; Execute Disable
+  ;; The field reference-addr refers to the 40 bits in a paging
+  ;; structure entry that contain the address of the inferior paging
+  ;; structure. If this paging entry maps a page (PS=1) instead of
+  ;; referencing an inferior structure (PS=0), do not use the
+  ;; reference-addr field to access the address of the page. Use
+  ;; dedicated macros (e.g., those defined in context of
+  ;; *ia32e-pdpte-1GB-page-layout*) in that case, because unlike
+  ;; reference-addr, the address of the mapped page is contained in
+  ;; different-sized fields for each paging structure.
+
+  '((:p              0  1)  ;; Page present
+    (:r/w            1  1)  ;; Read/Write
+    (:u/s            2  1)  ;; User/supervisor
+    (:pwt            3  1)  ;; Page-level Write-Through
+    (:pcd            4  1)  ;; Page-level Cache-Disable
+    (:a              5  1)  ;; Accessed
+    (:d              6  1)  ;; Dirty
+    (:ps             7  1)  ;; Page size
+    (0               8  4)  ;; Ignored
+    (:reference-addr 12 40) ;; Address of inferior paging table
+    (0               52 11) ;; Ignored and/or Reserved
+    (:xd             63 1)  ;; Execute Disable
     ))
 
 (defthm ia32e-page-tables-layout-ok

@@ -67,47 +67,61 @@
                                               :vl-gateinst
                                               :vl-always
                                               :vl-initial
+                                              :vl-final
                                               :vl-typedef
                                               :vl-import
                                               ;; :vl-fwdtypedef -- doesn't seem like these should be ok
                                               ;; :vl-modport    -- definitely not ok
                                               :vl-genvar
+                                              :vl-assertion
+                                              :vl-cassertion
+                                              :vl-property
+                                              :vl-sequence
+                                              :vl-dpiimport
+                                              :vl-dpiexport
                                               )))
        (warnings
         (if (not bad-item)
             warnings
           (fatal :type :vl-bad-module-item
-                 :msg "~a0: a module may not contain ~x1s."
-                 :args (list bad-item (tag bad-item)))))
+                 :msg "~a0: a module may not contain ~s1s."
+                 :args (list bad-item (vl-genelement->short-kind-string bad-item)))))
 
        ((vl-genblob c) (vl-sort-genelements items))
        ;; ((mv warnings c.portdecls c.vardecls)
        ;;  (vl-portdecl-sign c.portdecls c.vardecls warnings))
        )
-    (make-vl-module :name       name
-                    :params     params ;; Is this even right?
-                    :ports      ports
-                    :portdecls  c.portdecls
-                    :assigns    c.assigns
-                    :aliases    c.aliases
-                    :vardecls   c.vardecls
-                    :paramdecls (append-without-guard params c.paramdecls)
-                    :fundecls   c.fundecls
-                    :taskdecls  c.taskdecls
-                    :modinsts   c.modinsts
-                    :gateinsts  c.gateinsts
-                    :alwayses   c.alwayses
-                    :initials   c.initials
-                    :generates  c.generates
-                    :genvars    c.genvars
-                    :imports    c.imports
-                    :typedefs   c.typedefs
-                    :atts       atts
-                    :minloc     minloc
-                    :maxloc     maxloc
-                    :warnings   warnings
-                    :origname   name
-                    :comments   nil
+    (make-vl-module :name        name
+                    :params      params ;; Is this even right?
+                    :ports       ports
+                    :portdecls   c.portdecls
+                    :assigns     c.assigns
+                    :aliases     c.aliases
+                    :vardecls    c.vardecls
+                    :paramdecls  (append-without-guard params c.paramdecls)
+                    :fundecls    c.fundecls
+                    :taskdecls   c.taskdecls
+                    :modinsts    c.modinsts
+                    :gateinsts   c.gateinsts
+                    :alwayses    c.alwayses
+                    :initials    c.initials
+                    :finals      c.finals
+                    :generates   c.generates
+                    :genvars     c.genvars
+                    :imports     c.imports
+                    :typedefs    c.typedefs
+                    :properties  c.properties
+                    :sequences   c.sequences
+                    :assertions  c.assertions
+                    :cassertions c.cassertions
+                    :dpiimports  c.dpiimports
+                    :dpiexports  c.dpiexports
+                    :atts        atts
+                    :minloc      minloc
+                    :maxloc      maxloc
+                    :warnings    warnings
+                    :origname    name
+                    :comments    nil
                     :parse-temps (make-vl-parse-temps
                                   :ansi-p ansi-p
                                   :ansi-ports ansi-ports

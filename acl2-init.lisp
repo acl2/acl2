@@ -265,8 +265,9 @@ implementations.")
 ; but it doesn't currently seem worth the trouble to figure that out.
 #+(and hons (not cltl2))
 (progn
-  (format t "~%ERROR: It is illegal to build a hons-enabled version~%~
-             of ACL2 in this non-ANSI Common Lisp.  See :DOC hons-enabled.~%~%")
+; ACL2(c) deprecated: no longer says "build a hons-enabled version of ACL2".
+  (format t "~%ERROR: It is illegal to build ACL2 in this non-ANSI Common ~
+             Lisp.~%~%")
   (acl2::exit-lisp))
 
 ; Fix a bug in SBCL 1.0.49 (https://bugs.launchpad.net/bugs/795705), thanks to
@@ -445,6 +446,193 @@ implementations.")
   (declare (ignore string arguments))
   #-(or gcl lispworks allegro cmu sbcl clisp ccl)
   (error "SYSTEM-CALL is not yet defined in this Lisp."))
+
+(defun read-file-by-lines (file &optional delete-after-reading)
+  (let ((acc nil)
+        (eof '(nil))
+        missing-newline-p)
+    (with-open-file
+     (s file :direction :input)
+     (loop (multiple-value-bind (line temp)
+               (read-line s nil eof)
+             (cond ((eq line eof)
+                    (return acc))
+                   (t
+                    (setq missing-newline-p temp)
+                    (setq acc
+                          (if acc
+                              (concatenate 'string acc (string #\Newline) line)
+                            line)))))))
+    (when delete-after-reading
+      (delete-file file))
+    (if missing-newline-p
+        acc
+      (concatenate 'string acc (string #\Newline)))))
+
+(defun getpid$ ()
+
+; This function is intended to return the process id.  But it may return nil
+; instead, depending on the underlying lisp platform.
+
+  (let ((fn
+         #+allegro 'excl::getpid
+         #+gcl 'si::getpid
+         #+sbcl 'sb-unix::unix-getpid
+         #+cmu 'unix::unix-getpid
+         #+clisp (or (let ((fn0 (find-symbol "PROCESS-ID" "SYSTEM")))
+                       (and (fboundp fn0) ; CLISP 2.34
+                            fn0))
+                     (let ((fn0 (find-symbol "PROGRAM-ID" "SYSTEM")))
+                       (and (fboundp fn0) ; before CLISP 2.34
+                            fn0)))
+         #+ccl 'ccl::getpid
+         #+lispworks 'system::getpid
+         #-(or allegro gcl sbcl cmu clisp ccl lispworks) nil))
+    (and fn
+         (fboundp fn)
+         (funcall fn))))
+
+(defun system-call+ (string arguments)
+
+; Warning: Keep this in sync with system-call.
+
+  (let* (exit-code ; assigned below
+         #+(or gcl clisp)
+         (tmp-file (format nil
+                           "~a/tmp~s"
+                           (or (f-get-global 'tmp-dir *the-live-state*)
+                               "/tmp")
+                           (getpid$)))
+         no-error
+         (output-string
+          (our-ignore-errors
+           (prog1
+               #+gcl ; does wildcard expansion
+             (progn (setq exit-code
+                          (si::system
+                           (let ((result string))
+                             (dolist
+                               (x arguments)
+                               (setq result (concatenate 'string result " " x)))
+                             (concatenate 'string result " > " tmp-file))))
+                    (read-file-by-lines tmp-file t))
+             #+lispworks ; does wildcard expansion (see comment below)
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (system::call-system-showing-output
+
+; It was tempting to use (cons string arguments).  This would cause the given
+; command, string, to be applied to the given arguments, without involving the
+; shell.  But then a command such as "ls" would not work; one would have to
+; provide a string such as "/bin/ls".  So instead of using a list here, we use
+; a string, which according to the LispWorks manual will invoke the shell,
+; which will find commands (presumably including built-ins and also using the
+; user's path).
+
+                      (let ((result string))
+                        (dolist
+                          (x arguments)
+                          (setq result (concatenate 'string result " " x)))
+                        result)
+                      :output-stream s
+                      :prefix ""
+                      :show-cmd nil
+                      :kill-process-on-abort t))
+               #+windows ; process is returned above, not exit code
+               (setq exit-code nil))
+             #+allegro ; does wildcard expansion
+             (multiple-value-bind
+                 (stdout-lines stderr-lines exit-status)
+                 (excl.osi::command-output
+                  (let ((result string))
+                    (dolist
+                      (x arguments)
+                      (setq result (concatenate 'string result " " x)))
+                    result))
+               (declare (ignore stderr-lines))
+               (setq exit-code exit-status)
+               (let ((acc nil))
+                 (loop for line in stdout-lines
+                       do
+                       (setq acc
+                             (if acc
+                                 (concatenate 'string
+                                              acc
+                                              (string #\Newline)
+                                              line)
+                               line)))
+                 acc))
+             #+cmu
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let (temp)
+                       (if (ignore-errors
+                             (progn
+                               (setq temp
+                                     (ext:process-exit-code
+                                      (common-lisp-user::run-program
+                                       string arguments
+                                       :output s)))
+                               1))
+                           temp
+                         1))))
+             #+sbcl
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let (temp)
+                       (if (ignore-errors
+                             (progn
+                               (setq temp
+                                     (sb-ext:process-exit-code
+                                      (sb-ext:run-program string arguments
+                                                          :output s
+                                                          :search t)))
+                               1))
+                           temp
+                         1))))
+             #+clisp
+             (progn (setq exit-code
+                          (or (ext:run-program string
+                                               :arguments arguments
+                                               :output tmp-file)
+                              0))
+                    (read-file-by-lines tmp-file t))
+             #+ccl
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let* ((proc
+                             (ccl::run-program string arguments
+                                               :output s
+                                               :wait t))
+                            (status (multiple-value-list
+                                     (ccl::external-process-status proc))))
+                       (if (not (and (consp status)
+                                     (eq (car status) :EXITED)
+                                     (consp (cdr status))
+                                     (integerp (cadr status))))
+                           1 ; just some non-zero exit code here
+                         (cadr status)))))
+             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+             (declare (ignore string arguments))
+             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+             (error "SYSTEM-CALL is not yet defined in this Lisp.")
+             (setq no-error t)))))
+    (values (cond ((integerp exit-code)
+                   exit-code)
+                  ((null exit-code)
+                   (if no-error 0 1))
+                  (t (format t
+                             "WARNING: System-call produced non-integer, ~
+                              non-nil exit code:~%~a~%"
+                             exit-code)
+                     0))
+            (if (stringp output-string)
+                output-string
+              ""))))
 
 (defun our-probe-file (filename)
 
@@ -685,6 +873,16 @@ implementations.")
 (defvar *saved-build-date-lst*)
 (defvar *saved-mode*)
 
+(defun git-commit-hash ()
+  (multiple-value-bind
+   (exit-code hash)
+   (ignore-errors (system-call+ "git" '("rev-parse" "HEAD")))
+   (cond ((not (and (eql exit-code 0)
+                    (stringp hash)))
+          "[UNKNOWN]                               ")
+         (t (coerce (remove #\Newline (coerce hash 'list))
+                    'string)))))
+
 (defconstant *acl2-snapshot-string*
 
 ; Notes to developers (users should ignore this!):
@@ -699,15 +897,19 @@ implementations.")
 ; ""
 
 ; Normally:
-  "
+
+  (format
+   nil
+   "
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
+ + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
+ + (git commit hash: ~a).        +
  + The authors of ACL2 consider such distributions to be experimental; +
  + they may be incomplete, fragile, and unable to pass our own         +
  + regression tests.                                                   +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 "
-  )
+   (git-commit-hash)))
 
 (defvar *saved-string*
   (concatenate
@@ -1163,8 +1365,21 @@ implementations.")
 ; of startup information) is supported for every host Lisp.
 
 ; Note that LD always prints some startup information, regardless of the value
-; of *print-startup-banner*.  To suppress that information, evaluate
-; (set-ld-verbose nil state) in the ACL2 loop.
+; of *print-startup-banner*.  But that information is suppressed with
+; (set-ld-verbose nil state).
+
+; The following form can be put into one's ~/ccl-init.lisp file for CCL or
+; ~/init.lsp file for GCL, and similarly perhaps for some other Lisps, in order
+; to suppress printing at startup.
+
+;   (when (find-package "ACL2")
+;     ;; Suppress as much as possible at startup except for the LD info.
+;     (set (intern "*PRINT-STARTUP-BANNER*" "ACL2")
+;          nil)
+;     ;; Suppress the LD info.
+;     (eval (list (intern "SET-LD-VERBOSE" "ACL2")
+;                 nil
+;                 (intern "*THE-LIVE-STATE*" "ACL2"))))
 
   t)
 
@@ -1596,8 +1811,8 @@ implementations.")
 ; in a couple of places).  Yet more recently, community books
 ; books/centaur/regression/common.lisp and books/centaur/tutorial/intro.lisp
 ; fail with --control-stack-size 8, due to calls of def-gl-clause-processor.
-; So we use --control-stack-size 16.  We might increase 16 to 32 or greater in
-; the future.
+; So we use --control-stack-size 16.  We increased 16 to 64 on 10/22/2015 at
+; the request of Jared Davis, in support of a Verilog parser.
 
 ; See *sbcl-dynamic-space-size* for an explanation of the --dynamic-space-size
 ; setting below.
@@ -1607,7 +1822,7 @@ implementations.")
 ; out this option to us after ACL2 Version_6.2, we started using it in place of
 ; " --userinit /dev/null", which had not worked on Windows.
 
-        "~s --dynamic-space-size ~s --control-stack-size 16 --core ~s~a ~
+        "~s --dynamic-space-size ~s --control-stack-size 64 --core ~s~a ~
          --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
         prog
         *sbcl-dynamic-space-size*

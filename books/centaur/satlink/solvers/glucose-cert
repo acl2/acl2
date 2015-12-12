@@ -38,7 +38,7 @@
 #
 #     http://fv.centtech.com/acl2/latest/doc/?topic=ACL2____SATLINK
 #
-# Prerequisites: "glucose" and "drup-trim" are installed and in your PATH.
+# Prerequisites: "glucose" and "drat-trim" are installed and in your PATH.
 #
 # Usage:  glucose-cert [OPTIONS] FILE
 #

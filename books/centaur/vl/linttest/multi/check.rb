@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 # VL 2014 -- VL Verilog Toolkit, 2014 Edition
 # Copyright (C) 2008-2015 Centaur Technology
 #
@@ -140,5 +142,8 @@ normal(:m11, "clk")
 normal(:m12, "normal1")
 normal(:m12, "normal2")
 
+normal(:m13, "nowarn_w1")
+normal(:m13, "nowarn_w2")
+normal(:m13, "nowarn_w3")
 
 test_passed()

@@ -454,11 +454,18 @@ QUICKLISP_DIR := centaur/quicklisp
 ifeq ($(REALLY_USE_QUICKLISP), 0)
 
 quicklisp:
-	$(MAKE) REALLY_USE_QUICKLISP=1 $(QUICKLISP_DIR)/top.cert
+	@echo "Error: Can't build Quicklisp without USE_QUICKLISP=1."
+	@false
+
+manual:
+	@echo "Error: Can't build the manual without USE_QUICKLISP=1."
+	@false
 
 else
 
 quicklisp: $(QUICKLISP_DIR)/top.cert
+
+manual: doc/top.cert system/doc/acl2-manual.cert
 
 endif # REALLY_USE_QUICKLISP
 
@@ -1033,8 +1040,14 @@ almost-everything: all
 # even in the HONS case.  In particular, "make everything" no longer makes
 # doc/manual/; for that, specify USE_QUICKLISP=1.
 .PHONY: everything
-everything:
-	$(MAKE) all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+
+#everything:
+#	$(MAKE) all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+
+# [Jared] I think this is how everything should work.  All of this
+# ADDED_BOOKS stuff seems really complicated. :(
+
+everything: all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
@@ -1345,49 +1358,6 @@ special: $(BOOKS_SPECIAL_OUT)
 	@($(ACL2) < $(@D)/workxxx.special.$(*F) 2>&1) > $*.special.out
 	@rm -f $(@D)/workxxx.special.$(*F)
 
-##############################
-### Section: Building the XDOC combined manual
-##############################
-
-# See :DOC xdoc for more information.
-
-# The xdoc combined manual is built in directory doc/manual/, top
-# page index.html, as a byproduct of building doc/top.cert with
-# ACL2(h).  The following target builds the combined manual, but you
-# may wish to issue the command below directly, so that the -j option
-# is passed to the call of make.  Don't forget to include ACL2=acl2h,
-# where acl2h is your ACL2(h) executable.
-
-# This has been tested using CCL on Linux, but may work for other
-# OS/Lisp combinations.  Note that ACL2(h) is required for that build
-# of the xdoc manual, because it is required for some of the books
-# included in doc/top.lisp.
-
-# BUT NOTE: Here's a simple command for building both the combined
-# manual and the ACL2-only manual.  Replace "my-acl2h" with your own
-# ACL2(h) executable, and replace -j as appropriate.
-
-# make -j 8 USE_QUICKLISP=1 ACL2=my-acl2h doc/top.cert system/doc/acl2-manual.cert
-
-# WARNING: Do not make this target with other targets if using a value
-# for -j that is greater than 1.  Otherwise, overlapping parallel
-# processes might attempt to make the same target.
-manual:
-	$(MAKE) USE_QUICKLISP=1 doc/top.cert
-
-# In order to read the acl2+books combined manual in the Emacs-based
-# ACL2-Doc browser (see :DOC acl2-doc), the file
-# system/doc/rendered-doc-combined.lsp is required.  That requires (or
-# causes) doc/top.cert to be built, as above, which can be
-# time-consuming.  We do not currently include
-# system/doc/rendered-doc-combined.lsp with releases, though we do
-# make occasional updates for "bleeding-edge" (svn) users at
-# http://www.cs.utexas.edu/users/moore/acl2/manuals/.  To build this
-# text-based file after building doc/top.cert as above, issue the
-# following command in this directory, where acl2 is an ACL2(h)
-# executable.
-
-#   make doc/top.cert USE_QUICKLISP=1 ACL2=acl2
 
 ##############################
 ### Section: Some notes
@@ -1436,20 +1406,37 @@ manual:
 
 # VL Toolkit
 
-centaur/vl/bin/vl: centaur/vl/kit/top.cert
-	@echo "Making VL Verilog Toolkit"
-	@cd centaur/vl/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
-	@ls -la centaur/vl/bin/vl
+.PHONY: vl vl2014 vl_linttest sv_failtest
+
+vl: centaur/vl/bin/vl \
+    centaur/sv/cosims/cosim-core \
+    vl_linttest \
+    sv_failtest
+
+vl2014: centaur/vl2014/bin/vl2014
 
 centaur/vl2014/bin/vl2014: centaur/vl2014/kit/top.cert
 	@echo "Making VL Verilog Toolkit, 2014 Edition"
 	@cd centaur/vl2014/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
 	@ls -la centaur/vl2014/bin/vl2014
 
+centaur/vl/bin/vl: centaur/vl/kit/top.cert
+	@echo "Making VL Verilog Toolkit"
+	@cd centaur/vl/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
+	@ls -la centaur/vl/bin/vl
 
-.PHONY: vl vl2014
-vl: centaur/vl/bin/vl
-vl2014: centaur/vl2014/bin/vl2014
+centaur/sv/cosims/cosim-core: centaur/sv/cosims/cosims.cert centaur/sv/cosims/make-cosim.lsp
+	@echo "Making SV Cosims Tester"
+	@cd centaur/sv/cosims; $(MAKE) cosim-core
+	@ls -la centaur/sv/cosims/cosim-core
+
+vl_linttest : centaur/vl/bin/vl
+	@echo "Making VL linttests"
+	@cd centaur/vl/linttest; $(MAKE)
+
+sv_failtest : centaur/sv/cosims/cosim-core
+	@echo "Making SV failtests"
+	@cd centaur/sv/failtest; $(MAKE) passing
 
 
 .PHONY: clean_vl

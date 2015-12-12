@@ -171,12 +171,19 @@ trigger on any of the following:</p>
 (defalist svdecomp-symenv :key-type svar :val-type pseudo-term
   :true-listp t)
 
+(defun svdecomp-equal (a b)
+  (declare (xargs :guard t))
+  (equal a b))
+
+
+
 (acl2::defevaluator-fast svdecomp-ev svdecomp-ev-lst
   ((not a)
    (if a b c)
    (implies a b)
    (cons a b)
    (Equal a b)
+   (svdecomp-equal a b)
    (car a) (cdr a)
    (svex-alist-eval x env)
    (svexlist-eval x env)
@@ -2353,8 +2360,8 @@ trigger on any of the following:</p>
   (if (And (hons-equal x y)
            (hons-equal env1 env2))
       ''t
-    `(equal (,eval-fn ',x ,(svdecomp-symenv->term env1))
-            (,eval-fn ',y ,(svdecomp-symenv->term env2))))
+    `(svdecomp-equal (,eval-fn ',x ,(svdecomp-symenv->term env1))
+                     (,eval-fn ',y ,(svdecomp-symenv->term env2))))
   ///
   (defthm svdecomp-svex?-eval-compare-term-correct
     (equal (svdecomp-ev (svdecomp-svex?-eval-compare-term

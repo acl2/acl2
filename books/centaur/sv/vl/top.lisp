@@ -34,32 +34,17 @@
 (include-book "moddb")
 (include-book "centaur/vl/simpconfig" :dir :system)
 (include-book "centaur/vl/util/gc" :dir :system)
-;; (include-book "centaur/vl/transforms/always/top-svex" :dir :system)
-(include-book "centaur/vl/transforms/addnames" :dir :system)
-(include-book "centaur/vl/transforms/always/eliminitial" :dir :system)
-
-;; (include-book "centaur/vl/transforms/assign-trunc" :dir :system)
-;; (include-book "centaur/vl/transforms/blankargs" :dir :system)
-;; (include-book "centaur/vl/transforms/clean-params" :dir :system)
-;; (include-book "centaur/vl/transforms/delayredux" :dir :system)
-;; (include-book "centaur/vl/transforms/drop-blankports" :dir :system)
-;; (include-book "centaur/vl/transforms/expand-functions" :dir :system)
-;; (include-book "centaur/vl/transforms/gatesplit" :dir :system)
-;; (include-book "centaur/vl/transforms/gate-elim" :dir :system)
+(include-book "centaur/vl/transforms/eliminitial" :dir :system)
 (include-book "centaur/vl/transforms/problem-mods" :dir :system)
-;; (include-book "centaur/vl/transforms/replicate-insts" :dir :system)
-;; (include-book "centaur/vl/transforms/resolve-ranges" :dir :system)
-;; (include-book "centaur/vl/transforms/selresolve" :dir :system)
-;; (include-book "centaur/vl/transforms/sizing" :dir :system)
 (include-book "centaur/vl/transforms/unparam/top" :dir :system)
-;; (include-book "centaur/vl/transforms/wildeq" :dir :system)
 (include-book "centaur/vl/transforms/annotate/top" :dir :system)
-(include-book "centaur/vl/transforms/annotate/port-resolve" :dir :system)
+(include-book "centaur/vl/transforms/addnames" :dir :system)
 (include-book "centaur/vl/util/cw-unformatted" :dir :system)
 (include-book "centaur/vl/mlib/print-warnings" :dir :system)
 (include-book "centaur/vl/mlib/remove-bad" :dir :system)
-
-;; (include-book "compile")
+(include-book "centaur/vl/lint/lvaluecheck" :dir :system)
+(include-book "centaur/vl/transforms/cn-hooks" :dir :system)
+(include-book "centaur/vl/transforms/clean-warnings" :dir :system)
 (local (include-book "centaur/vl/mlib/design-meta" :dir :system))
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
@@ -97,6 +82,8 @@
        ;; (good          (xf-cwtime (vl-design-expand-functions good)))
        ;; (good          (xf-cwtime (vl-design-clean-params good)))
 
+       ;; BOZO is this something we actually want to do?  What's our philosophy
+       ;; here toward warnings?
        (good          (xf-cwtime (vl-design-lvaluecheck good)))
        ;; (good          (xf-cwtime (vl-design-check-reasonable good)))
        ;; (good          (xf-cwtime (vl-design-check-complete good)))
@@ -193,35 +180,6 @@
                               acl2::mv-nth-cons-meta)))
    (set-default-hints '('(:do-not '(preprocess))))))
 
-(define vl-annotate-svex ((x vl-design-p))
-  :returns (new-x vl-design-p)
-  (b* ((x (xf-cwtime (vl-design-resolve-ansi-portdecls x)
-                     :name xf-resolve-ansi-portdecls))
-       (x (xf-cwtime (vl-design-resolve-nonansi-interfaceports x)
-                     :name xf-resolve-nonansi-interfaceports))
-       (x (xf-cwtime (vl-design-add-enumname-declarations x)
-                     :name xf-design-add-enumname-declarations))
-       (x (xf-cwtime (vl-design-make-implicit-wires x)
-                     :name xf-make-implicit-wires))
-       (x (xf-cwtime (vl-design-portdecl-sign x)
-                     :name xf-portdecl-sign))
-       (x (xf-cwtime (vl-design-udp-elim x)
-                     :name xf-udp-elim))
-       (x (xf-cwtime (vl-design-portcheck x)
-                     :name xf-portcheck))
-       ;; (x (xf-cwtime (vl-design-designwires x)
-       ;;               :name xf-mark-design-wires))
-       (x (xf-cwtime (vl-design-argresolve x)
-                     :name xf-argresolve))
-       (x (xf-cwtime (vl-design-type-disambiguate x)
-                     :name xf-type-disambiguate))
-       (x (xf-cwtime (vl-design-addnames x)
-                     :name xf-addnames))
-       (x (xf-cwtime (vl-design-origexprs x)
-                     :name xf-origexprs))
-       (x (xf-cwtime (vl-design-clean-warnings x)
-                     :name xf-clean-warnings)))
-    x))
 
 (define vl-to-svex-main ((topmods string-listp)
                          (x vl-design-p)
@@ -238,13 +196,17 @@
        ;; Annotate and simplify the design, to some extent.  This does
        ;; unparametrization and expr sizing, but not e.g. expr splitting or
        ;; occforming.
+       (x (if (vl-simpconfig->already-annotated config)
+              x
+            (cwtime (vl-annotate-design x))))
+       ;; [Jared] I pulled addnames out of annotate because it interfered with
+       ;; certain linter checks.  (In particular for detecting duplicate things
+       ;; we don't really want to be adding names to unnamed blocks, etc.)
+       (x (cwtime (vl-design-addnames x)))
 
-       (x (vl-annotate-svex x))
+       (x (cwtime (vl-remove-unnecessary-elements topmods x)))
 
-       (x (vl-remove-unnecessary-elements topmods x))
-
-       ((mv good bad)
-        (vl::xf-cwtime (vl-simplify-svex x config)))
+       ((mv good bad) (cwtime (vl-simplify-svex x config)))
        ((vl-design good) good)
        (bad-mods (difference (mergesort topmods)
                              (mergesort (vl-modulelist->names good.mods))))
@@ -268,10 +230,17 @@
                                               (change-vl-design good :mods good.mods)))
 
        ;; Translate the VL module hierarchy into an isomorphic SVEX module hierarchy.
-       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1))))
+       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1)))
+       ;; The reportcard can't have any warnings about bad, because it's only being
+       ;; generated from a subset of good.  So, just apply it to good.
+       (good (vl-apply-reportcard good reportcard)))
+    (cw "~%")
+    (cw-unformatted "--- VL->SV Translation Report -------------------------------------------------")
+    (cw "~%")
     (cw-unformatted (vl-reportcard-to-string reportcard))
-    (mv nil
-        modalist good bad))
+    (cw-unformatted "-------------------------------------------------------------------------------")
+    (cw "~%~%")
+    (mv nil modalist good bad))
   ///
   (defret modalist-addr-p-of-vl-to-svex-main
     (sv::svarlist-addr-p (sv::modalist-vars modalist))))

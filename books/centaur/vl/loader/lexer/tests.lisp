@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "lexer")
+(include-book "top")
 (local (include-book "../../util/arithmetic"))
 
 (program)

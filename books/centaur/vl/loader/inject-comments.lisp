@@ -297,11 +297,14 @@ and max, gathering their comments.</p>"
       (:vl-typedef   (vl-typedef->minloc x))
       ;; Other things don't necessarily have minlocs, but we'll just use their
       ;; ordinary locations.
+      (:vl-vardecl    (vl-vardecl->loc x))
       (:vl-taskdecl   (vl-taskdecl->loc x))
       (:vl-fundecl    (vl-fundecl->loc x))
       (:vl-paramdecl  (vl-paramdecl->loc x))
       (:vl-import     (vl-import->loc x))
       (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (:vl-dpiimport  (vl-dpiimport->loc x))
+      (:vl-dpiexport  (vl-dpiexport->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->maxloc ((x vl-description-p))
@@ -317,11 +320,14 @@ and max, gathering their comments.</p>"
       (:vl-typedef   (vl-typedef->maxloc x))
       ;; Other things don't have separate min/max locs, but we'll just use
       ;; their ordinary locations.
+      (:vl-vardecl    (vl-vardecl->loc x))
       (:vl-taskdecl   (vl-taskdecl->loc x))
       (:vl-fundecl    (vl-fundecl->loc x))
       (:vl-paramdecl  (vl-paramdecl->loc x))
       (:vl-import     (vl-import->loc x))
       (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (:vl-dpiimport  (vl-dpiimport->loc x))
+      (:vl-dpiexport  (vl-dpiexport->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->comments ((x vl-description-p))

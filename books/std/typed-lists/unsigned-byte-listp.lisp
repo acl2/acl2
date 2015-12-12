@@ -64,56 +64,56 @@
     :hints(("Goal" :in-theory (enable unsigned-byte-listp))))
 
   (defthm unsigned-byte-p-of-car-when-unsigned-byte-listp
-    (implies (unsigned-byte-listp bytes x)
-             (equal (unsigned-byte-p bytes (car x))
+    (implies (unsigned-byte-listp width x)
+             (equal (unsigned-byte-p width (car x))
                     (consp x)))
     :rule-classes (:rewrite :forward-chaining))
 
   (defthm nat-listp-when-unsigned-byte-listp
-    (implies (unsigned-byte-listp bytes x)
+    (implies (unsigned-byte-listp width x)
              (nat-listp x))
     :hints(("Goal" :induct (len x))))
 
   (defthm true-listp-when-unsigned-byte-listp
-    (implies (unsigned-byte-listp bytes x)
+    (implies (unsigned-byte-listp width x)
              (true-listp x))
     :hints(("Goal" :induct (len x))))
 
   (defthm unsigned-byte-listp-of-append
-    (equal (unsigned-byte-listp bytes (append x y))
-           (and (unsigned-byte-listp bytes (list-fix x))
-                (unsigned-byte-listp bytes y)))
+    (equal (unsigned-byte-listp width (append x y))
+           (and (unsigned-byte-listp width (list-fix x))
+                (unsigned-byte-listp width y)))
     :hints(("Goal" :induct (len x))))
 
   (defthm unsigned-byte-listp-of-list-fix-when-unsigned-byte-listp
-    (implies (unsigned-byte-listp bytes x)
-             (unsigned-byte-listp bytes (list-fix x))))
+    (implies (unsigned-byte-listp width x)
+             (unsigned-byte-listp width (list-fix x))))
 
   (defthm unsigned-byte-listp-of-repeat
-    (equal (unsigned-byte-listp bytes (repeat n x))
+    (equal (unsigned-byte-listp width (repeat n x))
            (or (zp n)
-               (unsigned-byte-p bytes x)))
+               (unsigned-byte-p width x)))
     :hints(("Goal" :in-theory (enable repeat))))
 
   (defthm unsigned-byte-listp-of-take
-    (implies (unsigned-byte-listp bytes x)
-             (equal (unsigned-byte-listp bytes (take n x))
+    (implies (unsigned-byte-listp width x)
+             (equal (unsigned-byte-listp width (take n x))
                     (or (zp n)
                         (<= n (len x))))))
 
   (defthm unsigned-byte-listp-of-take-past-length
     (implies (and (natp k)
                   (< (len x) k))
-             (not (unsigned-byte-listp bytes (take k x)))))
+             (not (unsigned-byte-listp width (take k x)))))
 
   (defthm unsigned-byte-listp-of-nthcdr
-    (implies (unsigned-byte-listp bytes x)
-             (unsigned-byte-listp bytes (nthcdr n x))))
+    (implies (unsigned-byte-listp width x)
+             (unsigned-byte-listp width (nthcdr n x))))
 
   (defthm unsigned-byte-listp-when-take-and-nthcdr
-    (implies (and (unsigned-byte-listp bytes (take n x))
-                  (unsigned-byte-listp bytes (nthcdr n x)))
-             (unsigned-byte-listp bytes x))))
+    (implies (and (unsigned-byte-listp width (take n x))
+                  (unsigned-byte-listp width (nthcdr n x)))
+             (unsigned-byte-listp width x))))
 
 
 

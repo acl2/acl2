@@ -189,7 +189,7 @@ Common Lisp implementations.</li>
 <li>CLISP does not support building the
   default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v7-1/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
   ACL2 (ACL2(h)), but only (with the limitations expressed above)
-  ACL2(c).</li>
+  a discontinued version, ACL2(c).</li>
 
 </ul>
 
@@ -215,18 +215,12 @@ that ACL2 requires GCL version 2.6.12 or later, which can be fetched
 as a tarball from the <a href="http://www.gnu.org/software/gcl/">main
 GNU website for GCL</a> or perhaps
 from <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
-After unpacking the archive, GCL can be built with
+ACL2 also requires an ANSI Common Lisp executable;
+after unpacking the archive, an ANSI GCL can be built as follows.
 
 <pre>
 cd gcl && ./configure --enable-ansi && make
 </pre>
-
-The resulting GCL executable supports building a
-default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v7-1/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
-ACL2 executable.  If you have reason to build a "classic" ACL2
-executable (ACL2(c)) instead (that is, one that is <i>not</i>
-hons-enabled), you can omit the <code>--enable-ansi</code> flag above
-to generate a smaller GCL executable.
 
 <P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B><P>
 

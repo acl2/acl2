@@ -1,15 +1,13 @@
 ;; AUTHOR:
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
-;; This whole book is a work in progress, even though the proof of correctness
-;; of wc and its memory analysis is complete. There are a lot of
-;; similar-looking theorems here that I plan to generate and prove
-;; automatically in the future.
+;;  There are a lot of similar-looking theorems here that I plan to
+;; generate and prove automatically in the future.
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-memory-utils" :dir :proof-utils :ttags :all)
-(include-book "environment-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/environment-utils" :dir :proof-utils :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
 ;; Including the WC program binary and other misc. stuff:
 (include-book "wc-addr-byte")
@@ -517,7 +515,7 @@
                              imul-spec-32
                              gpr-sub-spec-4
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -659,7 +657,7 @@
                                     preconditions-forward-chain-addresses-info
                                     effects-to-gc-programmer-level-mode-projection
                                     effects-to-gc-program-projection
-                                    subset-p-two-create-canonical-address-lists
+                                    subset-p-two-create-canonical-address-lists-general
                                     )
                                    (effects-to-gc-no-call))
            :expand (loop-preconditions addr (x86-run (gc-clk-main-before-call) x86)))))
@@ -1111,7 +1109,7 @@
                              imul-spec-32
                              gpr-sub-spec-4
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -1472,7 +1470,7 @@
                                   (READ-X86-FILE-DES 0 X86))
                                  X86)))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -2049,7 +2047,7 @@
                                   (READ-X86-FILE-DES 0 X86))
                                  X86)))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -2701,7 +2699,7 @@
                 '(0 0 0 0)))
               X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -3777,7 +3775,7 @@
                 '(0 0 0 0)))
               X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -4606,7 +4604,7 @@
                 '(0 0 0 0)))
               X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -5312,22 +5310,6 @@
             (equal (equal (loghead 32 (+ -9 char)) 0) nil))
    :hints (("Goal" :in-theory (e/d* (loghead) ())))))
 
-(defthm greater-logbitp-of-unsigned-byte-p
-  (implies (and (unsigned-byte-p n x)
-                (natp m)
-                (< n m))
-           (equal (logbitp m x) nil))
-  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
-                                    ihsext-recursive-redefs
-                                    unsigned-byte-p)
-                                   ())))
-  :rule-classes ((:rewrite)
-                 (:rewrite :corollary
-                           (implies (and (< x (expt 2 m))
-                                         (natp x)
-                                         (natp m))
-                                    (equal (logbitp m x) nil)))))
-
 (defun-nx whatever-rflags-are-for-other-char-state-out (x86)
   (rflags (x86-run 13 x86)))
 
@@ -5450,7 +5432,7 @@
               (whatever-rflags-are-for-other-char-state-out x86-new)
               0 X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -6075,7 +6057,7 @@
               (whatever-rflags-are-for-other-char-state-in X86-NEW)
               0 X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (opcode-execute
+           :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -8051,7 +8033,7 @@
                     effects-to-gc-programmer-level-mode-projection
                     loop-preconditions-effects-to-gc
                     subset-p
-                    subset-p-two-create-canonical-address-lists)
+                    subset-p-two-create-canonical-address-lists-general)
      (theory 'minimal-theory))
     :use ((:instance memory-analysis-loop
                      (x86 (x86-run (gc-clk-main-before-call) x86))

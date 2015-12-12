@@ -31,11 +31,11 @@
 (in-package "VL")
 (include-book "strengths")
 (include-book "delays")
-(include-book "lvalues")
+(include-book "assignments") ;; for net_lvalue
+(include-book "datatypes") ;; bozo a bit heavy just for unpacked-dimension
 (include-book "../../mlib/expr-tools")
 (include-book "../../mlib/port-tools")
 (local (include-book "../../util/arithmetic"))
-
 
 (local (in-theory (disable acl2::consp-under-iff-when-true-listp
                            member-equal-when-member-equal-of-cdr-under-iff
@@ -76,13 +76,13 @@
   :elementp-of-nil nil
   :parents nil)
 
-(defund vl-build-gate-instances (loc tuples type strength delay atts)
-  (declare (xargs :guard (and (vl-location-p loc)
-                              (vl-gatebldr-tuple-list-p tuples)
-                              (vl-gatetype-p type)
-                              (vl-maybe-gatestrength-p strength)
-                              (vl-maybe-gatedelay-p delay)
-                              (vl-atts-p atts))))
+(define vl-build-gate-instances ((loc      vl-location-p)
+                                 (tuples   vl-gatebldr-tuple-list-p)
+                                 (type     vl-gatetype-p)
+                                 (strength vl-maybe-gatestrength-p)
+                                 (delay    vl-maybe-gatedelay-p)
+                                 (atts     vl-atts-p))
+  :returns (insts vl-gateinstlist-p)
   (if (consp tuples)
       (cons (make-vl-gateinst :loc loc
                               :type type
@@ -95,19 +95,6 @@
                               :atts atts)
             (vl-build-gate-instances loc (cdr tuples) type strength delay atts))
     nil))
-
-(defthm vl-gateinstlist-p-of-vl-build-gate-instances
-  (implies (and (force (vl-location-p loc))
-                (force (vl-gatebldr-tuple-list-p tuples))
-                (force (vl-gatetype-p type))
-                (force (vl-maybe-gatestrength-p strength))
-                (force (vl-maybe-gatedelay-p delay))
-                (force (vl-atts-p atts)))
-           (vl-gateinstlist-p (vl-build-gate-instances loc tuples type strength delay atts)))
-  :hints(("Goal" :in-theory (enable vl-build-gate-instances))))
-
-
-
 
 
 
@@ -213,13 +200,20 @@
 ;   and foo [3:0][4:0] (o, a, b); |    error    |   error      |  error
 ;  -------------------------------+-------------+--------------+------------
 ;
-; But without any discussion of what this stuff means, I think it seems pretty
-; reasonable for VL to not support it for now.  If we find that we need to look
-; into this more, consider the discussion in 23.3.2 Module instantiation
-; syntax, and particularly 23.3.3.5 Unpacked array ports and instances of
-; arrays, where an example of a two-dimensional array of flip-flops is
-; described.
-
+; It seems pretty reasonable for VL not to support multiple dimensions like
+; [3][4] and so forth.
+;
+; I'm don't think the spec is very clear about what single-expression
+; dimensions like [3] are supposed to mean.  But it seems basically reasonable
+; to assume that we're supposed to interpret them like other kinds of unpacked
+; arrays, e.g., see SystemVerilog-2012 page 109, where we're told that [size]
+; is equivalent to [0:size-1] for unpacked arrays.  So we'll try to handle
+; these with the usual vl-parse-unpacked-dimension.
+;
+; If this ever seems incorrect, or we need to look into it more, consider the
+; discussion in 23.3.2 Module instantiation syntax, and particularly 23.3.3.5
+; Unpacked array ports and instances of arrays, where an example of a
+; two-dimensional array of flip-flops is described.
 
 
 ; name_of_gate_instance ::= identifier [ range ]
@@ -237,7 +231,9 @@
        (when (vl-is-token? :vl-idtoken)
          (id := (vl-match))
          (when (vl-is-token? :vl-lbrack)
-           (range := (vl-parse-range)))
+           (range := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                         (vl-parse-range)
+                       (vl-parse-unpacked-dimension))))
          (return (cons (vl-idtoken->name id) range)))
        (return (cons nil nil))))
 
@@ -248,7 +244,7 @@
 ;     cmos_switchtype [delay3] cmos_switch_instance { ',' cmos_switch_instance } ';'
 ;
 ; cmos_switch_instance ::=
-;    [name_of_gate_instance] '(' lvalue ',' expression ',' expression ',' expression ')'
+;    [name_of_gate_instance] '(' net_lvalue ',' expression ',' expression ',' expression ')'
 
 (defparser vl-parse-cmos-switch-instance ()
   :result (vl-gatebldr-tuple-p val)
@@ -258,7 +254,7 @@
   (seq tokstream
        ((name . range) := (vl-parse-optional-name-of-gate-instance))
        (:= (vl-match-token :vl-lparen))
-       (arg1 := (vl-parse-lvalue))
+       (arg1 := (vl-parse-net-lvalue))
        (:= (vl-match-token :vl-comma))
        (arg2 := (vl-parse-expression))
        (:= (vl-match-token :vl-comma))
@@ -315,10 +311,10 @@
 ;  | mos_switchtype [delay3] mos_switch_instance { ',' mos_switch_instance } ';'
 ;
 ; enable_gate_instance ::=
-;    [name_of_gate_instance] '(' lvalue ',' expression ',' expression ')'
+;    [name_of_gate_instance] '(' net_lvalue ',' expression ',' expression ')'
 ;
 ; mos_switch_instance ::=
-;    [name_of_gate_instance] '(' lvalue ',' expression ',' expression ')'
+;    [name_of_gate_instance] '(' net_lvalue ',' expression ',' expression ')'
 ;
 ; Since these instances are the same, we handle them together.
 
@@ -331,7 +327,7 @@
   (seq tokstream
        ((name . range) := (vl-parse-optional-name-of-gate-instance))
        (:= (vl-match-token :vl-lparen))
-       (arg1 := (vl-parse-lvalue))
+       (arg1 := (vl-parse-net-lvalue))
        (:= (vl-match-token :vl-comma))
        (arg2 := (vl-parse-expression))
        (:= (vl-match-token :vl-comma))
@@ -406,7 +402,7 @@
 ;    n_input_gatetype [drive_strength] [delay2] n_input_gate_instance { ',' n_input_gate_instance } ';'
 ;
 ; n_input_gate_instance ::=
-;    [name_of_gate_instance] '(' lvalue ',' expression { ',' expression } ')'
+;    [name_of_gate_instance] '(' net_lvalue ',' expression { ',' expression } ')'
 
 (defparser vl-parse-n-input-gate-instance ()
   :result (vl-gatebldr-tuple-p val)
@@ -416,7 +412,7 @@
   (seq tokstream
        ((name . range) := (vl-parse-optional-name-of-gate-instance))
        (:= (vl-match-token :vl-lparen))
-       (arg1 := (vl-parse-lvalue))
+       (arg1 := (vl-parse-net-lvalue))
        (:= (vl-match-token :vl-comma))
        (others := (vl-parse-1+-expressions-separated-by-commas))
        (:= (vl-match-token :vl-rparen))
@@ -468,10 +464,10 @@
 ;    n_output_gatetype [drive_strength] [delay2] n_output_gate_instance { ',' n_output_gate_instance } ';'
 ;
 ; n_output_gate_instance ::=
-;    [name_of_gate_instance] '(' lvalue { ',' lvalue } ',' expression ')'
+;    [name_of_gate_instance] '(' net_lvalue { ',' net_lvalue } ',' expression ')'
 ;
 
-; This is slightly tricky because expressions can be lvalues.
+; This is slightly tricky because expressions can be net_lvalues.
 
 ; BUG on 2011-07-28.  The parse-0+-lvalues function was buggy, but note that it was
 ; only used by vl-parse-n-output-gate-instance (immediately below) so we can fix it
@@ -496,7 +492,7 @@
 ; Now we are sure to check that we always arrive at a comma or rparen after
 ; eating an lvalue, and always eat the comma.
 
-(defparser vl-parse-0+-lvalues-separated-by-commas ()
+(defparser vl-parse-0+-net-lvalues-separated-by-commas ()
   ;; Uses backtracking to stop; eats as many lvalues, separated by commas, as
   ;; it can find, and returns them as a list.
   :result (vl-exprlist-p val)
@@ -505,7 +501,7 @@
   :fails never
   :count strong-on-value
   (b* ((backup (vl-tokstream-save))
-       ((mv erp first tokstream) (vl-parse-lvalue))
+       ((mv erp first tokstream) (vl-parse-net-lvalue))
 
        ((when erp)
         ;; Failed to eat even a single lvalue, go back to where you were before
@@ -520,23 +516,23 @@
 
        ((unless (or (vl-is-token? :vl-comma)
                     (vl-is-token? :vl-rparen)))
-        ;; Very subtle.  We just ate an lvalue, but something is wrong because
+        ;; Very subtle.  We just ate an net_lvalue, but something is wrong because
         ;; we should have gotten to a comma or a right-paren.  Probably what has
         ;; happened is we have just eaten part of an expression that looks like
-        ;; an lvalue, e.g., "foo" from "foo & bar".  So, we need to backtrack
-        ;; and NOT eat this lvalue.
+        ;; an net_lvalue, e.g., "foo" from "foo & bar".  So, we need to backtrack
+        ;; and NOT eat this net_lvalue.
         (b* ((tokstream (vl-tokstream-restore backup)))
           (mv nil nil tokstream))))
 
-    ;; Otherwise, we successfully ate an lvalue and arrived at a comma or
-    ;; rparen as expected.  Commit to eating this lvalue.
+    ;; Otherwise, we successfully ate an net_lvalue and arrived at a comma or
+    ;; rparen as expected.  Commit to eating this net_lvalue.
     (seq tokstream
          (when (vl-is-token? :vl-rparen)
            ;; Nothing more to eat.
            (return (list first)))
          ;; Else, it's a comma
          (:= (vl-match-token :vl-comma))
-         (rest := (vl-parse-0+-lvalues-separated-by-commas))
+         (rest := (vl-parse-0+-net-lvalues-separated-by-commas))
          (return (cons first rest)))))
 
 (defparser vl-parse-n-output-gate-instance ()
@@ -549,7 +545,7 @@
        (:= (vl-match-token :vl-lparen))
        ;; First try to eat all the lvalues you see.  This might eat the final
        ;; expression, too!
-       (lvalues := (vl-parse-0+-lvalues-separated-by-commas))
+       (lvalues := (vl-parse-0+-net-lvalues-separated-by-commas))
        ;; If we are at an RPAREN, the last expression happened to look like an
        ;; lvalue and we already ate it.  Otherwise, we need to match the last
        ;; expression (which can be arbitrary)
@@ -616,7 +612,7 @@
 ;    pass_en_switchtype [delay2] pass_enable_switch_instance { ',' pass_enable_switch_instance } ';'
 ;
 ; pass_enable_switch_instance ::=
-;    [name_of_gate_instance] '(' lvalue ',' lvalue ',' expression ')'
+;    [name_of_gate_instance] '(' net_lvalue ',' net_lvalue ',' expression ')'
 
 (defparser vl-parse-pass-enable-switch-instance ()
   :result (vl-gatebldr-tuple-p val)
@@ -627,9 +623,9 @@
   (seq tokstream
        ((name . range) := (vl-parse-optional-name-of-gate-instance))
        (:= (vl-match-token :vl-lparen))
-       (arg1 := (vl-parse-lvalue))
+       (arg1 := (vl-parse-net-lvalue))
        (:= (vl-match-token :vl-comma))
-       (arg2 := (vl-parse-lvalue))
+       (arg2 := (vl-parse-net-lvalue))
        (:= (vl-match-token :vl-comma))
        (arg3 := (vl-parse-expression))
        (:= (vl-match-token :vl-rparen))
@@ -682,7 +678,7 @@
 ;    pass_switchtype pass_switch_instance { ',' pass_switch_instance } ';'
 ;
 ; pass_switch_instance ::=
-;    [name_of_gate_instance] '(' lvalue ',' lvalue ')'
+;    [name_of_gate_instance] '(' net_lvalue ',' net_lvalue ')'
 
 (defparser vl-parse-pass-switch-instance ()
   :result (vl-gatebldr-tuple-p val)
@@ -692,9 +688,9 @@
   (seq tokstream
        ((name . range) := (vl-parse-optional-name-of-gate-instance))
        (:= (vl-match-token :vl-lparen))
-       (arg1 := (vl-parse-lvalue))
+       (arg1 := (vl-parse-net-lvalue))
        (:= (vl-match-token :vl-comma))
-       (arg2 := (vl-parse-lvalue))
+       (arg2 := (vl-parse-net-lvalue))
        (:= (vl-match-token :vl-rparen))
        (return (list name range (list arg1 arg2)))))
 
@@ -743,7 +739,7 @@
 ;  | 'pullup'    [pullup_strength]   pull_gate_instance { ',' pull_gate_instance } ';'
 ;
 ; pull_gate_instance ::=
-;    [name_of_gate_instance] '(' lvalue ')'
+;    [name_of_gate_instance] '(' net_lvalue ')'
 ;
 ; pulldown_strength ::=
 ;    '(' strength0, strength1 ')'
@@ -852,7 +848,7 @@
   (seq tokstream
        ((name . range) := (vl-parse-optional-name-of-gate-instance))
        (:= (vl-match-token :vl-lparen))
-       (arg1 := (vl-parse-lvalue))
+       (arg1 := (vl-parse-net-lvalue))
        (:= (vl-match-token :vl-rparen))
        (return (list name range (list arg1)))))
 

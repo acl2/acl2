@@ -104,7 +104,10 @@
 (local (defthm svex-xeval-of-svex-call
          (equal (svex-xeval (svex-call fn args))
                 (svex-apply
-                 (if (eq (fnsym-fix fn) '===) '== fn)
+                 (case (fnsym-fix fn)
+                   (=== '==)
+                   (==? 'safer-==?)
+                   (otherwise (fnsym-fix fn)))
                  (svexlist-xeval args)))
          :hints(("Goal" :expand ((svex-xeval (svex-call fn args)))))))
 
@@ -435,6 +438,7 @@
             clog2
             ==
             ==?
+            safer-==?
             ==??
             ===) t)
           (id (3valued-syntaxp (first x.args)))
@@ -600,6 +604,10 @@
     (3vec-p (4vec-wildeq x y))
   :hints(("Goal" :in-theory (enable 4vec-wildeq))))
 
+  (defthm 3vec-p-of-4vec-wildeq-safe
+    (3vec-p (4vec-wildeq-safe x y))
+  :hints(("Goal" :in-theory (enable 4vec-wildeq-safe))))
+
   (defthm 3vec-p-of-4vec-symwildeq
     (3vec-p (4vec-symwildeq x y))
   :hints(("Goal" :in-theory (enable 4vec-symwildeq))))
@@ -681,6 +689,7 @@
             uxor
             ==
             ==?
+            safer-==?
             ==??) t)
           (otherwise nil))))
   ///
@@ -761,11 +770,15 @@
 
   (defthm 2vecx-p-of-4vec-wildeq
     (2vecx-p (4vec-wildeq x y))
-  :hints(("Goal" :in-theory (enable 4vec-wildeq))))
+    :hints(("Goal" :in-theory (enable 4vec-wildeq))))
+
+  (defthm 2vecx-p-of-4vec-wildeq-safe
+    (2vecx-p (4vec-wildeq-safe x y))
+    :hints(("Goal" :in-theory (enable 4vec-wildeq-safe))))
 
   (defthm 2vecx-p-of-4vec-symwildeq
     (2vecx-p (4vec-symwildeq x y))
-  :hints(("Goal" :in-theory (enable 4vec-symwildeq))))
+    :hints(("Goal" :in-theory (enable 4vec-symwildeq))))
 
   (defthm 2vecx-p-of-4vec-==
     (2vecx-p (4vec-== x y))
@@ -3299,6 +3312,7 @@
   (defthmd svex-eval-when-4vec-xfree-under-mask-of-minval-apply
     (implies (and (syntaxp (not (equal env ''nil)))
                   (not (equal (fnsym-fix fn) '===))
+                  (not (equal (fnsym-fix fn) '==?))
                   (4vec-xfree-under-mask (svex-apply fn (svexlist-xeval args)) mask))
              (equal (4vec-mask mask (svex-apply fn (svexlist-eval args env)))
                     (4vec-mask mask (svex-apply fn (svexlist-xeval args)))))
@@ -3314,6 +3328,16 @@
                     (4vec-mask mask (svex-apply '== (svexlist-xeval args)))))
     :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-under-mask-of-minval
                            (n (svex-call '=== args))))
+             :in-theory (disable svex-eval-when-4vec-xfree-under-mask-of-minval
+                                 equal-of-4vecs 4vec-xfree-under-mask))))
+
+  (defthmd svex-eval-when-4vec-xfree-under-mask-of-minval-apply-==?
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (4vec-xfree-under-mask (svex-apply 'safer-==? (svexlist-xeval args)) mask))
+             (equal (4vec-mask mask (svex-apply '==? (svexlist-eval args env)))
+                    (4vec-mask mask (svex-apply 'safer-==? (svexlist-xeval args)))))
+    :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-under-mask-of-minval
+                           (n (svex-call '==? args))))
              :in-theory (disable svex-eval-when-4vec-xfree-under-mask-of-minval
                                  equal-of-4vecs 4vec-xfree-under-mask)))))
 
@@ -3358,7 +3382,8 @@
                (equal (4vec-mask mask (svex-eval pat (svex-alist-eval subst env)))
                       (4vec-mask mask (svex-apply fn (svexlist-eval args env))))))
     :hints(("Goal" :in-theory (enable svex-eval-when-4vec-xfree-under-mask-of-minval-apply
-                                      svex-eval-when-4vec-xfree-under-mask-of-minval-apply-===))))
+                                      svex-eval-when-4vec-xfree-under-mask-of-minval-apply-===
+                                      svex-eval-when-4vec-xfree-under-mask-of-minval-apply-==?))))
 
   (defthm svex-rewrite-fncall-once-vars
     (b* (((mv ?ok ?pat subst) (svex-rewrite-fncall-once mask fn args localp)))

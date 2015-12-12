@@ -322,9 +322,6 @@ with are not normed.</p>")
                                    condition))))))
 
 
-#+hons
-(acl2::mf-multiprocessing t)
-
 (let ((support-started nil))
   (defun maybe-start-support-threads ()
     (unless support-started
@@ -538,6 +535,7 @@ with are not normed.</p>")
     nil)
 
   (defun start-fn (port public-dir)
+    (acl2::mf-multiprocessing t t)
     (maybe-start-support-threads)
     (when vl-server
       (stop))

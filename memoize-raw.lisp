@@ -19,7 +19,8 @@
 ; Austin, TX 78712 U.S.A.
 
 ; memoize-raw.lisp -- Raw lisp definitions for memoization functions, only to
-; be included in the hons-enabled ACL2 executables.
+; be included in the hons-enabled ACL2 executables (which is all ACL2
+; executables starting with Version_7.2).
 
 ; The original version of this file was contributed by Bob Boyer and Warren
 ; A. Hunt, Jr.  The design of this system of Hash CONS, function memoization,
@@ -238,7 +239,7 @@
   ;;     Lisp threads, then you really need to do something like this:
   ;;
   ;;        (setq *enable-multithreaded-memoization* t)
-  ;;        (rememoize-all)
+  ;;        (rememoize-all t)
   ;;
   ;;   - You need to be careful to do the rememoize-all AFTER you have already
   ;;     loaded any books that might contain memoized functions.  For instance,
@@ -264,7 +265,7 @@
         (t
          (unwind-protect ; make sure we finish!
              (setq *enable-multithreaded-memoization* flg)
-           (rememoize-all))))
+           (rememoize-all t))))
   flg)
 
 (defg *global-memoize-lock*
@@ -2140,13 +2141,27 @@
      (setq *callers-array* (make-array n2 :initial-element nil))
      (setq *caller* (outside-caller-col-base)))))
 
-(defun memoize-call-array-grow
-  (&optional (2nmax (* 2 (ceiling (* 3/2 (/ *2max-memoize-fns* 2))))))
+(defun memoize-call-array-grow (&optional
+                                (2nmax
+                                 (* 2 (ceiling
+                                       (* 3/2 (/ *2max-memoize-fns* 2))))))
 
 ; In our own code we call this function with no arguments.  However, as of this
 ; writing, community book file centaur/memoize/old/profile-raw.lsp calls it
 ; with an argument.  The argument will become the new dimension of the
 ; (virtual) 2D square array, *memoize-call-array*.
+
+; This function has the potential to corrupt the state, but we cause errors in
+; cases where that potential seems real.  In order to avoid having this
+; function invoked automatically, consider using the following hack.
+
+; :q
+; (setq *memoize-init-done* nil)
+; (setq *initial-2max-memoize-fns* 10000)
+; (memoize-init)
+; (lp)
+; (clear-memoize-tables)
+; (clear-memoize-statistics)
 
   (with-global-memoize-lock
    (unless (integerp 2nmax)
@@ -3674,36 +3689,61 @@
                  (access memoize-info-ht-entry v :record-pons-calls)
                  (access memoize-info-ht-entry v :record-time)))))))
 
-(defun-one-output rememoize-all ()
+(defun-one-output rememoize-all (&optional light)
 
 ; Warning: Keep this function in sync with memoize-info.
 
+; If light is true, then we are simply replacing *memoize-info-ht* with a copy.
+; In that case, we provide some unwind-protection.  Otherwise, we must be very
+; careful; currently we invoke (rememoize-all) -- that is, without the optional
+; argument -- only in memoize-call-array-grow.  If that is interrupted then the
+; state may be corrupted, but with luck, that will be rare.  See
+; memoize-call-array-grow.
+
   (with-global-memoize-lock
-   (let (lst)
-     (mf-maphash (lambda (k v)
-                   (declare (ignore v))
-                   (when (symbolp k)
-                     (push (memoize-info k) lst)))
-                 *memoize-info-ht*)
+   (cond
+    (light
+     (let ((*new-memoize-info-ht* (initial-memoize-info-ht)))
+       (unwind-protect
+           (progn
+             (mf-maphash (lambda (k v)
+                           (setf (gethash k *new-memoize-info-ht*) v))
+                         *memoize-info-ht*)
+             (setq *memoize-info-ht* *new-memoize-info-ht*))
+         (when (not (eq *memoize-info-ht* *new-memoize-info-ht*))
+           (cond ((eq light :done)
+                  (error "Fatal error in rememoize-all!~%Consider evaluating ~
+                         ~s before continuing.~%"
+                         '(unmemoize-all)))
+                 (t
+                  (format t "Error in rememoize-all; about to try again.~%")
+                  (rememoize-all :done)))))))
+    (t
+     (let (lst)
+       (mf-maphash (lambda (k v)
+                     (declare (ignore v))
+                     (when (symbolp k)
+                       (push (memoize-info k) lst)))
+                   *memoize-info-ht*)
 
 ; Note: memoize-info arranges that (caar x) is the memoized function symbol.
 
-     (loop for x in lst do (unmemoize-fn (caar x)))
-     (setq *memoize-info-ht* (initial-memoize-info-ht))
-     (gc$)
-     (setq *max-symbol-to-fixnum* *initial-max-symbol-to-fixnum*)
-     (loop for x in lst do
+       (loop for x in lst do (unmemoize-fn (caar x)))
+       (setq *memoize-info-ht* (initial-memoize-info-ht))
+       (gc$)
+       (setq *max-symbol-to-fixnum* *initial-max-symbol-to-fixnum*)
+       (loop for x in lst do
 
 ; Warning: Keep the first argument below in sync with memoize-info.
 
-           (progv '(*record-bytes*
-                    *record-calls*
-                    *record-hits*
-                    *record-mht-calls*
-                    *record-pons-calls*
-                    *record-time*)
-                  (cadr x)
-                  (apply 'memoize-fn (car x)))))))
+             (progv '(*record-bytes*
+                      *record-calls*
+                      *record-hits*
+                      *record-mht-calls*
+                      *record-pons-calls*
+                      *record-time*)
+                    (cadr x)
+                    (apply 'memoize-fn (car x)))))))))
 
 (defun profile-fn (fn &rest r &key (condition nil) (inline nil)
                       &allow-other-keys)

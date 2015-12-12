@@ -172,13 +172,20 @@
                                                                  :vl-import
                                                                  ;; :vl-fwdtypedef -- not allowed
                                                                  ;; :vl-modport    -- not allowed
+
+                                                                 ;; Don't get confused by assertion_item_declaration;
+                                                                 ;; :vl-assertion is not allowed and
+                                                                 ;; :vl-cassertion is not allowed either.
+                                                                 ;; They are assertion_items, not assertion_item_declarations.
+                                                                 :vl-dpiimport
+                                                                 :vl-dpiexport
                                                                  )))
                           (warnings
                            (if (not bad-item)
                                warnings
                              (fatal :type :vl-bad-package-item
-                                    :msg "~a0: a package may not contain ~x1s."
-                                    :args (list bad-item (tag bad-item)))))
+                                    :msg "~a0: a package may not contain ~s1s."
+                                    :args (list bad-item (vl-genelement->short-kind-string bad-item)))))
 
                           ((vl-genblob c) (vl-sort-genelements items)))
                        (make-vl-package :name (vl-idtoken->name name)
@@ -191,6 +198,8 @@
                                         :taskdecls c.taskdecls
                                         :typedefs c.typedefs
                                         :imports c.imports
+                                        :dpiimports c.dpiimports
+                                        :dpiexports c.dpiexports
                                         :warnings warnings
                                         :atts atts
                                         ;; bozo timeunits stuff

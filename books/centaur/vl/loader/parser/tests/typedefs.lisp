@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "base")
-(include-book "../typedefs")
+(include-book "../blockitems")
 
 (encapsulate nil
   (local (in-theory (enable vl-lookahead-is-token?

@@ -186,6 +186,7 @@
 
 (include-book "hacking/all" :dir :system)
 (include-book "hints/consider-hint" :dir :system)
+(include-book "hints/hint-wrapper" :dir :system)
 
 (include-book "ordinals/e0-ordinal" :dir :system)
 
@@ -194,6 +195,7 @@
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "tools/with-supporters" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
+(include-book "tools/removable-runes" :dir :system)
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
@@ -231,6 +233,7 @@
 (include-book "misc/seq" :dir :system)
 (include-book "misc/seqw" :dir :system)
 (include-book "misc/defpm" :dir :system)
+(include-book "misc/install-not-normalized" :dir :system)
 
 (include-book "make-event/proof-by-arith" :dir :system)
 

@@ -1,0 +1,17 @@
+In Version 7.1, together with GitHub versions of ACL2 before Dec. 3,
+2015, you could remove the must-fail wrappers in the book top.lisp,
+and the result would be certifiable.  That is, the following version
+of top.lisp was certifiable.
+
+(in-package "ACL2")
+(include-book "misc/eval" :dir :system)
+(include-book "sub1") ; no_port
+(include-book "sub2") ; no_port
+(include-book "pkg1") ; no_port
+(defthm contradiction
+  nil
+  :hints (("Goal" :use ((:instance a-not-in-acl2-pkg
+				   (x (intern$ "B" "MY-PKG")))
+			(:instance a-in-acl2-pkg
+				   (x (intern$ "B" "MY-PKG"))))))
+  :rule-classes nil)

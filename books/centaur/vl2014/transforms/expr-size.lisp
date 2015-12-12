@@ -1733,7 +1733,6 @@ minor warning for assignments where the rhs is a constant.</p>"
            acl2::natp-rw
            posp-when-member-equal-of-pos-listp
            natp-when-member-equal-of-nat-listp
-           (:ruleset tag-reasoning)
            acl2::car-when-all-equalp
            member-equal-when-member-equal-of-cdr-under-iff
            (:ruleset basic-arithmetic-rules)

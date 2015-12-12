@@ -137,7 +137,10 @@ and we get, for instance:</p>
       :quote expr.val
       :var (4vec-x)
       :call
-      (let ((expr.fn (if (eq expr.fn '===) '== expr.fn)))
+      (let ((expr.fn (case expr.fn
+                       (=== '==)
+                       (==? 'safer-==?)
+                       (otherwise expr.fn))))
         (mbe :logic
              (svex-apply expr.fn (svexlist-xeval expr.args))
              :exec

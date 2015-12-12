@@ -588,9 +588,9 @@
 my-gl-clause-processor.  This clause processor is defined so that it can
 execute all existing symbolic counterpart functions.</p>
 
-<p>There is rarely a necessity for a user to define a new GL clause processor
-now, unless they have added symbolic counterpart functions either by
-hand-coding them or using make-g-world.</p>
+<p>If one adds symbolic counterpart functions, either by hand-coding them,
+using make-g-world, or including books that add them, one will need to define a
+new GL clause processor.</p>
 
 <p>Each GL clause processor has an associated sets of functions that it can
 directly execute symbolically.  DEF-GL-CLAUSE-PROCESSOR makes a new processor

@@ -4,6 +4,6 @@
 
 (in-package "ACL2")
 (make-event '(defun h1 (x) x))
-; cert-flags: ? t :acl2x t :ttagsx :all :ttags nil
+; cert-flags: ? t :ttagsx :all :ttags nil
 ; cert_param: (acl2x)
 (certify-book "double-cert-test-1" ? t :acl2x t :ttagsx :all :ttags nil)

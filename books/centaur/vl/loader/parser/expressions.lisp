@@ -768,6 +768,27 @@ exists.</p>"
     :otherwise nil))
 
 
+(define vl-plausible-start-of-range-p (&key (tokstream 'tokstream))
+  ;; To support sequences/properties: look for a leading open bracket
+  ;; but do NOT match things like [*...], [=...] and [->...], which
+  ;; are repetitions instead of parts of expressions.
+  :enabled t
+  (and (vl-is-token? :vl-lbrack)
+       (not (vl-lookahead-is-some-token?
+             '(:vl-times :vl-arrow :vl-equalsign)
+             (cdr (vl-tokstream->tokens))))))
+
+(define vl-initial-patternkey-from-expr ((expr vl-expr-p))
+  :returns (key vl-patternkey-p)
+  ;; See vl-patternkey and vl-patternkey-ambiguity.  When we parse a simple
+  ;; identifier, we want to immediately turn it into a structure member.  This
+  ;; might not be quite right: it could also be a type name.  But we can't tell
+  ;; that at parse time.  We further disambiguate between structure members and
+  ;; types later, when we have enough information about the defined types.
+  (if (vl-idexpr-p expr)
+      (make-vl-patternkey-structmem :name (vl-idexpr->name expr))
+    (make-vl-patternkey-expr :key expr)))
+
 (defparsers parse-expressions
   :parents (parser)
   :short "Parser for Verilog and SystemVerilog expressions."
@@ -948,14 +969,10 @@ values.</p>"
 
   (defparser vl-parse-patternkey ()
     :measure (two-nats-measure (vl-tokstream-measure) 380)
-    ;; Either default, a type, an index expression, or the name of a struct
-    ;; field.  BOZO We currently parse the index expression and struct field
-    ;; both as just an expression -- the struct field will just be an ID.
-    ;; Furthermore, we don't know how to tell the difference between an
-    ;; expression and a type.  For now we'll parse it as an expression first
-    ;; and then fall bak on a type.  It seems reasonable that we could later
-    ;; reinterpret an expression as a datatype name.
+    ;; Very tricky and subtle and ambiguous.  See the documentation for
+    ;; vl-patternkey and vl-patternkey-ambiguity.
     (b* (((when (vl-is-token? :vl-kwd-default))
+          ;; Unambiguous and nice.
           (seq tokstream
                (:= (vl-match))
                (return (make-vl-patternkey-default))))
@@ -964,8 +981,10 @@ values.</p>"
          ((mv err expr tokstream)
           (vl-parse-expression))
          ((unless err)
-          (mv err (make-vl-patternkey-expr :key expr) tokstream))
+          (mv err (vl-initial-patternkey-from-expr expr) tokstream))
          (tokstream (vl-tokstream-restore backup)))
+      ;; Only other possibility is that it's a core type name which isn't
+      ;; a valid expression.
       (seq tokstream
            (type := (vl-parse-simple-type))
            (return (make-vl-patternkey-type :type type)))))
@@ -1589,7 +1608,7 @@ identifier, so we convert it into a hidpiece.</p>"
   (defparser vl-parse-0+-bracketed-expressions ()
     :short "Match @('{ '[' expression ']') }'), return an expression list."
     :measure (two-nats-measure (vl-tokstream-measure) 10)
-    (b* (((unless (vl-is-token? :vl-lbrack))
+    (b* (((unless (vl-plausible-start-of-range-p))
           ;; For termination, this needs to be a ruler.
           (mv nil nil tokstream))
 
@@ -1628,7 +1647,7 @@ identifier, so we convert it into a hidpiece.</p>"
     (seq tokstream
           (hid :s= (vl-parse-hierarchical-identifier recursivep))
           (bexprs :w= (vl-parse-0+-bracketed-expressions))
-          (when (vl-is-token? :vl-lbrack)
+          (when (vl-plausible-start-of-range-p)
             (:= (vl-match))
             (range := (vl-parse-range-expression))
             (:= (vl-match-token :vl-rbrack)))
@@ -1691,7 +1710,7 @@ identifier, so we convert it into a hidpiece.</p>"
                 (seq tokstream
                      (key :w= (vl-parse-patternkey))
                      (return key)))
-            (mv nil (make-vl-patternkey-expr :key first-expr) tokstream)))
+            (mv nil (vl-initial-patternkey-from-expr first-expr) tokstream)))
          ((when err) (mv err nil tokstream)))
       (seq tokstream
            (when (vl-is-token? :vl-colon)
@@ -2010,8 +2029,6 @@ identifier, so we convert it into a hidpiece.</p>"
     ;; SystemVerilog pre-increment operators are:
     ;;    inc_or_dec_expression ::= inc_or_dec_operator { attribute_instance } variable_lvalue      ;; pre increments
     ;;                            | variable_lvalue { attribute_instance } inc_or_dec_operator      ;; post increments
-    ;;
-    ;; We don't handle post-increments here, but the pre-increments fit perfectly here.
 
     (seq tokstream
 
@@ -2229,7 +2246,7 @@ identifier, so we convert it into a hidpiece.</p>"
   (defparser vl-parse-open-value-range ()
     :measure (two-nats-measure (vl-tokstream-measure) 310)
     (seq tokstream
-         (when (vl-is-token? :vl-lbrack)
+         (when (vl-plausible-start-of-range-p)
            ;; We want [ a : b ] here
            (:= (vl-match))
            (a :w= (vl-parse-expression))
@@ -2514,82 +2531,88 @@ identifier, so we convert it into a hidpiece.</p>"
 (defmacro vl-val-when-error-claim (name &key args)
   (vl-val-when-error-claim-fn name args))
 
+
 (with-output
   :gag-mode :goals
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
- (encapsulate
-  ()
-  (local (in-theory (disable vl-is-token?-fn-when-atom-of-tokens
-                           acl2::append-under-iff
-                           (:t len)
-                           (:t vl-is-token?)
-                           (force)
-                           acl2::len-when-atom)))
-  (make-event
-   `(defthm-parse-expressions-flag vl-parse-expression-val-when-error
-      ,(vl-val-when-error-claim vl-parse-attr-spec)
-      ,(vl-val-when-error-claim vl-parse-attribute-instance-aux)
-      ,(vl-val-when-error-claim vl-parse-attribute-instance)
-      ,(vl-val-when-error-claim vl-parse-0+-attribute-instances-aux)
-      ,(vl-val-when-error-claim vl-parse-0+-attribute-instances)
-      ,(vl-val-when-error-claim vl-parse-1+-expressions-separated-by-commas)
-      ,(vl-val-when-error-claim vl-parse-system-function-call)
-      ,(vl-val-when-error-claim vl-parse-mintypmax-expression)
-      ,(vl-val-when-error-claim vl-parse-range-expression)
-      ,(vl-val-when-error-claim vl-parse-concatenation)
-      ,(vl-val-when-error-claim vl-parse-stream-expression)
-      ,(vl-val-when-error-claim vl-parse-stream-concatenation)
-      ,(vl-val-when-error-claim vl-parse-1+-stream-expressions-separated-by-commas)
-      ,(vl-val-when-error-claim vl-parse-simple-type)
-      ,(vl-val-when-error-claim vl-parse-slice-size)
-      ,(vl-val-when-error-claim vl-parse-any-sort-of-concatenation)
-      ,(vl-val-when-error-claim vl-parse-hierarchical-identifier :args (recursivep))
-      ,(vl-val-when-error-claim vl-parse-function-call)
-      ,(vl-val-when-error-claim vl-parse-0+-bracketed-expressions)
-      ,(vl-val-when-error-claim vl-parse-indexed-id-2005 :args (scopes recursivep))
-      ,(vl-val-when-error-claim vl-parse-indexed-id-2012)
-      ,(vl-val-when-error-claim vl-parse-indexed-id)
-      ,(vl-val-when-error-claim vl-parse-assignment-pattern)
-      ,(vl-val-when-error-claim vl-parse-1+-keyval-expression-pairs)
-      ,(vl-val-when-error-claim vl-parse-primary-main)
-      ,(vl-val-when-error-claim vl-parse-primary-cast)
-      ,(vl-val-when-error-claim vl-parse-nonprimary-cast)
-      ,(vl-val-when-error-claim vl-parse-primary)
-      ,(vl-val-when-error-claim vl-parse-unary-expression)
-      ,(vl-val-when-error-claim vl-parse-power-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-power-expression)
-      ,(vl-val-when-error-claim vl-parse-mult-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-mult-expression)
-      ,(vl-val-when-error-claim vl-parse-add-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-add-expression)
-      ,(vl-val-when-error-claim vl-parse-shift-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-shift-expression)
-      ,(vl-val-when-error-claim vl-parse-compare-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-compare-expression)
-      ,(vl-val-when-error-claim vl-parse-equality-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-equality-expression)
-      ,(vl-val-when-error-claim vl-parse-bitand-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-bitand-expression)
-      ,(vl-val-when-error-claim vl-parse-bitxor-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-bitxor-expression)
-      ,(vl-val-when-error-claim vl-parse-bitor-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-bitor-expression)
-      ,(vl-val-when-error-claim vl-parse-logand-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-logand-expression)
-      ,(vl-val-when-error-claim vl-parse-logor-expression-aux)
-      ,(vl-val-when-error-claim vl-parse-logor-expression)
-      ,(vl-val-when-error-claim vl-parse-qmark-expression)
-      ,(vl-val-when-error-claim vl-parse-impl-expression)
-      ,(vl-val-when-error-claim vl-parse-open-value-range)
-      ,(vl-val-when-error-claim vl-parse-1+-open-value-ranges)
-      ,(vl-val-when-error-claim vl-parse-patternkey)
-      ,(vl-val-when-error-claim vl-parse-expression-without-failure)
-      ,(vl-val-when-error-claim vl-parse-scoped-hid)
-      ,(vl-val-when-error-claim vl-parse-expression)
-      :hints((and acl2::stable-under-simplificationp
-                  (flag::expand-calls-computed-hint
-                   acl2::clause
-                   ',(flag::get-clique-members 'vl-parse-expression-fn (w state)))))))))
+  (encapsulate
+    ()
+    (local (in-theory (disable vl-is-token?-fn-when-atom-of-tokens
+                               acl2::append-under-iff
+                               (:t len)
+                               (:t vl-is-token?)
+                               (force)
+                               acl2::len-when-atom)))
+    (make-event
+     `(defthm-parse-expressions-flag vl-parse-expression-val-when-error
+        ,(vl-val-when-error-claim vl-parse-attr-spec)
+        ,(vl-val-when-error-claim vl-parse-attribute-instance-aux)
+        ,(vl-val-when-error-claim vl-parse-attribute-instance)
+        ,(vl-val-when-error-claim vl-parse-0+-attribute-instances-aux)
+        ,(vl-val-when-error-claim vl-parse-0+-attribute-instances)
+        ,(vl-val-when-error-claim vl-parse-1+-expressions-separated-by-commas)
+        ,(vl-val-when-error-claim vl-parse-system-function-call)
+        ,(vl-val-when-error-claim vl-parse-mintypmax-expression)
+        ,(vl-val-when-error-claim vl-parse-range-expression)
+        ,(vl-val-when-error-claim vl-parse-concatenation)
+        ,(vl-val-when-error-claim vl-parse-stream-expression)
+        ,(vl-val-when-error-claim vl-parse-stream-concatenation)
+        ,(vl-val-when-error-claim vl-parse-1+-stream-expressions-separated-by-commas)
+        ,(vl-val-when-error-claim vl-parse-simple-type)
+        ,(vl-val-when-error-claim vl-parse-slice-size)
+        ,(vl-val-when-error-claim vl-parse-any-sort-of-concatenation)
+        ,(vl-val-when-error-claim vl-parse-hierarchical-identifier :args (recursivep))
+        ,(vl-val-when-error-claim vl-parse-function-call)
+        ,(vl-val-when-error-claim vl-parse-0+-bracketed-expressions)
+        ,(vl-val-when-error-claim vl-parse-indexed-id-2005 :args (scopes recursivep))
+        ,(vl-val-when-error-claim vl-parse-indexed-id-2012)
+        ,(vl-val-when-error-claim vl-parse-indexed-id)
+        ,(vl-val-when-error-claim vl-parse-assignment-pattern)
+        ,(vl-val-when-error-claim vl-parse-1+-keyval-expression-pairs)
+        ,(vl-val-when-error-claim vl-parse-primary-main)
+        ,(vl-val-when-error-claim vl-parse-primary-cast)
+        ,(vl-val-when-error-claim vl-parse-nonprimary-cast)
+        ,(vl-val-when-error-claim vl-parse-primary)
+        ,(vl-val-when-error-claim vl-parse-unary-expression)
+        ,(vl-val-when-error-claim vl-parse-power-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-power-expression)
+        ,(vl-val-when-error-claim vl-parse-mult-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-mult-expression)
+        ,(vl-val-when-error-claim vl-parse-add-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-add-expression)
+        ,(vl-val-when-error-claim vl-parse-shift-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-shift-expression)
+        ,(vl-val-when-error-claim vl-parse-compare-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-compare-expression)
+        ,(vl-val-when-error-claim vl-parse-equality-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-equality-expression)
+        ,(vl-val-when-error-claim vl-parse-bitand-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-bitand-expression)
+        ,(vl-val-when-error-claim vl-parse-bitxor-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-bitxor-expression)
+        ,(vl-val-when-error-claim vl-parse-bitor-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-bitor-expression)
+        ,(vl-val-when-error-claim vl-parse-logand-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-logand-expression)
+        ,(vl-val-when-error-claim vl-parse-logor-expression-aux)
+        ,(vl-val-when-error-claim vl-parse-logor-expression)
+        ,(vl-val-when-error-claim vl-parse-qmark-expression)
+        ,(vl-val-when-error-claim vl-parse-impl-expression)
+        ,(vl-val-when-error-claim vl-parse-open-value-range)
+        ,(vl-val-when-error-claim vl-parse-1+-open-value-ranges)
+        ,(vl-val-when-error-claim vl-parse-patternkey)
+        ,(vl-val-when-error-claim vl-parse-expression-without-failure)
+        ,(vl-val-when-error-claim vl-parse-scoped-hid)
+        ,(vl-val-when-error-claim vl-parse-expression)
+        :hints(
+               ;; Baseline: 8.91 seconds
+               ;; (and acl2::stable-under-simplificationp
+               ;;      (flag::expand-calls-computed-hint
+               ;;       acl2::clause
+               ;;       ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))
+               ;; New: 8.58 seconds
+               (and acl2::stable-under-simplificationp
+                    (expand-only-the-flag-function-hint clause state)))))))
 
 
 (defun vl-warning-claim-fn (name args)
@@ -2672,10 +2695,15 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-warning-claim vl-parse-expression-without-failure)
         ,(vl-warning-claim vl-parse-scoped-hid)
         ,(vl-warning-claim vl-parse-expression)
-        :hints((and acl2::stable-under-simplificationp
-                    (flag::expand-calls-computed-hint
-                     acl2::clause
-                     ',(flag::get-clique-members 'vl-parse-expression-fn (w state)))))))))
+        :hints(;; Baseline: 7.85 seconds
+               ;; (and acl2::stable-under-simplificationp
+               ;;      (flag::expand-calls-computed-hint
+               ;;       acl2::clause
+               ;;       ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))
+               ;; New: 7.66 seconds
+               (and acl2::stable-under-simplificationp
+                    (expand-only-the-flag-function-hint clause state))
+               )))))
 
 
 
@@ -2915,10 +2943,15 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-progress-claim vl-parse-expression-without-failure :strongp nil)
       ,(vl-progress-claim vl-parse-scoped-hid)
       ,(vl-progress-claim vl-parse-expression)
-      :hints((and acl2::stable-under-simplificationp
+      :hints(;; baseline: 17.63 seconds
+             (and acl2::stable-under-simplificationp
                   (flag::expand-calls-computed-hint
                    acl2::clause
-                   ',(flag::get-clique-members 'vl-parse-expression-fn (w state)))))))))
+                   ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))
+             ;; new: 17.66 seconds
+             ;; (and acl2::stable-under-simplificationp
+             ;;      (expand-only-the-flag-function-hint clause state))
+             )))))
 
 (defun vl-eof-claim-fn (name args type)
   `'(,name (implies (atom (vl-tokstream->tokens))
@@ -3015,10 +3048,15 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-expression-without-failure nil)
         ,(vl-eof-claim vl-parse-scoped-hid nil)
         ,(vl-eof-claim vl-parse-expression :error)
-        :hints((and acl2::stable-under-simplificationp
+        :hints(;; baseline: 3.58 seconds
+               (and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
-                     ',(flag::get-clique-members 'vl-parse-expression-fn (w state)))))))))
+                     ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))
+               ;; new: 3.59 seconds
+               ;; (and acl2::stable-under-simplificationp
+               ;;      (expand-only-the-flag-function-hint clause state))
+               )))))
 
 
 
@@ -3126,12 +3164,15 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-expression-claim vl-parse-expression-without-failure :maybe-expr)
       ,(vl-expression-claim vl-parse-scoped-hid :scopeexpr)
       ,(vl-expression-claim vl-parse-expression :expr)
-      :hints(("Goal"
-              :do-not '(generalize fertilize))
+      :hints(("Goal" :do-not '(generalize fertilize))
+             ;; Baseline: 7.49 seconds
              (and stable-under-simplificationp
                   (flag::expand-calls-computed-hint
                    acl2::clause
                    ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))
+             ;; New: 7.72 seconds
+             ;; (and acl2::stable-under-simplificationp
+             ;;      (expand-only-the-flag-function-hint clause state))
              )))))
 
 (local (defthm true-listp-when-vl-atts-p-rw
@@ -3152,7 +3193,7 @@ identifier, so we convert it into a hidpiece.</p>"
 
 (with-output
   :off (prove event) :gag-mode :goals
- (verify-guards vl-parse-expression-fn
+  (verify-guards vl-parse-expression-fn
    ;; :hints ((and stable-under-simplificationp
    ;;              '(:in-theory (enable vl-type-of-matched-token))))
    ;; :guard-debug t
@@ -3199,7 +3240,7 @@ identifier, so we convert it into a hidpiece.</p>"
   :fails gracefully
   :count strong-on-value
   (seq tokstream
-       (unless (vl-is-token? :vl-lbrack)
+       (unless (vl-plausible-start-of-range-p)
          (return nil))
        (first := (vl-parse-range))
        (rest := (vl-parse-0+-ranges))

@@ -28,18 +28,15 @@
 
 (encapsulate
  ()
- (local (include-book "arithmetic-5/top" :dir :system))
+
+ (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+ (local (include-book "arithmetic/top-with-meta" :dir :system))
 
  (defthmd expt-to-ash
    (implies (and (natp n)
                  (integerp x))
-            (equal (ash x n) (* x (expt 2 n))))))
-
-(encapsulate
- ()
-
- (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
- (local (include-book "arithmetic/top-with-meta" :dir :system))
+            (equal (ash x n) (* x (expt 2 n))))
+   :hints (("Goal" :in-theory (e/d* (expt ash floor) ()))))
 
  (defthmd logior-expt-to-plus-helper-1
    (implies (and (natp n)
@@ -81,40 +78,35 @@
             :use ((:instance logior-expt-to-plus-helper-1)
                   (:instance logior-expt-to-plus-helper-2)
                   (:instance putting-loghead-and-logtail-together
-                             (w (logior y (ash x n)))))))))
+                             (w (logior y (ash x n))))))))
 
  ;; Sometimes, it's easier to reason about addition instead of logical
  ;; OR.
 
-(defthm logior-expt-to-plus
-  (implies (and (natp n)
-                (integerp x)
-                (unsigned-byte-p n y))
-           (equal (logior y (* x (expt 2 n)))
-                  (+ (* (expt 2 n) x) y)))
-  :hints (("Goal" :use ((:instance expt-to-ash)
-                        (:instance logior-to-plus-with-ash)))))
+ (defthm logior-expt-to-plus
+   (implies (and (natp n)
+                 (integerp x)
+                 (unsigned-byte-p n y))
+            (equal (logior y (* x (expt 2 n)))
+                   (+ (* (expt 2 n) x) y)))
+   :hints (("Goal" :use ((:instance expt-to-ash)
+                         (:instance logior-to-plus-with-ash)))))
 
-;; Now for a new version of logior-expt-to-plus using a constant in
-;; place of (expt 2 n)....
+ ;; Now for a new version of logior-expt-to-plus using a constant in
+ ;; place of (expt 2 n)....
 
-(defthm logior-expt-to-plus-quotep
-  (implies (and (bind-free (and (quotep k)
-                                (let* ((k0 (acl2::unquote k))
-                                       (n (power-of-2 k0 0)))
-                                  (and (eql k0 (expt 2 n))
-                                       (list (cons 'n (kwote n)))))))
-                (natp n)
-                (eql k (expt 2 n))
-                (integerp x)
-                (unsigned-byte-p n y))
-           (equal (logior y (* k x))
-                  (+ (* k x) y))))
-
-(encapsulate
- ()
-
- (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+ (defthm logior-expt-to-plus-quotep
+   (implies (and (bind-free (and (quotep k)
+                                 (let* ((k0 (acl2::unquote k))
+                                        (n (power-of-2 k0 0)))
+                                   (and (eql k0 (expt 2 n))
+                                        (list (cons 'n (kwote n)))))))
+                 (natp n)
+                 (eql k (expt 2 n))
+                 (integerp x)
+                 (unsigned-byte-p n y))
+            (equal (logior y (* k x))
+                   (+ (* k x) y))))
 
  (defthm constant-upper-bound-of-logior-for-naturals
    (implies (and (bind-free (and (quotep k)
@@ -167,8 +159,7 @@
 
  (defthm |(ash x 1) != 1|
    (implies (natp x)
-            (equal (equal (ash x 1) 1)
-                   nil))
+            (equal (equal (ash x 1) 1) nil))
    :hints (("Goal" :in-theory (e/d (ash floor) ()))))
 
  (defthm |(ash a x) <= b ==> (ash (1+ a) x) <= b|
@@ -199,7 +190,152 @@
    :hints (("Goal" :in-theory (e/d (logtail) ())))
    :rule-classes :linear)
 
+ (defthm <-preserved-by-adding-<-*pseudo-page-size-in-bytes*
+   (implies (and (< next len)
+                 (integerp i)
+                 (<= 0 i)
+                 (< i *pseudo-page-size-in-bytes*)
+                 (force (natp next))
+                 (force (natp len))
+                 (force (equal (loghead *2^x-byte-pseudo-page* next) 0))
+                 (equal (loghead *2^x-byte-pseudo-page* len) 0))
+            (< (logior next i) len)))
+
+ (defthm <-preserved-by-adding-<-*pseudo-page-size-in-bytes*-commuted
+   (implies (and (< next len)
+                 (integerp i)
+                 (<= 0 i)
+                 (< i *pseudo-page-size-in-bytes*)
+                 (force (natp next))
+                 (force (natp len))
+                 (force (equal (loghead *2^x-byte-pseudo-page* next) 0))
+                 (equal (loghead *2^x-byte-pseudo-page* len) 0))
+            (< (logior i next) len))
+   :hints (("Goal"
+            :in-theory
+            (disable <-preserved-by-adding-<-*pseudo-page-size-in-bytes*)
+            :use
+            <-preserved-by-adding-<-*pseudo-page-size-in-bytes*)))
+
+ (defthmd mem-table-entries-logic-update-nth-helper-2
+   (implies (and (natp next-addr)
+                 (natp lower)
+                 (integerp (car mem-table))
+                 (mem-tablep (cdr mem-table))
+                 (< (logtail 1 (nth lower mem-table))
+                    next-addr)
+                 (<= (ash next-addr 1)
+                     (nth lower mem-table)))
+            (equal (logtail 1 (nth lower mem-table))
+                   next-addr))
+   :hints
+   (("Goal" :in-theory (e/d (logtail)
+                            ((:rewrite acl2::|(equal (if a b c) x)|))))))
+
+ (defthmd mem-table-entries-logic-update-nth-helper-3
+   (implies (and (natp next-addr)
+                 (mem-tablep (cdr mem-table))
+                 (equal (nth index mem-table) 1)
+                 (< (logtail 1 (nth index (cdr mem-table)))
+                    next-addr)
+                 (< (ash next-addr 1)
+                    (nth index (cdr mem-table))))
+            (equal (logtail 1 (nth index (cdr mem-table)))
+                   next-addr))
+   :hints
+   (("Goal" :in-theory (e/d (logtail)
+                            ((:rewrite acl2::|(equal (if a b c) x)|))))))
+
+ (defthm breaking-logior-apart-1
+   (implies (and (force (unsigned-byte-p *mem-table-size-bits* low25-i))
+                 (force (unsigned-byte-p *mem-table-size-bits* low25-j))
+                 (equal (logior (loghead *2^x-byte-pseudo-page* i)
+                                (ash low25-i *2^x-byte-pseudo-page*))
+                        (logior (loghead *2^x-byte-pseudo-page* j)
+                                (ash low25-j *2^x-byte-pseudo-page*))))
+            (equal low25-i low25-j))
+   :hints
+   (("Goal" :in-theory (e/d* (ifix) (not natp))
+     :use ((:instance logior-loghead-to-+-loghead
+                      (n *2^x-byte-pseudo-page*)
+                      (i i)
+                      (x*2^n (ash low25-i *2^x-byte-pseudo-page*)))
+           (:instance logior-loghead-to-+-loghead
+                      (n *2^x-byte-pseudo-page*)
+                      (i j)
+                      (x*2^n (ash low25-j *2^x-byte-pseudo-page*))))))
+   :rule-classes nil)
+
+ (defthmd breaking-logior-apart-2
+   (implies (and (force (unsigned-byte-p *mem-table-size-bits* low25-i))
+                 (force (unsigned-byte-p *mem-table-size-bits* low25-j))
+                 (equal (logior (loghead *2^x-byte-pseudo-page* i)
+                                (ash low25-i *2^x-byte-pseudo-page*))
+                        (logior (loghead *2^x-byte-pseudo-page* j)
+                                (ash low25-j *2^x-byte-pseudo-page*))))
+            (equal (loghead *2^x-byte-pseudo-page* i)
+                   (loghead *2^x-byte-pseudo-page* j)))
+   :hints (("Goal" :in-theory (e/d* (ifix) (not natp))
+            :use ((:instance breaking-logior-apart-1)))))
+
+ (defthm logtail-and-loghead-equality
+   (implies (and (equal (logtail n x) (logtail n y))
+                 (equal (loghead n x) (loghead n y))
+                 (natp x)
+                 (natp y))
+            (equal x y))
+   :hints (("Goal" :in-theory (enable logtail loghead)))
+   :rule-classes ((:forward-chaining
+                   ;; These trigger terms are no good if the hyps of
+                   ;; the theorem to be proved have something like
+                   ;; (and (equal (logtail n x) 0)
+                   ;;      (equal (logtail n x) 0))
+                   ;; But, for my use case so far, the following terms
+                   ;; do fine, though (equal (loghead n x) (loghead n
+                   ;; y)) is not a good candidate since logheads
+                   ;; appear separately, like:
+                   ;; (and (equal (loghead n x) 0)
+                   ;;      (equal (loghead n x) 0))
+                   :trigger-terms ((equal (logtail n x) (logtail n y))
+                                   ;; (equal (loghead n x) (loghead n y))
+                                   ))))
+
+ (defthm equal-ash-ash
+   (implies (and (natp x) (natp y) (natp n))
+            (equal (equal (ash x n) (ash y n))
+                   (equal x y)))
+   :hints (("Goal" :in-theory (enable ash))))
+
+ (defthm <=-logior
+   (and (implies (and (natp x) (natp y))
+                 (<= y (logior x y)))
+        (implies (and (natp x) (natp y))
+                 (<= x (logior x y))))
+   :rule-classes :linear)
+
+ (defthm len-nth-*mem-arrayi*
+   (implies (x86$cp x86$c)
+            (<= (ash (nth *mem-array-next-addr* x86$c) *2^x-byte-pseudo-page*)
+                *mem-size-in-bytes*))
+   :hints (("Goal" :in-theory (e/d (x86$cp good-memp))))
+   :rule-classes :linear)
+
+ (defthmd concrete-mem-hack ; len = (len (nth *mem-arrayi* x86$c))
+   (implies (and (equal (ash e *2^x-byte-pseudo-page*) len)
+                 (natp e) ; (expected-mem-array-next-addr 0 33554432 x86$c)
+                 (<= e 33554431)
+                 ;;(<= *mem-size-in-bytes* (* 2 len))
+                 )
+            (< (logior (loghead *2^x-byte-pseudo-page* j) len)
+               *mem-size-in-bytes*)))
+
  )
+
+;; ======================================================================
+
+;; Locally including helper arithmetic books:
+(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 ;; ======================================================================
 ;; Definition of mem$ci
@@ -211,10 +347,15 @@
 
   :short "Concrete memory byte read function @('mem$ci')"
 
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
-  (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-
   ;; mem$ci:
+
+  (defthm-usb logtail-*2^x-byte-pseudo-page*-of-physical-address
+    :hyp (unsigned-byte-p #.*physical-address-size* i)
+    :bound #.*mem-table-size-bits*
+    :concl (logtail #.*2^x-byte-pseudo-page* i)
+    :gen-type t
+    :gen-linear t
+    :hints-l (("Goal" :in-theory (disable unsigned-byte-p-of-logtail))))
 
   (defthm good-mem-table-entriesp-logic-property
     (let ((addr (nth i mem-table)))
@@ -252,20 +393,8 @@
                   (< x *pseudo-page-size-in-bytes*))
              (< (logior x (ash a *2^x-byte-pseudo-page*))
                 (ash b *2^x-byte-pseudo-page*)))
-    :hints (("Goal"
-             :in-theory (enable ash floor)))
+    :hints (("Goal" :in-theory (enable ash floor)))
     :rule-classes nil)
-
-  (defthm-usb logtail-*2^x-byte-pseudo-page*-of-physical-address
-    :hyp (unsigned-byte-p #.*physical-address-size* i)
-    :bound #.*mem-table-size-bits*
-    :concl (logtail #.*2^x-byte-pseudo-page* i)
-    :gen-type t
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (disable
-                                  unsigned-byte-p-of-logtail))))
-
-  (local (in-theory (e/d (x86$cp-pre x86$cp) ())))
 
   (defthm |address < shift(mem-array-next-addr) when page is present|
     (implies (and (integerp addr)
@@ -281,7 +410,7 @@
                                            (nth *mem-tablei* x86$c)))
                              *2^x-byte-pseudo-page*))
                 (ash (nth *mem-array-next-addr* x86$c) *2^x-byte-pseudo-page*)))
-    :hints (("Goal"
+    :hints (("Goal" :in-theory (e/d* (x86$cp-pre x86$cp) (force (force)))
              :use ((:instance |address < shift(mem-array-next-addr) when page is present|-helper
                               (x (loghead *2^x-byte-pseudo-page* addr))
                               (a (logtail 1
@@ -356,9 +485,8 @@
   (defthm mem-array-next-addr-is-expected-mem-array-next-addr
     (implies (x86$cp x86$c)
              (equal (nth *mem-array-next-addr* x86$c)
-                    (expected-mem-array-next-addr 0
-                                                  (mem-table-length x86$c)
-                                                  x86$c)))
+                    (expected-mem-array-next-addr
+                     0 (mem-table-length x86$c) x86$c)))
     :hints (("Goal" :in-theory (e/d (x86$cp good-memp)
                                     ()))))
 
@@ -388,14 +516,12 @@
                               (k *mem-table-size*)))))
     :rule-classes :linear)
 
-   (defthml natp-mem-array-next-addr
-     (implies (x86$cp-pre x86$c)
-              (and (integerp (nth *mem-array-next-addr* x86$c))
-                   (<= 0 (nth *mem-array-next-addr* x86$c))))
-     :hints (("Goal" :in-theory (enable x86$cp-pre)))
-     :rule-classes (:type-prescription :rewrite))
-
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
+  (defthml natp-mem-array-next-addr
+    (implies (x86$cp-pre x86$c)
+             (and (integerp (nth *mem-array-next-addr* x86$c))
+                  (<= 0 (nth *mem-array-next-addr* x86$c))))
+    :hints (("Goal" :in-theory (enable x86$cp-pre)))
+    :rule-classes (:type-prescription :rewrite))
 
   (define add-page-x86$c
     ((i (unsigned-byte-p #.*mem-table-size-bits* i)
@@ -431,43 +557,6 @@
   (defthm len-resize-list
     (equal (len (resize-list lst n default-value))
            (nfix n)))
-
-  (encapsulate
-   ()
-
-   (local
-    (include-book "arithmetic-5/top" :dir :system))
-
-   (defthm <-preserved-by-adding-<-*pseudo-page-size-in-bytes*
-     (implies (and (< next len)
-                   (integerp i)
-                   (<= 0 i)
-                   (< i *pseudo-page-size-in-bytes*)
-                   (force (natp next))
-                   (force (natp len))
-                   (force (equal (loghead *2^x-byte-pseudo-page* next) 0))
-                   (equal (loghead *2^x-byte-pseudo-page* len) 0))
-              (< (logior next i) len)))
-
-   (defthm <-preserved-by-adding-<-*pseudo-page-size-in-bytes*-commuted
-     (implies (and (< next len)
-                   (integerp i)
-                   (<= 0 i)
-                   (< i *pseudo-page-size-in-bytes*)
-                   (force (natp next))
-                   (force (natp len))
-                   (force (equal (loghead *2^x-byte-pseudo-page* next) 0))
-                   (equal (loghead *2^x-byte-pseudo-page* len) 0))
-              (< (logior i next) len))
-     :hints (("Goal"
-              :in-theory
-              (disable <-preserved-by-adding-<-*pseudo-page-size-in-bytes*)
-              :use
-              <-preserved-by-adding-<-*pseudo-page-size-in-bytes*)))
-
-   )
-
-  (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
   (defthmd |addr < 2 * len-mem-array|
     (implies (and (<= *initial-mem-array-length* (len (nth *mem-arrayi* x86$c)))
@@ -520,6 +609,8 @@
         (!mem-arrayi index v x86$c)))
   )
 
+;; ======================================================================
+
 (in-theory (disable mem$ci !mem$ci))
 
 ;; ======================================================================
@@ -529,8 +620,6 @@
   :parents (x86-concrete-memory)
 
   :short "We prove that @('mem$ci') returns an @(see n08p)."
-
-  (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
   (defthm-usb n08p-mem$ci
 
@@ -542,8 +631,7 @@
     :hints (("Goal" :in-theory (e/d (mem$ci) ())))
 
     :gen-type t
-    :gen-linear t)
-  )
+    :gen-linear t))
 
 ;; ======================================================================
 
@@ -557,8 +645,6 @@
   :parents (x86-concrete-memory)
 
   :short "We prove @('x86$cp-!mem$ci') in this section."
-
-  (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
   (local
    (encapsulate
@@ -639,8 +725,6 @@
                       (update-nth addr v (nth *mem-arrayi* x86$c))
                       x86$c)))
     :hints (("Goal" :in-theory (e/d (x86$cp good-memp) ()))))
-
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
 
   (defthmd x86$cp-update-nth-mem-arrayi-less-generic-helper
     (implies (and (x86$cp x86$c)
@@ -935,39 +1019,9 @@
                                        parity)
               (mem-table-entries-logic lower upper mem-table parity))))
 
-    (local
-     (encapsulate
-      ()
-      (local (include-book "arithmetic-5/top" :dir :system))
-
-      (defthm mem-table-entries-logic-update-nth-helper-2
-        (implies (and (natp next-addr)
-                      (natp lower)
-                      (integerp (car mem-table))
-                      (mem-tablep (cdr mem-table))
-                      (< (logtail 1 (nth lower mem-table))
-                         next-addr)
-                      (<= (ash next-addr 1)
-                          (nth lower mem-table)))
-                 (equal (logtail 1 (nth lower mem-table))
-                        next-addr))
-        :hints
-        (("Goal" :in-theory (e/d (logtail)
-                                 ((:rewrite acl2::|(equal (if a b c) x)|))))))
-
-      (defthm mem-table-entries-logic-update-nth-helper-3
-        (implies (and (natp next-addr)
-                      (mem-tablep (cdr mem-table))
-                      (equal (nth index mem-table) 1)
-                      (< (logtail 1 (nth index (cdr mem-table)))
-                         next-addr)
-                      (< (ash next-addr 1)
-                         (nth index (cdr mem-table))))
-                 (equal (logtail 1 (nth index (cdr mem-table)))
-                        next-addr))
-        :hints
-        (("Goal" :in-theory (e/d (logtail)
-                                 ((:rewrite acl2::|(equal (if a b c) x)|))))))))
+    (local (in-theory (e/d* (mem-table-entries-logic-update-nth-helper-2
+                             mem-table-entries-logic-update-nth-helper-3)
+                            ())))
 
     (defthm mem-table-entries-logic-update-nth
       (implies
@@ -1415,7 +1469,7 @@
                (equal (logtail 1 (nth i mem-table))
                       (logtail 1 (nth lower mem-table)))))
 
-    (defthml member-mem-table-entries-logic-lema-4
+    (defthml member-mem-table-entries-logic-lemma-4
       (implies (and (syntaxp (equal i 'i))
                     (equal (nth lower mem-table) 1)
                     (integerp i)
@@ -1889,83 +1943,6 @@
     :hints (("Goal" :in-theory (e/d (x86$cp good-memp ash-less-than-constant)
                                     ()))))
 
-  (encapsulate
-   ()
-
-   ;; [Shilpi]: Use of arith-5 is so ugly here.  Some theory invariant
-   ;; of arith-5 breaks with the disable form in this encapsulate, which
-   ;; makes ACL2 spew out ugly stuff.  This definitely needs cleaning up
-   ;; someday.
-
-   (local (include-book "arithmetic-5/top" :dir :system))
-
-   (defthm breaking-logior-apart-1
-     (implies (and (force (unsigned-byte-p *mem-table-size-bits* low25-i))
-                   (force (unsigned-byte-p *mem-table-size-bits* low25-j))
-                   (equal (logior (loghead *2^x-byte-pseudo-page* i)
-                                  (ash low25-i *2^x-byte-pseudo-page*))
-                          (logior (loghead *2^x-byte-pseudo-page* j)
-                                  (ash low25-j *2^x-byte-pseudo-page*))))
-              (equal low25-i low25-j))
-     :hints
-     (("Goal"
-       :use ((:instance logior-loghead-to-+-loghead
-                        (n *2^x-byte-pseudo-page*)
-                        (i i)
-                        (x*2^n (ash low25-i *2^x-byte-pseudo-page*)))
-             (:instance logior-loghead-to-+-loghead
-                        (n *2^x-byte-pseudo-page*)
-                        (i j)
-                        (x*2^n (ash low25-j *2^x-byte-pseudo-page*))))))
-     :rule-classes nil)
-
-   (defthmd breaking-logior-apart-2
-     (implies (and (force (unsigned-byte-p *mem-table-size-bits* low25-i))
-                   (force (unsigned-byte-p *mem-table-size-bits* low25-j))
-                   (equal (logior (loghead *2^x-byte-pseudo-page* i)
-                                  (ash low25-i *2^x-byte-pseudo-page*))
-                          (logior (loghead *2^x-byte-pseudo-page* j)
-                                  (ash low25-j *2^x-byte-pseudo-page*))))
-              (equal (loghead *2^x-byte-pseudo-page* i)
-                     (loghead *2^x-byte-pseudo-page* j)))
-     :hints (("Goal"
-              :use ((:instance breaking-logior-apart-1)))))
-
-   (local (in-theory (disable
-                      (:rewrite acl2::|(/ (expt x n))|)
-                      (:rewrite acl2::expt-minus)
-                      (:rewrite
-                       acl2::exponents-add-for-nonneg-exponents)
-                      (:rewrite acl2::|(* c (expt d n))|)
-                      (:rewrite acl2::bubble-down-*-match-1)
-                      (:rewrite
-                       acl2::normalize-factors-gather-exponents)
-                      )))
-
-   (defthm logtail-and-loghead-equality
-     (implies (and (equal (logtail n x) (logtail n y))
-                   (equal (loghead n x) (loghead n y))
-                   (natp x)
-                   (natp y))
-              (equal x y))
-     :hints (("Goal" :in-theory (enable logtail loghead)))
-     :rule-classes ((:forward-chaining
-                     ;; These trigger terms are no good if the hyps of
-                     ;; the theorem to be proved have something like
-                     ;; (and (equal (logtail n x) 0)
-                     ;;      (equal (logtail n x) 0))
-                     ;; But, for my use case so far, the following terms
-                     ;; do fine, though (equal (loghead n x) (loghead n
-                     ;; y)) is not a good candidate since logheads
-                     ;; appear separately, like:
-                     ;; (and (equal (loghead n x) 0)
-                     ;;      (equal (loghead n x) 0))
-                     :trigger-terms ((equal (logtail n x) (logtail n y))
-                                     ;; (equal (loghead n x) (loghead n y))
-                                     ))))
-
-   )
-
   (defthml mem-table-is-one-to-one-logtail
     (implies (and (x86$cp x86$c)
                   (unsigned-byte-p *mem-table-size-bits* i)
@@ -2052,7 +2029,7 @@
                               mem-array-next-addr-is-expected-mem-array-next-addr))
              :use
              ((:instance expected-mem-array-next-addr-bound-when-page-absent
-                         (i (logtail 27 i)))
+                         (i (logtail *2^x-byte-pseudo-page* i)))
               (:instance mem-array-next-addr-is-expected-mem-array-next-addr)
               (:instance breaking-logior-apart-2
                          (low25-i (nth *mem-array-next-addr* x86$c))
@@ -2084,7 +2061,7 @@
                               mem-array-next-addr-is-expected-mem-array-next-addr))
              :use
              ((:instance expected-mem-array-next-addr-bound-when-page-absent
-                         (i (logtail 27 i)))
+                         (i (logtail *2^x-byte-pseudo-page* i)))
               (:instance mem-array-next-addr-is-expected-mem-array-next-addr)
               (:instance breaking-logior-apart-2
                          (low25-i (nth *mem-array-next-addr* x86$c))
@@ -2187,48 +2164,37 @@
 
   (defthm equal-logior-logior
     (implies (and (natp x1) (natp x2) (natp y1) (natp y2))
-             (iff (equal (logior (loghead 27 x1)
-                                 (ash y1 27))
-                         (logior (loghead 27 x2)
-                                 (ash y2 27)))
-                  (and (equal (loghead 27 x1)
-                              (loghead 27 x2))
-                       (equal (ash y1 27)
-                              (ash y2 27)))))
+             (iff (equal (logior (loghead *2^x-byte-pseudo-page* x1)
+                                 (ash y1 *2^x-byte-pseudo-page*))
+                         (logior (loghead *2^x-byte-pseudo-page* x2)
+                                 (ash y2 *2^x-byte-pseudo-page*)))
+                  (and (equal (loghead *2^x-byte-pseudo-page* x1)
+                              (loghead *2^x-byte-pseudo-page* x2))
+                       (equal (ash y1 *2^x-byte-pseudo-page*)
+                              (ash y2 *2^x-byte-pseudo-page*)))))
     :hints (("Goal"
              :in-theory (disable bitops::loghead-of-logior bitops::logtail-of-logior)
              :use ((:instance bitops::loghead-of-logior
-                              (a 27) (x (loghead 27 x1)) (y (ash y1 27)))
+                              (a *2^x-byte-pseudo-page*)
+                              (x (loghead *2^x-byte-pseudo-page* x1))
+                              (y (ash y1 *2^x-byte-pseudo-page*)))
                    (:instance bitops::loghead-of-logior
-                              (a 27) (x (loghead 27 x2)) (y (ash y2 27)))
+                              (a *2^x-byte-pseudo-page*)
+                              (x (loghead *2^x-byte-pseudo-page* x2))
+                              (y (ash y2 *2^x-byte-pseudo-page*)))
                    (:instance bitops::logtail-of-logior
-                              (a 27) (x (loghead 27 x1)) (y (ash y1 27)))
+                              (a *2^x-byte-pseudo-page*)
+                              (x (loghead *2^x-byte-pseudo-page* x1))
+                              (y (ash y1 *2^x-byte-pseudo-page*)))
                    (:instance bitops::logtail-of-logior
-                              (a 27) (x (loghead 27 x2)) (y (ash y2 27)))))))
-
-  (encapsulate
-   ()
-   (local (include-book "arithmetic-5/top" :dir :system))
-   (defthm equal-ash-ash
-     (implies (and (natp x) (natp y) (natp n))
-              (equal (equal (ash x n) (ash y n))
-                     (equal x y)))
-     :hints (("Goal" :in-theory (enable ash)))))
+                              (a *2^x-byte-pseudo-page*)
+                              (x (loghead *2^x-byte-pseudo-page* x2))
+                              (y (ash y2 *2^x-byte-pseudo-page*)))))))
 
   (defthm x86$cp-implies-natp-next-addr
     (implies (force (x86$cp x86$c))
              (natp (nth *mem-array-next-addr* x86$c)))
     :rule-classes :type-prescription)
-
-  (encapsulate
-   ()
-   (local (include-book "arithmetic-5/top" :dir :system))
-   (defthm <=-logior
-     (and (implies (and (natp x) (natp y))
-                   (<= y (logior x y)))
-          (implies (and (natp x) (natp y))
-                   (<= x (logior x y))))
-     :rule-classes :linear))
 
   (defthm |addr < 2 * len-mem-array FORCED|
     (implies (forced-and (<= *initial-mem-array-length* (len (nth *mem-arrayi* x86$c)))
@@ -2244,16 +2210,14 @@
 
   (defthm read-write-different-helper-lemma-4
     (implies (x86$cp x86$c)
-             (<= 1342177280
+             (<= *initial-mem-array-length*
                  (len (nth *mem-arrayi* x86$c))))
     :hints (("Goal" :in-theory (enable x86$cp good-memp)))
     :rule-classes :linear)
 
   (defthm expected-mem-array-bound-better
     (implies (force (natp table-len))
-             (<= (expected-mem-array-next-addr 0
-                                               table-len
-                                               x86$c)
+             (<= (expected-mem-array-next-addr 0 table-len x86$c)
                  table-len))
     :hints (("Goal" :use ((:instance expected-mem-array-bound-general
                                      (i 0)
@@ -2262,33 +2226,8 @@
 
   (encapsulate
    ()
-   (local (include-book "arithmetic-5/top" :dir :system))
 
-   (defthm len-nth-*mem-arrayi*
-     (implies (x86$cp x86$c)
-              (<= (ash (nth *mem-array-next-addr* x86$c)
-                       27)
-                  4503599627370496))
-     :hints (("Goal" :in-theory (e/d (x86$cp good-memp))))
-     :rule-classes :linear))
-
-  (encapsulate
-   ()
-
-   (local
-    (encapsulate
-     ()
-
-     (local (include-book "arithmetic-5/top" :dir :system))
-
-     (defthm hack ; len = (len (nth *mem-arrayi* x86$c))
-       (implies (and (equal (ash e 27) len)
-                     (natp e) ; (expected-mem-array-next-addr 0 33554432 x86$c)
-                     (<= e 33554431)
-                     ;;(<= 4503599627370496 (* 2 len))
-                     )
-                (< (logior (loghead 27 j) len)
-                   4503599627370496)))))
+   (local (in-theory (e/d (concrete-mem-hack) ())))
 
    (local
     (defthm mem-array-next-addr-is-expected-mem-array-next-addr-alt
@@ -2310,13 +2249,13 @@
                            (unsigned-byte-p *physical-address-size* i)
                            (unsigned-byte-p *physical-address-size* j)
                            (n08p v)
-                           ;; (not (equal (logtail 27 i) (logtail 27 j)))
+                           ;; (not (equal (logtail *2^x-byte-pseudo-page* i) (logtail *2^x-byte-pseudo-page* j)))
                            (not (equal i j)))
                (equal (mem$ci j (!mem$ci i v x86$c))
                       (mem$ci j x86$c)))
       :hints (("Goal"
                :use ((:instance expected-mem-array-next-addr-bound-when-page-absent
-                                (i (logtail 27 i))))))))
+                                (i (logtail *2^x-byte-pseudo-page* i))))))))
 
    (defthm read-write
      (implies (forced-and (x86$cp x86$c)
@@ -2329,9 +2268,7 @@
                        (mem$ci i x86$c))))
      :hints (("Goal" :use (read-write-same
                            read-write-different))))
-   )
-  )
-
+   ))
 
 ;; ======================================================================
 

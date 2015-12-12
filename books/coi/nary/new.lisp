@@ -155,8 +155,8 @@
       (cadr term)
     term))
     
-(def::un context-fn (term)
-  (declare (xargs :signature ((wf-primitive-fix) t)))
+(def::un context-fn (term hyps hints)
+  (declare (xargs :signature ((wf-primitive-fix t t) t)))
   (met ((fix-fn old-var moduli) (extract-variables-from-primitive-fix term))
     (let* ((bound-var    (bound-var-name old-var))
            (fix-equiv-fn (fix-equiv-name fix-fn))
@@ -185,16 +185,19 @@
                           (,fix-fn ,@args)))))
          
          (defthm ,fix-equiv-of-fix
-           (,fix-equiv-fn (,fix-fn ,@args) ,@args))
+           ,(let ((conc `(,fix-equiv-fn (,fix-fn ,@args) ,@args)))
+              (if hyps `(implies ,hyps ,conc)
+                conc))
+           ,@(and hints `(:hints ,hints)))
          
          (defthm ,fix-equiv-no-fix
            (,fix-equiv-fn ,old-var ,@args))
        
        ))))
 
-(defmacro def::context (term)
+(defmacro def::context (term &key (hyps 'nil) (hints 'nil))
   (declare (type (satisfies wf-primitive-fix) term))
-  (context-fn term))
+  (context-fn term hyps hints))
 
 #|
 

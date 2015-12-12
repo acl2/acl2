@@ -78,7 +78,7 @@ allow extending table guards.
        (if ',skip-proof
          (value nil)
          (thm-fn `(implies ,old-guard ,(car new-guard-cons))
-                 state ',hints nil nil))
+                 state ',hints nil))
        (value `(table ,',name nil nil :guard ,(car new-guard-cons)))))))
 
 ; adds specified key to acl2-defaults-table with guard for its value.

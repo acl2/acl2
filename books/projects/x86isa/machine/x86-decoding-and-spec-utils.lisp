@@ -386,10 +386,13 @@ field conveying useful information. </li>
 
   (define x86-operand-from-modr/m-and-sib-bytes
 
-    ((reg-type      :type (unsigned-byte  1) "@('reg-type') is @('*rgf-access*') for GPRs, and @('*xmm-access*') for XMMs.")
+    ((reg-type      :type (unsigned-byte  1)
+                    "@('reg-type') is @('*rgf-access*') for GPRs, and @('*xmm-access*') for XMMs.")
      (operand-size  :type (member 1 2 4 6 8 10 16))
-     (p2            :type (unsigned-byte  8) "Segment Override Prefix")
-     (p4?           :type (or t nil)         "Address-Size Override Prefix Present?")
+     (p2            :type (unsigned-byte  8)
+                    "Segment Override Prefix")
+     (p4?           :type (or t nil)
+                    "Address-Size Override Prefix Present?")
      (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
      (rex-byte      :type (unsigned-byte 8))
      (r/m           :type (unsigned-byte 3))
@@ -545,7 +548,6 @@ field conveying useful information. </li>
                            num-imm-bytes x86))))))
 
   (define x86-operand-to-reg/mem
-
     ((operand-size :type (member 1 2 4 6 8 10 16))
      (operand      :type (integer 0 *))
      (v-addr       :type (signed-byte #.*max-linear-address-size*))
@@ -587,6 +589,7 @@ field conveying useful information. </li>
   (define x86-operand-to-xmm/mem
 
     ((operand-size :type (member 4 8 16))
+     (aligned      booleanp)
      (operand      :type (integer 0 *))
      (v-addr       :type (signed-byte #.*max-linear-address-size*))
      (rex-byte     :type (unsigned-byte 8))
@@ -607,6 +610,10 @@ field conveying useful information. </li>
                                   operand x86)))
             (mv nil x86)))
 
+         ;; [Aligned check contributed by Dmitry Nadezhin, thanks!]
+         ((when (and aligned (not (equal (and v-addr #xF) 0))))
+          (mv t x86))
+
          ((mv flg x86)
           (wm-size operand-size v-addr operand x86)))
         (mv flg x86))
@@ -615,10 +622,12 @@ field conveying useful information. </li>
 
     (defthm x86p-x86-operand-to-xmm/mem
       (implies (force (x86p x86))
-               (x86p (mv-nth 1 (x86-operand-to-xmm/mem operand-size
-                                                       operand v-addr
-                                                       rex-byte r/m mod
-                                                       x86))))
+               (x86p
+                (mv-nth 1 (x86-operand-to-xmm/mem
+                           operand-size aligned
+                           operand v-addr
+                           rex-byte r/m mod
+                           x86))))
       :hints (("Goal" :in-theory (e/d () (force (force))))))))
 
 ;; ======================================================================
@@ -659,12 +668,16 @@ field conveying useful information. </li>
 ;; ----------------------------------------------------------------------
 
 (defmacro def-inst
-  (name &key (operation 'nil)
-        (sp/dp 'nil)
+  (name &key
         ;; Will raise an error as a part of calling
         ;; add-to-implemented-opcodes-table when def-inst is expanded
         ;; and "implemented" is not an embedded event form.
         (implemented 't)
+        (operation   'nil)
+        (sp/dp       'nil)
+        (dp-to-sp    'nil)
+        (high/low    'nil)
+        (trunc       'nil)
         body parents short long
         inline enabled guard-debug guard
         guard-hints (verify-guards 't) prepwork thms
@@ -672,8 +685,11 @@ field conveying useful information. </li>
 
   (if body
       `(define ,name
-         (,@(and operation `((operation :type (integer 0 8))))
+         (,@(and operation `((operation :type (integer 0 36))))
           ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
+          ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
+          ,@(and high/low  `((high/low  :type (integer 0 1))))
+          ,@(and trunc     `((trunc     booleanp)))
           (start-rip :type (signed-byte   #.*max-linear-address-size*))
           (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
           (prefixes  :type (unsigned-byte 43))

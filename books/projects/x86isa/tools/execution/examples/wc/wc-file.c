@@ -5,6 +5,9 @@
 // This program takes in the name of a file as input and prints out
 // the number of characters, words, and lines in it.
 
+#include <stdio.h>
+#include <stdint.h>
+
 #define IN  0
 #define OUT 1
 
@@ -21,6 +24,7 @@ static int sysread_num  = 0x2000003;
 static int syswrite_num = 0x2000004;
 static int sysopen_num  = 0x2000005;
 #endif
+
 
 int writeNumberToBuffer(char* buffer, int bufSize, int number) {
   int numSize = 0, div = 1;
@@ -50,8 +54,8 @@ int writeNumberToBuffer(char* buffer, int bufSize, int number) {
 }
 
 int syscall_read(int fd, void* buf, long int count) {
-  int ret;
-  int num = sysread_num;
+  uint64_t ret;
+  uint64_t num = (uint64_t)sysread_num;
   __asm__ volatile                    // volatile indicates not to
     (                                 // be optimized by gcc
      "mov %1, %%rax\n\t"              // System call number in RAX
@@ -60,11 +64,11 @@ int syscall_read(int fd, void* buf, long int count) {
      "mov %4, %%rdx\n\t"              // Third parameter in RDX
      "syscall"
      : "+a"(ret)                      // return value to be moved to 'ret'
-                                      // 'a' indicates RAX
+				      // 'a' indicates RAX
 
-     : "g"(num), "g"(fd),             // input arguments, 'g' indicates these
-       "g"(buf), "g"(count)           // can be stored anywhere expect in registers
-                                      // that are not general-purpose registers
+     : "g"(num), "g"((uint64_t)fd),               // input arguments, 'g' indicates these
+       "g"((uint64_t)buf), "g"((uint64_t)count)   // can be stored anywhere expect in registers
+						  // that are not general-purpose registers
 
      : "%rdi",                        // Clobbered registers - the registers that
        "%rsi",                        // are used by the assembly code
@@ -73,42 +77,42 @@ int syscall_read(int fd, void* buf, long int count) {
        "%rcx",                        // RCX and R11 are used by kernel
        "%r11"                         // and destroyed
      );
-  return ret;
+  return (int)ret;
 }
 
 
 int syscall_open(char* pathname, unsigned int flags, unsigned int mode) {
-  int ret;
-  int num = sysopen_num;
+  uint64_t ret;
+  uint64_t num = (uint64_t)sysopen_num;
   __asm__ volatile
     (
-        "mov %1, %%rax\n\t"
-        "mov %2, %%rdi\n\t"
-        "mov %3, %%rsi\n\t"
-        "mov %4, %%rdx\n\t"
-        "syscall"
-        : "+a"(ret)
-        : "g"(num), "g"(pathname), "g"(flags), "g"(mode)
-        : "%rdi", "%rsi", "%rdx", "%rcx", "%r11", "cc", "memory"
+	"mov %1, %%rax\n\t"
+	"mov %2, %%rdi\n\t"
+	"mov %3, %%rsi\n\t"
+	"mov %4, %%rdx\n\t"
+	"syscall"
+	: "+a"(ret)
+	: "g"(num), "g"((uint64_t)pathname), "g"((uint64_t)flags), "g"((uint64_t)mode)
+	: "%rdi", "%rsi", "%rdx", "%rcx", "%r11", "cc", "memory"
     );
-  return ret;
+  return (int)ret;
 }
 
 int syscall_write(int fd, void* buf, long int count) {
-  int ret;
-  int num = syswrite_num;
+  uint64_t ret;
+  uint64_t num = (uint64_t)syswrite_num;
   __asm__ volatile
     (
-        "mov %1, %%rax\n\t"
-        "mov %2, %%rdi\n\t"
-        "mov %3, %%rsi\n\t"
-        "mov %4, %%rdx\n\t"
-        "syscall"
-        : "+a"(ret)
-        : "g"(num), "g"(fd), "g"(buf), "g"(count)
-        : "%rdi", "%rsi", "%rdx", "%rcx", "%r11", "cc", "memory"
+	"mov %1, %%rax\n\t"
+	"mov %2, %%rdi\n\t"
+	"mov %3, %%rsi\n\t"
+	"mov %4, %%rdx\n\t"
+	"syscall"
+	: "+a"(ret)
+	: "g"(num), "g"((uint64_t)fd), "g"((uint64_t)buf), "g"((uint64_t)count)
+	: "%rdi", "%rsi", "%rdx", "%rcx", "%r11", "cc", "memory"
     );
-  return ret;
+  return (int)ret;
 }
 
 
@@ -126,7 +130,7 @@ int main() {
 
     ret = syscall_read(0, filename, filename_count);
     if (ret == -1) {
-        return 0;
+	return 0;
     }
 
     nBytes = ret;
@@ -134,34 +138,34 @@ int main() {
 
     ret = syscall_open(filename, 0, 0);
     if (ret == -1) {
-        return 0;
+	return 0;
     }
 
     fd = ret;
     do {
       ret = syscall_read(fd, buffer, buffer_count);
       if (ret == -1) {
-        return 0;
+	return 0;
       }
 
       nBytes = ret;
       if (nBytes == 0) {
-        break;
+	break;
       }
 
       for (i = 0; i < nBytes; i++) {
-        ++nc;
-        if (buffer[i] == '\n') {
-          ++nl;
-        }
-        if (buffer[i] == ' ' || buffer[i] == '\n' || buffer[i] == '\t' ||
-            buffer[i] == ',' || buffer[i] == '.' || buffer[i] == ';') {
-          state = OUT;
-        }
-        else if (state == OUT) {
-          state = IN;
-          ++nw;
-        }
+	++nc;
+	if (buffer[i] == '\n') {
+	  ++nl;
+	}
+	if (buffer[i] == ' ' || buffer[i] == '\n' || buffer[i] == '\t' ||
+	    buffer[i] == ',' || buffer[i] == '.' || buffer[i] == ';') {
+	  state = OUT;
+	}
+	else if (state == OUT) {
+	  state = IN;
+	  ++nw;
+	}
       }
     }
     while (nBytes == buffer_count);
@@ -206,7 +210,8 @@ int main() {
 
 //
 // Assembly code entry point is _start()
-//
+// Use this if no std libs are being included.
+/*
 void _start() {
   main();
   asm (
@@ -214,3 +219,4 @@ void _start() {
        "xor %rdi, %rdi;"
        "syscall");
 }
+*/

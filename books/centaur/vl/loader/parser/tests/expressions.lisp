@@ -320,6 +320,18 @@
    (make-exprtest :input "$foo()"
                   :successp nil)
 
+   ;; These next three are important for property parsing to work correctly.
+   (make-exprtest :input "a[*]"
+                  :expect '(id "a")
+                  :remainder "[ * ]")
+
+   (make-exprtest :input "a[=]"
+                  :expect '(id "a")
+                  :remainder "[ = ]")
+
+   (make-exprtest :input "a[->]"
+                  :expect '(id "a")
+                  :remainder "[ -> ]")
 
    ))
 

@@ -3,6 +3,6 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 (in-package "ACL2")
-; cert-flags: ? t :acl2x t
+; cert-flags: ? t
 ; cert_param: (acl2x)
 (certify-book "acl2x-pcert-test-1" ? t :acl2x t)

@@ -190,7 +190,8 @@ argument (unless the whole form fits on the line).</li>
   :fix print-base-fix
   :equiv print-base-equiv
   :define t
-  :forward t)
+  :forward t
+  :topic print-base-p)
 
 (fty::defprod printconfig
   :tag :printconfig
@@ -964,7 +965,8 @@ parts.</p>"
   :fix keyword-fix
   :equiv keyword-equiv
   :define t
-  :forward t)
+  :forward t
+  :topic keywordp)
 
 (fty::defprod pflat
   :parents (printer-instructions)

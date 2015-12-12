@@ -338,18 +338,17 @@ BOZO what is going on here?
                           :suppress-lisp-errors t))
        ((when successp)
         (er hard? 'oracle-timelimit "Guard didn't get violated?")
-        state)
+        (value nil))
        (- (check-time-and-bytes time bytes))
        ((unless (equal ans 99))
         (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
-        state))
-    state))
+        (value nil)))
+    (value nil)))
 
 (make-event
  ;; BOZO too bad this doesn't explain what the error was.
- (let ((state
-        (with-guard-checking :all (test9 5 state))))
-   (value '(value-triple :success))))
+ (er-progn (with-guard-checking-error-triple :all (test9 5 state))
+           (value '(value-triple :success))))
 
 
 

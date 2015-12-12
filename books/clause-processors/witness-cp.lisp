@@ -2004,7 +2004,6 @@ witness-disable just as they are used in the ruleset argument of WITNESS.</p>")
 (defun defquant-fn (name vars quant-expr define
                          wcp-witness-rulename
                          instance-rulename
-                         doc
                          quant-ok
                          skolem-name
                          thm-name
@@ -2041,7 +2040,6 @@ witness-disable just as they are used in the ruleset argument of WITNESS.</p>")
 
   `(progn
      ,@(and define `((defun-sk ,name ,vars ,quant-expr
-                       :doc ,doc
                        :quant-ok ,quant-ok
                        :skolem-name ,skolem-name
                        :thm-name ,thm-name
@@ -2088,7 +2086,6 @@ following additional keywords:</p>
                          wcp-witness-rulename
                          instance-rulename
                          ;; defun-sk args
-                         doc
                          quant-ok
                          skolem-name
                          thm-name
@@ -2099,7 +2096,6 @@ following additional keywords:</p>
 
 
   (defquant-fn name vars quant-expr define wcp-witness-rulename instance-rulename
-    doc
     quant-ok
     skolem-name
     thm-name

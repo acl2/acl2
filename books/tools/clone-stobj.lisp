@@ -102,10 +102,12 @@
     (append fields
             (and renaming (list :renaming new-renaming))
             (and inline (list :inline (cdr inline)))
-            (list :doc
-                  (concatenate 'string "Clone of stobj "
-                               (symbol-name stobjname))
-                  :congruent-to stobjname))))
+            (list
+; Matt K. mod: :doc is no longer supported for defstobj after v7-1
+             ;; :doc
+             ;; (concatenate 'string "Clone of stobj "
+             ;; (symbol-name stobjname))
+             :congruent-to stobjname))))
 
 (defun clone-stobj-rewrite (newfn oldfn formals)
   (let ((thmname (intern-in-package-of-symbol

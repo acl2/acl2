@@ -61,7 +61,9 @@ these are pretty minor and uninteresting.</p>")
 
 (defenum vl-op-ac-p
   (:vl-binary-plus
-   :vl-binary-times
+   ;; We previously included :vl-binary-times here, but after this warning came
+   ;; up a few times, we decided that we don't want to warn about A*A.
+   ;; :vl-binary-times
    :vl-binary-logand
    :vl-binary-logor
    :vl-binary-bitand
@@ -330,7 +332,10 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                    ;; about them in certain cases...
                    (suppress-p
                     (and
-                     (member x.op '(:vl-binary-plus :vl-binary-times))
+                     (member x.op '(:vl-binary-plus
+                                    ;; We no longer consider * anyway
+                                    ;; :vl-binary-times
+                                    ))
                      (or
                       ;; Index computations, especially those involving
                       ;; parameters, often have duplicate arguments.  For

@@ -314,66 +314,56 @@
          (cdr body)))
     nil))
 
-(defmacro defstub (name &rest rst)
-  (mv-let (erp args key-alist)
-          (partition-rest-and-keyword-args rst '(:doc))
-          (cond
-           ((or erp
-                (not (or (equal (length args) 2)
-                         (and (equal (length args) 3)
-                              (symbol-listp (car args))
-                              (symbolp (cadr args))
-                              (equal (symbol-name (cadr args)) "=>")))))
-            `(er soft 'defstub
-                 "Defstub must be of the form (defstub name formals ~
-                  body) or (defstub name args-sig => body-sig), where ~
-                  args-sig is a true-list of symbols.  Both ~
-                  forms permit an optional, final :DOC doc-string ~
-                  argument.  See :DOC defstub."))
-           (t
-            (let ((doc (cdr (assoc-eq :doc key-alist))))
-              (cond
-               ((equal (length args) 2)
+(defmacro defstub (name &rest args)
+  (cond
+   ((not (or (equal (length args) 2)
+             (and (equal (length args) 3)
+                  (symbol-listp (car args))
+                  (symbolp (cadr args))
+                  (equal (symbol-name (cadr args)) "=>"))))
+    `(er soft 'defstub
+         "Defstub must be of the form (defstub name formals body) or (defstub ~
+          name args-sig => body-sig), where args-sig is a true-list of ~
+          symbols.  See :DOC defstub."))
+   ((equal (length args) 2)
 
 ; Old style
-                (let* ((formals (car args))
-                       (body (cadr args))
-                       (ignores (defstub-ignores formals body)))
-                  `(encapsulate
-                    ((,name ,formals ,body))
-                    (logic)
-                    (local
-                     (defun ,name ,formals
-                       (declare (ignore ,@ignores))
-                       ,body))
-                    ,@(and (consp body)
-                           (eq (car body) 'mv)
-                           `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
-                                                 name)
-                               (true-listp (,name ,@formals))
-                               :rule-classes :type-prescription)))
-                    ,@(if doc `((defdoc ,name ,doc)) nil))))
-               (t (let* ((args-sig (car args))
-                         (body-sig (caddr args))
-                         (formals (gen-formals-from-pretty-flags args-sig))
-                         (body (defstub-body body-sig))
-                         (ignores (defstub-ignores formals body))
-                         (stobjs (collect-non-x '* args-sig)))
-                    `(encapsulate
-                      (((,name ,@args-sig) => ,body-sig))
-                      (logic)
-                      (local
-                       (defun ,name ,formals
-                         (declare (ignore ,@ignores)
-                                  (xargs :stobjs ,stobjs))
-                         ,body))
-                      ,@(and (consp body-sig)
-                             (eq (car body-sig) 'mv)
-                             `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
-                                                   name)
-                                 (true-listp (,name ,@formals))
-                                 :rule-classes :type-prescription)))
-                      ,@(if doc `((defdoc ,name ,doc)) nil))))))))))
+    (let* ((formals (car args))
+           (body (cadr args))
+           (ignores (defstub-ignores formals body)))
+      `(encapsulate
+         ((,name ,formals ,body))
+         (logic)
+         (local
+          (defun ,name ,formals
+            (declare (ignore ,@ignores))
+            ,body))
+         ,@(and (consp body)
+                (eq (car body) 'mv)
+                `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
+                                      name)
+                    (true-listp (,name ,@formals))
+                    :rule-classes :type-prescription))))))
+   (t (let* ((args-sig (car args))
+             (body-sig (caddr args))
+             (formals (gen-formals-from-pretty-flags args-sig))
+             (body (defstub-body body-sig))
+             (ignores (defstub-ignores formals body))
+             (stobjs (collect-non-x '* args-sig)))
+        `(encapsulate
+           (((,name ,@args-sig) => ,body-sig))
+           (logic)
+           (local
+            (defun ,name ,formals
+              (declare (ignore ,@ignores)
+                       (xargs :stobjs ,stobjs))
+              ,body))
+           ,@(and (consp body-sig)
+                  (eq (car body-sig) 'mv)
+                  `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
+                                        name)
+                      (true-listp (,name ,@formals))
+                      :rule-classes :type-prescription))))))))
 
 ;; RAG - I changed the primitive guard for the < function, and the
 ;; complex function.  Added the functions complexp, realp, and floor1.
@@ -804,31 +794,31 @@
 
 ; End of Essay on Abbreviating Live Stobjs
 
-(defabbrev flambda-applicationp (term)
+(defmacro flambda-applicationp (term)
 
 ; Term is assumed to be nvariablep.
 
-  (consp (car term)))
+  `(consp (car ,term)))
 
 (defabbrev lambda-applicationp (term)
   (and (consp term)
        (flambda-applicationp term)))
 
-(defabbrev flambdap (fn)
+(defmacro flambdap (fn)
 
 ; Fn is assumed to be the fn-symb of some term.
 
-  (consp fn))
+  `(consp ,fn))
 
-(defabbrev lambda-formals (x) (cadr x))
+(defmacro lambda-formals (x) `(cadr ,x))
 
-(defabbrev lambda-body (x) (caddr x))
+(defmacro lambda-body (x) `(caddr ,x))
 
-(defabbrev make-lambda (args body)
-  (list 'lambda args body))
+(defmacro make-lambda (args body)
+  `(list 'lambda ,args ,body))
 
-(defabbrev make-let (bindings body)
-  (list 'let bindings body))
+(defmacro make-let (bindings body)
+  `(list 'let ,bindings ,body))
 
 (defun doubleton-list-p (x)
   (cond ((atom x) (equal x nil))
@@ -1028,6 +1018,36 @@
 ;                        (ts-builder-case-listp (cdr args)))))
   (ts-builder-macro (car args) (cdr args)))
 
+(defmacro ffn-symb-p (term sym)
+
+; Term and sym should be expressions that evaluate to a pseudo-termp and a
+; symbol, respectively.
+
+  (cond
+   ((symbolp term)
+    `(and (nvariablep ,term)
+;         (not (fquotep ,term))
+          (eq (ffn-symb ,term) ,sym)))
+
+; If we bind term then in general, we need to bind sym too, even though it only
+; occurs once below.  Consider for example the expansion of (ffn-symb-p x (foo
+; term)), where presumably term is bound above.  We need to avoid capturing the
+; occurrence of term in (foo term), which is solved by binding sym here.  Of
+; course, if sym is of the form (quote v) then this isn't an issue.
+
+   ((and (consp sym)
+         (eq (car sym) 'quote))
+    `(let ((term ,term))
+       (and (nvariablep term)
+;           (not (fquotep term))
+            (eq (ffn-symb term) ,sym))))
+   (t
+    `(let ((term ,term)
+           (sym ,sym))
+       (and (nvariablep term)
+;           (not (fquotep term))
+            (eq (ffn-symb term) sym))))))
+
 (defabbrev strip-not (term)
 
 ; A typical use of this macro is:
@@ -1037,42 +1057,34 @@
 ; is of the form (NOT x) and binding not-flg to NIL and atm to term
 ; otherwise.
 
-  (cond ((and (nvariablep term)
-;             (nquotep term)
-              (eq (ffn-symb term) 'not))
+  (cond ((ffn-symb-p term 'not)
          (mv t (fargn term 1)))
         (t (mv nil term))))
 
-(defabbrev equalityp (term)
+(defmacro equalityp (term)
 
 ; Note that the fquotep below is commented out.  This function violates
 ; our standard rules on the use of ffn-symb but is ok since we are looking
 ; for 'equal and not for 'quote or any constructor that might be hidden
 ; inside a quoted term.
 
-  (and (nvariablep term)
-;      (not (fquotep term))
-       (eq (ffn-symb term) 'equal)))
+  `(ffn-symb-p ,term 'equal))
 
-(defabbrev inequalityp (term)
+(defmacro inequalityp (term)
 
 ; Note that the fquotep below is commented out.  This function violates
 ; our standard rules on the use of ffn-symb but is ok since we are looking
 ; for 'equal and not for 'quote or any constructor that might be hidden
 ; inside a quoted term.
 
-  (and (nvariablep term)
-;      (not (fquotep term))
-       (eq (ffn-symb term) '<)))
+  `(ffn-symb-p ,term '<))
 
-(defabbrev consityp (term)
+(defmacro consityp (term)
 
 ; Consityp is to cons what equalityp is equal:  it recognizes terms
 ; that are non-evg cons expressions.
 
-  (and (nvariablep term)
-       (not (fquotep term))
-       (eq (ffn-symb term) 'cons)))
+  `(ffn-symb-p ,term 'cons))
 
 (defun print-current-idate (channel state)
   (mv-let (d state)
@@ -3249,10 +3261,10 @@
 
 #+acl2-loop-only
 (defmacro add-ld-keyword-alias! (key val)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'summary 'event (@ inhibit-output-lst))))
-    (progn (table ld-keyword-aliases ,key ,val)
-           (table ld-keyword-aliases))))
+  `(with-output
+     :off (event summary)
+     (progn (table ld-keyword-aliases ,key ,val)
+            (table ld-keyword-aliases))))
 
 #-acl2-loop-only
 (defmacro add-ld-keyword-alias! (key val)
@@ -3264,10 +3276,10 @@
 
 #+acl2-loop-only
 (defmacro set-ld-keyword-aliases! (alist)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'summary 'event (@ inhibit-output-lst))))
-    (progn (table ld-keyword-aliases nil ',alist :clear)
-           (table ld-keyword-aliases))))
+  `(with-output
+     :off (event summary)
+     (progn (table ld-keyword-aliases nil ',alist :clear)
+            (table ld-keyword-aliases))))
 
 #-acl2-loop-only
 (defmacro set-ld-keyword-aliases! (alist)

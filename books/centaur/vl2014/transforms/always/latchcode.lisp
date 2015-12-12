@@ -46,7 +46,13 @@ latch recognition is extremely primitive.</p>")
 
 (local (xdoc::set-default-parents latchcode))
 
+(local (defthm crock
+         (implies (vl-assignstmt->ctrl x)
+                  (vl-delayoreventcontrol-p (vl-assignstmt->ctrl x)))))
 
+(local (defthm crock2
+         (implies (equal (tag (vl-assignstmt->ctrl x)) :vl-delaycontrol)
+                  (vl-delaycontrol-p (vl-assignstmt->ctrl x)))))
 
 (define vl-match-latchbody-form1 ((x vl-stmt-p))
   :returns (mv (test :hyp :fguard (equal (vl-expr-p test) (if test t nil)))

@@ -2242,6 +2242,12 @@
    (generalizable-terms-across-relations
     cl ens wrld nil)))
 
+(defun ens-from-pspv (pspv)
+  (access rewrite-constant
+          (access prove-spec-var pspv
+                  :rewrite-constant)
+          :current-enabled-structure))
+
 (defun generalize-clause (cl hist pspv wrld state)
 
 ; A standard clause processor of the waterfall.
@@ -2259,11 +2265,7 @@
    ((not (assoc-eq 'being-proved-by-induction
                    (access prove-spec-var pspv :pool)))
     (mv 'miss nil nil nil))
-   (t (let* ((ens (access rewrite-constant
-                          (access prove-spec-var
-                                  pspv
-                                  :rewrite-constant)
-                          :current-enabled-structure))
+   (t (let* ((ens (ens-from-pspv pspv))
              (terms (generalizable-terms cl ens wrld)))
         (cond
          ((null terms)

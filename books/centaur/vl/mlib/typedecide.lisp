@@ -231,12 +231,12 @@
        (warnings nil)
        (arg-type (vl-maybe-exprsign-fix arg-type)))
     (case x.op
-      ((:vl-unary-plus :vl-unary-minus)
+      ((:vl-unary-plus :vl-unary-minus :vl-unary-bitnot)
        ;; From 5.5.1, I believe these fall into the "all other operators"
        ;; rule and just take on the signedness of their argument.
        (mv (ok) arg-type))
 
-      ((:vl-unary-lognot :vl-unary-bitnot :vl-unary-bitand :vl-unary-bitor
+      ((:vl-unary-lognot :vl-unary-bitand :vl-unary-bitor
         :vl-unary-nand :vl-unary-nor :vl-unary-xor :vl-unary-xnor)
        (cond ((eq mode :probably-right)
               ;; We believe the result is always unsigned; see "minutia".

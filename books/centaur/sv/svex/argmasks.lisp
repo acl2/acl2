@@ -594,8 +594,8 @@ every bit of X and Y, with no short circuiting or any kind.</p>"
          (and stable-under-simplificationp
               '(:in-theory (enable 4vmask-all-or-none)))))
 
-(def-svmask ==? (a b)
-  :long "<p>We are considering @('(==? a b)') and we want to compute the care
+(def-svmask safer-==? (a b)
+  :long "<p>We are considering @('(safer-==? a b)') and we want to compute the care
 masks for @('a') and @('b'), given some outer care mask for the whole
 expression.</p>
 
@@ -606,6 +606,36 @@ about any bits at all.</p>
 <p>We can't do anything smart for @('b'), but for @('a') we definitely don't
 care about any bits that are Z in @('b'), since @(see 4vec-wildeq) doesn't care
 about the corresponding bit in @('a').</p>"
+
+  :body (b* (((when (eql mask 0))
+              ;; Don't care about any bits at all.
+              (list 0 0))
+             ((4vec bval) (svex-xeval b))
+             (b-nonz (logorc2 bval.upper bval.lower)))
+          (list b-nonz -1))
+  :prepwork ((local (in-theory (disable* not))))
+  :hints(("Goal" :in-theory (enable svex-apply
+                                    4veclist-nth-safe
+                                    hide-past-second-arg))
+         (and stable-under-simplificationp
+              '(:in-theory (e/d (4vec-wildeq-safe
+                                 3vec-reduction-and
+                                 3vec-bitor
+                                 3vec-bitnot
+                                 4vec-bitxor
+                                 4vec-mask
+                                 4vec-[=)
+                                (svex-eval-gte-xeval))
+                :use ((:instance svex-eval-gte-xeval (x (car args)))
+                      (:instance svex-eval-gte-xeval (x (cadr args))))))
+         (bitops::logbitp-reasoning)
+         (and stable-under-simplificationp '(:bdd (:vars nil)))))
+
+(def-svmask ==? (a b)
+  :long "<p>We just reuse the argmasks for @('safer-==?') here.  We could
+someday check for bits in @('b') that are known to be @('x') and mark them as
+don't-cares for @('a'), but we currently don't have a good way to find bits
+that are known to be @('x').</p>"
 
   :body (b* (((when (eql mask 0))
               ;; Don't care about any bits at all.

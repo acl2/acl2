@@ -70,7 +70,7 @@ tests that expressions were sensible.  The result was copious error handling
 code, difficult and tedious proofs about well-formedness (e.g., see @(see
 vl2014::welltyped)), and additional interfacing layers such as the @(see
 vl2014::hid-tools) to hide the problem.  These layers became ever more complex
-as we implemented more of SystemVerilog, e.g., scope expressions and data type
+as we implemented more of SystemVerilog, e.g., scope expressions and datatype
 indexing greatly complicated the handling of hierarchical identifiers.</p>
 
 <p>Reflecting on these problems, and considering our improving ability to
@@ -123,20 +123,26 @@ and generally makes it easier to write safe expression-processing code.</p>")
          something like that, you probably want a @(see vl-maybe-exprsign)
          instead.</p>
 
-         <p>Note that the Verilog standards sometimes use the word ``type'' to
-         refer to the signedness of things.  Back in Verilog-2005, before there
-         were fancy types like structs and unions, the ``type'' of an
-         expression generally meant whether it was considered a real number, a
-         signed integer, an unsigned integer, and maybe other vaguely specified
-         things.</p>
+         <p>The signedness of wires and variables in VL is now generally part
+         of their @(see vl-datatype); see especially @(see
+         vl-datatype-signedness).  See also @(see portdecl-sign).</p>
 
-         <p>Now that SystemVerilog-2012 has much richer types, it is mostly
-         just confusing to use the word ``type'' in place of signedness.  But
-         this is still done occasionally.  Most notably, it happens in Section
-         11.8.1, which seems to be adapted from Verilog-2005's Section 5.5.1,
-         and explains how to compute the ``type'' of an expression, which
-         mostly means its signedness and has little to do with any kind of
-         fancy SystemVerilog types.</p>")
+         <p>Note about the word ``<b>type</b>.''  The Verilog-2005 and
+         SystemVerilog-2012 standards sometimes use the word ``type'' to refer
+         to the signedness of things.  Back in Verilog-2005 there were no fancy
+         types like structs and unions and the ``type'' of an expression
+         generally meant whether it was a real number, a signed integer, an
+         unsigned integer, and maybe other vaguely specified things.</p>
+
+         <p>With SystemVerilog-2012 adding much richer variable datatypes (see
+         @(see vl-datatype)), it gets very confusing to use the word ``type''
+         in place of signedness.  However, this is still done occasionally.
+         Most notably, it happens in SystemVerilog-2012 Section 11.8.1, which
+         is adapted from Verilog-2005's Section 5.5.1.  This section explains
+         how to compute the ``type'' of an expression, but in this context
+         ``type'' still means signedness and has little to do with any kind of
+         fancy SystemVerilog @(see vl-datatype)-like types.</p>")
+
 
 (defenum vl-exprsign-p
   (:vl-signed :vl-unsigned)
@@ -378,16 +384,22 @@ and generally makes it easier to write safe expression-processing code.</p>")
    :vl-shortreal
    :vl-real
    :vl-realtime
-   ;; misc core data types
+   ;; misc core datatypes
    :vl-string
    :vl-chandle
    :vl-event
    ;; it's convenient to include void here even though it's not part
    ;; of the grammar for data_type
    :vl-void
+   ;; it's convenient to include untyped, sequence, and property here,
+   ;; even though they aren't part of the grammar for data_type, to
+   ;; help simplify the representation of property/sequence ports.
+   :vl-sequence
+   :vl-property
+   :vl-untyped
    )
   :parents (vl-coretype)
-  :short "Basic kinds of data types."
+  :short "Basic kinds of datatypes."
   :long "<p>Our <i>core types</i> basically correspond to the following small
          subset of the valid @('data_type')s:</p>
 
@@ -403,7 +415,12 @@ and generally makes it easier to write safe expression-processing code.</p>")
               | <non core types>
          })
 
-         <p>We include @('void') here only because it's convenient.</p>")
+         <p>We include certain additional keywords here to represent @('void'),
+         and also for @('property'), @('sequence'), and @('untyped') (which can
+         occur in the property/sequence ports for SystemVerilog assertions).
+         This is mostly a convenience that allows us to unify the
+         representation of types in other places throughout the parse
+         tree.</p>")
 
 
 (defxdoc vl-scopename
@@ -632,7 +649,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
 
 (deftypes expressions-and-datatypes
   :parents (syntax)
-  :short "Representation of expressions, data types, and other related,
+  :short "Representation of expressions, datatypes, and other related,
           mutually recursive concepts."
 
   :long "<p>SystemVerilog has a very rich expression language.  For
@@ -654,8 +671,8 @@ and generally makes it easier to write safe expression-processing code.</p>")
          etc.)  See @(see vl-unary), @(see vl-binary), and @(see vl-qmark).</li>
 
          <li>It has certain casting and function call operators that allow for
-         the use of <b>data types directly in expressions</b>, which makes
-         expressions and data types <b>mutually recursive</b> concepts.</li>
+         the use of <b>datatypes directly in expressions</b>, which makes
+         expressions and datatypes <b>mutually recursive</b> concepts.</li>
 
          <li>It has several esoteric operators like @('inside') and the
          streaming operators, which have their own sub-syntax of sorts.</li>
@@ -674,7 +691,11 @@ and generally makes it easier to write safe expression-processing code.</p>")
          <p>A major differences between @(see vl2014) and @(see vl) is that VL
          uses a new, more mutually recursive, and more strongly typed
          expression representation.  See @(see new-expression-representation)
-         for some discussion about the motivation for this change.</p>"
+         for some discussion about the motivation for this change.</p>
+
+         <p>Note that there are many useful functions for working with
+         expressions in @(see mlib).  See most especially @(see expr-tools)
+         which contains many basic functions.</p>"
 
   :post-pred-events
   ((local (defthm impossible-cars-of-vl-expr
@@ -704,7 +725,9 @@ and generally makes it easier to write safe expression-processing code.</p>")
   (deftagsum vl-expr
     :short "Representation of a single SystemVerilog expression."
     :long "<p>For more general background, see @(see expressions-and-datatypes)
-           and @(see new-expression-representation).</p>"
+           and @(see new-expression-representation).  Also note that there are
+           many functions for working with expressions throughout @(see mlib);
+           see especially @(see expr-tools).</p>"
     :measure (two-nats-measure (acl2-count x) 50)
     :base-case-override :vl-literal
 
@@ -1054,7 +1077,10 @@ and generally makes it easier to write safe expression-processing code.</p>")
            instance, if a wire is declared with a range such as @('[7:0]'),
            then it should be selected from using ranges such as @('[3:0]') and
            attempting to select from it using a \"backwards\" part-select such
-           as @('[0:3]') is an error.</p>")
+           as @('[0:3]') is an error.</p>
+
+           <p>See @(see range-tools) for many functions for working with
+           ranges.</p>")
 
   (defoption vl-maybe-range vl-range
     :measure (two-nats-measure (acl2-count x) 110)
@@ -1409,19 +1435,39 @@ and generally makes it easier to write safe expression-processing code.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-  ;; BOZO document these
-
   (deftagsum vl-patternkey
     :measure (two-nats-measure (acl2-count x) 100)
     :parents (vl-pattern)
     :short "A key in an assignment pattern."
     (:expr
-     ;; BOZO This could either be the name of a struct field, or a constant
-     ;; expression (e.g. a parameter name).  But we don't foresee being able to
-     ;; tell this at parse time so we'll leave it to later interpretation.
+     :short "An unambiguous array index pattern key like @('5') or @('foo +
+             bar')."
      ((key vl-expr-p)))
-    (:type ((type vl-datatype-p)))
-    (:default ()))
+    (:structmem
+     :short "A struct member pattern key like @('opcode').  Note that until
+             @(see annotate) is done, this may be a type name which needs to be
+             disambiguated."
+     ((name stringp :rule-classes :type-prescription)))
+    (:type
+     :short "A type pattern key like @('integer') or @('mytype_t')."
+     ((type vl-datatype-p)))
+    (:default
+     :short "The special @('default') pattern key."
+     ())
+    :long "<p>A @('vl-patternkey') represents a single key in an key/value
+           style assignment pattern, such as:</p>
+
+           @({
+                '{ 0: a, 1: b, 2: c, default: 0 }    // assign to some array indices, default others...
+                '{ foo: 3, bar: 5 }                  // assign to struct members by name (maybe)
+                '{ integer: 5, opcode_t: 7 }         // assign to struct members by type (maybe)
+           })
+
+           <p>These kinds of pattern keys are, in general, somewhat ambiguous
+           and difficult to resolve until elaboration time.  To avoid the worst
+           of these ambiguities we impose certain restrictions on the kinds of
+           assignment patterns we support; @(see vl-patternkey-ambiguity) for
+           some notes about this.</p>")
 
   (fty::defalist vl-keyvallist
     :measure (two-nats-measure (acl2-count x) 10)
@@ -1452,22 +1498,23 @@ and generally makes it easier to write safe expression-processing code.</p>")
 
 ; -----------------------------------------------------------------------------
 ;
-;                            ** Data Types **
+;                             ** Datatypes **
 ;
 ; -----------------------------------------------------------------------------
 
   (deftagsum vl-datatype
     :measure (two-nats-measure (acl2-count x) 30)
     :base-case-override :vl-coretype
-    :short "Representation of a SystemVerilog data type."
+    :short "Representation of a SystemVerilog variable datatype, e.g., @('logic
+    [7:0][3:0]'), @('string'), @('mystruct_t [3:0]'), etc."
 
     (:vl-coretype
      :layout :tree
      :base-name vl-coretype
-     :short "A built-in SystemVerilog data type like @('integer'), @('string'),
+     :short "A built-in SystemVerilog datatype like @('integer'), @('string'),
              @('void'), etc., or an array of such a type."
      ((name    vl-coretypename-p
-               "Kind of primitive data type, e.g., @('byte'), @('string'),
+               "Kind of primitive datatype, e.g., @('byte'), @('string'),
                 etc.")
       (signedp booleanp :rule-classes :type-prescription
                "Only valid for integer types.  Roughly indicates whether the
@@ -1486,7 +1533,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     (:vl-struct
      :layout :tree
      :base-name vl-struct
-     :short "A SystemVerilog @('struct') data type, or an array of structs."
+     :short "A SystemVerilog @('struct') datatype, or an array of structs."
      ((packedp booleanp :rule-classes :type-prescription
                "Roughly: says whether this struct is @('packed') or not,
                 but <b>warning!</b> this is complicated and generally
@@ -1555,7 +1602,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     (:vl-union
      :layout :tree
      :base-name vl-union
-     :short "A SystemVerilog @('union') data type, or an array of @('union')s."
+     :short "A SystemVerilog @('union') datatype, or an array of @('union')s."
      ((packedp  booleanp :rule-classes :type-prescription
                 "Roughly: says whether this union is @('packed') or not, but
                  <b>warning!</b> this should normally not be used as it has the
@@ -1579,7 +1626,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     (:vl-enum
      :layout :tree
      :base-name vl-enum
-     :short "A SystemVerilog @('enum') data type, or an array of @('enum')s."
+     :short "A SystemVerilog @('enum') datatype, or an array of @('enum')s."
      ((basetype vl-datatype-p
                 "The base type for the enum.  Note that, in the SystemVerilog
                  syntax, enums are only allowed to have certain base types that
@@ -1595,7 +1642,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     (:vl-usertype
      :layout :tree
      :base-name vl-usertype
-     :short "Represents a reference to some user-defined SystemVerilog data type."
+     :short "Represents a reference to some user-defined SystemVerilog datatype."
      ;; data_type ::= ... | [ class_scope | package_scope ] type_identifier { packed_dimension }
      ((name   vl-scopeexpr-p
               "Typedef name, like @('foo_t').  May have a package scope, but
@@ -1664,8 +1711,38 @@ and generally makes it easier to write safe expression-processing code.</p>")
             vl-maybe-datatype) which, if present, means we've resolved this
             usertype and its definition is the @('res').</p>")
 
-    :long "<p>We do not yet implement some of the more advanced SystemVerilog
-           data types, including the following:</p>
+    :long "<h3>Introduction</h3>
+
+           <p>A @('vl-datatype') may represent a SystemVerilog variable
+           datatype such as @('logic [3:0]'), @('integer'), @('string'),
+           @('struct { ...}'), @('mybus_t'), etc.  It may also represent arrays
+           of such types with packed and/or unpacked dimensions.</p>
+
+           <p>Some higher-level functions for working with datatypes are found
+           in @(see mlib); see in particular @(see datatype-tools).</p>
+
+           <p>Note about the word ``<b>type</b>.''  The Verilog-2005 and
+           SystemVerilog-2012 standards sometimes use the word ``type'' to
+           refer to other things.  In particular:</p>
+
+           <ul>
+
+           <li>For historical reasons, the standards sometimes refer to the
+           ``type'' of an expression when they really mean something more like
+           its <b>signedness</b>.  Signedness is captured by @('vl-datatype'),
+           but there are some nuances; see @(see vl-datatype-signedness), @(see
+           vl-exprsign), and @(see portdecl-sign).</li>
+
+           <li>Net and port declarations can have a notion of a ``net type''
+           such as @('wire'), @('wor'), @('supply1'), etc., which govern how
+           multiple assignments to the net are resolved.  This information is
+           <b>not</b> part of a @('vl-datatype').  See @(see vl-vardecl) for
+           additional discussion.</li>
+
+           </ul>
+
+           <p>Note that we do not yet implement some of the more advanced
+           SystemVerilog datatypes, including at least the following:</p>
 
            @({
                 data_type ::= ...
@@ -2510,7 +2587,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
 
 (define vl-datatype-update-dims
   :parents (vl-datatype)
-  :short "Update the dimensions of any data type, no matter its kind."
+  :short "Update the dimensions of any datatype, no matter its kind."
   ((pdims vl-packeddimensionlist-p "New packed dimensions to install.")
    (udims vl-packeddimensionlist-p "New unpacked dimensions to install.")
    (x     vl-datatype-p            "Datatype to update."))
@@ -2580,10 +2657,6 @@ and generally makes it easier to write safe expression-processing code.</p>")
   :elt-type vl-range
   :parents (vl-range))
 
-(fty::deflist vl-scopeexprlist
-  :elt-type vl-scopeexpr
-  :parents (vl-scopeexpr))
-
 (define vl-scopeexpr->expr ((x vl-scopeexpr-p))
   :parents (vl-index vl-scopeexpr)
   :short "Promote an @(see vl-scopeexpr) into a proper @(see vl-index) without
@@ -2593,3 +2666,54 @@ and generally makes it easier to write safe expression-processing code.</p>")
                  :indices nil
                  :part (make-vl-partselect-none)
                  :atts nil))
+
+
+
+(defval *vl-plain-old-wire-type*
+  :parents (vl-datatype)
+  :short "The @(see vl-datatype) for a plain @('wire') or @('logic') variable."
+  :long "<p>It might seem weird to think of a @('wire') as having a datatype;
+         see @(see vl-vardecl).</p>"
+  (hons-copy (make-vl-coretype :name    :vl-logic
+                               :signedp nil
+                               :pdims   nil)))
+
+(defval *vl-plain-old-reg-type*
+  :parents (vl-datatype)
+  :short "The @(see vl-datatype) for a plain @('reg') variable."
+  (hons-copy (make-vl-coretype :name    :vl-reg
+                               :signedp nil
+                               :pdims   nil)))
+
+(defval *vl-plain-old-integer-type*
+  :parents (vl-datatype)
+  :short "The @(see vl-datatype) for a plain @('integer') variable."
+  (hons-copy (make-vl-coretype :name    :vl-integer
+                               :signedp t    ;; integer type is signed
+                               :pdims    nil ;; Not applicable to integers
+                               )))
+
+(defval *vl-plain-old-real-type*
+  :parents (vl-datatype)
+  :short "The @(see vl-datatype) for a plain @('real') variable."
+  (hons-copy (make-vl-coretype :name    :vl-real
+                               :signedp nil ;; Not applicable to reals
+                               :pdims   nil ;; Not applicable to reals
+                               )))
+
+(defval *vl-plain-old-time-type*
+  :parents (vl-datatype)
+  :short "The @(see vl-datatype) for a plain @('time') variable."
+  (hons-copy (make-vl-coretype :name    :vl-time
+                               :signedp nil ;; Not applicable to times
+                               :pdims    nil ;; Not applicable to times
+                               )))
+
+(defval *vl-plain-old-realtime-type*
+  :parents (vl-datatype)
+  :short "The @(see vl-datatype) for a plain @('realtime') variable."
+  (hons-copy (make-vl-coretype :name    :vl-realtime
+                               :signedp nil ;; Not applicable to realtimes
+                               :pdims    nil ;; Not applicable to realtimes
+                               )))
+

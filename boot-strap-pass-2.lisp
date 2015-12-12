@@ -1268,8 +1268,8 @@
 
 ;   (time nice make ACL2_DEVEL=d)
 ;   cd books
-;   make clean
-;   ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert
+;   make clean ACL2=`pwd`/../saved_acl2d
+;   time ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert
 ;   cd ..
 ;   (time nice make -j 8 devel-check ACL2=`pwd`/saved_acl2d)
 
@@ -1356,10 +1356,14 @@
 ; executable; only the books in the keys of this alist need to be certified.
 
   '(("system/top"
+     (>=-LEN X)
+     (ALIST-TO-DOUBLETS ALIST)
+     (ALL->=-LEN LST)
      (ARGLISTP)
      (ARGLISTP1 LST)
      (ARITIES-OKP USER-TABLE)
      (ARITY)
+     (COLLECT-BY-POSITION FULL-DOMAIN)
      (CONS-TERM1-MV2)
      (DUMB-NEGATE-LIT)
      (FETCH-DCL-FIELD)
@@ -1372,6 +1376,7 @@
      (LEGAL-CONSTANTP1)
      (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
      (LEGAL-VARIABLEP)
+     (MAKE-LAMBDA-APPLICATION)
      (MERGE-SORT-TERM-ORDER L)
      (MERGE-TERM-ORDER L2 L1)
      (META-EXTRACT-CONTEXTUAL-FACT)
@@ -1380,6 +1385,7 @@
      (PLAUSIBLE-DCLSP LST)
      (PLAUSIBLE-DCLSP1 LST)
      (PLIST-WORLDP-WITH-FORMALS ALIST)
+     (STRIP-CADRS X)
      (STRIP-DCLS LST)
      (STRIP-DCLS1 LST)
      (STRIP-KEYWORD-LIST LST)

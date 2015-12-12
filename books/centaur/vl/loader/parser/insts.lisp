@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "expressions")
-(include-book "lvalues")
+(include-book "assignments")
 (include-book "delays")
 (include-book "strengths")
 (include-book "datatypes")
@@ -431,15 +431,14 @@ tests at the bottom of this file.</p>")
         (return args)))
 
 
-
-; module_instantiation ::=
-;    identifier [ parameter_value_assignment ]
-;      module_instance { ',' module_instance } ';'
+; Verilog-2005:
 ;
-; module_instance ::=
-;    identifier [range] '(' [list_of_port_connections] ')'
+; module_instantiation ::= identifier [ parameter_value_assignment ]
+;                            module_instance { ',' module_instance } ';'
+;
+; module_instance ::= identifier [range] '(' [list_of_port_connections] ')'
 
-(defparser vl-parse-module-instance (modname paramargs atts)
+(defparser vl-parse-module-instance-2005 (modname paramargs atts)
   :guard (and (stringp modname)
               (vl-paramargs-p paramargs)
               (vl-atts-p atts))
@@ -463,6 +462,63 @@ tests at the bottom of this file.</p>")
                                 :paramargs paramargs
                                 :portargs (or portargs (make-vl-arguments-plain :args nil))
                                 :atts atts))))
+
+; SystemVerilog-2012:
+;
+; module_instantiation ::=  identifier [ parameter_value_assignment ]
+;                              hierarchical_instance { ',' hierarchical_instance } ';'
+;
+; hierarchical_instance ::= name_of_instance '(' [ list_of_port_connections ] ')'
+;
+; name_of_instance ::= identifier { unpacked_dimension }
+;
+; unpacked_dimension ::= '[' constant_range ']'
+;                      | '[' constant_expression ']'
+;
+; So basically we can now have single-expression instance arrays like [5], and
+; also multi-dimensional instance arrays.
+
+(defparser vl-parse-module-instance-2012 (modname paramargs atts)
+  :guard (and (stringp modname)
+              (vl-paramargs-p paramargs)
+              (vl-atts-p atts))
+  :result (vl-modinst-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (instname := (vl-match-token :vl-idtoken))
+       (udims := (vl-parse-0+-unpacked-dimensions))
+       (when (> (len udims) 1)
+         (return-raw
+          (vl-parse-error "Not yet implemented: multi-dimensional instance arrays.")))
+       (:= (vl-match-token :vl-lparen))
+       ;; Note special avoidance of actually parsing () lists.
+       (unless (vl-is-token? :vl-rparen)
+         (portargs := (vl-parse-list-of-port-connections)))
+       (:= (vl-match-token :vl-rparen))
+       (return (make-vl-modinst :loc (vl-token->loc instname)
+                                :instname (vl-idtoken->name instname)
+                                :modname modname
+                                :range (and (consp udims)
+                                            (car udims))
+                                :paramargs paramargs
+                                :portargs (or portargs (make-vl-arguments-plain :args nil))
+                                :atts atts))))
+
+(defparser vl-parse-module-instance (modname paramargs atts)
+  :guard (and (stringp modname)
+              (vl-paramargs-p paramargs)
+              (vl-atts-p atts))
+  :result (vl-modinst-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (if (eq (vl-loadconfig->edition config) :verilog-2005)
+      (vl-parse-module-instance-2005 modname paramargs atts)
+    (vl-parse-module-instance-2012 modname paramargs atts)))
+
+
 
 (defparser vl-parse-1+-module-instances (modname paramargs atts)
   :guard (and (stringp modname)
@@ -506,7 +562,7 @@ tests at the bottom of this file.</p>")
 ; udp_instantiation ::= identifier [drive_strength] [delay2] udp_instance { ',' udp_instance } ';'
 ;
 ; udp_instance ::=
-;    [name_of_udp_instance] '(' lvalue ',' expression { ',' expression } ')'
+;    [name_of_udp_instance] '(' net_lvalue ',' expression { ',' expression } ')'
 ;
 ; name_of_udp_instance ::= identifier [range]
 
@@ -526,7 +582,7 @@ tests at the bottom of this file.</p>")
           (when (vl-is-token? :vl-lbrack)
             (range := (vl-parse-range))))
         (:= (vl-match-token :vl-lparen))
-        (lvalue := (vl-parse-lvalue))
+        (lvalue := (vl-parse-net-lvalue))
         (:= (vl-match-token :vl-comma))
         (exprs := (vl-parse-1+-expressions-separated-by-commas))
         (:= (vl-match-token :vl-rparen))

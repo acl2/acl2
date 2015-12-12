@@ -42,7 +42,9 @@
 (local (defthm vl-modelement-p-when-vl-blockitem-p
          (implies (vl-blockitem-p x)
                   (vl-modelement-p x))
-         :hints(("Goal" :in-theory (enable vl-blockitem-p vl-modelement-p)))))
+         :hints(("Goal" :in-theory (enable tag-reasoning
+                                           vl-blockitem-p
+                                           vl-modelement-p)))))
 
 (local (defthm vl-modelementlist-p-when-vl-blockitemlist-p
          (implies (vl-blockitemlist-p x)

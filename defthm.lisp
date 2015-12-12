@@ -496,9 +496,7 @@
                (cdr hyps)
                (cons (fargn (car hyps) 1) bound-vars)
                wrld))
-             ((and (nvariablep (car hyps))
-                   (not (fquotep (car hyps)))
-                   (eq (ffn-symb (car hyps)) 'synp)
+             ((and (ffn-symb-p (car hyps) 'synp)
                    (not (equal (fargn (car hyps) 1) *nil*))) ; not syntaxp hyp
               (cond
                ((equal (fargn (car hyps) 1) *t*)
@@ -795,7 +793,7 @@
 (defun forced-hyps (lst)
   (cond ((null lst) nil)
         ((and (nvariablep (car lst))
-              (not (fquotep (car lst)))
+;             (not (fquotep (car lst)))
               (or (eq (ffn-symb (car lst)) 'force)
                   (eq (ffn-symb (car lst)) 'case-split)))
          (cons (car lst) (forced-hyps (cdr lst))))
@@ -807,7 +805,7 @@
     nil)
    (t (mv-let (not-flg atm)
               (strip-not (if (and (nvariablep (car hyps))
-                                  (not (fquotep (car hyps)))
+;                                 (not (fquotep (car hyps)))
                                   (or (eq (ffn-symb (car hyps)) 'force)
                                       (eq (ffn-symb (car hyps)) 'case-split)))
                              (fargn (car hyps) 1)
@@ -1057,10 +1055,7 @@
                     (let* ((equiv (ffn-symb hyp))
                            (var (fargn hyp 1))
                            (term0 (fargn hyp 2))
-                           (term (if (and (nvariablep term0)
-                                          (not (fquotep term0))
-                                          (eq (ffn-symb term0)
-                                              'double-rewrite))
+                           (term (if (ffn-symb-p term0 'double-rewrite)
                                      (fargn term0 1)
                                    term0))
                            (new-geneqv (cadr (geneqv-lst equiv
@@ -6644,9 +6639,7 @@
 (defun chk-acceptable-type-set-inverter-rule (name ts term ctx ens wrld state)
   (let* ((vars (all-vars term)))
     (cond
-     ((not (and (nvariablep term)
-                (not (fquotep term))
-                (eq (ffn-symb term) 'equal)
+     ((not (and (ffn-symb-p term 'equal)
                 (equal vars '(X))
                 (equal (all-vars (fargn term 1))
                        (all-vars (fargn term 2)))))
@@ -7998,7 +7991,7 @@
                                 x))
                            (t (let* ((first-hyp
                                       (if (and (nvariablep (car hyps))
-                                               (not (fquotep (car hyps)))
+;                                              (not (fquotep (car hyps)))
                                                (or (eq (ffn-symb (car hyps))
                                                        'force)
                                                    (eq (ffn-symb (car hyps))
@@ -8006,9 +7999,7 @@
                                           (fargn (car hyps) 1)
                                         (car hyps)))
                                      (trigger-term
-                                      (if (and (nvariablep first-hyp)
-                                               (not (fquotep first-hyp))
-                                               (eq (ffn-symb first-hyp) 'not))
+                                      (if (ffn-symb-p first-hyp 'not)
                                           (fargn first-hyp 1)
                                         first-hyp)))
                                 (pprogn
@@ -8029,9 +8020,7 @@
               (hyps concl)
               (unprettyify-tp (remove-guard-holders corollary))
               (declare (ignore hyps))
-              (let ((pat (cond ((and (not (variablep concl))
-                                     (not (fquotep concl))
-                                     (eq (ffn-symb concl) 'implies))
+              (let ((pat (cond ((ffn-symb-p concl 'implies)
                                 (find-type-prescription-pat (fargn concl 2)
                                                             ens wrld))
                                (t (find-type-prescription-pat concl ens
@@ -9638,14 +9627,23 @@
 
   (cond
    ((null props)
-    (reverse acc))
-   ((assoc-eq-eq (caar props) (cadar props) seen)
+    (prog2$ (fast-alist-free seen)
+            (reverse acc)))
+   ((member-eq (cadar props) (cdr (hons-get (caar props) seen)))
     (actual-props (cdr props) seen acc))
    ((eq (cddr (car props)) *acl2-property-unbound*)
-    (actual-props (cdr props) (cons (car props) seen) acc))
+    (actual-props (cdr props)
+                  (hons-acons (caar props)
+                              (cons (cadar props)
+                                    (cdr (hons-get (caar props) seen)))
+                              seen)
+                  acc))
    (t
     (actual-props (cdr props)
-                  (cons (car props) seen)
+                  (hons-acons (caar props)
+                              (cons (cadar props)
+                                    (cdr (hons-get (caar props) seen)))
+                              seen)
                   (cons (car props) acc)))))
 
 (defun info-for-well-founded-relation-rules (rules)
@@ -10027,7 +10025,7 @@
   (print-info-for-rules
    (info-for-rules (actual-props wrld-segment nil nil)
                    numes
-                   (ens state)
+                   (ens-maybe-brr state)
                    wrld)
    (standard-co state)
    state))
@@ -10129,7 +10127,7 @@
                      name)))))))
 
 (defmacro disabledp (name)
-  `(disabledp-fn ,name (ens state) (w state)))
+  `(disabledp-fn ,name (ens-maybe-brr state) (w state)))
 
 (defun access-x-rule-rune (x rule)
 
@@ -10364,155 +10362,248 @@
     (find-rules-of-rune1 rune
                          (actual-props
                           (world-to-next-event (cdr wrld-tail))
-                          nil
+                          'find-rules-of-rune1
                           nil)
                          nil)))
 
-(defun collect-non-backchain-subclass (rules)
+(defun collect-abbreviation-subclass (rules)
 
-; Rules is a list of REWRITE-RULEs.  We collect all those that are not
-; of :subclass 'backchain.
+; Rules is a list of REWRITE-RULEs.  We collect all those that are of :subclass
+; 'ABBREVIATION.
 
   (cond ((null rules) nil)
-        ((eq (access rewrite-rule (car rules) :subclass) 'backchain)
-         (collect-non-backchain-subclass (cdr rules)))
-        (t (cons (car rules) (collect-non-backchain-subclass (cdr rules))))))
+        ((eq (access rewrite-rule (car rules) :subclass) 'ABBREVIATION)
+         (cons (car rules) (collect-abbreviation-subclass (cdr rules))))
+        (t (collect-abbreviation-subclass (cdr rules)))))
 
-(defun chk-acceptable-monitor (rune expr ctx state)
+(defun runes-to-monitor-warnings (runes wrld ctx state
+                                        only-simple only-simple-count
+                                        some-simple some-s-all some-s-bad)
 
-; We check that rune is a breakable rune and expr is a suitable
-; conditional expression.  We either cause an error or return
-; the translation of expr.
+; This function assumes that "Monitor" warnings are enabled.
 
   (cond
-   ((not (runep rune (w state)))
-    (er soft ctx "~x0 is not a rune." rune))
-   ((not (member-eq (car rune) '(:rewrite :definition :linear)))
-    (er soft ctx
-        "Only :REWRITE, :DEFINITION, and :LINEAR runes may be monitored.  We ~
-         cannot break ~x0."
-        rune))
-   (t (er-let*
-          ((term (translate-break-condition expr ctx state)))
-          (cond
-           ((eq (car rune) :rewrite)
+   ((endp runes)
+    (pprogn (cond
+             (only-simple
+              (warning$ ctx ("Monitor")
+                        "The rune~#0~[~/s~] ~&0 name~#1~[s only a~/ only~] ~
+                         simple abbreviation rule~#1~[~/s~].  Monitors can be ~
+                         installed on abbreviation rules, but will not fire ~
+                         during preprocessing, so you may want to supply the ~
+                         hint :DO-NOT '(PREPROCESS); see :DOC hints.  For an ~
+                         explanation of what a simple abbreviation rule is, ~
+                         see :DOC simple.  Also, see :DOC monitor."
+                        only-simple
+                        (if (> only-simple-count 1) 1 0)))
+             (t state))
+            (cond
+             (some-simple
+              (assert$
+               (< 1 some-s-all)
+               (warning$ ctx ("Monitor")
+                         "Among the ~n0 rules named ~v1 ~#2~[is a simple ~
+                          abbreviation rule~/are ~n3 simple abbreviation ~
+                          rules~].  Such rules can be monitored, but will not ~
+                          fire during preprocessing, so you may want to ~
+                          supply the hint :DO-NOT '(PREPROCESS); see :DOC ~
+                          hints,  For an explanation of what a simple ~
+                          abbreviation rule is, see :DOC simple.  Also, see ~
+                          :DOC monitor."
+                         some-s-all
+                         some-simple
+                         (if (< 1 some-s-bad) 1 0)
+                         some-s-bad)))
+             (t state))))
+   (t
+    (let ((rune (car runes)))
+      (cond
+       ((member-eq (car rune) '(:rewrite :definition))
+        (let* ((rules (find-rules-of-rune rune wrld))
+               (bad-rewrite-rules (collect-abbreviation-subclass rules)))
+          (assert$
+           rules
+           (cond
+            ((equal (length bad-rewrite-rules) (length rules))
+             (runes-to-monitor-warnings
+              (cdr runes) wrld ctx state
+              (cons rune only-simple)
+              (+ (length rules) only-simple-count)
+              some-simple some-s-all some-s-bad))
+            (bad-rewrite-rules
+             (runes-to-monitor-warnings
+              (cdr runes) wrld ctx state
+              only-simple only-simple-count
+              (cons rune some-simple)
+              (+ (length rules) some-s-all)
+              (+ (length bad-rewrite-rules) some-s-bad)))
+            (t (runes-to-monitor-warnings (cdr runes) wrld ctx state
+                                          only-simple only-simple-count
+                                          some-simple some-s-all some-s-bad))))))
+       (t (runes-to-monitor-warnings (cdr runes) wrld ctx state
+                                     only-simple only-simple-count
+                                     some-simple some-s-all some-s-bad)))))))
 
-; The checks below can be extremely expensive when dealing with a :definition
-; rule for a function that is part of a large mutual recursion nest.  We have
-; seen the call of actual-props in find-rules-of-rune take over a minute for a
-; function defined in a mutual-recursion nest of several thousand functions.
-; So we restrict the check to :rewrite rules.
+(defconst *monitorable-rune-types*
+  '(:rewrite :definition :linear))
 
-            (let* ((rules (find-rules-of-rune rune (w state)))
-                   (bad-rewrite-rules (collect-non-backchain-subclass rules)))
+(defun monitorable-runes (lst)
+  (cond ((endp lst) nil)
+        ((member-eq (caar lst) *monitorable-rune-types*)
+         (cons (car lst)
+               (monitorable-runes (cdr lst))))
+        (t (monitorable-runes (cdr lst)))))
 
-; Observe that we collect all the non-backchain rules but then claim to the
-; user that they are all abbreviation rules.  That is because we believe that
-; there are only four subclasses of rewrite rules: backchain, abbreviation,
-; definition, and meta and the latter two have runes beginning with the tokens
-; :definition and :meta instead of :rewrite.
+(defun monitorable-runes-from-mapping-pairs (sym wrld)
 
-              (pprogn
-               (cond
-                ((null rules)
-                 (prog2$
-                  (er hard ctx
-                      "Implementation error (please contact the ACL2 ~
-                       implementors): Although ~x0 is a runep, ~
-                       find-rules-of-rune fails to find any rules for it."
-                      rune)
-                  state))
-                ((equal (length bad-rewrite-rules) (length rules))
-                 (warning$ ctx "Monitor"
-                           "The rune ~x0 only names ~#1~[a simple ~
-                            abbreviation rule~/~n2 simple abbreviation ~
-                            rules~].  Monitors can be installed on ~
-                            abbreviation rules, but will not fire during ~
-                            preprocessing, so you may want to supply the hint ~
-                            :DO-NOT '(PREPROCESS); see :DOC hints.  For an ~
-                            explanation of what a simple abbreviation rule ~
-                            is, see :DOC simple.  Also, see :DOC monitor."
-                           rune
-                           bad-rewrite-rules
-                           (length bad-rewrite-rules)))
-                (bad-rewrite-rules
-                 (warning$ ctx "Monitor"
-                           "Among the ~n0 rules named ~x1 ~#2~[is a simple ~
-                            abbreviation rule~/are ~n3 simple abbreviation ~
-                            rules~].  Such rules can be monitored, but will ~
-                            not fire during preprocessing, so you may want to ~
-                            supply the hint :DO-NOT '(PREPROCESS); see :DOC ~
-                            hints,  For an explanation of what a simple ~
-                            abbreviation rule is, see :DOC simple.  Also, see ~
-                            :DOC monitor."
-                           (length rules)
-                           rune
-                           bad-rewrite-rules
-                           (length bad-rewrite-rules)))
-                (t state))
-               (value term))))
-           (t (value term)))))))
+; Warning: keep this in sync with convert-theory-to-unordered-mapping-pairs1.
+; In both cases we are guided by the discussion of runic designators in :doc
+; theories.  However, here we do not include :induction runes, and we do not
+; accommodate theories because we wonder what complexity that might introduce
+; in providing useful errors and warnings from :monitor, and we don't (yet?)
+; consider it likely that users will want to monitor theories.
 
-(defun chk-acceptable-monitors (lst ctx state)
+; We accumuate runic mapping pairs of sym into ans, except in the case that sym
+; is a defined function, we only include the :definition rune and, if indp is
+; true, the induction rune.
 
-; We check that lst is an acceptable value for the brr-global
-; 'brr-monitored-runes.  We return the translation of lst or cause an
-; error.
+  (let ((temp (strip-cdrs
+               (getprop (deref-macro-name sym (macro-aliases wrld))
+                        'runic-mapping-pairs nil
+                        'current-acl2-world wrld))))
+    (cond
+     ((and temp
+           (eq (car (cdr (car temp))) :DEFINITION)
+           (eq (car (cdr (cadr temp))) :EXECUTABLE-COUNTERPART))
+      (list (car temp)))
+     (t (monitorable-runes temp)))))
 
-  (cond ((null lst) (value nil))
-        ((not (and (consp (car lst))
-                   (consp (cdr (car lst)))
-                   (null (cddr (car lst)))))
-         (er soft ctx
-             "Every element of brr-monitored-runes must be a doublet of the ~
-              form (rune term) and ~x0 is not."
-             (car lst)))
-        (t (er-let*
-            ((term (chk-acceptable-monitor (car (car lst))
-                                              (cadr (car lst))
-                                              ctx state))
-             (rlst (chk-acceptable-monitors (cdr lst) ctx state)))
-            (value (cons (list (car (car lst)) term) rlst))))))
+(defun runes-to-monitor (x ctx state)
+  (er-let* ((wrld (value (w state)))
+            (runes
+             (cond
+              ((symbolp x)
+               (let ((runes (monitorable-runes-from-mapping-pairs x wrld)))
+                 (cond ((null runes)
+                        (er soft ctx
+                            "The symbol ~x0 does not represent any runes to ~
+                             be monitored.  See :DOC monitor."
+                            x))
+                       (t (value runes)))))
+              (t
+               (let ((rune (translate-abbrev-rune x (macro-aliases wrld))))
+                 (cond
+                  ((not (runep rune wrld))
+                   (er soft ctx "~x0 does not designate a (valid) rune."
+                       rune))
+                  ((not (member-eq (car rune) *monitorable-rune-types*))
+                   (er soft ctx
+                       "Only ~&0 runes may be monitored.  We cannot break ~x1."
+                       *monitorable-rune-types*
+                       rune))
+                  (t (value (list rune)))))))))
+    (pprogn (cond ((warning-disabled-p "Monitor") state)
+                  (t (runes-to-monitor-warnings runes wrld ctx state
+                                                nil 0
+                                                nil 0 0)))
+            (value runes))))
 
-(defun monitor1 (rune form ctx state)
+(defun delete-assoc-equal? (key alist)
+  (cond ((assoc-equal key alist)
+         (delete-assoc-equal key alist))
+        (t alist)))
+
+(defun delete-assoc-equal?-lst (lst alist)
+  (declare (xargs :guard (alistp alist)))
+  (if (consp lst)
+      (delete-assoc-equal?-lst (cdr lst)
+                               (delete-assoc-equal? (car lst) alist))
+    alist))
+
+(defun monitor1 (x form ctx state)
 
 ; The list of monitored runes modified by this function is a brr-global.
 ; Thus, this function should only be evaluated within a wormhole.  The macro
 ; monitor can be called in either a wormhole state or a normal state.
 
-  (er-let*
-   ((term (chk-acceptable-monitor rune form ctx state)))
-   (prog2$
-    (or (f-get-global 'gstackp state)
-        (cw "Note: Enable break-rewrite with :brr t.~%"))
-    (pprogn
-     (f-put-global 'brr-monitored-runes
-                   (put-assoc-equal rune (list term)
-                                    (get-brr-global 'brr-monitored-runes
-                                                         state))
-                   state)
-     (value (get-brr-global 'brr-monitored-runes state))))))
+  (er-let* ((runes (runes-to-monitor x ctx state))
+            (term (translate-break-condition form ctx state)))
+    (prog2$
+     (or (f-get-global 'gstackp state)
+         (cw "Note: Enable break-rewrite with :brr t.~%"))
+     (pprogn
+      (f-put-global 'brr-monitored-runes
+                    (append (pairlis-x2 runes (list term))
+                            (delete-assoc-equal?-lst
+                             runes
+                             (get-brr-global 'brr-monitored-runes
+                                             state)))
+                    state)
+      (value (get-brr-global 'brr-monitored-runes state))))))
 
-(defun unmonitor1 (rune ctx state)
-  (cond
-   ((assoc-equal rune (get-brr-global 'brr-monitored-runes state))
-    (pprogn
-     (f-put-global 'brr-monitored-runes
-                   (remove1-equal
-                    (assoc-equal rune
-                                 (get-brr-global 'brr-monitored-runes state))
-                    (get-brr-global 'brr-monitored-runes state))
-                   state)
-     (prog2$
-      (cond ((and (f-get-global 'gstackp state)
-                  (null (get-brr-global 'brr-monitored-runes state)))
-             (cw "Note:  No runes are being monitored.  Disable break-rewrite ~
-                  with :brr nil.~%"))
-            (t nil))
-      (value (get-brr-global 'brr-monitored-runes state)))))
-   (t (er soft ctx "~x0 is not monitored." rune))))
+(defun delete-assoc-equal-lst (lst alist)
+  (declare (xargs :guard (alistp alist)))
+  (if (consp lst)
+      (delete-assoc-equal-lst (cdr lst)
+                              (delete-assoc-eq (car lst) alist))
+    alist))
 
-(defun monitor-fn (rune expr state)
+(defun set-difference-assoc-equal (lst alist)
+  (declare (xargs :guard (and (true-listp lst)
+                              (alistp alist))))
+  (cond ((endp lst) nil)
+        ((assoc-equal (car lst) alist)
+         (set-difference-assoc-equal (cdr lst) alist))
+        (t (cons (car lst) (set-difference-assoc-equal (cdr lst) alist)))))
+
+(defun unmonitor1 (x ctx state)
+  (let* ((wrld (w state))
+         (runes (cond
+                 ((symbolp x)
+                  (monitorable-runes-from-mapping-pairs x wrld))
+                 (t (list (translate-abbrev-rune x (macro-aliases wrld)))))))
+    (cond
+     ((null runes)
+      (er soft ctx
+          "The value ~x0 does not specify any runes that could be monitored."
+          x))
+     (t
+      (let* ((monitored-runes-alist
+              (get-brr-global 'brr-monitored-runes state))
+             (bad-runes ; specified to unmonitor, but not monitored
+              (set-difference-assoc-equal runes monitored-runes-alist)))
+        (er-progn
+         (cond ((null bad-runes)
+                (value nil))
+               ((not (intersectp-equal runes (strip-cars monitored-runes-alist)))
+                (cond
+                 ((null (cdr runes)) ; common case
+                  (er soft ctx "~x0 is not monitored." (car runes)))
+                 (t
+                  (er soft ctx
+                      "None of the ~n0 runes specified to be unmonitored is ~
+                       currently monitored."
+                      (length runes)))))
+               (t
+                (pprogn (warning$ ctx "Monitor"
+                                  "Skipping the rune~#0~[~/s~] ~&0, as ~
+                                   ~#0~[it is~/they are~] not currently ~
+                                   monitored."
+                                  bad-runes)
+                        (value nil))))
+         (pprogn
+          (f-put-global 'brr-monitored-runes
+                        (delete-assoc-equal-lst runes monitored-runes-alist)
+                        state)
+          (prog2$
+           (cond ((and (f-get-global 'gstackp state)
+                       (null monitored-runes-alist))
+                  (cw "Note:  No runes are being monitored.  Disable ~
+                       break-rewrite with :brr nil.~%"))
+                 (t nil))
+           (value monitored-runes-alist)))))))))
+
+(defun monitor-fn (x expr state)
 
 ; If we are not in a wormhole, get into one.  Then we set brr-monitored-runes
 ; appropriately.  We always print the final value of brr-monitored-runes to the
@@ -10521,7 +10612,7 @@
   (cond
    ((eq (f-get-global 'wormhole-name state) 'brr)
     (er-progn
-     (monitor1 rune expr 'monitor state)
+     (monitor1 x expr 'monitor state)
      (prog2$
       (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
       (value :invisible))))
@@ -10531,28 +10622,21 @@
            (set-wormhole-entry-code whs :ENTER))
         nil
         `(er-progn
-          (monitor1 ',rune ',expr 'monitor state)
+          (monitor1 ',x ',expr 'monitor state)
           (prog2$
            (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
            (value nil)))
         nil)
        (value :invisible)))))
 
-(defun unmonitor-fn (rune ctx state)
+(defun unmonitor-fn (x ctx state)
   (cond
    ((eq (f-get-global 'wormhole-name state) 'brr)
     (er-progn
-     (cond ((eq rune :all)
+     (cond ((eq x :all)
             (pprogn (f-put-global 'brr-monitored-runes nil state)
                     (value nil)))
-           ((and (consp rune)
-                 (keywordp (car rune)))
-            (unmonitor1 rune ctx state))
-           (t (er soft ctx
-                  "The only legal arguments to UNMONITOR are runes
-                   and :ALL, but ~x0 is neither.  See :DOC unmonitor ~
-                   for a more precise explanation of the requirements."
-                  rune)))
+           (t (unmonitor1 x ctx state)))
      (prog2$
       (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
       (value :invisible))))
@@ -10563,18 +10647,10 @@
          (set-wormhole-entry-code whs :ENTER))
       nil
       `(er-progn
-        (cond ((eq ',rune :all)
+        (cond ((eq ',x :all)
                (pprogn (f-put-global 'brr-monitored-runes nil state)
                        (value nil)))
-              ((and (consp ',rune)
-                    (keywordp (car ',rune)))
-               (unmonitor1 ',rune ',ctx state))
-              (t (er soft ',ctx
-                     "The only legal arguments to UNMONITOR are runes ~
-                      and :ALL, but ~x0 is neither.  See :DOC ~
-                      unmonitor for a more precise explanation of the ~
-                      requirements."
-                     ',rune)))
+              (t (unmonitor1 ',x ',ctx state)))
         (prog2$
          (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
          (value nil)))
@@ -10642,8 +10718,8 @@
         (:final-ttree '(get-brr-local 'final-ttree state))
         (otherwise '(get-brr-global 'brr-gstack state))))
 
-(defmacro monitor (rune expr)
-  `(monitor-fn ,rune ,expr state))
+(defmacro monitor (x expr)
+  `(monitor-fn ,x ,expr state))
 
 (defmacro unmonitor (rune)
   `(unmonitor-fn ,rune 'unmonitor state))
@@ -10658,18 +10734,18 @@
 ; print -  exit brr after printing results of attempted application
 ; break -  do not exit brr
 
-; Runes is allegedly either t or a list of runes to be used as brr-monitored-runes
-; after pairing every rune with *t*.  If it is t, it means use the same
-; brr-monitored-runes.  Otherwise, we check that they are all legal.  If not, we
-; warn and do not exit.  We may wish someday to provide the capability of
-; proceeding with conditions other than *t* on the various runes, but I haven't
-; seen a nice design for that yet.
+; Runes is allegedly either t or a list of runes (or any runic designators
+; legal for monitoring) to be used as brr-monitored-runes after pairing every
+; rune with *t*.  If it is t, it means use the same brr-monitored-runes.
+; Otherwise, we check that they are all legal.  If not, we warn and do not
+; exit.  We may wish someday to provide the capability of proceeding with
+; conditions other than *t* on the various runes, but I haven't seen a nice
+; design for that yet.
 
   (er-let*
    ((lst (if (eq runes t)
              (value nil)
-             (chk-acceptable-monitors (pairlis-x2 runes (list *t*))
-                                      ctx state))))
+           (runes-to-monitor runes ctx state))))
    (pprogn
     (put-brr-local 'saved-standard-oi
                    (f-get-global 'standard-oi state)
@@ -10779,12 +10855,11 @@
   (let ((supporters (instantiable-ancestors (all-fnnames tterm) wrld nil)))
     (value supporters)))
 
-(defun defaxiom-fn (name term state rule-classes doc event-form)
+(defun defaxiom-fn (name term state rule-classes event-form)
 
 ; Important Note: Don't change the formals of this function without reading the
 ; *initial-event-defmacros* discussion in axioms.lisp.
 
-  (declare (ignore doc))
   (when-logic
    "DEFAXIOM"
    (with-ctx-summarized
@@ -10995,7 +11070,6 @@
                         instructions
                         hints
                         otf-flg
-                        doc
                         event-form
                         #+:non-standard-analysis std-p)
   (with-ctx-summarized
@@ -11022,9 +11096,6 @@
                                             nil)
                                           (if otf-flg
                                               (list :otf-flg otf-flg)
-                                            nil)
-                                          (if doc
-                                              (list :doc doc)
                                             nil)))))
            (ld-skip-proofsp (ld-skip-proofsp state)))
        (pprogn
@@ -11146,7 +11217,6 @@
                        instructions
                        hints
                        otf-flg
-                       doc
                        event-form
                        #+:non-standard-analysis std-p)
 
@@ -11160,24 +11230,22 @@
      instructions
      hints
      otf-flg
-     doc
      event-form
      #+:non-standard-analysis std-p)))
 
-(defmacro thm (term &key hints otf-flg doc)
+(defmacro thm (term &key hints otf-flg)
   (list 'thm-fn
         (list 'quote term)
         'state
         (list 'quote hints)
-        (list 'quote otf-flg)
-        (list 'quote doc)))
+        (list 'quote otf-flg)))
 
-(defun thm-fn (term state hints otf-flg doc)
+(defun thm-fn (term state hints otf-flg)
   (er-progn
    (with-ctx-summarized
     (if (output-in-infixp state)
-        (list* 'THM term (if (or hints otf-flg doc) '(irrelevant) nil))
-        "( THM ...)")
+        (list* 'THM term (if (or hints otf-flg) '(irrelevant) nil))
+      "( THM ...)")
     (let ((wrld (w state))
           (ens (ens state)))
       (er-let* ((hints (translate-hints+ 'thm

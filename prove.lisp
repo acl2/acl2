@@ -432,9 +432,7 @@
                  ((and (equal geneqv *geneqv-iff*)
                        (equal b *t*)
                        (or (equal c *nil*)
-                           (and (nvariablep c)
-                                (not (fquotep c))
-                                (eq (ffn-symb c) 'HARD-ERROR))))
+                           (ffn-symb-p c 'HARD-ERROR)))
 
 ; Some users keep HARD-ERROR disabled so that they can figure out
 ; which guard proof case they are in.  HARD-ERROR is identically nil
@@ -656,9 +654,7 @@
 
   (cond
    ((equal term (if bool *nil* *t*)) (mv step-limit nil ttree))
-   ((and (nvariablep term)
-         (not (fquotep term))
-         (eq (ffn-symb term) 'if))
+   ((ffn-symb-p term 'if)
     (let ((t1 (fargn term 1))
           (t2 (fargn term 2))
           (t3 (fargn term 3)))
@@ -1411,8 +1407,9 @@
         (t t)))
 
 (defun delete-assoc-eq-lst (lst alist)
-  (declare (xargs :guard (or (symbol-listp lst)
-                             (symbol-alistp alist))))
+  (declare (xargs :guard (if (symbol-listp lst)
+                             (alistp alist)
+                           (symbol-alistp alist))))
   (if (consp lst)
       (delete-assoc-eq-lst (cdr lst)
                            (delete-assoc-eq (car lst) alist))
@@ -3771,67 +3768,72 @@
 (defmacro set-splitter-output (val)
   `(f-put-global 'splitter-output ,val state))
 
-(defun waterfall-msg1
-  (processor cl-id signal clauses new-hist msg ttree pspv state)
+(defun waterfall-msg1 (processor cl-id signal clauses new-hist msg ttree pspv
+                                 state)
   (with-output-lock
-   (pprogn
+   (let ((gag-mode (gag-mode)))
+     (pprogn
 
 ;  (maybe-show-gag-state cl-id pspv state) ; debug
 
-    (cond
+      (cond
 
 ; Suppress printing for :OR splits; see also other comments with this header.
 
-;   ((and (eq signal 'OR-HIT)
-;         (gag-mode))
-;    (fms "~@0~|~%~@1~|"
-;         (list (cons #\0 (or msg ""))
-;               (cons #\1 (or-hit-msg t cl-id ttree)))
-;         (proofs-co state) state nil))
+;      ((and (eq signal 'OR-HIT)
+;            gag-mode)
+;       (fms "~@0~|~%~@1~|"
+;            (list (cons #\0 (or msg ""))
+;                  (cons #\1 (or-hit-msg t cl-id ttree)))
+;            (proofs-co state) state nil))
 
-     ((and msg (gag-mode))
-      (fms "~@0~|" (list (cons #\0 msg)) (proofs-co state) state nil))
-     (t state))
-    (cond
-     ((gag-mode)
-      (print-splitter-rules-summary cl-id clauses ttree (proofs-co state)
-                                    state))
-     (t
-      (case
-        processor
-        (apply-top-hints-clause
+       ((and msg (gag-mode))
+        (fms "~@0~|" (list (cons #\0 msg)) (proofs-co state) state nil))
+       (t state))
+      (cond
+       ((or (gag-mode)
+            (f-get-global 'raw-proof-format state))
+        (print-splitter-rules-summary cl-id clauses ttree (proofs-co state)
+                                      state))
+       (t state))
+      (cond
+       (gag-mode state)
+       (t
+        (case
+          processor
+          (apply-top-hints-clause
 
 ; Note that the args passed to apply-top-hints-clause, and to
 ; simplify-clause-msg1 below, are nonstandard.  This is what allows the
 ; simplify message to detect and report if the just performed simplification
 ; was specious.
 
-         (apply-top-hints-clause-msg1
-          signal cl-id clauses
-          (consp (access history-entry (car new-hist)
-                         :processor))
-          ttree pspv state))
-        (preprocess-clause
-         (preprocess-clause-msg1 signal clauses ttree pspv state))
-        (simplify-clause
-         (simplify-clause-msg1 signal cl-id clauses
-                               (consp (access history-entry (car new-hist)
-                                              :processor))
-                               ttree pspv state))
-        (settled-down-clause
-         (settled-down-clause-msg1 signal clauses ttree pspv state))
-        (eliminate-destructors-clause
-         (eliminate-destructors-clause-msg1 signal clauses ttree
-                                            pspv state))
-        (fertilize-clause
-         (fertilize-clause-msg1 signal clauses ttree pspv state))
-        (generalize-clause
-         (generalize-clause-msg1 signal clauses ttree pspv state))
-        (eliminate-irrelevance-clause
-         (eliminate-irrelevance-clause-msg1 signal clauses ttree
-                                            pspv state))
-        (otherwise
-         (push-clause-msg1 cl-id signal clauses ttree pspv state))))))))
+           (apply-top-hints-clause-msg1
+            signal cl-id clauses
+            (consp (access history-entry (car new-hist)
+                           :processor))
+            ttree pspv state))
+          (preprocess-clause
+           (preprocess-clause-msg1 signal clauses ttree pspv state))
+          (simplify-clause
+           (simplify-clause-msg1 signal cl-id clauses
+                                 (consp (access history-entry (car new-hist)
+                                                :processor))
+                                 ttree pspv state))
+          (settled-down-clause
+           (settled-down-clause-msg1 signal clauses ttree pspv state))
+          (eliminate-destructors-clause
+           (eliminate-destructors-clause-msg1 signal clauses ttree
+                                              pspv state))
+          (fertilize-clause
+           (fertilize-clause-msg1 signal clauses ttree pspv state))
+          (generalize-clause
+           (generalize-clause-msg1 signal clauses ttree pspv state))
+          (eliminate-irrelevance-clause
+           (eliminate-irrelevance-clause-msg1 signal clauses ttree
+                                              pspv state))
+          (otherwise
+           (push-clause-msg1 cl-id signal clauses ttree pspv state)))))))))
 
 (defmacro io?-prove-cw (vars body &rest keyword-args)
 
@@ -4144,448 +4146,10 @@
 ; the vicinity of our definition of defun and verify-guards.  But we
 ; need it now.
 
-(defun sublis-var-lst-lst (alist clauses)
-  (cond ((null clauses) nil)
-        (t (cons (sublis-var-lst alist (car clauses))
-                 (sublis-var-lst-lst alist (cdr clauses))))))
-
-(defun add-segments-to-clause (clause segments)
-  (cond ((null segments) nil)
-        (t (conjoin-clause-to-clause-set
-            (disjoin-clauses clause (car segments))
-            (add-segments-to-clause clause (cdr segments))))))
-
-(defun split-initial-extra-info-lits (cl hyps-rev)
-  (cond ((endp cl) (mv hyps-rev cl))
-        ((extra-info-lit-p (car cl))
-         (split-initial-extra-info-lits (cdr cl)
-                                        (cons (car cl) hyps-rev)))
-        (t (mv hyps-rev cl))))
-
-(defun conjoin-clause-to-clause-set-extra-info1 (tags-rev cl0 cl cl-set
-                                                          cl-set-all)
-
-; Roughly speaking, we want to extend cl-set-all by adding cl = (revappend
-; tags-rev cl0), where tags-rev is the reversed initial prefix of negated calls
-; of *extra-info-fn*.  But the situation is a bit more complex:
-
-; Cl is (revappend tags-rev cl0) and cl-set is a tail of cl-set-all.  Let cl1
-; be the first member of cl-set, if any, such that removing its initial negated
-; calls of *extra-info-fn* yields cl0.  We replace the corresponding occurrence
-; of cl1 in cl-set-all by the result of adding tags-rev (reversed) in front of
-; cl0, except that we drop each tag already in cl1; otherwise we return
-; cl-set-all unchanged.  If there is no such cl1, then we return the result of
-; consing cl on the front of cl-set-all.
-
-  (cond
-   ((endp cl-set)
-    (cons cl cl-set-all))
-   (t
-    (mv-let
-     (initial-extra-info-lits-rev cl1)
-     (split-initial-extra-info-lits (car cl-set) nil)
-     (cond
-      ((equal cl0 cl1)
-       (cond
-        ((not tags-rev) ; seems unlikely
-         cl-set-all)
-        (t (cond
-            ((subsetp-equal tags-rev initial-extra-info-lits-rev)
-             cl-set-all)
-            (t
-             (append (take (- (length cl-set-all) (length cl-set))
-                           cl-set-all)
-                     (cons (revappend initial-extra-info-lits-rev
-                                      (mv-let
-                                       (changedp new-tags-rev)
-                                       (set-difference-equal-changedp
-                                        tags-rev
-                                        initial-extra-info-lits-rev)
-                                       (cond
-                                        (changedp (revappend new-tags-rev cl0))
-                                        (t cl))))
-                           (cdr cl-set))))))))
-      (t (conjoin-clause-to-clause-set-extra-info1 tags-rev cl0 cl (cdr cl-set)
-                                                   cl-set-all)))))))
-
-(defun conjoin-clause-to-clause-set-extra-info (cl cl-set)
-
-; Cl, as well as each clause in cl-set, may start with zero or more negated
-; calls of *extra-info-fn*.  Semantically (since *extra-info-fn* always returns
-; T), we return the result of conjoining cl to cl-set, as with
-; conjoin-clause-to-clause-set.  However, we view a prefix of negated
-; *extra-info-fn* calls in a clause as a set of tags indicating a source of
-; that clause, and we want to preserve that view when we conjoin cl to cl-set.
-; In particular, if a member cl1 of cl-set agrees with cl except for the
-; prefixes of negated calls of *extra-info-fn*, it is desirable for the merge
-; to be achieved simply by adding the prefix of negated calls of
-; *extra-info-fn* in cl to the prefix of such terms in cl1.  This function
-; carries out that desire.
-
-  (cond ((member-equal *t* cl) cl-set)
-        (t (mv-let (tags-rev cl0)
-                   (split-initial-extra-info-lits cl nil)
-                   (conjoin-clause-to-clause-set-extra-info1
-                    tags-rev cl0 cl cl-set cl-set)))))
-
-(defun conjoin-clause-sets-extra-info (cl-set1 cl-set2)
-
-; Keep in sync with conjoin-clause-sets.
-
-; It is unfortunatel that each clause in cl-set2 is split into a prefix (of
-; negated *extra-info-fn* calls) and the rest for EACH member of cl-set1.
-; However, we expect the sizes of clause-sets to be relatively modest;
-; otherwise presumably the simplifier would choke.  So even though we could
-; preprocess by splitting cl-set2 into a list of pairs (prefix . rest), for now
-; we'll avoid thus complicating the algorithm (which also could perhaps
-; generate extra garbage as it reconstitutes cl-set2 from such pairs).
-
-  (cond ((null cl-set1) cl-set2)
-        (t (conjoin-clause-to-clause-set-extra-info
-            (car cl-set1)
-            (conjoin-clause-sets-extra-info (cdr cl-set1) cl-set2)))))
-
-(defun maybe-add-extra-info-lit (debug-info term clause wrld)
-  (cond (debug-info
-         (cons (fcons-term* 'not
-                            (fcons-term* *extra-info-fn*
-                                         (kwote debug-info)
-                                         (kwote (untranslate term nil wrld))))
-               clause))
-        (t clause)))
-
-(defun conjoin-clause-sets+ (debug-info cl-set1 cl-set2)
-  (cond (debug-info (conjoin-clause-sets-extra-info cl-set1 cl-set2))
-        (t (conjoin-clause-sets cl-set1 cl-set2))))
-
-(defconst *equality-aliases*
-
-; This constant should be a subset of *definition-minimal-theory*, since we do
-; not track the corresponding runes in simplify-tests and related code below.
-
-  '(eq eql =))
-
-(defun term-equated-to-constant (term)
-  (case-match term
-    ((rel x y)
-     (cond ((or (eq rel 'equal)
-                (member-eq rel *equality-aliases*))
-            (cond ((quotep x) (mv y x))
-                  ((quotep y) (mv x y))
-                  (t (mv nil nil))))
-           (t (mv nil nil))))
-    (& (mv nil nil))))
-
-(defun simplify-clause-for-term-equal-const-1 (var const cl)
-
-; This is the same as simplify-tests, but where cl is a clause: here we are
-; considering their disjunction, rather than the disjunction of their negations
-; (i.e., an implication where all elements are considered true).
-
-  (cond ((endp cl)
-         (mv nil nil))
-        (t (mv-let (changedp rest)
-                   (simplify-clause-for-term-equal-const-1 var const (cdr cl))
-                   (mv-let (var2 const2)
-                           (term-equated-to-constant (car cl))
-                           (cond ((and (equal var var2)
-                                       (not (equal const const2)))
-                                  (mv t rest))
-                                 (changedp
-                                  (mv t (cons (car cl) rest)))
-                                 (t
-                                  (mv nil cl))))))))
-
-(defun simplify-clause-for-term-equal-const (var const cl)
-
-; See simplify-clause-for-term-equal-const.
-
-  (mv-let (changedp new-cl)
-          (simplify-clause-for-term-equal-const-1 var const cl)
-          (declare (ignore changedp))
-          new-cl))
-
-(defun add-literal-smart (lit cl at-end-flg)
-
-; This version of add-literal can remove literals from cl that are known to be
-; false, given that lit is false.
-
-  (mv-let (term const)
-          (cond ((and (nvariablep lit)
-;                     (not (fquotep lit))
-                      (eq (ffn-symb lit) 'not))
-                 (term-equated-to-constant (fargn lit 1)))
-                (t (mv nil nil)))
-          (add-literal lit
-                       (cond (term (simplify-clause-for-term-equal-const
-                                    term const cl))
-                             (t cl))
-                       at-end-flg)))
-
-(mutual-recursion
-
-(defun guard-clauses (term debug-info stobj-optp clause wrld ttree)
-
-; See also guard-clauses+, which is a wrapper for guard-clauses that eliminates
-; ground subexpressions.
-
-; We return two results.  The first is a set of clauses whose conjunction
-; establishes that all of the guards in term are satisfied.  The second result
-; is a ttree justifying the simplification we do and extending ttree.
-; Stobj-optp indicates whether we are to optimize away stobj recognizers.  Call
-; this with stobj-optp = t only when it is known that the term in question has
-; been translated with full enforcement of the stobj rules.  Clause is the list
-; of accumulated, negated tests passed so far on this branch.  It is maintained
-; in reverse order, but reversed before we return it.
-
-; We do not add the definition rune for *extra-info-fn* in ttree.  The caller
-; should be content with failing to report that rune.  Prove-guard-clauses is
-; ultimately the caller, and is happy not to burden the user with mention of
-; that rune.
-
-; Note: Once upon a time, this function took an additional argument, alist, and
-; was understood to be generating the guards for term/alist.  Alist was used to
-; carry the guard generation process into lambdas.
-
-  (cond ((variablep term) (mv nil ttree))
-        ((fquotep term) (mv nil ttree))
-        ((flambda-applicationp term)
-         (mv-let
-          (cl-set1 ttree)
-          (guard-clauses-lst (fargs term) debug-info stobj-optp clause wrld
-                             ttree)
-          (mv-let
-           (cl-set2 ttree)
-           (guard-clauses (lambda-body (ffn-symb term))
-                          debug-info
-                          stobj-optp
-
-; We pass in the empty clause here, because we do not want it involved in
-; wrapping up the lambda term that we are about to create.
-
-                          nil
-                          wrld ttree)
-           (let* ((term1 (make-lambda-application
-                          (lambda-formals (ffn-symb term))
-                          (termify-clause-set cl-set2)
-                          (remove-guard-holders-lst (fargs term))))
-                  (cl (reverse (add-literal-smart term1 clause nil)))
-                  (cl-set3 (if (equal cl *true-clause*)
-                               cl-set1
-                             (conjoin-clause-sets+
-                              debug-info
-                              cl-set1
-
-; Instead of cl below, we could use (maybe-add-extra-info-lit debug-info term
-; cl wrld).  But that can cause a large number of lambda (let) terms in the
-; output that are probabably more unhelpful (as noise) than helpful.
-
-                              (list cl)))))
-             (mv cl-set3 ttree)))))
-        ((eq (ffn-symb term) 'if)
-         (let ((test (remove-guard-holders (fargn term 1))))
-           (mv-let
-            (cl-set1 ttree)
-
-; Note:  We generate guards from the original test, not the one with guard
-; holders removed!
-
-            (guard-clauses (fargn term 1) debug-info stobj-optp clause wrld
-                           ttree)
-            (mv-let
-             (cl-set2 ttree)
-             (guard-clauses (fargn term 2)
-                            debug-info
-                            stobj-optp
-
-; But the additions we make to the two branches is based on the simplified
-; test.
-
-                            (add-literal-smart (dumb-negate-lit test)
-                                               clause
-                                               nil)
-                            wrld ttree)
-             (mv-let
-              (cl-set3 ttree)
-              (guard-clauses (fargn term 3)
-                             debug-info
-                             stobj-optp
-                             (add-literal-smart test
-                                                clause
-                                                nil)
-                             wrld ttree)
-              (mv (conjoin-clause-sets+
-                   debug-info
-                   cl-set1
-                   (conjoin-clause-sets+ debug-info cl-set2 cl-set3))
-                  ttree))))))
-        ((eq (ffn-symb term) 'wormhole-eval)
-
-; Because of translate, term is necessarily of the form
-
-; (wormhole-eval '<name> '(lambda (<whs>) <body>) <name-dropper-term>)
-; or
-; (wormhole-eval '<name> '(lambda (     ) <body>) <name-dropper-term>)
-
-; the only difference being whether the lambda has one or no formals.  The
-; <body> of the lambda has been translated despite its occurrence inside a
-; quoted lambda.  The <name-dropper-term> is always of the form 'NIL or a
-; variable symbol or a PROG2$ nest of variable symbols and thus has a guard of
-; T.  Furthermore, translate insures that the free variables of the lambda are
-; those of the <name-dropper-term>.  Thus, all the variables we encounter in
-; <body> are variables known in the current context, except <whs>.  By the way,
-; ``whs'' stands for ``wormhole status'' and if it is the lambda formal we know
-; it occurs in <body>.
-
-; The raw lisp macroexpansion of the first wormhole-eval form above is (modulo
-; the name of var)
-
-; (let* ((<whs> (cdr (assoc-equal '<name> *wormhole-status-alist*)))
-;        (val <body>))
-;   (or (equal <whs> val)
-;       (put-assoc-equal '<name> val *wormhole-status-alist*))
-;   nil)
-;
-; We wish to make sure this form is Common Lisp compliant.  We know that
-; *wormhole-status-alist* is an alist satisfying the guard of assoc-equal and
-; put-assoc-equal.  The raw lisp macroexpansion of the second form of
-; wormhole-eval is also like that above.  Thus, the only problematic form in
-; either expansion is <body>, which necessarily mentions the variable symbol
-; <whs> if it's mentioned in the lambda.  Furthermore, at runtime we know
-; absolutely nothing about the last wormhole status of <name>.  So we need to
-; generate a fresh variable symbol to use in place of <whs> in our guard
-; clauses.
-
-         (let* ((whs (car (lambda-formals (cadr (fargn term 2)))))
-                (body (lambda-body (cadr (fargn term 2))))
-                (name-dropper-term (fargn term 3))
-                (new-var (if whs
-                             (genvar whs (symbol-name whs) nil
-                                     (all-vars1-lst clause
-                                                    (all-vars name-dropper-term)))
-                           nil))
-                (new-body (if (eq whs new-var)
-                              body
-                            (subst-var new-var whs body))))
-           (guard-clauses new-body debug-info stobj-optp clause wrld ttree)))
-        ((throw-nonexec-error-p term :non-exec nil)
-
-; It would be sound to replace the test above by (throw-nonexec-error-p term
-; nil nil).  However, through Version_4.3 we have always generated guard proof
-; obligations for defun-nx, and indeed for any form (prog2$
-; (throw-nonexec-error 'fn ...) ...).  So we restrict this special treatment to
-; forms (prog2$ (throw-nonexec-error :non-exec ...) ...), as may be generated
-; by calls of the macro, non-exec.  The corresponding translated term is of the
-; form (return-last 'progn (throw-non-exec-error ':non-exec ...) targ3); then
-; only the throw-non-exec-error call needs to be considered for guard
-; generation, not targ3.
-
-         (guard-clauses (fargn term 2) debug-info stobj-optp clause wrld ttree))
-
-; At one time we optimized away the guards on (nth 'n MV) if n is an integerp
-; and MV is bound in (former parameter) alist to a call of a multi-valued
-; function that returns more than n values.  Later we changed the way mv-let is
-; handled so that we generated calls of mv-nth instead of nth, but we
-; inadvertently left the code here unchanged.  Since we have not noticed
-; resulting performance problems, and since this was the only remaining use of
-; alist when we started generating lambda terms as guards, we choose for
-; simplicity's sake to eliminate this special optimization for mv-nth.
-
-        (t
-
-; Here we generate the conclusion clauses we must prove.  These clauses
-; establish that the guard of the function being called is satisfied.  We first
-; convert the guard into a set of clause segments, called the
-; guard-concl-segments.
-
-; We optimize stobj recognizer calls to true here.  That is, if the function
-; traffics in stobjs (and is not non-executablep!), then it was so translated
-; (except in cases handled by the throw-nonexec-error-p case above), and we
-; know that all those stobj recognizer calls are true.
-
-; Once upon a time, we normalized the 'guard first.  Is that important?
-
-         (let ((guard-concl-segments (clausify
-                                      (guard (ffn-symb term)
-                                             stobj-optp
-                                             wrld)
-
-; Warning: It might be tempting to pass in the assumptions of clause into the
-; second argument of clausify.  That would be wrong!  The guard has not yet
-; been instantiated and so the variables it mentions are not the same ones in
-; clause!
-
-                                      nil
-
-; Should we expand lambdas here?  I say ``yes,'' but only to be conservative
-; with old code.  Perhaps we should change the t to nil?
-
-                                      t
-
-; We use the sr-limit from the world, because we are above the level at which
-; :hints or :guard-hints would apply.
-
-                                      (sr-limit wrld))))
-           (mv-let
-            (cl-set1 ttree)
-            (guard-clauses-lst
-             (cond
-              ((and (eq (ffn-symb term) 'return-last)
-                    (quotep (fargn term 1)))
-               (case (unquote (fargn term 1))
-                 (mbe1-raw
-
-; Since (return-last 'mbe1-raw exec logic) macroexpands to exec in raw Common
-; Lisp, we need only verify guards for the :exec part of an mbe call.
-
-                  (list (fargn term 2)))
-                 (ec-call1-raw
-
-; Since (return-last 'ec-call1-raw ign (fn arg1 ... argk)) leads to the call
-; (*1*fn arg1 ... argk) or perhaps (*1*fn$inline arg1 ... argk) in raw Common
-; Lisp, we need only verify guards for the argi.
-
-                  (fargs (fargn term 3)))
-                 (otherwise
-
-; Consider the case that (fargn term 1) is not syntactically equal to 'mbe1-raw
-; or 'ec-call1-raw but reduces to one of these.  Even then, return-last is a
-; macro in Common Lisp, so we shouldn't produce the reduced obligations for
-; either of the two cases above.  But this is a minor issue anyhow, because
-; it's certainly safe to avoid those reductions, so in the worst case we would
-; still be sound, even if producing excessively strong guard obligations.
-
-                  (fargs term))))
-              (t (fargs term)))
-             debug-info stobj-optp clause wrld ttree)
-            (mv (conjoin-clause-sets+
-                 debug-info
-                 cl-set1
-                 (add-segments-to-clause
-                  (maybe-add-extra-info-lit debug-info term (reverse clause)
-                                            wrld)
-                  (add-each-literal-lst
-                   (and guard-concl-segments ; optimization (nil for ec-call)
-                        (sublis-var-lst-lst
-                         (pairlis$
-                          (formals (ffn-symb term) wrld)
-                          (remove-guard-holders-lst
-                           (fargs term)))
-                         guard-concl-segments)))))
-                ttree))))))
-
-(defun guard-clauses-lst (lst debug-info stobj-optp clause wrld ttree)
-  (cond ((null lst) (mv nil ttree))
-        (t (mv-let
-            (cl-set1 ttree)
-            (guard-clauses (car lst) debug-info stobj-optp clause wrld ttree)
-            (mv-let
-             (cl-set2 ttree)
-             (guard-clauses-lst (cdr lst) debug-info stobj-optp clause wrld
-                                ttree)
-             (mv (conjoin-clause-sets+ debug-info cl-set1 cl-set2) ttree))))))
-
-)
+; NOTE: Conjoin-clause-sets+ and some other relevant functions were once
+; defined here, but have been moved to history-management.lisp in order to
+; support the definition of termination-theorem-clauses and
+; guard-clauses-for-clique.
 
 ; And now disvaring...
 
@@ -5724,10 +5288,26 @@
             (mv@par step-limit signal clauses ttree new-pspv state)))))
    (cond
     (erp ; from out-of-time or clause-processor failure; treat as 'error signal
-     (mv-let@par (erp val state)
+     (mv-let@par (erp2 val state)
                  (er@par soft ctx "~@0" erp)
-                 (declare (ignore erp val))
-                 (mv@par step-limit 'error nil nil nil nil state)))
+                 (declare (ignore erp2 val))
+                 (pprogn@par
+                  (assert$
+                   (null ttree)
+                   (mv-let@par
+                    (erp3 val state)
+                    (accumulate-ttree-and-step-limit-into-state@par
+                     (add-to-tag-tree! 'abort-cause
+                                       (if (equal erp *interrupt-string*)
+                                           'interrupt
+                                         'time-limit-reached)
+                                       nil)
+                     step-limit
+                     state)
+                    (declare (ignore val))
+                    (assert$ (null erp3)
+                             state)))
+                  (mv@par step-limit 'error nil nil nil nil state))))
     (t
      (pprogn@par ; account for bddnote in case we do not have a hit
       (cond ((and (eq processor 'apply-top-hints-clause)
@@ -6072,14 +5652,27 @@
 
 (defun lmi-name-or-rune (lmi)
 
-; See also lmi-seed, which is similar except that it returns a base
-; symbol where we are happy to return a rune, and when it returns a
-; term we return nil.
+; See also lmi-seed, which is similar except that it returns a base symbol
+; where we are happy to return a rune, and when it returns a term we return
+; nil.  The symbols returned by this function are those for which we want to
+; provide a warning about using an enabled rule; see enabled-lmi-names.
 
   (cond ((atom lmi) lmi)
-        ((eq (car lmi) :theorem) nil)
-        ((or (eq (car lmi) :instance)
-             (eq (car lmi) :functional-instance))
+        ((member-eq (car lmi) '(:theorem
+
+; There is no reason to warn about using a termination or guard theorem.  (See
+; comment above about the purpose being to provide a warning.)
+
+                                :termination-theorem
+                                :termination-theorem! 
+                                :guard-theorem
+
+; Through Version_7.1 we warned when using a functional instance of an enabled
+; rule.  As Eric Smith has pointed out, this is rarely appropriate.
+
+                                :functional-instance))
+         nil)
+        ((eq (car lmi) :instance)
          (lmi-name-or-rune (cadr lmi)))
         (t lmi)))
 
@@ -9458,11 +9051,14 @@
 ; gag-state under these conditions.  However, this is effectively a no-op,
 ; because the parallel waterfall does not save anything to gag-state anyway.
 
-  (let ((chan (proofs-co state)))
+  (let ((chan (proofs-co state))
+        (acc-ttree (f-get-global 'accumulated-ttree state)))
     (pprogn
-     (io? summary nil state (chan)
-          (newline chan state))
-     (print-rules-and-hint-events-summary state)
+     (clear-event-data state)
+     (io? summary nil state (chan acc-ttree)
+          (pprogn
+           (newline chan state)
+           (print-rules-and-hint-events-summary acc-ttree state)))
      (cond
       #+acl2-par
       ((and (f-get-global 'waterfall-parallelism state)

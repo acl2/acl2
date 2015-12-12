@@ -268,11 +268,25 @@
     (equal (vl-tokstream-restore (vl-tokstream-save) :tokstream anything)
            (vl-tokstream-fix))))
 
+(define vl-add-context-to-parser-warning ((warning vl-warning-p)
+                                          &key (tokstream 'tokstream))
+  :returns (new-warning vl-warning-p)
+  (b* ((tokens  (vl-tokstream->tokens))
+       (context (cat "  Near: \""
+                     (vl-tokenlist->string-with-spaces
+                      (take (min 4 (len tokens))
+                            (list-fix tokens)))
+                     (if (> (len tokens) 4) "..." "")
+                     "\""))
+       (new-msg (cat (vl-warning->msg warning)
+                     (str::strsubst "~" "~~" context))))
+    (change-vl-warning warning :msg new-msg)))
 
 (define vl-tokstream-add-warning ((warning vl-warning-p)
                                   &key (tokstream 'tokstream))
   :returns (new-tokstream)
-  (b* ((pstate (vl-tokstream->pstate))
+  (b* ((warning (vl-add-context-to-parser-warning warning))
+       (pstate (vl-tokstream->pstate))
        (pstate (vl-parsestate-add-warning warning pstate))
        (tokstream (vl-tokstream-update-pstate pstate)))
     tokstream)
@@ -818,19 +832,22 @@ execution) that includes the current location."
    ((function symbolp) '__function__)
    (tokstream 'tokstream))
   :returns
-  (mv (errmsg   vl-warning-p)
+  (mv (errmsg   vl-warning-p
+                "Note that such a warning is not automatically extended with
+                 ``nearby'' context, because for backtracking these are often
+                 ephemeral.")
       (value    "Always just @('nil')." (equal value nil))
       (new-tokstream (equal new-tokstream tokstream)))
-  (b* ((tokens (vl-tokstream->tokens)))
-    (mv (make-vl-warning :type :vl-parse-error
+  (b* ((tokens  (vl-tokstream->tokens))
+       (warning (make-vl-warning :type :vl-parse-error
                          :msg "Parse error at ~a0: ~s1"
                          :args (list (if (consp tokens)
                                          (vl-token->loc (car tokens))
                                        "EOF")
                                      description)
                          :fn function
-                         :fatalp t)
-        nil tokstream))
+                         :fatalp t)))
+    (mv warning nil tokstream))
   ///
   (more-returns (errmsg (iff errmsg t)
                         :name vl-parse-error-0-under-iff)))
@@ -1132,6 +1149,17 @@ the @('member') term never arose.</p>
                   (vl-type-of-matched-token (remove-equal exclude types) tokens)))
   :hints(("Goal" :in-theory (enable vl-type-of-matched-token))))
 
+(defthm magically-reduce-possible-types-from-vl-token->type-of-car-of-tokens
+  (implies (and (equal (vl-token->type (car (vl-tokstream->tokens))) free-type)
+                (syntaxp (quotep types))
+                (syntaxp (quotep free-type))
+                (member free-type types))
+           (equal (vl-type-of-matched-token types (vl-tokstream->tokens))
+                  (if (member free-type types)
+                      free-type
+                    nil)))
+  :hints(("Goal" :in-theory (enable vl-type-of-matched-token))))
+
 (defthm magically-resolve-vl-is-some-token?
   (implies (and (equal (vl-type-of-matched-token types2 (vl-tokstream->tokens)) value)
                 (member-equal value types)
@@ -1239,7 +1267,14 @@ guard)."
              (equal (vl-token->type (mv-nth 1 (vl-match)))
                     (vl-type-of-matched-token types (vl-tokstream->tokens))))
     :hints(("Goal" :in-theory (enable vl-type-of-matched-token
-                                      vl-is-some-token?)))))
+                                      vl-is-some-token?))))
+
+  (defthm more-tokens-after-vl-match-because-lookahead-sees-something
+    (implies (vl-lookahead-is-token? token (cdr (vl-tokstream->tokens)))
+             (consp (vl-tokstream->tokens :tokstream (mv-nth 2 (vl-match)))))
+    :rule-classes ((:forward-chaining :trigger-terms ((vl-lookahead-is-token? token (cdr (vl-tokstream->tokens))))))
+    :hints(("Goal" :in-theory (enable vl-lookahead-is-token?)))))
+
 
 
 (define vl-match-any
@@ -1431,3 +1466,48 @@ parser when we encounter such an ending.</p>"
   ///
   (defret vl-choose-parse-error-under-iff
     best-err))
+
+
+(defun clause-which-flag (clause)
+  (declare (xargs :mode :program))
+  (b* (((when (atom clause))
+        nil)
+       (lit1 (car clause)))
+    (case-match lit1
+      (('not ('acl2::flag-is ('quote flag)))
+       flag)
+      (&
+       (clause-which-flag (cdr clause))))))
+
+(defun expand-only-the-flag-function-hint (clause state)
+  ;; This computed hint is a much more restrictive alternative to
+  ;; flag::expand-calls-computed-hint.  We look for calls ONLY of the function
+  ;; whose flag we are currently on.  This was particularly useful for
+  ;; statement parsing, where we have a situation sort of like this:
+  ;;
+  ;;   (mutual-recursion
+  ;;      (defun f1 ...)
+  ;;      (defun f2 ...)
+  ;;      ...
+  ;;      (defun fN ...)
+  ;;      (defun g (args)
+  ;;         (cond ((cond1 args) (f1 args))
+  ;;               ((cond2 args) (f2 args))
+  ;;               ...
+  ;;               ((condN args) (fN args)))))
+  ;;
+  ;; Here, when we get to proving a theorem about G, it is a really bad idea to
+  ;; use expand-calls-computed-hint on all of the clique members (which
+  ;; normally works fine), because they're all being invoked on the original
+  ;; arguments, so it thinks they're all suitable for expansion and just opens
+  ;; them all up, leading to a massive case split.
+  ;;
+  ;; So the idea here is: don't open up all of the functions, only open up the
+  ;; one that is explicitly mentioned in the flag::flag-is hyp.  This doesn't
+  ;; seem to make much of any difference for, e.g., expression parsing, but it
+  ;; makes a big difference for statements.
+  (declare (xargs :mode :program :stobjs state))
+  (let ((flag (clause-which-flag clause)))
+    (and flag
+         (let ((fn (acl2::deref-macro-name flag (macro-aliases (w state)))))
+           (std::expand-calls-computed-hint clause (list fn))))))

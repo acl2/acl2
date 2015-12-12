@@ -516,7 +516,7 @@
 (defun get-guard-verification-theorem (name state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (b* (((er &) (acl2::in-theory-fn nil state nil '(in-theory nil)))
+  (b* (((er &) (acl2::in-theory-fn nil state '(in-theory nil)))
        (wrld (w state))
        (ctx 'get-guard-verification-theorem)
        ((er names) (acl2::chk-acceptable-verify-guards

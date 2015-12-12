@@ -60,40 +60,11 @@
         (t
          (vl-portdecl-fix (car x)))))
 
-(define vl-portdecl-or-blockitem-p (x)
-  :short "Used temporarily in function/task parsing."
-  (or (vl-portdecl-p x)
-      (vl-blockitem-p x)))
-
-(local (defthm vl-portdecl-p-when-vl-portdecl-or-blockitem-p
-         (implies (vl-portdecl-or-blockitem-p x)
-                  (equal (vl-portdecl-p x)
-                         (eq (tag x) :vl-portdecl)))
-         :hints(("Goal" :in-theory (enable vl-portdecl-or-blockitem-p
-                                           vl-blockitem-p)))))
-
-(deflist vl-portdecl-or-blockitem-list-p (x)
-  (vl-portdecl-or-blockitem-p x)
-  :guard t
-  :elementp-of-nil nil
-  :parents nil
-  ///
-  (local (in-theory (enable vl-portdecl-or-blockitem-p)))
-
-  (defthm vl-portdecl-or-blockitem-list-p-when-vl-portdecllist-p
-    (implies (vl-portdecllist-p x)
-             (vl-portdecl-or-blockitem-list-p x))
-    :hints(("Goal" :in-theory (enable tag-reasoning))))
-
-  (defthm vl-portdecl-or-blockitem-list-p-when-vl-blockitemlist-p
-    (implies (vl-blockitemlist-p x)
-             (vl-portdecl-or-blockitem-list-p x))))
-
 (define vl-filter-portdecl-or-blockitem-list
   :short "Split out port declarations from other block items."
   ((x vl-portdecl-or-blockitem-list-p))
-  :returns (mv (portdecls vl-portdecllist-p :hyp :fguard)
-               (blockitems vl-blockitemlist-p :hyp :fguard))
+  :returns (mv (portdecls vl-portdecllist-p)
+               (blockitems vl-blockitemlist-p))
   :prepwork ((local (in-theory (enable vl-portdecl-or-blockitem-p
                                        tag-reasoning))))
   (b* (((when (atom x))
@@ -101,8 +72,10 @@
        ((mv cdr-portdecls cdr-blockitems)
         (vl-filter-portdecl-or-blockitem-list (cdr x)))
        ((when (eq (tag (car x)) :vl-portdecl))
-        (mv (cons (car x) cdr-portdecls) cdr-blockitems)))
-    (mv cdr-portdecls (cons (car x) cdr-blockitems))))
+        (mv (cons (vl-portdecl-fix (car x)) cdr-portdecls)
+            cdr-blockitems)))
+    (mv cdr-portdecls
+        (cons (vl-blockitem-fix (car x)) cdr-blockitems))))
 
 (define vl-build-taskports
   :short "Build port declarations for a task/function declaration."
@@ -150,6 +123,7 @@ variable declaration plays well with @(see scopestack) and similar.</p>"
         (rettype    vl-datatype-p)
         (inputs     vl-portdecllist-p)
         (decls      vl-blockitemlist-p)
+        (loaditems  vl-portdecl-or-blockitem-list-p)
         (body       vl-stmt-p)
         (atts       vl-atts-p)
         (loc        vl-location-p))
@@ -164,15 +138,16 @@ information.</p>"
                                           (list (hons-copy "VL_HIDDEN_DECL_FOR_TASKPORT")))
                                    :loc  loc))
        (decls (append port-vars (list ret-var) decls))
-       ((mv vardecls paramdecls imports) (vl-sort-blockitems decls)))
+       ((mv vardecls paramdecls imports typedefs) (vl-sort-blockitems decls)))
     (make-vl-fundecl :name       name
                      :lifetime   lifetime
                      :rettype    rettype
                      :portdecls  inputs
-                     :parsed-blockitems decls
+                     :loaditems  loaditems
                      :vardecls   vardecls
                      :paramdecls paramdecls
                      :imports    imports
+                     :typedefs   typedefs
                      :body       body
                      :atts       atts
                      :loc        loc)))
@@ -183,6 +158,7 @@ information.</p>"
         (lifetime   vl-lifetime-p)
         (ports      vl-portdecllist-p)
         (decls      vl-blockitemlist-p)
+        (loaditems  vl-portdecl-or-blockitem-list-p)
         (body       vl-stmt-p)
         (atts       vl-atts-p)
         (loc        vl-location-p))
@@ -192,18 +168,18 @@ variables.  See the description of <i>decls</i> in @(see vl-taskdecl) for more
 information.</p>"
   (b* ((port-vars (vl-make-hidden-variables-for-portdecls ports))
        (decls (append port-vars decls))
-       ((mv vardecls paramdecls imports) (vl-sort-blockitems decls)))
-    (make-vl-taskdecl :name      name
-                      :lifetime  lifetime
-                      :portdecls ports
-                      :parsed-blockitems decls
+       ((mv vardecls paramdecls imports typedefs) (vl-sort-blockitems decls)))
+    (make-vl-taskdecl :name       name
+                      :lifetime   lifetime
+                      :portdecls  ports
+                      :loaditems  loaditems
                       :vardecls   vardecls
                       :paramdecls paramdecls
                       :imports    imports
-                      :body      body
-                      :atts      atts
-                      :loc       loc)))
-
+                      :typedefs   typedefs
+                      :body       body
+                      :atts       atts
+                      :loc        loc)))
 
 
 
@@ -427,6 +403,7 @@ try to resume parsing after a problematic function."
   :fails gracefully
   :count strong
   :prepwork ((local (in-theory (disable not))))
+  :guard-debug t
 
 :long "<p>Relevant grammar rules:</p>
 
@@ -482,6 +459,7 @@ try to resume parsing after a problematic function."
                                                              :rettype    rettype
                                                              :inputs     inputs
                                                              :decls      blockitems
+                                                             :loaditems  decls
                                                              :body       stmt
                                                              :atts       atts
                                                              :loc        (vl-token->loc function))))
@@ -503,11 +481,13 @@ try to resume parsing after a problematic function."
                                                      " has direction "
                                                      (symbol-name (vl-portdecl->dir non-input)))))
                           ;; (consp inputs) is automatic from vl-parse-taskport-list.
+                          (loaditems (append inputs blockitems))
                           (ret (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
                                                            :lifetime   (if automatic :vl-automatic nil)
                                                            :rettype    rettype
                                                            :inputs     inputs
                                                            :decls      blockitems
+                                                           :loaditems  loaditems
                                                            :body       stmt
                                                            :atts       atts
                                                            :loc        (vl-token->loc function))))
@@ -594,31 +574,34 @@ try to resume parsing after a problematic function."
                       (return
                        (b* (((mv ports blockitems)
                              (vl-filter-portdecl-or-blockitem-list decls))
-                            (ans (vl-make-taskdecl-for-parser :name     (vl-idtoken->name name)
-                                                              :lifetime (if automatic :vl-automatic nil)
-                                                              :ports    ports
-                                                              :decls    blockitems
-                                                              :body     stmt
-                                                              :atts     atts
-                                                              :loc      (vl-token->loc task))))
+                            (ans (vl-make-taskdecl-for-parser :name      (vl-idtoken->name name)
+                                                              :lifetime  (if automatic :vl-automatic nil)
+                                                              :ports     ports
+                                                              :decls     blockitems
+                                                              :loaditems decls
+                                                              :body      stmt
+                                                              :atts      atts
+                                                              :loc       (vl-token->loc task))))
                          (list ans))))
 
                     ;; Variant 2.
                     (:= (vl-match-token :vl-lparen))
-                    (ports := (vl-parse-taskport-list))
+                    (unless (vl-is-token? :vl-rparen) ;; the task_port_list is optional
+                      (ports := (vl-parse-taskport-list)))
                     (:= (vl-match-token :vl-rparen))
                     (:= (vl-match-token :vl-semi))
                     (blockitems := (vl-parse-0+-block-item-declarations))
                     (stmt       := (vl-parse-statement-or-null))
                     (:= (vl-match-token :vl-kwd-endtask))
                     (return
-                     (list (vl-make-taskdecl-for-parser :name     (vl-idtoken->name name)
-                                                        :lifetime (if automatic :vl-automatic nil)
-                                                        :ports    ports
-                                                        :decls    blockitems
-                                                        :body     stmt
-                                                        :atts     atts
-                                                        :loc      (vl-token->loc task))))))
+                     (list (vl-make-taskdecl-for-parser :name      (vl-idtoken->name name)
+                                                        :lifetime  (if automatic :vl-automatic nil)
+                                                        :ports     ports
+                                                        :decls     blockitems
+                                                        :loaditems (append ports blockitems)
+                                                        :body      stmt
+                                                        :atts      atts
+                                                        :loc       (vl-token->loc task))))))
 
               ((unless err)
                (mv nil val tokstream)))
@@ -753,7 +736,8 @@ then a semicolon or left-paren).</p>"
   :fails gracefully
   :count strong-on-value
   (seq tokstream
-       (when (vl-is-token? :vl-kwd-endfunction)
+       ;; Hack so we can reuse this in tasks.
+       (when (vl-is-some-token? '(:vl-kwd-endfunction :vl-kwd-endtask))
          (return nil))
        (stmt1 := (vl-parse-statement-or-null))
        (rest := (vl-parse-function-statements-aux))
@@ -797,7 +781,7 @@ statements at all.\"</blockquote>
        (when (atom (cdr stmts))
          ;; A single statement.  No need to add a block.
          (return (car stmts)))
-       (return (make-vl-blockstmt :sequentialp t
+       (return (make-vl-blockstmt :blocktype :vl-beginend
                                   :stmts stmts))))
 
 ;; (local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
@@ -1006,7 +990,7 @@ same direction.\"</blockquote>
   :long "@({
              list_of_tf_variable_identifiers ::= port_identifier { variable_dimension } [ '=' expression ]
                                                  { ',' port_identifier { variable_dimension } [ '=' expression ] }
-})"
+         })"
   :result (vl-tf-parsed-var-idlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -1045,7 +1029,7 @@ same direction.\"</blockquote>
   :long "@({
              tf_port_declaration ::= { attribute_instance } tf_port_direction
                                      [ var ] data_type_or_implicit list_of_tf_variable_identifiers ';'
-})"
+         })"
   :result (vl-portdecllist-p val)
   :guard (vl-atts-p atts)
   :resultp-of-nil t
@@ -1082,22 +1066,21 @@ same direction.\"</blockquote>
                                                         (eq (vl-token->type signing) :vl-kwd-signed))
                                           :pdims   (vl-ranges->packeddimensions ranges)))))
 
-       ;; Otherwise, usual ambiguity between data types and identifiers...
+       ;; Otherwise, usual ambiguity between data types and identifiers.
+       ;; As with ports, we know this is followed by an identifier.
 
-       (when (and (vl-is-token? :vl-idtoken)
-                  (not (vl-parsestate-is-user-defined-type-p
-                        (vl-idtoken->name (car (vl-tokstream->tokens)))
-                        (vl-tokstream->pstate))))
-         ;; Not a datatype, so pure implicit case.
+       (when (vl-is-token? :vl-idtoken)
+         (type := (vl-parse-datatype-only-if-followed-by-id))
          (ids := (vl-parse-list-of-tf-variable-identifiers))
          (:= (vl-match-token :vl-semi))
          (return (vl-make-tf-ports-from-parsed-ids
                   ids
                   :atts atts
                   :dir (cdr (assoc (vl-token->type dir) *vl-directions-kwd-alist*))
-                  :type (make-vl-coretype :name :vl-logic
-                                          :signedp nil
-                                          :pdims nil))))
+                  :type (or type
+                            (make-vl-coretype :name :vl-logic
+                                              :signedp nil
+                                              :pdims nil)))))
 
        ;; Else we'd better have a real datatype.
        (type := (vl-parse-datatype))
@@ -1170,28 +1153,31 @@ statement.</p>"
   :fails gracefully
   :count strong
   :long "@({
+             function_declaration ::= 'function' [ lifetime ] function_body_declaration
 
-     function_declaration ::= 'function' [ lifetime ] function_body_declaration
+             function_body_declaration ::=
 
-     function_body_declaration ::=
+               function_data_type_or_implicit                                                           ; Variant 1
+                 [ interface_identifier '.' | class_scope ] identifier ';'
+                 { tf_item_declaration }
+                 { function_statement_or_null }
+               'endfunction' [ ':' identifier ]
 
-       function_data_type_or_implicit                                                           ; Variant 1
-         [ interface_identifier '.' | class_scope ] identifier ';'
-         { tf_item_declaration }
-         { function_statement_or_null }
-       'endfunction' [ ':' identifier ]
+              | function_data_type_or_implicit
+                  [ interface_identifier '.' | class_scope ] identifier '(' [tf_port_list] ')' ';'      ; Variant 2
+                  { block_item_declaration }
+                  { function_statement_or_null }
+                'endfunction' [ ':' identifier ]
+         })
 
-      | function_data_type_or_implicit
-          [ interface_identifier '.' | class_scope ] identifier '(' [tf_port_list] ')' ';'      ; Variant 2
-          { block_item_declaration }
-          { function_statement_or_null }
-        'endfunction' [ ':' identifier ]
-})
+         <p>As is often the case with data_type_or_implicit forms, we need to
+         backtrack to figure out whether an identifier is a datatype or the
+         function name with an empty implicit datatype.  We do this in @(see
+         vl-parse-function-data-type-and-name).</p>
 
-<p>As is often the case with data_type_or_implicit forms, we need to backtrack
-to figure out whether an identifier is a datatype or the function name with an
-empty implicit datatype.  We do this in @(see
-vl-parse-function-data-type-and-name).</p>"
+         <p>BOZO we don't yet handle the interface identifier / class scope
+         stuff, but instead just expect the function name to be a regular
+         identifier.</p>"
 
   (seq tokstream
        (:= (vl-match-token :vl-kwd-function))
@@ -1216,6 +1202,7 @@ vl-parse-function-data-type-and-name).</p>"
                                                      :rettype   (vl-datatype-or-implicit->type rettype)
                                                      :inputs    portdecls
                                                      :decls     blockitems
+                                                     :loaditems items
                                                      :body      body
                                                      :atts      atts
                                                      :loc       (vl-token->loc name))))))
@@ -1223,7 +1210,8 @@ vl-parse-function-data-type-and-name).</p>"
        ;; Variant 2.  We need to match:
        ;;    '(' [tf_port_list] ')' ';' { block_item_declaration } { function_statement_or_null } 'endfunction' [ ':' identifier ]
        (:= (vl-match-token :vl-lparen))
-       (portdecls := (vl-parse-tf-port-list))
+       (unless (vl-is-token? :vl-rparen) ;; the tf_port_list is optional
+         (portdecls := (vl-parse-tf-port-list)))
        (:= (vl-match-token :vl-rparen))
        (:= (vl-match-token :vl-semi))
        (decls   := (vl-parse-0+-block-item-declarations))
@@ -1235,10 +1223,10 @@ vl-parse-function-data-type-and-name).</p>"
                                                  :rettype    (vl-datatype-or-implicit->type rettype)
                                                  :inputs     portdecls
                                                  :decls      decls
+                                                 :loaditems  (append portdecls decls)
                                                  :body       body
                                                  :atts       atts
                                                  :loc        (vl-token->loc name))))))
-
 
 (defparser vl-parse-task-declaration-2012 (atts)
   :guard (vl-atts-p atts)
@@ -1247,9 +1235,80 @@ vl-parse-function-data-type-and-name).</p>"
   :resultp-of-nil t
   :fails gracefully
   :count strong
+  :long "@({
+              task_declaration ::= 'task' [lifetime] task_body_declaration
+
+              task_body_declaration ::=
+
+                  [ interface_identifier '.' | class_scope ] task_identifier ';'                         ;; Variant 1
+                      {tf_item_declaration}
+                      {statement_or_null}
+                  'endtask' [ ':' task_identifier ]
+
+                | [ interface_identifier '.' | class_scope ] task_identifier '(' [tf_port_list] ')' ';'  ;; Variant 2
+                      {block_item_declaration}
+                      {statement_or_null}
+                  'endtask' [ ':' task_identifier ]
+         })
+
+         <p>BOZO we don't yet handle the interface_identifier/class-scope stuff
+         but instead just expect the task name to be a regular identifier.</p>"
+
+;Everything through the first semicolon is just like in functions.
+; We have done {tf_item_declaration} above in vl-parse-0+-tf-item-declarations
+; We definitely have statement_or_null already.
+; We have {block_item_declaration} in (vl-parse-0+-block-item-declarations)
+; So I think this is going to basically just be the same as for functions.
+
   (seq tokstream
-       (ans := (vl-parse-task-declaration-2005 atts))
-       (return ans)))
+       (:= (vl-match-token :vl-kwd-task))
+       (lifetime := (vl-maybe-parse-lifetime))
+       ;; BOZO eventually handle [ interface_identifier '.' | class_scope ] here.
+       (name := (vl-match-token :vl-idtoken))
+
+       (when (vl-is-token? :vl-semi)
+         ;; Variant 1.  We need to match:
+         ;;      { tf_item_declaration }
+         ;;      { statement_or_null }
+         ;;   'endtask' [ ':' identifier ]
+         (:= (vl-match)) ;; eat the semicolon
+         (items := (vl-parse-0+-tf-item-declarations))
+         (body := (vl-parse-function-statements)) ;; yep, this does the right thing
+         (:= (vl-match-token :vl-kwd-endtask))
+         (:= (vl-parse-endblock-name (vl-idtoken->name name) "task/endtask"))
+         (return (b* (((mv portdecls blockitems)
+                       (vl-filter-portdecl-or-blockitem-list items)))
+                   (list (vl-make-taskdecl-for-parser :name      (vl-idtoken->name name)
+                                                      :lifetime  lifetime
+                                                      :ports     portdecls
+                                                      :decls     blockitems
+                                                      :loaditems items
+                                                      :body      body
+                                                      :atts      atts
+                                                      :loc       (vl-token->loc name))))))
+
+       ;; Variant 2.  We need to match:
+       ;;   '(' [tf_port_list] ')' ';'
+       ;;       { block_item_declaration }
+       ;;       { statement_or_null }
+       ;;   'endtask' [ ':' identifier ]
+       (:= (vl-match-token :vl-lparen))
+       (unless (vl-is-token? :vl-rparen) ;; the tf_port_list is optional
+         (portdecls := (vl-parse-tf-port-list)))
+       (:= (vl-match-token :vl-rparen))
+       (:= (vl-match-token :vl-semi))
+       (decls   := (vl-parse-0+-block-item-declarations))
+       (body    := (vl-parse-function-statements))
+       (:= (vl-match-token :vl-kwd-endtask))
+       (:= (vl-parse-endblock-name (vl-idtoken->name name) "task/endtask"))
+       (return (list (vl-make-taskdecl-for-parser :name       (vl-idtoken->name name)
+                                                  :lifetime   lifetime
+                                                  :ports      portdecls
+                                                  :decls      decls
+                                                  :loaditems  (append portdecls decls)
+                                                  :body       body
+                                                  :atts       atts
+                                                  :loc        (vl-token->loc name))))))
 
 
 

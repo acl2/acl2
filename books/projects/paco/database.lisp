@@ -879,7 +879,6 @@
               (er-progn (assign last-proof-attempt p)
                         (defaxiom-fn name tterm state
                           rule-classes
-                          nil
                           `(paco::dthm ,name ,term
                                        ,@(if hint-settings
                                              (list :hint-settings

@@ -59,8 +59,8 @@ href='http://dx.doi.org/10.4204/EPTCS.152.2'>Industrial Strength Documentation
 for ACL2</a>.  ACL2 Workshop 2014.  EPTCS 152.  Pages 9-25.
 </blockquote>
 
-<p>See @(see acl2::|Building the ACL2+Books Manual|) for information on
-building the ACL2+Books manual.</p>
+<p>See <i>Building the Manual</i> under @(see books-certification) for
+information on building the ACL2+Books manual.</p>
 
 
 <p>To use XDOC to document your own books, the first step is:</p>
@@ -541,7 +541,14 @@ name, it may or may not include the package portion of @('name').</li>
 </ul>
 
 <p>You can use these to write your own @('<see>') tags.  You should probably
-<i>never</i> write a @('<see>') tag yourself without using @('@(url ...)').</p>
+<i>never</i> write a @('<see>') tag yourself without using @('@(url ...)').
+Some examples:</p>
+
+<ul>
+<li>@('@(url defxdoc)') expands to @(url defxdoc)</li>
+<li>@('@(sym defxdoc)') expands to @(sym defxdoc)</li>
+<li>@('@(csym defxdoc)') expands to @(csym defxdoc)</li>
+</ul>
 
 <h3>Escaping of @</h3>
 

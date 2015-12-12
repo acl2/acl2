@@ -142,7 +142,7 @@
 (fty::deffixcong svex-env-equiv svex-env-equiv (append a b) b
   :hints(("Goal" :in-theory (enable svex-env-fix append))))
 
-(define svtv-debug-run ((phase natp)
+(define svtv-debug-writephases ((phase natp)
                         (nphases natp)
                         (inalist svex-env-p)
                         (ins svtv-lines-p)
@@ -186,7 +186,7 @@
        (p (if (zp phase)
               (vcd-dump-first-snapshot vcd-vals vcd-wiremap p)
             (vcd-dump-delta (* 10 phase) changes vcd-vals vcd-wiremap p))))
-    (svtv-debug-run (1+ (lnfix phase))
+    (svtv-debug-writephases (1+ (lnfix phase))
                     nphases inalist
                     ins ovlines
                     next-state
@@ -210,40 +210,70 @@
                                     4veclist-p
                                     pairlis$))))
 
+(defenum debugdata-status-p
+  (:empty :initialized :composed))
 
-(define svtv-debug-core ((x svtv-p)
-                         (inalist svex-env-p)
+(local (defun debugdata-renaming (field-names)
+         (b* (((when (atom field-names)) nil)
+              (field (car field-names))
+              (new-field (intern$ (cat "DEBUGDATA->" (symbol-name field)) "SV"))
+              (update (intern$ (cat "UPDATE-" (symbol-name field)) "SV"))
+              (new-update (intern$ (cat "SET-DEBUGDATA->" (symbol-name field)) "SV")))
+           (cons (list field new-field)
+                 (cons (list update new-update)
+                       (debugdata-renaming (cdr field-names)))))))
+
+(make-event
+ (b* ((fields
+       `((design     :type (satisfies design-p)           :initially ,(make-design :top ""))
+         (modidx     :type (integer 0 *)                  :initially 0)
+         (assigns    :type (satisfies svex-alist-p)       :initially nil)
+         (delays     :type (satisfies svar-map-p)         :initially nil)
+         (updates    :type (satisfies svex-alist-p)       :initially nil)
+         (nextstates :type (satisfies svex-alist-p)       :initially nil)
+         (svtv       :type (satisfies svtv-p)             :initially ,(make-svtv :nphases 0))
+         (nphases    :type (integer 0 *)                  :initially 0)
+         (ins        :type (satisfies svtv-lines-p)       :initially nil)
+         (outs       :type (satisfies svtv-lines-p)       :initially nil)
+         (overrides  :type (satisfies svtv-lines-p)       :initially nil)
+         (status     :type (satisfies debugdata-status-p) :initially :empty)))
+      (field-names (strip-cars fields))
+      (renaming (debugdata-renaming field-names))
+      ;; (fns (append '(debugdatap create-debugdata)
+      ;;              (acl2::strip-cadrs renaming)))
+      (make-binder (std::da-make-binder 'debugdata field-names)))
+   
+   `(progn
+      (defstobj debugdata
+        ,@fields
+        :renaming ,renaming)
+      (in-theory (disable create-debugdata debugdatap))
+      ,make-binder)))
+
+
+;; This is much faster in logic mode (even with the svarlist-addr-p guard
+;; check) than program mode, where presumably invariant-risk is killing us.
+(define svtv-debug-init ((design design-p)
                          &key
-                         ((filename  stringp) '"svtv-debug.vcd")
                          (moddb 'moddb)
                          (aliases 'aliases)
-                         (vcd-wiremap 'vcd-wiremap)
-                         (vcd-vals 'vcd-vals)
-                         (state 'state))
+                         (debugdata 'debugdata))
+  :guard (svarlist-addr-p (modalist-vars (design->modalist design)))
+  :returns (mv err moddb-out aliases-out debugdata-out)
+  :short "Prepares an SV design for SVTV debugging, to the extent possible without
+          specifying an SVTV."
+  :long "<p>This does the initial compilation of the design, creating the
+moddb, aliases table, and local wire assignments and delays.  See @(see
+svtv-debug-set-svtv) for the next step, which composes the signals into their
+nextstate and update functions given a timing diagram.</p>
 
-  :returns (mv moddb aliases vcd-wiremap vcd-vals state)
-  :hooks ((:fix :omit (moddb aliases)))
-  (b* (((svtv x))
-       (mod-fn (intern-in-package-of-symbol
-                (str::cat (symbol-name x.name) "-MOD")
-                x.name))
-       ((mv err design)
-        (acl2::magic-ev-fncall mod-fn nil state t t))
-       ((when err)
-        (raise "Error: couldn't run ~x0: ~@1~%" mod-fn err)
-        (mv moddb aliases vcd-wiremap vcd-vals state))
-       ((unless (and (design-p design)
-                     (modalist-addr-p (design->modalist design))))
-        (raise "Error: ~x0 returned a malformed design~%" mod-fn)
-        (mv moddb aliases vcd-wiremap vcd-vals state))
-        ;; Make a moddb, canonical alias table, and flattened
-       ;; (non-alias-normalized) assignments from the design.  These are
-       ;; expressed terms of indexed variable names.
+<p>Technical: Erases and recreates the moddb, aliases, and debugdata stobjs.</p>"
+  (b* ((design (design-fix design))
        ((mv err assigns moddb aliases)
         (svex-design-flatten design))
        ((when err)
         (raise "~@0~%" err)
-        (mv moddb aliases vcd-wiremap vcd-vals state))
+        (mv err moddb aliases debugdata))
        ;; get the index of the top-level module within the moddb
        (modidx (moddb-modname-get-index (design->top design) moddb))
        ;; note: skip this step to leave things in terms of wire indices
@@ -254,62 +284,193 @@
        ((mv assigns delays)
         (svex-normalize-assigns assigns aliases))
 
-       ;; Process the timing diagram into internal form
-       (ins x.orig-ins)
-       (overrides x.orig-overrides)
-       (outs (append x.orig-outs x.orig-internals))
+       (debugdata (set-debugdata->design design debugdata))
+       (debugdata (set-debugdata->modidx modidx debugdata))
+       (debugdata (set-debugdata->assigns assigns debugdata))
+       (debugdata (set-debugdata->delays delays debugdata))
+       (debugdata (set-debugdata->updates nil   debugdata)) ;; not available yet
+       (debugdata (set-debugdata->nextstates nil debugdata))
+       (debugdata (set-debugdata->status :initialized debugdata)))
+    (mv nil moddb aliases debugdata))
+  ///
+  (defret svtv-debug-init-moddb-ok
+    (and (moddb-mods-ok moddb-out)
+         (moddb-basics-ok moddb-out)))
+
+  (defret svtv-debug-init-modidx-ok
+    (implies (not err)
+             (< (nth *debugdata->modidx* debugdata-out)
+                (nfix (nth *moddb->nmods1* moddb-out)))))
+
+  (defret svtv-debug-init-totalwires-ok
+    (implies (not err)
+             (<= (moddb-mod-totalwires
+                  (nth *debugdata->modidx* debugdata-out) moddb-out)
+                 (len aliases-out)))))
+
+
+(define svtv-debug-set-ios-logic (&key 
+                                   ((ins true-list-listp) 'nil)
+                                   ((outs true-list-listp) 'nil)
+                                   ((internals true-list-listp) 'nil)
+                                   ((overrides true-list-listp) 'nil)
+                                   (moddb 'moddb)
+                                   (aliases 'aliases)
+                                   (debugdata 'debugdata)
+                                   (rewrite 't))
+  :guard (and (moddb-ok moddb)
+              (< (debugdata->modidx debugdata) (moddb->nmods moddb))
+              (<= (moddb-mod-totalwires (debugdata->modidx debugdata) moddb)
+                  (aliass-length aliases)))
+  :returns debugdata-out
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable debugdatap))))
+  (b* (((debugdata debugdata))
+       ((when (eq debugdata.status :empty))
+        (raise "Error: Need to do SVTV-DEBUG-INIT before SVTV-DEBUG-SET-IOS~%")
+        debugdata)
+
+       ;; Process the timing diagram into internal form       
+       (outs (append outs internals))
        ;; really only doing the outs in case (likely) they contain more phases
        ;; than ins/overrides, for nphases computation
-       ((mv err ins) (svtv-wires->lhses ins modidx moddb aliases))
+       ((mv err ins) (svtv-wires->lhses ins debugdata.modidx moddb aliases))
        ((when err) (raise "Error resolving inputs: ~@0" err)
-        (mv moddb aliases vcd-wiremap vcd-vals state))
-       ((mv err overrides) (svtv-wires->lhses overrides modidx moddb aliases))
+        debugdata)
+       ((mv err overrides) (svtv-wires->lhses overrides debugdata.modidx moddb aliases))
        ((when err) (raise "Error resolving overrides: ~@0" err)
-        (mv moddb aliases vcd-wiremap vcd-vals state))
-       ((mv err outs) (svtv-wires->lhses outs modidx moddb aliases))
+        debugdata)
+       ((mv err outs) (svtv-wires->lhses outs debugdata.modidx moddb aliases))
        ((when err) (raise "Error resolving outputs: ~@0" err)
-        (mv moddb aliases vcd-wiremap vcd-vals state))
+        debugdata)
 
        ;; get the total number of phases to simulate and extend the
        ;; inputs/overrides to that length
        (nphases (max (svtv-max-length ins)
                      (max (svtv-max-length overrides)
                           (svtv-max-length outs))))
-       (ins (svtv-expand-lines ins nphases))
        (overrides (svtv-expand-lines overrides nphases))
 
-       ;; Each override has a unique test variable (determining if the override
-       ;; happens in a given phase) and override value variable.  This
-       ;; generates them (as tagged indices) and records them in data
-       ;; structures to associate the LHS for each override with its variables
-       ;; and entries.
-       ((mv ovlines ovs) (svtv-lines->overrides overrides 0))
+       ((mv updates next-states)
+        (b* (((when (and (eq debugdata.status :composed)
+                         (equal debugdata.overrides overrides)))
+              ;; Presumably we're just updating some inputs or outputs.  We
+              ;; don't need to compose assigns/delays again, which is an
+              ;; expensive part of the operation.
+              (mv debugdata.updates debugdata.nextstates))
 
-       ;; Apply the overrides to the assigns.  Each wire that is overridden has
-       ;; its gate-level assignment replaced with something like:
-       ;; (if override-this-phase override-value original-assignment)
-       ;; except that extra care is taken to override only the specified range.
-       (overridden-assigns (svex-apply-overrides ovs (make-fast-alist assigns)))
-       ;; Note! In defsvtv-main, we need to keep the original assigns around so
-       ;; that if an output/internal refers to an overridden variable, we can
-       ;; get that variable's value before overriding it.  At the moment we
-       ;; don't pay attention to output variables in svtv-debug, so we don't
-       ;; care about this.  If this changes, revisit this issue.
+             ;; Each override has a unique test variable (determining if the override
+             ;; happens in a given phase) and override value variable.  This
+             ;; generates them (as tagged indices) and records them in data
+             ;; structures to associate the LHS for each override with its variables
+             ;; and entries.
+             ((mv ?ovlines ovs) (svtv-lines->overrides overrides 0))
 
-       (- (fast-alist-free overridden-assigns))
-       ;; Compose together the final (gate-level) assignments to get full
-       ;; update formulas (in terms of PIs and current states), and compose
-       ;; delays with these to get next states.
-       ((mv updates next-states) (svex-compose-assigns/delays overridden-assigns delays))
-       ;; (- (acl2::sneaky-save 'updates updates))
+             ;; Apply the overrides to the assigns.  Each wire that is overridden has
+             ;; its gate-level assignment replaced with something like:
+             ;; (if override-this-phase override-value original-assignment)
+             ;; except that extra care is taken to override only the specified range.
+             (overridden-assigns (svex-apply-overrides ovs (make-fast-alist debugdata.assigns)))
+             ;; Note! In defsvtv-main, we need to keep the original assigns around so
+             ;; that if an output/internal refers to an overridden variable, we can
+             ;; get that variable's value before overriding it.  At the moment we
+             ;; don't pay attention to output variables in svtv-debug, so we don't
+             ;; care about this.  If this changes, revisit this issue.
+
+             (- (fast-alist-free overridden-assigns)))
+          ;; Compose together the final (gate-level) assignments to get full
+          ;; update formulas (in terms of PIs and current states), and compose
+          ;; delays with these to get next states.
+          (svex-compose-assigns/delays overridden-assigns
+                                       debugdata.delays
+                                       :rewrite rewrite)))
+
+       (debugdata (set-debugdata->updates updates debugdata))
+       (debugdata (set-debugdata->nextstates next-states debugdata))
+       (debugdata (set-debugdata->nphases nphases debugdata))
+       (debugdata (set-debugdata->ins ins debugdata))
+       (debugdata (set-debugdata->outs outs debugdata))
+       (debugdata (set-debugdata->overrides overrides debugdata))
+       (debugdata (set-debugdata->status :composed debugdata)))
+    debugdata)
+  ///
+  (defret svtv-debug-set-ios-modidx-unchanged
+    (equal (nth *debugdata->modidx* debugdata-out)
+           (nth *debugdata->modidx* debugdata))))
+
+(define svtv-debug-set-ios (&key 
+                             ((ins true-list-listp) 'nil)
+                             ((outs true-list-listp) 'nil)
+                             ((internals true-list-listp) 'nil)
+                             ((overrides true-list-listp) 'nil)
+                             (moddb 'moddb)
+                             (aliases 'aliases)
+                             (debugdata 'debugdata)
+                             (rewrite 't))
+  :mode :program
+  :hooks nil
+  (svtv-debug-set-ios-logic
+   :ins ins :outs outs :internals internals :overrides overrides
+   :rewrite rewrite))
+
+
+(define svtv-debug-set-svtv ((x svtv-p)
+                             &key 
+                             (moddb 'moddb)
+                             (aliases 'aliases)
+                             (debugdata 'debugdata)
+                             (rewrite 't))
+  :guard (and (moddb-ok moddb)
+              (< (debugdata->modidx debugdata) (moddb->nmods moddb))
+              (<= (moddb-mod-totalwires (debugdata->modidx debugdata) moddb)
+                  (aliass-length aliases)))
+  :returns debugdata-out
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable debugdatap))))
+  (svtv-debug-set-ios-logic
+   :ins (svtv->orig-ins x)
+   :outs (svtv->orig-outs x)
+   :internals (svtv->orig-internals x)
+   :overrides (svtv->orig-overrides x)
+   :moddb moddb
+   :aliases aliases
+   :debugdata debugdata
+   :rewrite rewrite)
+  ///
+  (defret svtv-debug-set-svtv-modidx-unchanged
+    (equal (nth *debugdata->modidx* debugdata-out)
+           (nth *debugdata->modidx* debugdata))))
+
+
+
+(define svtv-debug-run-logic ((inalist svex-env-p)
+                              &key
+                              ((filename stringp) '"svtv-debug.vcd")
+                              (moddb 'moddb)
+                              (aliases 'aliases)
+                              (debugdata 'debugdata)
+                              (vcd-wiremap 'vcd-wiremap)
+                              (vcd-vals 'vcd-vals)
+                              (state 'state))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable debugdatap))))
+  :guard (and (moddb-ok moddb)
+              (< (debugdata->modidx debugdata) (moddb->nmods moddb))
+              (<= (moddb-mod-totalwires (debugdata->modidx debugdata) moddb)
+                  (aliass-length aliases)))
+
+  :returns (mv vcd-wiremap vcd-vals state)
+  (b* (((debugdata debugdata))
+
+       ;; (- (acl2::sneaky-save 'debugdata.updates debugdata.updates))
        ;; Compute an initial state of all Xes
-       (states (svex-alist-keys next-states))
+       (states (svex-alist-keys debugdata.nextstates))
        (initst (pairlis$ states (replicate (len states) (4vec-x))))
 
        ;; Start VCD creation.  Make the wiremap and the scope structure (from
        ;; which we write out the module hierarchy portion of the VCD file.)
        (vcd-wiremap (resize-vcdwires (aliass-length aliases) vcd-wiremap))
-       ((mv scope & vcd-wiremap) (vcd-moddb->scopes "top" modidx 0 0 moddb vcd-wiremap))
+       ((mv scope & vcd-wiremap) (vcd-moddb->scopes "top" debugdata.modidx 0 0 moddb vcd-wiremap))
 
        ;; Start accumulating the contents of the VCD file into reverse
        ;; string/char accumulator p.  Print the header into p.
@@ -325,18 +486,21 @@
        ;; input variable).  This wouldn't be strictly necessary since we're
        ;; going to set these to Xes anyway, but this is how we do it for now.
        (in-vars (acl2::hons-set-diff (svexlist-collect-vars
-                                      (append (svex-alist-vals updates)
-                                              (svex-alist-vals next-states)))
-                                     (append (svex-alist-keys updates)
+                                      (append (svex-alist-vals debugdata.updates)
+                                              (svex-alist-vals debugdata.nextstates)))
+                                     (append (svex-alist-keys debugdata.updates)
                                              states)))
 
        ((with-fast inalist))
+
+       (ins (svtv-expand-lines debugdata.ins debugdata.nphases))
+       ((mv ovlines ?ovs) (svtv-lines->overrides debugdata.overrides 0))
        ;; Run the sequence of steps, recording value changes at each step and
        ;; printing them into p.
        ((mv vcd-vals p)
-        (svtv-debug-run 0 nphases inalist
+        (svtv-debug-writephases 0 debugdata.nphases inalist
                         ins ovlines initst
-                        updates next-states in-vars
+                        debugdata.updates debugdata.nextstates in-vars
                         aliases vcd-wiremap vcd-vals p))
 
        ;; Write the contents of p to an actual file.
@@ -345,10 +509,66 @@
                              :character state))
        ((unless channel)
         (raise "Couldn't write vcd file ~s0~%" filename)
-        (mv moddb aliases vcd-wiremap vcd-vals state))
+        (mv vcd-wiremap vcd-vals state))
        (state (princ$ (vl::vl-printedlist->string p) channel state))
        (state (close-output-channel channel state)))
-    (mv moddb aliases vcd-wiremap vcd-vals state)))
+    (mv vcd-wiremap vcd-vals state)))
+
+(define svtv-debug-run ((inalist svex-env-p)
+                        &key
+                        ((filename stringp) '"svtv-debug.vcd")
+                        (moddb 'moddb)
+                        (aliases 'aliases)
+                        (debugdata 'debugdata)
+                        (vcd-wiremap 'vcd-wiremap)
+                        (vcd-vals 'vcd-vals)
+                        (state 'state))
+  :mode :program :hooks nil
+  (svtv-debug-run-logic
+   inalist
+   :filename filename
+   :moddb moddb
+   :aliases aliases
+   :debugdata debugdata
+   :vcd-wiremap vcd-wiremap
+   :vcd-vals vcd-vals))
+
+
+(define svtv-debug-core ((x svtv-p)
+                         (inalist svex-env-p)
+                         &key
+                         ((filename  stringp) '"svtv-debug.vcd")
+                         (moddb 'moddb)
+                         (aliases 'aliases)
+                         (debugdata 'debugdata)
+                         (vcd-wiremap 'vcd-wiremap)
+                         (vcd-vals 'vcd-vals)
+                         (rewrite 't)
+                         (state 'state))
+
+  :returns (mv moddb aliases debugdata vcd-wiremap vcd-vals state)
+  :hooks ((:fix :omit (moddb aliases)))
+  (b* (((svtv x))
+       (mod-fn (intern-in-package-of-symbol
+                (str::cat (symbol-name x.name) "-MOD")
+                x.name))
+       ((mv err design)
+        (acl2::magic-ev-fncall mod-fn nil state t t))
+       ((when err)
+        (raise "Error: couldn't run ~x0: ~@1~%" mod-fn err)
+        (mv moddb aliases debugdata vcd-wiremap vcd-vals state))
+       ((unless (and (design-p design)
+                     (modalist-addr-p (design->modalist design))))
+        (raise "Error: ~x0 returned a malformed design~%" mod-fn)
+        (mv moddb aliases debugdata vcd-wiremap vcd-vals state))
+
+       ((mv err moddb aliases debugdata) (svtv-debug-init design))
+       ((when err)
+        (mv moddb aliases debugdata vcd-wiremap vcd-vals state))
+       (debugdata (svtv-debug-set-svtv x :rewrite rewrite))
+       ((mv vcd-wiremap vcd-vals state)
+        (svtv-debug-run-logic inalist :filename filename)))
+    (mv moddb aliases debugdata vcd-wiremap vcd-vals state)))
 
 (define svtv-debug ((x svtv-p)
                     (inalist svex-env-p)
@@ -359,8 +579,8 @@
   :short "Dump a VCD waveform showing the internal signals of an svex STV."
   :prepwork ((local (in-theory (disable max))))
   :verbosep t
-  (b* (((acl2::local-stobjs moddb aliases vcd-wiremap vcd-vals)
-        (mv moddb aliases vcd-wiremap vcd-vals state)))
+  (b* (((acl2::local-stobjs moddb aliases debugdata vcd-wiremap vcd-vals)
+        (mv moddb aliases debugdata vcd-wiremap vcd-vals state)))
     (svtv-debug-core x inalist :filename filename))
       
   ///

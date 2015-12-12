@@ -358,13 +358,22 @@ one such form may affect what you might think of as the proof of another.</p>
 (defun get-formals (fn world)
   (getprop fn 'formals :none 'current-acl2-world world))
 
-(defun get-body (fn world)
-  ;; This gets the original, normalized or non-normalized body based on what
-  ;; the user typed for the :normalize xarg.  The use of "last" skips past
-  ;; any other :definition rules that have been added since then.
-  (access def-body
-          (car (last (getprop fn 'def-bodies nil 'current-acl2-world world)))
-          :concl))
+(defun get-body (fn latest-def world)
+  ;; If latest-def is nil (the default for make-flag), this gets the original,
+  ;; normalized or non-normalized body based on what the user typed for the
+  ;; :normalize xarg.  The use of "last" skips past any other :definition rules
+  ;; that have been added since then.
+  ;; !! If latest-def is t, we should perhaps cause an error if the :hyps field
+  ;; is non-nil.
+  (let* ((bodies (getprop fn 'def-bodies nil 'current-acl2-world world))
+         (body (if latest-def
+                   (car bodies)
+                 (car (last bodies)))))
+    (if (access def-body body :hyp)
+        (er hard 'get-body
+            "Attempt to call get-body on a body with a non-nil hypothesis, ~x0"
+            (access def-body body :hyp))
+      (access def-body body :concl))))
 
 (defun get-measure (fn world)
   (access justification
@@ -450,7 +459,7 @@ one such form may affect what you might think of as the proof of another.</p>
 
 (defun make-flag-body-aux (flag-var fn-name formals alist full-alist world)
   (if (consp alist)
-      (let* ((orig-body (get-body (caar alist) world))
+      (let* ((orig-body (get-body (caar alist) nil world))
              (new-body (mangle-body orig-body fn-name full-alist formals world)))
         (cond ((consp (cdr alist))
                (cons `((equal ,flag-var ',(cdar alist)) ,new-body)
@@ -577,7 +586,7 @@ one such form may affect what you might think of as the proof of another.</p>
 ;
 ;  -or-
 ;
-;   (defthm[d] <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
+;   (defthm[d] <thmname> <thm-body> :flag ... :rule-classes ...)
 
 (defun flag-from-thmpart (thmpart)
   (if (member (car thmpart) '(defthm defthmd))
@@ -678,13 +687,15 @@ one such form may affect what you might think of as the proof of another.</p>
        (thmname           (flag-thm-entry-thmname explicit-name flag thmpart))
        (body              (body-from-thmpart thmpart))
        (rule-classes-look (member :rule-classes thmpart))
-       (doc               (extract-keyword-from-args :doc thmpart)))
+; Commented out by Matt K. for post-v-7.1 removal of :doc for defthm:
+       ;;(doc               (extract-keyword-from-args :doc thmpart))
+       )
     (cons `(with-output :stack :pop
              (,defthm[d] ,thmname
                ,body
                ,@(and rule-classes-look
                       `(:rule-classes ,(cadr rule-classes-look)))
-               :doc ,doc
+               ;; :doc ,doc ; Removed by Matt K.; see comment above
                :hints(("Goal"
                        :in-theory (theory 'minimal-theory)
                        :use ((:instance ,lemma-name (,flag-var ',flag)))))))
@@ -952,7 +963,10 @@ one such form may affect what you might think of as the proof of another.</p>
                                                               (strip-cars
                                                                alist))))))
           (defthm ,equiv-thm-name
-            (and . ,(equiv-theorem-cases flag-fn-name formals alist world))))))
+            (and . ,(equiv-theorem-cases flag-fn-name formals alist world))
+            :hints(("Goal" :in-theory (union-theories
+                                       '(flag-equiv-lemma)
+                                       (theory 'acl2::minimal-theory))))))))
 
       (progn . ,(flag-table-events alist `(,flag-fn-name
                                            ,alist

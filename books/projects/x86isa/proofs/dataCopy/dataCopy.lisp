@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -213,6 +213,11 @@
         (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
         ;; Destination Addresses
         (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
+       ;; We could modify the following pre-condition to say the following:
+       ;; either the source and destination addresses are completely disjoint
+       ;; or they are equal. However, the equality of the source and
+       ;; destination isn't what we are interested in for this program and so I
+       ;; choose to leave that out.
        (disjoint-p
         ;; Source Addresses
         (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rdi* x86)))
@@ -331,24 +336,7 @@
 
 ;; ======================================================================
 
-;; Some useful arithmetic theorems:
-
-(defthm greater-logbitp-of-unsigned-byte-p
-  ;; From word-count/wc.lisp
-  (implies (and (unsigned-byte-p n x)
-                (natp m)
-                (< n m))
-           (equal (logbitp m x) nil))
-  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
-                                    ihsext-recursive-redefs
-                                    unsigned-byte-p)
-                                   ())))
-  :rule-classes ((:rewrite)
-                 (:rewrite :corollary
-                           (implies (and (< x (expt 2 m))
-                                         (natp x)
-                                         (natp m))
-                                    (equal (logbitp m x) nil)))))
+;; Effects theorem:
 
 (encapsulate
  ()
@@ -361,18 +349,6 @@
             (<= 4 (ash n 2)))
    :hints (("Goal" :in-theory (e/d* (ash) ())))
    :rule-classes (:rewrite :linear)))
-
-;; ======================================================================
-
-;; Effects theorem:
-
-(defthm subset-p-linear-thm-1
-  (implies (and (canonical-address-p (+ m x))
-                (natp m)
-                (<= i m))
-           (subset-p (create-canonical-address-list i x)
-                     (create-canonical-address-list m x)))
-  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
 (encapsulate
  ()
@@ -389,16 +365,6 @@
    (implies (natp n)
             (equal (mod (ash n 2) 4) 0))
    :hints (("Goal" :in-theory (e/d* (ash) ())))))
-
-(defthm canonical-address-p-of-src/dst
-  (implies (and (canonical-address-p (+ (- k) src/dst))
-                (canonical-address-p (+ m src/dst))
-                (integerp src/dst)
-                (natp k)
-                (natp m))
-           (canonical-address-p src/dst))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
-  :rule-classes (:rewrite :forward-chaining))
 
 (defthmd effects-copyData-loop-base
   (implies
@@ -615,7 +581,7 @@
                              sal/shl-spec
                              sal/shl-spec-64
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -873,43 +839,6 @@
                              (loop-clk-base)
                              force (force))))))
 
-(defthmd canonical-address-p-and-ash-limits-thm-3
-  (implies (and (canonical-address-p (+ m x))
-                (canonical-address-p x)
-                (posp m))
-           (canonical-address-p (+ -1 (+ m x))))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
-  :rule-classes (:forward-chaining :rewrite))
-
-(defthmd disjointness-lemma-1-helper
-  (implies (and (x86p x86)
-                (unsigned-byte-p 33 k)
-                (equal (xr :rgf *rax* x86) m)
-                (canonical-address-p (+ (- k) (xr :rgf *rsi* x86)))
-                (canonical-address-p (+ m (xr :rgf *rsi* x86)))
-                (< 4 m))
-           (subset-p (create-canonical-address-list 4 (xr :rgf *rsi* x86))
-                     (create-canonical-address-list (+ k m) (+ (- k) (xr :rgf *rsi* x86)))))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p-and-ash-limits-thm-3 subset-p) ())
-           :do-not-induct t)))
-
-(defthm disjointness-lemma-1
-  (implies (and
-            (x86p x86)
-            (equal (mod m 4) 0)
-            (unsigned-byte-p 33 k)
-            (equal (xr :rgf *rax* x86) m)
-            (canonical-address-p (+ (- k) (xr :rgf *rsi* x86)))
-            (canonical-address-p (+ m (xr :rgf *rsi* x86)))
-            (disjoint-p
-             (create-canonical-address-list (len *copydata*) addr)
-             (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
-            (posp m)
-            (equal addr (+ -16 (xr :rip 0 x86))))
-           (disjoint-p (create-canonical-address-list 36 (+ -16 (xr :rip 0 x86)))
-                       (create-canonical-address-list 4 (xr :rgf *rsi* x86))))
-  :hints (("Goal" :use ((:instance disjointness-lemma-1-helper)))))
-
 (defthmd effects-copyData-loop-recur
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (< 4 m))
@@ -1119,7 +1048,6 @@
                                                           11))))))))))))))))))))))))))))))))
                           0 X86))))))))))
   :hints (("Goal"
-           :use ((:instance disjointness-lemma-1))
            :in-theory (e/d* (instruction-decoding-and-spec-rules
 
                              gpr-and-spec-4
@@ -1128,7 +1056,7 @@
                              sal/shl-spec
                              sal/shl-spec-64
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -1151,7 +1079,6 @@
                              subset-p
                              signed-byte-p)
                             (wb-remove-duplicate-writes
-                             disjointness-lemma-1
                              create-canonical-address-list)))))
 
 (defthm effects-copyData-loop-recur-destination-address-projection-original
@@ -1225,15 +1152,6 @@
                              (loop-clk-recur)
                              force (force))))))
 
-(defthmd disjointness-lemma-2
-  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
-                (< 4 m))
-           (disjoint-p (create-canonical-address-list k (+ (- k) (xr :rgf *rdi* x86)))
-                       (create-canonical-address-list 4 (xr :rgf *rsi* x86))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjointness-lemma-1-helper) ()))))
-
 (defthm effects-copyData-loop-recur-source-address-projection-original
   ;; src[(+ -k src-addr) to src-addr] in (x86-run (loop-clk-recur) x86) =
   ;; src[(+ -k src-addr) to src-addr] in x86
@@ -1241,36 +1159,13 @@
                 (< 4 m))
            (equal (source-bytes k src-addr (x86-run (loop-clk-recur) x86))
                   (source-bytes k src-addr x86)))
-  :hints (("Goal" :use ((:instance effects-copydata-loop-recur)
-                        (:instance disjointness-lemma-2))
+  :hints (("Goal" :use ((:instance effects-copydata-loop-recur))
            :in-theory (e/d* ()
                             (loop-clk-recur
                              rb-rb-split-reads
                              take-and-rb
                              (loop-clk-recur)
                              force (force))))))
-
-(defthmd disjointness-lemma-3-helper
-  (implies (and (x86p x86)
-                (unsigned-byte-p 33 k)
-                (equal (xr :rgf *rax* x86) m)
-                (canonical-address-p (+ (- k) (xr :rgf *rdi* x86)))
-                (canonical-address-p (+ m (xr :rgf *rdi* x86)))
-                (< 4 m))
-           (subset-p (create-canonical-address-list 4 (xr :rgf *rdi* x86))
-                     (create-canonical-address-list (+ k m) (+ (- k) (xr :rgf *rdi* x86)))))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p-and-ash-limits-thm-3 subset-p) ())
-           :do-not-induct t)))
-
-(defthmd disjointness-lemma-3
-  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
-                (< 4 m))
-           (disjoint-p (create-canonical-address-list 4 (xr :rgf *rdi* x86))
-                       (create-canonical-address-list 4 (xr :rgf *rsi* x86))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjointness-lemma-1-helper
-                             disjointness-lemma-3-helper) ()))))
 
 (defthm effects-copyData-loop-recur-source-address-projection-copied
   ;; src[(src-addr) to (src-addr + 4)] in (x86-run (loop-clk-recur) x86) =
@@ -1279,8 +1174,7 @@
                 (< 4 m))
            (equal (source-bytes 4 (+ 4 src-addr) (x86-run (loop-clk-recur) x86))
                   (source-bytes 4 (+ 4 src-addr) x86)))
-  :hints (("Goal" :use ((:instance effects-copydata-loop-recur)
-                        (:instance disjointness-lemma-3))
+  :hints (("Goal" :use ((:instance effects-copydata-loop-recur))
            :in-theory (e/d* ()
                             (loop-clk-recur
                              rb-rb-split-reads
@@ -1371,11 +1265,9 @@
                   (program-at (create-canonical-address-list prog-len addr)
                               *copyData* x86)))
   :hints (("Goal"
-           :use ((:instance effects-copyData-loop-recur)
-                 (:instance disjointness-lemma-1))
+           :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
                             (loop-clk-recur
-                             disjointness-lemma-1
                              (loop-clk-recur)
                              force (force))))))
 
@@ -1457,7 +1349,7 @@
                               :r x86))))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur)
                         (:instance loop-preconditions-fwd-chain-to-its-body))
-           :in-theory (e/d* (canonical-address-p-and-ash-limits-thm-3)
+           :in-theory (e/d* ()
                             (loop-clk-recur
                              loop-preconditions-fwd-chain-to-its-body
                              loop-preconditions
@@ -1536,7 +1428,7 @@
                              sal/shl-spec
                              sal/shl-spec-64
 
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -1579,30 +1471,6 @@
                              effects-copyData-loop-base
                              force (force))))))
 
-(defthmd disjointness-lemma-4-helper
-  (implies (and (x86p x86)
-                (unsigned-byte-p 33 k)
-                (equal (xr :rgf *rax* x86) m)
-                (canonical-address-p (+ (- k) (xr :rgf *rdi* x86)))
-                (canonical-address-p (+ m (xr :rgf *rdi* x86)))
-                (< 4 m))
-           (subset-p (create-canonical-address-list m (xr :rgf *rdi* x86))
-                     (create-canonical-address-list (+ k m) (+ (- k) (xr :rgf *rdi* x86)))))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p-and-ash-limits-thm-3 subset-p) ())
-           :do-not-induct t)))
-
-(defthmd disjointness-lemma-4
-  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
-                (< 4 m))
-           (disjoint-p (create-canonical-address-list m (xr :rgf *rdi* x86))
-                       (create-canonical-address-list 4 (xr :rgf *rsi* x86))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjointness-lemma-1-helper
-                             disjointness-lemma-3-helper
-                             disjointness-lemma-4-helper)
-                            ()))))
-
 (defthm effects-copyData-loop-recur-source-address-projection-full-helper
   ;; src[src-addr to (src-addr + m)] in (x86-run (loop-clk-recur) x86) =
   ;; src[src-addr to (src-addr + m)] in x86
@@ -1610,8 +1478,7 @@
                 (< 4 m))
            (equal (source-bytes m (+ m src-addr) (x86-run (loop-clk-recur) x86))
                   (source-bytes m (+ m src-addr) x86)))
-  :hints (("Goal" :use ((:instance effects-copydata-loop-recur)
-                        (:instance disjointness-lemma-4))
+  :hints (("Goal" :use ((:instance effects-copydata-loop-recur))
            :in-theory (e/d* ()
                             (loop-clk-recur
                              rb-rb-split-reads
@@ -1839,6 +1706,10 @@
        (equal (xr :fault 0 x86) nil)
        ;; We are poised to run the copyData sub-routine.
        (equal (xr :rip 0 x86) addr)
+       ;; n is n31p instead of n32p because in the C program, it's datatype is
+       ;; "int" as opposed to "unsigned int". I could have used (signed-byte-p
+       ;; 32 n) here, but I don't want to think about what will happen if
+       ;; negative number of bytes are copied.
        (unsigned-byte-p 31 n)
        (equal (xr :rgf *rdx* x86) n)
        ;; All the stack addresses are canonical.
@@ -1962,15 +1833,6 @@
                             *copyData* x86)))
   :rule-classes :forward-chaining)
 
-(defthm canonical-address-p-limits-thm-3
-  (implies (and (canonical-address-p (+ i x))
-                (canonical-address-p (+ (- j) x))
-                (integerp x)
-                (natp j)
-                (natp i))
-           (canonical-address-p x))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ()))))
-
 (defthm effects-copyData-pre
   (implies (preconditions n addr x86)
            (equal (x86-run (pre-clk n) x86)
@@ -2081,7 +1943,7 @@
                                     sal/shl-spec
                                     sal/shl-spec-64
 
-                                    opcode-execute
+                                    top-level-opcode-execute
                                     !rgfi-size
                                     x86-operand-to-reg/mem
                                     wr64
@@ -2773,7 +2635,7 @@
                      X86)))))
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64

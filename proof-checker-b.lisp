@@ -1424,9 +1424,7 @@
                  nil nil nil)))))
     (('if x1 x2 *t*) ; see untranslate1
      (cond ((int= n 1)
-            (cond ((and (nvariablep x1)
-                        (not (fquotep x1))
-                        (eq (ffn-symb x1) 'not))
+            (cond ((ffn-symb-p x1 'not)
                    (mv '(1) x1 t t))
                   (t
                    (mv "an unexpected case of diving to first argument: for ~
@@ -1481,9 +1479,7 @@
                         (and-addr (1- n) x2 iff-flg)))))
     (('if x1 *nil* x2)
      (cond ((int= n 1)
-            (cond ((and (nvariablep x1)
-                        (not (fquotep x1))
-                        (eq (ffn-symb x1) 'not))
+            (cond ((ffn-symb-p x1 'not)
                    (mv '(1) x1 t t))
                   (t
                    (mv "an unexpected case of diving to first argument: for ~
@@ -2128,9 +2124,7 @@
   ;; (implies x y) --> (mv (list x) y),
   ;; (implies x (implies (and y z)) w) --> (mv (list x y z) w), and
   ;; (foo 3) --> (mv nil (foo 3))
-  (if (or (variablep term)
-          (fquotep term)
-          (not (eq (ffn-symb term) 'implies)))
+  (if (not (ffn-symb-p term 'implies))
       (mv nil term)
     (mv-let (h c)
             (split-implies (fargn term 2))
