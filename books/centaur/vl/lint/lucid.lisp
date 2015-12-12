@@ -191,6 +191,7 @@ read/written.</p>"
    (warnings vl-warninglist-p)))
 
 
+
 ; State Initialization --------------------------------------------------------
 
 (local (xdoc::set-default-parents vl-lucidstate-init))
@@ -295,6 +296,21 @@ created when we process their packages, etc.</p>"
        (db (vl-initial-luciddb-init (car x) ss db)))
     (vl-initiallist-luciddb-init (cdr x) ss db)))
 
+(define vl-final-luciddb-init ((x  vl-final-p)
+                                 (ss vl-scopestack-p)
+                                 (db vl-luciddb-p))
+  :returns (new-db vl-luciddb-p)
+  (vl-stmt-luciddb-init (vl-final->stmt x) ss db))
+
+(define vl-finallist-luciddb-init ((x  vl-finallist-p)
+                                     (ss vl-scopestack-p)
+                                     (db vl-luciddb-p))
+  :returns (new-db vl-luciddb-p)
+  (b* (((when (atom x))
+        (vl-luciddb-fix db))
+       (db (vl-final-luciddb-init (car x) ss db)))
+    (vl-finallist-luciddb-init (cdr x) ss db)))
+
 (define vl-fundecl-luciddb-init ((x  vl-fundecl-p)
                                  (ss vl-scopestack-p)
                                  (db vl-luciddb-p))
@@ -334,17 +350,25 @@ created when we process their packages, etc.</p>"
 (def-genblob-transform vl-genblob-luciddb-init ((ss vl-scopestack-p)
                                                 (db vl-luciddb-p))
   ;; BOZO this is probably almost right.  We probably should add some
-  ;; additional handling to initialize genvars somehow.
+  ;; additional handling to initialize genvars somehow.  Actually, maybe really
+  ;; we just need to be including genvars in scopestacks.  Is there some reason
+  ;; we aren't doing that?
   :no-new-x t
   :returns ((db vl-luciddb-p))
   (b* (((vl-genblob x) (vl-genblob-fix x))
        (ss (vl-scopestack-push x ss))
        (db (vl-scope-luciddb-init x ss db))
+       ;; Note: don't need to do anything more with vardecls, paramdecls,
+       ;; assignments, instances, aliases, modports, etc.  These are all just
+       ;; local declarations that are handled by vl-scope-luciddb-init.
+       ;; However, we *do* need to initialize anything that potentially has
+       ;; subscopes.
        (db (vl-generates-luciddb-init x.generates ss db))
        (db (vl-fundecllist-luciddb-init x.fundecls ss db))
        (db (vl-taskdecllist-luciddb-init x.taskdecls ss db))
        (db (vl-alwayslist-luciddb-init x.alwayses ss db))
-       (db (vl-initiallist-luciddb-init x.initials ss db)))
+       (db (vl-initiallist-luciddb-init x.initials ss db))
+       (db (vl-finallist-luciddb-init x.finals ss db)))
     db)
   :apply-to-generates vl-generates-luciddb-init)
 
@@ -394,8 +418,8 @@ created when we process their packages, etc.</p>"
     db))
 
 (define vl-interfacelist-luciddb-init ((x  vl-interfacelist-p)
-                                     (ss vl-scopestack-p)
-                                     (db vl-luciddb-p))
+                                       (ss vl-scopestack-p)
+                                       (db vl-luciddb-p))
   :returns (new-db vl-luciddb-p)
   (b* (((when (atom x))
         (vl-luciddb-fix db))
@@ -1484,6 +1508,14 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list initiallist :element initial)
 
+(def-vl-lucidcheck final
+  :body
+  (b* (((vl-final x))
+       (ctx (vl-lucid-ctx ss x)))
+    (vl-stmt-lucidcheck x.stmt ss st ctx)))
+
+(def-vl-lucidcheck-list finallist :element final)
+
 (encapsulate nil
   (local (in-theory (enable (tau-system))))
   (def-vl-lucidcheck portdecl
@@ -1508,6 +1540,11 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list portdecllist :element portdecl)
 
+(local (defthm vl-hidname-p-when-stringp
+         (implies (stringp x)
+                  (vl-hidname-p x))
+         :hints(("Goal" :in-theory (enable vl-hidname-p)))))
+
 (def-vl-lucidcheck interfaceport
   ;; Unlike regular ports, I think we want to not mark an interface port as
   ;; being used or set.  The smarts for an interface port will mostly be in our
@@ -1518,8 +1555,25 @@ created when we process their packages, etc.</p>"
   (b* (((vl-interfaceport x))
        (ctx (vl-lucid-ctx ss x))
        (st  (vl-packeddimensionlist-lucidcheck x.udims ss st ctx))
-       ;; BOZO maybe mark the IFNAME as used?
-       )
+       ((unless x.modport)
+        st)
+
+       ;; We want to mark the modport for this interface as used.  This is a
+       ;; little tricky but we can do it.
+       (design (vl-scopestack->design ss))
+       ((unless design)
+        (raise "No design in lucid scopestack?  Something is horribly wrong.")
+        st)
+
+       (iface (vl-find-interface x.ifname (vl-design->interfaces design)))
+       ((unless iface)
+        (vl-cw-ps-seq (vl-cw "Error: ~a0: interface ~s1 not found.~%" x x.ifname))
+        st)
+
+       (temp-ss (vl-scopestack-init design))
+       (temp-ss (vl-scopestack-push iface temp-ss))
+       (temp-ss (vl-normalize-scopestack temp-ss))
+       (st      (vl-lucid-mark-simple :used x.modport temp-ss st ctx)))
     st))
 
 (def-vl-lucidcheck-list interfaceportlist :element interfaceport)
@@ -1571,6 +1625,16 @@ created when we process their packages, etc.</p>"
     st))
 
 (def-vl-lucidcheck-list dpiimportlist :element dpiimport)
+
+(def-vl-lucidcheck dpiexport
+  :body
+  (b* (((vl-dpiexport x))
+       (ctx (vl-lucid-ctx ss x))
+       ;; We mark he function as used since it might be used by the C program.
+       (st (vl-lucid-mark-simple :used x.name ss st ctx)))
+    st))
+
+(def-vl-lucidcheck-list dpiexportlist :element dpiexport)
 
 (def-vl-lucidcheck taskdecl
   :body
@@ -1715,6 +1779,37 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list modinstlist :element modinst)
 
+(def-vl-lucidcheck modport
+  :body
+  (let* ((x  (vl-modport-fix x))
+         (ss (vl-scopestack-fix ss)))
+    ;; Do we actually want to do anything with modports?  I think probably
+    ;; not?  That is, if someone writes:
+    ;;
+    ;;     interface foo;
+    ;;        logic [3:0] bar;
+    ;;        modport producer (output bar);
+    ;;     endinterface
+    ;;
+    ;; then we probably don't want to consider BAR as used or set or anything
+    ;; like that.  It's only when some other module actually refers to BAR via
+    ;; the interface that we should regard it as used/set.  Right?
+    (declare (ignore x ss))
+    st))
+
+(def-vl-lucidcheck-list modportlist :element modport)
+
+(def-vl-lucidcheck alias
+  :body
+  (let* ((x (vl-alias-fix x))
+         (ss (vl-scopestack-fix ss)))
+    (declare (ignore x ss))
+    ;; BOZO supporting aliases will be difficult.  For now ignore them.
+    st))
+
+(def-vl-lucidcheck-list aliaslist :element alias)
+
+
 (def-genblob-transform vl-genblob-lucidcheck ((ss vl-scopestack-p)
                                               (st vl-lucidstate-p))
   :no-new-x t
@@ -1724,22 +1819,32 @@ created when we process their packages, etc.</p>"
   :returns ((st vl-lucidstate-p))
   (b* (((vl-genblob x)     (vl-genblob-fix x))
        (ss                 (vl-scopestack-push x ss))
-       (st (vl-generates-lucidcheck x.generates ss st))
+       (st (vl-portdecllist-lucidcheck  x.portdecls  ss st))
        (st (vl-assignlist-lucidcheck    x.assigns    ss st))
+       (st (vl-aliaslist-lucidcheck     x.aliases    ss st))
+       (st (vl-vardecllist-lucidcheck   x.vardecls   ss st))
+       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
+       (st (vl-fundecllist-lucidcheck   x.fundecls   ss st))
+       (st (vl-taskdecllist-lucidcheck  x.taskdecls  ss st))
+       (st (vl-modinstlist-lucidcheck   x.modinsts   ss st))
+       (st (vl-gateinstlist-lucidcheck  x.gateinsts  ss st))
        (st (vl-alwayslist-lucidcheck    x.alwayses   ss st))
        (st (vl-initiallist-lucidcheck   x.initials   ss st))
-       (st (vl-fundecllist-lucidcheck   x.fundecls   ss st))
-       (st (vl-dpiimportlist-lucidcheck x.dpiimports ss st))
-       (st (vl-taskdecllist-lucidcheck  x.taskdecls  ss st))
-       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
-       (st (vl-vardecllist-lucidcheck   x.vardecls   ss st))
-       (st (vl-portdecllist-lucidcheck  x.portdecls  ss st))
+       (st (vl-finallist-lucidcheck     x.finals     ss st))
        (st (vl-typedeflist-lucidcheck   x.typedefs   ss st))
-       (st (vl-gateinstlist-lucidcheck  x.gateinsts  ss st))
-       (st (vl-modinstlist-lucidcheck   x.modinsts   ss st))
-       (st (vl-interfaceportlist-lucidcheck x.ifports ss st))
-       ;; BOZO aliases, modports??, typedefs ...
-       )
+       ;; Nothing to do for imports, they just affect the scopestack.
+       ;; Nothing to do for fwdtypedefs
+       (st (vl-modportlist-lucidcheck   x.modports   ss st))
+       ;; BOZO add genvars
+       ;; BOZO add assertions
+       ;; BOZO add cassertions
+       ;; BOZO add properties
+       ;; BOZO add sequences
+       (st (vl-dpiimportlist-lucidcheck x.dpiimports ss st))
+       (st (vl-dpiexportlist-lucidcheck x.dpiexports ss st))
+       (st (vl-generates-lucidcheck     x.generates  ss st))
+       ;; BOZO anything to do for normal ports?
+       (st (vl-interfaceportlist-lucidcheck x.ifports ss st)))
     st)
   :apply-to-generates vl-generates-lucidcheck)
 
@@ -1751,20 +1856,6 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list modulelist :element module)
 
-
-(def-vl-lucidcheck package
-  :body
-  (b* (((vl-package x))
-       (ss (vl-scopestack-push x ss))
-       (st (vl-fundecllist-lucidcheck x.fundecls ss st))
-       (st (vl-taskdecllist-lucidcheck x.taskdecls ss st))
-       (st (vl-typedeflist-lucidcheck x.typedefs ss st))
-       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
-       (st (vl-vardecllist-lucidcheck x.vardecls ss st)))
-    st))
-
-(def-vl-lucidcheck-list packagelist :element package)
-
 (def-vl-lucidcheck interface
   :body
   (b* ((genblob (vl-interface->genblob x))
@@ -1772,6 +1863,22 @@ created when we process their packages, etc.</p>"
     st))
 
 (def-vl-lucidcheck-list interfacelist :element interface)
+
+(def-vl-lucidcheck package
+  :body
+  (b* (((vl-package x))
+       (ss (vl-scopestack-push x ss))
+       (st (vl-fundecllist-lucidcheck   x.fundecls   ss st))
+       (st (vl-taskdecllist-lucidcheck  x.taskdecls  ss st))
+       (st (vl-typedeflist-lucidcheck   x.typedefs   ss st))
+       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
+       (st (vl-vardecllist-lucidcheck   x.vardecls   ss st))
+       (st (vl-dpiimportlist-lucidcheck x.dpiimports ss st))
+       (st (vl-dpiexportlist-lucidcheck x.dpiexports ss st)))
+    st))
+
+(def-vl-lucidcheck-list packagelist :element package)
+
 
 (define vl-design-lucidcheck-main ((x  vl-design-p)
                                    (ss vl-scopestack-p)
@@ -1781,16 +1888,20 @@ created when we process their packages, etc.</p>"
   :irrelevant-formals-ok t
   (b* (((vl-design x))
        (st (vl-modulelist-lucidcheck x.mods ss st))
+       ;; BOZO add udps
+       (st (vl-interfacelist-lucidcheck x.interfaces ss st))
+       ;; BOZO add programs
+       (st (vl-packagelist-lucidcheck x.packages ss st))
+       ;; BOZO add configs
+       (st (vl-vardecllist-lucidcheck x.vardecls ss st))
        (st (vl-fundecllist-lucidcheck x.fundecls ss st))
        (st (vl-taskdecllist-lucidcheck x.taskdecls ss st))
-       (st (vl-dpiimportlist-lucidcheck x.dpiimports ss st))
        (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
-       (st (vl-vardecllist-lucidcheck x.vardecls ss st))
-       (st (vl-typedeflist-lucidcheck x.typedefs ss st))
-       (st (vl-packagelist-lucidcheck x.packages ss st))
-       (st (vl-interfacelist-lucidcheck x.interfaces ss st))
-       ;; bozo programs, configs, udps, ...
-       )
+       ;; Nothing to do for imports, they just affect the scopestack
+       (st (vl-dpiimportlist-lucidcheck x.dpiimports ss st))
+       (st (vl-dpiexportlist-lucidcheck x.dpiexports ss st))
+       ;; Nothing to do for fwdtypedefs
+       (st (vl-typedeflist-lucidcheck x.typedefs ss st)))
     st))
 
 ; Analysis of Marks -----------------------------------------------------------
@@ -2067,13 +2178,13 @@ created when we process their packages, etc.</p>"
 ; take care to sort of collapse any SETs that occur in the same always block,
 ; function declaration, or task declaration.
 ;
-; Also, we definitely don't really want to regard initial statements as any
-; sort of real SETs, because something like this is perfectly fine:
+; Also, we definitely don't really want to regard initial or final statements
+; as any sort of real SETs, because something like this is perfectly fine:
 ;
 ;    initial foo = 0;
 ;    always @(posedge clk) foo = foo_in;
 
-(define vl-lucidocclist-drop-initials ((x vl-lucidocclist-p))
+(define vl-lucidocclist-drop-initials/finals ((x vl-lucidocclist-p))
   :returns (new-x vl-lucidocclist-p)
   :short "Remove all occurrences that are from @('initial') statements."
   :guard-hints(("Goal" :in-theory (enable tag-reasoning)))
@@ -2082,10 +2193,12 @@ created when we process their packages, etc.</p>"
        (elem (vl-context1->elem (vl-lucidocc->ctx (car x))))
        (initial-p (mbe :logic (vl-initial-p elem)
                        :exec (eq (tag elem) :vl-initial)))
-       ((when initial-p)
-        (vl-lucidocclist-drop-initials (cdr x))))
+       (final-p (mbe :logic (vl-final-p elem)
+                       :exec (eq (tag elem) :vl-final)))
+       ((when (or initial-p final-p))
+        (vl-lucidocclist-drop-initials/finals (cdr x))))
     (cons (vl-lucidocc-fix (car x))
-          (vl-lucidocclist-drop-initials (cdr x)))))
+          (vl-lucidocclist-drop-initials/finals (cdr x)))))
 
 (define vl-inside-true-generate-p ((ss vl-scopestack-p))
   :measure (vl-scopestack-count ss)
@@ -2467,7 +2580,7 @@ doesn't have to recreate the default heuristics.</p>"
         nil)
        ;; Clean up the list of sets by:
        ;;
-       ;;  1. Eliminating any sets from initial blocks
+       ;;  1. Eliminating any sets from initial/final blocks
        ;;
        ;;  2. Merging together any writes that happen in the same always block,
        ;;     function declaration, or task declaration, so that we don't
@@ -2498,7 +2611,7 @@ doesn't have to recreate the default heuristics.</p>"
        ;;
        ;;  6. Drop TAIL occurrences, because they might be things like foo[3-:0]
        ;;     that we don't understand.
-       (set (vl-lucidocclist-drop-initials set))
+       (set (vl-lucidocclist-drop-initials/finals set))
        (set (vl-lucidocclist-merge-blocks set))
        (set (vl-lucidocclist-drop-bad-modinsts set))
        (set (vl-lucidocclist-drop-foreign-writes set ss))
@@ -2738,6 +2851,17 @@ doesn't have to recreate the default heuristics.</p>"
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
 
+      (:vl-modport
+       (b* (((when (vl-lucid-some-solo-occp val.used))
+             reportcard)
+            (w (make-vl-warning :type :vl-lucid-unused
+                                :msg "Modport ~s0 is never used. (~s1)"
+                                :args (list (vl-modport->name key.item)
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                :fn __function__
+                                :fatalp nil)))
+         (vl-extend-reportcard topname w reportcard)))
+
       (:vl-dpiimport
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
@@ -2816,8 +2940,8 @@ doesn't have to recreate the default heuristics.</p>"
 
       (otherwise
        ;; Other kinds of items include, for instance, modinsts, gateinsts,
-       ;; modports, generate statements, etc.  We don't have anything sensible
-       ;; to say about those.
+       ;; generate statements, etc.  We don't have anything sensible to say
+       ;; about those.
        reportcard))))
 
 (define vl-lucid-dissect-database ((db         vl-luciddb-p "Already shrunk.")

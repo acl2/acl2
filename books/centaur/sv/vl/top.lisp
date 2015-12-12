@@ -196,7 +196,9 @@
        ;; Annotate and simplify the design, to some extent.  This does
        ;; unparametrization and expr sizing, but not e.g. expr splitting or
        ;; occforming.
-       (x (cwtime (vl-annotate-design x)))
+       (x (if (vl-simpconfig->already-annotated config)
+              x
+            (cwtime (vl-annotate-design x))))
        ;; [Jared] I pulled addnames out of annotate because it interfered with
        ;; certain linter checks.  (In particular for detecting duplicate things
        ;; we don't really want to be adding names to unnamed blocks, etc.)

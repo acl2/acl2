@@ -28,58 +28,84 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+
+primitive udp_not (o, i);
+
+  output o;
+  input  i;
+
+  table
+    // i   :   o
+       1   :   0 ;
+       0   :   1 ;
+  endtable
+
+endprimitive
+
+
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
-  wire [8:0] a9;
-  wire [3:0] a4;
-  wire a1;
+// Similar to gates_widenot
 
-  wire [8:0] b9;
-  wire [5:0] b6;
-  wire [1:0] b2;
 
-  wire signed [8:0] c9 = a9;
-  wire signed [3:0] c4 = a4;
-  wire signed 	    c1 = a1;
+  wire       a1, b1, c1;
+  wire [1:0] a2, b2, c2;
+  wire [2:0] a3, b3, c3;
+  wire [3:0] a4, b4, c4;
 
-  wire signed [8:0] d9 = b9;
-  wire signed [5:0] d6 = b6;
-  wire signed [1:0] d2 = b2;
+  wire signed       sa1, sb1, sc1;
+  wire signed [1:0] sa2, sb2, sc2;
+  wire signed [2:0] sa3, sb3, sc3;
+  wire signed [3:0] sa4, sb4, sc4;
 
-  wire [8:0]  o1 = a9 / b9;    // 9
-  wire [3:0]  o2 = a4 / b6;    // 4
-  wire 	      o3 = a1 / b2[0]; // 1
-  wire [15:0] o4 = a9 / b6;    // 16
-  wire [6:0]  o5 = a9 / b9;    // 7  --> (+ 9 4 1 16 7) = 37 bits
+  assign {a1, b1, c1} = in;
+  assign {a2, b2, c2} = in;
+  assign {a3, b3, c3} = in;
+  assign {a4, b4, c4} = in;
 
-  wire [8:0]  o6 = c9 / d9;    // 9
-  wire [3:0]  o7 = c4 / d6;    // 4
-  wire 	      o8 = c1 / d2;    // 1
-  wire [15:0] o9 = c9 / d6;    // 16
-  wire [6:0]  o10 = c9 / d2;   // 7  --> 37 bits, so (+ 37 37) =  74 bits so far
+  assign {sa1, sb1, sc1} = in;
+  assign {sa2, sb2, sc2} = in;
+  assign {sa3, sb3, sc3} = in;
+  assign {sa4, sb4, sc4} = in;
 
-  // A very special case is dividing the minimal signed integer by -1.
-  // NCVerilog seems to have bugs with this at widths 32 and 64, but
-  // agrees with VCS for other widths.
-  wire signed [1:0] minus1 = -1;
-  wire signed [3:0] special_in = { c1, 3'b0 }; // tends to be 1000, i.e. the minimal integer
+  wire m1, m2, m3, m4;
+  udp_not(m1, a1);
+  udp_not(m2, a2);
+  udp_not(m3, a3);
+  udp_not(m4, a4);
 
-  wire [3:0] o11 = special_in / minus1;   // 4
-  wire [3:0] o12 = c4         / minus1;   // 4
-  wire [1:0] o13 = d2         / minus1;   // 2 --> 10 bits
+  wire sm1, sm2, sm3, sm4;
+  udp_not (sm1, sa1);
+  udp_not (sm2, sa2);
+  udp_not (sm3, sb3);
+  udp_not (sm4, sa4);
 
-  // Dividing by 0 should return X.
-  wire [3:0] o14 = special_in / 0;        // 4
-  wire [3:0] o15 = c4         / 0;        // 4
-  wire [1:0] o16 = d2         / 0;        // 2 --> 10 bits
+  // wide outputs
+  wire r1;
+  wire [1:0] r2;
+  wire [2:0] r3;
+  wire [3:0] r4;
 
-  assign { a9, a4, a1, b9, b6, b2 } = in;
+  udp_not(r1, a1);
+  udp_not(r2, a1);
+  udp_not(r3, a1);
+  udp_not(r4, a1);
 
-  assign out = {
-    o16, o15, o14, o13, o12, o11,
-    o10, o9, o8, o7, o6,
-    o5, o4, o3, o2, o1
-  };
+  wire signed sr1;
+  wire signed [1:0] sr2;
+  wire signed [2:0] sr3;
+  wire signed [3:0] sr4;
 
-endmodule // spec
+  udp_not(sr1, a1);
+  udp_not(sr2, a1);
+  udp_not(sr3, a1);
+  udp_not(sr4, a1);
+
+  assign out = { m1, m2, m3, m4,
+                 sm1, sm2, sm3, sm4,
+                 r1, r2, r3, r4,
+                 sr1, sr2, sr3, sr4
+                 };
+
+endmodule

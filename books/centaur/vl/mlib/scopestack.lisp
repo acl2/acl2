@@ -217,30 +217,34 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
     :short "Information about the kinds of items in each scope."
     :long "<p>Note that this is only for items, i.e., it's not for definitions,
   ports, packages, etc.</p>"
-    '((interface    (:import)
-                    paramdecl vardecl fundecl taskdecl typedef dpiimport
-                    ;; NOTE: not dpiexport -- we DO want to include the dpi
-                    ;; imports in the scopestack because they're essentially
-                    ;; being "defined" by the C code.  But exports are just
-                    ;; things we're making available to the C code, which isn't
-                    ;; relevant to much of anything else.
-                    (modinst :name instname :maybe-stringp t)
-                    ;; no gateinsts in interfaces
-                    (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
-                    (interfaceport :acc ifports)
-                    )
-      (module       (:import)
-                    paramdecl vardecl fundecl taskdecl typedef dpiimport
-                    (modinst :name instname :maybe-stringp t)
-                    (gateinst :maybe-stringp t)
-                    (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
-                    (interfaceport :acc ifports))
-      (genblob      (:import)
-                    vardecl paramdecl fundecl taskdecl typedef dpiimport
-                    (modinst :name instname :maybe-stringp t)
-                    (gateinst :maybe-stringp t)
-                    (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
-                    (interfaceport :acc ifports))
+    '((interface (:import)
+                 ;; NOTE: if you add more things here, you also need to extend genblob!
+                 paramdecl vardecl fundecl taskdecl typedef dpiimport
+                 (modinst :name instname :maybe-stringp t)
+                 ;; no gateinsts in interfaces
+                 (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
+                 (interfaceport :acc ifports)
+                 modport
+                 ;; We don't include the dpi exports here because, unlike
+                 ;; imports which are "defined" by the C code, exports are just
+                 ;; things we're making available to the C code, which isn't
+                 ;; relevant to much of anything else.
+                 )
+      (module (:import)
+              ;; NOTE: if you add more things here, you also need to extend genblob!
+              paramdecl vardecl fundecl taskdecl typedef dpiimport
+              (modinst :name instname :maybe-stringp t)
+              (gateinst :maybe-stringp t)
+              (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
+              (interfaceport :acc ifports))
+      (genblob (:import)
+               vardecl paramdecl fundecl taskdecl typedef dpiimport
+               (modinst :name instname :maybe-stringp t)
+               (gateinst :maybe-stringp t)
+               (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
+               (interfaceport :acc ifports)
+               modport
+               )
 
       ;; fwdtypedefs could be included here, but we hope to have resolved them all
       ;;             to proper typedefs by the end of loading, so we omit them.
@@ -248,7 +252,6 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
       ;; Functions, Tasks, and Statements are all grouped together into Blockscopes.
       (blockscope   (:import)
                     vardecl paramdecl typedef)
-
       (design       (:import)
                     paramdecl vardecl fundecl taskdecl typedef dpiimport)
       (package      (:import)
@@ -618,9 +621,14 @@ in it, such as a function, task, or block statement."
     :tag :vl-importresult
     :layout :tree
     :short "Information about an item that was imported from another package."
-    ((item     vl-maybe-scopeitem-p "The item we imported, if any.")
-     (pkg-name stringp :rule-classes :type-prescription
-               "The package we imported it from.")))
+    ((item     vl-maybe-scopeitem-p
+               "The item we imported, if any.")
+     (pkg-name stringp
+               :rule-classes :type-prescription
+               "The package we imported it from.")
+     (loc      vl-location-p
+               "Location of the import statement.  Useful for name clash
+                reporting.")))
 
   (fty::defalist vl-importresult-alist
     :key-type stringp
@@ -961,12 +969,17 @@ be very cheap in the single-threaded case.</p>"
 ;; contain that name?  This should be an error, but practially speaking I think
 ;; we want to check for these in one place and not disrupt other code with
 ;; error handling.  So in this case we just don't find the item.
-(define vl-importlist-find-explicit-item ((name stringp) (x vl-importlist-p) (design vl-maybe-design-p))
+(define vl-importlist-find-explicit-item ((name stringp)
+                                          (x vl-importlist-p)
+                                          (design vl-maybe-design-p))
   :returns (mv (package (iff (stringp package) package)
                         :hints nil)
                (item (iff (vl-scopeitem-p item) item)
-                     :hints nil))
-  (b* (((when (atom x)) (mv nil nil))
+                     :hints nil)
+               (loc "Location of the actual import statement."
+                    (iff (vl-location-p loc) loc)
+                    :hints nil))
+  (b* (((when (atom x)) (mv nil nil nil))
        ((vl-import x1) (car x))
        ((when (and (stringp x1.part)
                    (equal x1.part (string-fix name))))
@@ -974,7 +987,7 @@ be very cheap in the single-threaded case.</p>"
         ;; item, just not what it is.
         (b* ((package (and design (vl-design-scope-find-package x1.pkg design))))
           ;; regardless of whether the package exists or has the item, return found
-          (mv x1.pkg (and package (vl-package-scope-find-item name package))))))
+          (mv x1.pkg (and package (vl-package-scope-find-item name package)) x1.loc))))
     (vl-importlist-find-explicit-item name (cdr x) design))
   ///
   (more-returns
@@ -984,7 +997,14 @@ be very cheap in the single-threaded case.</p>"
 
   (more-returns
    (package :name package-when-item-of-vl-importlist-find-explicit-item-package
-            (implies item package))))
+            (implies item package)))
+
+  (more-returns
+   (loc :name loc-when-item-of-vl-importlist-find-explicit-item-package
+        (implies package loc))))
+
+
+  
 
 ;; (local
 ;;  (defthm equal-of-vl-importlist-find-explicit-item
@@ -1000,8 +1020,8 @@ be very cheap in the single-threaded case.</p>"
 ;;                                      equal-of-cons
 ;;                                      vl-importlist-find-explicit-item)))))
 
-
-(define vl-importlist->explicit-item-alist ((x vl-importlist-p) (design vl-maybe-design-p)
+(define vl-importlist->explicit-item-alist ((x      vl-importlist-p)
+                                            (design vl-maybe-design-p)
                                             acc)
   :returns (alist (implies (vl-importresult-alist-p acc)
                            (vl-importresult-alist-p alist)))
@@ -1013,8 +1033,10 @@ be very cheap in the single-threaded case.</p>"
         ;; not the item is the best way to go here, since we might have
         ;; imported the name from the package but can't find out.
        (package (and design (cdr (hons-get x1.pkg (vl-design-scope-package-alist-top design)))))
-       (item (and package (cdr (hons-get x1.part (vl-package-scope-item-alist-top package))))))
-    (hons-acons x1.part (make-vl-importresult :item item :pkg-name x1.pkg)
+       (item    (and package (cdr (hons-get x1.part (vl-package-scope-item-alist-top package))))))
+    (hons-acons x1.part (make-vl-importresult :item item
+                                              :pkg-name x1.pkg
+                                              :loc x1.loc)
                 (vl-importlist->explicit-item-alist (cdr x) design acc)))
   ///
   (defthm vl-importlist->explicit-item-alist-lookup-acc-elim
@@ -1025,9 +1047,11 @@ be very cheap in the single-threaded case.</p>"
   (defthm vl-importlist->explicit-item-alist-correct
     (implies (stringp name)
              (equal (hons-assoc-equal name (vl-importlist->explicit-item-alist x design nil))
-                    (b* (((mv pkg item) (vl-importlist-find-explicit-item name x design)))
-                      (and (or pkg item)
-                           (cons name (make-vl-importresult :item item :pkg-name pkg))))))
+                    (b* (((mv pkg item loc) (vl-importlist-find-explicit-item name x design)))
+                      (and pkg
+                           (cons name (make-vl-importresult :item item
+                                                            :pkg-name pkg
+                                                            :loc loc))))))
     :hints(("Goal" :in-theory (enable vl-importlist-find-explicit-item)))))
 
 (define vl-importlist-find-implicit-item ((name stringp) (x vl-importlist-p) (design vl-maybe-design-p))
@@ -1317,8 +1341,8 @@ be very cheap in the single-threaded case.</p>"
                            (b* (((vl-__type__ scope :quietp t))
                                 (item (vl-__type__-scope-find-__result__ name scope))
                                 ((when item) (mv nil item))
-                                ((mv pkg item) (vl-importlist-find-explicit-item
-                                                name scope.imports design))
+                                ((mv pkg item ?loc)
+                                 (vl-importlist-find-explicit-item name scope.imports design))
                                 ((when (or pkg item)) (mv pkg item)))
                              (vl-importlist-find-implicit-item name scope.imports design))))))
                       substs)
@@ -1485,7 +1509,8 @@ be very cheap in the single-threaded case.</p>"
                  (equal (tag item) :vl-fundecl)
                  (equal (tag item) :vl-taskdecl)
                  (equal (tag item) :vl-typedef)
-                 (equal (tag item) :vl-dpiimport))))
+                 (equal (tag item) :vl-dpiimport)
+                 (equal (tag item) :vl-modport))))
   :rule-classes ((:forward-chaining))
   :hints(("Goal"
           :use ((:instance tag-when-vl-scopeitem-p-forward
@@ -1665,7 +1690,6 @@ transform that has used scopestacks.</p>"
 
 
 ; Scopestack debugging
-
 (define vl-scopeitem->name ((x vl-scopeitem-p))
   :returns (name maybe-stringp :rule-classes :type-prescription)
   :prepwork
@@ -1688,7 +1712,8 @@ transform that has used scopestacks.</p>"
       (:vl-vardecl       (vl-vardecl->name x))
       (:vl-fundecl       (vl-fundecl->name x))
       (:vl-taskdecl      (vl-taskdecl->name x))
-      (:vl-dpiimport  (vl-dpiimport->name x))
+      (:vl-dpiimport     (vl-dpiimport->name x))
+      (:vl-modport       (vl-modport->name x))
       (otherwise         (vl-typedef->name x)))))
 
 

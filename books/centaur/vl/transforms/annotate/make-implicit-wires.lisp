@@ -772,7 +772,10 @@ Our version of VCS says this isn't yet implemented.</li>
                   (eq tag :vl-typedef)
                   (eq tag :vl-fwdtypedef)
                   (eq tag :vl-genvar)
-                  (eq tag :vl-modport)))
+                  ;; SystemVerilog-2012 Section 25.5 (page 718): "modport
+                  ;; declarations shall not implicitly declare new ports"
+                  (eq tag :vl-modport)
+                  ))
         ;; These have their own names but there's no additional implicit wires to
         ;; be introduced by them, so just extend decls.
         (b* ((name     (case tag

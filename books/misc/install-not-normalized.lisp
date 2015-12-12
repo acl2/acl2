@@ -104,10 +104,26 @@ This comment motivates the macro install-not-normalized, defined below.
           (t (install-not-normalized-fn-1 name wrld nil)))))
 
 (defmacro install-not-normalized (name &optional (nestp 't))
+
+; Alessandro Coglio sent the following example, which failed until taking his
+; suggestion to use encapsulate (originally we used progn) and call
+; set-ignore-ok.
+
+;   (include-book "misc/install-not-normalized" :dir :system)
+;   (include-book "std/util/define" :dir :system)
+;   (define f (x) x)
+;   (install-not-normalized f) ; error
+
+; The problem was that the DEFINE generated the term ((LAMBDA (__FUNCTION__ X)
+; X) 'F X).
+
   (declare (xargs :guard (and name (symbolp name))))
   `(make-event
-    (cons 'progn
-          (install-not-normalized-fn ',name (w state) ,nestp))))
+    (list* 'encapsulate
+           ()
+           '(set-ignore-ok t) ; see comment above
+           '(set-irrelevant-formals-ok t) ; perhaps not necessary, but harmless
+           (install-not-normalized-fn ',name (w state) ,nestp))))
 
 (defmacro fn-is-body (name &key hints thm-name rule-classes)
   (declare (xargs :guard (and name (symbolp name))))

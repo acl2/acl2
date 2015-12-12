@@ -50,6 +50,7 @@ module m0 () ;
   wire [3:0] w1_unset;
   wire [3:0] w1_normal = top_normal;
   wire [3:0] w1_unused;
+
   assign w1_unused = w1_normal + w1_unset + top_unset;
 
 endmodule
@@ -68,10 +69,22 @@ function top_f_unused (input logic [3:0] a);
   top_f_unused = b;
 endfunction
 
+function top_f_dpiexported (input logic [3:0] a);
+  logic [3:0] b;
+  b = a;
+  top_f_dpiexported = b;
+endfunction
+
+export "DPI" function top_f_dpiexported;
+
+import "DPI" function logic top_f_dpiimported_unused (logic [3:0] a);
+import "DPI" function logic top_f_dpiimported_normal (logic [3:0] a);
+
 
 module m1 (output top_used_t myout) ;
 
   assign myout = top_f_used(4'b1101);
+  wire temp = top_f_dpiimported_normal(myout);
 
 endmodule
 
@@ -538,3 +551,37 @@ module pattern;
   end
 
 endmodule
+
+
+
+module tricky_init ;
+
+  wire w1_normal;
+  wire w2_normal;
+  wire w3_unused;
+  wire w4_unset;
+  wire w5_spurious;
+
+  initial begin
+    w1_normal = w4_unset;
+  end
+
+  initial begin
+    w2_normal = w4_unset;
+  end
+
+  final begin
+    w3_unused = w2_normal;
+  end
+
+  final begin
+    w3_unused = w1_normal;
+  end
+
+endmodule
+
+
+
+
+
+

@@ -28,58 +28,71 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+interface IBinaryALU ();
+  logic [3:0] a;
+  logic [3:0] b;
+  logic [3:0] op;
+  logic [3:0] out;
+endinterface
+
+module BinaryALU (IBinaryALU bif);
+
+   assign bif.out = (bif.op == 3) ? bif.a + bif.b :
+                    (bif.op == 2) ? bif.a - bif.b :
+                    (bif.op == 1) ? bif.a & bif.b :
+                                    bif.a | bif.b ;
+
+endmodule
+
+interface IUnaryALU ();
+  logic [3:0] a;
+  logic [3:0] op;
+  logic [3:0] out;
+endinterface
+
+module UnaryALU (IUnaryALU uif);
+
+   assign uif.out = (uif.op == 3) ? uif.a  :
+                    (uif.op == 2) ? -uif.a :
+                    (uif.op == 1) ? &uif.a :
+                                    |uif.a ;
+
+endmodule
+
+
+interface IPairedALUs () ;
+
+  IBinaryALU bif ();
+  IUnaryALU uif ();
+
+endinterface
+
+module PairedALUs (IPairedALUs iface) ;
+
+  BinaryALU binaryAlu (iface.bif);
+  UnaryALU unaryAlu (iface.uif);
+
+endmodule
+
+
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
-  wire [8:0] a9;
-  wire [3:0] a4;
-  wire a1;
+  IPairedALUs pif ();
 
-  wire [8:0] b9;
-  wire [5:0] b6;
-  wire [1:0] b2;
+  assign { pif.bif.a,
+           pif.bif.b,
+           pif.bif.op,
+           pif.uif.a,
+           pif.uif.op } = in;
 
-  wire signed [8:0] c9 = a9;
-  wire signed [3:0] c4 = a4;
-  wire signed 	    c1 = a1;
+  PairedALUs pairedAlus (pif);
 
-  wire signed [8:0] d9 = b9;
-  wire signed [5:0] d6 = b6;
-  wire signed [1:0] d2 = b2;
+  assign out = { pif.bif.a, pif.bif.b, pif.bif.op, pif.bif.out,
+                 pif.uif.a, pif.uif.op, pif.uif.out };
 
-  wire [8:0]  o1 = a9 / b9;    // 9
-  wire [3:0]  o2 = a4 / b6;    // 4
-  wire 	      o3 = a1 / b2[0]; // 1
-  wire [15:0] o4 = a9 / b6;    // 16
-  wire [6:0]  o5 = a9 / b9;    // 7  --> (+ 9 4 1 16 7) = 37 bits
+endmodule
 
-  wire [8:0]  o6 = c9 / d9;    // 9
-  wire [3:0]  o7 = c4 / d6;    // 4
-  wire 	      o8 = c1 / d2;    // 1
-  wire [15:0] o9 = c9 / d6;    // 16
-  wire [6:0]  o10 = c9 / d2;   // 7  --> 37 bits, so (+ 37 37) =  74 bits so far
 
-  // A very special case is dividing the minimal signed integer by -1.
-  // NCVerilog seems to have bugs with this at widths 32 and 64, but
-  // agrees with VCS for other widths.
-  wire signed [1:0] minus1 = -1;
-  wire signed [3:0] special_in = { c1, 3'b0 }; // tends to be 1000, i.e. the minimal integer
 
-  wire [3:0] o11 = special_in / minus1;   // 4
-  wire [3:0] o12 = c4         / minus1;   // 4
-  wire [1:0] o13 = d2         / minus1;   // 2 --> 10 bits
 
-  // Dividing by 0 should return X.
-  wire [3:0] o14 = special_in / 0;        // 4
-  wire [3:0] o15 = c4         / 0;        // 4
-  wire [1:0] o16 = d2         / 0;        // 2 --> 10 bits
-
-  assign { a9, a4, a1, b9, b6, b2 } = in;
-
-  assign out = {
-    o16, o15, o14, o13, o12, o11,
-    o10, o9, o8, o7, o6,
-    o5, o4, o3, o2, o1
-  };
-
-endmodule // spec

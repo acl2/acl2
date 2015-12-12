@@ -470,6 +470,26 @@ top-level hierarchical identifiers.</p>"
             (mv (vl-follow-hidexpr-error (vmsg "hierarchical reference into DPI import") item-ss)
                 trace x)))
 
+         ((when (eq (tag item) :vl-modport))
+          (if (eq kind :end)
+              ;; Plain reference to, e.g., myinterface.mymodport.  This would
+              ;; not make any sense, but note (25.5, Section 718) that when you
+              ;; instantiate a submodule that takes interfaces, you can do a
+              ;; really awful thing where you choose the modport to use *at
+              ;; instantiation time* instead of at module declaration time.
+              ;; That is, you can write things like:
+              ;;
+              ;;    mymod myinst (.mybus(mybus.consumer), ...)
+              ;;
+              ;; And in this case, the mybus.consumer is going to be a
+              ;; hierarchical reference to a modport.
+              (mv nil trace x)
+            ;; Indexed or dotted reference like foo.bar.mymodport[3] or
+            ;; foo.bar.mymodport[3].baz or foo.bar.mymodport.baz; doesn't
+            ;; seem like this probably makes any sense?
+            (mv (vl-follow-hidexpr-error (vmsg "hierarchical reference into modport") item-ss)
+                trace x)))
+
          ((when (eq (tag item) :vl-modinst))
           (b* (((vl-modinst item))
                (dims    (and item.range (list (vl-range->packeddimension item.range))))
@@ -512,6 +532,26 @@ top-level hierarchical identifiers.</p>"
             (vl-follow-hidexpr-aux rest trace next-ss :strictp strictp)))
 
          ((when (eq (tag item) :vl-interfaceport))
+          ;; BOZO.  We don't yet implement the access restrictions described in
+          ;; SystemVerilog-2012 Section 25.7.  For example:
+          ;;
+          ;; interface myInterface ;
+          ;;   wire [3:0] a, b, c;
+          ;;   modport blah (input a, output b);
+          ;; endinterface
+          ;;
+          ;; module useInterface(myInterface.blah iface) ;
+          ;;   assign iface.b = iface.a;                     // <-- this is legal
+          ;;   assign iface.c = iface.a;                     // <-- not legal: shouldn't see "c"
+          ;; endmodule
+          ;;
+          ;; NCVerilog reports the access of iface.c as a hierarchical name
+          ;; component lookup failure.  VCS reports that c can't be accessed
+          ;; from interface "iface" of modport "blah", and suggests checking
+          ;; whether the signal is declared in the modport.  It seems likely
+          ;; that we could possibly implement this here if we were smart enough
+          ;; to look at the modport (if any) and prohibit names that aren't
+          ;; mentioned in it.
           (b* (((vl-interfaceport item))
                ((when (or (consp indices)
                           (consp item.udims)))
