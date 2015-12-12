@@ -959,7 +959,8 @@ form is usually an adequate work-around.</p>")
         (er hard? 'post-hook-make-events "Invalid post-define hook specifier: ~x0" spec1))
        (look (assoc hook-kwd hooks-alist))
        ((unless look)
-        (er hard? 'post-hook-make-events "Post-define hook not found: ~x0." hook-kwd))
+        (er hard? 'post-hook-make-events "Post-define hook not found: ~x0.  Known hooks: ~&1."
+            hook-kwd (strip-cars hooks-alist)))
        (hook-fn (cdr look))
        (event1 `(make-event (,hook-fn ',guts ',user-args state))))
     (cons event1
@@ -1096,6 +1097,24 @@ form is usually an adequate work-around.</p>")
        (t-proof-name  (if t-proof (ACL2::packn (LIST name-fn '|-| t-proof)) nil))
 
        (returnspecs   (parse-returnspecs name returns world))
+
+       (guard-verification-will-happen-anyway-p
+        ;; Design decision: define will ignore set-verify-guards-eagerness 1
+        ;; and always try to verify guards.  (I think I much more frequently
+        ;; have guards of T than want to not verify guards.)  We could do this
+        ;; by always adding an explicit (declare (xargs :guard t)).  But that's
+        ;; a bit ugly, so work harder and only add it if there are no guards
+        ;; coming from other places like extended formals, type declarations,
+        ;; etc.
+        (or (consp formal-types)
+            (consp formal-guards)
+            (assoc :guard xargs)
+            (assoc :type xargs)
+            (assoc :guard embedded-xargs-alist)
+            ;; BOZO eventually could also look for type declarations in
+            ;; the traditional decls/docs
+            ))
+
        (main-def
         `(;; Historically we used defund unless the function was enabled-p.
           ;; But this ran afoul of Issue 464 for DEFINE forms that were
@@ -1131,12 +1150,7 @@ form is usually an adequate work-around.</p>")
 ; don't have further dependencies, e.g., don't rely on the top-level :guard
 
            ,@(cond ((atom formal-guards)
-                    ;; Design decision: I prefer to put in a declaration here
-                    ;; instead of leaving it out.  This makes define trigger
-                    ;; guard verification even with eagerness 1.  I think I
-                    ;; much more frequently have guards of T than want to not
-                    ;; verify guards.
-                    `((declare (xargs :guard t))))
+                    nil)
                    ((atom (cdr formal-guards))
                     `((declare (xargs :guard ,(car formal-guards)))))
                    (t
@@ -1164,6 +1178,10 @@ form is usually an adequate work-around.</p>")
 
            ,@(and xargs
                   `((declare (xargs . ,xargs))))
+
+           ;; Just in case there is nothing else to provoke guard verification:
+           ,@(and (not guard-verification-will-happen-anyway-p)
+                  `((declare (xargs :guard t))))
 
            ,final-body
            )))
