@@ -31,7 +31,25 @@
 (in-package "STD")
 (include-book "../defrule")
 (include-book "std/strings/coerce" :dir :system)
+(include-book "misc/assert" :dir :system)
+(set-state-ok t)
 (logic)
+
+(defsection stupid-test-that-defrule-actually-makes-theorems
+
+  (defun is-theorem-p (name state)
+    (fgetprop name 'acl2::theorem nil (w state)))
+
+  (assert! (is-theorem-p 'car-cons state))
+  (assert! (not (is-theorem-p 'you-should-never-make-a-theorem-with-this-name state)))
+
+  (assert! (not (is-theorem-p 'revappend-when-atom state)))
+  (local (defrule revappend-when-atom
+           (implies (atom x)
+                    (equal (revappend x y)
+                           y))))
+  (assert! (is-theorem-p 'revappend-when-atom state)))
+
 
 ;; Some tests of rule/defrule with-output handling.  This isn't a proper
 ;; book because there are some failing events.
@@ -177,7 +195,10 @@
   ;; A thm that violates a theory invariant, versus a rule that does the
   ;; same via a top-level enable
   ;; Goal: clear error message
-  ;; Status: UNACCEPTABLE -- the rule produces no output at all!
+  ;; Status: GOOD -- clear error message with no extraneous output
+  ;;                 actually better than the thm, because it doesn't
+  ;;                 produce a useless summary.
+  ;;   (previously this produced no output at all!)
   (local (defthm len-of-cdr
            (implies (consp x)
                     (equal (len (cdr x)) (+ -1 (len x))))))
@@ -205,8 +226,6 @@
         :hints(("Goal" :in-theory (enable len))))
    (rule (equal (len (append x y)) (+ (len x) (len y)))
          :hints(("Goal" :in-theory (enable len))))))
-
-
 
 (compare-output
  ;; Successful defthm versus an equivalent defrule with top-level enable
@@ -258,8 +277,9 @@
   ()
   ;; Failing proof due to theory invariant violation in :prep-lemmas
   ;; Goal: clear error
-  ;; Status: UNACCEPTABLE
-  ;;   -- no output at all, no indication that the error has occurred
+  ;; Status: GOOD -- clear error message, actually better than a plain
+  ;;         in-theory because it doesn't produce a useless summary
+  ;;   (previously this produced no output at all!)
   (local (defthm len-of-cdr
            (implies (consp x)
                     (equal (len (cdr x)) (+ -1 (len x))))))
