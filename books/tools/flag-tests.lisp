@@ -51,6 +51,19 @@
                  :defthm-macro-name defthm-pseudo-termp
                  )
 
+;; Same thing, but let it fill in the flag function name for us.
+
+(encapsulate
+  ()
+  (set-enforce-redundancy t) ;; implicitly local
+  (FLAG::make-flag pseudo-termp
+                   :flag-var flag
+                   :flag-mapping ((pseudo-termp . term)
+                                  (pseudo-term-listp . list))
+                   ;; :hints {for the measure theorem}
+                   :defthm-macro-name defthm-pseudo-termp
+                   ))
+
 ; This introduces (flag-pseudo-termp flag x lst)
 ; Theorems equating it with pseudo-termp and pseudo-term-listp
 ; And the macro shown below.
