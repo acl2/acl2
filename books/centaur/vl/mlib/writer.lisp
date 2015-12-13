@@ -3848,3 +3848,20 @@ module elements and its comments.</p>"
                (vl-pp-programlist (cdr x)))))
 
 
+(define vl-pp-design ((x vl-design-p) &key (ps 'ps))
+  ;; arbitrary order
+  (b* (((vl-design x)))
+    (vl-ps-seq (vl-pp-fwdtypedeflist x.fwdtypes)
+               (vl-pp-paramdecllist x.paramdecls)
+               (vl-pp-typedeflist x.typedefs)
+               (vl-pp-fundecllist x.fundecls)
+               (vl-pp-taskdecllist x.taskdecls)
+               (vl-pp-packagelist x.packages)
+               (vl-pp-importlist x.imports)
+               (vl-pp-programlist x.programs)
+               (vl-pp-interfacelist x.interfaces)
+               (vl-pp-udplist x.udps)
+               (vl-pp-modulelist x.mods nil)
+               (vl-pp-configlist x.configs)
+               (vl-pp-dpiimportlist x.dpiimports)
+               (vl-pp-dpiexportlist x.dpiexports))))

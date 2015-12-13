@@ -85,7 +85,8 @@ FAILING_TEST_TARGETS := \
   gates_rpmos/ok \
   gates_rnmos/ok \
   gates_pullup/ok \
-  gates_pulldown/ok
+  gates_pulldown/ok \
+  generate2/ok
 
 
 SPECFILES := $(wildcard */spec.sv)

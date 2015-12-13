@@ -101,13 +101,13 @@
 
 (define vl-index-typedecide ((x        vl-expr-p)
                              (ss       vl-scopestack-p)
-                             (typeov   vl-typeoverride-p))
+                             (scopes   vl-elabscopes-p))
   :guard (vl-expr-case x :vl-index)
   :returns (mv (new-warnings vl-warninglist-p)
                (type vl-maybe-exprsign-p))
   (b* ((x (vl-expr-fix x))
        (warnings nil)
-       ((mv err opinfo) (vl-index-expr-typetrace x ss typeov))
+       ((mv err opinfo) (vl-index-expr-typetrace x ss scopes))
        ((when err)
         (mv (fatal :type :vl-typedecide-fail
                    :msg "Failed to find the type of ~a0: ~@1"
@@ -137,7 +137,7 @@
 
 (define vl-funcall-typedecide ((x vl-expr-p)
                                (ss vl-scopestack-p)
-                               (typeov vl-typeoverride-p))
+                               (scopes vl-elabscopes-p))
   :guard (vl-expr-case x :vl-call (not x.systemp) :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
                (type (and (vl-maybe-exprsign-p type)
@@ -159,12 +159,20 @@
                   :args (list x lookup.item))
             nil))
        ((vl-fundecl lookup.item))
+       (fnscopes (vl-elabscopes-traverse (rev lookup.elabpath) scopes))
+       (info (vl-elabscopes-item-info lookup.item.name fnscopes))
        ((mv err rettype)
-        (b* ((look (hons-get x.name (Vl-typeoverride-fix typeov)))
-             ((when look)
-              (if (vl-datatype-resolved-p (cdr look))
-                  (mv nil (cdr look))
-                (mv (vmsg "Programming error: override type not resolved") nil))))
+        (b* (((when info)
+              (vl-elabinfo-case info
+                :function (if (vl-datatype-resolved-p info.type)
+                              (mv nil info.type)
+                            (mv (vmsg "Programming error: returntype ~
+                                       in elabinfo not resolved"
+                                      lookup.item.name)
+                                nil))
+                :otherwise (mv (vmsg "~x0 stored instead of function"
+                                     (vl-elabinfo-kind info) lookup.item.name)
+                               nil))))
           (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss)))
        ((when err)
         (mv (fatal :type :vl-typedecide-fail
@@ -335,7 +343,7 @@
   (define vl-expr-typedecide-aux
     ((x        vl-expr-p)
      (ss       vl-scopestack-p)
-     (typeov   vl-typeoverride-p) (mode     (or (eq mode :probably-wrong)
+     (scopes   vl-elabscopes-p) (mode     (or (eq mode :probably-wrong)
                    (eq mode :probably-right))))
     :parents (vl-expr-typedecide)
     :short "Core of computing expression signedness."
@@ -377,35 +385,35 @@ produce unsigned values.</li>
                            :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux))
                                      :expand ((:free (mode)
                                                (vl-expr-typedecide-aux
-                                                x ss typeov mode)))))))
+                                                x ss scopes mode)))))))
     :measure (vl-expr-count x)
     (b* ((x        (vl-expr-fix x))
          (warnings nil))
       (vl-expr-case x
         :vl-special (mv (ok) nil)
         :vl-literal (mv (ok) (vl-value-typedecide x.val))
-        :vl-index   (vl-index-typedecide x ss typeov)
+        :vl-index   (vl-index-typedecide x ss scopes)
 
         :vl-unary   (b* (((mv warnings arg-type)
-                          (vl-expr-typedecide-aux x.arg ss typeov mode))
+                          (vl-expr-typedecide-aux x.arg ss scopes mode))
                          ((wmv warnings ans)
                           (vl-unaryop-typedecide x arg-type mode)))
                       (mv warnings ans))
 
         :vl-binary (b* (((mv warnings left-type)
-                         (vl-expr-typedecide-aux x.left ss typeov mode))
+                         (vl-expr-typedecide-aux x.left ss scopes mode))
                         ((wmv warnings right-type)
-                         (vl-expr-typedecide-aux x.right ss typeov mode))
+                         (vl-expr-typedecide-aux x.right ss scopes mode))
                         ((wmv warnings ans)
                          (vl-binaryop-typedecide x left-type right-type mode)))
                      (mv warnings ans))
 
         :vl-qmark (b* (((mv warnings test-type)
-                        (vl-expr-typedecide-aux x.test ss typeov mode))
+                        (vl-expr-typedecide-aux x.test ss scopes mode))
                        ((wmv warnings then-type)
-                        (vl-expr-typedecide-aux x.then ss typeov mode))
+                        (vl-expr-typedecide-aux x.then ss scopes mode))
                        ((wmv warnings else-type)
-                        (vl-expr-typedecide-aux x.else ss typeov mode)))
+                        (vl-expr-typedecide-aux x.else ss scopes mode)))
                     (cond ((eq mode :probably-right)
                            ;; We believe the first op's type does NOT affect the result type;
                            ;; see "minutia".
@@ -431,7 +439,7 @@ produce unsigned values.</li>
 
         :vl-call        (if x.systemp
                             (vl-syscall-typedecide x)
-                          (vl-funcall-typedecide x ss typeov))
+                          (vl-funcall-typedecide x ss scopes))
 
         :vl-cast (vl-casttype-case x.to
                    :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type ss))
@@ -447,7 +455,7 @@ produce unsigned values.</li>
                                (vl-datatype-signedness to-type)))
                            (mv (ok) signedness))
                    :signedness (mv (ok) (if x.to.signedp :vl-signed :vl-unsigned))
-                   :otherwise (vl-expr-typedecide-aux x.expr ss typeov mode))
+                   :otherwise (vl-expr-typedecide-aux x.expr ss scopes mode))
 
         ;; By the spec, it seems this always returns a 1-bit unsigned (test this)
         :vl-inside (mv (ok) :vl-unsigned)
@@ -483,7 +491,7 @@ produce unsigned values.</li>
     (verify-guards vl-expr-typedecide-aux)
 
     (defrule symbolp-of-vl-expr-typedecide-aux
-      (symbolp (mv-nth 1 (vl-expr-typedecide-aux x ss typeov mode)))
+      (symbolp (mv-nth 1 (vl-expr-typedecide-aux x ss scopes mode)))
       :in-theory (enable (tau-system))
       :rule-classes :type-prescription)))
 
@@ -501,12 +509,12 @@ produce unsigned values.</li>
     ;; ;; implicit universal quantification) we prove "for all warnings and
     ;; ;; context, they're irrelevant" (with explicit universal quantification
     ;; ;; that gets instantiated in the induction hyps as well).
-    ;; (local (defun-sk all-warnings-and-context-irrelevant (x ss typeov mode)
+    ;; (local (defun-sk all-warnings-and-context-irrelevant (x ss scopes mode)
     ;;          (forall (ctx)
     ;;                  (implies (syntaxp (not (and (equal warnings ''nil)
     ;;                                              (equal ''nil))))
     ;;                           (b* (((mv & type1)
-    ;;                                 (vl-expr-typedecide-aux x ss typeov mode))
+    ;;                                 (vl-expr-typedecide-aux x ss scopes mode))
     ;;                                ((mv & type2)
     ;;                                 (vl-expr-typedecide-aux x ss nil nil mode)))
     ;;                             (equal type1 type2))))
@@ -516,18 +524,18 @@ produce unsigned values.</li>
 
     ;; (local
     ;;  (defthmd warning-irrelevance-of-vl-expr-typedecide-aux-1
-    ;;    (all-warnings-and-context-irrelevant x ss typeov mode)
+    ;;    (all-warnings-and-context-irrelevant x ss scopes mode)
     ;;    :hints (("goal"
     ;;             :in-theory (enable (:i vl-expr-typedecide-aux))
-    ;;             :induct (vl-expr-typedecide-aux x ss typeov mode)
-    ;;             :expand ((:free (ctx mode) (vl-expr-typedecide-aux x ss typeov mode))
-    ;;                      (:free (mode) (all-warnings-and-context-irrelevant x ss typeov mode)))))))
+    ;;             :induct (vl-expr-typedecide-aux x ss scopes mode)
+    ;;             :expand ((:free (ctx mode) (vl-expr-typedecide-aux x ss scopes mode))
+    ;;                      (:free (mode) (all-warnings-and-context-irrelevant x ss scopes mode)))))))
 
     ;; (defthm warning-irrelevance-of-vl-expr-typedecide-aux
     ;;   (implies (syntaxp (not (and (equal warnings ''nil)
     ;;                               (equal ''nil))))
     ;;            (b* (((mv & type1)
-    ;;                  (vl-expr-typedecide-aux x ss typeov mode))
+    ;;                  (vl-expr-typedecide-aux x ss scopes mode))
     ;;                 ((mv & type2)
     ;;                  (vl-expr-typedecide-aux x ss nil nil mode)))
     ;;              (equal type1 type2)))
@@ -542,7 +550,7 @@ produce unsigned values.</li>
   :short "Computation of expression signedness (main routine)."
   ((x        vl-expr-p)
    (ss vl-scopestack-p)
-   (typeov vl-typeoverride-p))
+   (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (type     (and (vl-maybe-exprsign-p type)
                               (equal (vl-exprsign-p type) (if type t nil)))))
@@ -582,8 +590,8 @@ the expression is an unsupported system call).  In such cases we just return
 @('nil') for the sign without adding any warnings.</p>"
 
   (b* ((x    (vl-expr-fix x))
-       ((mv warnings right-type) (vl-expr-typedecide-aux x ss typeov :probably-right))
-       ((wmv warnings wrong-type) (vl-expr-typedecide-aux x ss typeov :probably-wrong))
+       ((mv warnings right-type) (vl-expr-typedecide-aux x ss scopes :probably-right))
+       ((wmv warnings wrong-type) (vl-expr-typedecide-aux x ss scopes :probably-wrong))
        (warnings
         (if (eq right-type wrong-type)
             warnings

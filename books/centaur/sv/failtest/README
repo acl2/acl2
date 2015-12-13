@@ -19,3 +19,7 @@ completely in some spectacular way, or we at least get a fatal warning in the
 top module.
 
 -------------------------------------------------------------------------------
+
+stmt1.v -- nonblocking assignment to local variable
+
+elab1.v -- crazy parameter/generate dependency loop
