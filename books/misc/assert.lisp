@@ -41,7 +41,8 @@
  })
 
  <p>Also see @(see assert!-stobj), which is an analogous utility for assertions
- that return @('stobj')s.</p>")
+ that return @('stobj')s.  Also see @(see must-fail) and @(see must-succeed)
+ for other tests that certain commands fail or succeed.</p>")
 
 (defxdoc assert!-stobj
   :parents (assert$ errors)
