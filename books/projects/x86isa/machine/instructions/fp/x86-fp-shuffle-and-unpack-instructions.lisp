@@ -67,31 +67,31 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       ;; [Shilpi]: The Intel manual doesn't mention that a lock
-       ;; prefix causes an exception for this opcode. Should the
-       ;; following be removed then?
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
-
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
+       ;; Cuong: Although this requirement is not specified in the
+       ;; Intel manual, I got a segmentation fault when trying with
+       ;; non 16-byte aligned addresses on a real machine.
+       (inst-ac? ;; Exceptions Type 4
+        t) ;; This should be nil according to the manual, but... see
+       ;; the comment above.
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
-
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -129,14 +129,6 @@
            start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
-
-       ;; Raise an error if v-addr is not 16-byte aligned.
-       ;; In case the second operand is an XMM register, v-addr = 0.
-       ;; Although this requirement is not specified in the Intel manual, I got
-       ;; a segmentation fault when trying with non 16-byte aligned addresses
-       ;; on a real machine.
-       ((when (not (eql (mod v-addr 16) 0)))
-        (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
 
        (imm0 (mbe :logic (part-select imm :low 0 :high 1)
                   :exec  (the (unsigned-byte 2)
@@ -163,7 +155,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (add-to-implemented-opcodes-table 'SHUFPS #x0FC6
@@ -187,30 +179,29 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       ;; [Shilpi]: The Intel manual doesn't mention that a lock
-       ;; prefix causes an exception for this opcode. Should the
-       ;; following be removed then?
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock) (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
-
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       ;; Cuong: Although this requirement is not specified in the
+       ;; Intel manual, I got a segmentation fault when trying with
+       ;; non 16-byte aligned addresses on a real machine.
+       (inst-ac? ;; Exceptions Type 4
+        t) ;; This should be nil according to the Intel manuals, but
+           ;; see comment above.
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -249,14 +240,6 @@
            start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
-
-       ;; Raise an error if v-addr is not 16-byte aligned.
-       ;; In case the second operand is an XMM register, v-addr = 0.
-       ;; Although this requirement is not specified in the Intel manual, I got
-       ;; a segmentation fault when trying with non 16-byte aligned addresses
-       ;; on a real machine.
-       ((when (not (eql (mod v-addr 16) 0)))
-        (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
 
        (imm0 (logbit 0 imm))
        (imm1 (logbit 1 imm))
@@ -315,9 +298,6 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       ;; [Shilpi]: The Intel manual doesn't mention that a lock
-       ;; prefix causes an exception for this opcode. Should the
-       ;; following be removed then?
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
@@ -329,16 +309,20 @@
         (xmmi-size 16 xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       ;; Cuong: Although this requirement is not specified in the
+       ;; Intel manual, I got a segmentation fault when trying with
+       ;; non 16-byte aligned addresses on a real machine.
+       (inst-ac? ;; Exceptions Type 4
+        t) ;; This should be nil according to the Intel manuals, but
+           ;; see comment above.
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -361,11 +345,6 @@
            start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
-
-       ;; Raise an error if v-addr is not 16-byte aligned.
-       ;; In case the second operand is an XMM register, v-addr = 0.
-       ((when (not (eql (mod v-addr 16) 0)))
-        (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
 
        (dword0 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm :low 64 :high 95)
@@ -452,9 +431,6 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       ;; [Shilpi]: The Intel manual doesn't mention that a lock
-       ;; prefix causes an exception for this opcode. Should the
-       ;; following be removed then?
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
@@ -466,16 +442,20 @@
         (xmmi-size 16 xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       ;; Cuong: Although this requirement is not specified in the
+       ;; Intel manual, I got a segmentation fault when trying with
+       ;; non 16-byte aligned addresses on a real machine.
+       (inst-ac? ;; Exceptions Type 4
+        t) ;; This should be nil according to the Intel manuals, but
+       ;; see comment above.
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -498,11 +478,6 @@
            start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
-
-       ;; Raise an error if v-addr is not 16-byte aligned.
-       ;; In case the second operand is an XMM register, v-addr = 0.
-       ((when (not (eql (mod v-addr 16) 0)))
-        (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
 
        (qword0 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm :low 64 :high 127)
@@ -528,7 +503,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn

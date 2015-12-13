@@ -98,13 +98,13 @@
 
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
-
+       (inst-acc? t)
        ((mv flg0 reg/mem
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* operand-size inst-acc? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))

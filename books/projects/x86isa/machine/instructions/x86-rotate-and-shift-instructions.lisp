@@ -193,10 +193,11 @@
         (select-operand-size select-byte-operand rex-byte nil
                              prefixes))
 
+       (inst-ac? t)
        ((mv flg0 ?reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4 temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac? p2 p4 temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -286,15 +287,16 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem reg/mem-size
-                                ;; TO-DO@Shilpi: Remove this trunc.
-                                (trunc reg/mem-size result)
-                                (the (signed-byte #.*max-linear-address-size*) v-addr)
-                                rex-byte r/m mod x86))
+        (x86-operand-to-reg/mem
+         reg/mem-size inst-ac?
+         ;; TO-DO@Shilpi: Remove this trunc.
+         (trunc reg/mem-size result)
+         (the (signed-byte #.*max-linear-address-size*) v-addr)
+         rex-byte r/m mod x86))
        ;; Note: If flg2 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

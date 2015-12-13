@@ -48,10 +48,11 @@
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       (inst-ac? t)
        ((mv flg0 bitBase (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
+         #.*rgf-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -101,9 +102,10 @@
           x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-bt-0F-A3
+  ;; TO-DO: Speed this up!
 
   ;; 0F A3: BT r/m16/32/64, r16/32/64
 
@@ -120,11 +122,11 @@
   :parents (two-byte-opcodes)
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :guard-hints (("Goal" :in-theory (e/d (n08-to-i08
-                                         n16-to-i16
-                                         n32-to-i32
-                                         n64-to-i64)
-                                        ())))
+  :prepwork
+  ((local
+    (in-theory (e/d ()
+                    (acl2::mod-minus
+                     unsigned-byte-p)))))
 
   :implemented
   (add-to-implemented-opcodes-table 'BT #x0FA3 '(:nil nil) 'x86-bt-0F-A3)
@@ -213,15 +215,24 @@
                                 (4 (n32-to-i32 bitOffset))
                                 (t (n64-to-i64 bitOffset))))
                (bitOffset-int-abs (abs bitOffset-int))
+               (bitNumber (mod bitOffset-int-abs 8))
                (byte-v-addr (+ (the (signed-byte
                                      #.*max-linear-address-size*) v-addr)
                                (floor bitOffset-int 8)))
-               (bitNumber (mod bitOffset-int-abs 8))
+               ;; Alignment Check
+               (inst-ac? (alignment-checking-enabled-p x86))
+               ((when
+                    (and inst-ac?
+                         (not (equal
+                               (logand byte-v-addr
+                                       (the (integer 0 15) (- operand-size 1)))
+                               0))))
+                (mv (cons 'memory-access-not-aligned byte-v-addr) 0 0 x86))
                ((mv flg1 byte x86)
                 (if (canonical-address-p byte-v-addr)
                     (rm-size 1 byte-v-addr :r x86)
                   (mv (cons 'virtual-address-error byte-v-addr) 0 x86))))
-              (mv flg1 bitNumber byte x86))))
+            (mv flg1 bitNumber byte x86))))
        ((when flg2)
         (!!ms-fresh :rm-size-error flg2))
 
@@ -237,6 +248,6 @@
                (x86 (!flgi-undefined #.*of* x86)))
           x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

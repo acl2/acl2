@@ -88,30 +88,25 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       ;; [Shilpi]: The Intel manual doesn't mention that a lock
-       ;; prefix causes an exception for this opcode. Should the
-       ;; following be removed then?
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
-
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
-
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? ;; Exceptions Type 4
+        nil)
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -257,9 +252,6 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       ;; [Shilpi]: The Intel manual doesn't mention that a lock
-       ;; prefix causes an exception for this opcode. Should the
-       ;; following be removed then?
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
@@ -268,17 +260,16 @@
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? ;; Exceptions Type 7
+        nil)
 
        ((mv flg0
             (the (unsigned-byte 128) xmm)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* 16
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))

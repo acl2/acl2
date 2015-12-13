@@ -148,44 +148,6 @@
                 :hints (("Goal" :in-theory (e/d* ()
                                                  (unsigned-byte-p
                                                   signed-byte-p)))))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADD #x00 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'ADD #x01 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'OR #x08 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'OR #x09 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'ADC #x10 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'ADC #x11 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SBB #x18 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SBB #x19 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'AND #x20 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'AND #x21 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SUB #x28 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SUB #x29 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'XOR #x30 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'XOR #x31 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'CMP #x38 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'CMP #x39 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'TEST #x84 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'TEST #x85 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G))
 
   :body
 
@@ -213,11 +175,12 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
 
+       (inst-ac? t)
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) E-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -257,7 +220,7 @@
             ;; CMP and TEST modify just the flags.
             (mv nil x86)
           (x86-operand-to-reg/mem
-           operand-size result
+           operand-size inst-ac? result
            (the (signed-byte #.*max-linear-address-size*) E-addr)
            rex-byte r/m mod x86)))
        ;; Note: If flg1 is non-nil, we bail out without changing the
@@ -268,7 +231,46 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'ADD #x00 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'ADD #x01 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'OR #x08 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'OR #x09 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'ADC #x10 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'ADC #x11 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'SBB #x18 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'SBB #x19 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'AND #x20 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'AND #x21 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'SUB #x28 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'SUB #x29 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'XOR #x30 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'XOR #x31 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'CMP #x38 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'CMP #x39 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'TEST #x84 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
+    (add-to-implemented-opcodes-table 'TEST #x85 '(:nil nil)
+                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)))
 
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
 
@@ -365,11 +367,12 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
 
+       (inst-ac? t)
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) E-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -573,11 +576,12 @@
        ((the (integer 1 4) imm-size)
         (select-operand-size imm-byte-operand? rex-byte t prefixes))
 
+       (inst-ac? t)
        ((mv flg0 E increment-RIP-by
             (the (signed-byte #.*max-linear-address-size*) E-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* E-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* E-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
@@ -652,7 +656,7 @@
             ;; CMP and TEST modify just the flags.
             (mv nil x86)
           (x86-operand-to-reg/mem
-           E-size result
+           E-size inst-ac? result
            (the (signed-byte #.*max-linear-address-size*) E-addr)
            rex-byte r/m mod x86)))
        ;; Note: If flg1 is non-nil, we bail out without changing the
@@ -663,7 +667,7 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86))
 
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
   :parents (one-byte-opcodes)
@@ -812,7 +816,7 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: INC/DEC
@@ -859,11 +863,11 @@
        ((the (integer 1 8) r/mem-size)
         (select-operand-size
          select-byte-operand rex-byte nil prefixes))
-
+       (inst-ac? t)
        ((mv flg0 r/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* r/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* r/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -907,9 +911,10 @@
 
 
        ((mv flg1 x86)
-        (x86-operand-to-reg/mem r/mem-size result
-                                (the (signed-byte #.*max-linear-address-size*) v-addr)
-                                rex-byte r/m mod x86))
+        (x86-operand-to-reg/mem
+         r/mem-size inst-ac? result
+         (the (signed-byte #.*max-linear-address-size*) v-addr)
+         rex-byte r/m mod x86))
        ((when flg1)
         (!!ms-fresh :x86-operand-to-reg/mem flg1))
        (x86 (!rip temp-rip x86)))
@@ -955,10 +960,11 @@
        ((the (integer 0 8) r/mem-size)
         (select-operand-size select-byte-operand rex-byte nil
                              prefixes))
+       (inst-ac? t)
        ((mv flg0 r/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* r/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* r/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -1007,7 +1013,7 @@
           x86))
        ((mv flg1 x86)
         (x86-operand-to-reg/mem
-         r/mem-size result (the (signed-byte #.*max-linear-address-size*) v-addr)
+         r/mem-size inst-ac? result (the (signed-byte #.*max-linear-address-size*) v-addr)
          rex-byte r/m mod x86))
        ((when flg1)
         (!!ms-fresh :x86-operand-to-reg/mem flg1))
