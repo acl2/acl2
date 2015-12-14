@@ -3877,7 +3877,8 @@ module elements and its comments.</p>"
 
 (define vl-pp-design ((x vl-design-p) &key (ps 'ps))
   ;; arbitrary order
-  (b* (((vl-design x)))
+  (b* (((vl-design x))
+       (ss (vl-scopestack-init x)))
     (vl-ps-seq (vl-pp-fwdtypedeflist x.fwdtypes)
                (vl-pp-paramdecllist x.paramdecls)
                (vl-pp-typedeflist x.typedefs)
@@ -3886,9 +3887,9 @@ module elements and its comments.</p>"
                (vl-pp-packagelist x.packages)
                (vl-pp-importlist x.imports)
                (vl-pp-programlist x.programs)
-               (vl-pp-interfacelist x.interfaces)
+               (vl-pp-interfacelist x.interfaces ss)
                (vl-pp-udplist x.udps)
-               (vl-pp-modulelist x.mods nil)
+               (vl-pp-modulelist x.mods ss)
                (vl-pp-configlist x.configs)
                (vl-pp-dpiimportlist x.dpiimports)
                (vl-pp-dpiexportlist x.dpiexports))))

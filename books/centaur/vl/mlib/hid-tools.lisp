@@ -427,7 +427,8 @@ be resolved.</p>"
                  (equal (tag item) :vl-fundecl)
                  (equal (tag item) :vl-taskdecl)
                  (equal (tag item) :vl-typedef)
-                 (equal (tag item) :vl-dpiimport))))
+                 (equal (tag item) :vl-dpiimport)
+                 (equal (tag item) :vl-modport))))
   :rule-classes ((:forward-chaining))
   :hints(("Goal"
           :use ((:instance tag-when-vl-scopeitem-p-forward
@@ -1081,7 +1082,7 @@ instance, in this case the @('tail') would be
        ;; record this sort of thing.  For now, out of sheer pragmatism, I think
        ;; it seems pretty reasonable to just not bother to record the first
        ;; step.
-       (next-ss (vl-scopestack-push topdef top-def-ss))
+       (next-ss (vl-scopestack-push topdef topdef-ss))
        (elabpath (list (vl-elabinstruction-push-named (vl-elabkey-def name1))
                        (vl-elabinstruction-root)))
 

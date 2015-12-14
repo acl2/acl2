@@ -1477,7 +1477,7 @@ for each usertype is stored in the res field.</p>"
        ((unless ok)
         ;; (cw "not ok~%")
         (mv nil mod nil elabindex ledger)))
-    (mv ok mod nil elabindex ledger)))
+    (mv ok mod keylist elabindex ledger)))
 
 
 (fty::defalist vl-unparam-donelist :key-type vl-unparam-instkey)
@@ -1806,7 +1806,12 @@ scopestacks.</p>"
 ;;     (mv t warnings (cons pkg1 rest-packages))))
 
 
+#||
+(Trace$ #!vl (vl-design-elaborate
+              :entry (list 'vl-design-elaborate (with-local-ps (vl-pp-design x)))
+              :exit (list 'vl-design-elaborate (with-local-ps (vl-pp-design value)))))
 
+||#
 
 (define vl-design-elaborate
   :short "Top-level @(see unparameterization) transform."

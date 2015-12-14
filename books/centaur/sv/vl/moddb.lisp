@@ -3113,7 +3113,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
         ;; unparameterization before; we're just doing this to generate the
         ;; tables.
         (vl-genblob-elaborate x elabindex))
-
+       (elabindex (vl-elabindex-sync-scopes))
        (ss (vl-elabindex->ss))
        (scopes (vl-elabindex->scopes))
 

@@ -407,6 +407,7 @@ types.</p>"
         (vl-paramtype-elaborate decl.type elabindex))
 
        ;; To get the override scopes, temporarily traverse to that path.
+       (elabindex (vl-elabindex-sync-scopes))
        (elabindex (vl-elabindex-traverse ov-ss ov-scope-path))
        (ov-scopes (vl-elabindex->scopes elabindex))
        (elabindex (vl-elabindex-undo))

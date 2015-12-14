@@ -346,11 +346,15 @@ because... (BOZO)</p>
 
 
 (defines vl-procedural-assign->svstmts
+
+
 ;; (trace$
 ;;  #!vl (vl-procedural-assign->svstmts
 ;;        :entry (list 'vl-procedural-assign->svstmts
 ;;                     (with-local-ps (vl-pp-expr lhs))
-;;                     rhssvex)
+;;                     rhssvex
+;;                     (vl-scopestack->hashkey ss)
+;;                     (strip-cars scopes))
 ;;        :exit (b* (((list ?ok ?warnings ?svstmts ?shift) values)
 ;;                   (end (and warnings
 ;;                             (list (with-local-ps (vl-print-warnings warnings))))))
@@ -1799,6 +1803,17 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                             (sv::svex-alist-keys x))
                    :in-theory (enable sv::svex-alist-fix))))))
 
+
+#||
+
+(trace$ #!vl (vl-always->svex 
+              :entry (list 'vl-always->svex
+                           (with-local-ps (vl-pp-always x)))
+              :exit (list 'vl-always->svex
+                          (with-local-ps (vl-print-warnings (car values)))
+                          (cadr values))))
+
+||#
 
 (define vl-always->svex ((x vl-always-p)
                          (ss vl-scopestack-p)

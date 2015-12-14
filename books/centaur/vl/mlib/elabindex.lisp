@@ -749,14 +749,17 @@ are empty.</p>")
 
 (define vl-elabindex-update-ss ((ss vl-scopestack-p)
                                 &optional (elabindex 'elabindex))
+  :returns (new-elabindex)
   (vl-elabindex-update-ss1 (vl-scopestack-fix ss) elabindex))
 
 (define vl-elabindex-update-scopes ((scopes vl-elabscopes-p)
                                 &optional (elabindex 'elabindex))
+  :returns (new-elabindex)
   (vl-elabindex-update-scopes1 (vl-elabscopes-fix scopes) elabindex))
 
 (define vl-elabindex-update-undostack ((undostack vl-elabtraversal-stack-p)
                                        &optional (elabindex 'elabindex))
+  :returns (new-elabindex)
   (vl-elabindex-update-undostack1 (vl-elabtraversal-stack-fix undostack) elabindex))
 
 (local (in-theory (disable elabindexp)))
@@ -786,6 +789,7 @@ are empty.</p>")
 
 (define vl-elabindex-update-item-info ((name stringp) (val vl-elabinfo-p)
                                        &key (elabindex 'elabindex))
+  :returns (new-elabindex)
   (b* ((scopes (vl-elabindex->scopes elabindex))
        ((when (atom scopes))
         (raise "No scope -- can't update item info!~%")
@@ -803,6 +807,7 @@ are empty.</p>")
 
 (define vl-elabindex-init ((x vl-design-p)
                            &key (elabindex 'elabindex))
+  :returns (new-elabindex)
   (b* ((elabindex (vl-elabindex-update-ss (vl-scopestack-init x) elabindex)))
     (vl-elabindex-update-scopes (list (cons nil (make-vl-elabscope))) elabindex))
   ///
@@ -818,6 +823,7 @@ are empty.</p>")
 (define vl-elabindex-traverse ((ss vl-scopestack-p)
                                (path vl-elabtraversal-p)
                                &key (elabindex 'elabindex))
+  :returns (new-elabindex)
   (b* (((mv scopes rev-undo) (vl-elabscopes-traverse/update path (vl-elabindex->scopes elabindex)))
        (elabindex (vl-elabindex-update-scopes scopes elabindex))
        (elabindex (vl-elabindex-update-undostack (cons (cons (rev rev-undo)
@@ -844,6 +850,7 @@ are empty.</p>")
                                         vl-elabindex->undostack))))))
 
 (define vl-elabindex-undo (&key (elabindex 'elabindex))
+  :returns (new-elabindex)
   (b* ((undostack (vl-elabindex->undostack elabindex))
        ((unless (consp undostack))
         (raise "Empty undostack")
@@ -862,8 +869,8 @@ are empty.</p>")
                                       vl-elabindex->undostack)))))
 
 (define vl-elabindex-push ((scope vl-scope-p)
-                           &key (elabindex 'elabindex))
-  
+                           &key (elabindex 'elabindex))  
+  :returns (new-elabindex)
   (b* ((key (vl-scope->elabkey scope))
        (scopes (vl-elabindex->scopes elabindex))
        (scopes (if key
@@ -891,6 +898,20 @@ are empty.</p>")
                                         vl-elabindex-update-scopes
                                         vl-elabindex->ss
                                         vl-elabindex->undostack))))))
+
+(define vl-elabindex-sync-scopes (&key (elabindex 'elabindex))
+  :short "Ensure that all parent scopes have the current version of all child scopes.
+           This is accomplished by simply popping up to the root level and then
+          returning to the current scope."
+  :returns (new-elabindex)
+  (b* ((elabindex (vl-elabindex-traverse nil ;; scopestack irrelevant
+                                         (list (vl-elabinstruction-root)))))
+    (vl-elabindex-undo))
+  ///
+  (defret undostack-of-vl-elabindex-sync-scopes
+    (equal (vl-elabindex->undostack new-elabindex)
+           (vl-elabindex->undostack))))
+       
 
 
        
