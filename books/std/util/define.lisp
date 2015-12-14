@@ -1188,8 +1188,7 @@ form is usually an adequate work-around.</p>")
         ;; etc.
         (or (consp formal-types)
             (consp formal-guards)
-            (assoc :guard xargs)
-            (assoc :type xargs)
+            (assoc :guard kwd-alist)
             (assoc :guard embedded-xargs-alist)
             ;; BOZO eventually could also look for type declarations in
             ;; the traditional decls/docs
