@@ -170,7 +170,10 @@ substitution are left in place."
   ///
   (verify-guards svex-compose-svstack)
   (fty::deffixequiv-mutual svex-compose-svstack
-    :hints (("goal" :expand ((svexlist-fix x))))))
+    :hints (("goal" :expand ((svexlist-fix x)))))
+
+  (memoize 'svex-compose-svstack
+           :condition '(svex-case x :call)))
     
 
 (define svstack-free ((x svstack-p))

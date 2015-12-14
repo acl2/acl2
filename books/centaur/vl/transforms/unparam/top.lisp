@@ -184,7 +184,7 @@ with, we can safely remove @('plus') from our module list.</p>")
                resolved.")
    (outer-ss vl-scopestack-p
              "Scope of the overrides -- read-only")
-   (outer-scopes vl-elabscopes-p)
+   (outer-scope-path vl-elabtraversal-p "How to get to the scopes for the override context")
    (final-params-acc vl-paramdecllist-p)
    (warnings vl-warninglist-p))
   :prepwork ((local (in-theory (e/d (vl-paramdecloverridelist-fix)
@@ -222,7 +222,7 @@ with, we can safely remove @('plus') from our module list.</p>")
 
        ((mv ok warnings final-paramdecl elabindex)
         (vl-override-parameter
-         x1.decl elabindex x1.override outer-ss outer-scopes warnings))
+         x1.decl elabindex x1.override outer-ss outer-scope-path warnings))
        ((unless ok)
         (mv nil warnings nil elabindex))
 
@@ -233,7 +233,7 @@ with, we can safely remove @('plus') from our module list.</p>")
                                            final-paramdecl
                                            scopeinfo.locals)))
        (elabindex (vl-elabindex-update-ss outside-module-ss elabindex)))
-    (vl-scopeinfo-resolve-params (cdr x) new-scopeinfo elabindex outer-ss outer-scopes
+    (vl-scopeinfo-resolve-params (cdr x) new-scopeinfo elabindex outer-ss outer-scope-path
                                  (cons final-paramdecl
                                        final-params-acc)
                                  warnings)))
@@ -252,16 +252,14 @@ with, we can safely remove @('plus') from our module list.</p>")
 
 
 
-(define vl-scope-finalize-params ((formals vl-paramdecllist-p)
-                                  (actuals vl-paramargs-p)
-                                  (warnings vl-warninglist-p)
-                                  (elabindex "in the scope of the instantiated
-                                              module.  Warning: this function returns
-                                              an elabindex with a somewhat mangled
-                                              scopestack.")
-                                  (outer-ss vl-scopestack-p)
-                                  (outer-scopes vl-elabscopes-p
-                                                "in the instantiating context"))
+(define vl-scope-finalize-params
+  ((formals vl-paramdecllist-p)
+   (actuals vl-paramargs-p)
+   (warnings vl-warninglist-p)
+   (elabindex "in the scope of the instantiated module.  Warning: this function
+               returns an elabindex with a somewhat mangled scopestack.")
+   (outer-ss vl-scopestack-p)
+   (outer-scope-path vl-elabtraversal-p "How to get to the scopes for the override context"))
   :returns (mv (successp)
                (warnings vl-warninglist-p)
                (elabindex "with the overridden parameter values")
@@ -297,7 +295,7 @@ with, we can safely remove @('plus') from our module list.</p>")
                    (vl-scopeinfo->locals scopeinfo)))))
        ((mv ok warnings final-paramdecls elabindex)
         (vl-scopeinfo-resolve-params
-         overrides scopeinfo-with-empty-params elabindex outer-ss outer-scopes nil warnings)))
+         overrides scopeinfo-with-empty-params elabindex outer-ss outer-scope-path nil warnings)))
     (mv ok warnings elabindex
         final-paramdecls)))
 
@@ -793,7 +791,7 @@ for each usertype is stored in the res field.</p>"
                                   warnings
                                   elabindex
                                   ss
-                                  scopes))
+                                  (rev (vl-elabscopes->elabtraversal scopes))))
 
        (inside-mod-ss (vl-elabindex->ss))
        (elabindex (vl-elabindex-undo)) ;; back at global scope
@@ -1055,7 +1053,8 @@ for each usertype is stored in the res field.</p>"
            ((mv ok warnings elabindex paramdecls)
             (vl-scope-finalize-params x.paramdecls
                                       (make-vl-paramargs-named)
-                                      warnings elabindex elabindex.ss elabindex.scopes))
+                                      warnings elabindex elabindex.ss
+                                      (caar (vl-elabindex->undostack elabindex))))
            (elabindex (vl-elabindex-undo))
            ((unless ok)
             (mv nil warnings nil x elabindex ledger))
@@ -1664,7 +1663,8 @@ for each usertype is stored in the res field.</p>"
         (vl-scope-finalize-params (vl-module->paramdecls x)
                                   (make-vl-paramargs-named)
                                   warnings
-                                  elabindex elabindex.ss elabindex.scopes))
+                                  elabindex elabindex.ss
+                                  (caar (vl-elabindex->undostack))))
        (inside-mod-ss (vl-elabindex->ss))
        (elabindex (vl-elabindex-undo))
        ((unless ok) (mv nil nil warnings elabindex ledger))
@@ -1728,7 +1728,8 @@ scopestacks.</p>"
         (vl-scope-finalize-params x.paramdecls
                                   (make-vl-paramargs-named)
                                   warnings
-                                  elabindex elabindex.ss elabindex.scopes))
+                                  elabindex elabindex.ss
+                                  (caar (vl-elabindex->undostack))))
        (new-x (change-vl-package x :paramdecls new-params))
        ((unless ok)
         (b* ((elabindex (vl-elabindex-undo)))

@@ -392,8 +392,8 @@ types.</p>"
    (elabindex  "In the declaration scope")
    (override   vl-maybe-paramvalue-p "The value to override this parameter with,
                                       if any -- should be elaborated already")
-   (ov-ss    vl-scopestack-p     "Scopestack for the override context")
-   (ov-scopes    vl-elabscopes-p)
+   (ov-ss         vl-scopestack-p     "Scopestack for the override context")
+   (ov-scope-path vl-elabtraversal-p "How to get to the scopes for the override context")
    (warnings vl-warninglist-p      "Warnings accumulator for the submodule."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
@@ -405,6 +405,11 @@ types.</p>"
        (warnings (ok))
        ((wmv ok warnings decl.type elabindex)
         (vl-paramtype-elaborate decl.type elabindex))
+
+       ;; To get the override scopes, temporarily traverse to that path.
+       (elabindex (vl-elabindex-traverse ov-ss ov-scope-path))
+       (ov-scopes (vl-elabindex->scopes elabindex))
+       (elabindex (vl-elabindex-undo))
        ;; (- (cw "decl-conf: ~x0~%" decl-conf))
        ((unless ok)
         (mv nil warnings decl elabindex)))
