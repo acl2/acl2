@@ -7,10 +7,11 @@ simv.cst/
 test.vcd
 ucli.key
 cosim-core
-cosim-core.lx86cl64
-cosim-core.ccl
+cosim-core.*
 Makefile-books
 irun.history
 ncvlog_*.err
+ncverilog.history
 !*.data
 outputs.*.data
+.joblist

@@ -184,8 +184,8 @@
                            (if (not bad-item)
                                warnings
                              (fatal :type :vl-bad-package-item
-                                    :msg "~a0: a package may not contain ~x1s."
-                                    :args (list bad-item (tag bad-item)))))
+                                    :msg "~a0: a package may not contain ~s1s."
+                                    :args (list bad-item (vl-genelement->short-kind-string bad-item)))))
 
                           ((vl-genblob c) (vl-sort-genelements items)))
                        (make-vl-package :name (vl-idtoken->name name)

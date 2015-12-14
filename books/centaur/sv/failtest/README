@@ -20,6 +20,145 @@ top module.
 
 -------------------------------------------------------------------------------
 
-stmt1.v -- nonblocking assignment to local variable
+Test summary:
+
+ansi1.v -- illegal mixing of ansi and non-ansi ports
+ansi2.v -- illegal mixing of ansi and non-ansi ports
+
+assignexpr1.v -- assignment expression within continuous assign
+assignexpr2.v -- += assignment expression within continuous assign
+assignexpr3.v -- assignment expression in submodule port connection
+assignexpr4.v -- += assignment expression in submodule port connection
+assignexpr5.v -- assignment expression in gate instance (vcs crash)
+
+bigwire1.v -- negative indices in wire bounds
 
 elab1.v -- crazy parameter/generate dependency loop
+
+fn1.v -- shadowing too hard in function
+fn2.v -- function input names duplicated (ansi syntax)
+fn2b.v -- function input names duplicated (classic syntax)
+fn3.v -- function input name same as function name (ansi syntax)
+fn3b.v -- function input name same as function name (classic syntax)
+fn4.v -- two (identical) functions with the same name
+fn5.v -- two (different) functions with the same name
+fn6.v -- function references undefined variable in rhs
+fn7.v -- function references undefined variable on lhs
+
+gates1.v -- zeroary not-gate
+gates2.v -- wide port connected to not gate output
+gates3.v -- 3-bit wire connected to 4-wide not instance array input
+gates4.v -- 5-bit wire connected to 4-wire not instance array input
+gates5.v -- gate array of size 0
+
+gen1.v -- genvar redeclared as wire
+gen1b.v -- wire redeclared as genvar
+gen1c.v -- genvar redeclared as gate instance name
+gen1d.v -- gate instance name redeclared as genvar
+gen2.v -- continuous assignment to genvar
+gen2b.v -- continuous assignment from genvar
+gen3.v -- reference to wire declared in a named generate block's scope
+
+iface1.v -- multiply declared wire in interface
+iface2.v -- input redeclared as wire in interface
+iface3.v -- no subsequent declaration of legacy-style port in interface
+iface4.v -- no direction on subsequent declaration of legacy-style port in interface
+iface5.v -- name clash in modport port declarations (same direction)
+iface6.v -- name clash in modport port declarations (different direction)
+iface7.v -- undeclared name in simple modport declarations
+iface8.v -- modport port declarations reference wires declared later (ncv allows, vcs disallows)
+iface9.v -- name clash between modport name and wire name
+iface10.v -- undeclared name in modport expression, i.e., "bar" in .foo(bar)
+iface10b.v -- similar, but the wire *is* declared in some outer scope (still not ok)
+iface10c.v -- similar, but simpler port syntax
+iface11.v -- interface tries to instantiate submodule
+iface12.v -- interface tries to instantiate udp (not sure if legal, ncv allows, vcs prohibits)
+iface13.v -- interface tries to instantiate gate (not sure if legal, but ncv/vcs prohibit)
+iface14.v -- modport with insane port expression .foo(a+b) (vcs accepts it??)
+iface15.v -- modport tries to connect to parameter instead of variable
+iface16.v -- interface with mismatched "endinterface : oops"
+iface17.v -- module with interface port iface.consumer instanced with iface.producer
+iface18.v -- tries to instantiate module with interface connected to some other hierarchical path
+iface19.v -- like iface18.v, but with extra .consumer style modport as well
+iface20.v -- try to use foo.consumer style connection, where foo is itself an interface port (vcs/ncv disagree)
+
+ifport1.v -- port type refers to a module's wire instead of a valid type
+ifport2.v -- variable declaration refers a module's wire, not a valid type
+ifport3.v -- variable declaration refers to interface's wire, not a valid type
+ifport4.v -- oops, identical to ifport3.v
+
+implicit1.v -- explicit wire declaration after implicit declaration in gate
+implicit2.v -- explicit wire declaration clashes with ansi-style var output port
+implicit3.v -- explicit logic var declaration clashes with ansi-style wire input port
+implicit4.v -- explicit wire declaration clashes with ansi-style wire input port
+implicit5.v -- explicit wire declaration clashes with ansi-style integer output port
+implicit6.v -- explicit wire declaration clashes with ansi-style wire input port
+
+import1.v -- import non-existing name from existing package
+import2.v -- import * from non-existing package
+import3.v -- reference a name that is *-imported into an *-imported package (imports should not be transitive)
+import4.v -- reference a name that is explicitly imported into an *-imported package (same)
+import5.v -- explicitly import a name that is explicitly imported in another package (same)
+import6.v -- reference a name that is explicitly imported into a globally *-imported package (same)
+import7.v -- try to reference wire that is locally *-imported from two separate packages
+import8.v -- try to reference wire that is globally *-imported from two separate packages
+
+inc1.v -- post-increment in continuous assignment
+inc2.v -- pre-increment in continuous assignment
+inc3.v -- pre-decrement in continuous assignment
+inc4.v -- post-decrement in continuous assignment
+inc5.v -- post-increment in submodule port instance
+inc6.v -- post-increment in submodule port instance (oops same as inc5.v)
+inc7.v -- pre-increment in submodule port instance
+inc8.v -- pre+post increment of same variable (invalid lvalue)
+inc9.v -- pre+post increment of same variable (invalid lvalue)
+inc10.v -- weird ambiguity: + w2++ (vcs/ncverilog disagree on interpretation)
+
+inst1.v -- wrong port name when instancing submodule
+inst2.v -- too many positional arguments on submodule instance
+inst3.v -- multiple (distinct) named connections to same submodule port
+inst4.v -- multiple (identical) named connections to same submodule port)
+inst5.v -- .foo style connection without declaration in superior module
+inst6.v -- .* style connection without declaration in superior module
+inst7.v -- .foo and .foo(foo) connections to same submodule port
+inst8.v -- invalid syntax in submodule port list
+inst9.v -- illegal attempt to make an "inout var ..." port (ansi port syntax)
+inst10.v -- illegal attempt to make an "inout var ..." port (classic port syntax)
+inst11.v -- 2-element instance array with port of size 3 (can't be cleanly split)
+inst12.v -- array of 0 submodule instances
+
+mod1.v -- module with modport declaration
+mod2.v -- module foo with mismatched "endmodule : oops"
+
+names1.v -- redeclare wire with same name
+names2.v -- buf gate with same name as previous wire
+names3.v -- submodule instance with same name as previous wire
+names4.v -- simple module ports with same names (allowed with crazy behavior by some Verilog tools)
+names5.v -- ports with same external names
+names6.v -- ports with same external names (oops, same as names5)
+names7.v -- buf gate with same name as previous port
+names8.v -- parameter with after classic port, before subsequent portdecl
+
+param1.v -- wrong size connections to submodule after unparameterization (bozo faililng for the wrong reason)
+param2.v -- multiple (identical) actuals for same named parameter
+param3.v -- named parameter value for a parameter that does not exist
+param4.v -- too many positional parameters
+param5.v -- explicit parameter value given to local parameter
+
+port1.v -- interfaces given to submodule in wrong order (interface connection type error)
+port2.v -- .foo style connection of declared interface, but submodule has no such port
+port3.v -- .foo style connection of undeclared variable to submodule interface port
+port4.v -- .* style connection of undeclared variable to submodule interface port
+port5.v -- .* connection of interface with different types in supermodule/submodule
+port6.v -- redundant .foo style connections
+port7.v -- named connections, but submodule has an unnamed port
+port8.v -- try to instance submodule using portdecl names, not external names
+port9.v -- named connection to non-existent port
+port10.v -- too many positional ports (I guess this is redundant with inst2.v)
+port11.v -- instantiate undefiend submodule
+port12.v -- too few named port connections to submodule
+port13.v -- nested concatenations (which aren't allowed) in port expression
+
+pp1.v -- try to use undefined preprocessor macro
+
+stmt1.v -- nonblocking assignment to local variable

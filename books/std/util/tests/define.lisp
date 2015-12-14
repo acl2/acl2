@@ -38,12 +38,14 @@
   3)
 
 (assert-disabled foo)
+(assert-guard-verified foo)
 
 (define foo2 ()
   :enabled t
   (mv 3 "hi"))
 
 (assert-enabled foo2)
+(assert-guard-verified foo2)
 
 (define foo3 ()
   (mv 3 "hi"))
@@ -59,6 +61,8 @@
   :returns (ans integerp :hyp :guard)
   (- x 1))
 
+(assert-guard-verified foo5)
+
 (define foo6 ((x oddp :type (integer 0 *)))
   :returns (ans natp :hyp :guard)
   (- x 1))
@@ -67,6 +71,8 @@
   :parents (|look ma, parents before formals, even!|)
   (x)
   (consp x))
+
+(assert-guard-verified foo7)
 
 (encapsulate
   ()
@@ -87,7 +93,8 @@
   (program)
   (define foo10 ((x natp))
     (declare (xargs :mode :logic))
-    (+ 2 x)))
+    (+ 2 x))
+  (assert-guard-verified foo10))
 
 (encapsulate
   ()
@@ -146,6 +153,8 @@
 
 (define m0 (x)
   (consp x))
+
+(assert-guard-verified m0)
 
 (assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
            (not topic)))
@@ -221,6 +230,8 @@
   (defthm frags-of-cons
     (equal (frags (cons a x)) (+ 1 (frags x)))))
 
+(assert-guard-verified frags)
+
 
 
 ;; tests of evaluation of short/long strings
@@ -250,6 +261,8 @@
        (b (nfix b)))
     (mv (+ a b)
         (* a b))))
+
+(assert-guard-verified mathstuff)
 
 ;; (def-b*-binder mathstuff-ret
 ;;   :decls
@@ -516,6 +529,7 @@
           :name integer-listp-strip-cars-my-make-alist-and-len)
    (alist true-listp :rule-classes :type-prescription)))
 
+(remove-default-post-define-hook :silly)
 
 
 (define inline-test (x)
@@ -531,8 +545,6 @@
 
 (assert! (equal (notinline-test$notinline 2) 2))
 (assert! (equal (notinline-test 2) 2))
-
-
 
 
 
@@ -562,6 +574,8 @@
       nil
     (ac-g1 (ac-f x))))
 
+(assert-guard-unverified ac-g1)
+
 (define ac-g2 (x)
   :verify-guards nil
   :t-proof t
@@ -570,3 +584,39 @@
   (if (zp x)
       nil
     (ac-g2 (ac-f x))))
+
+(assert-guard-unverified ac-g2)
+
+(define another-guard-test-1 (x)
+  (declare (type integer x))
+  x)
+
+(define another-guard-test-2 ((x integerp))
+  x)
+
+(define another-guard-test-3 ((x :type integer))
+  x)
+
+(define another-guard-test-4 (x)
+  (declare (xargs :guard (integerp x)))
+  x)
+
+(define another-guard-test-5 (x state)
+  (declare (xargs :stobjs state))
+  (declare (ignorable state))
+  x)
+
+(define another-guard-test-6 (x state)
+  (declare (ignorable state))
+  x)
+
+;; Should be able to :PE these functions and see that no (declare (xargs :guard
+;; t)) are added except for 5/6 (stobjs aren't good enough to trigger guard
+;; verif.)
+(assert-guard-verified another-guard-test-1)
+(assert-guard-verified another-guard-test-2)
+(assert-guard-verified another-guard-test-3)
+(assert-guard-verified another-guard-test-4)
+(assert-guard-verified another-guard-test-5)
+(assert-guard-verified another-guard-test-6)
+

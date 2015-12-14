@@ -83,22 +83,25 @@ interface_ansi_header ::=
                                             '(:vl-generate
                                               ;; :vl-port    -- not allowed, they were parsed separately
                                               :vl-portdecl
-                                              ;; :vl-assign  -- not allowed
-                                              ;; :vl-alias   -- not allowed (bozo yet?)
+                                              :vl-assign
+                                              :vl-alias
                                               :vl-vardecl
                                               :vl-paramdecl
-                                              ;; :vl-fundecl  -- not allowed
-                                              ;; :vl-taskdecl -- not allowed
-                                              ;; :vl-modinst  -- not allowed
-                                              ;; :vl-gateinst -- not allowed
-                                              ;; :vl-always   -- not allowed
-                                              ;; :vl-initial  -- not allowed
-                                              ;; :vl-typedef    -- bozo? not yet
+                                              :vl-fundecl
+                                              :vl-taskdecl
+                                              :vl-modinst
+                                              ;; :vl-gateinst -- don't think these are allowed
+                                              :vl-always
+                                              :vl-initial
+                                              :vl-final
+                                              :vl-typedef
                                               :vl-import
                                               ;; :vl-fwdtypedef -- bozo? not yet
                                               :vl-modport
-                                              ;; :vl-assertion -- I don't think these are ok?
-                                              ;; :vl-cassertion -- I don't think these are ok?
+                                              :vl-assertion
+                                              :vl-cassertion
+                                              :vl-property
+                                              :vl-sequence
                                               :vl-dpiimport
                                               :vl-dpiexport
                                               )))
@@ -106,32 +109,44 @@ interface_ansi_header ::=
         (if (not bad-item)
             warnings
           (fatal :type :vl-bad-interface-item
-                 :msg "~a0: an interface may not contain ~x1s."
-                 :args (list bad-item (tag bad-item)))))
+                 :msg "~a0: an interface may not contain ~s1s."
+                 :args (list bad-item (vl-genelement->short-kind-string bad-item)))))
 
        ((vl-genblob c) (vl-sort-genelements items)))
 
-     (make-vl-interface :name       name
-                        :ports      ports
-                        :portdecls  c.portdecls
-                        :vardecls   c.vardecls
-                        :paramdecls c.paramdecls
-                        :modports   c.modports
-                        :generates  c.generates
-                        :imports    c.imports
-                        :dpiimports c.dpiimports
-                        :dpiexports c.dpiexports
-                        :atts       atts
-                        :minloc     minloc
-                        :maxloc     maxloc
-                        :warnings   warnings
-                        :origname   name
+     (make-vl-interface :name        name
+                        :imports     c.imports
+                        :ports       ports
+                        :portdecls   c.portdecls
+                        :modports    c.modports
+                        :vardecls    c.vardecls
+                        :paramdecls  c.paramdecls
+                        :fundecls    c.fundecls
+                        :taskdecls   c.taskdecls
+                        :typedefs    c.typedefs
+                        :dpiimports  c.dpiimports
+                        :dpiexports  c.dpiexports
+                        :properties  c.properties
+                        :sequences   c.sequences
+                        :modinsts    c.modinsts
+                        :assigns     c.assigns
+                        :assertions  c.assertions
+                        :cassertions c.cassertions
+                        :alwayses    c.alwayses
+                        :initials    c.initials
+                        :finals      c.finals
+                        :generates   c.generates
+                        :genvars     c.genvars
+                        :atts        atts
+                        :minloc      minloc
+                        :maxloc      maxloc
+                        :warnings    warnings
+                        :origname    name
                         :parse-temps (make-vl-parse-temps
                                       :ansi-p ansi-p
                                       :loaditems items
                                       :ansi-ports ansi-ports)
-                        :comments   nil
-                        )))
+                        :comments    nil)))
 
 (defparser vl-parse-interface-declaration-core (atts interface-kwd name)
   :guard (and (vl-atts-p atts)

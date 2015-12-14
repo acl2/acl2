@@ -576,6 +576,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
                                     x.temps
                                     :loaditems
                                     (append-without-guard
+                                     (vl-modelementlist->genelements portdecls)
                                      (vl-modelementlist->genelements vardecls)
                                      x.temps.loaditems)))))
 
@@ -623,7 +624,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
 ;; and remove the vardecl.  Remove the interfaceports from the loaditems and
 ;; vardecls.  Go through the ports and replace the interfaceports.
 
-;; 4. This is done in lint/portcheck.lisp.
+;; 4. This is done in basicsanity
 
 
 

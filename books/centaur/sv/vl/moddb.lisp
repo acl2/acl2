@@ -417,9 +417,9 @@ constructed separately.)</p>"
        (name   (string-fix name))
        ((mv iface i-ss) (vl-scopestack-find-definition/ss ifname ss))
        ((unless (and iface (eq (tag iface) :vl-interface)))
-        (mv (warn :type :vl-module->svex-fail
-                  :msg "~a0: Interface not found: ~s1"
-                  :args (list context ifname))
+        (mv (fatal :type :vl-module->svex-fail
+                   :msg "~a0: Interface not found: ~s1"
+                   :args (list context ifname))
             nil nil))
        ((wmv warnings size) (vl-interface-size iface i-ss))
        ((unless (posp size))
@@ -873,8 +873,7 @@ constructed separately.)</p>"
         (mv nil nil y-size y-size))
        ((mv err x-size) (vl-datatype-size x-type))
        ((when (or err (not x-size) (eql 0 x-size)))
-        (mv (vmsg "Couldn't size datatype ~a0 for ~s1 port ~
-                         expression ~a2"
+        (mv (vmsg "Couldn't size datatype ~a0 for ~s1 port expression ~a2"
                   (vl-datatype-fix x-type) (string-fix portname) (vl-expr-fix x-expr))
             nil nil nil))
        (y-packed (vl-datatype-packedp y-type))
@@ -1787,6 +1786,43 @@ how VL module instances are translated.</p>"
              (not (member v (sv::svex-vars svex))))))
 
 
+(define vl-fixup-wide-gate-input ((in sv::svex-p))
+  :returns (fixed-in sv::svex-p)
+  :short "Wrap an input to a gate instance in a truncation expression."
+  :long "<p>Consider an AND gate with wide inputs like this:</p>
+
+         @({
+              wire out;
+              wire [1:0] in1, in2;
+              and(out, in1, in2);
+         })
+
+         <p>NCV and VCS complain if the output is more than a single bit, but
+         they accept wide inputs.  They also behave in different ways in this
+         case: NCV does a reduction or on the input, while VCS truncates it and
+         just operates on the bottom bit.</p>
+
+         <p>Here we mimic VCS's behavior, wrapping each input expression
+         @('in') into a @('(zerox 1 in)') expression.  (We warn about this
+         situation elsewhere.)</p>"
+
+  (sv::svcall sv::zerox
+              (sv::make-svex-quote :val 1)
+              in)
+  ///
+  (defret vars-of-vl-fixup-wide-gate-input
+    (implies (not (member v (sv::svex-vars in)))
+             (not (member v (sv::svex-vars fixed-in))))))
+
+(defprojection vl-fixup-wide-gate-inputs ((x sv::svexlist-p))
+  :returns (fixed-inputs sv::svexlist-p)
+  (vl-fixup-wide-gate-input x)
+  ///
+  (defret vars-of-vl-fixup-wide-gate-inputs
+    (implies (not (member v (sv::svexlist-vars x)))
+             (not (member v (sv::svexlist-vars fixed-inputs))))))
+
+
 (define vl-gatetype-names/dirs/assigns ((type vl-gatetype-p)
                                         (nargs natp))
   :returns (mv (err (iff (vl-msg-p err) err))
@@ -1823,7 +1859,7 @@ how VL module instances are translated.</p>"
        (if (< nargs 2)
            (mv (vmsg "Need 2 or more arguments for ~x0" type) nil nil nil nil)
          (b* ((ins (vl-gatetypenames-count-up (1- nargs) 1 "in"))
-              (svex-ins (svex-vars-from-names ins))
+              (svex-ins (vl-fixup-wide-gate-inputs (svex-vars-from-names ins)))
               (assigns  (list (cons (svex-lhs-from-name "out")
                                     (if (eql (len svex-ins) 1)
                                         (sv::make-driver
@@ -1897,7 +1933,8 @@ how VL module instances are translated.</p>"
   (defret svarlist-addr-p-of-vl-gatetype-names/dirs/assigns
     (sv::svarlist-addr-p (sv::assigns-vars assigns))
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable sv::assigns-vars))))))
+                 '(:in-theory (enable sv::assigns-vars
+                                      vl-fixup-wide-gate-inputs))))))
 
 (define svex-gateinst-wirelist ((names string-listp))
   :returns (wires sv::wirelist-p)

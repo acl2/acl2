@@ -1,7 +1,7 @@
 module top (output topout, input topin);
 
   wire a;
-  wirei [1:0] b;
+  wire [1:0] b;
 
   sub mysub(.a(a)); // oops, named connections but unnamed port
 

@@ -225,13 +225,11 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
            '(fwdtypedef modport))))
 
 (defconst *vl-interface/genblob-fields*
-  '(port
-    portdecl
-    paramdecl
-    vardecl
-    modport
-    generate
-    import))
+  (append '(generate port) ;; extra things that are not modelements
+          (set-difference-eq
+           *vl-modelement-typenames*
+           ;; things in genblobs that are not in interfaces
+           '(gateinst fwdtypedef))))
 
 (make-event
  `(define vl-module->genblob

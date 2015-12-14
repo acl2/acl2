@@ -66,3 +66,21 @@
 
 (local (defun program-fn (x) (declare (xargs :mode :program)) x))
 (local (assert-program-mode program-fn))
+
+(defmacro assert-guard-verified (fn)
+  `(make-event
+    (if (eq (fgetprop ',fn 'acl2::symbol-class nil (w state)) :common-lisp-compliant)
+        (value '(value-triple :success))
+      (er soft 'assert-guard-verified "Function ~x0 is not guard verified!" ',fn))))
+
+(defmacro assert-guard-unverified (fn)
+  `(make-event
+    (if (eq (fgetprop ',fn 'acl2::symbol-class nil (w state)) :common-lisp-compliant)
+        (er soft 'assert-guard-verified "Function ~x0 is unexpectedly guard verified!" ',fn)
+      (value '(value-triple :success)))))
+
+(local (assert-guard-verified binary-append))
+(local (defun unverified-fn (x) (declare (xargs :verify-guards nil)) x))
+(local (assert-guard-unverified unverified-fn))
+(local (verify-guards unverified-fn))
+(local (assert-guard-verified unverified-fn))

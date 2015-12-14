@@ -1,0 +1,9 @@
+*.svok
+*.vok
+*.log
+simv.*
+ncverilog.history
+irun.history
+csrc
+INCA_libs
+startjob.*

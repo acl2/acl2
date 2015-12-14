@@ -306,49 +306,156 @@
 
 ;; ======================================================================
 
-;; (defthm page-table-entry-addr-found-p-after-a-page-walk
-;;   (implies (and (page-table-entry-addr-found-p lin-addr-1 x86)
-;;                 (page-table-entry-addr-found-p lin-addr-2 x86)
-;;                 (good-paging-structures-x86p x86))
-;;            (page-table-entry-addr-found-p
-;;             lin-addr-1
-;;             (mv-nth 2
-;;                     (ia32e-la-to-pa-page-table
-;;                      lin-addr-2
-;;                      (mv-nth 1 (page-table-base-addr lin-addr-2 x86))
-;;                      u-s-acc-2
-;;                      wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-;;   :hints (("Goal"
-;;            :use ((:instance logand-loghead-and-page-table-base-addr
-;;                             (lin-addr lin-addr-2))
-;;                  (:instance page-table-entry-addr-found-p-and-xlate-equiv-x86s
-;;                             (x86-1 x86)
-;;                             (lin-addr lin-addr-1)
-;;                             (x86-2
-;;                              (mv-nth 2
-;;                                      (ia32e-la-to-pa-page-table
-;;                                       lin-addr-2
-;;                                       (mv-nth 1 (page-table-base-addr lin-addr-2 x86))
-;;                                       u-s-acc-2
-;;                                       wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
-;;                  (:instance xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
-;;                             (x86 x86)
-;;                             (lin-addr lin-addr-2)
-;;                             (u-s-acc u-s-acc-2)
-;;                             (wp wp-2)
-;;                             (smep smep-2)
-;;                             (nxe nxe-2)
-;;                             (r-w-x r-w-x-2)
-;;                             (cpl cpl-2)))
-;;            :in-theory (e/d* ()
-;;                             (physical-address-p
-;;                              page-table-entry-addr-found-p-and-xlate-equiv-x86s
-;;                              xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
-;;                              xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
-;;                              xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
-;;                              xlate-equiv-x86s-and-page-directory-base-addr-address
-;;                              xlate-equiv-x86s-and-page-directory-base-addr-error
-;;                              xlate-equiv-x86s-and-page-directory-entry-addr-address
-;;                              xlate-equiv-x86s-and-page-table-base-addr-address
-;;                              xlate-equiv-x86s-and-page-table-entry-addr-address
-;;                              bitops::logand-with-negated-bitmask)))))
+;; *-entry-addr-found-p and ia32e-la-to-pa-PT:
+
+(defthm page-table-entry-addr-found-p-after-a-page-table-walk
+  (implies (and (page-table-entry-addr-found-p lin-addr-1 x86)
+                (page-table-entry-addr-found-p lin-addr-2 x86))
+           (page-table-entry-addr-found-p
+            lin-addr-1
+            (mv-nth 2
+                    (ia32e-la-to-pa-PT
+                     lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+  :hints (("Goal"
+           :use ((:instance page-table-entry-addr-found-p-and-xlate-equiv-x86s
+                            (x86-1 x86)
+                            (lin-addr lin-addr-1)
+                            (x86-2
+                             (mv-nth 2
+                                     (ia32e-la-to-pa-PT
+                                      lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+                 (:instance xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+                            (x86 x86)
+                            (lin-addr lin-addr-2)
+                            (u-s-acc u-s-acc-2)
+                            (wp wp-2)
+                            (smep smep-2)
+                            (nxe nxe-2)
+                            (r-w-x r-w-x-2)
+                            (cpl cpl-2)))
+           :in-theory (e/d* ()
+                            (physical-address-p
+                             page-table-entry-addr-found-p-and-xlate-equiv-x86s
+                             xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
+                             xlate-equiv-x86s-and-page-directory-base-addr-address
+                             xlate-equiv-x86s-and-page-directory-base-addr-error
+                             xlate-equiv-x86s-and-page-directory-entry-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-entry-addr-address
+                             bitops::logand-with-negated-bitmask)))))
+
+(defthm page-directory-entry-addr-found-p-after-a-page-table-walk
+  (implies (and (page-directory-entry-addr-found-p lin-addr-1 x86)
+                (page-directory-entry-addr-found-p lin-addr-2 x86))
+           (page-directory-entry-addr-found-p
+            lin-addr-1
+            (mv-nth 2
+                    (ia32e-la-to-pa-PT
+                     lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+  :hints (("Goal"
+           :use ((:instance page-directory-entry-addr-found-p-and-xlate-equiv-x86s
+                            (x86-1 x86)
+                            (lin-addr lin-addr-1)
+                            (x86-2
+                             (mv-nth 2
+                                     (ia32e-la-to-pa-PT
+                                      lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+                 (:instance xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+                            (x86 x86)
+                            (lin-addr lin-addr-2)
+                            (u-s-acc u-s-acc-2)
+                            (wp wp-2)
+                            (smep smep-2)
+                            (nxe nxe-2)
+                            (r-w-x r-w-x-2)
+                            (cpl cpl-2)))
+           :in-theory (e/d* ()
+                            (physical-address-p
+                             page-directory-entry-addr-found-p-and-xlate-equiv-x86s
+                             xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
+                             xlate-equiv-x86s-and-page-directory-base-addr-address
+                             xlate-equiv-x86s-and-page-directory-base-addr-error
+                             xlate-equiv-x86s-and-page-directory-entry-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-entry-addr-address
+                             bitops::logand-with-negated-bitmask)))))
+
+(defthm page-dir-ptr-table-entry-addr-found-p-after-a-page-table-walk
+  (implies (and (page-dir-ptr-table-entry-addr-found-p lin-addr-1 x86)
+                (page-dir-ptr-table-entry-addr-found-p lin-addr-2 x86))
+           (page-dir-ptr-table-entry-addr-found-p
+            lin-addr-1
+            (mv-nth 2
+                    (ia32e-la-to-pa-PT
+                     lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+  :hints (("Goal"
+           :use ((:instance page-dir-ptr-table-entry-addr-found-p-and-xlate-equiv-x86s
+                            (x86-1 x86)
+                            (lin-addr lin-addr-1)
+                            (x86-2
+                             (mv-nth 2
+                                     (ia32e-la-to-pa-PT
+                                      lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+                 (:instance xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+                            (x86 x86)
+                            (lin-addr lin-addr-2)
+                            (u-s-acc u-s-acc-2)
+                            (wp wp-2)
+                            (smep smep-2)
+                            (nxe nxe-2)
+                            (r-w-x r-w-x-2)
+                            (cpl cpl-2)))
+           :in-theory (e/d* ()
+                            (physical-address-p
+                             page-dir-ptr-table-entry-addr-found-p-and-xlate-equiv-x86s
+                             xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-entry-addr-address
+                             bitops::logand-with-negated-bitmask)))))
+
+(defthm pml4-table-entry-addr-found-p-after-a-page-table-walk
+  (implies (and (pml4-table-entry-addr-found-p lin-addr-1 x86)
+                (pml4-table-entry-addr-found-p lin-addr-2 x86))
+           (pml4-table-entry-addr-found-p
+            lin-addr-1
+            (mv-nth 2
+                    (ia32e-la-to-pa-PT
+                     lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+  :hints (("Goal"
+           :use ((:instance pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
+                            (x86-1 x86)
+                            (lin-addr lin-addr-1)
+                            (x86-2
+                             (mv-nth 2
+                                     (ia32e-la-to-pa-PT
+                                      lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+                 (:instance xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+                            (x86 x86)
+                            (lin-addr lin-addr-2)
+                            (u-s-acc u-s-acc-2)
+                            (wp wp-2)
+                            (smep smep-2)
+                            (nxe nxe-2)
+                            (r-w-x r-w-x-2)
+                            (cpl cpl-2)))
+           :in-theory (e/d* ()
+                            (physical-address-p
+                             pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
+                             xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+                             xlate-equiv-x86s-and-pml4-table-base-addr-address
+                             xlate-equiv-x86s-and-pml4-table-entry-addr-address
+                             xlate-equiv-x86s-and-pml4-table-base-addr-address
+                             xlate-equiv-x86s-and-pml4-table-entry-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-entry-addr-address
+                             bitops::logand-with-negated-bitmask)))))
+
+;; ======================================================================

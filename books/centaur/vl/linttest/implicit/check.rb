@@ -175,10 +175,10 @@ undeclared(:m9, "m9type_t")
 undeclared(:m10, "m10type_t")
 undeclared(:m11, "m11type_t")
 
-normal(:m12, "m12type_t")
+normal(:m12, " m12type_t")
 unused(:m12, "in")
 
-normal(:m13, "m13type_t")
+normal(:m13, " m13type_t")
 unused(:m13, "in")
 
 normal(:m14, "fun1type_t")
@@ -193,6 +193,19 @@ undeclared(:m14, "task2type_t")
 undeclared(:m14, "task3width")
 normal(:m14, "task4type_t")
 undeclared(:m14, "task5type_t")
+
+
+
+normal(:i1, "w1_declared")
+
+unused(:i1, "a1_implicit")
+unused(:i1, "a2_implicit")
+unused(:i1, "a3_implicit")
+undeclared(:i1, "a4_undeclared")
+normal(:i1, "a5_implicit")  # BOZO maybe check for selfassign
+normal(:i1, "a6_implicit")
+normal(:i1, "a7_implicit")
+
 
 
 test_passed()

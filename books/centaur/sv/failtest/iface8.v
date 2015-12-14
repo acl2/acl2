@@ -1,6 +1,6 @@
 // NCV tolerates this but VCS does not.
 
-interface simplebus (input foo);
+interface simplebus ;
 
   logic [2:0] bar;
 
@@ -15,6 +15,6 @@ module top (output topout, input topin);
 
   wire foo;
 
-  simplebus sb (foo);
+  simplebus sb ();
 
 endmodule

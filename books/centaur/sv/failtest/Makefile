@@ -28,7 +28,7 @@
 #
 # Original author: Jared Davis <jared@centtech.com>
 
-.PHONY: all clean
+.PHONY: all clean passing
 all:
 
 
@@ -41,12 +41,29 @@ TESTNAMES  := $(patsubst %.v, %, $(SPEC_FILES))
 VOK_FILES  := $(patsubst %.v, %.vok,  $(SPEC_FILES))
 SVOK_FILES := $(patsubst %.v, %.svok, $(SPEC_FILES))
 
+FAILING_TEST_TARGETS := \
+  bigwire1.svok \
+  gates2.svok \
+  gates5.svok \
+  inc8.svok \
+  inc9.svok \
+  inst9.svok \
+  inst12.svok \
+  param1.svok \
+  port1.svok \
+  gen1.vok gen1.svok \
+  gen1b.vok gen1b.svok \
+  gen1c.vok gen1c.svok \
+  gen1d.vok gen1d.svok \
+  iface18.svok iface19.svok
+
+
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core
 	ls -lah $(COSIM_DIR)/cosim-core
 
 %.vok: %.v $(CORE)
-	@echo "Making $*.ok"
+	@echo "Making $*.vok"
 	@rm -f $*.vok
 	@ACL2_CUSTOMIZATION=NONE TESTNAME=$* EDITION=VERILOG-2005 \
           $(STARTJOB) -c "$(CORE) < run.lsp &> $*.vok.log"
@@ -61,10 +78,14 @@ $(CORE):
 
 all: $(VOK_FILES) $(SVOK_FILES)
 
+PASSING_VOK := $(filter-out $(FAILING_TEST_TARGETS), $(VOK_FILES))
+PASSING_SVOK := $(filter-out $(FAILING_TEST_TARGETS), $(SVOK_FILES))
+passing: $(PASSING_VOK) $(PASSING_SVOK)
+
 clean:
 	rm -f *.vok *.svok *.log
 	rm -rf csrc INCA_libs simv.daidir
-	rm -f simv ucli.key
+	rm -f simv ucli.key *.history
 
 
 # [Jared] hack so you can just write "make ansi1" or similar, adapted
