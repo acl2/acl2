@@ -306,10 +306,6 @@ vl-gateinst-p)s."
 
 
 
-
-
-
-
 ; -----------------------------------------------------------------------------
 ;
 ;                            Module Instances
@@ -751,6 +747,214 @@ a non-fatal warning explaining the problem.</p>"
           (ok))))
     (vl-check-blankargs (cdr args) (cdr ports) inst warnings)))
 
+(define vl-patmatch-two-level-hid ((x vl-expr-p))
+  :parents (vl-unhierarchicalize-interfaceport)
+  :short "Match an expression of the form @('foo.bar')."
+  :returns (mv (foo maybe-stringp :rule-classes :type-prescription
+                    "NIL means the pattern match failed.")
+               (bar maybe-stringp :rule-classes :type-prescription))
+  (b* ((hid (vl-expr-case x
+              :vl-index (if (or x.indices
+                                (not (vl-partselect-case x.part :none)))
+                            ;; Something like foo.bar[3] -- not what we want
+                            nil
+                          (vl-scopeexpr-case x.scope
+                            ;; Something like foo::bar.baz -- don't think this is what we want.
+                            :colon nil
+                            ;; Else we have just a plain hid.
+                            :end x.scope.hid))
+              :otherwise nil))
+       ((unless hid)
+        (mv nil nil))
+       ((unless (and (vl-hidexpr-case hid :dot)
+                     (vl-hidexpr-case (vl-hidexpr-dot->rest hid) :end)))
+        ;; Not exactly two levels -- not what we want.
+        (mv nil nil))
+       (idx1  (vl-hidexpr-dot->first hid))
+       ((when (vl-hidindex->indices idx1))
+        ;; Something like foo[3].bar, not something we want
+        (mv nil nil))
+       (name1 (vl-hidindex->name idx1))
+       ((when (vl-hidname-equiv name1 :vl-$root))
+        ;; $root.bar, not something we want
+        (mv nil nil))
+       (name2 (vl-hidexpr-end->name (vl-hidexpr-dot->rest hid))))
+    (mv name1 name2))
+  :prepwork
+  ((local (defthm vl-hidname-root-or-string
+            (implies (vl-hidname-p x)
+                     (equal (equal x :vl-$root)
+                            (not (stringp x))))
+            :hints(("Goal" :in-theory (enable vl-hidname-p))))))
+  ///
+  (defret vl-patmatch-two-level-hid-finds-two-names
+    (iff bar foo))
+  (defret stringp-of-vl-patmatch-two-level-hid-finds
+    (and (iff (stringp foo) foo)
+         (iff (stringp bar) foo))))
+
+(define vl-fast-scopedef-is-interface-p ((x vl-scopedef-p))
+  :inline t
+  :enabled t
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  :hooks nil
+  (mbe :logic (vl-interface-p x)
+       :exec (eq (tag x) :vl-interface)))
+
+(define vl-unhierarchicalize-interfaceport
+  :short "Normalize interface port arguments, dropping hierarchical modinst
+name components, e.g., transform @('mypipe.producer') to just @('mypipe')."
+
+  :long "<p>See SystemVerilog-2012 Section 25.5, especially at the top of Page
+718.  Suppose we have an interface called @('IPipe') with modports named
+@('producer') and @('consumer').  The names of these modport declarations can
+be used in two distinct places:</p>
+
+@({
+     module fooBuilder( IPipe.producer pipe ) ;  // <-- .producer used in the module's port
+       ...
+     endmodule
+
+     module top ;
+       IPipe mypipe;
+       fooBuilder prod ( mypipe.producer );   // <-- .producer used in module instance
+     endmodule
+})
+
+<p>Our goal here is to deal with the latter kind of usage.  The basic idea is
+to reduce such an argument to just @('mypipe'), after checking that its
+interface is compatible with the module's interface declaration.  This way,
+later VL code for dealing with interface ports doesn't have to think about
+hierarchical identifiers that point at modports.</p>
+
+<p>What kind of expressions do we want to simplify here?  For some experiments
+see particularly failtest/iface18-20.v.  It appears that VCS/NCVerilog don't
+allow hierarchical references to modports that are outside of the module, and
+that VCS basically only allows them when the name is literally a interface
+variable (i.e., a modinst in our representation) instead of a
+interfaceport.</p>
+
+<p>We'll therefore similarly restrict our attention to two-level hierarchical
+references, i.e., foo.bar, where:</p>
+
+<ol>
+<li>foo refers to a module instance in the current scope,</li>
+<li>this instance refers to an interface in the design, and</li>
+<li>bar is a modport of that interface.</li>
+</ol>"
+
+  ((arg      vl-plainarg-p     "Actual for this port.")
+   (port     vl-port-p         "Corresponding port; not necessarily an interface port.")
+   (ss       vl-scopestack-p)
+   (inst     vl-modinst-p      "The module instance itself, context for error messages.")
+   (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-arg  vl-plainarg-p
+                         "If @('arg') is of the form @('myinterface.myport')
+                          and everything is OK, this will just be
+                          @('myinterface').  In any other case, we just return
+                          @('arg') unchanged."))
+  :prepwork ((local (in-theory (enable tag-reasoning)))
+             (local (defthm vl-interface-p-by-tag-when-vl-scopedef-p-unbounded
+                      (implies (vl-scopedef-p x)
+                               (equal (eq (tag x) :vl-interface)
+                                      (vl-interface-p x))))))
+  (b* ((port (vl-port-fix port))
+       ((vl-plainarg arg) (vl-plainarg-fix arg))
+       ((vl-modinst inst) (vl-modinst-fix inst))
+
+       ((unless (mbe :logic (vl-interfaceport-p port)
+                     :exec (eq (tag port) :vl-interfaceport)))
+        ;; Not an interface port, nothing to do.
+        (mv (ok) arg))
+
+       (expr (vl-plainarg->expr arg))
+       ((unless expr)
+        ;; Blank argument, nothing to do.
+        (mv (ok) arg))
+
+       ((mv ifname mpname) (vl-patmatch-two-level-hid expr))
+       ((unless ifname)
+        ;; Not of the form foo.bar, we won't consider it.
+        (mv (ok) arg))
+
+       ;; 1. foo must refer to a module instance in the current scope.
+       (local-scope (vl-scopestack-case ss :local ss.top :otherwise nil))
+       ((unless local-scope)
+        ;; We should certainly never hit this.
+        (mv (fatal :type :vl-programming-error
+                   :msg "~a0: trying to resolve instance outside any scope?"
+                   :args (list inst))
+            arg))
+       ((mv pkg-name item)
+        ;; Don't need a design here since we don't want to look things up from
+        ;; packages anyway.
+        (vl-scope-find-item ifname local-scope nil))
+       ((unless (and (not pkg-name)
+                     (mbe :logic (vl-modinst-p item)
+                          :exec (eq (tag item) :vl-modinst))))
+        ;; Not a locally declared modinst, don't touch it.
+        ;; BOZO cause an error here?  Can this make sense?
+        (mv (ok) arg))
+
+       ;; 2. this instance must refer to an interface in the design.
+       ((vl-modinst item))
+       (iface (vl-scopestack-find-definition item.modname ss))
+       ((unless (and iface (vl-fast-scopedef-is-interface-p iface)))
+        ;; The module isn't an interface, don't touch it.
+        ;; BOZO cause an error here?  Can this make sense?
+        (mv (ok) arg))
+
+       ;; 3. bar must be a modport of the interface
+       (look (vl-find-modport mpname (vl-interface->modports iface)))
+       ((unless look)
+        ;; Not a modport, don't want to touch it.
+        ;; BOZO cause an error here?  Can this make sense?
+        (mv (ok) arg))
+
+       ;; All prerequisites met -- this is indeed an argument of the form
+       ;; myinterface.mymodport.  We can go ahead and create a new argument.
+
+       ((vl-interfaceport port))
+       (warnings
+        ;; SystemVerilog-2012 25.5, page 718: "If a port connection specifies a
+        ;; modport list name in both the module instance and module header
+        ;; declaration, then the two modport list names shall be identical."
+        (if (or (not port.modport)
+                (equal port.modport mpname))
+            (ok)
+          (fatal :type :vl-bad-instance
+                 :msg "~a0: modport clash for .~s1(~a2).  In ~s3 the port is ~
+                       declared as modport ~s4, so you can't instantiate it ~
+                       with modport ~s5."
+                 :args (list inst port.name arg
+                             inst.modname port.modport mpname))))
+
+       ;; Drop the modport name.
+       (modportname-as-expr (make-vl-literal :val (make-vl-string :value mpname)))
+       (new-atts (cons (cons "VL_REMOVED_EXPLICIT_MODPORT" modportname-as-expr)
+                       arg.atts))
+       (new-arg (change-vl-plainarg arg
+                                    :expr (vl-idexpr ifname)
+                                    :atts new-atts)))
+
+    (mv warnings new-arg)))
+
+(define vl-unhierarchicalize-interfaceports
+  ((args     vl-plainarglist-p "plainargs to the instance, already annotated with directions")
+   (ports    vl-portlist-p     "corresponding ports for the submodule")
+   (ss       vl-scopestack-p)
+   (inst     vl-modinst-p      "the module instance itself, context for error messages.")
+   (warnings vl-warninglist-p))
+  :guard (same-lengthp args ports)
+  :returns (mv (warnings vl-warninglist-p)
+               (new-args vl-plainarglist-p))
+  (b* (((when (atom args))
+        (mv (ok) nil))
+       ((mv warnings first) (vl-unhierarchicalize-interfaceport (car args) (car ports) ss inst warnings))
+       ((mv warnings rest) (vl-unhierarchicalize-interfaceports (cdr args) (cdr ports) ss inst warnings)))
+    (mv warnings (cons first rest))))
+
 (define vl-arguments-argresolve
   ((x         "arguments of a module instance, named or plain" vl-arguments-p)
    (ss        vl-scopestack-p)
@@ -792,9 +996,9 @@ checking, and add direction/name annotations.</p>"
        ;; heuristically consider the directions of the ports.
        (plainargs (vl-annotate-plainargs plainargs ports scope))
        (warnings  (vl-check-blankargs plainargs ports inst warnings))
+       ((mv warnings plainargs) (vl-unhierarchicalize-interfaceports plainargs ports ss inst warnings))
        (new-x     (make-vl-arguments-plain :args plainargs)))
     (mv (ok) new-x)))
-
 
 (define vl-modinst-argresolve
   :short "Resolve arguments in a @(see vl-modinst-p)."

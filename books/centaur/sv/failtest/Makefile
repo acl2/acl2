@@ -50,7 +50,13 @@ FAILING_TEST_TARGETS := \
   inst9.svok \
   inst12.svok \
   param1.svok \
-  port1.svok
+  port1.svok \
+  gen1.vok gen1.svok \
+  gen1b.vok gen1b.svok \
+  gen1c.vok gen1c.svok \
+  gen1d.vok gen1d.svok \
+  iface18.svok iface19.svok
+
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core

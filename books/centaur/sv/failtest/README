@@ -49,6 +49,14 @@ gates3.v -- 3-bit wire connected to 4-wide not instance array input
 gates4.v -- 5-bit wire connected to 4-wire not instance array input
 gates5.v -- gate array of size 0
 
+gen1.v -- genvar redeclared as wire
+gen1b.v -- wire redeclared as genvar
+gen1c.v -- genvar redeclared as gate instance name
+gen1d.v -- gate instance name redeclared as genvar
+gen2.v -- continuous assignment to genvar
+gen2b.v -- continuous assignment from genvar
+gen3.v -- reference to wire declared in a named generate block's scope
+
 iface1.v -- multiply declared wire in interface
 iface2.v -- input redeclared as wire in interface
 iface3.v -- no subsequent declaration of legacy-style port in interface
@@ -67,6 +75,10 @@ iface13.v -- interface tries to instantiate gate (not sure if legal, but ncv/vcs
 iface14.v -- modport with insane port expression .foo(a+b) (vcs accepts it??)
 iface15.v -- modport tries to connect to parameter instead of variable
 iface16.v -- interface with mismatched "endinterface : oops"
+iface17.v -- module with interface port iface.consumer instanced with iface.producer
+iface18.v -- tries to instantiate module with interface connected to some other hierarchical path
+iface19.v -- like iface18.v, but with extra .consumer style modport as well
+iface20.v -- try to use foo.consumer style connection, where foo is itself an interface port (vcs/ncv disagree)
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type
