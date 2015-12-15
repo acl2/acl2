@@ -173,7 +173,7 @@ class ListProc extends Cons {
      nil
      nil
      nil
-     nil
+     (nil)
      (("<init>:()V" nil
        (return)))
      (ref  0))
@@ -188,58 +188,80 @@ class ListProc extends Cons {
      ("java/lang/Object")
      nil
      nil
-     nil
+     (nil (methodref "java/lang/Object" "<init>:()V" 0))
      (("run:()V" nil
        (return))
-      ("start:()V" nil
-       ())
-      ("stop:()V" nil
-       ())
+      ("start:()V" nil)
+      ("stop:()V" nil)
       ("<init>:()V" nil
        (aload\_0)
-       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (invokespecial 1)
        (return)))
      (REF 2))
     ("java/lang/String"
      ("java/lang/Object")
      ("value:[C")
      nil
-     nil
+     (nil (methodref "java/lang/Object" "<init>:()V" 0))
      (("<init>:()V" nil
        (aload\_0)
-       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (invokespecial 1)
        (return)))
      (ref 3))
     ("java/lang/Class"
      ("java/lang/Object")
      nil
      nil
-     nil
+     (nil (methodref "java/lang/Object" "<init>:()V" 0))
      (("<init>:()V" nil
        (aload\_0)
-       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (invokespecial 1)
        (return)))
      (ref 4))
     ("Cons"
      ("java/lang/Object")
      ("car:I" "cdr:Ljava/lang/Object;")
      nil
-     nil
+     (nil
+       (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
+       (class (ref 5) "Cons")                                  ; 2
+       (methodref "Cons" "<init>:()V" 0)                       ; 3
+       (fieldref "Cons" "car:I" 1)                             ; 4
+       (fieldref "Cons" "cdr:Ljava/lang/Object;" 1)            ; 5
+       (class (ref 0) "java/lang/Object")                      ; 6
+       (utf8)                                                  ; 7
+       (utf8)                                                  ; 8
+       (utf8)                                                  ; 9
+       (utf8)                                                  ; 10
+       (utf8)                                                  ; 11
+       (utf8)                                                  ; 12
+       (utf8)                                                  ; 13
+       (utf8)                                                  ; 14
+       (utf8)                                                  ; 15
+       (utf8)                                                  ; 16
+       (utf8)                                                  ; 17
+       (utf8)                                                  ; 18
+       (name-and-type "<init>:()V")                            ; 19
+       (utf8)                                                  ; 20
+       (name-and-type "car:I")                                 ; 21
+       (name-and-type "cdr:Ljava/lang/Object;")                ; 22
+       (utf8)                                                  ; 23
+      )
      (("<init>:()V" nil
        (aload\_0)
-       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (invokespecial 1)
        (return))
       ("cons:(ILjava/lang/Object;)LCons;" nil
-       (new "Cons")
+       (new 2) ; class Cons
        (dup)
-       (invokespecial "Cons" "<init>:()V" 0)
+       (invokespecial 3)
        (astore\_2)
        (aload\_2)
        (iload\_0)
-       (putfield "Cons" "car:I")
+       (putfield 4) ; Cons.car:I
        (aload\_2)
        (aload\_1)
-       (putfield "Cons" "cdr:Ljava/lang/Object;")
+       (putfield 5) ; Cons.cdr:Ljava/lang/Object;
        (aload\_2)
        (areturn)))
      (ref 5))
@@ -247,36 +269,69 @@ class ListProc extends Cons {
      ("Cons" "java/lang/Object")
      nil
      nil
-     nil
+     (nil
+       (methodref "Cons" "<init>:()V" 0)                       ; 1
+       (methodref "Cons" "cons:(ILjava/lang/Object;)LCons;" 2) ; 2
+       (class (ref 5) "Cons")                                  ; 3
+       (fieldref "Cons" "car:I" 1)                             ; 4
+       (fieldref "Cons" "cdr:Ljava/lang/Object;" 1)            ; 5
+       (methodref "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)   ; 6
+       (methodref "ListProc" "isort:(Ljava/lang/Object;)Ljava/lang/Object;" 1) ; 7
+       (class (ref 6) "ListProc")                              ; 8
+       (utf8)                                                  ; 9
+       (utf8)                                                  ; 10
+       (utf8)                                                  ; 11
+       (utf8)                                                  ; 12
+       (utf8)                                                  ; 13
+       (utf8)                                                  ; 14
+       (utf8)                                                  ; 15
+       (utf8)                                                  ; 16
+       (utf8)                                                  ; 17
+       (utf8)                                                  ; 18
+       (utf8)                                                  ; 19
+       (name-and-type "<init>:()V")                            ; 20
+       (name-and-type "cons:(ILjava/lang/Object;)LCons;")      ; 21
+       (utf8)                                                  ; 22
+       (name-and-type "car:I")                                 ; 23
+       (name-and-type "cdr:Ljava/lang/Object;")                ; 24
+       (name-and-type "insert:(ILjava/lang/Object;)LCons;")    ; 25
+       (name-and-type "isort:(Ljava/lang/Object;)Ljava/lang/Object;")  ; 26
+       (utf8)                                                  ; 27
+       (utf8)                                                  ; 28
+       (utf8)                                                  ; 29
+       (utf8)                                                  ; 30
+       (utf8)                                                  ; 31
+       (utf8)                                                  ; 32
+      )
      (("<init>:()V" nil
        (aload\_0)
-       (invokespecial "Cons" "<init>:()V" 0)
+       (invokespecial 1)
        (return))
       ("insert:(ILjava/lang/Object;)LCons;" nil
         (aload\_1)
         (ifnonnull 9)
         (iload\_0)
         (aload\_1)
-        (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
+        (invokestatic 2)
         (areturn)
         (iload\_0)
         (aload\_1)
-        (checkcast "Cons")
-        (getfield "Cons" "car:I")
+        (checkcast 3) ; class Cons
+        (getfield 4) ; Cons.car:I
         (if_icmpgt 9)
         (iload\_0)
         (aload\_1)
-        (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
+        (invokestatic 2)
         (areturn)
         (aload\_1)
-        (checkcast "Cons")
-        (getfield "Cons" "car:I")
+        (checkcast 3) ; class Cons
+        (getfield 4) ; Cons.car:I
         (iload\_0)
         (aload\_1)
-        (checkcast "Cons")
-        (getfield "Cons" "cdr:Ljava/lang/Object;")
-        (invokestatic "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)
-        (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
+        (checkcast 3) ; class Cons
+        (getfield 5) ; Cons.cdr:Ljava/lang/Object;
+        (invokestatic 6)
+        (invokestatic 2)
         (areturn))
       ("isort:(Ljava/lang/Object;)Ljava/lang/Object;" nil
        (aload\_0)
@@ -284,13 +339,13 @@ class ListProc extends Cons {
        (aload\_0)
        (areturn)
        (aload\_0)
-       (checkcast "Cons")
-       (getfield "Cons" "car:I")
+       (checkcast 3) ;  class Cons
+       (getfield 4) ; Cons.car:I
        (aload\_0)
-       (checkcast "Cons")
-       (getfield "Cons" "cdr:Ljava/lang/Object;")
-       (invokestatic "ListProc" "isort:(Ljava/lang/Object;)Ljava/lang/Object;" 1)
-       (invokestatic "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)
+       (checkcast 3) ; class Cons
+       (getfield 5) ; Cons.cdr:Ljava/lang/Object;
+       (invokestatic 7)
+       (invokestatic 6)
        (areturn)))
      (ref 6)))
    *default-m5-options*))
@@ -805,10 +860,10 @@ class ListProc extends Cons {
                        (bipush 2)
                        (bipush 1)
                        (aload_0)
-                       (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
-                       (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
-                       (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
-                       (invokestatic "ListProc" "isort:(Ljava/lang/Object;)Ljava/lang/Object;" 1)
+                       (invokestatic 2) ; Cons.cons
+                       (invokestatic 2) ; Cons.cons
+                       (invokestatic 2) ; Cons.cons
+                       (invokestatic 7) ; ListProc.isort
                        (halt))
                      'UNLOCKED
                      "ListProc")
@@ -909,8 +964,8 @@ class ListProc extends Cons {
 ; stack items or not.
 
 (defun poised-to-invoke-cons (th s)
-  (and (standard-hyps th s)
-       (equal (next-inst th s) '(INVOKESTATIC "Cons" "cons:(ILjava/lang/Object;)LCons;" 2))
+  (and (poised-to-invokestatic th s "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
+       (standard-hyps th s)
 ;      (intp (top (pop (stack (top-frame th s)))))
 ;      (ok-refp (top (stack (top-frame th s))) (heap s))
        ))
@@ -1040,7 +1095,7 @@ class ListProc extends Cons {
 (defun poised-to-invoke-insert (th s e x heap)
   (and (standard-hyps th s)
        (equal heap (heap s))
-       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2))
+       (poised-to-invokestatic th s "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)
        (equal e (top (pop (stack (top-frame th s)))))
        (equal x (top (stack (top-frame th s))))
 ;      (intp e)
@@ -1225,7 +1280,7 @@ class ListProc extends Cons {
 (defun poised-to-invoke-isort (th s x heap)
   (and (standard-hyps th s)
        (equal heap (heap s))
-       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "isort:(Ljava/lang/Object;)Ljava/lang/Object;" 1))
+       (poised-to-invokestatic th s "ListProc" "isort:(Ljava/lang/Object;)Ljava/lang/Object;" 1)
        (equal x (top (stack (top-frame th s))))
        (ok-refp x (heap s))))
 

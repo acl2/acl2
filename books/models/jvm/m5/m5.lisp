@@ -5,8 +5,6 @@
 ; Fixed arithmetic work by Robert Krug <rkrug@cs.utexas.edu>
 ; Support for Arrays by Hanbing Liu <hbl@cs.utexas.edu>
 ; Support for Floating Point by Dmitry Nadezhin <dmitry.nadezhin@gmail.com>
-;
-; $Id: m5.lisp,v 1.1 2001/07/10 17:37:06 george Exp $
 
 (in-package "M5")
 (include-book "rtl/rel11/lib/excps" :dir :system)
@@ -274,7 +272,7 @@
     '()
     '()
     '()
-    '()
+    '(nil)
     '(("<init>:()V" nil
        (return)))
     '(ref -1)))
@@ -285,16 +283,15 @@
     '("java/lang/Object")
     '()
     '()
-    '()
+    '(nil
+      (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
     '(("run:()V" nil
        (return))
-      ("start:()V" nil
-       ())
-      ("stop:()V" nil
-       ())
+      ("start:()V" nil) ; native method
+      ("stop:()V" nil) ; native method
       ("<init>:()V" nil
        (aload_0)
-       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
     '(ref -1)))
 
@@ -305,10 +302,11 @@
     '("java/lang/Object")
     '("value:[C")
     '()
-    '()
+    '(nil
+      (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
     '(("<init>:()V" nil
        (aload_0)
-       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
     '(ref -1)))
 
@@ -319,10 +317,11 @@
     '("java/lang/Object")
     '("value:[B" "coder:B")
     '()
-    '()
+    '(nil
+      (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
     '(("<init>:()V" nil
        (aload_0)
-       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
     '(ref -1)))
 
@@ -332,10 +331,11 @@
     '("java/lang/Object")
     '()
     '()
-    '()
+    '(nil
+      (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
     '(("<init>:()V" nil
        (aload_0)
-       (invokespecial "java/lang/Object" "<init>:()V" 0)
+       (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
     '(ref -1)))
 
@@ -371,44 +371,66 @@
 
 ; A constant pool is a list of entries.  Each entry is either:
 ;
+;  '(CLASS (REF -1) classname)
+;       Classname is a string with JVM class name.
+;       It is resolved to a heap reference to an instance of java/lang/Class.
+;       Once it is resolved, its reference is placed as the second element
+;       (displacing the null ref currently there).
+;
 ;  '(DOUBLE n)
 ;       Where n is a 64-bit unsigned number, bit representation of double
 ;
-;  '(FLOAT n)
-;       Where n is a 32-bit unsigned number, bit representation of float
+;  '(FIELDREF classname name-and-type size)
+;       Classname is a string with JVM class name.
+;       Name-and-type contains name and type descriptor separated by ':'.
+;       Size is 2 for long and double fields, 1 otherwise.
 ;
-;  '(INT n)
+;  '(FLOAT n)
+;       Where n is a 32-bit unsigned number, bit representation of float.
+;
+;  '(INTEGER n)
 ;       Where n is a 32-bit number, in the range specified by the JVM spec
 ;
+;  '(INTERFACE-METHODREF classname name-and-type size)
+;       Classname is a string with JVM class name.
+;       Name-and-type contains name and type descriptor separated by ':'.
+;       Size is a sum of size of formal parameters.
+;
+;  '(INVOKE-DYNAMIC)
+;       A dummy entry.
+;
 ;  '(LONG n)
-;       Where n is a 64-bit number, in the range specified by the JVM spec
+;       Where n is a 64-bit number, in the range specified by the JVM spec.
+;
+;  '(METHOD-HANDLE)
+;       A dummy entry.
+;
+;  '(METHOD-TYPE)
+;       A dummy entry.
+;
+;  '(METHODREF classname name-and-type nformals)
+;       Classname is a string with JVM class name.
+;       Name-and-type contains name and type descriptor separated by ':'.
+;       Size is a sum of size of formal parameters.
+;
+;  '(NAME-AND-TYPE name-and-type)
+;       Name-and-type is a string containing name of a member and
+;       its JVM type descriptor separated by ':' character.
 ;
 ;  '(STRING (REF -1) 72 101 108 108 111 44 32 87 111 114 108 100 33) ; "Hello, World!"
 ;       Elements from 3rd to the end are UTF16 char codes of a String.
-;       They are resolved to a heap reference the first time it is used.
-;       Once it is resolved, its reference is placed
-;       as the second element (displacing the null ref currently there).
-
-(defun cp-make-double-entry (n)
-  (list 'DOUBLE (bits2fp n (rtl::dp))))
-
-(defun cp-make-float-entry (n)
-  (list 'FLOAT (bits2fp n (rtl::sp))))
-
-(defun cp-make-int-entry (n)
-  (list 'INT (int-fix n)))
-
-(defun cp-make-long-entry (n)
-  (list 'LONG (long-fix n)))
-
-(defun cp-make-string-entry (chars)
-  (list* 'STRING '(REF -1) chars))
-
-(defun cp-string-resolved? (entry)
-  (not (equal (cadr (caddr entry)) -1)))
+;       They are resolved to a heap reference during preprocssing.
+;       The reference is placed as the second element
+;       (displacing the null ref currently there).
+;
+;  '(UTF8)
+;       A dummy entry.
 
 (defun retrieve-cp (class-name class-table)
   (class-decl-cp (bound? class-name class-table)))
+
+(defun retrieve-cp-entry (class-name idx class-table)
+  (nth idx (retrieve-cp class-name class-table)))
 
 (defun update-ct-ref (class idx newval ct)
   (let* ((class-entry (bound? class ct))
@@ -584,28 +606,35 @@
 
 ; sync-status is 't' if the method is synchronized, 'nil' if not
 
+; Suppose that the first four entires of constant pool of an example class are:
+;  nil                                ; 0
+;  (fieldref  "Point" "x:I" 1)        ; 1
+;  (fieldref  "Point" "y:I" 1)        ; 2
+;  (methodref "Point" "move:(II)I" 2) ; 3
+
 ; Method definitions will be constructed by expressions such as:
 ; (Note:  all of the symbols below are understood to be in the pkg "JVM".)
 
 ; ("move:(II)I" nil
 ;   (iload this)
 ;   (iload this)
-;   (getfield "Point" "x:I")
+;   (getfield 1) ; x:I
 ;   (iload dx)
 ;   (iadd)
-;   (putfield "Point" "x:I")    ; this.x = this.x + dx;
+;   (putfield 1) ; x:I  this.x = this.x + dx;
 ;   (iload :this)
 ;   (iload :this)
-;   (getfield "Point" "y:I")
+;   (getfield 2) ; y:I
 ;   (iload dy)
 ;   (add)
-;   (putfield "Point" "y:I")    ; this.y = this.y + dy;
+;   (putfield 2) ; y:I  this.y = this.y + dy;
 ;   (push 1)
 ;   (ireturn)))               ; return 1;
 
-; Provided this method is defined in the class "Point" it can be invoked by
+; Provided this method is defined in the class "Point" it can be invoked
+; from another method of this class by
 
-;   (invokevirtual "Point" "move:(II)I" 2)
+;   (invokevirtual 3) ; Point.move:(II)I
 
 ; This assumes that the stack, at the time of invocation, contains an
 ; reference to an object of type "Point" and two numbers, dx and dy.
@@ -629,8 +658,7 @@
 (defun method-program (m)
   (cddr m))
 (defun method-isNative? (m)
-  (equal '(NIL)
-         (method-program m)))
+  (not (method-program m)))
 
 ; The Standard Modify
 
@@ -730,9 +758,9 @@
       '(REF -1)
     0))
 
-(defund field-long-or-double (field-name-and-type)
-  (or (search ":J" field-name-and-type)
-      (search ":D" field-name-and-type)))
+;(defund field-long-or-double (field-name-and-type)
+;  (or (search ":J" field-name-and-type)
+;      (search ":D" field-name-and-type)))
 
 (defun build-class-field-bindings (fields)
   (if (endp fields)
@@ -1356,7 +1384,10 @@
 ; (ANEWARRAY) Instruction
 
 (defun execute-ANEWARRAY (inst th s)
-  (let* ((type (arg1 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (type (nth 2 cpe))
          (count (top (stack (top-frame th s))))
          (addr (len (heap s)))
          (obj (makearray (array-type-of type)
@@ -1494,8 +1525,13 @@
 ; No operation in M5 model.
 
 (defun execute-CHECKCAST (inst th s)
-  (modify th s
-          :pc (+ (inst-length inst) (pc (top-frame th s)))))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (type (nth 2 cpe)))
+    (declare (ignore type))
+    (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (D2F) Instruction - convert double to float
@@ -2045,9 +2081,12 @@
 ; (GETFIELD "class" "field" ?long-flag?) Instruction
 
 (defun execute-GETFIELD (inst th s)
-  (let* ((class-name (arg1 inst))
-         (field-name-and-type (arg2 inst))
-         (long-flag  (or (arg3 inst) (field-long-or-double field-name-and-type)))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 1 cpe))
+         (field-name-and-type (nth 2 cpe))
+         (long-flag  (> (nth 3 cpe) 1))
          (instance (deref (top (stack (top-frame th s))) (heap s)))
          (field-value (field-value class-name field-name-and-type instance)))
     (modify th s
@@ -2062,9 +2101,12 @@
 ; (GETSTATIC "class" "field" ?long-flag?) Instruction
 
 (defun execute-GETSTATIC (inst th s)
-  (let* ((class-name (arg1 inst))
-         (field-name-and-type (arg2 inst))
-         (long-flag (or (arg3 inst) (field-long-or-double field-name-and-type)))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 1 cpe))
+         (field-name-and-type (nth 2 cpe))
+         (long-flag  (> (nth 3 cpe) 1))
          (field-value (static-field-value class-name field-name-and-type s)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -2444,14 +2486,18 @@
 ; (INSTANCEOF) Instruction
 
 (defun execute-INSTANCEOF (inst th s)
-  (let* ((ref (top (stack (top-frame th s))))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (type (nth 2 cpe))
+         (ref (top (stack (top-frame th s))))
          (obj (deref ref (heap s)))
          (obj-class (obj-class obj))
          (obj-supers (cons obj-class (class-decl-superclasses
                       (bound? obj-class (class-table s)))))
          (value (if (nullrefp ref)
                     0
-                    (if (member-equal (arg1 inst) obj-supers)
+                    (if (member-equal type obj-supers)
                         1
                         0))))
         (modify th s
@@ -2602,9 +2648,12 @@
 ; (INVOKESPECIAL "class" "name" n) Instruction
 
 (defun execute-INVOKESPECIAL (inst th s)
-  (let* ((method-name-and-type (arg2 inst))
-         (nformals (arg3 inst))
-         (class-name (arg1 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (method-name-and-type (nth 2 cpe))
+         (nformals (nth 3 cpe))
+         (class-name (nth 1 cpe))
          (class-decl (bound? class-name (class-table s)))
          (method (bound? method-name-and-type (class-decl-methods class-decl))))
         (invoke-instance-method nformals
@@ -2619,9 +2668,12 @@
 ; (INVOKESTATIC "class" "name" n) Instruction
 
 (defun execute-INVOKESTATIC (inst th s)
-  (let* ((class (arg1 inst))
-         (method-name-and-type (arg2 inst))
-         (nformals (arg3 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class (nth 1 cpe))
+         (method-name-and-type (nth 2 cpe))
+         (nformals (nth 3 cpe))
          (class-decl (bound? class (class-table s)))
          (class-ref (class-decl-heapref class-decl))
          (class-instance (deref class-ref (heap s)))
@@ -2721,8 +2773,11 @@
   (car (car (deref ref heap))))
 
 (defun execute-INVOKEVIRTUAL (inst th s)
-  (let* ((method-name-and-type (arg2 inst))
-         (nformals (arg3 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (method-name-and-type (nth 2 cpe))
+         (nformals (nth 3 cpe))
          (obj-ref (top (popn nformals (stack (top-frame th s)))))
          (obj-class-name (class-name-of-ref obj-ref (heap s)))
          (closest-methodref
@@ -2854,10 +2909,10 @@
 ; (LDC) Instruction
 
 (defun execute-LDC (inst th s)
-  (let* ((class (cur-class (top-frame th s)))
-         (cp (retrieve-cp class (class-table s)))
-         (entry (nth (arg1 inst) cp))
-         (value (cadr entry)))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (value (cadr cpe)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (push value (stack (top-frame th s))))))
@@ -2866,10 +2921,10 @@
 ; (LDC2_W) Instruction
 
 (defun execute-LDC2_W (inst th s)
-  (let* ((class (cur-class (top-frame th s)))
-         (cp (retrieve-cp class (class-table s)))
-         (entry (nth (arg1 inst) cp))
-         (value (cadr entry)))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (value (cadr cpe)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (push 0 (push value (stack (top-frame th s)))))))
@@ -3094,7 +3149,10 @@
 ; (MULTIANEWARRAY) Instruction
 
 (defun execute-MULTIANEWARRAY (inst th s)
-  (let* ((type (arg1 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (type (nth 2 cpe))
          (dimentions (arg2 inst))
          (counts (reverse (take dimentions (stack (top-frame th s))))))
         (mv-let (addr new-heap)
@@ -3109,7 +3167,10 @@
 ; (NEW "class") Instruction
 
 (defun execute-NEW (inst th s)
-  (let* ((class-name (arg1 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 2 cpe))
          (class-table (class-table s))
          (closest-methodref (lookup-methodref "run:()V" class-name class-table))
          (closest-class (car closest-methodref))
@@ -3189,9 +3250,12 @@
 ; (PUTFIELD "class" "field" ?long-flag?) Instruction
 
 (defun execute-PUTFIELD (inst th s)
-  (let* ((class-name (arg1 inst))
-         (field-name-and-type (arg2 inst))
-         (long-flag (or (arg3 inst) (field-long-or-double field-name-and-type)))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 1 cpe))
+         (field-name-and-type (nth 2 cpe))
+         (long-flag  (> (nth 3 cpe) 1))
          (value (if long-flag
                     (top (pop (stack (top-frame th s))))
                     (top (stack (top-frame th s)))))
@@ -3219,9 +3283,12 @@
 ; (PUTSTATIC "class" "field" ?long-flag?) Instruction
 
 (defun execute-PUTSTATIC (inst th s)
-  (let* ((class-name (arg1 inst))
-         (field-name-and-type (arg2 inst))
-         (long-flag (or (arg3 inst) (field-long-or-double field-name-and-type)))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 1 cpe))
+         (field-name-and-type (nth 2 cpe))
+         (long-flag  (> (nth 3 cpe) 1))
          (class-ref (class-decl-heapref
                      (bound? class-name (class-table s))))
          (value (if long-flag
@@ -3793,38 +3860,32 @@
         (cdr type-list)
         (collect-type (car type-list) types))))
 
-(defun collect-types-in-classref (classref types)
+(defun collect-type-in-classref (classref types)
   (collect-type (classref->type classref) types))
-
-(defun collect-types-in-fieldref (class name-and-type types)
-  (collect-type
-    (classref->type class)
-    (collect-type (name-and-type->type name-and-type)
-                  types)))
-
-(defun collect-types-in-methodref (class name-and-type types)
-  (collect-type
-    (classref->type class)
-    (collect-types-in-list
-      (unpack-method-type (name-and-type->type name-and-type))
-      types)))
 
 (defun collect-types-in-superclasses (superclasses types)
   (if (endp superclasses)
       types
       (collect-types-in-superclasses
         (cdr superclasses)
-        (collect-types-in-classref (car superclasses) types))))
+        (collect-type-in-classref (car superclasses) types))))
 
-(defun collect-types-in-constant-pool (constants types)
-  (if (endp constants)
+(defun collect-types-in-name-and-type (name-and-type types)
+  (let* ((type (name-and-type->type name-and-type)))
+    (if (equal (char type 0) #\()
+        (collect-types-in-list (unpack-method-type type) types)
+      (collect-type type types))))
+
+(defun collect-types-in-constant-pool (cp types)
+  (if (endp cp)
       types
       (collect-types-in-constant-pool
-        (cdr constants)
-        (let ((const (car constants)))
-             (if (equal (car const) 'class)
-                 (collect-types-in-classref (caddr const) types)
-                 types)))))
+        (cdr cp)
+        (let ((cpe (car cp)))
+          (case (car cpe)
+            (class (collect-type-in-classref (caddr cpe) types))
+            (name-and-type (collect-types-in-name-and-type (cadr cpe) types))
+            (otherwise types))))))
 
 (defun collect-types-in-fields (fields types)
   (if (endp fields)
@@ -3833,64 +3894,60 @@
         (cdr fields)
         (collect-type (name-and-type->type (car fields)) types))))
 
-(defun collect-types-in-instr (instr types)
+(defun collect-array-types-in-instr (instr cp types)
   (case (car instr)
-    (ANEWARRAY      (collect-types-in-classref (array-type-of (arg1 instr)) types))
-    (CHECKCAST      (collect-types-in-classref (arg1 instr) types))
-    (GETFIELD       (collect-types-in-fieldref (arg1 instr) (arg2 instr) types))
-    (GETSTATIC      (collect-types-in-fieldref (arg1 instr) (arg2 instr) types))
-    (INSTANCEOF     (collect-types-in-classref (arg1 instr) types))
-    (INVOKESPECIAL  (collect-types-in-methodref (arg1 instr) (arg2 instr) types))
-    (INVOKESTATIC   (collect-types-in-methodref (arg1 instr) (arg2 instr) types))
-    (INVOKEVIRTUAL  (collect-types-in-methodref (arg1 instr) (arg2 instr) types))
-    (MULTINEWARRAY  (collect-types-in-classref (arg1 instr) types))
-    (NEW            (collect-types-in-classref (arg1 instr) types))
+    (ANEWARRAY      (let ((cpe (nth (arg1 instr) cp)))
+                      (collect-type (array-type-of (nth 2 cpe)) types)))
     (NEWARRAY       (collect-type (identifier-to-type (arg1 instr)) types))
-    (PUTFIELD       (collect-types-in-fieldref (arg1 instr) (arg2 instr) types))
-    (PUTSTATIC      (collect-types-in-fieldref (arg1 instr) (arg2 instr) types))
     (otherwise types)))
 
-(defun collect-types-in-program (instrs types)
+(defun collect-array-types-in-program (instrs cp types)
   (if (endp instrs)
       types
-      (collect-types-in-program
-        (cdr instrs)
-        (collect-types-in-instr
-          (let ((instr (car instrs)))
-               (if (isLabeledInst? instr) (cdr instr) instr))
-          types))))
+    (collect-array-types-in-program
+     (cdr instrs)
+     cp
+     (collect-array-types-in-instr
+      (let ((instr (car instrs)))
+        (if (isLabeledInst? instr) (cdr instr) instr))
+      cp
+      types))))
 
-(defun collect-types-in-methods (methods types)
+(defun collect-types-in-methods (methods cp types)
   (if (endp methods)
       types
-      (collect-types-in-methods
-        (cdr methods)
-        (let ((method (car methods)))
-              (collect-types-in-list
-                (unpack-method-type (name-and-type->type (method-name-and-type method)))
-                (collect-types-in-program
-                  (method-program method)
-                  types))))))
+    (collect-types-in-methods
+     (cdr methods)
+     cp
+     (let ((method (car methods)))
+       (collect-types-in-list
+        (unpack-method-type
+         (name-and-type->type (method-name-and-type method)))
+        (collect-array-types-in-program
+         (method-program method)
+         cp
+         types))))))
 
 (defun collect-types-in-classes (classes types)
   (if (endp classes)
       types
-      (collect-types-in-classes
-        (cdr classes)
-        (let ((class (car classes)))
-             (collect-types-in-classref
-               (class-decl-name class)
-               (collect-types-in-superclasses
-                 (class-decl-superclasses class)
-                 (collect-types-in-constant-pool
-                   (class-decl-cp class)
-                   (collect-types-in-fields
-                      (class-decl-fields class)
-                      (collect-types-in-fields
-                        (class-decl-sfields class)
-                        (collect-types-in-methods
-                          (class-decl-methods class)
-                          types))))))))))
+    (collect-types-in-classes
+     (cdr classes)
+     (let ((class (car classes)))
+       (collect-type-in-classref
+        (class-decl-name class)
+        (collect-types-in-superclasses
+         (class-decl-superclasses class)
+         (collect-types-in-constant-pool
+          (class-decl-cp class)
+          (collect-types-in-fields
+           (class-decl-fields class)
+           (collect-types-in-fields
+            (class-decl-sfields class)
+            (collect-types-in-methods
+             (class-decl-methods class)
+             (class-decl-cp class)
+             types))))))))))
 
 ; arrays is a map form elem-type to its maximal array dimension
 
@@ -4041,43 +4098,23 @@
        nil
       (let* ((class-name (car classes))
              (class-decl (bound? class-name class-table)))
-            (if (member-equal name-and-type (class-decl-fields class-decl))
-                class-name
-                (resolve-field-in-superclasses
-                  name-and-type
-                  (cdr classes)
-                  class-table)))))
+        (if (or (member-equal name-and-type (class-decl-fields class-decl))
+                (member-equal name-and-type (class-decl-sfields class-decl)))
+            class-name
+          (resolve-field-in-superclasses name-and-type
+                                         (cdr classes)
+                                         class-table)))))
+
+(defun resolve-class (class-name class-table)
+  (if (bound? class-name class-table)
+      class-name
+    (concatenate 'string "NoClassDefFoundError: " class-name)))
 
 (defun resolve-field (class-name name-and-type class-table)
   (let ((class (bound? class-name class-table)))
        (if class
            (let ((resolved-class
                   (resolve-field-in-superclasses
-                    name-and-type
-                    (cons class-name (class-decl-superclasses class))
-                    class-table)))
-                (or resolved-class
-                    (concatenate 'string "NoSuchFieldError: "
-                               class-name " " name-and-type)))
-           (concatenate 'string "NoClassDefFoundError: " class-name))))
-
-(defun resolve-sfield-in-superclasses (name-and-type classes class-table)
-  (if (endp classes)
-       nil
-      (let* ((class-name (car classes))
-             (class-decl (bound? class-name class-table)))
-            (if (member-equal name-and-type (class-decl-sfields class-decl))
-                class-name
-                (resolve-sfield-in-superclasses
-                  name-and-type
-                  (cdr classes)
-                  class-table)))))
-
-(defun resolve-sfield (class-name name-and-type class-table)
-  (let ((class (bound? class-name class-table)))
-       (if class
-           (let ((resolved-class
-                  (resolve-sfield-in-superclasses
                     name-and-type
                     (cons class-name (class-decl-superclasses class))
                     class-table)))
@@ -4097,57 +4134,29 @@
                                  class-name " "  name-and-type)))
            (concatenate 'string "NoClassDefFoundError: " class-name))))
 
-(defun link-instr (instr class-table)
-  (case (car instr)
-    (GETFIELD       (list* 'GETFIELD
-                           (resolve-field (cadr instr) (caddr instr) class-table)
-                           (caddr instr)
-                           (cdddr instr)))
-    (GETSTATIC      (list* 'GETSTATIC
-                           (resolve-sfield (cadr instr) (caddr instr) class-table)
-                           (caddr instr)
-                           (cdddr instr)))
-    (INVOKESPECIAL  (list* 'INVOKESPECIAL
-                           (resolve-method (cadr instr) (caddr instr) class-table)
-                           (caddr instr)
-                           (cdddr instr)))
-    (INVOKESTATIC   (list* 'INVOKESTATIC
-                           (resolve-method (cadr instr) (caddr instr) class-table)
-                           (caddr instr)
-                           (cdddr instr)))
-    (INVOKEVIRTUAL  (list* 'INVOKEVIRTUAL
-                           (resolve-method (cadr instr) (caddr instr) class-table)
-                           (caddr instr)
-                           (cdddr instr)))
-    (PUTFIELD       (list* 'PUTFIELD
-                           (resolve-field (cadr instr) (caddr instr) class-table)
-                           (caddr instr)
-                           (cdddr instr)))
-    (PUTSTATIC      (list* 'PUTSTATIC
-                           (resolve-sfield (cadr instr) (caddr instr) class-table)
-                           (caddr instr)
-                           (cdddr instr)))
-    (otherwise instr)))
-
-(defun link-program (instrs class-table)
-  (if (endp instrs)
-      instrs
-      (let ((instr (car instrs)))
-           (cons (if (isLabeledInst? instr)
-                     (cons (car instr)
-                           (link-instr (cdr instr) class-table))
-                     (link-instr instr class-table))
-                 (link-program (cdr instrs) class-table)))))
-
-(defun link-methods (methods class-table)
-  (if (endp methods)
-      methods
-      (let ((method (car methods)))
-           (cons
-             (list* (method-name-and-type method)
-                    (method-sync method)
-                    (link-program (method-program method) class-table))
-             (link-methods (cdr methods) class-table)))))
+(defun link-constantpool (cp class-table)
+  (if (endp cp)
+      cp
+    (let ((cpe (car cp)))
+      (cons (case (car cpe)
+              (class
+               (list (car cpe)
+                     (cadr cpe)
+                     (resolve-class (caddr cpe) class-table)))
+              (fieldref
+               (list* (car cpe)
+                      (resolve-field (cadr cpe) (caddr cpe) class-table)
+                      (cddr cpe)))
+              (interface-methodref
+               (list* (car cpe)
+                      (resolve-method (cadr cpe) (caddr cpe) class-table)
+                      (cddr cpe)))
+              (methodref
+               (list* (car cpe)
+                      (resolve-method (cadr cpe) (caddr cpe) class-table)
+                      (cddr cpe)))
+              (otherwise cpe))
+            (link-constantpool (cdr cp) class-table)))))
 
 (defun link-class-list-loop (class-decls class-table)
   (if (endp class-decls)
@@ -4159,8 +4168,8 @@
                (class-decl-superclasses class)
                (class-decl-fields class)
                (class-decl-sfields class)
-               (class-decl-cp class)
-               (link-methods (class-decl-methods class) class-table)
+               (link-constantpool (class-decl-cp class) class-table)
+               (class-decl-methods class)
                '(ref -1))
              (link-class-list-loop (cdr class-decls) class-table)))))
 

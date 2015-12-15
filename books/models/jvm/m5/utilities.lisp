@@ -172,7 +172,21 @@
                     s)))
   :hints (("Goal" :in-theory (disable do-inst))))
 
+(defthm consp-inst
+  (implies (op-code inst)
+           (consp inst)))
+
 (in-theory (disable step))
+
+; poised-to-invoke
+
+(defun poised-to-invokestatic (th s class method nformals)
+  (and (equal (status th s) 'scheduled)
+       (equal (op-code (next-inst th s)) 'invokestatic)
+       (equal (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 (next-inst th s))
+                                 (class-table s))
+              (list 'methodref class method nformals))))
 
 ; Clocks
 

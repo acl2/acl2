@@ -119,7 +119,7 @@ class IDemo {
              nil
              nil
              '((bipush 8)
-               (invokestatic "IDemo" "ifact:(I)I" 1)
+               (invokestatic 2) ; IDemo.ifact:(I)I
                (pop)
                (return))
              'unlocked
@@ -151,7 +151,7 @@ class IDemo {
      NIL
      NIL
      NIL
-     NIL
+     (NIL)
      (("<init>:()V" NIL
        (RETURN)))
      (REF 0))
@@ -173,26 +173,24 @@ class IDemo {
      ("java/lang/Object")
      NIL
      NIL
-     NIL
+     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
      (("run:()V" NIL
        (RETURN))
-      ("start:()V" NIL
-       ())
-      ("stop:()V" NIL
-       ())
+      ("start:()V" NIL)
+      ("stop:()V" NIL)
       ("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+       (INVOKESPECIAL 1)
        (RETURN)))
      (REF 3))
     ("java/lang/String"
      ("java/lang/Object")
      ("value:[C")
      NIL
-     NIL
+     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
      (("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+       (INVOKESPECIAL 1)
        (RETURN)))
      (REF 4))
     ("[Ljava/lang/String;"
@@ -206,20 +204,40 @@ class IDemo {
      ("java/lang/Object")
      NIL
      NIL
-     NIL
+     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
      (("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+       (INVOKESPECIAL 1)
        (RETURN)))
      (REF 6))
     ("IDemo"
      ("java/lang/Object")
      NIL
      NIL
-     NIL
+     (nil
+       (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
+       (methodref "IDemo" "ifact:(I)I" 1)                      ; 2
+       (class (ref 7) "IDemo")                                 ; 3
+       (class (ref 0) "java/lang/Object")                      ; 4
+       (utf8)                                                  ; 5
+       (utf8)                                                  ; 6
+       (utf8)                                                  ; 7
+       (utf8)                                                  ; 8
+       (utf8)                                                  ; 9
+       (utf8)                                                  ; 10
+       (utf8)                                                  ; 11
+       (utf8)                                                  ; 12
+       (utf8)                                                  ; 13
+       (utf8)                                                  ; 14
+       (utf8)                                                  ; 15
+       (name-and-type "<init>:()V")                            ; 16
+       (name-and-type "ifact:(I)I")                            ; 17
+       (utf8)                                                  ; 18
+       (utf8)                                                  ; 19
+      )
      (("<init>:()V" NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+       (INVOKESPECIAL 1)
        (RETURN))
       ("ifact:(I)I" NIL
        (ICONST\_1)
@@ -240,7 +258,7 @@ class IDemo {
        (IRETURN))
       ("main:([Ljava/lang/String;)V" NIL
        (BIPUSH 8)
-       (INVOKESTATIC "IDemo" "ifact:(I)I" 1)
+       (INVOKESTATIC 2)
        (POP)
        (RETURN)))
      (REF 7))))
@@ -375,8 +393,7 @@ class IDemo {
            :induct (ifact-loop-induction-hint th s n))))
 
 (defun poised-to-invoke-ifact (th s n)
-  (and (equal (status th s) 'SCHEDULED)
-       (equal (next-inst th s) '(invokestatic "IDemo" "ifact:(I)I" 1))
+  (and (poised-to-invokestatic th s "IDemo" "ifact:(I)I" 1)
        (equal n (top (stack (top-frame th s))))
        (intp n)
        (equal (bound? "ifact:(I)I" (class-decl-methods (bound? "IDemo" (class-table s))))

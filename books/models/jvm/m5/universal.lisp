@@ -61,7 +61,7 @@ Sun Jun 30 23:21:06 2002
 
 (defconst *universal-state*
   '(((0 ((0 NIL NIL
-            ((INVOKESTATIC "Universal" "universal:()I" 0)
+            ((INVOKESTATIC 2)
              (POP)
              (RETURN))
             JVM::UNLOCKED "Universal"))
@@ -78,16 +78,15 @@ Sun Jun 30 23:21:06 2002
         ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
      (5 ("java/lang/Class" ("<sfields>") ("<name>" . "Universal"))
         ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0))))
-    (("java/lang/Object" NIL ()
-      NIL NIL (("<init>:()V" NIL
-                (RETURN)))
+    (("java/lang/Object" NIL () () (NIL)
+      (("<init>:()V" NIL (RETURN)))
       (REF 0))
      ("[C" ("java/lang/Object")
       NIL
       NIL NIL NIL (REF 1))
      ("java/lang/Thread"
       ("java/lang/Object")
-      NIL NIL NIL
+      NIL NIL (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
       (("run:()V" NIL
         (RETURN))
        ("start:()V" NIL
@@ -96,30 +95,33 @@ Sun Jun 30 23:21:06 2002
         ())
        ("<init>:()V" NIL
         (ALOAD_0)
-        (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+        (INVOKESPECIAL 1)
         (RETURN)))
       (REF 2))
      ("java/lang/String"
       ("java/lang/Object")
       ("value:[C")
-      NIL NIL
+      NIL (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
       (("<init>:()V" NIL
         (ALOAD_0)
-        (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+        (INVOKESPECIAL 1)
         (RETURN)))
       (REF 3))
      ("java/lang/Class" ("java/lang/Object")
-      NIL NIL NIL
+      NIL NIL (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
       (("<init>:()V" NIL
         (ALOAD_0)
-        (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+        (INVOKESPECIAL 1)
         (RETURN)))
       (REF 4))
      ("Universal" ("java/lang/Object")
-      NIL NIL NIL
+      NIL NIL
+      (NIL
+       (METHODREF "java/lang/Object" "<init>:()V" 0) ; 1
+       (METHODREF "Universal" "universal:()I" 0)) ; 2
       (("<init>:()V" NIL
         (ALOAD_0)
-        (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
+        (INVOKESPECIAL 1)
         (RETURN))
        ("universal:()I" NIL
         (ICONST_0)
@@ -127,7 +129,7 @@ Sun Jun 30 23:21:06 2002
         (IADD)
         (GOTO -2))
        ("main:([Ljava/lang/String;)V" NIL
-        (INVOKESTATIC "Universal" "universal:()I" 0)
+        (INVOKESTATIC 2)
         (POP)
         (RETURN)))
       (REF 5)))
@@ -214,8 +216,7 @@ Sun Jun 30 23:21:06 2002
            :in-theory (enable zp))))
 
 (defun poised-to-invoke-universal (th s i)
-  (and (equal (status th s) 'SCHEDULED)
-       (equal (next-inst th s) '(INVOKESTATIC "Universal" "universal:()I" 0))
+  (and (poised-to-invokestatic th s "Universal" "universal:()I" 0)
        (equal (bound? "universal:()I"
                       (class-decl-methods (bound? "Universal" (class-table s))))
               '("universal:()I" NIL

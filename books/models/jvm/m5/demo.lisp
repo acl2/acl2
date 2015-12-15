@@ -65,16 +65,25 @@
                                  (iload_3)
                                  (iconst_1)
                                  (iadd)
-                                 (invokestatic "Demo" "fact:(I)I" 1)
+                                 (invokestatic 1) ; Demo.fact:(I)I
                                  (imul)
                                  (istore_3))
-                               'UNLOCKED
+                               'unlocked
                                "Test")
                    nil))
                  *demo-heap*
-                 *demo-class-table*
+                 (cons
+                  (make-class-decl
+                   "Test"
+                   '("java/lang/Object")
+                   ()
+                   ()
+                   '(nil
+                     (methodref "Demo" "fact:(I)I" 1)) ; 1
+                   ()
+                   '(ref -1))
+                  *demo-class-table*)
                  *default-m5-options*)))))
-
     (int-fix (* 2 (! (+ 1 k)))))))
 
 ; In the steps below we demonstrate the key steps in the
@@ -90,11 +99,11 @@
                         (iload_3)
                         (iconst_1)
                         (iadd)
-                        (invokestatic "Demo" "fact:(I)I" 1)
+                        (invokestatic 2) ; Demo.fact:(I)I
                         (imul)
                         (istore_3))
                       'UNLOCKED
-                      "Test")
+                      "Demo")
           nil))
    *demo-heap*
    *demo-class-table*

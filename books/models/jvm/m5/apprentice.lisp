@@ -318,7 +318,7 @@ Sun Jul 15 14:17:26 2001
                               nil
                               *Apprentice-main*
                               'UNLOCKED
-                              nil)
+                              "Apprentice")
                   nil))
    nil
    *Apprentice-class-table*
@@ -349,65 +349,65 @@ Sun Jul 15 14:17:26 2001
 
 (defconst *java.lang.Thread.<init>*
   '((ALOAD_0)                                     ;;;  0
-    (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0) ;;;  1
+    (INVOKESPECIAL 1)                             ;;;  1 java.lang.Object.<init>:()V
     (RETURN)))                                    ;;;  4
 
 (defconst *Apprentice.main*
-  '((NEW "Container")                             ;;;  0
+  '((NEW 2)                                       ;;;  0 class Container
     (DUP)                                         ;;;  3
-    (INVOKESPECIAL "Container" "<init>:()V" 0)    ;;;  4
+    (INVOKESPECIAL 3)                             ;;;  4 Container.<init>:()V
     (ASTORE_0)                                    ;;;  7
-    (NEW "Job")                                   ;;;  8
+    (NEW 4)                                       ;;;  8 class Job
     (DUP)                                         ;;; 11
-    (INVOKESPECIAL "Job" "<init>:()V" 0)          ;;; 12
+    (INVOKESPECIAL 5)                             ;;; 12 Job.<init>:()V
     (ASTORE_1)                                    ;;; 15
     (ALOAD_1)                                     ;;; 16
     (ALOAD_0)                                     ;;; 17
-    (INVOKEVIRTUAL "Job" "setref:(LContainer;)V" 1) ;;; 18
+    (INVOKEVIRTUAL 6)                             ;;; 18 Job.setref:(LContainer;)V
     (ALOAD_1)                                     ;;; 21
-    (INVOKEVIRTUAL "java/lang/Thread" "start:()V" 0) ;;; 22
+    (INVOKEVIRTUAL 7)                             ;;; 22 java.lang.Thread.start:()V
     (GOTO -17)))                                  ;;; 25
 #|
 (defconst *Apprentice.main*
-  '((NEW "Container")                             ;;;  0
+  '((NEW 2)                                       ;;;  0 class Container
     (DUP)                                         ;;;  3
-    (INVOKESPECIAL "Container" "<init>:()V" 0)    ;;;  4
+    (INVOKESPECIAL 3)                             ;;;  4 Container.<init>:()V
     (ASTORE_1)                                    ;;;  7
-    (NEW "Job")                                   ;;;  8
+    (NEW 4)                                       ;;;  8 class Job
     (DUP)                                         ;;; 11
-    (INVOKESPECIAL "Job" "<init>:()V" 0)          ;;; 12
+    (INVOKESPECIAL 5)                             ;;; 12 Job.<init>:()V
     (ASTORE_2)                                    ;;; 15
     (ALOAD_2)                                     ;;; 16
     (ALOAD_1)                                     ;;; 17
-    (INVOKEVIRTUAL "Job" "setref:(LContainer;)V" 1) ;;; 18
+    (INVOKEVIRTUAL 6)                             ;;; 18 Job.setref:(LContainer;)V
     (ALOAD_2)                                     ;;; 21
-    (INVOKEVIRTUAL "java/lang/Thread" "start:()V" 0) ;;; 22
+    (INVOKEVIRTUAL 7)                             ;;; java.lang.Thread.start:()V
     (GOTO -17)))                                  ;;; 25
 |#
 (defconst *Container.<init>*
   '((ALOAD_0)                                     ;;;  0
-    (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0) ;;;  1
+    (INVOKESPECIAL 1)                             ;;;  1 java.lang.Object.<init>:()V
     (RETURN)))                                    ;;;  4
 
 (defconst *Job.<init>*
   '((ALOAD_0)                                     ;;;  0
-    (INVOKESPECIAL "java/lang/Thread" "<init>:()V" 0) ;;;  1
+    (INVOKESPECIAL 1)                             ;;;  1 java.lang.Thread.<init>:()V
     (RETURN)))                                    ;;;  4
 
 (defconst *Job.incr*
   '((ALOAD_0)                                     ;;;  0
-    (GETFIELD "Job" "objref:LContainer;")         ;;;  1
+    (GETFIELD 2)                                  ;;;  1 Job.objref:LContainer;
     (DUP)                                         ;;;  4
     (ASTORE_1)                                    ;;;  5
     (MONITORENTER)                                ;;;  6
     (ALOAD_0)                                     ;;;  7
-    (GETFIELD "Job" "objref:LContainer;")         ;;;  8
+    (GETFIELD 2)                                  ;;;  8 Job.objref:LContainer;
     (ALOAD_0)                                     ;;; 11
-    (GETFIELD "Job" "objref:LContainer;")         ;;; 12
-    (GETFIELD "Container" "counter:I")            ;;; 15
+    (GETFIELD 2)                                  ;;; 12 Job.objref:LContainer;
+    (GETFIELD 3)                                  ;;; 15 Container.counter:I
     (ICONST_1)                                    ;;; 18
     (IADD)                                        ;;; 19
-    (PUTFIELD "Container" "counter:I")            ;;; 20
+    (PUTFIELD 3)                                  ;;; 20 Container.counter:I
     (ALOAD_1)                                     ;;; 23
     (MONITOREXIT)                                 ;;; 24
     (GOTO 8)                                      ;;; 25
@@ -422,12 +422,12 @@ Sun Jul 15 14:17:26 2001
 (defconst *Job.setref*
   '((ALOAD_0)                                     ;;;  0
     (ALOAD_1)                                     ;;;  1
-    (PUTFIELD "Job" "objref:LContainer;")         ;;;  2
+    (PUTFIELD 2)                                  ;;;  2 ; Job.objref:LContainer;
     (RETURN)))                                    ;;;  5
 
 (defconst *Job.run*
   '((ALOAD_0)                                     ;;;  0
-    (INVOKEVIRTUAL "Job" "incr:()LJob;" 0)        ;;;  1
+    (INVOKEVIRTUAL 4)                             ;;;  1 Job.incr:()LJob;
     (POP)                                         ;;;  4
     (GOTO -5)))                                   ;;;  5
 
@@ -498,9 +498,7 @@ Sun Jul 15 14:17:26 2001
 
 (defun programp (frame class method)
   (let ((const (program1 class method)))
-    (and (equal (cur-class frame)
-                (cond ((equal class "Apprentice") nil)
-                      (t class)))
+    (and (equal (cur-class frame) class)
          (equal (program frame) const))))
 
 (defthm next-inst-from-programp
@@ -510,6 +508,10 @@ Sun Jul 15 14:17:26 2001
                                       (PROGRAM frame))
                   (index-into-program pc
                                       (program1 class method)))))
+
+(defthm cur-class-from-programp
+  (implies (programp frame class method)
+           (equal (cur-class frame) class)))
 
 ; Details: In the defthm above, class and method and pc will always be
 ; constant.  Generally (program frame) will be undetermined, but
@@ -526,9 +528,7 @@ Sun Jul 15 14:17:26 2001
                             class
                             method)
                   (let ((const (program1 class method)))
-                    (and (equal cur-class
-                                (cond ((equal class "Apprentice") nil)
-                                      (t class)))
+                    (and (equal cur-class class)
                          (equal program const))))))
 
 ; Details: Programp is disabled but I want it to compute if the
@@ -1981,18 +1981,18 @@ Sun Jul 15 14:17:26 2001
            (equal (lookup-methodref "incr:()LJob;" class ct)
                   '("Job" . ("incr:()LJob;" NIL
                     (ALOAD_0)
-                    (GETFIELD "Job" "objref:LContainer;")
+                    (GETFIELD 2) ; Job.objref:LContainer;
                     (DUP)
                     (ASTORE_1)
                     (MONITORENTER)
                     (ALOAD_0)
-                    (GETFIELD "Job" "objref:LContainer;")
+                    (GETFIELD 2) ; Job.objref:LContainer;
                     (ALOAD_0)
-                    (GETFIELD "Job" "objref:LContainer;")
-                    (GETFIELD "Container" "counter:I")
+                    (GETFIELD 2) ; Job.objref:LContainer;
+                    (GETFIELD 3) ; Container.counter:I
                     (ICONST_1)
                     (IADD)
-                    (PUTFIELD "Container" "counter:I")
+                    (PUTFIELD 3) ; Container.counter:I
                     (ALOAD_1)
                     (MONITOREXIT)
                     (GOTO 8)
@@ -2010,7 +2010,7 @@ Sun Jul 15 14:17:26 2001
            (equal (lookup-methodref "run:()V" class ct)
                   '("Job" . ("run:()V" NIL
                     (ALOAD_0)
-                    (INVOKEVIRTUAL "Job" "incr:()LJob;" 0)
+                    (INVOKEVIRTUAL 4) ; Job.incr:()LJob;
                     (POP)
                     (GOTO -5))))))
 
