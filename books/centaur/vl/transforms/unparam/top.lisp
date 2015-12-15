@@ -172,25 +172,28 @@ with, we can safely remove @('plus') from our module list.</p>")
 
 
 
-(define vl-scopeinfo-resolve-params ((x vl-paramdecloverridelist-p)
-                                     (scopeinfo vl-scopeinfo-p)
-                                     (inner-conf vl-svexconf-p
-                                                 "Svexconf in the module whose
-                                                  params we're overriding, only
-                                                  without the scope pushed on
-                                                  it.")
-                                     (outer-conf vl-svexconf-p
-                                                 "Svexconf for the overrides -- read-only")
-                                     (final-params-acc vl-paramdecllist-p)
-                                     (warnings vl-warninglist-p))
+(define vl-scopeinfo-resolve-params
+  ((x vl-paramdecloverridelist-p)
+   (scopeinfo vl-scopeinfo-p
+              "Represents the module scope")
+   (elabindex "Scoped in the module whose parameters we're overriding.  However,
+               the SS in this elabindex is at the global level, and we always push
+               the scopeinfo onto the top of it before using it.  This is a bad
+               breakage of the elabindex abstraction, but before changing this
+               we'd need to think hard about how parameter values and types are
+               resolved.")
+   (outer-ss vl-scopestack-p
+             "Scope of the overrides -- read-only")
+   (outer-scope-path vl-elabtraversal-p "How to get to the scopes for the override context")
+   (final-params-acc vl-paramdecllist-p)
+   (warnings vl-warninglist-p))
   :prepwork ((local (in-theory (e/d (vl-paramdecloverridelist-fix)
                                     (append
                                      acl2::append-when-not-consp)))))
-  :returns (mv (successp)
+  :returns (mv (successp  "BOZO at the moment this never actually fails")
                (warnings vl-warninglist-p)
                (final-params vl-paramdecllist-p)
-               (new-inner-conf vl-svexconf-p
-                               "final svexconf with the full inner scope"))
+               (elabindex "with parameters resolved"))
   ;; :hooks ((:fix :hints (("Goal" :induct (vl-scopeinfo-resolve-params
   ;;                                        x scopeinfo ss final-params-acc warnings ctx)
   ;;                        :expand ((:free (scopeinfo ss final-params-acc warnings ctx)
@@ -203,32 +206,34 @@ with, we can safely remove @('plus') from our module list.</p>")
   ;;                        :in-theory (e/d (vl-paramdecloverridelist-fix)
   ;;                                        ((:d vl-scopeinfo-resolve-params)))))))
 
-  (b* ((current-conf (change-vl-svexconf
-                      inner-conf
-                      :ss (vl-scopestack-push (vl-scopeinfo-fix scopeinfo)
-                                              (vl-svexconf->ss inner-conf))))
+  (b* ((outside-module-ss (vl-elabindex->ss))
+       (elabindex (vl-elabindex-update-ss
+                   (vl-scopestack-push (vl-scopeinfo-fix scopeinfo)
+                                       outside-module-ss)
+                   elabindex))
        ((when (atom x))
         (mv t (ok)
             (revappend-without-guard
              (vl-paramdecllist-fix final-params-acc) nil)
-            current-conf))
+            elabindex))
        ((vl-paramdecloverride x1) (car x))
        (warnings (ok))
 
 
-       ((mv ok warnings final-paramdecl current-conf)
-        (vl-override-parameter x1.decl current-conf x1.override outer-conf warnings))
-       ((unless ok)
-        (mv nil warnings nil current-conf))
+       ((mv ok warnings final-paramdecl elabindex)
+        (vl-override-parameter
+         x1.decl elabindex x1.override outer-ss outer-scope-path warnings))
 
        ((vl-scopeinfo scopeinfo))
-       (new-scopeinfo (change-vl-scopeinfo
-                       scopeinfo
-                       :locals (hons-acons (vl-paramdecl->name final-paramdecl)
-                                           final-paramdecl
-                                           scopeinfo.locals)))
-       (inner-conf (change-vl-svexconf current-conf :ss (vl-svexconf->ss inner-conf))))
-    (vl-scopeinfo-resolve-params (cdr x) new-scopeinfo inner-conf outer-conf
+       (new-scopeinfo (if ok
+                          (change-vl-scopeinfo
+                           scopeinfo
+                           :locals (hons-acons (vl-paramdecl->name final-paramdecl)
+                                               final-paramdecl
+                                               scopeinfo.locals))
+                        scopeinfo))
+       (elabindex (vl-elabindex-update-ss outside-module-ss elabindex)))
+    (vl-scopeinfo-resolve-params (cdr x) new-scopeinfo elabindex outer-ss outer-scope-path
                                  (cons final-paramdecl
                                        final-params-acc)
                                  warnings)))
@@ -247,28 +252,38 @@ with, we can safely remove @('plus') from our module list.</p>")
 
 
 
-(define vl-scope-finalize-params ((x vl-scope-p)
-                                  (formals vl-paramdecllist-p)
-                                  (actuals vl-paramargs-p)
-                                  (warnings vl-warninglist-p)
-                                  (mod-ss vl-scopestack-p
-                                      "ss where the instantiated module was found
-                                       (presumably the design level), without the
-                                       module itself")
-                                  (outer-conf vl-svexconf-p
-                                              "svexconf for the instantiating context"))
+(define vl-scope-finalize-params
+  ((formals vl-paramdecllist-p)
+   (actuals vl-paramargs-p)
+   (warnings vl-warninglist-p)
+   (elabindex "in the scope of the instantiated module.  Warning: this function
+               returns an elabindex with a somewhat mangled scopestack.")
+   (outer-ss vl-scopestack-p)
+   (outer-scope-path vl-elabtraversal-p "How to get to the scopes for the override context"))
   :returns (mv (successp)
                (warnings vl-warninglist-p)
-               (inner-conf vl-svexconf-p
-                       "svexconf for x, but modified
-                        with the overridden parameter values")
+               (elabindex "with the overridden parameter values")
                (final-paramdecls vl-paramdecllist-p))
   (b* (((mv ok warnings overrides)
         (vl-make-paramdecloverrides formals actuals warnings))
-       (inner-conf (make-vl-svexconf :ss mod-ss))
        ((unless ok)
-        (mv nil warnings inner-conf nil))
-       (scopeinfo (vl-scope->scopeinfo x (vl-scopestack->design mod-ss)))
+        (mv nil warnings elabindex nil))
+       (mod-ss (vl-elabindex->ss))
+       ((mv err mod-scope no-mod-ss)
+        (vl-scopestack-case mod-ss
+          :local (mv nil mod-ss.top mod-ss.super)
+          :global (mv nil mod-ss.design (vl-scopestack-null))
+          :null (mv t nil nil)))
+       ((when err)
+        (mv nil
+            (fatal :type :vl-programming-error
+                   :msg "Empty scopestack -- expected at least the design scope")
+            elabindex nil))
+       ;; BOZO Horrible hack: We'll replace the top of the elabindex SS with a
+       ;; scope crafted without the paramdecl defaults, and gradually replace
+       ;; them with the overridden ones as we compute them.
+       (elabindex (vl-elabindex-update-ss no-mod-ss elabindex))
+       (scopeinfo (vl-scope->scopeinfo mod-scope (vl-scopestack->design mod-ss)))
        (scopeinfo-with-empty-params
         (change-vl-scopeinfo
          scopeinfo
@@ -278,10 +293,10 @@ with, we can safely remove @('plus') from our module list.</p>")
                   (vl-paramdecllist-alist
                    (vl-paramdecllist-remove-defaults formals)
                    (vl-scopeinfo->locals scopeinfo)))))
-       ((mv ok warnings final-paramdecls inner-conf)
+       ((mv ok warnings final-paramdecls elabindex)
         (vl-scopeinfo-resolve-params
-         overrides scopeinfo-with-empty-params inner-conf outer-conf nil warnings)))
-    (mv ok warnings inner-conf
+         overrides scopeinfo-with-empty-params elabindex outer-ss outer-scope-path nil warnings)))
+    (mv ok warnings elabindex
         final-paramdecls)))
 
 
@@ -495,6 +510,8 @@ parameters used to instantiate them, and
         ;; type to change the name to its final name component, pair this with
         ;; the scopekey where it is found.  Otherwise, pair the type with the
         ;; scopekey for the local scopestack -- not great but good enough.
+        ;; BOZO this probably doesn't work if the typedef depends on parameters
+        ;; that vary in different module instantiations!
         (vl-datatype-case x.type.default
           :vl-usertype
           (b* (((mv err trace ?context tail)
@@ -705,11 +722,11 @@ for each usertype is stored in the res field.</p>"
   ((inst     vl-modinst-p
              "Instance of some module.  The module being instantiated may or
               may not have parameters.")
-   (conf     vl-svexconf-p   "Svexconf where the module is instantiated")
+   (elabindex "at the instanting context")
    (ledger  vl-unparam-ledger-p)
    (warnings vl-warninglist-p
              "Warnings accumulator for the submodule."))
-
+  :guard-debug t
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
@@ -720,6 +737,7 @@ for each usertype is stored in the res field.</p>"
                 "An instkey for the instantiated module, if needed. Note: Currently
                  we produce an instkey even if there are no parameters.  Not sure
                  why we need to do this.")
+      (new-elabindex)
       (ledger         vl-unparam-ledger-p))
 
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
@@ -730,9 +748,10 @@ for each usertype is stored in the res field.</p>"
                                (vl-scope-p x)))))
 
   (b* (((vl-modinst inst) (vl-modinst-fix inst))
-       ((vl-svexconf conf) (vl-svexconf-fix conf))
        (ledger (vl-unparam-ledger-fix ledger))
-       (ss conf.ss)
+       (ss (vl-elabindex->ss))
+       (elabindex (vl-elabindex-sync-scopes))
+       (scopes (vl-elabindex->scopes))
        ((mv mod mod-ss) (vl-scopestack-find-definition/ss inst.modname ss))
        ((unless (and mod
                      (or (eq (tag mod) :vl-module)
@@ -742,7 +761,7 @@ for each usertype is stored in the res field.</p>"
             (fatal :type :vl-bad-instance
                    :msg "~a0: trying to instantiate undefined module ~s1."
                    :args (list inst inst.modname))
-            inst nil ledger))
+            inst nil elabindex ledger))
 
        (mod.paramdecls (if (eq (tag mod) :vl-module)
                            (vl-module->paramdecls mod)
@@ -763,18 +782,26 @@ for each usertype is stored in the res field.</p>"
        ;;               :args (list inst inst.modname))
        ;;        inst nil
        ;;        ledger)))
+       
+       (elabindex (vl-elabindex-traverse mod-ss (list (vl-elabinstruction-root))))
+       (elabindex (vl-elabindex-push mod))
 
-       ((mv ok warnings mod-conf final-paramdecls)
-        (vl-scope-finalize-params mod
-                                  mod.paramdecls
+       ((mv ok warnings elabindex final-paramdecls)
+        (vl-scope-finalize-params mod.paramdecls
                                   inst.paramargs
                                   warnings
-                                  mod-ss
-                                  conf))
+                                  elabindex
+                                  ss
+                                  (rev (vl-elabscopes->elabtraversal scopes))))
+
+       (inside-mod-ss (vl-elabindex->ss))
+       (elabindex (vl-elabindex-undo)) ;; back at global scope
+       
        ((unless ok)
         ;; already warned
         (vl-unparam-debug "~a0: failed to finalize params~%" inst)
-        (mv nil warnings inst nil ledger))
+        (b* ((elabindex (vl-elabindex-undo))) ;; back to original scope
+          (mv nil warnings inst nil elabindex ledger)))
 
        ;; Weird case: A type parameter B can have a default value that
        ;; references a previous type parameter A.  If this is the case and B is
@@ -791,22 +818,40 @@ for each usertype is stored in the res field.</p>"
        ;; (2) it depends on another parameter that differs.
 
        ((mv instkey ledger)
-        (vl-unparam-add-to-ledger inst.modname final-paramdecls ledger conf.ss
-                                  (vl-svexconf->ss mod-conf)))
+        (vl-unparam-add-to-ledger inst.modname final-paramdecls ledger ss
+                                  inside-mod-ss))
 
        ((vl-unparam-signature sig)
         (cdr (hons-get instkey (vl-unparam-ledger->instkeymap ledger))))
 
        (new-inst (change-vl-modinst inst
                                     :modname sig.newname
-                                    :paramargs (make-vl-paramargs-named))))
+                                    :paramargs (make-vl-paramargs-named)))
+
+       ;; Now, our elabindex is kind of messed up in that we now have the
+       ;; un-mangled module name associated with some info that depends on the
+       ;; particular parameters.  Fix this by associating that info with the
+       ;; new module name, and clobbering the info associated with the
+       ;; unmangled name.
+       (scopes (vl-elabindex->scopes))
+       (mod-scope (vl-elabscopes-subscope (vl-elabkey-def inst.modname)
+                                          (vl-elabindex->scopes)))
+       ;; Do it in this order in case inst.modname and sig.newname are the same!
+       (scopes (b* (((unless mod-scope) scopes)
+                    (scopes (vl-elabscopes-update-subscope (vl-elabkey-def inst.modname)
+                                              (make-vl-elabscope) scopes)))
+                 (vl-elabscopes-update-subscope (vl-elabkey-def sig.newname)
+                                                mod-scope scopes)))
+       (elabindex (vl-elabindex-update-scopes scopes elabindex))
+       ;; Go back to original instantiating scope.
+       (elabindex (vl-elabindex-undo)))
 
     (vl-unparam-debug "~a0: success, new instance is ~a1.~%" inst new-inst)
-    (mv t warnings new-inst instkey ledger)))
+    (mv t warnings new-inst instkey elabindex ledger)))
 
 (define vl-unparam-instlist ((x vl-modinstlist-p)
-                             (conf     vl-svexconf-p
-                                       "Svexconf where the instances occur.")
+                             (elabindex
+                              "where the instances occur")
                              (ledger         vl-unparam-ledger-p)
                              (warnings vl-warninglist-p
                                        "Warnings accumulator for the submodule.")
@@ -816,6 +861,7 @@ for each usertype is stored in the res field.</p>"
                (insts    vl-modinstlist-p
                          "Updated module instances")
                (keylist  vl-unparam-instkeylist-p "Needed instkeys")
+               (new-elabindex)
                (ledger         vl-unparam-ledger-p))
   ;; :hooks ((:fix :hints(("Goal" :in-theory (disable (:d vl-unparam-instlist))
   ;;                       :induct (vl-unparam-instlist x ss warnings modname sigalist)
@@ -826,17 +872,19 @@ for each usertype is stored in the res field.</p>"
   ;;                                  (vl-modinstlist-fix x)
   ;;                                  ss warnings modname sigalist)))))))
   (b* (((when (atom x)) (mv t (ok) nil (vl-unparam-instkeylist-fix keylist)
-                            (vl-unparam-ledger-fix ledger)))
-       ((mv ok1 warnings inst1 instkey1 ledger) (vl-unparam-inst (car x) conf ledger warnings))
+                            elabindex (vl-unparam-ledger-fix ledger)))
+       ((mv ok1 warnings inst1 instkey1 elabindex ledger)
+        (vl-unparam-inst (car x) elabindex ledger warnings))
        (keylist (if ok1 (cons instkey1 keylist) keylist))
-       ((mv ok2 warnings insts2 keylist ledger)
-        (vl-unparam-instlist (cdr x) conf ledger warnings keylist)))
-    (mv (and ok1 ok2) warnings (cons inst1 insts2) keylist ledger)))
+       ((mv ok2 warnings insts2 keylist elabindex ledger)
+        (vl-unparam-instlist (cdr x) elabindex ledger warnings keylist)))
+    (mv (and ok1 ok2) warnings (cons inst1 insts2) keylist elabindex ledger)))
 
 
 (define vl-gencase-match ((x vl-expr-p)
                           (y vl-expr-p)
-                          (conf vl-svexconf-p)
+                          (ss vl-scopestack-p)
+                          (scopes vl-elabscopes-p)
                           (warnings vl-warninglist-p))
   :returns (mv (ok)
                (warnings vl-warninglist-p)
@@ -844,7 +892,7 @@ for each usertype is stored in the res field.</p>"
   (b* ((eq-expr (make-vl-binary :op :vl-binary-ceq
                                 :left x :right y))
        (warnings (ok))
-       ((wmv warnings res) (vl-consteval eq-expr conf))
+       ((wmv warnings res) (vl-consteval eq-expr ss scopes))
        ((mv ok result)
         (vl-expr-case res
           :vl-literal (vl-value-case res.val
@@ -862,16 +910,17 @@ for each usertype is stored in the res field.</p>"
 
 (define vl-gencase-some-match ((x vl-expr-p)
                                (y vl-exprlist-p)
-                               (conf vl-svexconf-p)
+                               (ss vl-scopestack-p)
+                               (scopes vl-elabscopes-p)
                                (warnings vl-warninglist-p))
   :returns (mv (ok)
                (warnings vl-warninglist-p)
                (equalp))
   (b* (((when (atom y)) (mv t (ok) nil))
-       ((mv ok warnings first) (vl-gencase-match x (car y) conf warnings))
+       ((mv ok warnings first) (vl-gencase-match x (car y) ss scopes warnings))
        ((unless ok) (mv nil warnings nil))
        ((when first) (mv ok warnings first)))
-    (vl-gencase-some-match x (cdr y) conf warnings)))
+    (vl-gencase-some-match x (cdr y) ss scopes warnings)))
 
 
 #|
@@ -948,15 +997,14 @@ for each usertype is stored in the res field.</p>"
                                (vl-genblob-count x))
                         :hints (("goal" :expand ((:free (x) (vl-genblob-count x))))))))
     (define vl-genblob-resolve-aux ((x vl-genblob-p)
-                                    (conf vl-svexconf-p
-                                          "including the genblob's own scope")
+                                    (elabindex "in the genblob's own scope")
                                     (ledger vl-unparam-ledger-p)
                                     (warnings vl-warninglist-p))
       :returns (mv (ok)
                    (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-x vl-genblob-p)
-                   (new-conf vl-svexconf-p)
+                   (new-elabindex)
                    (ledger vl-unparam-ledger-p))
       :measure (two-nats-measure (vl-genblob-count x) 0)
       (b* (((vl-genblob x) (vl-genblob-fix x))
@@ -968,26 +1016,26 @@ for each usertype is stored in the res field.</p>"
            ;;                            warnings ss ss 'fake-context-for-unparam))
            ;; ((unless ok) (mv nil warnings (vl-genblob-fix x)))
            ;; (x (change-vl-genblob x :paramdecls final-paramdecls))
-           ((wmv ?ok warnings new-x conf)
-            (vl-genblob-elaborate x conf))
+           ((wmv ?ok warnings new-x elabindex)
+            (vl-genblob-elaborate x elabindex))
 
-           ((mv ok warnings keylist1 new-generates ledger)
+           ((mv ok warnings keylist1 new-generates elabindex ledger)
             ;; Not new-x.generates (complicates termination)
-            (vl-generatelist-resolve x.generates conf ledger warnings))
+            (vl-generatelist-resolve x.generates elabindex ledger warnings))
 
            ((vl-genblob new-x))
-           ((mv ok2 warnings new-insts keylist ledger)
-            (vl-unparam-instlist new-x.modinsts conf ledger warnings nil)))
+           ((mv ok2 warnings new-insts keylist elabindex ledger)
+            (vl-unparam-instlist new-x.modinsts elabindex ledger warnings nil)))
         (mv (and ok ok2)
             warnings (append-without-guard keylist1 keylist)
             (change-vl-genblob new-x :generates new-generates
                                :modinsts new-insts)
-            conf
+            elabindex
             ledger)))
 
 
     (define vl-genblob-resolve ((x vl-genblob-p)
-                                (conf vl-svexconf-p
+                                (elabindex
                                     "without the genblob's scope")
                                 (ledger vl-unparam-ledger-p)
                                 (warnings vl-warninglist-p))
@@ -995,23 +1043,28 @@ for each usertype is stored in the res field.</p>"
                    (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-x vl-genblob-p)
+                   (new-elabindex)
                    (ledger vl-unparam-ledger-p))
       :measure (two-nats-measure (vl-genblob-count x) 5)
       ;; wrapper around vl-genblob-elaborate that finalizes the params.
       (b* ((ledger (vl-unparam-ledger-fix ledger))
            ((vl-genblob x) (vl-genblob-fix x))
-           ((vl-svexconf conf))
-           ((mv ok warnings blobconf paramdecls)
-            (vl-scope-finalize-params x x.paramdecls
+           ((vl-elabindex elabindex))
+           (elabindex (vl-elabindex-push x))
+           ((mv ok warnings elabindex paramdecls)
+            (vl-scope-finalize-params x.paramdecls
                                       (make-vl-paramargs-named)
-                                      warnings conf.ss conf))
+                                      warnings elabindex elabindex.ss
+                                      (caar (vl-elabindex->undostack elabindex))))
+           (elabindex (vl-elabindex-undo))
            ((unless ok)
-            (mv nil warnings nil x ledger))
+            (mv nil warnings nil x elabindex ledger))
            (x1 (change-vl-genblob x :paramdecls paramdecls))
-           ((mv ok warnings keylist new-x blobconf ledger)
-            (vl-genblob-resolve-aux x1 blobconf ledger warnings)))
-        (vl-svexconf-free blobconf)
-        (mv ok warnings keylist new-x ledger)))
+           (elabindex (vl-elabindex-push x1))
+           ((mv ok warnings keylist new-x elabindex ledger)
+            (vl-genblob-resolve-aux x1 elabindex ledger warnings))
+           (elabindex (vl-elabindex-undo)))
+        (mv ok warnings keylist new-x elabindex ledger)))
 
 
 #||
@@ -1038,13 +1091,14 @@ for each usertype is stored in the res field.</p>"
 
     (define vl-generate-resolve
       ((x vl-genelement-p "The generate block to resolve")
-       (conf vl-svexconf-p "Current scopestack with resolved params")
+       (elabindex)
        (ledger vl-unparam-ledger-p)
        (warnings vl-warninglist-p))
       :returns (mv (ok)
                    (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-x vl-genelement-p)
+                   (new-elabindex)
                    (ledger vl-unparam-ledger-p))
       :measure (two-nats-measure (vl-genblob-generate-count x) 0)
       :verify-guards nil
@@ -1053,25 +1107,27 @@ for each usertype is stored in the res field.</p>"
         (vl-genelement-case x
           :vl-genbase (b* ((xlist (list x))
                            (blob (vl-sort-genelements xlist))
-                           ((mv ok warnings keylist new-blob ledger)
-                            (vl-genblob-resolve blob conf ledger warnings))
-                           ((unless ok) (mv nil warnings keylist (vl-genelement-fix x) ledger)))
+                           ((mv ok warnings keylist new-blob elabindex ledger)
+                            (vl-genblob-resolve blob elabindex ledger warnings))
+                           ((unless ok) (mv nil warnings keylist (vl-genelement-fix x) elabindex ledger)))
                         (mv t warnings keylist
                             (make-vl-genblock
                              :elems (vl-genblob->elems new-blob xlist)
                              :loc (vl-modelement->loc x.item))
+                            elabindex
                             ledger))
 
           :vl-genblock
           (b* ((blob (vl-sort-genelements x.elems
                                           :scopetype :vl-genblock
                                           :name x.name))
-               ((mv ok warnings keylist new-blob ledger)
-                (vl-genblob-resolve blob conf ledger warnings))
+               ((mv ok warnings keylist new-blob elabindex ledger)
+                (vl-genblob-resolve blob elabindex ledger warnings))
                ((unless ok)
-                (mv nil warnings keylist x ledger)))
+                (mv nil warnings keylist x elabindex ledger)))
             (mv t warnings keylist
                 (change-vl-genblock x :elems (vl-genblob->elems new-blob x.elems))
+                elabindex
                 ledger))
 
 
@@ -1081,35 +1137,43 @@ for each usertype is stored in the res field.</p>"
           (mv t (warn :type :vl-already-resolved-generate
                       :msg "~a0: Didn't expect to see an already-resolved genarray."
                       :args (list x))
-              nil x ledger)
+              nil x elabindex ledger)
 
           :vl-genif
-          (b* (((wmv warnings testval) (vl-consteval x.test conf))
+          (b* ((elabindex (vl-elabindex-sync-scopes))
+               ((vl-elabindex elabindex))
+               ((wmv warnings testval) (vl-consteval x.test elabindex.ss elabindex.scopes))
                ((unless (vl-expr-resolved-p testval))
                 (mv nil (fatal :type :vl-generate-resolve-fail
                                :msg "~a0: Failed to evaluate the test expression ~a1."
                                :args (list x x.test))
-                    nil x ledger))
+                    nil x elabindex ledger))
                (testval (vl-resolved->val testval))
                (subelem (if (eql 0 testval) x.else x.then)))
-            (vl-generate-resolve subelem conf ledger warnings))
+            (vl-generate-resolve subelem elabindex ledger warnings))
 
           :vl-gencase
           ;; BOZO the sizing on this may be wrong
-          (b* (((mv ok warnings keylist elem ledger)
-                (vl-gencaselist-resolve x.cases x.test x conf ledger warnings))
-               ((when elem) (mv ok warnings keylist elem ledger)))
-            (vl-generate-resolve x.default conf ledger warnings))
+          (b* (((mv ok warnings keylist elem elabindex ledger)
+                (vl-gencaselist-resolve x.cases x.test x elabindex ledger warnings))
+               ((when elem) (mv ok warnings keylist elem elabindex ledger)))
+            (vl-generate-resolve x.default elabindex ledger warnings))
 
           :vl-genloop
-          (b* (((wmv warnings initval) (vl-consteval x.initval conf))
+          (b* ((elabindex (vl-elabindex-sync-scopes))
+               ((vl-elabindex elabindex))
+               ((wmv warnings initval) (vl-consteval x.initval elabindex.ss elabindex.scopes))
                ((unless (vl-expr-resolved-p initval))
                 (mv nil (fatal :type :vl-generate-resolve-fail
                                :msg "~a0: Failed to evaluate the initial value expression ~a1."
                                :args (list x x.initval))
-                    nil x ledger))
-               (body.name (and (eql (vl-genelement-kind x.body) :vl-genblock)
-                               (vl-genblock->name x.body)))
+                    nil x elabindex ledger))
+               ((unless (vl-genelement-case x.body :vl-genblock))
+                (mv nil (Fatal :type :vl-generate-resolve-fail
+                               :msg "~a0: Body of generate loop should have been coerced to a block."
+                               :args (list x))
+                    nil x elabindex ledger))
+               (body.name (vl-genblock->name x.body))
                ;; ((mv body.name body.elems)
                ;;  (if (eql (vl-genelement-kind x.body) :vl-genblock)
                ;;      (mv (vl-genblock->name x.body) (vl-genblock->elems x.body))
@@ -1117,45 +1181,47 @@ for each usertype is stored in the res field.</p>"
                ;; (blob (vl-sort-genelements body.elems
                ;;                            :scopetype :vl-genarrayblock
                ;;                            :name nil))
-               ((mv ok warnings keylist arrayblocks ledger)
+               ((mv ok warnings keylist arrayblocks elabindex ledger)
                 (vl-genloop-resolve 100000 ;; recursion limit
                                     x.body
                                     x.var (vl-resolved->val initval)
                                     x.nextval x.continue
-                                    x conf ledger warnings)))
+                                    x elabindex ledger warnings)))
             (mv ok warnings keylist
                 (make-vl-genarray :name body.name :var x.var :blocks arrayblocks
                                   :loc x.loc)
+                elabindex
                 ledger)))))
 
 
     (define vl-generatelist-resolve ((x vl-genelementlist-p)
-                                     (conf vl-svexconf-p)
+                                     (elabindex)
                                      (ledger vl-unparam-ledger-p)
                                      (warnings vl-warninglist-p))
       :returns (mv (ok)
                    (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-elems vl-genelementlist-p)
+                   (new-elabindex)
                    (ledger vl-unparam-ledger-p))
       :measure (two-nats-measure (vl-genblob-generates-count x) 0)
       (b* ((ledger (vl-unparam-ledger-fix ledger))
-           ((when (atom x)) (mv t (ok) nil nil ledger))
-           ((mv ok1 warnings keylist1 first ledger)
-            (vl-generate-resolve (car x) conf ledger warnings))
-           ((mv ok2 warnings keylist2 rest ledger)
-            (vl-generatelist-resolve (cdr x) conf ledger warnings)))
+           ((when (atom x)) (mv t (ok) nil nil elabindex ledger))
+           ((mv ok1 warnings keylist1 first elabindex ledger)
+            (vl-generate-resolve (car x) elabindex ledger warnings))
+           ((mv ok2 warnings keylist2 rest elabindex ledger)
+            (vl-generatelist-resolve (cdr x) elabindex ledger warnings)))
         (mv (and ok1 ok2) warnings
             (append-without-guard keylist1 keylist2)
             (cons first rest)
-            ledger)))
+            elabindex ledger)))
 
 
 
     (define vl-gencaselist-resolve ((x vl-gencaselist-p)
                                     (test vl-expr-p)
                                     (orig-x vl-genelement-p)
-                                    (conf vl-svexconf-p)
+                                    (elabindex)
                                     (ledger vl-unparam-ledger-p)
                                     (warnings vl-warninglist-p))
       :guard (eq (vl-genelement-kind orig-x) :vl-gencase)
@@ -1163,20 +1229,23 @@ for each usertype is stored in the res field.</p>"
                    (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-elem (iff (vl-genelement-p new-elem) new-elem))
+                   (new-elabindex)
                    (ledger vl-unparam-ledger-p))
       :measure (two-nats-measure (vl-genblob-gencaselist-count x) 0)
       (b* ((ledger (vl-unparam-ledger-fix ledger))
            (x (vl-gencaselist-fix x))
-           ((when (atom x)) (mv t (ok) nil nil ledger))
+           ((when (atom x)) (mv t (ok) nil nil elabindex ledger))
 
            ((cons exprs1 block1) (car x))
 
-           ((mv ok warnings matchp) (vl-gencase-some-match test exprs1 conf warnings))
+           (elabindex (vl-elabindex-sync-scopes))
+           ((vl-elabindex elabindex))
+           ((mv ok warnings matchp) (vl-gencase-some-match test exprs1 elabindex.ss elabindex.scopes warnings))
            ((unless ok)
-            (mv nil warnings nil (vl-genelement-fix orig-x) ledger))
+            (mv nil warnings nil (vl-genelement-fix orig-x) elabindex ledger))
            ((unless matchp)
-            (vl-gencaselist-resolve (cdr x) test orig-x conf ledger warnings)))
-        (vl-generate-resolve block1 conf ledger warnings)))
+            (vl-gencaselist-resolve (cdr x) test orig-x elabindex ledger warnings)))
+        (vl-generate-resolve block1 elabindex ledger warnings)))
 
     (define vl-genloop-resolve ((clk natp "recursion limit")
                                 (body vl-genelement-p)
@@ -1185,13 +1254,14 @@ for each usertype is stored in the res field.</p>"
                                 (nextval vl-expr-p)
                                 (continue vl-expr-p)
                                 (orig-x vl-genelement-p)
-                                (conf vl-svexconf-p)
+                                (elabindex)
                                 (ledger vl-unparam-ledger-p)
                                 (warnings vl-warninglist-p))
       :returns (mv (ok)
                    (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-blocks vl-genarrayblocklist-p)
+                   (new-elabindex)
                    (ledger vl-unparam-ledger-p))
       :measure (two-nats-measure (vl-genblob-generate-count body) clk)
       (b* ((ledger (vl-unparam-ledger-fix ledger))
@@ -1200,7 +1270,7 @@ for each usertype is stored in the res field.</p>"
                 (fatal :type :vl-generate-resolve-fail
                        :msg "~a0: Iteration limit ran out in for loop."
                        :args (list (vl-genelement-fix orig-x)))
-                nil nil ledger))
+                nil nil elabindex ledger))
            (var-param (make-vl-paramdecl
                        :name var
                        :type (make-vl-explicitvalueparam
@@ -1208,15 +1278,14 @@ for each usertype is stored in the res field.</p>"
                               :default (vl-make-index (acl2::loghead 32 current-val)))
                        :loc *vl-fakeloc*))
 
-           ;; Make a fake scope containing just the index paramThis seems dicey wrt svex consitency, but the key thing is
+           ;; Make a fake scope containing just the index param.
+           ;; This seems dicey wrt svex consitency, but the key thing is
            ;; that we push 2 frames onto the ss total.  This first one only
            ;; contains the loop iterator, which won't be referenced in svex
            ;; since it'll resolve to a constant.
 
-           ((vl-svexconf conf))
-           (idx-ss (vl-scopestack-push
-                    (make-vl-scopeinfo :locals (hons-acons var var-param nil))
-                    conf.ss))
+           (idx-scope (make-vl-scopeinfo :locals (hons-acons var var-param nil)))
+           (elabindex (vl-elabindex-push idx-scope))
 
            ;; ((mv ok warnings idx-ss ?final-paramdecls)
            ;;  (vl-scope-finalize-params (make-vl-genblob)
@@ -1228,28 +1297,27 @@ for each usertype is stored in the res field.</p>"
            ;;  (mv nil warnings nil))
 
            ;; Check whether we continue.
-           (idx-conf (make-vl-svexconf :ss idx-ss))
-           ((wmv ok warnings continue-val ?svex idx-conf)
-            (vl-expr-resolve-to-constant continue idx-conf))
+           ((wmv ok warnings continue-val ?svex elabindex)
+            (vl-expr-resolve-to-constant continue elabindex))
            ((unless (and ok (vl-expr-resolved-p continue-val)))
-            (vl-svexconf-free idx-conf)
-            (mv nil
-                (fatal :type :vl-generate-resolve-fail
-                       :msg "~a0: Failed to evaluate the loop termination expression ~a1"
-                       :args (list (vl-genelement-fix orig-x) (vl-expr-fix continue)))
-                nil nil ledger))
+            (b* ((elabindex (vl-elabindex-undo)))
+              (mv nil
+                  (fatal :type :vl-generate-resolve-fail
+                         :msg "~a0: Failed to evaluate the loop termination expression ~a1"
+                         :args (list (vl-genelement-fix orig-x) (vl-expr-fix continue)))
+                  nil nil elabindex ledger)))
 
            ((when (eql (vl-resolved->val continue-val) 0))
-            (vl-svexconf-free idx-conf)
-            (mv t (ok) nil nil ledger))
+            (b* ((elabindex (vl-elabindex-undo)))
+              (mv t (ok) nil nil elabindex ledger)))
 
 
-           ((mv ok warnings keylist1 new-body ledger)
-            (vl-generate-resolve body idx-conf ledger warnings))
+           ((mv ok warnings keylist1 new-body elabindex ledger)
+            (vl-generate-resolve body elabindex ledger warnings))
 
            ((unless ok)
-            (vl-svexconf-free idx-conf)
-            (mv nil warnings nil nil ledger))
+            (b* ((elabindex (vl-elabindex-undo)))
+              (mv nil warnings nil nil elabindex ledger)))
 
            (param-genelt (make-vl-genbase :item var-param))
            (block1 (make-vl-genarrayblock :index current-val
@@ -1258,27 +1326,27 @@ for each usertype is stored in the res field.</p>"
                                                    :otherwise
                                                    (cons param-genelt (list new-body)))))
 
-           ((wmv ok warnings next-value ?svex idx-conf)
-            (vl-expr-resolve-to-constant nextval idx-conf))
-
-           (- (vl-svexconf-free idx-conf))
+           ((wmv ok warnings next-value ?svex elabindex)
+            (vl-expr-resolve-to-constant nextval elabindex))
+           
+           (elabindex (vl-elabindex-undo))
 
            ((unless (and ok (vl-expr-resolved-p next-value)))
             (mv nil
                 (fatal :type :vl-generate-resolve-fail
                        :msg "~a0: Failed to evaluate the loop increment expression ~a1"
                        :args (list (vl-genelement-fix orig-x) (vl-expr-fix nextval)))
-                nil nil ledger))
-
-           ((mv ok warnings keylist2 rest-blocks ledger)
+                nil nil elabindex ledger))
+           
+           ((mv ok warnings keylist2 rest-blocks elabindex ledger)
             (vl-genloop-resolve (1- clk) body var
                                 (vl-resolved->val next-value)
                                 nextval continue
-                                orig-x conf ledger warnings)))
+                                orig-x elabindex ledger warnings)))
         (mv ok warnings
             (append-without-guard keylist1 keylist2)
             (cons block1 rest-blocks)
-            ledger)))
+            elabindex ledger)))
     ///
     (local (in-theory (disable vl-genblob-resolve (:t vl-genblob-resolve)
                                vl-generate-resolve (:t vl-generate-resolve)
@@ -1351,18 +1419,18 @@ for each usertype is stored in the res field.</p>"
   ((x vl-module-p)
    (name stringp "New name including parameter disambiguation")
    (final-paramdecls vl-paramdecllist-p)
-   (ledger   vl-unparam-ledger-p)
-   (global-ss vl-scopestack-p "Scopestack for design scope"))
+   (elabindex "at global level")
+   (ledger   vl-unparam-ledger-p))
   :returns (mv (okp)
                (new-mod vl-module-p)
                (keylist vl-unparam-instkeylist-p "signatures for this module")
+               (new-elabindex)
                (ledger vl-unparam-ledger-p))
   (b* ((name (string-fix name))
        (x (change-vl-module x :name name
                             :paramdecls final-paramdecls))
        ((vl-module x))
-       (ss (vl-scopestack-push x global-ss))
-       (conf (make-vl-svexconf :ss ss))
+       (elabindex (vl-elabindex-push x))
        ;; Note: instead of making a new svexconf here, we used to save the
        ;; svexconf produced by vl-scope-finalize-params when processing the
        ;; module instance.  We don't do that now because it pushes the module
@@ -1373,45 +1441,47 @@ for each usertype is stored in the res field.</p>"
        (warnings x.warnings)
 
        (blob (vl-module->genblob x))
-       ((wmv ok warnings keylist new-blob conf ledger :ctx name)
-        (vl-genblob-resolve-aux blob conf ledger nil))
-       (- (vl-svexconf-free conf))
+       ((wmv ok warnings keylist new-blob elabindex ledger
+             :ctx name)
+        (vl-genblob-resolve-aux blob elabindex ledger nil))
+       (elabindex (vl-elabindex-undo))
        (mod (vl-genblob->module new-blob x))
        (mod (change-vl-module mod :warnings warnings))
        ((unless ok)
         ;; (cw "not ok~%")
-        (mv nil mod nil ledger)))
-    (mv ok mod keylist ledger)))
+        (mv nil mod nil elabindex ledger)))
+    (mv ok mod keylist elabindex ledger)))
 
 
 (define vl-create-unparameterized-interface
   ((x vl-interface-p)
    (name stringp "New name including parameter disambiguation")
    (final-paramdecls vl-paramdecllist-p)
-   (ledger   vl-unparam-ledger-p)
-   (global-ss vl-scopestack-p "Scopestack for design scope"))
+   (elabindex "at global scope")
+   (ledger   vl-unparam-ledger-p))
+
   :returns (mv (okp)
                (new-mod vl-interface-p)
                (keylist vl-unparam-instkeylist-p "signatures for this interface")
+               (new-elabindex)
                (ledger vl-unparam-ledger-p))
   (b* ((name (string-fix name))
        (x (change-vl-interface x :name name
                             :paramdecls final-paramdecls))
        ((vl-interface x))
-       (ss (vl-scopestack-push x global-ss))
-       (conf (make-vl-svexconf :ss ss))
+       (elabindex (vl-elabindex-push x))
        (warnings x.warnings)
 
        (blob (vl-interface->genblob x))
-       ((wmv ok warnings keylist new-blob conf ledger :ctx name)
-        (vl-genblob-resolve-aux blob conf ledger nil))
-       (- (vl-svexconf-free conf))
+       ((wmv ok warnings keylist new-blob elabindex ledger :ctx name)
+        (vl-genblob-resolve-aux blob elabindex ledger nil))
+       (elabindex (vl-elabindex-undo))
        (mod (vl-genblob->interface new-blob x))
        (mod (change-vl-interface mod :warnings warnings))
        ((unless ok)
         ;; (cw "not ok~%")
-        (mv nil mod nil ledger)))
-    (mv ok mod keylist ledger)))
+        (mv nil mod nil elabindex ledger)))
+    (mv ok mod keylist elabindex ledger)))
 
 
 (fty::defalist vl-unparam-donelist :key-type vl-unparam-instkey)
@@ -1431,8 +1501,8 @@ for each usertype is stored in the res field.</p>"
     ((instkey vl-unparam-instkey-p "a single signature to expand")
      (donelist vl-unparam-donelist-p "fast alist of previously-seen signatures")
      (depthlimit natp "termination counter")
-     (ledger   vl-unparam-ledger-p)
-     (global-ss vl-scopestack-p))
+     (elabindex "global scope")
+     (ledger   vl-unparam-ledger-p))
     :measure (two-nats-measure depthlimit 0)
     :verify-guards nil
     :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -1446,18 +1516,19 @@ for each usertype is stored in the res field.</p>"
                             to meet this signature, including instantiated
                             ones")
                  (donelist vl-unparam-donelist-p)
+                 (new-elabindex)
                  (ledger   vl-unparam-ledger-p))
     (b* ((instkey (vl-unparam-instkey-fix instkey))
          (ledger (vl-unparam-ledger-fix ledger))
          (donelist (vl-unparam-donelist-fix donelist))
-         ((when (hons-get instkey donelist)) (mv t nil nil nil donelist ledger))
+         ((when (hons-get instkey donelist)) (mv t nil nil nil donelist elabindex ledger))
          (warnings nil)
          ((when (zp depthlimit))
           (mv nil
               (fatal :type :vl-unparameterize-loop
                      :msg "Recursion depth ran out in unparameterize -- loop ~
                            in the hierarchy?")
-              nil nil donelist ledger))
+              nil nil donelist elabindex ledger))
 
          (sig (cdr (hons-get instkey (vl-unparam-ledger->instkeymap ledger))))
          ((unless sig)
@@ -1466,11 +1537,11 @@ for each usertype is stored in the res field.</p>"
               (fatal :type :vl-unparameterize-programming-error
                      :msg "Couldn't find instkey ~a0~%"
                      :args (list instkey))
-              nil nil donelist ledger))
+              nil nil donelist elabindex ledger))
          ((vl-unparam-signature sig))
          (donelist (hons-acons instkey t donelist))
 
-         (mod (vl-scopestack-find-definition sig.modname global-ss))
+         (mod (vl-scopestack-find-definition sig.modname (vl-elabindex->ss)))
 
          ((unless (and mod (or (eq (tag mod) :vl-module)
                                (eq (tag mod) :vl-interface))))
@@ -1478,82 +1549,83 @@ for each usertype is stored in the res field.</p>"
               (fatal :type :vl-unparameterize-programming-error
                      :msg "Couldn't find module ~s0"
                      :args (list sig.modname))
-              nil nil donelist ledger))
+              nil nil donelist elabindex ledger))
 
-         ((mv mod-ok new-mod sigalist ledger)
+         ((mv mod-ok new-mod sigalist elabindex ledger)
           (if (eq (tag mod) :vl-interface)
-              (vl-create-unparameterized-interface mod sig.newname sig.final-params ledger global-ss)
-            (vl-create-unparameterized-module mod sig.newname sig.final-params ledger global-ss)))
+              (vl-create-unparameterized-interface mod sig.newname sig.final-params elabindex ledger)
+            (vl-create-unparameterized-module mod sig.newname sig.final-params elabindex ledger)))
 
-         ((mv unparams-ok warnings new-mods new-ifaces donelist ledger)
-          (vl-unparameterize-main-list sigalist donelist (1- depthlimit) ledger global-ss)))
+         ((mv unparams-ok warnings new-mods new-ifaces donelist elabindex ledger)
+          (vl-unparameterize-main-list sigalist donelist (1- depthlimit) elabindex ledger)))
       (mv (and mod-ok unparams-ok)
           warnings
           (if (eq (tag mod) :vl-module) (cons new-mod new-mods) new-mods)
           (if (eq (tag mod) :vl-interface) (cons new-mod new-ifaces) new-ifaces)
-          donelist ledger)))
+          donelist elabindex ledger)))
 
   (define vl-unparameterize-main-list ((keys vl-unparam-instkeylist-p)
                                        (donelist vl-unparam-donelist-p)
                                        (depthlimit natp)
-                                       (ledger  vl-unparam-ledger-p)
-                                       (global-ss vl-scopestack-p))
+                                       (elabindex "global scope")
+                                       (ledger  vl-unparam-ledger-p))
     :measure (two-nats-measure depthlimit (len keys))
     :returns (mv (successp booleanp :rule-classes :type-prescription)
                  (warnings vl-warninglist-p)
                  (new-mods vl-modulelist-p)
                  (new-ifaces vl-interfacelist-p)
                  (donelist vl-unparam-donelist-p)
+                 (new-elabindex)
                  (ledger vl-unparam-ledger-p))
     (b* ((keys (vl-unparam-instkeylist-fix keys))
          (donelist (vl-unparam-donelist-fix donelist))
          (ledger (vl-unparam-ledger-fix ledger))
-         ((when (atom keys)) (mv t nil nil nil donelist ledger))
-         ((mv ok1 warnings1 new-mods1 new-ifaces1 donelist ledger)
-          (vl-unparameterize-main (car keys) donelist depthlimit ledger global-ss))
-         ((mv ok2 warnings2 new-mods2 new-ifaces2 donelist ledger)
-          (vl-unparameterize-main-list (cdr keys) donelist depthlimit ledger global-ss)))
+         ((when (atom keys)) (mv t nil nil nil donelist elabindex ledger))
+         ((mv ok1 warnings1 new-mods1 new-ifaces1 donelist elabindex ledger)
+          (vl-unparameterize-main (car keys) donelist depthlimit elabindex ledger))
+         ((mv ok2 warnings2 new-mods2 new-ifaces2 donelist elabindex ledger)
+          (vl-unparameterize-main-list (cdr keys) donelist depthlimit elabindex ledger)))
       (mv (and ok1 ok2)
           (append warnings1 warnings2)
           (append new-mods1 new-mods2)
           (append new-ifaces1 new-ifaces2)
-          donelist ledger)))
+          donelist elabindex ledger)))
   ///
   (local (in-theory (disable vl-unparameterize-main
                              vl-unparameterize-main-list)))
   (defthm-vl-unparameterize-main-flag
     (defthm true-listp-of-vl-unparameterize-main-warnings
-      (true-listp (mv-nth 1 (vl-unparameterize-main instkey donelist depthlimit ledger global-ss)))
-      :hints ('(:expand ((vl-unparameterize-main instkey donelist depthlimit ledger global-ss))))
+      (true-listp (mv-nth 1 (vl-unparameterize-main instkey donelist depthlimit elabindex ledger)))
+      :hints ('(:expand ((vl-unparameterize-main instkey donelist depthlimit elabindex ledger))))
       :rule-classes :type-prescription
       :flag vl-unparameterize-main)
     (defthm true-listp-of-vl-unparameterize-main-list-warnings
-      (true-listp (mv-nth 1 (vl-unparameterize-main-list keys donelist depthlimit ledger global-ss)))
-      :hints ('(:expand ((vl-unparameterize-main-list keys donelist depthlimit ledger global-ss))))
+      (true-listp (mv-nth 1 (vl-unparameterize-main-list keys donelist depthlimit elabindex ledger)))
+      :hints ('(:expand ((vl-unparameterize-main-list keys donelist depthlimit elabindex ledger))))
       :rule-classes :type-prescription
       :flag vl-unparameterize-main-list))
 
   (defthm-vl-unparameterize-main-flag
     (defthm true-listp-of-vl-unparameterize-main-mods
-      (true-listp (mv-nth 2 (vl-unparameterize-main instkey donelist depthlimit ledger global-ss)))
-      :hints ('(:expand ((vl-unparameterize-main instkey donelist depthlimit ledger global-ss))))
+      (true-listp (mv-nth 2 (vl-unparameterize-main instkey donelist depthlimit elabindex ledger)))
+      :hints ('(:expand ((vl-unparameterize-main instkey donelist depthlimit elabindex ledger))))
       :rule-classes :type-prescription
       :flag vl-unparameterize-main)
     (defthm true-listp-of-vl-unparameterize-main-list-mods
-      (true-listp (mv-nth 2 (vl-unparameterize-main-list keys donelist depthlimit ledger global-ss)))
-      :hints ('(:expand ((vl-unparameterize-main-list keys donelist depthlimit ledger global-ss))))
+      (true-listp (mv-nth 2 (vl-unparameterize-main-list keys donelist depthlimit elabindex ledger)))
+      :hints ('(:expand ((vl-unparameterize-main-list keys donelist depthlimit elabindex ledger))))
       :rule-classes :type-prescription
       :flag vl-unparameterize-main-list))
 
   (defthm-vl-unparameterize-main-flag
     (defthm true-listp-of-vl-unparameterize-main-ifaces
-      (true-listp (mv-nth 3 (vl-unparameterize-main instkey donelist depthlimit ledger global-ss)))
-      :hints ('(:expand ((vl-unparameterize-main instkey donelist depthlimit ledger global-ss))))
+      (true-listp (mv-nth 3 (vl-unparameterize-main instkey donelist depthlimit elabindex ledger)))
+      :hints ('(:expand ((vl-unparameterize-main instkey donelist depthlimit elabindex ledger))))
       :rule-classes :type-prescription
       :flag vl-unparameterize-main)
     (defthm true-listp-of-vl-unparameterize-main-list-ifaces
-      (true-listp (mv-nth 3 (vl-unparameterize-main-list keys donelist depthlimit ledger global-ss)))
-      :hints ('(:expand ((vl-unparameterize-main-list keys donelist depthlimit ledger global-ss))))
+      (true-listp (mv-nth 3 (vl-unparameterize-main-list keys donelist depthlimit elabindex ledger)))
+      :hints ('(:expand ((vl-unparameterize-main-list keys donelist depthlimit elabindex ledger))))
       :rule-classes :type-prescription
       :flag vl-unparameterize-main-list))
 
@@ -1566,13 +1638,15 @@ for each usertype is stored in the res field.</p>"
                            vl-unparameterize-main-list))))))
 
 
+
 (define vl-toplevel-default-signature ((modname stringp)
-                                       (conf     vl-svexconf-p "design level")
                                        (warnings vl-warninglist-p)
+                                       (elabindex "global scope")
                                        (ledger vl-unparam-ledger-p))
   :returns (mv (ok)
                (instkey (implies ok (vl-unparam-instkey-p instkey)))
                (warnings vl-warninglist-p)
+               (new-elabindex)
                (ledger vl-unparam-ledger-p))
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
                       (implies (vl-module-p x)
@@ -1582,8 +1656,7 @@ for each usertype is stored in the res field.</p>"
                                (vl-scope-p x)))))
   (b* ((modname (string-fix modname))
        (ledger (vl-unparam-ledger-fix ledger))
-       ((vl-svexconf conf))
-       (x (vl-scopestack-find-definition modname conf.ss))
+       (x (vl-scopestack-find-definition modname (vl-elabindex->ss)))
        ((unless (and x
                      (or (eq (tag x) :vl-module)
                          (eq (tag x) :vl-interface))))
@@ -1591,39 +1664,46 @@ for each usertype is stored in the res field.</p>"
             (fatal :type :vl-unparam-fail
                    :msg "Programming error: top-level module/interface ~s0 not found"
                    :args (list modname))
-            ledger))
-
+            elabindex ledger))
+       ((vl-elabindex elabindex))
+       (elabindex (vl-elabindex-push x))
        (paramdecls (if (eq (tag x) :vl-module)
                        (vl-module->paramdecls x)
                      (vl-interface->paramdecls x)))
-
-       ((mv ok warnings mod-conf final-paramdecls)
-        (vl-scope-finalize-params x paramdecls (make-vl-paramargs-named) warnings conf.ss conf))
-       ((unless ok) (mv nil nil warnings ledger))
-
+       ((mv ok warnings elabindex final-paramdecls)
+        (vl-scope-finalize-params paramdecls
+                                  (make-vl-paramargs-named)
+                                  warnings
+                                  elabindex elabindex.ss
+                                  (caar (vl-elabindex->undostack))))
+       (inside-mod-ss (vl-elabindex->ss))
+       (elabindex (vl-elabindex-undo))
+       ((unless ok) (mv nil nil warnings elabindex ledger))
        ((mv instkey ledger) (vl-unparam-add-to-ledger-without-renaming
-                             modname final-paramdecls ledger conf.ss
-                             (vl-svexconf->ss mod-conf))))
+                             modname final-paramdecls ledger elabindex.ss
+                             inside-mod-ss)))
 
-    (mv t instkey warnings ledger)))
+    (mv t instkey warnings elabindex ledger)))
 
 (define vl-toplevel-default-signatures ((names string-listp)
-                                        (conf vl-svexconf-p "design level")
                                         (warnings vl-warninglist-p)
+                                        (elabindex "design level")
                                         (ledger vl-unparam-ledger-p))
   :returns (mv (instkeys vl-unparam-instkeylist-p)
                (warnings vl-warninglist-p)
+               (new-elabindex)
                (ledger vl-unparam-ledger-p))
   (if (atom names)
-      (mv nil
-          (vl-warninglist-fix warnings)
-          (vl-unparam-ledger-fix ledger))
-    (b* (((mv ok instkey warnings ledger) (vl-toplevel-default-signature (car names) conf warnings ledger))
-         ((mv instkeys warnings ledger) (vl-toplevel-default-signatures (cdr names) conf warnings ledger)))
+      (mv nil (vl-warninglist-fix warnings)
+          elabindex (vl-unparam-ledger-fix ledger))
+    (b* (((mv ok instkey warnings elabindex ledger)
+          (vl-toplevel-default-signature (car names) warnings elabindex ledger))
+         ((mv instkeys warnings elabindex ledger)
+          (vl-toplevel-default-signatures (cdr names) warnings elabindex ledger)))
       (mv (if ok
               (cons instkey instkeys)
             instkeys)
-          warnings ledger))))
+          warnings elabindex ledger))))
 
 
 #|
@@ -1635,8 +1715,7 @@ for each usertype is stored in the res field.</p>"
 
 ||#
 (define vl-package-elaborate ((x        vl-package-p)
-                              (conf     vl-svexconf-p
-                                        "design level")
+                              (elabindex "design level")
                               (warnings vl-warninglist-p))
   :prepwork ((local (in-theory (enable (vl-context-p) vl-context-p))))
   :short "Resolve parameters in packages."
@@ -1648,18 +1727,22 @@ scopestacks.</p>"
 
   :returns (mv (ok)
                (warnings1 vl-warninglist-p)
+               (new-elabindex)
                (new-x     vl-package-p))
 
   (b* (((vl-package x) (vl-package-fix x))
-       ((vl-svexconf conf))
-       ((mv ok warnings pkg-conf new-params)
-        (vl-scope-finalize-params x x.paramdecls
+       ((vl-elabindex elabindex))
+       (elabindex (vl-elabindex-push x))
+       ((mv ok warnings elabindex new-params)
+        (vl-scope-finalize-params x.paramdecls
                                   (make-vl-paramargs-named)
                                   warnings
-                                  conf.ss conf))
+                                  elabindex elabindex.ss
+                                  (caar (vl-elabindex->undostack))))
        (new-x (change-vl-package x :paramdecls new-params))
        ((unless ok)
-        (mv nil warnings x))
+        (b* ((elabindex (vl-elabindex-undo)))
+          (mv nil warnings elabindex x)))
        ;; Note: When processing modules/interfaces, rather than using the
        ;; svexconf returned by scope-finalize-params we create a new empty conf
        ;; containing a SS with the new module (see the comment in
@@ -1669,21 +1752,22 @@ scopestacks.</p>"
        ;; currently only use scopestack hashing for disambiguating
        ;; unparameterized modules, which don't currently exist inside
        ;; packages).
-       ((wmv ok warnings new-x pkg-conf)
-        (vl-package-elaborate-aux new-x pkg-conf)))
-    (vl-svexconf-free pkg-conf)
-    (mv ok warnings new-x)))
+       ((wmv ok warnings new-x elabindex)
+        (vl-package-elaborate-aux new-x elabindex))
+       (elabindex (vl-elabindex-undo)))
+    (mv ok warnings elabindex new-x)))
 
 (define vl-packagelist-elaborate ((x vl-packagelist-p)
-                                  (conf vl-svexconf-p "design level")
+                                  (elabindex "design level")
                                   (warnings vl-warninglist-p))
   :returns (mv (ok)
                (warnings1 vl-warninglist-p)
+               (new-elabindex)
                (new-x     vl-packagelist-p))
-  (b* (((when (atom x)) (mv t (ok) nil))
-       ((mv ok1 warnings pkg1) (vl-package-elaborate (car x) conf warnings))
-       ((mv ok2 warnings pkgs) (vl-packagelist-elaborate (cdr x) conf warnings)))
-    (mv (and ok1 ok2) warnings (cons pkg1 pkgs))))
+  (b* (((when (atom x)) (mv t (ok) elabindex nil))
+       ((mv ok1 warnings elabindex pkg1) (vl-package-elaborate (car x) elabindex warnings))
+       ((mv ok2 warnings elabindex pkgs) (vl-packagelist-elaborate (cdr x) elabindex  warnings)))
+    (mv (and ok1 ok2) warnings elabindex (cons pkg1 pkgs))))
 
 
 
@@ -1726,7 +1810,23 @@ scopestacks.</p>"
 ;;     (mv t warnings (cons pkg1 rest-packages))))
 
 
+#||
+(Trace$ #!vl (vl-design-elaborate
+              :entry (list 'vl-design-elaborate (with-local-ps (vl-pp-design x)))
+              :exit (list 'vl-design-elaborate (with-local-ps (vl-pp-design value)))))
 
+
+(Trace$ #!vl (vl-design-elaborate
+              :entry (list 'vl-design-elaborate-entry (vl-paramdecllist->names (vl-design->paramdecls x)))
+              :exit (list 'vl-design-elaborate-exit (vl-paramdecllist->names (vl-design->paramdecls value)))))
+
+(Trace$ #!vl (vl-scope-finalize-params
+              :entry (list 'vl-scope-finalize-params-entry (vl-paramdecllist->names formals))
+              :exit (list 'vl-scope-finalize-params-exit (vl-paramdecllist->names (nth 3 values)))))
+
+
+
+||#
 
 (define vl-design-elaborate
   :short "Top-level @(see unparameterization) transform."
@@ -1741,21 +1841,24 @@ scopestacks.</p>"
        ;; We won't need this.
        ;; ((vl-design x) (vl-design-unparam-check x))
        ((vl-design x) (vl-design-fix x))
-       (ss  (vl-scopestack-init x))
-       (conf1 (make-vl-svexconf :ss ss))
-       ((mv ?ok warnings ?conf params)
-        (vl-scope-finalize-params x
-                                  x.paramdecls
+       ((local-stobjs elabindex) (mv new-x elabindex))
+       (elabindex (vl-elabindex-init x))
+       ((mv ?ok warnings elabindex params)
+        (vl-scope-finalize-params x.paramdecls
                                   (make-vl-paramargs-named)
                                   x.warnings
-                                  ss conf1)) ;; conf1 won't actually be used
+                                  elabindex
+                                  ;; outer ss and scopes shouldn't be used
+                                  nil nil))
        (new-x (change-vl-design x :paramdecls params))
 
-       ;; We used to use the conf returned by scope-finalize-params here, which
-       ;; might be ok but it adds an extra level of hierarchy in the ss which
-       ;; is a little weird here.
-       (ss (vl-scopestack-init new-x))
-       (conf (make-vl-svexconf :ss ss))
+       ;; ;; We used to use the conf returned by scope-finalize-params here, which
+       ;; ;; might be ok but it adds an extra level of hierarchy in the ss which
+       ;; ;; is a little weird here.
+       ;; (ss (vl-scopestack-init new-x))
+       ;; (conf (make-vl-svexconf :ss ss))
+
+       (elabindex (vl-elabindex-init new-x))
 
        ;; Why do we call design-elaborate-aux before unparameterizing modules,
        ;; interfaces, & packages?  This skips those fields, so we're really
@@ -1763,18 +1866,23 @@ scopestacks.</p>"
        ;; paramdecls (though these should already be done), udps, and
        ;; dpiimports.  We could perhaps get into trouble here since these could
        ;; depend on packages and package parameters.
-       ((wmv ?ok1 warnings new-x conf)
-        (vl-design-elaborate-aux new-x conf))
+       ((wmv ?ok1 warnings new-x elabindex)
+        (vl-design-elaborate-aux new-x elabindex))
 
-       ((mv ?ok warnings new-packages)
-        (vl-packagelist-elaborate x.packages conf warnings))
+       ((mv ?ok warnings elabindex new-packages)
+        (vl-packagelist-elaborate x.packages elabindex warnings))
 
-       (new-x (change-vl-design new-x :packages new-packages))
-       ;; Note: For some reason we previously didn't make a new conf with the
-       ;; new packages in it.  Not sure if that was intentional or not.
-       ;; Probably want some good cosim testing of package parameters.
-       (ss (vl-scopestack-init new-x))
-       (conf (make-vl-svexconf :ss ss))
+       ;; Note: We used to make a new elabindex with the elaborated design and
+       ;; packages in it.  Not sure if we need to do this anymore since the
+       ;; elabindex should keep track of all that (and there are no parameter
+       ;; overrides to confuse things).
+       ;; (new-x (change-vl-design new-x :packages new-packages))
+
+       ;; ;; Note: For some reason we previously didn't make a new conf with the
+       ;; ;; new packages in it.  Not sure if that was intentional or not.
+       ;; ;; Probably want some good cosim testing of package parameters.
+       ;; (ss (vl-scopestack-init new-x))
+       ;; (conf (make-vl-svexconf :ss ss))
 
        (topmods
         ;; [Jared] for linting it's nice to also keep top-level interfaces
@@ -1793,14 +1901,14 @@ scopestacks.</p>"
        ;; every top-level module with its default parameters, so that we don't
        ;; just throw away the whole design if someone is trying to check a
        ;; parameterized module.
-       ((mv top-sigs warnings ledger)
-        (vl-toplevel-default-signatures topmods conf warnings ledger))
-       (- (vl-svexconf-free conf))
+       ((mv top-sigs warnings elabindex ledger)
+        (vl-toplevel-default-signatures topmods warnings elabindex ledger))
 
-       ((wmv ?ok warnings new-mods new-ifaces donelist ledger)
-        (vl-unparameterize-main-list top-sigs nil 1000 ledger ss)))
+       ((wmv ?ok warnings new-mods new-ifaces donelist elabindex ledger)
+        (vl-unparameterize-main-list top-sigs nil 1000 elabindex ledger)))
     (fast-alist-free donelist)
     (vl-free-namedb (vl-unparam-ledger->ndb ledger))
     (fast-alist-free (vl-unparam-ledger->instkeymap ledger))
     (vl-scopestacks-free)
-    (change-vl-design new-x :warnings warnings :mods new-mods :interfaces new-ifaces)))
+    (mv (change-vl-design new-x :warnings warnings :mods new-mods :interfaces new-ifaces :packages new-packages)
+        elabindex)))

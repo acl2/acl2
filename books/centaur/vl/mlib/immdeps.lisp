@@ -1161,7 +1161,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-udp-immdeps* ((x     vl-udp-p)
                          (graph vl-immdepgraph-p)
                          &key
-                         (ss vl-scopestack-p))
+                         ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (declare (ignorable ss))
   (b* (((vl-udp x) (vl-udp-fix x))
@@ -1178,7 +1178,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-config-immdeps* ((x     vl-config-p)
                             (graph vl-immdepgraph-p)
                             &key
-                            (ss vl-scopestack-p))
+                            ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (declare (ignorable ss))
   (b* (((vl-config x) (vl-config-fix x))
@@ -1189,11 +1189,18 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 
 (def-vl-immdeps*-list vl-configlist vl-config)
 
+#||
+(trace$ #!vl (vl-package-immdeps*-fn
+              :entry (list 'vl-package-immdeps
+                           (with-local-ps (vl-pp-package x))
+                           graph
+                           (vl-scopestack->hashkey ss)))) 
 
+||#
 (define vl-package-immdeps* ((x     vl-package-p)
                              (graph vl-immdepgraph-p)
                              &key
-                             (ss vl-scopestack-p))
+                             ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (b* (((vl-package x) (vl-package-fix x))
        (ss  (vl-scopestack-push x ss))
@@ -1211,7 +1218,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-interface-immdeps* ((x vl-interface-p)
                                (graph vl-immdepgraph-p)
                                &key
-                               (ss vl-scopestack-p))
+                               ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (b* (((vl-interface x) (vl-interface-fix x))
        (ss  (vl-scopestack-push x ss))
@@ -1245,7 +1252,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-program-immdeps* ((x     vl-program-p)
                              (graph vl-immdepgraph-p)
                             &key
-                            (ss vl-scopestack-p))
+                            ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (declare (ignorable ss))
   (b* (((vl-program x) (vl-program-fix x))

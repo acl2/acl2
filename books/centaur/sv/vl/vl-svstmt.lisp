@@ -32,6 +32,7 @@
 (include-book "expr")
 (include-book "centaur/vl/mlib/writer" :dir :system) ;; bozo?
 (include-book "svstmt-compile")
+(include-book "centaur/fty/visitor" :dir :system)
 ;; (include-book "vl-fns-called")
 ;; (include-book "vl-paramrefs")
 ;; (include-book "centaur/vl/transforms/always/util" :dir :system)
@@ -71,7 +72,8 @@ because... (BOZO)</p>
 
 
 (define vl-index-expr-svex/size/type ((x vl-expr-p)
-                                      (conf vl-svexconf-p))
+                                      (ss vl-scopestack-p)
+                                      (scopes vl-elabscopes-p))
   :guard (vl-expr-case x :vl-index)
   :returns (mv (ok)
                (warnings vl-warninglist-p)
@@ -79,7 +81,7 @@ because... (BOZO)</p>
                (type (implies ok (vl-datatype-p type)))
                (size (implies ok (natp size)) :rule-classes :type-prescription))
   (b* ((warnings nil)
-       ((wmv warnings svex type) (vl-index-expr-to-svex x conf))
+       ((wmv warnings svex type) (vl-index-expr-to-svex x ss scopes))
        ((unless type) (mv nil warnings svex nil nil))
        ((mv err size) (vl-datatype-size type))
        ((when (or err (not size)))
@@ -316,10 +318,10 @@ because... (BOZO)</p>
 
 
 ;;         (b* (((wmv ok warnings lhssvex ?type size)
-;;               (vl-index-expr-svex/size/type lhs conf))
+;;               (vl-index-expr-svex/size/type lhs ss scopes))
 ;;              ((unless ok)
 ;;               (mv nil warnings nil nil))
-;;              ((vl-svexconf conf))
+;;              ((vl-svexconf ss scopes))
 ;;              ((mv err opinfo) (vl-index-expr-typetrace lhs conf.ss conf.typeov))
 ;;              ((when err)
 ;;               (mv nil
@@ -334,7 +336,7 @@ because... (BOZO)</p>
 ;;              ;; whole variable, where we really want the longest static prefix.
 ;;              ((wmv ok warnings wholesvex ?wholetype wholesize)
 ;;               (vl-index-expr-svex/size/type
-;;                (make-vl-index :scope opinfo.prefixname) conf))
+;;                (make-vl-index :scope opinfo.prefixname) ss scopes))
 ;;              ((unless ok) (mv nil warnings nil nil))
 ;;              ((wmv ok warnings svstmts)
 ;;               (vl-single-procedural-assign->svstmts
@@ -344,11 +346,15 @@ because... (BOZO)</p>
 
 
 (defines vl-procedural-assign->svstmts
+
+
 ;; (trace$
 ;;  #!vl (vl-procedural-assign->svstmts
 ;;        :entry (list 'vl-procedural-assign->svstmts
 ;;                     (with-local-ps (vl-pp-expr lhs))
-;;                     rhssvex)
+;;                     rhssvex
+;;                     (vl-scopestack->hashkey ss)
+;;                     (strip-cars scopes))
 ;;        :exit (b* (((list ?ok ?warnings ?svstmts ?shift) values)
 ;;                   (end (and warnings
 ;;                             (list (with-local-ps (vl-print-warnings warnings))))))
@@ -373,7 +379,8 @@ because... (BOZO)</p>
   (define vl-procedural-assign->svstmts ((lhs vl-expr-p)
                                          (rhssvex sv::svex-p)
                                          (blockingp booleanp)
-                                         (conf vl-svexconf-p))
+                                         (ss vl-scopestack-p)
+                                         (scopes vl-elabscopes-p))
     :measure (vl-expr-count lhs)
     :verify-guards nil
     :returns (mv ok
@@ -387,8 +394,7 @@ because... (BOZO)</p>
          (lhs (vl-expr-fix lhs)))
       (vl-expr-case lhs
         :vl-index
-        (b* (((vl-svexconf conf))
-             ((mv err opinfo) (vl-index-expr-typetrace lhs conf.ss conf.typeov))
+        (b* (((mv err opinfo) (vl-index-expr-typetrace lhs ss scopes))
              ((when err)
               (mv nil
                   (fatal :type :vl-assignstmt-fail
@@ -397,7 +403,7 @@ because... (BOZO)</p>
                   nil nil))
              ((vl-operandinfo opinfo))
              ((wmv warnings indices ?sizes)
-              (vl-exprlist-to-svex-selfdet (vl-operandinfo->indices opinfo) conf))
+              (vl-exprlist-to-svex-selfdet (vl-operandinfo->indices opinfo) ss scopes))
 
              ((mv err dyn-size) (vl-datatype-size opinfo.type))
              ((unless (and (not err) dyn-size))
@@ -412,7 +418,7 @@ because... (BOZO)</p>
              ;; *svex-longest-static-prefix-var*.
              ((mv err longest-static-prefix-svex lsp-type dynselect-expr)
               (vl-operandinfo-to-svex-longest-static-prefix
-               opinfo indices conf.ss conf.params))
+               opinfo indices ss scopes))
              (dynselect-trunc (sv::svcall sv::concat (svex-int dyn-size) dynselect-expr (svex-x)))
              ((when err)
               (mv nil
@@ -468,7 +474,7 @@ because... (BOZO)</p>
                      :blockingp blockingp))
               dyn-size))
         :vl-concat
-        (vl-procedural-assign-concat->svstmts lhs.parts rhssvex blockingp conf)
+        (vl-procedural-assign-concat->svstmts lhs.parts rhssvex blockingp ss scopes)
         :otherwise
         (mv nil
             (fatal :type :vl-assignstmt-fail
@@ -479,7 +485,8 @@ because... (BOZO)</p>
   (define vl-procedural-assign-concat->svstmts ((parts vl-exprlist-p)
                                                 (rhssvex sv::svex-p)
                                                 (blockingp booleanp)
-                                                (conf vl-svexconf-p))
+                                                (ss vl-scopestack-p)
+                                                (scopes vl-elabscopes-p))
     :measure (vl-exprlist-count parts)
     :returns (mv ok
                  (warnings vl-warninglist-p)
@@ -487,11 +494,11 @@ because... (BOZO)</p>
                  (shift (implies ok (natp shift)) :rule-classes :type-prescription))
     (b* (((when (atom parts)) (mv t nil nil 0))
          ((mv ok warnings svstmts2 shift2)
-          (vl-procedural-assign-concat->svstmts (cdr parts) rhssvex blockingp conf))
+          (vl-procedural-assign-concat->svstmts (cdr parts) rhssvex blockingp ss scopes))
          ((unless ok) (mv nil warnings nil nil))
          (rhs (sv::svcall sv::rsh (svex-int shift2) rhssvex))
          ((wmv ok warnings svstmts1 shift1)
-          (vl-procedural-assign->svstmts (car parts) rhs blockingp conf))
+          (vl-procedural-assign->svstmts (car parts) rhs blockingp ss scopes))
          ((unless ok) (mv nil warnings nil nil)))
       (mv t warnings (append-without-guard svstmts1 svstmts2)
           (+ shift1 shift2))))
@@ -536,7 +543,7 @@ because... (BOZO)</p>
   (defthm-vl-procedural-assign->svstmts-flag
     (defthm vars-of-vl-procedural-assign->svstmts
       (b* (((mv ?ok ?warnings ?svstmts ?shift)
-            (vl-procedural-assign->svstmts lhs rhssvex blockingp conf)))
+            (vl-procedural-assign->svstmts lhs rhssvex blockingp ss scopes)))
         (implies (sv::svarlist-addr-p (sv::svex-vars rhssvex))
                  (sv::svarlist-addr-p
                   (sv::svstmtlist-vars svstmts))))
@@ -546,7 +553,7 @@ because... (BOZO)</p>
 
     (defthm vars-of-vl-procedural-assign-concat->svstmts
       (b* (((mv ?ok ?warnings ?svstmts ?shift)
-            (vl-procedural-assign-concat->svstmts parts rhssvex blockingp conf)))
+            (vl-procedural-assign-concat->svstmts parts rhssvex blockingp ss scopes)))
         (implies (sv::svarlist-addr-p (sv::svex-vars rhssvex))
                  (sv::svarlist-addr-p
                   (sv::svstmtlist-vars svstmts))))
@@ -563,7 +570,8 @@ because... (BOZO)</p>
 (define vl-assignstmt->svstmts ((lhs vl-expr-p)
                                 (rhs vl-expr-p)
                                 (blockingp booleanp)
-                                (conf vl-svexconf-p))
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p))
   :returns (mv (ok)
                (warnings vl-warninglist-p)
                (res sv::svstmtlist-p))
@@ -574,8 +582,7 @@ because... (BOZO)</p>
       :vl-index
       ;; If it's an index expression we can look up its type and just process a
       ;; single assignment
-      (b* (((vl-svexconf conf))
-           ((mv err opinfo) (vl-index-expr-typetrace lhs conf.ss conf.typeov))
+      (b* (((mv err opinfo) (vl-index-expr-typetrace lhs ss scopes))
            ((when err)
             (mv nil
                 (fatal :type :vl-assignstmt-fail
@@ -584,21 +591,21 @@ because... (BOZO)</p>
                 nil))
            ((vl-operandinfo opinfo))
            ((wmv warnings rhssvex)
-            (vl-expr-to-svex-datatyped rhs lhs opinfo.type conf))
+            (vl-expr-to-svex-datatyped rhs lhs opinfo.type ss scopes))
            ((wmv ok warnings svstmts ?shift)
-            (vl-procedural-assign->svstmts lhs rhssvex blockingp conf)))
+            (vl-procedural-assign->svstmts lhs rhssvex blockingp ss scopes)))
         (mv ok warnings svstmts))
       :vl-concat
       ;; BOZO we don't currently get truncation warnings for this, maybe think
       ;; about whether we can fix it.
       (b* (((mv & & lhssize)
             ;; BOZO really want to discard warnings?
-            (vl-expr-to-svex-selfdet lhs nil conf))
+            (vl-expr-to-svex-selfdet lhs nil ss scopes))
            ((wmv warnings rhssvex ?rhssize)
-            (vl-expr-to-svex-selfdet rhs lhssize conf))
+            (vl-expr-to-svex-selfdet rhs lhssize ss scopes))
            ((wmv ok warnings svstmts ?shift)
             (vl-procedural-assign->svstmts
-             lhs rhssvex blockingp conf)))
+             lhs rhssvex blockingp ss scopes)))
         (mv ok warnings svstmts))
       :otherwise
       (mv nil
@@ -612,11 +619,11 @@ because... (BOZO)</p>
 
   ;; (b* ((warnings nil)
   ;;      ((wmv warnings svex-lhs lhs-type)
-  ;;       (vl-expr-to-svex-lhs lhs conf))
+  ;;       (vl-expr-to-svex-lhs lhs ss scopes))
   ;;      ((unless lhs-type)
   ;;       (mv nil warnings nil))
   ;;      ((wmv warnings svex-rhs)
-  ;;       (vl-expr-to-svex-datatyped rhs lhs-type conf)))
+  ;;       (vl-expr-to-svex-datatyped rhs lhs-type ss scopes)))
   ;;   (mv t warnings
   ;;       (list (sv::make-svstmt-assign :lhs svex-lhs :rhs svex-rhs
   ;;                                       :blockingp blockingp))))
@@ -635,11 +642,11 @@ because... (BOZO)</p>
 ;;                (res sv::svstmtlist-p))
 ;;   (b* ((warnings nil)
 ;;        ((wmv warnings svex-lhs lhs-type)
-;;         (vl-expr-to-svex-lhs lhs conf))
+;;         (vl-expr-to-svex-lhs lhs ss scopes))
 ;;        ((unless lhs-type)
 ;;         (mv nil warnings nil))
 ;;        ((wmv warnings svex-rhs)
-;;         (vl-expr-to-svex-datatyped rhs lhs-type conf)))
+;;         (vl-expr-to-svex-datatyped rhs lhs-type ss scopes)))
 ;;     (mv t warnings
 ;;         (list (sv::make-svstmt-assign :lhs svex-lhs :rhs svex-rhs
 ;;                                         :blockingp blockingp))))
@@ -651,24 +658,37 @@ because... (BOZO)</p>
 
 
 (define vl-vardecllist->svstmts ((x vl-vardecllist-p)
-                                 (conf vl-svexconf-p))
+                                 (ss vl-scopestack-p)
+                                 (scopes vl-elabscopes-p))
   :returns (mv (ok)
                (warnings vl-warninglist-p)
+               (locals (and (sv::svarlist-p locals)
+                            (sv::svarlist-addr-p locals))
+                       :hints(("Goal" :in-theory (enable sv::svar-addr-p))))
                (res (and (sv::svstmtlist-p res)
                          (sv::svarlist-addr-p
                           (sv::svstmtlist-vars res)))))
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
   (b* ((warnings nil)
-       ((when (atom x)) (mv t (ok) nil))
+       ((when (atom x)) (mv t (ok) nil nil))
        (x1 (vl-vardecl-fix (car x)))
-       ((mv ok warnings rest)
-        (vl-vardecllist->svstmts (cdr x) conf))
-       ((unless ok) (mv nil warnings rest))
+       ((mv ok warnings rest-locals rest-stmts)
+        (vl-vardecllist->svstmts (cdr x) ss scopes))
+       ((unless ok) (mv nil warnings rest-locals rest-stmts))
        ((vl-vardecl x1) x1)
-       ;; skip if there's no initial value given
-       ((unless x1.initval) (mv ok warnings rest))
+       (locals (cons
+                (sv::make-svar
+                 :name (sv::make-address :path (sv::make-path-wire :name x1.name)
+                                         :scope 0))
+                rest-locals))
+       ;; only make a local if there's no initial value given
+       ((unless x1.initval)
+        (mv ok warnings locals nil))
 
-       (lhs (vl-idexpr x1.name)))
-    (vl-assignstmt->svstmts lhs x1.initval t conf)))
+       (lhs (vl-idexpr x1.name))
+       ((wmv ok warnings assign)
+        (vl-assignstmt->svstmts lhs x1.initval t ss scopes)))
+    (mv ok warnings locals (append-without-guard assign rest-stmts))))
 
 (local (in-theory (disable member append
                            sv::svarlist-addr-p-when-subsetp-equal
@@ -692,13 +712,14 @@ because... (BOZO)</p>
                                  (test sv::svex-p)
                                  (size natp)
                                  (casetype vl-casetype-p)
-                                 (conf vl-svexconf-p))
+                                 (ss vl-scopestack-p)
+                                 (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (cond sv::svex-p))
   (if (atom x)
       (mv nil (svex-int 0))
-    (b* (((mv warnings rest) (vl-caseexprs->svex-test (cdr x) test size casetype conf))
-         ((wmv warnings first &) (vl-expr-to-svex-selfdet (car x) (lnfix size) conf)))
+    (b* (((mv warnings rest) (vl-caseexprs->svex-test (cdr x) test size casetype ss scopes))
+         ((wmv warnings first &) (vl-expr-to-svex-selfdet (car x) (lnfix size) ss scopes)))
     (mv warnings
         (sv::svcall sv::bitor
                       (case (vl-casetype-fix casetype)
@@ -713,7 +734,8 @@ because... (BOZO)</p>
 (defines vl-stmt->svstmts
   :prepwork ((local (in-theory (disable not))))
   (define vl-stmt->svstmts ((x vl-stmt-p)
-                            (conf vl-svexconf-p)
+                            (ss vl-scopestack-p)
+                            (scopes vl-elabscopes-p)
                             (nonblockingp))
     :verify-guards nil
     :returns (mv (ok)
@@ -741,94 +763,113 @@ because... (BOZO)</p>
                                  :args (list x))
                          (ok)))
              ((wmv ok warnings res)
-              (vl-assignstmt->svstmts x.lvalue x.expr (eq x.type :vl-blocking) conf)))
+              (vl-assignstmt->svstmts x.lvalue x.expr (eq x.type :vl-blocking) ss scopes)))
           (mv ok warnings res))
         :vl-ifstmt
         (b* (((wmv warnings cond ?type ?size)
-              (vl-expr-to-svex-untyped x.condition conf))
+              (vl-expr-to-svex-untyped x.condition ss scopes))
              ((wmv ok1 warnings true)
-              (vl-stmt->svstmts x.truebranch conf nonblockingp))
+              (vl-stmt->svstmts x.truebranch ss scopes nonblockingp))
              ((wmv ok2 warnings false)
-              (vl-stmt->svstmts x.falsebranch conf nonblockingp)))
+              (vl-stmt->svstmts x.falsebranch ss scopes nonblockingp)))
           (mv (and ok1 ok2) warnings
               (list (sv::make-svstmt-if :cond cond :then true :else false))))
         :vl-whilestmt
         (b* (((wmv warnings cond ?type ?size)
-              (vl-expr-to-svex-untyped x.condition conf))
+              (vl-expr-to-svex-untyped x.condition ss scopes))
              ((wmv ok warnings body)
-              (vl-stmt->svstmts x.body conf nonblockingp)))
+              (vl-stmt->svstmts x.body ss scopes nonblockingp)))
           (mv ok warnings (list (sv::make-svstmt-while :cond cond :body body))))
         :vl-forstmt
-        (b* ((warnings (if (consp x.initdecls)
-                           (warn :type :vl-stmt-unsupported
-                                 :msg "Missing support for locally ~
-                                       defined for loop vars: ~a0"
-                                 :args (list x))
-                         (ok)))
-             ((wmv ok1 warnings initstmts1)
-              (vl-vardecllist->svstmts x.initdecls conf))
+        (b* (;; (warnings (if (consp x.initdecls)
+             ;;               (warn :type :vl-stmt-unsupported
+             ;;                     :msg "Missing support for locally ~
+             ;;                           defined for loop vars: ~a0"
+             ;;                     :args (list x))
+             ;;             (ok)))
+             (blkscope (vl-forstmt->blockscope x))
+             (blk-ss (vl-scopestack-push blkscope ss))
+             (blk-scopes (vl-elabscopes-push-scope blkscope scopes))
+             ((wmv ok1 warnings locals initstmts1)
+              (vl-vardecllist->svstmts x.initdecls blk-ss blk-scopes))
              ((wmv ok2 warnings initstmts2)
-              (vl-stmtlist->svstmts x.initassigns conf nonblockingp))
+              (vl-stmtlist->svstmts x.initassigns blk-ss blk-scopes nonblockingp))
              ((wmv warnings cond ?type ?size)
-              (vl-expr-to-svex-untyped x.test conf))
+              (vl-expr-to-svex-untyped x.test blk-ss blk-scopes))
              ((wmv ok3 warnings stepstmts)
-              (vl-stmtlist->svstmts x.stepforms conf nonblockingp))
+              (vl-stmtlist->svstmts x.stepforms blk-ss blk-scopes nonblockingp))
              ((wmv ok4 warnings body)
-              (vl-stmt->svstmts x.body conf nonblockingp)))
+              (vl-stmt->svstmts x.body blk-ss blk-scopes nonblockingp)))
           (mv (and ok1 ok2 ok3 ok4)
               warnings
-              (append-without-guard
-               initstmts1 initstmts2
-               (list (sv::make-svstmt-while
-                      :cond cond
-                      :body (append-without-guard body stepstmts))))))
+              (list
+               (sv::make-svstmt-scope
+                :locals locals
+                :body
+                (append-without-guard
+                 initstmts1 initstmts2
+                 (list (sv::make-svstmt-while
+                        :cond cond
+                        :body (append-without-guard body stepstmts))))))))
         :vl-blockstmt
         (b* (((unless (or (vl-blocktype-equiv x.blocktype :vl-beginend)
                           (<= (len x.stmts) 1)))
               (fail (warn :type :vl-stmt-unsupported
                           :msg "We don't support fork/join block statements: ~a0"
                           :args (list x))))
-             (warnings (if (or (consp x.vardecls)
-                               (consp x.paramdecls))
-                           (warn :type :vl-stmt-unsupported
-                                 :msg "Missing support for block ~
-                                       statements with local variables: ~a0"
-                                 :args (list x))
-                         (ok)))
-             ;; ((wmv ok1 warnings initstmts)
-             ;;  (vl-vardecllist->svstmts x.vardecls conf))
+             ;; (warnings (if (or (consp x.vardecls)
+             ;;                   (consp x.paramdecls))
+             ;;               (warn :type :vl-stmt-unsupported
+             ;;                     :msg "Missing support for block ~
+             ;;                           statements with local variables: ~a0"
+             ;;                     :args (list x))
+             ;;             (ok)))
+             (blkscope (vl-blockstmt->blockscope x))
+             (blk-ss (vl-scopestack-push blkscope ss))
+             (blk-scopes (vl-elabscopes-push-scope blkscope scopes))
+             ((wmv ok1 warnings locals initstmts)
+              (vl-vardecllist->svstmts x.vardecls blk-ss blk-scopes))
              ((wmv ok2 warnings bodystmts)
-              (vl-stmtlist->svstmts x.stmts conf nonblockingp)))
-          (mv (and ok2)
+              (vl-stmtlist->svstmts x.stmts blk-ss blk-scopes nonblockingp)))
+          (mv (and ok1 ok2)
               warnings
-              bodystmts))
+              (list
+               (sv::make-svstmt-scope
+                :locals locals
+                :body (append-without-guard initstmts bodystmts)))))
 
         :vl-casestmt
         (b* ((caseexprs (cons x.test (vl-caselist->caseexprs x.caselist)))
-             ((vl-svexconf conf))
              ((wmv warnings sizes)
-              (vl-exprlist-selfsize caseexprs conf.ss conf.typeov))
+              (vl-exprlist-selfsize caseexprs ss scopes))
              ((when (member nil (list-fix sizes)))
               ;; already warned
               (fail (warn :type :vl-stmt->svstmts-failed
                           :msg "Failed to size some case expression: ~a0"
                           :args (list x))))
              (size (max-nats sizes))
-             ((wmv ok1 warnings default) (vl-stmt->svstmts x.default conf nonblockingp))
+             ((wmv ok1 warnings default) (vl-stmt->svstmts x.default ss scopes nonblockingp))
              ((wmv warnings test-svex &)
-              (vl-expr-to-svex-selfdet x.test size conf))
+              (vl-expr-to-svex-selfdet x.test size ss scopes))
              ((wmv ok2 warnings ans)
-              (vl-caselist->svstmts x.caselist size test-svex default x.casetype conf nonblockingp)))
+              (vl-caselist->svstmts x.caselist size test-svex default x.casetype ss scopes nonblockingp)))
           (mv (and ok1 ok2) warnings ans))
 
-
+        :vl-callstmt
+        (b* (((when (and x.systemp
+                         (equal x.id (vl-idscope "$display"))))
+              (mv t warnings nil)))
+          (fail (warn :type :vl-stmt-unsupported
+                      :msg "Statement type not supported: ~a0"
+                      :args (list x))))
         :otherwise
         (fail (warn :type :vl-stmt-unsupported
                     :msg "Statement type not supported: ~a0"
                     :args (list x))))))
 
   (define vl-stmtlist->svstmts ((x vl-stmtlist-p)
-                                (conf vl-svexconf-p)
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p)
                                 (nonblockingp))
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
@@ -838,8 +879,8 @@ because... (BOZO)</p>
     :measure (vl-stmtlist-count x)
     (b* ((warnings nil)
          ((when (atom x)) (mv t (ok) nil))
-         ((wmv ok1 warnings x1) (vl-stmt->svstmts (car x) conf nonblockingp))
-         ((wmv ok2 warnings x2) (vl-stmtlist->svstmts (cdr x) conf nonblockingp)))
+         ((wmv ok1 warnings x1) (vl-stmt->svstmts (car x) ss scopes nonblockingp))
+         ((wmv ok2 warnings x2) (vl-stmtlist->svstmts (cdr x) ss scopes nonblockingp)))
       (mv (and ok1 ok2) warnings (append-without-guard x1 x2))))
 
   (define vl-caselist->svstmts ((x vl-caselist-p)
@@ -847,7 +888,8 @@ because... (BOZO)</p>
                                 (test sv::svex-p)
                                 (default sv::svstmtlist-p)
                                 (casetype vl-casetype-p)
-                                (conf vl-svexconf-p)
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p)
                                 (nonblockingp))
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
@@ -861,10 +903,10 @@ because... (BOZO)</p>
          ((when (atom x))
           (mv t nil (sv::svstmtlist-fix default)))
          ((cons tests stmt) (car x))
-         ((mv ok1 warnings rest) (vl-caselist->svstmts (cdr x) size test default casetype conf nonblockingp))
-         ((wmv ok2 warnings first) (vl-stmt->svstmts stmt conf nonblockingp))
+         ((mv ok1 warnings rest) (vl-caselist->svstmts (cdr x) size test default casetype ss scopes nonblockingp))
+         ((wmv ok2 warnings first) (vl-stmt->svstmts stmt ss scopes nonblockingp))
          ((wmv warnings test)
-          (vl-caseexprs->svex-test tests test size casetype conf)))
+          (vl-caseexprs->svex-test tests test size casetype ss scopes)))
       (mv (and ok1 ok2)
           warnings
           (list (sv::make-svstmt-if :cond test :then first :else rest)))))
@@ -878,12 +920,73 @@ because... (BOZO)</p>
 
 
 
+;; (define vl-vardecls-to-assigns ((x vl-vardecllist-p))
+;;   :returns (assigns vl-stmtlist-p)
+;;   (b* (((when (atom x)) nil)
+;;        ((vl-vardecl x1) (car x))
+;;        ((unless x1.initval)
+;;         (vl-vardecls-to-assigns (cdr x))))
+;;     (cons (make-vl-assignstmt :lvalue (vl-idexpr x1.name)
+;;                               :type :vl-blocking
+;;                               :expr x1.initval
+;;                               :loc x1.loc)
+;;           (vl-vardecls-to-assigns (cdr x)))))
+
+;; (define vl-vardecls-remove-initvals ((x vl-vardecllist-p))
+;;   :returns (new-x vl-vardecllist-p)
+;;   (b* (((when (atom x)) nil)
+;;        ((vl-vardecl x1) (car x)))
+;;     (cons (change-vl-vardecl x1 :initval nil)
+;;           (vl-vardecls-remove-initvals (cdr x)))))
+
+
+
+;; (fty::defvisitor-template fix-vardecls ((x :object))
+;;   :type-fns ((vl-stmt vl-stmt-fix-vardecls))
+;;   :renames ((vl-stmt vl-stmt-fix-vardecls-aux))
+;;   :returns (mv (new-x :update)
+;;                (vardecls (:join (append-without-guard vardecls1 vardecls)
+;;                           :tmp-var vardecls1
+;;                           :initial nil)
+;;                          vl-vardecllist-p))
+;;     :fnname-template <type>-fix-vardecls)
+
+;; (fty::defvisitor-multi vl-stmt-fix-vardecls
+;;   (fty::defvisitors
+;;     :measure (two-nats-measure :count 0)
+;;     :template fix-vardecls
+;;     :types (vl-stmt))
+
+;;   (define vl-stmt-fix-vardecls ((x vl-stmt-p))
+;;     :returns (mv (new-x vl-stmt-p)
+;;                  (vardecls vl-vardecllist-p))
+;;     :measure (two-nats-measure (vl-stmt-count x) 1)
+;;     (b* (((mv x sub-vardecls) (vl-stmt-fix-vardecls-aux x)))
+;;       (vl-stmt-case x
+;;         :vl-blockstmt
+;;         (b* ((own-vardecls (vl-vardecls-remove-initvals x.vardecls))
+;;              (assigns (vl-vardecls-to-assigns x.vardecls)))
+;;           (mv (change-vl-blockstmt x
+;;                                    :vardecls nil
+;;                                    :stmts (append-without-guard assigns x.stmts))
+;;               (append-without-guard own-vardecls sub-vardecls)))
+;;         :vl-forstmt
+;;         (b* ((own-vardecls (vl-vardecls-remove-initvals x.initdecls))
+;;              (assigns (vl-vardecls-to-assigns x.initdecls)))
+;;           (mv (change-vl-forstmt x
+;;                                  :initdecls nil
+;;                                  :initassigns (append-without-guard assigns x.initassigns))
+;;               (append-without-guard own-vardecls sub-vardecls)))
+;;         :otherwise (mv x sub-vardecls)))))
+
+
 
 
 (define vl-implicitvalueparam-final-type ((x vl-paramtype-p)
                                           (override vl-expr-p)
-                                          (conf vl-svexconf-p
-                                                "for expr"))
+                                          (ss vl-scopestack-p)
+                                          (scopes vl-elabscopes-p
+                                                  "for override"))
   ;; BOZO this is really subtle/tricky code and we should probably explain what
   ;; we're trying to do here and what the SystemVerilog rules are at a high
   ;; level.
@@ -892,7 +995,6 @@ because... (BOZO)</p>
                (err (iff (vl-msg-p err) err))
                (type (implies (not err) (vl-datatype-p type))))
   (b* ((override (vl-expr-fix override))
-       ((vl-svexconf conf))
        ((vl-implicitvalueparam x) (vl-paramtype-fix x))
        (warnings nil)
        ((when x.range)
@@ -905,7 +1007,7 @@ because... (BOZO)</p>
                                   :pdims (list (vl-range->packeddimension x.range))
                                   :signedp (eq x.sign :vl-signed)))
           (mv warnings (vmsg "Unresolved range") nil)))
-       ((wmv warnings size) (vl-expr-selfsize override conf.ss conf.typeov))
+       ((wmv warnings size) (vl-expr-selfsize override ss scopes))
        ((unless (posp size))
         (mv warnings
             (vmsg "Unsized or zero-size parameter override: ~a0" override)
@@ -915,7 +1017,7 @@ because... (BOZO)</p>
        ((when x.sign)
         (mv warnings nil
             (make-vl-coretype :name :vl-logic :pdims dims :signedp (eq x.sign :vl-signed))))
-       ((wmv warnings signedness) (vl-expr-typedecide override conf.ss conf.typeov))
+       ((wmv warnings signedness) (vl-expr-typedecide override ss scopes))
        ((unless signedness)
         (mv warnings
             (vmsg "Couldn't decide signedness of parameter override ~a0" override)
@@ -940,9 +1042,94 @@ because... (BOZO)</p>
 
 (defconst *vl-svstmt-compile-reclimit* 100000)
 
+(fty::defvisitor-template strip-nullstmts ((x :object))
+  :type-fns ((vl-stmtlist vl-stmtlist-strip-nullstmts))
+  :returns (new-x :update)
+  :fnname-template <type>-strip-nullstmts)
+
+(fty::defvisitor-multi vl-stmt-strip-nullstmts
+  (fty::defvisitors
+    :template strip-nullstmts
+    :types (vl-stmt))
+
+  (define vl-stmtlist-strip-nullstmts ((x vl-stmtlist-p))
+    :returns (new-x vl-stmtlist-p)
+    :measure (vl-stmtlist-count x)
+    (if (atom x)
+        nil
+      (b* ((x1 (car x)))
+        (if (vl-stmt-case x1 :vl-nullstmt)
+            (vl-stmtlist-strip-nullstmts (cdr x))
+          (cons (vl-stmt-strip-nullstmts x1)
+                (vl-stmtlist-strip-nullstmts (cdr x))))))))
+
+
+(defines vl-stmt-fix-trivial-return
+  (define vl-stmt-fix-trivial-return ((x vl-stmt-p "Body of function, initially,
+                                                  or some last statement of a last
+                                                  subblock")
+                                      (fnname stringp "Name of the function"))
+    :returns (fixed-body vl-stmt-p)
+    :short "In cases where it's OK to do so, change return statements to assignments
+          to the function name."
+    :long "<p>In SystemVerilog, there are two ways to return a value from a
+function.  The way we mainly support is to assign the value to the implicit
+output variable given by the name of the function.  This is easy for us to deal
+with because it doesn't affect the control flow of the function.  However,
+another way is using a return statement, which is harder for us to deal with
+because it is like a @('goto') as well as an assignment to the output
+variable.</p>
+
+<p>However, if the return occurs as the last statement in the function (which
+is often the case), then the two forms are equivalent.  This function replaces
+a final return statement with an assignment to the output variable.</p>"
+    :measure (vl-stmt-count x)
+    :prepwork ((local (defthm vl-stmt-count-of-car-last
+                        (implies (consp x)
+                                 (< (vl-stmt-count (car (last x)))
+                                    (vl-stmtlist-count x)))
+                        :rule-classes :linear)))
+    :verify-guards nil
+    (b* ((x (vl-stmt-fix x)))
+      (vl-stmt-case x
+        :vl-returnstmt (if x.val
+                           (make-vl-assignstmt
+                            :type :vl-blocking
+                            :lvalue (vl-idexpr fnname)
+                            :expr x.val
+                            :loc *vl-fakeloc*)
+                         x)
+        :vl-ifstmt (change-vl-ifstmt
+                    x
+                    :truebranch (vl-stmt-fix-trivial-return x.truebranch fnname)
+                    :falsebranch (vl-stmt-fix-trivial-return x.falsebranch fnname))
+        :vl-casestmt
+        (change-vl-casestmt
+         x
+         :default (vl-stmt-fix-trivial-return x.default fnname)
+         :caselist (vl-caselist-fix-trivial-return x.caselist fnname))
+        :vl-blockstmt
+        (b* (((when (atom x.stmts)) x)
+             (last (vl-stmt-fix-trivial-return (car (last x.stmts)) fnname)))
+          (change-vl-blockstmt x :stmts (append-without-guard (butlast x.stmts 1) (list last))))
+        :otherwise x)))
+  (define vl-caselist-fix-trivial-return ((x vl-caselist-p)
+                                          (fnname stringp))
+    :measure (vl-caselist-count x)
+    :returns (fixed-caselist vl-caselist-p)
+    (b* ((x (vl-caselist-fix x))
+         ((when (Atom x)) nil))
+      (cons (cons (caar x)
+                  (vl-stmt-fix-trivial-return (cdar x) fnname))
+            (vl-caselist-fix-trivial-return (cdr x) fnname))))
+  ///
+  (verify-guards vl-stmt-fix-trivial-return))
+
+
 (define vl-fundecl-to-svex  ((x vl-fundecl-p)
-                             (conf vl-svexconf-p
-                                 "Svexconf for inside the function decl")
+                             (ss vl-scopestack-p)
+                             (scopes vl-elabscopes-p
+                                     "Scope info for inside the function decl")
                              ;; (fntable sv::svex-alist-p)
                              ;; (paramtable sv::svex-alist-p)
                              )
@@ -950,8 +1137,10 @@ because... (BOZO)</p>
                (svex sv::svex-p))
   (b* (((vl-fundecl x) (vl-fundecl-fix x))
        (warnings nil)
+       (x.body (vl-stmt-fix-trivial-return (vl-stmt-strip-nullstmts x.body) x.name))
+
        ;; nonblocking assignments not allowed
-       ((wmv ok warnings svstmts) (vl-stmt->svstmts x.body conf nil))
+       ((wmv ok warnings svstmts) (vl-stmt->svstmts x.body ss scopes nil))
        ((unless ok) (mv warnings (svex-x)))
        ((wmv ok warnings svstate)
         (time$ (sv::svstmtlist-compile svstmts (sv::make-svstate) *vl-svstmt-compile-reclimit*
@@ -962,7 +1151,7 @@ because... (BOZO)</p>
                :args (list x.name)))
        ((unless ok) (mv warnings (svex-x)))
        ((sv::svstate svstate))
-       (expr (sv::svex-lookup (sv::make-svar :name x.name) svstate.blkst))
+       (expr (sv::svstack-lookup (sv::make-svar :name x.name) svstate.blkst))
        (- (sv::svstate-free svstate))
        ((unless expr)
         (mv (warn :type :vl-fundecl-to-svex-fail
@@ -976,18 +1165,18 @@ because... (BOZO)</p>
          (sv::svarlist-addr-p (sv::svex-vars svex)))))
 
 (define vl-elaborated-expr-consteval ((x vl-expr-p)
-                                      (conf vl-svexconf-p)
+                                      (ss vl-scopestack-p)
+                                      (scopes vl-elabscopes-p)
                                       &key ((ctxsize maybe-natp) 'nil))
-  :short "Assumes expression is already elaborated.  conf is read-only."
+  :short "Assumes expression is already elaborated."
   :returns (mv (ok  "no errors")
                (constp "successfully reduced to constant")
                (warnings1 vl-warninglist-p)
                (new-x vl-expr-p)
                (svex sv::svex-p))
-  (b* (((vl-svexconf conf))
-       (x (vl-expr-fix x))
-       ((mv warnings signedness) (vl-expr-typedecide x conf.ss conf.typeov))
-       ((wmv warnings svex size) (vl-expr-to-svex-selfdet x ctxsize conf))
+  (b* ((x (vl-expr-fix x))
+       ((mv warnings signedness) (vl-expr-typedecide x ss scopes))
+       ((wmv warnings svex size) (vl-expr-to-svex-selfdet x ctxsize ss scopes))
        ((unless (and (posp size) signedness))
         ;; presumably already warned about this?
         (mv nil nil warnings x (svex-x)))
@@ -999,12 +1188,13 @@ because... (BOZO)</p>
     (mv t t warnings new-x svex)))
 
 (define vl-consteval ((x vl-expr-p)
-                      (conf vl-svexconf-p)
+                      (ss vl-scopestack-p)
+                      (scopes vl-elabscopes-p)
                       &key ((ctxsize maybe-natp) 'nil))
   :returns (mv (warnings vl-warninglist-p)
                (new-x vl-expr-p))
   (b* (((mv ?ok ?constant warnings new-x ?svex)
-        (vl-elaborated-expr-consteval x conf :ctxsize ctxsize)))
+        (vl-elaborated-expr-consteval x ss scopes :ctxsize ctxsize)))
     (mv warnings new-x)))
 
 
@@ -1023,7 +1213,8 @@ because... (BOZO)</p>
 
 
 (define vl-evatomlist->svex ((x vl-evatomlist-p)
-                             (conf vl-svexconf-p))
+                             (ss vl-scopestack-p)
+                             (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (trigger (and (sv::svex-p trigger)
                              (sv::svarlist-addr-p (sv::svex-vars trigger)))))
@@ -1040,7 +1231,7 @@ because... (BOZO)</p>
        ((vl-evatom x1) (car x))
        (warnings nil)
        ((wmv warnings expr ?type ?size)
-        (vl-expr-to-svex-untyped x1.expr conf))
+        (vl-expr-to-svex-untyped x1.expr ss scopes))
        (delay-expr (sv::svex-add-delay expr 1))
        ;; Note: Ensure these expressions always evaluate to either -1 or 0.
        (trigger1 (case x1.type
@@ -1100,7 +1291,7 @@ because... (BOZO)</p>
                                                :args (list (sv::svex-quote (sv::2vec 0))
                                                            delay-expr)))))))))
        ((wmv warnings rest)
-        (vl-evatomlist->svex (cdr x) conf)))
+        (vl-evatomlist->svex (cdr x) ss scopes)))
     (mv warnings
         (sv::make-svex-call
          :fn 'sv::bitor
@@ -1226,7 +1417,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 (define vl-evatomlist-delay-substitution ((x vl-evatomlist-p)
                                           (edge-dependent-delayp)
-                                          (conf vl-svexconf-p))
+                                          (ss vl-scopestack-p)
+                                          (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (subst (and (sv::svex-alist-p subst)
                            (sv::svarlist-addr-p (sv::svex-alist-vars subst))
@@ -1245,27 +1437,26 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
              (local (in-theory (disable member-equal))))
   (b* (((when (atom x)) (mv nil nil))
        ((vl-evatom x1) (car x))
-       ((vl-svexconf conf))
        (warnings nil)
        ((unless (vl-expr-case x1.expr
                   :vl-index (and (vl-partselect-case x1.expr.part :none)
                                  (atom x1.expr.indices))
                   :otherwise nil))
         ;; We're going to deal with all these sorts of problems elsewhere?
-        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp conf))
-       ((mv err opinfo) (vl-index-expr-typetrace x1.expr conf.ss conf.typeov))
+        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp ss scopes))
+       ((mv err opinfo) (vl-index-expr-typetrace x1.expr ss scopes))
        ((when err)
         ;; We're going to deal with all these sorts of problems elsewhere?
-        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp conf))
+        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp ss scopes))
        ((vl-operandinfo opinfo))
        ((unless (and (vl-hidtrace-resolved-p opinfo.hidtrace)
                      (eql (vl-seltrace-unres-count opinfo.seltrace) 0)))
         ;; We're going to deal with all these sorts of problems elsewhere?
-        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp conf))
-       ((mv err var) (vl-seltrace-to-svar opinfo.seltrace opinfo conf.ss))
+        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp ss scopes))
+       ((mv err var) (vl-seltrace-to-svar opinfo.seltrace opinfo ss))
        ((when err)
         ;; We're going to deal with all these sorts of problems elsewhere?
-        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp conf))
+        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp ss scopes))
        (expr (sv::make-svex-var :name var))
        (delay-expr (if edge-dependent-delayp
                        (case x1.type
@@ -1298,14 +1489,15 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                           expr))
                      expr))
        ((wmv warnings rest)
-        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp conf)))
+        (vl-evatomlist-delay-substitution (cdr x) edge-dependent-delayp ss scopes)))
     (mv warnings
         (cons (cons var delay-expr) rest))))
 
 
 
 (define vl-always->svex-checks ((x vl-always-p)
-                                (conf vl-svexconf-p))
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p))
   :short "Checks that the always block is suitable for translating to svex, ~
           and returns the body statement and eventcontrol."
   :returns (mv (ok)
@@ -1321,7 +1513,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                      (sv::svarlist-addr-p (sv::svex-alist-vars trigger-subst))
                      (sv::svarlist-addr-p (sv::svex-alist-keys trigger-subst)))))
   :prepwork ((local (defthm vl-evatomlist->svex-under-iff
-                      (mv-nth 1 (vl-evatomlist->svex x conf))
+                      (mv-nth 1 (vl-evatomlist->svex x ss scopes))
                       :hints (("goal" :use return-type-of-vl-evatomlist->svex.trigger
                                :in-theory (disable return-type-of-vl-evatomlist->svex.trigger))))))
   (b* (((vl-always x) (vl-always-fix x))
@@ -1350,10 +1542,10 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
             ;; We have a flop. Collect its trigger.
             ((wmv warnings trigger) (vl-evatomlist->svex
-                                     (vl-eventcontrol->atoms x.stmt.ctrl) conf))
+                                     (vl-eventcontrol->atoms x.stmt.ctrl) ss scopes))
             ((wmv warnings trigger-subst) (vl-evatomlist-delay-substitution
                                            (vl-eventcontrol->atoms x.stmt.ctrl)
-                                           t conf)))
+                                           t ss scopes)))
          (mv t
              warnings
              x.stmt.body
@@ -1618,8 +1810,20 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                    :in-theory (enable sv::svex-alist-fix))))))
 
 
+#||
+
+(trace$ #!vl (vl-always->svex 
+              :entry (list 'vl-always->svex
+                           (with-local-ps (vl-pp-always x)))
+              :exit (list 'vl-always->svex
+                          (with-local-ps (vl-print-warnings (car values)))
+                          (cadr values))))
+
+||#
+
 (define vl-always->svex ((x vl-always-p)
-                         (conf vl-svexconf-p))
+                         (ss vl-scopestack-p)
+                         (scopes vl-elabscopes-p))
   :short "Translate a combinational or latch-type always block into a set of SVEX
           expressions."
   :returns (mv (warnings vl-warninglist-p)
@@ -1654,13 +1858,13 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((warnings nil)
        ((vl-always x) (vl-always-fix x))
        ((wmv ok warnings stmt trigger trigger-subst)
-        (vl-always->svex-checks x conf))
+        (vl-always->svex-checks x ss scopes))
        ((unless ok) (mv warnings nil))
        ;; Run this after elaboration, like everything else
        ;; ((mv ?ok warnings stmt conf)
        ;;  (vl-stmt-elaborate stmt conf))
        ((wmv ok warnings svstmts)
-        (vl-stmt->svstmts stmt conf t))
+        (vl-stmt->svstmts stmt ss scopes t))
        ((unless ok) (mv warnings nil))
        ;; Only use the nonblocking-delay strategy for flops, not latches
        ((wmv ok warnings st)
@@ -1672,7 +1876,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
        ((sv::svstate st) (sv::svstate-clean st))
 
-
+       (- (sv::svstack-free st.blkst))
+       (st.blkst (make-fast-alist (sv::svstack-to-svex-alist st.blkst)))
        (blk-written-vars (sv::svex-alist-keys st.blkst))
        (nb-written-vars  (sv::svex-alist-keys st.nonblkst))
 
@@ -1752,7 +1957,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
     (mv warnings assigns)))
 
 (define vl-alwayslist->svex ((x vl-alwayslist-p)
-                             (conf vl-svexconf-p))
+                             (ss vl-scopestack-p)
+                             (scopes vl-elabscopes-p))
   :short "Translate a combinational or latch-type always block into a set of SVEX
           expressions."
   :returns (mv (warnings vl-warninglist-p)
@@ -1761,9 +1967,9 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((warnings nil)
        ((when (atom x)) (mv (ok) nil))
        ((wmv warnings assigns1)
-        (vl-always->svex (car x) conf))
+        (vl-always->svex (car x) ss scopes))
        ((wmv warnings assigns2)
-        (vl-alwayslist->svex (cdr x) conf)))
+        (vl-alwayslist->svex (cdr x) ss scopes)))
     (mv warnings
         (append-without-guard assigns1 assigns2))))
 
@@ -1771,7 +1977,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 
 (define vl-initial-size-warnings ((x vl-initial-p)
-                                  (conf vl-svexconf-p))
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p))
   :short "Generate any sizing warnings for an initial statement."
   :returns (warnings vl-warninglist-p)
   (b* (((vl-initial x) (vl-initial-fix x))
@@ -1780,20 +1987,22 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        ;; out warnings here if there are other kinds of restrictions that the
        ;; statement compiler is enforcing.
        ((mv ?ok warnings ?svstmts)
-        (vl-stmt->svstmts x.stmt conf t)))
+        (vl-stmt->svstmts x.stmt ss scopes t)))
     warnings))
 
 (define vl-initiallist-size-warnings ((x vl-initiallist-p)
-                                      (conf vl-svexconf-p))
+                                      (ss vl-scopestack-p)
+                                      (scopes vl-elabscopes-p))
   :returns (warnings vl-warninglist-p)
   (if (atom x)
       nil
-    (append-without-guard (vl-initial-size-warnings (car x) conf)
-                          (vl-initiallist-size-warnings (cdr x) conf))))
+    (append-without-guard (vl-initial-size-warnings (car x) ss scopes)
+                          (vl-initiallist-size-warnings (cdr x) ss scopes))))
 
 
 (define vl-final-size-warnings ((x vl-final-p)
-                                  (conf vl-svexconf-p))
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p))
   :short "Generate any sizing warnings for an final statement."
   :returns (warnings vl-warninglist-p)
   (b* (((vl-final x) (vl-final-fix x))
@@ -1802,13 +2011,14 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        ;; out warnings here if there are other kinds of restrictions that the
        ;; statement compiler is enforcing.
        ((mv ?ok warnings ?svstmts)
-        (vl-stmt->svstmts x.stmt conf t)))
+        (vl-stmt->svstmts x.stmt ss scopes t)))
     warnings))
 
 (define vl-finallist-size-warnings ((x vl-finallist-p)
-                                      (conf vl-svexconf-p))
+                                      (ss vl-scopestack-p)
+                                      (scopes vl-elabscopes-p))
   :returns (warnings vl-warninglist-p)
   (if (atom x)
       nil
-    (append-without-guard (vl-final-size-warnings (car x) conf)
-                          (vl-finallist-size-warnings (cdr x) conf))))
+    (append-without-guard (vl-final-size-warnings (car x) ss scopes)
+                          (vl-finallist-size-warnings (cdr x) ss scopes))))
