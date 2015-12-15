@@ -447,8 +447,8 @@ programmer-level mode.</p>" )
   (implies (programmer-level-mode x86)
            (equal (program-at addresses r-w-x (write-user-rflags flags mask x86))
                   (program-at addresses r-w-x x86)))
-  :hints (("Goal" :in-theory (e/d (program-at write-user-rflags !flgi-undefined !flgi)
-                                  (rb)))))
+  :hints (("Goal" :in-theory (e/d (write-user-rflags)
+                                  (force (force))))))
 
 ;; ======================================================================
 

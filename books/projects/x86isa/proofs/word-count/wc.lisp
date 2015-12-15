@@ -245,6 +245,8 @@
 
   (and (x86p x86)
        (xr :programmer-level-mode 0 x86)
+       ;; I don't care about alignment checks for this proof.
+       (not (alignment-checking-enabled-p x86))
        (equal (xr :os-info 0 x86) :linux)
        (env-assumptions x86)
        (canonical-address-p (xr :rgf *rsp* x86))
@@ -301,6 +303,7 @@
   (implies (preconditions addr x86)
            (and (x86p x86)
                 (xr :programmer-level-mode 0 x86)
+                (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
                 (env-assumptions x86)
                 (equal (xr :ms 0 x86) nil)
@@ -315,6 +318,7 @@
   ;; subroutine.
   (and (x86p x86)
        (xr :programmer-level-mode 0 x86)
+       (not (alignment-checking-enabled-p x86))
        (equal (xr :os-info 0 x86) :linux)
        (env-assumptions x86)
        (canonical-address-p (xr :rgf *rsp* x86))
@@ -391,6 +395,7 @@
   (implies (loop-preconditions addr x86)
            (and (x86p x86)
                 (xr :programmer-level-mode 0 x86)
+                (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
                 (env-assumptions x86)
                 (equal (xr :rgf *rsp* x86)
@@ -444,63 +449,78 @@
                      :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
                      (XW
                       :RIP 0 (+ 94 (XR :RIP 0 X86))
-                      (XW
-                       :RFLAGS 0
-                       (LOGIOR
-                        (LOGHEAD 1
-                                 (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                               32)))
-                        (LOGHEAD 32
-                                 (ASH (PF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
-                                      2))
-                        (LOGAND
-                         4294967290
-                         (LOGIOR
-                          (LOGHEAD
-                           32
-                           (ASH (SUB-AF-SPEC64 (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                               32)
-                                4))
-                          (LOGAND
-                           4294967278
+                      (MV-NTH
+                       1
+                       (WB
+                        (APPEND
+                         (CREATE-ADDR-BYTES-ALIST
+                          (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
+                          (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
+                         (CREATE-ADDR-BYTES-ALIST
+                          (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -16 (XR :RGF *RSP* X86)))
+                          '(0 0 0 0))
+                         (CREATE-ADDR-BYTES-ALIST
+                          (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -20 (XR :RGF *RSP* X86)))
+                          '(0 0 0 0))
+                         (CREATE-ADDR-BYTES-ALIST
+                          (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -24 (XR :RGF *RSP* X86)))
+                          '(0 0 0 0))
+                         (CREATE-ADDR-BYTES-ALIST
+                          (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -28 (XR :RGF *RSP* X86)))
+                          '(0 0 0 0)))
+                        (!FLGI
+                         *CF*
+                         (LOGHEAD 1
+                                  (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                                32)))
+                         (!FLGI
+                          *PF*
+                          (LOGIOR
+                           (PF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
+                           (LOGHEAD
+                            -1
+                            (LOGTAIL 2
+                                     (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                                   32)))))
+                          (!FLGI
+                           *AF*
                            (LOGIOR
-                            (LOGHEAD 32
-                                     (ASH (ZF-SPEC (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
-                                          6))
-                            (LOGAND
-                             4294967230
+                            (SUB-AF-SPEC64 (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                           32)
+                            (LOGHEAD
+                             -3
+                             (LOGTAIL 4
+                                      (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                                    32)))))
+                           (!FLGI
+                            *ZF*
+                            (LOGIOR
+                             (ZF-SPEC (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
+                             (LOGHEAD
+                              -5
+                              (LOGTAIL 6
+                                       (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                                     32)))))
+                            (!FLGI
+                             *SF*
                              (LOGIOR
+                              (SF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
                               (LOGHEAD
-                               32
-                               (ASH (SF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
-                                    7))
-                              (LOGAND
-                               4294967166
-                               (LOGIOR (LOGAND 4294965246
-                                               (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))
-                                       (LOGHEAD 32
-                                                (ASH (OF-SPEC64 (+ -40 (XR :RGF *RSP* X86)))
-                                                     11)))))))))))
-                       (MV-NTH
-                        1
-                        (WB
-                         (APPEND
-                          (CREATE-ADDR-BYTES-ALIST
-                           (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-                           (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
-                          (CREATE-ADDR-BYTES-ALIST
-                           (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -16 (XR :RGF *RSP* X86)))
-                           '(0 0 0 0))
-                          (CREATE-ADDR-BYTES-ALIST
-                           (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -20 (XR :RGF *RSP* X86)))
-                           '(0 0 0 0))
-                          (CREATE-ADDR-BYTES-ALIST
-                           (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -24 (XR :RGF *RSP* X86)))
-                           '(0 0 0 0))
-                          (CREATE-ADDR-BYTES-ALIST
-                           (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -28 (XR :RGF *RSP* X86)))
-                           '(0 0 0 0)))
-                         X86)))))))))
+                               -6
+                               (LOGTAIL 7
+                                        (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                                      32)))))
+                             (!FLGI
+                              *OF*
+                              (LOGIOR
+                               (OF-SPEC64 (+ -40 (XR :RGF *RSP* X86)))
+                               (LOGHEAD
+                                -10
+                                (LOGTAIL
+                                 11
+                                 (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                               32)))))
+                              X86))))))))))))))
   :hints (("Goal"
            :in-theory (e/d* (preconditions
                              gc-clk-main-before-call
@@ -537,10 +557,7 @@
                              x86-effective-addr
                              subset-p
                              ;; Flags
-                             write-user-rflags
-                             !flgi-undefined
-                             !flgi
-                             flgi)
+                             write-user-rflags)
 
                             (wb-remove-duplicate-writes
                              force (force))))))
@@ -619,6 +636,12 @@
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-main-before-call) x86))
                   (xr :programmer-level-mode 0 x86))))
 
+(defthmd effects-to-gc-alignment-checking-enabled-p-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (preconditions addr x86))
+           (equal (alignment-checking-enabled-p (x86-run (gc-clk-main-before-call) x86))
+                  (alignment-checking-enabled-p x86))))
+
 (defthmd effects-to-gc-os-info-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
@@ -650,6 +673,7 @@
                                     effects-to-gc-env-assumptions-projection
                                     (len)
                                     effects-to-gc-programmer-level-mode-projection
+                                    effects-to-gc-alignment-checking-enabled-p-projection
                                     effects-to-gc-os-info-projection
                                     loop-preconditions-fwd-chaining-essentials
                                     loop-preconditions-forward-chain-addresses-info
@@ -936,6 +960,7 @@
   (implies ;; Doesn't have the rbp binding of loop-preconditions
    (and (x86p x86)
         (xr :programmer-level-mode 0 x86)
+        (not (alignment-checking-enabled-p x86))
         (equal (xr :os-info 0 x86) :linux)
         (env-assumptions x86)
         (canonical-address-p (xr :rgf *rsp* x86))
@@ -1001,84 +1026,65 @@
                    (LOGIOR
                     256
                     (LOGAND
-                     4294967039
-                     (LOGIOR
-                      (ASH (LOGHEAD 1
-                                    (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                           4)
-                      (LOGAND
-                       4294967279
-                       (LOGIOR
+                     -257
+                     (LOGEXT
+                      64
+                      (XR
+                       :RFLAGS 0
+                       (!FLGI-UNDEFINED
                         4
-                        (LOGAND
-                         4294967290
-                         (LOGIOR
-                          64
-                          (LOGAND
-                           4294965054
-                           (LOGEXT 64
-                                   (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))))))))))
+                        (!FLGI
+                         *CF* 0
+                         (!FLGI
+                          *PF* 1
+                          (!FLGI
+                           *AF*
+                           (BITOPS::LOGSQUASH
+                            -3
+                            (LOGHEAD 1
+                                     (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                           (!FLGI *ZF* 1
+                                  (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))
                    (XW
-                    :RIP 0
-                    (LOGEXT 64
-                            (COMBINE-BYTES (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86)))))
-                    (XW
-                     :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
-                     (XW
-                      :RFLAGS 0
-                      (LOGAND
-                       4294770687
-                       (LOGIOR
-                        (ASH (LOGHEAD 1
-                                      (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                             4)
-                        (LOGAND
-                         4294967279
-                         (LOGIOR
-                          4
-                          (LOGAND
-                           4294967290
-                           (LOGIOR
-                            64
-                            (LOGAND 4294965054
-                                    (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))))))))
-                      (MV-NTH
-                       1
-                       (WB
-                        (APPEND
-                         (CREATE-ADDR-BYTES-ALIST (CREATE-CANONICAL-ADDRESS-LIST
-                                                   8 (+ -8 (XR :RGF *RSP* X86)))
-                                                  (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST
-                           8 (+ -16 (XR :RGF *RSP* X86)))
-                          (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST
-                           8 (+ -24 (XR :RGF *RSP* X86)))
-                          (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST
-                           8 (+ -48 (XR :RGF *RSP* X86)))
-                          (BYTE-IFY 8
-                                    (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
-                         (CREATE-ADDR-BYTES-ALIST
-                          (LIST (+ -25 (XR :RGF *RSP* X86)))
-                          (GRAB-BYTES
-                           (TAKE
-                            1
-                            (NTHCDR
-                             (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                             (STRING-TO-BYTES
-                              (CDR
-                               (ASSOC-EQUAL
-                                :CONTENTS
-                                (READ-X86-FILE-CONTENTS
-                                 (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                 X86))))))))
-                         (CREATE-ADDR-BYTES-ALIST (CREATE-CANONICAL-ADDRESS-LIST
-                                                   4 (+ -32 (XR :RGF *RSP* X86)))
-                                                  '(1 0 0 0)))
+                    :RIP 0 (+ 5 (XR :RIP 0 X86))
+                    (MV-NTH
+                     1
+                     (WB
+                      (APPEND
+                       (CREATE-ADDR-BYTES-ALIST
+                        (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
+                        (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
+                       (CREATE-ADDR-BYTES-ALIST
+                        (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -16 (XR :RGF *RSP* X86)))
+                        (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
+                       (CREATE-ADDR-BYTES-ALIST
+                        (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -24 (XR :RGF *RSP* X86)))
+                        (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
+                       (CREATE-ADDR-BYTES-ALIST
+                        (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -48 (XR :RGF *RSP* X86)))
+                        (BYTE-IFY 8
+                                  (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
+                       (CREATE-ADDR-BYTES-ALIST
+                        (LIST (+ -25 (XR :RGF *RSP* X86)))
+                        (GRAB-BYTES
+                         (TAKE
+                          1
+                          (NTHCDR
+                           (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                           (STRING-TO-BYTES
+                            (CDR
+                             (ASSOC-EQUAL
+                              :CONTENTS
+                              (READ-X86-FILE-CONTENTS
+                               (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                               X86))))))))
+                       (CREATE-ADDR-BYTES-ALIST
+                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -32 (XR :RGF *RSP* X86)))
+                        '(1 0 0 0)))
+                      (!FLGI
+                       *RF* 0
+                       (!FLGI
+                        *VM* 0
                         (WRITE-X86-FILE-DES
                          0
                          (PUT-ASSOC-EQUAL
@@ -1086,7 +1092,21 @@
                           (+ 1
                              (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
                           (READ-X86-FILE-DES 0 X86))
-                         X86)))))))))))))))))
+                         (!FLGI-UNDEFINED
+                          4
+                          (!FLGI
+                           *CF* 0
+                           (!FLGI
+                            *PF* 1
+                            (!FLGI
+                             *AF*
+                             (BITOPS::LOGSQUASH
+                              -3
+                              (LOGHEAD 1
+                                       (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                             (!FLGI *ZF* 1
+                                    (!FLGI *SF* 0
+                                           (!FLGI *OF* 0 X86))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (
                              syscall-read
@@ -1137,10 +1157,7 @@
                              rr32
                              rr64
                              ;; Flags
-                             write-user-rflags
-                             !flgi-undefined
-                             !flgi
-                             flgi)
+                             write-user-rflags)
 
                             (wb-remove-duplicate-writes
                              force (force))))))
@@ -1152,6 +1169,7 @@
 (defthmd effects-call-gc-ms-projection
   (implies (and (x86p x86) ;; Doesn't have the rbp binding of loop-preconditions
                 (xr :programmer-level-mode 0 x86)
+                (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
                 (env-assumptions x86)
                 (canonical-address-p (xr :rgf *rsp* x86))
@@ -1182,6 +1200,7 @@
   (implies
    (and (x86p x86) ;; Doesn't have the rbp binding of loop-preconditions
         (xr :programmer-level-mode 0 x86)
+        (not (alignment-checking-enabled-p x86))
         (equal (xr :os-info 0 x86) :linux)
         (env-assumptions x86)
         (canonical-address-p (xr :rgf *rsp* x86))
@@ -1257,218 +1276,108 @@
                            (LOGIOR
                             256
                             (LOGAND
-                             4294967039
-                             (LOGIOR
-                              (ASH (LOGHEAD 1
-                                            (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                                   4)
-                              (LOGAND
-                               4294967279
-                               (LOGIOR
+                             -257
+                             (LOGEXT
+                              64
+                              (XR
+                               :RFLAGS 0
+                               (!FLGI-UNDEFINED
                                 4
-                                (LOGAND
-                                 4294967290
-                                 (LOGIOR
-                                  64
-                                  (LOGAND
-                                   4294965054
-                                   (LOGEXT 64
-                                           (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))))))))))
+                                (!FLGI
+                                 *CF* 0
+                                 (!FLGI
+                                  *PF* 1
+                                  (!FLGI
+                                   *AF*
+                                   (BITOPS::LOGSQUASH
+                                    -3
+                                    (LOGHEAD 1
+                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                   (!FLGI *ZF* 1
+                                          (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))
                            (XW
                             :RIP 0 (+ 19 (XR :RIP 0 X86))
-                            (XW
-                             :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
-                             (XW
-                              :RFLAGS 0
-                              (LOGIOR
-                               4
-                               (LOGHEAD
-                                1
-                                (BOOL->BIT
-                                 (<
-                                  (LOGHEAD
-                                   32
-                                   (CDR
-                                    (ASSOC-EQUAL
-                                     (+ -25 (XR :RGF *RSP* X86))
-                                     (ACL2::REV
-                                      (CREATE-ADDR-BYTES-ALIST
-                                       (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                       (GRAB-BYTES
-                                        (TAKE
-                                         1
-                                         (NTHCDR
-                                          (CDR
-                                           (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                          (STRING-TO-BYTES
-                                           (CDR
-                                            (ASSOC-EQUAL
-                                             :CONTENTS
-                                             (READ-X86-FILE-CONTENTS
-                                              (CDR
-                                               (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                              X86))))))))))))
-                                  35)))
-                               (LOGAND
-                                4294967290
-                                (LOGIOR
-                                 (ASH
-                                  (LOGHEAD
-                                   1
-                                   (BOOL->BIT
-                                    (<
-                                     (LOGHEAD
-                                      4
-                                      (CDR
-                                       (ASSOC-EQUAL
-                                        (+ -25 (XR :RGF *RSP* X86))
-                                        (ACL2::REV
-                                         (CREATE-ADDR-BYTES-ALIST
-                                          (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                          (GRAB-BYTES
-                                           (TAKE
-                                            1
-                                            (NTHCDR
-                                             (CDR (ASSOC-EQUAL
-                                                   :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                             (STRING-TO-BYTES
-                                              (CDR
-                                               (ASSOC-EQUAL
-                                                :CONTENTS
-                                                (READ-X86-FILE-CONTENTS
-                                                 (CDR (ASSOC-EQUAL
-                                                       :NAME (READ-X86-FILE-DES 0 X86)))
-                                                 X86))))))))))))
-                                     3)))
-                                  4)
-                                 (LOGAND
-                                  4294967278
-                                  (LOGIOR
-                                   64
-                                   (LOGAND
-                                    4294967102
-                                    (LOGIOR
-                                     (LOGAND
-                                      4294768638
-                                      (LOGIOR
-                                       (ASH (LOGHEAD 1
-                                                     (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                                            4)
-                                       (LOGAND
-                                        4294967278
-                                        (LOGIOR
-                                         4
-                                         (LOGAND
-                                          4294967290
-                                          (LOGIOR
-                                           64
-                                           (LOGAND
-                                            4294965054
-                                            (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))))))))
-                                     (LOGHEAD
-                                      32
-                                      (ASH
-                                       (OF-SPEC32
-                                        (+
-                                         -35
-                                         (LOGEXT
-                                          32
-                                          (CDR
-                                           (ASSOC-EQUAL
-                                            (+ -25 (XR :RGF *RSP* X86))
-                                            (ACL2::REV
-                                             (CREATE-ADDR-BYTES-ALIST
-                                              (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                              (GRAB-BYTES
-                                               (TAKE
-                                                1
-                                                (NTHCDR
-                                                 (CDR
-                                                  (ASSOC-EQUAL
-                                                   :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                                 (STRING-TO-BYTES
-                                                  (CDR
-                                                   (ASSOC-EQUAL
-                                                    :CONTENTS
-                                                    (READ-X86-FILE-CONTENTS
-                                                     (CDR
-                                                      (ASSOC-EQUAL
-                                                       :NAME (READ-X86-FILE-DES 0 X86)))
-                                                     X86))))))))))))))
-                                       11)))))))))
-                              (MV-NTH
-                               1
-                               (WB
-                                (APPEND
-                                 (CREATE-ADDR-BYTES-ALIST (CREATE-CANONICAL-ADDRESS-LIST
-                                                           8 (+ -8 (XR :RGF *RSP* X86)))
-                                                          (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8 (+ -16 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY 8
-                                            (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8 (+ -24 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8 (+ -48 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY 8
-                                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                  (GRAB-BYTES
-                                   (TAKE
-                                    1
-                                    (NTHCDR
-                                     (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                     (STRING-TO-BYTES
-                                      (CDR
-                                       (ASSOC-EQUAL
-                                        :CONTENTS
-                                        (READ-X86-FILE-CONTENTS
-                                         (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                         X86))))))))
-                                 (CREATE-ADDR-BYTES-ALIST (CREATE-CANONICAL-ADDRESS-LIST
-                                                           4 (+ -32 (XR :RGF *RSP* X86)))
-                                                          '(1 0 0 0))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   4 (+ 28 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY
-                                   4
-                                   (LOGHEAD
-                                    32
+                            (MV-NTH
+                             1
+                             (WB
+                              (APPEND
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -16 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8
+                                          (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -24 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -48 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8
+                                          (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (LIST (+ -25 (XR :RGF *RSP* X86)))
+                                (GRAB-BYTES
+                                 (TAKE
+                                  1
+                                  (NTHCDR
+                                   (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                   (STRING-TO-BYTES
                                     (CDR
                                      (ASSOC-EQUAL
-                                      (+ -25 (XR :RGF *RSP* X86))
-                                      (ACL2::REV
-                                       (CREATE-ADDR-BYTES-ALIST
-                                        (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                        (GRAB-BYTES
-                                         (TAKE
-                                          1
-                                          (NTHCDR
-                                           (CDR
-                                            (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                           (STRING-TO-BYTES
-                                            (CDR
-                                             (ASSOC-EQUAL
-                                              :CONTENTS
-                                              (READ-X86-FILE-CONTENTS
-                                               (CDR (ASSOC-EQUAL
-                                                     :NAME (READ-X86-FILE-DES 0 X86)))
-                                               X86)))))))))))))))
-                                (WRITE-X86-FILE-DES
-                                 0
-                                 (PUT-ASSOC-EQUAL
-                                  :OFFSET
-                                  (+ 1
-                                     (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                  (READ-X86-FILE-DES 0 X86))
-                                 X86)))))))))))))))))
+                                      :CONTENTS
+                                      (READ-X86-FILE-CONTENTS
+                                       (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                       X86))))))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -32 (XR :RGF *RSP* X86)))
+                                '(1 0 0 0))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 28 (XR :RGF *RSP* X86)))
+                                '(35 0 0 0)))
+                              (!FLGI
+                               *CF* 0
+                               (!FLGI
+                                *PF* 1
+                                (!FLGI
+                                 *AF* 0
+                                 (!FLGI
+                                  *ZF* 1
+                                  (!FLGI
+                                   *SF* 0
+                                   (!FLGI
+                                    *OF* 0
+                                    (!FLGI
+                                     *RF* 0
+                                     (!FLGI
+                                      *VM* 0
+                                      (WRITE-X86-FILE-DES
+                                       0
+                                       (PUT-ASSOC-EQUAL
+                                        :OFFSET
+                                        (+
+                                         1
+                                         (CDR
+                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                        (READ-X86-FILE-DES 0 X86))
+                                       (!FLGI-UNDEFINED
+                                        4
+                                        (!FLGI
+                                         *CF* 0
+                                         (!FLGI
+                                          *PF* 1
+                                          (!FLGI
+                                           *AF*
+                                           (BITOPS::LOGSQUASH
+                                            -3
+                                            (LOGHEAD
+                                             1
+                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                           (!FLGI
+                                            *ZF* 1
+                                            (!FLGI
+                                             *SF* 0
+                                             (!FLGI *OF* 0 X86))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
@@ -1477,12 +1386,6 @@
                              jcc/cmovcc/setcc-spec
 
                              write-user-rflags
-                             !flgi
-                             !flgi-undefined
-                             zf-spec
-                             sub-af-spec32
-                             pf-spec32
-
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -1538,218 +1441,108 @@
                            (LOGIOR
                             256
                             (LOGAND
-                             4294967039
-                             (LOGIOR
-                              (ASH (LOGHEAD 1
-                                            (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                                   4)
-                              (LOGAND
-                               4294967279
-                               (LOGIOR
+                             -257
+                             (LOGEXT
+                              64
+                              (XR
+                               :RFLAGS 0
+                               (!FLGI-UNDEFINED
                                 4
-                                (LOGAND
-                                 4294967290
-                                 (LOGIOR
-                                  64
-                                  (LOGAND
-                                   4294965054
-                                   (LOGEXT 64
-                                           (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))))))))))
+                                (!FLGI
+                                 *CF* 0
+                                 (!FLGI
+                                  *PF* 1
+                                  (!FLGI
+                                   *AF*
+                                   (BITOPS::LOGSQUASH
+                                    -3
+                                    (LOGHEAD 1
+                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                   (!FLGI *ZF* 1
+                                          (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))
                            (XW
                             :RIP 0 (+ 19 (XR :RIP 0 X86))
-                            (XW
-                             :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
-                             (XW
-                              :RFLAGS 0
-                              (LOGIOR
-                               4
-                               (LOGHEAD
-                                1
-                                (BOOL->BIT
-                                 (<
-                                  (LOGHEAD
-                                   32
-                                   (CDR
-                                    (ASSOC-EQUAL
-                                     (+ -25 (XR :RGF *RSP* X86))
-                                     (ACL2::REV
-                                      (CREATE-ADDR-BYTES-ALIST
-                                       (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                       (GRAB-BYTES
-                                        (TAKE
-                                         1
-                                         (NTHCDR
-                                          (CDR
-                                           (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                          (STRING-TO-BYTES
-                                           (CDR
-                                            (ASSOC-EQUAL
-                                             :CONTENTS
-                                             (READ-X86-FILE-CONTENTS
-                                              (CDR
-                                               (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                              X86))))))))))))
-                                  35)))
-                               (LOGAND
-                                4294967290
-                                (LOGIOR
-                                 (ASH
-                                  (LOGHEAD
-                                   1
-                                   (BOOL->BIT
-                                    (<
-                                     (LOGHEAD
-                                      4
-                                      (CDR
-                                       (ASSOC-EQUAL
-                                        (+ -25 (XR :RGF *RSP* X86))
-                                        (ACL2::REV
-                                         (CREATE-ADDR-BYTES-ALIST
-                                          (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                          (GRAB-BYTES
-                                           (TAKE
-                                            1
-                                            (NTHCDR
-                                             (CDR (ASSOC-EQUAL
-                                                   :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                             (STRING-TO-BYTES
-                                              (CDR
-                                               (ASSOC-EQUAL
-                                                :CONTENTS
-                                                (READ-X86-FILE-CONTENTS
-                                                 (CDR (ASSOC-EQUAL
-                                                       :NAME (READ-X86-FILE-DES 0 X86)))
-                                                 X86))))))))))))
-                                     3)))
-                                  4)
-                                 (LOGAND
-                                  4294967278
-                                  (LOGIOR
-                                   64
-                                   (LOGAND
-                                    4294967102
-                                    (LOGIOR
-                                     (LOGAND
-                                      4294768638
-                                      (LOGIOR
-                                       (ASH (LOGHEAD 1
-                                                     (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                                            4)
-                                       (LOGAND
-                                        4294967278
-                                        (LOGIOR
-                                         4
-                                         (LOGAND
-                                          4294967290
-                                          (LOGIOR
-                                           64
-                                           (LOGAND
-                                            4294965054
-                                            (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))))))))
-                                     (LOGHEAD
-                                      32
-                                      (ASH
-                                       (OF-SPEC32
-                                        (+
-                                         -35
-                                         (LOGEXT
-                                          32
-                                          (CDR
-                                           (ASSOC-EQUAL
-                                            (+ -25 (XR :RGF *RSP* X86))
-                                            (ACL2::REV
-                                             (CREATE-ADDR-BYTES-ALIST
-                                              (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                              (GRAB-BYTES
-                                               (TAKE
-                                                1
-                                                (NTHCDR
-                                                 (CDR
-                                                  (ASSOC-EQUAL
-                                                   :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                                 (STRING-TO-BYTES
-                                                  (CDR
-                                                   (ASSOC-EQUAL
-                                                    :CONTENTS
-                                                    (READ-X86-FILE-CONTENTS
-                                                     (CDR
-                                                      (ASSOC-EQUAL
-                                                       :NAME (READ-X86-FILE-DES 0 X86)))
-                                                     X86))))))))))))))
-                                       11)))))))))
-                              (MV-NTH
-                               1
-                               (WB
-                                (APPEND
-                                 (CREATE-ADDR-BYTES-ALIST (CREATE-CANONICAL-ADDRESS-LIST
-                                                           8 (+ -8 (XR :RGF *RSP* X86)))
-                                                          (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8 (+ -16 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY 8
-                                            (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8 (+ -24 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8 (+ -48 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY 8
-                                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                  (GRAB-BYTES
-                                   (TAKE
-                                    1
-                                    (NTHCDR
-                                     (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                     (STRING-TO-BYTES
-                                      (CDR
-                                       (ASSOC-EQUAL
-                                        :CONTENTS
-                                        (READ-X86-FILE-CONTENTS
-                                         (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                         X86))))))))
-                                 (CREATE-ADDR-BYTES-ALIST (CREATE-CANONICAL-ADDRESS-LIST
-                                                           4 (+ -32 (XR :RGF *RSP* X86)))
-                                                          '(1 0 0 0))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   4 (+ 28 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY
-                                   4
-                                   (LOGHEAD
-                                    32
+                            (MV-NTH
+                             1
+                             (WB
+                              (APPEND
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -16 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8
+                                          (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -24 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -48 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8
+                                          (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (LIST (+ -25 (XR :RGF *RSP* X86)))
+                                (GRAB-BYTES
+                                 (TAKE
+                                  1
+                                  (NTHCDR
+                                   (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                   (STRING-TO-BYTES
                                     (CDR
                                      (ASSOC-EQUAL
-                                      (+ -25 (XR :RGF *RSP* X86))
-                                      (ACL2::REV
-                                       (CREATE-ADDR-BYTES-ALIST
-                                        (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                        (GRAB-BYTES
-                                         (TAKE
-                                          1
-                                          (NTHCDR
-                                           (CDR
-                                            (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                           (STRING-TO-BYTES
-                                            (CDR
-                                             (ASSOC-EQUAL
-                                              :CONTENTS
-                                              (READ-X86-FILE-CONTENTS
-                                               (CDR (ASSOC-EQUAL
-                                                     :NAME (READ-X86-FILE-DES 0 X86)))
-                                               X86)))))))))))))))
-                                (WRITE-X86-FILE-DES
-                                 0
-                                 (PUT-ASSOC-EQUAL
-                                  :OFFSET
-                                  (+ 1
-                                     (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                  (READ-X86-FILE-DES 0 X86))
-                                 X86)))))))))))))))))
+                                      :CONTENTS
+                                      (READ-X86-FILE-CONTENTS
+                                       (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                       X86))))))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -32 (XR :RGF *RSP* X86)))
+                                '(1 0 0 0))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 28 (XR :RGF *RSP* X86)))
+                                '(35 0 0 0)))
+                              (!FLGI
+                               *CF* 0
+                               (!FLGI
+                                *PF* 1
+                                (!FLGI
+                                 *AF* 0
+                                 (!FLGI
+                                  *ZF* 1
+                                  (!FLGI
+                                   *SF* 0
+                                   (!FLGI
+                                    *OF* 0
+                                    (!FLGI
+                                     *RF* 0
+                                     (!FLGI
+                                      *VM* 0
+                                      (WRITE-X86-FILE-DES
+                                       0
+                                       (PUT-ASSOC-EQUAL
+                                        :OFFSET
+                                        (+
+                                         1
+                                         (CDR
+                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                        (READ-X86-FILE-DES 0 X86))
+                                       (!FLGI-UNDEFINED
+                                        4
+                                        (!FLGI
+                                         *CF* 0
+                                         (!FLGI
+                                          *PF* 1
+                                          (!FLGI
+                                           *AF*
+                                           (BITOPS::LOGSQUASH
+                                            -3
+                                            (LOGHEAD
+                                             1
+                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                           (!FLGI
+                                            *ZF* 1
+                                            (!FLGI
+                                             *SF* 0
+                                             (!FLGI *OF* 0 X86))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-eof)
            :in-theory (union-theories
@@ -1904,9 +1697,6 @@
    :hints (("Goal" :in-theory (e/d* (loghead)
                                     ())))))
 
-(defun-nx whatever-rflags-are-for-eof-prelim (x86)
-  (rflags (x86-run (gc-clk-no-eof) x86)))
-
 (defthm effects-eof-not-encountered-prelim
 
   ;;  callq <gc>
@@ -1954,74 +1744,157 @@
                            (LOGIOR
                             256
                             (LOGAND
-                             4294967039
-                             (LOGIOR
-                              (ASH (LOGHEAD 1
-                                            (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                                   4)
-                              (LOGAND
-                               4294967279
-                               (LOGIOR
+                             -257
+                             (LOGEXT
+                              64
+                              (XR
+                               :RFLAGS 0
+                               (!FLGI-UNDEFINED
                                 4
-                                (LOGAND
-                                 4294967290
-                                 (LOGIOR
-                                  64
-                                  (LOGAND
-                                   4294965054
-                                   (LOGEXT 64
-                                           (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))))))))))
+                                (!FLGI
+                                 *CF* 0
+                                 (!FLGI
+                                  *PF* 1
+                                  (!FLGI
+                                   *AF*
+                                   (BITOPS::LOGSQUASH
+                                    -3
+                                    (LOGHEAD 1
+                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                   (!FLGI *ZF* 1
+                                          (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))
                            (XW
                             :RIP 0 (+ -58 (XR :RIP 0 X86))
-                            (XW
-                             :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
-                             (XW
-                              :RFLAGS
-                              0
-                              (whatever-rflags-are-for-eof-prelim x86)
-                              (MV-NTH
-                               1
-                               (WB
-                                (APPEND
-                                 (CREATE-ADDR-BYTES-ALIST (CREATE-CANONICAL-ADDRESS-LIST
-                                                           8 (+ -8 (XR :RGF *RSP* X86)))
-                                                          (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8 (+ -16 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY 8
-                                            (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8 (+ -24 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8 (+ -48 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY 8
-                                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                  (GRAB-BYTES
-                                   (TAKE
-                                    1
-                                    (NTHCDR
-                                     (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                     (STRING-TO-BYTES
-                                      (CDR
-                                       (ASSOC-EQUAL
-                                        :CONTENTS
-                                        (READ-X86-FILE-CONTENTS
-                                         (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                         X86))))))))
-                                 (CREATE-ADDR-BYTES-ALIST (CREATE-CANONICAL-ADDRESS-LIST
-                                                           4 (+ -32 (XR :RGF *RSP* X86)))
-                                                          '(1 0 0 0))
-                                 (CREATE-ADDR-BYTES-ALIST
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   4 (+ 28 (XR :RGF *RSP* X86)))
-                                  (BYTE-IFY
-                                   4
+                            (MV-NTH
+                             1
+                             (WB
+                              (APPEND
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -16 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8
+                                          (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -24 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -48 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY 8
+                                          (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (LIST (+ -25 (XR :RGF *RSP* X86)))
+                                (GRAB-BYTES
+                                 (TAKE
+                                  1
+                                  (NTHCDR
+                                   (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                   (STRING-TO-BYTES
+                                    (CDR
+                                     (ASSOC-EQUAL
+                                      :CONTENTS
+                                      (READ-X86-FILE-CONTENTS
+                                       (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                       X86))))))))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -32 (XR :RGF *RSP* X86)))
+                                '(1 0 0 0))
+                               (CREATE-ADDR-BYTES-ALIST
+                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 28 (XR :RGF *RSP* X86)))
+                                (BYTE-IFY
+                                 4
+                                 (LOGHEAD
+                                  32
+                                  (CAR
+                                   (GRAB-BYTES
+                                    (TAKE
+                                     1
+                                     (NTHCDR
+                                      (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                      (STRING-TO-BYTES
+                                       (CDR
+                                        (ASSOC-EQUAL
+                                         :CONTENTS
+                                         (READ-X86-FILE-CONTENTS
+                                          (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                          X86))))))))))))
+                              (!FLGI
+                               *CF*
+                               (LOGHEAD
+                                1
+                                (BOOL->BIT
+                                 (<
+                                  (LOGHEAD
+                                   32
+                                   (CAR
+                                    (GRAB-BYTES
+                                     (TAKE
+                                      1
+                                      (NTHCDR
+                                       (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                       (STRING-TO-BYTES
+                                        (CDR
+                                         (ASSOC-EQUAL
+                                          :CONTENTS
+                                          (READ-X86-FILE-CONTENTS
+                                           (CDR
+                                            (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                           X86)))))))))
+                                  35)))
+                               (!FLGI
+                                *PF*
+                                (LOGIOR
+                                 (PF-SPEC32
+                                  (LOGHEAD
+                                   32
+                                   (+
+                                    -35
+                                    (LOGEXT
+                                     32
+                                     (CAR
+                                      (GRAB-BYTES
+                                       (TAKE
+                                        1
+                                        (NTHCDR
+                                         (CDR
+                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                         (STRING-TO-BYTES
+                                          (CDR
+                                           (ASSOC-EQUAL
+                                            :CONTENTS
+                                            (READ-X86-FILE-CONTENTS
+                                             (CDR
+                                              (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                             X86))))))))))))
+                                 (LOGHEAD
+                                  -1
+                                  (LOGTAIL
+                                   2
+                                   (BOOL->BIT
+                                    (<
+                                     (LOGHEAD
+                                      32
+                                      (CAR
+                                       (GRAB-BYTES
+                                        (TAKE
+                                         1
+                                         (NTHCDR
+                                          (CDR
+                                           (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                          (STRING-TO-BYTES
+                                           (CDR
+                                            (ASSOC-EQUAL
+                                             :CONTENTS
+                                             (READ-X86-FILE-CONTENTS
+                                              (CDR
+                                               (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                              X86)))))))))
+                                     35)))))
+                                (!FLGI
+                                 *AF*
+                                 (LOGIOR
+                                  (SUB-AF-SPEC32
                                    (LOGHEAD
                                     32
                                     (CAR
@@ -2037,15 +1910,161 @@
                                            (READ-X86-FILE-CONTENTS
                                             (CDR
                                              (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                            X86))))))))))))
-                                (WRITE-X86-FILE-DES
-                                 0
-                                 (PUT-ASSOC-EQUAL
-                                  :OFFSET
-                                  (+ 1
-                                     (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                  (READ-X86-FILE-DES 0 X86))
-                                 X86)))))))))))))))))
+                                            X86)))))))))
+                                   35)
+                                  (LOGHEAD
+                                   -3
+                                   (LOGTAIL
+                                    4
+                                    (BOOL->BIT
+                                     (<
+                                      (LOGHEAD
+                                       32
+                                       (CAR
+                                        (GRAB-BYTES
+                                         (TAKE
+                                          1
+                                          (NTHCDR
+                                           (CDR
+                                            (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                           (STRING-TO-BYTES
+                                            (CDR
+                                             (ASSOC-EQUAL
+                                              :CONTENTS
+                                              (READ-X86-FILE-CONTENTS
+                                               (CDR (ASSOC-EQUAL
+                                                     :NAME (READ-X86-FILE-DES 0 X86)))
+                                               X86)))))))))
+                                      35)))))
+                                 (!FLGI
+                                  *ZF* 0
+                                  (!FLGI
+                                   *SF*
+                                   (LOGIOR
+                                    (SF-SPEC32
+                                     (LOGHEAD
+                                      32
+                                      (+
+                                       -35
+                                       (LOGEXT
+                                        32
+                                        (CAR
+                                         (GRAB-BYTES
+                                          (TAKE
+                                           1
+                                           (NTHCDR
+                                            (CDR
+                                             (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                            (STRING-TO-BYTES
+                                             (CDR
+                                              (ASSOC-EQUAL
+                                               :CONTENTS
+                                               (READ-X86-FILE-CONTENTS
+                                                (CDR (ASSOC-EQUAL
+                                                      :NAME (READ-X86-FILE-DES 0 X86)))
+                                                X86))))))))))))
+                                    (LOGHEAD
+                                     -6
+                                     (LOGTAIL
+                                      7
+                                      (BOOL->BIT
+                                       (<
+                                        (LOGHEAD
+                                         32
+                                         (CAR
+                                          (GRAB-BYTES
+                                           (TAKE
+                                            1
+                                            (NTHCDR
+                                             (CDR (ASSOC-EQUAL
+                                                   :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                             (STRING-TO-BYTES
+                                              (CDR
+                                               (ASSOC-EQUAL
+                                                :CONTENTS
+                                                (READ-X86-FILE-CONTENTS
+                                                 (CDR (ASSOC-EQUAL
+                                                       :NAME (READ-X86-FILE-DES 0 X86)))
+                                                 X86)))))))))
+                                        35)))))
+                                   (!FLGI
+                                    *OF*
+                                    (LOGIOR
+                                     (OF-SPEC32
+                                      (+
+                                       -35
+                                       (LOGEXT
+                                        32
+                                        (CAR
+                                         (GRAB-BYTES
+                                          (TAKE
+                                           1
+                                           (NTHCDR
+                                            (CDR
+                                             (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                            (STRING-TO-BYTES
+                                             (CDR
+                                              (ASSOC-EQUAL
+                                               :CONTENTS
+                                               (READ-X86-FILE-CONTENTS
+                                                (CDR (ASSOC-EQUAL
+                                                      :NAME (READ-X86-FILE-DES 0 X86)))
+                                                X86)))))))))))
+                                     (LOGHEAD
+                                      -10
+                                      (LOGTAIL
+                                       11
+                                       (BOOL->BIT
+                                        (<
+                                         (LOGHEAD
+                                          32
+                                          (CAR
+                                           (GRAB-BYTES
+                                            (TAKE
+                                             1
+                                             (NTHCDR
+                                              (CDR (ASSOC-EQUAL
+                                                    :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                              (STRING-TO-BYTES
+                                               (CDR
+                                                (ASSOC-EQUAL
+                                                 :CONTENTS
+                                                 (READ-X86-FILE-CONTENTS
+                                                  (CDR (ASSOC-EQUAL
+                                                        :NAME (READ-X86-FILE-DES 0 X86)))
+                                                  X86)))))))))
+                                         35)))))
+                                    (!FLGI
+                                     *RF* 0
+                                     (!FLGI
+                                      *VM* 0
+                                      (WRITE-X86-FILE-DES
+                                       0
+                                       (PUT-ASSOC-EQUAL
+                                        :OFFSET
+                                        (+
+                                         1
+                                         (CDR
+                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                        (READ-X86-FILE-DES 0 X86))
+                                       (!FLGI-UNDEFINED
+                                        4
+                                        (!FLGI
+                                         *CF* 0
+                                         (!FLGI
+                                          *PF* 1
+                                          (!FLGI
+                                           *AF*
+                                           (BITOPS::LOGSQUASH
+                                            -3
+                                            (LOGHEAD
+                                             1
+                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                           (!FLGI
+                                            *ZF* 1
+                                            (!FLGI
+                                             *SF* 0
+                                             (!FLGI *OF* 0 X86))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
@@ -2054,12 +2073,6 @@
                              jcc/cmovcc/setcc-spec
 
                              write-user-rflags
-                             !flgi
-                             !flgi-undefined
-                             zf-spec
-                             pf-spec32
-                             sub-af-spec32
-
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -2080,8 +2093,6 @@
 
                              gc-clk-no-eof)
                             (x86-run-plus)))))
-
-(local (in-theory (e/d () (whatever-rflags-are-for-eof-prelim))))
 
 ;;----------------------------------------------------------------------
 ;; EOF Not Encountered: Projection Theorems:
@@ -2235,6 +2246,13 @@
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-no-eof) x86))
                   (xr :programmer-level-mode 0 x86))))
 
+(defthmd effects-eof-not-encountered-prelim-alignment-checking-enabled-p-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (not (equal (get-char (offset x86) (input x86)) *eof*)))
+           (equal (alignment-checking-enabled-p (x86-run (gc-clk-no-eof) x86))
+                  (alignment-checking-enabled-p x86))))
+
 (defthmd effects-eof-not-encountered-prelim-os-info-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
@@ -2248,6 +2266,8 @@
            (and (x86p (x86-run (gc-clk-no-eof) x86))
                 (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-no-eof) x86))
                        (xr :programmer-level-mode 0 x86))
+                (equal (alignment-checking-enabled-p (x86-run (gc-clk-no-eof) x86))
+                       (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 (x86-run (gc-clk-no-eof) x86))
                        (xr :os-info 0 x86))
                 (equal (xr :rgf *rsp* (x86-run (gc-clk-no-eof) x86))
@@ -2279,29 +2299,12 @@
                                (assoc-equal
                                 :contents (read-x86-file-contents
                                            (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-                                           x86))))))))))
-                       ;; (list (car (grab-bytes
-                       ;;             (take
-                       ;;              1
-                       ;;              (nthcdr
-                       ;;               (cdr (assoc-equal
-                       ;;                     :offset
-                       ;;                     (read-x86-file-des 0 x86)))
-                       ;;               (string-to-bytes
-                       ;;                (cdr (assoc-equal
-                       ;;                      :contents
-                       ;;                      (read-x86-file-contents
-                       ;;                       (cdr
-                       ;;                        (assoc-equal
-                       ;;                         :name
-                       ;;                         (read-x86-file-des 0 x86)))
-                       ;;                       x86))))))))
-                       ;;       0 0 0)
-                       )))
+                                           x86)))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (union-theories
                        '(subset-p
                          effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                         effects-eof-not-encountered-prelim-alignment-checking-enabled-p-projection
                          effects-eof-not-encountered-prelim-rip-projection
                          effects-eof-not-encountered-prelim-fault-projection
                          effects-eof-not-encountered-prelim-ms-projection
@@ -2365,6 +2368,7 @@
   (implies
    (and (x86p x86-new)
         (xr :programmer-level-mode 0 x86-new)
+        (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
 
@@ -2403,301 +2407,46 @@
    (equal (x86-run 10 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-           (XW
-            :RFLAGS 0
-            (LOGIOR
-             4
-             (LOGAND
-              4294967274
-              (LOGIOR
-               64
-               (LOGAND
-                4294965034
-                (LOGIOR
-                 128
-                 (LOGAND
-                  4294965118
-                  (LOGIOR
-                   (BITOPS::LOGSQUASH
+           (MV-NTH
+            1
+            (WB
+             (APPEND
+              (CREATE-ADDR-BYTES-ALIST
+               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+               (BYTE-IFY
+                4
+                (LOGHEAD
+                 32
+                 (+
+                  1
+                  (COMBINE-BYTES
+                   (MV-NTH
                     1
-                    (LOGHEAD
-                     32
-                     (CF-SPEC32
-                      (+ 1
-                         (LOGHEAD
-                          32
-                          (COMBINE-BYTES
-                           (MV-NTH 1
-                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                        4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                       :X X86-NEW))))))))
-                   (BITOPS::LOGSQUASH
+                    (RB
+                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                     :X X86-NEW)))))))
+              (CREATE-ADDR-BYTES-ALIST
+               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
+               (BYTE-IFY
+                4
+                (LOGHEAD
+                 32
+                 (+
+                  1
+                  (COMBINE-BYTES
+                   (MV-NTH
                     1
-                    (LOGHEAD
-                     32
-                     (ASH
-                      (PF-SPEC32
-                       (LOGHEAD
-                        32
-                        (+
-                         1
-                         (LOGHEAD
-                          32
-                          (COMBINE-BYTES
-                           (MV-NTH 1
-                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                        4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                       :X X86-NEW)))))))
-                      2)))
-                   (LOGAND
-                    4294967290
-                    (LOGIOR
-                     (BITOPS::LOGSQUASH
-                      1
-                      (LOGHEAD
-                       32
-                       (ASH
-                        (ADD-AF-SPEC32
-                         (LOGHEAD
-                          32
-                          (COMBINE-BYTES
-                           (MV-NTH 1
-                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                        4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                       :X X86-NEW))))
-                         1)
-                        4)))
-                     (LOGAND
-                      4294967278
-                      (LOGIOR
-                       (BITOPS::LOGSQUASH
-                        1
-                        (LOGHEAD
-                         32
-                         (ASH
-                          (ZF-SPEC
-                           (LOGHEAD
-                            32
-                            (+
-                             1
-                             (LOGHEAD
-                              32
-                              (COMBINE-BYTES
-                               (MV-NTH 1
-                                       (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                            4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                           :X X86-NEW)))))))
-                          6)))
-                       (LOGAND
-                        4294967230
-                        (LOGIOR
-                         (BITOPS::LOGSQUASH
-                          1
-                          (LOGHEAD
-                           32
-                           (ASH
-                            (SF-SPEC32
-                             (LOGHEAD
-                              32
-                              (+
-                               1
-                               (LOGHEAD
-                                32
-                                (COMBINE-BYTES
-                                 (MV-NTH 1
-                                         (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                              4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                             :X X86-NEW)))))))
-                            7)))
-                         (LOGAND
-                          4294967166
-                          (LOGIOR
-                           (BITOPS::LOGSQUASH
-                            1
-                            (LOGHEAD
-                             32
-                             (ASH
-                              (OF-SPEC32
-                               (+
-                                1
-                                (LOGEXT
-                                 32
-                                 (COMBINE-BYTES
-                                  (MV-NTH 1
-                                          (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                               4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                              :X X86-NEW))))))
-                              11)))
-                           (LOGAND
-                            4294965246
-                            (LOGIOR
-                             4
-                             (LOGAND
-                              4294967274
-                              (LOGIOR
-                               64
-                               (LOGAND
-                                4294965054
-                                (LOGIOR
-                                 (BITOPS::LOGSQUASH
-                                  1
-                                  (LOGHEAD
-                                   32
-                                   (CF-SPEC32
-                                    (+
-                                     1
-                                     (LOGHEAD
-                                      32
-                                      (COMBINE-BYTES
-                                       (MV-NTH
-                                        1
-                                        (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                             4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                            :X X86-NEW))))))))
-                                 (BITOPS::LOGSQUASH
-                                  1
-                                  (LOGHEAD
-                                   32
-                                   (ASH
-                                    (PF-SPEC32
-                                     (LOGHEAD
-                                      32
-                                      (+
-                                       1
-                                       (LOGHEAD
-                                        32
-                                        (COMBINE-BYTES
-                                         (MV-NTH
-                                          1
-                                          (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                               4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                              :X X86-NEW)))))))
-                                    2)))
-                                 (LOGAND
-                                  4294967290
-                                  (LOGIOR
-                                   (BITOPS::LOGSQUASH
-                                    1
-                                    (LOGHEAD
-                                     32
-                                     (ASH
-                                      (ADD-AF-SPEC32
-                                       (LOGHEAD
-                                        32
-                                        (COMBINE-BYTES
-                                         (MV-NTH
-                                          1
-                                          (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                               4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                              :X X86-NEW))))
-                                       1)
-                                      4)))
-                                   (LOGAND
-                                    4294967278
-                                    (LOGIOR
-                                     (BITOPS::LOGSQUASH
-                                      1
-                                      (LOGHEAD
-                                       32
-                                       (ASH
-                                        (ZF-SPEC
-                                         (LOGHEAD
-                                          32
-                                          (+
-                                           1
-                                           (LOGHEAD
-                                            32
-                                            (COMBINE-BYTES
-                                             (MV-NTH
-                                              1
-                                              (RB
-                                               (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW)))))))
-                                        6)))
-                                     (LOGAND
-                                      4294967230
-                                      (LOGIOR
-                                       (BITOPS::LOGSQUASH
-                                        1
-                                        (LOGHEAD
-                                         32
-                                         (ASH
-                                          (SF-SPEC32
-                                           (LOGHEAD
-                                            32
-                                            (+
-                                             1
-                                             (LOGHEAD
-                                              32
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB
-                                                 (CREATE-CANONICAL-ADDRESS-LIST
-                                                  4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                 :X X86-NEW)))))))
-                                          7)))
-                                       (LOGAND
-                                        4294967166
-                                        (LOGIOR
-                                         (LOGAND 4294965246
-                                                 (BITOPS::LOGSQUASH
-                                                  1 (XR :RFLAGS 0 X86-NEW)))
-                                         (BITOPS::LOGSQUASH
-                                          1
-                                          (LOGHEAD
-                                           32
-                                           (ASH
-                                            (OF-SPEC32
-                                             (+
-                                              1
-                                              (LOGEXT
-                                               32
-                                               (COMBINE-BYTES
-                                                (MV-NTH
-                                                 1
-                                                 (RB
-                                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                                   4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                  :X X86-NEW))))))
-                                            11))))))))))))))))))))))))))))))))
-            (MV-NTH
-             1
-             (WB
-              (APPEND
-               (CREATE-ADDR-BYTES-ALIST
-                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                (BYTE-IFY
-                 4
-                 (LOGHEAD
-                  32
-                  (+
-                   1
-                   (LOGHEAD
-                    32
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW))))))))
-               (CREATE-ADDR-BYTES-ALIST
-                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                (BYTE-IFY
-                 4
-                 (LOGHEAD
-                  32
-                  (+
-                   1
-                   (LOGHEAD
-                    32
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW))))))))
-               (CREATE-ADDR-BYTES-ALIST
-                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                '(0 0 0 0)))
-              X86-NEW))))))
+                    (RB
+                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
+                     :X X86-NEW)))))))
+              (CREATE-ADDR-BYTES-ALIST
+               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+               '(0 0 0 0)))
+             (!FLGI *CF* 0
+                    (!FLGI *PF* 1
+                           (!FLGI *AF* 0
+                                  (!FLGI *ZF* 1
+                                         (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
@@ -2707,12 +2456,6 @@
                              jcc/cmovcc/setcc-spec
 
                              write-user-rflags
-                             ;; !flgi
-                             ;; !flgi-undefined
-                             ;; zf-spec
-                             ;; pf-spec32
-                             ;; sub-af-spec32
-
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -2747,301 +2490,46 @@
            (equal (x86-run 10 x86-new)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-                   (XW
-                    :RFLAGS 0
-                    (LOGIOR
-                     4
-                     (LOGAND
-                      4294967274
-                      (LOGIOR
-                       64
-                       (LOGAND
-                        4294965034
-                        (LOGIOR
-                         128
-                         (LOGAND
-                          4294965118
-                          (LOGIOR
-                           (BITOPS::LOGSQUASH
+                   (MV-NTH
+                    1
+                    (WB
+                     (APPEND
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
                             1
-                            (LOGHEAD
-                             32
-                             (CF-SPEC32
-                              (+ 1
-                                 (LOGHEAD
-                                  32
-                                  (COMBINE-BYTES
-                                   (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW))))))))
-                           (BITOPS::LOGSQUASH
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                             :X X86-NEW)))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
                             1
-                            (LOGHEAD
-                             32
-                             (ASH
-                              (PF-SPEC32
-                               (LOGHEAD
-                                32
-                                (+
-                                 1
-                                 (LOGHEAD
-                                  32
-                                  (COMBINE-BYTES
-                                   (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW)))))))
-                              2)))
-                           (LOGAND
-                            4294967290
-                            (LOGIOR
-                             (BITOPS::LOGSQUASH
-                              1
-                              (LOGHEAD
-                               32
-                               (ASH
-                                (ADD-AF-SPEC32
-                                 (LOGHEAD
-                                  32
-                                  (COMBINE-BYTES
-                                   (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW))))
-                                 1)
-                                4)))
-                             (LOGAND
-                              4294967278
-                              (LOGIOR
-                               (BITOPS::LOGSQUASH
-                                1
-                                (LOGHEAD
-                                 32
-                                 (ASH
-                                  (ZF-SPEC
-                                   (LOGHEAD
-                                    32
-                                    (+
-                                     1
-                                     (LOGHEAD
-                                      32
-                                      (COMBINE-BYTES
-                                       (MV-NTH 1
-                                               (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                    4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                                   :X X86-NEW)))))))
-                                  6)))
-                               (LOGAND
-                                4294967230
-                                (LOGIOR
-                                 (BITOPS::LOGSQUASH
-                                  1
-                                  (LOGHEAD
-                                   32
-                                   (ASH
-                                    (SF-SPEC32
-                                     (LOGHEAD
-                                      32
-                                      (+
-                                       1
-                                       (LOGHEAD
-                                        32
-                                        (COMBINE-BYTES
-                                         (MV-NTH 1
-                                                 (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                      4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                                     :X X86-NEW)))))))
-                                    7)))
-                                 (LOGAND
-                                  4294967166
-                                  (LOGIOR
-                                   (BITOPS::LOGSQUASH
-                                    1
-                                    (LOGHEAD
-                                     32
-                                     (ASH
-                                      (OF-SPEC32
-                                       (+
-                                        1
-                                        (LOGEXT
-                                         32
-                                         (COMBINE-BYTES
-                                          (MV-NTH 1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                                      :X X86-NEW))))))
-                                      11)))
-                                   (LOGAND
-                                    4294965246
-                                    (LOGIOR
-                                     4
-                                     (LOGAND
-                                      4294967274
-                                      (LOGIOR
-                                       64
-                                       (LOGAND
-                                        4294965054
-                                        (LOGIOR
-                                         (BITOPS::LOGSQUASH
-                                          1
-                                          (LOGHEAD
-                                           32
-                                           (CF-SPEC32
-                                            (+
-                                             1
-                                             (LOGHEAD
-                                              32
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                     4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                    :X X86-NEW))))))))
-                                         (BITOPS::LOGSQUASH
-                                          1
-                                          (LOGHEAD
-                                           32
-                                           (ASH
-                                            (PF-SPEC32
-                                             (LOGHEAD
-                                              32
-                                              (+
-                                               1
-                                               (LOGHEAD
-                                                32
-                                                (COMBINE-BYTES
-                                                 (MV-NTH
-                                                  1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                      :X X86-NEW)))))))
-                                            2)))
-                                         (LOGAND
-                                          4294967290
-                                          (LOGIOR
-                                           (BITOPS::LOGSQUASH
-                                            1
-                                            (LOGHEAD
-                                             32
-                                             (ASH
-                                              (ADD-AF-SPEC32
-                                               (LOGHEAD
-                                                32
-                                                (COMBINE-BYTES
-                                                 (MV-NTH
-                                                  1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                      :X X86-NEW))))
-                                               1)
-                                              4)))
-                                           (LOGAND
-                                            4294967278
-                                            (LOGIOR
-                                             (BITOPS::LOGSQUASH
-                                              1
-                                              (LOGHEAD
-                                               32
-                                               (ASH
-                                                (ZF-SPEC
-                                                 (LOGHEAD
-                                                  32
-                                                  (+
-                                                   1
-                                                   (LOGHEAD
-                                                    32
-                                                    (COMBINE-BYTES
-                                                     (MV-NTH
-                                                      1
-                                                      (RB
-                                                       (CREATE-CANONICAL-ADDRESS-LIST
-                                                        4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                       :X X86-NEW)))))))
-                                                6)))
-                                             (LOGAND
-                                              4294967230
-                                              (LOGIOR
-                                               (BITOPS::LOGSQUASH
-                                                1
-                                                (LOGHEAD
-                                                 32
-                                                 (ASH
-                                                  (SF-SPEC32
-                                                   (LOGHEAD
-                                                    32
-                                                    (+
-                                                     1
-                                                     (LOGHEAD
-                                                      32
-                                                      (COMBINE-BYTES
-                                                       (MV-NTH
-                                                        1
-                                                        (RB
-                                                         (CREATE-CANONICAL-ADDRESS-LIST
-                                                          4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                         :X X86-NEW)))))))
-                                                  7)))
-                                               (LOGAND
-                                                4294967166
-                                                (LOGIOR
-                                                 (LOGAND 4294965246
-                                                         (BITOPS::LOGSQUASH
-                                                          1 (XR :RFLAGS 0 X86-NEW)))
-                                                 (BITOPS::LOGSQUASH
-                                                  1
-                                                  (LOGHEAD
-                                                   32
-                                                   (ASH
-                                                    (OF-SPEC32
-                                                     (+
-                                                      1
-                                                      (LOGEXT
-                                                       32
-                                                       (COMBINE-BYTES
-                                                        (MV-NTH
-                                                         1
-                                                         (RB
-                                                          (CREATE-CANONICAL-ADDRESS-LIST
-                                                           4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                          :X X86-NEW))))))
-                                                    11))))))))))))))))))))))))))))))))
-                    (MV-NTH
-                     1
-                     (WB
-                      (APPEND
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                        (BYTE-IFY
-                         4
-                         (LOGHEAD
-                          32
-                          (+
-                           1
-                           (LOGHEAD
-                            32
-                            (COMBINE-BYTES (MV-NTH 1
-                                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                        4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                       :X X86-NEW))))))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                        (BYTE-IFY
-                         4
-                         (LOGHEAD
-                          32
-                          (+
-                           1
-                           (LOGHEAD
-                            32
-                            (COMBINE-BYTES (MV-NTH 1
-                                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                        4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                                                       :X X86-NEW))))))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                        '(0 0 0 0)))
-                      X86-NEW))))))
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
+                             :X X86-NEW)))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                       '(0 0 0 0)))
+                     (!FLGI *CF* 0
+                            (!FLGI *PF* 1
+                                   (!FLGI *AF* 0
+                                          (!FLGI *ZF* 1
+                                                 (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))
   :hints (("Goal" :in-theory
            (union-theories '(loop-preconditions
                              input
@@ -3069,301 +2557,52 @@
            (equal (x86-run (gc-clk-newline) x86)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                   (XW
-                    :RFLAGS 0
-                    (LOGIOR
-                     4
-                     (LOGAND
-                      4294967274
-                      (LOGIOR
-                       64
-                       (LOGAND
-                        4294965034
-                        (LOGIOR
-                         128
-                         (LOGAND
-                          4294965118
-                          (LOGIOR
-                           (BITOPS::LOGSQUASH
+                   (MV-NTH
+                    1
+                    (WB
+                     (APPEND
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST
+                        4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
                             1
-                            (LOGHEAD
-                             32
-                             (CF-SPEC32
-                              (+ 1
-                                 (LOGHEAD
-                                  32
-                                  (COMBINE-BYTES
-                                   (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                               :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
-                           (BITOPS::LOGSQUASH
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST
+                        4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
                             1
-                            (LOGHEAD
-                             32
-                             (ASH
-                              (PF-SPEC32
-                               (LOGHEAD
-                                32
-                                (+
-                                 1
-                                 (LOGHEAD
-                                  32
-                                  (COMBINE-BYTES
-                                   (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                               :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
-                              2)))
-                           (LOGAND
-                            4294967290
-                            (LOGIOR
-                             (BITOPS::LOGSQUASH
-                              1
-                              (LOGHEAD
-                               32
-                               (ASH
-                                (ADD-AF-SPEC32
-                                 (LOGHEAD
-                                  32
-                                  (COMBINE-BYTES
-                                   (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                               :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                                 1)
-                                4)))
-                             (LOGAND
-                              4294967278
-                              (LOGIOR
-                               (BITOPS::LOGSQUASH
-                                1
-                                (LOGHEAD
-                                 32
-                                 (ASH
-                                  (ZF-SPEC
-                                   (LOGHEAD
-                                    32
-                                    (+
-                                     1
-                                     (LOGHEAD
-                                      32
-                                      (COMBINE-BYTES
-                                       (MV-NTH 1
-                                               (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                    4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                   :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
-                                  6)))
-                               (LOGAND
-                                4294967230
-                                (LOGIOR
-                                 (BITOPS::LOGSQUASH
-                                  1
-                                  (LOGHEAD
-                                   32
-                                   (ASH
-                                    (SF-SPEC32
-                                     (LOGHEAD
-                                      32
-                                      (+
-                                       1
-                                       (LOGHEAD
-                                        32
-                                        (COMBINE-BYTES
-                                         (MV-NTH 1
-                                                 (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                      4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                     :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
-                                    7)))
-                                 (LOGAND
-                                  4294967166
-                                  (LOGIOR
-                                   (BITOPS::LOGSQUASH
-                                    1
-                                    (LOGHEAD
-                                     32
-                                     (ASH
-                                      (OF-SPEC32
-                                       (+
-                                        1
-                                        (LOGEXT
-                                         32
-                                         (COMBINE-BYTES
-                                          (MV-NTH 1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                      :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
-                                      11)))
-                                   (LOGAND
-                                    4294965246
-                                    (LOGIOR
-                                     4
-                                     (LOGAND
-                                      4294967274
-                                      (LOGIOR
-                                       64
-                                       (LOGAND
-                                        4294965054
-                                        (LOGIOR
-                                         (BITOPS::LOGSQUASH
-                                          1
-                                          (LOGHEAD
-                                           32
-                                           (CF-SPEC32
-                                            (+
-                                             1
-                                             (LOGHEAD
-                                              32
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                     4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                    :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
-                                         (BITOPS::LOGSQUASH
-                                          1
-                                          (LOGHEAD
-                                           32
-                                           (ASH
-                                            (PF-SPEC32
-                                             (LOGHEAD
-                                              32
-                                              (+
-                                               1
-                                               (LOGHEAD
-                                                32
-                                                (COMBINE-BYTES
-                                                 (MV-NTH
-                                                  1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                      :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
-                                            2)))
-                                         (LOGAND
-                                          4294967290
-                                          (LOGIOR
-                                           (BITOPS::LOGSQUASH
-                                            1
-                                            (LOGHEAD
-                                             32
-                                             (ASH
-                                              (ADD-AF-SPEC32
-                                               (LOGHEAD
-                                                32
-                                                (COMBINE-BYTES
-                                                 (MV-NTH
-                                                  1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                      :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                                               1)
-                                              4)))
-                                           (LOGAND
-                                            4294967278
-                                            (LOGIOR
-                                             (BITOPS::LOGSQUASH
-                                              1
-                                              (LOGHEAD
-                                               32
-                                               (ASH
-                                                (ZF-SPEC
-                                                 (LOGHEAD
-                                                  32
-                                                  (+
-                                                   1
-                                                   (LOGHEAD
-                                                    32
-                                                    (COMBINE-BYTES
-                                                     (MV-NTH
-                                                      1
-                                                      (RB
-                                                       (CREATE-CANONICAL-ADDRESS-LIST
-                                                        4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                       :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
-                                                6)))
-                                             (LOGAND
-                                              4294967230
-                                              (LOGIOR
-                                               (BITOPS::LOGSQUASH
-                                                1
-                                                (LOGHEAD
-                                                 32
-                                                 (ASH
-                                                  (SF-SPEC32
-                                                   (LOGHEAD
-                                                    32
-                                                    (+
-                                                     1
-                                                     (LOGHEAD
-                                                      32
-                                                      (COMBINE-BYTES
-                                                       (MV-NTH
-                                                        1
-                                                        (RB
-                                                         (CREATE-CANONICAL-ADDRESS-LIST
-                                                          4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                         :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
-                                                  7)))
-                                               (LOGAND
-                                                4294967166
-                                                (LOGIOR
-                                                 (LOGAND 4294965246
-                                                         (BITOPS::LOGSQUASH
-                                                          1 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                 (BITOPS::LOGSQUASH
-                                                  1
-                                                  (LOGHEAD
-                                                   32
-                                                   (ASH
-                                                    (OF-SPEC32
-                                                     (+
-                                                      1
-                                                      (LOGEXT
-                                                       32
-                                                       (COMBINE-BYTES
-                                                        (MV-NTH
-                                                         1
-                                                         (RB
-                                                          (CREATE-CANONICAL-ADDRESS-LIST
-                                                           4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                          :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
-                                                    11))))))))))))))))))))))))))))))))
-                    (MV-NTH
-                     1
-                     (WB
-                      (APPEND
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                        (BYTE-IFY
-                         4
-                         (LOGHEAD
-                          32
-                          (+
-                           1
-                           (LOGHEAD
-                            32
-                            (COMBINE-BYTES (MV-NTH 1
-                                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                        4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                       :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                        (BYTE-IFY
-                         4
-                         (LOGHEAD
-                          32
-                          (+
-                           1
-                           (LOGHEAD
-                            32
-                            (COMBINE-BYTES (MV-NTH 1
-                                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                        4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                       :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                        '(0 0 0 0)))
-                      (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST
+                        4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                       '(0 0 0 0)))
+                     (!FLGI *CF* 0
+                            (!FLGI *PF* 1
+                                   (!FLGI *AF* 0
+                                          (!FLGI *ZF* 1
+                                                 (!FLGI *SF* 0
+                                                        (!FLGI *OF* 0 (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-newline)
            :in-theory (union-theories
@@ -3456,6 +2695,13 @@
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-newline) x86))
                   (xr :programmer-level-mode 0 x86))))
 
+(defthmd effects-newline-encountered-alignment-checking-enabled-p-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (equal (get-char (offset x86) (input x86)) *newline*))
+           (equal (alignment-checking-enabled-p (x86-run (gc-clk-newline) x86))
+                  (alignment-checking-enabled-p x86))))
+
 (defthmd effects-newline-encountered-os-info-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
@@ -3475,6 +2721,7 @@
                                effects-newline-encountered-ms-projection
                                effects-newline-encountered-fault-projection
                                effects-newline-encountered-env-assumptions-projection
+                               effects-newline-encountered-alignment-checking-enabled-p-projection
                                (len)
                                loop-preconditions-fwd-chaining-essentials
                                loop-preconditions-forward-chain-addresses-info
@@ -3586,6 +2833,7 @@
   (implies
    (and (x86p x86-new)
         (xr :programmer-level-mode 0 x86-new)
+        (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
 
@@ -3624,156 +2872,32 @@
    (equal (x86-run 7 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-           (XW
-            :RFLAGS 0
-            (LOGIOR
-             4
-             (LOGAND
-              4294967274
-              (LOGIOR
-               64
-               (LOGAND
-                4294965050
-                (LOGIOR
-                 16
-                 (LOGAND
-                  4294965038
-                  (LOGIOR
-                   (BITOPS::LOGSQUASH
+           (MV-NTH
+            1
+            (WB
+             (APPEND
+              (CREATE-ADDR-BYTES-ALIST
+               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+               (BYTE-IFY
+                4
+                (LOGHEAD
+                 32
+                 (+
+                  1
+                  (COMBINE-BYTES
+                   (MV-NTH
                     1
-                    (LOGHEAD
-                     32
-                     (CF-SPEC32
-                      (+
-                       1
-                       (LOGHEAD 32
-                                (COMBINE-BYTES
-                                 (MV-NTH 1
-                                         (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                              4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                             :X X86-NEW))))))))
-                   (BITOPS::LOGSQUASH
-                    1
-                    (LOGHEAD
-                     32
-                     (ASH
-                      (PF-SPEC32
-                       (LOGHEAD
-                        32
-                        (+ 1
-                           (LOGHEAD
-                            32
-                            (COMBINE-BYTES
-                             (MV-NTH 1
-                                     (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                          4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                         :X X86-NEW)))))))
-                      2)))
-                   (LOGAND
-                    4294967290
-                    (LOGIOR
-                     (BITOPS::LOGSQUASH
-                      1
-                      (LOGHEAD
-                       32
-                       (ASH
-                        (ADD-AF-SPEC32
-                         (LOGHEAD
-                          32
-                          (COMBINE-BYTES
-                           (MV-NTH 1
-                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                        4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                       :X X86-NEW))))
-                         1)
-                        4)))
-                     (LOGAND
-                      4294967278
-                      (LOGIOR
-                       (BITOPS::LOGSQUASH
-                        1
-                        (LOGHEAD
-                         32
-                         (ASH
-                          (ZF-SPEC
-                           (LOGHEAD
-                            32
-                            (+
-                             1
-                             (LOGHEAD
-                              32
-                              (COMBINE-BYTES
-                               (MV-NTH 1
-                                       (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                            4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                           :X X86-NEW)))))))
-                          6)))
-                       (LOGAND
-                        4294967230
-                        (LOGIOR
-                         (BITOPS::LOGSQUASH
-                          1
-                          (LOGHEAD
-                           32
-                           (ASH
-                            (SF-SPEC32
-                             (LOGHEAD
-                              32
-                              (+
-                               1
-                               (LOGHEAD
-                                32
-                                (COMBINE-BYTES
-                                 (MV-NTH 1
-                                         (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                              4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                             :X X86-NEW)))))))
-                            7)))
-                         (LOGAND
-                          4294967166
-                          (LOGIOR
-                           (LOGAND 4294965246
-                                   (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86-NEW)))
-                           (BITOPS::LOGSQUASH
-                            1
-                            (LOGHEAD
-                             32
-                             (ASH
-                              (OF-SPEC32
-                               (+
-                                1
-                                (LOGEXT
-                                 32
-                                 (COMBINE-BYTES
-                                  (MV-NTH 1
-                                          (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                               4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                              :X X86-NEW))))))
-                              11))))))))))))))))))
-            (MV-NTH
-             1
-             (WB
-              (APPEND
-               (CREATE-ADDR-BYTES-ALIST
-                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                (BYTE-IFY
-                 4
-                 (LOGHEAD
-                  32
-                  (+
-                   1
-                   (LOGHEAD
-                    32
-                    (COMBINE-BYTES
-                     (MV-NTH
-                      1
-                      (RB
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                       :X X86-NEW))))))))
-               (CREATE-ADDR-BYTES-ALIST
-                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                '(0 0 0 0)))
-              X86-NEW))))))
+                    (RB
+                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                     :X X86-NEW)))))))
+              (CREATE-ADDR-BYTES-ALIST
+               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+               '(0 0 0 0)))
+             (!FLGI *CF* 0
+                    (!FLGI *PF* 1
+                           (!FLGI *AF* 0
+                                  (!FLGI *ZF* 1
+                                         (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
@@ -3783,12 +2907,6 @@
                              jcc/cmovcc/setcc-spec
 
                              write-user-rflags
-                             ;; !flgi
-                             ;; !flgi-undefined
-                             ;; zf-spec
-                             ;; pf-spec32
-                             ;; sub-af-spec32
-
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -3824,156 +2942,32 @@
            (equal (x86-run 7 x86-new)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-                   (XW
-                    :RFLAGS 0
-                    (LOGIOR
-                     4
-                     (LOGAND
-                      4294967274
-                      (LOGIOR
-                       64
-                       (LOGAND
-                        4294965050
-                        (LOGIOR
-                         16
-                         (LOGAND
-                          4294965038
-                          (LOGIOR
-                           (BITOPS::LOGSQUASH
+                   (MV-NTH
+                    1
+                    (WB
+                     (APPEND
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
                             1
-                            (LOGHEAD
-                             32
-                             (CF-SPEC32
-                              (+
-                               1
-                               (LOGHEAD 32
-                                        (COMBINE-BYTES
-                                         (MV-NTH 1
-                                                 (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                      4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                     :X X86-NEW))))))))
-                           (BITOPS::LOGSQUASH
-                            1
-                            (LOGHEAD
-                             32
-                             (ASH
-                              (PF-SPEC32
-                               (LOGHEAD
-                                32
-                                (+ 1
-                                   (LOGHEAD
-                                    32
-                                    (COMBINE-BYTES
-                                     (MV-NTH 1
-                                             (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                  4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                 :X X86-NEW)))))))
-                              2)))
-                           (LOGAND
-                            4294967290
-                            (LOGIOR
-                             (BITOPS::LOGSQUASH
-                              1
-                              (LOGHEAD
-                               32
-                               (ASH
-                                (ADD-AF-SPEC32
-                                 (LOGHEAD
-                                  32
-                                  (COMBINE-BYTES
-                                   (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW))))
-                                 1)
-                                4)))
-                             (LOGAND
-                              4294967278
-                              (LOGIOR
-                               (BITOPS::LOGSQUASH
-                                1
-                                (LOGHEAD
-                                 32
-                                 (ASH
-                                  (ZF-SPEC
-                                   (LOGHEAD
-                                    32
-                                    (+
-                                     1
-                                     (LOGHEAD
-                                      32
-                                      (COMBINE-BYTES
-                                       (MV-NTH 1
-                                               (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                    4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                   :X X86-NEW)))))))
-                                  6)))
-                               (LOGAND
-                                4294967230
-                                (LOGIOR
-                                 (BITOPS::LOGSQUASH
-                                  1
-                                  (LOGHEAD
-                                   32
-                                   (ASH
-                                    (SF-SPEC32
-                                     (LOGHEAD
-                                      32
-                                      (+
-                                       1
-                                       (LOGHEAD
-                                        32
-                                        (COMBINE-BYTES
-                                         (MV-NTH 1
-                                                 (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                      4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                     :X X86-NEW)))))))
-                                    7)))
-                                 (LOGAND
-                                  4294967166
-                                  (LOGIOR
-                                   (LOGAND 4294965246
-                                           (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86-NEW)))
-                                   (BITOPS::LOGSQUASH
-                                    1
-                                    (LOGHEAD
-                                     32
-                                     (ASH
-                                      (OF-SPEC32
-                                       (+
-                                        1
-                                        (LOGEXT
-                                         32
-                                         (COMBINE-BYTES
-                                          (MV-NTH 1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                      :X X86-NEW))))))
-                                      11))))))))))))))))))
-                    (MV-NTH
-                     1
-                     (WB
-                      (APPEND
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                        (BYTE-IFY
-                         4
-                         (LOGHEAD
-                          32
-                          (+
-                           1
-                           (LOGHEAD
-                            32
-                            (COMBINE-BYTES
-                             (MV-NTH
-                              1
-                              (RB
-                               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                               :X X86-NEW))))))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                        '(0 0 0 0)))
-                      X86-NEW))))))
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                             :X X86-NEW)))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                       '(0 0 0 0)))
+                     (!FLGI *CF* 0
+                            (!FLGI *PF* 1
+                                   (!FLGI *AF* 0
+                                          (!FLGI *ZF* 1
+                                                 (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))
   :hints (("Goal" :in-theory
            (union-theories '(loop-preconditions
                              input
@@ -4006,157 +3000,37 @@
                 (equal (get-char (offset x86) (input x86)) *space*))
            (equal (x86-run (gc-clk-space) x86)
                   (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 (x86-run (gc-clk-no-eof) x86)))
-                   (XW
-                    :RFLAGS 0
-                    (LOGIOR
-                     4
-                     (LOGAND
-                      4294967274
-                      (LOGIOR
-                       64
-                       (LOGAND
-                        4294965050
-                        (LOGIOR
-                         16
-                         (LOGAND
-                          4294965038
-                          (LOGIOR
-                           (BITOPS::LOGSQUASH
+                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                   (MV-NTH
+                    1
+                    (WB
+                     (APPEND
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST
+                        4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
                             1
-                            (LOGHEAD
-                             32
-                             (CF-SPEC32
-                              (+
-                               1
-                               (LOGHEAD 32
-                                        (COMBINE-BYTES
-                                         (MV-NTH 1
-                                                 (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                      4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                     :X (x86-run (gc-clk-no-eof) x86)))))))))
-                           (BITOPS::LOGSQUASH
-                            1
-                            (LOGHEAD
-                             32
-                             (ASH
-                              (PF-SPEC32
-                               (LOGHEAD
-                                32
-                                (+ 1
-                                   (LOGHEAD
-                                    32
-                                    (COMBINE-BYTES
-                                     (MV-NTH 1
-                                             (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                  4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                 :X (x86-run (gc-clk-no-eof) x86))))))))
-                              2)))
-                           (LOGAND
-                            4294967290
-                            (LOGIOR
-                             (BITOPS::LOGSQUASH
-                              1
-                              (LOGHEAD
-                               32
-                               (ASH
-                                (ADD-AF-SPEC32
-                                 (LOGHEAD
-                                  32
-                                  (COMBINE-BYTES
-                                   (MV-NTH 1
-                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                               :X (x86-run (gc-clk-no-eof) x86)))))
-                                 1)
-                                4)))
-                             (LOGAND
-                              4294967278
-                              (LOGIOR
-                               (BITOPS::LOGSQUASH
-                                1
-                                (LOGHEAD
-                                 32
-                                 (ASH
-                                  (ZF-SPEC
-                                   (LOGHEAD
-                                    32
-                                    (+
-                                     1
-                                     (LOGHEAD
-                                      32
-                                      (COMBINE-BYTES
-                                       (MV-NTH 1
-                                               (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                    4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                   :X (x86-run (gc-clk-no-eof) x86))))))))
-                                  6)))
-                               (LOGAND
-                                4294967230
-                                (LOGIOR
-                                 (BITOPS::LOGSQUASH
-                                  1
-                                  (LOGHEAD
-                                   32
-                                   (ASH
-                                    (SF-SPEC32
-                                     (LOGHEAD
-                                      32
-                                      (+
-                                       1
-                                       (LOGHEAD
-                                        32
-                                        (COMBINE-BYTES
-                                         (MV-NTH 1
-                                                 (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                      4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                     :X (x86-run (gc-clk-no-eof) x86))))))))
-                                    7)))
-                                 (LOGAND
-                                  4294967166
-                                  (LOGIOR
-                                   (LOGAND 4294965246
-                                           (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86))))
-                                   (BITOPS::LOGSQUASH
-                                    1
-                                    (LOGHEAD
-                                     32
-                                     (ASH
-                                      (OF-SPEC32
-                                       (+
-                                        1
-                                        (LOGEXT
-                                         32
-                                         (COMBINE-BYTES
-                                          (MV-NTH 1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                      :X (x86-run (gc-clk-no-eof) x86)))))))
-                                      11))))))))))))))))))
-                    (MV-NTH
-                     1
-                     (WB
-                      (APPEND
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                        (BYTE-IFY
-                         4
-                         (LOGHEAD
-                          32
-                          (+
-                           1
-                           (LOGHEAD
-                            32
-                            (COMBINE-BYTES
-                             (MV-NTH
-                              1
-                              (RB
-                               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                               :X (x86-run (gc-clk-no-eof) x86)))))))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                        '(0 0 0 0)))
-                      (x86-run (gc-clk-no-eof) x86)))))))
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST
+                        4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                       '(0 0 0 0)))
+                     (!FLGI *CF* 0
+                            (!FLGI *PF* 1
+                                   (!FLGI *AF* 0
+                                          (!FLGI *ZF* 1
+                                                 (!FLGI *SF* 0
+                                                        (!FLGI *OF* 0 (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-space)
            :in-theory (union-theories
@@ -4258,6 +3132,13 @@
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-space) x86))
                   (xr :programmer-level-mode 0 x86))))
 
+(defthmd effects-space-encountered-alignment-checking-enabled-p-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (equal (get-char (offset x86) (input x86)) *space*))
+           (equal (alignment-checking-enabled-p (x86-run (gc-clk-space) x86))
+                  (alignment-checking-enabled-p x86))))
+
 (defthmd effects-space-encountered-os-info-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
@@ -4279,6 +3160,7 @@
                                effects-space-encountered-env-assumptions-projection
                                (len)
                                loop-preconditions-fwd-chaining-essentials
+                               effects-space-encountered-alignment-checking-enabled-p-projection
                                loop-preconditions-forward-chain-addresses-info
                                effects-space-encountered-programmer-level-mode-projection
                                effects-space-encountered-os-info-projection
@@ -4381,6 +3263,7 @@
   (implies
    (and (x86p x86-new)
         (xr :programmer-level-mode 0 x86-new)
+        (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
 
@@ -4419,190 +3302,32 @@
    (equal (x86-run 11 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-           (XW
-            :RFLAGS 0
-            (LOGIOR
-             4
-             (LOGAND
-              4294967274
-              (LOGIOR
-               64
-               (LOGAND
-                4294965054
-                (LOGIOR
-                 4
-                 (LOGAND
-                  4294967290
-                  (LOGIOR
-                   16
-                   (LOGAND
-                    4294967214
-                    (LOGIOR
-                     128
-                     (LOGAND
-                      4294965034
-                      (LOGIOR
-                       128
-                       (LOGAND
-                        4294965118
-                        (LOGIOR
-                         4
-                         (LOGAND
-                          4294967290
-                          (LOGIOR
-                           16
-                           (LOGAND
-                            4294967214
-                            (LOGIOR
-                             128
-                             (LOGAND
-                              4294965118
-                              (LOGIOR
-                               (BITOPS::LOGSQUASH
-                                1
-                                (LOGHEAD
-                                 32
-                                 (CF-SPEC32
-                                  (+
-                                   1
-                                   (LOGHEAD
-                                    32
-                                    (COMBINE-BYTES
-                                     (MV-NTH 1
-                                             (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                  4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                 :X X86-NEW))))))))
-                               (BITOPS::LOGSQUASH
-                                1
-                                (LOGHEAD
-                                 32
-                                 (ASH
-                                  (PF-SPEC32
-                                   (LOGHEAD
-                                    32
-                                    (+
-                                     1
-                                     (LOGHEAD
-                                      32
-                                      (COMBINE-BYTES
-                                       (MV-NTH
-                                        1
-                                        (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                             4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                            :X X86-NEW)))))))
-                                  2)))
-                               (LOGAND
-                                4294967290
-                                (LOGIOR
-                                 (BITOPS::LOGSQUASH
-                                  1
-                                  (LOGHEAD
-                                   32
-                                   (ASH
-                                    (ADD-AF-SPEC32
-                                     (LOGHEAD
-                                      32
-                                      (COMBINE-BYTES
-                                       (MV-NTH
-                                        1
-                                        (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                             4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                            :X X86-NEW))))
-                                     1)
-                                    4)))
-                                 (LOGAND
-                                  4294967278
-                                  (LOGIOR
-                                   (BITOPS::LOGSQUASH
-                                    1
-                                    (LOGHEAD
-                                     32
-                                     (ASH
-                                      (ZF-SPEC
-                                       (LOGHEAD
-                                        32
-                                        (+
-                                         1
-                                         (LOGHEAD
-                                          32
-                                          (COMBINE-BYTES
-                                           (MV-NTH
-                                            1
-                                            (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                :X X86-NEW)))))))
-                                      6)))
-                                   (LOGAND
-                                    4294967230
-                                    (LOGIOR
-                                     (BITOPS::LOGSQUASH
-                                      1
-                                      (LOGHEAD
-                                       32
-                                       (ASH
-                                        (SF-SPEC32
-                                         (LOGHEAD
-                                          32
-                                          (+
-                                           1
-                                           (LOGHEAD
-                                            32
-                                            (COMBINE-BYTES
-                                             (MV-NTH
-                                              1
-                                              (RB
-                                               (CREATE-CANONICAL-ADDRESS-LIST
-                                                4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW)))))))
-                                        7)))
-                                     (LOGAND
-                                      4294967166
-                                      (LOGIOR
-                                       (LOGAND
-                                        4294965246
-                                        (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86-NEW)))
-                                       (BITOPS::LOGSQUASH
-                                        1
-                                        (LOGHEAD
-                                         32
-                                         (ASH
-                                          (OF-SPEC32
-                                           (+
-                                            1
-                                            (LOGEXT
-                                             32
-                                             (COMBINE-BYTES
-                                              (MV-NTH
-                                               1
-                                               (RB
-                                                (CREATE-CANONICAL-ADDRESS-LIST
-                                                 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                :X X86-NEW))))))
-                                          11))))))))))))))))))))))))))))))
-            (MV-NTH
-             1
-             (WB
-              (APPEND
-               (CREATE-ADDR-BYTES-ALIST
-                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                (BYTE-IFY
-                 4
-                 (LOGHEAD
-                  32
-                  (+
-                   1
-                   (LOGHEAD
-                    32
-                    (COMBINE-BYTES
-                     (MV-NTH
-                      1
-                      (RB
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                       :X X86-NEW))))))))
-               (CREATE-ADDR-BYTES-ALIST
-                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                '(0 0 0 0)))
-              X86-NEW))))))
+           (MV-NTH
+            1
+            (WB
+             (APPEND
+              (CREATE-ADDR-BYTES-ALIST
+               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+               (BYTE-IFY
+                4
+                (LOGHEAD
+                 32
+                 (+
+                  1
+                  (COMBINE-BYTES
+                   (MV-NTH
+                    1
+                    (RB
+                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                     :X X86-NEW)))))))
+              (CREATE-ADDR-BYTES-ALIST
+               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+               '(0 0 0 0)))
+             (!FLGI *CF* 0
+                    (!FLGI *PF* 1
+                           (!FLGI *AF* 0
+                                  (!FLGI *ZF* 1
+                                         (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
@@ -4612,12 +3337,6 @@
                              jcc/cmovcc/setcc-spec
 
                              write-user-rflags
-                             ;; !flgi
-                             ;; !flgi-undefined
-                             ;; zf-spec
-                             ;; pf-spec32
-                             ;; sub-af-spec32
-
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -4653,190 +3372,32 @@
            (equal (x86-run 11 x86-new)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-                   (XW
-                    :RFLAGS 0
-                    (LOGIOR
-                     4
-                     (LOGAND
-                      4294967274
-                      (LOGIOR
-                       64
-                       (LOGAND
-                        4294965054
-                        (LOGIOR
-                         4
-                         (LOGAND
-                          4294967290
-                          (LOGIOR
-                           16
-                           (LOGAND
-                            4294967214
-                            (LOGIOR
-                             128
-                             (LOGAND
-                              4294965034
-                              (LOGIOR
-                               128
-                               (LOGAND
-                                4294965118
-                                (LOGIOR
-                                 4
-                                 (LOGAND
-                                  4294967290
-                                  (LOGIOR
-                                   16
-                                   (LOGAND
-                                    4294967214
-                                    (LOGIOR
-                                     128
-                                     (LOGAND
-                                      4294965118
-                                      (LOGIOR
-                                       (BITOPS::LOGSQUASH
-                                        1
-                                        (LOGHEAD
-                                         32
-                                         (CF-SPEC32
-                                          (+
-                                           1
-                                           (LOGHEAD
-                                            32
-                                            (COMBINE-BYTES
-                                             (MV-NTH 1
-                                                     (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                          4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                         :X X86-NEW))))))))
-                                       (BITOPS::LOGSQUASH
-                                        1
-                                        (LOGHEAD
-                                         32
-                                         (ASH
-                                          (PF-SPEC32
-                                           (LOGHEAD
-                                            32
-                                            (+
-                                             1
-                                             (LOGHEAD
-                                              32
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                     4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                    :X X86-NEW)))))))
-                                          2)))
-                                       (LOGAND
-                                        4294967290
-                                        (LOGIOR
-                                         (BITOPS::LOGSQUASH
-                                          1
-                                          (LOGHEAD
-                                           32
-                                           (ASH
-                                            (ADD-AF-SPEC32
-                                             (LOGHEAD
-                                              32
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                     4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                    :X X86-NEW))))
-                                             1)
-                                            4)))
-                                         (LOGAND
-                                          4294967278
-                                          (LOGIOR
-                                           (BITOPS::LOGSQUASH
-                                            1
-                                            (LOGHEAD
-                                             32
-                                             (ASH
-                                              (ZF-SPEC
-                                               (LOGHEAD
-                                                32
-                                                (+
-                                                 1
-                                                 (LOGHEAD
-                                                  32
-                                                  (COMBINE-BYTES
-                                                   (MV-NTH
-                                                    1
-                                                    (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                         4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                        :X X86-NEW)))))))
-                                              6)))
-                                           (LOGAND
-                                            4294967230
-                                            (LOGIOR
-                                             (BITOPS::LOGSQUASH
-                                              1
-                                              (LOGHEAD
-                                               32
-                                               (ASH
-                                                (SF-SPEC32
-                                                 (LOGHEAD
-                                                  32
-                                                  (+
-                                                   1
-                                                   (LOGHEAD
-                                                    32
-                                                    (COMBINE-BYTES
-                                                     (MV-NTH
-                                                      1
-                                                      (RB
-                                                       (CREATE-CANONICAL-ADDRESS-LIST
-                                                        4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                       :X X86-NEW)))))))
-                                                7)))
-                                             (LOGAND
-                                              4294967166
-                                              (LOGIOR
-                                               (LOGAND
-                                                4294965246
-                                                (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86-NEW)))
-                                               (BITOPS::LOGSQUASH
-                                                1
-                                                (LOGHEAD
-                                                 32
-                                                 (ASH
-                                                  (OF-SPEC32
-                                                   (+
-                                                    1
-                                                    (LOGEXT
-                                                     32
-                                                     (COMBINE-BYTES
-                                                      (MV-NTH
-                                                       1
-                                                       (RB
-                                                        (CREATE-CANONICAL-ADDRESS-LIST
-                                                         4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                        :X X86-NEW))))))
-                                                  11))))))))))))))))))))))))))))))
-                    (MV-NTH
-                     1
-                     (WB
-                      (APPEND
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                        (BYTE-IFY
-                         4
-                         (LOGHEAD
-                          32
-                          (+
-                           1
-                           (LOGHEAD
-                            32
-                            (COMBINE-BYTES
-                             (MV-NTH
-                              1
-                              (RB
-                               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                               :X X86-NEW))))))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                        '(0 0 0 0)))
-                      X86-NEW))))))
+                   (MV-NTH
+                    1
+                    (WB
+                     (APPEND
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                             :X X86-NEW)))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                       '(0 0 0 0)))
+                     (!FLGI *CF* 0
+                            (!FLGI *PF* 1
+                                   (!FLGI *AF* 0
+                                          (!FLGI *ZF* 1
+                                                 (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))
   :hints (("Goal" :in-theory
            (union-theories '(loop-preconditions
                              input
@@ -4869,191 +3430,37 @@
                 (equal (get-char (offset x86) (input x86)) *tab*))
            (equal (x86-run (gc-clk-tab) x86)
                   (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 (x86-run (gc-clk-no-eof) x86)))
-                   (XW
-                    :RFLAGS 0
-                    (LOGIOR
-                     4
-                     (LOGAND
-                      4294967274
-                      (LOGIOR
-                       64
-                       (LOGAND
-                        4294965054
-                        (LOGIOR
-                         4
-                         (LOGAND
-                          4294967290
-                          (LOGIOR
-                           16
-                           (LOGAND
-                            4294967214
-                            (LOGIOR
-                             128
-                             (LOGAND
-                              4294965034
-                              (LOGIOR
-                               128
-                               (LOGAND
-                                4294965118
-                                (LOGIOR
-                                 4
-                                 (LOGAND
-                                  4294967290
-                                  (LOGIOR
-                                   16
-                                   (LOGAND
-                                    4294967214
-                                    (LOGIOR
-                                     128
-                                     (LOGAND
-                                      4294965118
-                                      (LOGIOR
-                                       (BITOPS::LOGSQUASH
-                                        1
-                                        (LOGHEAD
-                                         32
-                                         (CF-SPEC32
-                                          (+
-                                           1
-                                           (LOGHEAD
-                                            32
-                                            (COMBINE-BYTES
-                                             (MV-NTH 1
-                                                     (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                          4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                         :X (x86-run (gc-clk-no-eof) x86)))))))))
-                                       (BITOPS::LOGSQUASH
-                                        1
-                                        (LOGHEAD
-                                         32
-                                         (ASH
-                                          (PF-SPEC32
-                                           (LOGHEAD
-                                            32
-                                            (+
-                                             1
-                                             (LOGHEAD
-                                              32
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                     4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                    :X (x86-run (gc-clk-no-eof) x86))))))))
-                                          2)))
-                                       (LOGAND
-                                        4294967290
-                                        (LOGIOR
-                                         (BITOPS::LOGSQUASH
-                                          1
-                                          (LOGHEAD
-                                           32
-                                           (ASH
-                                            (ADD-AF-SPEC32
-                                             (LOGHEAD
-                                              32
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                     4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                    :X (x86-run (gc-clk-no-eof) x86)))))
-                                             1)
-                                            4)))
-                                         (LOGAND
-                                          4294967278
-                                          (LOGIOR
-                                           (BITOPS::LOGSQUASH
-                                            1
-                                            (LOGHEAD
-                                             32
-                                             (ASH
-                                              (ZF-SPEC
-                                               (LOGHEAD
-                                                32
-                                                (+
-                                                 1
-                                                 (LOGHEAD
-                                                  32
-                                                  (COMBINE-BYTES
-                                                   (MV-NTH
-                                                    1
-                                                    (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                         4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                        :X (x86-run (gc-clk-no-eof) x86))))))))
-                                              6)))
-                                           (LOGAND
-                                            4294967230
-                                            (LOGIOR
-                                             (BITOPS::LOGSQUASH
-                                              1
-                                              (LOGHEAD
-                                               32
-                                               (ASH
-                                                (SF-SPEC32
-                                                 (LOGHEAD
-                                                  32
-                                                  (+
-                                                   1
-                                                   (LOGHEAD
-                                                    32
-                                                    (COMBINE-BYTES
-                                                     (MV-NTH
-                                                      1
-                                                      (RB
-                                                       (CREATE-CANONICAL-ADDRESS-LIST
-                                                        4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                       :X (x86-run (gc-clk-no-eof) x86))))))))
-                                                7)))
-                                             (LOGAND
-                                              4294967166
-                                              (LOGIOR
-                                               (LOGAND
-                                                4294965246
-                                                (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86))))
-                                               (BITOPS::LOGSQUASH
-                                                1
-                                                (LOGHEAD
-                                                 32
-                                                 (ASH
-                                                  (OF-SPEC32
-                                                   (+
-                                                    1
-                                                    (LOGEXT
-                                                     32
-                                                     (COMBINE-BYTES
-                                                      (MV-NTH
-                                                       1
-                                                       (RB
-                                                        (CREATE-CANONICAL-ADDRESS-LIST
-                                                         4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                        :X (x86-run (gc-clk-no-eof) x86)))))))
-                                                  11))))))))))))))))))))))))))))))
-                    (MV-NTH
-                     1
-                     (WB
-                      (APPEND
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                        (BYTE-IFY
-                         4
-                         (LOGHEAD
-                          32
-                          (+
-                           1
-                           (LOGHEAD
-                            32
-                            (COMBINE-BYTES
-                             (MV-NTH
-                              1
-                              (RB
-                               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                               :X (x86-run (gc-clk-no-eof) x86)))))))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                        '(0 0 0 0)))
-                      (x86-run (gc-clk-no-eof) x86)))))))
+                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                   (MV-NTH
+                    1
+                    (WB
+                     (APPEND
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST
+                        4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST
+                        4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                       '(0 0 0 0)))
+                     (!FLGI *CF* 0
+                            (!FLGI *PF* 1
+                                   (!FLGI *AF* 0
+                                          (!FLGI *ZF* 1
+                                                 (!FLGI *SF* 0
+                                                        (!FLGI *OF* 0 (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-tab)
            :in-theory (union-theories
@@ -5156,6 +3563,13 @@
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-tab) x86))
                   (xr :programmer-level-mode 0 x86))))
 
+(defthmd effects-tab-encountered-alignment-checking-enabled-p-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (equal (get-char (offset x86) (input x86)) *tab*))
+           (equal (alignment-checking-enabled-p (x86-run (gc-clk-tab) x86))
+                  (alignment-checking-enabled-p x86))))
+
 (defthmd effects-tab-encountered-os-info-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
@@ -5168,6 +3582,7 @@
                 (equal (get-char (offset x86) (input x86)) *tab*))
            (loop-preconditions addr (x86-run (gc-clk-tab) x86)))
   :hints (("Goal" :in-theory '(effects-tab-encountered-rbp-projection
+                               effects-tab-encountered-alignment-checking-enabled-p-projection
                                effects-tab-encountered-rsp-projection
                                x86p-effects-tab-encountered
                                effects-tab-encountered-msri-projection
@@ -5310,13 +3725,7 @@
             (equal (equal (loghead 32 (+ -9 char)) 0) nil))
    :hints (("Goal" :in-theory (e/d* (loghead) ())))))
 
-(defun-nx whatever-rflags-are-for-other-char-state-out (x86)
-  (rflags (x86-run 13 x86)))
-
-
 (defthmd effects-other-char-encountered-state-out-limited
-  ;; 116.67 s!!!
-
   ;;  callq <gc>
   ;;
   ;;  addl $0x1,-0x10(%rbp)
@@ -5325,6 +3734,7 @@
   (implies
    (and (x86p x86-new)
         (xr :programmer-level-mode 0 x86-new)
+        (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
 
@@ -5404,33 +3814,97 @@
                  32
                  (+
                   1
-                  (LOGHEAD
-                   32
-                   (COMBINE-BYTES (MV-NTH 1
-                                          (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                               4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                              :X X86-NEW))))))))
+                  (COMBINE-BYTES
+                   (MV-NTH
+                    1
+                    (RB
+                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                     :X X86-NEW)))))))
               (CREATE-ADDR-BYTES-ALIST
                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
                (BYTE-IFY 4 1))
               (CREATE-ADDR-BYTES-ALIST
                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-               (byte-ify
+               (BYTE-IFY
                 4
                 (LOGHEAD
                  32
                  (+
                   1
+                  (COMBINE-BYTES
+                   (MV-NTH
+                    1
+                    (RB
+                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
+                     :X X86-NEW))))))))
+             (!FLGI
+              *CF*
+              (CF-SPEC32
+               (+
+                1
+                (COMBINE-BYTES
+                 (MV-NTH
+                  1
+                  (RB
+                   (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
+                   :X X86-NEW)))))
+              (!FLGI
+               *PF*
+               (PF-SPEC32
+                (LOGHEAD
+                 32
+                 (+
+                  1
+                  (COMBINE-BYTES
+                   (MV-NTH
+                    1
+                    (RB
+                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
+                     :X X86-NEW))))))
+               (!FLGI
+                *AF*
+                (ADD-AF-SPEC32
+                 (COMBINE-BYTES
+                  (MV-NTH
+                   1
+                   (RB
+                    (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
+                    :X X86-NEW)))
+                 1)
+                (!FLGI
+                 *ZF*
+                 (ZF-SPEC
                   (LOGHEAD
                    32
-                   (COMBINE-BYTES
-                    (MV-NTH
+                   (+
+                    1
+                    (COMBINE-BYTES (MV-NTH 1
+                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                4 (+ 16 (XR :RGF *RSP* X86-NEW)))
+                                               :X X86-NEW))))))
+                 (!FLGI
+                  *SF*
+                  (SF-SPEC32
+                   (LOGHEAD
+                    32
+                    (+ 1
+                       (COMBINE-BYTES
+                        (MV-NTH 1
+                                (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                     4 (+ 16 (XR :RGF *RSP* X86-NEW)))
+                                    :X X86-NEW))))))
+                  (!FLGI
+                   *OF*
+                   (OF-SPEC32
+                    (+
                      1
-                     (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                         :X X86-NEW)))))))))
-             (WRITE-USER-RFLAGS
-              (whatever-rflags-are-for-other-char-state-out x86-new)
-              0 X86-NEW))))))
+                     (LOGEXT 32
+                             (COMBINE-BYTES
+                              (MV-NTH 1
+                                      (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                           4 (+ 16 (XR :RGF *RSP* X86-NEW)))
+                                          :X X86-NEW))))))
+                   X86-NEW)))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
@@ -5439,13 +3913,7 @@
                              gpr-add-spec-4
                              jcc/cmovcc/setcc-spec
 
-                             ;; write-user-rflags
-                             ;; !flgi
-                             ;; !flgi-undefined
-                             zf-spec
-                             ;; pf-spec32
-                             ;; sub-af-spec32
-
+                             write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -5468,8 +3936,6 @@
                             (x86-run-plus
                              byte-ify
                              (byte-ify))))))
-
-(local (in-theory (e/d () (whatever-rflags-are-for-other-char-state-out))))
 
 (local
  (defthm combine-bytes-with-byte-ify-4-inequality-lemma
@@ -5497,46 +3963,110 @@
                 (equal x86-new (x86-run (gc-clk-no-eof) x86)))
            (equal (x86-run 13 x86-new)
                   (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
+                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
                    (MV-NTH
                     1
                     (WB
                      (APPEND
                       (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
                        (BYTE-IFY
                         4
                         (LOGHEAD
                          32
                          (+
                           1
-                          (LOGHEAD
-                           32
-                           (COMBINE-BYTES (MV-NTH 1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                                                      :X X86-NEW))))))))
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
                       (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
                        (BYTE-IFY 4 1))
                       (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                       (byte-ify
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                       (BYTE-IFY
                         4
                         (LOGHEAD
                          32
                          (+
                           1
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
+                     (!FLGI
+                      *CF*
+                      (CF-SPEC32
+                       (+
+                        1
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                           :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
+                      (!FLGI
+                       *PF*
+                       (PF-SPEC32
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                       (!FLGI
+                        *AF*
+                        (ADD-AF-SPEC32
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                         1)
+                        (!FLGI
+                         *ZF*
+                         (ZF-SPEC
                           (LOGHEAD
                            32
-                           (COMBINE-BYTES
-                            (MV-NTH
+                           (+
+                            1
+                            (COMBINE-BYTES (MV-NTH 1
+                                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                        4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                                       :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                         (!FLGI
+                          *SF*
+                          (SF-SPEC32
+                           (LOGHEAD
+                            32
+                            (+ 1
+                               (COMBINE-BYTES
+                                (MV-NTH 1
+                                        (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                             4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                            :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                          (!FLGI
+                           *OF*
+                           (OF-SPEC32
+                            (+
                              1
-                             (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                                 :X X86-NEW)))))))))
-                     (WRITE-USER-RFLAGS
-                      (whatever-rflags-are-for-other-char-state-out x86-new)
-                      0 X86-NEW))))))
+                             (LOGEXT 32
+                                     (COMBINE-BYTES
+                                      (MV-NTH 1
+                                              (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                   4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                                  :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                           (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal" :in-theory
            (union-theories '(loop-preconditions
                              input
@@ -5581,46 +4111,110 @@
                 (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (x86-run (gc-clk-otherwise-out) x86)
                   (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 (x86-run (gc-clk-no-eof) x86)))
+                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
                    (MV-NTH
                     1
                     (WB
                      (APPEND
                       (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
                        (BYTE-IFY
                         4
                         (LOGHEAD
                          32
                          (+
                           1
-                          (LOGHEAD
-                           32
-                           (COMBINE-BYTES (MV-NTH 1
-                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                                      :X (x86-run (gc-clk-no-eof) x86)))))))))
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
                       (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
                        (BYTE-IFY 4 1))
                       (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                       (byte-ify
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                       (BYTE-IFY
                         4
                         (LOGHEAD
                          32
                          (+
                           1
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
+                     (!FLGI
+                      *CF*
+                      (CF-SPEC32
+                       (+
+                        1
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                           :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
+                      (!FLGI
+                       *PF*
+                       (PF-SPEC32
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                       (!FLGI
+                        *AF*
+                        (ADD-AF-SPEC32
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                         1)
+                        (!FLGI
+                         *ZF*
+                         (ZF-SPEC
                           (LOGHEAD
                            32
-                           (COMBINE-BYTES
-                            (MV-NTH
+                           (+
+                            1
+                            (COMBINE-BYTES (MV-NTH 1
+                                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                        4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                                       :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                         (!FLGI
+                          *SF*
+                          (SF-SPEC32
+                           (LOGHEAD
+                            32
+                            (+ 1
+                               (COMBINE-BYTES
+                                (MV-NTH 1
+                                        (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                             4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                            :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                          (!FLGI
+                           *OF*
+                           (OF-SPEC32
+                            (+
                              1
-                             (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                                 :X (x86-run (gc-clk-no-eof) x86))))))))))
-                     (WRITE-USER-RFLAGS
-                      (whatever-rflags-are-for-other-char-state-out (x86-run (gc-clk-no-eof) x86))
-                      0 (x86-run (gc-clk-no-eof) x86)))))))
+                             (LOGEXT 32
+                                     (COMBINE-BYTES
+                                      (MV-NTH 1
+                                              (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                   4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                                  :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                           (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal"
            :in-theory (union-theories
                        '(programmer-level-mode-permissions-dont-matter
@@ -5657,8 +4251,8 @@
            (equal (xr :rgf *rbp* (x86-run (gc-clk-otherwise-out) x86))
                   (xr :rgf *rbp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthmd effects-other-char-encountered-state-out-rsp-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5789,6 +4383,18 @@
                   (xr :programmer-level-mode 0 x86)))
   :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
 
+(defthmd effects-other-char-encountered-state-out-alignment-checking-enabled-p-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
+           (equal (alignment-checking-enabled-p (x86-run (gc-clk-otherwise-out) x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+
 (defthmd effects-other-char-encountered-state-out-os-info-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
@@ -5821,6 +4427,7 @@
                                loop-preconditions-fwd-chaining-essentials
                                loop-preconditions-forward-chain-addresses-info
                                effects-other-char-encountered-state-out-programmer-level-mode-projection
+                               effects-other-char-encountered-state-out-alignment-checking-enabled-p-projection
                                effects-other-char-encountered-state-out-os-info-projection
                                effects-other-char-encountered-state-out-program-projection)
            :expand (loop-preconditions addr (x86-run (gc-clk-otherwise-out) x86)))))
@@ -5976,9 +4583,6 @@
 ;; Other Char Encountered (State = IN)
 ;;**********************************************************************
 
-(defun-nx whatever-rflags-are-for-other-char-state-in (x86)
-  (rflags (x86-run 11 x86)))
-
 (defthmd effects-other-char-encountered-state-in-limited
   ;;  callq <gc>
   ;;
@@ -5988,6 +4592,7 @@
   (implies
    (and (x86p x86-new)
         (xr :programmer-level-mode 0 x86-new)
+        (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
         ;; Points to the "addl $0x1,-0xc(%rbp)" instruction in main
@@ -6053,9 +4658,105 @@
                    (RB
                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
                     :X X86-NEW)))))))
-             (WRITE-USER-RFLAGS
-              (whatever-rflags-are-for-other-char-state-in X86-NEW)
-              0 X86-NEW))))))
+             (!FLGI
+              *CF*
+              (LOGHEAD
+               1
+               (BOOL->BIT
+                (<
+                 (COMBINE-BYTES
+                  (MV-NTH
+                   1
+                   (RB
+                    (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                    :X X86-NEW)))
+                 0)))
+              (!FLGI
+               *PF*
+               (LOGIOR
+                (PF-SPEC32
+                 (COMBINE-BYTES
+                  (MV-NTH
+                   1
+                   (RB
+                    (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                    :X X86-NEW))))
+                (LOGHEAD
+                 -1
+                 (LOGTAIL
+                  2
+                  (BOOL->BIT
+                   (<
+                    (COMBINE-BYTES (MV-NTH 1
+                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                               :X X86-NEW)))
+                    0)))))
+               (!FLGI
+                *AF*
+                (LOGIOR
+                 (SUB-AF-SPEC32
+                  (COMBINE-BYTES
+                   (MV-NTH
+                    1
+                    (RB
+                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                     :X X86-NEW)))
+                  0)
+                 (LOGHEAD
+                  -3
+                  (LOGTAIL
+                   4
+                   (BOOL->BIT
+                    (< (COMBINE-BYTES
+                        (MV-NTH 1
+                                (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                     4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                    :X X86-NEW)))
+                       0)))))
+                (!FLGI
+                 *ZF* 0
+                 (!FLGI
+                  *SF*
+                  (LOGIOR
+                   (SF-SPEC32
+                    (COMBINE-BYTES (MV-NTH 1
+                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                               :X X86-NEW))))
+                   (LOGHEAD
+                    -6
+                    (LOGTAIL
+                     7
+                     (BOOL->BIT
+                      (< (COMBINE-BYTES
+                          (MV-NTH 1
+                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                       4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                      :X X86-NEW)))
+                         0)))))
+                  (!FLGI
+                   *OF*
+                   (LOGIOR
+                    (OF-SPEC32
+                     (LOGEXT 32
+                             (COMBINE-BYTES
+                              (MV-NTH 1
+                                      (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                           4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                          :X X86-NEW)))))
+                    (LOGHEAD
+                     -10
+                     (LOGTAIL
+                      11
+                      (BOOL->BIT
+                       (< (COMBINE-BYTES
+                           (MV-NTH 1
+                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                        4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                       :X X86-NEW)))
+                          0)))))
+                   X86-NEW)))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
@@ -6063,14 +4764,6 @@
                              gpr-sub-spec-4
                              gpr-add-spec-4
                              jcc/cmovcc/setcc-spec
-
-                             ;; write-user-rflags
-                             ;; !flgi
-                             ;; !flgi-undefined
-                             zf-spec
-                             ;; pf-spec32
-                             ;; sub-af-spec32
-
                              !rgfi-size
                              x86-operand-to-reg/mem
                              wr64
@@ -6094,8 +4787,6 @@
                             (x86-run-plus
                              byte-ify
                              (byte-ify))))))
-
-(local (in-theory (e/d () (whatever-rflags-are-for-other-char-state-in))))
 
 (local
  (defthmd combine-bytes-and-byte-ify-inequality-lemma-for-n=4
@@ -6141,9 +4832,105 @@
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
                             :X X86-NEW)))))))
-                     (WRITE-USER-RFLAGS
-                      (whatever-rflags-are-for-other-char-state-in X86-NEW)
-                      0 X86-NEW))))))
+                     (!FLGI
+                      *CF*
+                      (LOGHEAD
+                       1
+                       (BOOL->BIT
+                        (<
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                            :X X86-NEW)))
+                         0)))
+                      (!FLGI
+                       *PF*
+                       (LOGIOR
+                        (PF-SPEC32
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                            :X X86-NEW))))
+                        (LOGHEAD
+                         -1
+                         (LOGTAIL
+                          2
+                          (BOOL->BIT
+                           (<
+                            (COMBINE-BYTES (MV-NTH 1
+                                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                        4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                                       :X X86-NEW)))
+                            0)))))
+                       (!FLGI
+                        *AF*
+                        (LOGIOR
+                         (SUB-AF-SPEC32
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                             :X X86-NEW)))
+                          0)
+                         (LOGHEAD
+                          -3
+                          (LOGTAIL
+                           4
+                           (BOOL->BIT
+                            (< (COMBINE-BYTES
+                                (MV-NTH 1
+                                        (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                             4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                            :X X86-NEW)))
+                               0)))))
+                        (!FLGI
+                         *ZF* 0
+                         (!FLGI
+                          *SF*
+                          (LOGIOR
+                           (SF-SPEC32
+                            (COMBINE-BYTES (MV-NTH 1
+                                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                        4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                                       :X X86-NEW))))
+                           (LOGHEAD
+                            -6
+                            (LOGTAIL
+                             7
+                             (BOOL->BIT
+                              (< (COMBINE-BYTES
+                                  (MV-NTH 1
+                                          (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                               4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                              :X X86-NEW)))
+                                 0)))))
+                          (!FLGI
+                           *OF*
+                           (LOGIOR
+                            (OF-SPEC32
+                             (LOGEXT 32
+                                     (COMBINE-BYTES
+                                      (MV-NTH 1
+                                              (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                   4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                                  :X X86-NEW)))))
+                            (LOGHEAD
+                             -10
+                             (LOGTAIL
+                              11
+                              (BOOL->BIT
+                               (< (COMBINE-BYTES
+                                   (MV-NTH 1
+                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                                               :X X86-NEW)))
+                                  0)))))
+                           X86-NEW)))))))))))
   :hints (("Goal" :in-theory
            (union-theories '(loop-preconditions
                              input
@@ -6193,13 +4980,13 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (x86-run (gc-clk-otherwise-in) x86)
                   (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 (x86-run (gc-clk-no-eof) x86)))
+                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
                    (MV-NTH
                     1
                     (WB
                      (CREATE-ADDR-BYTES-ALIST
                       (CREATE-CANONICAL-ADDRESS-LIST
-                       4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                       4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
                       (BYTE-IFY
                        4
                        (LOGHEAD
@@ -6211,11 +4998,112 @@
                            1
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST
-                             4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
-                            :X (x86-run (gc-clk-no-eof) x86))))))))
-                     (WRITE-USER-RFLAGS
-                      (whatever-rflags-are-for-other-char-state-in (x86-run (gc-clk-no-eof) x86))
-                      0 (x86-run (gc-clk-no-eof) x86)))))))
+                             4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                     (!FLGI
+                      *CF*
+                      (LOGHEAD
+                       1
+                       (BOOL->BIT
+                        (<
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                         0)))
+                      (!FLGI
+                       *PF*
+                       (LOGIOR
+                        (PF-SPEC32
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                            :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                        (LOGHEAD
+                         -1
+                         (LOGTAIL
+                          2
+                          (BOOL->BIT
+                           (<
+                            (COMBINE-BYTES
+                             (MV-NTH 1
+                                     (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                          4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                         :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                            0)))))
+                       (!FLGI
+                        *AF*
+                        (LOGIOR
+                         (SUB-AF-SPEC32
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                          0)
+                         (LOGHEAD
+                          -3
+                          (LOGTAIL
+                           4
+                           (BOOL->BIT
+                            (< (COMBINE-BYTES
+                                (MV-NTH 1
+                                        (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                             4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                               0)))))
+                        (!FLGI
+                         *ZF* 0
+                         (!FLGI
+                          *SF*
+                          (LOGIOR
+                           (SF-SPEC32
+                            (COMBINE-BYTES
+                             (MV-NTH 1
+                                     (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                          4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                         :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                           (LOGHEAD
+                            -6
+                            (LOGTAIL
+                             7
+                             (BOOL->BIT
+                              (< (COMBINE-BYTES
+                                  (MV-NTH 1
+                                          (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                               4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                              :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                 0)))))
+                          (!FLGI
+                           *OF*
+                           (LOGIOR
+                            (OF-SPEC32
+                             (LOGEXT 32
+                                     (COMBINE-BYTES
+                                      (MV-NTH 1
+                                              (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                   4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                                  :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
+                            (LOGHEAD
+                             -10
+                             (LOGTAIL
+                              11
+                              (BOOL->BIT
+                               (< (COMBINE-BYTES
+                                   (MV-NTH 1
+                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                               :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                  0)))))
+                           (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal"
            :in-theory (union-theories
                        '(programmer-level-mode-permissions-dont-matter
@@ -6340,8 +5228,8 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :fault 0 (x86-run (gc-clk-otherwise-in) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthmd effects-other-char-encountered-state-in-program-projection
   (implies (and (loop-preconditions addr x86) (equal len-wc (len *wc*))
@@ -6397,6 +5285,20 @@
                                   (word-state
                                    loop-preconditions-forward-chain-addresses-info)))))
 
+(defthmd effects-other-char-encountered-state-in-alignment-checking-enabled-p-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
+           (equal (alignment-checking-enabled-p (x86-run (gc-clk-otherwise-in) x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
+
 (defthmd effects-other-char-encountered-state-in-os-info-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
@@ -6429,6 +5331,7 @@
                                loop-preconditions-fwd-chaining-essentials
                                loop-preconditions-forward-chain-addresses-info
                                effects-other-char-encountered-state-in-programmer-level-mode-projection
+                               effects-other-char-encountered-state-in-alignment-checking-enabled-p-projection
                                effects-other-char-encountered-state-in-os-info-projection
                                effects-other-char-encountered-state-in-program-projection)
            :expand (loop-preconditions addr (x86-run (gc-clk-otherwise-in) x86)))))
@@ -7787,6 +6690,7 @@
 (defthmd memory-analysis-effects-call-gc
   (implies (and (x86p x86)
                 (xr :programmer-level-mode 0 x86)
+                (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
                 (env-assumptions x86)
                 (canonical-address-p (xr :rgf *rsp* x86))

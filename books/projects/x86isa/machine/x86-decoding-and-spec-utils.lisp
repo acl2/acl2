@@ -385,6 +385,7 @@ field conveying useful information. </li>
   (local (xdoc::set-default-parents read-operands-and-write-results))
 
   (define alignment-checking-enabled-p (x86)
+    :prepwork ((local (in-theory (e/d* (flgi) ()))))
     :returns (enabled booleanp :rule-classes :type-prescription)
     :short "Checking if alignment is enabled"
     :long "<p> Source: Intel Manuals, Volume 3, Section 6.15, Exception
@@ -419,16 +420,47 @@ made from privilege level 3.</sf>"
 
     (b* ((cr0 (the (unsigned-byte 32) (n32 (ctri *cr0* x86))))
          (AM  (cr0-slice :cr0-am cr0))
-         ((the (unsigned-byte 32) input-rflags) (rflags x86))
-         (AC (rflags-slice :ac input-rflags))
+         (AC (mbe :logic (flgi *ac* x86)
+                  :exec (rflags-slice :ac (the (unsigned-byte 32) (rflags x86)))))
          (cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
          (CPL (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
       (and (equal AM 1)
            (equal AC 1)
-           (equal CPL 3))))
+           (equal CPL 3)))
+
+    ///
+
+    (defthm alignment-checking-enabled-p-and-xw
+      (implies (and (not (equal fld :ctr))
+                    (not (equal fld :seg-visible))
+                    (not (equal fld :rflags)))
+               (equal (alignment-checking-enabled-p (xw fld index val x86))
+                      (alignment-checking-enabled-p x86))))
+
+    (defthm alignment-checking-enabled-p-and-xw-ctr
+      (implies (case-split (or (not (equal index *cr0*))
+                               (and (equal index *cr0*)
+                                    (equal (cr0-slice :cr0-am val)
+                                           (cr0-slice :cr0-am (xr :ctr *cr0* x86))))))
+               (equal (alignment-checking-enabled-p (xw :ctr index val x86))
+                      (alignment-checking-enabled-p x86))))
+
+    (defthm alignment-checking-enabled-p-and-xw-rflags
+      (implies (equal (rflags-slice :ac val)
+                      (rflags-slice :ac (xr :rflags 0 x86)))
+               (equal (alignment-checking-enabled-p (xw :rflags 0 val x86))
+                      (alignment-checking-enabled-p x86))))
+
+    (defthm alignment-checking-enabled-p-and-xw-seg-visible
+      (implies (case-split (or (not (equal index *cs*))
+                               (and (equal index *cs*)
+                                    (equal (seg-sel-layout-slice :rpl val)
+                                           (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86))))))
+               (equal (alignment-checking-enabled-p (xw :seg-visible index val x86))
+                      (alignment-checking-enabled-p x86)))))
 
   (define x86-operand-from-modr/m-and-sib-bytes
-
+    ;; TO-DO: operand-sizes 6 and 10 are weird. Fix them.
     ((reg-type      :type (unsigned-byte  1)
                     "@('reg-type') is @('*rgf-access*') for GPRs, and @('*xmm-access*') for XMMs.")
      (operand-size  :type (member 1 2 4 6 8 10 16))
@@ -624,6 +656,7 @@ made from privilege level 3.</sf>"
                            num-imm-bytes x86))))))
 
   (define x86-operand-to-reg/mem
+    ;; TO-DO: operand-sizes 6 and 10 are weird. Fix them.
     ((operand-size :type (member 1 2 4 6 8 10 16))
      (inst-ac?      booleanp
                     "@('t') if instruction does alignment checking, @('nil') otherwise")
@@ -634,7 +667,7 @@ made from privilege level 3.</sf>"
      (mod          :type (unsigned-byte 2))
      x86)
 
-    :long "<p> The reason why the type of v-addr here is i64p instead
+    :long "<p>The reason why the type of v-addr here is i64p instead
     of i49p is that the v-addr might be obtained from a 64-bit
     register or be a 64-bit value in the memory.  Also note that this
     v-addr includes the FS or GS-base if the appropriate prefix
