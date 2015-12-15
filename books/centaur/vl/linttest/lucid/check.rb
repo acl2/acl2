@@ -287,4 +287,11 @@ normal(:fancy_mp, "mp2")
 normal(:fancy_mp, "mp3")
 unused(:fancy_mp, "mp4")
 
+
+spurious(:'fancy_mp_param$width=5', "foo")
+normal(:'fancy_mp_param$width=5', "mp1")
+normal(:'fancy_mp_param$width=5', "mp2")
+normal(:'fancy_mp_param$width=5', "mp3")
+unused(:'fancy_mp_param$width=5', "mp4")
+
 test_passed()

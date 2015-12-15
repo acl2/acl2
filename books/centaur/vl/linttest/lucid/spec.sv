@@ -609,3 +609,37 @@ module fancy_mptest ;
 
 endmodule
 
+
+
+interface fancy_mp_param;
+
+  // parameterized interfaces make modport handling trickier
+
+  parameter width = 3;
+  logic [width-1:0] foo;
+
+  modport mp1 (input foo);
+  modport mp2 (input foo);
+  modport mp3 (input foo);
+  modport mp4 (input foo);
+
+endinterface
+
+module fancy_mp_paramtest_sub (fancy_mp_param xx);
+
+endmodule
+
+module fancy_mp_paramtest_sub2 (fancy_mp_param.mp3 xx);
+
+endmodule
+
+module fancy_mp_paramtest ;
+
+  fancy_mp_param #(5) xx();
+
+  fancy_mp_paramtest_sub sub1 (xx.mp1);
+  fancy_mp_paramtest_sub sub2 (.xx(xx.mp2));
+  fancy_mp_paramtest_sub2 sub3 (.*);
+
+endmodule
+

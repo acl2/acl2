@@ -171,6 +171,13 @@ read/written.</p>"
   ((db      vl-luciddb-p
             "Main database mapping keys to their use/set occurrences.")
 
+   (modportsp booleanp :rule-classes :type-prescription
+              "Should we issue warnings for modports?  It generally will only
+               make sense to do this <i>before</i> unparameterization has taken
+               place, because unparameterization can change the names of
+               interfaces and our argresolve handling drops the arg.modport
+               stuff in a way that makes this too hard to handle.")
+
    (paramsp booleanp :rule-classes :type-prescription
             "Should we issue warnings for parameters?  It generally will only
              make sense to do this <i>before</i> unparameterization has taken
@@ -447,9 +454,11 @@ created when we process their packages, etc.</p>"
   ((x vl-design-p)
    &key
    ((paramsp booleanp) 't)
+   ((modportsp booleanp) 't)
    ((generatesp booleanp) 't))
   :returns (st vl-lucidstate-p)
   (make-vl-lucidstate :db (vl-luciddb-init x)
+                      :modportsp modportsp
                       :paramsp paramsp
                       :generatesp generatesp))
 
@@ -2885,7 +2894,10 @@ doesn't have to recreate the default heuristics.</p>"
          (vl-extend-reportcard topname w reportcard)))
 
       (:vl-modport
-       (b* (((when (vl-lucid-some-solo-occp val.used))
+       (b* (((unless st.modportsp)
+             ;; Don't do any analysis of modports unless it's permitted.
+             reportcard)
+            ((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Modport ~s0 is never used. (~s1)"
@@ -2998,6 +3010,7 @@ doesn't have to recreate the default heuristics.</p>"
 
 (define vl-design-lucid ((x vl-design-p)
                          &key
+                         ((modportsp booleanp) 't)
                          ((paramsp booleanp) 't)
                          ((generatesp booleanp) 't))
   :returns (new-x vl-design-p)
@@ -3007,6 +3020,7 @@ doesn't have to recreate the default heuristics.</p>"
                    :mintime 1))
        (ss (vl-scopestack-init x))
        (st (cwtime (vl-lucidstate-init x
+                                       :modportsp modportsp
                                        :paramsp paramsp
                                        :generatesp generatesp)))
        (st (cwtime (vl-design-lucidcheck-main x ss st)))
