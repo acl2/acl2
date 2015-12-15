@@ -115,7 +115,7 @@
         (vl-unparam-debug "trying to override value parameter ~a1 with datatype ~a2.~%"
                           nil decl datatype)
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-bad-parameter-override
                    :msg "can't override parameter ~s1 with datatype ~a2: ~
                          ~s1 is a value parameter, not a type parameter."
                    :args (list nil decl.name datatype))
@@ -126,7 +126,7 @@
                            datatype ~a1 for parameter ~a2~%"
                          nil datatype decl)
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-bad-parameter-override
                    :msg "unresolved usertypes in override datatype ~
                          ~a1 for parameter ~a2"
                    :args (list nil datatype decl))
@@ -193,7 +193,7 @@ types.</p>"
 
        ((unless (vl-datatype-packedp type))
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-bad-parameter-override
                    :msg "For now we can only assign to parameters of ~
                          packed type, unlike ~a1."
                    :args (list nil type))
@@ -210,7 +210,7 @@ types.</p>"
                           nil paramname desired-width desired-signedness
                           err)
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-bad-parameter-override
                    :msg "can't override parameter ~s1: don't know the ~
                          correct width/signedness for type ~a2; ~@3."
                    :args (list nil paramname type err))
@@ -222,7 +222,7 @@ types.</p>"
         (vl-unparam-debug "only reduced ~a1 to ~a2 (not a constant).~%"
                           nil expr reduced-expr)
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-bad-parameter-override
                    :msg "can't override parameter ~s1: failed to reduce ~
                          expression ~a2 to a constant integer."
                    :args (list nil paramname expr))
@@ -276,116 +276,6 @@ types.</p>"
 ;;              (vl-datatype-resolved-p type))))
 
 
-#|
-(trace$ #!vl (Vl-override-parameter
-              :entry (list 'vl-override-parameter
-                           (with-local-ps (vl-pp-paramdecl decl))
-                           (if override
-                               (with-local-ps
-                                 (vl-pp-paramvalue override))
-                             nil))
-              :exit (list 'vl-override-parameter
-                          (vl-paramdecl->overriddenp (nth 2 values))
-                          (with-local-ps (vl-pp-paramdecl (nth 2 values)))
-                          (with-local-ps (vl-print-warnings
-                                          (butlast (nth 1 values) (len warnings)))))))
-
-(trace$ #!vl (vl-paramtype-elaborate-fn
-              :entry (list 'paramtype-elaborate
-                           (with-local-ps (vl-pp-paramdecl
-                                           (make-vl-paramdecl
-                                            :name "xxx"
-                                            :type x
-                                            :loc *vl-fakeloc*))))
-              :exit (list 'paramtype-elaborate
-                          (with-local-ps (vl-pp-paramdecl
-                                           (make-vl-paramdecl
-                                            :name "xxx"
-                                            :type (nth 2 values)
-                                            :loc *vl-fakeloc*)))
-                          (and (not (car values))
-                               (with-local-ps
-                                 (vl-print-warnings (nth 1 values)))))))
-
-(trace$ #!vl (vl-datatype-elaborate-fn
-              :entry (list 'datatype-elaborate
-                           (with-local-ps (vl-pp-datatype x)))
-              :exit (list 'datatype-elaborate
-                          (with-local-ps (vl-pp-datatype (nth 2 values)))
-                          (and (not (car values))
-                               (with-local-ps
-                                 (vl-print-warnings (nth 1 values)))))))
-
-(trace$ #!vl (vl-expr-elaborate-fn
-              :entry (list 'expr-elaborate
-                           (with-local-ps (vl-pp-expr x)))
-              :exit (list 'expr-elaborate
-                          (with-local-ps (vl-pp-expr (nth 2 values)))
-                          (and (not (car values))
-                               (with-local-ps
-                                 (vl-print-warnings (nth 1 values)))))))
-
-(trace$ #!vl (vl-assign-elaborate-fn
-              :entry (list 'assign-elaborate
-                           (with-local-ps (vl-pp-assign x)))
-              :exit (list 'assign-elaborate
-                          (with-local-ps (vl-pp-assign (nth 2 values)))
-                          (and (not (car values))
-                               (with-local-ps
-                                 (vl-print-warnings (nth 1 values)))))))
-
-(trace$ #!vl (vl-fundecl-elaborate-aux-fn
-              :entry (list 'fundecl-elaborate-aux
-                           (with-local-ps (vl-pp-fundecl x)))
-              :exit (list 'fundecl-elaborate-aux
-                          (with-local-ps (vl-pp-fundecl (nth 2 values)))
-                          (and (not (car values))
-                               (with-local-ps
-                                 (vl-print-warnings (nth 1 values))))
-                          (strip-cars (vl-svexconf->fns (nth 3 values))))))
-
-(trace$ #!vl (vl-fundecl-elaborate-fn
-              :entry (list 'fundecl-elaborate
-                           (with-local-ps (vl-pp-fundecl x)))
-              :exit (list 'fundecl-elaborate
-                          (with-local-ps (vl-pp-fundecl (nth 2 values)))
-                          (and (not (car values))
-                               (with-local-ps
-                                 (vl-print-warnings (nth 1 values))))
-                          (strip-cars (vl-svexconf->fns (nth 3 values))))))
-
-(trace$ #!vl (vl-index-resolve-if-constant-fn
-              :entry (list 'index-resolve-if-constant
-                           (with-local-ps (vl-pp-expr x)))
-              :exit (list 'index-resolve-if-constant
-                          (with-local-ps (vl-pp-expr (nth 2 values)))
-                          (and (not (car values))
-                               (with-local-ps
-                                 (vl-print-warnings (nth 1 values)))))))
-
-(trace$ #!vl (vl-expr-maybe-resolve-to-constant-fn
-              :entry (list 'expr-maybe-resolve-to-constant
-                           (with-local-ps (vl-pp-expr x)))
-              :exit (list 'expr-maybe-resolve-to-constant
-                          (with-local-ps (vl-pp-expr (nth 3 values)))
-                          (and (not (car values))
-                               (with-local-ps
-                                 (vl-print-warnings (nth 1 values))))
-                          (and (not (nth 1 values)) (nth 4 values))
-                          (and (not (nth 1 values))
-                               (change-vl-svexconf (nth 5 values)
-                                                   :ss nil)))))
-
-
-
-(trace$ #!vl (vl-elaborated-expr-consteval-fn
-              :entry (list 'vl-elaborated-expr-consteval
-                           (with-local-ps (vl-pp-expr x)))
-              :exit (list 'vl-elaborated-expr-consteval
-                          (with-local-ps (vl-pp-expr (nth 3 values))))))
-
-|#
-
 (define vl-override-parameter
   :short "Try to override a parameter with a new expression."
   ((decl       vl-paramdecl-p      "Some parameter from the submodule.")
@@ -408,149 +298,157 @@ types.</p>"
 
        ;; To get the override scopes, temporarily traverse to that path.
        (elabindex (vl-elabindex-sync-scopes))
-       (elabindex (vl-elabindex-traverse ov-ss ov-scope-path))
-       (ov-scopes (vl-elabindex->scopes elabindex))
-       (elabindex (vl-elabindex-undo))
+       (scopes1 (vl-elabindex->scopes))
+       ;; (- (set-fal-debug (list (vl-elabscope->members (vl-elabscopes->top-scope scopes1))
+       ;;                         (vl-elabscope->subscopes (vl-elabscopes->top-scope scopes1)))))
+       (ov-scopes (vl-elabscopes-traverse ov-scope-path scopes1))
+       ;; (- (add-fal-debug (list (vl-elabscope->members (vl-elabscopes->top-scope ov-scopes))
+       ;;                         (vl-elabscope->subscopes (vl-elabscopes->top-scope ov-scopes))))
+          
+
        ;; (- (cw "decl-conf: ~x0~%" decl-conf))
        ((unless ok)
         (mv nil warnings decl elabindex)))
-
-    (vl-paramtype-case decl.type
-      (:vl-typeparam
-       (b* (((unless override)
-             (b* (((unless decl.type.default)
-                   (mv nil
-                       (fatal :type :vl-bad-instance
-                              :msg "Can't instantiate without assignment ~
+       ;; ((mv ok warnings new-param elabindex)
+        (vl-paramtype-case decl.type
+          (:vl-typeparam
+           (b* (((unless override)
+                 (b* (((unless decl.type.default)
+                       (mv nil
+                           (fatal :type :vl-bad-parameter-override
+                                  :msg "Can't instantiate without assignment ~
                                     for type parameter ~a1."
-                              :args (list nil decl))
-                       decl elabindex))
-                  ((unless (vl-datatype-resolved-p decl.type.default))
-                   (mv nil
-                       (fatal :type :vl-bad-instance
-                              :msg "Default type for parameter ~a1 not resolved."
-                              :args (list nil decl))
-                       decl elabindex)))
-               (mv t (ok) (change-vl-paramdecl decl :type decl.type) elabindex)))
-            ((when (vl-paramvalue-case override :expr))
-             (mv nil
-                 (fatal :type :vl-bad-instance
-                        :msg "Overriding type parameter ~a1 with expression ~a2."
-                        :args (list nil decl (vl-paramvalue-expr->expr override)))
-                 decl elabindex))
-            (type (vl-paramvalue-type->type override))
-            ((unless (vl-datatype-resolved-p type))
-             (mv nil
-                 (fatal :type :vl-bad-instance
-                        :msg "Override type ~a1 for parameter ~a2 not resolved."
-                        :args (list nil type decl))
-                 decl elabindex)))
-         (mv t warnings (change-vl-paramdecl
-                         decl
-                         :type (change-vl-typeparam decl.type :default type)
-                         :overriddenp t)
-             elabindex)))
+                                  :args (list nil decl))
+                           decl elabindex))
+                      ((unless (vl-datatype-resolved-p decl.type.default))
+                       (mv nil
+                           (fatal :type :vl-bad-parameter-override
+                                  :msg "Default type for parameter ~a1 not resolved."
+                                  :args (list nil decl))
+                           decl elabindex)))
+                   (mv t (ok) (change-vl-paramdecl decl :type decl.type) elabindex)))
+                ((when (vl-paramvalue-case override :expr))
+                 (mv nil
+                     (fatal :type :vl-bad-parameter-override
+                            :msg "Overriding type parameter ~a1 with expression ~a2."
+                            :args (list nil decl (vl-paramvalue-expr->expr override)))
+                     decl elabindex))
+                (type (vl-paramvalue-type->type override))
+                ((unless (vl-datatype-resolved-p type))
+                 (mv nil
+                     (fatal :type :vl-bad-parameter-override
+                            :msg "Override type ~a1 for parameter ~a2 not resolved."
+                            :args (list nil type decl))
+                     decl elabindex)))
+             (mv t warnings (change-vl-paramdecl
+                             decl
+                             :type (change-vl-typeparam decl.type :default type)
+                             :overriddenp t)
+                 elabindex)))
 
 
-      (:vl-explicitvalueparam
-       ;; See the rules in SystemVerilog 23.10.  I think we should regard this
-       ;; case as having an "explicit type and range specification", even
-       ;; though that's pretty vague.  (We might not *really* have an explicit
-       ;; range, but might have a datatype like "integer", which sort of
-       ;; implicitly has a range.) If this is right, then we are supposed to
-       ;; convert the override value (expr) so that it has the type and range
-       ;; of this parameter.
-       (b* (((when (and override (vl-paramvalue-case override :type)))
-             (mv nil
-                 (fatal :type :vl-bad-instance
-                        :msg "Overriding value parameter ~a1 with type ~a2."
-                        :args (list nil decl (vl-paramvalue-type->type override)))
-                 decl elabindex))
-            ((mv expr expr-ss expr-scopes)
-             (if override
-                 (mv (vl-paramvalue-expr->expr override) ov-ss ov-scopes)
-               (mv decl.type.default (vl-elabindex->ss) (vl-elabindex->scopes))))
-            ((unless expr)
-             (mv nil
-                 (fatal :type :vl-bad-instance
-                        :msg "Can't instantiate without assignment for ~
+          (:vl-explicitvalueparam
+           ;; See the rules in SystemVerilog 23.10.  I think we should regard this
+           ;; case as having an "explicit type and range specification", even
+           ;; though that's pretty vague.  (We might not *really* have an explicit
+           ;; range, but might have a datatype like "integer", which sort of
+           ;; implicitly has a range.) If this is right, then we are supposed to
+           ;; convert the override value (expr) so that it has the type and range
+           ;; of this parameter.
+           (b* (((when (and override (vl-paramvalue-case override :type)))
+                 (mv nil
+                     (fatal :type :vl-bad-parameter-override
+                            :msg "Overriding value parameter ~a1 with type ~a2."
+                            :args (list nil decl (vl-paramvalue-type->type override)))
+                     decl elabindex))
+                ((mv expr expr-ss expr-scopes)
+                 (if override
+                     (mv (vl-paramvalue-expr->expr override) ov-ss ov-scopes)
+                   (mv decl.type.default (vl-elabindex->ss) (vl-elabindex->scopes))))
+                ((unless expr)
+                 (mv nil
+                     (fatal :type :vl-bad-parameter-override
+                            :msg "Can't instantiate without assignment for ~
                               value parameter ~a1."
-                        :args (list nil decl))
-                 decl elabindex))
-            ((unless (vl-datatype-resolved-p decl.type.type))
-             (mv nil
-                 (fatal :type :vl-bad-instance
-                        :msg "Failed to resolve datatype ~a1 for parameter ~a2"
-                        :args (list nil decl.type.type decl))
-                 decl elabindex))
-            ((mv okp warnings coerced-expr)
-             (vl-convert-parameter-value-to-explicit-type
-              decl.type.type expr expr-ss expr-scopes warnings decl.name))
-            ((unless okp)
-             ;; Already warned.
-             (mv nil warnings decl elabindex))
-            ;; Else, we successfully converted the overwriting expr to have the
-            ;; right type.  So, rewrite the parameter declaration to install
-            ;; the right value.
-            ;; (new-type (change-vl-explicitvalueparam decl.type :default coerced-expr))
-            ;; (new-decl (change-vl-paramdecl decl :type new-type))
-            (new-decl (change-vl-paramdecl
-                       decl
-                       :type (change-vl-explicitvalueparam
-                              decl.type
-                              :default coerced-expr)
-                       :overriddenp (and override t)))
-            )
-         (vl-unparam-debug "successfully overriding value parameter ~a1 with ~a2.~%"
-                           nil decl coerced-expr)
-         (mv t (ok) new-decl elabindex)))
+                            :args (list nil decl))
+                     decl elabindex))
+                ((unless (vl-datatype-resolved-p decl.type.type))
+                 (mv nil
+                     (fatal :type :vl-bad-parameter-override
+                            :msg "Failed to resolve datatype ~a1 for parameter ~a2"
+                            :args (list nil decl.type.type decl))
+                     decl elabindex))
+                ((mv okp warnings coerced-expr)
+                 (vl-convert-parameter-value-to-explicit-type
+                  decl.type.type expr expr-ss expr-scopes warnings decl.name))
+                ((unless okp)
+                 ;; Already warned.
+                 (mv nil warnings decl elabindex))
+                ;; Else, we successfully converted the overwriting expr to have the
+                ;; right type.  So, rewrite the parameter declaration to install
+                ;; the right value.
+                ;; (new-type (change-vl-explicitvalueparam decl.type :default coerced-expr))
+                ;; (new-decl (change-vl-paramdecl decl :type new-type))
+                (new-decl (change-vl-paramdecl
+                           decl
+                           :type (change-vl-explicitvalueparam
+                                  decl.type
+                                  :default coerced-expr)
+                           :overriddenp (and override t)))
+                )
+             (vl-unparam-debug "successfully overriding value parameter ~a1 with ~a2.~%"
+                               nil decl coerced-expr)
+             (mv t (ok) new-decl elabindex)))
 
-      (:vl-implicitvalueparam
-       ;; See the rules in SystemVerilog-2012 Section 23.10 and 6.20.2.
-       (b* (((when (and override (vl-paramvalue-case override :type)))
-             (mv nil
-                 (fatal :type :vl-bad-instance
-                        :msg "Overriding value parameter ~a1 with type ~a2."
-                        :args (list nil decl (vl-paramvalue-type->type override)))
-                 decl elabindex))
-            ((mv expr expr-ss expr-scopes)
-             (if override
-                 (mv (vl-paramvalue-expr->expr override) ov-ss ov-scopes)
-               (mv decl.type.default (vl-elabindex->ss) (vl-elabindex->scopes))))
-            ((unless expr)
-             (mv nil
-                 (fatal :type :vl-bad-instance
-                        :msg "Can't instantiate without assignment for ~
+          (:vl-implicitvalueparam
+           ;; See the rules in SystemVerilog-2012 Section 23.10 and 6.20.2.
+           (b* (((when (and override (vl-paramvalue-case override :type)))
+                 (mv nil
+                     (fatal :type :vl-bad-parameter-override
+                            :msg "Overriding value parameter ~a1 with type ~a2."
+                            :args (list nil decl (vl-paramvalue-type->type override)))
+                     decl elabindex))
+                ((mv expr expr-ss expr-scopes)
+                 (if override
+                     (mv (vl-paramvalue-expr->expr override) ov-ss ov-scopes)
+                   (mv decl.type.default (vl-elabindex->ss) (vl-elabindex->scopes))))
+                ((unless expr)
+                 (mv nil
+                     (fatal :type :vl-bad-parameter-override
+                            :msg "Can't instantiate without assignment for ~
                               value parameter ~a1."
-                        :args (list nil decl))
-                 decl elabindex))
-            ((wmv warnings err datatype)
-             (vl-implicitvalueparam-final-type decl.type expr expr-ss expr-scopes))
-            ((when err)
-             (mv nil
-                 (fatal :type :vl-bad-instance
-                        :msg "Failed to determine datatype for parameter ~
+                            :args (list nil decl))
+                     decl elabindex))
+                ((wmv warnings err datatype)
+                 (vl-implicitvalueparam-final-type decl.type expr expr-ss expr-scopes))
+                ((when err)
+                 (mv nil
+                     (fatal :type :vl-bad-parameter-override
+                            :msg "Failed to determine datatype for parameter ~
                               ~a1 overridden with ~a2: ~@3"
-                        :args (list nil decl expr err))
-                 decl elabindex))
+                            :args (list nil decl expr err))
+                     decl elabindex))
 
-            ((mv okp warnings coerced-expr)
-             ;; Do the conversion explicitly, which gives us all the nice warnings.
-             (vl-convert-parameter-value-to-explicit-type datatype expr expr-ss expr-scopes warnings decl.name))
-            ((unless okp)
-             ;; Already warned
-             (mv nil warnings decl elabindex))
+                ((mv okp warnings coerced-expr)
+                 ;; Do the conversion explicitly, which gives us all the nice warnings.
+                 (vl-convert-parameter-value-to-explicit-type datatype expr expr-ss expr-scopes warnings decl.name))
+                ((unless okp)
+                 ;; Already warned
+                 (mv nil warnings decl elabindex))
 
-            ;; Else, we successfully converted the overwriting expr to have the
-            ;; right type.  So, rewrite the parameter declaration to install
-            ;; the right value.
-            (new-decl (change-vl-paramdecl
-                       decl
-                       :type (make-vl-explicitvalueparam :type datatype :default coerced-expr)
-                       :overriddenp (and override t))))
-         (vl-unparam-debug "successfully overriding ~a1 with ~a2.~%"
-                           nil decl coerced-expr)
-         (mv t (ok) new-decl elabindex))))))
+                ;; Else, we successfully converted the overwriting expr to have the
+                ;; right type.  So, rewrite the parameter declaration to install
+                ;; the right value.
+                (new-decl (change-vl-paramdecl
+                           decl
+                           :type (make-vl-explicitvalueparam :type datatype :default coerced-expr)
+                           :overriddenp (and override t))))
+             (vl-unparam-debug "successfully overriding ~a1 with ~a2.~%"
+                               nil decl coerced-expr)
+             (mv t (ok) new-decl elabindex))));; ))
+    ;; (set-fal-debug nil)
+    ;; (mv ok warnings new-param elabindex)
+        ))
 
 ;; (define vl-override-parameter-value
 ;;   :parents (unparameterization)

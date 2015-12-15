@@ -58,7 +58,7 @@
        :exit (b* (((list warnings-out type) values))
                (list 'vl-index-typedecide
                      (with-local-ps
-                       (vl-print-warnings (butlast warnings-out (len warnings))))
+                       (vl-print-warnings warnings-out))
                      type))))
 
 
@@ -96,8 +96,6 @@
     (and (vl-partselect-case x.part :none)
          (consp x.seltrace)
          (vl-selstep->caveat (car x.seltrace)))))
-
-
 
 (define vl-index-typedecide ((x        vl-expr-p)
                              (ss       vl-scopestack-p)

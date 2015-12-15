@@ -190,7 +190,7 @@ with, we can safely remove @('plus') from our module list.</p>")
   :prepwork ((local (in-theory (e/d (vl-paramdecloverridelist-fix)
                                     (append
                                      acl2::append-when-not-consp)))))
-  :returns (mv (successp)
+  :returns (mv (successp  "BOZO at the moment this never actually fails")
                (warnings vl-warninglist-p)
                (final-params vl-paramdecllist-p)
                (elabindex "with parameters resolved"))
@@ -223,15 +223,15 @@ with, we can safely remove @('plus') from our module list.</p>")
        ((mv ok warnings final-paramdecl elabindex)
         (vl-override-parameter
          x1.decl elabindex x1.override outer-ss outer-scope-path warnings))
-       ((unless ok)
-        (mv nil warnings nil elabindex))
 
        ((vl-scopeinfo scopeinfo))
-       (new-scopeinfo (change-vl-scopeinfo
-                       scopeinfo
-                       :locals (hons-acons (vl-paramdecl->name final-paramdecl)
-                                           final-paramdecl
-                                           scopeinfo.locals)))
+       (new-scopeinfo (if ok
+                          (change-vl-scopeinfo
+                           scopeinfo
+                           :locals (hons-acons (vl-paramdecl->name final-paramdecl)
+                                               final-paramdecl
+                                               scopeinfo.locals))
+                        scopeinfo))
        (elabindex (vl-elabindex-update-ss outside-module-ss elabindex)))
     (vl-scopeinfo-resolve-params (cdr x) new-scopeinfo elabindex outer-ss outer-scope-path
                                  (cons final-paramdecl
@@ -750,6 +750,7 @@ for each usertype is stored in the res field.</p>"
   (b* (((vl-modinst inst) (vl-modinst-fix inst))
        (ledger (vl-unparam-ledger-fix ledger))
        (ss (vl-elabindex->ss))
+       (elabindex (vl-elabindex-sync-scopes))
        (scopes (vl-elabindex->scopes))
        ((mv mod mod-ss) (vl-scopestack-find-definition/ss inst.modname ss))
        ((unless (and mod
@@ -1139,7 +1140,8 @@ for each usertype is stored in the res field.</p>"
               nil x elabindex ledger)
 
           :vl-genif
-          (b* (((vl-elabindex elabindex))
+          (b* ((elabindex (vl-elabindex-sync-scopes))
+               ((vl-elabindex elabindex))
                ((wmv warnings testval) (vl-consteval x.test elabindex.ss elabindex.scopes))
                ((unless (vl-expr-resolved-p testval))
                 (mv nil (fatal :type :vl-generate-resolve-fail
@@ -1158,7 +1160,8 @@ for each usertype is stored in the res field.</p>"
             (vl-generate-resolve x.default elabindex ledger warnings))
 
           :vl-genloop
-          (b* (((vl-elabindex elabindex))
+          (b* ((elabindex (vl-elabindex-sync-scopes))
+               ((vl-elabindex elabindex))
                ((wmv warnings initval) (vl-consteval x.initval elabindex.ss elabindex.scopes))
                ((unless (vl-expr-resolved-p initval))
                 (mv nil (fatal :type :vl-generate-resolve-fail
@@ -1235,6 +1238,7 @@ for each usertype is stored in the res field.</p>"
 
            ((cons exprs1 block1) (car x))
 
+           (elabindex (vl-elabindex-sync-scopes))
            ((vl-elabindex elabindex))
            ((mv ok warnings matchp) (vl-gencase-some-match test exprs1 elabindex.ss elabindex.scopes warnings))
            ((unless ok)
@@ -1810,6 +1814,17 @@ scopestacks.</p>"
 (Trace$ #!vl (vl-design-elaborate
               :entry (list 'vl-design-elaborate (with-local-ps (vl-pp-design x)))
               :exit (list 'vl-design-elaborate (with-local-ps (vl-pp-design value)))))
+
+
+(Trace$ #!vl (vl-design-elaborate
+              :entry (list 'vl-design-elaborate-entry (vl-paramdecllist->names (vl-design->paramdecls x)))
+              :exit (list 'vl-design-elaborate-exit (vl-paramdecllist->names (vl-design->paramdecls value)))))
+
+(Trace$ #!vl (vl-scope-finalize-params
+              :entry (list 'vl-scope-finalize-params-entry (vl-paramdecllist->names formals))
+              :exit (list 'vl-scope-finalize-params-exit (vl-paramdecllist->names (nth 3 values)))))
+
+
 
 ||#
 

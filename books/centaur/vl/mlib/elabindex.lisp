@@ -51,7 +51,12 @@ types, and parameters."
 <li>@(see vl-elabindex-push) enters the given scope.</li>
 <li>@(see vl-elabindex-undo) undoes the latest traversal/push that hasn't already been undone.</li>
 <li>@(see vl-elabindex->ss) accesses the scopestack of the current location</li>
-<li>@(see vl-elabindex->scopes) accesses the stack of elabinfo scopes for the current location.</li>
+<li>@(see vl-elabindex-sync-scopes) readies the scopes for
+read-only/applicative usage by ensuring that the versions of subscopes
+currently in use are all written back to their parent scopes.</li>
+<li>@(see vl-elabindex->scopes) accesses the stack of elabinfo scopes for the
+current location.(Note: You should use @(see vl-elabindex-sync-scopes) before
+doing this.)</li>
 </ul>
 
 <p>An elabindex is most useful when you are going to be adding new elaboration
@@ -613,6 +618,18 @@ are empty.</p>")
                 (vl-elabinstruction-push-named (caar x))
               (vl-elabinstruction-push-anon (cdar x)))
             (vl-elabscopes->elabtraversal (cdr x))))))
+
+
+(define vl-elabscopes->top-scope ((x vl-elabscopes-p)
+                                  &key (allow-empty 'nil))
+  :returns (scope vl-elabscope-p)
+  (b* ((x (vl-elabscopes-fix x)))
+    (if (atom x)
+        (prog2$ (or allow-empty (raise "Empty elabscopes"))
+                (make-vl-elabscope))
+      (cdar x))))
+        
+  
        
 
 
@@ -936,6 +953,9 @@ are empty.</p>")
 
 #||
 
+
+
+
 (trace$ #!vl (vl-elabscopes-pop-fn :entry (list 'vl-elabscopes-pop n (strip-cars scopes))
                                 :exit (list 'vl-elabscopes-pop (strip-cars value)))
         #!vl (vl-elabscopes-pop/update :entry (prog2$ (and (<= (len scopes) n)
@@ -1005,117 +1025,149 @@ are empty.</p>")
 )
    
 
+(defparameter *last-scope* nil)
+
+(defun vl::check-scope-fals (x)
+  (b* (((vl::vl-elabscope scope1) x)
+       (faltable (acl2::hl-hspace-faltable acl2::*default-hs*))
+       (htable (acl2::hl-faltable-table faltable))
+       (subs-ok (or (atom scope1.subscopes)
+                    (acl2::hl-faltable-slot-lookup scope1.subscopes faltable)
+                    (gethash scope1.subscopes htable)))
+       (mems-ok (or (atom scope1.members)
+                    (acl2::hl-faltable-slot-lookup scope1.members faltable)
+                    (gethash scope1.members htable))))
+    (if (and subs-ok mems-ok)
+        t
+      (progn$ (cw "subscopes: ~x0 members: ~x1~%" (and subs-ok t) (and mems-ok t))
+              (setq *last-scope* x)
+              (break$)
+              nil))))
+
 (trace$ #!vl (vl-elabscopes-push-named-fn
-              ;; :entry '(vl-elabscopes-push-named)
+              :cond (not (check-scope-fals (cdar scopes)))
+              :entry '(vl-elabscopes-push-named)
               :exit (b* (((vl-elabscope scope1) (cdar value)))
-                      (if (and (or (atom scope1.subscopes)
-                                   (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                               (or (atom scope1.members)
-                                   (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                          (cons 'vl-elabscopes-push-named values)
-                        (prog2$ (cw "subscopes: ~x0 members: ~x1~%"
-                                    (or (atom scope1.subscopes)
-                                        (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                                    (or (atom scope1.members)
-                                        (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                                (break$)))))
+                      (check-scope-fals scope1)
+                      '(vl-elabscopes-push-named)))
         #!vl (vl-elabscopes-push-anon-fn
-              ;; :entry '(vl-elabscopes-push-anon)
+              :cond (not (check-scope-fals (cdar scopes)))
+              :entry '(vl-elabscopes-push-anon)
               :exit (b* (((vl-elabscope scope1) (cdar value)))
-                      (if (and (or (atom scope1.subscopes)
-                                   (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                               (or (atom scope1.members)
-                                   (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                          (cons 'vl-elabscopes-push-anon values)
-                        (prog2$ (cw "subscopes: ~x0 members: ~x1~%"
-                                    (or (atom scope1.subscopes)
-                                        (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                                    (or (atom scope1.members)
-                                        (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                                (break$)))))
+                      (check-scope-fals scope1)
+                      '(vl-elabscopes-push-anon)))
         #!vl (vl-elabscopes-pop-fn
-              ;; :entry '(vl-elabscopes-pop)
+              :cond (not (check-scope-fals (cdar scopes)))
+              :entry (b* (((vl-elabscope scope1) (cdar scopes)))
+                       (check-scope-fals scope1)
+                       '(vl-elabscopes-pop))
               :exit (b* (((vl-elabscope scope1) (cdar value)))
-                      (if (and (or (atom scope1.subscopes)
-                                   (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                               (or (atom scope1.members)
-                                   (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                          (cons 'vl-elabscopes-pop values)
-                        (prog2$ (cw "subscopes: ~x0 members: ~x1~%"
-                                    (or (atom scope1.subscopes)
-                                        (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                                    (or (atom scope1.members)
-                                        (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                                (break$)))))
+                      (check-scope-fals scope1)
+                      '(vl-elabscopes-pop)))
+        #!vl (vl-elabscopes-traverse-fn
+              :cond (not (check-scope-fals (cdar scopes)))
+              :entry (b* (((vl-elabscope scope1) (cdar scopes)))
+                       (check-scope-fals scope1)
+                       '(vl-elabscopes-traverse))
+              :exit (b* (((vl-elabscope scope1) (cdar value)))
+                      (check-scope-fals scope1)
+                      '(vl-elabscopes-traverse)))
         #!vl (vl-elabscopes-root-fn
-              ;; :entry '(vl-elabscopes-root)
+              :cond (not (check-scope-fals (cdar scopes)))
+              :entry '(vl-elabscopes-root)
               :exit (b* (((vl-elabscope scope1) (cdar value)))
-                      (if (and (or (atom scope1.subscopes)
-                                   (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                               (or (atom scope1.members)
-                                   (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                          (cons 'vl-elabscopes-root values)
-                        (prog2$ (cw "subscopes: ~x0 members: ~x1~%"
-                                    (or (atom scope1.subscopes)
-                                        (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                                    (or (atom scope1.members)
-                                        (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                                (break$)))))
+                      (check-scope-fals scope1)
+                      '(vl-elabscopes-root)))
         #!vl (vl-elabscopes-pop/update
-              ;; :entry '(vl-elabscopes-pop/update)
+              :cond (not (check-scope-fals (cdar scopes)))
+              :entry '(vl-elabscopes-pop/update)
               :exit (b* (((vl-elabscope scope1) (cdar (car values))))
-                      (if (and (or (atom scope1.subscopes)
-                                   (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                               (or (atom scope1.members)
-                                   (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                          (cons 'vl-elabscopes-pop/update values)
-                        (prog2$ (cw "subscopes: ~x0 members: ~x1~%"
-                                    (or (atom scope1.subscopes)
-                                        (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                                    (or (atom scope1.members)
-                                        (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                                (break$)))))
+                      (check-scope-fals scope1)
+                      '(vl-elabscopes-pop/update)))
         #!vl (vl-elabscopes-root/update
-              ;; :entry '(vl-elabscopes-root/update)
+              :cond (not (check-scope-fals (cdar scopes)))
+              :entry '(vl-elabscopes-root/update)
               :exit (b* (((vl-elabscope scope1) (cdar (car values))))
-                      (if (and (or (atom scope1.subscopes)
-                                   (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                               (or (atom scope1.members)
-                                   (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                          (cons 'vl-elabscopes-root/update values)
-                        (prog2$ (cw "subscopes: ~x0 members: ~x1~%"
-                                    (or (atom scope1.subscopes)
-                                        (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                                    (or (atom scope1.members)
-                                        (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                                (break$)))))
-        #!vl (vl-elabindex-update-item-info
-              ;; :entry '(vl-elabindex-update-item-info)
-              :exit (b* (((vl-elabscope scope1) (cdar (vl-elabindex->scopes value))))
-                      (if (and (or (atom scope1.subscopes)
-                                   (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                               (or (atom scope1.members)
-                                   (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                          (cons 'vl-elabindex-update-item-info values)
-                        (prog2$ (cw "subscopes: ~x0 members: ~x1~%"
-                                    (or (atom scope1.subscopes)
-                                        (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                                    (or (atom scope1.members)
-                                        (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                                (break$)))))
+                      (check-scope-fals scope1)
+                      '(vl-elabscopes-root/update)))
+        #!vl (vl-elabindex-update-item-info-fn
+              :cond (not (check-scope-fals (cdar (vl-elabindex->scopes1 elabindex))))
+              :entry '(vl-elabindex-update-item-info)
+              :exit (b* (((vl-elabscope scope1) (cdar (vl-elabindex->scopes1 value))))
+                      (check-scope-fals scope1)
+                      '(vl-elabindex-update-item-info)))
+        #!vl (vl-elabindex-sync-scopes-fn
+              :cond (not (check-scope-fals (cdar (vl-elabindex->scopes1 elabindex))))
+              :entry '(vl-elabindex-sync-scopes)
+              :exit (b* (((vl-elabscope scope1) (cdar (vl-elabindex->scopes1 value))))
+                      (check-scope-fals scope1)
+                      '(vl-elabindex-sync-scopes)))
         #!vl (vl-elabscope-update-item-info
-              ;; :entry '(vl-elabscope-update-item-info)
+              :cond (not (check-scope-fals x))
+              :entry '(vl-elabscope-update-item-info)
               :exit (b* (((vl-elabscope scope1) value))
-                      (if (and (or (atom scope1.subscopes)
-                                   (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                               (or (atom scope1.members)
-                                   (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                          (cons 'vl-elabscope-update-item-info values)
-                        (prog2$ (cw "subscopes: ~x0 members: ~x1~%"
-                                    (or (atom scope1.subscopes)
-                                        (acl2::hl-faltable-slot-lookup scope1.subscopes (acl2::hl-hspace-faltable acl2::*default-hs*)))
-                                    (or (atom scope1.members)
-                                        (acl2::hl-faltable-slot-lookup scope1.members (acl2::hl-hspace-faltable acl2::*default-hs*))))
-                                (break$))))))
+                      (check-scope-fals scope1)
+                      '(vl-elabscope-update-item-info)))
+
+        #!vl (vl-override-parameter
+              :entry (b* (((vl-elabscope scope1) (cdar (vl-elabindex->scopes1 elabindex))))
+                       (check-scope-fals scope1)
+                       '(vl-override-parameter))
+              :exit '(vl-override-parameter))
+        #!vl (vl-convert-parameter-value-to-explicit-type
+              :entry (b* (((vl-elabscope scope1) (cdar scopes)))
+                       (check-scope-fals scope1)
+                       '(vl-convert-parameter-value-to-explicit-type))
+              :exit '(vl-convert-parameter-value-to-explicit-type))
+
+        ;; #!vl (vl-elaborated-expr-consteval-fn
+        ;;       :cond (not (check-scope-fals (cdar scopes)))
+        ;;       :entry (b* (((vl-elabscope scope1) (cdar scopes)))
+        ;;                (check-scope-fals scope1)
+        ;;                '(vl-elaborated-expr-consteval))
+        ;;       :exit '(vl-elaborated-expr-consteval))
+
+        ;; #!vl (vl-index-typedecide :entry (b* (((vl-elabscope scope1) (cdar scopes)))
+        ;;                                    (check-scope-fals scope1)
+        ;;                                    '(vl-index-typedecide))
+        ;;                           :exit '(vl-index-typedecide))
+
+        ;; #!vl (vl-index-expr-typetrace :entry (b* (((vl-elabscope scope1) (cdar scopes)))
+        ;;                                        (check-scope-fals scope1)
+        ;;                                        '(vl-index-expr-typetrace))
+        ;;                               :exit '(vl-index-expr-typetrace))
+
+        #!vl (vl-elabindex->scopes-fn
+              :cond (not (check-scope-fals (cdar (vl-elabindex->scopes1 elabindex))))
+              :entry (b* (((vl-elabscope scope1) (cdar (vl-elabindex->scopes1 elabindex))))
+                       (check-scope-fals scope1)
+                       '(vl-elabindex->scopes))
+              :exit (b* (((vl-elabscope scope1) (cdar value)))
+                      (check-scope-fals scope1)
+                      '(vl-elabindex->scopes)))
+
+        #!vl (vl-paramtype-elaborate-fn
+              :entry (b* (((vl-elabscope scope1) (cdar (vl-elabindex->scopes1 elabindex))))
+                       (check-scope-fals scope1)
+                       '(vl-paramtype-elaborate))
+              :exit (b* (((vl-elabscope scope1) (cdar (vl-elabindex->scopes1 (nth 3 values)))))
+                      (check-scope-fals scope1)
+                      '(vl-paramtype-elaborate)))
+
+        #!acl2 (hons-acons :cond (and alist (member-eq alist vl::*fal-debug-list*))
+                           :entry (prog2$ (break$)
+                                          '(hons-acons))
+                           :exit '(hons-acons))
+
+        #!acl2 (fast-alist-free :cond (and alist (member-eq alist vl::*fal-debug-list*))
+                                :entry (prog2$ (break$)
+                                               '(hons-acons))
+                                :exit '(hons-acons))
+
+        #!acl2 (fast-alist-fork :cond (or (and alist (member-eq alist vl::*fal-debug-list*))
+                                          (and ans (member-eq ans vl::*fal-debug-list*)))
+                                :entry (prog2$ (break$)
+                                               '(hons-acons))
+                                :exit '(hons-acons)))
 
 ||#

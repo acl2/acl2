@@ -855,7 +855,13 @@ because... (BOZO)</p>
               (vl-caselist->svstmts x.caselist size test-svex default x.casetype ss scopes nonblockingp)))
           (mv (and ok1 ok2) warnings ans))
 
-
+        :vl-callstmt
+        (b* (((when (and x.systemp
+                         (equal x.id (vl-idscope "$display"))))
+              (mv t warnings nil)))
+          (fail (warn :type :vl-stmt-unsupported
+                      :msg "Statement type not supported: ~a0"
+                      :args (list x))))
         :otherwise
         (fail (warn :type :vl-stmt-unsupported
                     :msg "Statement type not supported: ~a0"

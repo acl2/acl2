@@ -367,8 +367,7 @@ expression with @(see vl-expr-to-svex).</p>
          ;; Pop the old function off and push the new function on to get the return type
          (elabindex (vl-elabindex-undo))
          (elabindex (vl-elabindex-push (vl-fundecl->blockscope new-x)))
-         (elabindex (prog2$ (cw "Synced scopes in fundecl-elaborate~%")
-                            (vl-elabindex-sync-scopes)))
+         (elabindex (vl-elabindex-sync-scopes))
          
          ((wmv warnings svex) (vl-fundecl-to-svex new-x
                                                   (vl-elabindex->ss elabindex)
@@ -491,6 +490,7 @@ expression with @(see vl-expr-to-svex).</p>
     (b* (((mv ok warnings x elabindex)
           (vl-expr-elaborate x elabindex :reclimit reclimit))
          ((unless ok) (mv nil nil warnings x (svex-x) elabindex))
+         (elabindex (vl-elabindex-sync-scopes))
          ((vl-elabindex elabindex))
          ((mv ok constp warnings x svex)
           (vl-elaborated-expr-consteval x elabindex.ss elabindex.scopes :ctxsize ctxsize)))
@@ -743,12 +743,14 @@ expression with @(see vl-expr-to-svex).</p>
                 (mv nil warnings elabindex)))
 
              (elabindex (vl-elabindex-sync-scopes))
+             (scopes (vl-elabindex->scopes elabindex))
+
              ;; We've resolved the range and value and can now somehow use that
              ;; to get the final type for this parameter.
              ((wmv warnings err type)
               (vl-implicitvalueparam-final-type paramtype val-expr
                                                 (vl-elabindex->ss elabindex)
-                                                (vl-elabindex->scopes elabindex)))
+                                                scopes))
              ((when err)
               (b* ((elabindex (vl-elabindex-undo)))
                 (mv nil

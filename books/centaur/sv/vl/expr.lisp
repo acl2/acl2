@@ -3005,7 +3005,6 @@ functions can assume all bits of it are good.</p>"
   (trace$ #!vl (vl-index-expr-to-svex
                 :entry (list 'vl-index-expr-to-svex (with-local-ps (vl-pp-expr x)))
                 :exit (b* (((list ?warnings ?svex ?type) values))
-                        (and warnings (progn (setq sv::*conf* conf) (break$)))
                         (list 'vl-index-expr-to-svex
                               (with-local-ps (vl-print-warnings warnings))))))
 ||#
