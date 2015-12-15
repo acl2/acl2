@@ -581,7 +581,31 @@ module tricky_init ;
 endmodule
 
 
+interface fancy_mp;
 
+  logic [3:0] foo;
 
+  modport mp1 (input foo);
+  modport mp2 (input foo);
+  modport mp3 (input foo);
+  modport mp4 (input foo);
 
+endinterface
+
+module fancy_mptest_sub (fancy_mp xx);
+
+endmodule
+
+module fancy_mptest_sub2 (fancy_mp.mp3 xx);
+
+endmodule
+
+module fancy_mptest ;
+
+  fancy_mp xx();
+
+  fancy_mptest_sub sub1 (xx.mp1);
+  fancy_mptest_sub sub2 (.xx(xx.mp2));
+
+endmodule
 

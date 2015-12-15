@@ -280,4 +280,11 @@ unused(:tricky_init, "w3_unused ")
 unset(:tricky_init, "w4_unset ")
 spurious(:tricky_init, "w5_spurious ")
 
+
+spurious(:fancy_mp, "foo")
+normal(:fancy_mp, "mp1")
+normal(:fancy_mp, "mp2")
+normal(:fancy_mp, "mp3")
+unused(:fancy_mp, "mp4")
+
 test_passed()

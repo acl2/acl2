@@ -726,6 +726,29 @@ created when we process their packages, etc.</p>"
   ///
   (verify-guards vl-normalize-scopestack))
 
+(define vl-lucidst-mark-modport ((ifname stringp)
+                                 (mpname stringp)
+                                 (ss     vl-scopestack-p)
+                                 (st     vl-lucidstate-p)
+                                 (ctx    vl-context1-p))
+  :returns (new-st vl-lucidstate-p)
+  :short "Helper function for marking interface modports as used."
+  (b* ((st (vl-lucidstate-fix st))
+       (design (vl-scopestack->design ss))
+       ((unless design)
+        (raise "No design in lucid scopestack?  Something is horribly wrong.")
+        st)
+       (iface (vl-find-interface ifname (vl-design->interfaces design)))
+       ((unless iface)
+        (vl-cw-ps-seq (vl-cw "Error: ~a0: interface ~s1 not found.~%" ctx ifname))
+        (vl-lucidstate-fix st))
+       ;; This is a little tricky because we need a normalized scopestack that
+       ;; puts us into the right interface, but that's easy enough...
+       (temp-ss (vl-scopestack-init design))
+       (temp-ss (vl-scopestack-push iface temp-ss))
+       (temp-ss (vl-normalize-scopestack temp-ss)))
+    (vl-lucid-mark-simple :used mpname temp-ss st ctx)))
+
 (define vl-hidstep-mark-interfaces ((mtype (member mtype '(:used :set)))
                                     (step  vl-hidstep-p)
                                     (ss    vl-scopestack-p)
@@ -1540,10 +1563,7 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list portdecllist :element portdecl)
 
-(local (defthm vl-hidname-p-when-stringp
-         (implies (stringp x)
-                  (vl-hidname-p x))
-         :hints(("Goal" :in-theory (enable vl-hidname-p)))))
+
 
 (def-vl-lucidcheck interfaceport
   ;; Unlike regular ports, I think we want to not mark an interface port as
@@ -1556,25 +1576,8 @@ created when we process their packages, etc.</p>"
        (ctx (vl-lucid-ctx ss x))
        (st  (vl-packeddimensionlist-lucidcheck x.udims ss st ctx))
        ((unless x.modport)
-        st)
-
-       ;; We want to mark the modport for this interface as used.  This is a
-       ;; little tricky but we can do it.
-       (design (vl-scopestack->design ss))
-       ((unless design)
-        (raise "No design in lucid scopestack?  Something is horribly wrong.")
-        st)
-
-       (iface (vl-find-interface x.ifname (vl-design->interfaces design)))
-       ((unless iface)
-        (vl-cw-ps-seq (vl-cw "Error: ~a0: interface ~s1 not found.~%" x x.ifname))
-        st)
-
-       (temp-ss (vl-scopestack-init design))
-       (temp-ss (vl-scopestack-push iface temp-ss))
-       (temp-ss (vl-normalize-scopestack temp-ss))
-       (st      (vl-lucid-mark-simple :used x.modport temp-ss st ctx)))
-    st))
+        st))
+    (vl-lucidst-mark-modport x.ifname x.modport ss st ctx)))
 
 (def-vl-lucidcheck-list interfaceportlist :element interfaceport)
 
@@ -1674,12 +1677,42 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list typedeflist :element typedef)
 
+
+(define vl-string-expr->value ((x vl-expr-p))
+  :returns (str maybe-stringp :rule-classes :type-prescription)
+  (vl-expr-case x
+    :vl-literal
+    (vl-value-case x.val
+      :vl-string x.val.value
+      :otherwise nil)
+    :otherwise nil))
+
+(local (defthm alistp-when-vl-atts-p-rewrite
+         (implies (vl-atts-p x)
+                  (alistp x))
+         :hints(("Goal" :in-theory (enable (tau-system))))))
+
 (def-vl-lucidcheck plainarg
   :takes-ctx t
   :body
   (b* (((vl-plainarg x))
        ((unless x.expr)
-        st))
+        st)
+       ;; See argresolve's vl-unhierarchicalize-interfaceport stuff, which
+       ;; converts fancy interfaceport arguments like myinterface.mymodport
+       ;; into just myinterface.  In this case, we want to mark the modport as
+       ;; being used.  Argresolve leaves us some attributes that we can use to
+       ;; carry out this marking.  (BOZO: this might not work quite right after
+       ;; unparameterizing interfaces, because the interface name may be
+       ;; different.)
+       (mpname (let ((look (cdr (assoc-equal "VL_REMOVED_EXPLICIT_MODPORT" x.atts))))
+                 (and look (vl-string-expr->value look))))
+       (ifname (and mpname
+                    (let ((look (cdr (assoc-equal "VL_INTERFACE_NAME" x.atts))))
+                      (and look (vl-string-expr->value look)))))
+       (st (if ifname
+               (vl-lucidst-mark-modport ifname mpname ss st ctx)
+             st)))
     (case x.dir
       (:vl-input
        ;; Inputs are like RHSes, they're used not set.
