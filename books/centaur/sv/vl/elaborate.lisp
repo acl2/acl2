@@ -449,7 +449,8 @@ expression with @(see vl-expr-to-svex).</p>
                                        elabindex
                                        &key
                                        ((reclimit natp) '1000)
-                                       ((ctxsize maybe-natp) 'nil))
+                                       ((ctxsize maybe-natp) 'nil)
+                                       ((type vl-maybe-datatype-p) 'nil))
     ;; Just calls vl-expr-maybe-resolve-to-constant, but produces a fatal
     ;; warning if it failed to reduce to a constant.
     :measure (acl2::nat-list-measure
@@ -462,7 +463,8 @@ expression with @(see vl-expr-to-svex).</p>
     (b* ((orig-x (vl-expr-fix x))
          ((mv ok constantp warnings x svex elabindex)
           (vl-expr-maybe-resolve-to-constant x elabindex :reclimit reclimit
-                                             :ctxsize ctxsize)))
+                                             :ctxsize ctxsize
+                                             :type type)))
       (mv (and ok constantp)
           (if (and ok (not constantp))
               (fatal :type :vl-expr-consteval-fail
@@ -477,7 +479,8 @@ expression with @(see vl-expr-to-svex).</p>
                                              elabindex
                                              &key
                                              ((reclimit natp) '1000)
-                                             ((ctxsize maybe-natp) 'nil))
+                                             ((ctxsize maybe-natp) 'nil)
+                                             ((type vl-maybe-datatype-p) 'nil))
     :measure (acl2::nat-list-measure
               (list reclimit 0 (vl-expr-count x) 9))
     :returns (mv (ok)
@@ -493,7 +496,8 @@ expression with @(see vl-expr-to-svex).</p>
          (elabindex (vl-elabindex-sync-scopes))
          ((vl-elabindex elabindex))
          ((mv ok constp warnings x svex)
-          (vl-elaborated-expr-consteval x elabindex.ss elabindex.scopes :ctxsize ctxsize)))
+          (vl-elaborated-expr-consteval x elabindex.ss elabindex.scopes
+                                        :ctxsize ctxsize :type type)))
       (mv ok constp warnings x svex elabindex))
     ///
     (in-theory (disable vl-expr-maybe-resolve-to-constant)))
@@ -661,10 +665,11 @@ expression with @(see vl-expr-to-svex).</p>
          ;; Go to the scope where the declaration was found.
          (elabindex (vl-elabindex-traverse hidstep.ss (rev hidstep.elabpath)))
                
+         ((wmv ok0 warnings decl elabindex)
+          (vl-paramdecl-elaborate hidstep.item elabindex :reclimit (1- reclimit)))
 
-         ((vl-paramdecl decl) hidstep.item))
-      ;; Note: We're potentially in a new scope here, so everything we do needs
-      ;; to involve just the hidstep.ss and no
+         ((vl-paramdecl decl)))
+
       (vl-paramtype-case decl.type
         :vl-typeparam
         (b* ((elabindex (vl-elabindex-undo)))
@@ -681,20 +686,27 @@ expression with @(see vl-expr-to-svex).</p>
                            :msg "Parameter with no default value: ~a0"
                            :args (list x))
                     elabindex)))
-             ((wmv ok1 warnings newtype elabindex)
-              (vl-datatype-elaborate
-               decl.type.type
-               elabindex :reclimit (1- reclimit)))
-             ((wmv ok2 warnings new-expr svex elabindex)
+             ((wmv ok1 warnings new-expr svex elabindex)
               (vl-expr-resolve-to-constant
-               decl.type.default elabindex :reclimit (1- reclimit)))
+               decl.type.default elabindex :reclimit (1- reclimit)
+               :type decl.type.type))
+
+             ((unless ok1)
+              (b* ((elabindex (vl-elabindex-undo)))
+                (mv nil
+                    (fatal :type :vl-resolve-constants-fail
+                           :msg "Couldn't resolve parameter: ~a0.  Other ~
+                                 warnings should explain why."
+                           :args (list x))
+                    elabindex)))
+
              (elabindex (vl-elabindex-update-item-info
                          decl.name
-                         (make-vl-elabinfo-param :type newtype
+                         (make-vl-elabinfo-param :type decl.type.type
                                                  :value-expr new-expr
                                                  :value-sv svex)))
              (elabindex (Vl-elabindex-undo)))
-          (mv (and ok1 ok2) warnings elabindex))
+          (mv ok0 warnings elabindex))
 
         :vl-implicitvalueparam
         ;; Examples:
@@ -712,22 +724,32 @@ expression with @(see vl-expr-to-svex).</p>
              ;; Try to resolve the range of the parameter declaration if
              ;; applicable.  Note that the range should be resolved relative to
              ;; the scope where the declaration occurs.
-             ((mv ok warnings range elabindex)
+             ((mv ok warnings range size elabindex)
               (if decl.type.range
                   (b* (((vl-range range) decl.type.range)
                        ((wmv ok warnings msb ?svex elabindex)
                         (vl-expr-resolve-to-constant
                          range.msb elabindex :reclimit (1- reclimit)))
                        ((unless ok)
-                        (mv nil warnings nil elabindex))
+                        (mv nil warnings nil nil elabindex))
                        ((wmv ok warnings lsb ?svex elabindex)
                         (vl-expr-resolve-to-constant
-                         range.lsb elabindex :reclimit (1- reclimit))))
-                    (mv ok warnings (make-vl-range :msb msb :lsb lsb) elabindex))
-                (mv t warnings nil elabindex)))
+                         range.lsb elabindex :reclimit (1- reclimit)))
+                       ((unless ok)
+                        (mv nil warnings nil nil elabindex))
+                       (range (make-vl-range :msb msb :lsb lsb))
+                       (size (and (vl-range-resolved-p range)
+                                  (vl-range-size range))))
+                    (mv ok warnings range size elabindex))
+                (mv t warnings nil nil elabindex)))
              ((unless ok)
               (b* ((elabindex (vl-elabindex-undo)))
-                (mv nil warnings elabindex)))
+                (mv nil
+                    (fatal :type :vl-resolve-constants-fail
+                           :msg "Couldn't resolve parameter ~a0 because its ~
+                                 range was not resolved"
+                           :args (list x))
+                    elabindex)))
              (paramtype (change-vl-implicitvalueparam decl.type :range range))
 
              ;; Next, try to resolve the actual value for this parameter.
@@ -737,10 +759,14 @@ expression with @(see vl-expr-to-svex).</p>
                ;; of the parameter.
                decl.type.default
                ;; Resolve it relative to 
-               elabindex :reclimit (1- reclimit)))
+               elabindex :reclimit (1- reclimit) :ctxsize size))
              ((unless ok)
               (b* ((elabindex (vl-elabindex-undo)))
-                (mv nil warnings elabindex)))
+                (mv nil
+                    (fatal :type :vl-resolve-constants-fail
+                           :msg "Couldn't resolve parameter ~a0.  See other warnings."
+                           :args (list x))
+                    elabindex)))
 
              (elabindex (vl-elabindex-sync-scopes))
              (scopes (vl-elabindex->scopes elabindex))
