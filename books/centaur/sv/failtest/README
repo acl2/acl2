@@ -56,6 +56,9 @@ gen1d.v -- gate instance name redeclared as genvar
 gen2.v -- continuous assignment to genvar
 gen2b.v -- continuous assignment from genvar
 gen3.v -- reference to wire declared in a named generate block's scope
+gen4.v -- hierarchical reference to genvar in continuous assign
+gen5.v -- trying to use genvar from another module in generate for-loop
+gen6.v -- reference "wrong" genvar inside generate for loop
 
 iface1.v -- multiply declared wire in interface
 iface2.v -- input redeclared as wire in interface

@@ -678,6 +678,84 @@ created when we process their packages, etc.</p>"
 ;;                                     :right (vl-expr-strip right))))
 ;;     (vl-lucidstate-mark-used key occ st ctx)))
 
+(local (xdoc::set-default-parents lucid))
+
+(define vl-luciddb-mark ((mtype (member mtype '(:used :set)))
+                         (key   vl-lucidkey-p)
+                         (occ   vl-lucidocc-p)
+                         (db    vl-luciddb-p)
+                         (ctx   vl-context1-p))
+  :parents (vl-lucidstate-mark-used)
+  :returns (new-db vl-luciddb-p)
+  (b* ((db   (vl-luciddb-fix db))
+       (occ  (vl-lucidocc-fix occ))
+       (key  (vl-lucidkey-fix key))
+       (ctx  (vl-context1-fix ctx))
+
+       (val (cdr (hons-get key db)))
+       ((unless val)
+        ;; BOZO we probably don't expect this to happen, but we'll go ahead and
+        ;; mark it as an error.
+        (let ((err (list __function__ ctx)))
+          (hons-acons key
+                      (change-vl-lucidval *vl-empty-lucidval*
+                                          :used (list occ)
+                                          :errors (list err))
+                      db)))
+
+       ((vl-lucidval val))
+       (val (if (eq mtype :used)
+                (change-vl-lucidval val :used (cons occ val.used))
+              (change-vl-lucidval val :set (cons occ val.set))))
+       (db  (hons-acons key val db)))
+    db))
+
+(define vl-lucidstate-mark ((mtype (member mtype '(:used :set)))
+                            (key   vl-lucidkey-p)
+                            (occ   vl-lucidocc-p)
+                            (st    vl-lucidstate-p)
+                            (ctx   vl-context1-p))
+  :returns (new-st vl-lucidstate-p)
+  (b* (((vl-lucidstate st))
+       (db (vl-luciddb-mark mtype key occ st.db ctx)))
+    (change-vl-lucidstate st :db db)))
+
+(define vl-lucid-mark-simple ((mtype (member mtype '(:used :set)))
+                              (name  stringp)
+                              (ss    vl-scopestack-p)
+                              (st    vl-lucidstate-p)
+                              (ctx   vl-context1-p))
+  :returns (new-st vl-lucidstate-p)
+  (b* ((st (vl-lucidstate-fix st))
+       ((mv item item-ss)
+        (vl-scopestack-find-item/ss name ss))
+       ((unless item)
+        ;; BOZO eventually turn into a proper bad-id warning
+        (cw "Warning: missing item ~s0.~%" name)
+        st)
+       (key (make-vl-lucidkey :item item :scopestack item-ss))
+       (occ (make-vl-lucidocc-solo :ctx ctx :ss ss)))
+    (vl-lucidstate-mark mtype key occ st ctx)))
+
+;; (define vl-lucid-mark-slice-used ((name  stringp)
+;;                                   (left  vl-expr-p)
+;;                                   (right vl-expr-p)
+;;                                   (ss    vl-scopestack-p)
+;;                                   (st    vl-lucidstate-p)
+;;                                   (ctx   acl2::any-p))
+;;   :returns (new-st vl-lucidstate-p)
+;;   (b* ((st (vl-lucidstate-fix st))
+;;        ((mv item item-ss)
+;;         (vl-scopestack-find-item/ss name ss))
+;;        ((unless item)
+;;         ;; BOZO eventually turn into a proper bad-id warning
+;;         (cw "Warning: missing item ~s0.~%" name)
+;;         st)
+;;        (key (make-vl-lucidkey :item item :scopestack item-ss))
+;;        (occ (make-vl-lucidocc-slice :left (vl-expr-strip left)
+;;                                     :right (vl-expr-strip right))))
+;;     (vl-lucidstate-mark-used key occ st ctx)))
+
 ;; (define vl-lucid-mark-solo-set ((name stringp)
 ;;                                 (ss   vl-scopestack-p)
 ;;                                 (st   vl-lucidstate-p)
@@ -1852,6 +1930,15 @@ created when we process their packages, etc.</p>"
 (def-vl-lucidcheck-list aliaslist :element alias)
 
 
+(define vl-gencaselist->flat-match-exprs ((x vl-gencaselist-p))
+  :measure (vl-gencaselist-count x)
+  :returns (exprs vl-exprlist-p)
+  (let ((x (vl-gencaselist-fix x)))
+    (if (atom x)
+        nil
+      (append (caar x)
+              (vl-gencaselist->flat-match-exprs (cdr x))))))
+
 (def-genblob-transform vl-genblob-lucidcheck ((ss vl-scopestack-p)
                                               (st vl-lucidstate-p))
   :no-new-x t
@@ -1877,7 +1964,7 @@ created when we process their packages, etc.</p>"
        ;; Nothing to do for imports, they just affect the scopestack.
        ;; Nothing to do for fwdtypedefs
        (st (vl-modportlist-lucidcheck   x.modports   ss st))
-       ;; BOZO add genvars
+       ;; Nothing to do for genvars, they just affect the scopestack
        ;; BOZO add assertions
        ;; BOZO add cassertions
        ;; BOZO add properties
@@ -1888,7 +1975,40 @@ created when we process their packages, etc.</p>"
        ;; BOZO anything to do for normal ports?
        (st (vl-interfaceportlist-lucidcheck x.ifports ss st)))
     st)
-  :apply-to-generates vl-generates-lucidcheck)
+  :apply-to-generates vl-generates-lucidcheck
+  :return-from-genif-bindings
+  ;; For IF generate constructs we should also consider the names used in the
+  ;; TEST expression as being used.
+  ((x   (vl-genelement-fix x))
+   (ctx (vl-lucid-ctx ss x))
+   (st  (vl-rhsexpr-lucidcheck x.test ss st ctx)))
+  :return-from-genarray-bindings
+  ;; For a genarray (a normalized generate loop), we should regard the iterator
+  ;; variable as both used and set.
+  ((x   (vl-genelement-fix x))
+   (ctx (vl-lucid-ctx ss x))
+   (st  (vl-lucid-mark-simple :used x.var ss st ctx))
+   (st  (vl-lucid-mark-simple :set x.var ss st ctx)))
+  :return-from-genloop-bindings
+  ;; For a generate loop (an not-yet-normalized generate loop), we should mark
+  ;; the variable itself as both set and used (because it is implicitly being
+  ;; used to create some number of blocks).  We should also mark any variables
+  ;; used in the initializer, continue, and nextval expressions as being used.
+  ((x   (vl-genelement-fix x))
+   (ctx (vl-lucid-ctx ss x))
+   (st  (vl-lucid-mark-simple :used x.var ss st ctx))
+   (st  (vl-lucid-mark-simple :set x.var ss st ctx))
+   (st  (vl-rhsexpr-lucidcheck x.initval ss st ctx))
+   (st  (vl-rhsexpr-lucidcheck x.continue ss st ctx))
+   (st  (vl-rhsexpr-lucidcheck x.nextval ss st ctx)))
+  :return-from-gencase-bindings
+  ;; For a generate case we need to consider the test expression and all match
+  ;; expressions as being used.
+  ((x   (vl-genelement-fix x))
+   (ctx (vl-lucid-ctx ss x))
+   (st  (vl-rhsexpr-lucidcheck x.test ss st ctx))
+   (st  (vl-rhsexprlist-lucidcheck (vl-gencaselist->flat-match-exprs x.cases) ss st ctx))))
+
 
 (def-vl-lucidcheck module
   :body
@@ -2891,6 +3011,36 @@ doesn't have to recreate the default heuristics.</p>"
                                             (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
                                 :fatalp nil)))
+         (vl-extend-reportcard topname w reportcard)))
+
+      (:vl-genvar
+       ;; We'll do a particularly dumb analysis here and only see if the
+       ;; variable has any sets/uses.
+       (b* ((usedp (consp val.used))
+            (setp  (consp val.set))
+            ((when (and usedp setp))
+             ;; Everything's good.
+             reportcard)
+            (name (vl-genvar->name key.item))
+            (path (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+            (w (cond ((and (not usedp) (not setp))
+                      (make-vl-warning :type :vl-lucid-spurious
+                                       :msg "~w0 is never used or set anywhere. (~s1)"
+                                       :args (list name path)
+                                       :fn __function__
+                                       :fatalp nil))
+                     ((and usedp (not setp))
+                      (make-vl-warning :type :vl-lucid-unset
+                                       :msg "~w0 is never set. (~s1)"
+                                       :args (list name path)
+                                       :fn __function__
+                                       :fatalp nil))
+                     (t
+                      (make-vl-warning :type :vl-lucid-unused
+                                       :msg "~w0 is never used. (~s1)"
+                                       :args (list name path)
+                                       :fn __function__
+                                       :fatalp nil)))))
          (vl-extend-reportcard topname w reportcard)))
 
       (:vl-modport

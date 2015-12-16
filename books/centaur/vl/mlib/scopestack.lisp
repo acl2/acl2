@@ -222,6 +222,7 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
                  paramdecl vardecl fundecl taskdecl typedef dpiimport
                  (modinst :name instname :maybe-stringp t)
                  ;; no gateinsts in interfaces
+                 genvar
                  (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
                  (interfaceport :acc ifports)
                  modport
@@ -235,12 +236,14 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
               paramdecl vardecl fundecl taskdecl typedef dpiimport
               (modinst :name instname :maybe-stringp t)
               (gateinst :maybe-stringp t)
+              genvar
               (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
               (interfaceport :acc ifports))
       (genblob (:import)
                vardecl paramdecl fundecl taskdecl typedef dpiimport
                (modinst :name instname :maybe-stringp t)
                (gateinst :maybe-stringp t)
+               genvar
                (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
                (interfaceport :acc ifports)
                modport
@@ -1503,6 +1506,7 @@ be very cheap in the single-threaded case.</p>"
                  (equal (tag item) :vl-genblock)
                  (equal (tag item) :vl-genarray)
                  (equal (tag item) :vl-genbase)
+                 (equal (tag item) :vl-genvar)
                  (equal (tag item) :vl-interfaceport)
                  (equal (tag item) :vl-paramdecl)
                  (equal (tag item) :vl-vardecl)
@@ -1706,6 +1710,7 @@ transform that has used scopestacks.</p>"
       (:vl-gateinst   (vl-gateinst->name x))
       (:vl-genblock   (vl-genblock->name x))
       (:vl-genarray   (vl-genarray->name x))
+      (:vl-genvar     (vl-genvar->name x))
       ((:vl-genloop :vl-genif :vl-gencase  :vl-genbase) nil)
       (:vl-interfaceport (vl-interfaceport->name x))
       (:vl-paramdecl     (vl-paramdecl->name x))

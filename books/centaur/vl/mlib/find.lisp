@@ -110,6 +110,11 @@
   :parents (vl-dpiimportlist-p)
   (vl-dpiimport->name x))
 
+(defprojection vl-genvarlist->names ((x vl-genvarlist-p))
+  :returns (names string-listp)
+  :parents (vl-genvarlist-p)
+  (vl-genvar->name x))
+
 (defprojection vl-modinstlist->modnames ((x vl-modinstlist-p))
   :parents (vl-modinstlist-p)
   :short "Collect all module names (not instance names!) from a
@@ -558,6 +563,7 @@ fast alists binding names to items that can be used for this purpose.</p>")
 (def-vl-finder paramdecl)
 (def-vl-finder typedef)
 (def-vl-finder dpiimport)
+(def-vl-finder genvar)
 
 (def-vl-finder modinst
   :name          instname

@@ -408,6 +408,23 @@ module mg1 () ;
 endmodule
 
 
+module mg2 () ;
+
+  wire [3:0] xx, yy;
+
+  genvar     genvar1;
+  genvar     genvar2;
+
+  generate
+    for(genvar1 = 0; genvar1 < 4; genvar1 = genvar1+1)
+    begin
+      not(xx[genvar1], yy[genvar1]);
+    end
+  endgenerate
+
+endmodule
+
+
 
 
 interface ImPort ;

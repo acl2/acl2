@@ -246,9 +246,12 @@ unused(:imsim, "bar ")
 normal(:imsim, "port1 ")
 normal(:imsim, "port2 ")
 
-# I know these don't work yet
-#normal(:mg1, "p1_used ")
-#normal(:mg1, "w1_normal ")
+normal(:mg1, "p1_used ")
+unused(:mg1, "w1_normal ")
+
+normal(:mg2, "genvar1")
+spurious(:mg2, "genvar2")
+
 
 unset(:useprim, "w1_unset ")
 unused(:useprim, "w1_unused ")

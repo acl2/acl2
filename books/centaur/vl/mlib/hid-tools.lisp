@@ -687,6 +687,13 @@ top-level hierarchical identifiers.</p>"
           ;; could be meaningfully addressed in any other way.  So, we just
           ;; regard any reference to a gate as invalid.
           (mv (vl-follow-hidexpr-error "hierarchical reference to gate instance" item-ss)
+              trace x))
+
+         ((when (eq (tag item) :vl-genvar))
+          ;; It seems that other Verilog tools don't let you hierarchically
+          ;; reference genvars... see also the gen4.v and gen5.v failtests.  We
+          ;; can probably just regard any reference to these as invalid.
+          (mv (vl-follow-hidexpr-error "hierarchical reference to genvar" item-ss)
               trace x)))
 
       (mv (impossible) trace x))
