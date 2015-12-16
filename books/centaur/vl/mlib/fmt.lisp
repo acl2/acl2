@@ -193,6 +193,8 @@ formerly the \"location directive\" and printed a location.</p>")
           :vl-genblock :vl-genarray
           :vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-modport)
          (vl-fmt-tilde-a-case vl-ctxelement-p vl-pp-ctxelement-summary))
+        ((:vl-genvar)
+         (vl-fmt-tilde-a-case vl-genvar-p vl-pp-genvar))
         (:vl-ansi-portdecl
          (vl-fmt-tilde-a-case vl-ansi-portdecl-p vl-pp-ansi-portdecl))
         ((:vl-plainarg)
