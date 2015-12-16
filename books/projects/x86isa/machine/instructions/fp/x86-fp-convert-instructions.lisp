@@ -7,7 +7,7 @@
 
 (include-book "../../x86-decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-(include-book "fp-base"
+(include-book "fp-cvt-base"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "centaur/bitops/merge" :dir :system)
 
@@ -16,28 +16,6 @@
 ; =============================================================================
 ; INSTRUCTION: SSE/SSE2 Conversion Instructions
 ; =============================================================================
-
-(local
- (defthm sp-sse-cvt-fp-to-int-2-upper-bound
-   (implies (and (n32p mxcsr)
-                 (natp nbytes))
-            (< (mv-nth 2 (sse-cvt-fp-to-int nbytes op mxcsr trunc
-                                            #.*IEEE-SP-EXP-WIDTH*
-                                            #.*IEEE-SP-FRAC-WIDTH*))
-               *2^32*))
-   :hints (("Goal" :in-theory (enable sse-cvt-fp-to-int)))
-   :rule-classes :linear))
-
-(local
- (defthm dp-sse-cvt-fp-to-int-2-upper-bound
-   (implies (and (n32p mxcsr)
-                 (natp nbytes))
-            (< (mv-nth 2 (sse-cvt-fp-to-int nbytes op mxcsr trunc
-                                            #.*IEEE-DP-EXP-WIDTH*
-                                            #.*IEEE-DP-FRAC-WIDTH*))
-               *2^32*))
-   :hints (("Goal" :in-theory (enable sse-cvt-fp-to-int)))
-   :rule-classes :linear))
 
 (def-inst x86-cvts?2si/cvtts?2si-Op/En-RM
 
@@ -265,7 +243,7 @@
        (x86 (!xmmi-size xmm-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -374,7 +352,7 @@
        (x86 (!xmmi-size xmm-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
