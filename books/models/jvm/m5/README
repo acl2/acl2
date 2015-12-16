@@ -11,6 +11,9 @@ m5.lisp
 utilities.lisp
   some handy lemmas when reasoning about M5 programs
 
+wf-state.lisp
+  definition of well-formed M5 state
+
 demo.lisp
   a proof of recursive JVM factorial
 
@@ -20,9 +23,6 @@ idemo.lisp
 jvm-fact-setup.lisp
  the prelude to the proof of recursive factorial, for demo purposes when all
  I want to show is the final proof
-
-apprentice-state.lisp
- state setting up the Apprentice challenge
 
 apprentice.lisp
  the Apprentice Challenge: a growing number of JVM threads competing for a
@@ -64,10 +64,28 @@ Demo.java
  a recursive factorial method written in Java.
 
 Demo.class
- the result of running the Sun java compiler:
+ the result of running the OpenJDK java compiler:
  % javac Demo.java
 
 demo.script
  a description of how to give a demo of M5 (a quick display of real
  Java and Sun's compiled bytecode, running the bytecode and the M5 model,
  proving a correctness theorem)
+
+IDemo.java
+ an iterative factorial method written in Java
+
+ISort.java
+ insertion sort method written in Java
+
+Apprentice.java
+ the Apprentice Challenge written in Java
+
+jvm2m5
+ converter from JVM classfiles to M5 class-decls
+
+classes/*.lisp
+  the result of running jvm2m5 converter
+  % javac Apprentice.java Demo.java IDemo.java ISort.java
+  % javac -cp $JAVA_HOME/lib/tools.jar:. jvm2m5.java
+  % java -cp $JAVA_HOME/lib/tools.jar:. jvm2m5 classes .
