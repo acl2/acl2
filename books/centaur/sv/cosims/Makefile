@@ -94,8 +94,7 @@ FAILING_TEST_TARGETS := \
   iface_basic3/ok \
   iface_subiface/ok \
   udp_wide1/ok \
-  generate2/ok \
-  globalimport/ok
+  generate2/ok
 
 
 SPECFILES := $(wildcard */spec.sv)
