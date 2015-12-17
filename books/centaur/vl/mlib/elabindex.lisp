@@ -161,21 +161,7 @@ definition.  But this should only matter if the function calls itself
 recursively, which we don't support for now anyway.)</p>")
 
 
-(deftagsum vl-elabinfo
-  (:function ((body  sv::svex)
-              (ports vl-portdecllist)
-              (type  vl-datatype)))
-  (:type    ((type vl-datatype))
-   :short "used for both typedefs and type parameters")
-  (:param   ((type vl-datatype)
-             (value-expr vl-expr)
-             (value-sv   sv::svex)))
-  :measure (two-nats-measure (acl2-count x) 0))
 
-(fty::defalist vl-elabinfo-alist :key-type stringp :val-type vl-elabinfo
-  :measure (two-nats-measure (acl2-count x) 0))
-
-(defoption vl-maybe-elabinfo vl-elabinfo)
 
 (deftagsum vl-elabkey
   (:package ((name stringp)) :hons t)
@@ -193,7 +179,7 @@ recursively, which we don't support for now anyway.)</p>")
 
   (defprod vl-elabscope
     ((subscopes vl-elabscope-alist)
-     (members vl-elabinfo-alist))
+     (members vl-scopeitem-alist))
     :measure (two-nats-measure (acl2-count x) 1)))
 
 
@@ -230,11 +216,11 @@ recursively, which we don't support for now anyway.)</p>")
   :hints(("Goal" :in-theory (enable vl-elabscope-alist-p)
           :induct (len x))))
 
-(defthm cdr-hons-assoc-equal-of-vl-elabinfo-alist-p
-  (implies (vl-elabinfo-alist-p x)
+(defthm cdr-hons-assoc-equal-of-vl-scopeitem-alist-p
+  (implies (vl-scopeitem-alist-p x)
            (iff (cdr (hons-assoc-equal k x))
                 (hons-assoc-equal k x)))
-  :hints(("Goal" :in-theory (enable vl-elabinfo-alist-p)
+  :hints(("Goal" :in-theory (enable vl-scopeitem-alist-p)
           :induct (len x))))
 
 
@@ -255,9 +241,9 @@ recursively, which we don't support for now anyway.)</p>")
   (vl-elabscope-subscope (vl-elabkey-item name) x))
 
 (define vl-elabscope-item-info ((name stringp) (x vl-elabscope-p))
-  :returns (info (and (iff (vl-elabinfo-p info) info)
-                      (vl-maybe-elabinfo-p info))
-                 :hints(("Goal" :in-theory (enable vl-maybe-elabinfo-p))))
+  :returns (info (and (iff (vl-scopeitem-p info) info)
+                      (vl-maybe-scopeitem-p info))
+                 :hints(("Goal" :in-theory (enable vl-maybe-scopeitem-p))))
   (cdr (hons-get (string-fix name) (vl-elabscope->members x))))
 
 
@@ -290,12 +276,12 @@ recursively, which we don't support for now anyway.)</p>")
   :returns (new-x vl-elabscope-p)
   (vl-elabscope-update-subscope (vl-elabkey-item name) val x))
 
-(define vl-elabscope-update-item-info ((name stringp) (val vl-elabinfo-p) (x vl-elabscope-p))
+(define vl-elabscope-update-item-info ((name stringp) (val vl-scopeitem-p) (x vl-elabscope-p))
   :returns (new-x vl-elabscope-p)
   (change-vl-elabscope
    x
    :members (hons-acons (string-fix name)
-                        (vl-elabinfo-fix val)
+                        (vl-scopeitem-fix val)
                         (vl-elabscope->members x))))
 
 
@@ -447,8 +433,8 @@ are empty.</p>")
 (define vl-elabscopes-item-info ((name stringp)
                                  (scopes vl-elabscopes-p)
                                  &key (allow-empty 'nil))
-  :returns (info (and (iff (vl-elabinfo-p info) info)
-                      (vl-maybe-elabinfo-p info)))
+  :returns (info (and (iff (vl-scopeitem-p info) info)
+                      (vl-maybe-scopeitem-p info)))
   (b* ((scopes (vl-elabscopes-fix scopes))
        ((when (consp scopes)) (vl-elabscope-item-info name (cdar scopes))))
     (and (not allow-empty)
@@ -717,7 +703,7 @@ are empty.</p>")
 ;; (define vl-elabscopes-lookup ((name stringp)
 ;;                               (ss vl-scopestack-p)
 ;;                               (scopes vl-elabscopes-p))
-;;   :returns (info (iff (vl-elabinfo-p info) info))
+;;   :returns (info (iff (vl-scopeitem-p info) info))
 ;;   :prepwork ((local (defthm consp-car-when-elabscopes-p
 ;;                       (implies (and (vl-elabscopes-p x)
 ;;                                     (consp x))
@@ -804,7 +790,7 @@ are empty.</p>")
 
 
 
-(define vl-elabindex-update-item-info ((name stringp) (val vl-elabinfo-p)
+(define vl-elabindex-update-item-info ((name stringp) (val vl-scopeitem-p)
                                        &key (elabindex 'elabindex))
   :returns (new-elabindex)
   (b* ((scopes (vl-elabindex->scopes elabindex))

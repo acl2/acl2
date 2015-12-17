@@ -995,6 +995,10 @@ for each usertype is stored in the res field.</p>"
                                                  :scopetype scopetype
                                                  :name name))
                                (vl-genblob-count x))
+                        :hints (("goal" :expand ((:free (x) (vl-genblob-count x)))))))
+               (local (defthm vl-genblob-count-of-fix
+                        (equal (vl-genblob-count (vl-genblob-fix x))
+                               (vl-genblob-count x))
                         :hints (("goal" :expand ((:free (x) (vl-genblob-count x))))))))
     (define vl-genblob-resolve-aux ((x vl-genblob-p)
                                     (elabindex "in the genblob's own scope")
@@ -1051,18 +1055,18 @@ for each usertype is stored in the res field.</p>"
            ((vl-genblob x) (vl-genblob-fix x))
            ((vl-elabindex elabindex))
            (elabindex (vl-elabindex-push x))
-           ((mv ok warnings elabindex paramdecls)
-            (vl-scope-finalize-params x.paramdecls
-                                      (make-vl-paramargs-named)
-                                      warnings elabindex elabindex.ss
-                                      (caar (vl-elabindex->undostack elabindex))))
-           (elabindex (vl-elabindex-undo))
-           ((unless ok)
-            (mv nil warnings nil x elabindex ledger))
-           (x1 (change-vl-genblob x :paramdecls paramdecls))
-           (elabindex (vl-elabindex-push x1))
+           ;; ((mv ok warnings elabindex paramdecls)
+           ;;  (vl-scope-finalize-params x.paramdecls
+           ;;                            (make-vl-paramargs-named)
+           ;;                            warnings elabindex elabindex.ss
+           ;;                            (caar (vl-elabindex->undostack elabindex))))
+           ;; (elabindex (vl-elabindex-undo))
+           ;; ((unless ok)
+           ;;  (mv nil warnings nil x elabindex ledger))
+           ;; (x1 (change-vl-genblob x :paramdecls paramdecls))
+           ;; (elabindex (vl-elabindex-push x1))
            ((mv ok warnings keylist new-x elabindex ledger)
-            (vl-genblob-resolve-aux x1 elabindex ledger warnings))
+            (vl-genblob-resolve-aux x elabindex ledger warnings))
            (elabindex (vl-elabindex-undo)))
         (mv ok warnings keylist new-x elabindex ledger)))
 

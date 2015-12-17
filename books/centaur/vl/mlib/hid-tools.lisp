@@ -437,7 +437,18 @@ be resolved.</p>"
                       item))))))))
 
 
+#||
+(trace$ #!vl (vl-follow-hidexpr-aux-fn
+              :entry (list 'vl-follow-hidexpr-aux
+                           (with-local-ps (vl-pp-hidexpr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list ?err ?new-trace ?tail)))
+                      (list 'vl-follow-hidexpr-aux
+                            (and err (with-local-ps (vl-cw "~@0" err)))
+                            ;; (with-local-ps (vl-pp-hidexpr tail))
+                            ))))
 
+||#
 (with-output
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil)
           :term nil)
@@ -917,6 +928,19 @@ top-level hierarchical identifiers.</p>"
          (implies (vl-module-p x)
                   (vl-scope-p x))))
 
+#||
+
+(trace$ #!vl (vl-follow-hidexpr-fn
+              :entry (list 'vl-follow-hidexpr
+                           (with-local-ps (vl-pp-hidexpr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list ?err ?trace ?context ?tail) values))
+                      (list 'vl-follow-hidexpr
+                            (and err (with-local-ps (vl-cw "~@0" err)))))))
+
+||#
+
+
 (define vl-follow-hidexpr
   :short "Follow a HID to find the associated declaration."
   ((x       vl-hidexpr-p       "Hierarchical identifier to follow.")
@@ -1115,7 +1139,17 @@ instance, in this case the @('tail') would be
              (vl-subhid-p tail x))
     :hints(("Goal" :in-theory (enable vl-subhid-p)))))
 
+#||
 
+(trace$ #!vl (vl-follow-scopeexpr-fn
+              :entry (list 'vl-follow-scopeexpr
+                           (with-local-ps (vl-pp-scopeexpr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list ?err ?trace ?context ?tail) values))
+                      (list 'vl-follow-scopeexpr
+                            (and err (with-local-ps (vl-cw "~@0" err)))))))
+
+||#
 
 (define vl-follow-scopeexpr
   :short "Follow a scope expression to find the associated declaration."
@@ -1388,21 +1422,20 @@ instance, in this case the @('tail') would be
        (name1 (vl-hidexpr-name1 tail))
        ((when (eq name1 :vl-$root))
         (mv (vmsg "$root is not supported") nil))
+       ;; Check whether there is elaboration info stored for the type as
+       ;; well. If so, use that item instead of the one found in the
+       ;; scopestack by follow-scopeexpr.
        (ref-scopes (vl-elabscopes-traverse (rev ref.elabpath) scopes :allow-empty t))
        (info (vl-elabscopes-item-info name1 ref-scopes))
-       ((when info)
-        (vl-elabinfo-case info
-          :type
-          (if (vl-datatype-resolved-p info.type)
-              (mv nil info.type)
-            (mv (vmsg "Programming error: unresolved type ~s0 in elabinfo"
-                      name1) nil))
-          :otherwise 
-          (mv (vmsg "~x0 info stored for type ~s1"
-                    (vl-elabinfo-kind info) name1) nil)))
-
-       ((when (eq (tag ref.item) :vl-typedef))
-        (b* (((vl-typedef item) ref.item)
+       (item (or info ref.item))
+       
+       ((when (eq (tag item) :vl-typedef))
+        (b* (((vl-typedef item) item)
+             ((when info)
+              (if (vl-datatype-resolved-p item.type)
+                  (mv nil item.type)
+                (mv (vmsg "Programming error: unresolved type ~s0 stored in elaboration"
+                          name1) nil)))
              ((when (zp rec-limit))
               (mv (vmsg "Recursion limit ran out looking up ~
                                       usertype ~a0" x)
@@ -1410,8 +1443,8 @@ instance, in this case the @('tail') would be
           (vl-datatype-usertype-resolve item.type ref.ss
                                         :rec-limit (1- rec-limit)
                                         :scopes ref-scopes)))
-       ((when (eq (tag ref.item) :vl-paramdecl))
-        (b* (((vl-paramdecl item) ref.item))
+       ((when (eq (tag item) :vl-paramdecl))
+        (b* (((vl-paramdecl item) item))
           (vl-paramtype-case item.type
             :vl-typeparam
             ;; Note: I think it would be wrong to recur on the parameter type
@@ -1426,7 +1459,7 @@ instance, in this case the @('tail') would be
             (mv (vmsg "Reference to data parameter ~a0 as type" item)
                 nil)))))
     (mv (vmsg "Didn't find a typedef ~a1, instead found ~a2"
-              nil x ref.item)
+              nil x item)
         nil)))
 
 
@@ -3636,25 +3669,11 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        (info (vl-elabscopes-item-info name1 decl-scopes))
 
        ((mv err type)
-        (b* (((when info)
-              (vl-elabinfo-case info
-                :type
-                (if (vl-datatype-resolved-p info.type)
-                    (mv nil info.type)
-                  (mv (vmsg "Programming error: unresolved type ~s0 in elabinfo"
-                            name1) nil))
-                :param
-                (if (vl-datatype-resolved-p info.type)
-                    (mv nil info.type)
-                  (mv (vmsg "Programming error: unresolved type ~s0 in elabinfo"
-                            name1) nil))
-                :otherwise 
-                (mv (vmsg "~x0 info stored for type ~s1"
-                          (vl-elabinfo-kind info) name1) nil))))
-          (case (tag hidstep.item)
-            (:vl-vardecl (b* ((type1 (vl-vardecl->type hidstep.item)))
+        (b* ((item (or info hidstep.item)))
+          (case (tag item)
+            (:vl-vardecl (b* ((type1 (vl-vardecl->type item)))
                            (vl-datatype-usertype-resolve type1 hidstep.ss :scopes decl-scopes)))
-            (:vl-paramdecl (b* (((vl-paramdecl decl) hidstep.item))
+            (:vl-paramdecl (b* (((vl-paramdecl decl) item))
                              (vl-paramtype-case decl.type
                                :vl-explicitvalueparam
                                (if (vl-datatype-resolved-p decl.type.type)
@@ -3665,7 +3684,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                                :otherwise (mv (vmsg "Bad parameter reference: ~a0" x)
                                               nil))))
             (otherwise
-             (mv (vmsg "~a0: instead of a vardecl, found ~a1" x hidstep.item) nil)))))
+             (mv (vmsg "~a0: instead of a vardecl, found ~a1" x item) nil)))))
 
        ((when err) (mv err nil))
 

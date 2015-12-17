@@ -62,13 +62,17 @@
     :renames ((vl-fundecl vl-fundecl-elaborate-aux)
               (vl-expr vl-expr-elaborate-aux)
               (vl-datatype vl-datatype-elaborate-aux)
+              (vl-paramdecl vl-paramdecl-elaborate-aux)
               (vl-stmt   vl-stmt-elaborate-aux)
               (vl-package vl-package-elaborate-aux)
-              (vl-design vl-design-elaborate-aux))
+              (vl-design vl-design-elaborate-aux)
+              (vl-scopeitem vl-scopeitem-elaborate-aux))
     :type-fns ((vl-datatype vl-datatype-elaborate-fn)
                (vl-fundecl vl-fundecl-elaborate-fn)
+               (vl-paramdecl vl-paramdecl-elaborate-fn)
                (vl-expr     vl-expr-elaborate-fn)
-               (vl-stmt     vl-stmt-elaborate-fn))
+               (vl-stmt     vl-stmt-elaborate-fn)
+               (vl-scopeitem vl-scopeitem-elaborate-fn))
     :prod-fns ((vl-hidindex  (indices vl-indexlist-resolve-constants-fn))
                (vl-range     (msb vl-index-resolve-if-constant-fn)
                              (lsb vl-index-resolve-if-constant-fn))
@@ -126,7 +130,9 @@
                            default-car
                            default-cdr
                            acl2::nfix-when-not-natp
-                           nth)))
+                           nth
+                           ;; acl2::member-of-cons
+                           cons-equal)))
 
 (fty::defvisitor-multi vl-elaborate
   :defines-args (:ruler-extenders :all ;; :measure-debug t
@@ -220,37 +226,96 @@ expression with @(see vl-expr-to-svex).</p>
 
 
   (fty::defvisitors :template elaborate
-    :dep-types (vl-fundecl)
-    :order-base 1
-    :measure (acl2::nat-list-measure
-              (list reclimit :order :count 0))
-    ;; BOZO Block and loop statements should perhaps also get their own scopes pushed
-    )
-
-  (fty::defvisitors :template elaborate
+    :dep-types (vl-fundecl vl-scopeitem)
     :types (vl-stmt vl-stmtlist)
     :order-base 1
     :measure (acl2::nat-list-measure
-              (list reclimit :order :count 0))
-    )
+              (list reclimit :order :count 0)))
 
+  ;; (fty::defvisitors :template elaborate
+  ;;   :types (vl-stmt vl-stmtlist)
+  ;;   :order-base 1
+  ;;   :measure (acl2::nat-list-measure
+  ;;             (list reclimit :order :count 0))
+  ;;   )
+
+  
+
+
+  (define vl-scopeitem-elaborate ((x vl-scopeitem-p)
+                                  (elabindex "must be in the scope where x is declared")
+                                  &key ((reclimit natp) '1000))
+    :measure-debug t
+    :measure
+    ;; we're just going to decrease the reclimit on every call
+    (acl2::nat-list-measure (list reclimit 0 0 0))
+    :returns (mv (ok)
+                 (warnings vl-warninglist-p)
+                 (new-x vl-scopeitem-p
+                        ;; (and (vl-scopeitem-p new-x)
+                        ;;      (equal (tag new-x) (tag x)))
+                        ;; :hints ('(:expand ((:free (reclimit)
+                        ;;                     (vl-scopeitem-elaborate-aux
+                        ;;                      x elabindex :reclimit reclimit)))
+                        ;;           :in-theory (enable tag-reasoning)))
+                        )
+                 new-elabindex)
+    (b* ((name (vl-scopeitem->name x))
+         (x (vl-scopeitem-fix x))
+         (warnings nil)
+         ((unless name)
+          (mv nil
+              (fatal :type :vl-programming-error
+                     :msg "Called vl-scopeitem-elaborate on nameless item: ~a0"
+                     :args (list x))
+              (vl-scopeitem-fix x) elabindex))
+         (info (vl-elabscopes-item-info name (vl-elabindex->scopes)))
+         ((when info)
+          (if (eq (tag info) (tag x))
+              ;; ok memoized result
+              (mv t nil info elabindex)
+            (mv nil
+                (fatal :type :vl-programming-error
+                       :msg "Elaboration index error: ~a0 stored for ~a1"
+                       :args (list info x))
+                (vl-scopeitem-fix x)
+                elabindex)))
+         ((when (zp reclimit))
+          (mv nil
+              (fatal :type :vl-resolve-constants-fail
+                     :msg "Recursion limit ran out processing ~a0 -- dependency loop?"
+                     :args (list x))
+              (vl-scopeitem-fix x)
+              elabindex))
+         ((mv ok warnings item elabindex)
+          (vl-scopeitem-elaborate-aux x elabindex :reclimit (1- reclimit)))
+         ((unless ok)
+          (mv nil warnings (vl-scopeitem-fix x) elabindex))
+         (elabindex (vl-elabindex-update-item-info name item)))
+      (mv t warnings item elabindex))
+    ///
+    (in-theory (disable vl-scopeitem-elaborate)))
+         
 
   (define vl-stmt-elaborate ((x vl-stmt-p)
                              elabindex
                              &key ((reclimit natp) '1000))
-    :guard-debug t
     :measure (acl2::nat-list-measure
-              (list reclimit
-                    17 ;; this happens to be the order of
-                       ;; vl-stmt-elaborate-aux.  Not sure how to do this
-                       ;; besides hardcode it.
-                    (vl-stmt-count x) 1))
-    :measure-debug t
+              ;; blah, just going to decrease the reclimit.
+              (list reclimit 0 0 0))
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
                  (new-x vl-stmt-p)
                  new-elabindex)
-    (b* ((warnings nil))
+    (b* ((warnings nil)
+         ((when (zp reclimit))
+          (mv nil
+              (fatal :type :vl-resolve-constants-fail
+                     :msg "Recursion limit ran out processing ~a0 -- dependency loop?"
+                     :args (list (vl-stmt-fix x)))
+              (vl-stmt-fix x)
+              elabindex))
+         (reclimit (1- reclimit)))
       (vl-stmt-case x
         :vl-blockstmt
         (b* ((elabindex (vl-elabindex-push (vl-blockstmt->blockscope x)))
@@ -295,7 +360,9 @@ expression with @(see vl-expr-to-svex).</p>
                                  :body body)
               elabindex))
         :otherwise
-        (vl-stmt-elaborate-aux x elabindex :reclimit reclimit))))                                   
+        (vl-stmt-elaborate-aux x elabindex :reclimit reclimit)))
+    ///
+    (in-theory (disable vl-stmt-elaborate))) 
              
                                              
          
@@ -306,6 +373,12 @@ expression with @(see vl-expr-to-svex).</p>
   (fty::defvisitor :template elaborate
     :type vl-fundecl
     :order 100
+    :measure (acl2::nat-list-measure
+              (list reclimit :order :count 0)))
+
+  (fty::defvisitor :template elaborate
+    :type vl-scopeitem
+    :order 101
     :measure (acl2::nat-list-measure
               (list reclimit :order :count 0)))
 
@@ -348,17 +421,25 @@ expression with @(see vl-expr-to-svex).</p>
   (define vl-fundecl-elaborate ((x vl-fundecl-p)
                                 elabindex
                                 &key ((reclimit natp) '1000))
-    :guard-debug t
+    ;; :guard-debug t
     :measure (acl2::nat-list-measure
-              (list reclimit
-                    1000 ;; this is kind of the top-level function, so choose a high order value
-                    0 0))
+              ;; just going to decrease the reclimit, blah
+              (list reclimit 0 0 0))
   :returns (mv (ok)
                (warnings vl-warninglist-p)
                (new-x vl-fundecl-p)
                new-elabindex) ;; unchanged
 
-    (b* ((elabindex (vl-elabindex-push (vl-fundecl->blockscope x)))
+    (b* ((warnings nil)
+         ((when (zp reclimit))
+          (mv nil
+              (fatal :type :vl-resolve-constants-fail
+                     :msg "Recursion limit ran out processing ~a0 -- dependency loop?"
+                     :args (list (vl-fundecl-fix x)))
+              (vl-fundecl-fix x)
+              elabindex))
+         (reclimit (1- reclimit))
+         (elabindex (vl-elabindex-push (vl-fundecl->blockscope x)))
          ((mv ok warnings new-x elabindex)
           (vl-fundecl-elaborate-aux x elabindex :reclimit reclimit))
          ((unless ok)
@@ -373,11 +454,9 @@ expression with @(see vl-expr-to-svex).</p>
                                                   (vl-elabindex->ss elabindex)
                                                   (vl-elabindex->scopes elabindex)))
          ((vl-fundecl new-x))
-         (info (make-vl-elabinfo-function :body svex
-                                          :ports new-x.portdecls
-                                          :type new-x.rettype))
-         (elabindex (vl-elabindex-undo)) ;; leave the function body scope
-         (elabindex (vl-elabindex-update-item-info new-x.name info)))
+         (new-x (change-vl-fundecl new-x :function svex))
+         (elabindex (vl-elabindex-undo))  ;; leave the function body scope
+         (elabindex (vl-elabindex-update-item-info new-x.name new-x)))
       (mv ok warnings new-x elabindex))
     ///
     (in-theory (disable vl-fundecl-elaborate)))
@@ -475,6 +554,36 @@ expression with @(see vl-expr-to-svex).</p>
     ///
     (in-theory (disable vl-expr-resolve-to-constant)))
 
+  (define vl-expr-resolve-to-constant-top ((x vl-expr-p)
+                                           elabindex
+                                           &key
+                                           ((reclimit natp) '1000)
+                                           ((ctxsize maybe-natp) 'nil)
+                                           ((type vl-maybe-datatype-p) 'nil))
+    
+    ;; Just calls vl-expr-resolve-to-constant, but also decrements the reclimit
+    ;; so it can be easily called from anywhere in the mutual recursion.
+    :measure (acl2::nat-list-measure
+              (list reclimit 0 0 0))
+    :returns (mv (ok)
+                 (warnings vl-warninglist-p)
+                 (new-x vl-expr-p)
+                 (svex sv::svex-p)
+                 new-elabindex)
+    (b* ((warnings nil)
+         ((when (zp reclimit))
+          (mv nil
+              (fatal :type :vl-elaborate-fail
+                     :msg "Reclimit ran out on ~a0: dependency loop?"
+                     :args (list (vl-expr-fix x)))
+              (vl-expr-fix x) (svex-x)
+              elabindex)))
+      (vl-expr-resolve-to-constant x elabindex :reclimit (1- reclimit)
+                                   :ctxsize ctxsize
+                                   :type type))
+    ///
+    (in-theory (disable vl-expr-resolve-to-constant-top)))
+
   (define vl-expr-maybe-resolve-to-constant ((x vl-expr-p)
                                              elabindex
                                              &key
@@ -560,36 +669,174 @@ expression with @(see vl-expr-to-svex).</p>
   ;;   ///
   ;;   (in-theory (disable vl-expr-resolve-to-constant-and-bind-param)))
 
+  ;; (define vl-datatype-fully-resolve-and-bind ((name stringp)
+  ;;                                             (type vl-datatype-p)
+  ;;                                             elabindex
+  ;;                                             &key
+  ;;                                             ((reclimit natp) '1000))
+  ;;   :measure (acl2::nat-list-measure
+  ;;             (list reclimit 0 (vl-datatype-count type) 20))
+  ;;   :returns (mv (ok)
+  ;;                (warnings vl-warninglist-p)
+  ;;                (new-type vl-datatype-p)
+  ;;                elabindex)
+
+  ;;   (b* ((name (string-fix name))
+  ;;        (info (vl-elabscopes-item-info name (vl-elabindex->scopes elabindex)))
+  ;;        (warnings nil)
+  ;;        ((when (and info (eq (tag info) :vl-typedef)))
+  ;;         ;; done already
+  ;;         (mv t warnings (vl-elabinfo-type->type info) elabindex))
+  ;;        ((wmv ok warnings new-type elabindex)
+  ;;         (vl-datatype-elaborate type elabindex :reclimit reclimit))
+  ;;        ((unless ok)
+  ;;         (mv nil warnings new-type elabindex))
+  ;;        (elabindex (vl-elabindex-update-item-info name
+  ;;                                                  (make-vl-elabinfo-type :type new-type))))
+  ;;     (mv t warnings new-type elabindex))
+  ;;   ///
+  ;;   (in-theory (disable vl-datatype-fully-resolve-and-bind)))
 
 
-
-  (define vl-datatype-fully-resolve-and-bind ((name stringp)
-                                              (type vl-datatype-p)
-                                              elabindex
-                                              &key
-                                              ((reclimit natp) '1000))
+  (fty::defvisitors :template elaborate
+    :types (vl-paramdecl)
+    :order-base 1
     :measure (acl2::nat-list-measure
-              (list reclimit 0 (vl-datatype-count type) 20))
+              (list reclimit :order :count 0)))
+
+  (define vl-paramdecl-elaborate ((x vl-paramdecl-p)
+                                  elabindex
+                                  &key ((reclimit natp) '1000))
+    :measure (acl2::nat-list-measure
+              ;; order of paramdecl-elaborate-aux is 2
+              (list reclimit 2 0 1))
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
-                 (new-type vl-datatype-p)
-                 elabindex)
+                 (new-x vl-paramdecl-p)
+                 new-elabindex)
+    (b* ((x (vl-paramdecl-fix x))
+         ((mv ok warnings decl elabindex)
+          (vl-paramdecl-elaborate-aux x elabindex :reclimit reclimit))
+         ((vl-paramdecl decl)))
 
-    (b* ((name (string-fix name))
-         (info (vl-elabscopes-item-info name (vl-elabindex->scopes elabindex)))
-         (warnings nil)
-         ((when (and info (vl-elabinfo-case info :type)))
-          ;; done already
-          (mv t warnings (vl-elabinfo-type->type info) elabindex))
-         ((wmv ok warnings new-type elabindex)
-          (vl-datatype-elaborate type elabindex :reclimit reclimit))
-         ((unless ok)
-          (mv nil warnings new-type elabindex))
-         (elabindex (vl-elabindex-update-item-info name
-                                                   (make-vl-elabinfo-type :type new-type))))
-      (mv t warnings new-type elabindex))
-    ///
-    (in-theory (disable vl-datatype-fully-resolve-and-bind)))
+      (vl-paramtype-case decl.type
+        :vl-typeparam
+        ;; Nothing to resolve.
+        (mv ok warnings decl elabindex)
+        :vl-explicitvalueparam
+        (b* (((unless decl.type.default)
+              (mv nil
+                  (fatal :type :vl-resolve-constants-fail
+                         :msg "Parameter with no default value: ~a0"
+                         :args (list x))
+                  decl
+                  elabindex))
+             ((wmv ok1 warnings new-expr svex elabindex)
+              (vl-expr-resolve-to-constant-top
+               decl.type.default elabindex :reclimit reclimit
+               :type decl.type.type))
+
+             (val (sv::svex-case svex :quote svex.val :otherwise nil))
+             ((unless (and ok1 val))
+              (mv nil
+                  (fatal :type :vl-resolve-constants-fail
+                         :msg "Couldn't resolve parameter: ~a0.  Other ~
+                                 warnings should explain why."
+                         :args (list x))
+                  decl
+                  elabindex))
+
+             (new-x (change-vl-paramdecl decl
+                                         :type (change-vl-explicitvalueparam
+                                                decl.type
+                                                :default new-expr
+                                                :final-value val))))
+
+          (mv ok warnings new-x elabindex))
+
+        :vl-implicitvalueparam
+        ;; Examples:
+        ;;   parameter foo = 5;              // no type info at all
+        ;;   parameter [3:0] foo = 5;        // range info but not a full datatype
+        ;;   parameter signed [3:0] foo = 5; // signedness and width but not a full type
+        (b* (((unless decl.type.default)
+              (mv nil
+                  (fatal :type :vl-resolve-constants-fail
+                         :msg "Parameter with no default value: ~a0"
+                         :args (list x))
+                  decl
+                  elabindex))
+
+             ;; Try to resolve the range of the parameter declaration if
+             ;; applicable.  Note that the range should be resolved relative to
+             ;; the scope where the declaration occurs.
+             ((mv ok warnings range size elabindex)
+              (if decl.type.range
+                  (b* (((vl-range range) decl.type.range)
+                       ((wmv ok warnings msb ?svex elabindex)
+                        (vl-expr-resolve-to-constant-top
+                         range.msb elabindex :reclimit reclimit))
+                       ((unless ok)
+                        (mv nil warnings nil nil elabindex))
+                       ((wmv ok warnings lsb ?svex elabindex)
+                        (vl-expr-resolve-to-constant-top
+                         range.lsb elabindex :reclimit reclimit))
+                       ((unless ok)
+                        (mv nil warnings nil nil elabindex))
+                       (range (make-vl-range :msb msb :lsb lsb))
+                       (size (and (vl-range-resolved-p range)
+                                  (vl-range-size range))))
+                    (mv ok warnings range size elabindex))
+                (mv t warnings nil nil elabindex)))
+             ((unless ok)
+              (mv nil
+                  (fatal :type :vl-resolve-constants-fail
+                         :msg "Couldn't resolve parameter ~a0 because its ~
+                                 range was not resolved"
+                         :args (list x))
+                  decl
+                  elabindex))
+             (paramtype (change-vl-implicitvalueparam decl.type :range range))
+
+             ;; Next, try to resolve the actual value for this parameter.
+             ((wmv ok warnings val-expr svex elabindex)
+              (vl-expr-resolve-to-constant-top
+               ;; The following is confusingly named, but it's just the value
+               ;; of the parameter.
+               decl.type.default
+               ;; Resolve it relative to 
+               elabindex :reclimit reclimit :ctxsize size))
+             (val (sv::svex-case svex :quote svex.val :otherwise nil))
+             ((unless (and ok val))
+              (mv nil
+                  (fatal :type :vl-resolve-constants-fail
+                         :msg "Couldn't resolve parameter ~a0.  See other warnings."
+                         :args (list x))
+                  decl
+                  elabindex))
+
+             (elabindex (vl-elabindex-sync-scopes))
+             (scopes (vl-elabindex->scopes elabindex))
+
+             ;; We've resolved the range and value and can now somehow use that
+             ;; to get the final type for this parameter.
+             ((wmv warnings err type)
+              (vl-implicitvalueparam-final-type paramtype val-expr
+                                                (vl-elabindex->ss elabindex)
+                                                scopes))
+             ((when err)
+              (mv nil
+                  (fatal :type :vl-resolve-constants-fail
+                         :msg "Error resolving parameter type for ~a0: ~@1"
+                         :args (list x err))
+                  decl
+                  elabindex))
+             (new-x (change-vl-paramdecl decl
+                                         :type (make-vl-explicitvalueparam
+                                                :type type
+                                                :default val-expr
+                                                :final-value val))))
+          (mv t warnings new-x elabindex)))))
 
 
   (define vl-index-expr-resolve-paramref ((x vl-expr-p)
@@ -627,171 +874,49 @@ expression with @(see vl-expr-to-svex).</p>
 
          ((vl-hidstep hidstep) (car hidtrace))
 
-         ((when (zp reclimit))
-          (mv nil
-              (fatal :type :vl-resolve-constants-fail
-                     :msg "Recursion limit ran out processing ~a0 -- dependency loop?"
-                     :args (list x))
-              elabindex))
-
          ((when (or (eq (tag hidstep.item) :vl-modinst)
                     (eq (tag hidstep.item) :vl-interfaceport)))
           ;; If it's a modinst, it might be an interface, which is legitimate
           ;; in some situations
           (mv t warnings elabindex))
 
-         
-         ((when (eq (tag hidstep.item) :vl-vardecl))
-          ;; It's not a paramdecl, so we can't resolve it to a constant.  But
-          ;; we do want to make sure its type is resolved if it's a vardecl.
-          (b* (;; Go to the scope where the declaration was found.
-               (elabindex (vl-elabindex-traverse hidstep.ss (rev hidstep.elabpath)))
-               ((mv ok warnings ?newtype elabindex)
-                (vl-datatype-fully-resolve-and-bind
-                 (vl-vardecl->name hidstep.item)
-                 (vl-vardecl->type hidstep.item)
-                 elabindex
-                 :reclimit (1- reclimit)))
-               (elabindex (vl-elabindex-undo)))
-            (mv ok warnings elabindex)))
+         (elabindex (vl-elabindex-traverse hidstep.ss (rev hidstep.elabpath)))
+         ((wmv ok warnings decl elabindex)
+          (vl-scopeitem-elaborate hidstep.item elabindex :reclimit reclimit))
 
-         ((unless (eq (tag hidstep.item) :vl-paramdecl))
+         ((unless (or (eq (tag decl) :vl-paramdecl)
+                      (eq (tag decl) :vl-vardecl)))
           (mv nil
               (fatal :type :vl-resolve-constants-fail
                      :msg "~a0: Bad item for variable reference: ~a1"
-                     :args (list x hidstep.item))
+                     :args (list x decl))
               elabindex))
+         
+         (elabindex (vl-elabindex-undo))
 
-         ;; Go to the scope where the declaration was found.
-         (elabindex (vl-elabindex-traverse hidstep.ss (rev hidstep.elabpath)))
-               
-         ((wmv ok0 warnings decl elabindex)
-          (vl-paramdecl-elaborate hidstep.item elabindex :reclimit (1- reclimit)))
+         ((when (eq (tag decl) :vl-vardecl))
+          ;; It's not a paramdecl, so we can't resolve it to a constant.  But
+          ;; we do want to make sure its type is resolved if it's a vardecl.
+          (mv ok warnings elabindex))
 
          ((vl-paramdecl decl)))
 
       (vl-paramtype-case decl.type
         :vl-typeparam
-        (b* ((elabindex (vl-elabindex-undo)))
-          (mv nil
-              (fatal :type :vl-resolve-constants-fail
-                     :msg "Type parameter referenced as expression: ~a0"
-                     :args (list x))
-              elabindex))
-        :vl-explicitvalueparam
-        (b* (((unless decl.type.default)
-              (b* ((elabindex (vl-elabindex-undo)))
-                (mv nil
-                    (fatal :type :vl-resolve-constants-fail
-                           :msg "Parameter with no default value: ~a0"
-                           :args (list x))
-                    elabindex)))
-             ((wmv ok1 warnings new-expr svex elabindex)
-              (vl-expr-resolve-to-constant
-               decl.type.default elabindex :reclimit (1- reclimit)
-               :type decl.type.type))
-
-             ((unless ok1)
-              (b* ((elabindex (vl-elabindex-undo)))
-                (mv nil
-                    (fatal :type :vl-resolve-constants-fail
-                           :msg "Couldn't resolve parameter: ~a0.  Other ~
-                                 warnings should explain why."
-                           :args (list x))
-                    elabindex)))
-
-             (elabindex (vl-elabindex-update-item-info
-                         decl.name
-                         (make-vl-elabinfo-param :type decl.type.type
-                                                 :value-expr new-expr
-                                                 :value-sv svex)))
-             (elabindex (Vl-elabindex-undo)))
-          (mv ok0 warnings elabindex))
-
+        (mv nil
+            (fatal :type :vl-resolve-constants-fail
+                   :msg "Type parameter referenced as expression: ~a0"
+                   :args (list x))
+            elabindex)
         :vl-implicitvalueparam
-        ;; Examples:
-        ;;   parameter foo = 5;              // no type info at all
-        ;;   parameter [3:0] foo = 5;        // range info but not a full datatype
-        ;;   parameter signed [3:0] foo = 5; // signedness and width but not a full type
-        (b* (((unless decl.type.default)
-              (b* ((elabindex (vl-elabindex-undo)))
-                (mv nil
-                    (fatal :type :vl-resolve-constants-fail
-                           :msg "Parameter with no default value: ~a0"
-                           :args (list x))
-                    elabindex)))
+        (mv nil
+            (fatal :type :vl-resolve-constants-fail
+                   :msg "Parameter not resolved to explicitly typed constant: ~a0"
+                   :args (list x))
+            elabindex)
 
-             ;; Try to resolve the range of the parameter declaration if
-             ;; applicable.  Note that the range should be resolved relative to
-             ;; the scope where the declaration occurs.
-             ((mv ok warnings range size elabindex)
-              (if decl.type.range
-                  (b* (((vl-range range) decl.type.range)
-                       ((wmv ok warnings msb ?svex elabindex)
-                        (vl-expr-resolve-to-constant
-                         range.msb elabindex :reclimit (1- reclimit)))
-                       ((unless ok)
-                        (mv nil warnings nil nil elabindex))
-                       ((wmv ok warnings lsb ?svex elabindex)
-                        (vl-expr-resolve-to-constant
-                         range.lsb elabindex :reclimit (1- reclimit)))
-                       ((unless ok)
-                        (mv nil warnings nil nil elabindex))
-                       (range (make-vl-range :msb msb :lsb lsb))
-                       (size (and (vl-range-resolved-p range)
-                                  (vl-range-size range))))
-                    (mv ok warnings range size elabindex))
-                (mv t warnings nil nil elabindex)))
-             ((unless ok)
-              (b* ((elabindex (vl-elabindex-undo)))
-                (mv nil
-                    (fatal :type :vl-resolve-constants-fail
-                           :msg "Couldn't resolve parameter ~a0 because its ~
-                                 range was not resolved"
-                           :args (list x))
-                    elabindex)))
-             (paramtype (change-vl-implicitvalueparam decl.type :range range))
-
-             ;; Next, try to resolve the actual value for this parameter.
-             ((wmv ok warnings val-expr svex elabindex)
-              (vl-expr-resolve-to-constant
-               ;; The following is confusingly named, but it's just the value
-               ;; of the parameter.
-               decl.type.default
-               ;; Resolve it relative to 
-               elabindex :reclimit (1- reclimit) :ctxsize size))
-             ((unless ok)
-              (b* ((elabindex (vl-elabindex-undo)))
-                (mv nil
-                    (fatal :type :vl-resolve-constants-fail
-                           :msg "Couldn't resolve parameter ~a0.  See other warnings."
-                           :args (list x))
-                    elabindex)))
-
-             (elabindex (vl-elabindex-sync-scopes))
-             (scopes (vl-elabindex->scopes elabindex))
-
-             ;; We've resolved the range and value and can now somehow use that
-             ;; to get the final type for this parameter.
-             ((wmv warnings err type)
-              (vl-implicitvalueparam-final-type paramtype val-expr
-                                                (vl-elabindex->ss elabindex)
-                                                scopes))
-             ((when err)
-              (b* ((elabindex (vl-elabindex-undo)))
-                (mv nil
-                    (fatal :type :vl-resolve-constants-fail
-                           :msg "Error resolving parameter type for ~a0: ~@1"
-                           :args (list x err))
-                    elabindex)))
-             (elabindex (vl-elabindex-update-item-info
-                         decl.name
-                         (make-vl-elabinfo-param
-                          :type type
-                          :value-expr val-expr
-                          :value-sv svex)))
-             (elabindex (vl-elabindex-undo)))
-          (mv t warnings elabindex))))
+        :vl-explicitvalueparam
+        (mv ok warnings elabindex)))
     ///
     (in-theory (disable vl-index-expr-resolve-paramref)))
 
@@ -963,51 +1088,25 @@ expression with @(see vl-expr-to-svex).</p>
               x elabindex))
          ((vl-hidstep ref) (car trace))
          (elabindex (vl-elabindex-traverse ref.ss (rev ref.elabpath)))
-         ((when (eq (tag ref.item) :vl-typedef))
-          (b* (((vl-typedef item) ref.item)
-               (info (vl-elabscopes-item-info item.name (vl-elabindex->scopes elabindex)))
-               ((when info)
-                (b* ((elabindex (vl-elabindex-undo))
-                     ((unless (vl-elabinfo-case info :type))
-                      (mv nil
-                          (fatal :type :vl-usertype-resolve-error
-                                 :msg "Wrong kind of elabinfo (~x0) for type ~x1"
-                                 :args (list (vl-elabinfo-kind info) item.name))
-                          x elabindex)))
-                  (mv t warnings (vl-elabinfo-type->type info) elabindex)))
-               ((wmv ok warnings res-type elabindex)
-                (vl-datatype-fully-resolve-and-bind
-                 item.name item.type elabindex
-                 :reclimit (1- reclimit)))
+         ((wmv ok warnings item elabindex)
+          (vl-scopeitem-elaborate ref.item elabindex :reclimit reclimit))
+         ((when (eq (tag item) :vl-typedef))
+          (b* (((vl-typedef item) item)
                (elabindex (vl-elabindex-undo)))
-            (mv ok warnings res-type elabindex)))
-         ((when (eq (tag ref.item) :vl-paramdecl))
-          (b* (((vl-paramdecl item) ref.item))
+            (mv ok warnings item.type elabindex)))
+         ((when (eq (tag item) :vl-paramdecl))
+          (b* (((vl-paramdecl item) item))
             (vl-paramtype-case item.type
               :vl-typeparam
-              (b* ((info (vl-elabscopes-item-info item.name (vl-elabindex->scopes elabindex)))
-                   ((when info)
-                    (b* ((elabindex (vl-elabindex-undo))
-                         ((unless (vl-elabinfo-case info :type))
-                          (mv nil
-                              (fatal :type :vl-usertype-resolve-error
-                                     :msg "Wrong kind of elabinfo (~x0) for type ~x1"
-                                     :args (list (vl-elabinfo-kind info) item.name))
-                              x elabindex)))
-                      (mv t warnings (vl-elabinfo-type->type info) elabindex)))
-                   ((unless item.type.default)
+              (b* (((unless item.type.default)
                     (b* ((elabindex (vl-elabindex-undo)))
                       (mv nil
                           (fatal :type :vl-usertype-resolve-error
                                  :msg "Reference to unresolved type parameter ~a0"
                                  :args (list item))
                           x elabindex)))
-                   ((wmv ok warnings res-type elabindex)
-                    (vl-datatype-fully-resolve-and-bind
-                     item.name item.type.default elabindex
-                     :reclimit (1- reclimit)))
                    (elabindex (vl-elabindex-undo)))
-                (mv ok warnings res-type elabindex))
+                (mv ok warnings item.type.default elabindex))
               :otherwise
               (b* ((elabindex (vl-elabindex-undo)))
                 (mv nil
@@ -1025,14 +1124,14 @@ expression with @(see vl-expr-to-svex).</p>
     (in-theory (disable vl-usertype-resolve))))
 
 
-(fty::defvisitors vl-genelement-deps-elaborate
-  :template elaborate
-  :dep-types (vl-genelement))
+;; (fty::defvisitors vl-genelement-deps-elaborate
+;;   :template elaborate
+;;   :dep-types (vl-genelement))
 
-(fty::defvisitor vl-genelement-elaborate
-  :template elaborate
-  :type vl-genelement
-  :omit-types (vl-genarrayblock vl-genarrayblocklist))
+;; (fty::defvisitor vl-genelement-elaborate
+;;   :template elaborate
+;;   :type vl-genelement
+;;   :omit-types (vl-genarrayblock vl-genarrayblocklist))
 
 
 (fty::defvisitors vl-genblob-elaborate

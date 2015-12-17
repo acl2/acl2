@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "expr")
+(include-book "../sv/svex/svex")
 (include-book "util/commentmap")
 (include-book "util/warnings")
 (include-book "util/defs")
@@ -2240,8 +2241,9 @@ their types as @(see vl-typeparam)s.</p>"
    :layout :tree
    :base-name vl-explicitvalueparam
    :short "Representation for explicitly specified value parameter types."
-   ((type    vl-datatype     "Type of this parameter.")
-    (default vl-maybe-expr-p "The default value for this parameter, if provided.")))
+   ((type    vl-datatype          "Type of this parameter.")
+    (default vl-maybe-expr-p      "The default value for this parameter, if provided.")
+    (final-value sv::maybe-4vec-p "The final, resolved value for this parameter, if available" )))
 
   (:vl-typeparam
    :layout :tree
@@ -3530,6 +3532,9 @@ flops, and to set up other simulation events.  A simple example would be:</p>
                 but it must follow certain rules as outlined in 10.4.4, e.g.,
                 it cannot have any time controls, cannot enable tasks, cannot
                 have non-blocking assignments, etc.")
+
+   (function   sv::maybe-svex-p
+               "The svex expression for the value of the function, if it has been computed.")
 
    (atts       vl-atts-p
                "Any attributes associated with this function declaration.")
