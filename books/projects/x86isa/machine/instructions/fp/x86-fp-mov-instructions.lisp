@@ -43,18 +43,17 @@
 
        ((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
-
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? ;; Exceptions Type 5
+        t)
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -129,14 +128,11 @@
 
        ((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
-
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
-
        (xmm (xmmi-size operand-size xmm-index x86))
 
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ((mv flg0
             (the (signed-byte 64) v-addr)
@@ -172,15 +168,15 @@
         (!!ms-fresh :instruction-length addr-diff))
 
        ;; Update the x86 state:
+       (inst-ac? ;; Exceptions Type 5
+        t)
        ((mv flg1 x86)
         (x86-operand-to-xmm/mem
-         operand-size nil xmm v-addr rex-byte r/m mod x86))
-       ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
+         operand-size inst-ac? xmm v-addr rex-byte r/m mod x86))
        ((when flg1)
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
-
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -219,9 +215,9 @@
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? ;; Exceptions Type 1
+        t)
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
@@ -229,7 +225,7 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -253,16 +249,11 @@
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-       ;; Raise an error if v-addr is not 16-byte aligned.
-       ;; In case the second operand is an XMM register, v-addr = 0.
-       ((when (not (eql (mod v-addr 16) 0)))
-        (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
-
        ;; Update the x86 state:
        (x86 (!xmmi-size 16 xmm-index xmm/mem x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -292,20 +283,16 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
-
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
-
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
        ((mv flg0
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
@@ -338,22 +325,17 @@
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-       ;; Raise an error if v-addr is not 16-byte aligned.
-       ;; In case the first operand is an XMM register, v-addr = 0.
-       ((when (not (eql (mod v-addr 16) 0)))
-        (!!ms-fresh :memory-address-is-not-16-byte-aligned v-addr))
-
        ;; Update the x86 state:
+       (inst-ac? ;; Exceptions Type 1
+        t)
        ((mv flg1 x86)
         (x86-operand-to-xmm/mem
-         ;; aligned = t (See Exceptions Type 1 in the Intel Manual)
-         16 t xmm v-addr rex-byte r/m mod x86))
-       ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
+         16 inst-ac? xmm v-addr rex-byte r/m mod x86))
        ((when flg1)
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -373,7 +355,15 @@
   "<h3>Op/En = RM: \[OP XMM, XMM/M\]</h3>
      0F 10: MOVUPS xmm1, xmm2/m128<br/>
   66 0F 10: MOVUPD xmm1, xmm2/m128<br/>
-  F3 0F 6F: MOVDQU xmm1, xmm2/m128<br/>"
+  F3 0F 6F: MOVDQU xmm1, xmm2/m128<br/>
+
+<p>Note: The MOVDQU, MOVUPS, and MOVUPD instructions perform 128-bit
+ unaligned loads or stores. They do not generate general-protection
+ exceptions (#GP) when operands are not aligned on a 16-byte
+ boundary. If alignment checking is enabled, alignment-check
+ exceptions (#AC) may or may not be generated depending on processor
+ implementation when data addresses are not aligned on an 8-byte
+ boundary.</p>"
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -390,9 +380,11 @@
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac?
+        ;; Exceptions Type 4 but treatment of #AC varies. For now, we
+        ;; check the alignment.
+        t)
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
@@ -400,7 +392,7 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -424,18 +416,11 @@
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-       ;; TO-DO@Cuong:
-       ;; From Intel Vol. 2A, p. 3-572 & 3-574.
-       ;; If alignment checking is enabled (CR0.AM = 1, RFLAGS.AC = 1, and CPL
-       ;; = 3), an alignment-check exception (#AC) may or may not be generated
-       ;; (depending on processor implementation) when the operand is not
-       ;; aligned on an 8-byte boundary.
-
        ;; Update the x86 state:
        (x86 (!xmmi-size 16 xmm-index xmm/mem x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -482,14 +467,6 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
 
-       ;; TO-DO@Cuong:
-       ;; From Intel Vol. 2A, p. 3-572 & 3-574.
-       ;; If alignment checking is enabled (CR0.AM = 1, RFLAGS.AC =
-       ;; 1, and CPL = 3), an alignment-check exception (#AC) may or
-       ;; may not be generated (depending on processor
-       ;; implementation) when the operand is not aligned on an
-       ;; 8-byte boundary.
-
        ((mv flg0
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
@@ -523,16 +500,18 @@
         (!!ms-fresh :instruction-length addr-diff))
 
        ;; Update the x86 state:
+       (inst-ac? ;; Exceptions Type 4, but treatment of #AC
+        ;; varies. For now, we do alignment checking.
+        t)
        ((mv flg1 x86)
         (x86-operand-to-xmm/mem
-         ;; aligned = t
-         16 t xmm v-addr rex-byte r/m mod x86))
+         16 inst-ac? xmm v-addr rex-byte r/m mod x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg1)
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -576,8 +555,9 @@
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? ;; Exceptions Type 5
+        t)
 
        ((mv flg0
             (the (unsigned-byte 64) mem)
@@ -585,7 +565,7 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 8 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -613,7 +593,7 @@
        (x86 (!xmmi-size 8 xmm-index mem x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -650,13 +630,10 @@
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
-
        ((the (unsigned-byte 64) xmm)
         (xmmi-size 8 xmm-index x86))
 
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
-
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
        ((mv flg0
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
@@ -664,7 +641,6 @@
         (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
-
        ((when (not (canonical-address-p v-addr)))
         (!!ms-fresh :v-addr-not-canonical v-addr))
 
@@ -688,16 +664,16 @@
         (!!ms-fresh :instruction-length addr-diff))
 
        ;; Update the x86 state:
+       (inst-ac? ;; Exceptions Type 5
+        t)
        ((mv flg1 x86)
         (x86-operand-to-xmm/mem
-         ;; aligned = nil because this opcode can invoke Exceptions
-         ;; Type 5, according to the Intel manuals.
-         8 nil xmm v-addr rex-byte r/m mod x86))
+         8 inst-ac? xmm v-addr rex-byte r/m mod x86))
        ((when flg1)
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -736,9 +712,9 @@
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? ;; Exceptions Type 5
+        t)
 
        ((mv flg0
             (the (unsigned-byte 64) mem)
@@ -746,7 +722,7 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 8 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -773,11 +749,8 @@
        ;; Update the x86 state:
        ((the (unsigned-byte 64) low-qword)
         (xmmi-size 8 xmm-index x86))
-
        (result (merge-2-u64s mem low-qword))
-
        (x86 (!xmmi-size 16 xmm-index result x86))
-
        (x86 (!rip temp-rip x86)))
       x86)
 
@@ -834,7 +807,6 @@
         (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
-
        ((when (not (canonical-address-p v-addr)))
         (!!ms-fresh :v-addr-not-canonical v-addr))
 
@@ -858,16 +830,16 @@
         (!!ms-fresh :instruction-length addr-diff))
 
        ;; Update the x86 state:
+       (inst-ac? ;; Exceptions Type 5
+        t)
        ((mv flg1 x86)
         (x86-operand-to-xmm/mem
-         ;; aligned = nil because this opcode can invoke Exceptions
-         ;; Type 5, according to the Intel manuals.
-         8 nil high-qword v-addr rex-byte r/m mod x86))
+         8 inst-ac? high-qword v-addr rex-byte r/m mod x86))
        ((when flg1)
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn

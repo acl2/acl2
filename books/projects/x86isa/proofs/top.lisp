@@ -32,9 +32,9 @@
 <p>The proof of correctness of a simple <b>array copy sub-routine</b> can be
 found in @('dataCopy/dataCopy.lisp').</p>
 
-<p>The proof of correctness of a <b>population count program</b> can be found
-in @('popcount/popcount.lisp'). This proof was done using the @(see GL)
-symbolic simulation framework.</p>
+<p>The proof of correctness of a <b>population count program</b> can
+be found in @('popcount/popcount.lisp'). This proof was done using the
+@(see GL::GL) symbolic simulation framework.</p>
 
 "
 

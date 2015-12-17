@@ -383,14 +383,12 @@ validation.</p>
   :short "Known issues, planned activities, wishlists, etc."
   :long "<ol>
 
+<li><b>To-do:</b> TO-DO: Remove the capability of reading and writing
+6 and 10 bytes from x86-operand-* functions, in light of alignment
+checking. </li>
+
 <li><b>To-do:</b> Check the segmentation specification and test the
 far @('jmp') instruction.</li>
-
-<li><b>To-do:</b> Speed up
-proofs/utilities/x86-row-wow-thms.lisp.</li>
-
-<li><b>To-do:</b> Resolve name conflicts in the factorial proof
-books.</li>
 
 <li><b>To-do:</b> Generate the dispatch function using
 implemented-opcodes-table in machine/x86.lisp.  Sort

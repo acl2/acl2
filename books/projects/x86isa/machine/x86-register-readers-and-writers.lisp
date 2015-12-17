@@ -859,131 +859,6 @@ pointer, or opcode registers\).</em></p>"
 
 ;; ======================================================================
 
-(defsection rflags-Reads-and-Writes
-  :parents (rflag-specifications x86-register-readers-and-writers)
-  :short "Reading from and writing to the @('rflags') register in the @('x86') state"
-
-  :long "<p>We define @(see flgi) to read a flag's value, and @(see
-  !flgi) to write a flag's value into the @('rflags') field in the
-  @('x86') state.</p>"
-
-  (local (xdoc::set-default-parents rflags-Reads-and-Writes))
-
-  (define flgi
-    ((flg :type (integer 0 32))
-     x86)
-    :guard (member flg *flg-names*)
-    :parents (rflags-Reads-and-Writes)
-
-    (b* ((rflags (the (unsigned-byte 32) (rflags x86))))
-        (mbe :logic
-             (part-select rflags :low flg
-                          :width (if (equal flg *iopl*)
-                                     2 1))
-             :exec
-             (the (unsigned-byte 2)
-               (logand (if (equal flg #.*iopl*) 3 1)
-                       (the (unsigned-byte 32)
-                         (ash (the (unsigned-byte 32) rflags)
-                              (the (integer -32 0)
-                                (- (the (integer 0 32) flg)))))))))
-
-
-    ///
-
-    (defthm-usb n01p-flgi-except-iopl
-      :hyp (and (force (x86p x86))
-                (not (equal flg *iopl*)))
-      :bound 1
-      :concl (flgi flg x86)
-      :gen-type t
-      :gen-linear t)
-
-    (defthm-usb n02p-flgi-iopl
-      :hyp (force (x86p x86))
-      :bound 2
-      :concl (flgi *iopl* x86)
-      :gen-type t
-      :gen-linear t)
-
-    (defthm flgi-xw
-      (equal (flgi flg (xw field index value x86))
-             (if (equal field :rflags)
-                 (if (not (equal flg *iopl*))
-                     (logbit flg value)
-                   (loghead 2 (logtail *iopl* value)))
-               (flgi flg x86)))))
-
-  (define !flgi
-    ((flg :type (integer 0 32))
-     (val :type (unsigned-byte 2))
-     x86)
-    :parents (rflags-Reads-and-Writes)
-    :guard (and (member flg *flg-names*)
-                (if (equal flg *iopl*)
-                    (unsigned-byte-p 2 val)
-                  (unsigned-byte-p 1 val)))
-    :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-    :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
-
-    (b* ((rflags (the (unsigned-byte 32) (rflags x86)))
-         (new-rflags
-          (mbe
-           :logic
-           (part-install val rflags :low flg
-                         :width (if (equal flg *iopl*)
-                                    2 1))
-           :exec
-           (let* ((mask (the (unsigned-byte 32)
-                          (logand #.*2^32-1*
-                                  (lognot
-                                   (the (unsigned-byte 32)
-                                     (ash (if (equal flg #.*iopl*)
-                                              3 1)
-                                          (the (integer 0 21)
-                                            flg))))))))
-
-             (the (unsigned-byte 32)
-               (logior
-                (the (unsigned-byte 32) (logand rflags mask))
-                (the (unsigned-byte 32) (ash val flg))))))))
-        (!rflags (mbe :logic (n32 new-rflags)
-                      :exec new-rflags)
-                 x86))
-
-    ///
-
-    (defthm x86p-!flgi
-      (implies (x86p x86)
-               (x86p (!flgi flg val x86))))
-
-    (defthm xr-!flgi
-      (implies (not (equal field :rflags))
-               (equal (xr field index (!flgi flg val x86))
-                      (xr field index x86)))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (defthm !flgi-xw
-      ;; Keep !flgi inside all other nests of updates.
-      (implies (not (equal field :rflags))
-               (equal (!flgi flg val (xw field index value x86))
-                      (xw field index value (!flgi flg val x86))))
-      :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
-
-    (defthm rflags-!flgi
-      (implies (and (member flg *flg-names*)
-                    (x86p x86))
-               (equal (xr :rflags index (!flgi flg val x86))
-                      (part-install val
-                                    (xr :rflags 0 x86)
-                                    :low flg
-                                    :width (if (equal flg *iopl*) 2 1))))))
-
-  )
-
-;; ======================================================================
-;; Characterizing Undefined Behavior
-
 (defsection characterizing-undefined-behavior
 
   :parents (machine)
@@ -1099,6 +974,130 @@ values.</p>"
 
   (undef-read-logic x86))
 
+;; ======================================================================
+
+(defsection rflags-Reads-and-Writes
+  :parents (rflag-specifications x86-register-readers-and-writers)
+  :short "Reading from and writing to the @('rflags') register in the @('x86') state"
+
+  :long "<p>We define @(see flgi) to read a flag's value, and @(see
+  !flgi) to write a flag's value into the @('rflags') field in the
+  @('x86') state.</p>"
+
+  (local (xdoc::set-default-parents rflags-Reads-and-Writes))
+
+  (define flgi
+    ((flg :type (integer 0 32))
+     x86)
+    :guard (member flg *flg-names*)
+    :parents (rflags-Reads-and-Writes)
+
+    (b* ((rflags (the (unsigned-byte 32) (rflags x86))))
+      (mbe :logic
+           (part-select rflags :low flg
+                        :width (if (equal flg *iopl*)
+                                   2 1))
+           :exec
+           (the (unsigned-byte 2)
+             (logand (if (equal flg #.*iopl*) 3 1)
+                     (the (unsigned-byte 32)
+                       (ash (the (unsigned-byte 32) rflags)
+                            (the (integer -32 0)
+                              (- (the (integer 0 32) flg)))))))))
+
+
+    ///
+
+    (defthm-usb n01p-flgi-except-iopl
+      :hyp (and (force (x86p x86))
+                (not (equal flg *iopl*)))
+      :bound 1
+      :concl (flgi flg x86)
+      :gen-type t
+      :gen-linear t)
+
+    (defthm-usb n02p-flgi-iopl
+      :hyp (force (x86p x86))
+      :bound 2
+      :concl (flgi *iopl* x86)
+      :gen-type t
+      :gen-linear t)
+
+    (defthm flgi-xw
+      (equal (flgi flg (xw field index value x86))
+             (if (equal field :rflags)
+                 (if (not (equal flg *iopl*))
+                     (logbit flg value)
+                   (loghead 2 (logtail *iopl* value)))
+               (flgi flg x86)))))
+
+  (define !flgi
+    ((flg :type (integer 0 32))
+     (val :type (unsigned-byte 2))
+     x86)
+    :parents (rflags-Reads-and-Writes)
+    :guard (and (member flg *flg-names*)
+                (if (equal flg *iopl*)
+                    (unsigned-byte-p 2 val)
+                  (unsigned-byte-p 1 val)))
+    :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+    :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
+
+    (b* ((rflags (the (unsigned-byte 32) (rflags x86)))
+         (new-rflags
+          (mbe
+           :logic
+           (part-install val rflags :low flg
+                         :width (if (equal flg *iopl*)
+                                    2 1))
+           :exec
+           (let* ((mask (the (unsigned-byte 32)
+                          (logand #.*2^32-1*
+                                  (lognot
+                                   (the (unsigned-byte 32)
+                                     (ash (if (equal flg #.*iopl*)
+                                              3 1)
+                                          (the (integer 0 21)
+                                            flg))))))))
+
+             (the (unsigned-byte 32)
+               (logior
+                (the (unsigned-byte 32) (logand rflags mask))
+                (the (unsigned-byte 32) (ash val flg))))))))
+      (!rflags (mbe :logic (n32 new-rflags)
+                    :exec new-rflags)
+               x86))
+
+    ///
+
+    (defthm x86p-!flgi
+      (implies (x86p x86)
+               (x86p (!flgi flg val x86))))
+
+    (defthm xr-!flgi
+      (implies (not (equal field :rflags))
+               (equal (xr field index (!flgi flg val x86))
+                      (xr field index x86)))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm !flgi-xw
+      ;; Keep !flgi inside all other nests of updates.
+      (implies (not (equal field :rflags))
+               (equal (!flgi flg val (xw field index value x86))
+                      (xw field index value (!flgi flg val x86))))
+      :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
+
+    (defthm rflags-!flgi
+      (implies (and (member flg *flg-names*)
+                    (x86p x86))
+               (equal (xr :rflags index (!flgi flg val x86))
+                      (part-install val
+                                    (xr :rflags 0 x86)
+                                    :low flg
+                                    :width (if (equal flg *iopl*) 2 1))))))
+
+  )
+
 (define undef-flg-logic (x86)
   :enabled t
   :parents (!flgi-undefined)
@@ -1133,11 +1132,44 @@ using the @(see undef-read) function.</p>"
   (b* (((mv (the (unsigned-byte 1) val) x86)
         (undef-flg x86))
        (x86 (!flgi flg val x86)))
-      x86))
+    x86))
+
+(local (include-book "centaur/gl/gl" :dir :system))
+
+(local
+ (def-gl-thm write-user-rflags-mbe-proof
+   :hyp (and (n32p user-flags-vector)
+             (n32p rflags))
+   :concl (equal (logior
+                  (ash (loghead 1 (bool->bit (logbitp 11 user-flags-vector))) 11)
+                  (logand
+                   4294965247
+                   (logior
+                    (ash (loghead 1 (bool->bit (logbitp 7 user-flags-vector))) 7)
+                    (logand
+                     4294967167
+                     (logior
+                      (ash (loghead 1 (bool->bit (logbitp 6 user-flags-vector))) 6)
+                      (logand
+                       4294967231
+                       (logior
+                        (ash (loghead 1 (bool->bit (logbitp 4 user-flags-vector))) 4)
+                        (logand
+                         4294967279
+                         (logior (ash (loghead 1 (bool->bit (logbitp 2 user-flags-vector))) 2)
+                                 (logand 4294967291
+                                         (logior (loghead 1 user-flags-vector)
+                                                 (logand 4294967294 rflags))))))))))))
+                 (logior (logand 2261 user-flags-vector)
+                         (logand 4294965034 rflags)))
+
+   :g-bindings (gl::auto-bindings
+                (:nat user-flags-vector 32)
+                (:nat rflags 32))))
 
 (define write-user-rflags
-  ((flgs  :type (unsigned-byte 32))
-   (mask  :type (unsigned-byte 32))
+  ((user-flags-vector :type (unsigned-byte 32))
+   (undefined-mask    :type (unsigned-byte 32))
    x86)
 
   :inline t
@@ -1149,84 +1181,95 @@ using the @(see undef-read) function.</p>"
   :long "<p>We set the undefined flags, which are indicated by
   @('mask'), to the value returned by @(see undef-read).</p>"
 
-  :guard-hints (("Goal" :in-theory (e/d (!flgi) ())))
+  :guard-hints (("Goal" :in-theory (e/d (!flgi) (unsigned-byte-p))))
   :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  (b* ((flgs (mbe :logic (n32 flgs) :exec flgs))
-       (mask (mbe :logic (n32 mask) :exec mask)))
+  (b* ((user-flags-vector
+        (mbe :logic (n32 user-flags-vector) :exec user-flags-vector))
+       (undefined-mask
+        (mbe :logic (n32 undefined-mask) :exec undefined-mask))
+       ((the (unsigned-byte 32) input-rflags)
+        (mbe :logic (n32 (rflags x86)) :exec (rflags x86)))
+       (x86
+        (mbe :logic (b* ((x86 (!flgi #.*cf* (rflags-slice :cf user-flags-vector) x86))
+                         (x86 (!flgi #.*pf* (rflags-slice :pf user-flags-vector) x86))
+                         (x86 (!flgi #.*af* (rflags-slice :af user-flags-vector) x86))
+                         (x86 (!flgi #.*zf* (rflags-slice :zf user-flags-vector) x86))
+                         (x86 (!flgi #.*sf* (rflags-slice :sf user-flags-vector) x86))
+                         (x86 (!flgi #.*of* (rflags-slice :of user-flags-vector) x86)))
+                      x86)
+             :exec (b* ((user-flags-layout
+                         ;; (!rflags-slice
+                         ;;  :cf 1
+                         ;;  (!rflags-slice
+                         ;;   :pf 1
+                         ;;   (!rflags-slice
+                         ;;    :af 1
+                         ;;    (!rflags-slice
+                         ;;     :zf 1
+                         ;;     (!rflags-slice
+                         ;;      :sf 1
+                         ;;      (!rflags-slice
+                         ;;       :of 1 0))))))
+                         #x8D5)
+                        (flags-without-undefined-values
+                         (logior (logand (logxor user-flags-layout #.*2^32-1*) input-rflags)
+                                 (logand user-flags-layout user-flags-vector))))
+                     (!rflags flags-without-undefined-values x86)))))
 
-      (if (equal mask 0)
+    (if (equal undefined-mask 0)
+        x86
+      (b* ((x86 (if (equal (rflags-slice :cf undefined-mask) 1)
+                    (!flgi-undefined #.*cf* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :pf undefined-mask) 1)
+                    (!flgi-undefined #.*pf* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :af undefined-mask) 1)
+                    (!flgi-undefined #.*af* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :zf undefined-mask) 1)
+                    (!flgi-undefined #.*zf* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :sf undefined-mask) 1)
+                    (!flgi-undefined #.*sf* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :of undefined-mask) 1)
+                    (!flgi-undefined #.*of* x86)
+                  x86)))
+        x86)))
 
-          (!rflags flgs x86)
+  ///
 
-        (b* ((x86 (!rflags flgs x86))
+  (defthm xr-write-user-rflags
+    (implies (and (not (equal fld :rflags))
+                  (not (equal fld :undef)))
+             (equal (xr fld index (write-user-rflags flags mask x86))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (force (force))))))
 
-             (x86 (if (equal (rflags-slice :cf mask) 1)
-                      (!flgi-undefined #.*cf* x86)
-                    x86))
+  (defthm xr-write-user-rflags-no-mask
+    ;; Do we need this?
+    (implies (not (equal fld :rflags))
+             (equal (xr fld index (write-user-rflags flags 0 x86))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (force (force))))))
 
-             (x86 (if (equal (rflags-slice :pf mask) 1)
-                      (!flgi-undefined #.*pf* x86)
-                    x86))
+  (defthm rflags-and-write-user-rflags-no-mask
+    (equal (write-user-rflags user-flags-vector 0 x86)
+           (b* ((x86 (!flgi #.*cf* (rflags-slice :cf user-flags-vector) x86))
+                (x86 (!flgi #.*pf* (rflags-slice :pf user-flags-vector) x86))
+                (x86 (!flgi #.*af* (rflags-slice :af user-flags-vector) x86))
+                (x86 (!flgi #.*zf* (rflags-slice :zf user-flags-vector) x86))
+                (x86 (!flgi #.*sf* (rflags-slice :sf user-flags-vector) x86))
+                (x86 (!flgi #.*of* (rflags-slice :of user-flags-vector) x86)))
+             x86))
+    :hints (("Goal" :in-theory (e/d* (flgi !flgi !flgi-undefined) (force (force)))))))
 
-             (x86 (if (equal (rflags-slice :af mask) 1)
-                      (!flgi-undefined #.*af* x86)
-                    x86))
 
-             (x86 (if (equal (rflags-slice :zf mask) 1)
-                      (!flgi-undefined #.*zf* x86)
-                    x86))
-
-             (x86 (if (equal (rflags-slice :sf mask) 1)
-                      (!flgi-undefined #.*sf* x86)
-                    x86))
-
-             (x86 (if (equal (rflags-slice :of mask) 1)
-                      (!flgi-undefined #.*of* x86)
-                    x86)))
-            x86))))
-
-;; [Shilpi]: I need more rules about when mask is not 0. I think I want to keep
-;; write-user-rflags disabled most of the time...
-
-(defthm xr-write-user-rflags
-  (implies (and (not (equal fld :rflags))
-                (not (equal fld :undef)))
-           (equal (xr fld index (write-user-rflags flags mask x86))
-                  (xr fld index x86)))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi-undefined) (force (force))))))
-
-(defthm xr-write-user-rflags-no-mask
-  ;; Do we need this?
-  (implies (not (equal fld :rflags))
-           (equal (xr fld index (write-user-rflags flags 0 x86))
-                  (xr fld index x86)))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi-undefined) (force (force))))))
-
-(defthm rflags-and-write-user-rflags-no-mask
-  (equal (xr :rflags 0 (write-user-rflags flags 0 x86))
-         (loghead 32 flags))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
-
-(defthm read-zf-using-flgi-from-write-user-rflags
-  (implies (equal (rflags-slice :zf mask) 0)
-           (equal (flgi *zf* (write-user-rflags flags mask x86))
-                  (bool->bit (logbitp *zf* flags))))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
-
-(defthm write-user-rflags-and-xw
-  (implies (and (not (equal fld :rflags))
-                (not (equal fld :undef)))
-           (equal (write-user-rflags flags mask (xw fld index value x86))
-                  (xw fld index value (write-user-rflags flags mask x86))))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
-
-(defthm write-user-rflags-write-user-flags-when-no-mask
-  (equal (write-user-rflags flags1 0 (write-user-rflags flags2 0 x86))
-         (write-user-rflags flags1 0 x86))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi !flgi-undefined) ()))))
+;; ======================================================================
 
 (include-book "tools/include-raw" :dir :system)
 (defttag :undef-flg)
