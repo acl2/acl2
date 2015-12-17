@@ -320,6 +320,12 @@ are empty.</p>")
   :returns (init-scopes vl-elabscopes-p)
   (list (cons nil (make-vl-elabscope))))
 
+(define vl-elabscopes-init-ss ((ss vl-scopestack-p))
+  :short "Makes an empty elabscopes at the same nesting depth as the given scopestack."
+  :returns (init-scopes vl-elabscopes-p)
+  (make-list (vl-scopestack-nesting-level ss)
+             :initial-element (cons nil (make-vl-elabscope))))
+
 
 (defsection vl-elabscopes-push-scope
   (define vl-scope->elabkey ((scope vl-scope-p))
