@@ -147,10 +147,11 @@
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       (inst-ac? t)
        ((mv flg jmp-addr (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* 8 p2 p4? temp-rip rex-byte r/m
+         #.*rgf-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m
          mod sib 0 x86))
        ((when flg)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes-error flg))
@@ -244,30 +245,26 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   :body
 
   (b* ((ctx 'x86-far-jmp-Op/En-M)
-       ;; If the lock prefix is used, then the #UD exception is
-       ;; raised.
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
+       ((when lock?) ;; #UD
         (!!ms-fresh :lock-prefix prefixes))
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-
-       ;; [TO-DO@Shilpi]: Note that this exception was not mentioned
-       ;; in the Intel Manuals, but I think that the reason for this
-       ;; omission was that the JMP instruction reference sheet
-       ;; mentioned direct addressing opcodes too (which are
-       ;; unavailable in the 64-bit mode).
-       ;; If the source operand is not a memory location, then #GP(0)
-       ;; is raised.
+       ;; Note that this exception was not mentioned in the Intel
+       ;; Manuals, but I think that the reason for this omission was
+       ;; that the JMP instruction reference sheet mentioned direct
+       ;; addressing opcodes too (which are unavailable in the 64-bit
+       ;; mode).  If the source operand is not a memory location, then
+       ;; #GP(0) is raised.
        ((when (equal mod #b11))
         (!!ms-fresh :source-operand-not-memory-location mod))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
        (offset-size
         ;; Offset size can be 2, 4, or 8 bytes.
         (select-operand-size nil rex-byte nil prefixes))
+       (inst-ac? t)
        ((mv flg mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
@@ -275,6 +272,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
          ;; offset-size is the number of bytes of the
          ;; offset.  We need two more bytes for the selector.
          (the (integer 2 10) (+ 2 offset-size))
+         inst-ac?
          p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes-error flg))
@@ -319,13 +317,13 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
             (b* ((gdtr (the (unsigned-byte 80) (stri *gdtr* x86)))
                  (gdtr-base (gdtr/idtr-layout-slice :base-addr gdtr))
                  (gdtr-limit (gdtr/idtr-layout-slice :limit gdtr)))
-                (mv gdtr-base gdtr-limit))
+              (mv gdtr-base gdtr-limit))
           ;; Selector references the LDT whose base address is in
           ;; LDTR.
           (b* ((ldtr-hidden (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86)))
                (ldtr-base (hidden-seg-reg-layout-slice :base-addr ldtr-hidden))
                (ldtr-limit (hidden-seg-reg-layout-slice :limit ldtr-hidden)))
-              (mv ldtr-base ldtr-limit))))
+            (mv ldtr-base ldtr-limit))))
 
        ;; Is the limit of the selector within the descriptor table
        ;; limit?
@@ -347,7 +345,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ;; wide but all other descriptors are 16 bytes wide in the
        ;; 64-bit mode.
        ((mv flg (the (unsigned-byte 128) descriptor) x86)
-        ;; [TO-DO@Shilpi]: I believe I should use :x below and not :r.
+        ;; [TO-DO@Shilpi]: I believe I should use :x below and not
+        ;; :r. Double check.
         (rm-size 16 descriptor-addr :x x86))
        ((when flg)
         (!!ms-fresh :rm-size-error flg))
@@ -371,87 +370,34 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
               (ia32e-valid-call-gate-segment-descriptor-p descriptor))
              ((when valid?)
               (mv nil 1 descriptor)))
-            (mv t (cons reason1 reason2) descriptor)))
+          (mv t (cons reason1 reason2) descriptor)))
        ((when flg)
         (!!ms-fresh
          :either-both-code-segment-or-call-gate-are-absent-or-some-other-descriptor-is-present
          (cons code-or-call-gate? descriptor))))
 
-      (if (eql code-or-call-gate? 0) ;; Code Segment:
+    (if (eql code-or-call-gate? 0) ;; Code Segment:
 
-          (if (equal (part-select
-                      (code-segment-descriptor-layout-slice
-                       :type descriptor)
-                      :low 2 :width 1)
-                     1)
+        (if (equal (part-select
+                    (code-segment-descriptor-layout-slice
+                     :type descriptor)
+                    :low 2 :width 1)
+                   1)
 
-              ;; Conforming Code Segment:
-
-              (b* ((current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                   (cpl (seg-sel-layout-slice :rpl current-cs-register))
-                   (dpl (code-segment-descriptor-layout-slice
-                         :dpl descriptor))
-                   ;; Access is allowed to a conforming code segment
-                   ;; when DPL <= CPL (numerically).  RPL is ignored
-                   ;; for this privilege check.  If access is not
-                   ;; allowed, #GP(segment-selector) is raised.
-                   ((when (not (<= dpl cpl)))
-                    (!!ms-fresh :privilege-check-fail
-                                (acons :dpl dpl
-                                       (acons :cpl cpl nil))))
-
-                   ;; Trimming the offset based on the operand-size:
-                   (jmp-addr
-                    (case offset-size
-                      (2 (n16 offset))
-                      (4 (n32 offset))
-                      (t offset)))
-
-                   ;; #GP(0) is thrown if the target offset in destination is
-                   ;; non-canonical.
-                   ((when (not (canonical-address-p jmp-addr)))
-                    (!!ms-fresh :target-offset-virtual-memory-error jmp-addr))
-
-                   (new-cs-visible
-                    (!seg-sel-layout-slice :rpl cpl selector))
-
-                   (new-cs-hidden
-                    (if (equal sel-ti 1)
-                        ;; Load the hidden portions of the CS segment
-                        ;; from the LDTR's hidden portion.
-                        (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86))
-                      ;; Descriptor was in GDT.
-                      (!hidden-seg-reg-layout-slice
-                       :base-addr dt-base-addr
-                       (!hidden-seg-reg-layout-slice
-                        :limit dt-limit
-                        (!hidden-seg-reg-layout-slice
-                         ;; Get attributes from the descriptor in GDT.
-                         :attr (make-code-segment-attr-field descriptor)
-                         0)))))
-
-                   ;; Update x86 state:
-                   (x86 (!seg-visiblei *cs* new-cs-visible x86))
-                   (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
-                   (x86 (!rip jmp-addr x86)))
-                  x86)
-
-            ;; Non-Conforming Code Segment:
+            ;; Conforming Code Segment:
 
             (b* ((current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
                  (cpl (seg-sel-layout-slice :rpl current-cs-register))
                  (dpl (code-segment-descriptor-layout-slice
                        :dpl descriptor))
                  ;; Access is allowed to a conforming code segment
-                 ;; when RPL <= CPL (numerically) and CPL = DPL. If
-                 ;; access is not allowed, #GP(segment-selector) is
-                 ;; raised.
-                 ((when (not (and (<= sel-rpl cpl)
-                                  (equal cpl dpl))))
+                 ;; when DPL <= CPL (numerically).  RPL is ignored
+                 ;; for this privilege check.  If access is not
+                 ;; allowed, #GP(segment-selector) is raised.
+                 ((when (not (<= dpl cpl)))
                   (!!ms-fresh :privilege-check-fail
                               (acons :dpl dpl
-                                     (acons :cpl cpl
-                                            (acons :rpl sel-rpl nil)))))
+                                     (acons :cpl cpl nil))))
 
                  ;; Trimming the offset based on the operand-size:
                  (jmp-addr
@@ -487,164 +433,217 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                  (x86 (!seg-visiblei *cs* new-cs-visible x86))
                  (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
                  (x86 (!rip jmp-addr x86)))
-                x86))
+              x86)
 
-        ;; Call Gate Descriptor:
+          ;; Non-Conforming Code Segment:
 
-        (b* ((current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-             (cpl (seg-sel-layout-slice :rpl current-cs-register))
-             (dpl (call-gate-descriptor-layout-slice :dpl descriptor))
+          (b* ((current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
+               (cpl (seg-sel-layout-slice :rpl current-cs-register))
+               (dpl (code-segment-descriptor-layout-slice
+                     :dpl descriptor))
+               ;; Access is allowed to a conforming code segment
+               ;; when RPL <= CPL (numerically) and CPL = DPL. If
+               ;; access is not allowed, #GP(segment-selector) is
+               ;; raised.
+               ((when (not (and (<= sel-rpl cpl)
+                                (equal cpl dpl))))
+                (!!ms-fresh :privilege-check-fail
+                            (acons :dpl dpl
+                                   (acons :cpl cpl
+                                          (acons :rpl sel-rpl nil)))))
 
-             ;; Access is allowed when:
-             ;; 1. CPL <= Call gate's DPL
-             ;; 2. RPL <= Call gate's DPL
-             ;; 3. If the destination Code segment is conforming,
-             ;;    then: DPL of code segment <= CPL
-             ;;    If the destination Code segment is non-conforming,
-             ;;    then: DPL of code segment = CPL.
-             ;; If access is not allowed, #GP(segment-selector) is
-             ;; raised.
-             ;; Below, we check 1 and 2.  We will check for 3 after we
-             ;; read in the code segment descriptor.
-             ((when (not (and (<= cpl dpl)
-                              (<= sel-rpl dpl))))
-              (!!ms-fresh :privilege-check-fail
-                          (acons :dpl dpl
-                                 (acons :cpl cpl
-                                        (acons :rpl sel-rpl nil)))))
+               ;; Trimming the offset based on the operand-size:
+               (jmp-addr
+                (case offset-size
+                  (2 (n16 offset))
+                  (4 (n32 offset))
+                  (t offset)))
 
-             (cs-selector
-              (call-gate-descriptor-layout-slice :selector descriptor))
-             ((the (unsigned-byte 13) cs-sel-index)
-              (seg-sel-layout-slice :index cs-selector))
-             ((the (unsigned-byte 1) cs-sel-ti)
-              (seg-sel-layout-slice :ti cs-selector))
-             ((the (unsigned-byte 2) cs-sel-rpl)
-              (seg-sel-layout-slice :rpl cs-selector))
+               ;; #GP(0) is thrown if the target offset in destination is
+               ;; non-canonical.
+               ((when (not (canonical-address-p jmp-addr)))
+                (!!ms-fresh :target-offset-virtual-memory-error jmp-addr))
 
-             ;; If the call gate's code segment selector is NULL,
-             ;; #GP(0) is raised.
-             ((when (and (equal cs-sel-ti 0)
-                         (equal cs-sel-index 0)))
-              (!!ms-fresh :call-gate-code-segment-nullselector 0))
+               (new-cs-visible
+                (!seg-sel-layout-slice :rpl cpl selector))
 
-             ;; Is the call gate code segment selector index outside
-             ;; the descriptor table limit?  If so, #GP(code segment
-             ;; selector) is raised.
-             ((mv cs-dt-base-addr cs-dt-limit)
-              (if (equal sel-ti 0)
-                  ;; Code Segment Selector references the GDT.
-                  (b* ((gdtr (the (unsigned-byte 80) (stri *gdtr* x86)))
-                       (gdtr-base (gdtr/idtr-layout-slice :base-addr gdtr))
-                       (gdtr-limit (gdtr/idtr-layout-slice :limit gdtr)))
-                      (mv gdtr-base gdtr-limit))
-                ;; Code Segment Selector references the LDT whose base
-                ;; address is in LDTR.
-                (b* ((ldtr-hidden (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86)))
-                     (ldtr-base (hidden-seg-reg-layout-slice :base-addr ldtr-hidden))
-                     (ldtr-limit (hidden-seg-reg-layout-slice :limit ldtr-hidden)))
-                    (mv ldtr-base ldtr-limit))))
-             ((when (< cs-dt-limit cs-sel-index))
-              (!!ms-fresh :gp-selector-limit-check-failed
-                          (list cs-selector cs-dt-base-addr cs-dt-limit)))
-
-             ;; Reading the code segment: we check if the code segment
-             ;; descriptor is valid.
-             (cs-descriptor-addr
-              ;; The index is scaled by 8.
-              (+ cs-dt-base-addr (the (unsigned-byte 16) (ash cs-sel-index 3))))
-             ((when (not (canonical-address-p cs-descriptor-addr)))
-              (!!ms-fresh :cs-descriptor-addr-virtual-memory-error cs-descriptor-addr))
-             ((mv flg (the (unsigned-byte 64) cs-descriptor) x86)
-              ;; [TO-DO@Shilpi]: I believe I should use :x below and not :r.
-              (rm-size 8 cs-descriptor-addr :x x86))
-             ((when flg)
-              (!!ms-fresh :rm-size-error flg))
-             ((mv valid? reason)
-              ;; Note that the following predicate reports the
-              ;; descriptor to be invalid if the P flag of the
-              ;; descriptor is 0.
-              (ia32e-valid-code-segment-descriptor-p cs-descriptor))
-             ((when (not valid?))
-              (!!ms-fresh :call-gate-code-segment-descriptor-invalid
-                          (cons reason cs-descriptor)))
-
-             ;; Checking the privileges of the code segment:
-             (cs-dpl (code-segment-descriptor-layout-slice :dpl cs-descriptor))
-             (c-bit (part-select
-                     (code-segment-descriptor-layout-slice
-                      :type cs-descriptor)
-                     :low 2 :width 1))
-             ((when (or (and ;; Conforming code segment
-                         (equal c-bit 1)
-                         (not (<= cs-dpl cpl)))
-                        (and ;; Conforming code segment
-                         (equal c-bit 0)
-                         (not (eql cs-dpl cpl)))))
-              (!!ms-fresh :privilege-check-fail
-                          (acons :c-bit c-bit
-                                 (acons :cpl cpl
-                                        (acons :cs-dpl cs-dpl nil)))))
-
-             (call-gate-offset15-0
-              (call-gate-descriptor-layout-slice :offset15-0 descriptor))
-             (call-gate-offset31-16
-              (call-gate-descriptor-layout-slice :offset31-16 descriptor))
-             (call-gate-offset63-32
-              (call-gate-descriptor-layout-slice :offset63-32 descriptor))
-             (call-gate-offset31-0
-              (mbe :logic (part-install call-gate-offset15-0
-                                        (ash call-gate-offset31-16 16)
-                                        :low 0 :width 16)
-                   :exec
-                   (the (unsigned-byte 32)
-                     (logior (the (unsigned-byte 16) call-gate-offset15-0)
-                             (the (unsigned-byte 32) (ash call-gate-offset31-16 16))))))
-             (call-gate-offset
-              (mbe :logic
-                   (part-install call-gate-offset31-0
-                                 (ash call-gate-offset63-32 32)
-                                 :low 0 :width 32)
-                   :exec
-                   (the (unsigned-byte 64)
-                     (logior (the (unsigned-byte 32) call-gate-offset31-0)
-                             (the (unsigned-byte 64) (ash call-gate-offset63-32 32))))))
-
-             ;; Trimming the call gate offset based on the operand-size:
-             (jmp-addr
-              (case offset-size
-                (2 (n16 call-gate-offset))
-                (4 (n32 call-gate-offset))
-                (t call-gate-offset)))
-
-             ;; #GP(0) is thrown if the target offset in destination is
-             ;; non-canonical.
-             ((when (not (canonical-address-p jmp-addr)))
-              (!!ms-fresh :target-offset-virtual-memory-error jmp-addr))
-
-             (new-cs-visible
-              (!seg-sel-layout-slice :rpl cpl cs-selector))
-
-             (new-cs-hidden
-              (if (equal cs-sel-ti 1)
-                  ;; Load the hidden portions of the CS segment
-                  ;; from the LDTR's hidden portion.
-                  (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86))
-                ;; Descriptor was in GDT.
-                (!hidden-seg-reg-layout-slice
-                 :base-addr cs-dt-base-addr
-                 (!hidden-seg-reg-layout-slice
-                  :limit cs-dt-limit
+               (new-cs-hidden
+                (if (equal sel-ti 1)
+                    ;; Load the hidden portions of the CS segment
+                    ;; from the LDTR's hidden portion.
+                    (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86))
+                  ;; Descriptor was in GDT.
                   (!hidden-seg-reg-layout-slice
-                   ;; Get attributes from the descriptor in GDT.
-                   :attr (make-code-segment-attr-field cs-descriptor)
-                   0)))))
+                   :base-addr dt-base-addr
+                   (!hidden-seg-reg-layout-slice
+                    :limit dt-limit
+                    (!hidden-seg-reg-layout-slice
+                     ;; Get attributes from the descriptor in GDT.
+                     :attr (make-code-segment-attr-field descriptor)
+                     0)))))
 
-             ;; Update x86 state:
-             (x86 (!seg-visiblei *cs* new-cs-visible x86))
-             (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
-             (x86 (!rip jmp-addr x86)))
-            x86))))
+               ;; Update x86 state:
+               (x86 (!seg-visiblei *cs* new-cs-visible x86))
+               (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
+               (x86 (!rip jmp-addr x86)))
+            x86))
+
+      ;; Call Gate Descriptor:
+
+      (b* ((current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
+           (cpl (seg-sel-layout-slice :rpl current-cs-register))
+           (dpl (call-gate-descriptor-layout-slice :dpl descriptor))
+
+           ;; Access is allowed when:
+           ;; 1. CPL <= Call gate's DPL
+           ;; 2. RPL <= Call gate's DPL
+           ;; 3. If the destination Code segment is conforming,
+           ;;    then: DPL of code segment <= CPL
+           ;;    If the destination Code segment is non-conforming,
+           ;;    then: DPL of code segment = CPL.
+           ;; If access is not allowed, #GP(segment-selector) is
+           ;; raised.
+           ;; Below, we check 1 and 2.  We will check for 3 after we
+           ;; read in the code segment descriptor.
+           ((when (not (and (<= cpl dpl)
+                            (<= sel-rpl dpl))))
+            (!!ms-fresh :privilege-check-fail
+                        (acons :dpl dpl
+                               (acons :cpl cpl
+                                      (acons :rpl sel-rpl nil)))))
+
+           (cs-selector
+            (call-gate-descriptor-layout-slice :selector descriptor))
+           ((the (unsigned-byte 13) cs-sel-index)
+            (seg-sel-layout-slice :index cs-selector))
+           ((the (unsigned-byte 1) cs-sel-ti)
+            (seg-sel-layout-slice :ti cs-selector))
+           ((the (unsigned-byte 2) cs-sel-rpl)
+            (seg-sel-layout-slice :rpl cs-selector))
+
+           ;; If the call gate's code segment selector is NULL,
+           ;; #GP(0) is raised.
+           ((when (and (equal cs-sel-ti 0)
+                       (equal cs-sel-index 0)))
+            (!!ms-fresh :call-gate-code-segment-nullselector 0))
+
+           ;; Is the call gate code segment selector index outside
+           ;; the descriptor table limit?  If so, #GP(code segment
+           ;; selector) is raised.
+           ((mv cs-dt-base-addr cs-dt-limit)
+            (if (equal sel-ti 0)
+                ;; Code Segment Selector references the GDT.
+                (b* ((gdtr (the (unsigned-byte 80) (stri *gdtr* x86)))
+                     (gdtr-base (gdtr/idtr-layout-slice :base-addr gdtr))
+                     (gdtr-limit (gdtr/idtr-layout-slice :limit gdtr)))
+                  (mv gdtr-base gdtr-limit))
+              ;; Code Segment Selector references the LDT whose base
+              ;; address is in LDTR.
+              (b* ((ldtr-hidden (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86)))
+                   (ldtr-base (hidden-seg-reg-layout-slice :base-addr ldtr-hidden))
+                   (ldtr-limit (hidden-seg-reg-layout-slice :limit ldtr-hidden)))
+                (mv ldtr-base ldtr-limit))))
+           ((when (< cs-dt-limit cs-sel-index))
+            (!!ms-fresh :gp-selector-limit-check-failed
+                        (list cs-selector cs-dt-base-addr cs-dt-limit)))
+
+           ;; Reading the code segment: we check if the code segment
+           ;; descriptor is valid.
+           (cs-descriptor-addr
+            ;; The index is scaled by 8.
+            (+ cs-dt-base-addr (the (unsigned-byte 16) (ash cs-sel-index 3))))
+           ((when (not (canonical-address-p cs-descriptor-addr)))
+            (!!ms-fresh :cs-descriptor-addr-virtual-memory-error cs-descriptor-addr))
+           ((mv flg (the (unsigned-byte 64) cs-descriptor) x86)
+            ;; [TO-DO@Shilpi]: I believe I should use :x below and not :r.
+            (rm-size 8 cs-descriptor-addr :x x86))
+           ((when flg)
+            (!!ms-fresh :rm-size-error flg))
+           ((mv valid? reason)
+            ;; Note that the following predicate reports the
+            ;; descriptor to be invalid if the P flag of the
+            ;; descriptor is 0.
+            (ia32e-valid-code-segment-descriptor-p cs-descriptor))
+           ((when (not valid?))
+            (!!ms-fresh :call-gate-code-segment-descriptor-invalid
+                        (cons reason cs-descriptor)))
+
+           ;; Checking the privileges of the code segment:
+           (cs-dpl (code-segment-descriptor-layout-slice :dpl cs-descriptor))
+           (c-bit (part-select
+                   (code-segment-descriptor-layout-slice
+                    :type cs-descriptor)
+                   :low 2 :width 1))
+           ((when (or (and ;; Conforming code segment
+                       (equal c-bit 1)
+                       (not (<= cs-dpl cpl)))
+                      (and ;; Conforming code segment
+                       (equal c-bit 0)
+                       (not (eql cs-dpl cpl)))))
+            (!!ms-fresh :privilege-check-fail
+                        (acons :c-bit c-bit
+                               (acons :cpl cpl
+                                      (acons :cs-dpl cs-dpl nil)))))
+
+           (call-gate-offset15-0
+            (call-gate-descriptor-layout-slice :offset15-0 descriptor))
+           (call-gate-offset31-16
+            (call-gate-descriptor-layout-slice :offset31-16 descriptor))
+           (call-gate-offset63-32
+            (call-gate-descriptor-layout-slice :offset63-32 descriptor))
+           (call-gate-offset31-0
+            (mbe :logic (part-install call-gate-offset15-0
+                                      (ash call-gate-offset31-16 16)
+                                      :low 0 :width 16)
+                 :exec
+                 (the (unsigned-byte 32)
+                   (logior (the (unsigned-byte 16) call-gate-offset15-0)
+                           (the (unsigned-byte 32) (ash call-gate-offset31-16 16))))))
+           (call-gate-offset
+            (mbe :logic
+                 (part-install call-gate-offset31-0
+                               (ash call-gate-offset63-32 32)
+                               :low 0 :width 32)
+                 :exec
+                 (the (unsigned-byte 64)
+                   (logior (the (unsigned-byte 32) call-gate-offset31-0)
+                           (the (unsigned-byte 64) (ash call-gate-offset63-32 32))))))
+
+           ;; Trimming the call gate offset based on the operand-size:
+           (jmp-addr
+            (case offset-size
+              (2 (n16 call-gate-offset))
+              (4 (n32 call-gate-offset))
+              (t call-gate-offset)))
+
+           ;; #GP(0) is thrown if the target offset in destination is
+           ;; non-canonical.
+           ((when (not (canonical-address-p jmp-addr)))
+            (!!ms-fresh :target-offset-virtual-memory-error jmp-addr))
+
+           (new-cs-visible
+            (!seg-sel-layout-slice :rpl cpl cs-selector))
+
+           (new-cs-hidden
+            (if (equal cs-sel-ti 1)
+                ;; Load the hidden portions of the CS segment
+                ;; from the LDTR's hidden portion.
+                (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86))
+              ;; Descriptor was in GDT.
+              (!hidden-seg-reg-layout-slice
+               :base-addr cs-dt-base-addr
+               (!hidden-seg-reg-layout-slice
+                :limit cs-dt-limit
+                (!hidden-seg-reg-layout-slice
+                 ;; Get attributes from the descriptor in GDT.
+                 :attr (make-code-segment-attr-field cs-descriptor)
+                 0)))))
+
+           ;; Update x86 state:
+           (x86 (!seg-visiblei *cs* new-cs-visible x86))
+           (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
+           (x86 (!rip jmp-addr x86)))
+        x86))))
 
 ;; ======================================================================
 ;; INSTRUCTION: LOOP
@@ -754,7 +753,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                   (1+ temp-rip))
                  ((the (signed-byte 51) temp-rip)
                   (+ next-rip rel8/temp-rip)))
-                temp-rip)
+              temp-rip)
           rel8/temp-rip))
 
        ((when (mbe :logic (not (canonical-address-p temp-rip))
@@ -764,6 +763,6 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
         (!!ms-fresh :virtual-memory-error temp-rip))
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

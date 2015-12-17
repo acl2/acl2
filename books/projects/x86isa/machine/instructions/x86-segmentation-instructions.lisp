@@ -9,6 +9,9 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (local (include-book "guard-helpers"))
 
+;; No alignment check is done for these instructions because they are
+;; supervisor-level instructions.
+
 ;; ======================================================================
 ;; INSTRUCTION: LGDT
 ;; ======================================================================
@@ -63,10 +66,11 @@
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ;; Fetch the memory operand:
+       (inst-ac? nil)
        ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 10 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         0 10 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -148,10 +152,11 @@
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ;; Fetch the memory operand:
+       (inst-ac? nil)
        ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 10 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         0 10 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -238,10 +243,11 @@ a non-canonical form, raise the SS exception.</p>"
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ;; Fetch the memory operand:
+       (inst-ac? nil)
        ((mv flg0 selector (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 2 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         0 2 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 

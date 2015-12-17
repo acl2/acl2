@@ -33,26 +33,23 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       ;; [Shilpi]: The Intel manual doesn't mention that a lock
-       ;; prefix causes an exception for this opcode. Should the
-       ;; following be removed then?
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? ;; Exceptions Type 5
+        t)
 
        ((mv flg0
             (the (unsigned-byte 32) mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*rgf-access* 4
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 0 x86))
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*rgf-access* 4 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -87,18 +84,18 @@
           (3 ;; STMXCSR
            (b* ((mxcsr (the (unsigned-byte 32) (mxcsr x86)))
                 ((mv flg1 x86)
-                 (x86-operand-to-reg/mem 4 mxcsr v-addr rex-byte r/m
-                                         mod x86))
+                 (x86-operand-to-reg/mem
+                  4 inst-ac? mxcsr v-addr rex-byte r/m mod x86))
                 ;; Note: If flg1 is non-nil, we bail out without changing the
                 ;; x86 state.
                 ((when flg1)
                  (!!ms-fresh :x86-operand-to-reg/mem flg1)))
-               x86))
+             x86))
           (otherwise ;; Should never be reached, unimplemented.
            x86)))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn

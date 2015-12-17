@@ -82,37 +82,37 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defun keep-symbols-info (alst names indices)
   (declare (xargs :guard (and (alistp alst)
-                              (true-listp names)
-                              (true-listp indices))
-                  :verify-guards nil))
+			      (true-listp names)
+			      (true-listp indices))
+		  :verify-guards nil))
   (if (endp alst)
       (mv names indices)
     (if (symbolp (caar alst))
-        (b* ((name (mk-name "*" (caar alst) "*"))
-             (index (if (and (consp (cdar alst))
-                             (consp (cddar alst)))
-                        (nfix (cadar alst)) ;; Position
-                      (cw "~%~%Input not a well-formed layout-constant-alistp?!~%~%"))))
-            (keep-symbols-info (cdr alst)
-                               (cons name names)
-                               (cons index indices)))
+	(b* ((name (mk-name "*" (caar alst) "*"))
+	     (index (if (and (consp (cdar alst))
+			     (consp (cddar alst)))
+			(nfix (cadar alst)) ;; Position
+		      (cw "~%~%Input not a well-formed layout-constant-alistp?!~%~%"))))
+	    (keep-symbols-info (cdr alst)
+			       (cons name names)
+			       (cons index indices)))
       (keep-symbols-info (cdr alst) names indices))))
 
 (defun define-layout-constants (layout)
   (b* (((mv names indices)
-        (keep-symbols-info layout nil nil)))
+	(keep-symbols-info layout nil nil)))
 
       `(defconsts ,names
-         ,(cons 'mv indices))))
+	 ,(cons 'mv indices))))
 
 
 (defun layout-names (name layout)
   (b* (((mv names &)
-        (keep-symbols-info layout nil nil))
+	(keep-symbols-info layout nil nil))
        (names (reverse names)))
 
       `(defconst ,(mk-name "*" name "*")
-         ,(cons 'list names))))
+	 ,(cons 'list names))))
 
 ;; ======================================================================
 
@@ -187,11 +187,11 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:cr4-smxe       14  1) ;; SMX Enable Bit
     (0               15  1) ;; 0 (Reserved)
     (:cr4-fsgsbase   16  1) ;; FSGSBase-Enable Bit (Enables the
-                            ;; instructions RDFSBASE, RDGSBASE,
-                            ;; WRFSBASE, and WRGSBASE.)
+			    ;; instructions RDFSBASE, RDGSBASE,
+			    ;; WRFSBASE, and WRGSBASE.)
     (:cr4-pcide      17  1) ;; PCID-Enable Bit
     (:cr4-osxsave    18  1) ;; XSAVE and Processor Extended States
-                            ;; Enable Bit
+			    ;; Enable Bit
     (0               19  1) ;; 0 (Reserved)
     (:cr4-smep       20  1) ;; Supervisor Mode Execution Prevention
     ;; Bit
@@ -201,9 +201,9 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defthm cr4-layout-ok
   (layout-constant-alistp *cr4-layout* 0 ;; 64
-                   ;; A lesser value here avoids
-                   ;; bignum creation.
-                   21)
+		   ;; A lesser value here avoids
+		   ;; bignum creation.
+		   21)
   :rule-classes nil)
 
 (defconst *cr8-layout*
@@ -223,10 +223,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defthm cr8-layout-ok
   (layout-constant-alistp *cr8-layout* 0 ;; 64
-                   ;; A lesser value here avoids
-                   ;; bignum creation.
-                   4
-                   )
+		   ;; A lesser value here avoids
+		   ;; bignum creation.
+		   4
+		   )
   :rule-classes nil)
 
 (defconst *xcr0-layout*
@@ -235,8 +235,8 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   ;; is also readable as CPUID.01H:ECX.OSXSAVE[bit 27].)
 
   '((:xcr0-fpu/mmx-state 0 1) ;; This bit must be 1.  An attempt
-                              ;; to write 0 to this bit causes a
-                              ;; #GP exception.
+			      ;; to write 0 to this bit causes a
+			      ;; #GP exception.
     (:xcr0-sse-state    1  1)
     (:xcr0-avx-state    2  1)
     (0                  3 60) ;; 0 (Reserved)
@@ -255,9 +255,9 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (0                9  1) ;; Reserved?
     (:ia32_efer-lma  10  1) ;; Long Mode Active (R)
     (:ia32_efer-nxe  11  1) ;; Execute Disable Bit Enable (R/W)
-                            ;; (Enables page access restriction by
-                            ;; preventing instruction fetches from
-                            ;; PAE pages with the XD bit set)
+			    ;; (Enables page access restriction by
+			    ;; preventing instruction fetches from
+			    ;; PAE pages with the XD bit set)
 ;   (0               12 52) ;; Reserved (must be zero)
     ))
 
@@ -345,11 +345,11 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pm       12  1) ;; Precision Mask
     (:rc       13  2) ;; Rounding Control
     (:fz       15  1) ;; Flush to Zero
-;   (:reserved 16 16) ;; Reserved bits
+    (:reserved 16 16) ;; Reserved bits
     ))
 
 (defthm mxcsr-layout-ok
-  (layout-constant-alistp *mxcsr-layout* 0 16)
+  (layout-constant-alistp *mxcsr-layout* 0 32)
   :rule-classes nil)
 
 ;; The constants defined by the following events (and NOT the events
@@ -395,28 +395,28 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:base15-0         16 16)  ;; Ignored in 64-bit mode
     (:base23-16        32  8)  ;; Ignored in 64-bit mode
     (:type             40  4)  ;; For Code-Segment descriptors, the
-                               ;; MSB bit of the type field is 1.
-                               ;; Also, the second MSB is the "C
-                               ;; bit" or conforming bit, which is
-                               ;; not ignored.  Third and fourth MSBs
-                               ;; are ignored.
+			       ;; MSB bit of the type field is 1.
+			       ;; Also, the second MSB is the "C
+			       ;; bit" or conforming bit, which is
+			       ;; not ignored.  Third and fourth MSBs
+			       ;; are ignored.
     (:s                44  1)  ;; S = 1 in 64-bit mode (code/data segment)
     (:dpl              45  2)
     (:p                47  1)
     (:limit19-16       48  4)  ;; Ignored in 64-bit mode
     (:avl              52  1)  ;; Ignored in 64-bit mode
-                               ;; As per AMD manuals, this is ignored
-                               ;; in 64-bit mode but the Intel manuals
-                               ;; say it's not.  We're following the
-                               ;; Intel manuals.
+			       ;; As per AMD manuals, this is ignored
+			       ;; in 64-bit mode but the Intel manuals
+			       ;; say it's not.  We're following the
+			       ;; Intel manuals.
     (:l                53  1)
     (:d                54  1)
     (:g                55  1)  ;; Ignored in 64-bit mode
-                               ;; Ignored in 64-bit mode
-                               ;; As per AMD manuals, this is ignored
-                               ;; in 64-bit mode but the Intel manuals
-                               ;; say it's not.  We're following the
-                               ;; Intel manuals.
+			       ;; Ignored in 64-bit mode
+			       ;; As per AMD manuals, this is ignored
+			       ;; in 64-bit mode but the Intel manuals
+			       ;; say it's not.  We're following the
+			       ;; Intel manuals.
     (:base31-24        56  8)) ;; Ignored in 64-bit mode
   )
 
@@ -445,8 +445,8 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:base15-0         16 16) ;; Ignored in 64-bit mode
     (:base23-16        32  8) ;; Ignored in 64-bit mode
     (:type             40  4) ;; For Data-Segment descriptors, the
-                              ;; MSB bit of the type field is 0.
-                              ;; All other bits are ignored.
+			      ;; MSB bit of the type field is 0.
+			      ;; All other bits are ignored.
     (:s                44  1) ;; S = 1 in 64-bit mode (code/data segment)
     (:dpl              45  2) ;; Ignored in 64-bit mode
     (:p                47  1) ;; !! NOT IGNORED: Segment present bit !!
@@ -497,7 +497,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:base63-32        64 32)
     (0                 96  8)
     (:all-zeroes?     104  5) ;; Check whether these are all zeroes or
-                              ;; not.
+			      ;; not.
     (0                109  19)
     ))
 
@@ -531,7 +531,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:offset63-32      64 32)
     (0                 96  8)
     (:all-zeroes?      104 5) ;; Check whether these are all zeroes or
-                              ;; not.
+			      ;; not.
     (0                109 19)
     ))
 
@@ -564,7 +564,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:offset63-32      64 32)
     (0                 96  8)
     (:all-zeros?      104  5) ;; Check whether these are all zeroes or
-                              ;; not.
+			      ;; not.
     (0                109 19)
     ))
 
@@ -638,15 +638,15 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pml4e-pwt      3  1)   ;; Page-level Write-Through
     (:pml4e-pcd      4  1)   ;; Page-level Cache-Disable
     (:pml4e-a        5  1)   ;; Accessed (whether this entry has been
-                             ;; used for LA translation)
+			     ;; used for LA translation)
     (0               6  1)   ;; Ignored
     (:pml4e-ps       7  1)   ;; Page size (Must be zero)
     (0               8  4)   ;; Ignored
     (:pml4e-pdpt     12 40)  ;; Address of page-directory pointer
-                             ;; table
+			     ;; table
     (0               52  11) ;; Ignored and/or Reserved
     (:pml4e-xd       63  1)) ;; If IA32_EFER.NXE = 1, Execute disable;
-                             ;; otherwise 0 (reserved)
+			     ;; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pml4e-layout-ok
@@ -655,7 +655,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pml4e-layout*))
 (make-event (layout-names 'ia32e-pml4e-names
-                          *ia32e-pml4e-layout*))
+			  *ia32e-pml4e-layout*))
 
 (defconst *ia32e-pdpte-1GB-page-layout*
   '((:pdpte-p        0  1)   ;; Page present (must be 1)
@@ -664,9 +664,9 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pdpte-pwt      3  1)   ;; Page-level Write-Through
     (:pdpte-pcd      4  1)   ;; Page-level Cache-Disable
     (:pdpte-a        5  1)   ;; Accessed (whether this entry has been
-                             ;; used for LA translation)
+			     ;; used for LA translation)
     (:pdpte-d        6  1)   ;; Dirty (whether s/w has written to the
-                             ;; 1 GB page referenced by this entry)
+			     ;; 1 GB page referenced by this entry)
     (:pdpte-ps       7  1)   ;; Page size (Must be 1 for 1GB pages)
     (:pdpte-g        8  1)   ;; Global translation
     (0               9  3)   ;; Ignored
@@ -675,7 +675,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pdpte-page     30 22)  ;; Address of 1 GB page
     (0               52 11)  ;; Ignored and/or Reserved
     (:pdpte-xd       63  1))  ;; If IA32_EFER.NXE = 1, Execute disable;
-                              ;; otherwise 0 (reserved)
+			      ;; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pdpte-1GB-page-layout-ok
@@ -684,7 +684,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pdpte-1GB-page-layout*))
 (make-event (layout-names 'ia32e-pdpte-1GB-page-names
-                          *ia32e-pdpte-1GB-page-layout*))
+			  *ia32e-pdpte-1GB-page-layout*))
 
 (defconst *ia32e-pdpte-pg-dir-layout*
   '((:pdpte-p        0  1)   ;; Page present (must be 1)
@@ -693,15 +693,15 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pdpte-pwt      3  1)   ;; Page-level Write-Through
     (:pdpte-pcd      4  1)   ;; Page-level Cache-Disable
     (:pdpte-a        5  1)   ;; Accessed (whether this entry has been
-                             ;; used for LA translation)
+			     ;; used for LA translation)
     (0               6  1)   ;; Ignored
     (:pdpte-ps       7  1)   ;; Page size (Must be 0)
     (0               8  4)   ;; Ignored
     (:pdpte-pd      12 40)   ;; Physical addres of 4-K aligned PD
-                             ;; referenced by this entry
+			     ;; referenced by this entry
     (0              52  11)  ;; Ignored and/or Reserved
     (:pdpte-xd      63  1))  ;; If IA32_EFER.NXE = 1, Execute disable;
-                             ;; otherwise 0 (reserved)
+			     ;; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pdpte-pg-dir-layout-ok
@@ -710,7 +710,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pdpte-pg-dir-layout*))
 (make-event (layout-names 'ia32e-pdpte-pg-dir-names
-                          *ia32e-pdpte-pg-dir-layout*))
+			  *ia32e-pdpte-pg-dir-layout*))
 
 (defconst *ia32e-pde-2MB-page-layout*
   '((:pde-p        0  1)    ;; Page present (must be 1)
@@ -726,10 +726,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pde-pat      12 1)    ;; PAT
     (0             13 8)    ;; Reserved
     (:pde-page     21 31)   ;; Physical addres of the 2MB page
-                            ;; referenced by this entry
+			    ;; referenced by this entry
     (0             52 11)   ;; Ignored and/or Reserved
     (:pde-xd       63  1))  ;; If IA32_EFER.NXE = 1, Execute
-                            ;; disable; otherwise 0 (reserved)
+			    ;; disable; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pde-2MB-page-layout-ok
@@ -738,7 +738,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pde-2MB-page-layout*))
 (make-event (layout-names 'ia32e-pde-2MB-page-names
-                          *ia32e-pde-2MB-page-layout*))
+			  *ia32e-pde-2MB-page-layout*))
 
 (defconst *ia32e-pde-pg-table-layout*
   '((:pde-p        0  1)    ;; Page present (must be 1)
@@ -751,10 +751,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pde-ps       7  1)    ;; Page size (Must be 0)
     (0             8  4)    ;; Ignored
     (:pde-pt       12 40)   ;; Physical addres of the 4K-aligned
-                            ;; page table referenced by this entry
+			    ;; page table referenced by this entry
     (0             52 11)   ;; Ignored and/or Reserved
     (:pde-xd       63  1))  ;; If IA32_EFER.NXE = 1, Execute
-                            ;; disable; otherwise 0 (reserved)
+			    ;; disable; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pde-pg-table-layout-ok
@@ -763,7 +763,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pde-pg-table-layout*))
 (make-event (layout-names 'ia32e-pde-pg-table-names
-                          *ia32e-pde-pg-table-layout*))
+			  *ia32e-pde-pg-table-layout*))
 
 
 (defconst *ia32e-pte-4K-page-layout*
@@ -778,10 +778,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pte-g        8  1)    ;; Global translation
     (0             9  3)    ;; Ignored
     (:pte-page    12 40)    ;; Physical address of the 4K page
-                            ;; referenced by this entry
+			    ;; referenced by this entry
     (0            52  11)   ;; Ignored
     (:pte-xd      63  1))   ;; If IA32_EFER.NXE = 1, Execute
-                            ;; disable; otherwise 0 (reserved)
+			    ;; disable; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pte-4k-page-layout-ok
@@ -790,7 +790,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pte-4k-page-layout*))
 (make-event (layout-names 'ia32e-pte-4k-page-names
-                          *ia32e-pte-4k-page-layout*))
+			  *ia32e-pte-4k-page-layout*))
 
 
 ;; Some parts of page tables are consistent across paging modes ---
@@ -833,31 +833,27 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defmacro mxcsr-slice (flg mxcsr)
   (slice flg mxcsr
-         ;; 32
-         16 ;; Top bits are reserved.  A lesser value here avoids
-            ;; bignum creation.
-         *mxcsr-layout*))
+	 32
+	 *mxcsr-layout*))
 
 (defmacro !mxcsr-slice (flg val mxcsr)
   (!slice flg val mxcsr
-          ;; 32
-          16 ;; Top bits are reserved.  A lesser value here avoids
-             ;; bignum creation.
-          *mxcsr-layout*))
+	  32
+	  *mxcsr-layout*))
 
 (defmacro ia32_efer-slice (flg ia32_efer)
   (slice flg ia32_efer
-         ;; 64
-         12 ;; Top bits are reserved.  A lesser value here avoids
-            ;; bignum creation.
-         *ia32_efer-layout*))
+	 ;; 64
+	 12 ;; Top bits are reserved.  A lesser value here avoids
+	    ;; bignum creation.
+	 *ia32_efer-layout*))
 
 (defmacro !ia32_efer-slice (flg val ia32_efer)
   (!slice flg val ia32_efer
-          ;; 64
-          12 ;; Top bits are reserved.  A lesser value here avoids
-             ;; bignum creation.
-          *ia32_efer-layout*))
+	  ;; 64
+	  12 ;; Top bits are reserved.  A lesser value here avoids
+	     ;; bignum creation.
+	  *ia32_efer-layout*))
 
 (defmacro cr0-slice (flg cr0)
   (slice flg cr0 32 *cr0-layout*))
@@ -873,15 +869,15 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defmacro cr4-slice (flg cr4)
   (slice flg cr4 ;; 64
-         21      ;; Top bits are reserved.  A lesser value here avoids
-                 ;; bignum creation.
-         *cr4-layout*))
+	 21      ;; Top bits are reserved.  A lesser value here avoids
+		 ;; bignum creation.
+	 *cr4-layout*))
 
 (defmacro !cr4-slice (flg val cr4)
   (!slice flg val cr4 ;; 64
-          21          ;; Top bits are reserved. A lesser value here avoids
-                      ;; bignum creation.
-          *cr4-layout*))
+	  21          ;; Top bits are reserved. A lesser value here avoids
+		      ;; bignum creation.
+	  *cr4-layout*))
 
 (defmacro hidden-seg-reg-layout-slice (flg segment-selector-layout)
   (slice flg segment-selector-layout 112 *hidden-segment-register-layout*))

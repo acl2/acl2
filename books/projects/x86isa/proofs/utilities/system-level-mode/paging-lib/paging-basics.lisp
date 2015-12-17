@@ -188,14 +188,14 @@
           lin-addr entry wp smep nxe r-w-x cpl x86))
         ((when fault-flg)
          nil))
-       (if (equal (ia32e-page-tables-slice :ps entry) 0)
-           ;; 4K pages
-           (b* ((page-table-base-addr
-                 (ash (ia32e-page-tables-slice :reference-addr entry) 12))
-                (u-s-acc (ia32e-page-tables-slice :u/s entry)))
-               (page-table-entry-validp
-                lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86))
-         t))))
+     (if (equal (page-size entry) 0)
+         ;; 4K pages
+         (b* ((page-table-base-addr
+               (ash (ia32e-page-tables-slice :reference-addr entry) 12))
+              (u-s-acc (page-user-supervisor entry)))
+           (page-table-entry-validp
+            lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86))
+       t))))
 
 (defthm x86-unchanged-if-no-error-in-paging-entry-no-page-fault-p
   (implies (not (mv-nth
@@ -218,7 +218,9 @@
                    (ia32e-la-to-pa-page-directory
                     lin-addr base-addr wp smep nxe r-w-x cpl x86))
                   nil))
-  :in-theory (e/d (ia32e-la-to-pa-page-directory)
+  :in-theory (e/d (ia32e-la-to-pa-page-directory
+                   page-size
+                   page-user-supervisor)
                   (bitops::logand-with-negated-bitmask
                    page-table-entry-validp
                    unsigned-byte-p
@@ -243,7 +245,7 @@
         (page-directory-entry-addr lin-addr page-directory-base-addr))
        (page-directory-entry (rm-low-64 page-directory-entry-addr x86))
 
-       (pde-ps? (equal (ia32e-page-tables-slice :ps page-directory-entry) 1))
+       (pde-ps? (equal (page-size page-directory-entry) 1))
        ((when pde-ps?)
         (list (addr-range 8 page-directory-entry-addr)))
 
@@ -254,9 +256,9 @@
         (translation-governing-addresses-for-page-table
          lin-addr page-table-base-addr x86)))
 
-      (append
-       (list (addr-range 8 page-directory-entry-addr))
-       page-table-addresses)))
+    (append
+     (list (addr-range 8 page-directory-entry-addr))
+     page-table-addresses)))
 
 ;; Page Directory Pointer Table:
 
@@ -285,21 +287,21 @@
        (physical-address-p ptr-table-base-addr)
        (equal (loghead 12 ptr-table-base-addr) 0)
        (b*
-        ((ptr-table-entry-addr
-          (page-dir-ptr-table-entry-addr lin-addr ptr-table-base-addr))
-         (entry (rm-low-64 ptr-table-entry-addr x86))
-         ((mv fault-flg & &)
-          (paging-entry-no-page-fault-p
-           lin-addr entry wp smep nxe r-w-x cpl x86))
-         ((when fault-flg)
-          nil))
-        (if (equal (ia32e-page-tables-slice :ps  entry) 0)
-            ;; 4K or 2M pages
-            (page-directory-entry-validp
-             lin-addr
-             (ash (ia32e-page-tables-slice :reference-addr entry) 12)
-             wp smep nxe r-w-x cpl x86)
-          t))))
+           ((ptr-table-entry-addr
+             (page-dir-ptr-table-entry-addr lin-addr ptr-table-base-addr))
+            (entry (rm-low-64 ptr-table-entry-addr x86))
+            ((mv fault-flg & &)
+             (paging-entry-no-page-fault-p
+              lin-addr entry wp smep nxe r-w-x cpl x86))
+            ((when fault-flg)
+             nil))
+         (if (equal (page-size  entry) 0)
+             ;; 4K or 2M pages
+             (page-directory-entry-validp
+              lin-addr
+              (ash (ia32e-page-tables-slice :reference-addr entry) 12)
+              wp smep nxe r-w-x cpl x86)
+           t))))
 
 (defrule mv-nth-0-no-error-ia32e-la-to-pa-page-dir-ptr-table
   (implies (page-dir-ptr-table-entry-validp
@@ -309,7 +311,8 @@
                    (ia32e-la-to-pa-page-dir-ptr-table
                     lin-addr base-addr wp smep nxe r-w-x cpl x86))
                   nil))
-  :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
+  :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table
+                   page-size)
                   (bitops::logand-with-negated-bitmask
                    page-table-entry-validp
                    unsigned-byte-p
@@ -332,7 +335,7 @@
         (page-dir-ptr-table-entry-addr lin-addr ptr-table-base-addr))
        (page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
 
-       (pdpte-ps? (equal (ia32e-page-tables-slice :ps page-dir-ptr-table-entry) 1))
+       (pdpte-ps? (equal (page-size page-dir-ptr-table-entry) 1))
 
        ;; 1G pages:
        ((when pdpte-ps?)
@@ -346,8 +349,8 @@
         (translation-governing-addresses-for-page-directory
          lin-addr page-directory-base-addr x86)))
 
-      (append (list (addr-range 8 page-dir-ptr-table-entry-addr))
-              page-directory-addresses)))
+    (append (list (addr-range 8 page-dir-ptr-table-entry-addr))
+            page-directory-addresses)))
 
 
 ;; PML4 Table:
@@ -514,6 +517,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 
 ;; ======================================================================
 
+;; Lemmas about set-accessed-bit, etc.:
+
 (defthmd loghead-smaller-equality
   (implies (and (equal (loghead n x) (loghead n y))
                 (natp n)
@@ -620,5 +625,91 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                  (:instance loghead-n-of-set-accessed-bit
                             (n n)
                             (entry entry))))))
+
+(defthm accessed-bit-set-accessed-bit
+  (equal (accessed-bit (set-accessed-bit e)) 1)
+  :hints (("Goal" :in-theory (e/d* (accessed-bit set-accessed-bit) ()))))
+
+(defthm accessed-bit-set-dirty-bit
+  (equal (accessed-bit (set-dirty-bit e))
+         (accessed-bit e))
+  :hints (("Goal" :in-theory (e/d* (accessed-bit set-dirty-bit) ()))))
+
+(defthm dirty-bit-set-dirty-bit
+  (equal (dirty-bit (set-dirty-bit e)) 1)
+  :hints (("Goal" :in-theory (e/d* (dirty-bit set-dirty-bit) ()))))
+
+(defthm dirty-bit-set-accessed-bit
+  (equal (dirty-bit (set-accessed-bit e))
+         (dirty-bit e))
+  :hints (("Goal" :in-theory (e/d* (dirty-bit set-accessed-bit) ()))))
+
+(def-gl-export nests-of-set-accessed-bit
+  :hyp (unsigned-byte-p 64 e)
+  :concl (equal (set-accessed-bit (set-accessed-bit e))
+                (set-accessed-bit e))
+  :g-bindings `((e (:g-number ,(gl-int 0 1 65)))))
+
+(def-gl-export nests-of-set-dirty-bit
+  :hyp (unsigned-byte-p 64 e)
+  :concl (equal (set-dirty-bit (set-dirty-bit e))
+                (set-dirty-bit e))
+  :g-bindings `((e (:g-number ,(gl-int 0 1 65)))))
+
+(def-gl-export pull-out-set-dirty-bit
+  :hyp (unsigned-byte-p 64 e)
+  :concl (equal (set-accessed-bit (set-dirty-bit e))
+                (set-dirty-bit (set-accessed-bit e)))
+  :g-bindings `((e (:g-number ,(gl-int 0 1 65)))))
+
+(defthm page-size-set-accessed-bit
+  (equal (page-size (set-accessed-bit e))
+         (page-size e))
+  :hints (("Goal" :in-theory (e/d* (page-size set-accessed-bit) ()))))
+
+(defthm page-size-set-dirty-bit
+  (equal (page-size (set-dirty-bit e))
+         (page-size e))
+  :hints (("Goal" :in-theory (e/d* (page-size set-dirty-bit) ()))))
+
+(defthm page-present-set-accessed-bit
+  (equal (page-present (set-accessed-bit e))
+         (page-present e))
+  :hints (("Goal" :in-theory (e/d* (page-present set-accessed-bit) ()))))
+
+(defthm page-present-set-dirty-bit
+  (equal (page-present (set-dirty-bit e))
+         (page-present e))
+  :hints (("Goal" :in-theory (e/d* (page-present set-dirty-bit) ()))))
+
+(defthm page-read-write-set-accessed-bit
+  (equal (page-read-write (set-accessed-bit e))
+         (page-read-write e))
+  :hints (("Goal" :in-theory (e/d* (page-read-write set-accessed-bit) ()))))
+
+(defthm page-read-write-set-dirty-bit
+  (equal (page-read-write (set-dirty-bit e))
+         (page-read-write e))
+  :hints (("Goal" :in-theory (e/d* (page-read-write set-dirty-bit) ()))))
+
+(defthm page-user-supervisor-set-accessed-bit
+  (equal (page-user-supervisor (set-accessed-bit e))
+         (page-user-supervisor e))
+  :hints (("Goal" :in-theory (e/d* (page-user-supervisor set-accessed-bit) ()))))
+
+(defthm page-user-supervisor-set-dirty-bit
+  (equal (page-user-supervisor (set-dirty-bit e))
+         (page-user-supervisor e))
+  :hints (("Goal" :in-theory (e/d* (page-user-supervisor set-dirty-bit) ()))))
+
+(defthm page-execute-disable-set-accessed-bit
+  (equal (page-execute-disable (set-accessed-bit e))
+         (page-execute-disable e))
+  :hints (("Goal" :in-theory (e/d* (page-execute-disable set-accessed-bit) ()))))
+
+(defthm page-execute-disable-set-dirty-bit
+  (equal (page-execute-disable (set-dirty-bit e))
+         (page-execute-disable e))
+  :hints (("Goal" :in-theory (e/d* (page-execute-disable set-dirty-bit) ()))))
 
 ;; ======================================================================
