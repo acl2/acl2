@@ -159,24 +159,22 @@
        ((vl-fundecl lookup.item))
        (fnscopes (vl-elabscopes-traverse (rev lookup.elabpath) scopes))
        (info (vl-elabscopes-item-info lookup.item.name fnscopes))
+       (item (or info lookup.item))
+       ((unless (eq (tag item) :vl-fundecl))
+        ;; note: it looks like we're doing this twice but it's different this time
+        (mv (fatal :type :vl-selfsize-fail
+                   :msg "In function call ~a0, function name does not ~
+                        refer to a fundecl but instead ~a1"
+                   :args (list x item))
+            nil))
+       ((vl-fundecl item))
        ((mv err rettype)
-        (b* (((when info)
-              (vl-elabinfo-case info
-                :function (if (vl-datatype-resolved-p info.type)
-                              (mv nil info.type)
-                            (mv (vmsg "Programming error: returntype ~
-                                       in elabinfo not resolved"
-                                      lookup.item.name)
-                                nil))
-                :otherwise (mv (vmsg "~x0 stored instead of function"
-                                     (vl-elabinfo-kind info) lookup.item.name)
-                               nil))))
-          (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss)))
+        (vl-datatype-usertype-resolve item.rettype lookup.ss))
        ((when err)
         (mv (fatal :type :vl-typedecide-fail
                    :msg "In function call ~a0, the function's return ~
                          type ~a1 had unresolvable usertypes: ~@2"
-                   :args (list x lookup.item.rettype err))
+                   :args (list x item.rettype err))
             nil))
        ((unless (vl-datatype-packedp rettype))
         (mv (ok) nil))

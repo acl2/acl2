@@ -228,6 +228,8 @@ typically be @(see memoize)d in some way or another.</p>"
     :elt-type svex
     :true-listp t))
 
+(fty::defoption maybe-svex svex)
+
 (memoize 'svex-p :condition '(consp x))
 
 (defsection svex-x

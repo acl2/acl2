@@ -746,30 +746,28 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
        ((vl-hidstep lookup) (car trace))
        ((unless (eq (tag lookup.item) :vl-fundecl))
         (mv (fatal :type :vl-selfsize-fail
-                  :msg "In function call ~a0, function name does not ~
+                   :msg "In function call ~a0, function name does not ~
                         refer to a fundecl but instead ~a1"
-                  :args (list x lookup.item))
+                   :args (list x lookup.item))
             nil))
        ((vl-fundecl lookup.item))
        (fnscopes (vl-elabscopes-traverse (rev lookup.elabpath) scopes))
        (info (vl-elabscopes-item-info lookup.item.name fnscopes))
+       (item (or info lookup.item))
+       ((unless (eq (tag item) :vl-fundecl))
+        ;; note: it looks like we're doing this twice but it's different this time
+        (mv (fatal :type :vl-selfsize-fail
+                   :msg "In function call ~a0, function name does not ~
+                        refer to a fundecl but instead ~a1"
+                   :args (list x item))
+            nil))
+       ((vl-fundecl item))
        ((mv err rettype)
-        (b* (((when info)
-              (vl-elabinfo-case info
-                :function (if (vl-datatype-resolved-p info.type)
-                              (mv nil info.type)
-                            (mv (vmsg "Programming error: returntype ~
-                                       in elabinfo not resolved"
-                                      lookup.item.name)
-                                nil))
-                :otherwise (mv (vmsg "~x0 stored instead of function"
-                                     (vl-elabinfo-kind info) lookup.item.name)
-                               nil))))
-          (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss)))
+        (vl-datatype-usertype-resolve item.rettype lookup.ss))
        ((when err)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "Couldn't resolve return type ~a0 of function ~a1: ~@2"
-                   :args (list lookup.item.rettype
+                   :args (list item.rettype
                                (vl-scopeexpr->expr x.name)
                                err))
             nil))
@@ -806,6 +804,19 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                   (equal (car (vl-exprlist-fix x))
                          (vl-expr-fix (car x))))
          :hints(("Goal" :in-theory (enable vl-exprlist-fix)))))
+
+#||
+(trace$ #!vl (vl-expr-selfsize
+              :entry (list 'vl-expr-selfsize
+                           (with-local-ps (vl-pp-expr x))
+                           (vl-scopestack->hashkey ss)
+                           (strip-cars scopes))
+              :exit (b* (((list ?warnings ?size) values))
+                      (list 'vl-expr-selfsize
+                            (with-local-ps (vl-print-warnings warnings))
+                            size))))
+
+||#
 
 (defines vl-expr-selfsize
   :parents (vl-expr-size)

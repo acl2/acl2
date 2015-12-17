@@ -995,6 +995,10 @@ for each usertype is stored in the res field.</p>"
                                                  :scopetype scopetype
                                                  :name name))
                                (vl-genblob-count x))
+                        :hints (("goal" :expand ((:free (x) (vl-genblob-count x)))))))
+               (local (defthm vl-genblob-count-of-fix
+                        (equal (vl-genblob-count (vl-genblob-fix x))
+                               (vl-genblob-count x))
                         :hints (("goal" :expand ((:free (x) (vl-genblob-count x))))))))
     (define vl-genblob-resolve-aux ((x vl-genblob-p)
                                     (elabindex "in the genblob's own scope")
@@ -1051,18 +1055,18 @@ for each usertype is stored in the res field.</p>"
            ((vl-genblob x) (vl-genblob-fix x))
            ((vl-elabindex elabindex))
            (elabindex (vl-elabindex-push x))
-           ((mv ok warnings elabindex paramdecls)
-            (vl-scope-finalize-params x.paramdecls
-                                      (make-vl-paramargs-named)
-                                      warnings elabindex elabindex.ss
-                                      (caar (vl-elabindex->undostack elabindex))))
-           (elabindex (vl-elabindex-undo))
-           ((unless ok)
-            (mv nil warnings nil x elabindex ledger))
-           (x1 (change-vl-genblob x :paramdecls paramdecls))
-           (elabindex (vl-elabindex-push x1))
+           ;; ((mv ok warnings elabindex paramdecls)
+           ;;  (vl-scope-finalize-params x.paramdecls
+           ;;                            (make-vl-paramargs-named)
+           ;;                            warnings elabindex elabindex.ss
+           ;;                            (caar (vl-elabindex->undostack elabindex))))
+           ;; (elabindex (vl-elabindex-undo))
+           ;; ((unless ok)
+           ;;  (mv nil warnings nil x elabindex ledger))
+           ;; (x1 (change-vl-genblob x :paramdecls paramdecls))
+           ;; (elabindex (vl-elabindex-push x1))
            ((mv ok warnings keylist new-x elabindex ledger)
-            (vl-genblob-resolve-aux x1 elabindex ledger warnings))
+            (vl-genblob-resolve-aux x elabindex ledger warnings))
            (elabindex (vl-elabindex-undo)))
         (mv ok warnings keylist new-x elabindex ledger)))
 
@@ -1845,6 +1849,7 @@ scopestacks.</p>"
        ((vl-design x) (vl-design-fix x))
        ((local-stobjs elabindex) (mv new-x elabindex))
        (elabindex (vl-elabindex-init x))
+       (warnings x.warnings)
        ;; ((mv ?ok warnings elabindex params)
        ;;  (vl-scope-finalize-params x.paramdecls
        ;;                            (make-vl-paramargs-named)
@@ -1868,7 +1873,7 @@ scopestacks.</p>"
        ;; paramdecls (though these should already be done), udps, and
        ;; dpiimports.  We could perhaps get into trouble here since these could
        ;; depend on packages and package parameters.
-       ((mv ?ok1 warnings new-x elabindex)
+       ((wmv ?ok1 warnings x elabindex)
         (vl-design-elaborate-aux x elabindex))
 
        ((mv ?ok warnings elabindex new-packages)
@@ -1895,7 +1900,7 @@ scopestacks.</p>"
        ;; Make a ledger with initially empty instkeymap and namefactory
        ;; containing the top-level definitions' names -- modules, UDPs,
        ;; interfaces, programs.
-       (top-names (acl2::alist-keys (vl-design-scope-definition-alist new-x nil)))
+       (top-names (acl2::alist-keys (vl-design-scope-definition-alist x nil)))
        (ledger (make-vl-unparam-ledger
                 :ndb (vl-starting-namedb top-names)))
 
@@ -1912,5 +1917,5 @@ scopestacks.</p>"
     (vl-free-namedb (vl-unparam-ledger->ndb ledger))
     (fast-alist-free (vl-unparam-ledger->instkeymap ledger))
     (vl-scopestacks-free)
-    (mv (change-vl-design new-x :warnings warnings :mods new-mods :interfaces new-ifaces :packages new-packages)
+    (mv (change-vl-design x :warnings warnings :mods new-mods :interfaces new-ifaces :packages new-packages)
         elabindex)))

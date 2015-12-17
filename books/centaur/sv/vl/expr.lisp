@@ -1335,34 +1335,35 @@ the way.</li>
        ((unless (vl-hidtrace-resolved-p x.hidtrace))
         (fail (vmsg "Unresolved hid indices")))
        ((vl-hidstep decl) (car x.hidtrace))
+       (decl-scopes (vl-elabscopes-traverse (rev decl.elabpath) scopes))
+       (info (vl-elabscopes-item-info x.declname decl-scopes))
+       (item (or info decl.item))
 
        ((mv err base-svex)
-        (if (eq (tag decl.item) :vl-vardecl)
-            (b* (;; ((mv unres-sels res-sels)
-                 ;;  (vl-seltrace-split x.seltrace
-                 ;;                     (vl-seltrace-unres-count x.seltrace)))
-                 ;; If we have a bunch of resolved selects, we can encode them
-                 ;; as either an explicit select (right shift + concat) or as a
-                 ;; name, where eventually this will be resolved to a shift by
-                 ;; alias resolution.  Let's go with the former for now since
-                 ;; the latter won't work for elaboration, where we don't yet
-                 ;; have a complete module hierarchy.
-                 ((mv err base-var)
-                  ;; Note we're passing NIL as the seltrace here, so it's
-                  ;; really only making a variable of the part corresponding to
-                  ;; the vardecl (hid), with no selects.
-                  (vl-seltrace-to-svex-var nil x ss)))
-              (mv err base-var))
-          (b* ((decl-scopes (vl-elabscopes-traverse (rev decl.elabpath) scopes))
-               (info (vl-elabscopes-item-info x.declname decl-scopes))
-               ((unless (and info
-                             (vl-elabinfo-case info :param)))
-                ;; (cw "var: ~x0 look: ~x1 alist: ~x2~%" var look params);; (break$)
-                (mv (vmsg "Parameter definition not found") nil))
-               (result (vl-elabinfo-param->value-sv info))
-               ((unless (sv::svex-addr-p result))
-                (mv (vmsg "Parameter expression malformed") nil)))
-            (mv nil result))))
+        (b* (((when (eq (tag item) :vl-vardecl))
+              (b* (;; ((mv unres-sels res-sels)
+                   ;;  (vl-seltrace-split x.seltrace
+                   ;;                     (vl-seltrace-unres-count x.seltrace)))
+                   ;; If we have a bunch of resolved selects, we can encode them
+                   ;; as either an explicit select (right shift + concat) or as a
+                   ;; name, where eventually this will be resolved to a shift by
+                   ;; alias resolution.  Let's go with the former for now since
+                   ;; the latter won't work for elaboration, where we don't yet
+                   ;; have a complete module hierarchy.
+                   ((mv err base-var)
+                    ;; Note we're passing NIL as the seltrace here, so it's
+                    ;; really only making a variable of the part corresponding to
+                    ;; the vardecl (hid), with no selects.
+                    (vl-seltrace-to-svex-var nil x ss)))
+                (mv err base-var)))
+             (paramval (b* (((unless (eq (tag item) :vl-paramdecl)) nil)
+                            ((vl-paramdecl item)))
+                         (vl-paramtype-case item.type
+                           :vl-explicitvalueparam item.type.final-value
+                           :otherwise nil)))
+             ((unless paramval)
+              (mv (vmsg "Parameter value is not resolved") nil)))
+          (mv nil (sv::svex-quote paramval))))
        ((when err) (fail err))
 
        (unres-count (vl-seltrace-unres-count x.seltrace))
@@ -1631,31 +1632,55 @@ the way.</li>
                            :exec (vl-datatype-$unpacked_dimensions x.res))
          :otherwise 0))))
 
-
+(define vl-datatype-syscall-remove-dims ((n natp)
+                                         (type vl-datatype-p))
+  :guard (vl-datatype-resolved-p type)
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (final-dim (implies (not err) (vl-packeddimension-p final-dim))))
+  :measure (nfix n)
+  (b* (((mv err ?caveat new-type dim)
+        (vl-datatype-remove-dim type))
+       ((when err) (mv err nil))
+       ((when (zp n)) (mv nil dim)))
+    (vl-datatype-syscall-remove-dims (1- n) new-type)))
 
 
 (define vl-datatype-syscall-to-svex ((orig-x vl-expr-p)
                                      (fn stringp)
                                      (type vl-datatype-p)
+                                     (index maybe-natp)
                                      (ss vl-scopestack-p)
                                      (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (res sv::Svex-p))
   (b* ((warnings nil)
+       (fn (string-fix fn))
+       (index (maybe-natp-fix index))
+       (orig-x (vl-expr-fix orig-x))
+       ((when (and index (zp index)))
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "Dimension argument of 0 is illegal in array query system calls: ~a0"
+                   :args (list orig-x))
+            (svex-x)))
+       ((when (and index (member-equal fn '("$bits" "$dimensions" "$unpacked_dimensions"))))
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "Dimension argument is illegal: ~a0"
+                   :args (list orig-x))
+            (svex-x)))
+
        ((mv err type)
         (vl-datatype-usertype-resolve type ss :scopes scopes))
        ((when err)
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Couldn't resolve datatype in ~a0: ~@1"
-                   :args (list (vl-expr-fix orig-x) err))
-            (svex-x)))
-       (fn (string-fix fn)))
+                   :args (list orig-x err))
+            (svex-x))))
     (cond ((equal fn "$bits")
            (b* (((mv err size) (vl-datatype-size type))
                 ((when (or err (not size)))
                  (mv (fatal :type :vl-expr-to-svex-fail
                             :msg "Couldn't size datatype in ~a0: ~@1"
-                            :args (list (vl-expr-fix orig-x) (or err "unsizable datatype")))
+                            :args (list orig-x (or err "unsizable datatype")))
                      (svex-x))))
              (mv (ok) (svex-int size))))
           ((equal fn "$dimensions")
@@ -1670,15 +1695,15 @@ the way.</li>
                               "$high"
                               "$size"))
            ;; Deals with the outermost dimension
-           (b* (((mv err & & dim)
-                 (vl-datatype-remove-dim type))
+           (b* (((mv err dim)
+                 (vl-datatype-syscall-remove-dims (if index (1- index) 0) type))
                 ((when (or err
                            ;; BOZO some of these might work for unsized dimensions
                            (vl-packeddimension-case dim :unsized)
                            (not (vl-range-resolved-p (vl-packeddimension->range dim)))))
                  (mv (fatal :type :vl-expr-to-svex-fail
                             :msg "Couldn't resolve outermost dimension for ~a0: ~@1"
-                            :args (list (vl-expr-fix orig-x)
+                            :args (list orig-x
                                         (or err "unresolved dimension")))
                      (svex-x)))
                 (dim.range (vl-packeddimension->range dim))
@@ -1709,7 +1734,7 @@ the way.</li>
 
           (t (mv (fatal :type :vl-expr-unsupported
                         :msg "Unrecognized system function: ~a0"
-                        :args (list (vl-expr-fix orig-x)))
+                        :args (list orig-x))
                  (svex-x)))))
 
 
@@ -2917,27 +2942,42 @@ functions can assume all bits of it are good.</p>"
                  ;; basically act on datatypes, and if an expression is given
                  ;; instead, they run on the type of the expression.
 
-                 ((when (and (atom x.args)
-                             x.typearg))
-                  (vl-datatype-syscall-to-svex x simple-name x.typearg ss scopes))
+                 (args-ok (if x.typearg
+                              (or (atom x.args) (atom (cdr x.args)))
+                            (and (consp x.args)
+                                 (or (atom (cdr x.args))
+                                     (atom (cddr x.args))))))
 
-                 ((unless (and (not x.typearg)
-                               (eql (len x.args) 1)))
+                 ((unless args-ok)
                   (mv (fatal :type :vl-expr-unsupported
-                             :msg "Unsupported system call: ~a0"
+                             :msg "Unsupported system call: ~a0 (bad arity for type query)"
                              :args (list x))
                       (svex-x)))
+                  
 
-                 ;; Resolve the expression to its type.
-                 ((wmv warnings ?arg-svex type ?size)
-                  (vl-expr-to-svex-untyped (car x.args) ss scopes))
+                 ((wmv warnings type index)
+                  (if x.typearg
+                      (mv nil x.typearg (and (consp x.args) (car x.args)))
+                    (b* (((mv warnings ?arg-svex type ?size)
+                          (vl-expr-to-svex-untyped (car x.args) ss scopes)))
+                      (mv warnings type (and (consp (cdr x.args)) (cadr x.args))))))
+
+                 ((when (and index (not (vl-expr-resolved-p index))))
+                  (mv (fatal :type :vl-expr-unsupported
+                             :msg "Unsupported system call: ~a0 ~
+                                         (dimension argument not resolved to ~
+                                         constant)"
+                             :args (list x))
+                      (svex-x)))
 
                  ((unless type)
                   ;; Already warned
                   (mv warnings (svex-x)))
 
                  ((wmv warnings svex)
-                  (vl-datatype-syscall-to-svex x simple-name type ss scopes)))
+                  (vl-datatype-syscall-to-svex x simple-name type
+                                               (and index (vl-resolved->val index))
+                                               ss scopes)))
               (mv warnings svex))
 
           (b* (((wmv warnings svex &)
@@ -3082,20 +3122,20 @@ functions can assume all bits of it are good.</p>"
               (svex-x) nil))
          (decl-scopes (vl-elabscopes-traverse (rev step.elabpath) scopes))
          (info (vl-elabscopes-item-info (vl-fundecl->name step.item) decl-scopes))
-         ((unless (and info
-                       (vl-elabinfo-case info :function)))
+         (item (or info step.item))
+         ((unless (eq (tag item) :vl-fundecl))
           (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Function hasn't been resolved (not in elabscopes): ~a0"
-                     :Args (list x.name))
+                     :msg "Lookup of function ~a0 yielded ~a1"
+                     :args (list x.name item))
               (svex-x) nil))
-         ((vl-elabinfo-function info))
+         ((vl-fundecl item))
          ;; ((mv err fnname trace) (vl-funname->svex-funname x.name ss))
-         ((unless (vl-datatype-resolved-p info.type))
+         ((unless (vl-datatype-resolved-p item.rettype))
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Function hasn't been preprocessed (return type unresolved): ~a0"
                      :args (list x))
               (svex-x) nil))
-         (port-types (vl-portdecllist->types info.ports))
+         (port-types (vl-portdecllist->types item.portdecls))
          ((unless (vl-datatypelist-resolved-p port-types))
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Function hasn't been preprocessed (unresolved ~
@@ -3108,16 +3148,22 @@ functions can assume all bits of it are good.</p>"
                            supposed to be ~x1 ports"
                      :args (list x (len port-types)))
               (svex-x) nil))
+         ((unless item.function)
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Function hasn't been preprocessed (unresolved ~
+                           body function): ~a0"
+                     :args (list x))
+              (svex-x) nil))
          ((wmv warnings args-svex)
           (vl-exprlist-to-svex-datatyped
            x.args
            port-types
            ss scopes))
-         (comp-alist (vl-function-pair-inputs-with-actuals info.ports args-svex))
+         (comp-alist (vl-function-pair-inputs-with-actuals item.portdecls args-svex))
          ((with-fast comp-alist))
-         (ans (sv::svex-subst-memo info.body comp-alist)))
+         (ans (sv::svex-subst-memo item.function comp-alist)))
       (clear-memoize-table 'sv::svex-subst-memo)
-      (mv (ok) ans info.type)))
+      (mv (ok) ans item.rettype)))
 
   (define vl-expr-to-svex-datatyped ((x    vl-expr-p)
                                      (lhs  vl-maybe-expr-p

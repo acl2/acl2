@@ -1179,7 +1179,8 @@ a final return statement with an assignment to the output variable.</p>"
                            (with-local-ps (vl-pp-expr x))
                            (vl-scopestack->hashkey ss)
                            (strip-cars scopes)
-                           ctxsize)
+                           ctxsize
+                           (and type (with-local-ps (vl-pp-datatype type))))
               :exit (b* (((list ?ok ?constp ?warnings ?new-x ?svex) values))
                       (list 'vl-elaborated-expr-consteval
                             ok constp
@@ -1202,22 +1203,31 @@ a final return statement with an assignment to the output variable.</p>"
                (svex sv::svex-p))
   (b* ((x (vl-expr-fix x))
        (type (vl-maybe-datatype-fix type))
-       ((mv warnings signedness) (vl-expr-typedecide x ss scopes))
+       ((when (and type (not (vl-datatype-resolved-p type))))
+        (mv nil nil
+            (list (make-vl-warning
+                   :type :vl-expression-type-unresolved
+                   :msg "Datatype ~a0 unresolved when evaluating expression ~a1"
+                   :args (list type x)))
+            x (svex-x)))
+       ((mv warnings signedness)
+        (if type
+            (b* (((mv ?caveat signedness) (vl-datatype-signedness type)))
+              (mv nil signedness))
+          (vl-expr-typedecide x ss scopes)))
        ((wmv warnings svex size)
         (if type
-            (b* (((unless (vl-datatype-resolved-p type))
-                  (mv (list (make-vl-warning
-                             :type :vl-expression-type-unresolved
-                             :msg "Datatype ~a0 unresolved when evaluating expression ~a1"
-                             :args (list type x)))
-                      (sv::svex-x) nil))
-                 ((mv ?err size) (vl-datatype-size type))
+            (b* (((mv ?err size) (vl-datatype-size type))
                  ;; Note: vl-expr-to-svex-datatyped is going to complain
                  ;; already if we don't get the size, so don't warn here.
                  ((mv warnings svex)
                   (vl-expr-to-svex-datatyped x nil type ss scopes)))
               (mv warnings svex size))
-          (vl-expr-to-svex-selfdet x ctxsize ss scopes)))
+          (if ctxsize
+              (vl-expr-to-svex-selfdet x ctxsize ss scopes)
+            (b* (((mv warnings svex ?type size)
+                  (vl-expr-to-svex-untyped x ss scopes)))
+              (mv warnings svex size)))))
        ((unless (and (posp size) signedness))
         ;; presumably already warned about this?
         (mv nil nil warnings x (svex-x)))

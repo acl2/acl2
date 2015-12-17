@@ -192,6 +192,7 @@ make-4vec) and @(see make-honsed-4vec).</p>
            (integerp (cdr x))
            (not (equal (car x) (cdr x))))))
 
+
 (local (in-theory (enable 4vec-p)))
 
 (defsection make-4vec
@@ -303,6 +304,8 @@ want when building @(see expressions).</p>
     :equiv 4vec-equiv
     :define t
     :forward t))
+
+(fty::defoption maybe-4vec 4vec)
 
 (local (in-theory (enable 4vec-fix 4vec-equiv)))
 
