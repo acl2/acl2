@@ -1849,6 +1849,7 @@ scopestacks.</p>"
        ((vl-design x) (vl-design-fix x))
        ((local-stobjs elabindex) (mv new-x elabindex))
        (elabindex (vl-elabindex-init x))
+       (warnings x.warnings)
        ;; ((mv ?ok warnings elabindex params)
        ;;  (vl-scope-finalize-params x.paramdecls
        ;;                            (make-vl-paramargs-named)
@@ -1872,7 +1873,7 @@ scopestacks.</p>"
        ;; paramdecls (though these should already be done), udps, and
        ;; dpiimports.  We could perhaps get into trouble here since these could
        ;; depend on packages and package parameters.
-       ((mv ?ok1 warnings new-x elabindex)
+       ((wmv ?ok1 warnings x elabindex)
         (vl-design-elaborate-aux x elabindex))
 
        ((mv ?ok warnings elabindex new-packages)
@@ -1899,7 +1900,7 @@ scopestacks.</p>"
        ;; Make a ledger with initially empty instkeymap and namefactory
        ;; containing the top-level definitions' names -- modules, UDPs,
        ;; interfaces, programs.
-       (top-names (acl2::alist-keys (vl-design-scope-definition-alist new-x nil)))
+       (top-names (acl2::alist-keys (vl-design-scope-definition-alist x nil)))
        (ledger (make-vl-unparam-ledger
                 :ndb (vl-starting-namedb top-names)))
 
@@ -1916,5 +1917,5 @@ scopestacks.</p>"
     (vl-free-namedb (vl-unparam-ledger->ndb ledger))
     (fast-alist-free (vl-unparam-ledger->instkeymap ledger))
     (vl-scopestacks-free)
-    (mv (change-vl-design new-x :warnings warnings :mods new-mods :interfaces new-ifaces :packages new-packages)
+    (mv (change-vl-design x :warnings warnings :mods new-mods :interfaces new-ifaces :packages new-packages)
         elabindex)))
