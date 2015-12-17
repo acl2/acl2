@@ -1731,18 +1731,20 @@ scopestacks.</p>"
                (new-x     vl-package-p))
 
   (b* (((vl-package x) (vl-package-fix x))
+       (warnings (vl-warninglist-fix warnings))
        ((vl-elabindex elabindex))
        (elabindex (vl-elabindex-push x))
-       ((mv ok warnings elabindex new-params)
-        (vl-scope-finalize-params x.paramdecls
-                                  (make-vl-paramargs-named)
-                                  warnings
-                                  elabindex elabindex.ss
-                                  (caar (vl-elabindex->undostack))))
-       (new-x (change-vl-package x :paramdecls new-params))
-       ((unless ok)
-        (b* ((elabindex (vl-elabindex-undo)))
-          (mv nil warnings elabindex x)))
+       ;; ((mv ok warnings elabindex new-params)
+       ;;  (vl-scope-finalize-params x.paramdecls
+       ;;                            (make-vl-paramargs-named)
+       ;;                            warnings
+       ;;                            elabindex elabindex.ss
+       ;;                            (caar (vl-elabindex->undostack))))
+       ;; (new-x (change-vl-package x :paramdecls new-params))
+       ;; ((unless ok)
+       ;;  (b* ((elabindex (vl-elabindex-undo)))
+       ;;    (mv nil warnings elabindex x)))
+
        ;; Note: When processing modules/interfaces, rather than using the
        ;; svexconf returned by scope-finalize-params we create a new empty conf
        ;; containing a SS with the new module (see the comment in
@@ -1753,7 +1755,7 @@ scopestacks.</p>"
        ;; unparameterized modules, which don't currently exist inside
        ;; packages).
        ((wmv ok warnings new-x elabindex)
-        (vl-package-elaborate-aux new-x elabindex))
+        (vl-package-elaborate-aux x elabindex))
        (elabindex (vl-elabindex-undo)))
     (mv ok warnings elabindex new-x)))
 
@@ -1843,22 +1845,22 @@ scopestacks.</p>"
        ((vl-design x) (vl-design-fix x))
        ((local-stobjs elabindex) (mv new-x elabindex))
        (elabindex (vl-elabindex-init x))
-       ((mv ?ok warnings elabindex params)
-        (vl-scope-finalize-params x.paramdecls
-                                  (make-vl-paramargs-named)
-                                  x.warnings
-                                  elabindex
-                                  ;; outer ss and scopes shouldn't be used
-                                  nil nil))
-       (new-x (change-vl-design x :paramdecls params))
+       ;; ((mv ?ok warnings elabindex params)
+       ;;  (vl-scope-finalize-params x.paramdecls
+       ;;                            (make-vl-paramargs-named)
+       ;;                            x.warnings
+       ;;                            elabindex
+       ;;                            ;; outer ss and scopes shouldn't be used
+       ;;                            nil nil))
+       ;; (new-x (change-vl-design x :paramdecls params))
 
-       ;; ;; We used to use the conf returned by scope-finalize-params here, which
-       ;; ;; might be ok but it adds an extra level of hierarchy in the ss which
-       ;; ;; is a little weird here.
-       ;; (ss (vl-scopestack-init new-x))
-       ;; (conf (make-vl-svexconf :ss ss))
+       ;; ;; ;; We used to use the conf returned by scope-finalize-params here, which
+       ;; ;; ;; might be ok but it adds an extra level of hierarchy in the ss which
+       ;; ;; ;; is a little weird here.
+       ;; ;; (ss (vl-scopestack-init new-x))
+       ;; ;; (conf (make-vl-svexconf :ss ss))
 
-       (elabindex (vl-elabindex-init new-x))
+       ;; (elabindex (vl-elabindex-init new-x))
 
        ;; Why do we call design-elaborate-aux before unparameterizing modules,
        ;; interfaces, & packages?  This skips those fields, so we're really
@@ -1866,8 +1868,8 @@ scopestacks.</p>"
        ;; paramdecls (though these should already be done), udps, and
        ;; dpiimports.  We could perhaps get into trouble here since these could
        ;; depend on packages and package parameters.
-       ((wmv ?ok1 warnings new-x elabindex)
-        (vl-design-elaborate-aux new-x elabindex))
+       ((mv ?ok1 warnings new-x elabindex)
+        (vl-design-elaborate-aux x elabindex))
 
        ((mv ?ok warnings elabindex new-packages)
         (vl-packagelist-elaborate x.packages elabindex warnings))

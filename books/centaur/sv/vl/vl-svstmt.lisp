@@ -980,7 +980,16 @@ because... (BOZO)</p>
 ;;         :otherwise (mv x sub-vardecls)))))
 
 
+#||
 
+(trace$ #!vl (vl-implicitvalueparam-final-type
+              :entry (list 'vl-implicitvalueparam-final-type
+                           (with-local-ps (vl-pp-paramdecl (make-vl-paramdecl :name "foo" :type x :loc *vl-fakeloc*)))
+                           (with-local-ps (vl-pp-expr override)))
+              :exit (list 'vl-implicitvalueparam-final-type
+                          (with-local-ps (vl-pp-datatype (nth 2 values))))))
+
+||#
 
 (define vl-implicitvalueparam-final-type ((x vl-paramtype-p)
                                           (override vl-expr-p)
@@ -998,9 +1007,6 @@ because... (BOZO)</p>
        ((vl-implicitvalueparam x) (vl-paramtype-fix x))
        (warnings nil)
        ((when x.range)
-        ;; BOZO When do we ensure that the range is resolved?  Presumably
-        ;; parameters are allowed to use other parameters in defining their
-        ;; datatypes.
         (if (vl-range-resolved-p x.range)
             (mv warnings nil
                 (make-vl-coretype :name :vl-logic
@@ -1022,6 +1028,7 @@ because... (BOZO)</p>
         (mv warnings
             (vmsg "Couldn't decide signedness of parameter override ~a0" override)
             nil)))
+
     (mv warnings nil
         (make-vl-coretype :name :vl-logic :pdims dims :signedp (eq signedness :vl-signed))))
   ///
@@ -1164,10 +1171,29 @@ a final return statement with an assignment to the output variable.</p>"
    (svex :name vars-of-vl-fundecl-to-svex
          (sv::svarlist-addr-p (sv::svex-vars svex)))))
 
+
+#||
+
+(trace$ #!vl (vl-elaborated-expr-consteval-fn
+              :entry (list 'vl-elaborated-expr-consteval
+                           (with-local-ps (vl-pp-expr x))
+                           (vl-scopestack->hashkey ss)
+                           (strip-cars scopes)
+                           ctxsize)
+              :exit (b* (((list ?ok ?constp ?warnings ?new-x ?svex) values))
+                      (list 'vl-elaborated-expr-consteval
+                            ok constp
+                            (with-local-ps (vl-print-warnings warnings))
+                            (with-local-ps (vl-pp-expr new-x))
+                            svex))))
+
+||#
 (define vl-elaborated-expr-consteval ((x vl-expr-p)
                                       (ss vl-scopestack-p)
                                       (scopes vl-elabscopes-p)
-                                      &key ((ctxsize maybe-natp) 'nil))
+                                      &key
+                                      ((ctxsize maybe-natp) 'nil)
+                                      ((type vl-maybe-datatype-p) 'nil))
   :short "Assumes expression is already elaborated."
   :returns (mv (ok  "no errors")
                (constp "successfully reduced to constant")
@@ -1175,8 +1201,23 @@ a final return statement with an assignment to the output variable.</p>"
                (new-x vl-expr-p)
                (svex sv::svex-p))
   (b* ((x (vl-expr-fix x))
+       (type (vl-maybe-datatype-fix type))
        ((mv warnings signedness) (vl-expr-typedecide x ss scopes))
-       ((wmv warnings svex size) (vl-expr-to-svex-selfdet x ctxsize ss scopes))
+       ((wmv warnings svex size)
+        (if type
+            (b* (((unless (vl-datatype-resolved-p type))
+                  (mv (list (make-vl-warning
+                             :type :vl-expression-type-unresolved
+                             :msg "Datatype ~a0 unresolved when evaluating expression ~a1"
+                             :args (list type x)))
+                      (sv::svex-x) nil))
+                 ((mv ?err size) (vl-datatype-size type))
+                 ;; Note: vl-expr-to-svex-datatyped is going to complain
+                 ;; already if we don't get the size, so don't warn here.
+                 ((mv warnings svex)
+                  (vl-expr-to-svex-datatyped x nil type ss scopes)))
+              (mv warnings svex size))
+          (vl-expr-to-svex-selfdet x ctxsize ss scopes)))
        ((unless (and (posp size) signedness))
         ;; presumably already warned about this?
         (mv nil nil warnings x (svex-x)))
@@ -1190,11 +1231,13 @@ a final return statement with an assignment to the output variable.</p>"
 (define vl-consteval ((x vl-expr-p)
                       (ss vl-scopestack-p)
                       (scopes vl-elabscopes-p)
-                      &key ((ctxsize maybe-natp) 'nil))
+                      &key
+                      ((ctxsize maybe-natp) 'nil)
+                      ((type vl-maybe-datatype-p) 'nil))
   :returns (mv (warnings vl-warninglist-p)
                (new-x vl-expr-p))
   (b* (((mv ?ok ?constant warnings new-x ?svex)
-        (vl-elaborated-expr-consteval x ss scopes :ctxsize ctxsize)))
+        (vl-elaborated-expr-consteval x ss scopes :ctxsize ctxsize :type type)))
     (mv warnings new-x)))
 
 
