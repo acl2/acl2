@@ -11,6 +11,15 @@
 
 ;; ======================================================================
 
+(defsection floating-point-arithmetic-specifications
+  :parents (floating-point-specifications)
+  :short "Specification of binary floating-point arithmetic operations
+  like MAX, MIN, ADD, SUB, MUL, and DIV" )
+
+(local (xdoc::set-default-parents floating-point-arithmetic-specifications))
+
+;; ======================================================================
+
 ;; Specifications of FP MAX and MIN:
 
 (define sse-max/min-special (kind1
@@ -103,7 +112,9 @@
 		     (exp-width posp)
 		     (frac-width posp))
 
-  (b* (((mv kind1 sign1 exp1 implicit1 frac1)
+  (b* ((mxcsr (mbe :logic (loghead 32 mxcsr)
+                   :exec mxcsr))
+       ((mv kind1 sign1 exp1 implicit1 frac1)
 	(fp-decode op1 exp-width frac-width))
        ((mv kind2 sign2 exp2 implicit2 frac2)
 	(fp-decode op2 exp-width frac-width))
@@ -160,11 +171,9 @@
     :rule-classes :type-prescription)
 
   (defthm-usb n32p-mxcsr-sse-max/min
-    :hyp (unsigned-byte-p 32 mxcsr)
     :bound 32
     :concl (mv-nth 2 (sse-max/min operation op1 op2 mxcsr exp-width frac-width))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
-    :hyp-t (natp mxcsr)
     :hints-l (("Goal" :in-theory (e/d* (unsigned-byte-p) ())))
     :gen-type t
     :gen-linear t))
@@ -174,7 +183,7 @@
 (define sp-sse-max/min ((operation :type (integer 0 36))
 			(op1       :type (unsigned-byte 32))
 			(op2       :type (unsigned-byte 32))
-			(mxcsr       :type (unsigned-byte 32)))
+			(mxcsr     :type (unsigned-byte 32)))
   (b* (((mv flg result mxcsr)
 	(sse-max/min operation op1 op2 mxcsr
 		     #.*IEEE-SP-EXP-WIDTH* #.*IEEE-SP-FRAC-WIDTH*))

@@ -17,6 +17,15 @@
 
 ;; ======================================================================
 
+(defsection floating-point-specifications
+  :parents (x86-instruction-semantics)
+  :short "Misc. utilities for the specification of floating-point operations"
+  )
+
+(local (xdoc::set-default-parents basic-floating-point-utilities))
+
+;; ======================================================================
+
 (defmacro fp-max-exp         ()  `(1- (ash 1 exp-width)))
 (defmacro fp-inf-exp         ()  `(fp-max-exp))
 (defmacro fp-max-finite-exp  ()  `(- (ash 1 exp-width) 2))
@@ -32,18 +41,18 @@
      (otherwise ,other)))
 
 (define fp-round-overflow-generic ((RC integerp)
-				   (sign integerp)
-				   (exp-width posp)
-				   (frac-width posp))
+                                   (sign integerp)
+                                   (exp-width posp)
+                                   (frac-width posp))
   :short "Returns rounded sign, exponent, and fraction in case of overflow."
   (RC-cases
    :rn  (mv sign (fp-inf-exp) (fp-inf-frac))
    :rd  (if (eql 0 sign)
-	    (mv sign (fp-max-finite-exp) (fp-max-frac))
-	  (mv sign (fp-inf-exp) (fp-inf-frac)))
+            (mv sign (fp-max-finite-exp) (fp-max-frac))
+          (mv sign (fp-inf-exp) (fp-inf-frac)))
    :ru  (if (eql 0 sign)
-	    (mv sign (fp-inf-exp) (fp-inf-frac))
-	  (mv sign (fp-max-finite-exp) (fp-max-frac)))
+            (mv sign (fp-inf-exp) (fp-inf-frac))
+          (mv sign (fp-max-finite-exp) (fp-max-frac)))
    :rz  (mv sign (fp-max-finite-exp) (fp-max-frac))
    ;; Should never get here.
    :other (mv       0               0               0))
@@ -51,7 +60,7 @@
 
   (defthm integerp-fp-round-overflow-generic-0
     (implies (integerp sign)
-	     (integerp (mv-nth 0 (fp-round-overflow-generic rc sign exp-width frac-width))))
+             (integerp (mv-nth 0 (fp-round-overflow-generic rc sign exp-width frac-width))))
     :rule-classes :type-prescription)
 
   (defthm integerp-fp-round-overflow-generic-1
@@ -67,12 +76,12 @@
 ;; FP-ENCODE-INTEGER:
 
 (define fp-encode-integer ((sign integerp)
-			   (exp  integerp)
-			   (frac integerp)
-			   (exp-width posp)
-			   (frac-width posp))
+                           (exp  integerp)
+                           (frac integerp)
+                           (exp-width posp)
+                           (frac-width posp))
   (logior frac (logior (ash exp frac-width)
-		       (ash sign (+ exp-width frac-width))))
+                       (ash sign (+ exp-width frac-width))))
 
   ///
 
@@ -85,8 +94,8 @@
 ;; FP-DECODE:
 
 (define fp-decode ((x integerp)
-		   (exp-width posp)
-		   (frac-width posp))
+                   (exp-width posp)
+                   (frac-width posp))
   :long
   "<p>This function returns:
 <ul>
@@ -102,24 +111,24 @@
        (exp  (part-select x :low frac-width :width exp-width))
        (sign (part-select x :low sign-bit-index :width 1)))
     (cond ((eql exp 0)
-	   ;; Denormal or zero
-	   (b* ((sym (if (not (eql frac 0)) 'denormal 'zero)))
-	     (mv sym sign exp 0 frac)))
-	  ((eql exp (1- (ash 1 exp-width)))
-	   ;; Infinity or NAN
-	   (if (eql frac 0)
-	       ;; infinity
-	       (mv 'inf sign exp 1 frac)
-	     ;; nan
-	     (let ((sym (if (logbitp (1- frac-width) frac)
-			    ;; qnan
-			    (if (and (eql sign 1)
-				     (eql frac (ash 1 (1- frac-width))))
-				'indef
-			      'qnan)
-			  'snan)))
-	       (mv sym sign exp 1 frac))))
-	  (t (mv 'normal sign exp 1 frac))))
+           ;; Denormal or zero
+           (b* ((sym (if (not (eql frac 0)) 'denormal 'zero)))
+             (mv sym sign exp 0 frac)))
+          ((eql exp (1- (ash 1 exp-width)))
+           ;; Infinity or NAN
+           (if (eql frac 0)
+               ;; infinity
+               (mv 'inf sign exp 1 frac)
+             ;; nan
+             (let ((sym (if (logbitp (1- frac-width) frac)
+                            ;; qnan
+                            (if (and (eql sign 1)
+                                     (eql frac (ash 1 (1- frac-width))))
+                                'indef
+                              'qnan)
+                          'snan)))
+               (mv sym sign exp 1 frac))))
+          (t (mv 'normal sign exp 1 frac))))
 
   ///
 
@@ -131,7 +140,7 @@
 
   (defthm natp-exp-fp-decode
     (implies (posp exp-width)
-	     (natp (mv-nth 2 (fp-decode x exp-width frac-width))))
+             (natp (mv-nth 2 (fp-decode x exp-width frac-width))))
     :rule-classes :type-prescription)
 
   (defthm-usb exp-width-wide-exp-from-fp-decode-lemma
@@ -148,7 +157,7 @@
 
   (defthm natp-frac-from-fp-decode
     (implies (posp frac-width)
-	     (natp (mv-nth 4 (fp-decode x exp-width frac-width))))
+             (natp (mv-nth 4 (fp-decode x exp-width frac-width))))
     :rule-classes :type-prescription)
 
   (defthm-usb frac-width-wide-frac-from-fp-decode-lemma
@@ -169,12 +178,12 @@
   ///
   (defthm natp-sse-daz-1
     (implies (natp exp)
-	     (natp (mv-nth 1 (sse-daz kind exp frac daz))))
+             (natp (mv-nth 1 (sse-daz kind exp frac daz))))
     :rule-classes :type-prescription)
 
   (defthm natp-sse-daz-2
     (implies (natp frac)
-	     (natp (mv-nth 2 (sse-daz kind exp frac daz))))
+             (natp (mv-nth 2 (sse-daz kind exp frac daz))))
     :rule-classes :type-prescription))
 
 ;; ======================================================================
@@ -191,11 +200,11 @@
 ;; FP-TO-RAT:
 
 (define fp-to-rat ((sign integerp)
-		   (exp integerp)
-		   (frac integerp)
-		   (bias natp)
-		   (exp-width posp)
-		   (frac-width posp))
+                   (exp integerp)
+                   (frac integerp)
+                   (bias natp)
+                   (exp-width posp)
+                   (frac-width posp))
   :short "Convert the bit-vector or integer representation used by
   hardware to rational for the cases of zero, denormal, and normal."
   (cond
@@ -204,24 +213,24 @@
    ;; Denormal case
    ((and (eql exp 0) (not (eql frac 0)))
     (let ((man (* frac
-		  (expt 2 (- frac-width)))))
+                  (expt 2 (- frac-width)))))
       (* (if (eql sign 0) 1 -1)
-	 man
-	 (expt 2 (- 1 bias)))))
+         man
+         (expt 2 (- 1 bias)))))
    ;; Normal case
    ((and (< 0 exp)
-	 (<= exp (fp-max-finite-exp)))
+         (<= exp (fp-max-finite-exp)))
     (let ((man (* (logior (ash 1 frac-width) frac)
-		  (expt 2 (- frac-width)))))
+                  (expt 2 (- frac-width)))))
       (* (if (eql sign 0) 1 -1)
-	 man
-	 (expt 2 (- exp bias)))))
+         man
+         (expt 2 (- exp bias)))))
    ;; Should never get here.
    (t 0))
   ///
   (defthm rationalp-fp-to-rat
     (implies (integerp frac)
-	     (rationalp (fp-to-rat sign exp frac bias exp-width frac-width)))
+             (rationalp (fp-to-rat sign exp frac bias exp-width frac-width)))
     :rule-classes :type-prescription))
 
 ;; RAT-TO-FP:
@@ -231,31 +240,31 @@
  :names (rtl::formal-+ rtl::cat-size rtl::cat)
 
  (defun rat-to-fp (rat sign overflow underflow flush rc
-		       exp-width frac-width)
+                       exp-width frac-width)
    ;; Convert the rational to bit-vector or integer representation
    ;; used by hardware.
    ;; Return (mv sign exp frac)
    (declare (xargs :guard (and (rationalp rat)
-			       (integerp sign)
-			       (booleanp overflow)
-			       (booleanp underflow)
-			       (booleanp flush)
-			       (integerp rc)
-			       (posp exp-width)
-			       (posp frac-width))))
+                               (integerp sign)
+                               (booleanp overflow)
+                               (booleanp underflow)
+                               (booleanp flush)
+                               (integerp rc)
+                               (posp exp-width)
+                               (posp frac-width))))
    (cond
     ((eql rat 0)
      (fp-encode-integer sign 0 0 exp-width frac-width))
     (overflow
      (b* (((mv sign exp frac)
-	   (fp-round-overflow-generic rc sign exp-width frac-width)))
+           (fp-round-overflow-generic rc sign exp-width frac-width)))
        (fp-encode-integer sign exp frac exp-width frac-width)))
     (flush
      (fp-encode-integer sign 0 0 exp-width frac-width))
     (underflow
      (if (ec-call (rtl::drepp rat (list nil (1+ frac-width) exp-width)))
-	 ;; Denormal representable
-	 (ec-call (rtl::dencode rat (list nil (1+ frac-width) exp-width)))
+         ;; Denormal representable
+         (ec-call (rtl::dencode rat (list nil (1+ frac-width) exp-width)))
        ;; Not denormal representable, should never happen.
        (fp-encode-integer sign 0 0 exp-width frac-width)))
     ;; Denormal number
@@ -276,18 +285,18 @@
 ;; ======================================================================
 
 (define make-special-bp (kind
-			 (nan-frac-bits integerp)
-			 (sign integerp)
-			 (exp-width posp)
-			 (frac-width posp))
+                         (nan-frac-bits integerp)
+                         (sign integerp)
+                         (exp-width posp)
+                         (frac-width posp))
   ;; Returns (mv sign exp implicit frac)
   (case kind
     (indef     (mv 1 (1- (ash 1 exp-width)) 1 (ash 1 (1- frac-width))))
     (qnan      (mv sign (1- (ash 1 exp-width)) 1
-		   (+ (ash 1 (1- frac-width))
-		      nan-frac-bits)))
+                   (+ (ash 1 (1- frac-width))
+                      nan-frac-bits)))
     (snan      (mv sign (1- (ash 1 exp-width)) 1
-		   nan-frac-bits))
+                   nan-frac-bits))
     (inf       (mv sign (1- (ash 1 exp-width)) 1 0))
     (zero      (mv sign 0                     0 0))
     ;; These two aren't particularly useful -- they're just arbitrary examples
@@ -298,7 +307,7 @@
 
   (defthm integerp-make-special-bp-0
     (implies (integerp sign)
-	     (integerp (mv-nth 0 (make-special-bp kind nan-frac-bits sign exp-width frac-width))))
+             (integerp (mv-nth 0 (make-special-bp kind nan-frac-bits sign exp-width frac-width))))
     :rule-classes :type-prescription)
 
   (defthm integerp-make-special-bp-1
@@ -311,7 +320,7 @@
 
   (defthm integerp-make-special-bp-3
     (implies (integerp nan-frac-bits)
-	     (integerp (mv-nth 3 (make-special-bp kind nan-frac-bits sign exp-width frac-width))))
+             (integerp (mv-nth 3 (make-special-bp kind nan-frac-bits sign exp-width frac-width))))
     :rule-classes :type-prescription))
 
 (defmacro flag-make-special-bp (kind nan-frac-bits sign invalid)
@@ -336,10 +345,10 @@
 
  (defun rat-round (x rc bias exp-width frac-width)
    (declare (xargs :guard (and (rationalp x)
-			       (natp rc)
-			       (natp bias)
-			       (posp exp-width)
-			       (posp frac-width))))
+                               (natp rc)
+                               (natp bias)
+                               (posp exp-width)
+                               (posp frac-width))))
 
    (if (> (RTL::expo x) (- bias))
        (ec-call (rtl::rnd x (convert-rc-to-mode rc) (1+ frac-width)))
@@ -347,7 +356,7 @@
 
 (defthm rationalp-rat-round
   (implies (rationalp x)
-	   (rationalp (rat-round x rc bias exp-width frac-width)))
+           (rationalp (rat-round x rc bias exp-width frac-width)))
   :rule-classes :type-prescription)
 
 (in-theory (disable rat-round))

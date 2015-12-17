@@ -47,22 +47,37 @@ module spec (input logic [127:0] in,
   wire signed [5:0] d6 = b6;
   wire signed [1:0] d2 = b2;
 
+  wire [8:0]  o1 = a9 / b9;    // 9
+  wire [3:0]  o2 = a4 / b6;    // 4
+  wire 	      o3 = a1 / b2[0]; // 1
+  wire [15:0] o4 = a9 / b6;    // 16
+  wire [6:0]  o5 = a9 / b9;    // 7  --> (+ 9 4 1 16 7) = 37 bits
 
-  wire [8:0]  o1 = a9 / b9;
-  wire [3:0]  o2 = a4 / b6;
-  wire 	      o3 = a1 / b2[0];
-  wire [15:0] o4 = a9 / b6;
-  wire [6:0]  o5 = a9 / b9;
+  wire [8:0]  o6 = c9 / d9;    // 9
+  wire [3:0]  o7 = c4 / d6;    // 4
+  wire 	      o8 = c1 / d2;    // 1
+  wire [15:0] o9 = c9 / d6;    // 16
+  wire [6:0]  o10 = c9 / d2;   // 7  --> 37 bits, so (+ 37 37) =  74 bits so far
 
-  wire [8:0]  o6 = c9 / d9;
-  wire [3:0]  o7 = c4 / d6;
-  wire 	      o8 = c1 / d2;
-  wire [15:0] o9 = c9 / d6;
-  wire [6:0]  o10 = c9 / d2;
+  // A very special case is dividing the minimal signed integer by -1.
+  // NCVerilog seems to have bugs with this at widths 32 and 64, but
+  // agrees with VCS for other widths.
+  wire signed [1:0] minus1 = -1;
+  wire signed [3:0] special_in = { c1, 3'b0 }; // tends to be 1000, i.e. the minimal integer
+
+  wire [3:0] o11 = special_in / minus1;   // 4
+  wire [3:0] o12 = c4         / minus1;   // 4
+  wire [1:0] o13 = d2         / minus1;   // 2 --> 10 bits
+
+  // Dividing by 0 should return X.
+  wire [3:0] o14 = special_in / 0;        // 4
+  wire [3:0] o15 = c4         / 0;        // 4
+  wire [1:0] o16 = d2         / 0;        // 2 --> 10 bits
 
   assign { a9, a4, a1, b9, b6, b2 } = in;
 
   assign out = {
+    o16, o15, o14, o13, o12, o11,
     o10, o9, o8, o7, o6,
     o5, o4, o3, o2, o1
   };

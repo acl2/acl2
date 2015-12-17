@@ -1002,7 +1002,8 @@ constructed separately.)</p>"
                                    (portname stringp)
                                    (portdir vl-direction-p)
                                    (argindex natp)
-                                   (conf vl-svexconf-p
+                                   (ss vl-scopestack-p)
+                                   (scopes vl-elabscopes-p
                                        "scopestack where the instance occurs")
                                    (arraysize maybe-posp))
   :short "Processes a gate instance argument into a vl-portinfo structure."
@@ -1040,7 +1041,7 @@ constructed separately.)</p>"
          (if arraysize
              nil
            port-type)
-         conf))
+         ss scopes))
 
        ((unless x-type) (fail warnings))
        ((mv err ?multi x-size ?port-size)
@@ -1082,7 +1083,8 @@ constructed separately.)</p>"
                                        (portnames string-listp)
                                        (portdirs vl-directionlist-p)
                                        (argindex natp)
-                                       (conf vl-svexconf-p)
+                                       (ss vl-scopestack-p)
+                                       (scopes vl-elabscopes-p)
                                        (arraysize maybe-posp))
   :guard (and (eql (len x) (len portnames))
               (eql (len x) (len portdirs)))
@@ -1093,11 +1095,11 @@ constructed separately.)</p>"
     (b* ((warnings nil)
          ((wmv warnings portinfo1)
           (vl-gate-plainarg-portinfo
-           (car x) (car portnames) (car portdirs) argindex conf arraysize))
+           (car x) (car portnames) (car portdirs) argindex ss scopes arraysize))
          ((wmv warnings portinfo2)
           (vl-gate-plainarglist-portinfo
            (cdr x) (cdr portnames) (cdr portdirs)
-           (1+ (lnfix argindex)) conf arraysize)))
+           (1+ (lnfix argindex)) ss scopes arraysize)))
       (mv warnings
           (cons portinfo1 portinfo2))))
   ///
@@ -1109,11 +1111,14 @@ constructed separately.)</p>"
 (define vl-plainarg-portinfo ((x vl-plainarg-p)
                               (y vl-port-p)
                               (argindex natp)
-                              (conf vl-svexconf-p
+                              (ss vl-scopestack-p)
+                              (scopes vl-elabscopes-p
                                   "scopestack where the instance occurs")
                               (inst-modname stringp)
                               (inst-ss vl-scopestack-p
                                        "scopestack inside the instance's module")
+                              (inst-scopes vl-elabscopes-p
+                                           "elabscopes inside the instance's module")
                               (arraysize maybe-posp))
   :short "Processes a module instance argument into a vl-portinfo structure."
   :returns (mv (warnings vl-warninglist-p)
@@ -1134,7 +1139,6 @@ constructed separately.)</p>"
                                                         sv::lhssvex-unbounded-p))))))
   (b* (((fun (fail warnings)) (mv warnings (make-vl-portinfo-bad)))
        ((vl-plainarg x) (vl-plainarg-fix x))
-       ((vl-svexconf conf))
        (y (vl-port-fix y))
        (arraysize (acl2::maybe-posp-fix arraysize))
        ;; (ss (vl-scopestack-fix conf))
@@ -1148,7 +1152,7 @@ constructed separately.)</p>"
               (fail (fatal :type :vl-plainarg->svex-fal
                            :msg "Interface arrays aren't yet suported: ~a0"
                            :args (list y))))
-             ((mv interface if-ss) (vl-scopestack-find-definition/ss y.ifname conf.ss))
+             ((mv interface if-ss) (vl-scopestack-find-definition/ss y.ifname ss))
              ((unless (and interface (eq (tag interface) :vl-interface)))
               (fail (fatal :type :vl-plainarg->svex-fail
                         :msg "Interface ~s0 for interface port ~s1 not found"
@@ -1187,13 +1191,13 @@ constructed separately.)</p>"
        ((unless y.expr)
         (mv (ok) (make-vl-portinfo-blank)))
        ((wmv warnings y-lhs y-type)
-        (vl-expr-to-svex-lhs y.expr (make-vl-svexconf :ss inst-ss)))
+        (vl-expr-to-svex-lhs y.expr inst-ss inst-scopes))
        ((unless y-type)
         ;; already warned
         (fail warnings))
        ((wmv warnings x-svex x-type ?x-size)
         (vl-expr-to-svex-maybe-typed
-         x.expr (if arraysize nil y-type) conf))
+         x.expr (if arraysize nil y-type) ss scopes))
 
        ((unless x-type) (fail warnings))
        ((mv err ?multi ?x-size ?y-size)
@@ -1241,9 +1245,11 @@ constructed separately.)</p>"
 (define vl-plainarglist-portinfo ((x vl-plainarglist-p)
                                   (y vl-portlist-p)
                                   (argindex natp)
-                                  (conf vl-svexconf-p)
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p)
                                   (inst-modname stringp)
                                   (inst-ss vl-scopestack-p)
+                                  (inst-scopes vl-elabscopes-p)
                                   (arraysize maybe-posp))
   :guard (eql (len x) (len y))
   :returns (mv (warnings vl-warninglist-p)
@@ -1253,10 +1259,10 @@ constructed separately.)</p>"
     (b* ((warnings nil)
          ((wmv warnings portinfo1)
           (vl-plainarg-portinfo
-           (car x) (car y) argindex conf inst-modname inst-ss arraysize))
+           (car x) (car y) argindex ss scopes inst-modname inst-ss inst-scopes arraysize))
          ((wmv warnings portinfo2)
           (vl-plainarglist-portinfo
-           (cdr x) (cdr y) (1+ (lnfix argindex)) conf inst-modname inst-ss arraysize)))
+           (cdr x) (cdr y) (1+ (lnfix argindex)) ss scopes inst-modname inst-ss inst-scopes arraysize)))
       (mv warnings
           (cons portinfo1 portinfo2))))
   ///
@@ -1546,7 +1552,8 @@ details on dealing with modinst arrays.</p>"
 
 
 (define vl-modinst->svex-assigns/aliases ((x vl-modinst-p)
-                                          (conf vl-svexconf-p)
+                                          (ss vl-scopestack-p)
+                                          (scopes vl-elabscopes-p)
                                           (wires   sv::wirelist-p)
                                           (assigns sv::assigns-p)
                                           (aliases sv::lhspairs-p)
@@ -1572,7 +1579,6 @@ how VL module instances are translated.</p>"
        (assigns (sv::assigns-fix assigns))
        (aliases (sv::lhspairs-fix aliases))
        (context-mod (sv::modname-fix context-mod))
-       ((vl-svexconf conf))
        (warnings nil)
 
        ((when (eq (vl-arguments-kind x.portargs) :vl-arguments-named))
@@ -1582,7 +1588,7 @@ how VL module instances are translated.</p>"
             wires assigns aliases
             nil nil))
        (x.plainargs (vl-arguments->args x.portargs))
-       ((mv inst-mod inst-ss) (vl-scopestack-find-definition/ss x.modname conf.ss))
+       ((mv inst-mod inst-ss) (vl-scopestack-find-definition/ss x.modname ss))
        ((unless (and inst-mod
                      (or (eq (tag inst-mod) :vl-module)
                          (eq (tag inst-mod) :vl-interface))))
@@ -1592,6 +1598,8 @@ how VL module instances are translated.</p>"
             wires assigns aliases
             nil nil))
        (inst-ss (vl-scopestack-push inst-mod inst-ss))
+       (inst-scopes (vl-elabscopes-push-scope inst-mod 
+                                              (vl-elabscopes-root scopes)))
        (i.ports (if (eq (tag inst-mod) :vl-module)
                     (vl-module->ports inst-mod)
                   (vl-interface->ports inst-mod)))
@@ -1619,7 +1627,7 @@ how VL module instances are translated.</p>"
 
        ((wmv warnings portinfo :ctx x)
         (vl-plainarglist-portinfo
-         x.plainargs i.ports 0 conf inst-modname inst-ss arraywidth))
+         x.plainargs i.ports 0 ss scopes inst-modname inst-ss inst-scopes arraywidth))
 
        ((wmv warnings portassigns portaliases :ctx x)
         (vl-portinfolist-to-svex-assigns/aliases portinfo x.instname))
@@ -1628,7 +1636,7 @@ how VL module instances are translated.</p>"
 
        ((wmv warnings ifwires ifaliases :ctx x)
         (if (eq (tag inst-mod) :vl-interface)
-            (vl-interfaceinst->svex x.instname x.modname x conf.ss)
+            (vl-interfaceinst->svex x.instname x.modname x ss)
           (mv nil nil nil)))
        (wires   (append-without-guard ifwires wires))
        (aliases (append-without-guard ifaliases aliases))
@@ -1677,7 +1685,8 @@ how VL module instances are translated.</p>"
 
 
 (define vl-modinstlist->svex-assigns/aliases ((x vl-modinstlist-p)
-                                              (conf vl-svexconf-p)
+                                              (ss vl-scopestack-p)
+                                              (scopes vl-elabscopes-p)
                                               (wires   sv::wirelist-p)
                                               (assigns sv::assigns-p)
                                               (aliases sv::lhspairs-p)
@@ -1698,9 +1707,9 @@ how VL module instances are translated.</p>"
             (sv::lhspairs-fix aliases)
             nil nil))
        ((wmv warnings wires assigns aliases insts1 modalist1)
-        (vl-modinst->svex-assigns/aliases (car x) conf wires assigns aliases context-mod))
+        (vl-modinst->svex-assigns/aliases (car x) ss scopes wires assigns aliases context-mod))
        ((wmv warnings wires assigns aliases insts2 modalist2)
-        (vl-modinstlist->svex-assigns/aliases (cdr x) conf wires assigns aliases context-mod)))
+        (vl-modinstlist->svex-assigns/aliases (cdr x) ss scopes wires assigns aliases context-mod)))
     (mv warnings
         wires assigns aliases
         (append-without-guard insts1 insts2)
@@ -1969,7 +1978,8 @@ how VL module instances are translated.</p>"
 
 
 (define vl-gateinst->svex-assigns/aliases ((x vl-gateinst-p)
-                                          (conf vl-svexconf-p)
+                                          (ss vl-scopestack-p)
+                                          (scopes vl-elabscopes-p)
                                           (wires   sv::wirelist-p)
                                           (assigns sv::assigns-p)
                                           (aliases sv::lhspairs-p)
@@ -1996,7 +2006,6 @@ how VL module instances are translated.</p>"
        (assigns (sv::assigns-fix assigns))
        (aliases (sv::lhspairs-fix aliases))
        (context-mod (sv::modname-fix context-mod))
-       ((vl-svexconf conf))
        (warnings nil)
 
        (nargs (len x.args))
@@ -2025,7 +2034,7 @@ how VL module instances are translated.</p>"
 
        ((wmv warnings portinfo)
         (vl-gate-plainarglist-portinfo
-         x.args portnames portdirs 0 conf arraywidth))
+         x.args portnames portdirs 0 ss scopes arraywidth))
 
        ((wmv warnings portassigns portaliases :ctx x)
         (vl-portinfolist-to-svex-assigns/aliases portinfo x.name))
@@ -2076,7 +2085,8 @@ how VL module instances are translated.</p>"
 
 
 (define vl-gateinstlist->svex-assigns/aliases ((x vl-gateinstlist-p)
-                                              (conf vl-svexconf-p)
+                                              (ss vl-scopestack-p)
+                                              (scopes vl-elabscopes-p)
                                               (wires   sv::wirelist-p)
                                               (assigns sv::assigns-p)
                                               (aliases sv::lhspairs-p)
@@ -2097,9 +2107,9 @@ how VL module instances are translated.</p>"
             (sv::lhspairs-fix aliases)
             nil nil))
        ((wmv warnings wires assigns aliases insts1 modalist1)
-        (vl-gateinst->svex-assigns/aliases (car x) conf wires assigns aliases context-mod))
+        (vl-gateinst->svex-assigns/aliases (car x) ss scopes wires assigns aliases context-mod))
        ((wmv warnings wires assigns aliases insts2 modalist2)
-        (vl-gateinstlist->svex-assigns/aliases (cdr x) conf wires assigns aliases context-mod)))
+        (vl-gateinstlist->svex-assigns/aliases (cdr x) ss scopes wires assigns aliases context-mod)))
     (mv warnings
         wires assigns aliases
         (append-without-guard insts1 insts2)
@@ -2151,7 +2161,8 @@ how VL module instances are translated.</p>"
 
 
 (define vl-assign->svex-assign ((x vl-assign-p)
-                                (conf vl-svexconf-p))
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (assigns sv::assigns-p "The assignment"))
   :short "Turn a VL assignment into an SVEX assignment or delayed assignment."
@@ -2162,14 +2173,13 @@ expressions, then converts the LHS into a @(see sv::lhs-p).</p>
 multi-tick we'd have to generate new names for the intermediate states.</p>"
   :prepwork ((local (in-theory (enable (force)))))
   (b* (((vl-assign x) (vl-assign-fix x))
-       ((vl-svexconf conf))
        (warnings nil)
        ((wmv warnings lhs lhs-type :ctx x)
-        (vl-expr-to-svex-lhs x.lvalue conf))
+        (vl-expr-to-svex-lhs x.lvalue ss scopes))
        ((unless lhs-type) (mv warnings nil))
        ((wmv warnings delay :ctx x) (vl-maybe-gatedelay->delay x.delay))
        ((wmv warnings svex-rhs :ctx x)
-        (vl-expr-to-svex-datatyped x.expr x.lvalue lhs-type conf))
+        (vl-expr-to-svex-datatyped x.expr x.lvalue lhs-type ss scopes))
        ;; BOZO deal with drive strengths
        ((when (not delay))
         (mv warnings (list (cons lhs (sv::make-driver :value svex-rhs)))))
@@ -2184,7 +2194,8 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
     :hints(("Goal" :in-theory (enable sv::assigns-vars)))))
 
 (define vl-assigns->svex-assigns ((x vl-assignlist-p)
-                                  (conf vl-svexconf-p)
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p)
                                   (assigns sv::assigns-p))
   :short "Collects svex module components for a list of assignments, by collecting
           results from @(see vl-assign->svex-assign)."
@@ -2194,9 +2205,9 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
       (mv nil
           (sv::assigns-fix assigns))
     (b* ((warnings nil)
-         ((wmv warnings assigns1) (vl-assign->svex-assign (car x) conf))
+         ((wmv warnings assigns1) (vl-assign->svex-assign (car x) ss scopes))
          ((wmv warnings assigns)
-          (vl-assigns->svex-assigns (cdr x) conf
+          (vl-assigns->svex-assigns (cdr x) ss scopes
                                     (append assigns1 assigns))))
       (mv warnings assigns)))
   ///
@@ -3071,7 +3082,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
   :verify-guards nil
 
   (define vl-genblob->svex-modules ((x vl-genblob-p)
-                                    (ss vl-scopestack-p)
+                                    (elabindex "outside of the genblob scope")
                                     (modname sv::modname-p)
                                     (modalist sv::modalist-p))
     :short "Given a @(see vl-genblob), translate its contents into an svex @(see
@@ -3090,52 +3101,54 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                (modalist1
                 (and (sv::modalist-p modalist1)
                      (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                              (sv::svarlist-addr-p (sv::modalist-vars modalist1))))))
+                              (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
+               (new-elabindex))
   :measure (vl-genblob-count x)
 
   (b* ((warnings nil)
-       (ss (vl-scopestack-push (vl-genblob-fix x) ss))
-       (blobconf (make-vl-svexconf :ss ss))
+       (elabindex (vl-elabindex-push (vl-genblob-fix x)))
        ((vl-genblob x))
-       ((wmv ?ok warnings ?new-x blobconf)
+       ((wmv ?ok warnings ?new-x elabindex)
         ;; new-x isn't really relevant since we've already run
         ;; unparameterization before; we're just doing this to generate the
         ;; tables.
-        (vl-genblob-elaborate x blobconf))
+        (vl-genblob-elaborate x elabindex))
+       (elabindex (vl-elabindex-sync-scopes))
+       (ss (vl-elabindex->ss))
+       (scopes (vl-elabindex->scopes))
 
        ((wmv warnings ?width wires aliases datainsts modalist)
         (vl-vardecllist->svex x.vardecls (sv::modalist-fix modalist)
                               nil)) ;; no :self aliases
-       ((wmv warnings assigns) (vl-assigns->svex-assigns x.assigns blobconf nil))
+       ((wmv warnings assigns) (vl-assigns->svex-assigns x.assigns ss scopes nil))
        ((wmv warnings wires assigns aliases insts arraymod-alist)
-        (vl-modinstlist->svex-assigns/aliases x.modinsts blobconf wires assigns aliases modname))
+        (vl-modinstlist->svex-assigns/aliases x.modinsts ss scopes wires assigns aliases modname))
        ((wmv warnings wires assigns aliases ginsts gatemod-alist)
-        (vl-gateinstlist->svex-assigns/aliases x.gateinsts blobconf wires assigns aliases modname))
+        (vl-gateinstlist->svex-assigns/aliases x.gateinsts ss scopes wires assigns aliases modname))
        (modalist (hons-shrink-alist gatemod-alist (hons-shrink-alist arraymod-alist modalist)))
 
        ((wmv warnings always-assigns)
-        (vl-alwayslist->svex x.alwayses blobconf))
-       ((wmv warnings) (vl-initiallist-size-warnings x.initials blobconf))
-       ((wmv warnings) (vl-finallist-size-warnings x.finals blobconf))
+        (vl-alwayslist->svex x.alwayses ss scopes))
+       ((wmv warnings) (vl-initiallist-size-warnings x.initials ss scopes))
+       ((wmv warnings) (vl-finallist-size-warnings x.finals ss scopes))
 
        ;; (delays (sv::delay-svarlist->delays (append-without-guard delayvars always-delayvars)))
 
-       (- (vl-svexconf-free blobconf))
-
-       ((wmv warnings modalist gen-insts)
+       ((wmv warnings modalist gen-insts elabindex)
         (vl-generates->svex-modules
-         x.generates 0 ss modname modalist))
+         x.generates 0 elabindex modname modalist))
 
        (module (sv::make-module :wires wires
                                   :insts (append-without-guard gen-insts datainsts ginsts insts)
                                   :assigns (append-without-guard always-assigns assigns)
                                   :aliaspairs aliases))
-       (modalist (hons-shrink-alist arraymod-alist modalist)))
-    (mv warnings module modalist)))
+       (modalist (hons-shrink-alist arraymod-alist modalist))
+       (elabindex (vl-elabindex-undo)))
+    (mv warnings module modalist elabindex)))
 
   (define vl-generates->svex-modules ((x vl-genelementlist-p)
                                       (index natp)
-                                      (ss vl-scopestack-p)
+                                      (elabindex)
                                       (modname sv::modname-p)
                                       (modalist sv::modalist-p))
 
@@ -3144,21 +3157,22 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                   (and (sv::modalist-p modalist1)
                        (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                 (insts     sv::modinstlist-p))
+                 (insts     sv::modinstlist-p)
+                 (new-elabindex))
     :measure (vl-genblob-generates-count x)
     (b* ((warnings nil)
-         ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil))
-         ((wmv warnings modalist insts1)
+         ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil elabindex))
+         ((wmv warnings modalist insts1 elabindex)
           (vl-generate->svex-modules
-           (car x) (lnfix index) ss modname modalist))
-         ((wmv warnings modalist insts2)
+           (car x) (lnfix index) elabindex modname modalist))
+         ((wmv warnings modalist insts2 elabindex)
           (vl-generates->svex-modules
-           (cdr x) (1+ (lnfix index)) ss modname modalist)))
-      (mv warnings modalist (append-without-guard insts1 insts2))))
+           (cdr x) (1+ (lnfix index)) elabindex modname modalist)))
+      (mv warnings modalist (append-without-guard insts1 insts2) elabindex)))
 
     (define vl-generate->svex-modules ((x vl-genelement-p)
                                        (index natp)
-                                       (ss vl-scopestack-p)
+                                       (elabindex)
                                        (modname sv::modname-p)
                                        (modalist sv::modalist-p))
       :returns (mv (warnings vl-warninglist-p)
@@ -3166,7 +3180,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                     (and (sv::modalist-p modalist1)
                          (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
                                   (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                   (insts      sv::modinstlist-p))
+                   (insts      sv::modinstlist-p)
+                   (new-elabindex))
       :measure (vl-genblob-generate-count x)
       (b* ((warnings nil))
         (vl-genelement-case x
@@ -3177,11 +3192,12 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                             (list modname :genblock (or x.name index))
                           (append-without-guard modname (list :genblock (or x.name index)))))
                (genblob (vl-sort-genelements x.elems :scopetype :vl-genblock))
-               ((wmv warnings mod modalist)
-                (vl-genblob->svex-modules genblob ss modname modalist)))
+               ((wmv warnings mod modalist elabindex)
+                (vl-genblob->svex-modules genblob elabindex modname modalist)))
             (mv warnings (hons-acons modname mod modalist)
                 (list (sv::make-modinst :modname modname
-                                          :instname (or x.name (list :anonymous index))))))
+                                          :instname (or x.name (list :anonymous index))))
+                elabindex))
 
           :vl-genarray
           (b* ((modname (sv::modname-fix modname))
@@ -3192,22 +3208,25 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                ;; BOZO This is a weird thing to do, but at the moment we need it
                ;; to make our scopes work out.  To fix this, see the discussion
                ;; under vl-path-scope->svex-addr and fix that first.
-               (ss (vl-scopestack-push (make-vl-genblob) ss))
-               ((wmv warnings modalist block-insts)
-                (vl-genarrayblocks->svex-modules x.blocks ss modname modalist))
+               (elabindex (vl-elabindex-push (make-vl-genblob)))
+               ((wmv warnings modalist block-insts elabindex)
+                (vl-genarrayblocks->svex-modules x.blocks elabindex modname modalist))
                (arraymod (sv::make-module :insts block-insts))
-               (modalist (hons-acons modname arraymod modalist)))
+               (modalist (hons-acons modname arraymod modalist))
+               (elabindex (vl-elabindex-undo)))
             (mv warnings modalist
                 (list (sv::make-modinst :modname modname
-                                          :instname (or x.name (list :anonymous index))))))
+                                          :instname (or x.name (list :anonymous index))))
+                elabindex))
           :otherwise
           (mv (warn :type :vl-module->svex-fail
                     :msg "Unresolved generate block: ~a0"
                     :args (list (vl-genelement-fix x)))
-              (sv::modalist-fix modalist) nil))))
+              (sv::modalist-fix modalist) nil
+              elabindex))))
 
     (define vl-genarrayblocks->svex-modules ((x vl-genarrayblocklist-p)
-                                             (ss vl-scopestack-p)
+                                             (elabindex)
                                              (modname sv::modname-p)
                                              (modalist sv::modalist-p))
       :returns (mv (warnings vl-warninglist-p)
@@ -3215,18 +3234,19 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                     (and (sv::modalist-p modalist1)
                          (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
                                   (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                   (insts sv::modinstlist-p))
+                   (insts sv::modinstlist-p)
+                   (new-elabindex))
       :measure (vl-genblob-genarrayblocklist-count x)
       (b* ((warnings nil)
-           ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil))
-           ((wmv warnings modalist insts1)
-            (vl-genarrayblock->svex-modules (car x) ss modname modalist))
-           ((wmv warnings modalist insts2)
-            (vl-genarrayblocks->svex-modules (cdr x) ss modname modalist)))
-        (mv warnings modalist (append-without-guard insts1 insts2))))
+           ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil elabindex))
+           ((wmv warnings modalist insts1 elabindex)
+            (vl-genarrayblock->svex-modules (car x) elabindex modname modalist))
+           ((wmv warnings modalist insts2 elabindex)
+            (vl-genarrayblocks->svex-modules (cdr x) elabindex modname modalist)))
+        (mv warnings modalist (append-without-guard insts1 insts2) elabindex)))
 
     (define vl-genarrayblock->svex-modules ((x vl-genarrayblock-p)
-                                            (ss vl-scopestack-p)
+                                            (elabindex)
                                             (modname sv::modname-p)
                                             (modalist sv::modalist-p))
       :returns (mv (warnings vl-warninglist-p)
@@ -3234,17 +3254,19 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                     (and (sv::modalist-p modalist1)
                          (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
                                   (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                   (insts sv::modinstlist-p))
+                   (insts sv::modinstlist-p)
+                   (new-elabindex))
       :measure (vl-genblob-genarrayblock-count x)
       (b* ((warnings nil)
            ((vl-genarrayblock x))
            (modname (sv::modname-fix modname))
            (modname (append-without-guard modname (list x.index)))
            (genblob (vl-sort-genelements x.elems :scopetype :vl-genarrayblock))
-           ((wmv warnings mod modalist)
-            (vl-genblob->svex-modules genblob ss modname modalist)))
+           ((wmv warnings mod modalist elabindex)
+            (vl-genblob->svex-modules genblob elabindex modname modalist)))
         (mv warnings (hons-acons modname mod modalist)
-            (list (sv::make-modinst :modname modname :instname x.index)))))
+            (list (sv::make-modinst :modname modname :instname x.index))
+            elabindex)))
     ///
     (verify-guards vl-genblob->svex-modules)
 
@@ -3262,7 +3284,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
 
 (define vl-module->svex-module ((name stringp)
-                                (ss vl-scopestack-p)
+                                (elabindex "global scope")
                                 (modalist sv::modalist-p))
   :short "Translate a VL module into an svex module, adding any auxiliary modules
           necessary."
@@ -3276,38 +3298,40 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
                                  (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p
                                  (sv::modalist-vars modalist1))))
-                          :hints(("Goal" :in-theory (enable sv::modalist-vars)))))
+                          :hints(("Goal" :in-theory (enable sv::modalist-vars))))
+               (new-elabindex))
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
                       (implies (vl-module-p x)
                                (vl-scope-p x))))
              (local (in-theory (enable sv::modname-p))))
   (b* ((modalist (sv::modalist-fix modalist))
        (name (string-fix name))
-       (x (vl-scopestack-find-definition name ss))
+       (x (vl-scopestack-find-definition name (vl-elabindex->ss)))
        (warnings nil)
        ((unless (and x (eq (tag x) :vl-module)))
         (mv (warn :type :vl-module->svex-fail
                   :msg "Module not found: ~s0"
                   :args (list name))
-            (sv::modalist-fix modalist)))
+            (sv::modalist-fix modalist)
+            elabindex))
        ((vl-module x) x)
        (genblob (vl-module->genblob x))
-       ((wmv warnings mod modalist)
-        (vl-genblob->svex-modules genblob ss x.name modalist))
+       ((wmv warnings mod modalist elabindex)
+        (vl-genblob->svex-modules genblob elabindex x.name modalist))
        ((sv::module mod))
        ((wmv warnings ifwires ifinsts ifaliases)
-        (vl-interfaceports->svex x.ifports ss))
+        (vl-interfaceports->svex x.ifports (vl-elabindex->ss)))
        (mod (sv::change-module
              mod
              :wires (append-without-guard ifwires mod.wires)
              :insts (append-without-guard ifinsts mod.insts)
              :aliaspairs (append-without-guard ifaliases mod.aliaspairs))))
-    (mv warnings (hons-acons x.name mod modalist))))
+    (mv warnings (hons-acons x.name mod modalist) elabindex)))
 
 
 (define vl-modulelist->svex-modalist
   ((x vl-modulelist-p)
-   (ss vl-scopestack-p)
+   (elabindex "global scope")
    (modalist sv::modalist-p))
   :returns (mv (warnings vl-reportcard-p)
                (modalist1 (and (sv::modalist-p modalist1)
@@ -3315,20 +3339,24 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
                                 (sv::svarlist-addr-p
                                  (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p
-                                 (sv::modalist-vars modalist1))))))
-  (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist)))
+                                 (sv::modalist-vars modalist1)))))
+               (new-elabindex))
+  (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist) elabindex))
        (name (vl-module->name (car x)))
-       ((mv warnings modalist) (vl-module->svex-module name ss modalist))
-
-       ((mv reportcard modalist) (vl-modulelist->svex-modalist (cdr x) ss modalist)))
+       ((mv warnings modalist elabindex)
+        (vl-module->svex-module name elabindex modalist))
+       
+       ((mv reportcard modalist elabindex)
+        (vl-modulelist->svex-modalist (cdr x) elabindex modalist)))
     (mv (if warnings
             (cons (cons name warnings) reportcard)
           reportcard)
-        modalist)))
+        modalist
+        elabindex)))
 
 
 (define vl-interface->svex-module ((name stringp)
-                                   (ss vl-scopestack-p)
+                                   (elabindex "global scope")
                                    (modalist sv::modalist-p))
   :returns (mv (warnings vl-warninglist-p)
                (modalist1 (and (sv::modalist-p modalist1)
@@ -3337,7 +3365,8 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
                                  (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p
                                  (sv::modalist-vars modalist1))))
-                          :hints(("Goal" :in-theory (enable sv::modalist-vars)))))
+                          :hints(("Goal" :in-theory (enable sv::modalist-vars))))
+               elabindex)
   :prepwork ((local (defthm vl-scope-p-when-vl-interface-p-strong
                       (implies (vl-interface-p x)
                                (vl-scope-p x))))
@@ -3349,15 +3378,16 @@ much like that generated for a struct; it has a :self wire that is aliased to
 the concatenation of all its other declared wires.</p>"
   (b* ((modalist (sv::modalist-fix modalist))
        (name (string-fix name))
-       (x (vl-scopestack-find-definition name ss))
+       (x (vl-scopestack-find-definition name (vl-elabindex->ss)))
        (warnings nil)
        ((unless (and x (eq (tag x) :vl-interface)))
         (mv (warn :type :vl-interface->svex-fail
                   :msg "Interface not found: ~s0"
                   :args (list name))
-            (sv::modalist-fix modalist)))
+            (sv::modalist-fix modalist)
+            elabindex))
        ((vl-interface x) x)
-       (?ss (vl-scopestack-push x ss))
+       ;; (?ss (vl-scopestack-push x ss))
        ;; CONVENTION: This returns only the vardecls whose types were
        ;; successfully resolved.  In interfaces, we consider only these
        ;; variables.  Any other variables won't have aliases set up so they'll
@@ -3370,11 +3400,12 @@ the concatenation of all its other declared wires.</p>"
                                :insts datainsts
                                :aliaspairs aliases)))
     (mv warnings
-        (hons-acons (sv::modname-fix name) mod modalist))))
+        (hons-acons (sv::modname-fix name) mod modalist)
+        elabindex)))
 
 (define vl-interfacelist->svex-modalist
   ((x vl-interfacelist-p)
-   (ss vl-scopestack-p)
+   (elabindex "global scope")
    (modalist sv::modalist-p))
   :parents (sv::svex)
   :returns (mv (warnings vl-reportcard-p)
@@ -3384,16 +3415,18 @@ the concatenation of all its other declared wires.</p>"
                                  (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p
                                  (sv::modalist-vars modalist1))))
-                          :hints(("Goal" :in-theory (enable sv::modalist-vars)))))
-  (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist)))
+                          :hints(("Goal" :in-theory (enable sv::modalist-vars))))
+               (new-elabindex))
+  (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist) elabindex))
        (name (vl-interface->name (car x)))
-       ((mv warnings modalist) (vl-interface->svex-module name ss modalist))
+       ((mv warnings modalist elabindex) (vl-interface->svex-module name elabindex modalist))
 
-       ((mv reportcard modalist) (vl-interfacelist->svex-modalist (cdr x) ss modalist)))
+       ((mv reportcard modalist elabindex) (vl-interfacelist->svex-modalist (cdr x) elabindex modalist)))
     (mv (if warnings
             (cons (cons name warnings) reportcard)
           reportcard)
-        modalist)))
+        modalist
+        elabindex)))
 
 
 (define vl-design->svex-modalist ((x vl-design-p))
@@ -3411,9 +3444,10 @@ this translation.</p>"
                               (sv::svarlist-addr-p
                                (sv::modalist-vars svexmods)))))
   (b* (((vl-design x) (vl-design-fix x))
-       (ss (vl-scopestack-init x))
-       ((mv reportcard1 modalist) (vl-modulelist->svex-modalist x.mods ss nil))
-       ((mv reportcard2 modalist) (vl-interfacelist->svex-modalist x.interfaces ss modalist))
+       ((local-stobjs elabindex) (mv reportcard modalist elabindex))
+       (elabindex (vl-elabindex-init x))
+       ((mv reportcard1 modalist elabindex) (vl-modulelist->svex-modalist x.mods elabindex nil))
+       ((mv reportcard2 modalist elabindex) (vl-interfacelist->svex-modalist x.interfaces elabindex modalist))
        (reportcard (vl-clean-reportcard (append-without-guard reportcard1 reportcard2))))
     (vl-scopestacks-free)
-    (mv reportcard modalist)))
+    (mv reportcard modalist elabindex)))

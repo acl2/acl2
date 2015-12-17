@@ -261,7 +261,7 @@ elements.")
                     (vl-immdeps-add-item name ans))))
     :colon
     (if (stringp x.first)
-        (vl-immdeps-add-item x.first ans)
+        (vl-immdeps-add-pkgdep x.first ans)
       ;; BOZO think about other scopes.
       ;; local:: is just something to do with randomize, I don't think we care yet.
       ;; $unit:: is sort of very ambiguous, we might want to treat it as top-level
@@ -277,20 +277,6 @@ elements.")
                                    ((ctx acl2::any-p) 'ctx))
   :returns (ans1 (:acc ans :fix (vl-immdeps-fix ans)) vl-immdeps-p)
   :field-fns ((atts :skip))
-  :prod-fns ((vl-special     (type :skip))
-             (vl-literal     (type :skip))
-             (vl-index       (type :skip))
-             (vl-unary       (type :skip))
-             (vl-binary      (type :skip))
-             (vl-qmark       (type :skip))
-             (vl-mintypmax   (type :skip))
-             (vl-concat      (type :skip))
-             (vl-multiconcat (type :skip))
-             (vl-call        (type :skip))
-             (vl-cast        (type :skip))
-             (vl-inside      (type :skip))
-             (vl-tagged      (type :skip))
-             (vl-pattern     (type :skip)))
   :fnname-template <type>-immdeps)
 
 ;; Not dealing with anything that might add a scope yet.
@@ -1175,7 +1161,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-udp-immdeps* ((x     vl-udp-p)
                          (graph vl-immdepgraph-p)
                          &key
-                         (ss vl-scopestack-p))
+                         ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (declare (ignorable ss))
   (b* (((vl-udp x) (vl-udp-fix x))
@@ -1192,7 +1178,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-config-immdeps* ((x     vl-config-p)
                             (graph vl-immdepgraph-p)
                             &key
-                            (ss vl-scopestack-p))
+                            ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (declare (ignorable ss))
   (b* (((vl-config x) (vl-config-fix x))
@@ -1203,11 +1189,18 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 
 (def-vl-immdeps*-list vl-configlist vl-config)
 
+#||
+(trace$ #!vl (vl-package-immdeps*-fn
+              :entry (list 'vl-package-immdeps
+                           (with-local-ps (vl-pp-package x))
+                           graph
+                           (vl-scopestack->hashkey ss)))) 
 
+||#
 (define vl-package-immdeps* ((x     vl-package-p)
                              (graph vl-immdepgraph-p)
                              &key
-                             (ss vl-scopestack-p))
+                             ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (b* (((vl-package x) (vl-package-fix x))
        (ss  (vl-scopestack-push x ss))
@@ -1225,7 +1218,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-interface-immdeps* ((x vl-interface-p)
                                (graph vl-immdepgraph-p)
                                &key
-                               (ss vl-scopestack-p))
+                               ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (b* (((vl-interface x) (vl-interface-fix x))
        (ss  (vl-scopestack-push x ss))
@@ -1259,7 +1252,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-program-immdeps* ((x     vl-program-p)
                              (graph vl-immdepgraph-p)
                             &key
-                            (ss vl-scopestack-p))
+                            ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (declare (ignorable ss))
   (b* (((vl-program x) (vl-program-fix x))

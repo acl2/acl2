@@ -33,6 +33,8 @@ assignexpr5.v -- assignment expression in gate instance (vcs crash)
 
 bigwire1.v -- negative indices in wire bounds
 
+elab1.v -- crazy parameter/generate dependency loop
+
 fn1.v -- shadowing too hard in function
 fn2.v -- function input names duplicated (ansi syntax)
 fn2b.v -- function input names duplicated (classic syntax)
@@ -49,6 +51,14 @@ gates3.v -- 3-bit wire connected to 4-wide not instance array input
 gates4.v -- 5-bit wire connected to 4-wire not instance array input
 gates5.v -- gate array of size 0
 
+gen1.v -- genvar redeclared as wire
+gen1b.v -- wire redeclared as genvar
+gen1c.v -- genvar redeclared as gate instance name
+gen1d.v -- gate instance name redeclared as genvar
+gen2.v -- continuous assignment to genvar
+gen2b.v -- continuous assignment from genvar
+gen3.v -- reference to wire declared in a named generate block's scope
+
 iface1.v -- multiply declared wire in interface
 iface2.v -- input redeclared as wire in interface
 iface3.v -- no subsequent declaration of legacy-style port in interface
@@ -59,6 +69,18 @@ iface7.v -- undeclared name in simple modport declarations
 iface8.v -- modport port declarations reference wires declared later (ncv allows, vcs disallows)
 iface9.v -- name clash between modport name and wire name
 iface10.v -- undeclared name in modport expression, i.e., "bar" in .foo(bar)
+iface10b.v -- similar, but the wire *is* declared in some outer scope (still not ok)
+iface10c.v -- similar, but simpler port syntax
+iface11.v -- interface tries to instantiate submodule
+iface12.v -- interface tries to instantiate udp (not sure if legal, ncv allows, vcs prohibits)
+iface13.v -- interface tries to instantiate gate (not sure if legal, but ncv/vcs prohibit)
+iface14.v -- modport with insane port expression .foo(a+b) (vcs accepts it??)
+iface15.v -- modport tries to connect to parameter instead of variable
+iface16.v -- interface with mismatched "endinterface : oops"
+iface17.v -- module with interface port iface.consumer instanced with iface.producer
+iface18.v -- tries to instantiate module with interface connected to some other hierarchical path
+iface19.v -- like iface18.v, but with extra .consumer style modport as well
+iface20.v -- try to use foo.consumer style connection, where foo is itself an interface port (vcs/ncv disagree)
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type
@@ -105,6 +127,9 @@ inst10.v -- illegal attempt to make an "inout var ..." port (classic port syntax
 inst11.v -- 2-element instance array with port of size 3 (can't be cleanly split)
 inst12.v -- array of 0 submodule instances
 
+mod1.v -- module with modport declaration
+mod2.v -- module foo with mismatched "endmodule : oops"
+
 names1.v -- redeclare wire with same name
 names2.v -- buf gate with same name as previous wire
 names3.v -- submodule instance with same name as previous wire
@@ -134,10 +159,6 @@ port11.v -- instantiate undefiend submodule
 port12.v -- too few named port connections to submodule
 port13.v -- nested concatenations (which aren't allowed) in port expression
 
-
 pp1.v -- try to use undefined preprocessor macro
 
-
-
-
-
+stmt1.v -- nonblocking assignment to local variable

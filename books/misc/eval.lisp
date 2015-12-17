@@ -7,6 +7,7 @@
 ; that directory) for how these macros may be employed.
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 
 (defmacro must-eval-to (&whole must-eval-to-form
                                form expr
@@ -48,7 +49,7 @@
                                    `(:check-expansion ,check-expansion)))))
     (cond (with-output-off `(with-output :off ,with-output-off ,form))
           (t form))))
-  
+
 (defmacro must-eval-to-t (form &key
                                (ld-skip-proofsp ':default)
                                (with-output-off ':all)
@@ -65,6 +66,68 @@
                         `(:check-expansion ,check-expansion))
                  ,@(and (not (eq ld-skip-proofsp :default))
                         `(:ld-skip-proofsp ,ld-skip-proofsp))))
+
+(defxdoc must-succeed
+  :parents (errors)
+  :short "A top-level @(see assert$)-like command.  Ensures that a command
+which returns an @(see error-triple)&mdash;e.g., a @(see defun) or
+@(see defthm)&mdash;will return successfully."
+
+  :long "<p>This can be useful for adding simple unit tests of macros,
+theories, etc. to your books.  Basic examples:</p>
+
+@({
+    (must-succeed                  ;; works fine
+      (defun f (x) (consp x)))     ;;   (NOTE: F not defined afterwards!)
+
+    (must-succeed                  ;; causes an error
+      (defthm bad-theorem nil))    ;;   (unless we can prove NIL!)
+
+    (must-succeed                  ;; causes an error
+      (set-gag-mode 42))           ;;   (because 42 isn't a gag mode)
+})
+
+<p>See also @(see must-fail).</p>
+
+<h5>General form:</h5>
+
+@({
+     (must-succeed form
+                   [:with-output-off items]  ;; default:  :all
+                   [:check-expansion bool]
+                   )
+})
+
+<p>The @('form') should typically be a form that returns an @(see
+event-triple), which is true for most top-level ACL2 events and other high
+level commands.</p>
+
+<p>The @('form') is submitted in a @(see make-event), which has a number of
+consequences.  Most importantly, when @('form') is an event like a @(see
+defun), or @(see defthm), it doesn't persist after the @(see must-succeed)
+form.  Other state updates do persist, e.g.,</p>
+
+@({
+     (must-succeed (assign foo 5))   ;; works fine
+     (@ foo)                         ;; 5
+})
+
+<p>See the @(see make-event) documentation for details.</p>
+
+<h5>Options</h5>
+
+<p><b>with-output-off</b>.  By default, all output from @('form') is
+suppressed, but you can customize this.  Typical example:</p>
+
+@({
+     (must-succeed
+       (defun f (x) (consp x))
+       :with-output-off nil)    ;; don't suppress anything
+})
+
+<p><b>check-expansion</b>.  By default the form won't be re-run and re-checked
+at @(see include-book) time.  But you can use @(':check-expansion') to
+customize this, as in @(see make-event).</p>")
 
 (defmacro must-succeed (&whole must-succeed-form
                                form
@@ -85,6 +148,33 @@
     ,@(and check-expansion-p
            `(:check-expansion ,check-expansion))
     :on-behalf-of ,must-succeed-form))
+
+(defxdoc must-fail
+    :parents (errors)
+  :short "A top-level @(see assert$)-like command.  Ensures that a command
+which returns an @(see error-triple)&mdash;e.g., @(see defun) or @(see
+defthm)&mdash;will not be successful."
+
+  :long "<p>This can be useful for adding simple unit tests of macros,
+theories, etc. to your books.  Basic examples:</p>
+
+@({
+    (must-fail                     ;; works fine
+      (defun 5))                   ;;   (invalid defun will indeed fail)
+
+    (must-fail                     ;; causes an error
+      (thm t))                     ;;   (because this thm proves fine)
+
+    (must-fail                     ;; causes an error
+      (in-theory (enable floor)))  ;;   (because this works fine)
+
+    (must-fail                     ;; causes an error
+      (* 3 4))                     ;;   (doesn't return an error triple)
+})
+
+<p>Must-fail is almost just like @(see must-succeed), except that the event is
+expected to fail instead of succeed.  Please see the documentation for
+@('must-succeed') for syntax, options, and additional discussion.</p>")
 
 (defmacro must-fail (&whole must-fail-form
                             form

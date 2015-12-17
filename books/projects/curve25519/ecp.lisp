@@ -1062,7 +1062,7 @@
                        (mod (* a2 (expt (frcp b) 2)) (p))))
            (equal (mod (* a1 (expt (frcp b) 2) (expt b 2)) (p))
                   (mod (* a2 (expt (frcp b) 2) (expt b 2)) (p))))
-  :hints (("Goal" ::use ((:instance mod-times-mod (a (* a1 (expt (frcp b) 2)))
+  :hints (("Goal" :use ((:instance mod-times-mod (a (* a1 (expt (frcp b) 2)))
                                                   (b (* a2 (expt (frcp b) 2)))
                                                   (c (expt b 2))
                                                   (n (p)))))))
@@ -1073,7 +1073,7 @@
                 (not (= (mod b (p)) 0)))
            (equal (mod (* a (expt (frcp b) 2) (expt b 2)) (p))
                   (mod (* a b (frcp b)) (p))))
-  :hints (("Goal" ::use ((:instance frcp-cor (m (* a b (frcp b))) (n b))))))
+  :hints (("Goal" :use ((:instance frcp-cor (m (* a b (frcp b))) (n b))))))
 
 (local-defthmd p0+p1=p0-p1-20
   (implies (and (integerp a)
@@ -1081,7 +1081,7 @@
                 (not (= (mod b (p)) 0)))
            (equal (mod (* a b (frcp b)) (p))
                   (mod a (p))))
-  :hints (("Goal" ::use ((:instance frcp-cor (m a) (n b))))))
+  :hints (("Goal" :use ((:instance frcp-cor (m a) (n b))))))
 
 (local-defthmd p0+p1=p0-p1-21
   (implies (and (integerp a1)

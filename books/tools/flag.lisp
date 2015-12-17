@@ -39,6 +39,7 @@
 (in-package "FLAG")
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+(include-book "std/util/support" :dir :system)
 
 (defxdoc make-flag
   :parents (mutual-recursion)
@@ -65,7 +66,7 @@ more discussion below.</p>
 <p>Example:</p>
 
 @({
-    (make-flag flag-pseudo-termp               ; flag function name
+    (make-flag flag-pseudo-termp               ; flag function name (optional)
                pseudo-termp                    ; any member of the clique
                ;; optional arguments:
                :flag-mapping ((pseudo-termp      . term)
@@ -79,8 +80,9 @@ more discussion below.</p>
 
 <p>Here @('pseudo-termp') is the name of a function in a mutually recursive
 clique.  In this case, the clique has two functions, @('pseudo-termp') and
-@('pseudo-term-listp').  name of the newly generated flag function will be
-@('flag-pseudo-termp').</p>
+@('pseudo-term-listp').  The name of the newly generated flag function can be
+provided explicitly, or else will be formed by sticking @('flag-') on the front
+of the clique member's name.</p>
 
 <p>The other arguments are optional:</p>
 
@@ -975,26 +977,54 @@ one such form may affect what you might think of as the proof of another.</p>
       (,(if local 'local 'id)
        (in-theory (disable (:definition ,flag-fn-name)))))))
 
-(defmacro make-flag (flag-fn-name clique-member-name
-                     &key
-                     flag-var
-                     flag-mapping
-                     formals-subst
-                     hints
-                     defthm-macro-name
-                     local
-                     ruler-extenders)
-  `(make-event (make-flag-fn ',flag-fn-name
-                             ',clique-member-name
-                             ',flag-var
-                             ',flag-mapping
-                             ',hints
-                             ',defthm-macro-name
-                             ',formals-subst
-                             ',local
-                             ',ruler-extenders
-                             (w state))))
+(defconst *make-flag-keywords*
+  '(:flag-var
+    :flag-mapping
+    :formals-subst
+    :hints
+    :defthm-macro-name
+    :local
+    :ruler-extenders))
 
+(defun make-flag-dwim (args world)
+  ;; Stupid wrapper so that you don't have to explicitly name the flag var
+  (b* (((mv names kwd/args) (acl2::split-at-first-keyword args))
+       ((unless (consp names))
+        (er hard? 'make-flag "No name given"))
+       ((unless (symbolp (first names)))
+        (er hard? 'make-flag "Name is not a symbol: ~x0" (first names)))
+
+       ((unless (or (eql 1 (len names))
+                    (eql 2 (len names))))
+        (er hard? 'make-flag "Too many names: ~x0~%" names))
+       ((unless (symbolp (second names)))
+        (er hard? 'make-flag "Clique member name is not a symbol: ~x0" (second names)))
+
+       ((mv flag-name clique-member-name)
+        (if (eql 2 (len names))
+            (mv (first names) (second names))
+          ;; Just one name, so it should be a clique-member name and we will
+          ;; name the flag function flag-foo.
+          (mv (intern-in-package-of-symbol
+               (concatenate 'string "FLAG-" (symbol-name (first names)))
+               (first names))
+              (first names))))
+       ((mv kwd-alist other-args)
+        (std::extract-keywords `(make-flag ,(first names)) *make-flag-keywords* kwd/args nil))
+       ((unless (atom other-args))
+        (er hard? 'make-flag "Spurious arguments: ~x0" other-args)))
+    (make-flag-fn flag-name clique-member-name
+                  (cdr (assoc :flag-var kwd-alist))
+                  (cdr (assoc :flag-mapping kwd-alist))
+                  (cdr (assoc :hints kwd-alist))
+                  (cdr (assoc :defthm-macro-name kwd-alist))
+                  (cdr (assoc :formals-subst kwd-alist))
+                  (cdr (assoc :local kwd-alist))
+                  (cdr (assoc :ruler-extenders kwd-alist))
+                  world)))
+
+(defmacro make-flag (&rest args)
+  `(make-event (make-flag-dwim ',args (w state))))
 
 
 ;; Accessors for the records stored in the flag-fns table

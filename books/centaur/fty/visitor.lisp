@@ -146,8 +146,14 @@
           (cdr type))))
     nil))
 
+(define strip-cars-of-pairs (x)
+  (if (atom x)
+      nil
+    (cons (if (consp (car x)) (caar x) (car x))
+          (strip-cars-of-pairs (cdr x)))))
+
 (define visitor-formal-names (formals)
-  (strip-cars (std::remove-macro-args 'visitor formals nil)))
+  (strip-cars-of-pairs (std::remove-macro-args 'visitor formals nil)))
 
 
 (define visitor-prod-field-joins (fields x prodname firstp)

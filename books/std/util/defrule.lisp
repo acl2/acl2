@@ -321,7 +321,18 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
                ;; The theory-hint has to come after the inclusion of books, so
                ;; we can disable rules that come from the books.
                ,@(and theory-hint
-                      `(,theory-hint))
+                      `((with-output
+                          ;; I think we don't want to show the user the theory
+                          ;; event happening because that'd be verbose.  But
+                          ;; the theory hint could cause errors in case of things
+                          ;; like theory invariant violations or trying to enable
+                          ;; or disable rules that don't exist, so we need to be
+                          ;; sure to turn on error output at least.  BOZO maybe
+                          ;; we should also turn on warnings here, e.g., for
+                          ;; theory warnings?  (but those are usually annoying
+                          ;; anyway...)
+                          :on (error)
+                          ,theory-hint)))
                (with-output :stack :pop ,thm))))))
     (if local
         `(local ,event)

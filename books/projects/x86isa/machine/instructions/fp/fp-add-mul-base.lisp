@@ -17,6 +17,15 @@
 
 ;; ======================================================================
 
+(defsection floating-point-add-mul
+  :parents (floating-point-arithmetic-specifications)
+  :short "Specification of floating-point ADD, SUB, MUL, and DIV
+  operations" )
+
+(local (xdoc::set-default-parents floating-point-add-mul))
+
+;; ======================================================================
+
 ;; ADD, SUB, MUL, DIV:
 
 (define convert-arith-operation-to-rtl-op
@@ -38,57 +47,57 @@
 
  (defun sse-add/sub/mul/div (operation operand1 operand2 mxcsr exp-width frac-width)
    (declare (xargs :guard (and (natp operation)
-			       (natp operand1) (natp operand2) (n32p mxcsr)
-			       (posp exp-width) (posp frac-width))
-		   :guard-hints (("Goal"
-				  :in-theory (e/d () (unsigned-byte-p not)))))
-	    (type (integer 0 36) operation))
+                               (natp operand1) (natp operand2) (n32p mxcsr)
+                               (posp exp-width) (posp frac-width))
+                   :guard-hints (("Goal"
+                                  :in-theory (e/d () (unsigned-byte-p not)))))
+            (type (integer 0 36) operation))
    (b* (((mv result mxcsr)
-	 (ec-call
-	  (rtl::sse-binary-spec
-	   (convert-arith-operation-to-rtl-op operation)
-	   operand1 operand2 mxcsr
-	   (list nil (1+ frac-width) exp-width))))
-	;; Hopefully, the following fixes will go away once we know
-	;; rtl::sse-binary-spec returns a well-formed result and
-	;; mxcsr.
-	(result (loghead (+ 1 exp-width frac-width) (ifix result)))
-	(mxcsr (loghead 32 (ifix mxcsr)))
-	;; Pre-computation Exceptions
-	;; Check invalid operation
-	((when (and (equal (mxcsr-slice :ie mxcsr) 1)
-		    (equal (mxcsr-slice :im mxcsr) 0)))
-	 (mv 'invalid-operand-exception-is-not-masked result mxcsr))
-	;; Check divide-by-zero
-	((when (and (equal (mxcsr-slice :ze mxcsr) 1)
-		    (equal (mxcsr-slice :zm mxcsr) 0)))
-	 (mv 'divide-by-zero-exception-is-not-masked result mxcsr))
-	;; Check denormal operand
-	((when (and (equal (mxcsr-slice :de mxcsr) 1)
-		    (equal (mxcsr-slice :dm mxcsr) 0)))
-	 (mv 'denormal-operand-exception-is-not-masked result mxcsr))
-	;; Post-computation Exceptions
-	;; Check overflow
-	((when (and (equal (mxcsr-slice :oe mxcsr) 1)
-		    (equal (mxcsr-slice :om mxcsr) 0)))
-	 (mv 'overflow-exception-is-not-masked result mxcsr))
-	;; Check underflow
-	((when (and (equal (mxcsr-slice :ue mxcsr) 1)
-		    (equal (mxcsr-slice :um mxcsr) 0)))
-	 (mv 'underflow-exception-is-not-masked result mxcsr))
-	;; Check precision
-	((when (and (equal (mxcsr-slice :pe mxcsr) 1)
-		    (equal (mxcsr-slice :pm mxcsr) 0)))
-	 (mv 'precision-exception-is-not-masked result mxcsr)))
+         (ec-call
+          (rtl::sse-binary-spec
+           (convert-arith-operation-to-rtl-op operation)
+           operand1 operand2 mxcsr
+           (list nil (1+ frac-width) exp-width))))
+        ;; Hopefully, the following fixes will go away once we know
+        ;; rtl::sse-binary-spec returns a well-formed result and
+        ;; mxcsr.
+        (result (loghead (+ 1 exp-width frac-width) (ifix result)))
+        (mxcsr (loghead 32 (ifix mxcsr)))
+        ;; Pre-computation Exceptions
+        ;; Check invalid operation
+        ((when (and (equal (mxcsr-slice :ie mxcsr) 1)
+                    (equal (mxcsr-slice :im mxcsr) 0)))
+         (mv 'invalid-operand-exception-is-not-masked result mxcsr))
+        ;; Check divide-by-zero
+        ((when (and (equal (mxcsr-slice :ze mxcsr) 1)
+                    (equal (mxcsr-slice :zm mxcsr) 0)))
+         (mv 'divide-by-zero-exception-is-not-masked result mxcsr))
+        ;; Check denormal operand
+        ((when (and (equal (mxcsr-slice :de mxcsr) 1)
+                    (equal (mxcsr-slice :dm mxcsr) 0)))
+         (mv 'denormal-operand-exception-is-not-masked result mxcsr))
+        ;; Post-computation Exceptions
+        ;; Check overflow
+        ((when (and (equal (mxcsr-slice :oe mxcsr) 1)
+                    (equal (mxcsr-slice :om mxcsr) 0)))
+         (mv 'overflow-exception-is-not-masked result mxcsr))
+        ;; Check underflow
+        ((when (and (equal (mxcsr-slice :ue mxcsr) 1)
+                    (equal (mxcsr-slice :um mxcsr) 0)))
+         (mv 'underflow-exception-is-not-masked result mxcsr))
+        ;; Check precision
+        ((when (and (equal (mxcsr-slice :pe mxcsr) 1)
+                    (equal (mxcsr-slice :pm mxcsr) 0)))
+         (mv 'precision-exception-is-not-masked result mxcsr)))
      (mv nil result mxcsr))))
 
 (defthm unsigned-byte-p-of-result-of-sse-add/sub/mul/div
   (implies (and (equal fp-width (+ 1 exp-width frac-width))
-		(posp exp-width)
-		(posp frac-width))
-	   (unsigned-byte-p
-	    fp-width
-	    (mv-nth 1 (sse-add/sub/mul/div operation op1 op2 mxcsr exp-width frac-width)))))
+                (posp exp-width)
+                (posp frac-width))
+           (unsigned-byte-p
+            fp-width
+            (mv-nth 1 (sse-add/sub/mul/div operation op1 op2 mxcsr exp-width frac-width)))))
 
 (defthm unsigned-byte-p-of-mxcsr-of-sse-add/sub/mul/div
   (unsigned-byte-p
