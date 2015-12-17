@@ -26,36 +26,37 @@
 //   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //   DEALINGS IN THE SOFTWARE.
 //
-// Original author: Sol Swords <sswords@centtech.com>
+// Original authors: Sol Swords <sswords@centtech.com>
+//                   Jared Davis <jared@centtech.com>
 
+// Tests of top-level explicit value parameter handling
+// This is tricky because you have to be careful to convert the rhs to the
+// right datatype.
 
+parameter logic [5:0] a1 = 3'b100 << 1'b1;
+parameter logic [5:0] a2 = 3'b100 << 1;
+parameter logic [5:0] a3 = 3'sb100 << 1;
+parameter logic signed [5:0] a4 = 3'b100 << 1;
+parameter logic signed [5:0] a5 = 3'sb100 << 1;
 
-parameter foo = 5;
+parameter logic signed [5:0] b1 = 3'sb 110 >>> 1'sb1 ;
+parameter logic signed [5:0] b2 = 3'sb 110 >>> 1 ;
+parameter logic signed [5:0] b3 = 6'b 111100 >>> 1'sb1 ;
+parameter logic signed [5:0] b4 = 6'b 111100 >>> 1 ;
+parameter logic signed [5:0] b5 = 3'sb 110;
+parameter logic signed [5:0] b6 = 3'b 110;
 
-typedef logic [foo-1 : 0] bar_t; // logic [5:0]
-
-// package p;
-
-   parameter bar_t br = $clog2(foo); // logic [5:0] br = 3   (?)
-
-  typedef bar_t [br : 0] buz_t; // logic [5:0] [3:0] 
-
-   parameter buz_t bz = $bits(buz_t) + $bits(br); // logic [5:0] [3:0] bz = 24 + 6 = 30
-
-// endpackage
-
-
-
-
+parameter logic [5:0] c1 = 3'sb 110 >>> 1'sb1 ;
+parameter logic [5:0] c2 = 3'sb 110 >>> 1 ;
+parameter logic [5:0] c3 = 6'b 111100 >>> 1'sb1 ;
+parameter logic [5:0] c4 = 6'b 111100 >>> 1 ;
 
 module spec (input logic [127:0] in,
-	     output wire [127:0] out);
+	     output logic [127:0] out);
 
-   typedef buz_t [bz-1:0] goz_t; // logic [5:0] [3:0] [29:0]
+   assign out = { c4, c3, c2, c1,
+		  b6, b5, b4, b3, b2, b1,
+		  a5, a4, a3, a2, a1 };
 
-   localparam goz_t gz = $bits(goz_t); // logic [5:0] [3:0] [29:0] gz = 6*4*30
-
-   assign out = gz;
-
-endmodule // spec
+endmodule
 

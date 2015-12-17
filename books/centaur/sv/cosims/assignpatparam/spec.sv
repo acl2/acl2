@@ -26,36 +26,27 @@
 //   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //   DEALINGS IN THE SOFTWARE.
 //
-// Original author: Sol Swords <sswords@centtech.com>
+// Original authors: Sol Swords <sswords@centtech.com>
+//                   Jared Davis <jared@centtech.com>
 
+// Tests of top-level explicit value parameter handling
+// This is tricky because you have to be careful to convert the rhs to the
+// right datatype.
 
+// Note: NCV and VCS disagree about c4_sign and c3_sign below.  We
+// think VCS's behavior makes sense: the parameter is declared
+// unsigned, so treat it as unsigned regardless of the signedness of
+// the value assigned to it.
 
-parameter foo = 5;
+parameter a = 3;
+parameter b = 5;
 
-typedef logic [foo-1 : 0] bar_t; // logic [5:0]
-
-// package p;
-
-   parameter bar_t br = $clog2(foo); // logic [5:0] br = 3   (?)
-
-  typedef bar_t [br : 0] buz_t; // logic [5:0] [3:0] 
-
-   parameter buz_t bz = $bits(buz_t) + $bits(br); // logic [5:0] [3:0] bz = 24 + 6 = 30
-
-// endpackage
-
-
-
+localparam logic [3:0] [5:0] c = '{ a, 'd10, 4, b };
 
 
 module spec (input logic [127:0] in,
-	     output wire [127:0] out);
+	     output logic [127:0] out);
 
-   typedef buz_t [bz-1:0] goz_t; // logic [5:0] [3:0] [29:0]
+   assign out = c;
 
-   localparam goz_t gz = $bits(goz_t); // logic [5:0] [3:0] [29:0] gz = 6*4*30
-
-   assign out = gz;
-
-endmodule // spec
-
+endmodule

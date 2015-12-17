@@ -681,7 +681,12 @@ expression with @(see vl-expr-to-svex).</p>
 
         :vl-call
         (b* (((wmv ok1 warnings new-args elabindex)
-              (vl-exprlist-elaborate x.args elabindex :reclimit reclimit))
+              ;; Heuristic decision: Resolve arguments to constants iff this is
+              ;; a system call.  That way we get the dimension resolved for
+              ;; things like $size.
+              (if x.systemp
+                  (vl-indexlist-resolve-constants x.args elabindex :reclimit reclimit)
+                (vl-exprlist-elaborate x.args elabindex :reclimit reclimit)))
              ((wmv ok2 warnings new-typearg elabindex)
               (if x.typearg
                   (vl-datatype-elaborate x.typearg elabindex :reclimit reclimit)
@@ -695,6 +700,7 @@ expression with @(see vl-expr-to-svex).</p>
           (mv (and* ok1 ok2 ok3 ok4) warnings new-x elabindex))
 
         :vl-cast
+        ;; what is different here from elaborate-aux?
         (b* (((wmv ok1 warnings new-casttype elabindex)
               (vl-casttype-elaborate x.to elabindex :reclimit reclimit))
              ((wmv ok2 warnings new-expr elabindex)

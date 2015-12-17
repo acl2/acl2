@@ -1632,31 +1632,55 @@ the way.</li>
                            :exec (vl-datatype-$unpacked_dimensions x.res))
          :otherwise 0))))
 
-
+(define vl-datatype-syscall-remove-dims ((n natp)
+                                         (type vl-datatype-p))
+  :guard (vl-datatype-resolved-p type)
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (final-dim (implies (not err) (vl-packeddimension-p final-dim))))
+  :measure (nfix n)
+  (b* (((mv err ?caveat new-type dim)
+        (vl-datatype-remove-dim type))
+       ((when err) (mv err nil))
+       ((when (zp n)) (mv nil dim)))
+    (vl-datatype-syscall-remove-dims (1- n) new-type)))
 
 
 (define vl-datatype-syscall-to-svex ((orig-x vl-expr-p)
                                      (fn stringp)
                                      (type vl-datatype-p)
+                                     (index maybe-natp)
                                      (ss vl-scopestack-p)
                                      (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (res sv::Svex-p))
   (b* ((warnings nil)
+       (fn (string-fix fn))
+       (index (maybe-natp-fix index))
+       (orig-x (vl-expr-fix orig-x))
+       ((when (and index (zp index)))
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "Dimension argument of 0 is illegal in array query system calls: ~a0"
+                   :args (list orig-x))
+            (svex-x)))
+       ((when (and index (member-equal fn '("$bits" "$dimensions" "$unpacked_dimensions"))))
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "Dimension argument is illegal: ~a0"
+                   :args (list orig-x))
+            (svex-x)))
+
        ((mv err type)
         (vl-datatype-usertype-resolve type ss :scopes scopes))
        ((when err)
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Couldn't resolve datatype in ~a0: ~@1"
-                   :args (list (vl-expr-fix orig-x) err))
-            (svex-x)))
-       (fn (string-fix fn)))
+                   :args (list orig-x err))
+            (svex-x))))
     (cond ((equal fn "$bits")
            (b* (((mv err size) (vl-datatype-size type))
                 ((when (or err (not size)))
                  (mv (fatal :type :vl-expr-to-svex-fail
                             :msg "Couldn't size datatype in ~a0: ~@1"
-                            :args (list (vl-expr-fix orig-x) (or err "unsizable datatype")))
+                            :args (list orig-x (or err "unsizable datatype")))
                      (svex-x))))
              (mv (ok) (svex-int size))))
           ((equal fn "$dimensions")
@@ -1671,15 +1695,15 @@ the way.</li>
                               "$high"
                               "$size"))
            ;; Deals with the outermost dimension
-           (b* (((mv err & & dim)
-                 (vl-datatype-remove-dim type))
+           (b* (((mv err dim)
+                 (vl-datatype-syscall-remove-dims (if index (1- index) 0) type))
                 ((when (or err
                            ;; BOZO some of these might work for unsized dimensions
                            (vl-packeddimension-case dim :unsized)
                            (not (vl-range-resolved-p (vl-packeddimension->range dim)))))
                  (mv (fatal :type :vl-expr-to-svex-fail
                             :msg "Couldn't resolve outermost dimension for ~a0: ~@1"
-                            :args (list (vl-expr-fix orig-x)
+                            :args (list orig-x
                                         (or err "unresolved dimension")))
                      (svex-x)))
                 (dim.range (vl-packeddimension->range dim))
@@ -1710,7 +1734,7 @@ the way.</li>
 
           (t (mv (fatal :type :vl-expr-unsupported
                         :msg "Unrecognized system function: ~a0"
-                        :args (list (vl-expr-fix orig-x)))
+                        :args (list orig-x))
                  (svex-x)))))
 
 
@@ -2918,27 +2942,42 @@ functions can assume all bits of it are good.</p>"
                  ;; basically act on datatypes, and if an expression is given
                  ;; instead, they run on the type of the expression.
 
-                 ((when (and (atom x.args)
-                             x.typearg))
-                  (vl-datatype-syscall-to-svex x simple-name x.typearg ss scopes))
+                 (args-ok (if x.typearg
+                              (or (atom x.args) (atom (cdr x.args)))
+                            (and (consp x.args)
+                                 (or (atom (cdr x.args))
+                                     (atom (cddr x.args))))))
 
-                 ((unless (and (not x.typearg)
-                               (eql (len x.args) 1)))
+                 ((unless args-ok)
                   (mv (fatal :type :vl-expr-unsupported
-                             :msg "Unsupported system call: ~a0"
+                             :msg "Unsupported system call: ~a0 (bad arity for type query)"
                              :args (list x))
                       (svex-x)))
+                  
 
-                 ;; Resolve the expression to its type.
-                 ((wmv warnings ?arg-svex type ?size)
-                  (vl-expr-to-svex-untyped (car x.args) ss scopes))
+                 ((wmv warnings type index)
+                  (if x.typearg
+                      (mv nil x.typearg (and (consp x.args) (car x.args)))
+                    (b* (((mv warnings ?arg-svex type ?size)
+                          (vl-expr-to-svex-untyped (car x.args) ss scopes)))
+                      (mv warnings type (and (consp (cdr x.args)) (cadr x.args))))))
+
+                 ((when (and index (not (vl-expr-resolved-p index))))
+                  (mv (fatal :type :vl-expr-unsupported
+                             :msg "Unsupported system call: ~a0 ~
+                                         (dimension argument not resolved to ~
+                                         constant)"
+                             :args (list x))
+                      (svex-x)))
 
                  ((unless type)
                   ;; Already warned
                   (mv warnings (svex-x)))
 
                  ((wmv warnings svex)
-                  (vl-datatype-syscall-to-svex x simple-name type ss scopes)))
+                  (vl-datatype-syscall-to-svex x simple-name type
+                                               (and index (vl-resolved->val index))
+                                               ss scopes)))
               (mv warnings svex))
 
           (b* (((wmv warnings svex &)
