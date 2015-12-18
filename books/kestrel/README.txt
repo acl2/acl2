@@ -1,0 +1,3 @@
+This directory contains the 'Kestrel Books', a collection of ACL2 books
+contributed by Kestrel Institute (www.kestrel.edu). Copyright, author, and
+license information is provided in the individual files and subdirectories.
