@@ -51,7 +51,11 @@ FAILING_TEST_TARGETS := \
   inst12.svok \
   param1.svok \
   port1.svok \
-  iface18.svok iface19.svok
+  iface18.svok iface19.svok \
+  elab6.vok elab6.svok \
+  elab2.vok elab2.svok \
+  elab3.vok elab3.svok \
+  stmt1.svok 
 
 
 $(CORE):

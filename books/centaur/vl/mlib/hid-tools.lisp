@@ -421,6 +421,7 @@ be resolved.</p>"
                  (equal (tag item) :vl-genblock)
                  (equal (tag item) :vl-genarray)
                  (equal (tag item) :vl-genbase)
+                 (equal (tag item) :vl-genvar)
                  (equal (tag item) :vl-interfaceport)
                  (equal (tag item) :vl-paramdecl)
                  (equal (tag item) :vl-vardecl)
