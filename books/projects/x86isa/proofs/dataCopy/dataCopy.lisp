@@ -154,7 +154,28 @@
    :concl (equal (mod (+ 4 k) 4) 0)
    :g-bindings (gl::auto-bindings (:nat k 33)))
 
- (in-theory (e/d () (effects-copyData-loop-helper-11))))
+ (def-gl-export effects-copyData-loop-helper-14
+   :hyp (and (< 4 m)
+             (equal (mod m 4) 0)
+             (unsigned-byte-p 33 m))
+   :concl (equal (mod (+ -4 m) 4) 0)
+   :g-bindings (gl::auto-bindings (:nat m 33)))
+
+ (def-gl-export effects-copyData-loop-helper-15
+   :hyp (and (equal (loghead 2 m) 0)
+             (canonical-address-p m))
+   :concl (equal (loghead 2 (+ 4 m)) 0)
+   :g-bindings (gl::auto-bindings (:int m 48)))
+
+ (def-gl-export effects-copyData-loop-helper-16
+   :hyp (and (equal (loghead 3 m) 0)
+             (canonical-address-p m))
+   :concl (equal (loghead 3 (+ 8 m)) 0)
+   :g-bindings (gl::auto-bindings (:int m 48)))
+
+ (in-theory (e/d ()
+                 (effects-copyData-loop-helper-11
+                  effects-copyData-loop-helper-14))))
 
 ;; ======================================================================
 
@@ -202,6 +223,13 @@
        ;; All the source addresses are canonical.
        (canonical-address-p (+ (- k) (xr :rgf *rdi* x86)))
        (canonical-address-p (+ m (xr :rgf *rdi* x86)))
+       ;; Alignment Checking
+       (if (alignment-checking-enabled-p x86)
+           ;; rsi and rdi point to doublewords (four bytes), so their
+           ;; natural boundary will be addresses divisible by 4.
+           (and (equal (loghead 2 (xr :rgf *rsi* x86)) 0)
+                (equal (loghead 2 (xr :rgf *rdi* x86)) 0))
+         t)
        ;; Memory locations of interest are disjoint.
        (disjoint-p
         ;; Program addresses
@@ -272,6 +300,11 @@
                 ;; All the source addresses are canonical.
                 (canonical-address-p (+ (- k) (xr :rgf *rdi* x86)))
                 (canonical-address-p (+ m (xr :rgf *rdi* x86)))
+                ;; Alignment Checking
+                (if (alignment-checking-enabled-p x86)
+                    (and (equal (loghead 2 (xr :rgf *rsi* x86)) 0)
+                         (equal (loghead 2 (xr :rgf *rdi* x86)) 0))
+                  t)
                 ;; Memory locations of interest are disjoint.
                 (disjoint-p
                  ;; Program addresses
@@ -728,6 +761,18 @@
                              (loop-clk-base)
                              force (force))))))
 
+(defthm effects-copyData-loop-base-alignment-checking-enabled-p
+  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
+                (<= m 4))
+           (equal (alignment-checking-enabled-p (x86-run (loop-clk-base) x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal"
+           :use ((:instance effects-copydata-loop-base))
+           :in-theory (e/d* (alignment-checking-enabled-p)
+                            (loop-clk-base
+                             (loop-clk-base)
+                             force (force))))))
+
 (defthm effects-copyData-loop-base-programmer-level-mode-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (<= m 4))
@@ -767,20 +812,6 @@
                 (<= m 4))
            (equal (xr :rgf *rsp* (x86-run (loop-clk-base) x86))
                   (xr :rgf *rsp* x86)))
-  :hints (("Goal" :use ((:instance effects-copydata-loop-base))
-           :in-theory (e/d* ()
-                            (loop-clk-base
-                             (loop-clk-base)
-                             force (force))))))
-
-(defthm effects-copyData-loop-base-program-at-projection
-  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
-                (equal prog-len (len *copydata*))
-                (<= m 4))
-           (equal (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* (x86-run (loop-clk-base) x86))
-                  (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* x86)))
   :hints (("Goal" :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()
                             (loop-clk-base
@@ -836,6 +867,20 @@
                              loop-preconditions-fwd-chain-to-its-body
                              loop-preconditions
                              effects-copyData-loop-base
+                             (loop-clk-base)
+                             force (force))))))
+
+(defthm effects-copyData-loop-base-program-at-projection
+  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
+                (equal prog-len (len *copydata*))
+                (<= m 4))
+           (equal (program-at (create-canonical-address-list prog-len addr)
+                              *copyData* (x86-run (loop-clk-base) x86))
+                  (program-at (create-canonical-address-list prog-len addr)
+                              *copyData* x86)))
+  :hints (("Goal" :use ((:instance effects-copydata-loop-base))
+           :in-theory (e/d* ()
+                            (loop-clk-base
                              (loop-clk-base)
                              force (force))))))
 
@@ -1112,6 +1157,7 @@
                              force (force))))))
 
 (defthm effects-copyData-loop-recur-destination-address-projection
+  ;; TO-DO: Ugh, subgoal hints...
   ;; dst[(+ -k dst-addr) to (dst-addr + 4)] in (x86-run (loop-clk-recur) x86) =
   ;; src[(+ -k src-addr) to (src-addr + 4)] in x86
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
@@ -1127,6 +1173,51 @@
                                    (r-w-x :x)
                                    (addr (+ (- k) (xr :rgf *rsi* x86)))
                                    (x86 (x86-run (loop-clk-recur) x86))))
+           :in-theory (e/d* ()
+                            (loop-clk-recur
+                             effects-copyData-loop-recur-destination-address-projection-copied
+                             effects-copyData-loop-recur-destination-address-projection-original
+                             rb-rb-split-reads
+                             take-and-rb
+                             acl2::take-of-append
+                             (loop-clk-recur)
+                             force (force))))
+          ("Subgoal 7" :use ((:instance rb-rb-split-reads
+                                        (k k)
+                                        (j 4)
+                                        (r-w-x :x)
+                                        (addr (+ (- k) (xr :rgf *rdi* x86)))
+                                        (x86 x86)))
+           :in-theory (e/d* ()
+                            (loop-clk-recur
+                             effects-copyData-loop-recur-destination-address-projection-copied
+                             effects-copyData-loop-recur-destination-address-projection-original
+                             rb-rb-split-reads
+                             take-and-rb
+                             acl2::take-of-append
+                             (loop-clk-recur)
+                             force (force))))
+          ("Subgoal 5" :use ((:instance rb-rb-split-reads
+                                        (k k)
+                                        (j 4)
+                                        (r-w-x :x)
+                                        (addr (+ (- k) (xr :rgf *rdi* x86)))
+                                        (x86 x86)))
+           :in-theory (e/d* ()
+                            (loop-clk-recur
+                             effects-copyData-loop-recur-destination-address-projection-copied
+                             effects-copyData-loop-recur-destination-address-projection-original
+                             rb-rb-split-reads
+                             take-and-rb
+                             acl2::take-of-append
+                             (loop-clk-recur)
+                             force (force))))
+          ("Subgoal 2" :use ((:instance rb-rb-split-reads
+                                        (k k)
+                                        (j 4)
+                                        (r-w-x :x)
+                                        (addr (+ (- k) (xr :rgf *rdi* x86)))
+                                        (x86 x86)))
            :in-theory (e/d* ()
                             (loop-clk-recur
                              effects-copyData-loop-recur-destination-address-projection-copied
@@ -1230,6 +1321,17 @@
                   (xr :programmer-level-mode 0 x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
+                            (loop-clk-recur
+                             (loop-clk-recur)
+                             force (force))))))
+
+(defthm effects-copyData-loop-recur-alignment-checking-enabled-p-projection
+  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
+                (< 4 m))
+           (equal (alignment-checking-enabled-p (x86-run (loop-clk-recur) x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
+           :in-theory (e/d* (alignment-checking-enabled-p)
                             (loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
@@ -1369,12 +1471,14 @@
            :do-not-induct t
            :use ((:instance loop-preconditions-fwd-chain-to-its-body))
            :expand (loop-preconditions (+ 4 k)
-                                       (loghead 64 (+ #xfffffffffffffffc (xr :rgf *rax* x86)))
+                                       (+ -4 (xr :rgf *rax* x86))
                                        (+ -16 (xr :rip 0 x86))
                                        (+ 4 (xr :rgf *rdi* x86))
                                        (+ 4 (xr :rgf *rsi* x86))
                                        (x86-run (loop-clk-recur) x86))
-           :in-theory (e/d* (unsigned-byte-p)
+           :in-theory (e/d* (unsigned-byte-p
+                             effects-copyData-loop-helper-11
+                             effects-copyData-loop-helper-14)
                             (loop-clk-recur
                              rb-rb-split-reads
                              take-and-rb
@@ -1383,9 +1487,7 @@
                              loop-preconditions
                              loop-preconditions-fwd-chain-to-its-body
                              (loop-clk-recur)
-                             force (force))))
-          ("Subgoal 1" :in-theory (e/d* (effects-copyData-loop-helper-11)
-                                        ()))))
+                             force (force))))))
 
 (defun-nx loop-state (k m src-addr dst-addr x86)
 
@@ -1503,25 +1605,16 @@
                                    (j m)
                                    (r-w-x :x)
                                    (addr (+ (- k) (xr :rgf *rdi* x86)))
-                                   (x86 (x86-run (loop-clk-recur) x86))))
+                                   (x86 (x86-run (loop-clk-recur) x86)))
+                        (:instance rb-rb-split-reads
+                                   (k k)
+                                   (j (xr :rgf *rax* x86))
+                                   (r-w-x :x)
+                                   (addr (+ (- k) (xr :rgf *rdi* x86)))
+                                   (x86 x86)))
            :in-theory (e/d* ()
                             (loop-clk-recur
                              effects-copyData-loop-recur-source-address-projection-full-helper
-                             effects-copyData-loop-recur-source-address-projection-copied
-                             effects-copyData-loop-recur-source-address-projection-original
-                             rb-rb-split-reads
-                             take-and-rb
-                             acl2::take-of-append
-                             (loop-clk-recur)
-                             force (force))))
-          ("Subgoal 1" :use ((:instance rb-rb-split-reads
-                                        (k k)
-                                        (j (xr :rgf *rax* x86))
-                                        (r-w-x :x)
-                                        (addr (+ (- k) (xr :rgf *rdi* x86)))
-                                        (x86 x86)))
-           :in-theory (e/d* (unsigned-byte-p)
-                            (loop-clk-recur
                              effects-copyData-loop-recur-source-address-projection-copied
                              effects-copyData-loop-recur-source-address-projection-original
                              rb-rb-split-reads
@@ -1729,6 +1822,15 @@
        ;; All the source addresses are canonical.
        (canonical-address-p (xr :rgf *rdi* x86))
        (canonical-address-p (+ (ash n 2) (xr :rgf *rdi* x86)))
+       ;; Alignment Checking
+       (if (alignment-checking-enabled-p x86)
+           ;; rsi and rdi point to doublewords (four bytes), so their
+           ;; natural boundary will be addresses divisible by 4.
+           (and (equal (loghead 2 (xr :rgf *rsi* x86)) 0)
+                (equal (loghead 2 (xr :rgf *rdi* x86)) 0)
+                ;; rsp will be aligned to a 16-byte boundary.
+                (equal (loghead 3 (+ -8 (xr :rgf *rsp* x86))) 0))
+         t)
        ;; Memory locations of interest are disjoint.
        (disjoint-p
         ;; Return Addresses
@@ -1794,6 +1896,14 @@
                 ;; All the source addresses are canonical.
                 (canonical-address-p (xr :rgf *rdi* x86))
                 (canonical-address-p (+ (ash n 2) (xr :rgf *rdi* x86)))
+                ;; Alignment Checking
+                (if (alignment-checking-enabled-p x86)
+                    ;; rsi and rdi point to doublewords (four bytes), so their
+                    ;; natural boundary will be addresses divisible by 4.
+                    (and (equal (loghead 2 (xr :rgf *rsi* x86)) 0)
+                         (equal (loghead 2 (xr :rgf *rdi* x86)) 0)
+                         (equal (loghead 3 (+ -8 (xr :rgf *rsp* x86))) 0))
+                  t)
                 ;; Memory locations of interest are disjoint.
                 (disjoint-p
                  ;; Return Addresses
@@ -2063,6 +2173,15 @@
            :in-theory (e/d* (canonical-address-p-limits-thm-3)
                             ((pre-clk) pre-clk force (force)
                              preconditions)))))
+
+(defthm effects-copyData-pre-alignment-checking-enabled-p-projection
+  (implies (preconditions n addr x86)
+           (equal (alignment-checking-enabled-p (x86-run (pre-clk n) x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal"
+           :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* (alignment-checking-enabled-p)
+                            ((pre-clk) pre-clk force (force))))))
 
 (defthm preconditions-implies-loop-preconditions-after-pre-clk
   (implies (and (preconditions n addr x86)
@@ -2529,6 +2648,37 @@
                              effects-copydata-loop
                              create-canonical-address-list)))))
 
+(defthm loop-state-alignment-checking-enabled-p-projection
+  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
+                (natp k))
+           (equal (alignment-checking-enabled-p (loop-state k m src-addr dst-addr x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal"
+           :hands-off (x86-run)
+           :in-theory (e/d* ()
+                            (loop-preconditions
+                             loop-invariant
+                             destination-bytes
+                             source-bytes
+                             loop-clk-recur
+                             (loop-clk-recur)
+                             loop-clk-base
+                             (loop-clk-base)
+                             create-canonical-address-list)))))
+
+(defthm loop-clk-alignment-checking-enabled-p-projection
+  (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
+           (equal (alignment-checking-enabled-p (x86-run (loop-clk m) x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal"
+           :use ((:instance effects-copydata-loop (k 0)))
+           :hands-off (x86-run)
+           :in-theory (e/d* ()
+                            (loop-preconditions
+                             (loop-clk) loop-clk
+                             effects-copydata-loop
+                             create-canonical-address-list)))))
+
 (defun-nx after-the-copy-conditions (n addr x86)
   (and (x86p x86)
        (xr :programmer-level-mode 0 x86)
@@ -2546,6 +2696,10 @@
                  (mv-nth 1 (rb
                             (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
                             :r x86)))))
+       ;; Alignment Checking
+       (if (alignment-checking-enabled-p x86)
+           (equal (loghead 3 (xr :rgf *rsp* x86)) 0)
+         t)
        ;; All program addresses are canonical.
        (canonical-address-p addr)
        ;; [Shilpi]: Why not (canonical-address-p (+ -1 (len *copyData*) addr))?

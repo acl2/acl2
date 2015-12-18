@@ -33,6 +33,7 @@
 (include-book "scopestack")
 (include-book "expr-tools")
 (include-book "coretypes")
+(include-book "elabindex")
 (include-book "../util/sum-nats")
 (local (include-book "../util/arithmetic"))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
@@ -167,7 +168,9 @@ step along a HID.</p>"
   ((name stringp "Name from the hid")
    (index vl-maybe-expr-p "Instance array/genarray index, if present")
    (item vl-scopeitem-p  "The item encountered along the path of the HID.")
-   (ss   vl-scopestack-p "The scope where this item was found.")))
+   (ss   vl-scopestack-p "The scope where this item was found.")
+   (elabpath vl-elabtraversal-p "Reversed instructions to get to this scope
+                                 from the original scope.")))
 
 (fty::deflist vl-hidtrace
   :elt-type vl-hidstep
@@ -365,6 +368,87 @@ be resolved.</p>"
                          (not (stringp x))))
          :hints(("Goal" :in-theory (enable vl-hidname-p)))))
 
+(local (defthm nesting-level-of-vl-scopestack-find-item/context
+         (<= (vl-scopestack-nesting-level
+              (mv-nth 1 (vl-scopestack-find-item/context name ss)))
+             (vl-scopestack-nesting-level ss))
+         :hints(("Goal" :in-theory (enable vl-scopestack-find-item/context
+                                           vl-scopestack-nesting-level)))
+         :rule-classes :linear))
+
+(local (defthm maybe-stringp-of-vl-scopestack-find-item/context-pkg-name
+         (maybe-stringp
+          (mv-nth 2 (vl-scopestack-find-item/context name ss)))
+         :hints(("Goal" :in-theory (enable maybe-stringp)))
+         :rule-classes :type-prescription))
+
+(define vl-scopestack-find-elabpath ((ss vl-scopestack-p)
+                                     (context-ss vl-scopestack-p)
+                                     (pkg-name maybe-stringp))
+  :guard (<= (vl-scopestack-nesting-level context-ss)
+             (vl-scopestack-nesting-level ss))
+  :returns (elabpath vl-elabtraversal-p)
+  (if pkg-name
+      (list (vl-elabinstruction-push-named (vl-elabkey-package pkg-name))
+            (vl-elabinstruction-root))
+    (b* ((levels-up (- (vl-scopestack-nesting-level ss)
+                       (vl-scopestack-nesting-level context-ss))))
+      (list (vl-elabinstruction-pop levels-up)))))
+
+(define vl-scopestack-find-item/ss/path ((name stringp)
+                                         (ss vl-scopestack-p))
+  :returns (mv (item (iff (vl-scopeitem-p item) item))
+               (item-ss vl-scopestack-p)
+               (elabpath vl-elabtraversal-p
+                         "Reversed instructions to get from the SS to the item location."))
+  (b* (((mv item context-ss pkg-name) (vl-scopestack-find-item/context name ss))
+       (elabpath (vl-scopestack-find-elabpath ss context-ss pkg-name))
+       ((unless pkg-name)
+        (mv item context-ss elabpath))
+       (design (vl-scopestack->design context-ss))
+       (pkg (and design (cdr (hons-get pkg-name (vl-design-scope-package-alist-top design)))))
+       (item-ss (and pkg (vl-scopestack-push pkg (vl-scopestack-init design)))))
+    (mv item item-ss elabpath))
+  ///
+  (defthm tag-of-vl-scopestack-find-item/ss/path-forward
+    (b* (((mv item ?item-ss ?item-path) (vl-scopestack-find-item/ss/path name ss)))
+    (implies item
+             (or (equal (tag item) :vl-modinst)
+                 (equal (tag item) :vl-gateinst)
+                 (equal (tag item) :vl-genloop)
+                 (equal (tag item) :vl-genif)
+                 (equal (tag item) :vl-gencase)
+                 (equal (tag item) :vl-genblock)
+                 (equal (tag item) :vl-genarray)
+                 (equal (tag item) :vl-genbase)
+                 (equal (tag item) :vl-interfaceport)
+                 (equal (tag item) :vl-paramdecl)
+                 (equal (tag item) :vl-vardecl)
+                 (equal (tag item) :vl-fundecl)
+                 (equal (tag item) :vl-taskdecl)
+                 (equal (tag item) :vl-typedef)
+                 (equal (tag item) :vl-dpiimport)
+                 (equal (tag item) :vl-modport))))
+  :rule-classes ((:forward-chaining))
+  :hints(("Goal"
+          :use ((:instance tag-when-vl-scopeitem-p-forward
+                 (x (b* (((mv item ?item-ss ?path)
+                          (vl-scopestack-find-item/ss/path name ss)))
+                      item))))))))
+
+
+#||
+(trace$ #!vl (vl-follow-hidexpr-aux-fn
+              :entry (list 'vl-follow-hidexpr-aux
+                           (with-local-ps (vl-pp-hidexpr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list ?err ?new-trace ?tail)))
+                      (list 'vl-follow-hidexpr-aux
+                            (and err (with-local-ps (vl-cw "~@0" err)))
+                            ;; (with-local-ps (vl-pp-hidexpr tail))
+                            ))))
+
+||#
 (with-output
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil)
           :term nil)
@@ -377,6 +461,7 @@ be resolved.</p>"
      (ss    vl-scopestack-p "Current scopestack we're working from.")
      &key
      (strictp booleanp)
+     ((elabpath vl-elabtraversal-p) 'elabpath)
      ((origx vl-scopeexpr-p      "Original version of X, for better error messages.") 'origx))
     :returns
     (mv (err     (iff (vl-msg-p err) err)
@@ -404,8 +489,8 @@ top-level hierarchical identifiers.</p>"
                                  (vl-maybe-expr-p (car x))))))
     :hooks ((:fix
              :hints(("Goal"
-                     :expand ((:free (trace ss strictp) (vl-follow-hidexpr-aux x trace ss :strictp strictp))
-                              (:free (trace ss strictp) (vl-follow-hidexpr-aux (vl-expr-fix x) trace ss :strictp strictp)))))))
+                     :expand ((:free (trace ss strictp elabpath) (vl-follow-hidexpr-aux x trace ss :strictp strictp :elabpath elabpath))
+                              (:free (trace ss strictp elabpath) (vl-follow-hidexpr-aux (vl-expr-fix x) trace ss :strictp strictp :elabpath elabpath)))))))
     (b* ((trace (vl-hidtrace-fix trace))
          (x     (vl-hidexpr-fix x))
          ((mv name1 indices rest kind)
@@ -418,10 +503,11 @@ top-level hierarchical identifiers.</p>"
           (mv (vl-follow-hidexpr-error (vmsg "$root is not yet supported") ss)
               trace x))
 
-         ((mv item item-ss) (vl-scopestack-find-item/ss name1 ss))
+         ((mv item item-ss item-path) (vl-scopestack-find-item/ss/path name1 ss))
          ((unless item)
           (mv (vl-follow-hidexpr-error (vmsg "item not found") ss)
               trace x))
+         (elabpath (vl-elabpaths-append item-path elabpath))
 
          ((when (or (eq (tag item) :vl-vardecl)
                     (eq (tag item) :vl-paramdecl)))
@@ -433,7 +519,8 @@ top-level hierarchical identifiers.</p>"
                                              :item item
                                              ;; No indices -- they belong to
                                              ;; the variable
-                                             :ss item-ss)
+                                             :ss item-ss
+                                             :elabpath elabpath)
                             trace)))
             (mv nil trace x)))
 
@@ -442,7 +529,8 @@ top-level hierarchical identifiers.</p>"
          (trace (cons (make-vl-hidstep :name name1
                                        :item item
                                        :index (car indices)
-                                       :ss item-ss)
+                                       :ss item-ss
+                                       :elabpath elabpath)
                       trace))
 
          ((when (or (eq (tag item) :vl-fundecl)
@@ -523,13 +611,15 @@ top-level hierarchical identifiers.</p>"
                            name1 item.modname modtag)
                      item-ss)
                     trace x))
+               (mod-path (list (vl-elabinstruction-push-named (vl-elabkey-def item.modname))
+                               (vl-elabinstruction-root)))
                (next-ss
                 ;; The MOD-SS is just the scopestack for where the module is
                 ;; defined, which in practice will be the top level scope.
                 ;; The next part of the HID needs to be looked up from within
                 ;; MOD, so we need to actually go into the module.
                 (vl-scopestack-push mod mod-ss)))
-            (vl-follow-hidexpr-aux rest trace next-ss :strictp strictp)))
+            (vl-follow-hidexpr-aux rest trace next-ss :strictp strictp :elabpath mod-path)))
 
          ((when (eq (tag item) :vl-interfaceport))
           ;; BOZO.  We don't yet implement the access restrictions described in
@@ -582,9 +672,12 @@ top-level hierarchical identifiers.</p>"
                            name1 item.ifname iftag)
                      item-ss)
                     trace x))
-               (next-ss (vl-scopestack-push iface iface-ss)))
+               (next-ss (vl-scopestack-push iface iface-ss))
+               (iface-path (list (vl-elabinstruction-push-named (vl-elabkey-def item.ifname))
+                                 (vl-elabinstruction-root))))
             (vl-follow-hidexpr-aux rest trace next-ss
-                                   :strictp strictp)))
+                                   :strictp strictp
+                                   :elabpath iface-path)))
 
          ((when (eq (tag item) :vl-genblock))
           (b* (((when (consp indices))
@@ -601,10 +694,12 @@ top-level hierarchical identifiers.</p>"
                ;; This is fine, we just need to go into the generate block.
                (genblob (vl-sort-genelements (vl-genblock->elems item)
                                              :scopetype :vl-genblock
-                                             :name (vl-genblock->name item)))
-               (next-ss (vl-scopestack-push genblob item-ss)))
+                                             :name name1))
+               (next-ss (vl-scopestack-push genblob item-ss))
+               (next-path (cons (vl-elabinstruction-push-named (vl-elabkey-item name1))
+                                elabpath)))
             (vl-follow-hidexpr-aux rest trace next-ss
-                                   :strictp strictp)))
+                                   :strictp strictp :elabpath next-path)))
 
          ((when (eq (tag item) :vl-genarray))
           (b* (((when (eq kind :end))
@@ -653,9 +748,11 @@ top-level hierarchical identifiers.</p>"
                     trace x))
                (genblob (vl-sort-genelements (vl-genarrayblock->elems block)
                                              :scopetype :vl-genarrayblock
-                                             :name (vl-genarray->name item)))
-               (next-ss (vl-scopestack-push genblob item-ss)))
-            (vl-follow-hidexpr-aux rest trace next-ss :strictp strictp)))
+                                             :name name1))
+               (next-ss (vl-scopestack-push genblob item-ss))
+               (next-path (cons (vl-elabinstruction-push-named (vl-elabkey-item name1))
+                                elabpath)))
+            (vl-follow-hidexpr-aux rest trace next-ss :strictp strictp :elabpath next-path)))
 
          ((when (eq (tag item) :vl-typedef))
           (b* (((when (eq kind :end))
@@ -711,9 +808,11 @@ top-level hierarchical identifiers.</p>"
     (defthm context-irrelevance-of-vl-follow-hidexpr-aux
       (implies (syntaxp (not (equal origx  (list 'quote (with-guard-checking :none (vl-scopeexpr-fix nil))))))
                (b* (((mv err1 trace1 tail1) (vl-follow-hidexpr-aux x trace ss
+                                                                   :elabpath elabpath
                                                                    :strictp strictp
                                                                    :origx origx))
                     ((mv err2 trace2 tail2) (vl-follow-hidexpr-aux x trace ss
+                                                                   :elabpath elabpath
                                                                    :strictp strictp
                                                                    :origx (vl-scopeexpr-fix nil))))
                  (and (equal trace1 trace2)
@@ -721,11 +820,13 @@ top-level hierarchical identifiers.</p>"
                       (iff err1 err2))))
       :hints ((acl2::just-induct-and-expand
                (vl-follow-hidexpr-aux x trace ss
+                                      :elabpath elabpath
                                       :strictp strictp
                                       :origx origx)
                :expand-others
                ((:free (ctx strictp origx)
                  (vl-follow-hidexpr-aux x trace ss
+                                        :elabpath elabpath
                                         :strictp strictp
                                         :origx origx))))))
 
@@ -744,15 +845,8 @@ top-level hierarchical identifiers.</p>"
       (implies (not err)
                (vl-subhid-p tail x))
       :hints(("Goal" :in-theory (enable vl-subhid-p)
-              :induct (vl-follow-hidexpr-aux x trace ss :strictp strictp :origx origx))))))
+              :induct (vl-follow-hidexpr-aux x trace ss :elabpath elabpath :strictp strictp :origx origx))))))
 
-(deftagsum vl-scopecontext
-  (:local     ((levels natp :rule-classes :type-prescription
-                       "How many levels up from the current scope was the item found")))
-  (:root      ())
-  (:package   ((pkg vl-package-p)))
-  (:module    ((mod vl-module-p)))
-  (:interface ((iface vl-interface-p))))
 
 (deftagsum vl-select
   (:field ((name stringp "The name of the field we're selecting")))
@@ -802,12 +896,19 @@ top-level hierarchical identifiers.</p>"
     (equal (vl-seltrace->indices (rev x))
            (rev (vl-seltrace->indices x)))))
 
-
+(deftagsum vl-scopecontext
+  (:local     ((levels natp :rule-classes :type-prescription
+                       "How many levels up from the current scope was the item found")))
+  (:root      ())
+  (:package   ((pkg vl-package-p)))
+  (:module    ((mod vl-module-p)))
+  (:interface ((iface vl-interface-p))))
 
 (defprod vl-operandinfo
   ((orig-expr  vl-expr-p         "The original index expression, for error messages etc")
    (context  vl-scopecontext-p  "The context in which the HID base was found")
    (prefixname vl-scopeexpr-p    "The scopeexpr, not including the possible data selects.")
+   (declname stringp            "The name of the variable or parameter")
    (hidtrace vl-hidtrace-p      "The follow-hids trace, i.e. the trace of instances/blocks
                                  in which the base variable is located")
    (hidtype  vl-datatype-p      "The datatype of the final element of the hidtrace.")
@@ -818,13 +919,7 @@ top-level hierarchical identifiers.</p>"
                                  partselecting.")))
 
 
-(local (defthm nesting-level-of-vl-scopestack-find-item/context
-         (<= (vl-scopestack-nesting-level
-              (mv-nth 1 (vl-scopestack-find-item/context name ss)))
-             (vl-scopestack-nesting-level ss))
-         :hints(("Goal" :in-theory (enable vl-scopestack-find-item/context
-                                           vl-scopestack-nesting-level)))
-         :rule-classes :linear))
+
 
 (local (defthm top-level-design-elements-are-modules-or-interfaces
          (implies (and (member-equal name (vl-design-toplevel design))
@@ -840,13 +935,27 @@ top-level hierarchical identifiers.</p>"
          (implies (vl-module-p x)
                   (vl-scope-p x))))
 
+#||
+
+(trace$ #!vl (vl-follow-hidexpr-fn
+              :entry (list 'vl-follow-hidexpr
+                           (with-local-ps (vl-pp-hidexpr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list ?err ?trace ?context ?tail) values))
+                      (list 'vl-follow-hidexpr
+                            (and err (with-local-ps (vl-cw "~@0" err)))))))
+
+||#
+
+
 (define vl-follow-hidexpr
   :short "Follow a HID to find the associated declaration."
   ((x       vl-hidexpr-p       "Hierarchical identifier to follow.")
    (ss      vl-scopestack-p "Scopestack where the HID originates.")
    &key
    ((origx vl-scopeexpr-p      "Original version of X, for better error messages.") 'origx)
-   (strictp booleanp "Require all array indices and bounds to be resolved?"))
+   (strictp booleanp "Require all array indices and bounds to be resolved?")
+   ((elabpath vl-elabtraversal-p) 'nil))
   :guard-debug t
   :returns
   (mv (err   (iff (vl-msg-p err) err)
@@ -943,7 +1052,8 @@ instance, in this case the @('tail') would be
        ((mv item ctx-ss pkg-name) (vl-scopestack-find-item/context name1 ss))
        ((when item)
         (b* (((mv err trace tail)
-              (vl-follow-hidexpr-aux x nil ss :strictp strictp))
+              ;; Starting from the original SS, don't get an elabpath from the lookup above
+              (vl-follow-hidexpr-aux x nil ss :strictp strictp :elabpath elabpath))
              ((when err) (mv err trace nil tail))
              ((mv err context)
               (cond (pkg-name
@@ -1004,10 +1114,12 @@ instance, in this case the @('tail') would be
        ;; it seems pretty reasonable to just not bother to record the first
        ;; step.
        (next-ss (vl-scopestack-push topdef topdef-ss))
+       (elabpath (list (vl-elabinstruction-push-named (vl-elabkey-def name1))
+                       (vl-elabinstruction-root)))
 
        ((mv err trace tail)
         (vl-follow-hidexpr-aux rest trace next-ss
-                               :strictp strictp))
+                               :strictp strictp :elabpath elabpath))
 
        (context (if (eq (tag topdef) :vl-module)
                     (make-vl-scopecontext-module :mod topdef)
@@ -1034,7 +1146,17 @@ instance, in this case the @('tail') would be
              (vl-subhid-p tail x))
     :hints(("Goal" :in-theory (enable vl-subhid-p)))))
 
+#||
 
+(trace$ #!vl (vl-follow-scopeexpr-fn
+              :entry (list 'vl-follow-scopeexpr
+                           (with-local-ps (vl-pp-scopeexpr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list ?err ?trace ?context ?tail) values))
+                      (list 'vl-follow-scopeexpr
+                            (and err (with-local-ps (vl-cw "~@0" err)))))))
+
+||#
 
 (define vl-follow-scopeexpr
   :short "Follow a scope expression to find the associated declaration."
@@ -1057,7 +1179,7 @@ instance, in this case the @('tail') would be
               indexing."))
   (vl-scopeexpr-case x
     :end
-    (vl-follow-hidexpr x.hid ss :strictp strictp :origx x)
+    (vl-follow-hidexpr x.hid ss :strictp strictp :origx x :elabpath nil)
 
     :colon
     (b* ((x (vl-scopeexpr-fix x))
@@ -1080,10 +1202,12 @@ instance, in this case the @('tail') would be
                                      not yet supported."
                     x)
               nil nil (vl-scopeexpr->hid x)))
+         (elabpath (list (vl-elabinstruction-push-named (vl-elabkey-package x.first))
+                         (vl-elabinstruction-root)))
          ((mv err trace context tail)
           (vl-follow-hidexpr
            (vl-scopeexpr-end->hid x.rest)
-           pkg-ss  :strictp strictp :origx x))
+           pkg-ss  :strictp strictp :origx x :elabpath elabpath))
          ((when err) (mv err trace context tail))
          ((unless (vl-scopecontext-case context :local))
           (mv nil trace context tail)))
@@ -1112,6 +1236,15 @@ instance, in this case the @('tail') would be
 
 (local (xdoc::set-default-parents datatype-tools))
 
+
+(define vl-hidexpr-name1 ((x vl-hidexpr-p))
+  :returns (name vl-hidname-p
+                 :hints ((and stable-under-simplificationp
+                              '(:in-theory (enable vl-hidname-p)))))
+  (vl-hidexpr-case x
+    :end x.name
+    :dot (vl-hidindex->name x.first)))
+    
 
 
 (defines vl-datatype-resolved-p
@@ -1204,24 +1337,24 @@ instance, in this case the @('tail') would be
              (vl-datatype-resolved-p (vl-datatype-update-dims pdims udims x)))
     :hints(("Goal" :in-theory (enable vl-datatype-update-dims)))))
 
-(fty::defalist vl-typeoverride :key-type vl-scopeexpr :val-type vl-datatype
-  :short "Alist mapping names to datatypes, used to store resolutions of parameter
-          types that have been computed but not yet put in the design."
-  :long "<p>The names may be of various different kinds of objects, meaning
-slightly different things:</p>
+;; (fty::defalist vl-typeoverride :key-type vl-scopeexpr :val-type vl-datatype
+;;   :short "Alist mapping names to datatypes, used to store resolutions of parameter
+;;           types that have been computed but not yet put in the design."
+;;   :long "<p>The names may be of various different kinds of objects, meaning
+;; slightly different things:</p>
 
-<ul>
-<li>A value parameter name maps to the type of the parameter value</li>
-<li>A type parameter name maps to the resolved type that is that parameter's value</li>
-<li>A typedef name maps to the resolved type</li>
-<li>A function name maps to the resolved return type of the function.</li>
-</ul>")
+;; <ul>
+;; <li>A value parameter name maps to the type of the parameter value</li>
+;; <li>A type parameter name maps to the resolved type that is that parameter's value</li>
+;; <li>A typedef name maps to the resolved type</li>
+;; <li>A function name maps to the resolved return type of the function.</li>
+;; </ul>")
 
 (defines vl-datatype-usertype-resolve
   (define vl-datatype-usertype-resolve ((x vl-datatype-p)
                                         (ss vl-scopestack-p)
                                         &key
-                                        ((typeov vl-typeoverride-p) 'nil)
+                                        ((scopes vl-elabscopes-p) 'nil)
                                         ((rec-limit natp) '1000))
     :verify-guards nil
     :measure (two-nats-measure rec-limit (vl-datatype-count x))
@@ -1232,26 +1365,26 @@ slightly different things:</p>
         :vl-coretype (mv nil x)
         :vl-struct (b* (((mv err members)
                          (vl-structmemberlist-usertype-resolve
-                          x.members ss :typeov typeov :rec-limit rec-limit)))
+                          x.members ss :scopes scopes :rec-limit rec-limit)))
                      (mv err (change-vl-struct x :members members)))
         :vl-union  (b* (((mv err members)
                          (vl-structmemberlist-usertype-resolve
-                          x.members ss :typeov typeov :rec-limit rec-limit)))
+                          x.members ss :scopes scopes :rec-limit rec-limit)))
                      (mv err (change-vl-union x :members members)))
         :vl-enum   (b* (((mv err basetype)
                          (vl-datatype-usertype-resolve
-                          x.basetype ss :typeov typeov :rec-limit rec-limit)))
+                          x.basetype ss :scopes scopes :rec-limit rec-limit)))
                      (mv err (change-vl-enum x :basetype basetype)))
         :vl-usertype (b* (((when (and x.res (vl-datatype-resolved-p x.res)))
                            (mv nil x))
                           ((mv err def)
-                           (vl-usertype-lookup x.name ss :typeov typeov :rec-limit rec-limit)))
+                           (vl-usertype-lookup x.name ss :scopes scopes :rec-limit rec-limit)))
                        (mv err (change-vl-usertype x :res def))))))
 
   (define vl-structmemberlist-usertype-resolve ((x vl-structmemberlist-p)
                                                 (ss vl-scopestack-p)
                                                 &key
-                                                ((typeov vl-typeoverride-p) 'nil)
+                                                ((scopes vl-elabscopes-p) 'nil)
                                                 ((rec-limit natp) '1000))
     :measure (two-nats-measure rec-limit (vl-structmemberlist-count x))
     :returns (mv (err (iff (vl-msg-p err) err))
@@ -1259,9 +1392,9 @@ slightly different things:</p>
     (b* (((when (atom x)) (mv nil nil))
          ((mv err1 type1)
           (vl-datatype-usertype-resolve
-           (vl-structmember->type (car x)) ss :typeov typeov :rec-limit rec-limit))
+           (vl-structmember->type (car x)) ss :scopes scopes :rec-limit rec-limit))
          ((mv err2 rest)
-          (vl-structmemberlist-usertype-resolve (cdr x) ss :typeov typeov :rec-limit
+          (vl-structmemberlist-usertype-resolve (cdr x) ss :scopes scopes :rec-limit
                                                 rec-limit)))
       (mv (or err1 err2)
           (cons (change-vl-structmember (car x) :type type1) rest))))
@@ -1269,7 +1402,7 @@ slightly different things:</p>
   (define vl-usertype-lookup ((x vl-scopeexpr-p "The usertype name to look up")
                               (ss vl-scopestack-p)
                               &key
-                              ((typeov vl-typeoverride-p) 'nil)
+                              ((scopes vl-elabscopes-p) 'nil)
                               ((rec-limit natp) '1000))
   :short "Looks up a usertype name and returns its definition if successful."
   :measure (two-nats-measure rec-limit 0)
@@ -1280,7 +1413,7 @@ slightly different things:</p>
                                    (vl-datatype-p type)))
                      "Fully resolved type, if successful"))
   (b* ((x (vl-scopeexpr-fix x))
-       (typeov (vl-typeoverride-fix typeov))
+       (scopes (vl-elabscopes-fix scopes))
        (hid (vl-scopeexpr->hid x))
        ;; BOZO Maybe we should use a different type than scopeexpr for a usertype name
        ((unless (vl-hidexpr-case hid :end))
@@ -1288,29 +1421,42 @@ slightly different things:</p>
                                    paths, only package scopes: ~a1"
                   nil x)
             nil))
-       (look (hons-get x typeov))
-       ((when look)
-        (if (vl-datatype-resolved-p (cdr look))
-            (mv nil (cdr look))
-          (mv (vmsg "Programming error: unresolved override type") nil)))
        ((mv err trace ?context ?tail)
         (vl-follow-scopeexpr x ss))
        ((when err)
         (mv err nil))
        ((vl-hidstep ref) (car trace))
-       ((when (eq (tag ref.item) :vl-typedef))
-        (b* (((vl-typedef item) ref.item)
+       (name1 (vl-hidexpr-name1 tail))
+       ((when (eq name1 :vl-$root))
+        (mv (vmsg "$root is not supported") nil))
+       ;; Check whether there is elaboration info stored for the type as
+       ;; well. If so, use that item instead of the one found in the
+       ;; scopestack by follow-scopeexpr.
+       (ref-scopes (vl-elabscopes-traverse (rev ref.elabpath) scopes :allow-empty t))
+       (info (vl-elabscopes-item-info name1 ref-scopes))
+       (item (or info ref.item))
+       
+       ((when (eq (tag item) :vl-typedef))
+        (b* (((vl-typedef item) item)
+             ((when info)
+              (if (vl-datatype-resolved-p item.type)
+                  (mv nil item.type)
+                (mv (vmsg "Programming error: unresolved type ~s0 stored in elaboration"
+                          name1) nil)))
              ((when (zp rec-limit))
               (mv (vmsg "Recursion limit ran out looking up ~
                                       usertype ~a0" x)
                   nil)))
           (vl-datatype-usertype-resolve item.type ref.ss
-                                        :typeov nil ;; different scope!
-                                        :rec-limit (1- rec-limit))))
-       ((when (eq (tag ref.item) :vl-paramdecl))
-        (b* (((vl-paramdecl item) ref.item))
+                                        :rec-limit (1- rec-limit)
+                                        :scopes ref-scopes)))
+       ((when (eq (tag item) :vl-paramdecl))
+        (b* (((vl-paramdecl item) item))
           (vl-paramtype-case item.type
             :vl-typeparam
+            ;; Note: I think it would be wrong to recur on the parameter type
+            ;; here, because it could be overridden with a type from outside
+            ;; the module, in which case we don't know what scope it came from.
             (if (and item.type.default
                      (vl-datatype-resolved-p item.type.default))
                 (mv nil item.type.default)
@@ -1320,7 +1466,7 @@ slightly different things:</p>
             (mv (vmsg "Reference to data parameter ~a0 as type" item)
                 nil)))))
     (mv (vmsg "Didn't find a typedef ~a1, instead found ~a2"
-              nil x ref.item)
+              nil x item)
         nil)))
 
 
@@ -1329,46 +1475,46 @@ slightly different things:</p>
 
   (defthm vl-datatype-usertype-resolve-nonnil
     (mv-nth 1 (vl-datatype-usertype-resolve
-               x ss :typeov typeov :rec-limit rec-limit))
+               x ss :scopes scopes :rec-limit rec-limit))
     :hints (("goal" :use ((:instance
                            (:theorem
                             (implies (not x)
                                      (not (vl-datatype-p x))))
                            (x (mv-nth 1 (vl-datatype-usertype-resolve
-                                         x ss :typeov typeov :rec-limit rec-limit)))))
+                                         x ss :scopes scopes :rec-limit rec-limit)))))
              :in-theory (disable vl-datatype-usertype-resolve)))
     :rule-classes
     ((:type-prescription :typed-term (mv-nth 1 (vl-datatype-usertype-resolve
-                                                x ss :typeov typeov :rec-limit rec-limit)))))
+                                                x ss :scopes scopes :rec-limit rec-limit)))))
 
   (defthm vl-usertype-lookup-nonnil
-    (b* (((mv err res) (vl-usertype-lookup x ss :typeov typeov :rec-limit rec-limit)))
+    (b* (((mv err res) (vl-usertype-lookup x ss :scopes scopes :rec-limit rec-limit)))
       (implies (not err)
                res))
     :hints (("goal" :use ((:instance return-type-of-vl-usertype-lookup-fn.type))
              :in-theory (disable return-type-of-vl-usertype-lookup-fn.type)))
     :rule-classes
     ((:type-prescription :typed-term (mv-nth 1 (vl-usertype-lookup
-                                                x ss :typeov typeov :rec-limit rec-limit)))))
+                                                x ss :scopes scopes :rec-limit rec-limit)))))
 
   (defthm-vl-datatype-usertype-resolve-flag
     (defthm vl-datatype-resolved-p-of-vl-datatype-usertype-resolve
       (b* (((mv err new-x)
-            (vl-datatype-usertype-resolve x ss :typeov typeov :rec-limit rec-limit)))
+            (vl-datatype-usertype-resolve x ss :scopes scopes :rec-limit rec-limit)))
         (implies (not err)
                  (vl-datatype-resolved-p new-x)))
       :hints('(:expand ((vl-datatype-resolved-p x))))
       :flag vl-datatype-usertype-resolve)
     (defthm vl-structmemberlist-resolved-p-of-vl-structmemberlist-usertype-resolve
       (b* (((mv err new-x)
-            (vl-structmemberlist-usertype-resolve x ss :typeov typeov :rec-limit rec-limit)))
+            (vl-structmemberlist-usertype-resolve x ss :scopes scopes :rec-limit rec-limit)))
         (implies (not err)
                  (vl-structmemberlist-resolved-p new-x)))
       ;; :hints('(:in-theory (enable vl-structmemberlist-resolved-p)))
       :flag vl-structmemberlist-usertype-resolve)
     (defthm vl-datatype-resolved-p-of-vl-usertype-lookup
       (b* (((mv err type)
-            (vl-usertype-lookup x ss :typeov typeov :rec-limit rec-limit)))
+            (vl-usertype-lookup x ss :scopes scopes :rec-limit rec-limit)))
         (implies (not err)
                  (vl-datatype-resolved-p type)))
       :flag vl-usertype-lookup))
@@ -3500,7 +3646,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        identifier with 0 or more array selects and a possible partselect.")
    (ss vl-scopestack-p
        "Scopestack where @('x') is referenced.")
-   (typeov vl-typeoverride-p))
+   (scopes vl-elabscopes-p))
   :guard (vl-expr-case x :vl-index)
   :returns (mv (err (iff (vl-msg-p err) err)
                     "Success indicator, we fail if we can't follow the HID or
@@ -3521,22 +3667,20 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        ;; Suppose foo.bar is the actual vardecl, and .baz.fum are selects into it.
        ;; We want to see if foo.bar has a cached resolved type.
 
-       ;; Compute foo.bar.
-       (prefix-name (vl-scopeexpr-replace-hid
-                     x.scope
-                     (vl-hid-prefix-for-subhid (vl-scopeexpr->hid x.scope) tail)))
+       (decl-scopes (vl-elabscopes-traverse (rev hidstep.elabpath) scopes))
+       ;; This is the scope in which bar is declared.
+       (name1 (vl-hidexpr-name1 tail)) ;; bar
+       ((when (eq name1 :vl-$root))
+        (mv (vmsg "$root is not supported") nil))
+
+       (info (vl-elabscopes-item-info name1 decl-scopes))
 
        ((mv err type)
-        (b* ((look (hons-get prefix-name (vl-typeoverride-fix typeov)))
-             ((when look)
-              (if (vl-datatype-resolved-p (cdr look))
-                  (mv nil (cdr look))
-                (mv (vmsg "Programming error: Type override was unresolved")
-                    nil))))
-          (case (tag hidstep.item)
-            (:vl-vardecl (b* ((type1 (vl-vardecl->type hidstep.item)))
-                           (vl-datatype-usertype-resolve type1 hidstep.ss :typeov typeov)))
-            (:vl-paramdecl (b* (((vl-paramdecl decl) hidstep.item))
+        (b* ((item (or info hidstep.item)))
+          (case (tag item)
+            (:vl-vardecl (b* ((type1 (vl-vardecl->type item)))
+                           (vl-datatype-usertype-resolve type1 hidstep.ss :scopes decl-scopes)))
+            (:vl-paramdecl (b* (((vl-paramdecl decl) item))
                              (vl-paramtype-case decl.type
                                :vl-explicitvalueparam
                                (if (vl-datatype-resolved-p decl.type.type)
@@ -3547,8 +3691,16 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                                :otherwise (mv (vmsg "Bad parameter reference: ~a0" x)
                                               nil))))
             (otherwise
-             (mv (vmsg "~a0: instead of a vardecl, found ~a1" x hidstep.item) nil)))))
+             (mv (vmsg "~a0: instead of a vardecl, found ~a1" x item) nil)))))
+
        ((when err) (mv err nil))
+
+
+
+       ;; Compute foo.bar.
+       (prefix-name (vl-scopeexpr-replace-hid
+                     x.scope
+                     (vl-hid-prefix-for-subhid (vl-scopeexpr->hid x.scope) tail)))
 
        ((mv err seltrace final-type)
         (vl-datatype-resolve-selects type tail x.indices x.part))
@@ -3559,6 +3711,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
              :orig-expr x
              :context context
              :prefixname prefix-name
+             :declname name1
              :hidtrace hidtrace
              :hidtype type
              :seltrace seltrace

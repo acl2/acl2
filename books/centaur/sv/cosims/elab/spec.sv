@@ -32,15 +32,15 @@
 
 parameter foo = 5;
 
-typedef logic [foo-1 : 0] bar_t;
+typedef logic [foo-1 : 0] bar_t; // logic [5:0]
 
 // package p;
 
-   parameter bar_t br = $clog2(foo);
+   parameter bar_t br = $clog2(foo); // logic [5:0] br = 3   (?)
 
-  typedef bar_t [br : 0] buz_t;
+  typedef bar_t [br : 0] buz_t; // logic [5:0] [3:0] 
 
-   parameter buz_t bz = $bits(buz_t) + $bits(br);
+   parameter buz_t bz = $bits(buz_t) + $bits(br); // logic [5:0] [3:0] bz = 24 + 6 = 30
 
 // endpackage
 
@@ -51,9 +51,9 @@ typedef logic [foo-1 : 0] bar_t;
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
-   typedef buz_t [bz-1:0] goz_t;
+   typedef buz_t [bz-1:0] goz_t; // logic [5:0] [3:0] [29:0]
 
-   localparam goz_t gz = $bits(goz_t);
+   localparam goz_t gz = $bits(goz_t); // logic [5:0] [3:0] [29:0] gz = 6*4*30
 
    assign out = gz;
 

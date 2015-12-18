@@ -118,14 +118,15 @@
         (!!ms-fresh :instruction-length addr-diff))
 
        ;; Update the x86 state:
+       (inst-ac? t)
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem operand-size register v-addr rex-byte
-                                r/m mod x86))
+        (x86-operand-to-reg/mem
+         operand-size inst-ac? register v-addr rex-byte r/m mod x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-mov-Op/En-RM
 
@@ -175,9 +176,10 @@
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?v-addr x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -205,7 +207,7 @@
        (x86 (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
                         reg/mem rex-byte x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-mov-Op/En-OI
 
@@ -431,14 +433,15 @@
               imm))
 
        ;; Update the x86 state:
+       (inst-ac? t)
        ((mv flg3 x86)
-        (x86-operand-to-reg/mem reg/mem-size imm v-addr rex-byte
-                                r/m mod x86))
+        (x86-operand-to-reg/mem
+         reg/mem-size inst-ac? imm v-addr rex-byte r/m mod x86))
        ;; Note: If flg2 is non-nil, we bail out without changing the x86 state.
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg3))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: LEA
@@ -582,10 +585,11 @@
                    (prefixes-slice :group-4-prefix prefixes)))
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size nil rex-byte t prefixes))
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -662,11 +666,11 @@
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
        (reg/mem-size (if (equal opcode #xBE) 1 2))
-
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -753,10 +757,11 @@
                    (prefixes-slice :group-4-prefix prefixes)))
 
        (reg/mem-size (if (equal opcode #xB6) 1 2))
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -786,6 +791,6 @@
        (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*) reg/mem
                         rex-byte x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

@@ -2175,7 +2175,9 @@ created when we process their packages, etc.</p>"
   :returns (mv (simple-p booleanp :rule-classes :type-prescription)
                (bits     (and (nat-listp bits)
                               (setp bits))))
-  (b* (((mv err x) (vl-datatype-usertype-resolve x ss :rec-limit 1000))
+  (b* (((mv err x) (vl-datatype-usertype-resolve x ss
+                                                 :rec-limit 1000
+                                                 :scopes (vl-elabscopes-init-ss ss)))
        ((when err)
         ;; Some kind of error resolving the user-defined data types, let's
         ;; not try to analyze this at all.

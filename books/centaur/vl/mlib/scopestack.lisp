@@ -1471,7 +1471,34 @@ be very cheap in the single-threaded case.</p>"
                              ((unless pkg) ;; this should mean item is already nil
                               (mv item nil))
                              (pkg-ss (vl-scopestack-push pkg (vl-scopestack-init design))))
-                          (mv item pkg-ss))))))))
+                          (mv item pkg-ss)))
+
+                      (define vl-scopestack-find-item/ss/package
+                        :short "Look up a plain identifier in the current scope stack."
+                        ((name stringp)
+                         (ss   vl-scopestack-p))
+                        :returns (mv (item (iff (__resulttype__ item) item)
+                                           "The item declaration, if found.")
+                                     (item-ss vl-scopestack-p
+                                              "The scopestack for the context
+                                               in which the item was declared.")
+                                     (context-ss vl-scopestack-p
+                                                 "The scopestack for the context
+                                                  in which the item was found (possibly
+                                                  imported).")
+                                     (pkg-name (iff (stringp pkg-name) pkg-name)
+                                               "If the item was imported, the name
+                                                of the package it was imported
+                                                from."))
+                        (b* (((mv item context-ss pkg-name)
+                              (vl-scopestack-find-item/context name ss))
+                             ((unless pkg-name) (mv item context-ss context-ss nil))
+                             (design (vl-scopestack->design context-ss))
+                             (pkg (and design (cdr (hons-get pkg-name (vl-design-scope-package-alist-top design)))))
+                             ((unless pkg) ;; this should mean item is already nil
+                              (mv item nil context-ss pkg-name))
+                             (pkg-ss (vl-scopestack-push pkg (vl-scopestack-init design))))
+                          (mv item pkg-ss context-ss pkg-name))))))))
      (template-subst-top template
                          (make-tmplsubst
                           :features (and importsp '(:import))

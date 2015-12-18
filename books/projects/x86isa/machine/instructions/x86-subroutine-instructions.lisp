@@ -42,11 +42,11 @@
 
   ;; Call near, displacement relative to the next instruction
   ;; Op/En: M
-  ;; E8 cd (CALL rel16/32)
-  ;; Note E8 cw is N.S. in 64-bit mode.
+  ;; E8 cd (CALL rel32)
+  ;; Note E8 cw (CALL rel16) is N.S. in 64-bit mode.
 
   ;; The address-size override prefix will not have any effect here
-  ;; since we have no memory operands.  I should check this once more.
+  ;; since we have no memory operands.
 
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
@@ -63,6 +63,10 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ;; AC is not done during code fetches. Fetching rel32 from the
+       ;; instruction stream still qualifies as a code fetch
+       ;; (double-check).
        ((mv flg0 (the (signed-byte 32) rel32) x86)
         (rim32 temp-rip :x x86))
        ((when flg0)
@@ -93,6 +97,13 @@
         (!!ms-fresh :invalid-new-rsp new-rsp))
        ;; Update the x86 state:
        ;; Push the return address on the stack.
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when
+            ;; Check alignment.
+            (and
+             inst-ac?
+             (not (equal (logand new-rsp 7) 0))))
+        (!!ms-fresh :memory-access-unaligned new-rsp)) ;; #AC
        ((mv flg1 x86)
         (write-canonical-address-to-memory
          (the (signed-byte #.*max-linear-address-size*) new-rsp)
@@ -114,7 +125,6 @@
   ;; Note that FF/2 r/m16 and r/m32 are N.E. in 64-bit mode.
 
   :parents (one-byte-opcodes)
-  :guard-debug t
   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
@@ -131,18 +141,17 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        ;; Note that the reg field serves as an opcode extension for
        ;; this instruction.  The reg field will always be 2 when this
        ;; function is called.
-
+       (inst-ac? (alignment-checking-enabled-p x86))
        ((mv flg0 (the (unsigned-byte 64) call-rip) (the (unsigned-byte 3) increment-rip-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* 8 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
        ((the (signed-byte #.*max-linear-address-size+1*) next-rip)
@@ -160,11 +169,16 @@
         (!!ms-fresh :temp-rip-invalid call-rip))
        (rsp (rgfi *rsp* x86))
        (new-rsp (- rsp 8))
-       ;; TO-DO@Shilpi: #SS/#GP exception?
        ((when (not (canonical-address-p new-rsp)))
         (!!ms-fresh :invalid-new-rsp new-rsp))
        ;; Update the x86 state:
        ;; Push the return address on the stack.
+       ((when
+            ;; Check alignment.
+            (and
+             inst-ac?
+             (not (equal (logand new-rsp 7) 0))))
+        (!!ms-fresh :memory-access-unaligned new-rsp))
        ((mv flg1 x86)
         (write-canonical-address-to-memory
          (the (signed-byte #.*max-linear-address-size*) new-rsp)
@@ -230,7 +244,6 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
        (rsp (rgfi *rsp* x86))
-       ;; #SS/#GP exception?
        ((when (not (canonical-address-p rsp)))
         (!!ms-fresh :old-rsp-invalid rsp))
 
@@ -239,23 +252,23 @@
             (mv nil (+ (the (signed-byte #.*max-linear-address-size*) rsp) 8) x86)
           (b* (((mv flg0 (the (unsigned-byte 16) imm16) x86)
                 (rm16 temp-rip :x x86)))
-              (mv flg0 (+ (the (signed-byte #.*max-linear-address-size*) rsp) imm16) x86))))
+            (mv flg0 (+ (the (signed-byte #.*max-linear-address-size*) rsp) imm16) x86))))
        ((when flg0)
         (!!ms-fresh :imm-rm16-error flg0))
 
-       ;; #SS/#GP exception?
        ((when (mbe :logic (not (canonical-address-p new-rsp))
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
                                new-rsp))))
         (!!ms-fresh :new-rsp-invalid new-rsp))
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when (and inst-ac? (not (equal (logand rsp 7) 0))))
+        (!!ms-fresh :memory-access-unaligned rsp))
        ((mv flg (the (signed-byte 64) tos) x86)
         (rim64 rsp :r x86))
-       ;; #SS/#GP exception?
        ((when flg)
         (!!ms-fresh :rim64-error flg))
-       ;; #SS/#GP exception?
        ((when (not (canonical-address-p tos)))
         (!!ms-fresh :invalid-return-address tos))
        ;; Update the x86 state:
@@ -264,7 +277,7 @@
                            new-rsp) x86))
        ;; Update the rip to point to the return address.
        (x86 (!rip (the (signed-byte #.*max-linear-address-size*) tos) x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: LEAVE
@@ -289,8 +302,7 @@
                                (canonical-address-p temp-rip)))
 
   :implemented
-  (add-to-implemented-opcodes-table 'LEAVE #xC9 '(:nil nil)
-                                    'x86-leave)
+  (add-to-implemented-opcodes-table 'LEAVE #xC9 '(:nil nil) 'x86-leave)
 
   :body
 
@@ -307,11 +319,14 @@
        (rbp (rgfi *rbp* x86))
        ((when (not (canonical-address-p rbp)))
         (!!ms-fresh :rbp-not-canonical rbp))
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when (and inst-ac? (not (equal (logand rbp 7) 0))))
+        (!!ms-fresh :memory-access-unaligned rbp))
        ((mv flg val x86)
         (rm-size pop-bytes
                  (the (signed-byte #.*max-linear-address-size*) rbp)
                  :r x86))
-       ((when flg) ;; Will catch "bad" rsp errors too
+       ((when flg)
         (!!ms-fresh :rm-size-error flg))
        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
         (+ (the (signed-byte #.*max-linear-address-size*) rbp) pop-bytes))
@@ -330,6 +345,6 @@
        (x86 (!rgfi-size pop-bytes *rbp* val rex-byte x86))
        (x86 (!rgfi *rsp* new-rsp x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

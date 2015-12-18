@@ -66,6 +66,9 @@
      :layout :tree)
     (:while
      ((cond svex)
+      (body svstmtlist)))
+    (:scope
+     ((locals svarlist)
       (body svstmtlist))))
   (deflist svstmtlist :elt-type svstmt :true-listp nil :elementp-of-nil nil))
 
@@ -85,6 +88,9 @@
            (svstmtlist-vars x.else))
       :while (append-without-guard
               (svex-vars x.cond)
+              (svstmtlist-vars x.body))
+      :scope (append-without-guard
+              (svarlist-fix x.locals)
               (svstmtlist-vars x.body))))
   (define svstmtlist-vars ((x svstmtlist-p))
     :returns (vars svarlist-p)
@@ -118,5 +124,11 @@
     (equal (svstmt-vars (svstmt-while cond body))
            (append (svex-vars cond)
                    (svstmtlist-vars body)))
-    :hints (("goal" :expand ((svstmt-vars (svstmt-while cond body)))))))
+    :hints (("goal" :expand ((svstmt-vars (svstmt-while cond body))))))
+
+  (defthm svstmt-vars-of-scope
+    (equal (svstmt-vars (svstmt-scope locals body))
+           (append (svarlist-fix locals)
+                   (svstmtlist-vars body)))
+    :hints (("goal" :expand ((svstmt-vars (svstmt-scope locals body)))))))
 

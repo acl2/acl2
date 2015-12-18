@@ -33,6 +33,8 @@ assignexpr5.v -- assignment expression in gate instance (vcs crash)
 
 bigwire1.v -- negative indices in wire bounds
 
+elab1.v -- crazy parameter/generate dependency loop
+
 fn1.v -- shadowing too hard in function
 fn2.v -- function input names duplicated (ansi syntax)
 fn2b.v -- function input names duplicated (classic syntax)
@@ -162,8 +164,4 @@ port13.v -- nested concatenations (which aren't allowed) in port expression
 
 pp1.v -- try to use undefined preprocessor macro
 
-
-
-
-
-
+stmt1.v -- nonblocking assignment to local variable

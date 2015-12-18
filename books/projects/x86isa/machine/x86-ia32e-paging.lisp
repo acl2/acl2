@@ -179,6 +179,111 @@
 
   )
 
+(define page-present
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (bit (unsigned-byte-p 1 bit) :hyp :guard)
+  (ia32e-page-tables-slice :p entry)
+
+  ///
+
+  (defthm-usb n01p-page-present
+    :hyp (unsigned-byte-p 64 val)
+    :bound 1
+    :concl (page-present val)
+    :gen-type t
+    :gen-linear t))
+
+(define page-size
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (bit (unsigned-byte-p 1 bit) :hyp :guard)
+  (ia32e-page-tables-slice :ps entry)
+
+  ///
+
+  (defthm-usb n01p-page-size
+    :hyp (unsigned-byte-p 64 val)
+    :bound 1
+    :concl (page-size val)
+    :gen-type t
+    :gen-linear t))
+
+(define page-read-write
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (bit (unsigned-byte-p 1 bit) :hyp :guard)
+  (ia32e-page-tables-slice :r/w entry)
+
+  ///
+
+  (defthm-usb n01p-page-read-write
+    :hyp (unsigned-byte-p 64 val)
+    :bound 1
+    :concl (page-read-write val)
+    :gen-type t
+    :gen-linear t))
+
+(define page-user-supervisor
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (bit (unsigned-byte-p 1 bit) :hyp :guard)
+  (ia32e-page-tables-slice :u/s entry)
+
+  ///
+
+  (defthm-usb n01p-page-user-supervisor
+    :hyp (unsigned-byte-p 64 val)
+    :bound 1
+    :concl (page-user-supervisor val)
+    :gen-type t
+    :gen-linear t))
+
+(define page-execute-disable
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (bit (unsigned-byte-p 1 bit) :hyp :guard)
+  (ia32e-page-tables-slice :xd entry)
+
+  ///
+
+  (defthm-usb n01p-page-execute-disable
+    :hyp (unsigned-byte-p 64 val)
+    :bound 1
+    :concl (page-execute-disable val)
+    :gen-type t
+    :gen-linear t))
+
+(define accessed-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (bit (unsigned-byte-p 1 bit) :hyp :guard)
+  (ia32e-page-tables-slice :a entry)
+
+  ///
+
+  (defthm-usb n01p-accessed-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 1
+    :concl (accessed-bit val)
+    :gen-type t
+    :gen-linear t))
+
+(define dirty-bit
+  ((entry :type (unsigned-byte 64)))
+  :enabled t
+  :returns (bit (unsigned-byte-p 1 bit) :hyp :guard)
+  (ia32e-page-tables-slice :d entry)
+
+  ///
+
+  (defthm-usb n01p-dirty-bit
+    :hyp (unsigned-byte-p 64 val)
+    :bound 1
+    :concl (dirty-bit val)
+    :gen-type t
+    :gen-linear t))
+
 (define set-accessed-bit
   ((entry :type (unsigned-byte 64)))
   :enabled t
@@ -191,7 +296,6 @@
     :hyp (unsigned-byte-p 64 val)
     :bound 64
     :concl (set-accessed-bit val)
-    :hints (("Goal" :in-theory (e/d* (set-accessed-bit) ())))
     :gen-type t
     :gen-linear t))
 
@@ -207,7 +311,6 @@
     :hyp (unsigned-byte-p 64 val)
     :bound 64
     :concl (set-dirty-bit val)
-    :hints (("Goal" :in-theory (e/d* (set-dirty-bit) ())))
     :gen-type t
     :gen-linear t))
 
@@ -540,7 +643,8 @@
   :inline t
   :returns (mv flg val (x86 x86p :hyp (x86p x86)))
 
-  (b* ((page-present (ia32e-page-tables-slice :p entry))
+  (b* ((page-present (mbe :logic (page-present entry)
+                          :exec (ia32e-page-tables-slice :p entry)))
        ((when (equal page-present 0))
         ;; Page not present fault:
         (let ((err-no (page-fault-err-no
@@ -553,9 +657,12 @@
        ;; We now extract the rest of the relevant bit fields from the
        ;; entry.  Note that we ignore fields related to the cache or
        ;; TLB, since we aren't modeling caches yet.
-       (read-write      (ia32e-page-tables-slice :r/w entry))
-       (user-supervisor (ia32e-page-tables-slice :u/s entry))
-       (execute-disable (ia32e-page-tables-slice :xd  entry))
+       (read-write      (mbe :logic (page-read-write entry)
+                             :exec (ia32e-page-tables-slice :r/w entry)))
+       (user-supervisor (mbe :logic (page-user-supervisor entry)
+                             :exec (ia32e-page-tables-slice :u/s entry)))
+       (execute-disable (mbe :logic (page-execute-disable entry)
+                             :exec (ia32e-page-tables-slice :xd  entry)))
 
        (rsvd
         (mbe
@@ -573,8 +680,7 @@
                                  *physical-address-size* :high 62)
                     0))
               (and (equal nxe 0)
-                   (not (equal (ia32e-pte-4K-page-slice :pte-xd entry)
-                               0))))
+                   (not (equal execute-disable 0))))
              1 0)
          :exec
          (if (or
@@ -691,7 +797,7 @@
                                          1 ;; pae
                                          nxe)))
           (page-fault-exception lin-addr err-no x86))))
-      (mv nil 0 x86))
+    (mv nil 0 x86))
 
   ///
 
@@ -803,8 +909,10 @@
        ;; No errors, so we proceed with the address translation.
 
        ;; Get accessed and dirty bits:
-       (accessed        (ia32e-page-tables-slice :a entry))
-       (dirty           (ia32e-page-tables-slice :d entry))
+       (accessed        (mbe :logic (accessed-bit entry)
+                             :exec (ia32e-page-tables-slice :a entry)))
+       (dirty           (mbe :logic (dirty-bit entry)
+                             :exec (ia32e-page-tables-slice :d entry)))
        ;; Compute accessed and dirty bits:
        (entry (if (equal accessed 0)
                   (mbe :logic (set-accessed-bit entry)
@@ -934,7 +1042,8 @@
   :inline t
   :returns (mv flg val (x86 x86p :hyp (x86p x86)))
 
-  (b* ((page-present (ia32e-page-tables-slice :p entry))
+  (b* ((page-present (mbe :logic (page-present entry)
+                          :exec (ia32e-page-tables-slice :p entry)))
        ((when (equal page-present 0))
         ;; Page not present fault:
         (let ((err-no (page-fault-err-no
@@ -947,11 +1056,15 @@
        ;; We now extract the rest of the relevant bit fields from the
        ;; entry.  Note that we ignore those fields having to do with
        ;; the cache or TLB, since we are not modeling caches yet.
-       (read-write      (ia32e-page-tables-slice :r/w entry))
-       (user-supervisor (ia32e-page-tables-slice :u/s entry))
-       (execute-disable (ia32e-page-tables-slice :xd  entry))
+       (read-write      (mbe :logic (page-read-write entry)
+                             :exec (ia32e-page-tables-slice :r/w entry)))
+       (user-supervisor (mbe :logic (page-user-supervisor entry)
+                             :exec (ia32e-page-tables-slice :u/s entry)))
+       (execute-disable (mbe :logic (page-execute-disable entry)
+                             :exec (ia32e-page-tables-slice :xd  entry)))
 
-       (page-size       (ia32e-page-tables-slice :ps  entry))
+       (page-size       (mbe :logic (page-size entry)
+                             :exec (ia32e-page-tables-slice :ps  entry)))
 
        (rsvd
         ;; At this point, we know that the page is present.
@@ -962,7 +1075,7 @@
                                                       :high 62)
                                          0))
                              (and (equal nxe 0)
-                                  (not (equal (ia32e-page-tables-slice :xd entry) 0))))
+                                  (not (equal execute-disable 0))))
                          1
                        0)
              :exec  (if (or (and (equal page-size 1)
@@ -1180,84 +1293,87 @@
        ((when fault-flg)
         (mv 'Page-Fault val x86)))
 
-      ;; No errors at this level, so we proceed with the translation:
+    ;; No errors at this level, so we proceed with the translation:
 
-      (if (equal (ia32e-page-tables-slice :ps entry) 1)
-          ;; 2MB page
-          (b* (
-               ;; Get accessed and dirty bits:
-               (accessed        (ia32e-pde-2MB-page-slice :pde-a entry))
-               (dirty           (ia32e-pde-2MB-page-slice :pde-d entry))
+    (if (mbe :logic (equal (page-size entry) 1)
+             :exec (equal (ia32e-page-tables-slice :ps entry) 1))
+        ;; 2MB page
+        (b* (
+             ;; Get accessed and dirty bits:
+             (accessed        (ia32e-pde-2MB-page-slice :pde-a entry))
+             (dirty           (ia32e-pde-2MB-page-slice :pde-d entry))
 
-               ;; Compute accessed and dirty bits:
-               (entry (if (equal accessed 0)
-                          (mbe :logic (set-accessed-bit entry)
-                               :exec (!ia32e-pde-2MB-page-slice :pde-a 1 entry))
-                        entry))
-               (entry (if (and (equal dirty 0)
-                               (equal r-w-x :w))
-                          (mbe :logic (set-dirty-bit entry)
-                               :exec (!ia32e-pde-2MB-page-slice :pde-d 1 entry))
-                        entry))
-               ;; Update x86 (to reflect accessed and dirty bits change), if needed:
-               (x86 (if (or (equal accessed 0)
-                            (and (equal dirty 0)
-                                 (equal r-w-x :w)))
-                        (wm-low-64 p-entry-addr entry x86)
-                      x86)))
-              ;; Return address of 2MB page frame and the modified x86 state.
-              (mv nil
-                  (mbe
-                   :logic
-                   (part-install
-                    (part-select lin-addr :low 0 :high 20)
-                    (ash (ia32e-pde-2MB-page-slice :pde-page entry) 21)
-                    :low 0 :high 20)
-                   :exec
-                   (the
-                       (unsigned-byte 52)
-                     (logior
-                      (the
-                          (unsigned-byte 52)
-                        (logand (the
-                                    (unsigned-byte 52)
-                                  (ash (the (unsigned-byte 31)
-                                         (ia32e-pde-2mb-page-slice :pde-page entry))
-                                       21))
-                                (lognot (1- (ash 1 21)))))
-                      (the
-                          (unsigned-byte 21)
-                        (logand (1- (ash 1 21)) lin-addr)))))
-                  x86))
-        ;; Go to the next level of page table structure (PT, which
-        ;; references a 4KB page)
-        (b* ((page-table-base-addr
-              (ash (ia32e-pde-pg-table-slice :pde-pt entry) 12))
-             ((mv flag
-                  (the (unsigned-byte #.*physical-address-size*) p-addr)
-                  x86)
-              (ia32e-la-to-pa-page-table
-               lin-addr page-table-base-addr
-               (ia32e-page-tables-slice :u/s entry)
-               wp smep nxe r-w-x cpl x86))
-
-             ((when flag)
-              ;; Error, so do not update accessed bit.
-              (mv flag 0 x86))
-
-             ;; Get accessed bit.  Dirty bit is ignored when PDE
-             ;; references the PT.
-             (accessed        (ia32e-page-tables-slice :a entry))
-             ;; Update accessed bit, if needed.
+             ;; Compute accessed and dirty bits:
              (entry (if (equal accessed 0)
                         (mbe :logic (set-accessed-bit entry)
-                             :exec (!ia32e-page-tables-slice :a 1 entry))
+                             :exec (!ia32e-pde-2MB-page-slice :pde-a 1 entry))
                       entry))
-             ;; Update x86, if needed.
-             (x86 (if (equal accessed 0)
+             (entry (if (and (equal dirty 0)
+                             (equal r-w-x :w))
+                        (mbe :logic (set-dirty-bit entry)
+                             :exec (!ia32e-pde-2MB-page-slice :pde-d 1 entry))
+                      entry))
+             ;; Update x86 (to reflect accessed and dirty bits change), if needed:
+             (x86 (if (or (equal accessed 0)
+                          (and (equal dirty 0)
+                               (equal r-w-x :w)))
                       (wm-low-64 p-entry-addr entry x86)
                     x86)))
-            (mv nil p-addr x86))))
+          ;; Return address of 2MB page frame and the modified x86 state.
+          (mv nil
+              (mbe
+               :logic
+               (part-install
+                (part-select lin-addr :low 0 :high 20)
+                (ash (ia32e-pde-2MB-page-slice :pde-page entry) 21)
+                :low 0 :high 20)
+               :exec
+               (the
+                   (unsigned-byte 52)
+                 (logior
+                  (the
+                      (unsigned-byte 52)
+                    (logand (the
+                                (unsigned-byte 52)
+                              (ash (the (unsigned-byte 31)
+                                     (ia32e-pde-2mb-page-slice :pde-page entry))
+                                   21))
+                            (lognot (1- (ash 1 21)))))
+                  (the
+                      (unsigned-byte 21)
+                    (logand (1- (ash 1 21)) lin-addr)))))
+              x86))
+      ;; Go to the next level of page table structure (PT, which
+      ;; references a 4KB page)
+      (b* ((page-table-base-addr
+            (ash (ia32e-pde-pg-table-slice :pde-pt entry) 12))
+           ((mv flag
+                (the (unsigned-byte #.*physical-address-size*) p-addr)
+                x86)
+            (ia32e-la-to-pa-page-table
+             lin-addr page-table-base-addr
+             (mbe :logic (page-user-supervisor entry)
+                  :exec (ia32e-page-tables-slice :u/s entry))
+             wp smep nxe r-w-x cpl x86))
+
+           ((when flag)
+            ;; Error, so do not update accessed bit.
+            (mv flag 0 x86))
+
+           ;; Get accessed bit.  Dirty bit is ignored when PDE
+           ;; references the PT.
+           (accessed        (mbe :logic (accessed-bit entry)
+                                 :exec (ia32e-page-tables-slice :a entry)))
+           ;; Update accessed bit, if needed.
+           (entry (if (equal accessed 0)
+                      (mbe :logic (set-accessed-bit entry)
+                           :exec (!ia32e-page-tables-slice :a 1 entry))
+                    entry))
+           ;; Update x86, if needed.
+           (x86 (if (equal accessed 0)
+                    (wm-low-64 p-entry-addr entry x86)
+                  x86)))
+        (mv nil p-addr x86))))
   ///
 
   (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-page-directory
@@ -1390,7 +1506,8 @@
 
       ;; No errors at this level, so we proceed with the translation.
 
-      (if (equal (ia32e-page-tables-slice :ps entry) 1)
+      (if (mbe :logic (equal (page-size entry) 1)
+               :exec (equal (ia32e-page-tables-slice :ps entry) 1))
           ;; 1GB page
           (b* (
                ;; Get accessed and dirty bits:
@@ -1453,7 +1570,8 @@
 
              ;; Get accessed bit. Dirty bit is ignored when PDPTE
              ;; references the PD.
-             (accessed        (ia32e-page-tables-slice :a entry))
+             (accessed        (mbe :logic (accessed-bit entry)
+                                   :exec (ia32e-page-tables-slice :a entry)))
              ;; Update accessed bit, if needed.
              (entry (if (equal accessed 0)
                         (mbe :logic (set-accessed-bit entry)
@@ -1606,7 +1724,8 @@
 
        ;; Get accessed bit. Dirty bit is ignored when PDPTE
        ;; references the PDPT.
-       (accessed        (ia32e-page-tables-slice :a entry))
+       (accessed        (mbe :logic (accessed-bit entry)
+                             :exec (ia32e-page-tables-slice :a entry)))
        ;; Update accessed bit, if needed.
        (entry (if (equal accessed 0)
                   (mbe :logic (set-accessed-bit entry)
@@ -2384,6 +2503,12 @@
 
 ;; ======================================================================
 
-(in-theory (e/d* () (set-accessed-bit set-dirty-bit)))
+(in-theory (e/d* () (set-accessed-bit
+                     set-dirty-bit
+                     page-present
+                     page-size
+                     page-read-write
+                     page-user-supervisor
+                     page-execute-disable)))
 
 ;; ======================================================================

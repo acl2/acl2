@@ -54,86 +54,81 @@ memory.</li>
 
 (local
  (encapsulate
-  ()
+   ()
 
-  (local (include-book "centaur/gl/gl" :dir :system))
+   (local (include-book "centaur/gl/gl" :dir :system))
 
-  ;; Various lemmas for the guard proofs of rm* functions
+   ;; Various lemmas for the guard proofs of rm* functions
 
-  (def-gl-export rm16-guard-proof-helper
-    :hyp (and (n08p a)
-              (n08p b))
-    :concl (< (logior a (ash b 8)) *2^16*)
-    :g-bindings
-    (gl::auto-bindings
-     (:mix (:nat a 8) (:nat b 8)))
-    :rule-classes :linear)
+   (def-gl-export rm16-guard-proof-helper
+     :hyp (and (n08p a)
+               (n08p b))
+     :concl (< (logior a (ash b 8)) *2^16*)
+     :g-bindings
+     (gl::auto-bindings
+      (:mix (:nat a 8) (:nat b 8)))
+     :rule-classes :linear)
 
-  (def-gl-export rb-and-rvm32-helper
-    :hyp (and (n08p a)
-              (n08p b)
-              (n16p c))
-    :concl (equal (logior a (ash b 8) (ash c 16))
-                  (logior a (ash (logior b (ash c 8)) 8)))
-    :g-bindings
-    (gl::auto-bindings
-     (:mix (:nat a 8) (:nat b 8)) (:nat c 16))
-    :rule-classes :linear)
+   (def-gl-export rb-and-rvm32-helper
+     :hyp (and (n08p a)
+               (n08p b)
+               (n16p c))
+     :concl (equal (logior a (ash b 8) (ash c 16))
+                   (logior a (ash (logior b (ash c 8)) 8)))
+     :g-bindings
+     (gl::auto-bindings
+      (:mix (:nat a 8) (:nat b 8)) (:nat c 16))
+     :rule-classes :linear)
 
-  (def-gl-export rm32-guard-proof-helper
-    :hyp (and (n08p a)
-              (n08p b)
-              (n08p c)
-              (n08p d))
-    :concl (<
-            (logior a
-                    (ash (logior b
-                                 (ash (logior c (ash d 8)) 8))
-                         8))
-            *2^32*)
-    :g-bindings
-    (gl::auto-bindings
-     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)))
-    :rule-classes :linear)
+   (def-gl-export rm32-guard-proof-helper
+     :hyp (and (n08p a)
+               (n08p b)
+               (n08p c)
+               (n08p d))
+     :concl (<
+             (logior a
+                     (ash (logior b
+                                  (ash (logior c (ash d 8)) 8))
+                          8))
+             *2^32*)
+     :g-bindings
+     (gl::auto-bindings
+      (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)))
+     :rule-classes :linear)
 
-  (def-gl-export rb-and-rvm64-helper
-    :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-              (n08p e) (n08p f) (n08p g) (n08p h))
-    :concl (equal
-            (logior a (ash b 8)
-                    (ash (logior c (ash d 8)) 16)
-                    (ash (logior e (ash f 8) (ash (logior g (ash h 8)) 16)) 32))
-            (logior a
-                    (ash (logior
-                          b
-                          (ash (logior
-                                c
-                                (ash (logior
-                                      d
-                                      (ash (logior
-                                            e
-                                            (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 8)) 8))
-                               8))
-                         8)))
-    :g-bindings
-    (gl::auto-bindings
-     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
-           (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+   (def-gl-export rb-and-rvm64-helper
+     :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+               (n08p e) (n08p f) (n08p g) (n08p h))
+     :concl (equal
+             (logior a (ash b 8)
+                     (ash (logior c (ash d 8)) 16)
+                     (ash (logior e (ash f 8) (ash (logior g (ash h 8)) 16)) 32))
+             (logior a
+                     (ash (logior
+                           b
+                           (ash (logior
+                                 c
+                                 (ash (logior
+                                       d
+                                       (ash (logior
+                                             e
+                                             (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 8)) 8))
+                                8))
+                          8)))
+     :g-bindings
+     (gl::auto-bindings
+      (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+            (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-  (def-gl-export rm64-guard-proof-helper
-    :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-              (n08p e) (n08p f) (n08p g) (n08p h))
-    :concl (< (logior a (ash b 8)
-                      (ash (logior c (ash d 8)) 16)
-                      (ash (logior e (ash f 8) (ash (logior g (ash h 8)) 16)) 32))
-              *2^64*)
-    :g-bindings
-    (gl::auto-bindings
-     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
-           (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8)))
-    :rule-classes :linear)
+   (def-gl-export rm64-guard-proof-helper
+     :hyp (and (n32p a) (n32p b))
+     :concl (< (logior a (ash b 32)) *2^64*)
+     :g-bindings
+     (gl::auto-bindings
+      (:mix (:nat a 32) (:nat b 32)))
+     :rule-classes :linear)
 
-  )) ;; End of local encapsulate
+   )) ;; End of local encapsulate
 
 (acl2::set-waterfall-parallelism t)
 
@@ -156,7 +151,7 @@ memory.</li>
          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
           (la-to-pa lin-addr r-w-x cpl x86))
          ((when flag)
-          (mv (list 'rm08 flag) 0 x86))
+          (mv flag 0 x86))
          (byte (the (unsigned-byte 8) (memi p-addr x86))))
         (mv nil byte x86)))
 
@@ -293,7 +288,7 @@ memory.</li>
          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
           (la-to-pa lin-addr :w cpl x86))
          ((when flag)
-          (mv (list 'wm08 flag) x86))
+          (mv flag x86))
          (byte (mbe :logic (n08 val)
                     :exec val))
          (x86 (!memi p-addr byte x86)))
@@ -1423,7 +1418,7 @@ memory.</li>
                      (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm16 flag) 0 x86))
+                     ((when flag) (mv flag 0 x86))
 
                      (1+lin-addr
                       (the (signed-byte #.*max-linear-address-size+1*)
@@ -1432,7 +1427,7 @@ memory.</li>
 
                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
                       (la-to-pa 1+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm16 flag) 0 x86))
+                     ((when flag) (mv flag 0 x86))
 
                      (byte0 (the (unsigned-byte 8) (memi p-addr0 x86)))
                      (byte1 (the (unsigned-byte 8) (memi p-addr1 x86)))
@@ -1553,11 +1548,11 @@ memory.</li>
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm16 flag) x86))
+                     ((when flag) (mv flag x86))
 
                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
                       (la-to-pa 1+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm16 flag) x86))
+                     ((when flag) (mv flag x86))
 
                      (byte0 (mbe
                              :logic (part-select val :low 0 :width 8)
@@ -1651,28 +1646,28 @@ memory.</li>
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm32 flag) 0 x86))
+                     ((when flag) (mv flag 0 x86))
 
                      (1+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
                                    (+ 1 (the (signed-byte #.*max-linear-address-size*)
                                           lin-addr))))
                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
                       (la-to-pa 1+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm32 flag) 0 x86))
+                     ((when flag) (mv flag 0 x86))
 
                      (2+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
                                    (+ 2 (the (signed-byte #.*max-linear-address-size*)
                                           lin-addr))))
                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
                       (la-to-pa 2+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm32 flag) 0 x86))
+                     ((when flag) (mv flag 0 x86))
 
                      (3+lin-addr (the (signed-byte #.*max-linear-address-size+3*)
                                    (+ 3 (the (signed-byte #.*max-linear-address-size*)
                                           lin-addr))))
                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
                       (la-to-pa 3+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm32 flag) 0 x86))
+                     ((when flag) (mv flag 0 x86))
 
                      (byte0 (the (unsigned-byte 8) (memi p-addr0 x86)))
                      (byte1 (the (unsigned-byte 8) (memi p-addr1 x86)))
@@ -1797,27 +1792,27 @@ memory.</li>
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm32 flag) x86))
+                     ((when flag) (mv flag x86))
 
                      ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
                       (+ 1 lin-addr))
                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
                       (la-to-pa 1+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm32 flag) x86))
+                     ((when flag) (mv flag x86))
 
                      (2+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
                                    (+ 2 (the (signed-byte #.*max-linear-address-size*)
                                           lin-addr))))
                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
                       (la-to-pa 2+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm32 flag) x86))
+                     ((when flag) (mv flag x86))
 
                      (3+lin-addr (the (signed-byte #.*max-linear-address-size+3*)
                                    (+ 3 (the (signed-byte #.*max-linear-address-size*)
                                           lin-addr))))
                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
                       (la-to-pa 3+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm32 flag) x86))
+                     ((when flag) (mv flag x86))
 
                      (byte0 (mbe
                              :logic (part-select val :low 0 :width 8)
@@ -1940,7 +1935,7 @@ memory.</li>
                            (rb (create-canonical-address-list 8 lin-addr)
                                r-w-x x86))
                           (result (combine-bytes bytes)))
-                         (mv flg result x86))))
+                       (mv flg result x86))))
      :hints (("Goal"
               :in-theory (e/d (rb-and-rvm64-helper-1
                                rb-and-rvm64-helper-2)
@@ -1960,7 +1955,7 @@ memory.</li>
                            (rb (create-canonical-address-list 8 lin-addr)
                                r-w-x x86))
                           (result (combine-bytes bytes)))
-                         (mv flg result x86))))
+                       (mv flg result x86))))
      :hints (("Goal" :expand (create-canonical-address-list 8 lin-addr)
               :in-theory (e/d (rm08 rvm08 rvm32 rvm64 ifix)
                               (rb-and-rvm32-helper
@@ -2002,81 +1997,21 @@ memory.</li>
                            (rb (create-canonical-address-list 8 lin-addr)
                                r-w-x x86))
                           (result (combine-bytes bytes)))
-                         (mv flg result x86))
+                       (mv flg result x86))
                      :exec (rvm64 lin-addr x86))
 
-              (let* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (b* (((mv flag (the (unsigned-byte 32) dword0) x86)
+                    (rm32 lin-addr r-w-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((mv flag (the (unsigned-byte 32) dword1) x86)
+                    (rm32 (+ 4 lin-addr) r-w-x x86))
+                   ((when flag) (mv flag 0 x86))
 
-                (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                      (la-to-pa lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm64 flag) 0 x86))
-                     ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                      (+ 1 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                      (la-to-pa 1+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm64 flag) 0 x86))
-                     ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                      (+ 2 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                      (la-to-pa 2+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm64 flag) 0 x86))
-                     ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                      (+ 3 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                      (la-to-pa 3+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm64 flag) 0 x86))
-                     ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                      (+ 4 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                      (la-to-pa 4+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm64 flag) 0 x86))
-                     ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                      (+ 5 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                      (la-to-pa 5+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm64 flag) 0 x86))
-                     ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
-                      (+ 6 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
-                      (la-to-pa 6+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm64 flag) 0 x86))
-                     ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
-                      (+ 7 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
-                      (la-to-pa 7+lin-addr r-w-x cpl x86))
-                     ((when flag) (mv (list 'rm64 flag) 0 x86))
+                   (qword
+                    (the (unsigned-byte 64)
+                      (logior (the (unsigned-byte 64) (ash dword1 32)) dword0))))
 
-                     (byte0 (the (unsigned-byte 8) (memi p-addr0 x86)))
-                     (byte1 (the (unsigned-byte 8) (memi p-addr1 x86)))
-                     (byte2 (the (unsigned-byte 8) (memi p-addr2 x86)))
-                     (byte3 (the (unsigned-byte 8) (memi p-addr3 x86)))
-                     (byte4 (the (unsigned-byte 8) (memi p-addr4 x86)))
-                     (byte5 (the (unsigned-byte 8) (memi p-addr5 x86)))
-                     (byte6 (the (unsigned-byte 8) (memi p-addr6 x86)))
-                     (byte7 (the (unsigned-byte 8) (memi p-addr7 x86)))
-
-                     (word0 (the (unsigned-byte 16)
-                              (logior (the (unsigned-byte 16) (ash byte1 8))
-                                      byte0)))
-                     (word1 (the (unsigned-byte 16)
-                              (logior (the (unsigned-byte 16) (ash byte3 8))
-                                      byte2)))
-
-                     (word2 (the (unsigned-byte 16) (logior (the (unsigned-byte 16) (ash byte5 8))
-                                                            byte4)))
-                     (word3 (the (unsigned-byte 16) (logior (the (unsigned-byte 16) (ash byte7 8))
-                                                            byte6)))
-
-                     (dword0 (the (unsigned-byte 32) (logior (the (unsigned-byte 32) (ash word1 16))
-                                                             word0)))
-                     (dword1 (the (unsigned-byte 32) (logior (the (unsigned-byte 32) (ash word3 16))
-                                                             word2)))
-
-                     (qword (the (unsigned-byte 64) (logior (the (unsigned-byte 64) (ash dword1 32))
-                                                            dword0))))
-
-                    (mv nil qword x86))))
+                (mv nil qword x86)))
 
           (mv 'rm64 0 x86)))
 
@@ -2179,83 +2114,19 @@ memory.</li>
                  :exec
                  (wvm64 lin-addr val x86))
 
-              (let* ((cs-segment (the (unsigned-byte 64) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (b* ((dword0 (mbe :logic (part-select val :low 0 :width 32)
+                                :exec (logand 4294967295 val)))
+                   (dword1 (mbe :logic (part-select val :low 32 :width 32)
+                                :exec (logand 4294967295 (ash val -32))))
+                   ((mv flag x86) (wm32 lin-addr dword0 x86))
+                   ((when flag) (mv flag x86))
+                   ((mv flag x86)
+                    (wm32 (the (signed-byte #.*max-linear-address-size+4*)
+                            (+ 4 lin-addr))
+                          dword1 x86))
+                   ((when flag) (mv flag x86)))
 
-                (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                      (la-to-pa lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm64 flag) x86))
-                     ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                      (+ 1 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                      (la-to-pa 1+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm64 flag) x86))
-                     ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                      (+ 2 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                      (la-to-pa 2+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm64 flag) x86))
-                     ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                      (+ 3 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                      (la-to-pa 3+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm64 flag) x86))
-                     ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                      (+ 4 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                      (la-to-pa 4+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm64 flag) x86))
-                     ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                      (+ 5 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                      (la-to-pa 5+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm64 flag) x86))
-                     ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
-                      (+ 6 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
-                      (la-to-pa 6+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm64 flag) x86))
-                     ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
-                      (+ 7 lin-addr))
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
-                      (la-to-pa 7+lin-addr :w cpl x86))
-                     ((when flag) (mv (list 'wm64 flag) x86))
-
-                     (byte0 (mbe :logic (part-select val :low 0 :width 8)
-                                 :exec (the (unsigned-byte 8)
-                                         (logand #xff val))))
-                     (byte1 (mbe :logic (part-select val :low 8 :width 8)
-                                 :exec (the (unsigned-byte 8)
-                                         (logand #xff (ash val -8)))))
-                     (byte2 (mbe :logic (part-select val :low 16 :width 8)
-                                 :exec (the (unsigned-byte 8)
-                                         (logand #xff (ash val -16)))))
-                     (byte3 (mbe :logic (part-select val :low 24 :width 8)
-                                 :exec (the (unsigned-byte 8)
-                                         (logand #xff (ash val -24)))))
-                     (byte4 (mbe :logic (part-select val :low 32 :width 8)
-                                 :exec (the (unsigned-byte 8)
-                                         (logand #xff (ash val -32)))))
-                     (byte5 (mbe :logic (part-select val :low 40 :width 8)
-                                 :exec (the (unsigned-byte 8)
-                                         (logand #xff (ash val -40)))))
-                     (byte6 (mbe :logic (part-select val :low 48 :width 8)
-                                 :exec (the (unsigned-byte 8)
-                                         (logand #xff (ash val -48)))))
-                     (byte7 (mbe :logic (part-select val :low 56 :width 8)
-                                 :exec (the (unsigned-byte 8)
-                                         (logand #xff (ash val -56)))))
-
-                     (x86 (!memi p-addr0 byte0 x86))
-                     (x86 (!memi p-addr1 byte1 x86))
-                     (x86 (!memi p-addr2 byte2 x86))
-                     (x86 (!memi p-addr3 byte3 x86))
-                     (x86 (!memi p-addr4 byte4 x86))
-                     (x86 (!memi p-addr5 byte5 x86))
-                     (x86 (!memi p-addr6 byte6 x86))
-                     (x86 (!memi p-addr7 byte7 x86)))
-
-                    (mv nil x86))))
+                (mv nil x86)))
 
           (mv 'wm64 x86)))
 
@@ -2357,7 +2228,7 @@ memory.</li>
                            (rb (create-canonical-address-list 16 lin-addr)
                                r-w-x x86))
                           (result (combine-bytes bytes)))
-                         (mv flg result x86))))
+                       (mv flg result x86))))
      :hints (("Goal"
 
               :in-theory (e/d (rb-and-rvm128-helper-1
@@ -2408,24 +2279,24 @@ memory.</li>
                                   (rb (create-canonical-address-list 16 lin-addr)
                                       r-w-x x86))
                                  (result (combine-bytes bytes)))
-                                (mv flg result x86))
+                              (mv flg result x86))
                      :exec (rvm128 lin-addr x86))
 
               (b* (((mv flag0 (the (unsigned-byte 64) qword0) x86)
                     (rm64 lin-addr r-w-x x86))
                    ((when flag0)
-                    (mv (list 'rm128 flag0) 0 x86))
+                    (mv flag0 0 x86))
 
                    ((mv flag1 (the (unsigned-byte 64) qword1) x86)
                     (rm64 (+ 8 lin-addr) r-w-x x86))
                    ((when flag1)
-                    (mv (list 'rm128 flag1) 0 x86))
+                    (mv flag1 0 x86))
 
                    (oword (the (unsigned-byte 128)
                             (logior (the (unsigned-byte 128) (ash qword1 64))
                                     qword0))))
 
-                  (mv nil oword x86)))
+                (mv nil oword x86)))
 
           (mv 'rm128 0 x86)))
 
@@ -2507,13 +2378,13 @@ memory.</li>
 
                    ((mv flag0 x86)
                     (wm64 lin-addr qword0 x86))
-                   ((when flag0) (mv (list 'wm128 flag0) x86))
+                   ((when flag0) (mv flag0 x86))
 
                    ((mv flag1 x86)
                     (wm64 (+ 8 lin-addr) qword1 x86))
-                   ((when flag1) (mv (list 'wm128 flag1) x86)))
+                   ((when flag1) (mv flag1 x86)))
 
-                  (mv nil x86)))
+                (mv nil x86)))
 
           (mv 'wm128 x86)))
 
@@ -2856,42 +2727,42 @@ memory.</li>
 
             (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                   (la-to-pa lin-addr :w cpl x86))
-                 ((when flag) (mv (list 'write-canonical-address-to-memory flag) x86))
+                 ((when flag) (mv flag x86))
                  ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
                   (+ 1 lin-addr))
                  ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
                   (la-to-pa 1+lin-addr :w cpl x86))
-                 ((when flag) (mv (list 'write-canonical-address-to-memory flag) x86))
+                 ((when flag) (mv flag x86))
                  ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
                   (+ 2 lin-addr))
                  ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
                   (la-to-pa 2+lin-addr :w cpl x86))
-                 ((when flag) (mv (list 'write-canonical-address-to-memory flag) x86))
+                 ((when flag) (mv flag x86))
                  ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
                   (+ 3 lin-addr))
                  ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
                   (la-to-pa 3+lin-addr :w cpl x86))
-                 ((when flag) (mv (list 'write-canonical-address-to-memory flag) x86))
+                 ((when flag) (mv flag x86))
                  ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
                   (+ 4 lin-addr))
                  ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
                   (la-to-pa 4+lin-addr :w cpl x86))
-                 ((when flag) (mv (list 'write-canonical-address-to-memory flag) x86))
+                 ((when flag) (mv flag x86))
                  ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
                   (+ 5 lin-addr))
                  ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
                   (la-to-pa 5+lin-addr :w cpl x86))
-                 ((when flag) (mv (list 'write-canonical-address-to-memory flag) x86))
+                 ((when flag) (mv flag x86))
                  ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
                   (+ 6 lin-addr))
                  ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
                   (la-to-pa 6+lin-addr :w cpl x86))
-                 ((when flag) (mv (list 'write-canonical-address-to-memory flag) x86))
+                 ((when flag) (mv flag x86))
                  ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
                   (+ 7 lin-addr))
                  ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
                   (la-to-pa 7+lin-addr :w cpl x86))
-                 ((when flag) (mv (list 'write-canonical-address-to-memory flag) x86))
+                 ((when flag) (mv flag x86))
 
                  (byte0 (mbe :logic (part-select canonical-address :low 0 :width 8)
                              :exec (the (unsigned-byte 8)
