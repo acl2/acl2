@@ -436,6 +436,7 @@
             *
             <
             clog2
+            pow
             ==
             ==?
             safer-==?
@@ -634,6 +635,10 @@
     (3vec-p (4vec-clog2 x))
     :hints(("Goal" :in-theory (enable 3vec-p 4vec-clog2))))
 
+  (defthm 3vec-p-of-4vec-pow
+    (3vec-p (4vec-pow x y))
+    :hints(("Goal" :in-theory (enable 3vec-p 4vec-pow))))
+
   (defthm 3vec-p-of-eval-when-3valued-syntaxp
     (implies (3valued-syntaxp x)
              (3vec-p (svex-eval x env)))
@@ -682,6 +687,7 @@
             *
             <
             clog2
+            pow
             /
             %
             uand
@@ -791,6 +797,10 @@
   (defthm 2vecx-p-of-4vec-clog2
     (2vecx-p (4vec-clog2 x))
     :hints(("Goal" :in-theory (enable 2vecx-p 4vec-clog2))))
+
+  (defthm 2vecx-p-of-4vec-pow
+    (2vecx-p (4vec-pow x y))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-pow))))
 
   (defthm 2vecx-p-of-eval-when-2vecx-syntaxp
     (implies (2vecx-syntaxp x)

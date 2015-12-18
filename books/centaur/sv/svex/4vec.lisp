@@ -1649,6 +1649,34 @@ an unknown.</p>"
     :args ((a 2vecnatx))
     :hints(("Goal" :in-theory (enable 2vecnatx-fix)))))
 
+
+(local (defthm expt-neg1-integerp
+         (integerp (expt -1 n))
+         :hints (("goal" :in-theory (enable expt)))))
+
+(define 4vec-pow ((base 4vec-p) (exp 4vec-p))
+  :short "Power operator (** in SystemVerilog)."
+  :long "<p>See Table 11-4 in IEEE System Verilog Spec."
+  :returns (res 4vec-p)
+  (if (and (2vec-p base)
+           (2vec-p exp))
+      (b* ((base (2vec->val base))
+           (exp (2vec->val exp))
+           ((when (or (natp exp)
+                      (eql base 1)
+                      (eql base -1)))
+            (2vec (expt base exp)))
+           ((when (eql base 0)) (4vec-x))) ;; 0 to negative power
+        (2vec 0)) ;; a <= -2 or a >= 2, b negative.
+    (4vec-x))
+  ///
+  (deffixequiv 4vec-pow
+    :args ((base 2vecx) (exp 2vecx))
+    :hints(("Goal" :in-theory (enable 2vecx-fix)))))
+
+
+
+
 ;;ANNA: Converting 4vec-p / 4veclist-p to string(s) of 0s, 1s, Xs, and Zs
 ;;MSB first
 

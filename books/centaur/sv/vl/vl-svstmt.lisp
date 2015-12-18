@@ -1235,7 +1235,9 @@ a final return statement with an assignment to the output variable.</p>"
        (val (sv::svex-case svex :quote svex.val :otherwise nil))
        ((unless val)
         (mv t nil warnings x svex))
-       (new-x (make-vl-literal :val (vl-4vec-to-value val size :signedness signedness))))
+       (new-x (make-vl-literal
+               :val (vl-4vec-to-value val size :signedness signedness)
+               :atts (cons (cons "VL_ORIG_EXPR" x) (vl-expr->atts x)))))
     (mv t t warnings new-x svex)))
 
 (define vl-consteval ((x vl-expr-p)

@@ -1902,6 +1902,7 @@ the way.</li>
           (:vl-binary-bitor   (sv::svcall sv::bitor  left right))
           (:vl-binary-xor     (sv::svcall sv::bitxor left right))
           (:vl-binary-xnor    (sv::svcall sv::bitnot (sv::svcall sv::bitxor left right)))
+          (:vl-binary-power   (sv::svcall sv::pow    left right))
           ;; Shift amounts need to be zero-extended -- right arg is always
           ;; treated as unsigned per SV spec 11.4.10.
           (:vl-binary-shr     (sv::svcall sv::rsh
@@ -3165,6 +3166,20 @@ functions can assume all bits of it are good.</p>"
       (clear-memoize-table 'sv::svex-subst-memo)
       (mv (ok) ans item.rettype)))
 
+#||
+
+ (trace$ #!vl (vl-expr-to-svex-datatyped
+  :entry (list 'vl-expr-to-svex-datatyped
+                (with-local-ps (vl-pp-expr x))
+                (with-local-ps (vl-pp-datatype type))
+                (vl-scopestack->hashkey ss)
+                (strip-cars scopes))
+  ::exit (list 'vl-expr-to-svex-datatyped
+                (with-local-ps (vl-print-warnings (car values)))
+                (cadr values))))
+
+||#
+
   (define vl-expr-to-svex-datatyped ((x    vl-expr-p)
                                      (lhs  vl-maybe-expr-p
                                            "LHS, if applicable, for truncation warnings.")
@@ -3455,7 +3470,20 @@ functions can assume all bits of it are good.</p>"
           (mv warnings
               (sv::svcall sv::rsh (svex-int shift) svex)
               size)))))
+#||
 
+ (trace$ #!vl (vl-assignpat-to-svex
+  :entry (list 'vl-assignpat-to-svex
+                (with-local-ps (vl-pp-assignpat x))
+                (with-local-ps (vl-pp-datatype type))
+                (vl-scopestack->hashkey ss)
+                (strip-cars scopes)
+                (with-local-ps (vl-pp-expr orig-x)))
+  ::exit (list 'vl-assignpat-to-svex
+                (with-local-ps (vl-print-warnings (car values)))
+                (cadr values))))
+
+||#
   (define vl-assignpat-to-svex ((x vl-assignpat-p)
                                 (type vl-datatype-p)
                                 (ss vl-scopestack-p)

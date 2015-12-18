@@ -1149,3 +1149,84 @@ for computing:</p>
                         (ash (lnfix w) 1) (cdr n) (bfr-logtail-ns w x)
                         y))
        (bfr-logapp-uss (ash (lnfix w) 1) (cdr n) x y)))))
+
+
+
+(local
+ (defsection expt-lemmas
+   (defthm expt-of-0
+     (equal (expt base 0) 1)
+     :hints(("Goal" :in-theory (enable expt))))
+
+
+   (defthm expt-of-*-2
+     (implies (natp exp)
+              (equal (expt base (* 2 exp))
+                     (* (expt base exp)
+                        (expt base exp))))
+     :hints(("Goal" :in-theory (enable expt))))))
+
+
+;; (local
+;;  (defthm expt-base-decompose
+;;    (implies (and (posp exp) (integerp base))
+;;             (equal (expt base exp)
+;;                    (* (if (eql (logcar exp) 1) base 1)
+;;                       (expt (* base base) (logcdr exp)))))
+;;    :hints (("goal" :use ((:instance acl2::logcar-logcdr-elim
+;;                           (i exp))
+;;                          (:instance acl2::exponents-add-for-nonneg-exponents
+;;                           (r base) (i (* 2 (logcdr exp))) (j (logcar exp)))
+;;                          (:instance acl2::exponents-add-for-nonneg-exponents
+;;                           (r base) (i (logcdr exp)) (j (logcdr exp))))
+;;             :in-theory (e/d (logcons) (acl2::logcar-logcdr-elim
+;;                                        bitops::logcons-destruct
+;;                                        acl2::exponents-add-for-nonneg-exponents))))))
+
+;; (define expt-impl ((base integerp)
+;;                    (exp natp))
+;;   :measure (nfix exp)
+;;   (if (mbe :logic (or (zp exp) (zp (logcdr exp)))
+;;            :exec (zp (logcdr exp)))
+;;       (if (eql (logcar exp) 1) base 1)
+;;     (let ((rest (expt-impl (* base base) (logcdr exp))))
+;;       (if (eql (logcar exp) 1)
+;;           (* base rest)
+;;         rest)))
+;;   ///
+
+;;   (defthm expt-impl-correct
+;;     (implies (and (integerp base) (natp exp))
+;;              (equal (expt-impl base exp)
+;;                     (expt base exp)))))
+
+
+(define all-nil ((x))
+  (if (atom x)
+      t
+    (and (eq (car x) nil)
+         (all-nil (cdr x))))
+  ///
+  (defthm all-nil-when-atom
+    (implies (atom x) (all-nil x)))
+
+  (defthmd zero-when-all-nil
+    (implies (all-nil x)
+             (equal (bfr-list->u x env) 0))))
+
+;; Note: We don't have a symbolic counterpart for expt yet, but this is used in
+;; SV and it could easily be used in GL as well so we wrote it here.
+(defsymbolic bfr-expt-su ((b s)
+                          (e u))
+  :measure (len e)
+  :returns (b^e s (expt b e))
+  (b* (((when (all-nil e)) '(t nil))
+       ((when (all-nil (cdr e)))
+        (bfr-ite-bss (car e) b '(t nil)))
+       (rest (bfr-expt-su (bfr-*-ss b b) (cdr e))))
+    (bfr-ite-bss (car e)
+                 (bfr-*-ss b rest)
+                 rest))
+  :correct-hints ('(:in-theory (enable zero-when-all-nil
+                                       logcons))))
+
