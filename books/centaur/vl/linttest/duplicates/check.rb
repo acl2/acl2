@@ -77,6 +77,10 @@ nodupe("w9_nodupe")
 nodupe("w10_nodupe")
 nodupe("w11_nodupe")
 
+nodupe("busclk")
+nodupe("bus1")
+nodupe("bus2")
+
 test_passed()
 
 
