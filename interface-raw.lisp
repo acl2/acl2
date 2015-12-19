@@ -9345,7 +9345,11 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 ; See also the centaur/misc/memory-mgmt books.
 
-  (expt 2 30))
+  (min (expt 2 30)
+
+ ; CCL requires a fixnum for ccl::lisp-heap-gc-threshold.
+
+       most-positive-fixnum))
 
 (let ((physical-memory-cached-answer nil))
 (defun physical-memory () ; in KB
@@ -9371,8 +9375,12 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; bytes before the next GC, unless the current memory usage is more than
 ; (3/4)G, in which case we allocate the minimum of (1/4)G.
 
-         (max (- *max-mem-usage* (ccl::%usedbytes))
-              *gc-min-threshold*)))
+         (min (max (- *max-mem-usage* (ccl::%usedbytes))
+                   *gc-min-threshold*)
+
+; CCL requires a fixnum for ccl::lisp-heap-gc-threshold.
+
+              most-positive-fixnum)))
 
 ; Now set the "threshold" to the number of bytes computed above (unless that
 ; would be a no-op).
@@ -9405,11 +9413,16 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
           (min (floor memsize 8)
                (expt 2 31)))
     (setq *gc-min-threshold* ; no change if we were here already
-          (cond ((null threshold) (floor *max-mem-usage* 4))
-                ((posp threshold) threshold)
-                (t (error "The GC threshold must be a positive integer, but ~
-                           ~s is not!"
-                          threshold))))
+          (min (cond ((null threshold)
+                      (floor *max-mem-usage* 4))
+                     ((posp threshold) threshold)
+                     (t (error "The GC threshold must be a positive integer, ~
+                                but ~s is not!"
+                               threshold)))
+
+ ; CCL requires a fixnum for ccl::lisp-heap-gc-threshold.
+
+               most-positive-fixnum))
     (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
     (ccl::use-lisp-heap-gc-threshold)
     nil))

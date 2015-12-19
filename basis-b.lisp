@@ -4112,7 +4112,15 @@
       #-acl2-loop-only
       (progn
         #+ccl
-        (ccl:set-lisp-heap-gc-threshold new-threshold)
+        (ccl:set-lisp-heap-gc-threshold ; CCL requires a fixnum.
+         (cond ((> new-threshold most-positive-fixnum)
+                (progn (cw "Requested value for set-gc-threshold$ must be a ~
+                            fixnum in CeCL, but ~x0 is greater than ~
+                            most-positive-fixnum (which is ~x1). Setting to ~
+                            most-positive-fixnum instead.~|"
+                           new-threshold most-positive-fixnum)
+                       most-positive-fixnum))
+               (t new-threshold)))
         #+(and ccl acl2-par)
         (progn (cw "Disabling the CCL Ephemeral GC for ACL2(p)~%")
                (ccl:egc nil))
