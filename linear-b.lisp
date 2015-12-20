@@ -302,8 +302,7 @@
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).
 
-              (not (getprop (ffn-symb term) 'constrainedp nil
-                            'current-acl2-world wrld)))
+              (not (getpropc (ffn-symb term) 'constrainedp nil wrld)))
          (mv-let
           (erp val latches)
           (pstk

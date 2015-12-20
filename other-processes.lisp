@@ -417,8 +417,8 @@
 
   (cond
    ((flambda-applicationp term) nominations)
-   (t (let ((rule (getprop (ffn-symb term) 'eliminate-destructors-rule
-                           nil 'current-acl2-world wrld)))
+   (t (let ((rule (getpropc (ffn-symb term) 'eliminate-destructors-rule nil
+                            wrld)))
         (cond
          ((or (null rule)
               (not (enabled-numep (access elim-rule rule :nume) ens)))
@@ -562,8 +562,8 @@
   (cond ((null lst) 0)
         (t (+ (if (flambda-applicationp (car lst))
                   (max-level-no (lambda-body (ffn-symb (car lst))) wrld)
-                  (or (getprop (ffn-symb (car lst)) 'level-no
-                               nil 'current-acl2-world wrld)
+                  (or (getpropc (ffn-symb (car lst)) 'level-no
+                                nil wrld)
                       0))
               (sum-level-nos (cdr lst) wrld)))))
 
@@ -616,8 +616,8 @@
      ((null nominations) nil)
      (t
       (let* ((dterm (pick-highest-sum-level-nos nominations wrld nil -1))
-             (rule (getprop (ffn-symb dterm) 'eliminate-destructors-rule
-                            nil 'current-acl2-world wrld))
+             (rule (getpropc (ffn-symb dterm) 'eliminate-destructors-rule
+                             nil wrld))
              (alist (pairlis$ (fargs (access elim-rule rule :destructor-term))
                               (fargs dterm))))
         (change elim-rule rule
@@ -1503,9 +1503,10 @@
         ((fquotep term) nil)
         ((flambda-applicationp term) nil)
         (t (and (all-variablep (fargs term))
-                (let ((rule (getprop (ffn-symb term)
-                                     'eliminate-destructors-rule
-                                     nil 'current-acl2-world wrld)))
+                (let ((rule (getpropc (ffn-symb term)
+                                      'eliminate-destructors-rule
+                                      nil
+                                      wrld)))
                   (and rule
                        (enabled-numep (access elim-rule rule :nume)
                                       ens)))))))
@@ -2023,8 +2024,7 @@
 
   (cond ((flambdap fn) nil)
         ((eq fn 'cons) nil)
-        (t (let ((rule (getprop fn 'eliminate-destructors-rule nil
-                                'current-acl2-world wrld)))
+        (t (let ((rule (getpropc fn 'eliminate-destructors-rule nil wrld)))
              (cond ((and rule
                          (enabled-numep (access elim-rule rule :nume) ens))
                     nil)

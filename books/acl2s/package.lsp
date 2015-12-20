@@ -81,7 +81,11 @@
      )
    (union-eq
     defdata::*defdata-exports*
-    (union-eq *acl2-exports*
+    (union-eq (set-difference-eq
+               *acl2-exports*
+; Matt K. mod 12/20/2015: Avoid name conflict with macros defined in
+; cgen/utilities.lisp.
+               '(acl2::access acl2::change))
               *common-lisp-symbols-from-main-lisp-package*))))
 
 

@@ -36,6 +36,7 @@
          (fns-clauses (defevaluator-form/fns-clauses evfn fn-args-lst))
          (defthms (defevaluator-form/defthms
                     evfn
+                    evfn-lst
                     (symbol-name (pack2 evfn '-constraint-))
                     0
                     clauses)))

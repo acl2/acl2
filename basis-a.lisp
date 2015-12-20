@@ -3893,7 +3893,7 @@
          (er hard! 'stobjs-out
              "Implementation error: Attempted to find stobjs-out for ~x0."
              fn))
-        (t (getprop fn 'stobjs-out '(nil) 'current-acl2-world w))))
+        (t (getpropc fn 'stobjs-out '(nil) w))))
 
 ; The ACL2 Record Facilities
 
@@ -5170,7 +5170,7 @@
 ; nil) of course).
 
   (and (symbolp name)
-       (getprop name 'const nil 'current-acl2-world w)))
+       (getpropc name 'const nil w)))
 
 (defun fix-stobj-array-type (type wrld)
 
@@ -5488,7 +5488,7 @@
 
   (cond ((eq stobj 'state) 'state-p)
         ((not (symbolp stobj)) nil)
-        (wrld (caddr (getprop stobj 'stobj nil 'current-acl2-world wrld)))
+        (wrld (caddr (getpropc stobj 'stobj nil wrld)))
         (t
          #-acl2-loop-only
          (let ((d (get (the-live-var stobj)
@@ -5826,7 +5826,7 @@
   (and x
        (symbolp x)
        (if (eq known-stobjs t)
-           (getprop x 'stobj nil 'current-acl2-world w)
+           (getpropc x 'stobj nil w)
          (member-eq x known-stobjs))))
 
 (defun translate-stobj-type-to-guard (x var wrld)
@@ -5945,7 +5945,7 @@
 (defun congruent-stobj-rep (name wrld)
   (assert$
    wrld ; use congruent-stobj-rep-raw if wrld is not available
-   (or (getprop name 'congruent-stobj-rep nil 'current-acl2-world wrld)
+   (or (getpropc name 'congruent-stobj-rep nil wrld)
        name)))
 
 (defun all-but-last (l)

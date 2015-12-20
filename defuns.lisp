@@ -1373,41 +1373,6 @@
                     (or flg1 flg))))))
 )
 
-; We now develop the code for eliminating needless tests in tests-and-calls
-; records, leading to function simplify-tests-and-calls-lst.  See the comment
-; there.  Term-equated-to-constant appears earlier, because it is used in
-; related function simplify-clause-for-term-equal-const-1.
-
-(defun term-equated-to-constant-in-termlist (lst)
-  (cond ((endp lst)
-         (mv nil nil))
-        (t (mv-let
-            (var const)
-            (term-equated-to-constant (car lst))
-            (cond (var (mv var const))
-                  (t (term-equated-to-constant-in-termlist (cdr lst))))))))
-
-(defun simplify-tests (var const tests)
-
-; For a related function, see simplify-clause-for-term-equal-const-1.
-
-  (cond ((endp tests)
-         (mv nil nil))
-        (t (mv-let (changedp rest)
-                   (simplify-tests var const (cdr tests))
-                   (mv-let (flg term)
-                           (strip-not (car tests))
-                           (mv-let (var2 const2)
-                                   (term-equated-to-constant term)
-                                   (cond ((and flg
-                                               (equal var var2)
-                                               (not (equal const const2)))
-                                          (mv t rest))
-                                         (changedp
-                                          (mv t (cons (car tests) rest)))
-                                         (t
-                                          (mv nil tests)))))))))
-
 (defun simplify-tests-and-calls (tc)
 
 ; For an example of the utility of removing guard holders, note that lemma
@@ -1909,8 +1874,7 @@
 ; property below to decide if we need to prove termination.
 
     (cond ((and (null (cdr names))
-                (null (getprop (car names) 'recursivep nil
-                               'current-acl2-world wrld1)))
+                (null (getpropc (car names) 'recursivep nil wrld1)))
 
 ; If only one function is being defined and it is non-recursive, we can quit.
 ; But we have to store the symbol-class and we have to print out the admission
@@ -2087,8 +2051,7 @@
 ; with fn = return-last, and the function stobjs-out causes an error in that
 ; case.  We don't mind treating return-last as an ordinary function here.
 
-                                     (getprop fn 'stobjs-out '(nil)
-                                              'current-acl2-world wrld)))
+                                     (getpropc fn 'stobjs-out '(nil) wrld)))
                                vars-bag
                                body)))
           (rule
@@ -2113,8 +2076,7 @@
      (let ((wrld0 (if (eq fn 'hide)
                       wrld
                     (putprop fn 'lemmas
-                             (cons rule (getprop fn 'lemmas nil
-                                                 'current-acl2-world wrld))
+                             (cons rule (getpropc fn 'lemmas nil wrld))
                              wrld))))
        (cond (install-body
               (mv (putprop fn
@@ -2127,8 +2089,7 @@
                                        :formals args
                                        :recursivep clique
                                        :controller-alist controller-alist)
-                                 (getprop fn 'def-bodies nil
-                                          'current-acl2-world wrld))
+                                 (getpropc fn 'def-bodies nil wrld))
                            wrld0)
                   ttree))
              (t (mv wrld0 ttree)))))))
@@ -2529,11 +2490,7 @@
                               :basic-ts *ts-empty*
                               :vars nil
                               :corollary *t*)
-                        (getprop fn
-                                 'type-prescriptions
-                                 nil
-                                 'current-acl2-world
-                                 wrld))
+                        (getpropc fn 'type-prescriptions nil wrld))
                   wrld))))))
 
 ; We now turn to the problem of iteratively guessing new
@@ -3096,8 +3053,7 @@
                         (mv ts *ts-empty* nil ttree))))
        (t
         (type-set-and-returned-formals-with-rules
-         (getprop (ffn-symb term) 'type-prescriptions nil
-                  'current-acl2-world wrld)
+         (getpropc (ffn-symb term) 'type-prescriptions nil wrld)
          term type-alist ens wrld
          *ts-unknown* *ts-empty* nil ttree)))))))
 
@@ -3135,7 +3091,7 @@
 
   (let* ((ttree0 ttree)
          (old-type-prescriptions
-          (getprop name 'type-prescriptions nil 'current-acl2-world wrld))
+          (getpropc name 'type-prescriptions nil wrld))
          (tp (car old-type-prescriptions)))
     (mv-let (new-basic-type-set returned-vars-type-set new-returned-vars ttree)
       (type-set-and-returned-formals body nil ens wrld ttree)
@@ -3332,8 +3288,8 @@
                       names
                       old-type-prescriptions-lst
                       def-nume
-                      (length (getprop (car names) 'runic-mapping-pairs nil
-                                       'current-acl2-world wrld))
+                      (length (getpropc (car names) 'runic-mapping-pairs nil
+                                        wrld))
                       ens
                       wrld
                       wrld1
@@ -3531,10 +3487,8 @@
              (putprop-level-no-lst (cdr names)
                                    (putprop (car names)
                                             'level-no
-                                            (if (getprop (car names)
-                                                         'recursivep nil
-                                                         'current-acl2-world
-                                                         wrld)
+                                            (if (getpropc (car names)
+                                                          'recursivep nil wrld)
                                                 (1+ maximum)
                                               maximum)
                                             wrld))))))
@@ -3655,9 +3609,8 @@
   (cond ((null names) wrld)
         ((cdr names) wrld)
         ((primitive-recursive-machinep (formals (car names) wrld)
-                                       (getprop (car names)
-                                                'induction-machine nil
-                                                'current-acl2-world wrld)
+                                       (getpropc (car names)
+                                                 'induction-machine nil wrld)
                                        wrld)
          (putprop (car names)
                   'primitive-recursive-defunp
@@ -3696,11 +3649,11 @@
                        (make-controller-pocket
                         (formals (car names) wrld)
                         (access justification
-                                (getprop (car names)
-                                         'justification
-                                         '(:error
-                                           "See MAKE-CONTROLLER-ALIST1.")
-                                         'current-acl2-world wrld)
+                                (getpropc (car names)
+                                          'justification
+                                          '(:error
+                                            "See MAKE-CONTROLLER-ALIST1.")
+                                          wrld)
                                 :subset)))
                  (make-controller-alist1 (cdr names) wrld)))))
 
@@ -3718,7 +3671,7 @@
 ; in the clique by a given controller-alist were used jointly in the
 ; justification of the clique.
 
-  (and (getprop (car names) 'justification nil 'current-acl2-world wrld)
+  (and (getpropc (car names) 'justification nil wrld)
        (make-controller-alist1 names wrld)))
 
 (defun max-nume-exceeded-error (ctx)
@@ -3827,7 +3780,7 @@
              next-nume
              tp-flg
              (and tp-flg
-                  (getprop (car names) 'recursivep nil 'current-acl2-world wrld))
+                  (getpropc (car names) 'recursivep nil wrld))
              wrld))))
 
 ; NOTE: Several functions formerly defined here in support of guard
@@ -4019,14 +3972,14 @@
     (cond
      ((eq symbol-class :common-lisp-compliant)
       (value 'redundant))
-     ((getprop name 'theorem nil 'current-acl2-world wrld)
+     ((getpropc name 'theorem nil wrld)
 
 ; Theorems are of either symbol-class :ideal or :common-lisp-compliant.
 
       (er-progn
        (chk-acceptable-verify-guards-formula
         name
-        (getprop name 'untranslated-theorem nil 'current-acl2-world wrld)
+        (getpropc name 'untranslated-theorem nil wrld)
         ctx wrld state)
        (value (list name))))
      ((function-symbolp name wrld)
@@ -4037,8 +3990,7 @@
              verified.  See :DOC verify-guards."
              name))
         (:ideal
-         (let* ((recp (getprop name 'recursivep nil
-                               'current-acl2-world wrld))
+         (let* ((recp (getpropc name 'recursivep nil wrld))
                 (names (cond
                         ((null recp)
                          (list name))
@@ -4103,12 +4055,10 @@
                          (mv cl-set cl-set-ttree state)))
                 ((and (consp x)
                       (null (cdr x))
-                      (getprop (car x) 'theorem nil
-                               'current-acl2-world wrld))
+                      (getpropc (car x) 'theorem nil wrld))
                  (mv-let (cl-set cl-set-ttree)
                          (guard-clauses+
-                          (getprop (car x) 'theorem nil
-                                   'current-acl2-world wrld)
+                          (getpropc (car x) 'theorem nil wrld)
                           (and guard-debug (car x))
                           nil ;stobj-optp = nil
                           nil ens wrld state nil)
@@ -4753,8 +4703,7 @@
 
 ; Risk-fn can be :built-in or a function symbol; see put-invariant-risk.
 
-             (getprop (car body-fns) 'invariant-risk nil 'current-acl2-world
-                      wrld)))
+             (getpropc (car body-fns) 'invariant-risk nil wrld)))
         (cond (risk-fn (putprop-x-lst1 new-fns 'invariant-risk risk-fn wrld))
               (t (put-invariant-risk1 new-fns (cdr body-fns) wrld)))))))
 
@@ -4842,8 +4791,7 @@
    ((null names) (mv nil nil))
    (t (mv-let (fns alist)
               (print-defun-msg/collect-type-prescriptions (cdr names) wrld)
-              (let ((lst (getprop (car names) 'type-prescriptions nil
-                                  'current-acl2-world wrld)))
+              (let ((lst (getpropc (car names) 'type-prescriptions nil wrld)))
                 (cond
                  ((null lst)
                   (mv (cons (car names) fns) alist))
@@ -4951,7 +4899,7 @@
 ; with fn = return-last, and the function stobjs-out causes an error in that
 ; case.  We don't mind treating return-last as an ordinary function here.
 
-       (null (cdr (getprop fn 'stobjs-out '(nil) 'current-acl2-world wrld)))))
+       (null (cdr (getpropc fn 'stobjs-out '(nil) wrld)))))
 
 (defun all-simple-signaturesp (names wrld)
   (cond ((endp names) t)
@@ -4974,8 +4922,7 @@
 ; with fn = return-last, and the function stobjs-out causes an error in that
 ; case.  We don't mind treating return-last as an ordinary function here.
 
-                      (getprop (car names) 'stobjs-out '(nil)
-                               'current-acl2-world wrld))))
+                      (getpropc (car names) 'stobjs-out '(nil) wrld))))
           (proofs-co state)
           state
           nil)
@@ -5471,8 +5418,7 @@
 ; subversiveness.
 
   (let* ((justification (and chk-measure-p ; optimization
-                             (getprop (car def2) 'justification nil
-                                      'current-acl2-world wrld)))
+                             (getpropc (car def2) 'justification nil wrld)))
          (all-but-body1 (butlast (cddr def1) 1))
          (ruler-extenders1-lst (fetch-dcl-field :ruler-extenders all-but-body1))
          (ruler-extenders1 (if ruler-extenders1-lst
@@ -5946,7 +5892,7 @@
                   the ACL2 implementors unless you have called ~x2 yourself.")
         (ctx 'recover-defs-lst))
     (cond
-     ((getprop fn 'non-executablep nil 'current-acl2-world wrld)
+     ((getpropc fn 'non-executablep nil wrld)
 
 ; We shouldn't be seeing this message, as something between verify-termination
 ; and this lower-level function should be handling the non-executable case
@@ -5960,10 +5906,10 @@
       (let ((val
              (scan-to-cltl-command
               (cdr (lookup-world-index 'event
-                                       (getprop fn 'absolute-event-number
-                                                '(:error "See ~
-                                                          RECOVER-DEFS-LST.")
-                                                'current-acl2-world wrld)
+                                       (getpropc fn 'absolute-event-number
+                                                 '(:error "See ~
+                                                           RECOVER-DEFS-LST.")
+                                                 wrld)
                                        wrld)))))
         (cond ((and (consp val)
                     (eq (car val) 'defuns))
@@ -5996,7 +5942,7 @@
   (cond ((programp fn wrld)
          (let ((defs (recover-defs-lst fn wrld)))
            (strip-cars defs)))
-        (t (let ((recp (getprop fn 'recursivep nil 'current-acl2-world wrld)))
+        (t (let ((recp (getpropc fn 'recursivep nil wrld)))
              (cond ((null recp) (list fn))
                    (t recp))))))
 
@@ -6020,9 +5966,8 @@
                    (cond ((eq ans 'redundant)
                           (cond
                            ((or (eq defun-mode :program)
-                                (let ((recp (getprop (caar def-lst) 'recursivep
-                                                     nil 'current-acl2-world
-                                                     wrld)))
+                                (let ((recp (getpropc (caar def-lst) 'recursivep
+                                                      nil wrld)))
                                   (if (and (consp recp)
                                            (consp (cdr recp)))
                                       (set-equalp-eq (strip-cars def-lst) recp)
@@ -6872,8 +6817,7 @@
   (cond ((and (not (f-get-global 'in-local-flg state))
               (not (global-val 'boot-strap-flg (w state)))
               (not (f-get-global 'redundant-with-raw-code-okp state))
-              (let ((recp (getprop (car names) 'recursivep nil
-                                   'current-acl2-world wrld))
+              (let ((recp (getpropc (car names) 'recursivep nil wrld))
                     (bad-fns (if (eq (symbol-class (car names) wrld)
                                      :program)
                                  (f-get-global
@@ -7583,9 +7527,10 @@
 
 (defun collect-hereditarily-constrained-fnnames (names wrld ans)
   (cond ((endp names) ans)
-        (t (let ((name-fns (getprop (car names)
-                                    'hereditarily-constrained-fnnames nil
-                                    'current-acl2-world wrld)))
+        (t (let ((name-fns (getpropc (car names)
+                                     'hereditarily-constrained-fnnames
+                                     nil
+                                     wrld)))
              (cond
               (name-fns
                (collect-hereditarily-constrained-fnnames
@@ -7685,8 +7630,7 @@
      (mv-let
       (wrld5 ttree2)
       (putprop-body-lst names arglists bodies normalizeps
-                        (getprop (car names) 'recursivep nil
-                                 'current-acl2-world wrld4)
+                        (getpropc (car names) 'recursivep nil wrld4)
                         (make-controller-alist names wrld4)
                         #+:non-standard-analysis std-p
                         ens wrld4 wrld4 nil)
@@ -8321,8 +8265,7 @@
                   (guard (untranslate (guard name nil wrld) t wrld))
                   (tp (find-runed-type-prescription
                        (list :type-prescription name)
-                       (getprop name 'type-prescriptions nil
-                                'current-acl2-world wrld)))
+                       (getpropc name 'type-prescriptions nil wrld)))
                   (tpthm (cond (tp (untranslate
                                     (access type-prescription tp :corollary)
                                     t wrld))
@@ -8363,7 +8306,7 @@
                    channel state nil)
               (value name))))
           ((and (symbolp name)
-                (getprop name 'macro-body nil 'current-acl2-world wrld))
+                (getpropc name 'macro-body nil wrld))
            (let ((args (macro-args name wrld))
                  (guard (untranslate (guard name nil wrld) t wrld)))
              (pprogn
@@ -8411,7 +8354,7 @@
                              (add-to-set-eq :mode new-fields)
                              dcls)))
     (assert$
-     (not (getprop fn 'non-executablep nil 'current-acl2-world wrld))
+     (not (getpropc fn 'non-executablep nil wrld))
      `(,fn ,args
            ,@new-dcls
            ,@(if (and (not (member-eq :mode new-fields))
@@ -8516,7 +8459,7 @@
 ; except: as a courtesy to the user, we may cause an error here if the function
 ; could not have been upgraded from :program mode.
 
-      (cond ((getprop (caar lst) 'constrainedp nil 'current-acl2-world wrld)
+      (cond ((getpropc (caar lst) 'constrainedp nil wrld)
              (er soft ctx
                  "The :LOGIC mode function symbol ~x0 was originally ~
                   introduced introduced not with DEFUN, but ~#1~[as a ~
@@ -8524,12 +8467,11 @@
                   VERIFY-TERMINATION does not make sense for this function ~
                   symbol."
                  (caar lst)
-                 (cond ((getprop (caar lst) 'defchoose-axiom nil
-                                 'current-acl2-world wrld)
+                 (cond ((getpropc (caar lst) 'defchoose-axiom nil wrld)
                         1)
                        (t 0))))
             (t (value :redundant))))
-     ((getprop (caar lst) 'non-executablep nil 'current-acl2-world wrld)
+     ((getpropc (caar lst) 'non-executablep nil wrld)
       (er soft ctx
           "The :PROGRAM mode function symbol ~x0 is declared non-executable, ~
            so ~x1 is not legal for this symbol.  Such functions are intended ~

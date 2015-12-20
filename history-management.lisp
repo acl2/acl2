@@ -1153,8 +1153,7 @@
 
   (cond ((symbolp name)
          (cond ((eq name :here) (not (null wrld)))
-               (t (getprop name 'absolute-event-number nil
-                           'current-acl2-world wrld))))
+               (t (getpropc name 'absolute-event-number nil wrld))))
         ((and (stringp name)
               (find-non-hidden-package-entry
                name (global-val 'known-package-alist wrld)))
@@ -1577,8 +1576,7 @@
     (cond ((eq name :here)
            (scan-to-event wrld))
           (t
-           (let ((n (getprop name 'absolute-event-number nil
-                             'current-acl2-world wrld)))
+           (let ((n (getpropc name 'absolute-event-number nil wrld)))
              (cond ((null n) nil)
                    (t (lookup-world-index 'event n wrld)))))))
    ((stringp name)
@@ -1787,7 +1785,7 @@
      (putprop name
               'lemmas
               (renew-lemmas name
-                            (getprop name 'lemmas nil 'current-acl2-world wrld))
+                            (getpropc name 'lemmas nil wrld))
               wrld)))
    ((member-eq (caar old-getprops)
 
@@ -3522,13 +3520,9 @@
                            (eq flg 'retraction))
                        (plist-worldp wrld)
                        (known-package-alistp
-                        (getprop 'known-package-alist 'global-value nil
-                                 'current-acl2-world
-                                 wrld))
+                        (getpropc 'known-package-alist 'global-value nil wrld))
                        (symbol-alistp
-                        (getprop 'acl2-defaults-table 'table-alist nil
-                                 'current-acl2-world
-                                 wrld))
+                        (getpropc 'acl2-defaults-table 'table-alist nil wrld))
                        (state-p state))))
 
   #+acl2-loop-only
@@ -3695,10 +3689,10 @@
             (with-prover-step-limit! :START ,form))))
 
 (defun attachment-alist (fn wrld)
-  (let ((prop (getprop fn 'attachment nil 'current-acl2-world wrld)))
+  (let ((prop (getpropc fn 'attachment nil wrld)))
     (and prop
          (cond ((symbolp prop)
-                (getprop prop 'attachment nil 'current-acl2-world wrld))
+                (getpropc prop 'attachment nil wrld))
                ((eq (car prop) :attachment-disallowed)
                 prop) ; (cdr prop) follows "because", e.g., (msg "it is bad")
                (t prop)))))
@@ -5317,7 +5311,7 @@
 ; none of the runes based on name are disabled.  If name is not the basic
 ; symbol of any rune, we return #\Space.
 
-  (let ((temp (getprop name 'runic-mapping-pairs nil 'current-acl2-world wrld)))
+  (let ((temp (getpropc name 'runic-mapping-pairs nil wrld)))
     (cond ((null temp) #\Space)
           (t (big-d-little-d-name1 (cdr temp) ens
                                    (if (enabled-numep (caar temp) ens)
@@ -5424,7 +5418,7 @@
 ; disabled status.
 
   (cond ((and (function-symbolp name wrld)
-              (not (getprop name 'constrainedp nil 'current-acl2-world wrld)))
+              (not (getpropc name 'constrainedp nil wrld)))
          (if (memoizedp-world name wrld)
              #\M
            #\E))
@@ -5870,15 +5864,15 @@
      :off error ; avoid extra needless layer of error
      (table pe-table
             ',name
-            (cons (cons (getprop ',name 'absolute-event-number
-                                 (list :error
-                                       (concatenate 'string
-                                                    "Event for "
-                                                    ,(symbol-name name)
-                                                    " (package "
-                                                    ,(symbol-package-name name)
-                                                    ") not found."))
-                                 'current-acl2-world world)
+            (cons (cons (getpropc ',name 'absolute-event-number
+                                  (list :error
+                                        (concatenate 'string
+                                                     "Event for "
+                                                     ,(symbol-name name)
+                                                     " (package "
+                                                     ,(symbol-package-name name)
+                                                     ") not found."))
+                                  world)
                         ',form)
                   (cdr (assoc-eq ',name
                                  (table-alist 'pe-table world)))))))
@@ -6293,8 +6287,7 @@
          (cond
           ((and (symbolp logical-name)
                 (not (eq logical-name :here))
-                (eql (getprop logical-name 'absolute-event-number nil
-                              'current-acl2-world wrld)
+                (eql (getpropc logical-name 'absolute-event-number nil wrld)
                      0))
 
 ; This special case avoids printing something like the following, which isn't
@@ -6358,6 +6351,21 @@
      (make-event (er-progn (table pe-table nil nil :clear)
                            (pe ,logical-name)
                            (value '(value-triple :invisible))))))
+
+(defmacro gthm (fn)
+  `(value (untranslate (guard-theorem ,fn (w state) state)
+                       t
+                       (w state))))
+
+(defmacro tthm (fn)
+  `(let* ((fn ,fn)
+          (term (termination-theorem fn (w state))))
+     (cond ((and (consp term)
+                 (eq (car term) :failed))
+            (er soft 'top
+                "There is no termination theorem for ~ ~x0.  ~@1"
+                fn (cdr term)))
+           (t (value (untranslate term t (w state)))))))
 
 (defun command-block-names1 (wrld ans symbol-classes)
 
@@ -6750,8 +6758,7 @@
 ; New-type is (function stobjs-in . stobjs-out); see chk-signature.
 
               (eq (car new-type) 'function)
-              (eq (getprop name 'non-executablep nil 'current-acl2-world
-                           wrld)
+              (eq (getpropc name 'non-executablep nil wrld)
                   :program)
 
 ; A non-executable :program-mode function has no logical content, so it is
@@ -6812,8 +6819,7 @@
                  ((consp reclassifyingp) 2)
                  (t 0))
            reclassifyingp
-           (cond ((eq (getprop name 'non-executablep nil 'current-acl2-world
-                               wrld)
+           (cond ((eq (getpropc name 'non-executablep nil wrld)
                       :program)
                   (msg "  Note that you are attempting to upgrade a proxy, ~
                         which is only legal using an encapsulate signature ~
@@ -6895,7 +6901,7 @@
             Furthermore, the redefinition facility makes no provision for ~
            packages.  Please rename the package or :ubt ~x0.  Sorry."
           name))
-     ((null (getprop name 'absolute-event-number nil 'current-acl2-world wrld))
+     ((null (getpropc name 'absolute-event-number nil wrld))
 
 ; One might think that (a) this function is only called on old names and (b)
 ; every old name has an absolute event number.  Therefore, why do we ask the
@@ -7036,12 +7042,9 @@
                                             0 1))
                               (cons #\6 (if (defstobj-supporterp name wrld)
                                             1 0))
-                              (cons #\7 (getprop (defstobj-supporterp name
-                                                   wrld)
-                                                 'stobj
-                                                 nil
-                                                 'current-acl2-world
-                                                 wrld))
+                              (cons #\7 (getpropc (defstobj-supporterp name
+                                                    wrld)
+                                                  'stobj nil wrld))
                               (cons #\8
                                     (if rest
                                         (msg ", and Y! will assume a Y ~
@@ -7142,11 +7145,8 @@
 
          (value
           (renew-names (cons name
-                             (getprop (defstobj-supporterp name wrld)
-                                      'stobj
-                                      nil
-                                      'current-acl2-world
-                                      wrld))
+                             (getpropc (defstobj-supporterp name wrld)
+                                       'stobj nil wrld))
                        renewal-mode wrld)))
         (t (value (renew-name name renewal-mode wrld)))))))))
 
@@ -7321,7 +7321,7 @@
 ; event-form.
 
   (and (global-val 'boot-strap-pass-2 wrld)
-       (getprop name 'label nil 'current-acl2-world wrld)
+       (getpropc name 'label nil wrld)
        (equal event-form (get-event name wrld))))
 
 (defun deflabel-fn (name state event-form)
@@ -7510,7 +7510,7 @@
   (if (and (consp form)
            (true-listp form)
            (symbolp (car form))
-           (getprop (car form) 'macro-body nil 'current-acl2-world (w state)))
+           (getpropc (car form) 'macro-body))
       (macroexpand1 form 'top-level state)
     (er soft 'top-level
         "TRANS1 may only be applied to a form (m t1 ... tk) where m is a ~
@@ -8930,7 +8930,7 @@
         (cond
          (name
           (let* ((fn (ffn-symb term))
-                 (lemmas (getprop fn 'lemmas nil 'current-acl2-world wrld))
+                 (lemmas (getpropc fn 'lemmas nil wrld))
                  (lemma (cond ((symbolp name)
                                (find-named-lemma
                                 (deref-macro-name name (macro-aliases wrld))
@@ -9205,9 +9205,7 @@
       (car arg)))
    (t (let ((runes (if (symbolp (caar arg))
                        (get-rewrite-and-defn-runes-from-runic-mapping-pairs
-                        (getprop (caar arg)
-                                 'runic-mapping-pairs nil
-                                 'current-acl2-world wrld))
+                        (getpropc (caar arg) 'runic-mapping-pairs nil wrld))
                      (list (caar arg)))))
         (cond
          ((null runes)
@@ -9416,20 +9414,19 @@
   (let* ((formals (formals fn wrld))
          (term (fcons-term fn formals))
          (quick-block-info
-          (getprop fn 'quick-block-info
-                   '(:error "See SUGGESTED-INDUCTION-CANDS1.")
-                   'current-acl2-world wrld))
+          (getpropc fn 'quick-block-info
+                    '(:error "See SUGGESTED-INDUCTION-CANDS1.")
+                    wrld))
          (justification
-          (getprop fn 'justification
-                   '(:error "See SUGGESTED-INDUCTION-CANDS1.")
-                   'current-acl2-world wrld))
+          (getpropc fn 'justification
+                    '(:error "See SUGGESTED-INDUCTION-CANDS1.")
+                    wrld))
          (mask (sound-induction-principle-mask term formals
                                                quick-block-info
                                                (access justification
                                                        justification
                                                        :subset)))
-         (machine (getprop fn 'induction-machine nil
-                           'current-acl2-world wrld)))
+         (machine (getpropc fn 'induction-machine nil wrld)))
     (tests-and-alists-lst (pairlis$ formals (fargs term))
                           (fargs term) mask machine)))
 
@@ -9439,7 +9436,7 @@
 ; Nil is returned when we cannot recover a suitable formula.
 
   (let* ((name (base-symbol rune))
-         (classes (getprop name 'classes nil 'current-acl2-world wrld)))
+         (classes (getpropc name 'classes nil wrld)))
     (cond
      ((null classes)
       (cond
@@ -9448,10 +9445,9 @@
         (let ((body (body name t wrld)))
           (cond ((null body) nil)
                 ((eq (car rune) :definition)
-                 (let ((lemma (find-runed-lemma rune
-                                                (getprop name 'lemmas nil
-                                                         'current-acl2-world
-                                                         wrld))))
+                 (let ((lemma
+                        (find-runed-lemma rune
+                                          (getpropc name 'lemmas nil wrld))))
                    (and lemma
                         (let ((concl
                                (mcons-term* (access rewrite-rule lemma :equiv)
@@ -9470,8 +9466,7 @@
        ((eq (car rune) :type-prescription)
         (let ((tp (find-runed-type-prescription
                    rune
-                   (getprop name 'type-prescriptions nil
-                            'current-acl2-world wrld))))
+                   (getpropc name 'type-prescriptions nil wrld))))
           (cond
            ((null tp) *t*)
            (t (access type-prescription tp :corollary)))))
@@ -9498,12 +9493,12 @@
                  (cdr
                   (truncated-class
                    rune
-                   (getprop name 'runic-mapping-pairs
-                            '(:error "See COROLLARY.")
-                            'current-acl2-world wrld)
+                   (getpropc name 'runic-mapping-pairs
+                             '(:error "See COROLLARY.")
+                             wrld)
                    classes))))))
           (or term
-              (getprop name 'theorem nil 'current-acl2-world wrld)))))))
+              (getpropc name 'theorem nil wrld)))))))
 
 (defun formula (name normalp wrld)
 
@@ -9522,9 +9517,8 @@
                     (mcons-term* 'equal
                                  (cons-term name (formals name wrld))
                                  body))
-                   (t (or (getprop name 'theorem nil 'current-acl2-world wrld)
-                          (getprop name 'defchoose-axiom nil
-                                   'current-acl2-world wrld))))))))
+                   (t (or (getpropc name 'theorem nil wrld)
+                          (getpropc name 'defchoose-axiom nil wrld))))))))
 
 (defun pf-fn (name state)
   (io? temporary nil (mv erp val state)
@@ -9653,7 +9647,7 @@
 ; value we want to return here; so do not switch the order of the disjuncts
 ; below!
 
-       (or (getprop fn 'constrainedp nil 'current-acl2-world wrld)
+       (or (getpropc fn 'constrainedp nil wrld)
            (and (body fn nil wrld)
                 t))))
 
@@ -9703,20 +9697,19 @@
 
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp wrld))))
-  (let ((prop (getprop fn 'constraint-lst
+  (let ((prop (getpropc fn 'constraint-lst
 
 ; We want to distinguish between not finding a list of constraints, and finding
 ; a list of constraints of nil.  Perhaps we only store non-nil constraints, but
 ; even if so, there is no need to rely on that invariant, and future versions
 ; of ACL2 may not respect it.
 
-                       t
-                       'current-acl2-world wrld)))
+                        t wrld)))
 
     (cond
      ((eq prop t)
       (let ((body ; (body fn nil wrld), but easier to guard-verify:
-             (getprop fn 'unnormalized-body nil 'current-acl2-world wrld)))
+             (getpropc fn 'unnormalized-body nil wrld)))
         (cond (body
 
 ; Warning: Do not apply remove-guard-holders to body.  We rely on having all
@@ -9732,7 +9725,7 @@
                                     body)))
               (t
                (mv nil
-                   (or (getprop fn 'defchoose-axiom nil 'current-acl2-world wrld)
+                   (or (getpropc fn 'defchoose-axiom nil wrld)
 
 ; Then fn is a primitive, and has no constraint.
 
@@ -9744,10 +9737,10 @@
 ; Then prop is a name, and the constraints for fn are found under that name.
 
       (mv prop
-          (getprop prop 'constraint-lst
-                   '(:error "See constraint-info:  expected to find a ~
-                             'constraint-lst property where we did not.")
-                   'current-acl2-world wrld)))
+          (getpropc prop 'constraint-lst
+                    '(:error "See constraint-info:  expected to find a ~
+                              'constraint-lst property where we did not.")
+                    wrld)))
      (t
       (mv fn prop)))))
 
@@ -10206,11 +10199,11 @@
     (cond
      ((eq x *unknown-constraints*)
       (let* ((cl-proc
-              (getprop name 'constrainedp
-                       '(:error
-                         "See immediate-instantiable-ancestors:  expected to ~
-                          find a 'constrainedp property where we did not.")
-                       'current-acl2-world wrld))
+              (getpropc name 'constrainedp
+                        '(:error
+                          "See immediate-instantiable-ancestors:  expected to ~
+                           find a 'constrainedp property where we did not.")
+                        wrld))
              (supporters (unknown-constraint-supporters cl-proc wrld)))
         (collect-instantiablep supporters wrld ignore-fns)))
      (name (instantiable-ffn-symbs-lst x wrld nil ignore-fns))
@@ -10302,8 +10295,7 @@
 
 (defun getprop-x-lst (symbols prop wrld)
   (cond ((null symbols) nil)
-        (t (cons (getprop (car symbols) prop nil
-                          'current-acl2-world wrld)
+        (t (cons (getpropc (car symbols) prop nil wrld)
                  (getprop-x-lst (cdr symbols) prop wrld)))))
 
 (defun filter-hitps (lst alist ans)
@@ -10366,11 +10358,11 @@
             (cond
              ((eq x *unknown-constraints*)
               (let ((cl-proc
-                     (getprop name 'constrainedp
-                              '(:error
-                                "See relevant-constraints1: expected to find ~
-                                 a 'constrainedp property where we did not.")
-                              'current-acl2-world wrld)))
+                     (getpropc name 'constrainedp
+                               '(:error
+                                 "See relevant-constraints1: expected to find ~
+                                  a 'constrainedp property where we did not.")
+                               wrld)))
                 (cond
                  ((first-assoc-eq (unknown-constraint-supporters cl-proc wrld)
                                   alist)
@@ -10492,10 +10484,10 @@
 
   (cond ((null names) (mv constraints event-names new-entries))
         (t (let* ((constraint
-                   (getprop (car names)
-                            'theorem
-                            '(:error "See relevant-constraints1-axioms.")
-                            'current-acl2-world wrld))
+                   (getpropc (car names)
+                             'theorem
+                             '(:error "See relevant-constraints1-axioms.")
+                             wrld))
                   (instantiable-fns
                    (instantiable-ffn-symbs constraint wrld nil nil)))
              (cond ((hitp constraint alist)
@@ -10883,6 +10875,73 @@
   (or (eq lst :all)
       (member-eq a lst)))
 
+(defconst *equality-aliases*
+
+; This constant should be a subset of *definition-minimal-theory*, since we do
+; not track the corresponding runes in simplify-tests and related code below.
+
+  '(eq eql =))
+
+(defun term-equated-to-constant (term)
+  (case-match term
+    ((rel x y)
+     (cond ((or (eq rel 'equal)
+                (member-eq rel *equality-aliases*))
+            (cond ((quotep x) (mv y x))
+                  ((quotep y) (mv x y))
+                  (t (mv nil nil))))
+           (t (mv nil nil))))
+    (& (mv nil nil))))
+
+; We now develop the code for eliminating needless tests in tests-and-calls
+; records, leading to function simplify-tests-and-calls-lst.  See the comment
+; there.  Term-equated-to-constant appears earlier, because it is used in
+; related function simplify-clause-for-term-equal-const-1.
+
+(defun term-equated-to-constant-in-termlist (lst)
+  (cond ((endp lst)
+         (mv nil nil))
+        (t (mv-let
+            (var const)
+            (term-equated-to-constant (car lst))
+            (cond (var (mv var const))
+                  (t (term-equated-to-constant-in-termlist (cdr lst))))))))
+
+(defun simplify-tests (var const tests)
+
+; For a related function, see simplify-clause-for-term-equal-const-1.
+
+  (cond ((endp tests)
+         (mv nil nil))
+        (t (mv-let (changedp rest)
+                   (simplify-tests var const (cdr tests))
+                   (mv-let (flg term)
+                           (strip-not (car tests))
+                           (mv-let (var2 const2)
+                                   (term-equated-to-constant term)
+                                   (cond ((and flg
+                                               (equal var var2)
+                                               (not (equal const const2)))
+                                          (mv t rest))
+                                         (changedp
+                                          (mv t (cons (car tests) rest)))
+                                         (t
+                                          (mv nil tests)))))))))
+
+(defun add-test-smart (test tests)
+; For a related function, see add-literal-smart.
+  (mv-let (term const)
+          (term-equated-to-constant test)
+          (cons test
+                (cond
+                 (term
+                  (mv-let (changedp new-tests)
+                          (simplify-tests term const tests)
+                          (if changedp
+                              new-tests
+                              tests)))
+                 (t tests)))))
+
 (mutual-recursion
 
 (defun termination-machine (names body alist tests ruler-extenders)
@@ -10944,13 +11003,14 @@
             (append (termination-machine names
                                          (fargn body 2)
                                          alist
-                                         (cons inst-test tests)
+                                         (add-test-smart inst-test tests)
                                          ruler-extenders)
                     (termination-machine names
                                          (fargn body 3)
                                          alist
-                                         (cons (dumb-negate-lit inst-test)
-                                               tests)
+                                         (add-test-smart
+                                          (dumb-negate-lit inst-test)
+                                          tests)
                                          ruler-extenders))))
       (cond
        ((member-eq-all 'if ruler-extenders)
@@ -11253,7 +11313,7 @@
 ;                 (defun f2 (x) x)))
 ;   ; The following returns X.
 ;   (access justification
-;           (getprop 'f1 'justification nil 'current-acl2-world (w state))
+;           (getpropc 'f1 'justification)
 ;           :measure)
 
   (cond ((endp names) nil)
@@ -11261,8 +11321,7 @@
                   (rest (measure-alist? (cdr names) wrld))
                   (bad-names (and (eq (car rest) :FAILED)
                                   (cdr rest)))
-                  (just (getprop fn 'justification nil 'current-acl2-world
-                                 wrld))
+                  (just (getpropc fn 'justification nil wrld))
                   (m (assert$ just
                               (access justification just :measure)))
                   (bad (eq (ffn-symb m) :?)))
@@ -11274,16 +11333,14 @@
 
 (defun ruler-extenders-lst (names wrld)
   (cond ((endp names) nil)
-        (t (cons (let ((just (getprop (car names) 'justification nil 
-                                      'current-acl2-world wrld)))
+        (t (cons (let ((just (getpropc (car names) 'justification nil wrld)))
                    (assert$ just
                             (access justification just :ruler-extenders)))
                  (ruler-extenders-lst (cdr names) wrld)))))
 
 (defun get-unnormalized-bodies (names wrld)
   (cond ((endp names) nil)
-        (t (cons (getprop (car names) 'unnormalized-body nil
-                          'current-acl2-world wrld)
+        (t (cons (getpropc (car names) 'unnormalized-body nil wrld)
                  (get-unnormalized-bodies (cdr names) wrld)))))
 
 (defun termination-theorem (fn wrld)
@@ -11296,9 +11353,9 @@
                               (symbolp fn)
                               (function-symbolp fn wrld)
                               (logicalp fn wrld))))
-  (let* ((names (getprop fn 'recursivep nil 'current-acl2-world wrld))
+  (let* ((names (getpropc fn 'recursivep nil wrld))
          (just (and names ; optimization
-                    (getprop fn 'justification nil 'current-acl2-world wrld))))
+                    (getpropc fn 'justification nil wrld))))
     (cond
      ((null names)
       (cons :FAILED
@@ -11387,24 +11444,6 @@
         (t (conjoin-clause-to-clause-set
             (disjoin-clauses clause (car segments))
             (add-segments-to-clause clause (cdr segments))))))
-
-(defconst *equality-aliases*
-
-; This constant should be a subset of *definition-minimal-theory*, since we do
-; not track the corresponding runes in simplify-tests and related code below.
-
-  '(eq eql =))
-
-(defun term-equated-to-constant (term)
-  (case-match term
-    ((rel x y)
-     (cond ((or (eq rel 'equal)
-                (member-eq rel *equality-aliases*))
-            (cond ((quotep x) (mv y x))
-                  ((quotep y) (mv x y))
-                  (t (mv nil nil))))
-           (t (mv nil nil))))
-    (& (mv nil nil))))
 
 (defun simplify-clause-for-term-equal-const-1 (var const cl)
 
@@ -11782,9 +11821,9 @@
                     nil nil ens wrld state ttree)
     (let ((guard (guard name nil wrld))
           (unnormalized-body
-           (getprop name 'unnormalized-body
-                    '(:error "See GUARD-CLAUSES-FOR-FN.")
-                    'current-acl2-world wrld)))
+           (getpropc name 'unnormalized-body
+                     '(:error "See GUARD-CLAUSES-FOR-FN.")
+                     wrld)))
       (mv-let
         (normal-guard ttree)
         (cond ((eq ens :do-not-simplify)
@@ -11817,16 +11856,15 @@
 ; Observe that when we generate the guard clauses for the body we optimize
 ; the stobj recognizers away, provided the named function is executable.
 
-                                      (not (eq (getprop name 'non-executablep nil
-                                                        'current-acl2-world wrld)
+                                      (not (eq (getpropc name 'non-executablep
+                                                         nil wrld)
                                                t))
                                       ens wrld state ttree)
               (mv-let (type-clauses ttree)
                 (guard-clauses-for-body
                  hyp-segments
                  (fcons-term* 'insist
-                              (getprop name 'split-types-term *t*
-                                       'current-acl2-world wrld))
+                              (getpropc name 'split-types-term *t* wrld))
                  (and debug-p `(:guard (:type ,name)))
                  nil ; stobj-optp: no clear reason for setting this to t
                  ens wrld state ttree)
@@ -11873,7 +11911,7 @@
 ; guard-verified.
 
                                   :COMMON-LISP-COMPLIANT))))
-  (let ((names (or (getprop fn 'recursivep nil 'current-acl2-world wrld)
+  (let ((names (or (getpropc fn 'recursivep nil wrld)
                    (list fn))))
     (mv-let (cl-set ttree)
       (guard-clauses-for-clique names
@@ -12429,9 +12467,9 @@
          (pprogn
           (let ((new-disables
                  (new-disables
-                  (getprop 'definition-minimal-theory 'theory
-                           nil ; so, returns nil early in boot-strap
-                           'current-acl2-world wrld)
+                  (getpropc 'definition-minimal-theory 'theory
+                            nil ; so, returns nil early in boot-strap
+                            wrld)
                   runic-value ens wrld)))
             (cond
              (new-disables
@@ -12447,10 +12485,10 @@
              (t state)))
           (let ((new-disables
                  (new-disables
-                  (getprop 'executable-counterpart-minimal-theory
-                           'theory
-                           nil ; so, returns nil early in boot-strap
-                           'current-acl2-world wrld)
+                  (getpropc 'executable-counterpart-minimal-theory
+                            'theory
+                            nil ; so, returns nil early in boot-strap
+                            wrld)
                   runic-value ens wrld)))
             (cond
              (new-disables
@@ -12493,9 +12531,9 @@
         (progn$
          (let ((new-disables
                 (new-disables
-                 (getprop 'definition-minimal-theory 'theory
-                          nil ; so, returns nil early in boot-strap
-                          'current-acl2-world wrld)
+                 (getpropc 'definition-minimal-theory 'theory
+                           nil ; so, returns nil early in boot-strap
+                           wrld)
                  runic-value ens wrld)))
            (cond
             (new-disables
@@ -12511,10 +12549,10 @@
             (t nil)))
          (let ((new-disables
                 (new-disables
-                 (getprop 'executable-counterpart-minimal-theory
-                          'theory
-                          nil ; so, returns nil early in boot-strap
-                          'current-acl2-world wrld)
+                 (getpropc 'executable-counterpart-minimal-theory
+                           'theory
+                           nil ; so, returns nil early in boot-strap
+                           wrld)
                  runic-value ens wrld)))
            (cond
             (new-disables
@@ -12711,7 +12749,7 @@
          (arity (arity fn wrld)))
     (cond
      ((null arity)
-      (if (getprop sym 'macro-body nil 'current-acl2-world wrld)
+      (if (getpropc sym 'macro-body nil wrld)
           nil
         (msg "~x0 is neither a function symbol nor a macro name"
              sym)))
@@ -12812,8 +12850,7 @@
            symbol"))
        (t
         (let ((verified-p
-               (getprop (ffn-symb term) 'clause-processor nil
-                        'current-acl2-world wrld)))
+               (getpropc (ffn-symb term) 'clause-processor nil wrld)))
 
 ; If a verified clause processor has a well-formedness guarantee then the
 ; value of the property is the guarantee ((name fn thm-name1) . arity-alist);
@@ -15196,7 +15233,7 @@
         "Illegal attempt to set the include-book-dir!-table.  This can only ~
          be done by calling ~v0."
         '(add-include-book-dir! delete-include-book-dir!)))
-   (t (let ((term (getprop name 'table-guard *t* 'current-acl2-world wrld)))
+   (t (let ((term (getpropc name 'table-guard *t* wrld)))
         (er-progn
          (mv-let
           (erp okp latches)
@@ -15303,8 +15340,8 @@
 
   (and (function-symbolp fn wrld)
        (let* ((event-number
-               (getprop (or stobj-function fn) 'absolute-event-number nil
-                        'current-acl2-world wrld))
+               (getpropc (or stobj-function fn) 'absolute-event-number nil
+                         wrld))
               (wrld
                (and event-number
                     (lookup-world-index 'event event-number wrld)))
@@ -15315,8 +15352,8 @@
               (or (null stobj-function)
                   (and (not (member-equal *stobj-inline-declare* def))
                        (or axiomatic-p
-                           (not (getprop stobj-function 'absstobj-info nil
-                                         'current-acl2-world wrld)))))
+                           (not (getpropc stobj-function 'absstobj-info nil
+                                          wrld)))))
               (cons 'defun def)))))
 
 (defun cltl-def-from-name (fn wrld)
@@ -15326,8 +15363,7 @@
 ; definition that is oneified to create the corresponding *1* function.
 
   (cltl-def-from-name1 fn
-                       (getprop fn 'stobj-function nil 'current-acl2-world
-                                wrld)
+                       (getpropc fn 'stobj-function nil wrld)
                        nil
                        wrld))
 
@@ -15396,16 +15432,14 @@
                           ,condition
                           ,(cdr (assoc-eq :inline val))
                           ,(cltl-def-from-name key wrld) ; cl-defun
-                          ,(getprop key 'formals t 'current-acl2-world
-                                    wrld) ; formals
-                          ,(getprop key 'stobjs-in t 'current-acl2-world
-                                    wrld) ; stobjs-in
-                          ,(getprop key 'stobjs-out t 'current-acl2-world
+                          ,(getpropc key 'formals t wrld) ; formals
+                          ,(getpropc key 'stobjs-in t wrld) ; stobjs-in
+                          ,(getpropc key 'stobjs-out t
 
 ; Normally we would avoid getting the stobjs-out of return-last.  But
 ; return-last is rejected for mamoization anyhow (by memoize-table-chk).
 
-                                    wrld) ; stobjs-out
+                                     wrld) ; stobjs-out
                           ,(and (symbolp condition)
                                 condition
                                 (not (eq condition t))
@@ -15445,13 +15479,11 @@
                               ctx state)
           (value
            (cdr (assoc-equal key
-                             (getprop name 'table-alist nil
-                                      'current-acl2-world wrld))))))
+                             (getpropc name 'table-alist nil wrld))))))
         (:put
          (with-ctx-summarized
           (if (output-in-infixp state) event-form ctx)
-          (let* ((tbl (getprop name 'table-alist nil
-                               'current-acl2-world wrld)))
+          (let* ((tbl (getpropc name 'table-alist nil wrld)))
             (er-progn
              (chk-table-nil-args :put term '(5) ctx state)
              (cond
@@ -15536,7 +15568,7 @@
                                 (or key val)
                                 (cond (key '(2)) (t '(3)))
                                 ctx state)
-            (value (getprop name 'table-guard *t* 'current-acl2-world wrld))))
+            (value (getpropc name 'table-guard *t* wrld))))
           (t
            (with-ctx-summarized
             (if (output-in-infixp state) event-form ctx)
@@ -15554,8 +15586,7 @@
 ; non-stobjs.
 
                       (let ((old-guard
-                             (getprop name 'table-guard nil
-                                      'current-acl2-world wrld)))
+                             (getpropc name 'table-guard nil wrld)))
                         (cond
                          ((equal old-guard tterm)
                           (stop-redundant-event ctx state))
@@ -15567,11 +15598,10 @@
                                changed only by undoing the event that set it.  ~
                                See :DOC table."
                               name
-                              (untranslate (getprop name 'table-guard nil
-                                                    'current-acl2-world wrld)
+                              (untranslate (getpropc name 'table-guard nil
+                                                     wrld)
                                            t wrld)))
-                         ((getprop name 'table-alist nil
-                                   'current-acl2-world wrld)
+                         ((getpropc name 'table-alist nil wrld)
 
 ; At one time Matt wanted the option of setting the :val-guard of a
 ; non-empty table, but he doesn't recall why.  Perhaps we'll add such

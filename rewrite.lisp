@@ -474,8 +474,7 @@
 ; -- which isn't equiv2 -- so we skip it.
 
          (member-eq equiv2
-                    (cdr (getprop equiv1 'coarsenings nil
-                                  'current-acl2-world wrld))))))
+                    (cdr (getpropc equiv1 'coarsenings nil wrld))))))
 
 ; The above function determines if one equivalence symbol is a
 ; refinement of another.  More often we want to know whether a symbol
@@ -530,8 +529,7 @@
 
   (cond ((eq equiv 'equal) *fake-rune-for-anonymous-enabled-rule*)
         ((null geneqv) nil)
-        (t (geneqv-refinementp1 (getprop equiv 'coarsenings nil
-                                         'current-acl2-world wrld)
+        (t (geneqv-refinementp1 (getpropc equiv 'coarsenings nil wrld)
                                 geneqv))))
 
 ; We now define the function which constructs the list of generated
@@ -628,8 +626,8 @@
   (cond
    ((null geneqv) nil)
    (t (cons (cons (car geneqv)
-                  (cdr (getprop (access congruence-rule (car geneqv) :equiv)
-                                'coarsenings nil 'current-acl2-world wrld)))
+                  (cdr (getpropc (access congruence-rule (car geneqv) :equiv)
+                                'coarsenings nil wrld)))
             (pair-congruence-rules-with-coarsenings (cdr geneqv) wrld)))))
 
 (defun add-to-cr-and-coarsenings
@@ -702,12 +700,11 @@
    ((null geneqv1) old-crs-and-coarsenings)
    (t (union-geneqv1 (cdr geneqv1)
                      (add-to-cr-and-coarsenings (car geneqv1)
-                                                (getprop
+                                                (getpropc
                                                  (access congruence-rule
                                                          (car geneqv1)
                                                          :equiv)
-                                                 'coarsenings nil
-                                                 'current-acl2-world wrld)
+                                                 'coarsenings nil wrld)
                                                 old-crs-and-coarsenings
                                                 t)
                      wrld))))
@@ -926,8 +923,7 @@
 ; never call geneqv-lst on 'IF.
 
          (list *geneqv-iff* geneqv geneqv))
-        (t (let ((congruences (getprop fn 'congruences nil
-                                       'current-acl2-world wrld)))
+        (t (let ((congruences (getpropc fn 'congruences nil wrld)))
              (cond
               ((null congruences) nil)
               ((null geneqv)
@@ -1089,8 +1085,7 @@
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).
 
-                  (not (getprop fn 'constrainedp nil
-                                'current-acl2-world wrld)))))
+                  (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: This code is supposed to be the same as in rewrite.  Keep them in sync
 ; and see the comment there for explanations.
@@ -2112,7 +2107,7 @@
   (cond
    ((flambdap fn) ; no chance of a match by child rewrite call
     (mv nil nil))
-   (t (let* ((prop (getprop fn 'pequivs nil 'current-acl2-world wrld))
+   (t (let* ((prop (getpropc fn 'pequivs nil wrld))
              (shallow-pequiv-alist (pequivs-property-field prop :shallow)))
         (cond
          ((not pequiv-info) ; no pequivs for which to take the "next"
@@ -4778,7 +4773,7 @@
            ((variablep hyp) nil)
            ((fquotep hyp) nil)
            ((flambda-applicationp hyp) nil)
-           (t (getprop (ffn-symb hyp) 'lemmas nil 'current-acl2-world wrld)))))
+           (t (getpropc (ffn-symb hyp) 'lemmas nil wrld)))))
 
 (defun search-ground-units1
   (hyp unify-subst lemmas type-alist ens force-flg wrld ttree)
@@ -11592,9 +11587,7 @@
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).  Indeed, we rely on this check in chk-live-state-p.
 
-                             (not (getprop fn 'constrainedp nil
-                                           'current-acl2-world
-                                           wrld)))))
+                             (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: The test above, if true, leads here where we execute the
 ; executable counterpart of the fn (or just go into the lambda
@@ -11714,8 +11707,7 @@
 
                            (rewrite-with-lemmas1
                             term
-                            (getprop (ffn-symb new-term) 'lemmas nil
-                                     'current-acl2-world wrld)))
+                            (getpropc (ffn-symb new-term) 'lemmas nil wrld)))
                           (declare (ignore rewrittenp))
                           (mv step-limit term1 ttree)))))))
 
@@ -14288,8 +14280,7 @@
            (rewrittenp rewritten-term ttree)
            (rewrite-entry
             (rewrite-with-lemmas1 term
-                                  (getprop (ffn-symb term) 'lemmas nil
-                                           'current-acl2-world wrld)))
+                                  (getpropc (ffn-symb term) 'lemmas nil wrld)))
            (cond
             (rewrittenp (mv step-limit rewritten-term ttree))
             (t (mv-let
@@ -16352,9 +16343,8 @@
                   (not (access rewrite-constant rcnst :cheap-linearp)))
              (rewrite-entry
               (add-linear-lemmas (car new-vars)
-                                 (getprop (ffn-symb (car new-vars))
-                                          'linear-lemmas nil
-                                          'current-acl2-world wrld))
+                                 (getpropc (ffn-symb (car new-vars))
+                                          'linear-lemmas nil wrld))
               :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
               :simplify-clause-pot-lst new-pot-lst)
            (mv step-limit nil new-pot-lst))
@@ -16552,11 +16542,9 @@
          (t
           (rewrite-entry
            (add-linear-lemmas (car new-vars)
-                              (getprop
+                              (getpropc
                                (ffn-symb (car new-vars))
-                               'linear-lemmas nil
-                               'current-acl2-world
-                               wrld))
+                               'linear-lemmas nil wrld))
            :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
            )))
         (cond

@@ -99,7 +99,7 @@ theories, etc. to your books.  Basic examples:</p>
 })
 
 <p>The @('form') should typically be a form that returns an @(see
-event-triple), which is true for most top-level ACL2 events and other high
+error-triple), which is true for most top-level ACL2 events and other high
 level commands.</p>
 
 <p>The @('form') is submitted in a @(see make-event), which has a number of

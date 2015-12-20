@@ -1188,13 +1188,13 @@
          (subsume-check-enabled (not (warning-disabled-p "Subsume")))
          (subsumed-rule-names
           (and subsume-check-enabled
-               (find-subsumed-rule-names (getprop (ffn-symb lhs) 'lemmas nil
-                                                  'current-acl2-world wrld)
+               (find-subsumed-rule-names (getpropc (ffn-symb lhs) 'lemmas nil
+                                                   wrld)
                                          rule ens wrld)))
          (subsuming-rule-names
           (and subsume-check-enabled
-               (find-subsuming-rule-names (getprop (ffn-symb lhs) 'lemmas nil
-                                                   'current-acl2-world wrld)
+               (find-subsuming-rule-names (getpropc (ffn-symb lhs) 'lemmas nil
+                                                    wrld)
                                           rule ens wrld)))
          (equiv (access rewrite-rule rule :equiv))
          (double-rewrite-opportunities
@@ -1486,8 +1486,7 @@
             (wrld1 (putprop (ffn-symb lhs)
                             'lemmas
                             (cons rewrite-rule
-                                  (getprop (ffn-symb lhs) 'lemmas nil
-                                           'current-acl2-world wrld))
+                                  (getpropc (ffn-symb lhs) 'lemmas nil wrld))
                             wrld)))
        (put-match-free-value match-free-value rune wrld1))))))
 
@@ -2012,12 +2011,10 @@
                                                :max-term))
                              'linear-lemmas
                              (cons linear-rule
-                                   (getprop (ffn-symb
-                                             (access linear-lemma linear-rule
-                                                     :max-term))
-                                            'linear-lemmas nil
-                                            'current-acl2-world
-                                            wrld))
+                                   (getpropc (ffn-symb
+                                              (access linear-lemma linear-rule
+                                                      :max-term))
+                                             'linear-lemmas nil wrld))
                              wrld)))
         (add-linear-rule3 rune nume hyps concl (cdr max-terms)
                           backchain-limit-lst
@@ -2991,9 +2988,8 @@
                                  :hyps hyps
                                  :concls concls
                                  :match-free match-free)
-                           (getprop (ffn-symb (car triggers))
-                                    'forward-chaining-rules nil
-                                    'current-acl2-world wrld))
+                           (getpropc (ffn-symb (car triggers))
+                                     'forward-chaining-rules nil wrld))
                      wrld)))))
 
 (defun add-forward-chaining-rule (rune nume trigger-terms term match-free wrld)
@@ -3440,19 +3436,29 @@
 ; To make it easier to introduce an evaluator, we define the following
 ; macro.
 
-(defun defevaluator-form/defthms (evfn prefix i clauses)
+(defun defevaluator-form/defthms (evfn evfn-lst prefix i clauses)
   (cond ((null clauses) nil)
         (t (cons (list* (if (eql i 0) 'defthmd 'defthm)
                         (genvar evfn prefix i nil)
                         (prettyify-clause (car clauses) nil nil)
-                        (and (eql i 0)
-                             `(:hints
-                               (("Goal"
-                                 :expand ((:free (x) (hide x))
-                                          (,evfn x a))
-                                 :in-theory (disable (:executable-counterpart
-                                                      ,evfn)))))))
-                 (defevaluator-form/defthms evfn prefix (1+ i)
+                        (if (or (equal i 4)   ; constraints on
+                                (equal i 5))  ; (evfn-lst x-lst a)
+
+; Notes: constraints 0 through 5 are independent of the function symbols being
+; interpreted.  Constraint 0 is the interpretation of an ``anonymous'' function
+; application, constraints 1, 2, and 3 are for variables, quotes, and lambda
+; applications, and constraints 4 and 5 are for (evfn-lst nil a) and (evfn-lst
+; (cons x y) a).
+
+                            `(:hints
+                              (("Goal"
+                                :expand ((,evfn-lst x-lst a)))))
+                            `(:hints ; constraints on (evfn x a)
+                              (("Goal"
+                                :expand ((:free (x) (hide x))
+                                         (,evfn x a)
+                                         (:free (fn args) (,evfn (cons fn args) nil))))))))
+                 (defevaluator-form/defthms evfn evfn-lst prefix (1+ i)
                    (cdr clauses))))))
 
 (defun defevaluator-form/fns-clauses (evfn fn-args-lst)
@@ -3486,11 +3492,22 @@
             fix-true-list kwote kwote-lst pairlis$-fix-true-list
             (:type-prescription acl2-count))))
 
+(defun filter-runes1 (keyword runes ans)
+  (cond
+   ((endp runes) ans)
+   ((eq (car (car runes)) keyword)
+    (filter-runes1 keyword (cdr runes) (cons (car runes) ans)))
+   (t (filter-runes1 keyword (cdr runes) ans))))
+
+(defun filter-runes (keyword runes)
+  (filter-runes1 keyword runes nil))
+
 (defun defevaluator-form (evfn evfn-lst fn-args-lst)
   (let* ((clauses (evaluator-clauses evfn evfn-lst fn-args-lst))
          (fns-clauses (defevaluator-form/fns-clauses evfn fn-args-lst))
          (defthms (defevaluator-form/defthms
                     evfn
+                    evfn-lst
                     (symbol-name (pack2 evfn '-constraint-))
                     0
                     clauses)))
@@ -3498,7 +3515,16 @@
       (((,evfn * *) => *)
        ((,evfn-lst * *) => *))
       (set-inhibit-warnings "theory")
-      (local (in-theory *defevaluator-form-base-theory*))
+
+; Note: union-theories and universal-theory below are not yet defined when we
+; introduce defevaluator-form, but that's ok as long as we don't try to execute
+; this!
+
+      (local
+       (in-theory
+        (union-theories (filter-runes :built-in-clause
+                                      (universal-theory :here))
+                        *defevaluator-form-base-theory*)))
       ,@(sublis
          (list (cons 'evfn evfn)
                (cons 'evfn-lst evfn-lst)
@@ -3536,6 +3562,21 @@
             (defthm eval-list-kwote-lst
               (equal (evfn-lst (kwote-lst args) a)
                      (fix-true-list args))))
+           (local
+            (defthm cdr-kwote-lst-eval-list
+              (equal (cdr (kwote-lst (evfn-lst lst a)))
+                     (kwote-lst (evfn-lst (cdr lst) a)))))
+
+           (local
+            (defthm evfn-car-kwote-lst-evfn-list
+              (equal (evfn (car (kwote-lst (evfn-lst lst a))) nil)
+                     (evfn (car lst) a))))
+           (local
+            (in-theory (disable evfn
+                                (:executable-counterpart evfn)
+                                evfn-lst
+                                (:executable-counterpart evfn-lst))))
+
            . defthms)))))
 
 (defun pairs-to-macro-alias-msgs (alist)
@@ -3836,14 +3877,14 @@
                             (attached-fns (cdr fns) wrld))))))))
 
 (defun siblings (f wrld)
-  (or (getprop f 'siblings nil 'current-acl2-world wrld)
-      (getprop f 'recursivep nil 'current-acl2-world wrld)
+  (or (getpropc f 'siblings nil wrld)
+      (getpropc f 'recursivep nil wrld)
       (list f)))
 
 (defun canonical-sibling (f wrld)
-  (let ((sibs (getprop f 'siblings nil 'current-acl2-world wrld)))
+  (let ((sibs (getpropc f 'siblings nil wrld)))
     (cond (sibs (car sibs))
-          (t (let ((sibs (getprop f 'recursivep nil 'current-acl2-world wrld)))
+          (t (let ((sibs (getpropc f 'recursivep nil wrld)))
                (cond (sibs (car sibs))
                      (t f)))))))
 
@@ -3914,12 +3955,12 @@
             (cond
              ((eq x *unknown-constraints*)
               (let* ((cl-proc
-                      (getprop name 'constrainedp
-                               '(:error
-                                 "See immediate-canonical-ancestors:  ~
-                                  expected to find a 'constrainedp property ~
-                                  where we did not.")
-                               'current-acl2-world wrld))
+                      (getpropc name 'constrainedp
+                                '(:error
+                                  "See immediate-canonical-ancestors:  ~
+                                   expected to find a 'constrainedp property ~
+                                   where we did not.")
+                                wrld))
                      (supporters (unknown-constraint-supporters cl-proc wrld)))
                 (collect-canonical-siblings supporters wrld guard-anc
                                             ignore-fns)))
@@ -4009,16 +4050,14 @@
           rule-type
           name
           ev
-          (getprop ev 'constrainedp
-                   '(:error "See chk-evaluator-use-in-rule:  expected to find ~
-                             a 'constrainedp property where we did not.")
-                   'current-acl2-world wrld)))
+          (getpropc ev 'constrainedp
+                    '(:error "See chk-evaluator-use-in-rule:  expected to ~
+                              find a 'constrainedp property where we did not.")
+                    wrld)))
      (t
       (let* ((ev-lst (ev-lst-from-ev ev wrld))
-             (ev-prop (getprop ev 'defaxiom-supporter nil
-                               'current-acl2-world wrld))
-             (ev-lst-prop (getprop ev-lst 'defaxiom-supporter nil
-                                   'current-acl2-world wrld))
+             (ev-prop (getpropc ev 'defaxiom-supporter nil wrld))
+             (ev-lst-prop (getpropc ev-lst 'defaxiom-supporter nil wrld))
              (ev-fns (list ev ev-lst))
              (meta-fn-lst (if hyp-fn
                               (list meta-fn hyp-fn)
@@ -4028,8 +4067,8 @@
              (ev-anc (canonical-ancestors-lst (list ev) wrld)))
         (cond
          ((and extra-fns
-               (or (getprop ev 'predefined nil 'current-acl2-world wrld)
-                   (getprop ev-lst 'predefined nil 'current-acl2-world wrld)))
+               (or (getpropc ev 'predefined nil wrld)
+                   (getpropc ev-lst 'predefined nil wrld)))
 
 ; See the comment below about this case in the comment in a case below, where
 ; we point out that extra-fns are defined in the boot-strap world.
@@ -4039,7 +4078,7 @@
                boot-strap world.  This is illegal when meta-extract hyotheses ~
                are present, because for logical reasons our implementation ~
                assumes that the evaluator is not ancestral in ~v1."
-              (if (getprop ev 'predefined nil 'current-acl2-world wrld)
+              (if (getpropc ev 'predefined nil wrld)
                   ev
                 ev-lst)
               '(meta-extract-contextual-fact meta-extract-global-fact+)))
@@ -4366,14 +4405,13 @@
 ; Fn is a function symbol, not a lambda expression.
 
   (cond ((null lst) wrld)
-        (t (add-meta-rule1 (cdr lst) rule
-                           (putprop (car lst)
-                                    'lemmas
-                                    (cons rule
-                                          (getprop (car lst)
-                                                   'lemmas nil
-                                                   'current-acl2-world wrld))
-                                    wrld)))))
+        (t
+         (add-meta-rule1 (cdr lst) rule
+                         (putprop (car lst)
+                                  'lemmas
+                                  (cons rule
+                                        (getpropc (car lst) 'lemmas nil wrld))
+                                  wrld)))))
 
 (defun maybe-putprop-lst (symb-lst key val wrld)
   (cond ((endp symb-lst)
@@ -4381,7 +4419,7 @@
         (t (let ((symb (car symb-lst)))
              (maybe-putprop-lst
               (cdr symb-lst) key val
-              (cond ((getprop symb key nil 'current-acl2-world wrld)
+              (cond ((getpropc symb key nil wrld)
                      wrld)
                     (t (putprop symb key val wrld))))))))
 
@@ -4397,11 +4435,7 @@
         (t (mark-attachment-disallowed2
             (cdr fns)
             msg
-            (let ((old-prop (getprop (car fns)
-                                     'attachment
-                                     nil
-                                     'current-acl2-world
-                                     wrld)))
+            (let ((old-prop (getpropc (car fns) 'attachment nil wrld)))
               (cond ((and (consp old-prop)
                           (eq (car old-prop)
                               :attachment-disallowed))
@@ -4536,8 +4570,7 @@
         name
         (car dests)
         (set-difference-eq vars (fargs (car dests)))))
-   ((getprop (ffn-symb (car dests)) 'eliminate-destructors-rule nil
-             'current-acl2-world wrld)
+   ((getpropc (ffn-symb (car dests)) 'eliminate-destructors-rule nil wrld)
     (er soft ctx
         "~x0 is an unacceptable destructor elimination rule because ~
          we already have a destructor elimination rule for ~x1, ~
@@ -4545,8 +4578,7 @@
          for the same function symbol."
         name
         (ffn-symb (car dests))
-        (getprop (ffn-symb (car dests)) 'eliminate-destructors-rule nil
-                 'current-acl2-world wrld)))
+        (getpropc (ffn-symb (car dests)) 'eliminate-destructors-rule nil wrld)))
    (t (chk-acceptable-elim-rule1 name vars (cdr dests) ctx wrld state))))
 
 (defun chk-acceptable-elim-rule (name term ctx wrld state)
@@ -5054,7 +5086,7 @@
 ; ; In v2-7 and presumably earlier, the above leads us to a type-prescription
 ; ; rule with a NIL :basic-ts field:
 ;
-;   ACL2 !>(car (getprop 'my-equal 'type-prescriptions t 'current-acl2-world (w state)))
+;   ACL2 !>(car (getpropc 'my-equal 'type-prescriptions t))
 ;   (NIL (1685 MY-EQUAL X Y)
 ;        NIL
 ;        (NIL :EQUIVALENCE MY-EQUAL-IS-AN-EQUIVALENCE)
@@ -5092,11 +5124,8 @@
                           :basic-ts ts
                           :vars vars
                           :corollary term)
-                    (getprop (ffn-symb typed-term)
-                             'type-prescriptions
-                             nil
-                             'current-acl2-world
-                             wrld))
+                    (getpropc (ffn-symb typed-term) 'type-prescriptions nil
+                              wrld))
               wrld)))))
 
 (defun strong-compound-recognizer-p (fn recognizer-alist ens)
@@ -5447,7 +5476,7 @@
            (cond
             ((or (eq fn 'equal)
                  (and (not (flambdap fn))
-                      (getprop fn 'coarsenings nil 'current-acl2-world wrld)))
+                      (getpropc fn 'coarsenings nil wrld)))
              (er soft ctx
                  "~x0 is already known to be an equivalence relation."
                  fn))
@@ -5464,7 +5493,7 @@
                    (let ((lst
                           (scrunch-eq
                            (collect-problematic-pre-equivalence-rule-names
-                            (getprop fn 'lemmas nil 'current-acl2-world wrld)))))
+                            (getpropc fn 'lemmas nil wrld)))))
                      (cond
                       (lst
                        (pprogn
@@ -5621,8 +5650,7 @@
      (list fn)
      (putprop 'equal
               'coarsenings
-              (append (getprop 'equal 'coarsenings nil
-                               'current-acl2-world wrld)
+              (append (getpropc 'equal 'coarsenings nil wrld)
                       (list fn))
               (putprop fn
                        'congruences
@@ -5635,9 +5663,7 @@
                                                :rune rune
                                                :nume nume
                                                :equiv fn)))
-                             (getprop fn 'congruences nil
-                                      'current-acl2-world
-                                      wrld))
+                             (getpropc fn 'congruences nil wrld))
                        (cond
                         ((mv-let
                           (ts ttree)
@@ -5703,8 +5729,7 @@
 ; Return an alist that pairs each equivalence relation in wrld with
 ; its current coarsenings.
 
-  (let ((all-equivs (getprop 'equal 'coarsenings nil
-                             'current-acl2-world wrld)))
+  (let ((all-equivs (getpropc 'equal 'coarsenings nil wrld)))
     (pairlis$ all-equivs
               (getprop-x-lst all-equivs 'coarsenings wrld))))
 
@@ -5715,8 +5740,7 @@
 ; in wrld.
 
   (cond ((null alist) wrld)
-        ((equal (getprop (caar alist) 'coarsenings nil
-                         'current-acl2-world wrld)
+        ((equal (getpropc (caar alist) 'coarsenings nil wrld)
                 (cdar alist))
          (putprop-coarsenings (cdr alist) wrld))
         (t (putprop (caar alist) 'coarsenings (cdar alist)
@@ -5794,8 +5818,7 @@
     (putprop-coarsenings
      (close-value-sets
       (put-assoc-eq equiv1
-                    (append (getprop equiv1 'coarsenings nil
-                                     'current-acl2-world wrld)
+                    (append (getpropc equiv1 'coarsenings nil wrld)
                             (list equiv2))
                     (collect-coarsenings wrld)))
      wrld)))
@@ -6296,8 +6319,7 @@
           (let* ((k addr)
                  (temp (nth k
                             (assoc-eq equiv2
-                                      (getprop fn 'congruences nil
-                                               'current-acl2-world wrld)))))
+                                      (getpropc fn 'congruences nil wrld)))))
             (cond
              ((some-congruence-rule-same equiv1 temp)
               (warning$ ctx "Equiv"
@@ -6394,16 +6416,14 @@
       ((eq flg :classic)
        (let* ((k addr)
               (temp (assoc-eq equiv2
-                              (getprop fn 'congruences nil
-                                       'current-acl2-world wrld)))
+                              (getpropc fn 'congruences nil wrld)))
               (equiv2-congruence
                (or temp
                    (cons equiv2 (make-list-ac (arity fn wrld) nil nil))))
               (rst (if temp
                        (remove1-equal temp
-                                      (getprop fn 'congruences nil
-                                               'current-acl2-world wrld))
-                     (getprop fn 'congruences nil 'current-acl2-world wrld))))
+                                      (getpropc fn 'congruences nil wrld))
+                     (getpropc fn 'congruences nil wrld))))
          (putprop fn
                   'congruences
                   (cons (add-congruence-rule-to-congruence
@@ -6438,7 +6458,7 @@
                                   (fquotep arg)
                                   (lambda-applicationp arg)))
                          (ffn-symb arg)))))
-               (prop (getprop sym 'pequivs nil 'current-acl2-world wrld))
+               (prop (getpropc sym 'pequivs nil wrld))
                (new-prop
                 (let ((prop (or prop
                                 *empty-pequivs-property*)))
@@ -6458,7 +6478,7 @@
                                                  prop :deep)))))))
                (parent-prop
                 (and (eq flg :deep) ; optimization
-                     (getprop fn 'pequivs nil 'current-acl2-world wrld))))
+                     (getpropc fn 'pequivs nil wrld))))
           (putprop sym 'pequivs new-prop
                    (cond ((eq flg :shallow) wrld)
                          ((null parent-prop) ; and flg is :deep
@@ -6629,8 +6649,7 @@
                          :pattern pat-term
                          :condition cond-term
                          :scheme scheme-term)
-                   (getprop fn 'induction-rules nil
-                            'current-acl2-world wrld))
+                   (getpropc fn 'induction-rules nil wrld))
              wrld)))
 
 ;---------------------------------------------------------------------------
@@ -8705,10 +8724,11 @@
                                 the application of a lambda expression.  Thus ~
                                 ~x0 is illegal.  See :DOC induction."
                                x))
-                          ((not (or (getprop (ffn-symb term) 'induction-machine
-                                             nil 'current-acl2-world wrld)
-                                    (getprop (ffn-symb term) 'induction-rules
-                                             nil 'current-acl2-world wrld)))
+                          ((not (or (getpropc (ffn-symb term)
+                                              'induction-machine
+                                              nil wrld)
+                                    (getpropc (ffn-symb term) 'induction-rules
+                                              nil wrld)))
                            (er soft ctx
                                "The function symbol of the :SCHEME term of an ~
                                 :INDUCTION rule class must, at least ~
@@ -9431,9 +9451,9 @@
 ; when a :corollary is implicit, then translate-rule-class generates the
 ; :corollary to be exactly the original theorem.
 
-  (or (and (equal term (getprop name 'theorem 0 'current-acl2-world wrld))
+  (or (and (equal term (getpropc name 'theorem 0 wrld))
            (equal (truncate-classes classes term)
-                  (getprop name 'classes 0 'current-acl2-world wrld)))
+                  (getpropc name 'classes 0 wrld)))
       (assert$ event-form
                (equal event-form
                       (get-event name wrld)))))
@@ -10035,8 +10055,8 @@
               (not (keywordp name)))
          (let* ((wrld (w state))
                 (name (deref-macro-name name (macro-aliases wrld)))
-                (numes (strip-cars (getprop name 'runic-mapping-pairs nil
-                                            'current-acl2-world wrld)))
+                (numes (strip-cars
+                        (getpropc name 'runic-mapping-pairs nil wrld)))
                 (wrld-segment (world-to-next-event
                                (cdr (decode-logical-name name wrld)))))
            (pr-body wrld-segment numes wrld state)))
@@ -10107,16 +10127,16 @@
   (declare (xargs :guard t))
   (cond ((symbolp name)
          (let ((name2 (deref-macro-name name (macro-aliases wrld))))
-           (cond ((and (not (eq name2 :here))
-                       name2
-                       (logical-namep name2 wrld))
-                  (disabledp-fn-lst (getprop name2 'runic-mapping-pairs nil
-                                             'current-acl2-world wrld)
-                                    ens))
-                 (t (er hard 'disabledp
-                        "Illegal call of disabledp on symbolp argument ~x0.  ~
-                         See :DOC disabledp."
-                        name)))))
+           (cond
+            ((and (not (eq name2 :here))
+                  name2
+                  (logical-namep name2 wrld))
+             (disabledp-fn-lst (getpropc name2 'runic-mapping-pairs nil wrld)
+                               ens))
+            (t (er hard 'disabledp
+                   "Illegal call of disabledp on symbolp argument ~x0.  See ~
+                    :DOC disabledp."
+                   name)))))
         (t (let* ((rune (translate-abbrev-rune name (macro-aliases wrld))))
              (cond
               ((runep rune wrld)
@@ -10468,9 +10488,8 @@
 ; true, the induction rune.
 
   (let ((temp (strip-cdrs
-               (getprop (deref-macro-name sym (macro-aliases wrld))
-                        'runic-mapping-pairs nil
-                        'current-acl2-world wrld))))
+               (getpropc (deref-macro-name sym (macro-aliases wrld))
+                         'runic-mapping-pairs nil wrld))))
     (cond
      ((and temp
            (eq (car (cdr (car temp))) :DEFINITION)
