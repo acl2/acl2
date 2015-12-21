@@ -473,7 +473,7 @@
      (er-progn
       (chk-all-but-new-name name ctx 'const wrld1 state)
       (chk-legal-defconst-name name state)
-      (let ((const-prop (getprop name 'const nil 'current-acl2-world wrld1)))
+      (let ((const-prop (getpropc name 'const nil wrld1)))
         (cond
          ((and const-prop
                (not (ld-redefinition-action state))
@@ -806,14 +806,14 @@
 ; it is not nil.  Hence, if name is not a macro and there is no
 ; 'macro-body, the first equal below will fail.
 
-  (and (getprop name 'absolute-event-number nil 'current-acl2-world w)
+  (and (getpropc name 'absolute-event-number nil w)
 
 ; You might think the above test is redundant, given that we look for
 ; properties like 'macro-body below and find them.  But you would be wrong.
 ; Certain defmacros, in particular, those in *initial-event-defmacros* have
 ; 'macro-body and other properties but haven't really been defined yet!
 
-       (equal (getprop name 'macro-body nil 'current-acl2-world w) body)
+       (equal (getpropc name 'macro-body nil w) body)
        (equal (macro-args name w) args)
        (equal (guard name nil w) guard)))
 
@@ -1471,7 +1471,7 @@
 ; or not we are in the hons version: for example, we get different evaluation
 ; results for the following.
 
-;   (getprop 'memoize-table 'table-guard *t* 'current-acl2-world (w state))
+;   (getpropc 'memoize-table 'table-guard *t*)
 
 ; By making hons-enabled a world global, we can access its value without state
 ; in history query functions such as :pe.
@@ -1621,8 +1621,7 @@
 ;;; ; In that case, the following getprop will return nil, in which case the
 ;;; ; above member-eq test is false, which works out as expected.
 ;;; 
-;;;                            (getprop (car fns) 'formals nil
-;;;                                      'current-acl2-world wrld0))
+;;;                            (getprop (car fns) 'formals nil wrld0))
 ;;;                 (putprop (car fns) 'invariant-risk (car fns) wrld)
 ;;;               wrld)
 ;;;             wrld0))))
@@ -3061,7 +3060,7 @@
 ; i.e., a name introduced by deftheory.
 
   (and (symbolp name)
-       (not (eq (getprop name 'theory t 'current-acl2-world wrld)
+       (not (eq (getpropc name 'theory t wrld)
                 t))))
 
 (defun theory-fn (name wrld)
@@ -3070,7 +3069,7 @@
 
   (declare (xargs :guard t))
   (cond ((theory-namep name wrld)
-         (getprop name 'theory nil 'current-acl2-world wrld))
+         (getpropc name 'theory nil wrld))
         (t (er hard?! 'theory
                "The alleged theory name, ~x0, is not the name of a previously ~
                 executed deftheory event.  See :DOC theory."
@@ -4405,7 +4404,7 @@
                                               wrld ctx state names
                                               portcullisp in-local-flg
                                               in-encapsulatep t)))))
-          ((getprop (car form) 'macro-body nil 'current-acl2-world wrld)
+          ((getpropc (car form) 'macro-body nil wrld)
            (cond
             ((member-eq (car form) (global-val 'untouchable-fns wrld))
              (er soft ctx er-str
@@ -4604,7 +4603,7 @@
                  '(@ raw-arity-alist)))
          (t
           (let ((stobjs-out
-                 (getprop (car form) 'stobjs-out t 'current-acl2-world wrld)))
+                 (getpropc (car form) 'stobjs-out t wrld)))
             (cond
              ((eq stobjs-out t)
               (multiple-value-bind
@@ -6079,8 +6078,7 @@
 
 (defun get-subversives (fns wrld)
   (cond ((endp fns) nil)
-        (t (let ((j (getprop (car fns) 'justification nil 'current-acl2-world
-                             wrld)))
+        (t (let ((j (getpropc (car fns) 'justification nil wrld)))
              (cond ((and j
                          (access justification j :subversive-p))
                     (cons (car fns)
@@ -6207,7 +6205,7 @@
 
 ; If you then evaluate
 
-; (getprop 'foo-witness 'constraint-lst nil 'current-acl2-world (w state))
+; (getpropc 'foo-witness 'constraint-lst)
 
 ; you'll see a much simpler result, with return-last calls removed, than if we
 ; did not apply remove-guard-holders-lst here.
@@ -6262,8 +6260,7 @@
 
   (cond ((endp names) nil)
         ((and (eq (symbol-class (car names) wrld) :common-lisp-compliant)
-              (not (getprop (car names) 'constrainedp nil
-                            'current-acl2-world wrld))
+              (not (getpropc (car names) 'constrainedp nil wrld))
 
 ; We can only trust guard verification for (car names) if its guard proof
 ; obligation can be moved forward.  We could in principle save that proof
@@ -6535,7 +6532,7 @@
 ;
 ; (test
 ;  (equal
-;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;   (getpropc 'p 'constraint-lst)
 ;   '((booleanp (P X)))))
 ;
 ; (u)
@@ -6604,7 +6601,7 @@
 ;
 ; (test
 ;  (equal
-;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;   (getpropc 'p 'constraint-lst)
 ;   '((EVP (P X)))))
 ;
 ; (u)
@@ -6629,9 +6626,9 @@
 ;   (defthm integerp-p (integerp (p x))))
 ;
 ; (test
-;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;  (and (equal (getpropc 'p 'constraint-lst)
 ;              '((integerp (p x))))
-;       (equal (getprop 'mapp 'constraint-lst nil 'current-acl2-world (w state))
+;       (equal (getpropc 'mapp 'constraint-lst)
 ;              nil)))
 ;
 ; (u)
@@ -6650,7 +6647,7 @@
 ;       t)))
 ;
 ; (test
-;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;  (and (equal (getpropc 'p 'constraint-lst)
 ; ; Modified for v3-5:
 ;              (reverse '((EQUAL (BAD X)
 ;                                (IF (CONSP X)
@@ -6661,7 +6658,7 @@
 ; ;                            (EQUAL (BAD X) 'NIL))
 ;                         (IMPLIES (CONSP X)
 ;                                  (< (LEN (P X)) (LEN X))))))
-;       (equal (getprop 'bad 'constraint-lst nil 'current-acl2-world (w state))
+;       (equal (getpropc 'bad 'constraint-lst)
 ;              'p)))
 ;
 ; (u)
@@ -6678,7 +6675,7 @@
 ;   (defthm len-p (implies (consp x) (< (len (p x)) (len x)))))
 ;
 ; (test
-;  (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;  (equal (getpropc 'p 'constraint-lst)
 ;         '((IMPLIES (CONSP X)
 ;                    (< (LEN (P X)) (LEN X))))))
 ;
@@ -6708,7 +6705,7 @@
 ;     (integer-listp (mapp x))))
 ;
 ; (test
-;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;  (and (equal (getpropc 'p 'constraint-lst)
 ;              '((EQUAL (MAPP X)
 ;                       (IF (CONSP X)
 ;                           (CONS (P (CAR X)) (MAPP (CDR X)))
@@ -6716,7 +6713,7 @@
 ; ; No longer starting with v3-5:
 ; ;              (TRUE-LISTP (MAPP X))
 ;                (INTEGER-LISTP (MAPP X))))
-;       (equal (getprop 'mapp 'constraint-lst nil 'current-acl2-world (w state))
+;       (equal (getpropc 'mapp 'constraint-lst)
 ;              'p)))
 ;
 ; (u)
@@ -6741,7 +6738,7 @@
 ;       t)))
 ;
 ; (test
-;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;  (and (equal (getpropc 'p 'constraint-lst)
 ;              '((EQUAL (BAD1 X) (P X))
 ;                (EQUAL (BAD2 X)
 ;                       (IF (CONSP X)
@@ -6752,12 +6749,11 @@
 ; ;                  'T
 ; ;                  (EQUAL (BAD2 X) 'NIL))
 ;                ))
-;       (equal (getprop 'bad1 'constraint-lst nil 'current-acl2-world (w state))
+;       (equal (getpropc 'bad1 'constraint-lst)
 ;              'p)
-;       (equal (getprop 'bad2 'constraint-lst nil 'current-acl2-world (w state))
+;       (equal (getpropc 'bad2 'constraint-lst)
 ;              'p)
-;       (equal (getprop 'bad2 'induction-machine nil
-;                       'current-acl2-world (w state))
+;       (equal (getpropc 'bad2 'induction-machine nil)
 ;              nil)))
 ;
 ;
@@ -7398,7 +7394,7 @@
                    (find-first-non-local-name (car (last lst))
                                               wrld primitives state-vars))
                   ((member-eq sym primitives) nil)
-                  ((getprop (car x) 'macro-body nil 'current-acl2-world wrld)
+                  ((getpropc (car x) 'macro-body nil wrld)
                    (mv-let
                     (erp expansion)
                     (macroexpand1-cmp x 'find-first-non-local-name wrld
@@ -7596,8 +7592,7 @@
            (not (new-namep name wrld))
            (let* ((wrld-tail (lookup-world-index
                               'event
-                              (getprop name 'absolute-event-number 0
-                                       'current-acl2-world wrld)
+                              (getpropc name 'absolute-event-number 0 wrld)
                               wrld))
                   (event-tuple (cddr (car wrld-tail)))
                   (old-event-form (access-event-tuple-form
@@ -7642,8 +7637,7 @@
                 (default-ruler-extenders-from-table new-adt)
                 (default-verify-guards-eagerness-from-table new-adt)
                 (and name
-                     (getprop name 'absolute-event-number nil
-                              'current-acl2-world wrld))
+                     (getpropc name 'absolute-event-number nil wrld))
                 wrld)))))))
 
 (defun mark-missing-as-hidden-p (a1 a2)
@@ -7816,8 +7810,7 @@
 
 (defun update-proof-supporters-alist-3 (names local-alist old new wrld)
   (cond ((endp names) (mv (reverse old) new))
-        ((getprop (car names) 'absolute-event-number nil 'current-acl2-world
-                  wrld)
+        ((getpropc (car names) 'absolute-event-number nil wrld)
 
 ; We'd like to say that if the above getprop is non-nil, then (car names)
 ; is non-local.  But maybe redefinition was on and some local event redefined
@@ -7843,8 +7836,7 @@
 
 (defun posn-first-non-event (names wrld idx)
   (cond ((endp names) nil)
-        ((getprop (car names) 'absolute-event-number nil 'current-acl2-world
-                  wrld)
+        ((getpropc (car names) 'absolute-event-number nil wrld)
          (posn-first-non-event (cdr names) wrld (1+ idx)))
         (t idx)))
 
@@ -7866,9 +7858,8 @@
    names ; sanity check; else we wouldn't have updated at install-event
    (let ((non-local-names
           (update-proof-supporters-alist-2 names local-alist wrld)))
-     (cond ((getprop (if (symbolp namex) namex (car namex))
-                     'absolute-event-number
-                     nil 'current-acl2-world wrld)
+     (cond ((getpropc (if (symbolp namex) namex (car namex))
+                      'absolute-event-number nil wrld)
 ; See comment for similar getprop call in  update-proof-supporters-alist-2.
             (mv local-alist
                 (if non-local-names
@@ -9318,7 +9309,7 @@
        cbd dir names localp ctx state)
       (cond (changedp (mv t (append (butlast form 1) (list x))))
             (t (mv nil form)))))
-   ((getprop (car form) 'macro-body nil 'current-acl2-world (w state))
+   ((getpropc (car form) 'macro-body)
     (mv-let (erp x)
       (macroexpand1-cmp form ctx (w state)
                         (default-state-vars t))
@@ -16561,16 +16552,14 @@
             args culprit explan)))
      ((not (and (true-listp body)
                 (equal (length body) 3)
-                (symbolp (car body))
-                (member-equal (symbol-name (car body))
-                              '("FORALL" "EXISTS"))
+                (member-eq (car body) '(forall exists))
                 (true-listp bound-vars)
                 (null (collect-non-legal-variableps bound-vars))))
       (msg "The body (last argument) of a DEFUN-SK form must be a true list of ~
-            the form (Q vars term), where Q is FORALL or EXISTS and vars is a ~
-            variable or a true list of variables.  The body ~x0 is therefore ~
+            the form (Q vars term), where Q is ~x0 or ~x1 and vars is a ~
+            variable or a true list of variables.  The body ~x2 is therefore ~
             illegal."
-           body))
+           'forall 'exists body))
      ((member-eq 'state bound-vars)
       (msg "The body (last argument) of a DEFUN-SK form must be a true list of ~
             the form (Q vars term), where vars represents the bound ~
@@ -16590,18 +16579,15 @@
            (intersection-eq bound-vars args)
            args bound-vars))
      ((and (not quant-ok)
-           (or (symbol-name-tree-occur 'forall (caddr body))
-               (symbol-name-tree-occur 'exists (caddr body))))
+           (or (tree-occur-eq 'forall (caddr body))
+               (tree-occur-eq 'exists (caddr body))))
       (msg "The symbol ~x0 occurs in the term you have supplied to DEFUN-SK, ~
             namely, ~x1.  By default, this is not allowed.  Perhaps you ~
             believe that DEFUN-SK can appropriately handle quantifiers other ~
-            than one outermost quantifier; sadly, this is not yet the case ~
-            (though you are welcome to contact the implementors and request ~
-            this capability).  If however you really intend this DEFUN-SK form ~
-            to be executed (because, for example, ~x0 is in the scope of a ~
-            macro that expands it away), simply give a non-nil :quant-ok ~
-            argument.  See :DOC defun-sk."
-           (if (symbol-name-tree-occur 'forall (caddr body))
+            than one outermost quantifier; however, this is not the case.  If ~
+            however you really intend this DEFUN-SK form to be executed, ~
+            simply give a non-nil :quant-ok argument.  See :DOC defun-sk."
+           (if (tree-occur-eq 'forall (caddr body))
                'forall
              'exists)
            body))
@@ -16615,8 +16601,7 @@
                          (witness-dcls
                           '((declare (xargs :non-executable t)))))
   (let* ((exists-p (and (true-listp body)
-                        (symbolp (car body))
-                        (equal (symbol-name (car body)) "EXISTS")))
+                        (eq (car body) 'exists)))
          (bound-vars (and (true-listp body)
                           (or (symbolp (cadr body))
                               (true-listp (cadr body)))
@@ -16863,8 +16848,7 @@
                             etype-error-string
                             field name etype))
                        ((and non-memoizable
-                             (not (getprop etype 'non-memoizable nil
-                                           'current-acl2-world wrld)))
+                             (not (getpropc etype 'non-memoizable nil wrld)))
                         (er soft ctx
                             child-stobj-memoizable-error-string
                             name etype))
@@ -16935,8 +16919,7 @@
                           type-error-string
                           field name type))
                      ((and non-memoizable
-                           (not (getprop type 'non-memoizable nil
-                                         'current-acl2-world wrld)))
+                           (not (getpropc type 'non-memoizable nil wrld)))
                       (er soft ctx
                           child-stobj-memoizable-error-string
                           name type))
@@ -17248,7 +17231,7 @@
 ; relevant for redundancy from the event associated with name in wrld.
 
   (assert$
-   (getprop name 'stobj nil 'current-acl2-world wrld)
+   (getpropc name 'stobj nil wrld)
    (let ((ev (get-event name wrld)))
      (and ev
           (assert$ (and (eq (car ev) 'defstobj)
@@ -17277,7 +17260,7 @@
 
 ; So we have changed this function to be extremely simple.
 
-  (and (getprop name 'stobj nil 'current-acl2-world wrld)
+  (and (getpropc name 'stobj nil wrld)
        (equal (old-defstobj-redundancy-bundle name wrld)
               (defstobj-redundancy-bundle args))))
 
@@ -17341,8 +17324,7 @@
                 See :DOC defstobj."
                congruent-to))
           ((and congruent-to ; hence stobjp holds, hence symbolp holds
-                (getprop congruent-to 'absstobj-info nil 'current-acl2-world
-                         wrld))
+                (getpropc congruent-to 'absstobj-info nil wrld))
            (er soft ctx
                "The symbol ~x0 is the name of an abstract stobj in the ~
                 current ACL2 world, so it is not legal for use as the ~
@@ -17362,8 +17344,7 @@
                name congruent-to))
           ((and congruent-to
                 (not (eq non-memoizable
-                         (getprop congruent-to 'non-memoizable nil
-                                  'current-acl2-world wrld))))
+                         (getpropc congruent-to 'non-memoizable nil wrld))))
            (er soft ctx
                "Congruent stobjs must agree on whether or not they are ~
                 specified as :NON-MEMOIZABLE.  However, this fails for the ~
@@ -18470,10 +18451,10 @@
 
 (defun concrete-stobj (st wrld)
   (let ((absstobj-info
-         (getprop st 'absstobj-info nil 'current-acl2-world wrld)))
+         (getpropc st 'absstobj-info nil wrld)))
     (and absstobj-info
          (access absstobj-info
-                 (getprop st 'absstobj-info nil 'current-acl2-world wrld)
+                 (getpropc st 'absstobj-info nil wrld)
                  :st$c))))
 
 (defmacro defabsstobj-missing-events (&whole event-form
@@ -18498,7 +18479,7 @@
         (list 'quote event-form)))
 
 (defun redundant-defabsstobjp (name event-form wrld)
-  (and (getprop name 'stobj nil 'current-acl2-world wrld)
+  (and (getpropc name 'stobj nil wrld)
        (equal event-form (get-event name wrld))))
 
 (defun absstobj-correspondence-concl-lst (stobjs-out i st$c corr-fn)
@@ -18638,21 +18619,20 @@
 ; wrld)).
 
    (cond
-    ((eq st (getprop fn 'stobj-function nil 'current-acl2-world wrld))
+    ((eq st (getpropc fn 'stobj-function nil wrld))
      :once)
-    ((getprop fn 'recursivep nil 'current-acl2-world wrld)
+    ((getpropc fn 'recursivep nil wrld)
 
 ; We can't predict how many updates fn will make to st.
 
      t)
-    ((getprop fn 'constrainedp nil 'current-acl2-world wrld)
+    ((getpropc fn 'constrainedp nil wrld)
 
 ; Fn might be attachable, so we can't predict how many updates fn will make to
 ; st.
 
      t)
-    (t (let ((body (getprop fn 'unnormalized-body nil 'current-acl2-world
-                            wrld)))
+    (t (let ((body (getpropc fn 'unnormalized-body nil wrld)))
          (assert$ body
                   (stobj-updates-p st body wrld))))))
 
@@ -18673,7 +18653,7 @@
 
 ; Then we have:
 
-;   ACL2 !>(getprop 'foo 'unnormalized-body nil 'current-acl2-world (w state))
+;   ACL2 !>(getpropc 'foo 'unnormalized-body)
 ;   ((LAMBDA (B ST)
 ;            ((LAMBDA (ST B) (CONS B (CONS ST 'NIL)))
 ;             (UPDATE-FLD B ST)
@@ -19386,7 +19366,7 @@
         "The symbol ~x0 is not the name of a stobj in the current ACL2 world. ~
          ~ ~@1"
         st$c see-doc))
-   ((getprop st$c 'absstobj-info nil 'current-acl2-world wrld)
+   ((getpropc st$c 'absstobj-info nil wrld)
     (er soft ctx
         "The symbol ~x0 is the name of an abstract stobj in the current ACL2 ~
          world, so it is not legal for use as the :CONCRETE argument of ~
@@ -19405,8 +19385,7 @@
         see-doc))
    ((and congruent-to
          (not (and (symbolp congruent-to)
-                   (getprop congruent-to 'absstobj-info nil 'current-acl2-world
-                            wrld))))
+                   (getpropc congruent-to 'absstobj-info nil wrld))))
 
 ; Here, we only check that congruent-to is a candidate for a congruent abstract
 ; stobj.  The check is elsewhere that it is truly congruent to the proposed
@@ -19775,8 +19754,7 @@
 ; See the comment about this in chk-acceptable-defabsstobj.
 
                 (and congruent-to
-                     (getprop congruent-to 'absstobj-info nil
-                              'current-acl2-world wrld0)))
+                     (getpropc congruent-to 'absstobj-info nil wrld0)))
                (logic-exec-pairs (make-absstobj-logic-exec-pairs methods0)))
           (cond
            ((and congruent-to
@@ -19901,8 +19879,7 @@
                               (putprop-unless
                                st-name
                                'non-memoizable
-                               (getprop st$c 'non-memoizable nil
-                                        'current-acl2-world wrld2)
+                               (getpropc st$c 'non-memoizable nil wrld2)
                                nil
                                (putprop
                                 st-name 'absstobj-info
@@ -20325,8 +20302,8 @@
     `(let* ((wrld (w state))
             (fn (deref-macro-name ',fn (macro-aliases wrld)))
             (lemmas (def-body-lemmas
-                      (getprop fn 'def-bodies nil 'current-acl2-world wrld)
-                      (getprop fn 'lemmas nil 'current-acl2-world wrld))))
+                      (getpropc fn 'def-bodies nil wrld)
+                      (getpropc fn 'lemmas nil wrld))))
        (cond (lemmas
               (pprogn (fms "Definitional bodies available for ~x0, current ~
                             one listed first:~|"
@@ -20372,7 +20349,7 @@
           (fn (and (symbolp fn)
                    (deref-macro-name fn (macro-aliases wrld))))
           (old-def-bodies
-           (getprop fn 'def-bodies nil 'current-acl2-world wrld))
+           (getpropc fn 'def-bodies nil wrld))
           (def-bodies
             (and fn
                  old-def-bodies
@@ -20422,7 +20399,7 @@
 ; Return-last cannot be traced, so it is harmless to get the stobjs-out here
 ; without checking if name is return-last.
 
-         (getprop name 'stobjs-out nil 'current-acl2-world (w state))))
+         (getpropc name 'stobjs-out)))
     (and stobjs-out
          (length stobjs-out))))
 
@@ -20519,7 +20496,7 @@
 
 (defun *1*defp (trace-spec wrld)
   (let ((fn (car trace-spec)))
-    (not (eq (getprop fn 'formals t 'current-acl2-world wrld)
+    (not (eq (getpropc fn 'formals t wrld)
              t))))
 
 (defun trace$-er-msg (fn)
@@ -21057,12 +21034,11 @@
 
 #-acl2-loop-only
 (defun oneified-def (fn wrld &optional trace-rec-for-none)
-  (let* ((stobj-function (getprop fn 'stobj-function nil
-                                  'current-acl2-world wrld))
+  (let* ((stobj-function (getpropc fn 'stobj-function nil wrld))
          (form (cltl-def-from-name1 fn stobj-function t wrld)))
     (oneify-cltl-code
-     (cond ((or (getprop fn 'constrainedp nil 'current-acl2-world wrld)
-                (getprop fn 'non-executablep nil 'current-acl2-world wrld))
+     (cond ((or (getpropc fn 'constrainedp nil wrld)
+                (getpropc fn 'non-executablep nil wrld))
             nil)
            ((eq (symbol-class fn wrld) :program)
             :program) ; see oneify-cltl-code
@@ -21079,7 +21055,7 @@
          (wrld (w state))
          (stobj-function
           (and (not (assoc-keyword :def trace-options)) ; optimization
-               (getprop fn 'stobj-function nil 'current-acl2-world wrld)))
+               (getpropc fn 'stobj-function nil wrld)))
          #-acl2-loop-only (*inside-trace$* t)
          (def (or (cadr (assoc-keyword :def trace-options))
                   (let ((defun+def
@@ -21089,9 +21065,8 @@
                                 (cltl-def-from-name1 fn stobj-function t wrld))
                            :macro)
                           (t nil)))
-                  (and (getprop fn 'constrainedp nil 'current-acl2-world wrld)
-                       (let ((formals (getprop fn 'formals t
-                                               'current-acl2-world wrld)))
+                  (and (getpropc fn 'constrainedp nil wrld)
+                       (let ((formals (getpropc fn 'formals t wrld)))
                          (assert$ (not (eq formals t))
                                   (list fn
                                         formals
@@ -21100,21 +21075,20 @@
          (formals-default (and (not formals-tail)
                                (atom def)
                                (not native) ; else formals doesn't much matter
-                               (getprop fn 'formals t 'current-acl2-world
-                                        wrld)))
+                               (getpropc fn 'formals t wrld)))
          (formals (cond (formals-tail (cadr formals-tail))
                         ((consp def) (cadr def))
                         (t formals-default)))
          (evisc-tuple (cadr (assoc-keyword :evisc-tuple trace-options)))
          (compile (cadr (assoc-keyword :compile trace-options)))
          (predefined ; (acl2-system-namep fn wrld)
-          (getprop fn 'predefined nil 'current-acl2-world wrld)))
+          (getpropc fn 'predefined nil wrld)))
     (cond
      ((eq def :macro)
       (assert$
        stobj-function
        (cond
-        ((getprop stobj-function 'absstobj-info nil 'current-acl2-world wrld)
+        ((getpropc stobj-function 'absstobj-info nil wrld)
          (er very-soft ctx
              "~x0 cannot be traced, because it is a macro in raw Lisp, ~
               introduced with the defabsstobj event for abstract stobj ~x1."
@@ -21128,7 +21102,7 @@
              fn
              stobj-function)))))
      ((eq formals-default t)
-      (cond ((getprop fn 'macro-body nil 'current-acl2-world wrld)
+      (cond ((getpropc fn 'macro-body nil wrld)
              (er very-soft ctx
                  "~x0 is an ACL2 macro, hence cannot be traced in ACL2.~@1"
                  fn
@@ -22492,14 +22466,12 @@
                     (applicable-rewrite-rules1
                      current-term
                      geneqv
-                     (getprop (ffn-symb current-term) 'lemmas nil
-                              'current-acl2-world w)
+                     (getpropc (ffn-symb current-term) 'lemmas nil w)
                      1 (or name rune) index w))
                    (t
                     (applicable-linear-rules1
                      current-term
-                     (getprop (ffn-symb current-term) 'linear-lemmas nil
-                              'current-acl2-world w)
+                     (getpropc (ffn-symb current-term) 'linear-lemmas nil w)
                      1 (or name rune) index)))))
              (cond
               ((null app-rules)
@@ -22589,8 +22561,7 @@
               (not (fquotep term))
               (not (flambdap (ffn-symb term))))
          (let ((wrld (w state)))
-           (show-meta-lemmas1 (getprop (ffn-symb term) 'lemmas nil
-                                       'current-acl2-world wrld)
+           (show-meta-lemmas1 (getpropc (ffn-symb term) 'lemmas nil wrld)
                               rule-id term wrld ens state)))
         (t state)))
 
@@ -22693,8 +22664,7 @@
                     should complete this goal.~|"
                    nil (standard-co state) state nil))
              (t (show-type-prescription-rules1
-                 (getprop (ffn-symb term) 'type-prescriptions nil
-                          'current-acl2-world wrld)
+                 (getpropc (ffn-symb term) 'type-prescriptions nil wrld)
                  term rule-id hyps-type-alist abbreviations wrld ens
                  state))))))
         (t
@@ -22777,24 +22747,23 @@
         (print-info-for-rules
          (append
           (info-for-lemmas
-           (getprop name 'lemmas nil 'current-acl2-world wrld)
+           (getpropc name 'lemmas nil wrld)
            t ens wrld)
           (info-for-linear-lemmas
-           (getprop name 'linear-lemmas nil 'current-acl2-world wrld)
+           (getpropc name 'linear-lemmas nil wrld)
            t ens wrld)
           (info-for-type-prescriptions
-           (getprop name 'type-prescriptions nil 'current-acl2-world wrld)
+           (getpropc name 'type-prescriptions nil wrld)
            t ens wrld)
           (info-for-forward-chaining-rules
-           (getprop name 'forward-chaining-rules nil 'current-acl2-world wrld)
+           (getpropc name 'forward-chaining-rules nil wrld)
            t ens wrld)
-          (let ((elim-rule (getprop name 'eliminate-destructors-rule nil
-                                    'current-acl2-world wrld)))
+          (let ((elim-rule (getpropc name 'eliminate-destructors-rule nil wrld)))
             (and elim-rule
                  (info-for-eliminate-destructors-rule
                   elim-rule t ens wrld)))
           (info-for-induction-rules
-           (getprop name 'induction-rules nil 'current-acl2-world wrld)
+           (getpropc name 'induction-rules nil wrld)
            t ens wrld))
          (standard-co state) state))
        (t (er soft 'pl
@@ -23306,13 +23275,12 @@
 ; memoize-table-chk.
 
   (declare (xargs :guard (and (symbolp fn)
-                              (not (eq (getprop fn 'formals t
-                                                'current-acl2-world wrld)
+                              (not (eq (getpropc fn 'formals t wrld)
                                        t))
                               (symbol-alistp val))))
   (let ((commutative (cdr (assoc-eq :commutative val))))
     (cond ((null commutative) t)
-          ((not (eql (len (getprop fn 'formals t 'current-acl2-world wrld))
+          ((not (eql (len (getpropc fn 'formals t wrld))
                      2))
            (er hard ctx
                "~@0~x1 is not a binary function symbol, so it is illegal to ~
@@ -23324,8 +23292,7 @@
                "~@0Attempted to memoize ~x1 with a non-symbolp value of ~
                 :commutative, ~x2."
                str fn commutative))
-          (t (let ((thm (getprop commutative 'theorem nil 'current-acl2-world
-                                 wrld)))
+          (t (let ((thm (getpropc commutative 'theorem nil wrld)))
                (cond ((null thm)
                       (er hard ctx
                           "~@0The theorem ~x1 specified for :commutative ~
@@ -23349,14 +23316,14 @@
 
 (defun non-memoizable-stobjs (stobjs-in wrld)
   (cond ((endp stobjs-in) nil)
-        ((getprop (car stobjs-in) 'non-memoizable nil 'current-acl2-world wrld)
+        ((getpropc (car stobjs-in) 'non-memoizable nil wrld)
          (cons (car stobjs-in)
                (non-memoizable-stobjs (cdr stobjs-in) wrld)))
         (t (non-memoizable-stobjs (cdr stobjs-in) wrld))))
 
 (defun filter-absstobjs (lst wrld abs conc)
   (cond ((endp lst) (mv (reverse abs) (reverse conc)))
-        ((getprop (car lst) 'absstobj-info nil 'current-acl2-world wrld)
+        ((getpropc (car lst) 'absstobj-info nil wrld)
          (filter-absstobjs (cdr lst) wrld (cons (car lst) abs) conc))
         (t
          (filter-absstobjs (cdr lst) wrld abs (cons (car lst) conc)))))
@@ -23385,7 +23352,7 @@
         (str "Illegal attempt to set memoize-table:  ")
         (memoize-table (table-alist 'memoize-table wrld))
         (key-formals (if (symbolp key)
-                         (getprop key 'formals t 'current-acl2-world wrld)
+                         (getpropc key 'formals t wrld)
                        t))
         (key-class (symbol-class key wrld))
         (condition (and val (cdr (assoc-eq :condition-fn val))))
@@ -23462,7 +23429,7 @@
              (er hard ctx
                  "~@0~x1 is not a defined ACL2 function."
                  str key))
-            ((getprop key 'constrainedp nil 'current-acl2-world wrld)
+            ((getpropc key 'constrainedp nil wrld)
              (er hard ctx
                  "~@0~x1 is constrained.  You may instead wish to memoize a ~
                   caller or to memoize its attachment (see :DOC defattach)."
@@ -23536,13 +23503,11 @@
             (t
              (let ((val-formals (and condition
                                      (if (symbolp condition)
-                                         (getprop condition 'formals t
-                                                  'current-acl2-world wrld)
+                                         (getpropc condition 'formals t wrld)
                                        t)))
                    (val-guard (and condition
                                    (if (symbolp condition)
-                                       (getprop condition 'guard *t*
-                                                'current-acl2-world wrld)
+                                       (getpropc condition 'guard *t* wrld)
                                      t))))
 
                (cond
@@ -23570,7 +23535,7 @@
                       function for ~x2, because the two functions have ~
                       different formal parameter lists."
                      str condition key))
-                ((not (equal (getprop key 'guard *t* 'current-acl2-world wrld)
+                ((not (equal (getpropc key 'guard *t* wrld)
                              val-guard))
                  (er hard ctx
                      "~@0Function ~x1 cannot serve as a memoization condition ~
@@ -24879,11 +24844,11 @@
        unknown constraints provided by the dependent clause-processor ~x1.  ~
        See :DOC define-trusted-clause-processor."
       name
-      (getprop name 'constrainedp
-               '(:error
-                 "See defattach-unknown-constraints-error:  expected to find ~
-                  a 'constrainedp property where we did not.")
-               'current-acl2-world wrld)))
+      (getpropc name 'constrainedp
+                '(:error
+                  "See defattach-unknown-constraints-error:  expected to find ~
+                   a 'constrainedp property where we did not.")
+                wrld)))
 
 (defun intersection-domains (a1 a2)
   (declare (xargs :guard (and (symbol-alistp a1)
@@ -24974,8 +24939,7 @@
                                     instead of ~x1, which is a macro alias ~
                                     for the function symbol ~x0."
                                    f1 f))
-                             ((getprop f 'macro-body nil 'current-acl2-world
-                                       wrld)
+                             ((getpropc f 'macro-body nil wrld)
                               (msg "  NOTE: ~x0 is a macro, not a function ~
                                     symbol."
                                    f))
@@ -25026,8 +24990,7 @@
                                              (append at-alist erasures))
                                             (t erasures)))
                             (constraint-lst
-                             (getprop f 'constraint-lst t 'current-acl2-world
-                                      wrld))
+                             (getpropc f 'constraint-lst t wrld))
                             (attach-pair (assoc-eq :ATTACH helper-alist)))
                        (cond
                         ((and (not skip-checks-t)
@@ -25073,8 +25036,8 @@
 ; it is legal to attach for execution, so we can move on to the next COND
 ; branch.
 
-                                        (eq (getprop f 'non-executablep nil
-                                                     'current-acl2-world wrld)
+                                        (eq (getpropc f 'non-executablep nil
+                                                      wrld)
                                             :program)))
 
 ; Is it legal to attach for execution?  A 'constraint-lst property alone isn't
@@ -25095,8 +25058,7 @@
 ; it.
 
                               (or (eq constraint-lst t) ; property is missing
-                                  (not (getprop f 'constrainedp nil
-                                                'current-acl2-world wrld))))
+                                  (not (getpropc f 'constrainedp nil wrld))))
 
 ; We cause an error: the function is not permitted an executable attachment.
 ; The only challenge is to provide a useful error message.
@@ -25105,8 +25067,7 @@
                              "It is illegal to attach to function symbol ~x0, ~
                               because it was introduced with ~x1.~@2"
                              f
-                             (if (getprop f 'defchoose-axiom nil
-                                          'current-acl2-world wrld)
+                             (if (getpropc f 'defchoose-axiom nil wrld)
                                  'defchoose
                                'defun)
                              see-doc))
@@ -25136,8 +25097,7 @@
                                             a macro alias for the function ~
                                             symbol ~x0."
                                            g1 g))
-                                     ((getprop g 'macro-body nil
-                                               'current-acl2-world wrld)
+                                     ((getpropc g 'macro-body nil wrld)
                                       (msg "  NOTE: ~x0 is a macro, not a ~
                                             function symbol."
                                            g))
@@ -26424,8 +26384,7 @@
 
 (defun defaxiom-supporter-msg-list (symbols wrld)
   (cond ((endp symbols) nil)
-        (t (let ((prop (getprop (car symbols) 'defaxiom-supporter nil
-                                'current-acl2-world wrld)))
+        (t (let ((prop (getpropc (car symbols) 'defaxiom-supporter nil wrld)))
              (cond
               (prop (cons (msg "function symbol ~x0 supports defaxiom ~x1"
                                (car symbols) prop)
@@ -26672,7 +26631,7 @@
               (or (null val)
                   (let ((val2 (if (symbolp val) val (car val))))
                     (or
-                     (getprop val2 'macro-body nil 'current-acl2-world wrld)
+                     (getpropc val2 'macro-body nil wrld)
                      (er hard! 'chk-return-last-entry
                          "The proposed value ~x0 for key ~x1 in ~x2 is ~
                           illegal because ~x3 is not the name of a macro ~
@@ -27724,7 +27683,7 @@
      ((and (symbolp fn)
            (true-listp args)
            (let ((formals
-                  (getprop fn 'formals t 'current-acl2-world wrld)))
+                  (getpropc fn 'formals t wrld)))
              (and (not (eq formals t)) ; (function-symbolp fn wrld)
                   (eql (length args) (length formals))))
            (logicalp fn wrld))
@@ -27745,19 +27704,17 @@
                     (msg "~x0 is not a symbol" fn))
                    ((not (true-listp args))
                     (msg "that argument list is not a true list"))
-                   ((eq (getprop fn 'formals t 'current-acl2-world wrld) t)
+                   ((eq (getpropc fn 'formals t wrld) t)
                     (msg "~x0 is not a known function symbol in the current ~
                           ACL2 logical world"
                          fn))
                    ((not (eql (length args)
-                              (length (getprop fn 'formals t
-                                               'current-acl2-world wrld))))
+                              (length (getpropc fn 'formals t wrld))))
                     (msg "The length of that args is ~x0, but ~x1 takes ~x2 ~
                           arguments"
                          (length args)
                          fn
-                         (length (getprop fn 'formals t
-                                          'current-acl2-world wrld))))
+                         (length (getpropc fn 'formals t wrld))))
                    (t
                     (assert (not (logicalp fn wrld)))
                     (msg "~x0 is not a logic-mode function symbol"

@@ -1032,8 +1032,7 @@
                     (pc-single-step-primitive instr state)))
            (meta
             (cond ((and (not (f-get-global 'in-verify-flg state))
-                        (not (getprop (car instr) 'predefined nil
-                                      'current-acl2-world (w state))))
+                        (not (getpropc (car instr) 'predefined nil (w state))))
                    (er soft 'proof-checker
                        "You may only invoke a user-defined proof-checker meta ~
                         command, such as ~x0, when you are inside the ~

@@ -912,12 +912,14 @@
                            :in-theory
                            (disable assume-true-false
                                     type-set))
+                          ("Subgoal 27" :do-not '(preprocess)
+                           :by rewrite-clique-speedup-5) 
                           ("Subgoal 26" :do-not '(preprocess)
-                           :by rewrite-clique-speedup-26)
-                          ("Subgoal 17" :do-not '(preprocess)
-                           :by rewrite-clique-speedup-5)
-                          ("Subgoal 16" :do-not '(preprocess)
                            :by rewrite-clique-speedup-4)
+;                         ("Subgoal 17" :do-not '(preprocess)
+;                          :by rewrite-clique-speedup-5)
+;                         ("Subgoal 16" :do-not '(preprocess)
+;                          :by rewrite-clique-speedup-4)
 ;                         ("Subgoal 5" :do-not '(preprocess)
 ;                          :by rewrite-clique-speedup-5)
 ;                         ("Subgoal 4" :do-not '(preprocess)

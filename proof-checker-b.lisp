@@ -2185,8 +2185,7 @@
                           equivalence relation.  The current list of ~
                           ACL2 equivalence relations is ~x1."
                          equiv
-                         (getprop 'equal 'coarsenings nil
-                                  'current-acl2-world w))))))
+                         (getpropc 'equal 'coarsenings nil w))))))
          (if (find-equivalence-hyp-term old
                                         (flatten-ands-in-lit-lst assumptions)
                                         new equiv w)
@@ -2734,8 +2733,7 @@
                          the current subterm.")
                        (value :fail)))
               ((not (member-eq equiv
-                               (getprop 'equal 'coarsenings nil
-                                        'current-acl2-world w)))
+                               (getpropc 'equal 'coarsenings nil w)))
                (pprogn (print-no-change
                         "The ``equivalence relation'' that you supplied, ~p0, ~
                          is not known to ACL2 as an equivalence relation."
@@ -2821,7 +2819,7 @@
   (applicable-rewrite-rules1
    current-term
    (geneqv-at-subterm-top conc current-addr ens wrld)
-   (getprop (ffn-symb current-term) 'lemmas nil 'current-acl2-world wrld)
+   (getpropc (ffn-symb current-term) 'lemmas nil wrld)
    1 target-name-or-rune target-index wrld))
 
 (define-pc-help show-rewrites (&optional rule-id enabled-only-flg)
@@ -3152,8 +3150,7 @@
                                   (flambdap (ffn-symb current-term))))))
   (applicable-linear-rules1
    current-term
-   (getprop (ffn-symb current-term) 'linear-lemmas nil 'current-acl2-world
-            wrld)
+   (getpropc (ffn-symb current-term) 'linear-lemmas nil wrld)
    1 target-name-or-rune target-index))
 
 (defun make-linear-instr (lemma-id raw-subst instantiate-free)

@@ -537,7 +537,7 @@
 ; rules.
 
                 (first-boolean-type-prescription
-                 (getprop fn 'type-prescriptions nil 'current-acl2-world wrld)
+                 (getpropc fn 'type-prescriptions nil wrld)
                  ens
                  formals)
                 (and rune
@@ -614,9 +614,9 @@
    ((eq fn 'equal)
     (fn-rune-nume 'equal nil nil wrld))
    (t (equivalence-rune1 fn
-                         (getprop fn 'congruences
-                                  '(:error "See equivalence-rune.")
-                                  'current-acl2-world wrld)))))
+                         (getpropc fn 'congruences
+                                   '(:error "See equivalence-rune.")
+                                   wrld)))))
 
 (defun commutative-p (fn ens wrld)
 
@@ -627,7 +627,7 @@
        (if (equivalence-relationp fn wrld)
            (equivalence-rune fn wrld)
            (commutative-p1 fn
-                           (getprop fn 'lemmas nil 'current-acl2-world wrld)
+                           (getpropc fn 'lemmas nil wrld)
                            ens))))
 
 ; To memoize the various merging operations we will hash on the opcodes.
@@ -658,8 +658,8 @@
                 (cons (list* (car fns)
                              i
                              (commutative-p (car fns) ens wrld)
-                             (and (not (getprop (car fns) 'constrainedp nil
-                                                'current-acl2-world wrld))
+                             (and (not (getpropc (car fns) 'constrainedp nil
+                                                 wrld))
                                   (enabled-xfnp (car fns) ens wrld)
                                   (fn-rune-nume (car fns) nil t wrld))
                              (bool-mask (car fns)
@@ -1222,8 +1222,7 @@
    (t (mv-let (new-fns nondef-rules def-rules)
               (bdd-rules-alist1
                (recursivep (car fns) wrld)
-               (append (getprop
-                        (car fns) 'lemmas nil 'current-acl2-world wrld)
+               (append (getpropc (car fns) 'lemmas nil wrld)
                        (extra-rules-for-bdds (car fns) wrld))
                ens
                (cons (car fns) all-fns)
