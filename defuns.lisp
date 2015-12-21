@@ -5457,6 +5457,25 @@
           (msg "the proposed and existing definitions for ~x0 differ on their ~
                 :non-executable declarations."
                (car def1)))
+         ((flet ((normalize-value
+                  (x)
+                  (cond ((equal x '(nil))
+                         nil)
+                        ((or (equal x '(t))
+                             (null x))
+                         t)
+                        (t (er hard 'non-identical-defp
+                               "Internal error: Unexpected value when ~
+                                processing :normalize xargs keyword, ~x0.  ~
+                                Please contact the ACL2 implementors."
+                               x)))))
+            (not (equal (normalize-value
+                         (fetch-dcl-field :normalize all-but-body1))
+                        (normalize-value
+                         (fetch-dcl-field :normalize all-but-body2)))))
+          (msg "the proposed and existing definitions for ~x0 differ on the ~
+                values supplied by :normalize declarations."
+               (car def1)))
          ((not (equal (fetch-dcl-field :stobjs all-but-body1)
                       (fetch-dcl-field :stobjs all-but-body2)))
 

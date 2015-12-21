@@ -16552,16 +16552,14 @@
             args culprit explan)))
      ((not (and (true-listp body)
                 (equal (length body) 3)
-                (symbolp (car body))
-                (member-equal (symbol-name (car body))
-                              '("FORALL" "EXISTS"))
+                (member-eq (car body) '(forall exists))
                 (true-listp bound-vars)
                 (null (collect-non-legal-variableps bound-vars))))
       (msg "The body (last argument) of a DEFUN-SK form must be a true list of ~
-            the form (Q vars term), where Q is FORALL or EXISTS and vars is a ~
-            variable or a true list of variables.  The body ~x0 is therefore ~
+            the form (Q vars term), where Q is ~x0 or ~x1 and vars is a ~
+            variable or a true list of variables.  The body ~x2 is therefore ~
             illegal."
-           body))
+           'forall 'exists body))
      ((member-eq 'state bound-vars)
       (msg "The body (last argument) of a DEFUN-SK form must be a true list of ~
             the form (Q vars term), where vars represents the bound ~
@@ -16581,18 +16579,15 @@
            (intersection-eq bound-vars args)
            args bound-vars))
      ((and (not quant-ok)
-           (or (symbol-name-tree-occur 'forall (caddr body))
-               (symbol-name-tree-occur 'exists (caddr body))))
+           (or (tree-occur-eq 'forall (caddr body))
+               (tree-occur-eq 'exists (caddr body))))
       (msg "The symbol ~x0 occurs in the term you have supplied to DEFUN-SK, ~
             namely, ~x1.  By default, this is not allowed.  Perhaps you ~
             believe that DEFUN-SK can appropriately handle quantifiers other ~
-            than one outermost quantifier; sadly, this is not yet the case ~
-            (though you are welcome to contact the implementors and request ~
-            this capability).  If however you really intend this DEFUN-SK form ~
-            to be executed (because, for example, ~x0 is in the scope of a ~
-            macro that expands it away), simply give a non-nil :quant-ok ~
-            argument.  See :DOC defun-sk."
-           (if (symbol-name-tree-occur 'forall (caddr body))
+            than one outermost quantifier; however, this is not the case.  If ~
+            however you really intend this DEFUN-SK form to be executed, ~
+            simply give a non-nil :quant-ok argument.  See :DOC defun-sk."
+           (if (tree-occur-eq 'forall (caddr body))
                'forall
              'exists)
            body))
@@ -16606,8 +16601,7 @@
                          (witness-dcls
                           '((declare (xargs :non-executable t)))))
   (let* ((exists-p (and (true-listp body)
-                        (symbolp (car body))
-                        (equal (symbol-name (car body)) "EXISTS")))
+                        (eq (car body) 'exists)))
          (bound-vars (and (true-listp body)
                           (or (symbolp (cadr body))
                               (true-listp (cadr body)))

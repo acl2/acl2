@@ -6446,17 +6446,6 @@
 ; better idea would be to connect the goal stack to the comment window
 ; and actually display it so that persistence became visual again.
 
-; The uses of acl2-loop-only below are simply to give us a debugging
-; tool for stack overflows.  When a stack overflow occurs, set :brr t.
-; Then provoke the overflow.  Exit from the break and from LP.  In raw
-; lisp type
-; (cw-gstack)
-; to see the gstack near the point of overflow.
-
-; Furthermore, one can interrupt ACL2 anytime with ctrl-c and do
-; (cw-gstack)
-; from within the Raw Lisp Break to see what is happening.  Continue with :r.
-
 #-acl2-loop-only
 (defparameter *deep-gstack* nil)
 

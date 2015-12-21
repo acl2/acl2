@@ -11968,7 +11968,9 @@
 ; normalized body when instantiating a definition.
 
   (let ((str "The object ~x0 is an ill-formed lemma instance because ~@1.  ~
-              See :DOC lemma-instance."))
+              See :DOC lemma-instance.")
+        (atomic-lmi-cars '(:theorem :termination-theorem :termination-theorem!
+                                    :guard-theorem)))
     (cond
      ((atom lmi)
       (cond ((symbolp lmi)
@@ -11981,9 +11983,7 @@
                                lmi))))))
             (t (er@par soft ctx str lmi
                  "it is an atom that is not a symbol"))))
-     ((and (member-eq (car lmi)
-                      '(:theorem :termination-theorem :termination-theorem!
-                                 :guard-theorem))
+     ((and (member-eq (car lmi) atomic-lmi-cars)
            (not (and (true-listp lmi)
                      (= (length lmi) 2))))
       (er@par soft ctx str lmi
@@ -12009,13 +12009,13 @@
            (cond
             ((eq (car lmi) :instance)
              (mv-let
-              (extra-bindings-ok substn)
-              (cond ((eq (car substn) :extra-bindings-ok)
-                     (mv t (cdr substn)))
-                    (t (mv nil substn)))
-              (translate-lmi/instance@par formula constraints event-names
-                                          new-entries extra-bindings-ok substn
-                                          ctx wrld state)))
+               (extra-bindings-ok substn)
+               (cond ((eq (car substn) :extra-bindings-ok)
+                      (mv t (cdr substn)))
+                     (t (mv nil substn)))
+               (translate-lmi/instance@par formula constraints event-names
+                                           new-entries extra-bindings-ok substn
+                                           ctx wrld state)))
             (t (translate-lmi/functional-instance@par
                 formula constraints event-names new-entries substn
                 (global-val 'proved-functional-instances-alist wrld)
@@ -12071,8 +12071,8 @@
                    "there is no known formula associated with this rune")))))
      (t (er@par soft ctx str lmi
           "is not a symbol, a rune in the current logical world, or a list ~
-           whose first element is :THEOREM, :INSTANCE, or~ ~
-           :FUNCTIONAL-INSTANCE")))))
+           whose first element is ~v0."
+          (list* :INSTANCE :FUNCTIONAL-INSTANCE atomic-lmi-cars))))))
 
 (defun@par translate-use-hint1 (arg ctx wrld state)
 

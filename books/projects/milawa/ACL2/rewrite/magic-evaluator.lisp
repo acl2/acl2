@@ -61,7 +61,7 @@
  (set-verify-guards-eagerness 0)
 
  (defun-sk evaluable-termp (x defs)
-   (exists n (generic-evaluator x defs n)))
+   (acl2::exists n (generic-evaluator x defs n)))
 
  (set-verify-guards-eagerness 2))
 
