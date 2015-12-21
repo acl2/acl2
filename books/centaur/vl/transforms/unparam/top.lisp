@@ -397,9 +397,12 @@ which any usertypes are defined.  To track which scope is which, we use @(see
 vl-scopestack->hashkey), which reduces a scopestack to a hierarchy of
 names.</p>
 
-<p>These instance keys are used to track the generated names of modules, the
-parameters used to instantiate them, and 
+<h2>Indirect Parameterization Via Interface Ports</h2>
 
+<p>If an interface is instantiated with a set of parameters and then passed to
+a module instance, that instance differs from a similar instance that is passed
+an interface instantiated with different parameters, even if the parameters two
+the two instances are the same (or there aren't any parameters).
 ")
 
 
@@ -425,7 +428,7 @@ parameters used to instantiate them, and
         (acl2::substitute #\_ #\Space (vl-pps-expr x)))
     "NULL"))
 
-(define vl-unparam-basename-aux ((x vl-paramdecllist-p)
+(define vl-unparam-basename-paramdecls ((x vl-paramdecllist-p)
                                 &key (ps 'ps))
   :parents (vl-unparam-basename)
   (b* (((when (atom x)) ps)
@@ -433,7 +436,7 @@ parameters used to instantiate them, and
        ((when x1.localp)
         ;; we think localparams are always determined by the nonlocal params,
         ;; so we don't need to include them in the name.
-        (vl-unparam-basename-aux (cdr x)))
+        (vl-unparam-basename-paramdecls (cdr x)))
        ((the string name-part)
         (acl2::substitute #\_ #\Space x1.name))
        ((the string type-expr-part)
@@ -448,7 +451,40 @@ parameters used to instantiate them, and
                (vl-print-str name-part)
                (vl-print "=")
                (vl-print-str type-expr-part)
-               (vl-unparam-basename-aux (cdr x)))))
+               (vl-unparam-basename-paramdecls (cdr x)))))
+
+(fty::defalist vl-ifport-alist :key-type string :val-type string
+  :short "Mapping from interface port portnames to interface names."
+  :long "<p>Disambiguates between modules that are passed different versions of
+interfaces.  This mapping contains a pair @('(portname . ifname)') for each
+interfaceport that is passed a non-default interface -- that is, one that has
+been instantiated with parameter overrides or, recursively, passed non-default
+interfaces on one of its ports.</p>")
+
+(define vl-unparam-basename-ifports ((x vl-ifport-alist-p)
+                                     &key (ps 'ps))
+  :parents (vl-unparam-basename)
+  :measure (len (vl-ifport-alist-fix x))
+  (b* ((x (vl-ifport-alist-fix x))
+       ((when (atom x)) ps))
+    (vl-ps-seq (vl-print-str "$<")
+               (vl-print-str (caar x))
+               (vl-print-str "=")
+               (vl-print-str (cdar x))
+               (vl-print-str ">")
+               (vl-unparam-basename-ifports (cdr x)))))
+
+
+(define vl-unparam-basename 
+  :short "Generate a new name for an unparameterized module."
+  ((origname stringp              "Original name of the module, e.g., @('my_adder').")
+   (paramdecls vl-paramdecllist-p "Final, overridden paramdecls for the module.")
+   (ifportalist vl-ifport-alist-p  "Interface port alist"))
+  :returns (new-name stringp :rule-classes :type-prescription
+                     "New, mangled name, e.g., @('my_adder$size=5').")
+  (with-local-ps (vl-ps-seq (vl-print-str origname)
+                            (vl-unparam-basename-paramdecls paramdecls)
+                            (vl-unparam-basename-ifports ifportalist))))
 
 
 ;; actualkey:
@@ -537,30 +573,18 @@ parameters used to instantiate them, and
   ;; bozo add option to defprojection to make this a honsed list
   (vl-unparam-actualkey x inst-ss mod-ss))
 
-
-(define vl-unparam-instkey-p ((x))
-  :short "Mainly, the type of an element produced by vl-unparam-inst->instkey."
-  (and (consp x)
-       (stringp (car x)))
-  ///
-  (define vl-unparam-instkey-fix ((x vl-unparam-instkey-p))
-    :returns (new-x vl-unparam-instkey-p)
-    (mbe :logic (if (vl-unparam-instkey-p x) x '(""))
-         :exec x)
-    ///
-    (defret vl-unparam-instkey-fix-idempotent
-      (implies (vl-unparam-instkey-p x)
-               (equal new-x x)))
-    (fty::deffixtype vl-unparam-instkey
-      :pred vl-unparam-instkey-p
-      :fix vl-unparam-instkey-fix
-      :equiv vl-unparam-instkey-equiv
-      :define t)))
+(defprod vl-unparam-instkey
+  :layout :tree
+  ((modname stringp)
+   (ifportalist vl-ifport-alist-p)
+   (param-actualkeys))
+  :hons t)
 
 (fty::deflist vl-unparam-instkeylist :elt-type vl-unparam-instkey)
 
 (define vl-unparam-inst->instkey ((origname stringp)
                                   (paramdecls vl-paramdecllist-p)
+                                  (ifportalist vl-ifport-alist-p)
                                   (inst-ss vl-scopestack-p
                                            "scopestack from the instantiating context")
                                   (mod-ss  vl-scopestack-p
@@ -568,12 +592,16 @@ parameters used to instantiate them, and
                                             context (just paramdecls)"))
   :returns (instkey vl-unparam-instkey-p
                     :hints(("Goal" :in-theory (enable vl-unparam-instkey-p))))
-  (hons (string-fix origname) (vl-unparam-actualkeys paramdecls inst-ss mod-ss)))
+  (make-vl-unparam-instkey
+   :modname origname
+   :ifportalist ifportalist
+   :param-actualkeys (vl-unparam-actualkeys paramdecls inst-ss mod-ss)))
 
 (defprod vl-unparam-signature
   ((modname stringp)
    (newname stringp)
-   (final-params vl-paramdecllist-p)
+   (final-params vl-paramdecllist-p "paramdecls with constant, overridden values")
+   (final-ports  vl-portlist-p      "interfaceports with final interface names")
    ;; BOZO We used to pass the svexconf from the parameter override step with
    ;; the signature and use it to elaborate the new module.  This seems
    ;; overcomplicated and error prone to me now, but I don't understand why we
@@ -614,14 +642,6 @@ for each usertype is stored in the res field.</p>"
              far.  Fast alist.")))
 
 
-(define vl-unparam-basename 
-  :short "Generate a new name for an unparameterized module."
-  ((origname stringp              "Original name of the module, e.g., @('my_adder').")
-   (paramdecls vl-paramdecllist-p "Final, overridden paramdecls for the module."))
-  :returns (new-name stringp :rule-classes :type-prescription
-                     "New, mangled name, e.g., @('my_adder$size=5').")
-  (with-local-ps (vl-ps-seq (vl-print-str origname)
-                            (vl-unparam-basename-aux paramdecls))))
 
 (define vl-paramdecllist-all-localp ((x vl-paramdecllist-p))
   (if (atom x)
@@ -629,7 +649,7 @@ for each usertype is stored in the res field.</p>"
     (and (vl-paramdecl->localp (car x))
          (vl-paramdecllist-all-localp (cdr x)))))
 
-#|
+#||
 (trace$ #!vl (vl-unparam-add-to-ledger
               :entry (list 'vl-unparam-add-to-ledger
                            origname
@@ -639,43 +659,52 @@ for each usertype is stored in the res field.</p>"
                       (list 'vl-unparam-add-to-ledger
                             instkey ledger))))
 
-|#
+||#
 
 (define vl-unparam-add-to-ledger
   :short "Generate an instkey for an unparameterized module and add it to the ledger
           if it isn't there already."
   ((origname stringp              "Original name of the module, e.g., @('my_adder').")
    (paramdecls vl-paramdecllist-p "Final, overridden paramdecls for the module.")
+   (ports      vl-portlist-p      "Portlist including final interfaces for the module")
+   (ifportalist vl-ifport-alist-p)
    (ledger     vl-unparam-ledger-p  "Ledger for disambiguating generated module names")
    (inst-ss         vl-scopestack-p "Scopestack for the instantiating context")
-   (mod-ss          vl-scopestack-p "Scopestack for the instantiated module"))
+   (mod-ss          vl-scopestack-p "Scopestack for the instantiated module")
+   &key
+   (no-rename 'nil))
   :returns (mv (instkey vl-unparam-instkey-p "Instance key uniquely identifying
                                               the module/parameter combo.")
                (ledger vl-unparam-ledger-p "Updated ledger whose instkeymap
                                                 binds the instkey."))
   (b* (((vl-unparam-ledger ledger) (vl-unparam-ledger-fix ledger))
+       (ifportalist (vl-ifport-alist-fix ifportalist))
        (origname (string-fix origname))
-       (instkey (vl-unparam-inst->instkey origname paramdecls inst-ss mod-ss))
+       (instkey (vl-unparam-inst->instkey origname paramdecls ifportalist inst-ss mod-ss))
        (existing (cdr (hons-get instkey ledger.instkeymap)))
        ((when existing)
         ;; This module has already been named -- just return the existing name.
         (mv instkey ledger))
-       ((when (vl-paramdecllist-all-localp paramdecls))
+       ((when (or no-rename
+                  (and (vl-paramdecllist-all-localp paramdecls)
+                       (atom ifportalist))))
         ;; If there are no parameters, or there are only localparams, preserve
         ;; the original name of the module.
         (b* ((signature (make-vl-unparam-signature :modname origname
                                                    :newname origname
-                                                   :final-params paramdecls))
+                                                   :final-params paramdecls
+                                                   :final-ports ports))
              (instkeymap (hons-acons instkey signature ledger.instkeymap)))
           (mv instkey (change-vl-unparam-ledger ledger
                                                 :instkeymap instkeymap))))
        ;; Haven't named this particular combination yet: generate the name,
        ;; uniquify it, and add it to the ledger.
-       (basename (vl-unparam-basename origname paramdecls))
+       (basename (vl-unparam-basename origname paramdecls ifportalist))
        ((mv newname ndb) (vl-namedb-plain-name basename ledger.ndb))
        (signature (make-vl-unparam-signature :modname origname
                                              :newname newname
-                                             :final-params paramdecls))
+                                             :final-params paramdecls
+                                             :final-ports ports))
        (instkeymap (hons-acons instkey signature ledger.instkeymap)))
     (mv instkey (change-vl-unparam-ledger ledger
                                           :ndb ndb
@@ -684,36 +713,82 @@ for each usertype is stored in the res field.</p>"
   (defret vl-unparam-add-to-ledger-binds-instkey
     (hons-assoc-equal instkey (vl-unparam-ledger->instkeymap ledger))))
 
+(define vl-ifportexpr->name ((x vl-expr-p))
+  :returns (name maybe-stringp)
+  (vl-expr-case x
+    :vl-index (and (vl-idscope-p x.scope)
+                   (vl-idscope->name x.scope))
+    :otherwise nil))
 
-(define vl-unparam-add-to-ledger-without-renaming
-  :short "Generate an instkey for an unparameterized module and add it to the ledger
-          without munging the name to reflect unparameterization."
-  ((origname stringp              "Original name of the module, e.g., @('my_adder').")
-   (paramdecls vl-paramdecllist-p "Final, overridden paramdecls for the module.")
-   (ledger     vl-unparam-ledger-p  "Ledger for disambiguating generated module names")
-   (inst-ss         vl-scopestack-p "Scopestack for the instantiating context")
-   (mod-ss          vl-scopestack-p "Scopestack for the instantiated module"))
-  :returns (mv (instkey vl-unparam-instkey-p "Instance key uniquely identifying
-                                              the module/parameter combo.")
-               (ledger vl-unparam-ledger-p "Updated ledger whose instkeymap
-                                                binds the instkey."))
-  (b* (((vl-unparam-ledger ledger) (vl-unparam-ledger-fix ledger))
-       (origname (string-fix origname))
-       (instkey (vl-unparam-inst->instkey origname paramdecls inst-ss mod-ss))
-       (existing (cdr (hons-get instkey ledger.instkeymap)))
-       ((when existing)
-        ;; This module has already been named -- just return the existing name.
-        (mv instkey ledger))
-       (signature (make-vl-unparam-signature :modname origname
-                                             :newname origname
-                                             :final-params paramdecls))
-       (instkeymap (hons-acons instkey signature ledger.instkeymap)))
 
-    (mv instkey (change-vl-unparam-ledger ledger
-                                          :instkeymap instkeymap)))
+(define vl-plainarg-update-ifports ((x1 vl-plainarg-p)
+                                    (port1 vl-port-p)
+                                    (ss vl-scopestack-p)
+                                    (scopes vl-elabscopes-p))
+  :returns (mv (new-port vl-port-p)
+               (ifportalist-chunk vl-ifport-alist-p))
+  (b* ((port1 (vl-port-fix port1))
+       ((vl-plainarg x1) (vl-plainarg-fix x1))
+       ((when (eq (tag port1) :vl-regularport))
+        (mv port1 nil))
+       (name (and x1.expr (vl-ifportexpr->name x1.expr)))
+       ((unless name)
+        ;; Think this shouldn't be able to happen after argresolve.
+        (raise "Bad interface port connection: ~s0" (vl-cw-ps-seq
+                                                     (if x1.expr (vl-pp-expr x1.expr)
+                                                       (vl-print-str "(empty)"))))
+        (mv port1 nil))
+       ((vl-interfaceport port1) port1)
+       ((mv ss-item ?item-ss item-path) (vl-scopestack-find-item/ss/path name ss))
+       (item-scopes (vl-elabscopes-traverse item-path scopes))
+       (item (or (vl-elabscopes-item-info name item-scopes) ss-item))
+       ((unless (and item
+                     (or (eq (tag item) :vl-interfaceport)
+                         (eq (tag item) :vl-modinst))))
+        (raise "Bad interface port connection: ~s0" (vl-cw-ps-seq (vl-pp-expr x1.expr)))
+        (mv port1 nil))
+       (ifname (if (eq (tag item) :vl-interfaceport)
+                   (vl-interfaceport->ifname item)
+                 (vl-modinst->modname item))))
+    (if (equal ifname port1.ifname)
+        (mv port1 nil)
+      (mv (change-vl-interfaceport port1 :ifname ifname)
+          (list (cons name ifname)))))
   ///
-  (defret vl-unparam-add-to-ledger-without-renaming-binds-instkey
-    (hons-assoc-equal instkey (vl-unparam-ledger->instkeymap ledger))))
+  (defret vl-plainarg-update-ifports-preserves-port
+    (implies (atom ifportalist-chunk)
+             (equal new-port (vl-port-fix port1)))))
+
+(define vl-plainarglist-update-ifports
+  ((x vl-plainarglist-p "Actuals of the instance")
+   (ports vl-portlist-p "Ports of the instantiated module")
+   (ss    vl-scopestack-p "In the instantiating scope")
+   (scopes vl-elabscopes-p "In the instantiating scope"))
+  :returns (mv (final-portlist vl-portlist-p "With modified interface port names")
+               (inst-ifportalist vl-ifport-alist-p
+                                 "The ifport alist for this instance"))
+  :measure (len x)
+  :guard (eql (len x) (len ports))
+  (b* (((when (atom x)) (mv (vl-portlist-fix ports) nil))
+       ((mv port1 ifportalist1) (vl-plainarg-update-ifports (car x) (car ports) ss scopes))
+       ((mv rest-ports rest-ifportalist)
+        (vl-plainarglist-update-ifports (cdr x) (cdr ports) ss scopes)))
+    (mv (cons port1 rest-ports)
+        (append-without-guard ifportalist1 rest-ifportalist)))
+
+  ///
+  
+  (defret vl-plainarglistlist-update-ifports-ports-preserved-when-no-ifports
+    (implies (and (atom inst-ifportalist)
+                  (equal (len x) (len ports)))
+             (equal final-portlist (vl-portlist-fix ports)))
+    :hints (("goal" :induct (vl-plainarglist-update-ifports
+                             x ports ss scopes)
+             :in-theory (disable (:d vl-plainarglist-update-ifports))
+             :expand ((vl-plainarglist-fix x)
+                      (vl-plainarglist-update-ifports
+                       x ports ss scopes)
+                      (vl-portlist-fix ports))))))
 
 
 (define vl-unparam-inst
@@ -753,6 +828,7 @@ for each usertype is stored in the res field.</p>"
        (elabindex (vl-elabindex-sync-scopes))
        (scopes (vl-elabindex->scopes))
        ((mv mod mod-ss) (vl-scopestack-find-definition/ss inst.modname ss))
+
        ((unless (and mod
                      (or (eq (tag mod) :vl-module)
                          (eq (tag mod) :vl-interface))))
@@ -766,6 +842,25 @@ for each usertype is stored in the res field.</p>"
        (mod.paramdecls (if (eq (tag mod) :vl-module)
                            (vl-module->paramdecls mod)
                          (vl-interface->paramdecls mod)))
+       (mod.ports (if (eq (tag mod) :vl-module)
+                      (vl-module->ports mod)
+                    (vl-interface->ports mod)))
+
+       ((unless (vl-arguments-case inst.portargs
+                  :vl-arguments-plain (eql (len inst.portargs.args)
+                                           (len mod.ports))
+                  :otherwise nil))
+        (mv nil
+            (fatal :type :vl-programming-error
+                   :msg "~a0: port args should be a plainarglist of the same ~
+                         length as the module's ports"
+                   :args (list inst))
+            inst nil elabindex ledger))
+
+       (args (vl-arguments-plain->args inst.portargs))
+
+       ((mv new-ports inst-ifportalist) (vl-plainarglist-update-ifports
+                                         args mod.ports ss scopes))
 
        ;; ((when (atom mod.paramdecls))
        ;;  ;; Optimization.  In the common case there are no parameter
@@ -784,6 +879,20 @@ for each usertype is stored in the res field.</p>"
        ;;        ledger)))
        
        (elabindex (vl-elabindex-traverse mod-ss (list (vl-elabinstruction-root))))
+       ;; Note: We need to delete any info about the module stored in the
+       ;; elabindex, because if any exists, then it's relative to the default
+       ;; parameters and ifports.  (Optimization: don't delete it if parameters
+       ;; and ifports are default.)
+       (elabindex
+        (if (and (vl-paramargs-empty-p inst.paramargs)
+                 (atom inst-ifportalist))
+            elabindex
+          (b* ((scopes (vl-elabscopes-update-subscope
+                        (vl-elabkey-def inst.modname)
+                        (make-vl-elabscope)
+                        (vl-elabindex->scopes))))
+            (vl-elabindex-update-scopes scopes))))
+
        (elabindex (vl-elabindex-push mod))
 
        ((mv ok warnings elabindex final-paramdecls)
@@ -818,8 +927,9 @@ for each usertype is stored in the res field.</p>"
        ;; (2) it depends on another parameter that differs.
 
        ((mv instkey ledger)
-        (vl-unparam-add-to-ledger inst.modname final-paramdecls ledger ss
-                                  inside-mod-ss))
+        (vl-unparam-add-to-ledger
+         inst.modname final-paramdecls new-ports inst-ifportalist
+         ledger ss inside-mod-ss))
 
        ((vl-unparam-signature sig)
         (cdr (hons-get instkey (vl-unparam-ledger->instkeymap ledger))))
@@ -844,18 +954,23 @@ for each usertype is stored in the res field.</p>"
                                                 mod-scope scopes)))
        (elabindex (vl-elabindex-update-scopes scopes elabindex))
        ;; Go back to original instantiating scope.
-       (elabindex (vl-elabindex-undo)))
+       (elabindex (vl-elabindex-undo))
+
+       (elabindex (if inst.instname
+                      (vl-elabindex-update-item-info inst.instname new-inst)
+                    elabindex)))
 
     (vl-unparam-debug "~a0: success, new instance is ~a1.~%" inst new-inst)
     (mv t warnings new-inst instkey elabindex ledger)))
 
-(define vl-unparam-instlist ((x vl-modinstlist-p)
-                             (elabindex
-                              "where the instances occur")
-                             (ledger         vl-unparam-ledger-p)
-                             (warnings vl-warninglist-p
-                                       "Warnings accumulator for the submodule.")
-                             (keylist  vl-unparam-instkeylist-p "Accumulator"))
+(define vl-unparam-instlist
+  ((x vl-modinstlist-p)
+   (elabindex
+    "where the instances occur")
+   (ledger         vl-unparam-ledger-p)
+   (warnings vl-warninglist-p
+             "Warnings accumulator for the submodule.")
+   (keylist  vl-unparam-instkeylist-p "Accumulator"))
   :returns (mv (successp booleanp :rule-classes :type-prescription)
                (warnings vl-warninglist-p)
                (insts    vl-modinstlist-p
@@ -872,7 +987,8 @@ for each usertype is stored in the res field.</p>"
   ;;                                  (vl-modinstlist-fix x)
   ;;                                  ss warnings modname sigalist)))))))
   (b* (((when (atom x)) (mv t (ok) nil (vl-unparam-instkeylist-fix keylist)
-                            elabindex (vl-unparam-ledger-fix ledger)))
+                            elabindex
+                            (vl-unparam-ledger-fix ledger)))
        ((mv ok1 warnings inst1 instkey1 elabindex ledger)
         (vl-unparam-inst (car x) elabindex ledger warnings))
        (keylist (if ok1 (cons instkey1 keylist) keylist))
@@ -1423,6 +1539,7 @@ for each usertype is stored in the res field.</p>"
   ((x vl-module-p)
    (name stringp "New name including parameter disambiguation")
    (final-paramdecls vl-paramdecllist-p)
+   (final-ports vl-portlist-p)
    (elabindex "at global level")
    (ledger   vl-unparam-ledger-p))
   :returns (mv (okp)
@@ -1432,7 +1549,8 @@ for each usertype is stored in the res field.</p>"
                (ledger vl-unparam-ledger-p))
   (b* ((name (string-fix name))
        (x (change-vl-module x :name name
-                            :paramdecls final-paramdecls))
+                            :paramdecls final-paramdecls
+                            :ports final-ports))
        ((vl-module x))
        (elabindex (vl-elabindex-push x))
        ;; Note: instead of making a new svexconf here, we used to save the
@@ -1461,6 +1579,7 @@ for each usertype is stored in the res field.</p>"
   ((x vl-interface-p)
    (name stringp "New name including parameter disambiguation")
    (final-paramdecls vl-paramdecllist-p)
+   (final-ports vl-portlist-p)
    (elabindex "at global scope")
    (ledger   vl-unparam-ledger-p))
 
@@ -1471,7 +1590,8 @@ for each usertype is stored in the res field.</p>"
                (ledger vl-unparam-ledger-p))
   (b* ((name (string-fix name))
        (x (change-vl-interface x :name name
-                            :paramdecls final-paramdecls))
+                               :paramdecls final-paramdecls
+                               :ports final-ports))
        ((vl-interface x))
        (elabindex (vl-elabindex-push x))
        (warnings x.warnings)
@@ -1557,8 +1677,8 @@ for each usertype is stored in the res field.</p>"
 
          ((mv mod-ok new-mod sigalist elabindex ledger)
           (if (eq (tag mod) :vl-interface)
-              (vl-create-unparameterized-interface mod sig.newname sig.final-params elabindex ledger)
-            (vl-create-unparameterized-module mod sig.newname sig.final-params elabindex ledger)))
+              (vl-create-unparameterized-interface mod sig.newname sig.final-params sig.final-ports elabindex ledger)
+            (vl-create-unparameterized-module mod sig.newname sig.final-params sig.final-ports elabindex ledger)))
 
          ((mv unparams-ok warnings new-mods new-ifaces donelist elabindex ledger)
           (vl-unparameterize-main-list sigalist donelist (1- depthlimit) elabindex ledger)))
@@ -1641,14 +1761,87 @@ for each usertype is stored in the res field.</p>"
                   clause '(vl-unparameterize-main
                            vl-unparameterize-main-list))))))
 
+;; BOZO.  If the interfaceports of a top-level module themselves have
+;; interfaceports, we currently don't pick up those dependencies; really,
+;; vl-toplevel-default-signature should just be in a mutual-recursion with
+;; vl-portlist-interface-signatures with a termination counter or some seenlist
+;; measure.  
+(define vl-interfaceport-default-signature ((port vl-interfaceport-p)
+                                            (warnings vl-warninglist-p)
+                                            (elabindex "global scope")
+                                            (ledger vl-unparam-ledger-p))
+  :returns (mv (ok)
+               (instkey (implies ok (vl-unparam-instkey-p instkey)))
+               (warnings vl-warninglist-p)
+               (new-elabindex)
+               (ledger vl-unparam-ledger-p))
+  :prepwork ((local (defthm vl-scope-p-when-vl-interface-p-strong
+                      (implies (vl-interface-p x)
+                               (vl-scope-p x)))))
+  (b* (((vl-interfaceport port))
+       (ledger (vl-unparam-ledger-fix ledger))
+       (x (vl-scopestack-find-definition port.ifname (vl-elabindex->ss)))
+       ((unless (and x
+                     (eq (tag x) :vl-interface)))
+        (mv nil nil
+            (fatal :type :vl-unparam-fail
+                   :msg "Programming error: interface ~s0 for top-level interface port not found"
+                   :args (list port.ifname))
+            elabindex ledger))
+       ((vl-elabindex elabindex))
+       (elabindex (vl-elabindex-push x))
+       (paramdecls (vl-interface->paramdecls x))
+       ((mv ok warnings elabindex final-paramdecls)
+        (vl-scope-finalize-params paramdecls
+                                  (make-vl-paramargs-named)
+                                  warnings
+                                  elabindex elabindex.ss
+                                  (caar (vl-elabindex->undostack))))
+       (inside-mod-ss (vl-elabindex->ss))
+       (elabindex (vl-elabindex-undo))
+       ((unless ok) (mv nil nil warnings elabindex ledger))
+       ((mv instkey ledger) (vl-unparam-add-to-ledger
+                             port.ifname final-paramdecls
+                             (vl-interface->ports x) nil ;; ifportalist
+                             ledger elabindex.ss
+                             inside-mod-ss
+                             :no-rename t)))
+    
+    (mv t instkey warnings elabindex ledger)))
 
+(define vl-portlist-interface-signatures ((x vl-portlist-p)
+                                          (warnings vl-warninglist-p)
+                                          (elabindex "global scope")
+                                          (ledger vl-unparam-ledger-p))
+    :returns (mv (ok)
+               (instkeys vl-unparam-instkeylist-p)
+               (warnings vl-warninglist-p)
+               (new-elabindex)
+               (ledger vl-unparam-ledger-p))
+    (b* ((warnings (vl-warninglist-fix warnings))
+         (ledger (vl-unparam-ledger-fix ledger))
+         ((when (atom x)) (mv t nil warnings elabindex ledger))
+         (port1 (vl-port-fix (car x)))
+         ((mv ok1 instkeys1 warnings elabindex ledger)
+          (case (tag port1)
+            (:vl-regularport
+             (mv t nil warnings elabindex ledger))
+            (otherwise
+             (b* (((mv ok instkey warnings elabindex ledger)
+                   (vl-interfaceport-default-signature port1 warnings elabindex ledger)))
+               (mv ok (and ok (list instkey)) warnings elabindex ledger)))))
+         ((mv ok2 instkeys2 warnings elabindex ledger)
+          (vl-portlist-interface-signatures (cdr x) warnings elabindex ledger)))
+      (mv (and ok1 ok2)
+          (append instkeys1 instkeys2)
+          warnings elabindex ledger)))
 
 (define vl-toplevel-default-signature ((modname stringp)
                                        (warnings vl-warninglist-p)
                                        (elabindex "global scope")
                                        (ledger vl-unparam-ledger-p))
   :returns (mv (ok)
-               (instkey (implies ok (vl-unparam-instkey-p instkey)))
+               (instkeys vl-unparam-instkeylist-p)
                (warnings vl-warninglist-p)
                (new-elabindex)
                (ledger vl-unparam-ledger-p))
@@ -1674,6 +1867,9 @@ for each usertype is stored in the res field.</p>"
        (paramdecls (if (eq (tag x) :vl-module)
                        (vl-module->paramdecls x)
                      (vl-interface->paramdecls x)))
+       (ports (if (eq (tag x) :vl-module)
+                  (vl-module->ports x)
+                (vl-interface->ports x)))
        ((mv ok warnings elabindex final-paramdecls)
         (vl-scope-finalize-params paramdecls
                                   (make-vl-paramargs-named)
@@ -1683,11 +1879,20 @@ for each usertype is stored in the res field.</p>"
        (inside-mod-ss (vl-elabindex->ss))
        (elabindex (vl-elabindex-undo))
        ((unless ok) (mv nil nil warnings elabindex ledger))
-       ((mv instkey ledger) (vl-unparam-add-to-ledger-without-renaming
-                             modname final-paramdecls ledger elabindex.ss
-                             inside-mod-ss)))
+       ((mv instkey ledger) (vl-unparam-add-to-ledger
+                             modname final-paramdecls ports nil
+                             ledger elabindex.ss
+                             inside-mod-ss
+                             :no-rename t))
 
-    (mv t instkey warnings elabindex ledger)))
+       ((mv ok ifaceport-instkeys warnings elabindex ledger)
+        (vl-portlist-interface-signatures
+         (if (eq (tag x) :vl-module)
+             (vl-module->ports x)
+           (vl-interface->ports x))
+         warnings elabindex ledger)))
+
+    (mv ok (cons instkey ifaceport-instkeys) warnings elabindex ledger)))
 
 (define vl-toplevel-default-signatures ((names string-listp)
                                         (warnings vl-warninglist-p)
@@ -1700,13 +1905,11 @@ for each usertype is stored in the res field.</p>"
   (if (atom names)
       (mv nil (vl-warninglist-fix warnings)
           elabindex (vl-unparam-ledger-fix ledger))
-    (b* (((mv ok instkey warnings elabindex ledger)
+    (b* (((mv ?ok instkeys1 warnings elabindex ledger)
           (vl-toplevel-default-signature (car names) warnings elabindex ledger))
          ((mv instkeys warnings elabindex ledger)
           (vl-toplevel-default-signatures (cdr names) warnings elabindex ledger)))
-      (mv (if ok
-              (cons instkey instkeys)
-            instkeys)
+      (mv (append-without-guard instkeys1 instkeys)
           warnings elabindex ledger))))
 
 

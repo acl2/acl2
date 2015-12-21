@@ -37,6 +37,7 @@
 (include-book "centaur/vl/mlib/selfsize" :dir :system)
 (include-book "centaur/vl/mlib/typedecide" :dir :system)
 (include-book "centaur/vl/mlib/elabindex" :dir :system)
+(include-book "centaur/vl/mlib/strip" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -2019,16 +2020,41 @@ the way.</li>
     (implies (not (member v (sv::svexlist-vars x)))
              (not (member v (sv::svex-vars concat))))))
 
+
+
+
 (define vl-compare-datatypes ((a vl-datatype-p)
                               (b vl-datatype-p))
-  :returns (err (iff (vl-msg-p err) err))
-  (if (vl-datatype-equiv a b)
-      nil
-    ;; We'll see how often this bites us...
-    (vmsg "Mismatching datatypes: ~a0, ~a1"
-          (vl-datatype-fix a) (vl-datatype-fix b))))
-
-
+  :guard (and (vl-datatype-resolved-p a)
+              (vl-datatype-resolved-p b))
+  (b* (((fun (fail a b reason))
+        (vmsg "Mismatching datatypes: ~a0, ~a1: ~@2"
+              ;; Using structmembers to make them print with unpacked dims.
+              (make-vl-structmember :type a :name "a")
+              (make-vl-structmember :type b :name "b")
+              reason))
+       (a-udims (vl-packeddimensionlist-strip (vl-datatype->udims a)))
+       (b-udims (vl-packeddimensionlist-strip (vl-datatype->udims b)))
+       ((unless (equal a-udims b-udims))
+        (fail a b (vmsg "Unpacked dimensions mismatch")))
+       (a (vl-datatype-update-udims nil a))
+       (b (vl-datatype-update-udims nil b))
+       ((when (vl-datatype-equiv (vl-datatype-strip a)
+                                 (vl-datatype-strip b)))
+        nil)
+       ((unless (and (vl-datatype-packedp a)
+                     (vl-datatype-packedp b)))
+        (fail a b "Unpacked datatypes are unequal"))
+       ((mv erra asize) (vl-datatype-size a))
+       ((mv errb bsize) (vl-datatype-size b))
+       ((when (or erra errb))
+        (fail a b (vmsg "Sizing failed: ~@0" (or erra errb))))
+       ((when (or (not asize) (not bsize)))
+        (fail a b (vmsg "~s0 unsized" (cond (asize "b")
+                                                (bsize "a")
+                                                (t "a and b")))))
+       ((when (eql asize bsize)) nil))
+    (fail a b (vmsg "Packed datatypes differ in size: ~x0, ~x1" asize bsize))))
 
 
 (define vl-value-in-range ((x vl-expr-p)
@@ -3232,9 +3258,11 @@ functions can assume all bits of it are good.</p>"
              (err (vl-compare-datatypes type itype)))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
-                         :msg "Type mismatch: ~a0 has type ~a1 but ~
-                               should be ~a2. More: ~@3"
-                         :args (list x itype (vl-datatype-fix type) err))
+                         :msg "Type mismatch: ~a0 has type ~a1 xx ~a2 but ~
+                               should be ~a3 xx ~a4. More: ~@5"
+                         :args (list x itype (vl-datatype->udims itype)
+                                     (vl-datatype-fix type) (vl-datatype->udims type)
+                                     err))
                 (ok))
               svex))
 
@@ -3265,8 +3293,8 @@ functions can assume all bits of it are good.</p>"
              (err (vl-compare-datatypes type ftype)))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
-                         :msg "Type mismatch: ~a0 has type ~a1 but ~
-                               should be ~a2. More: ~@3"
+                         :msg "Type mismatch: ~a0 has type ~a1 xx ~a2 but ~
+                               should be ~a3 xx ~a4. More: ~@5"
                          :args (list x ftype (vl-datatype-fix type) err))
                 (ok))
               svex))

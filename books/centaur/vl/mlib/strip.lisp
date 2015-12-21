@@ -33,6 +33,7 @@
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
 
 (defxdoc stripping-functions
   :parents (mlib)
