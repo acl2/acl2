@@ -1264,36 +1264,25 @@ and generally makes it easier to write safe expression-processing code.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-  (defflexsum vl-valuerange
+  (deftagsum vl-valuerange
     :parents (vl-inside)
     :measure (two-nats-measure (acl2-count x) 105)
+    :base-case-override :valuerange-single
     :short "A value or a range used in an @('inside') expression.  For instance,
             the @('8') or @('[16:20]') from @('a inside { 8, [16:20] }')."
-    (:range
+    (:valuerange-range
+     :base-name vl-valuerange-range
      :short "A range of values from an @('inside') expression's set.  For
              instance, the @('[16:20]') part of @('a inside { 8, [16:20] }')."
-     :cond (and (consp x)
-                (eq (car x) :vl-range))
-     :fields ((range :type vl-range
-                     :acc-body x
-                     :acc-name vl-valuerange->range
-                     :doc "The whole range, e.g., @('[16:20]'), as an atomic
-                           @(see vl-range)."))
-     :ctor-body range
-     :ctor-name vl-range->valuerange
-     :extra-binder-names (msb lsb)
-     :long "<p>Note that the @(see b*) binder sets up extra bindings for
-            @('.msb') and @('.lsb'), so you can typically access the guts of
-            the interior range directly.</p>")
-    (:single
+     ((low  vl-expr-p "Always the left component, e.g., @('16') in @('[16:20]').")
+      (high vl-expr-p "Always the high component, e.g., @('20') in @('[16:20]').")))
+
+    (:valuerange-single
+     :base-name vl-valuerange-single
      :short "A single value from an @('inside') expression's set.  For
              instance, the @('8') part of @('a inside { 8, [16:20] }')."
-     :cond t
-     :fields ((expr :type vl-expr
-                    :acc-body x
-                    :acc-name vl-valuerange->expr))
-     :ctor-body expr
-     :ctor-name vl-expr->valuerange))
+     ((expr vl-expr-p))))
+
 
   (fty::deflist vl-valuerangelist
     :measure (two-nats-measure (acl2-count x) 10)
@@ -1994,26 +1983,6 @@ and generally makes it easier to write safe expression-processing code.</p>")
   :inline t
   :enabled t
   (vl-plusminus->minusp (vl-arrayrange->plusminus x)))
-
-
-(define vl-valuerange-range->msb ((x vl-valuerange-p))
-  :parents (vl-valuerange)
-  :guard (eq (vl-valuerange-kind x) :range)
-  :short "Directly get the @('msb') of a @(see vl-valuerange-range)'s range."
-  :long "<p>This is also available as a @('.msb') @(see b*) binding.</p>"
-  :inline t
-  :enabled t
-  (vl-range->msb (vl-valuerange->range x)))
-
-(define vl-valuerange-range->lsb ((x vl-valuerange-p))
-  :parents (vl-valuerange)
-  :guard (eq (vl-valuerange-kind x) :range)
-  :short "Directly get the @('lsb') of a @(see vl-valuerange-range)'s range."
-  :long "<p>This is also available as a @('.lsb') @(see b*) binding.</p>"
-  :inline t
-  :enabled t
-  (vl-range->lsb (vl-valuerange->range x)))
-
 
 (define vl-packeddimension-range->msb ((x vl-packeddimension-p))
   :parents (vl-packeddimension)

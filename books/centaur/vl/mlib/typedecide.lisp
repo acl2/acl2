@@ -339,7 +339,8 @@
   (define vl-expr-typedecide-aux
     ((x        vl-expr-p)
      (ss       vl-scopestack-p)
-     (scopes   vl-elabscopes-p) (mode     (or (eq mode :probably-wrong)
+     (scopes   vl-elabscopes-p)
+     (mode     (or (eq mode :probably-wrong)
                    (eq mode :probably-right))))
     :parents (vl-expr-typedecide)
     :short "Core of computing expression signedness."
@@ -453,7 +454,7 @@ produce unsigned values.</li>
                    :signedness (mv (ok) (if x.to.signedp :vl-signed :vl-unsigned))
                    :otherwise (vl-expr-typedecide-aux x.expr ss scopes mode))
 
-        ;; By the spec, it seems this always returns a 1-bit unsigned (test this)
+        ;; It seems this should always returns a 1-bit unsigned.
         :vl-inside (mv (ok) :vl-unsigned)
 
         ;; Tagged unions aren't vector types

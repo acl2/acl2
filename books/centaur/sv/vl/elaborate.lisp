@@ -81,7 +81,6 @@
                (vl-plusminus (base vl-index-resolve-if-constant-fn)
                              (width vl-index-resolve-constant-fn))
                (vl-arrayrange-index (expr vl-index-resolve-if-constant-fn))
-               (vl-valuerange-single (expr vl-index-resolve-if-constant-fn))
                (vl-patternkey-expr   (key vl-index-resolve-if-constant-fn)) ;; BOZO this will break struct field names
                (vl-casttype-size (size vl-index-resolve-if-constant-fn))
                (vl-slicesize-expr (expr vl-index-resolve-if-constant-fn))
