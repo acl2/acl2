@@ -74,7 +74,9 @@
   (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
 
 (defrule encodingp-forward
-  (implies (encodingp x f) (formatp f))
+  (implies (encodingp x f)
+           (and (natp x)
+                (formatp f)))
   :enable encodingp
   :rule-classes :forward-chaining)
 
@@ -428,6 +430,22 @@
   :hints (("Goal" :use ((:instance expo<= (x (abs x)) (n (- (bias f)))))
                   :in-theory (enable expo spn nrepp))))
 
+(defruled abs<spn-as-expo
+  (implies
+   (and
+    (rationalp x)
+    (formatp f))
+   (equal (< (abs x) (spn f))
+          (or (= x 0)
+              (<= (expo x) (- (bias f))))))
+  :enable (spn)
+  :use ((:instance  expo<=
+          (x (abs x))
+          (n (- (bias f))))
+        (:instance expo>=
+          (x (abs x))
+          (n (- 1 (bias f))))))
+
 ;; Largest positive normal:
 
 (defund lpn (f)
@@ -478,6 +496,33 @@
   :rule-classes ((:rewrite :match-free :once))
   :hints (("Goal" :in-theory (enable nrepp) :use (largest-lpn-1 positive-lpn))))
 
+(defruled lpn<abs-as-expo
+  (implies
+   (and (rationalp x)
+        (exactp x (prec f))
+        (formatp f))
+   (equal (< (lpn f) (abs x))
+          (< (bias f) (expo x))))
+  :prep-lemmas (
+    (defrule lemma
+      (implies
+        (formatp f)
+        (equal (expt 2 (expw f))
+               (+ 2 (* 2 (bias f)))))
+      :enable bias))
+  :enable (nrepp expo-lpn)
+  :cases ((< (expo x) (bias f))
+          (> (expo x) (bias f))
+          (= (expo x) (bias f)))
+  :hints (
+   ("subgoal 3" :use (:instance expo-monotone
+                       (x (lpn f))
+                       (y x)))
+   ("subgoal 2" :use (:instance expo-monotone
+                       (x x)
+                       (y (lpn f))))
+   ("subgoal 1" :use (:instance largest-lpn
+                       (x (abs x))))))
 
 ;;;***************************************************************
 ;;;               Denormals and Zeroes
@@ -519,6 +564,13 @@
   (if (= (expf x f) 0)
       (ddecode x f)
     (ndecode x f)))
+
+(defruled decode-0
+  (implies
+    (encodingp x f)
+    (equal (equal (decode x f) 0)
+           (zerp x f)))
+  :enable (decode ddecode ndecode zerp manf))
 
 (local-defthm sgn-ddecode-1
   (implies (pseudop x f)
