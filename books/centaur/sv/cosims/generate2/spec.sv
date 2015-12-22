@@ -74,33 +74,53 @@ module spec (input logic [127:0] in,
   wire [15:0] ifelse_stuff;
 
   if (version == 1)
-  begin
+  begin : ifelsename
     // New scope here, so no name clash.
     wire [3:0] ww3 = in[19:16];
     wire [3:0] aa = ~ww3;
     assign ifelse_stuff = { ww3, aa };
   end
   else if (version == 2)
-  begin
+  begin : ifelsename
     // New scope here, so no name clash.
     wire [3:0] ww3 = in[23:20];
     wire [3:0] aa = ~ww3;
     assign ifelse_stuff = { ww3, aa };
   end
 
+// Same thing without the blocks being named:
+
+  wire [15:0] ifelse_stuff2;
+
+  if (version == 1)
+  begin
+    // New scope here, so no name clash.
+    wire [3:0] ww3 = in[58:54];
+    wire [3:0] aa = ~ww3;
+    assign ifelse_stuff2 = { ww3, aa };
+  end
+  else if (version == 2)
+  begin
+    // New scope here, so no name clash.
+    wire [3:0] ww3 = in[53:50];
+    wire [3:0] aa = ~ww3;
+    assign ifelse_stuff2 = { ww3, aa };
+  end
+
+
   wire [15:0]  case_stuff;
 
   case (version)
     1 :
     // New scope here, so no name clash.
-    begin
+    begin : casename
       wire ww4 = in[27:24];
       wire [3:0] aa = ww4;
       assign case_stuff = { ww4, aa };
     end
 
     2 :
-    begin
+    begin : casename
       // New scope here, so no name clash.
       wire ww4 = in[31:28];
       wire [3:0] aa = ww4;
@@ -108,6 +128,31 @@ module spec (input logic [127:0] in,
     end
 
   endcase
+
+
+  // Same thing without the blocks being named
+
+  wire [15:0]  case_stuff2;
+
+  case (version)
+    1 :
+    // New scope here, so no name clash.
+    begin
+      wire ww4 = in[63:60];
+      wire [3:0] aa = ww4;
+      assign case_stuff2 = { ww4, aa };
+    end
+
+    2 :
+    begin
+      // New scope here, so no name clash.
+      wire ww4 = in[68:64];
+      wire [3:0] aa = ww4;
+      assign case_stuff2 = { ww4, aa };
+    end
+
+  endcase
+
 
   for(genvar j = 0;j < 3;++j)
   begin : subblock
@@ -123,7 +168,9 @@ module spec (input logic [127:0] in,
                  subblock[1].aa,
                  subblock[0].aa,
                  case_stuff,
+                 case_stuff2,
 		 ifelse_stuff,
+		 ifelse_stuff2,
 		 named2.vv, named2.ww,
 		 vv, ww,
 		 named.aa,
