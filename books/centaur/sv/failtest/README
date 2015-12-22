@@ -79,6 +79,8 @@ gen7.v  -- generate loop mentions var on initializer rhs, i.e., for(i = i; ...)
 gen8.v  -- nested generate loops that use the same variable (explicitly prohibited)
 gen9.v  -- generate loop without declaring its genvar
 gen9b.v -- generate loop variable declared inline as integer instead of genvar
+gen10.v -- generate block with a port declaration (explicitly forbidden)
+gen11.v -- generate block with parameter should turn into a localparam
 
 iface1.v -- multiply declared wire in interface
 iface2.v -- input redeclared as wire in interface
