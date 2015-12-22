@@ -32,14 +32,102 @@
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
+  // This is a test of a lot of scoping stuff with for generates.
+
+  parameter version = 1;
+
   begin
+    // Unnamed block -- doesn't introduce its own scope
     wire [3:0] aa = in[3:0];
+    localparam [3:0] aa2 = 3;
   end
 
   begin : named
-    wire [3:0] bb = in[7:4];
+    // Named block has its own scope, so there's no name clash
+    wire [3:0] aa = in[7:4];
   end
 
-  assign out = { named.bb, aa } ;
+  generate
+    begin
+      // Unnamed block doesn't introduce its own scope
+      genvar i;
+      wire [3:0] ww = in[11:8];
+      wire [3:0] vv;
+      for(i = 0; i < 4;++i)
+      begin
+	not(vv[i], ww[i]);
+      end
+    end
+  endgenerate
+
+  begin : named2
+    // Named block introduces a new scope, so there's no name clash
+    genvar i;
+    wire [3:0] ww = in[15:12];
+    wire [3:0] vv;
+    for(i = 0; i < 4;++i)
+    begin
+      not(vv[i], ww[i]);
+    end
+  end
+
+  wire [15:0] ifelse_stuff;
+
+  if (version == 1)
+  begin
+    // New scope here, so no name clash.
+    wire [3:0] ww3 = in[19:16];
+    wire [3:0] aa = ~ww3;
+    assign ifelse_stuff = { ww3, aa };
+  end
+  else if (version == 2)
+  begin
+    // New scope here, so no name clash.
+    wire [3:0] ww3 = in[23:20];
+    wire [3:0] aa = ~ww3;
+    assign ifelse_stuff = { ww3, aa };
+  end
+
+  wire [15:0]  case_stuff;
+
+  case (version)
+    1 :
+    // New scope here, so no name clash.
+    begin
+      wire ww4 = in[27:24];
+      wire [3:0] aa = ww4;
+      assign case_stuff = { ww4, aa };
+    end
+
+    2 :
+    begin
+      // New scope here, so no name clash.
+      wire ww4 = in[31:28];
+      wire [3:0] aa = ww4;
+      assign case_stuff = { ww4, aa };
+    end
+
+  endcase
+
+  for(genvar j = 0;j < 3;++j)
+  begin : subblock
+    // New scope here, so no name clash
+    wire [3:0] ww5 = in[(32+j) +: 4];
+    wire [3:0] aa = ww5 + j;
+  end
+
+  assign out = { subblock[2].ww5,
+                 subblock[1].ww5,
+                 subblock[0].ww5,
+                 subblock[2].aa,
+                 subblock[1].aa,
+                 subblock[0].aa,
+                 case_stuff,
+		 ifelse_stuff,
+		 named2.vv, named2.ww,
+		 vv, ww,
+		 named.aa,
+		 aa2, aa } ;
 
 endmodule
+
