@@ -67,10 +67,11 @@
       1)))
 
 (defund exactp (x n)
-;  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (defun fp+ (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (defund trunc (x n)
@@ -85,6 +86,7 @@
 ;;
 
 (defund re (x)
+  (declare (xargs :guard (real/rationalp x)))
   (- x (fl x)))
 
 (defund near (x n)

@@ -612,6 +612,8 @@
 ;;;**********************************************************************
 
 (defund chop (x k)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp k))))
   (/ (fl (* (expt 2 k) x)) (expt 2 k)))
 
 (local (defrule |chop as chop-r|

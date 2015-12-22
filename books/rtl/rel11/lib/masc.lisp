@@ -29,6 +29,8 @@
   (floor x 1))
 
 (defund chop (x k)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp k))))
   (/ (fl (* (expt 2 k) x)) (expt 2 k)))
 
 (defund bvecp (x k)
@@ -56,6 +58,8 @@
        :exec  (if (evenp (ash x (- n))) 0 1)))
 
 (defund si (r n)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n))))
   (if (= (bitn r (1- n)) 1)
       (- r (expt 2 n))
     r))
@@ -345,6 +349,8 @@
 (defund ui (r) r)
 
 (defund si (r n)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n))))
   (if (= (bitn r (1- n)) 1)
       (- r (expt 2 n))
     r))
