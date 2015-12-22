@@ -54,16 +54,31 @@ gates3.v -- 3-bit wire connected to 4-wide not instance array input
 gates4.v -- 5-bit wire connected to 4-wire not instance array input
 gates5.v -- gate array of size 0
 
-gen1.v -- genvar redeclared as wire
+gen1.v  -- genvar redeclared as wire
 gen1b.v -- wire redeclared as genvar
 gen1c.v -- genvar redeclared as gate instance name
 gen1d.v -- gate instance name redeclared as genvar
-gen2.v -- continuous assignment to genvar
+gen1e.v -- genvar block name conflicts with wire declaration
+gen1f.v -- unnamed generate block tries to redeclare wire (but it's in the same scope)
+gen1g.v -- unnamed generate block declared wire that is later redeclared outside it
+gen2.v  -- continuous assignment to genvar
 gen2b.v -- continuous assignment from genvar
-gen3.v -- reference to wire declared in a named generate block's scope
-gen4.v -- hierarchical reference to genvar in continuous assign
-gen5.v -- trying to use genvar from another module in generate for-loop
-gen6.v -- reference "wrong" genvar inside generate for loop
+gen3.v  -- bare reference to wire declared in a named generate block's scope
+gen3b.v -- bare reference to a wire declared in a case generate block's scope
+gen3c.v -- bare reference to a wire declared in a if-else generate block's scope
+gen3d.v -- bare reference to a wire declared in a loop generate block's scope (unnamed block)
+gen3e.v -- bare reference to a wire declared in a loop generate block's scope (named block)
+gen3f.v -- bare reference to a wire declared in a loop generate block's scope (no explicit block)
+gen3g.v -- hierarchical reference without necessary index into loop generate block scope
+gen3h.v -- same as gen3g, but put it in $bits; still makes no sense
+gen3i.v -- hierarchical reference with bad index into loop generate block scope
+gen4.v  -- hierarchical reference to genvar in continuous assign
+gen5.v  -- trying to use genvar from another module in generate for-loop
+gen6.v  -- reference "wrong" genvar inside generate for loop
+gen7.v  -- generate loop mentions var on initializer rhs, i.e., for(i = i; ...)
+gen8.v  -- nested generate loops that use the same variable (explicitly prohibited)
+gen9.v  -- generate loop without declaring its genvar
+gen9b.v -- generate loop variable declared inline as integer instead of genvar
 
 iface1.v -- multiply declared wire in interface
 iface2.v -- input redeclared as wire in interface
