@@ -29,6 +29,15 @@
 // Original authors: Sol Swords <sswords@centtech.com>
 //                   Jared Davis <jared@centtech.com>
 
+package foo ;
+  parameter [3:0] five = 5;
+endpackage
+
+package bar ;
+  parameter [3:0] six = 6;
+endpackage
+
+
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
@@ -40,6 +49,7 @@ module spec (input logic [127:0] in,
     // Unnamed block -- doesn't introduce its own scope
     wire [3:0] aa = in[3:0];
     localparam [3:0] aa2 = 3;
+    import foo::five;
   end
 
   begin : named
@@ -57,6 +67,7 @@ module spec (input logic [127:0] in,
       begin
 	not(vv[i], ww[i]);
       end
+      import bar::*;
     end
   endgenerate
 
@@ -161,7 +172,8 @@ module spec (input logic [127:0] in,
     wire [3:0] aa = ww5 + j;
   end
 
-  assign out = { subblock[2].ww5,
+  assign out = { six, five,
+                 subblock[2].ww5,
                  subblock[1].ww5,
                  subblock[0].ww5,
                  subblock[2].aa,

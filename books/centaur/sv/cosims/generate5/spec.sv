@@ -29,40 +29,28 @@
 // Original authors: Sol Swords <sswords@centtech.com>
 //                   Jared Davis <jared@centtech.com>
 
+package foo ;
+  parameter [3:0] five = 5;
+endpackage
+
+package bar ;
+  parameter [3:0] six = 6;
+endpackage
+
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
-  genvar i;
-
-  // Basic test of the nature of a genvar.
-
-  // SystemVerilog-2012 is pretty clear that a generate var is supposed to
-  // correspond to an integer.  We think this should mean a 32-bit signed
-  // quantity.  This test just tries to make sure other implementations agree.
-
-  wire [9:0] isize;
-  wire [9:0] ival;
-  wire [9:0] isigndetect;
-
-  for(i = 0; i < 1; ++i)
   begin
-
-    // We expect that I is 0.
-    assign ival = i;
-
-    // We expect that I is 32 bits.
-    assign isize = $bits(i);
-
-    // We expect that I is signed.  If it is indeed a signed zero, this should
-    // get sign-extended to 10 bits.  But if I is unsigned, then it should get
-    // zero extended instead.
-    assign isigndetect = 3'sb 111 + i;
+    wire [3:0] w1 = in[3:0];
+    begin
+      import foo::five;
+      import bar::*;
+      wire [3:0] w2 = in[7:4];
+    end
+    wire [3:0] w3 = w1;
+    wire [3:0] w4 = w2;
   end
 
-  assign out = { isize, ival, isigndetect };
-
-  // Basic test that an empty generate loop is OK.
-  genvar jj;
-  for(jj = 0; jj < 4; ++jj) begin end
+  assign out = {six, five, w4, w3, w2, w1};
 
 endmodule
