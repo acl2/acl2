@@ -58,9 +58,13 @@ gen1.v  -- genvar redeclared as wire
 gen1b.v -- wire redeclared as genvar
 gen1c.v -- genvar redeclared as gate instance name
 gen1d.v -- gate instance name redeclared as genvar
-gen1e.v -- genvar block name conflicts with wire declaration
+gen1e.v -- loop generate block name conflicts with wire declaration
 gen1f.v -- unnamed generate block tries to redeclare wire (but it's in the same scope)
 gen1g.v -- unnamed generate block declared wire that is later redeclared outside it
+gen1h.v -- conditional generate block name conflicts with wire declaration
+gen1i.v -- case generate block name conflicts with wire declaration
+gen1j.v -- begin/end generate block name conflicts with wire declaration
+gen1k.v -- default generate block name conflicts with wire declaration
 gen2.v  -- continuous assignment to genvar
 gen2b.v -- continuous assignment from genvar
 gen3.v  -- bare reference to wire declared in a named generate block's scope
