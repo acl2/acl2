@@ -263,7 +263,8 @@ the number of gate instances in the list.</p>"
   :returns (blockname maybe-stringp)
   :parents (vl-genelement-p)
   (vl-genelement-case x
-    :vl-genblock x.name
+    ;; BOZO should we be harvesting names from other kinds of generates?
+    :vl-genbegin (vl-genblock->name x.block)
     :vl-genarray x.name
     :otherwise nil))
 

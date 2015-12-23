@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-12-18")
+  "VL Syntax 2015-12-23")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -3869,7 +3869,8 @@ be non-sliceable, at least if it's an input.</p>"
 
 (fty::deflist vl-genvarlist :elt-type vl-genvar :elementp-of-nil nil)
 
-(encapsulate nil
+(defsection modelements
+  :parents nil
 
   (defconst *vl-modelement-typenames*
     '(portdecl
@@ -3965,114 +3966,159 @@ initially kept in a big, mixed list.</p>"
         (let ((x (vl-modelement-fix x)))
           (case (tag x)
             . ,(project-over-modelement-types
-                '(:vl-__type__ (vl-__type__->loc x))))))))
+                '(:vl-__type__ (vl-__type__->loc x)))))))))
 
+
+
+(defsection generates
+  :parents nil
 
   (local (in-theory (disable acl2::o<-of-two-nats-measure o< o<-when-natps nfix)))
   (deftypes vl-genelement
-    ;; :prepwork
-    ;; ((local (defthm nfix-when-natp
-    ;;           (implies (natp x)
-    ;;                    (equal (nfix x) x))
-    ;;           :hints(("Goal" :in-theory (enable nfix)))))
-    ;;  (local (in-theory (disable default-car default-cdr
-    ;;                             acl2::consp-of-car-when-alistp)))
-    ;;  (local (defthm my-o<-of-two-nats-measure-1
-    ;;           (implies (< (nfix a) (nfix b))
-    ;;                    (o< (two-nats-measure a c) (two-nats-measure b d)))
-    ;;           :hints(("Goal" :in-theory (enable acl2::o<-of-two-nats-measure)))))
-    ;;  (local (defthm my-o<-of-two-nats-measure-2
-    ;;           (implies (and (<= (nfix a) (nfix b))
-    ;;                         (< (nfix c) (nfix d)))
-    ;;                    (o< (two-nats-measure a c) (two-nats-measure b d)))
-    ;;           :hints(("Goal" :in-theory (enable acl2::o<-of-two-nats-measure)))))
-    ;;  )
+
+    ;; NOTE: According to the SystemVerilog spec, generate/endgenerate just
+    ;; defines a textual region, which makes "no semantic difference" in the
+    ;; module.
 
     (deftagsum vl-genelement
-
-      ;; NOTE: According to the SystemVerilog spec, generate/endgenerate just
-      ;; defines a textual region, which makes "no semantic difference" in the module.
-      ;; So (for now at least) we'll ignore them.
-
-      ;; (:vl-genregion
-      ;;  :base-name vl-genregion
-      ;;  :layout :tree
-      ;;  :short "A generate/endgenerate region"
-      ;;  ((items vl-genelementlist     "the items contained in the region")
-      ;;   (loc   vl-location)))
-
-      (:vl-genloop
-       :base-name vl-genloop
-       :layout :tree
-       :short "A loop generate construct"
-       ((var        stringp          "the iterator variable")
-        (initval    vl-expr-p        "initial value of the iterator")
-        (continue   vl-expr-p        "continue the loop until this is false")
-        (nextval    vl-expr-p        "next value of the iterator")
-        (body       vl-genelement "body of the loop")
-        (loc        vl-location)))
-
-      (:vl-genif
-       :base-name vl-genif
-       :layout :tree
-       :short "An if generate construct"
-       ((test       vl-expr-p        "the test of the IF")
-        (then       vl-genelement "the block for the THEN case")
-        (else       vl-genelement "the block for the ELSE case; empty if not provided")
-        (loc        vl-location)))
-
-      (:vl-gencase
-       :base-name vl-gencase
-       :layout :tree
-       :short "A case generate construct"
-       ((test      vl-expr-p         "the expression to test against the cases")
-        (cases     vl-gencaselist    "the case generate items, except the default")
-        (default   vl-genelement  "the default, which may be an empty genblock if not provided")
-        (loc       vl-location)))
-
-      (:vl-genblock
-       :base-name vl-genblock
-       :layout :tree
-       :short "Normalized form of a generate construct that has been instantiated."
-       ((name      maybe-stringp     "the name of the block, if named")
-        (elems     vl-genelementlist-p)
-        (loc       vl-location)))
-
-
-      (:vl-genarray
-       :base-name vl-genarray
-       :layout :tree
-       :short "Normalized form of a generate loop."
-       ((name      maybe-stringp     "the name of the block array, if named")
-        (var       stringp           "the iterator variable")
-        (blocks    vl-genarrayblocklist-p "the blocks produced by the loop")
-        (loc       vl-location)))
+      :short "Representation of an arbitrary module element or generate construct."
+      :measure (two-nats-measure (acl2-count x) 1)
 
       (:vl-genbase
        :base-name vl-genbase
        :layout :tree
-       :short "A basic module/generate item"
-       ((item      vl-modelement        "a generate item")))
+       :short "Wrapper for promoting basic module items into genelements."
+       ((item vl-modelement))
+       :long "<p>This is a trivial wrapper that allows any kind of module
+              element (variables, assignments, module instances, etc.) to be
+              used within a @('generate') construct.</p>")
 
-      :measure (two-nats-measure (acl2-count x) 1))
+      (:vl-genbegin
+       :base-name vl-genbegin
+       :layout :tree
+       :short "Wrapper for promoting begin/end generate blocks into genelements."
+       ((block vl-genblock-p))
+       :long "<p>This is a trivial wrapper for converting a @(see vl-genblock),
+              which represents a @('begin/end') generate construct, into a
+              standalone @('vl-genelement').</p>
 
-    (fty::deflist vl-genelementlist :elt-type vl-genelement
+              <p>Having this kind of wrapper is a bit ugly.  It might be nicer
+              looking to just have the name, location, and genelements for the
+              block right here, instead of relegating them to a @(see
+              vl-genblock).</p>
+
+              <p>But having a wrapper gives us a really nice property: it
+              allows the ``implicit'' begin/end blocks for every kind of
+              generate construct to be treated in a completely uniform way.
+              That is: go look at @(see vl-gencase), @(see vl-genif), etc.
+              You'll see that all of our branches are represented as explicit
+              @(see vl-genblock)s.  This is really handy when it comes to
+              scoping.  We can ensure that all of these blocks have a name, and
+              we can deal with begin/end blocks and if/case blocks in a uniform
+              way in @(see vl-scopestacks).  (We still have to handle generate
+              arrays separately, but there's no getting around that.)</p>
+
+              <p>We wouldn't be able to have this kind of uniformity if a
+              begin/end block just had its elements right here, because we
+              can't easily require that, e.g., a @(see vl-genif)'s @('then')
+              branch is @(see vl-genelement) of subtype
+              @(':vl-genbegin').</p>")
+
+      (:vl-genif
+       :base-name vl-genif
+       :layout :tree
+       :short "An @('if') or @('if/else') generate construct."
+       ((test vl-expr-p    "Expression to test.")
+        (then vl-genblock-p "The begin/end block for when @('test') is true.")
+        (else vl-genblock-p "The begin/end block for when @('test') is false.
+                             May be an empty block if there is no @('else') part.")
+        (loc  vl-location-p "Where this @('if') came from in the Verilog source code."))
+       :long "<p>These are mostly straightforward; note that each branch gets
+              its own scope but that there are tricky scoping rules for nested
+              if/else branches; see SystemVerilog-2012 Section 27.5 for
+              details.</p>")
+
+      (:vl-gencase
+       :base-name vl-gencase
+       :layout :tree
+       :short "A case generate construct."
+       ((test      vl-expr-p      "The expression to test against the cases, e.g.,
+                                   @('mode') in @('case (mode) ...').")
+        (cases     vl-gencaselist "The match expressions and corresponding blocks.")
+        (default   vl-genblock-p  "The default block. May be an empty @(see vl-genblock).")
+        (loc       vl-location-p  "Where this @('case') came from in the Verilog source code.")))
+
+      (:vl-genloop
+       :base-name vl-genloop
+       :layout :tree
+       :short "A loop generate construct, before elaboration."
+       ((var        stringp       "Iterator variable for this generate loop.")
+        (initval    vl-expr-p     "Initial value of the variable.")
+        (continue   vl-expr-p     "Continue the loop until this expression is false.")
+        (nextval    vl-expr-p     "Next value expression for the variable.")
+        (body       vl-genblock-p "Body of the loop.")
+        (loc        vl-location-p "Where this loop came from in the Verilog source code."))
+       :long "<p>This structure captures something like the ``just parsed''
+              form of a generate loop.  Elaboration should convert these into
+              the more regular @(see vl-genarray) form.</p>")
+
+      (:vl-genarray
+       :base-name vl-genarray
+       :layout :tree
+       :short "A loop generate construct, after elaboration."
+       ((name      maybe-stringp          "Name of the block array, if named.  BOZO are these really ever unnamed?")
+        (var       stringp                "Iterator variable name.")
+        (blocks    vl-genarrayblocklist-p "Blocks produced by the loop")
+        (loc       vl-location-p          "Where the loop came from in the Verilog source code."))
+       :long "<p>This is a post-elaboration representation of a generate for
+              loop, where the loop itself is gone and we instead have something
+              like a list of begin/end blocks for each value that @('var') took
+              on during the loop's execution.</p>
+
+              <p>This representation may seem weird but notice that things like
+              the sizes of wires can change from iteration to iteration if they
+              depend on the loop variable, and similarly other things within
+              the loop like @('if/else') generate blocks may depend on the loop
+              variable and so may need to differ from iteration to iteration.
+              To support these kinds of things, we really do want a
+              representation where each block can be separated from the others
+              and processed independently.</p>"))
+
+    (defprod vl-genblock
+      :layout :tree
+      :short "Representation of an explicit or implicit @('begin/end') generate block."
+      ((name      maybe-stringp       "The name of the block, if named.")
+       (elems     vl-genelementlist-p "Elements within the block.")
+       (loc       vl-location         "Location of the block in the Verilog source code."))
+      :measure (two-nats-measure (acl2-count x) 3)
+      :long "<p>See the documentation for @(see vl-genbegin).  A
+             @('vl-genblock') may represent an explicit @('begin/end')
+             construct, or might instead be something like the @('true') or
+             @('false') branch of an @('if/else') generate construct,
+             etc.</p>")
+
+    (fty::deflist vl-genelementlist
+      :elt-type vl-genelement
       :true-listp t
       :elementp-of-nil nil
       :measure (two-nats-measure (acl2-count x) 1))
 
-    (fty::defalist vl-gencaselist :key-type vl-exprlist :val-type vl-genelement
+    (fty::defalist vl-gencaselist
+      :key-type vl-exprlist
+      :val-type vl-genblock
       :true-listp t
-      :measure (two-nats-measure (acl2-count x) 5))
+      :measure (two-nats-measure (acl2-count x) 10))
 
-    (fty::deflist vl-genarrayblocklist :elt-type vl-genarrayblock
-      :true-listp t :elementp-of-nil nil
+    (fty::deflist vl-genarrayblocklist
+      :elt-type vl-genarrayblock
+      :true-listp t
+      :elementp-of-nil nil
       :measure (two-nats-measure (acl2-count x) 1))
 
     (defprod vl-genarrayblock
-      ((index    integerp           "index of the iterator variable for this block")
-       (elems    vl-genelementlist-p))
-      :measure (two-nats-measure (acl2-count x) 3))
+      ((index integerp "index of the iterator variable for this block")
+       (body  vl-genblock-p))
+      :measure (two-nats-measure (acl2-count x) 5))
 
     :enable-rules (acl2::o-p-of-two-nats-measure
                    acl2::o<-of-two-nats-measure
@@ -4092,12 +4138,12 @@ initially kept in a big, mixed list.</p>"
   (define vl-genelement->loc ((x vl-genelement-p))
     :returns (loc vl-location-p)
     (vl-genelement-case x
+      (:vl-genbase  (vl-modelement->loc x.item))
+      (:vl-genbegin (vl-genblock->loc x.block))
       (:vl-genloop  x.loc)
       (:vl-genif    x.loc)
       (:vl-gencase  x.loc)
-      (:vl-genblock x.loc)
-      (:vl-genarray x.loc)
-      (:vl-genbase  (vl-modelement->loc x.item)))))
+      (:vl-genarray x.loc))))
 
 
 (define vl-modelementlist->genelements ((x vl-modelementlist-p))
@@ -4107,7 +4153,8 @@ initially kept in a big, mixed list.</p>"
     (cons (make-vl-genbase :item (car x))
           (vl-modelementlist->genelements (cdr x)))))
 
-(encapsulate nil
+(defsection ctxelements
+  :parents nil
 
   (deftranssum vl-ctxelement
     ;; Add any tagged product that can be written with ~a and has a loc field.
@@ -4170,7 +4217,7 @@ initially kept in a big, mixed list.</p>"
                  (equal (tag x) :vl-property)
                  (equal (tag x) :vl-sequence)
                  (equal (tag x) :vl-import)
-                 (equal (tag x) :vl-genblock)
+                 (equal (tag x) :vl-genbegin)
                  (equal (tag x) :vl-genarray)
                  (equal (tag x) :vl-genbase)
                  (equal (tag x) :vl-genif)
@@ -4217,7 +4264,7 @@ initially kept in a big, mixed list.</p>"
         (:vl-genloop (vl-genloop->loc x))
         (:vl-genif   (vl-genif->loc x))
         (:vl-gencase (vl-gencase->loc x))
-        (:vl-genblock (vl-genblock->loc x))
+        (:vl-genbegin (vl-genblock->loc (vl-genbegin->block x)))
         (:vl-genarray (vl-genarray->loc x))
         (:vl-assertion (vl-assertion->loc x))
         (:vl-cassertion (vl-cassertion->loc x))

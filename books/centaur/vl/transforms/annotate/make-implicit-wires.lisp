@@ -69,9 +69,9 @@ a separate transform.</p>
 
 <h3>Note: Special Transform!</h3>
 
-<p>This transform is unique and we generally expect to run it as the first step
-after parsing.  Normally it is invoked as part of @(see annotate).  It is also
-closely related to @(see shadowcheck)&mdash;indeed, it invokes
+<p>This transform is unique and we generally expect to run it as a very early
+step after parsing.  Normally it is invoked as part of @(see annotate).  It is
+also closely related to @(see shadowcheck)&mdash;indeed, it invokes
 shadowcheck&mdash; and the two should generally be regarded as a single,
 unified transition from just-parsed modules to a more canonical form.</p>
 
@@ -299,8 +299,6 @@ declared, and mark them with the @('VL_IMPLICIT') attribute.  Historically this
 attribute was used in a ``typo detection'' @(see lint) check, which has become
 defunct but can probably be easily revived.</p>")
 
-
-
 ; FEATURE-CREEP WARNING.
 ;
 ; It is tempting to try to do a lot here, e.g., we might want to check for any
@@ -324,20 +322,15 @@ defunct but can probably be easily revived.</p>")
   (define vl-expr-names-for-implicit-nrev ((x vl-expr-p) nrev)
     :measure (vl-expr-count x)
     :flag :expr
+    ;; Don't try to understand this.  It's just an nrev-optimized version of
+    ;; vl-expr-names-for-implicit, which is very tricky.  See its docs below.
     (vl-expr-case x
       (:vl-index
-       ;; Want only plain names with no selects/indexing, and don't want to
-       ;; descend into any select/indexing subexpressions.
        (if (and (vl-idscope-p x.scope)
                 (vl-partselect-case x.part :none)
                 (atom x.indices))
            (nrev-push (vl-idscope->name x.scope) nrev)
          (nrev-fix nrev)))
-      ;; The pattern case is subtle.  See particularly vl-patternkey and
-      ;; vl-patternkey-ambiguity.  Historically we had problems with pattern
-      ;; keys like "foo" fooling us into introducing implicit wires.  Now our
-      ;; parser makes sure to treat those as structure names, so we can just
-      ;; fall through to the default here and it works out correctly.
       (:otherwise
        (vl-exprlist-names-for-implicit-nrev (vl-expr->subexprs x) nrev))))
 
@@ -838,7 +831,6 @@ Our version of VCS says this isn't yet implemented.</li>
 ;;                   (vl-modelementlist-p x))
 ;;          :hints(("Goal" :induct (len x)))))
 
-
 (defines vl-make-implicit-wires-aux
   :verify-guards nil
 
@@ -1046,6 +1038,223 @@ Our version of VCS says this isn't yet implemented.</li>
 ;;                                (vl-println "warnings:")
 ;;                                (vl-print-warnings (butlast warnings-out
 ;;                                                            (len warnings)))))))))
+
+(defsection implicit-wires-generate-scoping
+  :short "Some details about generate block scoping quirks which affect
+implicit wire handling and other aspects of scoping."
+
+  :long "<p>AFAICT none of the following is discussed in the SystemVerilog-2012
+standard.</p>
+
+<p>Unlike any other kind of @('generate') statement, it seems that plain old
+@('begin ... end') style generate blocks with no names are treated by
+commercial simulators in a special way.  In particular, they don't (at least at
+the top level; see below) introduce new scopes.</p>
+
+<p>This has implications for correctly introducing implicit wires and also for
+scoping in general.  We want to be smart enough to prohibit things like:</p>
+
+@({
+     module m;
+       not(v, w);       // implicit declaration of w
+       begin
+         wire w = 1;    // illegal (redefinition of w)
+       end
+     endmodule
+})
+
+<p>while at the same time allowing legal things like:</p>
+
+@({
+     module m;
+       not(v, w);       // implicit declaration of w
+       begin : myblock
+         wire w = 1;    // fine (this is a new scope)
+       end
+     endmodule
+})
+
+
+<h5>Top-level begin/end: no name = no scope</h5>
+
+<p>On both NCV and VCS, at least at the top level of a module, an unnamed block
+does NOT appear to introduce a new scope.  Instead, wires declared inside it
+become visible to the rest of the module after the generate, just as if they
+were declared before the begin/end block.</p>
+
+<p>Moreover, the following seem to be roughly(*) equivalent,</p>
+
+@({
+     module m ;                    module m ;
+       begin
+         ...              vs.           ...
+       end
+     endmodule                     endmodule
+})
+
+<p>(*) Exceptions we're aware of: begin/end blocks aren't allowed to have
+ports, specify blocks, and specparams (Section 27.3) and parameter declarations
+inside of begin/end blocks are supposed to be treated as localparams.  Testing
+suggests that these restrictions still hold for unnamed top-level begin/end
+blocks.  See especially @(see vl-convert-sub-generate-paramdecls).</p>
+
+
+<h5>Interior begin/end: no name = unclear scope</h5>
+
+<p>We find that NCV and VCS <b>disagree</b> about the handling of scopes for
+nested begin/end generate blocks.  In particular, consider something like:</p>
+
+@({
+    module m ;
+    begin
+      wire [3:0] w1 = 0;
+      begin
+        wire [3:0] w2 = 1;
+      end
+      wire [3:0] w3 = w1;
+      wire [3:0] w4 = w2;
+    end
+    endmodule
+})
+
+<p>This code is happily accepted by NCVerilog, suggesting that the inner
+begin/end block is not given its own scope.  However, VCS instead produces an
+error saying that @('w2') is not declared, which suggests that VCS treats
+interior begin/end blocks as new scopes.  Note however that VCS still treats
+top-level begin/end blocks as not being new scopes.  Messy.</p>
+
+<p>In VL we choose to follow the behavior of NCVerilog since it is seems more
+consistent.  That is, we will universally regard any unnamed begin/end generate
+blocks as <b>not</b> introducing a scope.</p>
+
+
+<h5>Eliminating begin/end blocks</h5>
+
+<p>Since we are going to treat unnamed begin/end blocks as not having their own
+scopes, there's really no reason to keep them around.</p>
+
+<p>It also seems like a good idea to get rid of them.  If we keep unnamed
+begin/end blocks around, then when building scopes for @(see vl-scopestack)s,
+we would need to would need to collect all the items from (say) the module, and
+then also dive down into the begin/end blocks and (recursively) collect up the
+items within them.  It seems much nicer and simpler to inline the contents of
+these generate blocks into their surroundings.  Similarly we would need to do
+this sort of thing for packages.</p>
+
+<p>We do this inlining as part of introducing implicit wires.  This seems like
+a reasonable place: it certainly needs to happen before or during implicit wire
+introduction in order to get implicit wires right.  It also needs to happen
+before we create scopestacks for shadowchecking.</p>")
+
+;; BOZO implement generate handling as described above...
+
+;; (local (xdoc::set-default-parents implicit-wires-generate-scoping))
+
+;; (defines vl-genelementlist-flatten
+;;   :short "Special flattening of unnamed @('begin/end') blocks."
+;;   :long "<p>See @(see implicit-wires-generate-scoping).  Here we flatten the
+;;          unnamed begin/end blocks and take care of weird special cases like
+;;          checking that generates have no ports, converting @('parameter')s to
+;;          @('localparam')s within generates, etc.</p>"
+
+;;   (define vl-genelement-flatten ((x        vl-genelement-p     "Single item to process.")
+;;                                  (genp     booleanp            "Are we currently in a generate block?")
+;;                                  (newitems vl-genelementlist-p "Accumulator for replacement items."))
+;;     :returns (mv (warnings vl-warninglist-p)
+;;                  (newitems vl-genelementlist-p "Extended with @('x') or its replacement."))
+;;     :measure (vl-genelement-count x)
+;;     (b* ((x        (vl-genelement-fix x))
+;;          (newitems (vl-genelementlist-fix newitems)))
+;;       (vl-genelement-case x
+;;         :vl-genbase
+;;         (b* (((unless genp)
+;;               ;; Not inside a generate, don't do anything.
+;;               (mv (ok) (cons x newitems)))
+
+;;              ((when (mbe :logic (vl-portdecl-p x)
+;;                          :exec (eq (tag x) :vl-portdecl)))
+;;               ;; SystemVerilog-2012 27.2, page 749. "A generate may not
+;;               ;; contain port declarations."
+;;               (mv (fatal :type :vl-bad-portdecl
+;;                          :msg "~a0: port declarations are not allowed in generates."
+;;                          :args (list x))
+;;                   (cons x new-items)))
+
+;;              ((when (mbe :logic (vl-paramdecl-p x)
+;;                          :exec (eq (tag x) :vl-paramdecl)))
+;;               ;; SystemVerilog-2012 27.2, page 749.  "Parameters declared in
+;;               ;; generate blocks shall be treated as localparams."
+;;               (mv (ok)
+;;                   (if (vl-paramdecl->localp x)
+;;                       x
+;;                     (change-vl-paramdecl x
+;;                                          :localp t
+;;                                          ;; Attribute just for debugging.
+;;                                          :atts (cons (cons "VL_LOCALIZED_DUE_TO_GENERATE" nil)
+;;                                                      (vl-paramdecl->atts x))))))
+
+;;              ;; BOZO if support for specify blocks or specparam declarations
+;;              ;; is ever added, we will need to extend this to prohibit them
+;;              ;; per 27.2.  For now they're not implemented.
+;;              )
+
+;;           ;; If we get here, this is some other kind of module element.  There
+;;           ;; aren't any nested generates.  Just keep it.
+;;           (mv (ok) (cons x newitems)))
+
+;;         :vl-genblock
+;;         (if x.name
+;;             ;; Named begin/end block gets its own scope, so we don't want to
+;;             ;; get rid of it; just flatten the elements inside of it
+;;             ;; (independently of the current newitems).
+;;             (b* (((mv warnings newelems) (vl-genelementlist-flatten x.elems t nil warnings))
+;;                  (new-x                  (change-vl-genblock x :elems newelems)))
+;;               (mv (ok) (cons new-x newitems)))
+;;           ;; Unnamed begin/end block gets flattened into the current scope.
+;;           (vl-genelementlist-flatten x.elems t newitems warnings))
+
+;;         :vl-genloop
+;;         ;;
+
+
+
+
+
+
+;; (define vl-genelementlist-flatten
+
+;;   ((x         vl-genelementlist-p "Load items, may contain unnamed begin/end blocks.")
+;;    (gen-p     booleanp            "Are we currently within a generate block?")
+;;    (new-items vl-genelementlist-p "Accumulator for replacement items.")
+;;    (warnings  vl-warninglist-p))
+;;   :returns (mv (warnings vl-warninglist-p)
+;;                (new-x vl-genelementlist-p "Rewritten items."))
+;;   (b* ((x         (vl-genelementlist-fix x))
+;;        (new-items (vl-genelementlist-fix new-items))
+;;        ((when (atom x))
+;;         nil)
+;;        (x1 (car x)))
+
+
+
+
+
+
+;;                          (mv (fatal :type :vl-illegal-portdecl
+;;                                     :msg "~a0:
+;;                          ...) ;; fail, not allowed
+;;                         (:vl-paramdecl ...) ;; convert to localparam if needed
+;;                         (otherwise
+;;                          ;; There are no nested generates in here and it's
+;;                          ;; not any kind of element we have to do anything
+;;                          ;; with, so just keep it unmodified.
+;;                          (mv (ok) (cons x1 new-items)))))
+;;          (
+
+;;     (vl-genelement-case x
+;;       (:vl-genloop
+;;        (b* (((mv new-body warnings) (vl-convert-sub-generate-paramdecls
+
 
 
 (define vl-module-make-implicit-wires ((x  vl-module-p)
@@ -1354,4 +1563,3 @@ Our version of VCS says this isn't yet implemented.</li>
 ;;     ;; That's it, all done with the local scope.
 ;;     (fast-alist-free local-decls)
 ;;     warnings))
-
