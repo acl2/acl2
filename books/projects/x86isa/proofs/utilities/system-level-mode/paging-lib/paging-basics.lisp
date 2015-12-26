@@ -3,9 +3,9 @@
 
 (in-package "X86ISA")
 (include-book "../physical-memory-utils")
+(include-book "gl-lemmas")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "centaur/gl/gl" :dir :system))
 
 ;; ======================================================================
 
@@ -68,14 +68,6 @@
                  (ash-monotone-2
                   <-preserved-by-adding-<-*pseudo-page-size-in-bytes*-commuted
                   <-preserved-by-adding-<-*pseudo-page-size-in-bytes*))))
-
-(local
- (def-gl-thm 4K-aligned-physical-address-helper
-   :hyp (and (unsigned-byte-p 52 x)
-             (equal (loghead 12 x) 0))
-   :concl (equal (logand 18446744073709547520 x)
-                 x)
-   :g-bindings `((x (:g-number ,(gl-int 0 1 53))))))
 
 ;; ======================================================================
 
@@ -535,7 +527,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                 (not (equal n 5)))
            (equal (logbitp n (set-accessed-bit entry))
                   (logbitp n entry)))
-  :hints (("Goal" :in-theory (e/d* (set-accessed-bit)
+  :hints (("Goal" :in-theory (e/d* (set-accessed-bit not)
                                    ()))))
 
 (defthm logbitp-n-of-set-dirty-bit
@@ -544,7 +536,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                 (not (equal n 6)))
            (equal (logbitp n (set-dirty-bit entry))
                   (logbitp n entry)))
-  :hints (("Goal" :in-theory (e/d* (set-dirty-bit)
+  :hints (("Goal" :in-theory (e/d* (set-dirty-bit not)
                                    ()))))
 
 (defthm logbitp-n-of-set-dirty-and-accessed-bits
@@ -555,7 +547,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
            (equal (logbitp n (set-dirty-bit (set-accessed-bit entry)))
                   (logbitp n entry)))
   :hints (("Goal" :in-theory (e/d* (set-dirty-bit
-                                    set-accessed-bit)
+                                    set-accessed-bit
+                                    not)
                                    ()))))
 
 (defthm logtail-n-of-set-accessed-bit
@@ -643,24 +636,6 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
   (equal (dirty-bit (set-accessed-bit e))
          (dirty-bit e))
   :hints (("Goal" :in-theory (e/d* (dirty-bit set-accessed-bit) ()))))
-
-(def-gl-export nests-of-set-accessed-bit
-  :hyp (unsigned-byte-p 64 e)
-  :concl (equal (set-accessed-bit (set-accessed-bit e))
-                (set-accessed-bit e))
-  :g-bindings `((e (:g-number ,(gl-int 0 1 65)))))
-
-(def-gl-export nests-of-set-dirty-bit
-  :hyp (unsigned-byte-p 64 e)
-  :concl (equal (set-dirty-bit (set-dirty-bit e))
-                (set-dirty-bit e))
-  :g-bindings `((e (:g-number ,(gl-int 0 1 65)))))
-
-(def-gl-export pull-out-set-dirty-bit
-  :hyp (unsigned-byte-p 64 e)
-  :concl (equal (set-accessed-bit (set-dirty-bit e))
-                (set-dirty-bit (set-accessed-bit e)))
-  :g-bindings `((e (:g-number ,(gl-int 0 1 65)))))
 
 (defthm page-size-set-accessed-bit
   (equal (page-size (set-accessed-bit e))

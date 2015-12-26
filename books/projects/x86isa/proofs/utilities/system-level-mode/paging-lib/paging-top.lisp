@@ -157,12 +157,11 @@
                             (physical-address-p
                              page-table-entry-addr-found-p-and-xlate-equiv-x86s
                              xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
-                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr
                              xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-directory-base-addr-address
-                             xlate-equiv-x86s-and-page-directory-base-addr-error
+                             xlate-equiv-x86s-and-page-directory-base-addr
                              xlate-equiv-x86s-and-page-directory-entry-addr-address
-                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              bitops::logand-with-negated-bitmask)))))
 
@@ -181,12 +180,11 @@
                             (physical-address-p
                              page-directory-entry-addr-found-p-and-xlate-equiv-x86s
                              xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
-                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr
                              xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-directory-base-addr-address
-                             xlate-equiv-x86s-and-page-directory-base-addr-error
+                             xlate-equiv-x86s-and-page-directory-base-addr
                              xlate-equiv-x86s-and-page-directory-entry-addr-address
-                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              bitops::logand-with-negated-bitmask)))))
 
@@ -205,11 +203,10 @@
                             (physical-address-p
                              page-dir-ptr-table-entry-addr-found-p-and-xlate-equiv-x86s
                              xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
-                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr
                              xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
                              xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              bitops::logand-with-negated-bitmask)))))
 
@@ -228,11 +225,10 @@
                             (physical-address-p
                              pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
                              xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
-                             xlate-equiv-x86s-and-pml4-table-base-addr-address
+                             xlate-equiv-x86s-and-pml4-table-base-addr
                              xlate-equiv-x86s-and-pml4-table-entry-addr-address
-                             xlate-equiv-x86s-and-pml4-table-base-addr-address
                              xlate-equiv-x86s-and-pml4-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              bitops::logand-with-negated-bitmask)))))
 

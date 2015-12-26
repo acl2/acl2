@@ -72,14 +72,14 @@
                              page-fault-exception)
                             (xlate-equiv-x86s
                              xlate-equiv-x86s-and-pml4-table-entry-addr-value
-                             xlate-equiv-x86s-and-pml4-table-base-addr-address
+                             xlate-equiv-x86s-and-pml4-table-base-addr
                              xlate-equiv-x86s-and-pml4-table-entry-addr-address
                              pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
                              bitops::logand-with-negated-bitmask
                              bitops::logior-equal-0
                              not))
            :use ((:instance xlate-equiv-x86s-and-pml4-table-entry-addr-value)
-                 (:instance xlate-equiv-x86s-and-pml4-table-base-addr-address)
+                 (:instance xlate-equiv-x86s-and-pml4-table-base-addr)
                  (:instance pml4-table-entry-addr-found-p-and-xlate-equiv-x86s)
                  (:instance pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
                             (x86-1 x86-2)
@@ -191,9 +191,9 @@
                               page-table-entry-addr-found-p-and-xlate-equiv-x86s
                               ia32e-la-to-pa-PT-with-xlate-equiv-x86s
                               xlate-equiv-x86s-and-pml4-table-entry-addr-value
-                              xlate-equiv-x86s-and-pml4-table-base-addr-address
+                              xlate-equiv-x86s-and-pml4-table-base-addr
                               xlate-equiv-x86s-and-pml4-table-entry-addr-address
-                              xlate-equiv-x86s-and-page-table-base-addr-address
+                              xlate-equiv-x86s-and-page-table-base-addr
                               pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
                               bitops::logand-with-negated-bitmask
                               unsigned-byte-p
@@ -226,7 +226,7 @@
                                    (mv-nth 1 (pml4-table-base-addr x86-2)))
                                   x86-2)))
                   (:instance xlate-equiv-x86s-and-pml4-table-entry-addr-value)
-                  (:instance xlate-equiv-x86s-and-pml4-table-base-addr-address)
+                  (:instance xlate-equiv-x86s-and-pml4-table-base-addr)
                   (:instance pml4-table-entry-addr-found-p-and-xlate-equiv-x86s)
                   (:instance pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
                              (x86-1 x86-2)
@@ -290,7 +290,7 @@
                             (bitops::logand-with-negated-bitmask
                              entry-found-p-and-good-paging-structures-x86p
                              xlate-equiv-x86s-and-page-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr
                              no-duplicates-list-p
                              gather-all-paging-structure-qword-addresses-wm-low-64-different-x86)))))
 
@@ -394,12 +394,11 @@
                             (physical-address-p
                              page-table-entry-addr-found-p-and-xlate-equiv-x86s
                              xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
-                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr
                              xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-directory-base-addr-address
-                             xlate-equiv-x86s-and-page-directory-base-addr-error
+                             xlate-equiv-x86s-and-page-directory-base-addr
                              xlate-equiv-x86s-and-page-directory-entry-addr-address
-                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              bitops::logand-with-negated-bitmask)))))
 
@@ -431,12 +430,11 @@
                             (physical-address-p
                              page-directory-entry-addr-found-p-and-xlate-equiv-x86s
                              xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
-                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr
                              xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-directory-base-addr-address
-                             xlate-equiv-x86s-and-page-directory-base-addr-error
+                             xlate-equiv-x86s-and-page-directory-base-addr
                              xlate-equiv-x86s-and-page-directory-entry-addr-address
-                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              bitops::logand-with-negated-bitmask)))))
 
@@ -468,11 +466,11 @@
                             (physical-address-p
                              page-dir-ptr-table-entry-addr-found-p-and-xlate-equiv-x86s
                              xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
-                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr
                              xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
+                             xlate-equiv-x86s-and-page-dir-ptr-table-base-addr
                              xlate-equiv-x86s-and-page-dir-ptr-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              bitops::logand-with-negated-bitmask)))))
 
@@ -504,11 +502,10 @@
                             (physical-address-p
                              pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
                              xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
-                             xlate-equiv-x86s-and-pml4-table-base-addr-address
+                             xlate-equiv-x86s-and-pml4-table-base-addr
                              xlate-equiv-x86s-and-pml4-table-entry-addr-address
-                             xlate-equiv-x86s-and-pml4-table-base-addr-address
                              xlate-equiv-x86s-and-pml4-table-entry-addr-address
-                             xlate-equiv-x86s-and-page-table-base-addr-address
+                             xlate-equiv-x86s-and-page-table-base-addr
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              bitops::logand-with-negated-bitmask)))))
 

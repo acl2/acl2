@@ -5,18 +5,10 @@
 
 (include-book "gather-paging-structures" :ttags :all)
 (include-book "clause-processors/find-subterms" :dir :system)
+(include-book "gl-lemmas")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
-(local (include-book "centaur/gl/gl" :dir :system))
-
-(local
- (def-gl-thm 4K-aligned-physical-address-helper
-   :hyp (and (unsigned-byte-p 52 x)
-             (equal (loghead 12 x) 0))
-   :concl (equal (logand 18446744073709547520 x)
-                 x)
-   :g-bindings `((x (:g-number ,(gl-int 0 1 53))))))
 
 (local (in-theory (e/d* () (signed-byte-p unsigned-byte-p))))
 
@@ -65,12 +57,14 @@ function. We intend to use these functions only for reasoning.</p>" )
              (equal (superior-entry-points-to-an-inferior-one-p addr (xw fld index val x86))
                     (superior-entry-points-to-an-inferior-one-p addr x86)))))
 
+;; ----------------------------------------------------------------------
+
 (define pml4-table-base-addr (x86)
   (if (good-paging-structures-x86p x86)
       (b* ((cr3 (ctri *cr3* x86))
            ;; PML4 Table:
            (pml4-base-addr (ash (cr3-slice :cr3-pdb cr3) 12)))
-          (mv nil pml4-base-addr))
+        (mv nil pml4-base-addr))
     (mv t 0))
 
   ///
@@ -110,11 +104,28 @@ function. We intend to use these functions only for reasoning.</p>" )
              (equal (mv-nth 1 (pml4-table-base-addr (xw fld index val x86)))
                     (mv-nth 1 (pml4-table-base-addr x86))))))
 
+(define pml4-table-entry-addr-found-p (lin-addr x86)
+  :non-executable t
+  :enabled t
+  (and (canonical-address-p lin-addr)
+       (physical-address-p (+ (ash 512 3) (mv-nth 1 (pml4-table-base-addr x86))))
+       (good-paging-structures-x86p x86))
+  ///
+  (defthm pml4-table-entry-addr-found-p-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (pml4-table-entry-addr-found-p lin-addr (xw fld index val x86))
+                    (pml4-table-entry-addr-found-p lin-addr x86)))))
+
+;; ----------------------------------------------------------------------
+
 (define page-dir-ptr-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    (x86))
 
-  (if (good-paging-structures-x86p x86)
+  (if (pml4-table-entry-addr-found-p lin-addr x86)
       (b* ( ;; PML4 Table:
            ((mv & pml4-base-addr)
             (pml4-table-base-addr x86))
@@ -164,11 +175,43 @@ function. We intend to use these functions only for reasoning.</p>" )
                     (page-dir-ptr-table-base-addr lin-addr x86)))
     :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ())))))
 
+(define page-dir-ptr-table-entry-addr-found-p
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   x86)
+  :non-executable t
+  :enabled t
+  (and (pml4-table-entry-addr-found-p lin-addr x86)
+       (superior-entry-points-to-an-inferior-one-p
+        (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86)))
+        x86)
+       (x86p x86))
+  ///
+  (defthm page-dir-ptr-table-entry-addr-found-p-implies-pml4-table-entry-addr-found-p
+    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+             (pml4-table-entry-addr-found-p lin-addr x86)))
+
+  (defthm page-dir-ptr-table-entry-addr-found-p-and-page-dir-ptr-table-base-addr-no-error
+    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+             (not (mv-nth 0 (page-dir-ptr-table-base-addr lin-addr x86))))
+    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ()))))
+
+  (defthm page-dir-ptr-table-entry-addr-found-p-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (page-dir-ptr-table-entry-addr-found-p lin-addr (xw fld index val x86))
+                    (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
+    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p)
+                                     ())))))
+
+;; ----------------------------------------------------------------------
+
 (define page-directory-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    (x86))
 
-  (if (good-paging-structures-x86p x86)
+  (if (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
       (b* ( ;; Page-Directory Directory Pointer Table:
            ((mv & ptr-table-base-addr)
             (page-dir-ptr-table-base-addr lin-addr x86))
@@ -226,11 +269,42 @@ function. We intend to use these functions only for reasoning.</p>" )
                     (page-directory-base-addr lin-addr x86)))
     :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ())))))
 
+(define page-directory-entry-addr-found-p
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   x86)
+  :non-executable t
+  :enabled t
+  (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+       (superior-entry-points-to-an-inferior-one-p
+        (page-dir-ptr-table-entry-addr lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+        x86))
+  ///
+  (defthm page-directory-entry-addr-found-p-implies-page-dir-ptr-table-entry-addr-found-p
+    (implies (page-directory-entry-addr-found-p lin-addr x86)
+             (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
+
+  (defthm page-directory-entry-addr-found-p-and-page-directory-base-addr-no-error
+    (implies (page-directory-entry-addr-found-p lin-addr x86)
+             (not (mv-nth 0 (page-directory-base-addr lin-addr x86))))
+    :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ()))))
+
+  (defthm page-directory-entry-addr-found-p-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (x86p x86)
+                  (x86p (xw fld index val x86)))
+             (equal (page-directory-entry-addr-found-p lin-addr (xw fld index val x86))
+                    (page-directory-entry-addr-found-p lin-addr x86)))
+    :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr-found-p)
+                                     ())))))
+
+;; ----------------------------------------------------------------------
+
 (define page-table-base-addr
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    (x86))
 
-  (if (good-paging-structures-x86p x86)
+  (if (page-directory-entry-addr-found-p lin-addr x86)
       (b* ( ;; Page Directory:
            ((mv flg page-directory-base-addr)
             (page-directory-base-addr lin-addr x86))
@@ -288,84 +362,6 @@ function. We intend to use these functions only for reasoning.</p>" )
                     (page-table-base-addr lin-addr x86)))
     :hints (("Goal" :in-theory (e/d* (page-table-base-addr) ())))))
 
-;; ======================================================================
-
-;;  Conditions for finding an entry of a paging data structure:
-
-(define pml4-table-entry-addr-found-p (lin-addr x86)
-  :non-executable t
-  :enabled t
-  (and (canonical-address-p lin-addr)
-       (physical-address-p (+ (ash 512 3) (mv-nth 1 (pml4-table-base-addr x86))))
-       (good-paging-structures-x86p x86))
-  ///
-  (defthm pml4-table-entry-addr-found-p-and-xw
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :ctr))
-                  (x86p x86)
-                  (x86p (xw fld index val x86)))
-             (equal (pml4-table-entry-addr-found-p lin-addr (xw fld index val x86))
-                    (pml4-table-entry-addr-found-p lin-addr x86)))))
-
-(define page-dir-ptr-table-entry-addr-found-p
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   x86)
-  :non-executable t
-  :enabled t
-  (and (pml4-table-entry-addr-found-p lin-addr x86)
-       (superior-entry-points-to-an-inferior-one-p
-        (pml4-table-entry-addr lin-addr (mv-nth 1 (pml4-table-base-addr x86)))
-        x86)
-       (x86p x86))
-  ///
-  (defthm page-dir-ptr-table-entry-addr-found-p-implies-pml4-table-entry-addr-found-p
-    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-             (pml4-table-entry-addr-found-p lin-addr x86)))
-
-  (defthm page-dir-ptr-table-entry-addr-found-p-and-page-dir-ptr-table-base-addr-no-error
-    (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-             (not (mv-nth 0 (page-dir-ptr-table-base-addr lin-addr x86))))
-    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-base-addr) ()))))
-
-  (defthm page-dir-ptr-table-entry-addr-found-p-and-xw
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :ctr))
-                  (x86p x86)
-                  (x86p (xw fld index val x86)))
-             (equal (page-dir-ptr-table-entry-addr-found-p lin-addr (xw fld index val x86))
-                    (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
-    :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr-found-p)
-                                     ())))))
-
-(define page-directory-entry-addr-found-p
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   x86)
-  :non-executable t
-  :enabled t
-  (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-       (superior-entry-points-to-an-inferior-one-p
-        (page-dir-ptr-table-entry-addr lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
-        x86))
-  ///
-  (defthm page-directory-entry-addr-found-p-implies-page-dir-ptr-table-entry-addr-found-p
-    (implies (page-directory-entry-addr-found-p lin-addr x86)
-             (page-dir-ptr-table-entry-addr-found-p lin-addr x86)))
-
-  (defthm page-directory-entry-addr-found-p-and-page-directory-base-addr-no-error
-    (implies (page-directory-entry-addr-found-p lin-addr x86)
-             (not (mv-nth 0 (page-directory-base-addr lin-addr x86))))
-    :hints (("Goal" :in-theory (e/d* (page-directory-base-addr) ()))))
-
-  (defthm page-directory-entry-addr-found-p-and-xw
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :ctr))
-                  (x86p x86)
-                  (x86p (xw fld index val x86)))
-             (equal (page-directory-entry-addr-found-p lin-addr (xw fld index val x86))
-                    (page-directory-entry-addr-found-p lin-addr x86)))
-    :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr-found-p)
-                                     ())))))
-
 (define page-table-entry-addr-found-p
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    x86)
@@ -396,6 +392,8 @@ function. We intend to use these functions only for reasoning.</p>" )
     :hints (("Goal" :in-theory (e/d* (page-table-entry-addr-found-p)
                                      ())))))
 
+;; ----------------------------------------------------------------------
+
 (define paging-entries-found-p
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    x86)
@@ -410,16 +408,16 @@ function. We intend to use these functions only for reasoning.</p>" )
          (page-directory-entry-addr lin-addr PD-base-addr))
         (PD-entry
          (rm-low-64 PD-entry-addr x86)))
-       (and (page-directory-entry-addr-found-p lin-addr x86)
-            (equal (page-size PD-entry) 1)))
+     (and (page-directory-entry-addr-found-p lin-addr x86)
+          (equal (page-size PD-entry) 1)))
    ;; 1 GB Pages
    (b* ((PDPT-base-addr
          (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
         (PDPT-entry-addr
          (page-dir-ptr-table-entry-addr lin-addr PDPT-base-addr))
         (PDPT-entry (rm-low-64 PDPT-entry-addr x86)))
-       (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
-            (equal (page-size PDPT-entry) 1)))))
+     (and (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
+          (equal (page-size PDPT-entry) 1)))))
 
 (defun find-binding-from-entry-found-p-aux (var calls)
   (if (endp calls)
@@ -430,8 +428,8 @@ function. We intend to use these functions only for reasoning.</p>" )
                     (if (equal var 'x86)
                         (third call)
                       nil))))
-        (append `((,var . ,var-val))
-                (find-binding-from-entry-found-p-aux var (cdr calls))))))
+      (append `((,var . ,var-val))
+              (find-binding-from-entry-found-p-aux var (cdr calls))))))
 
 (defun find-binding-from-entry-found-p (var mfc state)
   (declare (xargs :stobjs (state) :mode :program)
@@ -443,7 +441,7 @@ function. We intend to use these functions only for reasoning.</p>" )
                  pml4-table-entry-addr-found-p
                  paging-entries-found-p)
                (acl2::mfc-clause mfc))))
-      (find-binding-from-entry-found-p-aux var calls)))
+    (find-binding-from-entry-found-p-aux var calls)))
 
 (defthmd entry-found-p-and-lin-addr
   (implies (and (bind-free (find-binding-from-entry-found-p 'x86 mfc state) (x86))
@@ -1259,157 +1257,5 @@ function. We intend to use these functions only for reasoning.</p>" )
     :hints (("Goal" :in-theory (e/d* (ia32e-entries-found-la-to-pa)
                                      (bitops::logand-with-negated-bitmask
                                       force (force)))))))
-
-;; ======================================================================
-
-;; Memory accessor and updater functions defined using
-;; ia32e-entries-found-la-to-pa instead of ia32e-la-to-pa:
-
-(define rm08-mapped
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-w-x    :type (member  :r :w :x))
-   (x86))
-
-  :guard (not (programmer-level-mode x86))
-  :non-executable t
-
-  (if (programmer-level-mode x86)
-
-      (mv t 0 x86)
-
-    (b* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-         (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
-         ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
-          (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86))
-         ((when flag)
-          (mv flag 0 x86))
-         (byte (the (unsigned-byte 8) (memi p-addr x86))))
-      (mv nil byte x86)))
-
-  ///
-
-  (defthmd rm08-and-rm08-mapped
-    (implies (and (paging-entries-found-p lin-addr x86)
-                  (not (programmer-level-mode x86)))
-             (equal (rm08        lin-addr r-w-x x86)
-                    (rm08-mapped lin-addr r-w-x x86)))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-                                      rm08)
-                                     ()))))
-
-  (defthm-usb n08p-mv-nth-1-rm08-mapped
-    :hyp (and (signed-byte-p *max-linear-address-size* lin-addr)
-              (x86p x86))
-    :bound 8
-    :concl (mv-nth 1 (rm08-mapped lin-addr r-w-x x86))
-    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
-    ;; If the hyps in the :type-prescription corollary aren't forced,
-    ;; we run into natp vs integerp/<= 0.. problems.
-    :hyp-t (forced-and (integerp lin-addr)
-                       (x86p x86))
-    :gen-type t)
-
-  (defthm x86p-rm08-mapped
-    (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm08-mapped lin-addr r-w-x x86))))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defthm rm08-mapped-value-when-error
-    (implies (mv-nth 0 (rm08-mapped addr :x x86))
-             (equal (mv-nth 1 (rm08-mapped addr :x x86)) 0))
-    :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
-
-  (defthm xr-rm08-mapped-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (rm08-mapped addr r-w-x x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-  (defthm rm08-mapped-xw-system-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (paging-entries-found-p addr x86)
-                  (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :ctr))
-                  (not (equal fld :msr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :programmer-level-mode))
-                  (x86p x86)
-                  (x86p (xw fld index value x86)))
-             (and (equal (mv-nth 0 (rm08-mapped addr r-w-x (xw fld index value x86)))
-                         (mv-nth 0 (rm08-mapped addr r-w-x x86)))
-                  (equal (mv-nth 1 (rm08-mapped addr r-w-x (xw fld index value x86)))
-                         (mv-nth 1 (rm08-mapped addr r-w-x x86)))
-                  (equal (mv-nth 2 (rm08-mapped addr r-w-x (xw fld index value x86)))
-                         (xw fld index value (mv-nth 2 (rm08-mapped addr r-w-x x86))))))))
-
-(define wm08-mapped
-  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-   (val      :type (unsigned-byte 8))
-   (x86))
-
-  :guard (not (programmer-level-mode x86))
-  :non-executable t
-
-  (if (programmer-level-mode x86)
-      ;; Use this function only in the system-level mode.
-      (mv t x86)
-
-    (b* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-         (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
-         ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
-          (ia32e-entries-found-la-to-pa lin-addr :w cpl x86))
-         ((when flag)
-          (mv flag x86))
-         (byte (mbe :logic (n08 val)
-                    :exec val))
-         (x86 (!memi p-addr byte x86)))
-      (mv nil x86)))
-
-  ///
-
-  (defthmd wm08-and-wm08-mapped
-    (implies (and (paging-entries-found-p lin-addr x86)
-                  (not (programmer-level-mode x86)))
-             (equal (wm08        lin-addr val x86)
-                    (wm08-mapped lin-addr val x86)))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-                                      wm08)
-                                     ()))))
-
-  (defthm x86p-wm08-mapped
-    (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm08-mapped lin-addr val x86))))
-    :hints (("Goal" :in-theory (e/d () (force (force)))))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defthm xr-wm08-mapped-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 1 (wm08-mapped addr val x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-  (defthm wm08-mapped-xw-system-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (paging-entries-found-p addr x86)
-                  (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :ctr))
-                  (not (equal fld :msr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :programmer-level-mode))
-                  (x86p x86)
-                  (x86p (xw fld index value x86)))
-             (and (equal (mv-nth 0 (wm08-mapped addr val (xw fld index value x86)))
-                         (mv-nth 0 (wm08-mapped addr val x86)))
-                  (equal (mv-nth 1 (wm08-mapped addr val (xw fld index value x86)))
-                         (xw fld index value (mv-nth 1 (wm08-mapped addr val x86))))))
-    :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
 ;; ======================================================================
