@@ -1300,8 +1300,10 @@
         ;; 2MB page
         (b* (
              ;; Get accessed and dirty bits:
-             (accessed        (ia32e-pde-2MB-page-slice :pde-a entry))
-             (dirty           (ia32e-pde-2MB-page-slice :pde-d entry))
+             (accessed        (mbe :logic (accessed-bit entry)
+                                   :exec (ia32e-pde-2MB-page-slice :pde-a entry)))
+             (dirty           (mbe :logic (dirty-bit entry)
+                                   :exec (ia32e-pde-2MB-page-slice :pde-d entry)))
 
              ;; Compute accessed and dirty bits:
              (entry (if (equal accessed 0)
@@ -1511,8 +1513,10 @@
           ;; 1GB page
           (b* (
                ;; Get accessed and dirty bits:
-               (accessed        (ia32e-pdpte-1GB-page-slice :pdpte-a entry))
-               (dirty           (ia32e-pdpte-1GB-page-slice :pdpte-d entry))
+               (accessed        (mbe :logic (accessed-bit entry)
+                                     :exec (ia32e-pdpte-1GB-page-slice :pdpte-a entry)))
+               (dirty           (mbe :logic (dirty-bit entry)
+                                     :exec (ia32e-pdpte-1GB-page-slice :pdpte-d entry)))
                ;; Compute accessed and dirty bits:
                (entry (if (equal accessed 0)
                           (mbe :logic (set-accessed-bit entry)

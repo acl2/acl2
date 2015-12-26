@@ -624,7 +624,7 @@ function. We intend to use these functions only for reasoning.</p>" )
 
                ;; Get accessed bit.  Dirty bit is ignored when PDE
                ;; references the PT.
-               (accessed        (ia32e-page-tables-slice :a entry))
+               (accessed        (accessed-bit entry))
                ;; Update accessed bit, if needed.
                (entry (if (equal accessed 0)
                           (set-accessed-bit entry)
@@ -785,7 +785,7 @@ function. We intend to use these functions only for reasoning.</p>" )
 
                ;; Get accessed bit.  Dirty bit is ignored when PDE
                ;; references the PT.
-               (accessed        (ia32e-page-tables-slice :a entry))
+               (accessed        (accessed-bit entry))
                ;; Update accessed bit, if needed.
                (entry (if (equal accessed 0)
                           (set-accessed-bit entry)
@@ -976,7 +976,7 @@ function. We intend to use these functions only for reasoning.</p>" )
            ((when flag)
             (mv flag 0 x86))
 
-           (accessed (ia32e-page-tables-slice :a entry))
+           (accessed (accessed-bit entry))
            (entry (if (equal accessed 0)
                       (set-accessed-bit entry)
                     entry))

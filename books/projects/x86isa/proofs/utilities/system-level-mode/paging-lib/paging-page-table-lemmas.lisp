@@ -189,7 +189,8 @@
   :hints (("Goal"
            :in-theory (e/d* (ia32e-la-to-pa-PT
                              ia32e-la-to-pa-page-table)
-                            (xlate-equiv-x86s
+                            (pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
+                             xlate-equiv-x86s
                              xlate-equiv-x86s-and-page-table-entry-addr-value
                              xlate-equiv-x86s-and-page-table-base-addr-address
                              xlate-equiv-x86s-and-page-table-entry-addr-address
@@ -268,6 +269,7 @@
            :in-theory (e/d* (ia32e-la-to-pa-page-table
                              good-paging-structures-x86p)
                             (bitops::logand-with-negated-bitmask
+                             not
                              xlate-equiv-x86s-and-page-table-entry-addr-address
                              xlate-equiv-x86s-and-page-table-base-addr-address
                              entry-found-p-and-good-paging-structures-x86p

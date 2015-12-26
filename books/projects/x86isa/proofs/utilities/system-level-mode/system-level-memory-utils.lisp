@@ -19,9 +19,24 @@
 (local (xdoc::set-default-parents system-level-memory-utils))
 
 (local (in-theory (e/d* (entry-found-p-and-good-paging-structures-x86p
-                         entry-found-p-and-lin-addr)
+                         entry-found-p-and-lin-addr
+                         ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
                         (signed-byte-p
                          unsigned-byte-p))))
+
+;; ======================================================================
+
+(local
+ (defthm cpl-unaffected-by-rm08
+   (equal (xr :seg-visible 1 (mv-nth 2 (rm08 lin-addr r-w-x x86)))
+          (xr :seg-visible 1 x86))
+   :hints (("Goal" :in-theory (e/d* (rm08) (force (force)))))))
+
+(local
+ (defthm cpl-unaffected-by-wm08
+   (equal (xr :seg-visible 1 (mv-nth 1 (wm08 addr byte x86)))
+          (xr :seg-visible 1 x86))
+   :hints (("Goal" :in-theory (e/d* (wm08) (force (force)))))))
 
 ;; ======================================================================
 
@@ -87,16 +102,14 @@
     (implies (and (paging-entries-found-p lin-addr-1 x86)
                   (paging-entries-found-p lin-addr-2 x86))
              (paging-entries-found-p lin-addr-1 (mv-nth 2 (rm08 lin-addr-2 r-w-x x86))))
-    :hints (("Goal" :in-theory (e/d* (rm08
-                                      ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+    :hints (("Goal" :in-theory (e/d* (rm08)
                                      ()))))
 
   (defthm all-paging-entries-found-p-after-rm08
     (implies (and (all-paging-entries-found-p l-addrs x86)
                   (paging-entries-found-p lin-addr-2 x86))
              (all-paging-entries-found-p l-addrs (mv-nth 2 (rm08 lin-addr-2 r-w-x x86))))
-    :hints (("Goal" :in-theory (e/d* (rm08
-                                      ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+    :hints (("Goal" :in-theory (e/d* (rm08)
                                      ()))))
 
   (local
@@ -323,17 +336,18 @@
 
 ;; ======================================================================
 
-;; Lemmas about rb in system-level mode:
+;; Lemmas about rb in the system-level mode:
 
-(defthm rm08-returns-no-error-in-system-level-mode
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (paging-entries-found-p lin-addr x86)
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
-           (equal (mv-nth 0 (rm08 lin-addr r-w-x x86)) nil))
-  :hints (("Goal"
-           :in-theory (e/d* (rm08
-                             ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
-                            ()))))
+(local
+ (defthm rm08-returns-no-error-in-system-level-mode
+   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                 (paging-entries-found-p lin-addr x86)
+                 (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
+            (equal (mv-nth 0 (rm08 lin-addr r-w-x x86)) nil))
+   :hints (("Goal"
+            :in-theory (e/d* (rm08
+                              ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+                             ())))))
 
 (local
  (defthm rb-1-returns-no-error-in-system-level-mode
@@ -378,36 +392,209 @@
 
 ;; Lemmas about wb in system-level mode:
 
-(defthm wm08-returns-no-error-in-system-level-mode
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (paging-entries-found-p lin-addr x86)
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr :w cpl x86))))
-           (equal (mv-nth 0 (wm08 lin-addr val x86)) nil))
-  :hints (("Goal"
-           :in-theory (e/d* (wm08
-                             ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
-                            ()))))
+(local
+ (defthm wm08-returns-no-error-in-system-level-mode
+   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                 (paging-entries-found-p lin-addr x86)
+                 (not (mv-nth 0 (ia32e-la-to-pa lin-addr :w cpl x86))))
+            (equal (mv-nth 0 (wm08 lin-addr val x86)) nil))
+   :hints (("Goal"
+            :in-theory (e/d* (wm08
+                              ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+                             ())))))
 
-(defthm wm08-xw-mem-returns-no-error-in-system-level-mode
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (paging-entries-found-p lin-addr x86)
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr :w cpl x86)))
-                (pairwise-disjoint-p-aux
-                 (list index)
-                 (open-qword-paddr-list-list
-                  (gather-all-paging-structure-qword-addresses x86)))
-                (physical-address-p index)
-                (unsigned-byte-p 8 val))
-           (equal (mv-nth 0 (wm08 lin-addr val (xw :mem index val x86)))
-                  nil))
-  :hints (("Goal"
-           :in-theory (e/d* (wm08
-                             ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
-                            ()))))
+(local
+ (defthm wm08-xw-mem-returns-no-error-in-system-level-mode
+   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                 (paging-entries-found-p lin-addr x86)
+                 (not (mv-nth 0 (ia32e-la-to-pa lin-addr :w cpl x86)))
+                 (pairwise-disjoint-p-aux
+                  (list index)
+                  (open-qword-paddr-list-list
+                   (gather-all-paging-structure-qword-addresses x86)))
+                 (physical-address-p index)
+                 (unsigned-byte-p 8 val))
+            (equal (mv-nth 0 (wm08 lin-addr val (xw :mem index val x86)))
+                   nil))
+   :hints (("Goal"
+            :in-theory (e/d* (wm08
+                              ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+                             ())))))
+
+(local
+ (defthm wm08-wm08-returns-no-error-in-system-level-mode
+   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                 (paging-entries-found-p lin-addr-1 x86)
+                 (paging-entries-found-p lin-addr-2 x86)
+                 (not (mv-nth 0 (ia32e-entries-found-la-to-pa lin-addr-1 :w cpl x86)))
+                 (pairwise-disjoint-p-aux
+                  (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr-2 :w cpl x86)))
+                  (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86))))
+            (equal (mv-nth 0 (wm08 lin-addr-1 val-1 (mv-nth 1 (wm08 lin-addr-2 val-2 x86))))
+                   nil))
+   :hints (("Goal"
+            :in-theory (e/d* (wm08
+                              ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+                             ())))))
+
+;; (i-am-here)
+
+;; To prove wm08-wm08-commute-in-system-level-mode:
+
+;; (acl2::why ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+;; (acl2::why PAGING-ENTRIES-FOUND-P-AND-XW-MEM-DISJOINT-FROM-PAGING-STRUCTURES)
+
+;; (DEFTHM
+;;   IA32E-ENTRIES-FOUND-LA-TO-PA-XW-MEM-DISJOINT-FROM-PAGING-STRUCTURES-STATE-new
+;;   (IMPLIES
+;;    (AND
+;;     (PAGING-ENTRIES-FOUND-P LIN-ADDR X86)
+;;     (PAIRWISE-DISJOINT-P-AUX
+;;      (LIST INDEX)
+;;      (OPEN-QWORD-PADDR-LIST-LIST
+;;       (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+;;     (PHYSICAL-ADDRESS-P INDEX)
+;;     (UNSIGNED-BYTE-P 8 VAL))
+;;    (EQUAL
+;;     (MV-NTH 2
+;;             (IA32E-ENTRIES-FOUND-LA-TO-PA
+;;              LIN-ADDR
+;;              R-W-X CPL (XW :MEM INDEX VAL X86)))
+;;     (XW
+;;      :MEM INDEX VAL
+;;      (MV-NTH
+;;       2
+;;       (IA32E-ENTRIES-FOUND-LA-TO-PA LIN-ADDR R-W-X CPL X86))))))
+
+;; L.H.S.:
+;; (XW
+;;  :MEM
+;;  p-addr-1
+;;  val-1
+;;  (XW
+;;   :MEM
+;;   p-addr-2
+;;   val-2
+;;   (MV-NTH
+;;    2
+;;    (IA32E-ENTRIES-FOUND-LA-TO-PA
+;;     LIN-ADDR-1 r-w-x cpl
+;;     (MV-NTH 2 (IA32E-ENTRIES-FOUND-LA-TO-PA
+;;             LIN-ADDR-2 r-w-x cpl X86))))))
+;; R.H.S:
+;; (XW
+;;  :MEM
+;;  p-addr-2
+;;  val-2
+;;  (XW
+;;   :MEM
+;;   p-addr-1
+;;   val-1
+;;   (MV-NTH
+;;    2
+;;    (IA32E-ENTRIES-FOUND-LA-TO-PA
+;;     LIN-ADDR-2 r-w-x cpl
+;;     (MV-NTH
+;;      2 (IA32E-ENTRIES-FOUND-LA-TO-PA
+;;      LIN-ADDR-1 r-w-x cpl X86))))))
+
+;; Useful rule:
+;; (DEFTHM XW-XW-INTRA-FIELD-ARRANGE-WRITES
+;;   (IMPLIES (AND (MEMBER FLD *X86-ARRAY-FIELDS-AS-KEYWORDS*)
+;;              (NOT (EQUAL I1 I2)))
+;;         (EQUAL (XW FLD I2 V2 (XW FLD I1 V1 X86))
+;;                (XW FLD I1 V1 (XW FLD I2 V2 X86))))
+;;   :RULE-CLASSES ((:REWRITE :LOOP-STOPPER ((I2 I1)))))
+
+;; (local
+;;  (defthm wm08-wm08-commute-in-system-level-mode
+;;    (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                  (paging-entries-found-p lin-addr-1 x86)
+;;                  (paging-entries-found-p lin-addr-2 x86)
+;;                  (not (mv-nth 0 (ia32e-entries-found-la-to-pa lin-addr-1 :w cpl x86)))
+;;                  (not (mv-nth 0 (ia32e-entries-found-la-to-pa lin-addr-2 :w cpl x86)))
+;;                  (pairwise-disjoint-p-aux
+;;                   (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr-1 :w cpl x86)))
+;;                   (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
+;;                  (pairwise-disjoint-p-aux
+;;                   (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr-2 :w cpl x86)))
+;;                   (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
+;;                  (not (xr :programmer-level-mode 0 x86)))
+;;             (equal (mv-nth 1 (wm08 lin-addr-1 val-1 (mv-nth 1 (wm08 lin-addr-2 val-2 x86))))
+;;                    (mv-nth 1 (wm08 lin-addr-2 val-2 (mv-nth 1 (wm08 lin-addr-1 val-1 x86))))))
+;;    :hints (("Goal"
+;;             :in-theory (e/d* (wm08)
+;;                              (ia32e-entries-found-la-to-pa-xw-mem-disjoint-from-paging-structures-state))))))
 
 ;; (i-am-here)
 
 ;; (local (include-book "std/lists/nthcdr" :dir :system))
+
+;; (defun-nx wb-induct-scheme (l-addrs bytes x86)
+;;   (if (or (endp l-addrs)
+;;           (endp bytes))
+;;       x86
+;;     (b* ((x86     (mv-nth 1 (wm08 (car l-addrs) (car bytes) x86)))
+;;          (l-addrs (cdr l-addrs))
+;;          (bytes   (cdr bytes)))
+;;       (wb-induct-scheme l-addrs bytes x86))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;; To Prove:
+;; ;; (equal (mv-nth 0 (wb (create-addr-bytes-alist l-addrs bytes)
+;; ;;                      (mv-nth 1 (wm08 lin-addr val x86))))
+;; ;;       nil)
+
+;; ;; Assume:
+
+;; ;; (equal (mv-nth 0 (wb (create-addr-bytes-alist (cdr l-addrs) (cdr bytes))
+;; ;;                   (mv-nth 1 (wm08
+;; ;;                              lin-addr
+;; ;;                              val
+;; ;;                              (mv-nth 1 (wm08 (car l-addrs) (car bytes) x86))))))
+;; ;;        nil)
+
+;; ;; [
+;; ;;   x86    : (mv-nth 1 (wm08 (car l-addrs) (car bytes) x86))
+;; ;;   l-addrs: (cdr l-addrs)
+;; ;;   bytes  : (cdr bytes)
+;; ;; ]
+
+;; ;; ==>
+
+;; ;; (equal (mv-nth 0 (wb (create-addr-bytes-alist l-addrs bytes)
+;; ;;                   (mv-nth 1 (wm08 lin-addr val x86))))
+;; ;;        (mv-nth 0
+;; ;;             (wb (create-addr-bytes-alist (cdr l-addrs) (cdr bytes))
+;; ;;                 (mv-nth 1 (wm08 (car l-addrs) (car bytes)
+;; ;;                                 (mv-nth 1 (wm08 lin-addr val x86)))))))
+
+;; ;; Ugh, I need commutativity of wm08s. Ugh.
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (local
+;;  (defthm wb-wm08-returns-no-error-in-system-level-mode
+;;    (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                  (paging-entries-found-p lin-addr x86)
+;;                  (all-paging-entries-found-p l-addrs x86)
+;;                  (not (mv-nth 0 (ia32e-entries-found-la-to-pa lin-addr :w cpl x86)))
+;;                  (no-page-faults-during-translation-p l-addrs :w cpl x86)
+;;                  (pairwise-disjoint-p-aux
+;;                   (list (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr :w cpl x86)))
+;;                   (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
+;;                  (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl x86)
+;;                  (byte-listp bytes)
+;;                  (unsigned-byte-p 8 val))
+;;             (equal (mv-nth 0 (wb (create-addr-bytes-alist l-addrs bytes)
+;;                                  (mv-nth 1 (wm08 lin-addr val x86))))
+;;                    nil))
+;;    :hints (("Goal" :induct (wb-induct-scheme l-addrs bytes x86)
+;;             :hands-off (wm08)
+;;             :in-theory (e/d* ()
+;;                              ( ;; ia32e-entries-found-la-to-pa-xw-mem-disjoint-from-paging-structures-state
+;;                               ))))))
 
 ;; (defthm wb-returns-no-error-in-system-level-mode
 ;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
@@ -417,18 +604,14 @@
 ;;                 (byte-listp bytes)
 ;;                 (not (xr :programmer-level-mode 0 x86)))
 ;;            (equal (mv-nth 0 (wb (create-addr-bytes-alist l-addrs bytes) x86))
-;;                   nil))
-;;   :hints (("Goal"
-;;            :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-;;                              wm08)
-;;                             (ia32e-entries-found-la-to-pa-xw-mem-disjoint-from-paging-structures-state)))))
+;;                   nil)))
 
 ;; ======================================================================
 
 ;; Relating top-level memory accessors and updaters with rb and wb in
 ;; system-level mode:
 
-(defthm rb-and-rm08-in-the-system-level-mode
+(defthm rm08-to-rb-in-system-level-mode
   (implies (and (not (programmer-level-mode x86))
                 (paging-entries-found-p lin-addr x86))
            (equal (rm08 lin-addr r-x x86)
@@ -443,7 +626,7 @@
                             (signed-byte-p
                              unsigned-byte-p)))))
 
-(defthm wb-and-wm08-in-the-system-level-mode
+(defthm wm08-to-wb-in-system-level-mode
   (implies (and (not (programmer-level-mode x86))
                 (paging-entries-found-p lin-addr x86)
                 (unsigned-byte-p 8 byte))
@@ -459,9 +642,9 @@
                             (signed-byte-p
                              unsigned-byte-p)))))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
-(defthm rb-and-rm16-in-system-level-mode
+(defthm rm16-to-rb-in-system-level-mode
   (implies
    (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
         (equal l-addrs (create-canonical-address-list 2 lin-addr))
@@ -482,11 +665,11 @@
                              signed-byte-p
                              unsigned-byte-p
                              bitops::logior-equal-0
-                             rb-and-rm08-in-the-system-level-mode
+                             rm08-to-rb-in-system-level-mode
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
-(defthm wb-and-wm16-in-system-level-mode
+(defthm wm16-to-wb-in-system-level-mode
   (implies
    (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
         (equal l-addrs (create-canonical-address-list 2 lin-addr))
@@ -506,9 +689,10 @@
                             (signed-byte-p
                              unsigned-byte-p
                              bitops::logior-equal-0
-                             wb-and-wm08-in-the-system-level-mode
+                             wm08-to-wb-in-system-level-mode
                              (:meta acl2::mv-nth-cons-meta))))))
 
+;; ----------------------------------------------------------------------
 
 (local
  (def-gl-thm rm32-rb-system-level-mode-proof-helper
@@ -525,7 +709,7 @@
 
 (local (in-theory (e/d () (rm32-rb-system-level-mode-proof-helper))))
 
-(defthm rb-and-rm32-in-system-level-mode
+(defthm rm32-to-rb-in-system-level-mode
   (implies
    (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
         (equal l-addrs (create-canonical-address-list 4 lin-addr))
@@ -550,11 +734,11 @@
                             (signed-byte-p
                              unsigned-byte-p
                              bitops::logior-equal-0
-                             rb-and-rm08-in-the-system-level-mode
+                             rm08-to-rb-in-system-level-mode
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
-(defthm wb-and-wm32-in-system-level-mode
+(defthm wm32-to-wb-in-system-level-mode
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
                 (equal l-addrs (create-canonical-address-list 4 lin-addr))
                 (equal (len l-addrs) 4)
@@ -574,19 +758,19 @@
            :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
                              wm32
                              wm08
-                             byte-ify
-                             rm32-rb-system-level-mode-proof-helper)
+                             byte-ify)
                             (signed-byte-p
                              unsigned-byte-p
                              bitops::logior-equal-0
-                             wb-and-wm08-in-the-system-level-mode
+                             wm08-to-wb-in-system-level-mode
                              cons-equal
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
+;; ----------------------------------------------------------------------
 
 (local
- (def-gl-thm rb-and-rm64-in-system-level-mode-helper
+ (def-gl-thm rm64-to-rb-in-system-level-mode-helper
    :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
              (n08p e) (n08p f) (n08p g) (n08p h))
    :concl (equal
@@ -611,9 +795,9 @@
           (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8)))
    :rule-classes :linear))
 
-(local (in-theory (e/d () (rb-and-rm64-in-system-level-mode-helper))))
+(local (in-theory (e/d () (rm64-to-rb-in-system-level-mode-helper))))
 
-(defthmd rb-and-rm64-in-system-level-mode
+(defthmd rm64-to-rb-in-system-level-mode
   ;; Relies on open-create-canonical-address-list.
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
                 (equal l-addrs (create-canonical-address-list 8 lin-addr))
@@ -632,21 +816,55 @@
                             (count 8)
                             (end-addr (+ 7 lin-addr))))
            :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-                             rb-and-rm64-in-system-level-mode-helper
+                             rm64-to-rb-in-system-level-mode-helper
                              rm64
                              rm08)
                             (signed-byte-p
                              unsigned-byte-p
                              bitops::logior-equal-0
-                             rb-and-rm08-in-the-system-level-mode
+                             rm08-to-rb-in-system-level-mode
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
-;; ======================================================================
-
 ;; (i-am-here)
 
-(local (in-theory (e/d () (rb-and-rm08-in-the-system-level-mode))))
+;; (defthmd wm64-to-wb-in-system-level-mode
+;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                 (equal l-addrs (create-canonical-address-list 8 lin-addr))
+;;                 (equal (len l-addrs) 8)
+;;                 (all-paging-entries-found-p l-addrs x86)
+;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl x86)
+;;                 (no-page-faults-during-translation-p l-addrs :w cpl x86))
+;;            (equal (wm64 lin-addr qword x86)
+;;                   (b* (((mv flg x86)
+;;                         (wb (create-addr-bytes-alist l-addrs (byte-ify 8 qword))
+;;                             x86)))
+;;                     (mv flg x86))))
+;;   :hints (("Goal"
+;;            :use ((:instance create-canonical-address-list-end-addr-is-canonical
+;;                             (addr lin-addr)
+;;                             (count 8)
+;;                             (end-addr (+ 7 lin-addr))))
+;;            :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+;;                              wm64
+;;                              byte-ify)
+;;                             (signed-byte-p
+;;                              unsigned-byte-p
+;;                              bitops::logior-equal-0
+;;                              wm08-to-wb-in-system-level-mode
+;;                              wm32-to-wb-in-system-level-mode
+;;                              cons-equal
+;;                              (:meta acl2::mv-nth-cons-meta)
+;;                              force (force))))))
+
+;; ======================================================================
+
+(local (in-theory (e/d () (rm08-to-rb-in-system-level-mode
+                           wm08-to-wb-in-system-level-mode))))
+
+;; ======================================================================
+
+;; RB returns no error after another RB:
 
 (local
  (defthm rm08-returns-no-error-in-system-level-mode-after-rm08
@@ -719,9 +937,9 @@
 
 ;; ----------------------------------------------------------------------
 
-;; Page Traversal WoW Theorems:
+;; RB WoW Theorems:
 
-;; (defthm rm08-rm08-WoW-in-the-system-level-mode
+;; (defthm rm08-rm08-WoW-in-system-level-mode
 ;;   ;; Need similar WoW thms for paging traversal functions...
 ;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
 ;;                 ;; A hyp about physical addresses corresponding to
@@ -737,7 +955,43 @@
 ;;                              ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
 ;;                             ()))))
 
+
+;; (local
+;;  (defthm rb-1-rb-1-WoW-in-system-level-mode
+;;    (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                  (all-paging-entries-found-p l-addrs-1 x86)
+;;                  (all-paging-entries-found-p l-addrs-2 x86)
+;;                  (no-page-faults-during-translation-p l-addrs-1 r-w-x-1 cpl x86)
+;;                  (no-page-faults-during-translation-p l-addrs-2 r-w-x-2 cpl x86))
+;;             (equal (mv-nth 2 (rb-1 l-addrs-2 r-w-x-2 (mv-nth 2 (rb-1 l-addrs-1 r-w-x-1 x86 acc-1)) acc-2))
+;;                    (mv-nth 2 (rb-1 l-addrs-1 r-w-x-1 (mv-nth 2 (rb-1 l-addrs-2 r-w-x-2 x86 acc-2)) acc-1))))
+;;    :hints (("Goal" :induct (rb-1 l-addrs-2 r-w-x-2 x86 acc-2)
+;;             :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+;;                               rm08)
+;;                              (force
+;;                               (force)
+;;                               all-paging-entries-found-p
+;;                               no-page-faults-during-translation-p
+;;                               mapped-lin-addrs-disjoint-from-paging-structure-addrs-p))))))
+
+;; (defthm rb-rb-WoW-in-system-level-mode
+;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                 (all-paging-entries-found-p l-addrs-1 x86)
+;;                 (all-paging-entries-found-p l-addrs-2 x86)
+;;                 (no-page-faults-during-translation-p l-addrs-1 r-w-x-1 cpl x86)
+;;                 (no-page-faults-during-translation-p l-addrs-2 r-w-x-2 cpl x86))
+;;            (equal (mv-nth 2 (rb l-addrs-2 r-w-x-2 (mv-nth 2 (rb l-addrs-1 r-w-x-1 x86))))
+;;                   (mv-nth 2 (rb l-addrs-1 r-w-x-1 (mv-nth 2 (rb l-addrs-2 r-w-x-2 x86))))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+;;                             (rb-1 force (force)
+;;                                   all-paging-entries-found-p
+;;                                   no-page-faults-during-translation-p
+;;                                   mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)))))
+
 ;; ----------------------------------------------------------------------
+
+;; Reading via RB after another RB:
 
 (defthm rm08-value-in-system-level-mode-after-rm08
   ;; Need an rb version of this...
@@ -753,12 +1007,6 @@
            :in-theory (e/d* (rm08
                              ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
                             ()))))
-
-(local
- (defthm cpl-unaffected-by-rm08
-   (equal (xr :seg-visible 1 (mv-nth 2 (rm08 lin-addr r-w-x x86)))
-          (xr :seg-visible 1 x86))
-   :hints (("Goal" :in-theory (e/d* (rm08) (force (force)))))))
 
 (local
  (defthm pairwise-disjoint-p-aux-after-rm08-lemma
@@ -912,6 +1160,10 @@
 ;;                                   no-page-faults-during-translation-p
 ;;                                   mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)))))
 
+;; ;; ----------------------------------------------------------------------
+
+;; ;; Proving rb-rb-split-reads-in-system-level-mode:
+
 ;; (defthm rm08-after-ia32e-entries-found-la-to-pa
 ;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
 ;;                 (paging-entries-found-p lin-addr-1 x86)
@@ -1050,7 +1302,9 @@
 ;;                                     ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
 ;;                                    ((:meta acl2::mv-nth-cons-meta))))))
 
-;; (defthm rb-and-rm64-in-system-level-mode-new
+;; ;; ======================================================================
+
+;; (defthm rm64-to-rb-in-system-level-mode-new
 ;;   ;; Shouldn't rely on open-create-canonical-address-list.
 ;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
 ;;                 (equal l-addrs (create-canonical-address-list 8 lin-addr))
@@ -1074,14 +1328,14 @@
 ;;                             (count 8)
 ;;                             (end-addr (+ 7 lin-addr))))
 ;;            :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-;;                              rb-and-rm64-in-system-level-mode-helper
+;;                              rm64-to-rb-in-system-level-mode-helper
 ;;                              ;; COMBINE-BYTES-OF-APPEND-OF-BYTE-LISTS
 ;;                              rm64)
 ;;                             (rb
 ;;                              signed-byte-p
 ;;                              unsigned-byte-p
 ;;                              bitops::logior-equal-0
-;;                              rb-and-rm08-in-the-system-level-mode
+;;                              rm08-to-rb-in-system-level-mode
 ;;                              (:meta acl2::mv-nth-cons-meta)
 ;;                              force (force)
 ;;                              all-paging-entries-found-p
@@ -1090,7 +1344,37 @@
 ;;                              open-create-canonical-address-list))))
 ;;   :otf-flg t)
 
-;; (defthm wb-and-wm64-in-system-level-mode
+;; (defthmd rm64-to-rb-in-system-level-mode
+;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                 (equal l-addrs (create-canonical-address-list 8 lin-addr))
+;;                 (equal (len l-addrs) 8)
+;;                 ;;
+;;                 (canonical-address-p (+ 7 lin-addr))
+;;                 ;;
+;;                 (all-paging-entries-found-p l-addrs x86)
+;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs r-w-x cpl x86)
+;;                 (no-page-faults-during-translation-p l-addrs r-w-x cpl x86))
+;;            (equal (rm64 lin-addr r-w-x x86)
+;;                   (b* (((mv flg bytes x86)
+;;                         (rb l-addrs r-w-x x86))
+;;                        (result (combine-bytes bytes)))
+;;                     (mv flg result x86))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+;;                              rm64-to-rb-in-system-level-mode-helper
+;;                              rm64
+;;                              rb)
+;;                             (signed-byte-p
+;;                              unsigned-byte-p
+;;                              bitops::logior-equal-0
+;;                              (:meta acl2::mv-nth-cons-meta)
+;;                              rm08-to-rb-in-system-level-mode
+;;                              ;; rm32-to-rb-in-system-level-mode
+;;                              rb
+;;                              force (force)))))
+;;   :otf-flg t)
+
+;; (defthm wm64-to-wb-in-system-level-mode
 ;;   (implies (and (not (programmer-level-mode x86))
 ;;                 (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
 ;;                 (equal l-addrs (create-canonical-address-list 8 lin-addr))
@@ -1121,7 +1405,7 @@
 ;;                              signed-byte-p
 ;;                              unsigned-byte-p
 ;;                              bitops::logior-equal-0
-;;                              wb-and-wm08-in-the-system-level-mode
+;;                              wm08-to-wb-in-system-level-mode
 ;;                              (:meta acl2::mv-nth-cons-meta)))))
 ;;   :otf-flg t)
 

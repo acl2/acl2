@@ -259,7 +259,8 @@
   (implies (xlate-equiv-x86s x86-1 x86-2)
            (equal (mv-nth 1 (pml4-table-base-addr x86-1))
                   (mv-nth 1 (pml4-table-base-addr x86-2))))
-  :hints (("Goal" :in-theory (e/d* (pml4-table-base-addr) ()))))
+  :hints (("Goal" :in-theory (e/d* (pml4-table-base-addr) ())))
+  :rule-classes :congruence)
 
 (defthm xlate-equiv-x86s-and-pml4-table-entry-addr-address
   (implies (xlate-equiv-x86s x86-1 x86-2)
@@ -269,7 +270,8 @@
            :use ((:instance xlate-equiv-x86s-and-pml4-table-base-addr-address))
            :in-theory (e/d* (pml4-table-entry-addr
                              xlate-equiv-x86s)
-                            (xlate-equiv-x86s-and-pml4-table-base-addr-address)))))
+                            (xlate-equiv-x86s-and-pml4-table-base-addr-address))))
+  :rule-classes :congruence)
 
 (defthm xlate-equiv-x86s-and-pml4-table-entry-addr-value
   (implies (and (xlate-equiv-x86s x86-1 x86-2)
@@ -299,15 +301,16 @@
                   physical-address-p)))))
 
 (defthm pml4-table-entry-addr-found-p-and-xlate-equiv-x86s
-  (implies (and (xlate-equiv-x86s x86-1 x86-2)
-                (pml4-table-entry-addr-found-p lin-addr x86-1))
-           (pml4-table-entry-addr-found-p lin-addr x86-2))
+  (implies (xlate-equiv-x86s x86-1 x86-2)
+           (equal (pml4-table-entry-addr-found-p lin-addr x86-1)
+                  (pml4-table-entry-addr-found-p lin-addr x86-2)))
   :hints (("Goal"
            :use ((:instance xlate-equiv-x86s-and-pml4-table-base-addr-address))
            :in-theory (e/d* (pml4-table-entry-addr-found-p)
                             (physical-address-p
                              xlate-equiv-x86s-and-pml4-table-base-addr-address
-                             bitops::logand-with-negated-bitmask)))))
+                             bitops::logand-with-negated-bitmask))))
+  :rule-classes :congruence)
 
 ;; ======================================================================
 
@@ -343,7 +346,8 @@
 
 (defthm page-dir-ptr-table-base-addr-is-in-a-table-pointed-to-by-a-pml4e
   (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
-                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (equal pml4-table-entry-addr
+                       (pml4-table-entry-addr lin-addr pml4-table-base-addr))
                 (superior-entry-points-to-an-inferior-one-p
                  pml4-table-entry-addr x86)
                 (good-paging-structures-x86p x86))
@@ -359,7 +363,8 @@
 
 (defthm page-dir-ptr-table-entry-addr-is-in-a-table-pointed-to-by-a-pml4e
   (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
-                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (equal pml4-table-entry-addr
+                       (pml4-table-entry-addr lin-addr pml4-table-base-addr))
                 (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
                 (canonical-address-p lin-addr)
                 (good-paging-structures-x86p x86))
@@ -403,7 +408,8 @@
 (defthm page-dir-ptr-table-base-addr-is-in-gather-all-paging-structure-qword-addresses
   (implies (and (equal pml4-table-base-addr (mv-nth 1 (pml4-table-base-addr x86)))
                 (physical-address-p (+ (ash 512 3) pml4-table-base-addr))
-                (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+                (equal pml4-table-entry-addr
+                       (pml4-table-entry-addr lin-addr pml4-table-base-addr))
                 (superior-entry-points-to-an-inferior-one-p pml4-table-entry-addr x86)
                 (good-paging-structures-x86p x86)
                 (canonical-address-p lin-addr))
@@ -424,7 +430,9 @@
 (defthm page-dir-ptr-table-entry-addr-is-in-gather-all-paging-structure-qword-addresses
   (implies (page-dir-ptr-table-entry-addr-found-p lin-addr x86)
            (member-list-p
-            (page-dir-ptr-table-entry-addr lin-addr (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
+            (page-dir-ptr-table-entry-addr
+             lin-addr
+             (mv-nth 1 (page-dir-ptr-table-base-addr lin-addr x86)))
             (gather-all-paging-structure-qword-addresses x86)))
   :hints (("Goal"
            :use ((:instance subset-list-p-and-member-list-p
@@ -441,6 +449,8 @@
                             (subset-list-p-and-member-list-p)))))
 
 ;; Relationship of PDPT with xlate-equiv-x86s:
+
+;; (i-am-here)
 
 (defthm xlate-equiv-x86s-and-page-dir-ptr-table-base-addr-address
   (implies (and (xlate-equiv-x86s x86-1 x86-2)
@@ -1198,7 +1208,8 @@
                    lin-addr (mv-nth 1 (page-table-base-addr lin-addr x86-2)))))
   :hints (("Goal" :in-theory
            (e/d* (page-table-base-addr)
-                 (xlate-equiv-x86s
+                 (page-directory-entry-addr-found-p
+                  xlate-equiv-x86s
                   xlate-equiv-x86s-and-page-directory-entry-addr-address
                   xlate-equiv-x86s-and-page-directory-base-addr-error
                   xlate-equiv-x86s-and-page-directory-base-addr-address
