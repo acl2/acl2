@@ -182,21 +182,14 @@
   (<= (len a) (len (bind x v a)))
   :rule-classes :linear)
 
-(include-book "ordinals/e0-ordinal" :dir :system)
-
 (encapsulate
  nil
  (local
   (defun makemultiarray-fn (fn type car-counts cdr-counts s ac)
     (declare
-     (xargs :measure
-            (if (equal fn 'makemultiarray2)
-                (cons (len (cons car-counts cdr-counts))
-                      (natural-sum (cons car-counts cdr-counts)))
-              (cons (+ 1 (len cdr-counts))
-                    (natural-sum cdr-counts)))
-            :well-founded-relation e0-ord-<))
-
+     (xargs :measure (makemultiarray-measure
+                      (if (equal fn 'makemultiarray2) car-counts 0)
+                      cdr-counts)))
     (if (equal fn 'makemultiarray2)
         (if
          (zp car-counts)

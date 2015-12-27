@@ -929,21 +929,16 @@
       nil
       (cons initial-value (init-array initial-value (- count 1)))))
 
-; The following measure is due to J
-(defun natural-sum (lst)
-  (cond ((endp lst) 0)
-        (t (+ (nfix (car lst)) (natural-sum (cdr lst))))))
-
-(include-book "ordinals/lexicographic-ordering" :dir :system)
+(defun makemultiarray-measure (car-counts cdr-counts)
+   (cons
+    (cons 1 (1+ (len cdr-counts)))
+    (nfix car-counts)))
 
 (mutual-recursion
 
   ; makemultiarray2 :: num, counts, s, ac --> [refs]
   (defun makemultiarray2 (type car-counts cdr-counts s ac)
-    (declare (xargs :measure (acl2::llist
-                              (len (cons car-counts cdr-counts))
-                              (natural-sum (cons car-counts cdr-counts)))
-                    :well-founded-relation acl2::l<))
+    (declare (xargs :measure (makemultiarray-measure car-counts cdr-counts)))
     (if (zp car-counts)
         (mv (heap s) ac)
         (mv-let (new-addr new-heap)
@@ -959,9 +954,7 @@
 
   ; makemultiarray :: [counts], s --> addr, new-heap
   (defun makemultiarray (type counts s)
-    (declare (xargs :measure (acl2::llist (+ 1 (len counts))
-                                          (natural-sum counts))
-                    :well-founded-relation acl2::l<))
+    (declare (xargs :measure (makemultiarray-measure 0 counts)))
     (if (<= (len counts) 1)
 
         ; "Base case"  Handles initializing the final dimension
