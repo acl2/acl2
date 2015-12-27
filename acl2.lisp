@@ -2208,6 +2208,20 @@ You are using version ~s.~s.~s."
 
 (defparameter *acl2-panic-exit-status* nil)
 
+#+ccl
+(defun common-lisp-user::acl2-exit-lisp-ccl-report (status)
+  (declare (ignore status))
+  (format t
+          "~%(ccl::total-bytes-allocated) = ~s~%(ccl::gctime) ~
+           = ~s~%(ccl::gccounts) = ~s~%~%"
+          (ccl::total-bytes-allocated)
+          (multiple-value-list (ccl::gctime))
+          (multiple-value-list (ccl::gccounts))))
+
+#+cltl2
+(defvar common-lisp-user::*acl2-exit-lisp-hook*
+  nil)
+
 (defun exit-lisp (&optional (status '0 status-p))
 
 ; Parallelism blemish: In ACL2(p), LispWorks 6.0.1 hasn't always successfully
@@ -2218,6 +2232,9 @@ You are using version ~s.~s.~s."
 ; calls to send-die-to-worker-threads and stop-multiprocessing, they should be
 ; removed.
 
+  (when (fboundp common-lisp-user::*acl2-exit-lisp-hook*)
+    (funcall common-lisp-user::*acl2-exit-lisp-hook* status)
+    (setq common-lisp-user::*acl2-exit-lisp-hook* nil))
   #+(and acl2-par lispworks)
   (when mp::*multiprocessing*
     (send-die-to-worker-threads)
