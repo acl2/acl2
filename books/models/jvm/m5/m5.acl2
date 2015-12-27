@@ -185,6 +185,7 @@
                JVM::LLOAD_3
                JVM::LMUL
                JVM::LNEG
+	       JVM::LOOKUPSWITCH
                JVM::LOR
                JVM::LREM
                JVM::LRETURN
@@ -216,6 +217,7 @@
                JVM::SASTORE
                JVM::SIPUSH
                JVM::SWAP
+	       JVM::TABLESWITCH
                ASSOC-EQUAL LEN NTH ZP SYNTAXP
                QUOTEP FIX NFIX E0-ORDINALP E0-ORD-<)
              (union-eq *acl2-exports*

@@ -1166,6 +1166,7 @@
     (LLOAD_3            1)
     (LMUL               1)
     (LNEG               1)
+    (LOOKUPSWITCH       (arg1 inst))
     (LOR                1)
     (LREM               1)
     (LRETURN            1)
@@ -1197,6 +1198,7 @@
     (SASTORE            1)
     (SIPUSH             3)
     (SWAP               1)
+    (TABLESWITCH        (arg1 inst))
     (t 1)))
 
 ; -----------------------------------------------------------------------------
@@ -2997,6 +2999,19 @@
                        (push result (popn 2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
+; (LOOKUPSWITCH) Instruction
+
+(defun execute-LOOKUPSWITCH (inst th s)
+  (let* ((default (arg2 inst))
+         (pairs (nthcdr 2 inst))
+         (key (top (stack (top-frame th s))))
+         (pair (bound? key pairs))
+         (offset (if pair (cdr pair) default)))
+    (modify th s
+            :pc (+ offset (pc (top-frame th s)))
+            :stack (pop (stack (top-frame th s))))))
+
+; -----------------------------------------------------------------------------
 ; (LOR) Instruction
 
 (defun execute-LOR (inst th s)
@@ -3380,6 +3395,20 @@
                               (pop (pop (stack (top-frame th s)))))))))
 
 ; -----------------------------------------------------------------------------
+; (TABLESWITCH) Instruction
+
+(defun execute-TABLESWITCH (inst th s)
+  (let* ((default (arg2 inst))
+         (low (arg3 inst))
+         (offsets (nthcdr 3 inst))
+         (index (top (stack (top-frame th s))))
+         (offset (or (and (>= index low) (nth (- index low) offsets))
+                     default)))
+    (modify th s
+            :pc (+ offset (pc (top-frame th s)))
+            :stack (pop (stack (top-frame th s))))))
+
+; -----------------------------------------------------------------------------
 ; Putting it all together
 
 (defun index-into-program (byte-offset program)
@@ -3575,6 +3604,7 @@
     (LLOAD_3        (execute-LLOAD_X inst th s 3))
     (LMUL           (execute-LMUL inst th s))
     (LNEG           (execute-LNEG inst th s))
+    (LOOKUPSWITCH   (execute-LOOKUPSWITCH inst th s))
     (LOR            (execute-LOR inst th s))
     (LREM           (execute-LREM inst th s))
     (LRETURN        (execute-LRETURN inst th s))
@@ -3606,6 +3636,7 @@
     (SASTORE        (execute-SASTORE inst th s))
     (SIPUSH         (execute-SIPUSH inst th s))
     (SWAP           (execute-SWAP inst th s))
+    (TABLESWITCH    (execute-TABLESWITCH inst th s))
     (HALT           s)
     (otherwise s)))
 

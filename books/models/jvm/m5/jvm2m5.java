@@ -321,38 +321,31 @@ public class jvm2m5 implements
 
     @Override
     public ConstantPool.CPInfo visitLookupSwitch(Instruction instr, int default_, int npairs, int[] matches, int[] offsets, Void p) {
-        sb.append(" (lookupswitchinfo ")
-                .append(default_) // the default target
+        sb.append(' ')
+                .append(instr.length())
                 .append(' ')
-                .append(npairs) // the pair count
-                .append(" (");
+                .append(default_); // the default target
         for (int i = 0; i < npairs; i++) {
-            sb.append('(')
+            sb.append(" (")
                     .append(matches[i])
                     .append(" . ")
                     .append(offsets[i])
-                    .append(") ");
+                    .append(')');
         }
-        sb.setCharAt(sb.length() - 1, ')');
-        sb.append(")");
         return null;
     }
 
     @Override
     public ConstantPool.CPInfo visitTableSwitch(Instruction instr, int default_, int low, int high, int[] offsets, Void p) {
-        sb.append(" (tableswitchinfo ")
+        sb.append(' ')
+                .append(instr.length())
+                .append(' ')
                 .append(default_) // the default target
-                .append(" (")
-                .append(low)
-                .append(" . ")
-                .append(high)
-                .append(") (");
+                .append(' ')
+                .append(low);
         for (int i = 0; i < high - low + 1; i++) {
-            sb.append(offsets[i])
-                    .append(' ');
+            sb.append(' ').append(offsets[i]);
         }
-        sb.setCharAt(sb.length() - 1, ')');
-        sb.append(")");
         return null;
     }
 
