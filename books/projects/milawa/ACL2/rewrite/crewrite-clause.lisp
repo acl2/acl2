@@ -826,9 +826,10 @@
   :hints(("Goal" :in-theory (enable rw.ccstep-list-list-obligations))))
 
 (defthm forcing-logic.term-list-listp-of-rw.ccstep-list-list-obligations-free
-  (implies (force (and (equal free (rw.ccstep-list-list-obligations x))
-                       (rw.ccstep-list-listp x)
-                       (cons-listp x)))
+; Matt K. mod for v7-2: Don't force assumption below with free variable.
+  (implies (and (equal free (rw.ccstep-list-list-obligations x))
+                (force (rw.ccstep-list-listp x))
+                (force (cons-listp x)))
            (equal (logic.term-list-listp free)
                   t))
   :hints(("Goal" :in-theory (enable rw.ccstep-list-list-obligations))))

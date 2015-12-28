@@ -302,15 +302,17 @@
               (rw.assmsp assms)))
 
 (defthm forcing-rw.trace->assms-of-rw.cacheline->ifftrace
-  (implies (force (and (rw.cacheline->ifftrace x)
-                       (rw.cacheline-assmsp x assms)))
+  (implies (and (force (rw.cacheline->ifftrace x))
+; Matt K. mod for v7-2: Don't force assumption below with free variable.
+                (rw.cacheline-assmsp x assms))
            (equal (rw.trace->hypbox (rw.cacheline->ifftrace x))
                   (rw.assms->hypbox assms)))
   :hints(("Goal" :in-theory (enable rw.cacheline-assmsp))))
 
 (defthm forcing-rw.trace->assms-of-rw.cacheline->eqltrace
-  (implies (force (and (rw.cacheline->eqltrace x)
-                       (rw.cacheline-assmsp x assms)))
+  (implies (and (force (rw.cacheline->eqltrace x))
+; Matt K. mod for v7-2: Don't force assumption below with free variable.
+                (rw.cacheline-assmsp x assms))
            (equal (rw.trace->hypbox (rw.cacheline->eqltrace x))
                   (rw.assms->hypbox assms)))
   :hints(("Goal" :in-theory (enable rw.cacheline-assmsp))))
