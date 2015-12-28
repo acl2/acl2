@@ -271,14 +271,16 @@
 ;; The following theorems enable ACL2 to force its way through the bogus subgoal generate by the assertion.
 (defthm forced--st-filter-unmarked123-nodes-update-marksi-2
   (implies (and (force (natp node))
-                (force (A-valid-nodes nodes nodeset)))
+; Matt K. mod for v7-2: Don't force assumption below with free variable.
+                (A-valid-nodes nodes nodeset))
            (equal (st-filter-unmarked123-nodes nodes (update-marksi node 2 marks))
                   (remove-equal node (st-filter-unmarked123-nodes nodes marks))))
     :hints (("Goal" :do-not '(eliminate-destructors generalize)
                   :in-theory (disable esci depi update-marksi nodes-length neighborsi dests-of-edge neighbors->destsi append-to-esc append-to-dep marksi nodesi))))
 (defthm forced--st-filter-unmarked123-nodes-update-marksi-3
   (implies (and (force (natp node))
-                (force (A-valid-nodes nodes nodeset)))
+; Matt K. mod for v7-2: Don't force assumption below with free variable.
+                (A-valid-nodes nodes nodeset))
            (equal (st-filter-unmarked123-nodes nodes (update-marksi node 3 marks))
                   (remove-equal node (st-filter-unmarked123-nodes nodes marks))))
     :hints (("Goal" :do-not '(eliminate-destructors generalize)
