@@ -3062,6 +3062,11 @@
 ; mutually recursive function that evaluates a list of such terms is
 ; named evfn-lst.
 
+; This function serves two purposes: it is used to generate the constraints
+; produced by the defevaluator event and it is used to check that the
+; constraints on an alleged evaluator are in fact those required.  (Remember:
+; the user need not have introduced an evaluator via defevaluator.)
+
 ; The clauses that describe an evaluator include an evaluator-clause
 ; (q.v.)  for each fn in fn-args-lst plus clauses describing evfn when
 ; x is a variable symbol, a quoted object, and a lambda application,
@@ -3071,7 +3076,7 @@
 ; an evaluator, then the constraint on it will contain at least 4
 ; clauses.  (One of the five fixed clauses below is about only
 ; evfn-lst and not about evfn and hence wouldn't be among the
-; constraints of evfn.)  If this changes, change chk-evaluatorp.
+; constraints of evfn.)  If this changes, change chk-evaluator.
 
 ; The functions guess-fn-args-lst-for-evfn and guess-evfn-lst-for-evfn take the
 ; known constraints on an evfn and guess the evfn-lst and list of fns for which
@@ -3080,8 +3085,11 @@
 ; evfn-lst on a cons and the structure of the evaluator-clause for a given fn.
 ; If these structures change, change these two functions.
 
-; WARNING: Don't change the clauses below without reading the Notes
-; above!
+; WARNING: Don't change the clauses below without reading the Notes above!  In
+; particular, the functions chk-evaluator and defevaluator-form/defthms both
+; call this function.  Furthermore, at least the following functions know about
+; the number, order, and shape of the clauses generated:
+; defevaluator-form/defthm-name and defevaluator-form/defthm-hints.
 
   (append (sublis (list (cons 'evfn evfn)
                         (cons 'evfn-lst evfn-lst))
@@ -3436,33 +3444,130 @@
 ; To make it easier to introduce an evaluator, we define the following
 ; macro.
 
-(defun defevaluator-form/defthms (evfn evfn-lst prefix i clauses)
-  (cond ((null clauses) nil)
-        (t (cons (list* (if (eql i 0) 'defthmd 'defthm)
-                        (genvar evfn prefix i nil)
-                        (prettyify-clause (car clauses) nil nil)
-                        (if (or (equal i 4)   ; constraints on
-                                (equal i 5))  ; (evfn-lst x-lst a)
+(defun namedp-prefix (evfn namedp)
 
-; Notes: constraints 0 through 5 are independent of the function symbols being
-; interpreted.  Constraint 0 is the interpretation of an ``anonymous'' function
-; application, constraints 1, 2, and 3 are for variables, quotes, and lambda
-; applications, and constraints 4 and 5 are for (evfn-lst nil a) and (evfn-lst
-; (cons x y) a).
+; We generate the prefix used in naming the constraints for evaluator evfn.
+; Namedp is t or nil and indicates whether we generate a name like
+; evfn-OF-fn-CALL or like evfn-CONSTRAINT-i.  We return either "evfn-OF-" or
+; "evfn-CONSTRAINT-".
 
-                            `(:hints
-                              (("Goal"
-                                :expand ((,evfn-lst x-lst a)))))
-                            `(:hints ; constraints on (evfn x a)
-                              (("Goal"
-                                :expand ((:free (x) (hide x))
-                                         (,evfn x a)
-                                         (:free (fn args) (,evfn (cons fn args) nil))))))))
-                 (defevaluator-form/defthms evfn evfn-lst prefix (1+ i)
-                   (cdr clauses))))))
+  (if namedp
+      (concatenate 'string (symbol-name evfn) "-OF-")
+      (concatenate 'string (symbol-name evfn) "-CONSTRAINT-")))
 
-(defun defevaluator-form/fns-clauses (evfn fn-args-lst)
+(defun defevaluator-form/defthm-name (evfn evfn-lst namedp prefix i clause)
 
+; This function generates the name of the ith constraint for evaluator function
+; evfn.  Namedp is t or nil and indicates whether we generate a name like
+; evfn-OF-fn-CALL or like evfn-CONSTRAINT-i.  Prefix is a string and is either
+; of the form "evfn-OF-" or "evfn-CONSTRAINT-"; see namedp-prefix. I is 0-based
+; the number of the constraint and clause is the clausal form of the
+; constraint.  But when namedp is non-nil we have to solve two problems: (a)
+; give special names to the first few constraints (which do not concern one of
+; the function symbols to be interpreted) and (b) figure out the function
+; symbol fn.
+
+; We solve (a) by coding in our knowledge of the order of the clauses generated
+; by evaluator-clauses and we solve (b) by looking into those clauses
+; corresponding to calls of functions to be interpreted.
+
+; i             name of defthm when namedp
+
+; 0             evfn-OF-FNCALL-ARGS
+; 1             evfn-OF-VARIABLE
+; 2             evfn-of-QUOTE
+; 3             evfn-of-LAMBDA
+; 4             evfn-lst-OF-ATOM
+; 5             evfn-lst-OF-CONS
+; 6 ...         evfn-OF-fn-CALL, ... for each interpreted fn
+
+; When i>5, clause is always of the form:
+; ((NOT (CONSP X)) (NOT (EQUAL (CAR X) 'fn)) (EQUAL (evfn X A) (fn ...)))
+; and we recover fn from the second literal as shown in the binding of
+; fn below.
+
+  (cond
+   (namedp
+    (let ((fn (car (fargn (caddr clause) 2))))
+      (case i
+        (0 (genvar evfn (concatenate 'string prefix "FNCALL-ARGS") nil nil))
+        (1 (genvar evfn (concatenate 'string prefix "VARIABLE") nil nil))
+        (2 (genvar evfn (concatenate 'string prefix "QUOTE") nil nil))
+        (3 (genvar evfn (concatenate 'string prefix "LAMBDA") nil nil))
+        (4 (genvar evfn
+                   (concatenate 'string (symbol-name evfn-lst) "-OF-ATOM")
+                   nil nil))
+        (5 (genvar evfn
+                   (concatenate 'string (symbol-name evfn-lst) "-OF-CONS")
+                   nil nil))
+        (otherwise
+         (genvar evfn
+                 (concatenate 'string prefix (symbol-name fn) "-CALL")
+                 nil nil)))))
+   (t (genvar evfn prefix i nil))))
+
+(defun defevaluator-form/defthm-hints (evfn evfn-lst i)
+
+; See the comment in defevaluator-form/defthm-name about the knowledge of
+; evaluator-clauses encoded in this function.  We generate the :hints for the
+; ith constraint, i.e., for the formula (prettyify-clause clause nil nil),
+; where clause is (nth i (evaluator-clauses evfn evfn-lst fn-args-lst).  A
+; representative value of fn-args-lst would be ((CAR X) (CONS X Y) (IF X Y Z)),
+; for which suitable i would be 0, 1, ..., 8.
+
+  (cond
+   ((> i 5)
+    `(("Goal" :expand
+       ((,evfn X A)
+        (:free (x) (HIDE x))
+        (:free (fn args)
+               (APPLY-FOR-DEFEVALUATOR fn args))))))
+   (t
+    (case i
+      (0 `(("Goal" :expand
+            ((:free (x) (HIDE x))
+             (,evfn X A)
+             (:free (args)
+                    (,evfn (CONS (CAR X) ARGS) NIL)))
+            :in-theory '(eval-list-kwote-lst
+                         fix-true-list-ev-lst
+                         car-cons cdr-cons))))
+      ((1 2 3) `(("Goal" :expand ((,evfn X A)))))
+      (otherwise
+       `(("Goal" :expand ((,evfn-lst X-LST A)))))))))
+
+(defun defevaluator-form/defthm (evfn evfn-lst namedp prefix i clause)
+
+; We generate the defthm event for the ith constraint, given the clause
+; expressing that constraint.  The 0th constraint is disabled; the
+; others are only locally disabled.
+
+  (let* ((defthm (if (zp i) 'defthmd 'defthm))
+         (name (defevaluator-form/defthm-name
+                 evfn evfn-lst namedp prefix i clause))
+         (formula (prettyify-clause clause nil nil))
+         (hints (defevaluator-form/defthm-hints evfn evfn-lst i)))
+    `((,defthm ,name
+        ,formula
+        :hints ,hints)
+      (local (in-theory (disable ,name))))))
+
+(defun defevaluator-form/defthms (evfn evfn-lst namedp prefix i clauses)
+  (declare (xargs :mode :program))
+  (if (endp clauses)
+      nil
+    (append
+     (defevaluator-form/defthm evfn evfn-lst namedp prefix i (car clauses))
+     (defevaluator-form/defthms evfn evfn-lst namedp prefix (+ 1 i) (cdr clauses)))))
+
+(defun car-cadr-caddr-etc (formals x)
+  (if (endp formals)
+      nil
+      (cons `(CAR ,x)
+            (car-cadr-caddr-etc (cdr formals) `(CDR ,x)))))
+
+(defun defevaluator-form/fns-clauses (fn-args-lst)
+  (declare (xargs :mode :program))
 ; We return a list of cond clauses,
 ; (
 ;  ((equal (car x) 'fn1)
@@ -3476,108 +3581,106 @@
 
   (cond ((null fn-args-lst) '((t nil)))
         (t (cons
-            (list (list 'equal '(car x) (kwote (caar fn-args-lst)))
+            (list (list 'equal 'fn (kwote (caar fn-args-lst)))
                   (cons (caar fn-args-lst)
-                        (evaluator-clause/arglist evfn
-                                                  (cdar fn-args-lst)
-                                                  '(cdr x))))
-            (defevaluator-form/fns-clauses evfn (cdr fn-args-lst))))))
+                        (car-cadr-caddr-etc (cdar fn-args-lst)
+                                                       'args)))
+            (defevaluator-form/fns-clauses (cdr fn-args-lst))))))
 
 (defconst *defevaluator-form-base-theory*
   (append *definition-minimal-theory*
           '(car-cdr-elim
             car-cons cdr-cons
             o< o-finp o-first-expt o-first-coeff o-rst natp posp
-            acl2-count alistp
+            acl2-count
+            alistp
             fix-true-list kwote kwote-lst pairlis$-fix-true-list
-            (:type-prescription acl2-count))))
+            )))
 
-(defun filter-runes1 (keyword runes ans)
-  (cond
-   ((endp runes) ans)
-   ((eq (car (car runes)) keyword)
-    (filter-runes1 keyword (cdr runes) (cons (car runes) ans)))
-   (t (filter-runes1 keyword (cdr runes) ans))))
-
-(defun filter-runes (keyword runes)
-  (filter-runes1 keyword runes nil))
-
-(defun defevaluator-form (evfn evfn-lst fn-args-lst)
-  (let* ((clauses (evaluator-clauses evfn evfn-lst fn-args-lst))
-         (fns-clauses (defevaluator-form/fns-clauses evfn fn-args-lst))
-         (defthms (defevaluator-form/defthms
-                    evfn
-                    evfn-lst
-                    (symbol-name (pack2 evfn '-constraint-))
+(defun defevaluator-form (evfn evfn-lst namedp fn-args-lst)
+  (declare (xargs :mode :program))
+  (let* ((fns-clauses (defevaluator-form/fns-clauses fn-args-lst))
+         (defthms (defevaluator-form/defthms evfn evfn-lst namedp
+                    (namedp-prefix evfn namedp)
                     0
-                    clauses)))
+                    (evaluator-clauses evfn evfn-lst fn-args-lst))))
     `(encapsulate
       (((,evfn * *) => *)
        ((,evfn-lst * *) => *))
       (set-inhibit-warnings "theory")
-
-; Note: union-theories and universal-theory below are not yet defined when we
-; introduce defevaluator-form, but that's ok as long as we don't try to execute
-; this!
-
-      (local
-       (in-theory
-        (union-theories (filter-runes :built-in-clause
-                                      (universal-theory :here))
-                        *defevaluator-form-base-theory*)))
-      ,@(sublis
-         (list (cons 'evfn evfn)
-               (cons 'evfn-lst evfn-lst)
-               (cons 'fns-clauses fns-clauses)
-               (cons 'defthms defthms))
-         '((local
-            (mutual-recursion
-             (defun-nx evfn (x a)
-               (declare (xargs :verify-guards nil
-                               :measure (acl2-count x)
-                               :well-founded-relation o<
-                               :mode :logic))
-               (cond
-                ((symbolp x)
-
-; Before removing the conjunct of x below, see the long comment in
-; evaluator-clauses about "without making a special case for x = nil".
-
-                 (and x (cdr (assoc-eq x a))))
-                ((atom x) nil)
-                ((eq (car x) 'quote) (car (cdr x)))
-                ((consp (car x))
-                 (evfn (car (cdr (cdr (car x))))
-                       (pairlis$ (car (cdr (car x)))
-                                 (evfn-lst (cdr x) a))))
-                .
-                fns-clauses))
-             (defun-nx evfn-lst (x-lst a)
-               (declare (xargs :measure (acl2-count x-lst)
-                               :well-founded-relation o<))
-               (cond ((endp x-lst) nil)
-                     (t (cons (evfn (car x-lst) a)
-                              (evfn-lst (cdr x-lst) a)))))))
-           (local
-            (defthm eval-list-kwote-lst
-              (equal (evfn-lst (kwote-lst args) a)
-                     (fix-true-list args))))
-           (local
-            (defthm cdr-kwote-lst-eval-list
-              (equal (cdr (kwote-lst (evfn-lst lst a)))
-                     (kwote-lst (evfn-lst (cdr lst) a)))))
-
-           (local
-            (defthm evfn-car-kwote-lst-evfn-list
-              (equal (evfn (car (kwote-lst (evfn-lst lst a))) nil)
-                     (evfn (car lst) a))))
-           (local
-            (in-theory (disable evfn
-                                (:executable-counterpart evfn)
-                                evfn-lst
-                                (:executable-counterpart evfn-lst))))
-
-           . defthms)))))
+      (local (in-theory *defevaluator-form-base-theory*))
+      . ,(sublis
+          (list (cons 'evfn evfn)
+                (cons 'evfn-lst evfn-lst)
+                (cons 'fns-clauses fns-clauses)
+                (cons 'defthms defthms))
+          '((local (defun-nx apply-for-defevaluator (fn args)
+                     (declare (xargs :verify-guards nil
+                                     :normalize nil))
+                     (cond . fns-clauses)))
+            (local
+             (mutual-recursion
+              (defun-nx evfn (x a)
+                (declare
+                 (xargs :verify-guards nil
+                        :measure (acl2-count x)
+                        :well-founded-relation o<
+                        :normalize nil
+                        :hints (("goal" :in-theory
+                                 (enable (:type-prescription
+                                          acl2-count))))
+                        :mode :logic))
+                (cond
+                 ((symbolp x) (and x (cdr (assoc-eq x a))))
+                 ((atom x) nil)
+                 ((eq (car x) 'quote) (car (cdr x)))
+                 (t (let ((args (evfn-lst (cdr x) a)))
+                      (cond
+                       ((consp (car x))
+                        (evfn (car (cdr (cdr (car x))))
+                              (pairlis$ (car (cdr (car x)))
+                                        args)))
+                       (t (apply-for-defevaluator (car x) args)))))))
+                (defun-nx evfn-lst (x-lst a)
+                  (declare (xargs :measure (acl2-count x-lst)
+                                  :well-founded-relation o<))
+                  (cond ((endp x-lst) nil)
+                        (t (cons (evfn (car x-lst) a)
+                                 (evfn-lst (cdr x-lst) a)))))))
+            (local (in-theory (disable evfn evfn-lst apply-for-defevaluator)))
+            (local
+             (defthm eval-list-kwote-lst
+               (equal (evfn-lst (kwote-lst args) a)
+                      (fix-true-list args))
+               :hints (("goal"
+                        :expand ((:free (x y) (evfn-lst (cons x y) a))
+                                 (evfn-lst nil a)
+                                 (:free (x)
+                                        (evfn (list 'quote x) a)))
+                        :induct (fix-true-list args)))))
+            (local
+             (defthm fix-true-list-ev-lst
+               (equal (fix-true-list (evfn-lst x a))
+                      (evfn-lst x a))
+               :hints (("goal" :induct (len x)
+                        :in-theory (e/d ((:induction len)))
+                        :expand ((evfn-lst x a)
+                                 (evfn-lst nil a))))))
+            (local
+             (defthm ev-commutes-car
+               (equal (car (evfn-lst x a))
+                      (evfn (car x) a))
+               :hints (("goal" :expand ((evfn-lst x a)
+                                        (evfn nil a))
+                        :in-theory (enable default-car)))))
+            (local
+             (defthm ev-lst-commutes-cdr
+               (equal (cdr (evfn-lst x a))
+                      (evfn-lst (cdr x) a))
+               :hints (("Goal" :expand ((evfn-lst x a)
+                                        (evfn-lst nil a))
+                        :in-theory (enable default-cdr)))))
+            . defthms)))))
 
 (defun pairs-to-macro-alias-msgs (alist)
   (declare (xargs :guard (symbol-alistp alist)))
@@ -3637,8 +3740,9 @@
          (er soft ctx
              "The form of a defevaluator event is (defevaluator evfn evfn-lst ~
               fn-args-lst), where evfn and evfn-lst are symbols and ~
-              fn-args-lst is a true list of lists of symbols.  However, ~x0 ~
-              does not have this form."
+              fn-args-lst is a true list of lists of symbols.  Optionally, ~
+              one may supply the final keyword argument :namedp with value t ~
+              or nil (default).  However, ~x0 does not have this form."
              x))
         (t (let* ((wrld (w state))
                   (msg (defevaluator-check-msg
@@ -3662,7 +3766,7 @@
          state))
       (value '(value-triple nil))))))
 
-(defmacro defevaluator (&whole x evfn evfn-lst fn-args-lst &key skip-checks)
+(defmacro defevaluator (&whole x evfn evfn-lst fn-args-lst &key skip-checks namedp)
 
 ; Note: It might be nice to allow defevaluator to take a :DOC string, but that
 ; would require allowing encapsulate to take such a string!
@@ -3671,7 +3775,15 @@
 ; evfn (with mutually recursive counterpart evfn-lst for lists of
 ; terms) that recognizes the functions in fns.
 
-  (let ((form (defevaluator-form evfn evfn-lst fn-args-lst)))
+; Note: This version of defevaluator was adapted, with permission, from ACL2
+; Community Book tools/defevaluator-fast.lisp which was authored by Sol Swords
+; and Jared Davis.  The defevaluator-fast defun-nx for evfn and evfn-lst,
+; together with the preliminary lemmas and hints for the constraints were
+; ripped from that book.  The code for generating those forms was refactored to
+; make it clear that the :namedp option only affects the names of the
+; constraint theorems.
+
+  (let ((form (defevaluator-form evfn evfn-lst namedp fn-args-lst)))
     (cond (skip-checks form)
           (t `(progn ,(defevaluator-check-form x evfn evfn-lst fn-args-lst)
                      ,form)))))
