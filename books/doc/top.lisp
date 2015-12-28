@@ -245,6 +245,8 @@
 
 (include-book "projects/doc" :dir :system)
 
+(include-book "kestrel/top" :dir :system)
+
 
 
 #||
