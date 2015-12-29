@@ -32,6 +32,11 @@
 (include-book "delays")
 (local (include-book "../../util/arithmetic"))
 
+(defsection parse-eventctrl
+  :parents (parser)
+  :short "Functions for parsing event controls.")
+
+(local (xdoc::set-default-parents parse-eventctrl))
 
 ; delay_control ::=
 ;    '#' delay_value

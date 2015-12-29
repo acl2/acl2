@@ -40,13 +40,13 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc svmods
-  :parents (svex)
+  :parents (sv)
   :short "An svex-based format for expressing a module hierarchy."
   :long "<p>See the subtopics for a description of the format.  The top-level
 description of a design is a @(see design) object.</p>")
 
 (defxdoc svmods.lisp :parents (svmods))
-(local (xdoc::set-default-parents svmods.lisp))
+(local (xdoc::set-default-parents svmods))
 
 (defenum wiretype
   (:wire

@@ -1133,18 +1133,17 @@ real Verilog file.</p>"
   (with-local-ps (vl-pp-expr x)))
 
 (define vl-pp-origexpr ((x vl-expr-p) &key (ps 'ps))
-  :parents (origexprs verilog-printing)
+  :parents (verilog-printing)
   :short "Pretty-print the \"original,\" un-transformed version of an
 expression."
   :long "<p>This is like @(see vl-pp-expr) but, if @('x') has a
-@('VL_ORIG_EXPR') attribute (see @(see origexprs)), we actually pretty-print
-the original version of @('x') rather than the current version (which may be
-simplified, and hence not correspond as closely to the original source
-code.)</p>
+@('VL_ORIG_EXPR') attribute, we actually pretty-print the original version of
+@('x') rather than the current version (which may be simplified, and hence not
+correspond as closely to the original source code.)</p>
 
-<p>This only works if the @(see origexprs) transform is run early in the
-transformation sequence.  When there's no @('VL_ORIG_EXPR') attribute, we just
-print @('x') as is.</p>"
+<p>Historically we annotated every expression with its original version using
+an @('origexprs') transform.  Typically we don't do this anymore.  It may be
+that we can get rid of this function and related code.</p>"
   (b* ((atts   (vl-expr->atts x))
        (lookup (cdr (hons-assoc-equal "VL_ORIG_EXPR" atts)))
        ((when lookup)

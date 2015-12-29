@@ -68,9 +68,6 @@ literal:</p>
  @(thm aignet-vals->regvals-of-aignet-regvals->vals)
  @(thm aignet-vals->regvals-of-aignet-invals->vals)
 
-<p>See @(see aignet-seq-eval) for discussion of sequential evaluation.</p>
-
-
 <p>The difference between @('aignet-eval') and @('aignet-eval-frame') is that
 aignet-eval-frame is designed to be used as part of a sequential simulation.
 Therefore, it looks up input nodes in a separate structure

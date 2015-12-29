@@ -150,8 +150,9 @@
 
 
 
-(defxdoc svex-rewrite-rules.lisp :parents (svex-rewriting))
-(local (xdoc::set-default-parents svex-rewrite-rules.lisp))
+(defxdoc svex-rewrite-rules
+  :parents (rewriting)
+  :short "Rules used by the svex @(see rewriting) functions.")
 
 (local
  (progn

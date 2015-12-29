@@ -295,8 +295,9 @@ which occur in the left-hand sides of continuous assignments.  For assignments,
 we always issue a non-fatal warning that says Verilog-XL doesn't add implicit
 nets here, and we always process the left-hand side first (like NCVerilog).  We
 add the wire declarations at the locations in which they are implicitly
-declared, and mark them with the @('VL_IMPLICIT') attribute, which is useful in
-@(see typo-detection).</p>")
+declared, and mark them with the @('VL_IMPLICIT') attribute.  Historically this
+attribute was used in a ``typo detection'' @(see lint) check, which has become
+defunct but can probably be easily revived.</p>")
 
 
 

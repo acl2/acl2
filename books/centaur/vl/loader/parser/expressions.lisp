@@ -687,15 +687,15 @@ yet; they'll just cause a parse error.</p>"
 
 (defparser vl-parse-0+-scope-prefixes ()
   :short "Match @('{ id '::' }') and return a list of all the ids that have been matched."
-  :long "<p>See also @(see vl-parse-indexed-id-2012) and @(see abstract-hids).
+  :long "<p>See also @(see vl-parse-indexed-id-2012) and @(see vl-scopeexpr).
 We use this in the tricky case of parsing:</p>
 
 @({
       { id '::' } hierarchical_identifier select
 })
 
-<p>But per our desired abstract HID representation, we want to keep all of the
-scoping stuff bundled up together, so we prefer to match it first, if it
+<p>But per our desired scope expression representation, we want to keep all of
+the scoping stuff bundled up together, so we prefer to match it first, if it
 exists.</p>"
   :verify-guards nil
   :result (string-listp val)

@@ -56,10 +56,9 @@
   :hints(("Goal" :in-theory (enable tag vl-genelement-kind vl-genelement-p))))
 
 
-
-(defxdoc following-hids
-  :parents (hid-tools)
-  :short "Functions for following hierarchical identifiers."
+(defxdoc hid-tools
+  :parents (mlib)
+  :short "Functions for working with hierarchical identifiers."
 
   :long "<p>Perhaps the most fundamental operation for a hierarchical
 identifier is figure out what it refers to.  This turns out to be a
@@ -87,9 +86,6 @@ hierarchical index that leads into this variable.  For instance, in a case like
 @('foo.bar.myinst.opcode') where @('myinst') is an @('instruction_t') structure
 variable, we will follow only until the declaration of @('myinst') and then we
 will return @('myinst.opcode') as the tail.</dd>
-
-<dd>Tools that want to descend into structures will need to do so using the
-appropriate functions; for instance @(see BOZO) and @(see BOZO).</dd>
 
 
 <dt>Unclear Destination</dt>
@@ -155,14 +151,14 @@ that the end-user can understand the nature and location of the problem.</dd>
 
 </dl>")
 
-(local (xdoc::set-default-parents following-hids))
+(local (xdoc::set-default-parents hid-tools))
 
 
 (defprod vl-hidstep
   :short "A single step along the way of a hierarchical identifier."
-  :long "<p>Some routines for @(see following-hids) produce traces of the items
-they encounter along the way.  A <b>hidstep</b> structure represents a single
-step along a HID.</p>"
+  :long "<p>See @(see hid-tools).  Some routines for following hids produce
+traces of the items they encounter along the way.  A <b>hidstep</b> structure
+represents a single step along a HID.</p>"
   :tag :vl-hidstep
   :layout :tree
   ((name stringp "Name from the hid")
@@ -973,7 +969,7 @@ top-level hierarchical identifiers.</p>"
               declaration.  This may include array indexing or structure
               indexing."))
 
-  :long "<p>Prerequisite: see @(see following-hids) for considerable discussion
+  :long "<p>Prerequisite: see @(see hid-tools) for considerable discussion
 about the goals and design of this function.</p>
 
 <p>This is our top-level routine for following hierarchical identifiers.  It

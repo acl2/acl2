@@ -37,72 +37,149 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ||#
 
 (in-package "ACL2")
-
-#|
-
-Note: See also the following paper (and accompanying slides):
-
-Matt Kaufmann and Rob Sumners.  Efficient Rewriting of Data Structures
-in ACL2.  In: Proceedings of ACL2 Workshop 2002,
-http://www.cs.utexas.edu/users/moore/acl2/workshop-2002/#presentations
-
-We define properties of a generic record accessor function and updater
-function.  The basic functions are (g a r) and (s a v r) where a is an
-address/key, v is a value, r is a record, and (g a r) returns the value set to
-address a in record r, and (s a v r) returns a new record with address a set to
-value v in record r.
-
-The following main lemmas are "exported" about record (g)et and (s)et:
-
-(defthm g-same-s
-  (equal (g a (s a v r))
-         v))
-
-(defthm g-diff-s
-  (implies (not (equal a b))
-           (equal (g a (s b v r))
-                  (g a r))))
-
-(defthm s-same-g
-  (equal (s a (g a r) r)
-         r))
-
-(defthm s-same-s
-  (equal (s a y (s a x r))
-         (s a y r)))
-
-(defthm s-diff-s
-  (implies (not (equal a b))
-           (equal (s b y (s a x r))
-                  (s a x (s b y r))))
-  :rule-classes ((:rewrite :loop-stopper ((b a s)))))
-
-We also include some auxiliary lemmas which have proven useful.
-
-(defthm access-of-nil-is-nil
-  (not (g a nil)))
-
-(defthm record-set-cannot-be-nil
-  (implies v (s a v r)))
-
-(defthm record-get-non-nil-cannot-be-nil
-  (implies (g a r) r))
-
-We normalize the record structures (which allows the 'equal-ity based rewrite
-rules) as alists where the keys (cars) are ordered using the total-order added
-to ACL2 and defined in the included book. We define a set of "-aux" functions
-which assume well-formed records -- defined by rcdp -- and then prove the
-desired properties using hypothesis assuming well-formed records.
-
-We then remove these well-formed record hypothesis by defining an invertible
-mapping (acl2->rcd) taking any ACL2 object and returning a well-formed
-record. We then prove the desired properties using the proper translations of
-the -aux functions to the acl2 objects, and subsequently remove the
-well-formed record hypothesis.
-
-|#
-
 (include-book "total-order")
+
+(defxdoc misc/records
+  :parents (alists)
+  :short "A @('misc/record') is an <see topic='@(url alists)'>alist</see>-like
+data structure that associates keys to values, but features efficient,
+unconditional rewrite rules about its @('get') and @('set') operations."
+
+  :long "<h3>Introduction</h3>
+
+<p>Note: See also the following paper:</p>
+
+<blockquote> Matt Kaufmann and Rob Sumners.  <a
+href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2002/contrib/kaufmann-sumners/rcd.pdf'>Efficient
+Rewriting of Data Structures in ACL2</a>.  In: Proceedings of <a
+href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2002/'>ACL2 Workshop
+2002</a>.  (<a
+href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2002/contrib/kaufmann-sumners/rcdsld.pdf'>Slides</a>)</blockquote>
+
+<p>We define properties of a generic record accessor function and updater
+function.  The basic functions are:</p>
+
+<ul>
+
+<li>@('(g a r)') &mdash; returns the value at address @('a') in record
+@('r')</li>
+
+<li>@('(s a v r)') &mdash; returns a new record by setting address @('a') to
+value @('v') in record @('r')</li>
+
+</ul>
+
+<p>The following main lemmas are ``exported'' about record @(see g)et and @(see
+s)et:</p>
+
+@({
+    (defthm g-same-s
+      (equal (g a (s a v r))
+             v))
+
+    (defthm g-diff-s
+      (implies (not (equal a b))
+               (equal (g a (s b v r))
+                      (g a r))))
+
+    (defthm s-same-g
+      (equal (s a (g a r) r)
+             r))
+
+    (defthm s-same-s
+      (equal (s a y (s a x r))
+             (s a y r)))
+
+    (defthm s-diff-s
+      (implies (not (equal a b))
+               (equal (s b y (s a x r))
+                      (s a x (s b y r))))
+      :rule-classes ((:rewrite :loop-stopper ((b a s)))))
+})
+
+<p>We also include some auxiliary lemmas which have proven useful.</p>
+
+@({
+    (defthm access-of-nil-is-nil
+      (not (g a nil)))
+
+    (defthm record-set-cannot-be-nil
+      (implies v (s a v r)))
+
+    (defthm record-get-non-nil-cannot-be-nil
+      (implies (g a r) r))
+})
+
+<h3>Extensions and Related Books</h3>
+
+<p>The @('misc/records') book has been widely popular, especially for
+representing memories and heaps.  This popularity has led to some variants and
+extensions.</p>
+
+<p>Records make no distinction between addresses that are unbound versus
+addresses that are bound to @('nil').  This generally makes it difficult to
+reason about the domain of a record, and difficult to iterate through the keys
+of a record.  The @('coi/records') books add several theorems, as well as
+functions like @('rkeys') and useful lemmas like @('rkeyquiv-by-multiplicity')
+that allow you to prove records are equal by showing that they agree for any
+arbitrary key in a ``pick-a-point'' fashion.  These are generally not well
+documented, so see the books themselves for details.</p>
+
+<p>The @(see memory) library defines @('memory') data structures which are very
+similar to @('misc/records') and provide the same read-over-write theorems, but
+which are intended to be more efficient for representing processor memories.
+These functions have restrictive guards that require addresses must be natural
+numbers below @($2^n$) for some @($n$), but use a tree-like structure for
+@($O(\\log_2 n)$) performance.</p>
+
+<p>The @(see defrstobj) library allows certain @(see stobj)s to be reasoned
+about as if they were @(see misc/records).  This may be useful for developing
+efficient processor models.</p>
+
+<p>The keys and values of @('misc/records') are essentially untyped.  The book
+@('coi/records/defrecord') provides a way to introduce alternate ``typed''
+records.  See also: David Greve and Matthew Wilding.  <a
+href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2003/contrib/greve-wilding_defrecord/defrecord.pdf'>Typed
+ACL2 Records</a>.  ACL2 Workshop 2003.  An alternative typed record
+implementation is also provided by the @(see defrstobj) books, see @(see
+def-typed-record).</p>
+
+
+<h3>Implementation Notes</h3>
+
+<p>We normalize the record structures (which allows the equality based rewrite
+rules) as alists where the keys (cars) are ordered using the total-order @(see
+<<). We define a set of ``-aux'' functions which assume well-formed records,
+defined by @('rcdp'), and then prove the desired properties using hypothesis
+assuming well-formed records.</p>
+
+<p>We then remove these well-formed record hypothesis by defining an invertible
+mapping, @('acl2->rcd') taking any ACL2 object and returning a well-formed
+record. We then prove the desired properties using the proper translations of
+the -aux functions to the acl2 objects, and subsequently remove the well-formed
+record hypothesis.</p>")
+
+(defxdoc g
+  :parents (misc/records)
+  :short "Basic accessor for @(see misc/records)."
+  :long "<p>@('(g a r)') returns the value stored at address @('a') in record
+@('r').</p>
+
+<p>This is essentially similar to a function like @(see assoc) for @(see
+alists), except that @('misc/records') do not distinguish between keys that are
+unbound and keys that are bound to @('nil'), so @('g') just returns the value
+instead of a @('(key . value)') pair.</p>")
+
+(defxdoc s
+  :parents (misc/records)
+  :short "Basic update function for @(see misc/records)."
+  :long "<p>@('(s a v r)') ``modifies'' the record @('r') by installing the
+value @('v') at address @('a').  This produces a new record.</p>
+
+<p>This is essentially similar to a function like @(see acons) for @(see
+alists), but its careful definition supports the lemmas described in @(see
+misc/records).</p>")
+
 
 ;; BEGIN records definitions.
 

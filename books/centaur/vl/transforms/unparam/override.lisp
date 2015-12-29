@@ -93,75 +93,77 @@
 ; The way this reconciliation is done follows strict rules, but rules which are
 ; somewhat elaborate and have a rather arbitrary feel.
 ;
-; We now develop vl-override-parameter-value, which, we think, correctly
-; implements these rules and allows us to correctly override a single parameter
-; with the value supplied by the module instance.
+; We now develop vl-override-parameter, which, we think, correctly implements
+; these rules and allows us to correctly override a single parameter with the
+; value supplied by the module instance.
 
-(local (xdoc::set-default-parents vl-override-parameter-value))
+(local (xdoc::set-default-parents vl-override-parameter))
 
-(define vl-override-parameter-with-type
-  :short "Try to override a parameter with a new datatype."
-  ((decl     vl-paramdecl-p        "Some parameter from the submodule.")
-   (datatype vl-datatype-p         "A new datatype to override this parameter with (resolved)")
-   (warnings vl-warninglist-p      "Warnings accumulator for the submodule."))
-  :returns (mv (okp       booleanp :rule-classes :type-prescription)
-               (warnings  vl-warninglist-p)
-               (new-param vl-paramdecl-p "The replacement parameter."))
-  (b* ((decl     (vl-paramdecl-fix decl))
-       (datatype (vl-datatype-fix datatype))
+;; [Jared] BOZO where is this done now?
 
-       ((vl-paramdecl decl) decl)
-       ((unless (eq (vl-paramtype-kind decl.type) :vl-typeparam))
-        (vl-unparam-debug "trying to override value parameter ~a1 with datatype ~a2.~%"
-                          nil decl datatype)
-        (mv nil
-            (fatal :type :vl-bad-parameter-override
-                   :msg "can't override parameter ~s1 with datatype ~a2: ~
-                         ~s1 is a value parameter, not a type parameter."
-                   :args (list nil decl.name datatype))
-            decl))
+;; (define vl-override-parameter-with-type
+;;   :short "Try to override a parameter with a new datatype."
+;;   ((decl     vl-paramdecl-p        "Some parameter from the submodule.")
+;;    (datatype vl-datatype-p         "A new datatype to override this parameter with (resolved)")
+;;    (warnings vl-warninglist-p      "Warnings accumulator for the submodule."))
+;;   :returns (mv (okp       booleanp :rule-classes :type-prescription)
+;;                (warnings  vl-warninglist-p)
+;;                (new-param vl-paramdecl-p "The replacement parameter."))
+;;   (b* ((decl     (vl-paramdecl-fix decl))
+;;        (datatype (vl-datatype-fix datatype))
 
-       ((unless (vl-datatype-resolved-p datatype))
-        (vl-unparam-debug "unresolved usertypes usertypes in override ~
-                           datatype ~a1 for parameter ~a2~%"
-                         nil datatype decl)
-        (mv nil
-            (fatal :type :vl-bad-parameter-override
-                   :msg "unresolved usertypes in override datatype ~
-                         ~a1 for parameter ~a2"
-                   :args (list nil datatype decl))
-            decl))
+;;        ((vl-paramdecl decl) decl)
+;;        ((unless (eq (vl-paramtype-kind decl.type) :vl-typeparam))
+;;         (vl-unparam-debug "trying to override value parameter ~a1 with datatype ~a2.~%"
+;;                           nil decl datatype)
+;;         (mv nil
+;;             (fatal :type :vl-bad-parameter-override
+;;                    :msg "can't override parameter ~s1 with datatype ~a2: ~
+;;                          ~s1 is a value parameter, not a type parameter."
+;;                    :args (list nil decl.name datatype))
+;;             decl))
 
-       (new-decl (change-vl-paramdecl
-                  decl
-                  :type (change-vl-typeparam decl.type :default datatype)))
+;;        ((unless (vl-datatype-resolved-p datatype))
+;;         (vl-unparam-debug "unresolved usertypes usertypes in override ~
+;;                            datatype ~a1 for parameter ~a2~%"
+;;                          nil datatype decl)
+;;         (mv nil
+;;             (fatal :type :vl-bad-parameter-override
+;;                    :msg "unresolved usertypes in override datatype ~
+;;                          ~a1 for parameter ~a2"
+;;                    :args (list nil datatype decl))
+;;             decl))
 
-       ;; It seems like we might want to do some other kinds of sanity/error
-       ;; checking here, but I'm not sure what that would look like.  Well
-       ;; maybe we don't?  After all, this is basically just setting up a type
-       ;; alias.  What kinds of things could go wrong?
-       ;;
-       ;;   - The type might be sort of malformed or non-existent, e.g., the
-       ;;     instance could say use foo_t but this might not be a defined
-       ;;     type, or could say to use a struct { foo_t a; int b; } when foo_t
-       ;;     doesn't exist, or something like that.
-       ;;
-       ;;   - The type might not make sense in a context where it's used.  For
-       ;;     instance, suppose that somewhere in the module we try to add one
-       ;;     to a variable of this type.  That won't make sense if the
-       ;;     instance overrides this type with, say, an unpacked struct.
-       ;;
-       ;;   - Probably other things I haven't thought through very well yet.
-       ;;
-       ;; Well, so what?  I think all of these could also be problems with the
-       ;; parameter's default type.  So, it seems like probably we don't have
-       ;; to be especially worried with sanity checking this kind of stuff at
-       ;; override time.
-       ;(new-type (change-vl-typeparam decl.type :default datatype))
-       ;(new-decl (change-vl-paramdecl decl :type new-type))
-       )
-    (vl-unparam-debug "parameter ~a1 becomes ~a2.~%" nil decl datatype)
-    (mv t (ok) new-decl)))
+;;        (new-decl (change-vl-paramdecl
+;;                   decl
+;;                   :type (change-vl-typeparam decl.type :default datatype)))
+
+;;        ;; It seems like we might want to do some other kinds of sanity/error
+;;        ;; checking here, but I'm not sure what that would look like.  Well
+;;        ;; maybe we don't?  After all, this is basically just setting up a type
+;;        ;; alias.  What kinds of things could go wrong?
+;;        ;;
+;;        ;;   - The type might be sort of malformed or non-existent, e.g., the
+;;        ;;     instance could say use foo_t but this might not be a defined
+;;        ;;     type, or could say to use a struct { foo_t a; int b; } when foo_t
+;;        ;;     doesn't exist, or something like that.
+;;        ;;
+;;        ;;   - The type might not make sense in a context where it's used.  For
+;;        ;;     instance, suppose that somewhere in the module we try to add one
+;;        ;;     to a variable of this type.  That won't make sense if the
+;;        ;;     instance overrides this type with, say, an unpacked struct.
+;;        ;;
+;;        ;;   - Probably other things I haven't thought through very well yet.
+;;        ;;
+;;        ;; Well, so what?  I think all of these could also be problems with the
+;;        ;; parameter's default type.  So, it seems like probably we don't have
+;;        ;; to be especially worried with sanity checking this kind of stuff at
+;;        ;; override time.
+;;        ;(new-type (change-vl-typeparam decl.type :default datatype))
+;;        ;(new-decl (change-vl-paramdecl decl :type new-type))
+;;        )
+;;     (vl-unparam-debug "parameter ~a1 becomes ~a2.~%" nil decl datatype)
+;;     (mv t (ok) new-decl)))
 
 (define vl-convert-parameter-value-to-explicit-type
   :short "Alter the expression given to an explicitly typed parameter so that
@@ -277,6 +279,7 @@ types.</p>"
 
 
 (define vl-override-parameter
+  :parents (elaborate)
   :short "Try to override a parameter with a new expression."
   ((decl       vl-paramdecl-p      "Some parameter from the submodule.")
    (elabindex  "In the declaration scope")

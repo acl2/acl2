@@ -42,8 +42,8 @@
 (defsection annotate
   :parents (transforms)
   :short "Typically the first step after <see topic='@(url
-loader')'>loading</see> a design.  Applies several basic, preliminary
-transforms to normalize the design and check it for well-formedness."
+loader)'>loading</see> a design.  Applies several basic, preliminary transforms
+to normalize the design and check it for well-formedness."
 
   :long "<p>The @(see vl-design)s produced by VL's @(see loader) are not yet in
 a very finished or error-checked form.  The function @(see vl-annotate-design)

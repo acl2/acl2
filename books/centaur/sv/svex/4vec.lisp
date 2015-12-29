@@ -103,8 +103,7 @@ to explicitly replicate/extend comparison results.</p>
 <p>It is critical that these functions support efficient symbolic simulation
 with @(see gl).  However, the logical definitions of these functions are
 typically not relevant to this, because we use a custom translation from @(see
-expressions) into @(see acl2::aig)s; see @(see svex-symbolic-evaluation) for
-details.</p>")
+expressions) into @(see acl2::aig)s; see @(see bit-blasting) for details.</p>")
 
 (xdoc::defpointer boolean-convention 4vec-operations)
 

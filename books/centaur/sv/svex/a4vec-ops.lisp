@@ -128,8 +128,8 @@ vectors.</p>")
 
 
 (defsection a4vec-0
-  :short "@(call a4vec-0) return an @(see a4vec) that evaluates to @(see
-4vec-0) under every environment."
+  :short "@(call a4vec-0) return an @(see a4vec) that evaluates to 0 under
+every environment."
   :long "@(def a4vec-0)"
 
   (defmacro a4vec-0 ()

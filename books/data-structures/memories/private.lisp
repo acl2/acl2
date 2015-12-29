@@ -65,9 +65,10 @@ further: it also disables the resulting type-prescription rule and sets up
 definition or the type prescription.</p>
 
 <p>Why would we want such a thing?  A nice way to develop libraries is to use
-@(see redundant-events) in an interface file, so that users never even see the
-local lemmas and so forth that you used to get the proofs to go through.  This
-gives you the freedom to change and remove those definitions at will.</p>
+@(see acl2::redundant-events) in an interface file, so that users never even
+see the local lemmas and so forth that you used to get the proofs to go
+through.  This gives you the freedom to change and remove those definitions at
+will.</p>
 
 <p>Unfortunately, you cannot do the same for functions, because ACL2 needs the
 functions available in the interface book if they are ever used.  With

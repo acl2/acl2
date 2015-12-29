@@ -47,7 +47,7 @@ types, and parameters."
 <ul>
 <li>@(see vl-elabindex-init) initializes an empty elabindex at the design scope.</li>
 <li>@(see vl-elabindex-update-item-info) adds an entry about a parameter, type, or function name to the current scope.</li>
-<li>@(see vl-elabindex-traverse-to-ss) traverses to the scope represented by the given scopestack.</li>
+<li>@(see vl-elabindex-traverse) traverses to the scope represented by the given scopestack.</li>
 <li>@(see vl-elabindex-push) enters the given scope.</li>
 <li>@(see vl-elabindex-undo) undoes the latest traversal/push that hasn't already been undone.</li>
 <li>@(see vl-elabindex->ss) accesses the scopestack of the current location</li>
@@ -61,7 +61,7 @@ doing this.)</li>
 
 <p>An elabindex is most useful when you are going to be adding new elaboration
 results.  To simply examine elaboration results, you may use a @(see
-vl-elabscope-stack).  This is a data structure used in an elabindex, but also
+vl-elabscopes).  This is a data structure used in an elabindex, but also
 has a set of functions appropriate for using it in an applicative manner.</p>
 
 
@@ -95,13 +95,13 @@ non-treelike traversals of the design.</p>
 
 <h3>Implementation</h3>
 
-<p>An elabindex contains a scopestack and an elabscope-stack.  A scopestack
+<p>An elabindex contains a scopestack and an elabscopes.  A scopestack
 contains all the smarts necessary to look up items correctly (which can be
-nontrivial when you factor in imports, etc.).  The elabscope-stack contains
+nontrivial when you factor in imports, etc.).  The elabscopes contains
 analogous scopes as the scopestack, but these scopes record elaboration
 information and are designed to be easily updated, as well as the subscopes
 contained within.  To make writes to a scope permanent, each time we go up a
-scope, we pop the scope off of the elabscope-stack, but write it into the
+scope, we pop the scope off of the elabscopes, but write it into the
 parent scope so that next time we go into that scope, we'll get our most recent
 updates.</p>
 
@@ -125,9 +125,9 @@ context.</p>
 <ul>
 
 <li>Keep a stack of checkpoints, i.e. before going to the package context, save
-our current elabscope-stack, and restore it when we're done computing the
+our current elabscopes, and restore it when we're done computing the
 parameter.  Problem: we need to save the work we did to compute the parameter,
-so we can't just revert to our previous elabscope-stack.</li>
+so we can't just revert to our previous elabscopes.</li>
 
 <li>Keep a stack of paths that uniquely identify the current location.  When
 going to a new location, push the current location's path onto the stack, and
@@ -160,7 +160,7 @@ back to one.  (An exception, arguably, is a block scope inside a function
 definition.  But this should only matter if the function calls itself
 recursively, which we don't support for now anyway.)</p>")
 
-
+(local (xdoc::set-default-parents elabindex))
 
 
 (deftagsum vl-elabkey

@@ -29,7 +29,6 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
-
 (include-book "vl-svstmt")
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
@@ -45,6 +44,97 @@
                            acl2::true-listp-append
                            acl2::subsetp-when-atom-right
                            acl2::subsetp-when-atom-left)))
+
+(defsection elaborate
+  :parents (transforms)
+  :short "Resolve constant expressions, parameter values, and datatypes."
+
+  :long "<p>In the previous version of VL, we used to do a series of transforms
+that:</p>
+
+<ul>
+<li>expanded function definitions into assignments (see @(see
+vl2014::expand-functions))</li>
+
+<li>resolved parameter values and created all the necessary versions of
+parametrized modules (see @(see vl2014::unparameterization))</li>
+
+<li>resolved constant indices in datatypes (see @(see
+vl2014::rangeresolve)).</li>
+</ul>
+
+<p>(We'll refer to these three kinds of transformations collectively as
+\"elaboration;\" commercial implementations use that term to mean something
+somewhat similar.)</p>
+
+<p>The problem with this series of transformations is that there may be
+complicated relationships among functions, parameters, and datatypes -- a
+function, parameter, or datatype definition may use functions, parameters, and
+datatypes.  Consider the following sequence of declarations:</p>
+
+@({
+ function integer f1 (logic a);
+    f1 = a ? 3 : 5;
+ endfunction
+
+ parameter p1 = f1(1);
+
+ typedef logic [p1-1:0] t1;
+
+ function t1 f2 (integer b);
+    f2 = ~b;
+ endfunction
+
+ parameter t1 p2 = f2(p1);
+
+ })
+
+<p>From the example we can see that it won't suffice to use our three
+transformations once each in any order.  One solution might be to try the
+tranformations repeatedly in a cycle.  Our solution is instead to allow
+parameters, functions, and types to be resolved as needed while resolving other
+parameters, functions, and types.  We use a lookup table to store previously
+resolved items as a form of memoization.</p>
+
+<p>The lookup table in which we store these values is called an @(see
+elabindex).</p>
+
+<p>The elaboration algorithm calls subsidiary algorithms @(see vl-expr-to-svex)
+and @(see vl-fundecl-to-svex), which each use the elabindex lookup tables in a
+read-only manner.  Before translating an expression (or, similarly, function
+declaration) to svex, the elaboration algorithm walks over the expression and
+collects the information it needs to successfully resolve it to an svex
+expression: the types, svex translations, and port lists of functions that the
+expression calls, and types and values of parameters referenced in the
+expression.  This information is stored in the elabindex before translating the
+expression with @(see vl-expr-to-svex).</p>")
+
+;; [Jared] Old notes about svexconfs -- do we describe this well for elabscopes
+;; now?  Also BOZO need to check that the above description of elabindex is OK.
+
+;; which contains a scopestack and additionally holds the following four
+;; tables:</p>
+
+;; <ul>
+
+;; <li>@('typeov'), mapping from function, parameter, and type names to resolved
+;; datatypes.  These datatypes have all indices and usertypes resolved.  Functions
+;; map to their return types, value parameters map to their types, type parameters
+;; map to their (datatype) values, and type names map to their definitions.</li>
+
+;; <li>@('fns'), mapping from function names to @(see sv::svex) expressions for
+;; their return values in terms of their inputs.</li>
+
+;; <li>@('fnports'), mapping from function names to their resolved list of
+;; ports (containing resolved datatypes).</li>
+
+;; <li>@('params'), mapping from parameter names to @(see sv::svex) expressions for
+;; their values, which should be constant.</li>
+
+;; </ul>
+
+
+(local (xdoc::set-default-parents elaborate))
 
 (fty::defvisitor-template elaborate ((x :object)
                                      elabindex
@@ -293,89 +383,7 @@
     :type expressions-and-datatypes
     :order 1
     :measure (acl2::nat-list-measure
-              (list reclimit :order :count 0))
-
-    :short "Resolve constant expressions, parameter values, and datatypes."
-    :long "
-<p>In the previous version of VL, we used to do a series of transforms that:</p>
-
-<ul>
-<li>expanded function definitions into assignments (see @(see
-vl2014::expand-functions))</li>
-
-<li>resolved parameter values and created all the necessary versions of
-parametrized modules (see @(see vl2014::unparameterization))</li>
-
-<li>resolved constant indices in datatypes (see @(see
-vl2014::rangeresolve)).</li>
-</ul>
-
-<p>(We'll refer to these three kinds of transformations collectively as
-\"elaboration;\" commercial implementations use that term to mean something
-somewhat similar.)</p>
-
-<p>The problem with this series of transformations is that there may be
-complicated relationships among functions, parameters, and datatypes -- a
-function, parameter, or datatype definition may use functions, parameters, and
-datatypes.  Consider the following sequence of declarations:</p>
-
-@({
- function integer f1 (logic a);
-    f1 = a ? 3 : 5;
- endfunction
-
- parameter p1 = f1(1);
-
- typedef logic [p1-1:0] t1;
-
- function t1 f2 (integer b);
-    f2 = ~b;
- endfunction
-
- parameter t1 p2 = f2(p1);
-
- })
-
-<p>From the example we can see that it won't suffice to use our three
-transformations once each in any order.  One solution might be to try the
-tranformations repeatedly in a cycle.  Our solution is instead to allow
-parameters, functions, and types to be resolved as needed while resolving other
-parameters, functions, and types.  We use a lookup table to store previously
-resolved items as a form of memoization.</p>
-
-<p>The lookup table in which we store these values is a @(see vl-svexconf),
-which contains a scopestack and additionally holds the following four
-tables:</p>
-
-<ul>
-
-<li>@('typeov'), mapping from function, parameter, and type names to resolved
-datatypes.  These datatypes have all indices and usertypes resolved.  Functions
-map to their return types, value parameters map to their types, type parameters
-map to their (datatype) values, and type names map to their definitions.</li>
-
-<li>@('fns'), mapping from function names to @(see svex) expressions for
-their return values in terms of their inputs.</li>
-
-<li>@('fnports'), mapping from function names to their resolved list of
-ports (containing resolved datatypes).</li>
-
-<li>@('params'), mapping from parameter names to @(see svex) expressions for
-their values, which should be constant.</li>
-
-</ul>
-
-<p>The elaboration algorithm calls subsidiary algorithms @(see vl-expr-to-svex)
-and @(see vl-fundecl-to-svex), which each use the svexconf lookup tables in a
-read-only manner.  Before translating an expression (or, similarly, function
-declaration) to svex, the elaboration algorithm walks over the expression and
-collects the information it needs to successfully resolve it to an svex
-expression: the types, svex translations, and port lists of functions that the
-expression calls, and types and values of parameters referenced in the
-expression.  This information is stored in the svexconf before translating the
-expression with @(see vl-expr-to-svex).</p>
-
-")
+              (list reclimit :order :count 0)))
 
   (define vl-datatype-elaborate ((x vl-datatype-p)
                                  elabindex

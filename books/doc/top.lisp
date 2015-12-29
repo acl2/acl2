@@ -241,6 +241,7 @@
 (include-book "centaur/memoize/old/watch" :dir :system)
 
 (include-book "data-structures/top" :dir :system)
+(include-book "data-structures/memories/memory" :dir :system)
 (include-book "acl2s/doc" :dir :system)
 
 (include-book "projects/doc" :dir :system)

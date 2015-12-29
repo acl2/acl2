@@ -404,10 +404,9 @@
 
 (defsection vl-one-bit-constants
   :short "Already-sized, one-bit constants."
-
-  :long "<p>Care should be taken when using these constants because they are
-already annotated with their final widths and types, and @(see
-expression-sizing) is a very complex topic.</p>"
+  :long "<p>The names of these constants are historic relics from a time when
+VL's expressions had size annotations.  We should probably get rid of these, it
+looks like they are now mainly used in @(see udp-elim).</p>"
 
   (defconst |*sized-1'b0*|
     (hons-copy (make-vl-literal

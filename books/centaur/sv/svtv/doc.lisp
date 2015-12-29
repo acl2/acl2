@@ -38,7 +38,7 @@
 (local (include-book "std/strings/explode-nonnegative-integer" :dir :system))
 
 (defsection svtv-doc
-  :parents (svex-svtv)
+  :parents (svex-stvs)
   :short "Automatic documentation support for svex symbolic test vectors."
 
   :long "<p>Symbolic test vectors are integrated into @(see xdoc::xdoc) so that you
@@ -74,7 +74,6 @@ tags get rendered into HTML is controlled by, e.g.,
 
 (define stv-name-to-xml (name acc)
   :returns (acc character-listp :hyp (character-listp acc))
-  :parents (stv-doc)
   :short "Encode the name of an STV line."
   (b* (((when (stringp name))
         ;; It already looks like a Verilog name, so this is easy enough.
@@ -259,7 +258,6 @@ tags get rendered into HTML is controlled by, e.g.,
                                          (svtv-entry-p expansion)))
                           acc)
   :returns (acc character-listp :hyp (character-listp acc))
-  :parents (stv-doc)
   :short "Encode a single value from an STV line."
   (cond ((4vec-p expansion)
          (revappend (4vec-to-xml-chars expansion) acc))
@@ -285,7 +283,6 @@ tags get rendered into HTML is controlled by, e.g.,
                                         svtv-entrylist-p)
                             acc)
   :returns (acc character-listp :hyp (character-listp acc))
-  :parents (stv-doc)
   :short "Encode all the values from an STV line."
   (b* (((when (atom entries))
         acc)
@@ -308,7 +305,6 @@ tags get rendered into HTML is controlled by, e.g.,
                   (svtv-line-p expansion)))
    acc)
   :returns (acc character-listp :hyp (character-listp acc))
-  :parents (stv-doc)
   :short "Encode one full line from the STV into XML for XDOC."
   (b* ((acc (str::revappend-chars "<stv_line>" acc))
        (acc (str::revappend-chars "<stv_name>" acc))
@@ -326,7 +322,6 @@ tags get rendered into HTML is controlled by, e.g.,
                           (expansions svtv-lines-p)
                           acc)
   :returns (acc character-listp :hyp (character-listp acc))
-  :parents (stv-doc)
   (b* (((when (atom lines))
         acc)
        ((cons expansion1 rest-expansions) (if (atom expansions)
@@ -338,7 +333,6 @@ tags get rendered into HTML is controlled by, e.g.,
 (define stv-labels-to-xml ((labels symbol-listp)
                            acc)
   :returns (acc character-listp :hyp (character-listp acc))
-  :parents (stv-doc)
   (b* (((when (atom labels))
         acc)
        (acc (str::revappend-chars "<stv_label>" acc))

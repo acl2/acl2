@@ -1755,8 +1755,8 @@ transform that has used scopestacks.</p>"
 causes a hard error; and if the name of each scope isn't unique within its
 parent scope, then the hash key won't be unique.</p>
 
-<p>Running @(see vl-design-addnames) before using this should ensure that
-scopes are named, and the names generated should be unique.</p>"
+<p>Running @(see addnames) before using this should ensure that scopes are
+named, and the names generated should be unique.</p>"
   :returns (key)
   :measure (vl-scopestack-count x)
   (vl-scopestack-case x

@@ -36,11 +36,13 @@
 (local (include-book "std/osets/under-set-equiv" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
-
-(define name-p (x)
+(defxdoc name
   :parents (svmods)
   :short "Type of the names of wires, module instances, and namespaces (such as
-          datatype fields)."
+          datatype fields).")
+
+(define name-p (x)
+  :parents (name)
   (or (stringp x)    ;; normal wire/instance/field names
       (integerp x)   ;; array indices
       (eq x :self)   ;; special name for a datatype's self wire -- see vl-datatype->mods
@@ -48,7 +50,7 @@
            (eq (car x) :anonymous))))
 
 (define name-fix ((x name-p))
-  :parents (name-p)
+  :parents (name)
   :returns (xx name-p)
   :hooks nil
   (mbe :logic (if (name-p x) x '(:anonymous))
@@ -59,12 +61,17 @@
              (equal (name-fix x) x))))
 
 (defsection name-equiv
-  :parents (name-p)
-  (fty::deffixtype name :pred name-p :fix name-fix :equiv name-equiv
-    :define t :forward t))
+  :parents (name)
+  (fty::deffixtype name
+    :pred name-p
+    :fix name-fix
+    :equiv name-equiv
+    :define t
+    :forward t))
 
 
 (fty::defflexsum path
+  :parents (svmods)
   :short "Type of a path to a wire in svex modules, expressed relative to the local scope."
   ;; :prepwork ((local (defthm car-of-name-fix
   ;;                     (implies (consp (name-fix x))
@@ -96,6 +103,7 @@
 
 
 (define path-append ((x path-p) (y path-p))
+  :parents (path)
   :returns (new-path path-p)
   :measure (path-count x)
   :verify-guards nil
@@ -105,26 +113,16 @@
   ///
   (verify-guards path-append))
 
+
+(defxdoc addr-scope
+  :parents (address)
+  :short "Scope for an @(see address-p).")
+
 (define addr-scope-p (x)
+  :parents (addr-scope)
   (or (natp x)
       (eq x :root))
   ///
-  (define addr-scope-fix ((x addr-scope-p))
-    :returns (xx addr-scope-p)
-    :hooks nil
-    (mbe :logic (if (eq x :root) x (nfix x))
-         :exec x)
-    ///
-    (defthm addr-scope-fix-when-addr-scope-p
-      (implies (addr-scope-p x)
-               (equal (addr-scope-fix x) x)))
-
-    (fty::deffixtype addr-scope
-      :pred addr-scope-p
-      :fix addr-scope-fix
-      :equiv addr-scope-equiv
-      :define t :forward t))
-
   (defthm addr-scope-possibilities
     (implies (addr-scope-p x)
              (or (equal x :root)
@@ -134,6 +132,27 @@
   (defthm addr-scope-p-when-natp
     (implies (natp x)
              (addr-scope-p x))))
+
+(define addr-scope-fix ((x addr-scope-p))
+  :parents (addr-scope)
+  :returns (xx addr-scope-p)
+  :hooks nil
+  (mbe :logic (if (eq x :root) x (nfix x))
+       :exec x)
+  ///
+  (defthm addr-scope-fix-when-addr-scope-p
+    (implies (addr-scope-p x)
+             (equal (addr-scope-fix x) x))))
+
+(defsection addr-scope-equiv
+  :parents (addr-scope)
+  (fty::deffixtype addr-scope
+    :pred addr-scope-p
+    :fix addr-scope-fix
+    :equiv addr-scope-equiv
+    :define t
+    :forward t))
+
 
 
 ;; (fty::defprod address
@@ -152,7 +171,7 @@
 
 
 (fty::defflexsum address
-  :parents (svex)
+  :parents (svmods)
   :short "Convention for referring to wires in expressions and lvalues."
   :long "<p>This is a product type containing a path, scope qualifier, and
 index.  The scope qualifier is either a natural number (indicating that
@@ -213,20 +232,15 @@ address with empty index and scope qualifier 0.</p>"
                            (x (address->scope x))))))
     :rule-classes ((:forward-chaining :trigger-terms ((address->scope x))))))
 
-(defxdoc address.lisp
-  :parents (address))
 
-(local (xdoc::set-default-parents address.lisp))
-
+(local (xdoc::set-default-parents address))
 
 (define address->svar ((x address-p))
-  :parents (address)
   :short "Turn an address into a variable name."
   :returns (xvar svar-p)
   (make-svar :name (address-fix x)))
 
 (define svar-addr-p ((x svar-p))
-  :parents (address)
   :short "An svar containing an address."
   (address-p (svar->name x))
   ///

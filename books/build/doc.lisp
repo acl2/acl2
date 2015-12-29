@@ -34,7 +34,7 @@
 (defxdoc cert.pl
   :parents (books)
   :short "@('cert.pl') is a mature, user-friendly, industrial-strength tool for
-certifying ACL2 @(see books)."
+certifying ACL2 @(see acl2::books)."
 
   :long "<h3>Introduction</h3>
 
@@ -80,9 +80,9 @@ directory of the Community Books, and is today the main tool behind
 
 <p>This documentation is really a <b>tutorial</b>, not a reference.  We
 recommend that you read the topics in order.  Also see @(see
-books-certification) for additional information on how to automate the
-certification of the @(see community-books), and for more details, execute
-the following command in the shell.</p>
+acl2::books-certification) for additional information on how to automate the
+certification of the @(see community-books), and for more details, execute the
+following command in the shell.</p>
 
 @({
      <path_to_acl2>/books/build/cert.pl --help
@@ -295,7 +295,7 @@ Successfully built /home/jared/acl2/books/tmp/inc.cert
 
 <ul>
 
-<li>@('inc.cert'), the ACL2 @(see certificate) for @('inc.lisp')</li>
+<li>@('inc.cert'), the ACL2 @(see acl2::certificate) for @('inc.lisp')</li>
 
 <li>@('inc.cert.out'), the log for certifying @('inc'); this shows the
 instructions that were submitted to ACL2, and the output from the @(see
@@ -465,10 +465,10 @@ that @('mybook.lisp') includes.</p>
 <h3>Dependency Scanning Limitations</h3>
 
 <p>Keep in mind that @('cert.pl') is a dumb Perl script.  It's quite easy to
-fool it using @(see macros) or other tricks.  But you don't even need to get
-that fancy&mdash;a newline will do the trick.  For instance, if @('foo.lisp')
-contains the following, then @('cert.pl') will not think it depends on
-@('bar'):</p>
+fool it using @(see acl2::macros) or other tricks.  But you don't even need to
+get that fancy&mdash;a newline will do the trick.  For instance, if
+@('foo.lisp') contains the following, then @('cert.pl') will not think it
+depends on @('bar'):</p>
 
 @({
    (include-book     ;; newline to fool dependency scanner
@@ -531,7 +531,7 @@ certify-book).  You'll need this to use ACL2 features like @(see defpkg) and
 <p>ACL2 commands like @(see defpkg) can't be embedded within books.  Instead,
 when using raw ACL2 to certify books, you typically define the package before
 issuing the @(see certify-book) command.  The @(see defpkg) command then
-becomes part of the book's @(see portcullis).</p>
+becomes part of the book's @(see acl2::portcullis).</p>
 
 <p>For example, here is how to successfully certify a book with its own
 package, using raw ACL2:</p>
@@ -549,8 +549,8 @@ package, using raw ACL2:</p>
 })
 
 <p>If this doesn't make sense, please see the documentation for @(see books),
-especially see @(see book-example) which explains something like the above in
-far greater detail.</p>
+especially see @(see acl2::book-example) which explains something like the
+above in far greater detail.</p>
 
 
 <h3>Individual @('.acl2') Files</h3>
@@ -611,7 +611,7 @@ will also replicate this form in their portculli.  This can be a problem
 because including multiple books depending on this package requires checking
 many times that this defpkg form is redundant, which can actually add up to a
 significant performance problem.  We suggest using the discipline described in
-@(see working-with-packages) instead.</p>
+@(see acl2::working-with-packages) instead.</p>
 
 <h3>Directory-Wide @('cert.acl2') Files</h3>
 
@@ -773,11 +773,11 @@ instance,</p>
 
 <ul>
 
-<li>An ACL2 book for verifying a Java program might use @(see io) routines to
-load @('encrypt.java'), or</li>
+<li>An ACL2 book for verifying a Java program might use @(see acl2::io)
+routines to load @('encrypt.java'), or</li>
 
-<li>An ACL2 book with trust tags might use @(see include-raw) to load in some
-extra raw Lisp file named @('server-raw.lsp').</li>
+<li>An ACL2 book with trust tags might use @(see acl2::include-raw) to load in
+some extra raw Lisp file named @('server-raw.lsp').</li>
 
 </ul>
 

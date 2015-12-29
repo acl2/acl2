@@ -1087,10 +1087,12 @@ do this processing once, in the creation of templates, rather than each time we
 want to expand a call of the function.</p>
 
 <p>But a more important reason is that it allows us to support functions that
-call other functions in a straightforward way.  In @(see
-vl-flatten-funtemplates) we use our ordinary function-expansion code to expand
-any function calls within function templates, so that when we expand functions
-throughout the rest of the module we only need one pass.</p>")
+call other functions in a straightforward way.  BOZO: previously we claimed
+that ``in @('vl-flatten-funtemplates') we use our ordinary function-expansion
+code to expand any function calls within function templates, so that when we
+expand functions throughout the rest of the module we only need one pass.'' but
+that function no longer exists and Jared does not remember whether we changed
+how this worked.</p>")
 
 (fty::deflist vl-funtemplatelist :elt-type vl-funtemplate-p
   :elementp-of-nil nil
@@ -1246,8 +1248,9 @@ vl-fun-vardecllist-types-okp).</p>"
   :long "<p>We try to generate a @(see vl-funtemplate-p) corresponding to
 @('x').  On success, the template we generate is only an <b>initial</b>
 template; it isn't necessarily \"flat\" and might have function calls within
-its assignments.  We later flatten these initial templates with @(see
-vl-flatten-funtemplates).</p>
+its assignments.  BOZO we previously claimed: ``We later flatten these initial
+templates with @('vl-flatten-funtemplates').'' but that function no longer
+exists and Jared doesn't remember whether we changed how it works.</p>
 
 <p>Creating the template for a function is a pretty elaborate process which
 involves a lot of sanity checking, and will fail if the function includes

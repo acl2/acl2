@@ -59,7 +59,7 @@ href='http://dx.doi.org/10.4204/EPTCS.152.2'>Industrial Strength Documentation
 for ACL2</a>.  ACL2 Workshop 2014.  EPTCS 152.  Pages 9-25.
 </blockquote>
 
-<p>See <i>Building the Manual</i> under @(see books-certification) for
+<p>See <i>Building the Manual</i> under @(see acl2::books-certification) for
 information on building the ACL2+Books manual.</p>
 
 

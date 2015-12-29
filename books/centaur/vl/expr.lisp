@@ -89,7 +89,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
   :short "Fixing function for non-empty @(see vl-bitlist)s."
   :long "<p>This is just a technical helper function that supports the @(see
          fty::fty-discipline).  It is used to ensure that the @('bits') of a
-         @(see vl-weirdint-p) are always nonempty.</p>"
+         @(see vl-weirdint) are always nonempty.</p>"
   :returns (x-fix vl-bitlist-p)
   :inline t
   (mbe :logic
@@ -644,8 +644,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
                            acl2::nfix-when-not-natp
                            (:t acl2::acl2-count-of-consp-positive))))
 
-(local (xdoc::set-default-parents nil))
-
+(local (xdoc::set-default-parents))
 
 (deftypes expressions-and-datatypes
   :parents (syntax)
@@ -1040,10 +1039,9 @@ and generally makes it easier to write safe expression-processing code.</p>")
            <h3>Internal Use of Attributes by VL</h3>
 
            <p>Certain VL transformations may occasionally add attributes
-           throughout modules.  For instance, the @(see designwires)
-           transformation will add @('VL_DESIGN_WIRE') attributes to the
-           declarations that were found in the original design, so that you can
-           distinguish them from, e.g., temporary wires that VL adds later.</p>
+           throughout modules.  For instance, the @(see make-implicit-wires)
+           transformation will add @('VL_IMPLICIT') attributes to the wire
+           declarations that added implicitly.</p>
 
            <p>We once tried to record the different kinds of attributes that VL
            used here, but that list became quickly out of date as we forgot to
@@ -2588,6 +2586,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :hints(("Goal" :in-theory (enable vl-datatype->udims)))))
 
 (define vl-datatype-update-pdims ((pdims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :parents (vl-datatype)
   :enabled t
   :prepwork ((local (in-theory (enable vl-datatype-update-dims))))
   :returns (newx (and (vl-datatype-p newx)
@@ -2601,6 +2600,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
                   :vl-usertype (change-vl-usertype x :pdims pdims))))
 
 (define vl-datatype-update-udims ((udims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :parents (vl-datatype)
   :enabled t
   :prepwork ((local (in-theory (enable vl-datatype-update-dims))))
   :returns (newx (and (vl-datatype-p newx)

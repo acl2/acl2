@@ -331,6 +331,7 @@ vl-unparameterize-main) does.</p>
 <h3>Tricky Parts</h3>
 
 <h2>Scoping</h2>
+
 <p>When we unparameterize a module instance like</p>
 
 @({
@@ -398,7 +399,7 @@ vl-scopestack->hashkey), which reduces a scopestack to a hierarchy of
 names.</p>
 
 <p>These instance keys are used to track the generated names of modules, the
-parameters used to instantiate them, and 
+parameters used to instantiate them, and </p>
 
 ")
 
@@ -539,7 +540,7 @@ parameters used to instantiate them, and
 
 
 (define vl-unparam-instkey-p ((x))
-  :short "Mainly, the type of an element produced by vl-unparam-inst->instkey."
+  :short "Mainly, the type of an element produced by @(see vl-unparam-inst->instkey)."
   (and (consp x)
        (stringp (car x)))
   ///

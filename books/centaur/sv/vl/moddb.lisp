@@ -189,7 +189,7 @@ instantiate other data-structure modules.  Interfaces are treated as a
 combination of struct variable and module instance.</p>
 
 <p>This approach to array indexing also lets us deal straightforwardly with
-instance arrays; see @(see vl-instarray-plainarg-nested-instance-alias) for details.</p>
+instance arrays; see @(see vl-portinfo-instarray-nested-alias) for details.</p>
 
 <h3>Scopes</h3>
 
@@ -1525,7 +1525,7 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
                      '(:in-theory (enable sv::name-p))))
   :short "Produces the wire declaration for the wire of an instance array module
           that consolidates all occurrences of a particular port."
-  :long "<p>See @(see vl-instarray-plainarg-nested-instance-alias) for more
+  :long "<p>See @(see vl-portinfo-instarray-nested-alias) for more
 details on dealing with modinst arrays.</p>"
   (vl-portinfo-case x
     :regular

@@ -47,7 +47,7 @@
 sv::svex) expressions."
 
   :long "<p>The top-level function for converting a VL expression into a @(see
-sv::svex) expression is @(see vl-expr->svex).</p>
+sv::svex) expression is @(see vl-expr-to-svex).</p>
 
 <p>We assume that the expressions we are dealing with are sized.</p>
 
@@ -213,7 +213,7 @@ would therefore incur some overhead.</p>")
 (define svex-extend ((type vl-exprsign-p)
                      (width natp)
                      (x sv::svex-p))
-  :parents (vl-expr->svex)
+  :parents (vl-expr-to-svex)
   :short "Returns an svex representing the sign- or zero-extension of x at the given width."
 
   :long "<p>We don't have to extend/truncate operands when translating VL
