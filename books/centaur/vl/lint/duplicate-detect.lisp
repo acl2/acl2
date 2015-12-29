@@ -197,16 +197,32 @@ things might well be copy/paste errors.</p>")
        (rest    (vl-duplicate-warnings (cdr dupes) fixed orig)))
     (cons warning rest)))
 
+(define vl-modinstlist-remove-interfaces ((x vl-modinstlist-p)
+                                          (ss vl-scopestack-p))
+  :returns (filtered-x vl-modinstlist-p)
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  (b* (((when (atom x))
+        nil)
+       (dfn (vl-scopestack-find-definition (vl-modinst->modname (car x)) ss))
+       ((when (mbe :logic (vl-interface-p dfn)
+                   :exec (eq (tag dfn) :vl-interface)))
+        (vl-modinstlist-remove-interfaces (cdr x) ss)))
+    (cons (vl-modinst-fix (car x))
+          (vl-modinstlist-remove-interfaces (cdr x) ss))))
 
-(define vl-module-duplicate-detect ((x vl-module-p))
+(define vl-module-duplicate-detect ((x  vl-module-p)
+                                    (ss vl-scopestack-p))
   :short "Detect duplicate assignments and instances throughout a module."
   :returns (new-x vl-module-p "Same as @('x'), but perhaps with more warnings.")
   :prepwork (;; BOZO why is this still enabled?
              (local (in-theory (disable acl2::true-listp-append))))
   (b* (((vl-module x) (vl-module-fix x))
+       (ss (vl-scopestack-push x ss))
+
+       (modinsts       (vl-modinstlist-remove-interfaces x.modinsts ss))
 
        (gateinsts-fix  (vl-duplicate-detect-strip-gateinsts x.gateinsts))
-       (modinsts-fix   (vl-duplicate-detect-strip-modinsts x.modinsts))
+       (modinsts-fix   (vl-duplicate-detect-strip-modinsts modinsts))
        (assigns-fix    (vl-duplicate-detect-strip-assigns x.assigns))
        (always-fix     (vl-duplicate-detect-strip-alwayses x.alwayses))
        (initial-fix    (vl-duplicate-detect-strip-initials x.initials))
@@ -230,7 +246,7 @@ things might well be copy/paste errors.</p>")
        (sequence-dupes (duplicated-members sequence-fix))
 
        (gateinst-warnings (vl-duplicate-warnings gateinst-dupes gateinsts-fix x.gateinsts))
-       (modinst-warnings  (vl-duplicate-warnings modinst-dupes modinsts-fix x.modinsts))
+       (modinst-warnings  (vl-duplicate-warnings modinst-dupes modinsts-fix modinsts))
        (assign-warnings   (vl-duplicate-warnings assign-dupes assigns-fix x.assigns))
        (always-warnings   (vl-duplicate-warnings always-dupes always-fix x.alwayses))
        (initial-warnings  (vl-duplicate-warnings initial-dupes initial-fix x.initials))
@@ -256,16 +272,20 @@ things might well be copy/paste errors.</p>")
 
     (change-vl-module x :warnings warnings)))
 
-(defprojection vl-modulelist-duplicate-detect ((x vl-modulelist-p))
+(defprojection vl-modulelist-duplicate-detect ((x  vl-modulelist-p)
+                                               (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-duplicate-detect x))
+  (vl-module-duplicate-detect x ss))
 
 (define vl-design-duplicate-detect
   :short "Top-level @(see duplicate-detect) check."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-duplicate-detect x.mods))))
+  (b* (((vl-design x))
+       (ss (vl-scopestack-init x))
+       (new-mods (vl-modulelist-duplicate-detect x.mods ss)))
+    (vl-scopestacks-free)
+    (clear-memoize-table 'vl-expr-strip)
+    (change-vl-design x :mods new-mods)))
 
 

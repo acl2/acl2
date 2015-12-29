@@ -693,8 +693,12 @@ displays.  The module browser's web pages are responsible for defining the
   (define vl-pp-valuerange ((x vl-valuerange-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-valuerange-count x) 10)
     (vl-valuerange-case x
-      :range (vl-pp-range x.range)
-      :single (vl-pp-expr x.expr)))
+      :valuerange-single (vl-pp-expr x.expr)
+      :valuerange-range (vl-ps-seq (vl-print "[")
+                                   (vl-pp-expr x.low)
+                                   (vl-print ":")
+                                   (vl-pp-expr x.high)
+                                   (vl-print "]"))))
 
   (define vl-pp-valuerangelist ((x vl-valuerangelist-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-valuerangelist-count x) 10)

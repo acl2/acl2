@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-12-08")
+  "VL Syntax 2015-12-18")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)

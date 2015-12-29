@@ -937,8 +937,8 @@ construct fast alists binding identifiers to things, etc.</p>"
 (define vl-valuerange->subexprs ((x vl-valuerange-p))
   :returns (subexprs vl-exprlist-p)
   (vl-valuerange-case x
-    :single (list x.expr)
-    :range  (vl-range->subexprs x.range))
+    :valuerange-single (list x.expr)
+    :valuerange-range  (list x.low x.high))
   ///
   (defret vl-exprlist-count-of-vl-valuerange->subexprs
     (<= (vl-exprlist-count subexprs)
@@ -954,8 +954,9 @@ construct fast alists binding identifiers to things, etc.</p>"
   :returns (new-x vl-valuerange-p)
   :verify-guards nil
   (vl-valuerange-case x
-    :single (vl-expr->valuerange (car subexprs))
-    :range (vl-range->valuerange (vl-range-update-subexprs x.range subexprs)))
+    :valuerange-single (make-vl-valuerange-single :expr (first subexprs))
+    :valuerange-range (make-vl-valuerange-range :low (first subexprs)
+                                                :high (second subexprs)))
   ///
   (verify-guards vl-valuerange-update-subexprs
     :hints ((and stable-under-simplificationp

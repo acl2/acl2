@@ -87,6 +87,7 @@ iface17.v -- module with interface port iface.consumer instanced with iface.prod
 iface18.v -- tries to instantiate module with interface connected to some other hierarchical path
 iface19.v -- like iface18.v, but with extra .consumer style modport as well
 iface20.v -- try to use foo.consumer style connection, where foo is itself an interface port (vcs/ncv disagree)
+iface21.v -- trying to use interfaces out of order
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type
