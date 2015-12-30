@@ -3407,7 +3407,6 @@ the concatenation of all its other declared wires.</p>"
   ((x vl-interfacelist-p)
    (elabindex "global scope")
    (modalist sv::modalist-p))
-  :parents (sv::svex)
   :returns (mv (warnings vl-reportcard-p)
                (modalist1 (and (sv::modalist-p modalist1)
                                (implies

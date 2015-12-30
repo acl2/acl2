@@ -182,7 +182,7 @@
 
 
 (deflist lhs :elt-type lhrange :true-listp t
-  :parents (svex)
+  :parents (svmods)
   :short "A shorthand format for an expression consisting of a concatenation of parts of variables."
   :long "<p>LHS objects are used in flattening the module hierarchy.  They are
 called LHS objects because they are also used to represent the left-hand sides

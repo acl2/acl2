@@ -135,7 +135,7 @@ of three times each.)</p>"
 
 
 (defxdoc moddb
-  :parents (svex)
+  :parents (sv)
   :short "A database object that provides a unique numbering of all the wires in
           a module hierarchy."
   :long "<p>A moddb is a stobj that provides a fast method of enumerating wires
