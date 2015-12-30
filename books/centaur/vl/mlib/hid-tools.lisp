@@ -414,7 +414,7 @@ be resolved.</p>"
                  (equal (tag item) :vl-genloop)
                  (equal (tag item) :vl-genif)
                  (equal (tag item) :vl-gencase)
-                 (equal (tag item) :vl-genblock)
+                 (equal (tag item) :vl-genbegin)
                  (equal (tag item) :vl-genarray)
                  (equal (tag item) :vl-genbase)
                  (equal (tag item) :vl-genvar)
@@ -676,7 +676,7 @@ top-level hierarchical identifiers.</p>"
                                    :strictp strictp
                                    :elabpath iface-path)))
 
-         ((when (eq (tag item) :vl-genblock))
+         ((when (eq (tag item) :vl-genbegin))
           (b* (((when (consp indices))
                 ;; Doesn't make any sense: this is a single, named generate
                 ;; block, not an array, so we shouldn't try to index into it.
@@ -689,7 +689,7 @@ top-level hierarchical identifiers.</p>"
                     trace x))
                ;; Else we have something like foo.bar.myblock.mywire or whatever.
                ;; This is fine, we just need to go into the generate block.
-               (genblob (vl-sort-genelements (vl-genblock->elems item)
+               (genblob (vl-sort-genelements (vl-genblock->elems (vl-genbegin->block item))
                                              :scopetype :vl-genblock
                                              :name name1))
                (next-ss (vl-scopestack-push genblob item-ss))
@@ -743,7 +743,7 @@ top-level hierarchical identifiers.</p>"
                 (mv (vl-follow-hidexpr-error (vmsg "invalid index into generate array: ~x0" blocknum)
                                              item-ss)
                     trace x))
-               (genblob (vl-sort-genelements (vl-genarrayblock->elems block)
+               (genblob (vl-sort-genelements (vl-genblock->elems (vl-genarrayblock->body block))
                                              :scopetype :vl-genarrayblock
                                              :name name1))
                (next-ss (vl-scopestack-push genblob item-ss))

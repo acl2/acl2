@@ -624,7 +624,7 @@ Our version of VCS says this isn't yet implemented.</li>
        ((mv warnings st) (vl-blockitemlist-update-implicit (cdr x) st warnings)))
     (mv warnings st)))
 
-(define vl-genelement-make-implicit-wires
+(define vl-genbase-make-implicit-wires
   :short "Make implicit wires for a single modelement."
   ((x        vl-genelement-p
              "Base genelement to process.")
@@ -831,125 +831,119 @@ Our version of VCS says this isn't yet implemented.</li>
 ;;                   (vl-modelementlist-p x))
 ;;          :hints(("Goal" :induct (len x)))))
 
-(defines vl-make-implicit-wires-aux
+(defines vl-genblock-make-implicit-wires
   :verify-guards nil
 
-  (define vl-make-implicit-wires-generate
-    :short "Make implicit wires for a generate statement."
-    ((x        vl-genelement-p)
-     (st       vl-implicitst-p)
-     (warnings vl-warninglist-p))
-    :returns (mv (new-warnings vl-warninglist-p)
-                 (new-x        vl-genelement-p "Extended with implicit declarations."))
+  (define vl-genblock-make-implicit-wires ((x        vl-genblock-p)
+                                           (st       vl-implicitst-p)
+                                           (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x    vl-genblock-p))
+    :measure (vl-genblock-count x)
     :long "<p>Per SystemVerilog-2012 Section 6.10: wires that are implicitly
            declared within a generate block are local to that generate block.
            So we collect the implicit declarations for each particular generate
-           block without leaking them into the outer context.</p>
+           block without leaking them into the outer context.</p>"
+    (b* (((vl-genblock x))
+         ((mv warnings new-st new-elems)
+          (vl-genelementlist-make-implicit-wires x.elems st nil warnings))
+         (- (vl-implicitsts-restore-fast-alists st new-st))
+         (new-x (change-vl-genblock x :elems (rev new-elems))))
+      (mv warnings new-x)))
 
-           <p>This function should be called from outside (including
-           vl-make-implicit-wires-aux) on non-genbase elements.  However,
-           recursive calls may be on genbases, which are then assumed to be
-           stand-alone elements that are in a generate construct by
-           themselves.</p>"
+  (define vl-genelementlist-make-implicit-wires ((x        vl-genelementlist-p)
+                                                 (st       vl-implicitst-p)
+                                                 (newitems vl-genelementlist-p)
+                                                 (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (st       vl-implicitst-p)
+                 (newitems vl-genelementlist-p))
+    :measure (vl-genelementlist-count x)
+    (b* ((st       (vl-implicitst-fix st))
+         (newitems (vl-genelementlist-fix newitems))
+         ((when (atom x))
+          (mv (ok) st newitems))
+         ((mv warnings st newitems) (vl-genelement-make-implicit-wires (car x) st newitems warnings))
+         ((mv warnings st newitems) (vl-genelementlist-make-implicit-wires (cdr x) st newitems warnings)))
+      (mv warnings st newitems)))
+
+  (define vl-genelement-make-implicit-wires ((x        vl-genelement-p)
+                                             (st       vl-implicitst-p)
+                                             (newitems vl-genelementlist-p)
+                                             (warnings vl-warninglist-p))
     :measure (vl-genelement-count x)
-    (vl-genelement-case x
+    :returns (mv (new-warnings vl-warninglist-p)
+                 (st           vl-implicitst-p)
+                 (newitems     vl-genelementlist-p))
+    (b* ((newitems (vl-genelementlist-fix newitems))
+         (st       (vl-implicitst-fix st)))
+      (vl-genelement-case x
+        :vl-genbase
+        (vl-genbase-make-implicit-wires x st newitems warnings)
 
-      :vl-genloop
-      (b* (((vl-implicitst st))
-           ;; Bind the loop index var in the state first.
-           (new-decls              (hons-acons x.var nil st.decls))
-           (local-st               (change-vl-implicitst st :decls new-decls))
-           ((mv warnings new-body) (vl-make-implicit-wires-generate x.body local-st warnings))
-           (-                      (vl-implicitsts-restore-fast-alists st local-st))
-           (new-x                  (change-vl-genloop x :body new-body)))
-        (mv warnings new-x))
+        ;; BOZO totally wrong -- acts like every block is a scope, even unnamed blocks.
+        :vl-genbegin
+        (b* (((vl-implicitst st))
+             ((mv warnings new-block) (vl-genblock-make-implicit-wires x.block st warnings))
+             (name                    (vl-genblock->name x.block))
+             (new-decls               (if name (hons-acons name nil st.decls) st.decls))
+             (st                      (change-vl-implicitst st :decls new-decls))
+             (new-x                   (change-vl-genbegin x :block new-block)))
+          (mv warnings st (cons new-x newitems)))
 
-      :vl-genif
-      (b* (((mv warnings new-then) (vl-make-implicit-wires-generate x.then st warnings))
-           ((mv warnings new-else) (vl-make-implicit-wires-generate x.else st warnings))
-           (new-x                  (change-vl-genif x :then new-then :else new-else)))
-        (mv warnings new-x))
+        :vl-genloop
+        (b* (((vl-implicitst st))
+             ;; Bind the loop index var in the state first.
+             (new-decls              (hons-acons x.var nil st.decls))
+             (local-st               (change-vl-implicitst st :decls new-decls))
+             ((mv warnings new-body) (vl-genblock-make-implicit-wires x.body local-st warnings))
+             (-                      (vl-implicitsts-restore-fast-alists st local-st))
+             (new-x                  (change-vl-genloop x :body new-body)))
+          ;; BOZO this state isn't going to be quite right -- should also declare
+          ;; names from blocks... actually maybe we should just do that as part
+          ;; of genblock-make-implicit-wires and have it return an updated state?
+          (mv warnings st (cons new-x newitems)))
 
-      :vl-gencase
-      (b* (((mv warnings new-cases)   (vl-make-implicit-wires-gencaselist x.cases st warnings))
-           ((mv warnings new-default) (vl-make-implicit-wires-generate x.default st warnings))
-           (new-x                     (change-vl-gencase x :cases new-cases :default new-default)))
-        (mv warnings new-x))
+        :vl-genif
+        (b* (((mv warnings new-then) (vl-genblock-make-implicit-wires x.then st warnings))
+             ((mv warnings new-else) (vl-genblock-make-implicit-wires x.else st warnings))
+             (new-x                  (change-vl-genif x :then new-then :else new-else)))
+          ;; BOZO do something about declaring the named generate blocks from x.then/x.else
+          (mv warnings st (cons new-x newitems)))
 
-      :vl-genblock
-      (b* (((mv warnings new-st new-elems) (vl-make-implicit-wires-aux x.elems st nil warnings))
-           (- (vl-implicitsts-restore-fast-alists st new-st))
-           (new-x (change-vl-genblock x :elems new-elems)))
-        (mv warnings new-x))
+        :vl-gencase
+        (b* (((mv warnings new-cases)   (vl-gencaselist-make-implicit-wires x.cases st warnings))
+             ((mv warnings new-default) (vl-genblock-make-implicit-wires x.default st warnings))
+             (new-x                     (change-vl-gencase x :cases new-cases :default new-default)))
+          ;; BOZO do something about declaring the named generate blocks from the cases/default
+          (mv warnings st (cons new-x newitems)))
 
-      :vl-genbase
-      (b* (((mv warnings new-st new-elems) (vl-genelement-make-implicit-wires x st nil warnings))
-           (- (vl-implicitsts-restore-fast-alists st new-st))
-           (new-x (make-vl-genblock :elems new-elems :loc (vl-modelement->loc x.item))))
-        (mv warnings new-x))
+        :otherwise
+        ;; This should be fine, don't really need to support genarray things
+        ;; here, because this is part of annotate.
+        (mv (fatal :type :vl-programming-error
+                   :msg "~a0: Didn't expect to see this kind of generate element yet."
+                   :args (list (vl-genelement-fix x)))
+            st
+            (cons (vl-genelement-fix x) newitems)))))
 
-      :otherwise
-      (mv (warn :type :vl-programming-error
-                :msg "~a0: Didn't expect to see this kind of generate element yet."
-                :args (list (vl-genelement-fix x)))
-          (vl-genelement-fix x))))
-
-  (define vl-make-implicit-wires-gencaselist ((x        vl-gencaselist-p)
+  (define vl-gencaselist-make-implicit-wires ((x        vl-gencaselist-p)
                                               (st       vl-implicitst-p)
                                               (warnings vl-warninglist-p))
     :returns (mv (new-warnings vl-warninglist-p)
                  (new-x        vl-gencaselist-p "Extended with implicit declarations."))
     :measure (vl-gencaselist-count x)
     (b* ((x (vl-gencaselist-fix x))
-         ((when (atom x)) (mv (vl-warninglist-fix warnings) nil))
-         ((mv warnings new-elem) (vl-make-implicit-wires-generate (cdar x) st warnings))
-         ((mv warnings new-rest) (vl-make-implicit-wires-gencaselist (cdr x) st warnings))
+         ((when (atom x))
+          (mv (ok) nil))
+         ((mv warnings new-elem) (vl-genblock-make-implicit-wires (cdar x) st warnings))
+         ((mv warnings new-rest) (vl-gencaselist-make-implicit-wires (cdr x) st warnings))
          (new-x (cons (cons (caar x) new-elem) new-rest)))
       (mv warnings new-x)))
 
-  (define vl-make-implicit-wires-aux
-    :short "Main function for adding implicit wires."
-    ((x        vl-genelementlist-p "Elements to process in parse order.")
-     (st       vl-implicitst-p)
-     (newitems vl-genelementlist-p
-               "Accumulator for rewriting X and inserting implicit variable
-                declarations right where they occur.")
-     (warnings vl-warninglist-p))
-    :returns (mv (new-warnings vl-warninglist-p)
-                 (new-st       vl-implicitst-p)
-                 (newitems     vl-genelementlist-p))
-    :measure (vl-genelementlist-count x)
-
-    :long "<p>Note that to keep this code simple, we don't try to defend
-           against multiply declared names here.</p>
-
-           <p>We don't try to add any port declarations here, because we have
-           to sort of get through the whole module to make sure there isn't an
-           explicit declaration later on.  We handle that in @(see
-           vl-make-implicit-wires-main).</p>"
-
-    (b* ((x        (vl-genelementlist-fix x))
-         (st       (vl-implicitst-fix st))
-         (warnings (vl-warninglist-fix warnings))
-         (newitems (vl-genelementlist-fix newitems))
-
-         ((when (atom x))
-          (mv warnings st newitems))
-
-         (elem (car x))
-
-         ((unless (vl-genelement-case elem :vl-genbase))
-          (b* (((mv warnings new-elem)
-                (vl-make-implicit-wires-generate elem st warnings))
-               (newitems (cons new-elem newitems)))
-            (vl-make-implicit-wires-aux (cdr x) st newitems warnings)))
-
-         ((mv warnings st newitems)
-          (vl-genelement-make-implicit-wires elem st newitems warnings)))
-      (vl-make-implicit-wires-aux (cdr x) st newitems warnings)))
   ///
-  (verify-guards vl-make-implicit-wires-aux)
-  (deffixequiv-mutual vl-make-implicit-wires-aux))
+  (verify-guards vl-genblock-make-implicit-wires)
+  (deffixequiv-mutual vl-genblock-make-implicit-wires))
 
 
 (define vl-make-port-implicit-wires
@@ -1010,7 +1004,7 @@ Our version of VCS says this isn't yet implemented.</li>
                                     :ss        ss))
        (newitems nil)
        ;; Add regular implicit wires.  This reverses the items.
-       ((mv warnings st newitems) (vl-make-implicit-wires-aux loaditems st newitems warnings))
+       ((mv warnings st newitems) (vl-genelementlist-make-implicit-wires loaditems st newitems warnings))
        ;; Add port implicit wires.  This reverses them again so they're back in parse order.
        ((vl-implicitst st))
        (newitems (vl-make-port-implicit-wires newitems st.decls nil))

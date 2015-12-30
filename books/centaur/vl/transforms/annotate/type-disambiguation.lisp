@@ -335,7 +335,7 @@
     :measure (two-nats-measure (vl-genelement-count x) 1)
     (b* ((ss (vl-genelement-case x
                ;; BOZO are we doing this right for generate loops?
-               :vl-genblock (vl-scopestack-push (vl-sort-genelements x.elems) ss)
+               :vl-genbegin (vl-scopestack-push (vl-sort-genelements (vl-genblock->elems x.block)) ss)
                :otherwise ss)))
       (vl-genelement-type-disambiguate-aux x ss)))
 
@@ -345,7 +345,7 @@
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-genarrayblock-p))
     :measure (two-nats-measure (vl-genarrayblock-count x) 1)
-    (b* ((ss (vl-scopestack-push (vl-sort-genelements (vl-genarrayblock->elems x)) ss)))
+    (b* ((ss (vl-scopestack-push (vl-sort-genelements (vl-genblock->elems (vl-genarrayblock->body x))) ss)))
       (vl-genarrayblock-type-disambiguate-aux x ss))))
 
 (fty::defvisitors vl-module-type-disambiguate-deps

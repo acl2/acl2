@@ -63,6 +63,7 @@ hassle.</p>
    :vl-design
    :vl-package
    :vl-genblock
+   :vl-genarrayblock
    :vl-anonymous-scope))
 
 (make-event
@@ -842,7 +843,12 @@ etc., are overwritten with whatever is in the genblob.</p>"
               ((maybe-mv ,@return-names2 ,@(and new-x '(rest)))
                (,apply-to-generates (cdr x) . ,formal-names))
               . ,combine-bindings)
-           (maybe-mv ,@return-names ,@(and new-x '((append first rest))))))
+           (maybe-mv ,@return-names
+                     ;; We should be able to use append here, but ACL2 won't
+                     ;; always infer the type prescription so we can run into
+                     ;; guard violations.  Just use append-without-guard so
+                     ;; we don't have to worry about it.
+                     ,@(and new-x '((append-without-guard first rest))))))
 
        (define ,apply-to-genblock ((x vl-genblock-p) . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns

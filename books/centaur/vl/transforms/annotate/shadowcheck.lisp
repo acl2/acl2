@@ -79,7 +79,7 @@
   :prepwork ((local (in-theory (enable vl-scopeitem-p tag-reasoning))))
   (let ((x (vl-scopeitem-fix x)))
     (case (tag x)
-      ((:vl-genloop :vl-genif :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
+      ((:vl-genloop :vl-genif :vl-gencase :vl-genbegin :vl-genarray :vl-genbase)
        (vl-genelement->loc x))
       ((:vl-interfaceport)
        (vl-interfaceport->loc x))

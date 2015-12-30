@@ -542,8 +542,8 @@ more than one, e.g. in the case of a netdeclaration with implicit
 assignment.)</li>
 
 <li>@('vl-parse-generate-block') parses a generate construct or modelement and
-returns a single genelement.  If multiple modelements are produced by parsing
-the one modelement, it consolidates them into an unnamed @('begin/end') block.</li>
+returns a @(see vl-genblock).</li>
+
 </ul>"
       :flag-local nil
       (defparser vl-parse-generate ()
@@ -572,10 +572,11 @@ the one modelement, it consolidates them into an unnamed @('begin/end') block.</
                  ;; have to check for SystemVerilog-2012 mode since
                  ;; that's baked into vl-parse-endblock-name.
                  (:= (vl-parse-endblock-name (vl-idtoken->name blkname) "begin/end")))
-               (return (make-vl-genblock :name (and blkname
-                                                    (vl-idtoken->name blkname))
-                                         :elems elts
-                                         :loc loc)))
+               (return (make-vl-genbegin
+                        :block (make-vl-genblock :name (and blkname
+                                                            (vl-idtoken->name blkname))
+                                                 :elems elts
+                                                 :loc loc))))
              (return nil)))
 
       (defparser vl-parse-genelement ()
@@ -602,7 +603,8 @@ the one modelement, it consolidates them into an unnamed @('begin/end') block.</
              (loc := (vl-current-loc))
              (gen :w= (vl-parse-generate))
              (when gen
-               (return gen))
+               (return (make-vl-genblock :loc loc
+                                         :elems (list gen))))
              (items := (vl-parse-modelement))
              (return (make-vl-genblock :loc loc
                                        :elems (vl-modelementlist->genelements items)))))
@@ -802,16 +804,16 @@ the one modelement, it consolidates them into an unnamed @('begin/end') block.</
       ,(vl-genelement-claim vl-parse-genelement        vl-genelementlist-p)
       ,(vl-genelement-claim vl-parse-generate          (lambda (val)
                                                          (iff (vl-genelement-p val) val)))
-      ,(vl-genelement-claim vl-parse-generate-block    vl-genelement-p)
+      ,(vl-genelement-claim vl-parse-generate-block    vl-genblock-p)
       ,(vl-genelement-claim vl-parse-genelements-until vl-genelementlist-p :args (endkwd) :true-listp t)
-      ,(vl-genelement-claim vl-parse-genloop        vl-genelement-p)
-      ,(vl-genelement-claim vl-parse-genif          vl-genelement-p)
-      ,(vl-genelement-claim vl-parse-gencase        vl-genelement-p)
-      ,(vl-genelement-claim vl-parse-gencaselist    (lambda (val)
-                                                      (and (consp val)
-                                                           (vl-gencaselist-p (car val))
-                                                           (iff (vl-genelement-p (cdr val))
-                                                                (cdr val)))))
+      ,(vl-genelement-claim vl-parse-genloop           vl-genelement-p)
+      ,(vl-genelement-claim vl-parse-genif             vl-genelement-p)
+      ,(vl-genelement-claim vl-parse-gencase           vl-genelement-p)
+      ,(vl-genelement-claim vl-parse-gencaselist       (lambda (val)
+                                                         (and (consp val)
+                                                              (vl-gencaselist-p (car val))
+                                                              (iff (vl-genblock-p (cdr val))
+                                                                   (cdr val)))))
       :hints ('(:do-not '(preprocess))
               (flag::expand-calls-computed-hint
                acl2::clause
@@ -871,7 +873,7 @@ the one modelement, it consolidates them into an unnamed @('begin/end') block.</
     :vl-genloop "generate loop"
     :vl-genif "generate if statement"
     :vl-gencase "generate case statement"
-    :vl-genblock "generate"
+    :vl-genbegin "generate"
     :vl-genarray "generate loop"))
 
 (defines vl-genelement-findbad
@@ -888,26 +890,34 @@ contexts where some of the items aren't allowed.</p>"
     :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
     (b* ((x (vl-genelement-fix x)))
       (vl-genelement-case x
-        :vl-genloop (if (member :vl-generate allowed)
-                        (vl-genelement-findbad x.body allowed)
-                      x)
-        :vl-genif   (if (member :vl-generate allowed)
-                        (or (vl-genelement-findbad x.then allowed)
-                            (vl-genelement-findbad x.else allowed))
-                      x)
-        :vl-gencase (if (member :vl-generate allowed)
-                        (or (vl-gencaselist-findbad x.cases allowed)
-                            (vl-genelement-findbad x.default allowed))
-                      x)
         :vl-genbase (if (member (tag x.item) allowed)
                         nil
                       x)
-        :vl-genblock (if (member :vl-generate allowed)
-                         (vl-genelementlist-findbad x.elems allowed)
+        :vl-genbegin (if (member :vl-generate allowed)
+                         (vl-genblock-findbad x.block allowed)
                        x)
+        :vl-genloop (if (member :vl-generate allowed)
+                        (vl-genblock-findbad x.body allowed)
+                      x)
+        :vl-genif   (if (member :vl-generate allowed)
+                        (or (vl-genblock-findbad x.then allowed)
+                            (vl-genblock-findbad x.else allowed))
+                      x)
+        :vl-gencase (if (member :vl-generate allowed)
+                        (or (vl-gencaselist-findbad x.cases allowed)
+                            (vl-genblock-findbad x.default allowed))
+                      x)
         :vl-genarray (if (member :vl-generate allowed)
                          (vl-genarrayblocklist-findbad x.blocks allowed)
                        x))))
+
+  (define vl-genblock-findbad ((x       vl-genblock-p)
+                               (allowed symbol-listp))
+    :measure (vl-genblock-count x)
+    :guard   (subsetp-equal allowed (cons :vl-generate *vl-modelement-tagnames*))
+    :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
+    (b* (((vl-genblock x)))
+      (vl-genelementlist-findbad x.elems allowed)))
 
   (define vl-genelementlist-findbad ((x vl-genelementlist-p)
                                      (allowed symbol-listp))
@@ -928,7 +938,7 @@ contexts where some of the items aren't allowed.</p>"
          ((when (atom x))
           nil)
          ((cons (cons ?expr block) rest) x))
-      (or (vl-genelement-findbad block allowed)
+      (or (vl-genblock-findbad block allowed)
           (vl-gencaselist-findbad rest allowed))))
 
   (define vl-genarrayblocklist-findbad ((x vl-genarrayblocklist-p)
@@ -947,5 +957,5 @@ contexts where some of the items aren't allowed.</p>"
     :guard (subsetp-equal allowed (cons :vl-generate *vl-modelement-tagnames*))
     :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
     (b* (((vl-genarrayblock x)))
-      (vl-genelementlist-findbad x.elems allowed))))
+      (vl-genblock-findbad x.body allowed))))
 
