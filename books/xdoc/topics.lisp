@@ -102,6 +102,11 @@ developing your book.  Afterward, each @(see defxdoc) form you submit will be
 immediately shown at the terminal, giving you a quick, text-mode preview that
 may help you to diagnose any markup problems.</p>")
 
+(defxdoc missing-parents-test
+  :short "A topic with no @(':parents')."
+  :long "<p>This topic has no @(':parents') and is just meant to ensure that
+@(see missing-parents) is working correctly.</p>")
+
 (local (set-default-parents xdoc))
 
 (defxdoc defxdoc
@@ -1187,14 +1192,19 @@ the programmer did provide.</p>
 <p>As ongoing documentation improvement work, most topics here can benefit from
 being given more appropriate @(':parents').</p>")
 
-;; [Jared] removing this because we don't seem to be using it?
+(defxdoc missing-parents
+  :short "Placeholder for documentation topics that lack @(':parents')."
 
-;; (defxdoc unselected-parents
-;;   :short "Placeholder for topics with bad parents."
-;;   :long "<p>These are topics that we'd like to place somewhere other than, for
-;;   example, in `acl2-built-ins`.  See <a
-;;   href=\"https://github.com/acl2/acl2/issues/316\">Github Issue #316</a> for
-;;   more info.</p>")
+  :long "<p>If a @(see defxdoc) form ends up having no parents, it ends up
+being put here.  See also @(see undocumented).</p>
+
+<p>Historic note.  We used to put these topics directly underneath @(see top)
+instead.  But we found that during development, this sometimes led to a
+strange-looking hierarchy where ``random'' topics were presented as top-level
+topics just because they were new or being moved around or because @(see
+set-default-parents) forms weren't quite in the right places.  To avoid this,
+we now move these topics to @('missing-parents') and print notes about them
+when a manual is saved with @(see xdoc::save).</p>")
 
 (defxdoc set-default-parents
   :short "Set up default parents to use for @(see xdoc)."
