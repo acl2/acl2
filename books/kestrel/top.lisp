@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "general/top")
+(include-book "system/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
