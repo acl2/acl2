@@ -297,6 +297,8 @@
 
 ;; ======================================================================
 
+#||
+
 (defthm rm08-wm08-disjoint-in-system-level-mode
   (implies (and (not (programmer-level-mode x86))
                 (paging-entries-found-p addr-1 x86)
@@ -1410,3 +1412,5 @@
 ;;   :otf-flg t)
 
 ;; ======================================================================
+
+||#

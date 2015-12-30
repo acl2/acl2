@@ -389,68 +389,73 @@
                             (bitops::logand-with-negated-bitmask
                              member-list-p-and-mult-8-qword-paddr-list-listp)))))
 
-(defthm xlate-equiv-x86s-with-mv-nth-2-paging-entry-no-page-fault-p
-  (implies (x86p x86)
-           (xlate-equiv-x86s
-            (mv-nth 2 (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
-            (double-rewrite x86)))
-  :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
-                                    page-fault-exception
-                                    xlate-equiv-x86s)
-                                   ()))))
+;; (defthm xlate-equiv-x86s-with-mv-nth-2-paging-entry-no-page-fault-p
+;; ;; Copied over.
+;;   (implies (x86p x86)
+;;            (xlate-equiv-x86s
+;;             (mv-nth 2 (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+;;             (double-rewrite x86)))
+;;   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
+;;                                     page-fault-exception
+;;                                     xlate-equiv-x86s)
+;;                                    ()))))
 
-(defun find-an-xlate-equiv-x86-aux (thm-name x86-term)
-  ;; Finds a "smaller" x86 that is xlate-equiv to x86-term.
-  (if (atom x86-term)
-      x86-term
-    (b* ((outer-fn (car x86-term))
-         ((when (and (not (equal outer-fn 'MV-NTH))
-                     (not (equal outer-fn 'WM-LOW-64))))
-          (cw "~%~p0: Unexpected x86-term encountered:~p1~%" thm-name x86-term)
-          x86-term))
-      (cond ((equal outer-fn 'MV-NTH)
-             ;; We expect x86-term to be a function related to page
-             ;; traversals.
-             (b* ((mv-nth-index (second x86-term))
-                  (inner-fn-call (third x86-term))
-                  (inner-fn (first inner-fn-call))
-                  ((when (or (not (equal mv-nth-index ''2))
-                             (not (member-p inner-fn
-                                            '(IA32E-LA-TO-PA-PT
-                                              IA32E-LA-TO-PA-PD
-                                              IA32E-LA-TO-PA-PDPT
-                                              IA32E-LA-TO-PA-PML4T
-                                              PAGE-TABLE-ENTRY-NO-PAGE-FAULT-P$INLINE
-                                              PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE)))))
-                   (cw "~%~p0: Unexpected mv-nth x86-term encountered:~p1~%" thm-name x86-term)
-                   x86-term)
-                  (sub-x86 (first (last inner-fn-call))))
-               sub-x86))
-            ((equal outer-fn 'WM-LOW-64)
-             ;; We expect x86-term to be of the form (wm-low-64 index val sub-x86).
-             (b* ((sub-x86 (first (last x86-term))))
-               sub-x86))))))
+;; (defun find-an-xlate-equiv-x86-aux (thm-name x86-term)
+;;   ;; Copied over.
 
-(defun find-an-xlate-equiv-x86 (thm-name x86-var x86-term)
-  ;; bind-free for an x86 in xlate-equiv-x86s: should check just for the
-  ;; page traversal functions and wm-low-64.
+;;   ;; Finds a "smaller" x86 that is xlate-equiv to x86-term.
+;;   (if (atom x86-term)
+;;       x86-term
+;;     (b* ((outer-fn (car x86-term))
+;;          ((when (and (not (equal outer-fn 'MV-NTH))
+;;                      (not (equal outer-fn 'WM-LOW-64))))
+;;           (cw "~%~p0: Unexpected x86-term encountered:~p1~%" thm-name x86-term)
+;;           x86-term))
+;;       (cond ((equal outer-fn 'MV-NTH)
+;;              ;; We expect x86-term to be a function related to page
+;;              ;; traversals.
+;;              (b* ((mv-nth-index (second x86-term))
+;;                   (inner-fn-call (third x86-term))
+;;                   (inner-fn (first inner-fn-call))
+;;                   ((when (or (not (equal mv-nth-index ''2))
+;;                              (not (member-p inner-fn
+;;                                             '(IA32E-LA-TO-PA-PT
+;;                                               IA32E-LA-TO-PA-PD
+;;                                               IA32E-LA-TO-PA-PDPT
+;;                                               IA32E-LA-TO-PA-PML4T
+;;                                               PAGE-TABLE-ENTRY-NO-PAGE-FAULT-P$INLINE
+;;                                               PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE)))))
+;;                    (cw "~%~p0: Unexpected mv-nth x86-term encountered:~p1~%" thm-name x86-term)
+;;                    x86-term)
+;;                   (sub-x86 (first (last inner-fn-call))))
+;;                sub-x86))
+;;             ((equal outer-fn 'WM-LOW-64)
+;;              ;; We expect x86-term to be of the form (wm-low-64 index val sub-x86).
+;;              (b* ((sub-x86 (first (last x86-term))))
+;;                sub-x86))))))
 
-  ;; rewrite rules for xlate-equiv-x86s:
-  ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-PAGING-ENTRY-NO-PAGE-FAULT-P
-  ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-LA-TO-PA-PT
-  ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-LA-TO-PA-PD
-  ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-LA-TO-PA-PDPT
-  ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-LA-TO-PA-PML4T
-  ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-ENTRIES-FOUND-LA-TO-PA
-  ;; XLATE-EQUIV-X86S-AND-WM-LOW-64
+;; (defun find-an-xlate-equiv-x86 (thm-name x86-var x86-term)
+;;   ;; Copied over.
 
-  ;; TO-DO: Logic mode...
-  (declare (xargs :mode :program))
-  (b* ((equiv-x86-1 (find-an-xlate-equiv-x86-aux thm-name x86-term))
-       (equiv-x86-2 (find-an-xlate-equiv-x86-aux thm-name equiv-x86-1)))
-    (if (equal equiv-x86-1 equiv-x86-2)
-        `((,x86-var . ,equiv-x86-1))
-      (find-an-xlate-equiv-x86 thm-name x86-var equiv-x86-2))))
+;;   ;; bind-free for an x86 in xlate-equiv-x86s: should check just for the
+;;   ;; page traversal functions and wm-low-64.
+
+;;   ;; rewrite rules for xlate-equiv-x86s:
+;;   ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-PAGING-ENTRY-NO-PAGE-FAULT-P
+;;   ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-LA-TO-PA-PT
+;;   ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-LA-TO-PA-PD
+;;   ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-LA-TO-PA-PDPT
+;;   ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-LA-TO-PA-PML4T
+;;   ;; XLATE-EQUIV-X86S-WITH-MV-NTH-2-IA32E-ENTRIES-FOUND-LA-TO-PA
+;;   ;; XLATE-EQUIV-X86S-AND-WM-LOW-64
+
+;;   ;; TO-DO: Logic mode...
+;;   (declare (xargs :mode :program))
+;;   (b* ((equiv-x86-1 (find-an-xlate-equiv-x86-aux thm-name x86-term))
+;;        (equiv-x86-2 (find-an-xlate-equiv-x86-aux thm-name equiv-x86-1)))
+;;     (if (equal equiv-x86-1 equiv-x86-2)
+;;         `((,x86-var . ,equiv-x86-1))
+;;       (find-an-xlate-equiv-x86 thm-name x86-var equiv-x86-2))))
 
 (defthm paging-entry-no-page-fault-p-error-with-xlate-equiv-x86s
   (implies (xlate-equiv-x86s x86-1 x86-2)
@@ -486,32 +491,33 @@
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-x86s)
                                    ()))))
 
-(defthm xlate-equiv-x86s-and-wm-low-64
-  (implies (and
-            ;; We need the bind-free below if this is an
-            ;; xlate-equiv-x86s rewrite rule.
-            (bind-free (find-an-xlate-equiv-x86
-                        'xlate-equiv-x86s-and-wm-low-64
-                        'x86 x86-equiv)
-                       (x86))
-            (xlate-equiv-x86s x86 (double-rewrite x86-equiv))
-            (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
-            (member-list-p index (gather-all-paging-structure-qword-addresses x86))
-            (good-paging-structures-x86p x86)
-            (x86p (wm-low-64 index val x86-equiv))
-            (unsigned-byte-p 64 val))
-           (xlate-equiv-x86s (wm-low-64 index val x86-equiv) x86))
-  :hints (("Goal"
-           :use ((:instance
-                  xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-with-different-x86
-                  (addrs (gather-all-paging-structure-qword-addresses x86))
-                  (x86-1 x86)
-                  (x86-2 x86-equiv)))
-           :in-theory
-           (e/d*
-            (xlate-equiv-x86s
-             good-paging-structures-x86p)
-            (xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-with-different-x86)))))
+;; (defthm xlate-equiv-x86s-and-wm-low-64
+;;   ;; Copied over to paging-page-table-lemmas.lisp.
+;;   (implies (and
+;;             ;; We need the bind-free below if this is an
+;;             ;; xlate-equiv-x86s rewrite rule.
+;;             (bind-free (find-an-xlate-equiv-x86
+;;                         'xlate-equiv-x86s-and-wm-low-64
+;;                         'x86 x86-equiv)
+;;                        (x86))
+;;             (xlate-equiv-x86s x86 (double-rewrite x86-equiv))
+;;             (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
+;;             (member-list-p index (gather-all-paging-structure-qword-addresses x86))
+;;             (good-paging-structures-x86p x86)
+;;             (x86p (wm-low-64 index val x86-equiv))
+;;             (unsigned-byte-p 64 val))
+;;            (xlate-equiv-x86s (wm-low-64 index val x86-equiv) x86))
+;;   :hints (("Goal"
+;;            :use ((:instance
+;;                   xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-with-different-x86
+;;                   (addrs (gather-all-paging-structure-qword-addresses x86))
+;;                   (x86-1 x86)
+;;                   (x86-2 x86-equiv)))
+;;            :in-theory
+;;            (e/d*
+;;             (xlate-equiv-x86s
+;;              good-paging-structures-x86p)
+;;             (xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-with-different-x86)))))
 
 (defthm mv-nth-2-paging-entry-no-page-fault-p-after-wm-low-64-value
   (implies

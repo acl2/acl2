@@ -643,7 +643,9 @@
   :inline t
   :returns (mv flg val (x86 x86p :hyp (x86p x86)))
 
-  (b* ((page-present (mbe :logic (page-present entry)
+  (b* ((entry (mbe :logic (loghead 64 entry)
+                   :exec entry))
+       (page-present (mbe :logic (page-present entry)
                           :exec (ia32e-page-tables-slice :p entry)))
        ((when (equal page-present 0))
         ;; Page not present fault:
@@ -1042,7 +1044,9 @@
   :inline t
   :returns (mv flg val (x86 x86p :hyp (x86p x86)))
 
-  (b* ((page-present (mbe :logic (page-present entry)
+  (b* ((entry (mbe :logic (loghead 64 entry)
+                   :exec entry))
+       (page-present (mbe :logic (page-present entry)
                           :exec (ia32e-page-tables-slice :p entry)))
        ((when (equal page-present 0))
         ;; Page not present fault:
@@ -1186,7 +1190,7 @@
                        1 ; pae
                        nxe)))
           (page-fault-exception lin-addr err-no x86))))
-      (mv nil 0 x86))
+    (mv nil 0 x86))
 
   ///
 
