@@ -8439,15 +8439,15 @@
 ; information not be observable in the logical theory.  For example, it would
 ; really be unfortunate if we did something like:
 
-;  (defconst *directory-separator*
-;    #+apple #\:
-;    #-apple #\/)
+;  (defconst *foo*
+;    #+mswindows 'win
+;    #-mswindows 'not-win)
 
 ; because then we could certify a book in one ACL2 that contains a theorem
-; (equal *directory-separator* #\/), and include this book in another world
-; where that theorem fails, thus deriving a contradiction.  In fact, we make
-; the operating-system part of the state (as a world global), and figure
-; everything else out about book names using that information.
+; (equal *foo* 'win), and include this book in another world where that theorem
+; fails, thus deriving a contradiction.  In fact, we make the operating-system
+; part of the state (as a world global), and figure everything else out about
+; book names using that information.
 
 (defun chk-book-name (book-name full-book-name ctx state)
 

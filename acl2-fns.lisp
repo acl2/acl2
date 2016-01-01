@@ -1665,8 +1665,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   #+unix (return-from get-os :unix)
   #+mswindows (return-from get-os :mswindows)
-  #+apple (return-from get-os :apple)
-  #-(or unix apple mswindows) nil)
+  #-(or unix mswindows) nil)
 
 (defmacro our-ignore-errors (x)
   #+cltl2 `(ignore-errors ,x)

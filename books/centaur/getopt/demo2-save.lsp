@@ -79,6 +79,9 @@
 ;; Set up our program NOT try to read the any customization files.
 (defun initial-customization-filename () :none)
 
+;; Avoid causing a difference with the expected output.
+(setq common-lisp-user::*acl2-exit-lisp-hook* nil)
+
 (save-exec "demo2" "getopt demo 2 program"
 
            ;; Inert-args MUST be given, or ACL2 won't put the "--" into the

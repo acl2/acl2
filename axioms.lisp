@@ -18177,23 +18177,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       str
     (case os
       (:unix str)
-      ((:apple :mswindows)
-       (let ((sep (if (eq os :apple) #\: #\\)))
-         (let* ((relative-p-apple ; relevant only for apple
-                 (eql (char str 0) sep))
-                (str0 (substitute
-                       *directory-separator* sep
-                       (cond
-                        ((eq os :mswindows)
-                         str)
-                        (relative-p-apple (subseq str 1 (length str)))
-                        (t str)))))
-           (cond
-            ((and (eq os :apple)
-                  (not relative-p-apple))
-             (string-append *directory-separator-string* str0))
-            ((and (eq os :mswindows)
-                  (eql (char str0 0) *directory-separator*))
+      (:mswindows
+       (let* ((sep #\\)
+              (str0 (substitute *directory-separator* sep str)))
+         (cond
+          ((and (eq os :mswindows)
+                (eql (char str0 0) *directory-separator*))
 
 ; Warning: Do not append the drive if there is already a drive present.  We
 ; rely on this in LP, where we initialize state global 'system-books-dir
@@ -18201,10 +18190,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; environment variable ACL2_SYSTEM_BOOKS, which might already have a drive that
 ; differs from that of the user.
 
-             (string-append (mswindows-drive nil state)
-                            str0))
-            (t
-             str0)))))
+           (string-append (mswindows-drive nil state)
+                          str0))
+          (t
+           str0))))
       (otherwise (os-er os 'pathname-os-to-unix)))))
 
 #+(and (not acl2-loop-only) ccl)
@@ -18243,30 +18232,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (let ((os (os (w state))))
       (case os
         (:unix str)
-        ((:apple :mswindows)
-         (let ((sep (if (eq os :apple) #\: #\\)))
+        (:mswindows
+         (let ((sep #\\))
            (if (position sep str)
                (illegal 'pathname-unix-to-os
-                "Unable to convert pathname ~p0 for OS ~p1 because ~
+                        "Unable to convert pathname ~p0 for OS ~p1 because ~
                  character ~p2 occurs in that pathname string at position ~p3."
-                (list (cons #\0 str)
-                      (cons #\1 os)
-                      (cons #\2 sep)
-                      (cons #\3 (position sep str))))
+                        (list (cons #\0 str)
+                              (cons #\1 os)
+                              (cons #\2 sep)
+                              (cons #\3 (position sep str))))
              (let* ((sep-is-first (eql (char str 0) *directory-separator*))
-                    (str0 (substitute sep *directory-separator*
-                                      (if (and (eq os :apple)
-                                               sep-is-first)
-                                          (subseq str 1 (length str))
-                                        str))))
-               (if (eq os :apple)
-                   (if sep-is-first
-                       str0
-                     (string-append ":" str0))
-                 (if sep-is-first
-                     (string-append (mswindows-drive nil state)
-                                    str0)
-                   str0))))))
+                    (str0 (substitute sep *directory-separator* str)))
+               (if sep-is-first
+                   (string-append (mswindows-drive nil state)
+                                  str0)
+                 str0)))))
         (otherwise (os-er os 'pathname-unix-to-os))))))
 
 (defun shrink-t-stack (n state-state)

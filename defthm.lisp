@@ -5345,7 +5345,8 @@
                                    ens wrld nil)))
                       (mv-let
                        (ts ttree)
-                       (type-set term nil t nil ens wrld2 nil nil nil)
+                       (type-set (remove-guard-holders term)
+                                 nil t nil ens wrld2 nil nil nil)
                        (or (not (assumption-free-ttreep ttree))
                            (ts-intersectp ts *ts-nil*)))))))
          (pprogn

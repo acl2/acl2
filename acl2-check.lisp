@@ -315,9 +315,9 @@ most-negative-fixnum = ~s."
 ; the symbol.  In fact, :UNIX is not a member of *features* in gcl; LISP:UNIX
 ; is.
 
-#-(or unix apple mswindows)
+#-(or unix mswindows)
 (error "This Common Lisp is unsuitable for ACL2 because~%~
-        neither :UNIX nor :APPLE nor :MSWINDOWS is a member of *features*.")
+        neither :UNIX nor :MSWINDOWS is a member of *features*.")
 
 (or (typep (1- array-dimension-limit) 'fixnum)
     (error "We assume that (1- ARRAY-DIMENSION-LIMIT) is a fixnum.  CLTL2 ~
