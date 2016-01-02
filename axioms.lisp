@@ -23115,23 +23115,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ((guard-checking-on ,val))
     ,form))
 
-(defmacro with-guard-checking1 (val form)
-  `(return-last 'with-guard-checking1-raw ,val ,form))
+(defmacro with-guard-checking1 (val gated-form)
+  `(return-last 'with-guard-checking1-raw ,val ,gated-form))
+
+(defun with-guard-checking-gate (form)
+
+; This is a custom version of check-vars-not-free, used by with-guard-checking.
+
+  (declare (xargs :guard t))
+  `(lambda (term)
+     (or (not (member-eq 'state (all-vars term)))
+         (msg "It is forbidden to use ~x0 in the scope of a call of ~x1, ~
+                 but ~x0 occurs in the [translation of] the form ~x2.  ~
+                 Consider using ~x3 instead."
+              'state
+              'with-guard-checking
+              ',form
+              'with-guard-checking-error-triple))))
 
 (defmacro with-guard-checking (val form)
   (declare (xargs :guard t))
   `(with-guard-checking1
     (chk-with-guard-checking-arg ,val)
-    (translate-and-test ; custom version of check-vars-not-free
-     (lambda (term)
-       (or (not (member-eq 'state (all-vars term)))
-           (msg "It is forbidden to use ~x0 in the scope of a call of ~x1, ~
-                 but ~x0 occurs in the [translation of] the form ~x2.  ~
-                 Consider using ~x3 instead."
-                'state
-                'with-guard-checking
-                ',form
-                'with-guard-checking-error-triple)))
+    (translate-and-test
+     ,(with-guard-checking-gate form)
 
 ; Through Version_7.1, the following events all succeeded, which could be
 ; viewed as a soundness bug.  The problem is clear from this example: we are
@@ -23153,7 +23160,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;
 ;   (assert-event (not (equal (foo state)
 ;                             (f-get-global 'guard-checking-on state))))
-
 
      ,form)))
 
