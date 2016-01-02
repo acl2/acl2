@@ -392,14 +392,14 @@
 (defund bias (f) (declare (xargs :guard (formatp f))) (- (expt 2 (- (expw f) 1)) 1))
 (local (in-theory (enable bias)))
 
-(defnd normp (x f)
+(defund normp (x f)
   (declare (xargs :guard (encodingp x f)))
   (and (mbt (encodingp x f))
        (< 0 (expf x f))
        (< (expf x f) (1- (expt 2 (expw f))))
        (implies (explicitp f) (= (bitn x (1- (prec f))) 1))))
 
-(defnd unsupp (x f)
+(defund unsupp (x f)
   (declare (xargs :guard (encodingp x f)))
   (and (mbt (encodingp x f))
        (explicitp f)
@@ -439,7 +439,7 @@
   (* (expt 2 (- (expt 2 (expw f)) (+ 2 (bias f))))
      (- 2 (expt 2 (- 1 (prec f))))))
 
-(defnd zerp (x f)
+(defund zerp (x f)
   (declare (xargs :guard (encodingp x f)))
   (and (mbt (encodingp x f))
        (= (expf x f) 0)
@@ -450,14 +450,14 @@
                               (formatp f))))
   (cat sgn 1 0 (+ (sigw f) (expw f))))
 
-(defnd denormp (x f)
+(defund denormp (x f)
   (declare (xargs :guard (encodingp x f)))
   (and (mbt (encodingp x f))
        (= (expf x f) 0)
        (not (= (sigf x f) 0))
        (implies (explicitp f) (= (bitn x (1- (prec f))) 0))))
 
-(defnd pseudop (x f)
+(defund pseudop (x f)
   (declare (xargs :guard (encodingp x f)))
   (and (mbt (encodingp x f))
        (explicitp f)
@@ -498,7 +498,7 @@
      (declare (xargs :guard (formatp f)))
      (expt 2 (+ 2 (- (bias f)) (- (prec f)))))
 
-(defnd infp (x f)
+(defund infp (x f)
   (declare (xargs :guard (encodingp x f)))
   (and (mbt (encodingp x f))
        (= (expf x f) (1- (expt 2 (expw f))))
@@ -512,7 +512,7 @@
       (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 1 1 0 (1- (sigw f)))
     (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 0 (sigw f))))
 
-(defnd nanp (x f)
+(defund nanp (x f)
   (declare (xargs :guard (encodingp x f)))
   (and (mbt (encodingp x f))
        (= (expf x f) (1- (expt 2 (expw f))))
@@ -520,11 +520,11 @@
        (not (= (manf x f) 0))))
 (local (in-theory (enable nanp)))
 
-(defnd qnanp (x f)
+(defund qnanp (x f)
   (declare (xargs :guard (encodingp x f)))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 1)))
 
-(defnd snanp (x f)
+(defund snanp (x f)
   (declare (xargs :guard (encodingp x f)))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
