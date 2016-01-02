@@ -169,8 +169,7 @@
     (indexed-alistp (thread-table (step th s))))
   :enable (|indexed-alistp bind when bound?|
            |indexed-alistp bind rrefToThread|)
-  :disable (bound? binding
-            bits2fp fp2fp fp2int
+  :disable (bound? binding fp2fp fp2int
             fpadd fpcmp fpdiv fpmul fpneg fpsqrt fprem fpsub
             shl shr iushr lushr truncate abs
             next-inst bind-formals)
@@ -311,8 +310,7 @@
 (acl2::defrule thread-table-len-grows-monotonically
   (<= (len (heap s))
       (len (heap (step th s))))
-  :disable (bound? binding
-            bits2fp fp2fp fp2int
+  :disable (bound? binding fp2fp fp2int
             fpadd fpcmp fpdiv fpmul fpneg fpsqrt fprem fpsub
             shl shr iushr lushr truncate abs
             next-inst bind-formals)
@@ -321,8 +319,7 @@
 (acl2::defrule heap-len-grows-monotonically
   (<= (len (heap s))
       (len (heap (step th s))))
-  :disable (bound? binding
-            bits2fp fp2fp fp2int
+  :disable (bound? binding fp2fp fp2int
             fpadd fpcmp fpdiv fpmul fpneg fpsqrt fprem fpsub
             shl shr iushr lushr truncate abs
             next-inst bind-formals)

@@ -89,6 +89,12 @@
 (defun char-fix (x)
   (u-fix x 16))
 
+(defun float-fix (x)
+  (u-fix x 32))
+
+(defun double-fix (x)
+  (u-fix x 64))
+
 (defun 6-bit-fix (x)
   (u-fix x 6))
 
@@ -194,17 +200,16 @@
                    result))))
 
 (defun fpneg (x f)
-  (fpsub (rtl::zencode 1 f) x f))
+; Experiments show that this operation naively flips sign of floating-point representation.
+; It doesn't treat NaNs in a special way.
+  (logxor (expt 2 (+ (rtl::expw f) (rtl::sigw f))) x))
+;  (fpsub (rtl::zencode 1 f) x f))  old version propagated NaNs.
 
 (defun fpsqrt (x f)
   (mv-let (result flags)
           (rtl::sse-sqrt-spec x *mxcsr* f)
           (declare (ignore flags))
           result))
-
-(defun bits2fp (x f)
-  (let ((x (u-fix x (+ 1 (rtl::expw f) (rtl::sigw f)))))
-       (if (rtl::nanp x f) (rtl::qnanize x f) x)))
 
 ; -----------------------------------------------------------------------------
 ; States
@@ -2721,15 +2726,13 @@
             ((and (equal class "java/lang/Float")
                   (equal method-name-and-type "intBitsToFloat:(I)F"))
              (modify th s1
-                     :stack (push (bits2fp (top (stack (top-frame th s)))
-                                           (rtl::sp))
+                     :stack (push (float-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
             ((and (equal class "java/lang/Double")
                   (equal method-name-and-type "longBitsToDouble:(J)D"))
              (modify th s1
                      :stack (push 0
-                                  (push (bits2fp (top (pop (stack (top-frame th s))))
-                                                 (rtl::dp))
+                                  (push (double-fix (top (pop (stack (top-frame th s)))))
                                         (stack (top-frame th s1))))))
             ((and (equal class "java/lang/StrictMath")
                   (equal method-name-and-type "sqrt:(D)D"))
