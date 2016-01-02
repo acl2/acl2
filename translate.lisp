@@ -8654,6 +8654,25 @@
                                                     a solution might be to ~
                                                     replace ~x0 by ~x1"
                                                    fn0 sym))))))))))
+               ((and
+                 (eq key 'with-guard-checking1-raw)
+                 (or (not (case-match arg2
+                            (('chk-with-guard-checking-arg &) t)
+                            (& nil)))
+                     (not (case-match arg3
+                            (('translate-and-test gate form)
+                             (equal gate (with-guard-checking-gate form)))
+                            (& nil))))
+                 (not (global-val 'boot-strap-flg
+                                  wrld)) ; see ev-rec-return-last
+                 (not (ttag wrld)))
+                (trans-er+? cform x ctx
+                            "The form ~x0 is essentially a call of ~x1, but ~
+                             without certain checks performed.  This is ~
+                             illegal unless there is an active trust tag; see ~
+                             :DOC defttag.  To avoid this error without use ~
+                             of a trust tag, call ~x1 directly."
+                            x 'with-guard-checking))
                ((and keyp
                      (let ((val (return-last-lookup key wrld)))
                        (or (null val)
