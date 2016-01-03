@@ -24,7 +24,9 @@
       x86-term
     (b* ((outer-fn (car x86-term))
          ((when (and (not (equal outer-fn 'MV-NTH))
-                     (not (equal outer-fn 'WM-LOW-64))))
+                     (not (equal outer-fn 'WM-LOW-64))
+                     (not (and (equal outer-fn 'XW)
+                               (equal (second x86-term) '':MEM)))))
           (cw "~%~p0: Unexpected x86-term encountered:~p1~%" thm-name x86-term)
           x86-term))
       (cond ((equal outer-fn 'MV-NTH)
@@ -39,14 +41,17 @@
                                               IA32E-LA-TO-PA-PD
                                               IA32E-LA-TO-PA-PDPT
                                               IA32E-LA-TO-PA-PML4T
+                                              IA32E-ENTRIES-FOUND-LA-TO-PA
                                               PAGE-TABLE-ENTRY-NO-PAGE-FAULT-P$INLINE
                                               PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE)))))
                    (cw "~%~p0: Unexpected mv-nth x86-term encountered:~p1~%" thm-name x86-term)
                    x86-term)
                   (sub-x86 (first (last inner-fn-call))))
                sub-x86))
-            ((equal outer-fn 'WM-LOW-64)
-             ;; We expect x86-term to be of the form (wm-low-64 index val sub-x86).
+            ((or (equal outer-fn 'WM-LOW-64)
+                 (equal outer-fn 'XW))
+             ;; We expect x86-term to be of the form (wm-low-64 index
+             ;; val sub-x86) or (xw :mem val index).
              (b* ((sub-x86 (first (last x86-term))))
                sub-x86))))))
 
@@ -64,7 +69,7 @@
 (defthm xlate-equiv-x86s-and-xw-mem-disjoint
   (implies (and (bind-free
                  (find-an-xlate-equiv-x86
-                  'xlate-equiv-x86s-and-wm-low-64-disjoint
+                  'xlate-equiv-x86s-and-xw-mem-disjoint
                   'x86-1 x86-2)
                  (x86-1))
                 (xlate-equiv-x86s x86-1 (double-rewrite x86-2))

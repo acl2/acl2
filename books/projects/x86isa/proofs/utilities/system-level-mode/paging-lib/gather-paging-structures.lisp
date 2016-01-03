@@ -417,22 +417,13 @@
   (defequiv xlate-equiv-entries)
 
   (defthm xlate-equiv-entries-self-set-accessed-bit
-    ;; [Shilpi]: It seems to be that ACL2 never uses this rule, even
-    ;; when I have a term that matches exactly --- well, maybe it's
-    ;; more accurate to say that ACL2 never uses it outside of
-    ;; preprocessing. Since this is a "simple" rule, I can't see it
-    ;; firing even when I give a :DO-NOT '(PREPROCESS) hint. If it is
-    ;; true that simple rules can't be used apart from in
-    ;; preprocessing, it's sad because I often have to relieve hyps
-    ;; during rewriting that match this rule exactly. The same comment
-    ;; applies to the rule XLATE-EQUIV-ENTRIES-SELF-SET-DIRTY-BIT.
-    (and (xlate-equiv-entries e (set-accessed-bit e))
-         (xlate-equiv-entries (set-accessed-bit e) e))
+    (and (xlate-equiv-entries e (set-accessed-bit (double-rewrite e)))
+         (xlate-equiv-entries (set-accessed-bit e) (double-rewrite e)))
     :hints (("Goal" :in-theory (e/d* (set-accessed-bit) ()))))
 
   (defthm xlate-equiv-entries-self-set-dirty-bit
-    (and (xlate-equiv-entries e (set-dirty-bit e))
-         (xlate-equiv-entries (set-dirty-bit e) e))
+    (and (xlate-equiv-entries e (set-dirty-bit (double-rewrite e)))
+         (xlate-equiv-entries (set-dirty-bit e) (double-rewrite e)))
     :hints (("Goal" :in-theory (e/d* (set-dirty-bit) ()))))
 
   (defun find-xlate-equiv-entries (e-1-equiv e-2-equiv)
@@ -604,7 +595,7 @@
         ;; something's wrong --- likely, the paging structures haven't
         ;; been set up correctly.
         nil))
-      (create-qword-address-list 512 pml4-table-base-addr))
+    (create-qword-address-list 512 pml4-table-base-addr))
   ///
   (std::more-returns
    (list-of-addresses true-listp))
@@ -641,7 +632,8 @@
 
   :parents (gather-paging-structures)
 
-  :guard (and (physical-address-p superior-structure-paddr)
+  :guard (and (not (xr :programmer-level-mode 0 x86))
+              (physical-address-p superior-structure-paddr)
               (physical-address-p (+ 7 superior-structure-paddr)))
 
   :returns (list-of-addresses qword-paddr-listp)
@@ -675,7 +667,8 @@
    (list-of-addresses true-listp))
 
   (defthm gather-qword-addresses-corresponding-to-1-entry-xw-fld!=mem
-    (implies (not (equal fld :mem))
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
              (equal (gather-qword-addresses-corresponding-to-1-entry
                      n (xw fld index val x86))
                     (gather-qword-addresses-corresponding-to-1-entry n x86)))
@@ -709,10 +702,11 @@
 
   (defthm gather-qword-addresses-corresponding-to-1-entry-wm-low-64-superior-entry-addr
     (implies (and (equal index addr)
-                  (xlate-equiv-entries val (rm-low-64 addr x86))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 addr x86))
                   (unsigned-byte-p 64 val)
                   (physical-address-p index)
                   (physical-address-p (+ 7 index))
+                  (not (xr :programmer-level-mode 0 x86))
                   (x86p x86))
              (equal (gather-qword-addresses-corresponding-to-1-entry
                      addr (wm-low-64 index val x86))
@@ -778,11 +772,12 @@
     ;; gather-qword-addresses-corresponding-to-1-entry is defined ---
     ;; simply in terms of create-qword-address-list once the entry at
     ;; addr is read from the x86 (or x86-equiv) state.
-    (implies (and (xlate-equiv-entries val (rm-low-64 addr x86))
+    (implies (and (xlate-equiv-entries (double-rewrite val) (rm-low-64 addr x86))
                   (unsigned-byte-p 64 val)
                   (physical-address-p addr)
                   (physical-address-p (+ 7 addr))
-                  (x86p x86))
+                  (x86p x86)
+                  (not (xr :programmer-level-mode 0 x86-equiv)))
              (equal (gather-qword-addresses-corresponding-to-1-entry
                      addr (wm-low-64 addr val x86-equiv))
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
@@ -847,7 +842,8 @@
 
   :parents (gather-paging-structures)
 
-  :guard (qword-paddr-listp superior-structure-paddrs)
+  :guard (and (not (xr :programmer-level-mode 0 x86))
+              (qword-paddr-listp superior-structure-paddrs))
 
   :short "Returns a list of lists of qword addresses of inferior
   paging structures referred by the entries located at addresses
@@ -877,7 +873,8 @@
    (list-of-lists-of-addresses true-list-listp))
 
   (defthm gather-qword-addresses-corresponding-to-entries-xw-fld!=mem
-    (implies (not (equal fld :mem))
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
              (equal (gather-qword-addresses-corresponding-to-entries
                      addrs (xw fld index val x86))
                     (gather-qword-addresses-corresponding-to-entries addrs x86)))
@@ -920,8 +917,8 @@
                    (xlate-equiv-entries val (rm-low-64 index x86))
                    (unsigned-byte-p 64 val)
                    (physical-address-p index)
-                   (equal (loghead 3 index) 0)
-                   (x86p x86))
+                   (x86p x86)
+                   (not (xr :programmer-level-mode 0 x86)))
               (equal (gather-qword-addresses-corresponding-to-entries
                       addrs (wm-low-64 index val x86))
                      (gather-qword-addresses-corresponding-to-entries addrs x86)))
@@ -934,7 +931,8 @@
                   (no-duplicates-p addrs)
                   (xlate-equiv-entries val (rm-low-64 index x86))
                   (unsigned-byte-p 64 val)
-                  (x86p x86))
+                  (x86p x86)
+                  (not (xr :programmer-level-mode 0 x86)))
              (equal (gather-qword-addresses-corresponding-to-entries
                      addrs (wm-low-64 index val x86))
                     (gather-qword-addresses-corresponding-to-entries addrs x86)))
@@ -969,9 +967,10 @@
                   (member-p index addrs)
                   (mult-8-qword-paddr-listp addrs)
                   (no-duplicates-p addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86-equiv))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86-equiv))
                   (unsigned-byte-p 64 val)
-                  (x86p x86-equiv))
+                  (x86p x86-equiv)
+                  (not (xr :programmer-level-mode 0 x86-equiv)))
              (equal (gather-qword-addresses-corresponding-to-entries
                      addrs (wm-low-64 index val x86-equiv))
                     (gather-qword-addresses-corresponding-to-entries addrs x86)))
@@ -985,7 +984,8 @@
 
   :parents (gather-paging-structures)
 
-  :guard (qword-paddr-list-listp list-of-superior-structure-entries)
+  :guard (and (not (xr :programmer-level-mode 0 x86))
+              (qword-paddr-list-listp list-of-superior-structure-entries))
 
   :short "Returns a list of lists of qword addresses of inferior
   paging structures referred by the entries of a given superior
@@ -1005,7 +1005,8 @@
    (list-of-lists-of-addresses true-list-listp))
 
   (defthm gather-qword-addresses-corresponding-to-list-of-entries-xw-fld!=mem
-    (implies (not (equal fld :mem))
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
              (equal (gather-qword-addresses-corresponding-to-list-of-entries
                      addrs (xw fld index val x86))
                     (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
@@ -1036,9 +1037,10 @@
     (implies (and (member-list-p index addrs)
                   (mult-8-qword-paddr-list-listp addrs)
                   (no-duplicates-list-p addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                   (unsigned-byte-p 64 val)
-                  (x86p x86))
+                  (x86p x86)
+                  (not (xr :programmer-level-mode 0 x86)))
              (equal (gather-qword-addresses-corresponding-to-list-of-entries
                      addrs (wm-low-64 index val x86))
                     (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
@@ -1068,9 +1070,10 @@
                   (member-list-p index addrs)
                   (mult-8-qword-paddr-list-listp addrs)
                   (no-duplicates-list-p addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86-equiv))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86-equiv))
                   (unsigned-byte-p 64 val)
-                  (x86p x86-equiv))
+                  (x86p x86-equiv)
+                  (not (xr :programmer-level-mode 0 x86-equiv)))
              (equal (gather-qword-addresses-corresponding-to-list-of-entries
                      addrs (wm-low-64 index val x86-equiv))
                     (gather-qword-addresses-corresponding-to-list-of-entries addrs x86)))
@@ -1091,6 +1094,8 @@
   paging data structures: all the addresses of the paging structures
   \(i.e., the output of this function\) are
   @('pairwise-disjoint-p')</p>"
+
+  :guard (not (xr :programmer-level-mode 0 x86))
 
   :returns (list-of-lists-of-addresses qword-paddr-list-listp)
 
@@ -1123,22 +1128,17 @@
 
   (defthm gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr
     (implies (and (not (equal fld :mem))
-                  (not (equal fld :ctr)))
+                  (not (equal fld :ctr))
+                  (not (equal fld :programmer-level-mode)))
              (equal (gather-all-paging-structure-qword-addresses
                      (xw fld index val x86))
-                    (gather-all-paging-structure-qword-addresses x86)))
-    :hints (("Goal"
-             :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
-                              ()))))
+                    (gather-all-paging-structure-qword-addresses x86))))
 
   (defthm gather-all-paging-structure-qword-addresses-xw-fld=ctr
     (implies (not (equal index *cr3*))
              (equal (gather-all-paging-structure-qword-addresses
                      (xw :ctr index val x86))
-                    (gather-all-paging-structure-qword-addresses x86)))
-    :hints (("Goal"
-             :in-theory (e/d* (gather-all-paging-structure-qword-addresses)
-                              ()))))
+                    (gather-all-paging-structure-qword-addresses x86))))
 
   (defthm gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
     (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
@@ -1318,9 +1318,10 @@
                   (mult-8-qword-paddr-list-listp addrs)
                   (no-duplicates-list-p addrs)
                   (member-list-p index addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                   (unsigned-byte-p 64 val)
-                  (x86p x86))
+                  (x86p x86)
+                  (not (xr :programmer-level-mode 0 x86)))
              (equal (gather-all-paging-structure-qword-addresses
                      (wm-low-64 index val x86))
                     (gather-all-paging-structure-qword-addresses x86)))))
@@ -1332,28 +1333,35 @@
 (define xlate-equiv-entries-at-qword-addresses-aux?
   (list-of-addresses-1 list-of-addresses-2 x86-1 x86-2)
   :parents (xlate-equiv-x86s)
+  :non-executable t
   :guard (and (qword-paddr-listp list-of-addresses-1)
               (qword-paddr-listp list-of-addresses-2)
               (equal (len list-of-addresses-1)
                      (len list-of-addresses-2))
               (x86p x86-1)
               (x86p x86-2))
-  :non-executable t
 
-  (if (endp list-of-addresses-1)
-      t
-    (b* ((addr-1 (car list-of-addresses-1))
-         (addr-2 (car list-of-addresses-2))
-         ((when (not (and (physical-address-p (+ 7 addr-1))
-                          (physical-address-p (+ 7 addr-2)))))
-          nil)
-         (qword-1 (rm-low-64 addr-1 x86-1))
-         (qword-2 (rm-low-64 addr-2 x86-2))
-         ((when (not (xlate-equiv-entries qword-1 qword-2)))
-          nil))
-      (xlate-equiv-entries-at-qword-addresses-aux?
-       (cdr list-of-addresses-1) (cdr list-of-addresses-2)
-       x86-1 x86-2)))
+  (if (not (xr :programmer-level-mode 0 x86-1))
+      (if (not (xr :programmer-level-mode 0 x86-2))
+
+          (if (endp list-of-addresses-1)
+              t
+            (b* ((addr-1 (car list-of-addresses-1))
+                 (addr-2 (car list-of-addresses-2))
+                 ((when (not (and (physical-address-p (+ 7 addr-1))
+                                  (physical-address-p (+ 7 addr-2)))))
+                  nil)
+                 (qword-1 (rm-low-64 addr-1 x86-1))
+                 (qword-2 (rm-low-64 addr-2 x86-2))
+                 ((when (not (xlate-equiv-entries qword-1 qword-2)))
+                  nil))
+              (xlate-equiv-entries-at-qword-addresses-aux?
+               (cdr list-of-addresses-1) (cdr list-of-addresses-2)
+               x86-1 x86-2)))
+
+        nil)
+    (xr :programmer-level-mode 0 x86-2))
+
   ///
 
   (defthm xlate-equiv-entries-at-qword-addresses-aux?-reflexive
@@ -1361,7 +1369,9 @@
              (xlate-equiv-entries-at-qword-addresses-aux? a a x x)))
 
   (defthm xlate-equiv-entries-at-qword-addresses-aux?-commutative
-    (implies (equal (len a) (len b))
+    (implies (and (equal (len a) (len b))
+                  (x86p x)
+                  (x86p y))
              (equal (xlate-equiv-entries-at-qword-addresses-aux? a b x y)
                     (xlate-equiv-entries-at-qword-addresses-aux? b a y x))))
 
@@ -1373,7 +1383,8 @@
              (xlate-equiv-entries-at-qword-addresses-aux? a c x z)))
 
   (defthm xlate-equiv-entries-at-qword-addresses-aux?-with-xw-fld!=mem
-    (implies (not (equal fld :mem))
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
              (equal (xlate-equiv-entries-at-qword-addresses-aux?
                      addrs-1 addrs-2
                      x86-1
@@ -1415,7 +1426,7 @@
     (implies (and (mult-8-qword-paddr-listp addrs)
                   (no-duplicates-p addrs)
                   (member-p index addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86-1))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86-1))
                   (unsigned-byte-p 64 val)
                   (xlate-equiv-entries-at-qword-addresses-aux? addrs addrs x86-1 x86-2))
              (xlate-equiv-entries-at-qword-addresses-aux?
@@ -1481,7 +1492,7 @@
     (implies (and (mult-8-qword-paddr-listp addrs)
                   (no-duplicates-p addrs)
                   (member-p index addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86-2))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86-2))
                   (unsigned-byte-p 64 val))
              (equal
               (xlate-equiv-entries-at-qword-addresses-aux?
@@ -1511,30 +1522,45 @@
                      (len list-of-lists-of-addresses-2))
               (x86p x86-1)
               (x86p x86-2))
+
   :non-executable t
 
-  (if (endp list-of-lists-of-addresses-1)
-      t
-    (b* ((list-of-addresses-1 (car list-of-lists-of-addresses-1))
-         (list-of-addresses-2 (car list-of-lists-of-addresses-2))
-         ((when (not (equal (len list-of-addresses-1)
-                            (len list-of-addresses-2))))
-          nil))
-      (and (xlate-equiv-entries-at-qword-addresses-aux?
-            list-of-addresses-1 list-of-addresses-2
-            x86-1 x86-2)
-           (xlate-equiv-entries-at-qword-addresses?
-            (cdr list-of-lists-of-addresses-1)
-            (cdr list-of-lists-of-addresses-2)
-            x86-1 x86-2))))
+  (if (not (xr :programmer-level-mode 0 x86-1))
+      (if (not (xr :programmer-level-mode 0 x86-2))
+
+          (if (endp list-of-lists-of-addresses-1)
+              t
+            (b* ((list-of-addresses-1 (car list-of-lists-of-addresses-1))
+                 (list-of-addresses-2 (car list-of-lists-of-addresses-2))
+                 ((when (not (equal (len list-of-addresses-1)
+                                    (len list-of-addresses-2))))
+                  nil))
+              (and (xlate-equiv-entries-at-qword-addresses-aux?
+                    list-of-addresses-1 list-of-addresses-2 x86-1
+                    x86-2)
+                   (xlate-equiv-entries-at-qword-addresses?
+                    (cdr list-of-lists-of-addresses-1)
+                    (cdr list-of-lists-of-addresses-2)
+                    x86-1 x86-2))))
+        nil)
+
+    (xr :programmer-level-mode 0 x86-2))
+
   ///
+
+  (defthm booleanp-xlate-equiv-entries-at-qword-addresses?
+    (implies (x86p y)
+             (booleanp (xlate-equiv-entries-at-qword-addresses? addrs addrs x y)))
+    :rule-classes :type-prescription)
 
   (defthm xlate-equiv-entries-at-qword-addresses?-reflexive
     (implies (qword-paddr-list-listp a)
              (xlate-equiv-entries-at-qword-addresses? a a x x)))
 
   (defthm xlate-equiv-entries-at-qword-addresses?-commutative
-    (implies (equal (len a) (len b))
+    (implies (and (equal (len a) (len b))
+                  (x86p x)
+                  (x86p y))
              (equal (xlate-equiv-entries-at-qword-addresses? a b x y)
                     (xlate-equiv-entries-at-qword-addresses? b a y x))))
 
@@ -1560,7 +1586,8 @@
   (defthm xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
     (implies (and (xlate-equiv-entries-at-qword-addresses?
                    addrs addrs x86-1 x86-2)
-                  (member-list-p index addrs))
+                  (member-list-p index addrs)
+                  (not (xr :programmer-level-mode 0 x86-1)))
              (xlate-equiv-entries (rm-low-64 index x86-1)
                                   (rm-low-64 index x86-2)))
     :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses?
@@ -1570,7 +1597,8 @@
                                      (xlate-equiv-entries)))))
 
   (defthm xlate-equiv-entries-at-qword-addresses?-with-xw-fld!=mem
-    (implies (not (equal fld :mem))
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
              (equal (xlate-equiv-entries-at-qword-addresses?
                      addrs addrs
                      x86
@@ -1616,7 +1644,7 @@
     (implies (and (mult-8-qword-paddr-list-listp addrs)
                   (no-duplicates-list-p addrs)
                   (member-list-p index addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                   (unsigned-byte-p 64 val)
                   (xlate-equiv-entries-at-qword-addresses? addrs addrs x86 x86))
              (xlate-equiv-entries-at-qword-addresses?
@@ -1654,9 +1682,10 @@
     (implies (and (mult-8-qword-paddr-list-listp addrs)
                   (no-duplicates-list-p addrs)
                   (member-list-p index addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86-1))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86-1))
                   (unsigned-byte-p 64 val)
-                  (xlate-equiv-entries-at-qword-addresses? addrs addrs x86-1 x86-2))
+                  (xlate-equiv-entries-at-qword-addresses? addrs addrs x86-1 x86-2)
+                  (not (xr :programmer-level-mode 0 x86-1)))
              (xlate-equiv-entries-at-qword-addresses?
               addrs addrs
               x86-1
@@ -1669,6 +1698,7 @@
 (define good-paging-structures-x86p (x86)
   :parents (xlate-equiv-x86s reasoning-about-page-tables)
   (and (x86p x86)
+       (not (xr :programmer-level-mode 0 x86))
        (let* ((paging-addresses (gather-all-paging-structure-qword-addresses x86)))
          (and (mult-8-qword-paddr-list-listp paging-addresses)
               (no-duplicates-list-p paging-addresses))))
@@ -1681,11 +1711,18 @@
 
   (defthm good-paging-structures-x86p-implies-x86p
     (implies (good-paging-structures-x86p x86)
-             (x86p x86)))
+             (x86p x86))
+    :rule-classes (:rewrite :forward-chaining))
+
+  (defthm good-paging-structures-x86p-implies-system-level-mode
+    (implies (good-paging-structures-x86p x86)
+             (not (xr :programmer-level-mode 0 x86)))
+    :rule-classes (:rewrite :forward-chaining))
 
   (defthm good-paging-structures-x86p-xw-fld!=mem-and-ctr
     (implies (and (not (equal fld :mem))
                   (not (equal fld :ctr))
+                  (not (equal fld :programmer-level-mode))
                   (x86p x86)
                   (x86p (xw fld index val x86)))
              (equal (good-paging-structures-x86p (xw fld index val x86))
@@ -1739,7 +1776,9 @@
                  (paging-qword-addresses-2
                   (gather-all-paging-structure-qword-addresses x86-2)))
 
-            (and (equal (cr0-slice :cr0-wp (n32 (ctri *cr0* x86-1)))
+            (and (equal (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-1))
+                        (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-2)))
+                 (equal (cr0-slice :cr0-wp (n32 (ctri *cr0* x86-1)))
                         (cr0-slice :cr0-wp (n32 (ctri *cr0* x86-2))))
                  (equal (cr3-slice :cr3-pdb (ctri *cr3* x86-1))
                         (cr3-slice :cr3-pdb (ctri *cr3* x86-2)))
@@ -1782,7 +1821,7 @@
 
 (defthm gather-all-paging-structure-qword-addresses-wm-low-64-different-x86-disjoint
   (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
-                (xlate-equiv-x86s x86 x86-equiv)
+                (xlate-equiv-x86s (double-rewrite x86) (double-rewrite x86-equiv))
                 (good-paging-structures-x86p x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 8 index)
@@ -1802,11 +1841,11 @@
                         gather-all-paging-structure-qword-addresses)))))
 
 (defthm gather-all-paging-structure-qword-addresses-wm-low-64-different-x86
-  (implies (and (xlate-equiv-x86s x86 x86-equiv)
+  (implies (and (xlate-equiv-x86s x86 (double-rewrite x86-equiv))
                 (good-paging-structures-x86p x86)
                 (equal addrs (gather-all-paging-structure-qword-addresses x86))
                 (member-list-p index addrs)
-                (xlate-equiv-entries val (rm-low-64 index x86))
+                (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                 (mult-8-qword-paddr-list-listp addrs)
                 (no-duplicates-list-p addrs)
                 (unsigned-byte-p 64 val))

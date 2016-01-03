@@ -192,10 +192,19 @@
                    (mv-nth 2 (ia32e-la-to-pa-PDPT lin-addr wp smep nxe r-w-x cpl x86)))
                   (xlate-equiv-entries-at-qword-addresses? addrs addrs x86 x86)))
   :hints (("Goal"
+           :in-theory (e/d* () (booleanp-xlate-equiv-entries-at-qword-addresses?))
            :use ((:instance xlate-equiv-x86s-and-xlate-equiv-entries-at-qword-addresses?
                             (addrs addrs)
                             (x86 x86)
                             (x86-equiv
-                             (mv-nth 2 (ia32e-la-to-pa-PDPT lin-addr wp smep nxe r-w-x cpl x86))))))))
+                             (mv-nth 2 (ia32e-la-to-pa-PDPT lin-addr wp smep nxe r-w-x cpl x86))))
+                 (:instance booleanp-xlate-equiv-entries-at-qword-addresses?
+                            (addrs (gather-all-paging-structure-qword-addresses x86))
+                            (x x86)
+                            (y x86))
+                 (:instance booleanp-xlate-equiv-entries-at-qword-addresses?
+                            (addrs (gather-all-paging-structure-qword-addresses x86))
+                            (x x86)
+                            (y (mv-nth 2 (ia32e-la-to-pa-PDPT lin-addr wp smep nxe r-w-x cpl x86))))))))
 
 ;; ======================================================================

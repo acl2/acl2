@@ -90,7 +90,8 @@
 
   :enabled t
   :non-executable t
-  :guard (and (canonical-address-p lin-addr)
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p lin-addr)
               (equal (loghead 12 page-table-base-addr) 0))
   :guard-hints (("Goal"
                  :in-theory (e/d (adding-7-to-shifted-bits)
@@ -99,6 +100,7 @@
                                   member-equal
                                   not))))
   (and
+   (not (programmer-level-mode x86))
    (canonical-address-p lin-addr)
    (physical-address-p page-table-base-addr)
    ;; 4K-aligned --- the base address is
@@ -112,7 +114,7 @@
         ((mv fault-flg & &)
          (page-table-entry-no-page-fault-p
           lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86)))
-       (not fault-flg))))
+     (not fault-flg))))
 
 (defrule mv-nth-0-no-error-ia32e-la-to-pa-page-table
   (implies (page-table-entry-validp
@@ -131,16 +133,17 @@
   ((lin-addr             :type (signed-byte   #.*max-linear-address-size*))
    (page-table-base-addr :type (unsigned-byte #.*physical-address-size*))
    (x86))
-  :guard (and (canonical-address-p lin-addr)
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p lin-addr)
               (equal (loghead 12 page-table-base-addr) 0))
   :enabled t
   :ignore-ok t
 
   (b* ((page-table-entry-addr
         (page-table-entry-addr lin-addr page-table-base-addr)))
-      ;; 4K pages
-      (list
-       (addr-range 8 page-table-entry-addr))))
+    ;; 4K pages
+    (list
+     (addr-range 8 page-table-entry-addr))))
 
 ;; Page Directory:
 
@@ -156,7 +159,8 @@
 
   :enabled t
   :non-executable t
-  :guard (and (canonical-address-p lin-addr)
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p lin-addr)
               (equal (loghead 12 page-dir-base-addr) 0))
   :guard-hints (("Goal"
                  :in-theory (e/d (adding-7-to-shifted-bits)
@@ -165,6 +169,7 @@
                                   member-equal
                                   not))))
   (and
+   (not (programmer-level-mode x86))
    (canonical-address-p lin-addr)
    (physical-address-p page-dir-base-addr)
    ;; 4K-aligned --- the base address is
@@ -222,7 +227,8 @@
   ((lin-addr                 :type (signed-byte   #.*max-linear-address-size*))
    (page-directory-base-addr :type (unsigned-byte #.*physical-address-size*))
    (x86))
-  :guard (and (canonical-address-p lin-addr)
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p lin-addr)
               (equal (loghead 12 page-directory-base-addr) 0))
   :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
                                          (translation-governing-addresses-for-page-table
@@ -266,7 +272,8 @@
 
   :non-executable t
   :enabled t
-  :guard (and (canonical-address-p lin-addr)
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p lin-addr)
               (equal (loghead 12 ptr-table-base-addr) 0))
   :guard-hints (("Goal"
                  :in-theory (e/d (adding-7-to-shifted-bits)
@@ -275,7 +282,8 @@
                                   member-equal
                                   not))))
 
-  (and (canonical-address-p lin-addr)
+  (and (not (programmer-level-mode x86))
+       (canonical-address-p lin-addr)
        (physical-address-p ptr-table-base-addr)
        (equal (loghead 12 ptr-table-base-addr) 0)
        (b*
@@ -314,7 +322,8 @@
   ((lin-addr                 :type (signed-byte   #.*max-linear-address-size*))
    (ptr-table-base-addr :type (unsigned-byte #.*physical-address-size*))
    (x86))
-  :guard (and (canonical-address-p lin-addr)
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p lin-addr)
               (equal (loghead 12 ptr-table-base-addr) 0))
   :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
                                          (translation-governing-addresses-for-page-directory
@@ -359,7 +368,8 @@
 
   :non-executable t
   :enabled t
-  :guard (and (canonical-address-p lin-addr)
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p lin-addr)
               (equal (loghead 12 pml4-base-addr) 0))
   :guard-hints (("Goal"
                  :in-theory (e/d (adding-7-to-shifted-bits)
@@ -368,22 +378,23 @@
                                   member-equal
                                   not))))
 
-  (and (canonical-address-p lin-addr)
+  (and (not (programmer-level-mode x86))
+       (canonical-address-p lin-addr)
        (physical-address-p pml4-base-addr)
        (equal (loghead 12 pml4-base-addr) 0)
        (b*
-        ((pml4-entry-addr
-          (pml4-table-entry-addr lin-addr pml4-base-addr))
-         (entry (rm-low-64 pml4-entry-addr x86))
-         ((mv fault-flg & &)
-          (paging-entry-no-page-fault-p
-           lin-addr entry wp smep nxe r-w-x cpl x86))
-         ((when fault-flg)
-          nil))
-        (page-dir-ptr-table-entry-validp
-         lin-addr
-         (ash (ia32e-page-tables-slice :reference-addr entry) 12)
-         wp smep nxe r-w-x cpl x86))))
+           ((pml4-entry-addr
+             (pml4-table-entry-addr lin-addr pml4-base-addr))
+            (entry (rm-low-64 pml4-entry-addr x86))
+            ((mv fault-flg & &)
+             (paging-entry-no-page-fault-p
+              lin-addr entry wp smep nxe r-w-x cpl x86))
+            ((when fault-flg)
+             nil))
+         (page-dir-ptr-table-entry-validp
+          lin-addr
+          (ash (ia32e-page-tables-slice :reference-addr entry) 12)
+          wp smep nxe r-w-x cpl x86))))
 
 (defrule mv-nth-0-no-error-ia32e-la-to-pa-pml4-table
   (implies (pml4-table-entry-validp
@@ -395,6 +406,7 @@
                   nil))
   :in-theory (e/d (ia32e-la-to-pa-pml4-table)
                   (bitops::logand-with-negated-bitmask
+                   page-dir-ptr-table-entry-validp
                    page-table-entry-validp
                    unsigned-byte-p
                    signed-byte-p)))
@@ -404,7 +416,8 @@
    (pml4-base-addr :type (unsigned-byte #.*physical-address-size*))
    (x86))
 
-  :guard (and (canonical-address-p lin-addr)
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p lin-addr)
               (equal (loghead 12 pml4-base-addr) 0))
   :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
                                          (translation-governing-addresses-for-page-dir-ptr-table
@@ -425,9 +438,9 @@
         (translation-governing-addresses-for-page-dir-ptr-table
          lin-addr ptr-table-base-addr x86)))
 
-      (append
-       (list (addr-range 8 pml4-entry-addr))
-       ptr-table-addresses)))
+    (append
+     (list (addr-range 8 pml4-entry-addr))
+     ptr-table-addresses)))
 
 ;; Top-level recognizer:
 
@@ -436,10 +449,9 @@
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
    (x86))
-
-
   :enabled t
-  :guard (canonical-address-p lin-addr)
+  :guard (and (not (xr :programmer-level-mode 0 x86))
+              (canonical-address-p lin-addr))
   :guard-hints (("Goal"
                  :in-theory (e/d ()
                                  (unsigned-byte-p
@@ -454,8 +466,8 @@
        (nxe (ia32_efer-slice :ia32_efer-nxe ia32-efer))
        (cr3 (ctri *cr3* x86))
        (pml4-base-addr (ash (cr3-slice :cr3-pdb cr3) 12)))
-      (pml4-table-entry-validp
-       lin-addr pml4-base-addr wp smep nxe r-w-x cpl x86)))
+    (pml4-table-entry-validp
+     lin-addr pml4-base-addr wp smep nxe r-w-x cpl x86)))
 
 (define translation-governing-addresses
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
@@ -484,6 +496,7 @@
 <p>I intend to use this function for reasoning only, which is why I
 don't have @('MBE')s to facilitate efficient execution.</p>"
 
+  :guard (not (xr :programmer-level-mode 0 x86))
   :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
                                          (translation-governing-addresses-for-pml4-table
                                           unsigned-byte-p
@@ -496,8 +509,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
        ;; PML4 Table:
        (pml4-base-addr (ash (cr3-slice :cr3-pdb cr3) 12)))
 
-      (translation-governing-addresses-for-pml4-table
-       lin-addr pml4-base-addr x86)))
+    (translation-governing-addresses-for-pml4-table
+     lin-addr pml4-base-addr x86)))
 
 (defthm consp-translation-governing-addresses
   (consp (translation-governing-addresses lin-addr x86))
