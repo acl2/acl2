@@ -36,14 +36,47 @@
 ; packages that are both being built at separate times in separate threads,
 ; crashing into each other's working space.
 
-(asdf:load-system "bordeaux-threads")
-(asdf:load-system "bt-semaphore")
-(asdf:load-system "cl-fad")
-(asdf:load-system "external-program")
-(asdf:load-system "fastnumio")
-(asdf:load-system "html-template")
-(asdf:load-system "hunchentoot")
-(asdf:load-system "osicat")
-(asdf:load-system "shellpool")
-(asdf:load-system "uiop")
+#-sbcl
+(defmacro load-system-from-acl2-quicklisp-bundle (name)
+  `(asdf:load-system ,name))
+
+#+sbcl
+(defmacro load-system-from-acl2-quicklisp-bundle (name)
+  ;; [Jared] Gross hack.
+  ;;
+  ;; Development versions of SBCL from 1.3.1.108-e9046da through at least SBCL
+  ;; 1.3.1.185-bb7a213 seem to have a bug that is provoked by loading CL+SSL
+  ;; (included via hunchentoot) when the optimize settings are set to a high
+  ;; level, as they are in ACL2.  For details and status on this bug see
+  ;; #1530390:
+  ;;
+  ;;    https://bugs.launchpad.net/sbcl/+bug/1530390
+  ;;
+  ;; As a workaround, if we are using SBCL, then explicitly set the compiler
+  ;; policy to something less aggressive, which seems to avoid the problem.
+  ;; When the SBCL bug is fixed, I think we should feel free to get rid of this
+  ;; hack.
+  `(cl:with-compilation-unit
+     (:policy '(optimize (speed 1)
+                         (space 1)
+                         (safety 1)
+                         (debug 1)
+                         (compilation-speed 1)))
+     (sb-ext:restrict-compiler-policy 'safety 1)
+     (sb-ext:restrict-compiler-policy 'space 1)
+     (sb-ext:restrict-compiler-policy 'speed 1)
+     (sb-ext:restrict-compiler-policy 'debug 1)
+     (sb-ext:restrict-compiler-policy 'compilation-speed 1)
+     (asdf:load-system ,name)))
+
+(load-system-from-acl2-quicklisp-bundle "bordeaux-threads")
+(load-system-from-acl2-quicklisp-bundle "bt-semaphore")
+(load-system-from-acl2-quicklisp-bundle "cl-fad")
+(load-system-from-acl2-quicklisp-bundle "external-program")
+(load-system-from-acl2-quicklisp-bundle "fastnumio")
+(load-system-from-acl2-quicklisp-bundle "html-template")
+(load-system-from-acl2-quicklisp-bundle "hunchentoot")
+(load-system-from-acl2-quicklisp-bundle "osicat")
+(load-system-from-acl2-quicklisp-bundle "shellpool")
+(load-system-from-acl2-quicklisp-bundle "uiop")
 
