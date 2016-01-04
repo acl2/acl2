@@ -408,6 +408,23 @@ module mg1 () ;
 endmodule
 
 
+module mg2 () ;
+
+  wire [3:0] xx, yy;
+
+  genvar     genvar1;
+  genvar     genvar2;
+
+  generate
+    for(genvar1 = 0; genvar1 < 4; genvar1 = genvar1+1)
+    begin
+      not(xx[genvar1], yy[genvar1]);
+    end
+  endgenerate
+
+endmodule
+
+
 
 
 interface ImPort ;
@@ -581,7 +598,65 @@ module tricky_init ;
 endmodule
 
 
+interface fancy_mp;
+
+  logic [3:0] foo;
+
+  modport mp1 (input foo);
+  modport mp2 (input foo);
+  modport mp3 (input foo);
+  modport mp4 (input foo);
+
+endinterface
+
+module fancy_mptest_sub (fancy_mp xx);
+
+endmodule
+
+module fancy_mptest_sub2 (fancy_mp.mp3 xx);
+
+endmodule
+
+module fancy_mptest ;
+
+  fancy_mp xx();
+
+  fancy_mptest_sub sub1 (xx.mp1);
+  fancy_mptest_sub sub2 (.xx(xx.mp2));
+
+endmodule
 
 
 
+interface fancy_mp_param;
+
+  // parameterized interfaces make modport handling trickier
+
+  parameter width = 3;
+  logic [width-1:0] foo;
+
+  modport mp1 (input foo);
+  modport mp2 (input foo);
+  modport mp3 (input foo);
+  modport mp4 (input foo);
+
+endinterface
+
+module fancy_mp_paramtest_sub (fancy_mp_param xx);
+
+endmodule
+
+module fancy_mp_paramtest_sub2 (fancy_mp_param.mp3 xx);
+
+endmodule
+
+module fancy_mp_paramtest ;
+
+  fancy_mp_param #(5) xx();
+
+  fancy_mp_paramtest_sub sub1 (xx.mp1);
+  fancy_mp_paramtest_sub sub2 (.xx(xx.mp2));
+  fancy_mp_paramtest_sub2 sub3 (.*);
+
+endmodule
 

@@ -35,7 +35,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc eliminitial
-  :parents (always-top)
+  :parents (transforms)
   :short "Throw away any @('initial') statements and add non-fatal @(see
 warnings) to the affected modules."
 

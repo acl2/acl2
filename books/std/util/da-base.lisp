@@ -61,15 +61,16 @@ that reasoning about the tags of objects does not slow down reasoning about
 @('car') in general.</p>
 
 <p>Even so, tag reasoning can occasionally get expensive.  Macros like
-@('defaggregate'), @(see defprod), etc., generally add their tag-related rules
-to the @('tag-reasoning') ruleset; see @(see rulesets).  You may generally want
-to keep this ruleset disabled, and only enable it when you really want to use
-tags to distinguish between objects.</p>
+@('defaggregate'), @(see fty::defprod), etc., generally add their tag-related
+rules to the @('tag-reasoning') ruleset; see @(see acl2::rulesets).  You may
+generally want to keep this ruleset disabled, and only enable it when you
+really want to use tags to distinguish between objects.</p>
 
-<p>Note: if you are using the @(see fty) framework, it is generally best to
-avoid using @('tag') to distinguish between members of the same sum of products
-type.  Instead, consider using the custom @('-kind') macros that are introduced
-by macros such as @(see fty::deftagsum) and @(fty::deftranssum).</p>"
+<p>Note: if you are using the @(see fty::fty) framework, it is generally best
+to avoid using @('tag') to distinguish between members of the same sum of
+products type.  Instead, consider using the custom @('-kind') macros that are
+introduced by macros such as @(see fty::deftagsum) and @(see
+fty::deftranssum).</p>"
 
   (defund-inline tag (x)
     (declare (xargs :guard t))

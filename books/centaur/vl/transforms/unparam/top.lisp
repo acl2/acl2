@@ -331,6 +331,7 @@ vl-unparameterize-main) does.</p>
 <h3>Tricky Parts</h3>
 
 <h2>Scoping</h2>
+
 <p>When we unparameterize a module instance like</p>
 
 @({
@@ -402,8 +403,7 @@ names.</p>
 <p>If an interface is instantiated with a set of parameters and then passed to
 a module instance, that instance differs from a similar instance that is passed
 an interface instantiated with different parameters, even if the parameters two
-the two instances are the same (or there aren't any parameters).
-")
+the two instances are the same (or there aren't any parameters).</p>")
 
 
 
@@ -574,6 +574,7 @@ interfaces on one of its ports.</p>")
   (vl-unparam-actualkey x inst-ss mod-ss))
 
 (defprod vl-unparam-instkey
+  :short "Mainly, the type of an element produced by @(see vl-unparam-inst->instkey)."
   :layout :tree
   ((modname stringp)
    (ifportalist vl-ifport-alist-p)

@@ -459,7 +459,7 @@
 
 (local
  (defthm lemma1
-   (implies (and (force (character-listp chars))
+   (implies (and ; (force (character-listp chars)) ; Matt K. mod
                  (force (stringp str))
                  (not (member-symbol-name str
                                           (pkg-imports "KEYWORD"))))
@@ -470,7 +470,7 @@
 
 (local
  (defthm lemma2
-   (implies (and (force (character-listp chars))
+   (implies (and ; (force (character-listp chars)) ; Matt K. mod
                  (force (stringp str))
                  (not (member-symbol-name str
                                           nil)))

@@ -246,9 +246,12 @@ unused(:imsim, "bar ")
 normal(:imsim, "port1 ")
 normal(:imsim, "port2 ")
 
-# I know these don't work yet
-#normal(:mg1, "p1_used ")
-#normal(:mg1, "w1_normal ")
+normal(:mg1, "p1_used ")
+unused(:mg1, "w1_normal ")
+
+normal(:mg2, "genvar1")
+spurious(:mg2, "genvar2")
+
 
 unset(:useprim, "w1_unset ")
 unused(:useprim, "w1_unused ")
@@ -279,5 +282,19 @@ normal(:tricky_init, "w2_normal ")
 unused(:tricky_init, "w3_unused ")
 unset(:tricky_init, "w4_unset ")
 spurious(:tricky_init, "w5_spurious ")
+
+
+spurious(:fancy_mp, "foo")
+normal(:fancy_mp, "mp1")
+normal(:fancy_mp, "mp2")
+normal(:fancy_mp, "mp3")
+unused(:fancy_mp, "mp4")
+
+
+spurious(:'fancy_mp_param$width=5', "foo")
+normal(:'fancy_mp_param$width=5', "mp1")
+normal(:'fancy_mp_param$width=5', "mp2")
+normal(:'fancy_mp_param$width=5', "mp3")
+unused(:'fancy_mp_param$width=5', "mp4")
 
 test_passed()

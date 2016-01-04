@@ -339,17 +339,15 @@
   (define vl-expr-typedecide-aux
     ((x        vl-expr-p)
      (ss       vl-scopestack-p)
-     (scopes   vl-elabscopes-p) (mode     (or (eq mode :probably-wrong)
+     (scopes   vl-elabscopes-p)
+     (mode     (or (eq mode :probably-wrong)
                    (eq mode :probably-right))))
     :parents (vl-expr-typedecide)
     :short "Core of computing expression signedness."
 
-    :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>These are the same arguments as @(see vl-expr-typedecide) except for
-@('mode').  You should probably read @(see expression-sizing-minutia) to
-understand the valid modes:</p>
+    :long "<p>These are the same arguments as @(see vl-expr-typedecide) except
+for @('mode').  You should probably read @(see
+vl2014::expression-sizing-minutia) to understand the valid modes:</p>
 
 <ul>
 
@@ -453,7 +451,7 @@ produce unsigned values.</li>
                    :signedness (mv (ok) (if x.to.signedp :vl-signed :vl-unsigned))
                    :otherwise (vl-expr-typedecide-aux x.expr ss scopes mode))
 
-        ;; By the spec, it seems this always returns a 1-bit unsigned (test this)
+        ;; It seems this should always returns a 1-bit unsigned.
         :vl-inside (mv (ok) :vl-unsigned)
 
         ;; Tagged unions aren't vector types
@@ -542,7 +540,7 @@ produce unsigned values.</li>
 
 
 (define vl-expr-typedecide
-  :parents (vl-expr-size)
+  :parents (expr-tools)
   :short "Computation of expression signedness (main routine)."
   ((x        vl-expr-p)
    (ss vl-scopestack-p)
@@ -551,10 +549,7 @@ produce unsigned values.</li>
                (type     (and (vl-maybe-exprsign-p type)
                               (equal (vl-exprsign-p type) (if type t nil)))))
 
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We determine the signedness of an expression.  This function must
+  :long "<p>We determine the signedness of an expression.  This function must
 <b>only</b> be used on \"top-level\" and self-determined portions of
 expressions.  That is, consider an assignment like:</p>
 

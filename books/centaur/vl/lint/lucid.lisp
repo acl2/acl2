@@ -171,6 +171,13 @@ read/written.</p>"
   ((db      vl-luciddb-p
             "Main database mapping keys to their use/set occurrences.")
 
+   (modportsp booleanp :rule-classes :type-prescription
+              "Should we issue warnings for modports?  It generally will only
+               make sense to do this <i>before</i> unparameterization has taken
+               place, because unparameterization can change the names of
+               interfaces and our argresolve handling drops the arg.modport
+               stuff in a way that makes this too hard to handle.")
+
    (paramsp booleanp :rule-classes :type-prescription
             "Should we issue warnings for parameters?  It generally will only
              make sense to do this <i>before</i> unparameterization has taken
@@ -197,7 +204,7 @@ read/written.</p>"
 (local (xdoc::set-default-parents vl-lucidstate-init))
 
 (define vl-scope-luciddb-init-aux
-  :parents (vl-luciddb-initialize-scope)
+  :parents (vl-scope-luciddb-init)
   ((locals vl-scopeitem-alist-p "The local variables declared in some scope.")
    (ss vl-scopestack-p          "Scopestack for our current location.")
    (db vl-luciddb-p             "Database we're initializing."))
@@ -447,9 +454,11 @@ created when we process their packages, etc.</p>"
   ((x vl-design-p)
    &key
    ((paramsp booleanp) 't)
+   ((modportsp booleanp) 't)
    ((generatesp booleanp) 't))
   :returns (st vl-lucidstate-p)
   (make-vl-lucidstate :db (vl-luciddb-init x)
+                      :modportsp modportsp
                       :paramsp paramsp
                       :generatesp generatesp))
 
@@ -598,7 +607,7 @@ created when we process their packages, etc.</p>"
                          (occ   vl-lucidocc-p)
                          (db    vl-luciddb-p)
                          (ctx   vl-context1-p))
-  :parents (vl-lucidstate-mark-used)
+  :parents (vl-lucidstate-mark)
   :returns (new-db vl-luciddb-p)
   (b* ((db   (vl-luciddb-fix db))
        (occ  (vl-lucidocc-fix occ))
@@ -725,6 +734,29 @@ created when we process their packages, etc.</p>"
                           (vl-normalize-scopestack x.super))))
   ///
   (verify-guards vl-normalize-scopestack))
+
+(define vl-lucidst-mark-modport ((ifname stringp)
+                                 (mpname stringp)
+                                 (ss     vl-scopestack-p)
+                                 (st     vl-lucidstate-p)
+                                 (ctx    vl-context1-p))
+  :returns (new-st vl-lucidstate-p)
+  :short "Helper function for marking interface modports as used."
+  (b* ((st (vl-lucidstate-fix st))
+       (design (vl-scopestack->design ss))
+       ((unless design)
+        (raise "No design in lucid scopestack?  Something is horribly wrong.")
+        st)
+       (iface (vl-find-interface ifname (vl-design->interfaces design)))
+       ((unless iface)
+        (vl-cw-ps-seq (vl-cw "Error: ~a0: interface ~s1 not found.~%" ctx ifname))
+        (vl-lucidstate-fix st))
+       ;; This is a little tricky because we need a normalized scopestack that
+       ;; puts us into the right interface, but that's easy enough...
+       (temp-ss (vl-scopestack-init design))
+       (temp-ss (vl-scopestack-push iface temp-ss))
+       (temp-ss (vl-normalize-scopestack temp-ss)))
+    (vl-lucid-mark-simple :used mpname temp-ss st ctx)))
 
 (define vl-hidstep-mark-interfaces ((mtype (member mtype '(:used :set)))
                                     (step  vl-hidstep-p)
@@ -1540,10 +1572,7 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list portdecllist :element portdecl)
 
-(local (defthm vl-hidname-p-when-stringp
-         (implies (stringp x)
-                  (vl-hidname-p x))
-         :hints(("Goal" :in-theory (enable vl-hidname-p)))))
+
 
 (def-vl-lucidcheck interfaceport
   ;; Unlike regular ports, I think we want to not mark an interface port as
@@ -1556,25 +1585,8 @@ created when we process their packages, etc.</p>"
        (ctx (vl-lucid-ctx ss x))
        (st  (vl-packeddimensionlist-lucidcheck x.udims ss st ctx))
        ((unless x.modport)
-        st)
-
-       ;; We want to mark the modport for this interface as used.  This is a
-       ;; little tricky but we can do it.
-       (design (vl-scopestack->design ss))
-       ((unless design)
-        (raise "No design in lucid scopestack?  Something is horribly wrong.")
-        st)
-
-       (iface (vl-find-interface x.ifname (vl-design->interfaces design)))
-       ((unless iface)
-        (vl-cw-ps-seq (vl-cw "Error: ~a0: interface ~s1 not found.~%" x x.ifname))
-        st)
-
-       (temp-ss (vl-scopestack-init design))
-       (temp-ss (vl-scopestack-push iface temp-ss))
-       (temp-ss (vl-normalize-scopestack temp-ss))
-       (st      (vl-lucid-mark-simple :used x.modport temp-ss st ctx)))
-    st))
+        st))
+    (vl-lucidst-mark-modport x.ifname x.modport ss st ctx)))
 
 (def-vl-lucidcheck-list interfaceportlist :element interfaceport)
 
@@ -1674,12 +1686,42 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list typedeflist :element typedef)
 
+
+(define vl-string-expr->value ((x vl-expr-p))
+  :returns (str maybe-stringp :rule-classes :type-prescription)
+  (vl-expr-case x
+    :vl-literal
+    (vl-value-case x.val
+      :vl-string x.val.value
+      :otherwise nil)
+    :otherwise nil))
+
+(local (defthm alistp-when-vl-atts-p-rewrite
+         (implies (vl-atts-p x)
+                  (alistp x))
+         :hints(("Goal" :in-theory (enable (tau-system))))))
+
 (def-vl-lucidcheck plainarg
   :takes-ctx t
   :body
   (b* (((vl-plainarg x))
        ((unless x.expr)
-        st))
+        st)
+       ;; See argresolve's vl-unhierarchicalize-interfaceport stuff, which
+       ;; converts fancy interfaceport arguments like myinterface.mymodport
+       ;; into just myinterface.  In this case, we want to mark the modport as
+       ;; being used.  Argresolve leaves us some attributes that we can use to
+       ;; carry out this marking.  (BOZO: this might not work quite right after
+       ;; unparameterizing interfaces, because the interface name may be
+       ;; different.)
+       (mpname (let ((look (cdr (assoc-equal "VL_REMOVED_EXPLICIT_MODPORT" x.atts))))
+                 (and look (vl-string-expr->value look))))
+       (ifname (and mpname
+                    (let ((look (cdr (assoc-equal "VL_INTERFACE_NAME" x.atts))))
+                      (and look (vl-string-expr->value look)))))
+       (st (if ifname
+               (vl-lucidst-mark-modport ifname mpname ss st ctx)
+             st)))
     (case x.dir
       (:vl-input
        ;; Inputs are like RHSes, they're used not set.
@@ -1810,6 +1852,15 @@ created when we process their packages, etc.</p>"
 (def-vl-lucidcheck-list aliaslist :element alias)
 
 
+(define vl-gencaselist->flat-match-exprs ((x vl-gencaselist-p))
+  :measure (vl-gencaselist-count x)
+  :returns (exprs vl-exprlist-p)
+  (let ((x (vl-gencaselist-fix x)))
+    (if (atom x)
+        nil
+      (append (caar x)
+              (vl-gencaselist->flat-match-exprs (cdr x))))))
+
 (def-genblob-transform vl-genblob-lucidcheck ((ss vl-scopestack-p)
                                               (st vl-lucidstate-p))
   :no-new-x t
@@ -1835,7 +1886,7 @@ created when we process their packages, etc.</p>"
        ;; Nothing to do for imports, they just affect the scopestack.
        ;; Nothing to do for fwdtypedefs
        (st (vl-modportlist-lucidcheck   x.modports   ss st))
-       ;; BOZO add genvars
+       ;; Nothing to do for genvars, they just affect the scopestack
        ;; BOZO add assertions
        ;; BOZO add cassertions
        ;; BOZO add properties
@@ -1846,7 +1897,40 @@ created when we process their packages, etc.</p>"
        ;; BOZO anything to do for normal ports?
        (st (vl-interfaceportlist-lucidcheck x.ifports ss st)))
     st)
-  :apply-to-generates vl-generates-lucidcheck)
+  :apply-to-generates vl-generates-lucidcheck
+  :return-from-genif-bindings
+  ;; For IF generate constructs we should also consider the names used in the
+  ;; TEST expression as being used.
+  ((x   (vl-genelement-fix x))
+   (ctx (vl-lucid-ctx ss x))
+   (st  (vl-rhsexpr-lucidcheck x.test ss st ctx)))
+  :return-from-genarray-bindings
+  ;; For a genarray (a normalized generate loop), we should regard the iterator
+  ;; variable as both used and set.
+  ((x   (vl-genelement-fix x))
+   (ctx (vl-lucid-ctx ss x))
+   (st  (vl-lucid-mark-simple :used x.var ss st ctx))
+   (st  (vl-lucid-mark-simple :set x.var ss st ctx)))
+  :return-from-genloop-bindings
+  ;; For a generate loop (an not-yet-normalized generate loop), we should mark
+  ;; the variable itself as both set and used (because it is implicitly being
+  ;; used to create some number of blocks).  We should also mark any variables
+  ;; used in the initializer, continue, and nextval expressions as being used.
+  ((x   (vl-genelement-fix x))
+   (ctx (vl-lucid-ctx ss x))
+   (st  (vl-lucid-mark-simple :used x.var ss st ctx))
+   (st  (vl-lucid-mark-simple :set x.var ss st ctx))
+   (st  (vl-rhsexpr-lucidcheck x.initval ss st ctx))
+   (st  (vl-rhsexpr-lucidcheck x.continue ss st ctx))
+   (st  (vl-rhsexpr-lucidcheck x.nextval ss st ctx)))
+  :return-from-gencase-bindings
+  ;; For a generate case we need to consider the test expression and all match
+  ;; expressions as being used.
+  ((x   (vl-genelement-fix x))
+   (ctx (vl-lucid-ctx ss x))
+   (st  (vl-rhsexpr-lucidcheck x.test ss st ctx))
+   (st  (vl-rhsexprlist-lucidcheck (vl-gencaselist->flat-match-exprs x.cases) ss st ctx))))
+
 
 (def-vl-lucidcheck module
   :body
@@ -2853,8 +2937,41 @@ doesn't have to recreate the default heuristics.</p>"
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
 
+      (:vl-genvar
+       ;; We'll do a particularly dumb analysis here and only see if the
+       ;; variable has any sets/uses.
+       (b* ((usedp (consp val.used))
+            (setp  (consp val.set))
+            ((when (and usedp setp))
+             ;; Everything's good.
+             reportcard)
+            (name (vl-genvar->name key.item))
+            (path (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+            (w (cond ((and (not usedp) (not setp))
+                      (make-vl-warning :type :vl-lucid-spurious
+                                       :msg "~w0 is never used or set anywhere. (~s1)"
+                                       :args (list name path)
+                                       :fn __function__
+                                       :fatalp nil))
+                     ((and usedp (not setp))
+                      (make-vl-warning :type :vl-lucid-unset
+                                       :msg "~w0 is never set. (~s1)"
+                                       :args (list name path)
+                                       :fn __function__
+                                       :fatalp nil))
+                     (t
+                      (make-vl-warning :type :vl-lucid-unused
+                                       :msg "~w0 is never used. (~s1)"
+                                       :args (list name path)
+                                       :fn __function__
+                                       :fatalp nil)))))
+         (vl-extend-reportcard topname w reportcard)))
+
       (:vl-modport
-       (b* (((when (vl-lucid-some-solo-occp val.used))
+       (b* (((unless st.modportsp)
+             ;; Don't do any analysis of modports unless it's permitted.
+             reportcard)
+            ((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Modport ~s0 is never used. (~s1)"
@@ -2967,6 +3084,7 @@ doesn't have to recreate the default heuristics.</p>"
 
 (define vl-design-lucid ((x vl-design-p)
                          &key
+                         ((modportsp booleanp) 't)
                          ((paramsp booleanp) 't)
                          ((generatesp booleanp) 't))
   :returns (new-x vl-design-p)
@@ -2976,6 +3094,7 @@ doesn't have to recreate the default heuristics.</p>"
                    :mintime 1))
        (ss (vl-scopestack-init x))
        (st (cwtime (vl-lucidstate-init x
+                                       :modportsp modportsp
                                        :paramsp paramsp
                                        :generatesp generatesp)))
        (st (cwtime (vl-design-lucidcheck-main x ss st)))

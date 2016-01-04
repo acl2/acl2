@@ -266,7 +266,7 @@ only meant as a heuristic for generating more useful warnings.</p>"
 
 
 (define vl-tweak-fussy-warning-type
-  :parents (vl-op-selfsize)
+  :parents (vl-expr-selfsize)
   :short "Heuristically categorize fussy warnings according to severity."
   ((type  symbolp   "Base warning type, which we may adjust.")
    (a     vl-expr-p "LHS expression, i.e., A in: A + B, or C ? A : B")
@@ -371,7 +371,7 @@ details.</p>"
 
 (define vl-binary->original-operator ((x vl-expr-p))
   :guard (vl-expr-case x :vl-binary)
-  :parents (origexprs)
+  :parents (vl-binaryop-selfsize)
   :short "Get the original operator from a binary expression."
   :returns (op vl-binaryop-p)
   (b* (((vl-binary x))
@@ -396,15 +396,13 @@ details.</p>"
       (size     maybe-natp :rule-classes :type-prescription))
   :verify-guards nil
 
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We attempt to determine the size of the binary operator expression.  We
-assume that each argument has already had its self-size computed successfully
-and that the results of these computations are given as the @('arg-sizes').</p>
+  :long "<p>We attempt to determine the size of the binary operator expression.
+We assume that each argument has already had its self-size computed
+successfully and that the results of these computations are given as the
+@('arg-sizes').</p>
 
 <p>This function basically implements Verilog-2005 Table 5-22, or
-SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
+SystemVerilog-2012 Table 11-21.</p>"
   :prepwork ((local (in-theory (disable acl2::member-of-cons))))
 
 
@@ -618,15 +616,13 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
       (size     maybe-natp :rule-classes :type-prescription))
   :verify-guards nil
 
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We attempt to determine the size of the unary operator expression.  We
-assume that each argument has already had its self-size computed successfully
-and that the results of these computations are given as the @('arg-sizes').</p>
+  :long "<p>We attempt to determine the size of the unary operator expression.
+We assume that each argument has already had its self-size computed
+successfully and that the results of these computations are given as the
+@('arg-sizes').</p>
 
 <p>This function basically implements Verilog-2005 Table 5-22, or
-SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
+SystemVerilog-2012 Table 11-21.</p>"
   :prepwork ((local (in-theory (disable acl2::member-of-cons))))
 
   (b* (((vl-unary x) (vl-expr-fix x))
@@ -819,22 +815,14 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 ||#
 
 (defines vl-expr-selfsize
-  :parents (vl-expr-size)
+  :parents (expr-tools)
   :short "Computation of self-determined expression sizes."
 
-  :long "<p><b>Warning</b>: these functions should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>Some failures are expected, e.g., we do not know how to size some system
-calls.  In these cases we do not cause any warnings.  But in other cases, a
-failure might mean that the expression is malformed in some way, e.g., maybe it
-references an undefined wire or contains a raw, \"unindexed\" reference to an
-array.  In these cases we generate fatal warnings.</p>
-
-<p>BOZO we might eventually add as inputs the full list of modules and a
-modalist so that we can look up HIDs.  An alternative would be to use the
-annotations left by @(see vl-design-follow-hids) like (e.g.,
-@('VL_HID_RESOLVED_RANGE_P')) to see how wide HIDs are.</p>"
+  :long "<p>Some failures are expected, e.g., we do not know how to size some
+system calls.  In these cases we do not cause any warnings.  But in other
+cases, a failure might mean that the expression is malformed in some way, e.g.,
+maybe it references an undefined wire or contains a raw, \"unindexed\"
+reference to an array.  In these cases we generate fatal warnings.</p>"
 
   (define vl-expr-selfsize
     ((x        vl-expr-p        "Expression whose size we are to compute.")

@@ -453,16 +453,17 @@
                    t)))
 
 (defthm logic.formula-list-atblp-of-rw.crewrite-clause-plan->forced-goals
-   (implies (force (and (rw.crewrite-clause-planp x)
-                        (rw.crewrite-clause-plan-okp x world)
-                        (rw.crewrite-clause-plan-atblp x atbl)
-                        (tactic.worldp world)
-                        (tactic.world-atblp world atbl)
-                        (equal (cdr (lookup 'not atbl)) 1)
-                        (equal (cdr (lookup 'equal atbl)) 2)
-                        (equal (cdr (lookup 'iff atbl)) 2)
-                        (equal (cdr (lookup 'if atbl)) 3)
-                        ))
+; Matt K. mod for v7-2: Don't force assumption below with free variable.
+   (implies (and (force (rw.crewrite-clause-planp x))
+                 (rw.crewrite-clause-plan-okp x world)
+                 (force (and (rw.crewrite-clause-plan-atblp x atbl)
+                             (tactic.worldp world)
+                             (tactic.world-atblp world atbl)
+                             (equal (cdr (lookup 'not atbl)) 1)
+                             (equal (cdr (lookup 'equal atbl)) 2)
+                             (equal (cdr (lookup 'iff atbl)) 2)
+                             (equal (cdr (lookup 'if atbl)) 3)
+                             )))
             (equal (logic.formula-list-atblp (rw.crewrite-clause-plan->forced-goals x) atbl)
                    t)))
 

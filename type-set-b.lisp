@@ -179,8 +179,7 @@
               (symbolp (cadr x)))
          (car
           (assoc-equal-cdr x
-                           (getprop (cadr x) 'runic-mapping-pairs nil
-                                    'current-acl2-world wrld))))
+                           (getpropc (cadr x) 'runic-mapping-pairs nil wrld))))
         (t nil)))
 
 ; Essay on Fake-Runes
@@ -247,16 +246,16 @@
 
   (car
    (assoc-equal-cdr rune
-                    (getprop (base-symbol rune) 'runic-mapping-pairs nil
-                             'current-acl2-world wrld))))
+                    (getpropc (base-symbol rune) 'runic-mapping-pairs nil
+                              wrld))))
 
 (defun frunic-mapping-pair (rune wrld)
 
 ; Rune must be a rune in wrld.  We return its mapping pair.
 
   (assoc-equal-cdr rune
-                   (getprop (base-symbol rune) 'runic-mapping-pairs nil
-                            'current-acl2-world wrld)))
+                   (getpropc (base-symbol rune) 'runic-mapping-pairs nil
+                             wrld)))
 
 (defun fn-rune-nume (fn nflg xflg wrld)
 
@@ -270,7 +269,7 @@
 ; return nil for all combinations of the flags.
 
   (let* ((runic-mapping-pairs
-          (getprop fn 'runic-mapping-pairs nil 'current-acl2-world wrld))
+          (getpropc fn 'runic-mapping-pairs nil wrld))
          (pair (if xflg (cadr runic-mapping-pairs) (car runic-mapping-pairs))))
     (if nflg (car pair) (cdr pair))))
 
@@ -369,10 +368,10 @@
 
   (cond ((symbolp x)
          (cond
-          ((getprop (deref-macro-name x macro-aliases) 'runic-mapping-pairs nil
-                    'current-acl2-world wrld)
+          ((getpropc (deref-macro-name x macro-aliases)
+                     'runic-mapping-pairs nil wrld) 
            t)
-          (t (not (eq (getprop x 'theory t 'current-acl2-world wrld) t)))))
+          (t (not (eq (getpropc x 'theory t wrld) t)))))
         ((and (consp x)
               (null (cdr x))
               (symbolp (car x)))
@@ -404,9 +403,7 @@
 
 ; Do not use the function macro-args below, as it can cause a hard error!
 
-              (not (eq (getprop (car lst) 'macro-args
-                                t
-                                'current-acl2-world wrld)
+              (not (eq (getpropc (car lst) 'macro-args t wrld)
                        t)))
          (prog2$ (cw "~|~%**NOTE**:  The name ~x0 is a macro.  See :DOC ~
                       add-macro-alias if you want it to be associated with a ~
@@ -420,10 +417,9 @@
                          name
                          (cond ((and (symbolp name)
                                      (or (body name nil wrld)
-                                         (getprop name 'theorem nil
-                                                  'current-acl2-world wrld)
-                                         (getprop name 'defchoose-axiom nil
-                                                  'current-acl2-world wrld)))
+                                         (getpropc name 'theorem nil wrld)
+                                         (getpropc name 'defchoose-axiom nil
+                                                   wrld)))
                                 " (though there is a theorem with that name)")
                                (t ""))))
                    (theoryp!1 (cdr lst) t macro-aliases wrld)))))
@@ -552,9 +548,10 @@
               (eq (base-symbol rune) (cadr (cdr (car mapping-pairs)))))
          (find-mapping-pairs-tail1 rune mapping-pairs))
         (t (find-mapping-pairs-tail1 rune
-                                     (getprop (base-symbol rune)
-                                              'runic-mapping-pairs nil
-                                              'current-acl2-world wrld)))))
+                                     (getpropc (base-symbol rune)
+                                               'runic-mapping-pairs
+                                               nil
+                                               wrld)))))
 
 (defun augment-runic-theory1 (lst mapping-pairs wrld ans)
 
@@ -620,9 +617,8 @@
   (cond
    ((null lst) ans)
    ((symbolp (car lst))
-    (let ((temp (getprop (deref-macro-name (car lst) macro-aliases)
-                         'runic-mapping-pairs nil
-                         'current-acl2-world wrld)))
+    (let ((temp (getpropc (deref-macro-name (car lst) macro-aliases)
+                          'runic-mapping-pairs nil wrld)))
       (cond
        ((and temp
              (eq (car (cdr (car temp))) :DEFINITION)
@@ -650,19 +646,19 @@
         (convert-theory-to-unordered-mapping-pairs1
          (cdr lst) macro-aliases wrld
          (augment-runic-theory1
-          (reverse (getprop (car lst) 'theory
-                            `(:error ,*bad-runic-designator-string*)
-                            'current-acl2-world wrld))
+          (reverse (getpropc (car lst) 'theory
+                             `(:error ,*bad-runic-designator-string*)
+                             wrld))
           nil
           wrld
           ans))))))
    ((null (cdr (car lst)))
     (convert-theory-to-unordered-mapping-pairs1
      (cdr lst) macro-aliases wrld
-     (cons (cadr (getprop (deref-macro-name (car (car lst)) macro-aliases)
-                          'runic-mapping-pairs
-                          `(:error ,*bad-runic-designator-string*)
-                          'current-acl2-world wrld))
+     (cons (cadr (getpropc (deref-macro-name (car (car lst)) macro-aliases)
+                           'runic-mapping-pairs
+                           `(:error ,*bad-runic-designator-string*)
+                           wrld))
            ans)))
    (t (convert-theory-to-unordered-mapping-pairs1
        (cdr lst) macro-aliases wrld
@@ -1102,8 +1098,7 @@
 ; because the call of ev-fncall-w below disallows the use of attachments (last
 ; parameter, aok, is nil).
 
-              (not (getprop (ffn-symb term) 'constrainedp nil
-                            'current-acl2-world wrld)))
+              (not (getpropc (ffn-symb term) 'constrainedp nil wrld)))
          (mv-let
           (erp val)
           (pstk
@@ -1720,8 +1715,7 @@
 ; (with-acl2-lock
 ;  *acl2-par-arrays-lock*
 
-  (let* ((ges1 (getprop varname 'global-value nil
-                        'current-acl2-world wrld))
+  (let* ((ges1 (getpropc varname 'global-value nil wrld))
          (theory-array (access enabled-structure ges1 :theory-array))
          (name (access enabled-structure ges1 :array-name)))
 
@@ -1754,7 +1748,7 @@
   (if (endp stobj-names)
       t
     (let* ((st (car stobj-names))
-           (ar (getprop st 'accessor-names nil 'current-acl2-world wrld)))
+           (ar (getpropc st 'accessor-names nil wrld)))
       (prog2$ (or (null ar)
                   (prog2$ (flush-compress st)
                           (compress1 st ar)))
@@ -7587,7 +7581,7 @@
                      (mv-let
                       (ts2 ttree2)
                       (type-set-with-rules
-                       (getprop fn 'type-prescriptions nil 'current-acl2-world w)
+                       (getpropc fn 'type-prescriptions nil w)
                        x force-flg
                        dwp ; see comment in rewrite-atm about "use of dwp"
                        type-alist ancestors ens w
@@ -7709,7 +7703,7 @@
 
          (mv-let (ts1 ttree1)
                  (type-set-with-rules
-                  (getprop fn 'type-prescriptions nil 'current-acl2-world w)
+                  (getpropc fn 'type-prescriptions nil w)
                   x force-flg
                   dwp ; see comment in rewrite-atm about "use of dwp"
                   type-alist ancestors ens w
@@ -11695,6 +11689,3 @@
 
 (defun ens (state)
   (f-get-global 'global-enabled-structure state))
-
-(defmacro git (sym prop)
-  `(getprop ,sym ,prop nil 'current-acl2-world (w state)))

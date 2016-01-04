@@ -55,13 +55,13 @@
 ; keep that list of properties in sync with raw-acl2-exports1.
 
   (declare (xargs :guard (plist-worldp wrld)))
-  (let ((doc-alist (global-val 'documentation-alist wrld)))
+  (let ((doc-alist *acl2-system-documentation*))
     (cond ((alistp doc-alist)
            (raw-acl2-exports1 doc-alist
-                                   (pkg-witness "ACL2")
-                                   wrld
-                                   allp
-                                   nil))
+                              (pkg-witness "ACL2")
+                              wrld
+                              allp
+                              nil))
           (t (er hard? 'raw-acl2-exports
                  "Expected ~x0 to be an alistp!")))))
 

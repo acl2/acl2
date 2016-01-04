@@ -55,7 +55,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
   :elt-type vl-ctxexpr)
 
 (define vl-exprlist-ctxexprs-nrev
-  :parents (vl-make-ctxexprlist)
+  :parents (vl-exprlist-ctxexprs)
   ((exprs vl-exprlist-p)
    (ctx   vl-context1-p)
    (ss    vl-scopestack-p)

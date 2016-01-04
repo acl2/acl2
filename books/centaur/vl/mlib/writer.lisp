@@ -725,8 +725,12 @@ displays.  The module browser's web pages are responsible for defining the
   (define vl-pp-valuerange ((x vl-valuerange-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-valuerange-count x) 10)
     (vl-valuerange-case x
-      :range (vl-pp-range x.range)
-      :single (vl-pp-expr x.expr)))
+      :valuerange-single (vl-pp-expr x.expr)
+      :valuerange-range (vl-ps-seq (vl-print "[")
+                                   (vl-pp-expr x.low)
+                                   (vl-print ":")
+                                   (vl-pp-expr x.high)
+                                   (vl-print "]"))))
 
   (define vl-pp-valuerangelist ((x vl-valuerangelist-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-valuerangelist-count x) 10)
@@ -1165,18 +1169,16 @@ real Verilog file.</p>"
   (with-local-ps (vl-pp-expr x)))
 
 (define vl-pp-origexpr ((x vl-expr-p) &key (ps 'ps))
-  :parents (origexprs verilog-printing)
+  :parents (verilog-printing)
   :short "Pretty-print the \"original,\" un-transformed version of an
 expression."
   :long "<p>This is like @(see vl-pp-expr) but, if @('x') has a
 @('VL_ORIG_EXPR') attribute (see @(see origexprs)), we actually pretty-print
 the original version of @('x') rather than the current version (which may be
-simplified, and hence not correspond as closely to the original source
-code.)</p>
-
-<p>This only works if the @(see origexprs) transform is run early in the
-transformation sequence.  When there's no @('VL_ORIG_EXPR') attribute, we just
-print @('x') as is.</p>"
+simplified, and hence not correspond as closely to the original source code.)
+Specifically, the elaboration transform may replace certain subexpressions with
+constants and leave behind an annotation giving the original version of
+@('x').</p>"
   (b* ((misc (vl-ps->misc))
        (prev-p (vl-ps->use-origexprs-p)))
     (vl-ps-seq

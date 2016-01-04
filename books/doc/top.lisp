@@ -241,9 +241,12 @@
 (include-book "centaur/memoize/old/watch" :dir :system)
 
 (include-book "data-structures/top" :dir :system)
+(include-book "data-structures/memories/memory" :dir :system)
 (include-book "acl2s/doc" :dir :system)
 
 (include-book "projects/doc" :dir :system)
+
+(include-book "kestrel/top" :dir :system)
 
 
 
@@ -451,7 +454,7 @@
   (state-global-let*
    ((current-package "ACL2" set-current-package-state))
    (b* ((all-topics (time$
-                     (force-root-parents
+                     (force-missing-parents
                       (maybe-add-top-topic
                        (normalize-parents-list ; Should we clean-topics?
                         (get-xdoc-table (w state)))))))

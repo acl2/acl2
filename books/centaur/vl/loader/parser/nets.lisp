@@ -43,78 +43,6 @@
                            default-cdr)))
 
 
-; net_type ::= supply0 | supply1 | tri | triand | trior | tri0 | tri1
-;            | uwire | wire | wand | wor
-
-
-;; BOZO SystemVerilog adds trireg as a valid net_type.  We aren't accounting
-;; for this correctly.
-
-(defconst *vl-nettypes-kwd-alist*
-  '((:vl-kwd-wire    . :vl-wire)    ; we put wire first since it's most common
-    (:vl-kwd-supply0 . :vl-supply0)
-    (:vl-kwd-supply1 . :vl-supply1)
-    (:vl-kwd-tri     . :vl-tri)
-    (:vl-kwd-triand  . :vl-triand)
-    (:vl-kwd-trior   . :vl-trior)
-    (:vl-kwd-tri0    . :vl-tri0)
-    (:vl-kwd-tri1    . :vl-tri1)
-    (:vl-kwd-uwire   . :vl-uwire)
-    (:vl-kwd-wand    . :vl-wand)
-    (:vl-kwd-wor     . :vl-wor)))
-
-(defconst *vl-nettypes-kwds*
-  (strip-cars *vl-nettypes-kwd-alist*))
-
-(defparser vl-parse-optional-nettype ()
-  :result (vl-maybe-nettypename-p val)
-  :resultp-of-nil t
-  :fails never
-  :count strong-on-value
-  (seq tokstream
-        (when (vl-is-some-token? *vl-nettypes-kwds*)
-          (type := (vl-match)))
-        (return (and type
-                     (cdr (assoc-eq (vl-token->type type)
-                                    *vl-nettypes-kwd-alist*))))))
-
-
-
-; This is not a real production in the Verilog grammar, but we imagine:
-;
-; netdecltype ::= net_type | trireg
-;
-; Which is useful for parsing net declarations, where you can either
-; have a net_type or trireg.
-
-(defconst *vl-netdecltypes-kwd-alist*
-  (append *vl-nettypes-kwd-alist*
-          (list '(:vl-kwd-trireg . :vl-trireg))))
-
-(defconst *vl-netdecltype-kwd-types*
-  (strip-cars *vl-netdecltypes-kwd-alist*))
-
-(defparser vl-parse-netdecltype ()
-  :result (consp val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (ret := (vl-match-some-token *vl-netdecltype-kwd-types*))
-       (return (cons (cdr (assoc-eq (vl-token->type ret) *vl-netdecltypes-kwd-alist*))
-                     (vl-token->loc ret)))))
-
-(defthm vl-netdecltype-p-of-vl-parse-netdecltype
-  (implies (not (mv-nth 0 (vl-parse-netdecltype)))
-           (vl-nettypename-p (car (mv-nth 1 (vl-parse-netdecltype)))))
-  :hints(("Goal" :in-theory (enable vl-parse-netdecltype))))
-
-(defthm vl-location-p-of-vl-parse-netdecltype
-  (implies (not (mv-nth 0 (vl-parse-netdecltype)))
-           (vl-location-p (cdr (mv-nth 1 (vl-parse-netdecltype)))))
-  :hints(("Goal" :in-theory (enable vl-parse-netdecltype))))
-
-
 
 ; PARSING CONTINUOUS ASSIGNMENTS ----------------------------------------------
 
@@ -228,7 +156,87 @@
        (return (vl-build-assignments (vl-token->loc assignkwd)
                                      pairs strength delay atts))))
 
-(local (xdoc::set-default-parents nil))
+
+(defxdoc parse-netdecls
+  :parents (parser)
+  :short "Functions for parsing net declarations.")
+
+(local (xdoc::set-default-parents parse-netdecls))
+
+; net_type ::= supply0 | supply1 | tri | triand | trior | tri0 | tri1
+;            | uwire | wire | wand | wor
+
+;; BOZO SystemVerilog adds trireg as a valid net_type.  We aren't accounting
+;; for this correctly.
+
+(defconst *vl-nettypes-kwd-alist*
+  '((:vl-kwd-wire    . :vl-wire)    ; we put wire first since it's most common
+    (:vl-kwd-supply0 . :vl-supply0)
+    (:vl-kwd-supply1 . :vl-supply1)
+    (:vl-kwd-tri     . :vl-tri)
+    (:vl-kwd-triand  . :vl-triand)
+    (:vl-kwd-trior   . :vl-trior)
+    (:vl-kwd-tri0    . :vl-tri0)
+    (:vl-kwd-tri1    . :vl-tri1)
+    (:vl-kwd-uwire   . :vl-uwire)
+    (:vl-kwd-wand    . :vl-wand)
+    (:vl-kwd-wor     . :vl-wor)))
+
+(defconst *vl-nettypes-kwds*
+  (strip-cars *vl-nettypes-kwd-alist*))
+
+(defparser vl-parse-optional-nettype ()
+  :result (vl-maybe-nettypename-p val)
+  :resultp-of-nil t
+  :fails never
+  :count strong-on-value
+  (seq tokstream
+        (when (vl-is-some-token? *vl-nettypes-kwds*)
+          (type := (vl-match)))
+        (return (and type
+                     (cdr (assoc-eq (vl-token->type type)
+                                    *vl-nettypes-kwd-alist*))))))
+
+
+
+; This is not a real production in the Verilog grammar, but we imagine:
+;
+; netdecltype ::= net_type | trireg
+;
+; Which is useful for parsing net declarations, where you can either
+; have a net_type or trireg.
+
+(defconst *vl-netdecltypes-kwd-alist*
+  (append *vl-nettypes-kwd-alist*
+          (list '(:vl-kwd-trireg . :vl-trireg))))
+
+(defconst *vl-netdecltype-kwd-types*
+  (strip-cars *vl-netdecltypes-kwd-alist*))
+
+(defparser vl-parse-netdecltype ()
+  :result (consp val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (ret := (vl-match-some-token *vl-netdecltype-kwd-types*))
+       (return (cons (cdr (assoc-eq (vl-token->type ret) *vl-netdecltypes-kwd-alist*))
+                     (vl-token->loc ret)))))
+
+(defthm vl-netdecltype-p-of-vl-parse-netdecltype
+  (implies (not (mv-nth 0 (vl-parse-netdecltype)))
+           (vl-nettypename-p (car (mv-nth 1 (vl-parse-netdecltype)))))
+  :hints(("Goal" :in-theory (enable vl-parse-netdecltype))))
+
+(defthm vl-location-p-of-vl-parse-netdecltype
+  (implies (not (mv-nth 0 (vl-parse-netdecltype)))
+           (vl-location-p (cdr (mv-nth 1 (vl-parse-netdecltype)))))
+  :hints(("Goal" :in-theory (enable vl-parse-netdecltype))))
+
+
+
+
+
 
 
 ;                            PARSING NET DECLARATIONS
@@ -254,7 +262,9 @@
 ; net_decl_assignment ::= identifier '=' expression
 
 
-(fty::deflist vl-rangelist-list :elt-type vl-rangelist :elementp-of-nil t)
+(fty::deflist vl-rangelist-list
+  :elt-type vl-rangelist
+  :elementp-of-nil t)
 
 (defparser vl-parse-list-of-net-identifiers ()
   ;; Matches: identifier { range } { ',' identifier { range } }

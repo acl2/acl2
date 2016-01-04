@@ -125,4 +125,37 @@
                               (list (vl::vl-cw-warning (car values)) rest)
                             (list rest)))))))
 
+#!VL
+(trace$ (vl-design-elaborate
+         :entry (with-local-ps (vl-pp-design x))
+         :exit (with-local-ps (vl-pp-design value))))
+
+
+#!VL
+(trace$ (vl-inside-expr-case-to-svex
+         :entry (list 'vl-inside-expr-case-to-svex
+                      :elem elem
+                      :elem-selfsize elem-selfsize
+                      :elem-type elem-type
+                      :range range)
+         :exit (list 'vl-inside-expr-case-to-svex
+                     (second values))))
+
+#!VL
+(trace$ (vl-inside-expr-cases-to-svex
+         :entry (list 'vl-inside-expr-case-to-svex
+                      :elem elem
+                      :elem-selfsize elem-selfsize
+                      :elem-type elem-type
+                      :set set)
+         :exit (list 'vl-inside-expr-case-to-svex
+                     (second values))))
+
+#!VL
+(trace$ (vl-expr-to-svex-opaque
+         :entry (list 'vl-expr-to-svex-opaque x)
+         :exit (list 'vl-expr-to-svex-opaque (second values))))
+
+
+
 ||#

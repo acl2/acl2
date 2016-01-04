@@ -195,6 +195,12 @@ ACL2_COMPILER_DISABLED =
 # See *acl2-egc-on* for an explanation of the following variable.
 ACL2_EGC_ON =
 
+# The following supplies a value for *acl2-exit-lisp-hook*, which
+# should be a symbol in the "COMMON-LISP-USER" package.  For example,
+# for CCL consider:
+# make ACL2_EXIT_LISP_HOOK='acl2-exit-lisp-ccl-report'.
+ACL2_EXIT_LISP_HOOK =
+
 # The following is not advertised.  It allows more symbol allocation
 # when ACL2 package is created; if specified, its value should be a
 # number to supply for the :size argument of defpackage.  For example,
@@ -284,6 +290,9 @@ acl2r.lisp:
 	fi
 	if [ "$(ACL2_EGC_ON)" != "" ] ; then \
 	echo '(DEFPARAMETER *ACL2-EGC-ON* $(ACL2_EGC_ON))' >> acl2r.lisp ;\
+	fi
+	if [ "$(ACL2_EXIT_LISP_HOOK)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-EXIT-LISP-HOOK* (QUOTE $(ACL2_EXIT_LISP_HOOK)))' >> acl2r.lisp ;\
 	fi
 
 .PHONY: chmod_image
@@ -867,7 +876,7 @@ endif
 
 # Simple targets that ignore variables not mentioned below,
 # including: ACL2_SUFFIX, PREFIX, ACL2_SAFETY, ACL2_COMPILER_DISABLED,
-# ACL2_EGC_ON, and ACL2_SIZE:
+# ACL2_EGC_ON, ACL2_SIZE, and ACL2_EXIT_LISP_HOOK:
 
 saved_acl2: $(ACL2_DEPS)
 	echo "Making ACL2 on $(LISP)"

@@ -687,15 +687,15 @@ yet; they'll just cause a parse error.</p>"
 
 (defparser vl-parse-0+-scope-prefixes ()
   :short "Match @('{ id '::' }') and return a list of all the ids that have been matched."
-  :long "<p>See also @(see vl-parse-indexed-id-2012) and @(see abstract-hids).
+  :long "<p>See also @(see vl-parse-indexed-id-2012) and @(see vl-scopeexpr).
 We use this in the tricky case of parsing:</p>
 
 @({
       { id '::' } hierarchical_identifier select
 })
 
-<p>But per our desired abstract HID representation, we want to keep all of the
-scoping stuff bundled up together, so we prefer to match it first, if it
+<p>But per our desired scope expression representation, we want to keep all of
+the scoping stuff bundled up together, so we prefer to match it first, if it
 exists.</p>"
   :verify-guards nil
   :result (string-listp val)
@@ -2247,16 +2247,16 @@ identifier, so we convert it into a hidpiece.</p>"
     :measure (two-nats-measure (vl-tokstream-measure) 310)
     (seq tokstream
          (when (vl-plausible-start-of-range-p)
-           ;; We want [ a : b ] here
+           ;; We want [ low : high ] here
            (:= (vl-match))
-           (a :w= (vl-parse-expression))
+           (low :w= (vl-parse-expression))
            (:= (vl-match-token :vl-colon))
-           (b := (vl-parse-expression))
+           (high := (vl-parse-expression))
            (:= (vl-match-token :vl-rbrack))
-           (return (vl-range->valuerange (make-vl-range :msb a :lsb b))))
+           (return (make-vl-valuerange-range :low low :high high)))
          ;; Otherwise, just an expression
          (expr := (vl-parse-expression))
-         (return (vl-expr->valuerange expr))))
+         (return (make-vl-valuerange-single :expr expr))))
 
 
   (defparser vl-parse-1+-open-value-ranges ()

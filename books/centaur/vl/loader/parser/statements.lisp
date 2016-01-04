@@ -996,7 +996,7 @@
 
 
 
-(defparsers parse-statements
+(defparsers vl-parse-statement
   :flag-local nil
 ;;  :measure-debug t
 
@@ -1071,7 +1071,7 @@
                                      'inside' case_inside_item {case_inside_item} 'endcase'
           })
 
-          <p>But BOZO we do not yet implement these."
+          <p>But BOZO we do not yet implement these.</p>"
     :guard (vl-atts-p atts)
     :measure (two-nats-measure (vl-tokstream-measure) 0)
     (seq tokstream
@@ -1920,7 +1920,7 @@
     :off prove
     :gag-mode :goals
     (make-event
-     `(defthm-parse-statements-flag vl-parse-statement-val-when-error
+     `(defthm-vl-parse-statement-flag vl-parse-statement-val-when-error
         ,(vl-val-when-error-claim vl-parse-case-item)
         ,(vl-val-when-error-claim vl-parse-1+-case-items)
         ,(vl-val-when-error-claim vl-parse-case-statement :args (atts))
@@ -1950,7 +1950,7 @@
   (with-output
     :off prove :gag-mode :goals
     (make-event
-     `(defthm-parse-statements-flag vl-parse-statement-warning
+     `(defthm-vl-parse-statement-flag vl-parse-statement-warning
         ,(vl-warning-claim vl-parse-case-item)
         ,(vl-warning-claim vl-parse-1+-case-items)
         ,(vl-warning-claim vl-parse-case-statement :args (atts))
@@ -1980,7 +1980,7 @@
   (with-output
     :off prove :gag-mode :goals
     (make-event
-     `(defthm-parse-statements-flag vl-parse-statement-progress
+     `(defthm-vl-parse-statement-flag vl-parse-statement-progress
         ,(vl-progress-claim vl-parse-case-item)
         ,(vl-progress-claim vl-parse-1+-case-items)
         ,(vl-progress-claim vl-parse-case-statement :args (atts))
@@ -2051,7 +2051,7 @@
   (with-output
     :off prove :gag-mode :goals
     (make-event
-     `(defthm-parse-statements-flag vl-parse-statement-type
+     `(defthm-vl-parse-statement-flag vl-parse-statement-type
 
         ,(vl-stmt-claim vl-parse-case-item
                         (vl-caselist-p val)

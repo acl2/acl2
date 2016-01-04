@@ -100,7 +100,7 @@ full update functions.")
 ;; this.
 
 (defines svex-compose-dfs
-  :parents (svex-composition)
+  :parents (sv)
   :short "Compose together a network of svex assignments, stopping when a
 variable depends on itself."
 

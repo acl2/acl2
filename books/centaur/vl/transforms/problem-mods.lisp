@@ -45,7 +45,6 @@ expose some kind of programming problem with VL.</p>")
 (local (xdoc::set-default-parents problem-modules))
 
 (define vl-warn-problem-module
-  :parents (vl-simplify)
   :short "Add a fatal warning if this is a problem module."
   ((x        vl-module-p  "A module, perhaps a problem module.")
    (problems string-listp "A list of problem module names, supplied by the user."))
@@ -64,7 +63,6 @@ expose some kind of programming problem with VL.</p>")
   (vl-warn-problem-module x problems)
   :guard (and (vl-modulelist-p x)
               (string-listp problems))
-  :parents (vl-simplify)
   :short "Extend @(see vl-warn-problem-modulelist) to a list of modules.")
 
 (defthm vl-modulelist-p-of-vl-warn-problem-modulelist
@@ -73,7 +71,6 @@ expose some kind of programming problem with VL.</p>")
   :hints(("Goal" :induct (len x))))
 
 (define vl-design-problem-mods
-  :parents (vl-simplify)
   :short "Remove user-specified problem modules from the design."
   ((design   vl-design-p)
    (problems string-listp))

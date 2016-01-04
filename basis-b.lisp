@@ -2078,7 +2078,7 @@
                               (plist-worldp w))))
   (cond ((flambdap fn)
          (lambda-formals fn))
-        (t (let ((temp (getprop fn 'formals t 'current-acl2-world w)))
+        (t (let ((temp (getpropc fn 'formals t w)))
              (cond ((eq temp t)
                     (er hard? 'formals
                         "Every function symbol is supposed to have a ~
@@ -2111,7 +2111,7 @@
                                   (symbolp fn))
                               (plist-worldp-with-formals w))))
   (cond ((flambdap fn) (length (lambda-formals fn)))
-        (t (let ((temp (getprop fn 'formals t 'current-acl2-world w)))
+        (t (let ((temp (getpropc fn 'formals t w)))
              (cond ((eq temp t) nil)
                    (t (length temp)))))))
 
@@ -2137,7 +2137,7 @@
        :guard
        (and (member-eq key *user-defined-functions-table-keys*)
             (symbolp val)
-            (not (eq (getprop val 'formals t 'current-acl2-world world)
+            (not (eq (getpropc val 'formals t world)
                      t))
             (all-nils (stobjs-out val world))))
 
@@ -2162,7 +2162,7 @@
     concl))
 
 (defun def-body (fn wrld)
-  (car (getprop fn 'def-bodies nil 'current-acl2-world wrld)))
+  (car (getpropc fn 'def-bodies nil wrld)))
 
 (defun body (fn normalp w)
 
@@ -2190,7 +2190,7 @@
                                                     :formals))
                                 (access def-body def-body :hyp)
                                 (access def-body def-body :concl))))
-        (t (getprop fn 'unnormalized-body nil 'current-acl2-world w))))
+        (t (getpropc fn 'unnormalized-body nil w))))
 
 (defun symbol-class (sym wrld)
 
@@ -2240,8 +2240,8 @@
 
   (declare (xargs :guard (and (symbolp sym)
                               (plist-worldp wrld))))
-  (or (getprop sym 'symbol-class nil 'current-acl2-world wrld)
-      (if (getprop sym 'theorem nil 'current-acl2-world wrld)
+  (or (getpropc sym 'symbol-class nil wrld)
+      (if (getpropc sym 'theorem nil wrld)
           :ideal
           :program)))
 
@@ -2306,7 +2306,7 @@
 
   (cond ((eq stobj 'state)
          'state-p)
-        (t (cadr (getprop stobj 'stobj nil 'current-acl2-world wrld)))))
+        (t (cadr (getpropc stobj 'stobj nil wrld)))))
 
 (defun stobj-recognizer-terms (known-stobjs wrld)
 
@@ -2427,7 +2427,7 @@
   (cond ((flambdap fn) *t*)
         ((or (not stobj-optp)
              (all-nils (stobjs-in fn w)) )
-         (getprop fn 'guard *t* 'current-acl2-world w))
+         (getpropc fn 'guard *t* w))
         (t
 
 ; If we have been told to optimize the stobj recognizers (stobj-optp =
@@ -2438,7 +2438,7 @@
 
          (optimize-stobj-recognizers
           (collect-non-x 'nil (stobjs-in fn w))
-          (or (getprop fn 'guard *t* 'current-acl2-world w)
+          (or (getpropc fn 'guard *t* w)
 
 ; Once upon a time we found a guard of nil, and it took awhile to track down
 ; the source of the ensuing error.
@@ -2475,7 +2475,7 @@
      (or (eq fn 'equal)
          (eq fn 'iff)
          (and (not (flambdap fn))
-              (getprop fn 'coarsenings nil 'current-acl2-world ,w)))))
+              (getpropc fn 'coarsenings nil ,w)))))
 
 (defun >=-len (x n)
   (declare (xargs :guard (and (integerp n) (<= 0 n))))
@@ -2831,7 +2831,7 @@
   (cond
    ((variablep term)
     (or (cdr (assoc term alist))
-        (and (getprop term 'stobj nil 'current-acl2-world wrld)
+        (and (getpropc term 'stobj nil wrld)
              term)))
    ((fquotep term)
     nil)
@@ -2893,7 +2893,7 @@
     (and st
          (symbolp st)
          (let ((accessor-names
-                (getprop st 'accessor-names nil 'current-acl2-world wrld)))
+                (getpropc st 'accessor-names nil wrld)))
            (and accessor-names
                 (< n (car (dimensions st accessor-names)))
                 (aref1 st accessor-names n))))))
@@ -3245,8 +3245,7 @@
                      (function-symbolp fn wrld))
                 (equal (arity fn wrld) n))
                ((and (symbolp fn)
-                     (getprop fn 'macro-body nil
-                              'current-acl2-world wrld))
+                     (getpropc fn 'macro-body nil wrld))
                 t)
                (t (and (true-listp fn)
                        (>= (length fn) 3)
@@ -3339,7 +3338,7 @@
 ; renew-name to be (renewal-mode .  old-sig) where renewal-mode is :erase,
 ; :overwrite, or :reclassifying-overwrite.
 
-  (let ((redefined (getprop name 'redefined nil 'current-acl2-world wrld)))
+  (let ((redefined (getpropc name 'redefined nil wrld)))
     (cond
      ((and (consp redefined)
            (eq (car redefined) :erase))
@@ -4112,7 +4111,15 @@
       #-acl2-loop-only
       (progn
         #+ccl
-        (ccl:set-lisp-heap-gc-threshold new-threshold)
+        (ccl:set-lisp-heap-gc-threshold ; CCL requires a fixnum.
+         (cond ((> new-threshold most-positive-fixnum)
+                (progn (cw "Requested value for set-gc-threshold$ must be a ~
+                            fixnum in CeCL, but ~x0 is greater than ~
+                            most-positive-fixnum (which is ~x1). Setting to ~
+                            most-positive-fixnum instead.~|"
+                           new-threshold most-positive-fixnum)
+                       most-positive-fixnum))
+               (t new-threshold)))
         #+(and ccl acl2-par)
         (progn (cw "Disabling the CCL Ephemeral GC for ACL2(p)~%")
                (ccl:egc nil))

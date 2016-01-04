@@ -474,8 +474,7 @@
 ; -- which isn't equiv2 -- so we skip it.
 
          (member-eq equiv2
-                    (cdr (getprop equiv1 'coarsenings nil
-                                  'current-acl2-world wrld))))))
+                    (cdr (getpropc equiv1 'coarsenings nil wrld))))))
 
 ; The above function determines if one equivalence symbol is a
 ; refinement of another.  More often we want to know whether a symbol
@@ -530,8 +529,7 @@
 
   (cond ((eq equiv 'equal) *fake-rune-for-anonymous-enabled-rule*)
         ((null geneqv) nil)
-        (t (geneqv-refinementp1 (getprop equiv 'coarsenings nil
-                                         'current-acl2-world wrld)
+        (t (geneqv-refinementp1 (getpropc equiv 'coarsenings nil wrld)
                                 geneqv))))
 
 ; We now define the function which constructs the list of generated
@@ -628,8 +626,8 @@
   (cond
    ((null geneqv) nil)
    (t (cons (cons (car geneqv)
-                  (cdr (getprop (access congruence-rule (car geneqv) :equiv)
-                                'coarsenings nil 'current-acl2-world wrld)))
+                  (cdr (getpropc (access congruence-rule (car geneqv) :equiv)
+                                'coarsenings nil wrld)))
             (pair-congruence-rules-with-coarsenings (cdr geneqv) wrld)))))
 
 (defun add-to-cr-and-coarsenings
@@ -702,12 +700,11 @@
    ((null geneqv1) old-crs-and-coarsenings)
    (t (union-geneqv1 (cdr geneqv1)
                      (add-to-cr-and-coarsenings (car geneqv1)
-                                                (getprop
+                                                (getpropc
                                                  (access congruence-rule
                                                          (car geneqv1)
                                                          :equiv)
-                                                 'coarsenings nil
-                                                 'current-acl2-world wrld)
+                                                 'coarsenings nil wrld)
                                                 old-crs-and-coarsenings
                                                 t)
                      wrld))))
@@ -926,8 +923,7 @@
 ; never call geneqv-lst on 'IF.
 
          (list *geneqv-iff* geneqv geneqv))
-        (t (let ((congruences (getprop fn 'congruences nil
-                                       'current-acl2-world wrld)))
+        (t (let ((congruences (getpropc fn 'congruences nil wrld)))
              (cond
               ((null congruences) nil)
               ((null geneqv)
@@ -1089,8 +1085,7 @@
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).
 
-                  (not (getprop fn 'constrainedp nil
-                                'current-acl2-world wrld)))))
+                  (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: This code is supposed to be the same as in rewrite.  Keep them in sync
 ; and see the comment there for explanations.
@@ -2112,7 +2107,7 @@
   (cond
    ((flambdap fn) ; no chance of a match by child rewrite call
     (mv nil nil))
-   (t (let* ((prop (getprop fn 'pequivs nil 'current-acl2-world wrld))
+   (t (let* ((prop (getpropc fn 'pequivs nil wrld))
              (shallow-pequiv-alist (pequivs-property-field prop :shallow)))
         (cond
          ((not pequiv-info) ; no pequivs for which to take the "next"
@@ -4778,7 +4773,7 @@
            ((variablep hyp) nil)
            ((fquotep hyp) nil)
            ((flambda-applicationp hyp) nil)
-           (t (getprop (ffn-symb hyp) 'lemmas nil 'current-acl2-world wrld)))))
+           (t (getpropc (ffn-symb hyp) 'lemmas nil wrld)))))
 
 (defun search-ground-units1
   (hyp unify-subst lemmas type-alist ens force-flg wrld ttree)
@@ -6450,17 +6445,6 @@
 ; across args, etc., unless it is done in an extra-logical style.  A
 ; better idea would be to connect the goal stack to the comment window
 ; and actually display it so that persistence became visual again.
-
-; The uses of acl2-loop-only below are simply to give us a debugging
-; tool for stack overflows.  When a stack overflow occurs, set :brr t.
-; Then provoke the overflow.  Exit from the break and from LP.  In raw
-; lisp type
-; (cw-gstack)
-; to see the gstack near the point of overflow.
-
-; Furthermore, one can interrupt ACL2 anytime with ctrl-c and do
-; (cw-gstack)
-; from within the Raw Lisp Break to see what is happening.  Continue with :r.
 
 #-acl2-loop-only
 (defparameter *deep-gstack* nil)
@@ -11592,9 +11576,7 @@
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).  Indeed, we rely on this check in chk-live-state-p.
 
-                             (not (getprop fn 'constrainedp nil
-                                           'current-acl2-world
-                                           wrld)))))
+                             (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: The test above, if true, leads here where we execute the
 ; executable counterpart of the fn (or just go into the lambda
@@ -11714,8 +11696,7 @@
 
                            (rewrite-with-lemmas1
                             term
-                            (getprop (ffn-symb new-term) 'lemmas nil
-                                     'current-acl2-world wrld)))
+                            (getpropc (ffn-symb new-term) 'lemmas nil wrld)))
                           (declare (ignore rewrittenp))
                           (mv step-limit term1 ttree)))))))
 
@@ -12954,15 +12935,15 @@
        ))))))
 
 (defun relieve-hyps1-free-2
-  (hyp lemmas forcer-fn forcep ens force-flg
-       rune target hyps backchain-limit-lst
-       unify-subst bkptr unify-subst0
-       ttree0 allp rw-cache-alist rw-cache-alist-new ; &extra formals
-       rdepth step-limit
-       type-alist obj geneqv pequiv-info wrld state fnstack ancestors
-       backchain-limit
-       simplify-clause-pot-lst rcnst gstack
-       ttree)
+    (hyp lemmas forcer-fn forcep ens force-flg
+         rune target hyps backchain-limit-lst
+         unify-subst bkptr unify-subst0
+         ttree0 allp rw-cache-alist rw-cache-alist-new ; &extra formals
+         rdepth step-limit
+         type-alist obj geneqv pequiv-info wrld state fnstack ancestors
+         backchain-limit
+         simplify-clause-pot-lst rcnst gstack
+         ttree)
 
 ; We search ground units in an attempt to extend unify-subst to make term true,
 ; As with relieve-hyps1-free-1, we return a relieve-hyps-ans, a
@@ -12990,156 +12971,152 @@
                  unify-subst)
               unify-subst)))
        (mv-let
-        (force-flg ttree)
-        (cond
-         ((not forcep)
-          (mv nil ttree))
-         (t (force-assumption
-             rune
-             target
-             (sublis-var fully-bound-unify-subst hyp)
-             type-alist
-             nil
-             (immediate-forcep
-              forcer-fn
-              (access rewrite-constant rcnst
-                      :current-enabled-structure))
-             force-flg
-             ttree)))
-        (cond
-         (force-flg
-          (mv-let
-           (cached-failure-reason-free cached-failure-reason)
-           (rw-cached-failure-pair fully-bound-unify-subst rw-cache-alist)
-           (cond
-            (cached-failure-reason
-             (mv step-limit nil
-                 (and (f-get-global 'gstackp state) ; cons optimization
-                      (list                         ; failure-reason-lst
-                       (cons fully-bound-unify-subst
-                             (cons 'cached cached-failure-reason))))
+         (force-flg ttree)
+         (cond
+          ((not forcep)
+           (mv nil ttree))
+          (t (force-assumption
+              rune
+              target
+              (sublis-var fully-bound-unify-subst hyp)
+              type-alist
+              nil
+              (immediate-forcep
+               forcer-fn
+               (access rewrite-constant rcnst
+                       :current-enabled-structure))
+              force-flg
+              ttree)))
+         (cond
+          (force-flg
+           (mv-let
+             (cached-failure-reason-free cached-failure-reason)
+             (rw-cached-failure-pair fully-bound-unify-subst rw-cache-alist)
+             (cond
+              (cached-failure-reason
+               (mv step-limit nil
+                   (and (f-get-global 'gstackp state) ; cons optimization
+                        (list                         ; failure-reason-lst
+                         (cons fully-bound-unify-subst
+                               (cons 'cached cached-failure-reason))))
+                   unify-subst0
+                   (accumulate-rw-cache t ttree ttree0)
+                   allp rw-cache-alist-new))
+              (t
+               (sl-let
+                (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
+                                  inferior-rw-cache-alist-new)
+                (rewrite-entry
+                 (relieve-hyps1 rune target (cdr hyps)
+                                (cdr backchain-limit-lst)
+                                fully-bound-unify-subst
+                                (1+ bkptr)
+                                unify-subst0 ttree0 allp
+                                (cdr cached-failure-reason-free)
+                                nil)
+                 :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                 )
+                (let ((rw-cache-alist-new
+                       (extend-rw-cache-alist-free
+                        rcnst
+                        fully-bound-unify-subst
+                        inferior-rw-cache-alist-new
+                        rw-cache-alist-new)))
+                  (cond (relieve-hyps-ans
+                         (mv step-limit relieve-hyps-ans
+                             nil ; failure-reason-lst
+                             unify-subst1 ttree1 allp rw-cache-alist-new))
+                        (t
+                         (mv step-limit nil
+                             (and (f-get-global 'gstackp state) ; cons optimization
+                                  (list (cons fully-bound-unify-subst
+                                              failure-reason)))
+                             unify-subst0
+                             (accumulate-rw-cache t ttree1 ttree0)
+                             allp
+                             (rw-cache-add-failure-reason
+                              rcnst
+                              fully-bound-unify-subst
+                              failure-reason
+                              rw-cache-alist-new))))))))))
+          (t (mv step-limit nil
+                 nil ; failure-reason-lst
                  unify-subst0
                  (accumulate-rw-cache t ttree ttree0)
-                 allp rw-cache-alist-new))
-            (t
-             (sl-let
-              (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
-                                inferior-rw-cache-alist-new)
-              (rewrite-entry
-               (relieve-hyps1 rune target (cdr hyps)
-                              (cdr backchain-limit-lst)
-                              fully-bound-unify-subst
-                              (1+ bkptr)
-                              unify-subst0 ttree0 allp
-                              (cdr cached-failure-reason-free)
-                              nil)
-               :obj nil :geneqv nil :pequiv-info nil ; all ignored
-               )
-              (let ((rw-cache-alist-new
-                     (extend-rw-cache-alist-free
-                      rcnst
-                      fully-bound-unify-subst
-                      inferior-rw-cache-alist-new
-                      rw-cache-alist-new)))
-                (cond (relieve-hyps-ans
-                       (mv step-limit relieve-hyps-ans
-                           nil ; failure-reason-lst
-                           unify-subst1 ttree1 allp rw-cache-alist-new))
-                      (t
-                       (mv step-limit nil
-                           (and (f-get-global 'gstackp state) ; cons optimization
-                                (list (cons fully-bound-unify-subst
-                                            failure-reason)))
-                           unify-subst0
-                           (accumulate-rw-cache t ttree1 ttree0)
-                           allp
-                           (rw-cache-add-failure-reason
-                            rcnst
-                            fully-bound-unify-subst
-                            failure-reason
-                            rw-cache-alist-new))))))))))
-         (t (mv step-limit nil
-                nil ; failure-reason-lst
-                unify-subst0
-                (accumulate-rw-cache t ttree ttree0)
-                allp rw-cache-alist-new))))))
+                 allp rw-cache-alist-new))))))
     (t
      (mv-let
-      (winp new-unify-subst new-ttree rest-lemmas)
-      (search-ground-units1
-       hyp unify-subst lemmas type-alist
-       ens force-flg wrld ttree)
-      (cond
-       (winp
-        (mv-let
-         (cached-failure-reason-free cached-failure-reason)
-         (rw-cached-failure-pair new-unify-subst rw-cache-alist)
-         (sl-let
-          (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
-                            inferior-rw-cache-alist-new)
-          (cond
-           (cached-failure-reason
-            (mv step-limit nil
-                (and (f-get-global 'gstackp state) ; cons optimization
-                     (list                         ; failure-reason-lst
-                      (cons new-unify-subst
-                            (cons 'cached cached-failure-reason))))
-                unify-subst ttree allp nil))
-           (t
-            (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                          (cdr backchain-limit-lst)
-                                          new-unify-subst
-                                          (1+ bkptr)
-                                          unify-subst0 ttree0 allp
-                                          (cdr cached-failure-reason-free)
-                                          nil)
-                           :obj nil :geneqv nil :pequiv-info nil ; all ignored
-                           :ttree new-ttree)))
-          (let ((rw-cache-alist-new
-                 (extend-rw-cache-alist-free rcnst
-                                             new-unify-subst
-                                             inferior-rw-cache-alist-new
-                                             rw-cache-alist-new)))
+       (winp new-unify-subst new-ttree rest-lemmas)
+       (search-ground-units1 hyp unify-subst lemmas type-alist ens force-flg
+                             wrld ttree)
+       (cond
+        (winp
+         (mv-let
+           (cached-failure-reason-free cached-failure-reason)
+           (rw-cached-failure-pair new-unify-subst rw-cache-alist)
+           (sl-let
+            (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
+                              inferior-rw-cache-alist-new)
             (cond
-             (relieve-hyps-ans
-              (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp
-                  rw-cache-alist-new))
+             (cached-failure-reason
+              (mv step-limit nil
+                  (and (f-get-global 'gstackp state) ; cons optimization
+                       (list                         ; failure-reason-lst
+                        (cons new-unify-subst
+                              (cons 'cached cached-failure-reason))))
+                  unify-subst ttree allp nil))
              (t
-              (let ((rw-cache-alist-new ; add normal-failure reason
-                     (rw-cache-add-failure-reason rcnst
-                                                  new-unify-subst
-                                                  failure-reason
-                                                  rw-cache-alist-new)))
-                (cond
-                 ((not allp) ; hence original allp is nil
-                  (mv step-limit nil
-                      (and (f-get-global 'gstackp state) ; cons optimization
-                           (list                         ; failure-reason-lst
-                            (cons new-unify-subst
-                                  failure-reason)))
-                      unify-subst0
-                      (accumulate-rw-cache t ttree1 ttree0)
-                      nil rw-cache-alist-new))
-                 (t
-                  (rewrite-entry-extending-failure
-                   new-unify-subst
-                   failure-reason
-                   (relieve-hyps1-free-2
-                    hyp rest-lemmas forcer-fn forcep ens force-flg rune
-                    target hyps backchain-limit-lst unify-subst bkptr
-                    unify-subst0 ttree0 allp rw-cache-alist rw-cache-alist-new)
-                   :obj nil :geneqv nil :pequiv-info nil ; all ignored
-                   :ttree (accumulate-rw-cache t ttree1 ttree)))))))))))
-       (t (mv step-limit nil
-              nil ; failure-reason-lst
-              unify-subst0
-
-; We believe that new-ttree is unlikely to have rw-cache entries that are not
-; already in ttree0, as they would generally (always?) come from type-set
-; computations.  But we expect the following call to be cheap, so we make it.
-
-              (accumulate-rw-cache t new-ttree ttree0)
-              allp rw-cache-alist-new))))))))
+              (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                            (cdr backchain-limit-lst)
+                                            new-unify-subst
+                                            (1+ bkptr)
+                                            unify-subst0 ttree0 allp
+                                            (cdr cached-failure-reason-free)
+                                            nil)
+                             :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                             :ttree new-ttree)))
+            (let ((rw-cache-alist-new
+                   (extend-rw-cache-alist-free rcnst
+                                               new-unify-subst
+                                               inferior-rw-cache-alist-new
+                                               rw-cache-alist-new)))
+              (cond
+               (relieve-hyps-ans
+                (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp
+                    rw-cache-alist-new))
+               (t
+                (let ((rw-cache-alist-new ; add normal-failure reason
+                       (rw-cache-add-failure-reason rcnst
+                                                    new-unify-subst
+                                                    failure-reason
+                                                    rw-cache-alist-new)))
+                  (cond
+                   ((not allp) ; hence original allp is nil
+                    (mv step-limit nil
+                        (and (f-get-global 'gstackp state) ; cons optimization
+                             (list                         ; failure-reason-lst
+                              (cons new-unify-subst
+                                    failure-reason)))
+                        unify-subst0
+                        (accumulate-rw-cache t ttree1 ttree0)
+                        nil rw-cache-alist-new))
+                   (t
+                    (rewrite-entry-extending-failure
+                     new-unify-subst
+                     failure-reason
+                     (relieve-hyps1-free-2
+                      hyp rest-lemmas forcer-fn forcep ens force-flg rune
+                      target hyps backchain-limit-lst unify-subst bkptr
+                      unify-subst0 ttree0 allp rw-cache-alist rw-cache-alist-new)
+                     :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                     :ttree (accumulate-rw-cache t ttree1 ttree)))))))))))
+        (t (rewrite-entry
+            (relieve-hyps1-free-2
+             hyp nil forcer-fn forcep ens force-flg rune
+             target hyps backchain-limit-lst unify-subst bkptr
+             unify-subst0 ttree0 allp rw-cache-alist rw-cache-alist-new)
+            :obj nil :geneqv nil :pequiv-info nil ; all ignored
+            ))))))))
 
 (defun relieve-hyps (rune target hyps backchain-limit-lst
                           unify-subst allp ; &extra formals
@@ -14288,8 +14265,7 @@
            (rewrittenp rewritten-term ttree)
            (rewrite-entry
             (rewrite-with-lemmas1 term
-                                  (getprop (ffn-symb term) 'lemmas nil
-                                           'current-acl2-world wrld)))
+                                  (getpropc (ffn-symb term) 'lemmas nil wrld)))
            (cond
             (rewrittenp (mv step-limit rewritten-term ttree))
             (t (mv-let
@@ -16352,9 +16328,8 @@
                   (not (access rewrite-constant rcnst :cheap-linearp)))
              (rewrite-entry
               (add-linear-lemmas (car new-vars)
-                                 (getprop (ffn-symb (car new-vars))
-                                          'linear-lemmas nil
-                                          'current-acl2-world wrld))
+                                 (getpropc (ffn-symb (car new-vars))
+                                          'linear-lemmas nil wrld))
               :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
               :simplify-clause-pot-lst new-pot-lst)
            (mv step-limit nil new-pot-lst))
@@ -16552,11 +16527,9 @@
          (t
           (rewrite-entry
            (add-linear-lemmas (car new-vars)
-                              (getprop
+                              (getpropc
                                (ffn-symb (car new-vars))
-                               'linear-lemmas nil
-                               'current-acl2-world
-                               wrld))
+                               'linear-lemmas nil wrld))
            :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
            )))
         (cond

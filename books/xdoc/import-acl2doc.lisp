@@ -62,6 +62,7 @@
                               '(acl2::acl2 acl2::broken-link)))
 
 (defxdoc acl2::acl2
+  :parents (top)
   :short "Documentation for the <a
   href=\"http://www.cs.utexas.edu/users/moore/acl2\">ACL2 Theorem Prover</a>."
 

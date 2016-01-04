@@ -1349,10 +1349,10 @@
  ()
  (defun-sk logic.provablep (x axioms thms atbl)
    ;; A formula is provable if there exists some proof of it.
-   (exists proof
-           (and (logic.appealp proof)
-                (logic.proofp proof axioms thms atbl)
-                (equal (logic.conclusion proof) x)))
+   (acl2::exists proof
+                 (and (logic.appealp proof)
+                      (logic.proofp proof axioms thms atbl)
+                      (equal (logic.conclusion proof) x)))
    :witness-dcls
    #-skip-guards
    ((declare (xargs ;:non-executable t

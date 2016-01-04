@@ -34,6 +34,9 @@ assignexpr5.v -- assignment expression in gate instance (vcs crash)
 bigwire1.v -- negative indices in wire bounds
 
 elab1.v -- crazy parameter/generate dependency loop
+elab2.v -- hid into generate of submodule
+elab3.v -- parameter argument to submodule calls function from that submodule that depends on parameters
+elab6.v -- hierarchical reference into generate block before wire declaration
 
 fn1.v -- shadowing too hard in function
 fn2.v -- function input names duplicated (ansi syntax)
@@ -58,6 +61,9 @@ gen1d.v -- gate instance name redeclared as genvar
 gen2.v -- continuous assignment to genvar
 gen2b.v -- continuous assignment from genvar
 gen3.v -- reference to wire declared in a named generate block's scope
+gen4.v -- hierarchical reference to genvar in continuous assign
+gen5.v -- trying to use genvar from another module in generate for-loop
+gen6.v -- reference "wrong" genvar inside generate for loop
 
 iface1.v -- multiply declared wire in interface
 iface2.v -- input redeclared as wire in interface
@@ -81,6 +87,7 @@ iface17.v -- module with interface port iface.consumer instanced with iface.prod
 iface18.v -- tries to instantiate module with interface connected to some other hierarchical path
 iface19.v -- like iface18.v, but with extra .consumer style modport as well
 iface20.v -- try to use foo.consumer style connection, where foo is itself an interface port (vcs/ncv disagree)
+iface21.v -- trying to use interfaces out of order
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type

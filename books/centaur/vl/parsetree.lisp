@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-12-08")
+  "VL Syntax 2015-12-18")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -923,8 +923,7 @@ the ports have no buffers.  We call this \"backflow.\" <b>BOZO</b> eventually
 implement a comprehensive approach to detecting and dealing with backflow.</p>
 
 <p>The width of a port can be determined after expression sizing has been
-performed by examining the width of the port expression.  See @(see
-expression-sizing) for details.</p>")
+performed by examining the width of the port expression.</p>")
 
 (fty::deflist vl-portlist
               :elt-type vl-port-p
@@ -2687,9 +2686,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
 
             <p>SystemVerilog also adds increment and decrement operators, i.e.,
             @('a++') and @('a--').  These operators, per Section 11.4.2 of
-            SystemVerilog-2012, also \"behave as blocking assignments.\" We
-            normally convert these operators into blocking assignments in the
-            @(see increment-elim) transform.</p>")
+            SystemVerilog-2012, also \"behave as blocking assignments.\"</p>")
 
     (:vl-deassignstmt
      :short "Representation of a deassign or release statement."
@@ -2943,7 +2940,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      ((atts vl-atts-p
             "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
              with this statement."))
-     :long "<p>It doesn't get much simpler than a @('break') statement.")
+     :long "<p>It doesn't get much simpler than a @('break') statement.</p>")
 
     (:vl-continuestmt
      :base-name vl-continuestmt
@@ -2952,7 +2949,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      ((atts vl-atts-p
             "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
              with this statement."))
-     :long "<p>It doesn't get much simpler than a @('continue') statement.")
+     :long "<p>It doesn't get much simpler than a @('continue') statement.</p>")
 
     (:vl-blockstmt
      :base-name vl-blockstmt
@@ -3293,7 +3290,7 @@ flops, and to set up other simulation events.  A simple example would be:</p>
            "The type declared for this port, if any.  Note that the special
             keywords @('property'), @('sequence'), and @('untyped') can also be
             used here; we represent them as ordinary @(see vl-datatype)s, see
-            @(see vl-coretypename).  This type includes any array dimensions
+            @(see vl-coretypename-p).  This type includes any array dimensions
             associated with the port.")
    (arg    vl-propactual-p
            "The default property or sequence actual assigned to this port.  If

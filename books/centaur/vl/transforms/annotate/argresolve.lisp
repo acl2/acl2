@@ -930,10 +930,14 @@ references, i.e., foo.bar, where:</p>
                  :args (list inst port.name arg
                              inst.modname port.modport mpname))))
 
-       ;; Drop the modport name.
-       (modportname-as-expr (make-vl-literal :val (make-vl-string :value mpname)))
-       (new-atts (cons (cons "VL_REMOVED_EXPLICIT_MODPORT" modportname-as-expr)
-                       arg.atts))
+       ;; We now remove the modport name from the expression. But, we also
+       ;; record some attributes that say this argument used to have a .modport
+       ;; part.  Note: these attributes are used by Lucid!
+       (modportname-as-expr   (make-vl-literal :val (make-vl-string :value mpname)))
+       (interfacename-as-expr (make-vl-literal :val (make-vl-string :value port.ifname)))
+       (new-atts (list* (cons "VL_REMOVED_EXPLICIT_MODPORT" modportname-as-expr)
+                        (cons "VL_INTERFACE_NAME" interfacename-as-expr)
+                        arg.atts))
        (new-arg (change-vl-plainarg arg
                                     :expr (vl-idexpr ifname)
                                     :atts new-atts)))

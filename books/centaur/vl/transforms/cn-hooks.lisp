@@ -32,10 +32,9 @@
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
 
-
 (defsection custom-transform-hooks
   :parents (transforms)
-  :short "Ways of extending @(see vl-simplify) with custom transformations."
+  :short "Ways of extending VL with custom transformations."
 
   :long "<p>These are hooks for additional transforms that we use at Centaur,
 but which have not yet been released for whatever reason.  When it comes time
@@ -65,43 +64,6 @@ hard to make them available at this time.</p>")
       (vl-design-p (mp-verror-transform-hook x))))
 
   (defattach mp-verror-transform-hook vl-design-fix$inline))
-
-
-(defsection vl-design-pre-toe-hook
-  :short "Arbitrary hook for adding additional transforms before @(see
-e-conversion)."
-
-  (encapsulate
-    (((vl-design-pre-toe-hook *) => *
-      :formals (x)
-      :guard (vl-design-p x)))
-
-    (local (defun vl-design-pre-toe-hook (x)
-             (vl-design-fix x)))
-
-    (defthm vl-design-p-of-vl-design-pre-toe-hook
-      (vl-design-p (vl-design-pre-toe-hook x))))
-
-  (defattach vl-design-pre-toe-hook vl-design-fix$inline))
-
-
-
-(defsection vl-design-post-unparam-hook
-  :short "Arbitrary hook for adding additional transforms before @(see
-e-conversion)."
-
-  (encapsulate
-    (((vl-design-post-unparam-hook *) => *
-      :formals (x)
-      :guard (vl-design-p x)))
-
-    (local (defun vl-design-post-unparam-hook (x)
-             (vl-design-fix x)))
-
-    (defthm vl-design-p-of-vl-design-post-unparam-hook
-      (vl-design-p (vl-design-post-unparam-hook x))))
-
-  (defattach vl-design-post-unparam-hook vl-design-fix$inline))
 
 
 (defsection vl-design-constcheck-hook

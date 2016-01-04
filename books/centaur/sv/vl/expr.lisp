@@ -48,7 +48,7 @@
 sv::svex) expressions."
 
   :long "<p>The top-level function for converting a VL expression into a @(see
-sv::svex) expression is @(see vl-expr->svex).</p>
+sv::svex) expression is @(see vl-expr-to-svex).</p>
 
 <p>We assume that the expressions we are dealing with are sized.</p>
 
@@ -214,7 +214,7 @@ would therefore incur some overhead.</p>")
 (define svex-extend ((type vl-exprsign-p)
                      (width natp)
                      (x sv::svex-p))
-  :parents (vl-expr->svex)
+  :parents (vl-expr-to-svex)
   :short "Returns an svex representing the sign- or zero-extension of x at the given width."
 
   :long "<p>We don't have to extend/truncate operands when translating VL
@@ -2573,6 +2573,15 @@ the way.</li>
       :otherwise (prog2$ (impossible)
                          (mv "impossible" nil nil)))))
 
+
+(local (defthm vl-expr-count-helper-for-inside
+         (implies (equal (vl-expr-kind x) :vl-inside)
+                  (< (+ (VL-EXPR-COUNT (VL-INSIDE->ELEM X))
+                        (VL-VALUERANGELIST-COUNT (VL-INSIDE->SET X)))
+                     (VL-EXPR-COUNT X)))
+         :rule-classes :linear
+         :hints(("Goal" :expand ((vl-expr-count x))))))
+
 (defines vl-expr-to-svex
   :ruler-extenders :all
   :verify-guards nil
@@ -2757,7 +2766,6 @@ functions can assume all bits of it are good.</p>"
             selfsize)))
       (mv warnings (svex-extend signedness size svex))))
 
-
   (define vl-expr-to-svex-transparent ((x vl-expr-p)
                                        (size natp)
                                        (signedness vl-exprsign-p)
@@ -2833,6 +2841,157 @@ functions can assume all bits of it are good.</p>"
             (svex-x))
         :otherwise
         (mv (ok) (prog2$ (impossible) (svex-x))))))
+
+  (define vl-inside-expr-cases-to-svex
+    ;; Process ELEM inside { RANGE, VAL, RANGE, ... }
+    ((elem          vl-expr-p           "LHS expression to check for set membership.")
+     (elem-selfsize natp                "Pre-computed self-determined size of lhs.")
+     (elem-type     vl-exprsign-p       "Pre-computed self-determined signedness of the lhs.")
+     (set           vl-valuerangelist-p "RHS expressions and ranges.")
+     (ss            vl-scopestack-p)
+     (scopes        vl-elabscopes-p)
+     (fullexpr      vl-expr-p           "Context for error messages."))
+    :measure (two-nats-measure (+ (vl-expr-count elem) (vl-valuerangelist-count set)) 0)
+    :returns (mv (warnings vl-warninglist-p)
+                 (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
+    (b* ((warnings nil)
+         (fullexpr (vl-expr-fix fullexpr))
+         (set      (vl-valuerangelist-fix set))
+         ((when (atom set))
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Inside expression with no cases: ~a0"
+                     :args (list fullexpr))
+              (svex-x)))
+         ((when (atom (cdr set)))
+          ;; Singleton set, so no need to wrap it in an OR.
+          (vl-inside-expr-case-to-svex elem elem-selfsize elem-type (car set) ss scopes fullexpr))
+         ;; Else, just OR together the membership checks.
+         ((wmv warnings in-first-svex) (vl-inside-expr-case-to-svex elem elem-selfsize elem-type (car set) ss scopes fullexpr))
+         ((wmv warnings in-rest-svex)  (vl-inside-expr-cases-to-svex elem elem-selfsize elem-type (cdr set) ss scopes fullexpr))
+         (in-any-svex                  (sv::svcall sv::bitor in-first-svex in-rest-svex)))
+      (mv warnings in-any-svex)))
+
+  (define vl-inside-expr-case-to-svex
+    ;; Process a single ELEM inside { RANGE }
+    ((elem          vl-expr-p           "LHS expression to check for set membership.")
+     (elem-selfsize natp                "Pre-computed self-determined size of lhs.")
+     (elem-type     vl-exprsign-p       "Pre-computed self-determined signedness of the lhs.")
+     (range         vl-valuerange-p     "Single member (or range) of the set.")
+     (ss            vl-scopestack-p)
+     (scopes        vl-elabscopes-p)
+     (fullexpr      vl-expr-p           "Context for error messages."))
+    :measure (two-nats-measure (+ (vl-expr-count elem) (vl-valuerange-count range)) 5)
+    :returns (mv (warnings vl-warninglist-p)
+                 (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
+    (b* ((warnings nil)
+         (elem-selfsize (lnfix elem-selfsize))
+         (elem-type     (vl-exprsign-fix elem-type))
+         (elem          (vl-expr-fix elem))
+         (fullexpr      (vl-expr-fix fullexpr)))
+      (vl-valuerange-case range
+        :valuerange-single
+        (b* (((wmv warnings rhs-size) (vl-expr-selfsize range.expr ss scopes))
+             ((wmv warnings rhs-type) (vl-expr-typedecide range.expr ss scopes))
+             ((unless (and rhs-size rhs-type))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to find size and signedness of expression ~a0"
+                         :args (list range.expr))
+                  (svex-x)))
+             (final-size               (max elem-selfsize rhs-size))
+             (final-type               (vl-exprsign-max elem-type rhs-type))
+             ((wmv warnings elem-svex) (vl-expr-to-svex-vector elem final-size final-type ss scopes))
+             ((wmv warnings rhs-svex)  (vl-expr-to-svex-vector range.expr final-size final-type ss scopes))
+             ((mv err svex)
+              (vl-binaryop-to-svex :vl-binary-wildeq elem-svex rhs-svex final-size final-size 1 :vl-unsigned))
+             ((when err)
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to convert expression ~a0 ==? ~a1 for inside expr ~a2: ~@3"
+                         :args (list elem range.expr fullexpr err))
+                  (svex-x))))
+          (mv (ok) svex))
+        :valuerange-range
+        (b* (;; The range can have a dollar sign to mean the lowest or highest
+             ;; value in the range.  Note that NCVerilog says that, e.g., 1'bx
+             ;; inside { [$:$] } is X instead of true.  (Our version of VCS
+             ;; doesn't seem to support $ signs yet, so we can't test this on
+             ;; both simulators.)  I think a nice, easy way to handle this is
+             ;; to just replace $ signs with elem itself.  That'll turn things
+             ;; into A <= A comparisons, which will be true unless there are
+             ;; X/Z bits, and that seems like what NCV does.
+             (low   (if (and (vl-expr-case range.low :vl-special)
+                             (vl-specialkey-equiv (vl-special->key range.low) :vl-$))
+                        elem
+                      range.low))
+             (high  (if (and (vl-expr-case range.high :vl-special)
+                             (vl-specialkey-equiv (vl-special->key range.high) :vl-$))
+                        elem
+                      range.high))
+
+             ;; Context will be the max size/sign of expr, low, and high, so we
+             ;; need to know the types and sizes of everything in play...
+             ((wmv warnings low-size)  (vl-expr-selfsize   low ss scopes))
+             ((wmv warnings low-type)  (vl-expr-typedecide low ss scopes))
+             ((unless (and low-size low-type))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to find size and signedness of expression ~a0"
+                         :args (list low))
+                  (svex-x)))
+             ((wmv warnings high-size)  (vl-expr-selfsize   high ss scopes))
+             ((wmv warnings high-type)  (vl-expr-typedecide high ss scopes))
+             ((unless (and high-size high-type))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to find size and signedness of expression ~a0"
+                         :args (list high))
+                  (svex-x)))
+
+             ;; First guess -- all sizes matter
+             ;; (final-size               (max elem-selfsize (max low-size high-size)))
+             ;; (final-type               (vl-exprsign-max elem-type (vl-exprsign-max low-type high-type)))
+             ;; ((wmv warnings elem-svex) (vl-expr-to-svex-vector elem final-size final-type ss scopes))
+             ;; ((wmv warnings low-svex)  (vl-expr-to-svex-vector low  final-size final-type ss scopes))
+             ;; ((wmv warnings high-svex) (vl-expr-to-svex-vector high final-size final-type ss scopes))
+             ;; ((mv err low<=elem-svex)
+             ;;  (vl-binaryop-to-svex :vl-binary-lte low-svex elem-svex final-size final-size 1 :vl-unsigned))
+             ;; ((when err)
+             ;;  (mv (fatal :type :vl-expr-to-svex-fail
+             ;;             :msg "Failed to convert ~a0 <= ~a1 for inside expr ~a2: ~@3"
+             ;;             :args (list low elem fullexpr err))
+             ;;      (svex-x)))
+             ;; ((mv err elem<=high-svex)
+             ;;  (vl-binaryop-to-svex :vl-binary-lte elem-svex high-svex final-size final-size 1 :vl-unsigned))
+             ;; ((when err)
+             ;;  (mv (fatal :type :vl-expr-to-svex-fail
+             ;;             :msg "Failed to convert ~a0 <= ~a1 for inside expr ~a2: ~@3"
+             ;;             :args (list elem high fullexpr err))
+             ;;      (svex-x)))
+             ;; (final-svex (sv::svcall sv::bitand low<=elem-svex elem<=high-svex)))
+
+             ;; New guess -- do comparisons independently
+             (lowcmp-size              (max elem-selfsize low-size))
+             (lowcmp-type              (vl-exprsign-max elem-type low-type))
+             ((wmv warnings elem-svex) (vl-expr-to-svex-vector elem lowcmp-size lowcmp-type ss scopes))
+             ((wmv warnings low-svex)  (vl-expr-to-svex-vector low  lowcmp-size lowcmp-type ss scopes))
+             ((mv err low<=elem-svex)
+              (vl-binaryop-to-svex :vl-binary-lte low-svex elem-svex lowcmp-size lowcmp-size 1 :vl-unsigned))
+             ((when err)
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to convert ~a0 <= ~a1 for inside expr ~a2: ~@3"
+                         :args (list low elem fullexpr err))
+                  (svex-x)))
+
+             (highcmp-size             (max elem-selfsize high-size))
+             (highcmp-type             (vl-exprsign-max elem-type high-type))
+             ((wmv warnings elem-svex) (vl-expr-to-svex-vector elem highcmp-size highcmp-type ss scopes))
+             ((wmv warnings high-svex) (vl-expr-to-svex-vector high highcmp-size highcmp-type ss scopes))
+             ((mv err elem<=high-svex)
+              (vl-binaryop-to-svex :vl-binary-lte elem-svex high-svex highcmp-size highcmp-size 1 :vl-unsigned))
+             ((when err)
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to convert ~a0 <= ~a1 for inside expr ~a2: ~@3"
+                         :args (list elem high fullexpr err))
+                  (svex-x)))
+             (final-svex (sv::svcall sv::bitand low<=elem-svex elem<=high-svex)))
+          (mv (ok) final-svex)))))
 
   (define vl-expr-to-svex-opaque ((x vl-expr-p)
                                   (ss vl-scopestack-p)
@@ -2945,10 +3104,16 @@ functions can assume all bits of it are good.</p>"
           (mv (ok) svex))
 
         :vl-inside
-        (mv (fatal :type :vl-expr-unsupported
-                   :msg "Inside expressions are not yet supported: ~a0"
-                   :args (list x))
-            (svex-x))
+        (b* (((wmv warnings elem-selfsize) (vl-expr-selfsize x.elem ss scopes))
+             ((wmv warnings elem-type)     (vl-expr-typedecide x.elem ss scopes))
+             ((unless (and elem-selfsize elem-type))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to find size and signedness of inside expression lhs: ~a0" 
+                         :args (list x))
+                  (svex-x)))
+             ((wmv warnings svex)
+              (vl-inside-expr-cases-to-svex x.elem elem-selfsize elem-type x.set ss scopes x)))
+          (mv (ok) svex))
 
         :vl-call
         (if x.systemp

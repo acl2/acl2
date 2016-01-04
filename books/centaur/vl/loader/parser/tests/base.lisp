@@ -169,8 +169,10 @@
   (define vl-pretty-valuerange ((x vl-valuerange-p))
     :measure (vl-valuerange-count x)
     (vl-valuerange-case x
-      (:range (vl-pretty-range x.range))
-      (:single (vl-pretty-expr x.expr))))
+      (:valuerange-single (vl-pretty-expr x.expr))
+      (:valuerange-range (list :range
+                               (vl-pretty-expr x.low)
+                               (vl-pretty-expr x.high)))))
 
   (define vl-pretty-valuerangelist ((x vl-valuerangelist-p))
     :measure (vl-valuerangelist-count x)

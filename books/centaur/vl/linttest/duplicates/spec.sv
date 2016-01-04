@@ -28,10 +28,13 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-
 module sub (output o, input a, input b);
   assign o = a & b;
 endmodule
+
+interface mybus (input clk);
+  logic [3:0] foo;
+endinterface
 
 module top ;
 
@@ -119,5 +122,12 @@ module top ;
   property p2;
     always w11_nodupe ##1 a;
   endproperty
+
+  // We originally warned about this because it looked like module
+  // instances with the same ports.  But that's silly because it's an
+  // interface and of course it's OK to have more than one of them.
+  wire busclk;
+  mybus bus1(busclk);
+  mybus bus2(busclk);
 
 endmodule

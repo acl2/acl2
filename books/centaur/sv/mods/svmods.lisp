@@ -40,27 +40,12 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc svmods
-  :parents (svex)
+  :parents (sv)
   :short "An svex-based format for expressing a module hierarchy."
   :long "<p>See the subtopics for a description of the format.  The top-level
 description of a design is a @(see design) object.</p>")
 
-(defxdoc svmods.lisp :parents (svmods))
-(local (xdoc::set-default-parents svmods.lisp))
-
-(defenum wiretype
-  (:wire
-   :supply0
-   :supply1
-   :wand
-   :wor
-   :tri0
-   :tri1
-   :trireg)
-  :parents (svmods))
-
-
-
+(local (xdoc::set-default-parents svmods))
 
 (defines svex-addr-p
   :verify-guards nil
@@ -282,6 +267,17 @@ of adding the namespace.</p>"
 
 
 
+(defenum wiretype
+  (:wire
+   :supply0
+   :supply1
+   :wand
+   :wor
+   :tri0
+   :tri1
+   :trireg)
+  :parents (wire))
+
 (fty::defprod wire
   :short "Wire info as stored in an svex module."
   ((name name-p)
@@ -296,28 +292,36 @@ of adding the namespace.</p>"
    (type wiretype :default :wire)
    (delay natp :rule-classes :type-prescription
           :default 0))
-  :parents (svmods)
   :layout :tree)
 
-(fty::deflist wirelist :elt-type wire :true-listp t
+(fty::deflist wirelist
+  :elt-type wire
+  :true-listp t
   :parents (wire))
 
-(fty::deflist namelist :elt-type name :true-listp t)
+(fty::deflist namelist
+  :elt-type name
+  :true-listp t
+  :parents (name))
+
 
 (defprojection wirelist->names ((x wirelist-p))
   (wire->name x)
-  :returns (names namelist-p))
-
-(deffixequiv wirelist->names :args ((x wirelist))
-  :hints(("Goal" :in-theory (enable wirelist-fix))))
+  :returns (names namelist-p)
+  :parents (wirelist)
+  ///
+  (deffixequiv wirelist->names :args ((x wirelist))))
 
 (define wirelist-find ((name name-p) (x wirelist-p))
+  :parents (wirelist)
+  :short "@(call wirelist-find) searches for a @(see name) in a @(see wirelist)."
   :returns (wire (iff (wire-p wire) wire))
-  (if (atom x)
-      nil
-    (if (equal (wire->name (car x)) (name-fix name))
-        (wire-fix (car x))
-      (wirelist-find name (cdr x)))))
+  (cond ((atom x)
+         nil)
+        ((equal (wire->name (car x)) (name-fix name))
+         (wire-fix (car x)))
+        (t
+         (wirelist-find name (cdr x)))))
 
 ;; (defprojection wirelist-from-strings (x)
 ;;   (wire x )
@@ -329,10 +333,11 @@ of adding the namespace.</p>"
 
 
 
+(defxdoc modname
+  :short "A type for names of modules and other hierarchical scopes.")
 
 (define modname-p (x)
-  :parents (svmods)
-  :short "Type of names of modules and other hierarchical scopes"
+  :parents (modname)
   (declare (ignorable x))
   (not (eq x nil))
   ///
@@ -342,21 +347,33 @@ of adding the namespace.</p>"
   (defthm modname-p-compound-recognizer
     (implies (modname-p x) x)
     :rule-classes :compound-recognizer)
-  (define modname-fix ((x modname-p))
-    :returns (xx modname-p)
-    :hooks nil
-    (mbe :logic (if (modname-p x) x "default-modname")
-         :exec x)
-    ///
-    (defthm modname-fix-when-modname-p
-      (implies (modname-p x)
-               (equal (modname-fix x) x)))
-    (fty::deffixtype modname :pred modname-p :fix modname-fix :equiv modname-equiv
-      :define t :forward t))
   (in-theory (disable (:t modname-p))))
 
-(fty::deflist modnamelist :elt-type modname :true-listp t :elementp-of-nil nil
-  :parents (modname-p))
+(define modname-fix ((x modname-p))
+  :parents (modname)
+  :returns (x-fix modname-p)
+  :hooks nil
+  (mbe :logic (if (modname-p x) x "default-modname")
+       :exec x)
+  ///
+  (defthm modname-fix-when-modname-p
+    (implies (modname-p x)
+             (equal (modname-fix x) x))))
+
+(defsection modname-equiv
+  :parents (modname)
+  (fty::deffixtype modname
+    :pred modname-p
+    :fix modname-fix
+    :equiv modname-equiv
+    :define t
+    :forward t))
+
+(fty::deflist modnamelist
+  :elt-type modname
+  :true-listp t
+  :elementp-of-nil nil
+  :parents (modname))
 
 
 (fty::defprod modinst
@@ -364,28 +381,31 @@ of adding the namespace.</p>"
    (modname modname-p))
   :parents (svmods))
 
-(fty::deflist modinstlist :elt-type modinst :true-listp t
+(fty::deflist modinstlist
+  :elt-type modinst
+  :true-listp t
   :parents (modinst))
-
-
 
 (defprojection modinstlist->modnames ((x modinstlist-p))
   (modinst->modname x)
-  :returns (names modnamelist-p))
+  :returns (names modnamelist-p)
+  :parents (modinstlist))
 
 (defprojection modinstlist->instnames ((x modinstlist-p))
   (modinst->instname x)
-  :returns (names namelist-p))
+  :returns (names namelist-p)
+  :parents (modinstlist))
+
 
 (fty::defprod module
-  ((wires wirelist)
-   (insts modinstlist)
-   (assigns assigns)
+  ((wires      wirelist)
+   (insts      modinstlist)
+   (assigns    assigns)
    ;; (delays svar-map)
-   (aliaspairs lhspairs))
-  :parents (svmods))
+   (aliaspairs lhspairs)))
 
 (define module-vars ((x module-p))
+  :parents (module)
   :returns (vars svarlist-p)
   (b* (((module x)))
     (append (assigns-vars x.assigns)
@@ -417,6 +437,7 @@ of adding the namespace.</p>"
     :hints(("Goal" :in-theory (enable module-vars)))))
 
 (define module-addr-p ((x module-p))
+  :parents (module)
   :enabled t
   :verify-guards nil
   (mbe :logic (svarlist-addr-p (module-vars x))
@@ -428,18 +449,24 @@ of adding the namespace.</p>"
     :hints(("Goal" :in-theory (enable module-vars)))))
 
 
-(fty::defmap modalist :key-type modname :val-type module
-  :parents (svmods))
+(fty::defmap modalist
+  :key-type modname
+  :val-type module
+  ///
+  (defcong modalist-equiv modalist-equiv (append a b) 1)
+  (defcong modalist-equiv modalist-equiv (append a b) 2))
 
 (define modalist-lookup (modname (modalist modalist-p))
-  :returns (mod (iff (module-p mod) mod) :hints(("Goal" :in-theory (enable modalist-fix))))
+  :parents (modalist)
+  :returns (mod (iff (module-p mod) mod)
+                :hints(("Goal" :in-theory (enable modalist-fix))))
   (cdr (hons-get modname
                  (mbe :logic (modalist-fix modalist) :exec modalist)))
   ///
   (fty::deffixequiv modalist-lookup))
 
-
 (define modalist->modnames ((modalist modalist-p))
+  :parents (modalist)
   :returns (modnames modnamelist-p
                      :hints(("Goal" :in-theory (enable alist-keys modalist-fix))))
   (alist-keys (mbe :logic (modalist-fix modalist) :exec modalist))
@@ -460,10 +487,8 @@ of adding the namespace.</p>"
     (implies (modname->submodnames x modalist)
              (modalist-lookup x modalist))))
 
-(defcong modalist-equiv modalist-equiv (append a b) 1)
-(defcong modalist-equiv modalist-equiv (append a b) 2)
-
 (define modalist-vars ((x modalist-p))
+  :parents (modalist)
   :returns (vars svarlist-p)
   :measure (len (modalist-fix x))
   (b* ((x (modalist-fix x)))
@@ -482,6 +507,7 @@ of adding the namespace.</p>"
                       (append a b))))))
 
 (define modalist-addr-p ((x modalist-p))
+  :parents (modalist)
   :enabled t
   :verify-guards nil
   (mbe :logic (svarlist-addr-p (modalist-vars x))
@@ -664,6 +690,5 @@ of adding the namespace.</p>"
   (memoize 'mod-instcount))
 
 (defprod design
-  :parents (svmods)
   ((modalist modalist-p)
-   (top modname-p)))
+   (top      modname-p)))

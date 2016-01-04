@@ -137,9 +137,9 @@ vl-ppcs-module) and perhaps more generally the VL @(see printer).</p>
 
 <p>After getting a feel for how modules are represented, it would be good to
 look at the available @(see transforms).  For instance, you might look at the
-code for @(see vl-simplify) to see the transforms used in the @(see esim) flow.
-You could also look at @('run-vl-lint-main') which uses a different
-transformation sequence for toward linting.</p>
+code for @('run-vl-lint-main') to see a transformation sequence geared toward
+linting.  You might also see @(see vl-design->svex-design) to see how the new
+@(see sv) flow works.</p>
 
 <p>If you are going to write any Verilog-processing tools of your own, you
 should probably read through how VL deals with @(see warnings) and then take a

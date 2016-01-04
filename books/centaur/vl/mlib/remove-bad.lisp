@@ -37,18 +37,19 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc propagating-errors
-  :parents (warnings vl-simplify)
-  :short "The error handling strategy used by @(see vl-simplify)."
+  :parents (warnings)
+  :short "A mechanism for propagating fatal errors from submodules up to all
+modules that rely on these submodules."
 
   :long "<p>As described in @(see warnings), our @(see transforms) can
 sometimes run into severe problems, e.g., we might run into an instance of an
 undefined module.  In this case, the transform should typically extend the
 module with a fatal warning.</p>
 
-<p>In the context of @(see vl-simplify), we generally want to throw away any
-design elements (e.g., modules, packages, etc.) that have fatal errors, so that
-we only produce a formal model of whatever part of the design is well-formed
-and supported.</p>
+<p>When we are trying to build accurate/sound/correct formal models to analyze,
+we generally want to throw away any design elements (e.g., modules, packages,
+etc.) that have fatal errors, so that we only produce a model of whatever part
+of the design is well-formed and supported.</p>
 
 <p>For various reasons, it's a good idea to throw away any these bad parts of
 the design as early as possible.  The main reason for this is that it easier to
@@ -62,11 +63,11 @@ we're going to throw away, anyway.</p>
 <p>On the other hand, we can't really just throw bad parts of the design away.
 We at least need some way to see what went wrong, so that we can debug it.</p>
 
-<p>Our basic strategy for dealing with this, in @(see vl-simplify) at least, is
-to imagine two designs, <b>good</b> and <b>bad</b>.  Initially, we put all of
-the design elements into the good design, and the bad design is empty.  We
-always only try to transform the good design, and afterward we can move any
-design elements that had errors into the bad design.</p>
+<p>Our basic strategy for dealing with this is to imagine two designs,
+<b>good</b> and <b>bad</b>.  Initially, we put all of the design elements into
+the good design, and the bad design is empty.  We always only try to transform
+the good design, and afterward we can move any design elements that had errors
+into the bad design.</p>
 
 <p>Moving things into the bad design is tricky because design elements do not
 exist in isolation.  When, for instance, some module M has an error, we would

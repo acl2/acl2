@@ -393,7 +393,7 @@
 ||#
 
 (defun save-json-files (topics dir state)
-  (b* ((topics (force-root-parents
+  (b* ((topics (force-missing-parents
                 (maybe-add-top-topic
                  (normalize-parents-list
                   (clean-topics topics)))))
