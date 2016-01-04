@@ -275,6 +275,7 @@ acl2::4v-monotonicity).</p>"
   (def-4vec-monotonicity 4vec-wildeq-safe)
   (def-4vec-monotonicity 4vec-symwildeq)
   (def-4vec-monotonicity 4vec-clog2)
+  (def-4vec-monotonicity 4vec-pow)
 
   (local (in-theory (enable (:t logbitp)
                              bit->bool)))

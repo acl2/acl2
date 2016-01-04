@@ -567,6 +567,19 @@ of global X/Z detection.</p>"
          (and stable-under-simplificationp
               '(:in-theory (enable 4vmask-all-or-none)))))
 
+(def-svmask pow (x y)
+  :long "<p>As in @(see svmask-for-+), we can't do anything smart here because
+of global X/Z detection.</p>"
+  :inline t
+  :nobindings t
+  :body (b* ((argmask (4vmask-all-or-none mask)))
+          (list argmask argmask))
+  :hints(("Goal" :in-theory (enable svex-apply
+                                    4veclist-nth-safe
+                                    hide-past-first-arg))
+         (and stable-under-simplificationp
+              '(:in-theory (enable 4vmask-all-or-none)))))
+
 (def-svmask xdet (x)
   :long "<p>We can't do anything smart here.  Since @('(xdet x)') returns pure
 Xes whenever there are <i>any</i> X/Z bits in x, we always have to consider all

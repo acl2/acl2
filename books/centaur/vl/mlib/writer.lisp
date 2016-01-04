@@ -77,6 +77,21 @@ instead of @('show-atts').</p>"
         (misc  (vl-ps->misc)))
     (vl-ps-update-misc (acons :vl-hide-atts hidep misc))))
 
+(define vl-ps->use-origexprs-p (&key (ps 'ps))
+  :parents (verilog-printing)
+  :short "Should we print VL_ORIG_EXPR fields?"
+  :long "<p>See also @(see vl-ps-update-use-origexprs).</p>"
+  (cdr (assoc-equal :vl-use-origexprs (vl-ps->misc))))
+
+(define vl-ps-update-use-origexprs ((usep booleanp) &key (ps 'ps))
+  :parents (verilog-printing)
+  :short "Set whether we should print expressions as VL_ORIG_EXPRs, when
+they have such annotations."
+  :verbosep t
+  (let ((misc (vl-ps->misc)))
+    (vl-ps-update-misc (acons :vl-use-origexprs (and usep t) misc))))
+
+
 (define vl-simple-id-tail-string-p ((x stringp)
                                     (i natp)
                                     (len (eql len (length x))))
@@ -595,6 +610,23 @@ displays.  The module browser's web pages are responsible for defining the
                          (not (stringp x))))
          :hints(("Goal" :in-theory (enable vl-hidname-p)))))
 
+(local (defthm vl-expr-count-of-hons-assoc-equal
+         (implies (and (cdr (hons-assoc-equal name atts))
+                       (vl-atts-p atts))
+                  (< (Vl-expr-count (cdr (hons-assoc-equal name atts)))
+                     (vl-atts-count atts)))
+         :hints (("goal" :induct (hons-assoc-equal name atts)
+                  :expand ((vl-atts-count atts)
+                           (vl-atts-p atts))
+                  :in-theory (enable hons-assoc-equal
+                                     vl-maybe-expr-count)))
+         :rule-classes :linear))
+
+(local (defthm alistp-when-vl-atts-p-rw
+         (implies (vl-atts-p x)
+                  (alistp x))
+         :hints(("Goal" :in-theory (enable (tau-system))))))
+
 (defines vl-pp-expr
   :parents (verilog-printing)
   :short "Main pretty-printer for an expression."
@@ -760,6 +792,10 @@ displays.  The module browser's web pages are responsible for defining the
     :measure (two-nats-measure (vl-expr-count x) 10)
     :ruler-extenders :all
     (b* ((atts (vl-expr->atts x))
+         (origexpr (cdr (assoc-equal "VL_ORIG_EXPR" atts)))
+         ((when (and origexpr
+                     (vl-ps->use-origexprs-p)))
+          (vl-pp-expr origexpr))
          (unspecial-atts (vl-remove-keys (vl-pp-expr-special-atts) atts)))
       (vl-expr-case x
 
@@ -1137,18 +1173,20 @@ real Verilog file.</p>"
   :short "Pretty-print the \"original,\" un-transformed version of an
 expression."
   :long "<p>This is like @(see vl-pp-expr) but, if @('x') has a
-@('VL_ORIG_EXPR') attribute, we actually pretty-print the original version of
-@('x') rather than the current version (which may be simplified, and hence not
-correspond as closely to the original source code.)</p>
-
-<p>Historically we annotated every expression with its original version using
-an @('origexprs') transform.  Typically we don't do this anymore.  It may be
-that we can get rid of this function and related code.</p>"
-  (b* ((atts   (vl-expr->atts x))
-       (lookup (cdr (hons-assoc-equal "VL_ORIG_EXPR" atts)))
-       ((when lookup)
-        (vl-pp-expr lookup)))
-    (vl-pp-expr x)))
+@('VL_ORIG_EXPR') attribute (see @(see origexprs)), we actually pretty-print
+the original version of @('x') rather than the current version (which may be
+simplified, and hence not correspond as closely to the original source code.)
+Specifically, the elaboration transform may replace certain subexpressions with
+constants and leave behind an annotation giving the original version of
+@('x').</p>"
+  (b* ((misc (vl-ps->misc))
+       (prev-p (vl-ps->use-origexprs-p)))
+    (vl-ps-seq
+     (if (not prev-p)
+         (vl-ps-update-use-origexprs t)
+       ps)
+     (vl-pp-expr x)
+     (vl-ps-update-misc misc))))
 
 (define vl-pps-origexpr ((x vl-expr-p))
   :returns (pretty-x stringp :rule-classes :type-prescription)

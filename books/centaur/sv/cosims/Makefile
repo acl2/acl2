@@ -75,7 +75,6 @@ FAILING_TEST_TARGETS := \
   alias2/ok \
   alias3/ok \
   alias4/ok \
-  bin_pow/ok \
   gates_bufif0/ok \
   gates_bufif1/ok \
   gates_notif0/ok \
