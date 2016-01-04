@@ -717,8 +717,15 @@ for each usertype is stored in the res field.</p>"
 (define vl-ifportexpr->name ((x vl-expr-p))
   :returns (name maybe-stringp)
   (vl-expr-case x
-    :vl-index (and (vl-idscope-p x.scope)
-                   (vl-idscope->name x.scope))
+    :vl-index (vl-scopeexpr-case x.scope
+                :colon nil
+                :end (vl-hidexpr-case x.scope.hid
+                       :dot (b* (((vl-hidindex x.scope.hid.first)))
+                              (and (atom x.scope.hid.first.indices)
+                                   (vl-hidexpr-case x.scope.hid.rest :end)
+                                   (stringp x.scope.hid.first.name)
+                                   x.scope.hid.first.name))
+                       :end x.scope.hid.name))
     :otherwise nil))
 
 
@@ -735,7 +742,7 @@ for each usertype is stored in the res field.</p>"
        (name (and x1.expr (vl-ifportexpr->name x1.expr)))
        ((unless name)
         ;; Think this shouldn't be able to happen after argresolve.
-        (raise "Bad interface port connection: ~s0" (vl-cw-ps-seq
+        (raise "Bad interface port connection: ~s0" (with-local-ps
                                                      (if x1.expr (vl-pp-expr x1.expr)
                                                        (vl-print-str "(empty)"))))
         (mv port1 nil))
@@ -746,7 +753,7 @@ for each usertype is stored in the res field.</p>"
        ((unless (and item
                      (or (eq (tag item) :vl-interfaceport)
                          (eq (tag item) :vl-modinst))))
-        (raise "Bad interface port connection: ~s0" (vl-cw-ps-seq (vl-pp-expr x1.expr)))
+        (raise "Bad interface port connection: ~s0" (with-local-ps (vl-pp-expr x1.expr)))
         (mv port1 nil))
        (ifname (if (eq (tag item) :vl-interfaceport)
                    (vl-interfaceport->ifname item)
