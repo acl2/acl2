@@ -17,13 +17,30 @@
 ;; Some lemmas about page-table-entry-no-page-fault-p:
 
 (defthm mv-nth-2-page-table-entry-no-page-fault-p-value-no-error
-  (implies (not (mv-nth 0 (page-table-entry-no-page-fault-p
-                           lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86)))
-           (equal
-            (mv-nth 2 (page-table-entry-no-page-fault-p
-                       lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
-            x86))
-  :hints (("Goal" :in-theory (e/d* (page-table-entry-no-page-fault-p) ()))))
+  (implies (and (not (mv-nth 0
+                             (page-table-entry-no-page-fault-p
+                              lin-addr entry-1
+                              u-s-acc wp smep nxe r-w-x cpl x86)))
+                (xlate-equiv-entries (double-rewrite entry-1)
+                                     (double-rewrite entry-2))
+                (unsigned-byte-p 64 entry-1)
+                (unsigned-byte-p 64 entry-2))
+           (equal (mv-nth 2
+                          (page-table-entry-no-page-fault-p
+                           lin-addr entry-2
+                           u-s-acc wp smep nxe r-w-x cpl x86))
+                  x86))
+  :hints (("Goal"
+           :use ((:instance xlate-equiv-entries-and-logtail
+                            (n 52)
+                            (e-1 entry-1)
+                            (e-2 entry-2))
+                 (:instance xlate-equiv-entries-and-page-execute-disable
+                            (e-1 entry-1)
+                            (e-2 entry-2)))
+           :in-theory (e/d* (page-table-entry-no-page-fault-p
+                             page-fault-exception)
+                            ()))))
 
 (defthm gather-all-paging-structure-qword-addresses-page-table-entry-no-page-fault-p
   (equal (gather-all-paging-structure-qword-addresses
@@ -95,8 +112,8 @@
                              not))))
   :rule-classes :congruence)
 
-(defthm mv-nth-0-page-table-entry-no-page-fault-p-with-xlate-equiv-x86s
-  (implies (xlate-equiv-x86s x86-1 x86-2)
+(defthm mv-nth-0-page-table-entry-no-page-fault-p-with-xlate-equiv-structures
+  (implies (xlate-equiv-structures x86-1 x86-2)
            (equal (mv-nth
                    0
                    (page-table-entry-no-page-fault-p
@@ -114,8 +131,8 @@
                              not))))
   :rule-classes :congruence)
 
-(defthm mv-nth-1-page-table-entry-no-page-fault-p-with-xlate-equiv-x86s
-  (implies (xlate-equiv-x86s x86-1 x86-2)
+(defthm mv-nth-1-page-table-entry-no-page-fault-p-with-xlate-equiv-structures
+  (implies (xlate-equiv-structures x86-1 x86-2)
            (equal (mv-nth
                    1
                    (page-table-entry-no-page-fault-p
@@ -134,21 +151,33 @@
   :rule-classes :congruence)
 
 (defthm mv-nth-2-page-table-entry-no-page-fault-p-with-xlate-equiv-x86s
-  (implies (x86p x86)
-           (xlate-equiv-x86s
-            (mv-nth 2 (page-table-entry-no-page-fault-p lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
-            (double-rewrite x86)))
+  (implies
+   ;; The hyp would need to be changed to
+
+   ;; (equal
+   ;;  (mv-nth 0 (page-table-entry-no-page-fault-p lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
+   ;;  nil)
+
+   ;; if the definition of xlate-equiv-x86s requires the MS and FAULT
+   ;; fields to be exactly equal too. If that happens, then the
+   ;; theorem xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT would
+   ;; also need such a hypothesis.
+   (x86p x86)
+   (xlate-equiv-x86s
+    (mv-nth 2 (page-table-entry-no-page-fault-p lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
+    (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (page-table-entry-no-page-fault-p
                                     page-fault-exception
-                                    xlate-equiv-x86s)
+                                    xlate-equiv-x86s
+                                    xlate-equiv-structures)
                                    ()))))
 
 ;; ======================================================================
 
 ;; Finally, lemmas about ia32e-la-to-pa-PT:
 
-(defthmd ia32e-la-to-pa-PT-with-xlate-equiv-x86s
-  (implies (xlate-equiv-x86s (double-rewrite x86-1) x86-2)
+(defthmd ia32e-la-to-pa-PT-with-xlate-equiv-structures
+  (implies (xlate-equiv-structures (double-rewrite x86-1) x86-2)
            (and
             (equal (mv-nth
                     0
@@ -178,8 +207,8 @@
                             (e-2 (mv-nth 2 (read-page-table-entry lin-addr x86-2)))
                             (n 12))))))
 
-(defthm mv-nth-0-ia32e-la-to-pa-PT-with-xlate-equiv-x86s
-  (implies (xlate-equiv-x86s x86-1 x86-2)
+(defthm mv-nth-0-ia32e-la-to-pa-PT-with-xlate-equiv-structures
+  (implies (xlate-equiv-structures x86-1 x86-2)
            (equal (mv-nth
                    0
                    (ia32e-la-to-pa-PT
@@ -188,11 +217,11 @@
                    0
                    (ia32e-la-to-pa-PT
                     lin-addr u-s-acc wp smep nxe r-w-x cpl x86-2))))
-  :hints (("Goal" :use ((:instance ia32e-la-to-pa-PT-with-xlate-equiv-x86s))))
+  :hints (("Goal" :use ((:instance ia32e-la-to-pa-pt-with-xlate-equiv-structures))))
   :rule-classes :congruence)
 
-(defthm mv-nth-1-ia32e-la-to-pa-PT-with-xlate-equiv-x86s
-  (implies (xlate-equiv-x86s x86-1 x86-2)
+(defthm mv-nth-1-ia32e-la-to-pa-PT-with-xlate-equiv-structures
+  (implies (xlate-equiv-structures x86-1 x86-2)
            (equal (mv-nth
                    1
                    (ia32e-la-to-pa-PT
@@ -201,7 +230,7 @@
                    1
                    (ia32e-la-to-pa-PT
                     lin-addr u-s-acc wp smep nxe r-w-x cpl x86-2))))
-  :hints (("Goal" :use ((:instance ia32e-la-to-pa-PT-with-xlate-equiv-x86s))))
+  :hints (("Goal" :use ((:instance ia32e-la-to-pa-pt-with-xlate-equiv-structures))))
   :rule-classes :congruence)
 
 (defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
@@ -211,9 +240,9 @@
   :hints (("Goal" :do-not '(preprocess)
            :use ((:instance entry-found-p-and-good-paging-structures-x86p))
            :in-theory (e/d* (ia32e-la-to-pa-page-table-alt
-                             read-page-table-entry)
+                             read-page-table-entry
+                             xlate-equiv-x86s)
                             (bitops::logand-with-negated-bitmask
-                             xlate-equiv-x86s
                              accessed-bit
                              dirty-bit
                              not
@@ -261,13 +290,14 @@
 ;; structure traversals...
 
 (defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa-PT
-  (implies (good-paging-structures-x86p x86)
+  (implies (good-paging-structures-x86p (double-rewrite x86))
            (equal (gather-all-paging-structure-qword-addresses
                    (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86)))
                   (gather-all-paging-structure-qword-addresses x86)))
   :hints (("Goal"
+           :in-theory (e/d* () (xlate-equiv-x86s))
            :use ((:instance
-                  gather-all-paging-structure-qword-addresses-with-xlate-equiv-x86s
+                  gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
                   (x86-equiv (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))))))))
 
 (defthm xlate-equiv-entries-at-qword-addresses?-mv-nth-2-ia32e-la-to-pa-PT
@@ -279,8 +309,10 @@
                    (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86)))
                   (xlate-equiv-entries-at-qword-addresses? addrs addrs x86 x86)))
   :hints (("Goal" :in-theory (e/d* ()
-                                   (booleanp-xlate-equiv-entries-at-qword-addresses?))
-           :use ((:instance xlate-equiv-x86s-and-xlate-equiv-entries-at-qword-addresses?
+                                   (booleanp-xlate-equiv-entries-at-qword-addresses?
+                                    xlate-equiv-structures-and-xlate-equiv-entries-at-qword-addresses?
+                                    xlate-equiv-x86s))
+           :use ((:instance xlate-equiv-structures-and-xlate-equiv-entries-at-qword-addresses?
                             (addrs (gather-all-paging-structure-qword-addresses x86))
                             (x86 x86)
                             (x86-equiv

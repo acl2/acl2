@@ -1,6 +1,403 @@
 ;; AUTHOR:
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
+(in-package "X86ISA")
+(include-book "paging-top" :ttags :all)
+
+(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+
+(local (in-theory (e/d (entry-found-p-and-lin-addr
+                        entry-found-p-and-good-paging-structures-x86p
+                        ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
+                       (signed-byte-p
+                        unsigned-byte-p))))
+
+;; ======================================================================
+
+(defthm ia32e-la-to-pa-PT-state-WoW-no-page-fault
+  (implies (and (page-table-entry-addr-found-p lin-addr-1 (double-rewrite x86))
+                (not
+                 (mv-nth
+                  0
+                  (page-table-entry-no-page-fault-p
+                   lin-addr-1
+                   (mv-nth 2 (read-page-table-entry lin-addr-1 x86))
+                   u-s-acc-1
+                   wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)))
+                (not
+                 (mv-nth
+                  0
+                  (page-table-entry-no-page-fault-p
+                   lin-addr-2
+                   (mv-nth 2 (read-page-table-entry lin-addr-2 x86))
+                   u-s-acc-2
+                   wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+           (equal
+            (mv-nth
+             2
+             (ia32e-la-to-pa-PT
+              lin-addr-1 u-s-acc-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+              (mv-nth
+               2
+               (ia32e-la-to-pa-PT
+                lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+            (mv-nth
+             2
+             (ia32e-la-to-pa-PT
+              lin-addr-2 u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2
+              (mv-nth
+               2
+               (ia32e-la-to-pa-PT
+                lin-addr-1 u-s-acc-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86))))))
+  :hints (("Goal"
+           :cases ((equal
+                    (page-table-entry-addr
+                     lin-addr-1
+                     (mv-nth 1 (page-table-base-addr lin-addr-1 x86)))
+                    (page-table-entry-addr
+                     lin-addr-2
+                     (mv-nth 1 (page-table-base-addr lin-addr-2 x86)))))
+           :in-theory (e/d* (ia32e-la-to-pa-PT
+                             ia32e-la-to-pa-page-table-alt
+                             read-page-table-entry)
+                            (bitops::logand-with-negated-bitmask
+                             accessed-bit
+                             dirty-bit
+                             bitops::logior-equal-0)))))
+
+;; ======================================================================
+
+(i-am-here)
+
+(local
+ (defthm ia32e-la-to-pa-PD-state-WoW-no-page-fault-both-2M-pages
+   (implies (and
+             (page-directory-entry-addr-found-p lin-addr-1 (double-rewrite x86))
+             (equal (page-size (mv-nth 2 (read-page-directory-entry lin-addr-1 x86)))
+                    1)
+             (equal (page-size (mv-nth 2 (read-page-directory-entry lin-addr-2 x86)))
+                    1)
+             (not
+              (mv-nth
+               0
+               (paging-entry-no-page-fault-p
+                lin-addr-1
+                (mv-nth 2 (read-page-directory-entry lin-addr-1 x86))
+                wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)))
+             (not
+              (mv-nth
+               0
+               (paging-entry-no-page-fault-p
+                lin-addr-2
+                (mv-nth 2 (read-page-directory-entry lin-addr-2 x86))
+                wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+            (equal
+             (mv-nth
+              2
+              (ia32e-la-to-pa-PD
+               lin-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+               (mv-nth
+                2
+                (ia32e-la-to-pa-PD
+                 lin-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+             (mv-nth
+              2
+              (ia32e-la-to-pa-PD
+               lin-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2
+               (mv-nth
+                2
+                (ia32e-la-to-pa-PD
+                 lin-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86))))))
+   :hints (("Goal"
+            :cases ((equal
+                     (page-directory-entry-addr
+                      lin-addr-1
+                      (mv-nth 1 (page-directory-base-addr lin-addr-1 x86)))
+                     (page-directory-entry-addr
+                      lin-addr-2
+                      (mv-nth 1 (page-directory-base-addr lin-addr-2 x86)))))
+            :in-theory (e/d* (ia32e-la-to-pa-PD
+                              ia32e-la-to-pa-page-directory-alt
+                              read-page-directory-entry)
+                             (bitops::logand-with-negated-bitmask
+                              accessed-bit
+                              dirty-bit
+                              bitops::logior-equal-0))))))
+
+(defthm ia32e-la-to-pa-PT-returns-no-error
+  (implies (and (page-table-entry-addr-found-p lin-addr (double-rewrite x86))
+                (not (mv-nth 0
+                             (page-table-entry-no-page-fault-p
+                              lin-addr
+                              (mv-nth 2 (read-page-table-entry lin-addr x86))
+                              u-s-acc
+                              wp smep nxe r-w-x cpl x86))))
+           (equal
+            (mv-nth 0
+                    (ia32e-la-to-pa-PT
+                     lin-addr u-s-acc wp smep nxe r-w-x cpl x86))
+            nil))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
+                                    ia32e-la-to-pa-page-table-alt)
+                                   ()))))
+
+(defthm foo
+  ;; I don't want to enable READ-PAGE-DIRECTORY-ENTRY because
+  ;; otherwise rules like
+  ;; MV-NTH-2-PAGING-ENTRY-NO-PAGE-FAULT-P-VALUE-NO-ERROR won't
+  ;; fire. But the rule XLATE-EQUIV-X86S-AND-WM-LOW-64-ENTRY-ADDR
+  ;; needs to relieve it's xlate-equiv-entries hyp with
+  ;; rm-low-64. This rule is a stop-gap to get around this right now.
+  (implies (page-directory-entry-addr-found-p lin-addr (double-rewrite x86))
+           (xlate-equiv-entries
+            (mv-nth 2 (read-page-directory-entry lin-addr x86))
+            (rm-low-64 (page-directory-entry-addr
+                        lin-addr
+                        (mv-nth 1 (page-directory-base-addr lin-addr x86)))
+                       x86)))
+  :hints (("Goal" :in-theory (e/d* (read-page-directory-entry)
+                                   ()))))
+
+(defthm mv-nth-2-paging-entry-no-page-fault-p-value-no-error-new
+  (implies
+   (and (not (mv-nth 0
+                     (paging-entry-no-page-fault-p
+                      lin-addr
+                      entry wp smep nxe r-w-x cpl x86)))
+        (unsigned-byte-p 64 entry))
+   (equal (mv-nth 2
+                  (paging-entry-no-page-fault-p
+                   lin-addr
+                   entry wp smep nxe r-w-x cpl x86))
+          x86)))
+
+(defthm bar
+  (implies
+   (and
+    (not
+     (mv-nth
+      '0
+      (paging-entry-no-page-fault-p$inline
+       lin-addr-2
+       (mv-nth '2
+               (read-page-directory-entry lin-addr-2 x86))
+       wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+   (not
+    (mv-nth
+     '0
+     (paging-entry-no-page-fault-p$inline
+      lin-addr-2
+      (mv-nth
+       '2
+       (read-page-directory-entry
+        lin-addr-2
+        (mv-nth
+         '2
+         (ia32e-la-to-pa-pt
+          lin-addr-1
+          (page-user-supervisor
+           (rm-low-64
+            (page-directory-entry-addr$inline
+             lin-addr-1
+             (mv-nth '1
+                     (page-directory-base-addr lin-addr-1 x86)))
+            x86))
+          wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86))))
+      wp-2 smep-2 nxe-2 r-w-x-2 cpl-2
+      (mv-nth
+       '2
+       (ia32e-la-to-pa-pt
+        lin-addr-1
+        (page-user-supervisor
+         (rm-low-64
+          (page-directory-entry-addr$inline
+           lin-addr-1
+           (mv-nth '1
+                   (page-directory-base-addr lin-addr-1 x86)))
+          x86))
+        wp-1
+        smep-1 nxe-1 r-w-x-1 cpl-1 x86)))))))
+
+(defthm baz
+  (implies
+   (and
+    (equal (page-directory-entry-addr
+            lin-addr-1
+            (mv-nth 1
+                    (page-directory-base-addr lin-addr-1 x86)))
+           (page-directory-entry-addr
+            lin-addr-2
+            (mv-nth 1
+                    (page-directory-base-addr lin-addr-2 x86))))
+    (not
+     (mv-nth
+      0
+      (paging-entry-no-page-fault-p
+       lin-addr-1
+       (rm-low-64 (page-directory-entry-addr
+                   lin-addr-1
+                   (mv-nth 1
+                           (page-directory-base-addr lin-addr-1 x86)))
+                  x86)
+       wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)))
+    (page-table-entry-addr-found-p lin-addr-1 x86)
+    (page-table-entry-addr-found-p lin-addr-2 x86))
+   (NOT
+    (MV-NTH
+     '0
+     (PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE
+      LIN-ADDR-1
+      (MV-NTH
+       '2
+       (READ-PAGE-DIRECTORY-ENTRY
+        LIN-ADDR-1
+        (MV-NTH
+         '2
+         (IA32E-LA-TO-PA-PT
+          LIN-ADDR-2
+          (PAGE-USER-SUPERVISOR
+           (RM-LOW-64 (PAGE-DIRECTORY-ENTRY-ADDR$INLINE
+                       LIN-ADDR-1
+                       (MV-NTH '1
+                               (PAGE-DIRECTORY-BASE-ADDR LIN-ADDR-1 X86)))
+                      X86))
+          WP-2 SMEP-2 NXE-2 R-W-X-2 CPL-2
+          (WM-LOW-64 (PAGE-DIRECTORY-ENTRY-ADDR$INLINE
+                      LIN-ADDR-1
+                      (MV-NTH '1
+                              (PAGE-DIRECTORY-BASE-ADDR LIN-ADDR-1 X86)))
+                     (SET-ACCESSED-BIT
+                      (MV-NTH '2
+                              (READ-PAGE-DIRECTORY-ENTRY LIN-ADDR-2 X86)))
+                     X86)))))
+      WP-1 SMEP-1 NXE-1 R-W-X-1 CPL-1
+      (MV-NTH
+       '2
+       (IA32E-LA-TO-PA-PT
+        LIN-ADDR-2
+        (PAGE-USER-SUPERVISOR
+         (RM-LOW-64 (PAGE-DIRECTORY-ENTRY-ADDR$INLINE
+                     LIN-ADDR-1
+                     (MV-NTH '1
+                             (PAGE-DIRECTORY-BASE-ADDR LIN-ADDR-1 X86)))
+                    X86))
+        WP-2 SMEP-2 NXE-2 R-W-X-2 CPL-2
+        (WM-LOW-64
+         (PAGE-DIRECTORY-ENTRY-ADDR$INLINE
+          LIN-ADDR-1
+          (MV-NTH '1
+                  (PAGE-DIRECTORY-BASE-ADDR LIN-ADDR-1 X86)))
+         (SET-ACCESSED-BIT (MV-NTH '2
+                                   (READ-PAGE-DIRECTORY-ENTRY LIN-ADDR-2 X86)))
+         X86))))))))
+
+
+(defthm ia32e-la-to-pa-PD-state-WoW-no-page-fault-both-4K-pages
+  (implies (and
+            (DISJOINT-P
+             (ADDR-RANGE 8
+                         (PAGE-DIRECTORY-ENTRY-ADDR
+                          LIN-ADDR-1
+                          (MV-NTH 1 (PAGE-DIRECTORY-BASE-ADDR LIN-ADDR-1 X86))))
+             (ADDR-RANGE 8
+                         (PAGE-TABLE-ENTRY-ADDR
+                          LIN-ADDR-1
+                          (MV-NTH 1 (PAGE-TABLE-BASE-ADDR LIN-ADDR-1 X86)))))
+            (DISJOINT-P
+             (ADDR-RANGE 8
+                         (PAGE-DIRECTORY-ENTRY-ADDR
+                          LIN-ADDR-1
+                          (MV-NTH 1 (PAGE-DIRECTORY-BASE-ADDR LIN-ADDR-1 X86))))
+             (ADDR-RANGE 8
+                         (PAGE-TABLE-ENTRY-ADDR
+                          LIN-ADDR-2
+                          (MV-NTH 1 (PAGE-TABLE-BASE-ADDR LIN-ADDR-2 X86)))))
+
+            (equal (page-size
+                    (mv-nth 2 (read-page-directory-entry lin-addr-1 x86)))
+                   0)
+            (equal (page-size
+                    (mv-nth 2 (read-page-directory-entry lin-addr-2 x86)))
+                   0)
+            (page-directory-entry-addr-found-p lin-addr-1 x86)
+            (page-directory-entry-addr-found-p lin-addr-2 x86)
+            (not
+             (mv-nth 0
+                     (paging-entry-no-page-fault-p
+                      lin-addr-1
+                      (mv-nth 2 (read-page-directory-entry lin-addr-1 x86))
+                      wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)))
+            (not
+             (mv-nth
+              0
+              (paging-entry-no-page-fault-p
+               lin-addr-2
+               (mv-nth 2 (read-page-directory-entry lin-addr-2 x86))
+               wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)))
+            (equal u-s-acc-1
+                   (page-user-supervisor
+                    (mv-nth 2 (read-page-directory-entry lin-addr-1 x86))))
+            (equal u-s-acc-2
+                   (page-user-supervisor
+                    (mv-nth 2 (read-page-directory-entry lin-addr-2 x86))))
+            (page-table-entry-addr-found-p lin-addr-1 x86)
+            (page-table-entry-addr-found-p lin-addr-2 x86)
+            (not
+             (mv-nth 0
+                     (page-table-entry-no-page-fault-p
+                      lin-addr-1
+                      (mv-nth 2 (read-page-table-entry lin-addr-1 x86))
+                      u-s-acc-1
+                      wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)))
+            (not
+             (mv-nth
+              0
+              (page-table-entry-no-page-fault-p
+               lin-addr-2
+               (mv-nth 2 (read-page-table-entry lin-addr-2 x86))
+               u-s-acc-2
+               wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+           (equal
+            (mv-nth
+             2
+             (ia32e-la-to-pa-PD
+              lin-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+              (mv-nth
+               2
+               (ia32e-la-to-pa-PD
+                lin-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+            (mv-nth
+             2
+             (ia32e-la-to-pa-PD
+              lin-addr-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2
+              (mv-nth
+               2
+               (ia32e-la-to-pa-PD
+                lin-addr-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86))))))
+  :hints (("Goal"
+           :cases ((not (equal
+                         (page-directory-entry-addr
+                          lin-addr-1
+                          (mv-nth 1 (page-directory-base-addr lin-addr-1 x86)))
+                         (page-directory-entry-addr
+                          lin-addr-2
+                          (mv-nth 1 (page-directory-base-addr lin-addr-2 x86))))))
+           :in-theory (e/d* (ia32e-la-to-pa-PD
+                             ia32e-la-to-pa-page-directory-alt)
+                            (bitops::logand-with-negated-bitmask
+                             accessed-bit
+                             dirty-bit
+                             bitops::logior-equal-0)))))
+
+
+;; ======================================================================
+
+#||
+
+;; AUTHOR:
+;; Shilpi Goel <shigoel@cs.utexas.edu>
+
 ;; WORK IN PROGRESS (Thursday, December 10 2015)
 
 ;; This book will be folded into books under paging-top. For now, this
@@ -13,7 +410,8 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
 (local (in-theory (e/d (entry-found-p-and-lin-addr
-                        entry-found-p-and-good-paging-structures-x86p)
+                        entry-found-p-and-good-paging-structures-x86p
+                        ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa)
                        (signed-byte-p
                         unsigned-byte-p))))
 
@@ -156,7 +554,8 @@
                      lin-addr-2
                      (mv-nth 1 (page-table-base-addr lin-addr-2 x86)))))
            :in-theory (e/d* (ia32e-la-to-pa-PT
-                             ia32e-la-to-pa-page-table)
+                             ia32e-la-to-pa-page-table-alt
+                             read-page-table-entry)
                             (bitops::logand-with-negated-bitmask
                              accessed-bit
                              dirty-bit
@@ -828,4 +1227,4 @@
   :hints (("Goal" :in-theory (e/d* (ia32e-entries-found-la-to-pa)
                                    ()))))
 
-;; ======================================================================
+||#

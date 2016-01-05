@@ -2327,7 +2327,8 @@
                              (loop-clk-recur)
                              loop-clk-base
                              (loop-clk-base)
-                             create-canonical-address-list)))))
+                             create-canonical-address-list
+                             force (force))))))
 
 (defthm loop-clk-programmer-level-mode-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
