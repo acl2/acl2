@@ -921,8 +921,8 @@ elements.")
                   :expand ((vl-genelement-immdeps x ans)
                            (vl-genelementlist-immdeps x ans)
                            (vl-gencaselist-immdeps x ans)
-                           (vl-genarrayblocklist-immdeps x ans)
-                           (vl-genarrayblock-immdeps x ans))))
+                           (vl-genblocklist-immdeps x ans)
+                           (vl-genblock-immdeps x ans))))
 
   (define vl-genblock-immdeps ((x   vl-genblock-p)
                                (ans vl-immdeps-p)
@@ -932,7 +932,9 @@ elements.")
     :measure (vl-genblock-count x)
     :flag :genblock
     (b* (((vl-genblock x) x)
-         (scope (vl-sort-genelements x.elems))
+         (scope (vl-sort-genelements x.elems
+                                     :scopetype :vl-genblock
+                                     :id x.name))
          (ss    (vl-scopestack-push scope ss))
          (ans   (vl-genelementlist-immdeps x.elems ans)))
       ans))
@@ -975,7 +977,7 @@ elements.")
               (ans        (vl-genblock-immdeps x.body ans)))
            ans))
         (:vl-genarray
-         (b* ((ans (vl-genarrayblocklist-immdeps x.blocks ans)))
+         (b* ((ans (vl-genblocklist-immdeps x.blocks ans)))
            ans)))))
 
   (define vl-genelementlist-immdeps ((x   vl-genelementlist-p)
@@ -1009,29 +1011,19 @@ elements.")
          (ans (vl-genblock-immdeps block ans)))
       (vl-gencaselist-immdeps (cdr x) ans)))
 
-  (define vl-genarrayblocklist-immdeps ((x   vl-genarrayblocklist-p)
+  (define vl-genblocklist-immdeps ((x   vl-genblocklist-p)
                                         (ans vl-immdeps-p)
                                         &key
                                         ((ss vl-scopestack-p) 'ss))
     :returns (new-ans vl-immdeps-p)
-    :measure (vl-genarrayblocklist-count x)
-    :flag :genarrayblocklist
-    (b* ((x   (vl-genarrayblocklist-fix x))
+    :measure (vl-genblocklist-count x)
+    :flag :genblocklist
+    (b* ((x   (vl-genblocklist-fix x))
          (ans (vl-immdeps-fix ans))
          ((when (atom x))
           ans)
-         (ans (vl-genarrayblock-immdeps (car x) ans)))
-      (vl-genarrayblocklist-immdeps (cdr x) ans)))
-
-  (define vl-genarrayblock-immdeps ((x   vl-genarrayblock-p)
-                                    (ans vl-immdeps-p)
-                                    &key
-                                    ((ss vl-scopestack-p) 'ss))
-    :returns (new-ans vl-immdeps-p)
-    :measure (vl-genarrayblock-count x)
-    :flag :genarrayblock
-    (b* (((vl-genarrayblock x)))
-      (vl-genblock-immdeps x.body ans)))
+         (ans (vl-genblock-immdeps (car x) ans)))
+      (vl-genblocklist-immdeps (cdr x) ans)))
 
   ///
   (verify-guards vl-genelement-immdeps-fn)

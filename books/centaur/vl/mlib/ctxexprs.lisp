@@ -356,16 +356,11 @@ expression with a @(see vl-context-p) describing its origin.</p>")
                (equal (vl-genblob-ctxexprs-nrev-gencaselist x mod ss nrev)
                       (append nrev (vl-genblob-ctxexprs-gencaselist x mod ss))))
       :flag vl-genblob-ctxexprs-nrev-gencaselist)
-    (defthm vl-genblob-ctxexprs-nrev-elim-genarrayblocklist
+    (defthm vl-genblob-ctxexprs-nrev-elim-genblocklist
       (implies (true-listp nrev)
-               (equal (vl-genblob-ctxexprs-nrev-genarrayblocklist x mod ss nrev)
-                      (append nrev (vl-genblob-ctxexprs-genarrayblocklist x mod ss))))
-      :flag vl-genblob-ctxexprs-nrev-genarrayblocklist)
-    (defthm vl-genblob-ctxexprs-nrev-elim-genarrayblock
-      (implies (true-listp nrev)
-               (equal (vl-genblob-ctxexprs-nrev-genarrayblock x mod ss nrev)
-                      (append nrev (vl-genblob-ctxexprs-genarrayblock x mod ss))))
-      :flag vl-genblob-ctxexprs-nrev-genarrayblock)
+               (equal (vl-genblob-ctxexprs-nrev-genblocklist x mod ss nrev)
+                      (append nrev (vl-genblob-ctxexprs-genblocklist x mod ss))))
+      :flag vl-genblob-ctxexprs-nrev-genblocklist)
     :hints ((acl2::just-expand-mrec-default-hint 'vl-genblob-ctxexprs-nrev id t world)
             (and stable-under-simplificationp
                  (EQL 0 (ACCESS ACL2::CLAUSE-ID ID :FORCING-ROUND))
@@ -375,8 +370,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
                             (vl-genblob-ctxexprs-generate x mod ss)
                             (vl-genblob-ctxexprs-genblock x mod ss)
                             (vl-genblob-ctxexprs-gencaselist x mod ss)
-                            (vl-genblob-ctxexprs-genarrayblocklist x mod ss)
-                            (vl-genblob-ctxexprs-genarrayblock x mod ss))))))
+                            (vl-genblob-ctxexprs-genblocklist x mod ss))))))
   (verify-guards vl-genblob-ctxexprs
     :hints ((and stable-under-simplificationp
                  '(:expand ((vl-genblob-ctxexprs x mod ss)))))))

@@ -492,7 +492,7 @@ rules:</p>
          (loc := (vl-current-loc))
          (:= (vl-match))
          (:= (vl-match-token :vl-lparen))
-         (:= (vl-maybe-match-token :vl-kwd-genvar)) ;; skip genvar
+         (genvar := (vl-maybe-match-token :vl-kwd-genvar)) ;; skip genvar
          (id := (vl-match-token :vl-idtoken))
          (:= (vl-match-token :vl-equalsign))
          (init := (vl-parse-expression))
@@ -507,6 +507,7 @@ rules:</p>
             (vl-parse-error "For loop: the initialized variable differed from the incremented variable.")))
          (:= (vl-match-token :vl-rparen))
          (return (make-vl-genloop :var (vl-idtoken->name id)
+                                  :genvarp (and genvar t)
                                   :initval init
                                   :continue continue
                                   :nextval next
@@ -603,8 +604,13 @@ returns a @(see vl-genblock).</li>
              (loc := (vl-current-loc))
              (gen :w= (vl-parse-generate))
              (when gen
-               (return (make-vl-genblock :loc loc
-                                         :elems (list gen))))
+               (return
+                ;; If what we parsed is already a block, just return that,
+                ;; otherwise wrap it as a singleton element in a block.
+                (vl-genelement-case gen
+                  :vl-genbegin gen.block
+                  :otherwise (make-vl-genblock :loc loc
+                                               :elems (list gen)))))
              (items := (vl-parse-modelement))
              (return (make-vl-genblock :loc loc
                                        :elems (vl-modelementlist->genelements items)))))
@@ -715,6 +721,9 @@ returns a @(see vl-genblock).</li>
         ;;                   (cdr val)))
         :measure (two-nats-measure (vl-tokstream-measure) 5)
         (seq tokstream
+             (when (vl-is-token? :vl-kwd-endcase)
+               (:= (vl-match))
+               (return (cons nil nil)))
              (when (vl-is-token? :vl-kwd-default)
                (:= (vl-match))
                (:= (vl-match-token :vl-colon))
@@ -908,7 +917,7 @@ contexts where some of the items aren't allowed.</p>"
                             (vl-genblock-findbad x.default allowed))
                       x)
         :vl-genarray (if (member :vl-generate allowed)
-                         (vl-genarrayblocklist-findbad x.blocks allowed)
+                         (vl-genblocklist-findbad x.blocks allowed)
                        x))))
 
   (define vl-genblock-findbad ((x       vl-genblock-p)
@@ -941,21 +950,13 @@ contexts where some of the items aren't allowed.</p>"
       (or (vl-genblock-findbad block allowed)
           (vl-gencaselist-findbad rest allowed))))
 
-  (define vl-genarrayblocklist-findbad ((x vl-genarrayblocklist-p)
+  (define vl-genblocklist-findbad ((x vl-genblocklist-p)
                                         (allowed symbol-listp))
-    :measure (vl-genarrayblocklist-count x)
+    :measure (vl-genblocklist-count x)
     :guard (subsetp-equal allowed (cons :vl-generate *vl-modelement-tagnames*))
     :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
     (if (atom x)
         nil
-      (or (vl-genarrayblock-findbad (car x) allowed)
-          (vl-genarrayblocklist-findbad (cdr x) allowed))))
-
-  (define vl-genarrayblock-findbad ((x vl-genarrayblock-p)
-                                    (allowed symbol-listp))
-    :measure (vl-genarrayblock-count x)
-    :guard (subsetp-equal allowed (cons :vl-generate *vl-modelement-tagnames*))
-    :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
-    (b* (((vl-genarrayblock x)))
-      (vl-genblock-findbad x.body allowed))))
+      (or (vl-genblock-findbad (car x) allowed)
+          (vl-genblocklist-findbad (cdr x) allowed)))))
 

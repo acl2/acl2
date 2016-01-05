@@ -1142,112 +1142,137 @@ before we create scopestacks for shadowchecking.</p>")
 
 ;; BOZO implement generate handling as described above...
 
-;; (local (xdoc::set-default-parents implicit-wires-generate-scoping))
+(local (xdoc::set-default-parents implicit-wires-generate-scoping))
 
-;; (defines vl-genelementlist-flatten
-;;   :short "Special flattening of unnamed @('begin/end') blocks."
-;;   :long "<p>See @(see implicit-wires-generate-scoping).  Here we flatten the
-;;          unnamed begin/end blocks and take care of weird special cases like
-;;          checking that generates have no ports, converting @('parameter')s to
-;;          @('localparam')s within generates, etc.</p>"
+(defines vl-genelementlist-flatten
+  :short "Special flattening of unnamed @('begin/end') blocks."
+  :long "<p>See @(see implicit-wires-generate-scoping).  Here we flatten the
+         unnamed begin/end blocks and take care of weird special cases like
+         checking that generates have no ports, converting @('parameter')s to
+         @('localparam')s within generates, etc.</p>"
+  :verify-guards nil
+  (define vl-genblock-flatten ((x vl-genblock-p)
+                               (warnings vl-warninglist-p))
+    ;; Used for IF, CASE, and FOR loop bodies
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x    vl-genblock-p))
+    :measure (vl-genblock-count x)
+    (b* (((vl-genblock x))
+         ((mv warnings new-elems) (vl-genelementlist-flatten x.elems t nil warnings)))
+      (mv warnings (change-vl-genblock x :elems (rev new-elems)))))
 
-;;   (define vl-genelement-flatten ((x        vl-genelement-p     "Single item to process.")
-;;                                  (genp     booleanp            "Are we currently in a generate block?")
-;;                                  (newitems vl-genelementlist-p "Accumulator for replacement items."))
-;;     :returns (mv (warnings vl-warninglist-p)
-;;                  (newitems vl-genelementlist-p "Extended with @('x') or its replacement."))
-;;     :measure (vl-genelement-count x)
-;;     (b* ((x        (vl-genelement-fix x))
-;;          (newitems (vl-genelementlist-fix newitems)))
-;;       (vl-genelement-case x
-;;         :vl-genbase
-;;         (b* (((unless genp)
-;;               ;; Not inside a generate, don't do anything.
-;;               (mv (ok) (cons x newitems)))
+  (define vl-genelementlist-flatten ((x vl-genelementlist-p)
+                                     (genp booleanp)
+                                     (newitems vl-genelementlist-p)
+                                     (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (newitems vl-genelementlist-p))
+    :measure (vl-genelementlist-count x)
+    (b* (((when (atom x))
+          (mv (ok) (vl-genelementlist-fix newitems)))
+         ((mv warnings newitems) (vl-genelement-flatten (car x) genp newitems warnings)))
+      (vl-genelementlist-flatten (cdr x) genp newitems warnings)))
 
-;;              ((when (mbe :logic (vl-portdecl-p x)
-;;                          :exec (eq (tag x) :vl-portdecl)))
-;;               ;; SystemVerilog-2012 27.2, page 749. "A generate may not
-;;               ;; contain port declarations."
-;;               (mv (fatal :type :vl-bad-portdecl
-;;                          :msg "~a0: port declarations are not allowed in generates."
-;;                          :args (list x))
-;;                   (cons x new-items)))
+  (define vl-genelement-flatten ((x        vl-genelement-p     "Single item to process.")
+                                 (genp     booleanp            "Are we currently in a generate block?")
+                                 (newitems vl-genelementlist-p "Accumulator for replacement items.")
+                                 (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (newitems vl-genelementlist-p "Extended with @('x') or its replacement."))
+    :measure (vl-genelement-count x)
+    (b* ((x        (vl-genelement-fix x))
+         (newitems (vl-genelementlist-fix newitems)))
+      (vl-genelement-case x
+        :vl-genbase
+        (b* (((unless genp)
+              ;; Not inside a generate, don't do anything.
+              (mv (ok) (cons x newitems)))
+             
+             ((when (mbe :logic (vl-portdecl-p x.item)
+                         :exec (eq (tag x.item) :vl-portdecl)))
+              ;; SystemVerilog-2012 27.2, page 749. "A generate may not
+              ;; contain port declarations."
+              (mv (fatal :type :vl-bad-portdecl
+                         :msg "~a0: port declarations are not allowed in generates."
+                         :args (list x))
+                  (cons x newitems)))
+             
+             ((when (mbe :logic (vl-paramdecl-p x.item)
+                         :exec (eq (tag x.item) :vl-paramdecl)))
+              ;; SystemVerilog-2012 27.2, page 749.  "Parameters declared in
+              ;; generate blocks shall be treated as localparams."
+              (b* ((new-item 
+                    (if (vl-paramdecl->localp x.item)
+                        x.item
+                      (change-vl-paramdecl
+                       x.item
+                       :localp t
+                       ;; Attribute just for debugging.
+                       :atts (cons (cons "VL_LOCALIZED_DUE_TO_GENERATE" nil)
+                                   (vl-paramdecl->atts x.item)))))
+                   (new-x (change-vl-genbase x :item new-item)))
+                (mv (ok) (cons new-x newitems))))
 
-;;              ((when (mbe :logic (vl-paramdecl-p x)
-;;                          :exec (eq (tag x) :vl-paramdecl)))
-;;               ;; SystemVerilog-2012 27.2, page 749.  "Parameters declared in
-;;               ;; generate blocks shall be treated as localparams."
-;;               (mv (ok)
-;;                   (if (vl-paramdecl->localp x)
-;;                       x
-;;                     (change-vl-paramdecl x
-;;                                          :localp t
-;;                                          ;; Attribute just for debugging.
-;;                                          :atts (cons (cons "VL_LOCALIZED_DUE_TO_GENERATE" nil)
-;;                                                      (vl-paramdecl->atts x))))))
+             ;; BOZO if support for specify blocks or specparam declarations
+             ;; is ever added, we will need to extend this to prohibit them
+             ;; per 27.2.  For now they're not implemented.
+             )
 
-;;              ;; BOZO if support for specify blocks or specparam declarations
-;;              ;; is ever added, we will need to extend this to prohibit them
-;;              ;; per 27.2.  For now they're not implemented.
-;;              )
+          ;; If we get here, this is some other kind of module element.  There
+          ;; aren't any nested generates.  Just keep it.
+          (mv (ok) (cons x newitems)))
 
-;;           ;; If we get here, this is some other kind of module element.  There
-;;           ;; aren't any nested generates.  Just keep it.
-;;           (mv (ok) (cons x newitems)))
+        :vl-genbegin
+        (b* (((vl-genblock x.block))
+             ((unless x.block.name)
+              ;; Unnamed begin/end block gets flattened into the current scope.
+              (vl-genelementlist-flatten x.block.elems t newitems warnings))
+             ;; Named begin/end block gets its own scope, so we don't want to
+             ;; get rid of it; just flatten the elements inside of it
+             ;; (independently of the current newitems).
+             ((mv warnings newelems) (vl-genelementlist-flatten x.block.elems t nil warnings))
+             (new-block              (change-vl-genblock x.block :elems (rev newelems))))
+          (mv (ok) (cons (change-vl-genbegin x :block new-block) newitems)))
 
-;;         :vl-genblock
-;;         (if x.name
-;;             ;; Named begin/end block gets its own scope, so we don't want to
-;;             ;; get rid of it; just flatten the elements inside of it
-;;             ;; (independently of the current newitems).
-;;             (b* (((mv warnings newelems) (vl-genelementlist-flatten x.elems t nil warnings))
-;;                  (new-x                  (change-vl-genblock x :elems newelems)))
-;;               (mv (ok) (cons new-x newitems)))
-;;           ;; Unnamed begin/end block gets flattened into the current scope.
-;;           (vl-genelementlist-flatten x.elems t newitems warnings))
+        :vl-genif
+        (b* (((mv warnings new-then) (vl-genblock-flatten x.then warnings))
+             ((mv warnings new-else) (vl-genblock-flatten x.else warnings))
+             (new-x (change-vl-genif x :then new-then :else new-else)))
+          (mv (ok) (cons new-x newitems)))
 
-;;         :vl-genloop
-;;         ;;
+        :vl-gencase
+        (b* (((mv warnings new-cases) (vl-gencaselist-flatten x.cases warnings))
+             ((mv warnings new-default) (vl-genblock-flatten x.default warnings))
+             (new-x (change-vl-gencase x :default new-default :cases new-cases)))
+          (mv (ok) (cons new-x newitems)))
 
+        :vl-genloop
+        (b* (((mv warnings new-body) (vl-genblock-flatten x.body warnings))
+             (new-x (change-vl-genloop x :body new-body)))
+          (mv (ok) (cons new-x newitems)))
+        
+        :vl-genarray
+        (mv (fatal :type :vl-programming-error
+                   :msg "Didn't expect to see genarray before elaboration: ~a0."
+                   :args (list x))
+            (cons x newitems)))))
 
-
-
-
-
-;; (define vl-genelementlist-flatten
-
-;;   ((x         vl-genelementlist-p "Load items, may contain unnamed begin/end blocks.")
-;;    (gen-p     booleanp            "Are we currently within a generate block?")
-;;    (new-items vl-genelementlist-p "Accumulator for replacement items.")
-;;    (warnings  vl-warninglist-p))
-;;   :returns (mv (warnings vl-warninglist-p)
-;;                (new-x vl-genelementlist-p "Rewritten items."))
-;;   (b* ((x         (vl-genelementlist-fix x))
-;;        (new-items (vl-genelementlist-fix new-items))
-;;        ((when (atom x))
-;;         nil)
-;;        (x1 (car x)))
-
-
-
-
-
-
-;;                          (mv (fatal :type :vl-illegal-portdecl
-;;                                     :msg "~a0:
-;;                          ...) ;; fail, not allowed
-;;                         (:vl-paramdecl ...) ;; convert to localparam if needed
-;;                         (otherwise
-;;                          ;; There are no nested generates in here and it's
-;;                          ;; not any kind of element we have to do anything
-;;                          ;; with, so just keep it unmodified.
-;;                          (mv (ok) (cons x1 new-items)))))
-;;          (
-
-;;     (vl-genelement-case x
-;;       (:vl-genloop
-;;        (b* (((mv new-body warnings) (vl-convert-sub-generate-paramdecls
+  (define vl-gencaselist-flatten ((cases vl-gencaselist-p)
+                                  (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-cases vl-gencaselist-p))
+    :measure (vl-gencaselist-count cases)
+    (b* ((cases (vl-gencaselist-fix cases))
+         ((when (atom cases))
+          (mv (ok) nil))
+         ((cons exprs1 block1) (car cases))
+         ((mv warnings new-block1) (vl-genblock-flatten block1 warnings))
+         ((mv warnings rest) (vl-gencaselist-flatten (cdr cases) warnings)))
+      (mv warnings (cons (cons exprs1 new-block1) rest))))
+  ///
+  (verify-guards vl-genelementlist-flatten
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable tag-reasoning))))))
 
 
 
@@ -1259,8 +1284,10 @@ before we create scopestacks for shadowchecking.</p>")
                          (append (vl-modelementlist->genelements
                                   (vl-parse-temps->paramports x.parse-temps))
                                  (vl-parse-temps->loaditems x.parse-temps))))
+       ((mv warnings rev-flatitems)
+        (vl-genelementlist-flatten x.loaditems nil nil x.warnings))
        ((mv newitems warnings)
-        (vl-make-implicit-wires-main x.loaditems x.ifports ss x.warnings))
+        (vl-make-implicit-wires-main (rev rev-flatitems) x.ifports ss warnings))
        (parse-temps (and x.parse-temps
                          (change-vl-parse-temps x.parse-temps
                                                 :paramports nil
@@ -1286,8 +1313,10 @@ before we create scopestacks for shadowchecking.</p>")
                                   (vl-parse-temps->paramports x.parse-temps))
                                  (vl-parse-temps->loaditems x.parse-temps))))
        (ifports (vl-collect-interface-ports x.ports))
+       ((mv warnings rev-flatitems)
+        (vl-genelementlist-flatten x.loaditems nil nil x.warnings))
        ((mv newitems warnings)
-        (vl-make-implicit-wires-main x.loaditems ifports ss x.warnings))
+        (vl-make-implicit-wires-main (rev rev-flatitems) ifports ss warnings))
        (parse-temps (and x.parse-temps
                          (change-vl-parse-temps x.parse-temps
                                                 :paramports nil

@@ -928,12 +928,13 @@ be very cheap in the single-threaded case.</p>"
        :exec (make-fast-alist (vl-design-scope-package-alist-aux x))))
 
 
+
 (defprod vl-scopeinfo
   ((locals  vl-scopeitem-alist-p "Locally defined names bound to their declarations")
    (imports vl-importresult-alist-p
             "Explicitly imported names bound to import result, i.e. package-name and declaration)")
    (star-packages string-listp "Names of packages imported with *")
-   (name maybe-stringp)
+   (id            vl-maybe-scopeid)
    (scopetype vl-scopetype-p :default ':vl-anonymous-scope))
   :layout :tree
   :tag :vl-scopeinfo)
@@ -972,16 +973,16 @@ be very cheap in the single-threaded case.</p>"
        ;; (:vl-interface :vl-module :vl-design :vl-package
        tag))))
 
-(define vl-scope->name ((x vl-scope-p))
-  :returns (name maybe-stringp :rule-classes :type-prescription)
+(define vl-scope->id ((x vl-scope-p))
+  :returns (name vl-maybe-scopeid-p :rule-classes :type-prescription)
   (b* ((x (vl-scope-fix x)))
     (case (tag x)
       (:vl-interface  (vl-interface->name x))
       (:vl-module     (vl-module->name x))
-      (:vl-genblob    (vl-genblob->name x))
+      (:vl-genblob    (vl-genblob->id x))
       (:vl-blockscope (vl-blockscope->name x))
       (:vl-package    (vl-package->name x))
-      (:vl-scopeinfo  (vl-scopeinfo->name x))
+      (:vl-scopeinfo  (vl-scopeinfo->id x))
       ;; bozo does this make sense?
       (:vl-design     "Design Root")
       ;; Don't know a name for a scopeinfo
@@ -1420,7 +1421,7 @@ be very cheap in the single-threaded case.</p>"
                           (b* (((vl-__type__ scope :quietp t)))
                             (make-vl-scopeinfo
                              :scopetype (vl-scope->scopetype scope)
-                             :name (vl-scope->name scope)
+                             :id (vl-scope->id scope)
                              :locals (make-fast-alist
                                       (vl-__type__-scope-__result__-alist scope nil))
                              (:@ :import
@@ -1782,7 +1783,8 @@ transform that has used scopestacks.</p>"
     (case (tag x)
       (:vl-modinst    (vl-modinst->instname x))
       (:vl-gateinst   (vl-gateinst->name x))
-      (:vl-genbegin   (vl-genblock->name (vl-genbegin->block x)))
+      (:vl-genbegin   (b* ((name (vl-genblock->name (vl-genbegin->block x))))
+                        (and (stringp name) name)))
       (:vl-genarray   (vl-genarray->name x))
       (:vl-genvar     (vl-genvar->name x))
       ((:vl-genloop :vl-genif :vl-gencase :vl-genbase) nil)
@@ -1810,7 +1812,7 @@ named, and the names generated should be unique.</p>"
     :null nil
     :global (hons :root nil)
     :local (b* ((super (vl-scopestack->hashkey x.super)))
-             (hons (or (vl-scope->name x.top)
+             (hons (or (vl-scope->id x.top)
                        (raise "Unnamed scope under ~x0: ~x1~%"
                               (rev super)
                               x.top))
@@ -1825,11 +1827,20 @@ named, and the names generated should be unique.</p>"
     :null   (str::revappend-chars ":null" rchars)
     :global (str::revappend-chars "$root" rchars)
     :local  (b* ((rchars (vl-scopestack->path-aux x.super rchars))
-                 (rchars (cons #\. rchars))
-                 (name1 (or (vl-scope->name x.top)
-                            "<unnamed " (symbol-name (tag x.top)) ">"))
-                 (rchars (str::revappend-chars name1 rchars)))
-              rchars)))
+                 (id (vl-scope->id x.top)))
+              (cond ((stringp id)
+                     (b* ((rchars (cons #\. rchars)))
+                       (str::revappend-chars id rchars)))
+                    ((integerp id)
+                     (b* ((rchars (cons #\[ rchars))
+                          (rchars (if (< id 0) (cons #\- rchars) rchars))
+                          (rchars (str::revappend-natchars (abs id) rchars))
+                          (rchars (cons #\] rchars)))
+                       rchars))
+                    (t ;; (not id)
+                     (str::revappend-chars
+                      (cat "<unnamed " (symbol-name (vl-scope->scopetype x.top)) ">")
+                      rchars))))))
 
 (define vl-scopestack->path
   :short "Debugging aide: get the current path indicated by a scopestack."
@@ -2103,3 +2114,17 @@ way.</p>"
              (member name (vl-scope-namespace x design)))))
 
 (defoption vl-maybe-scope vl-scope)
+
+#||
+
+(trace$ #!vl (vl-scopestack-find-item/context
+              :entry (list 'vl-scopestack-find-item/context
+                           name (vl-scopestack->hashkey name))
+              :exit (b* (((list ?item ?ss ?pkg) values))
+                      (list 'vl-scopestack-find-item/context
+                            (with-local-ps (vl-cw "~a0" item))
+                            (vl-scopestack->hashkey ss)
+                            pkg))))
+
+
+||#

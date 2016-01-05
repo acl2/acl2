@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-12-23")
+  "VL Syntax 2016-01-04.0")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -2117,21 +2117,18 @@ recognized by @(call vl-gatetype-p).</p>")
              ((:rewrite)
               (:type-prescription
                :corollary
-               ;; BOZO may not want to force this
-               (implies (force (vl-gateinst-p x))
-                        (and (symbolp (vl-gateinst->type x))
-                             (not (equal (vl-gateinst->type x) t))
-                             (not (equal (vl-gateinst->type x) nil)))))))
+               (and (symbolp (vl-gateinst->type x))
+                    (not (equal (vl-gateinst->type x) t))
+                    (not (equal (vl-gateinst->type x) nil))))))
 
    (name     maybe-stringp
              :rule-classes
              ((:type-prescription)
               (:rewrite :corollary
-                        (implies (force (vl-gateinst-p x))
-                                 (equal (stringp (vl-gateinst->name x))
-                                        (if (vl-gateinst->name x)
-                                            t
-                                          nil)))))
+               (equal (stringp (vl-gateinst->name x))
+                      (if (vl-gateinst->name x)
+                          t
+                        nil))))
              "The name of this gate instance, or @('nil') if it has no name;
               see also the @(see addnames) transform.")
 
@@ -3970,6 +3967,62 @@ initially kept in a big, mixed list.</p>"
 
 
 
+(defxdoc vl-scopeid
+  :parents (vl-scopestack)
+  :short "Type of the name of a scope level -- either a string, in the common cases
+          of modules, interfaces, packages, single generate constructs, etc., or
+          an integer, for the special case of a generate block produced by a for
+          loop.")
+
+(define vl-scopeid-p (x)
+  :parents (vl-scopeid)
+  :short "Recognizer for scope names."
+  :returns bool
+  (or (stringp x)
+      (integerp x))
+  ///
+
+  (defthm vl-scopeid-compound-recognizer
+    (equal (vl-scopeid-p x)
+           (or (stringp x) (integerp x)))
+    :rule-classes :compound-recognizer))
+
+(define vl-scopeid-fix ((x vl-scopeid-p))
+  :parents (vl-scopeid)
+  :short "Fixing function for @(see vl-scopeid)s."
+  :returns (name vl-scopeid-p)
+  :inline t
+  (mbe :logic (if (vl-scopeid-p x)
+                  x
+                "")
+       :exec x)
+  ///
+  (defthm vl-scopeid-fix-when-vl-scopeid-p
+    (implies (vl-scopeid-p x)
+             (equal (vl-scopeid-fix x) x))))
+
+(defsection vl-scopeid-equiv
+  :parents (vl-scopeid)
+  :short "Equivalence relation for @(see vl-scopeid)s."
+  (deffixtype vl-scopeid
+    :pred vl-scopeid-p
+    :fix vl-scopeid-fix
+    :equiv vl-scopeid-equiv
+    :define t
+    :forward t))
+
+(defoption vl-maybe-scopeid vl-scopeid
+  ///
+  (defthm vl-maybe-scopeid-compound-recognizer
+    (equal (vl-maybe-scopeid-p x)
+           (or (not x) (stringp x) (integerp x)))
+    :hints(("Goal" :in-theory (enable vl-maybe-scopeid-p
+                                      vl-scopeid-p)))
+    :rule-classes :compound-recognizer))
+
+
+
+
 (defsection generates
   :parents nil
 
@@ -4053,6 +4106,7 @@ initially kept in a big, mixed list.</p>"
        :layout :tree
        :short "A loop generate construct, before elaboration."
        ((var        stringp       "Iterator variable for this generate loop.")
+        (genvarp    booleanp      "Is the variable declared using the genvar keyword, locally")
         (initval    vl-expr-p     "Initial value of the variable.")
         (continue   vl-expr-p     "Continue the loop until this expression is false.")
         (nextval    vl-expr-p     "Next value expression for the variable.")
@@ -4066,10 +4120,10 @@ initially kept in a big, mixed list.</p>"
        :base-name vl-genarray
        :layout :tree
        :short "A loop generate construct, after elaboration."
-       ((name      maybe-stringp          "Name of the block array, if named.  BOZO are these really ever unnamed?")
-        (var       stringp                "Iterator variable name.")
-        (blocks    vl-genarrayblocklist-p "Blocks produced by the loop")
-        (loc       vl-location-p          "Where the loop came from in the Verilog source code."))
+       ((name      maybe-stringp     "Name of the block array, if named.")
+        (var       stringp           "Iterator variable name.")
+        (blocks    vl-genblocklist-p "Blocks produced by the loop")
+        (loc       vl-location-p     "Where the loop came from in the Verilog source code."))
        :long "<p>This is a post-elaboration representation of a generate for
               loop, where the loop itself is gone and we instead have something
               like a list of begin/end blocks for each value that @('var') took
@@ -4087,7 +4141,7 @@ initially kept in a big, mixed list.</p>"
     (defprod vl-genblock
       :layout :tree
       :short "Representation of an explicit or implicit @('begin/end') generate block."
-      ((name      maybe-stringp       "The name of the block, if named.")
+      ((name      vl-maybe-scopeid-p  "The name of the block, if named.")
        (elems     vl-genelementlist-p "Elements within the block.")
        (loc       vl-location         "Location of the block in the Verilog source code."))
       :measure (two-nats-measure (acl2-count x) 3)
@@ -4109,16 +4163,11 @@ initially kept in a big, mixed list.</p>"
       :true-listp t
       :measure (two-nats-measure (acl2-count x) 10))
 
-    (fty::deflist vl-genarrayblocklist
-      :elt-type vl-genarrayblock
+    (fty::deflist vl-genblocklist
+      :elt-type vl-genblock
       :true-listp t
       :elementp-of-nil nil
       :measure (two-nats-measure (acl2-count x) 1))
-
-    (defprod vl-genarrayblock
-      ((index integerp "index of the iterator variable for this block")
-       (body  vl-genblock-p))
-      :measure (two-nats-measure (acl2-count x) 5))
 
     :enable-rules (acl2::o-p-of-two-nats-measure
                    acl2::o<-of-two-nats-measure

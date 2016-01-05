@@ -64,7 +64,14 @@ hassle.</p>
    :vl-package
    :vl-genblock
    :vl-genarrayblock
+   :vl-genarray
    :vl-anonymous-scope))
+
+
+
+
+
+
 
 (make-event
  `(progn
@@ -85,8 +92,8 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
        (generates vl-genelementlist-p)
        (ports     vl-portlist-p)
        (scopetype vl-scopetype-p :default :vl-anonymous-scope)
-       (name      maybe-stringp :rule-classes :type-prescription
-                  "Just a debugging aide, not intended to be semantically meaningful."))
+       (id        vl-maybe-scopeid :rule-classes :type-prescription
+                  "Name of the subscope, or index in the case of a genarrayblock."))
       :extra-binder-names (ifports)
       :tag :vl-genblob
       :layout :tree)
@@ -102,6 +109,7 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
                                     :in-theory (disable (:d ,fnname)))))
                                ((equal pool-lst '(1))
                                 (std::expand-calls-computed-hint clause (list fnname)))))))))
+
 
     ;; (local (std::set-returnspec-default-hints
     ;;         ((my-returnspec-default-hint 'fnname acl2::id acl2::clause world))))
@@ -122,7 +130,7 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
       (b* (((when (atom x))
             (mv ,@(project-over-modelement-types
                    '(rev (vl-__type__list-fix        __elts__)))
-                (vl-genelementlist-fix generates)))
+                (rev (vl-genelementlist-fix generates))))
            (xf (car x)))
         (vl-genelement-case xf
           :vl-genbase
@@ -153,12 +161,69 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
                                (:rules-of-class :type-prescription :here)
                                ))))))
 
+    (make-event
+     (let ((genelems-call `(vl-sort-genelements-aux
+                            x ,@(project-over-modelement-types '__elts__)
+                            generates)))
+       `(progn
+          ,@(project-over-modelement-types
+             `(define vl-genelementlist->__elts__ ((x vl-genelementlist-p))
+                :returns (__elts__ vl-__type__list-p)
+                (b* (((when (atom x)) nil)
+                     (x1 (car x)))
+                  (vl-genelement-case x1
+                    :vl-genbase
+                    (if (eq (tag x1.item) :vl-__type__)
+                        (cons x1.item (vl-genelementlist->__elts__ (cdr x)))
+                      (vl-genelementlist->__elts__ (cdr x)))
+                    :otherwise (vl-genelementlist->__elts__ (cdr x))))
+                ///
+                (make-event
+                 (let ((n (- (len *vl-modelement-typenames*)
+                             (len (member '__type__ *vl-modelement-typenames*)))))
+                   `(defthm vl-sort-genelements-aux-is-vl-genelementlist->__elts__
+                      (equal (mv-nth ,n ,',genelems-call)
+                             (append (rev (vl-__type__list-fix __elts__))
+                                     (vl-genelementlist->__elts__ x)))
+                      :hints(("Goal" :induct ,',genelems-call
+                              :expand (,',genelems-call)
+                              :in-theory (e/d ((:i vl-sort-genelements-aux))
+                                              (acl2::rev-when-not-consp
+                                               append
+                                               acl2::consp-of-rev
+                                               tag-reasoning)
+                                              (vl-__type__-p-by-tag-when-vl-modelement-p)))))))))
+    
+          (define vl-genelementlist->generates ((x vl-genelementlist-p))
+            :returns (generates vl-genelementlist-p)
+            (b* (((when (atom x)) nil)
+                 (x1 (vl-genelement-fix (car x))))
+              (vl-genelement-case x1
+                :vl-genbase
+                (vl-genelementlist->generates (cdr x))
+                :otherwise (cons x1 (vl-genelementlist->generates (cdr x)))))
+            ///
+            (make-event
+                 (let ((n (len *vl-modelement-typenames*)))
+                   `(defthm vl-sort-genelements-aux-is-vl-genelementlist->generates
+                      (equal (mv-nth ,n ,',genelems-call)
+                             (append (rev (vl-genelementlist-fix generates))
+                                     (vl-genelementlist->generates x)))
+                      :hints(("Goal" :induct ,',genelems-call
+                              :expand (,',genelems-call)
+                              :in-theory (e/d ((:i vl-sort-genelements-aux))
+                                              (acl2::rev-when-not-consp
+                                               append
+                                               acl2::consp-of-rev
+                                               tag-reasoning)))))))))))
+
+
     (define vl-sort-genelements
       :parents (genblob)
       :short "Sort a @(see vl-genelementlist-p) to create a @(see vl-genblob)."
       ((x vl-genelementlist-p)
        &key
-       ((name maybe-stringp) 'nil)
+       ((id vl-maybe-scopeid-p) 'nil)
        ((scopetype vl-scopetype-p) ':vl-anonymous-scope))
       :returns (blob vl-genblob-p)
       (b* (((mv ,@(project-over-modelement-types '__elts__) generates)
@@ -166,7 +231,7 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
         (make-vl-genblob
          ,@(append-over-modelement-types '(:__elts__ __elts__))
          :generates generates
-         :name name
+         :id id
          :scopetype scopetype)))))
 
 
@@ -219,7 +284,7 @@ fields can be reinstalled into the module using @(see vl-genblob->module).</p>"
 
     (b* (((vl-module x)))
       (make-vl-genblob
-       :name x.name
+       :id x.name
        :scopetype :vl-module
        ,@(template-append
           '(:__elts__ x.__elts__)
@@ -241,7 +306,7 @@ fields can be reinstalled into the interface using @(see vl-genblob->interface).
 
     (b* (((vl-interface x)))
       (make-vl-genblob
-       :name x.name
+       :id x.name
        :scopetype :vl-interface
        ,@(template-append
           '(:__elts__ x.__elts__)
@@ -272,7 +337,7 @@ fields can be reinstalled into the package using @(see vl-genblob->package).</p>
 
     (b* (((vl-package x)))
       (make-vl-genblob
-       :name x.name
+       :id x.name
        :scopetype :vl-package
        ,@(template-append
           '(:__elts__ x.__elts__)
@@ -408,8 +473,18 @@ etc., are overwritten with whatever is in the genblob.</p>"
        x.generates nil))))
 
 
+(defthm vl-genelementlist-count-of-append
+  (equal (vl-genelementlist-count (append x y))
+         (+ -1 (vl-genelementlist-count x)
+            (vl-genelementlist-count y)))
+  :hints(("Goal" :in-theory (enable vl-genelementlist-count))))
 
-
+(defthm vl-genelementlist-count-of-rev
+  (equal (vl-genelementlist-count (rev x))
+         (vl-genelementlist-count x))
+  :hints(("Goal" :induct (len x)
+          :expand ((vl-genelementlist-count x) (rev x)
+                   (:free (x y) (vl-genelementlist-count (cons x y)))))))
 
 (make-event
  `(defthm vl-genelementlist-count-of-vl-sort-genelements-aux
@@ -428,10 +503,19 @@ etc., are overwritten with whatever is in the genblob.</p>"
                       x ,@(project-over-modelement-types '__elts__) generates))))
     :rule-classes :linear))
 
+(defthm vl-genelementlist-count-of-vl-genelementlist-generates
+  (<= (vl-genelementlist-count (vl-genelementlist->generates x))
+      (vl-genelementlist-count x))
+  :hints (("goal" :in-theory (enable vl-genelementlist->generates)
+           :induct (len x)
+           :expand ((vl-genelementlist-count x)
+                    (:free (x y) (vl-genelementlist-count (cons x y))))))
+  :rule-classes :linear)
+
 (defthm vl-genelementlist-count-of-vl-sort-genelements
   (<= (vl-genelementlist-count
        (vl-genblob->generates
-        (vl-sort-genelements x :name name :scopetype type)))
+        (vl-sort-genelements x :id name :scopetype type)))
       (vl-genelementlist-count x))
   :hints(("Goal" :in-theory (enable vl-sort-genelements)))
   :rule-classes :linear)
@@ -475,7 +559,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
       (implies (syntaxp (or (not (equal name ''nil))
                             (not (equal scopetype '':vl-anonymous-scope))))
                (equal (vl-genblob-count (vl-sort-genelements x
-                                                             :name name
+                                                             :id name
                                                              :scopetype scopetype))
                       (vl-genblob-count (vl-sort-genelements x))))
       :hints (("goal"
@@ -513,7 +597,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
     ///
     (defret vl-genblob-genblock-count-greater-than-sorted
       (< (vl-genblob-count (vl-sort-genelements (vl-genblock->elems x)
-                                                :name name
+                                                :id name
                                                 :scopetype type))
          (vl-genblob-genblock-count x))
       :rule-classes :linear))
@@ -531,7 +615,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
                      (vl-genblob-genblock-count x.default)
                      (vl-genblob-gencaselist-count x.cases))
       :vl-genloop (+ 2 (vl-genblob-genblock-count x.body))
-      :vl-genarray (+ 2 (vl-genblob-genarrayblocklist-count x.blocks)))
+      :vl-genarray (+ 2 (vl-genblob-genblocklist-count x.blocks)))
     ///
     (defret vl-genblob-generate-count-greater-than-genbegin-block
       (implies (vl-genelement-case x :vl-genbegin)
@@ -540,7 +624,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
       :rule-classes :linear)
     (defret vl-genblob-generate-count-greater-than-genblockarray-blocks
       (implies (vl-genelement-case x :vl-genarray)
-               (< (vl-genblob-genarrayblocklist-count (vl-genarray->blocks x))
+               (< (vl-genblob-genblocklist-count (vl-genarray->blocks x))
                   count))
       :rule-classes :linear)
     (defret vl-genblob-generate-count-greater-than-genif-blocks
@@ -606,38 +690,28 @@ etc., are overwritten with whatever is in the genblob.</p>"
          count)
       :rule-classes :linear))
 
-  (define vl-genblob-genarrayblocklist-count ((x vl-genarrayblocklist-p))
-    :measure (two-nats-measure (vl-genarrayblocklist-count x) 10)
+  (define vl-genblob-genblocklist-count ((x vl-genblocklist-p))
+    :measure (two-nats-measure (vl-genblocklist-count x) 10)
     :returns (count posp :rule-classes :type-prescription)
     (if (atom x)
         1
       (+ 1
-         (vl-genblob-genarrayblock-count (car x))
-         (vl-genblob-genarrayblocklist-count (cdr x))))
+         (vl-genblob-genblock-count (car x))
+         (vl-genblob-genblocklist-count (cdr x))))
     ///
-    (defret vl-genblob-genarrayblocklist-count-greater-than-first
+    (defret vl-genblob-genblocklist-count-greater-than-first
       (implies (consp x)
-               (< (vl-genblob-genarrayblock-count (car x))
+               (< (vl-genblob-genblock-count (car x))
                   count))
       :rule-classes :linear)
-    (defret vl-genblob-genarrayblocklist-count-gte-rest
-      (<= (vl-genblob-genarrayblocklist-count (cdr x))
+    (defret vl-genblob-genblocklist-count-gte-rest
+      (<= (vl-genblob-genblocklist-count (cdr x))
           count)
       :rule-classes :linear)
-    (defret vl-genblob-genarrayblocklist-count-greater-than-rest
+    (defret vl-genblob-genblocklist-count-greater-than-rest
       (implies (consp x)
-               (< (vl-genblob-genarrayblocklist-count (cdr x))
+               (< (vl-genblob-genblocklist-count (cdr x))
                   count))
-      :rule-classes :linear))
-
-  (define vl-genblob-genarrayblock-count ((x vl-genarrayblock-p))
-    :measure (two-nats-measure (vl-genarrayblock-count x) 15)
-    :returns (count posp :rule-classes :type-prescription)
-    (+ 1 (vl-genblob-genblock-count (vl-genarrayblock->body x)))
-    ///
-    (defret vl-genblob-genarrayblock-count-greater-than-body
-      (< (vl-genblob-genblock-count (vl-genarrayblock->body x))
-         count)
       :rule-classes :linear)))
 
 ;; Example def-genblob-transform:
@@ -686,8 +760,6 @@ etc., are overwritten with whatever is in the genblob.</p>"
     :return-from-genblock-bindings
     :genarray-bindings
     :return-from-genarray-bindings
-    :genarrayblock-bindings
-    :return-from-genarrayblock-bindings
     :genif-bindings
     :return-from-genif-bindings
     :gencase-bindings
@@ -758,8 +830,6 @@ etc., are overwritten with whatever is in the genblob.</p>"
                  return-from-genblock-bindings
                  genarray-bindings
                  return-from-genarray-bindings
-                 genarrayblock-bindings
-                 return-from-genarrayblock-bindings
                  genif-bindings
                  return-from-genif-bindings
                  gencase-bindings
@@ -798,8 +868,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
 
        (apply-to-generate          (std::mksym name '-generate))
        (apply-to-genblock          (std::mksym name '-genblock))
-       (apply-to-genarrayblock     (std::mksym name '-genarrayblock))
-       (apply-to-genarrayblocklist (std::mksym name '-genarrayblocklist))
+       (apply-to-genblocklist (std::mksym name '-genblocklist))
        (apply-to-gencaselist       (std::mksym name '-gencaselist))
 
        (return-names-ordered (append extra-returns accumulators))
@@ -860,7 +929,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
               ((maybe-mv ,@return-names ,@(and new-x '(new-blob)))
                (,name (vl-sort-genelements x.elems
                                            :scopetype :vl-genblock
-                                           :name x.name)
+                                           :id x.name)
                       . ,formal-names))
               ,@return-from-genblock-bindings)
            (maybe-mv ,@return-names
@@ -922,7 +991,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
            :vl-genarray
            (b* (,@genarray-bindings
                 ((maybe-mv ,@return-names ,@(and new-x '(new-blocks)))
-                 (,apply-to-genarrayblocklist x.blocks . ,formal-names))
+                 (,apply-to-genblocklist x.blocks . ,formal-names))
                 ,@return-from-genarray-bindings)
              (maybe-mv ,@return-names
                        ,@(and new-x '((list (change-vl-genarray x :blocks new-blocks))))))
@@ -976,39 +1045,25 @@ etc., are overwritten with whatever is in the genblob.</p>"
        ;;        ,@return-from-elementlist-bindings)
        ;;     (maybe-mv ,@return-names ,@(and new-x '((vl-genblob->elems new-blob x))))))
 
-       (define ,apply-to-genarrayblocklist ((x vl-genarrayblocklist-p)
+       (define ,apply-to-genblocklist ((x vl-genblocklist-p)
                                             . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
-                                  ,@(and new-x '((new-x vl-genarrayblocklist-p)))))
-         :measure (vl-genblob-genarrayblocklist-count x)
+                                  ,@(and new-x '((new-x vl-genblocklist-p)))))
+         :measure (vl-genblob-genblocklist-count x)
          ,@global-extra-decls
          (b* (((when (atom x))
                (b* (,@acc-fix-bindings
                     ,@empty-list-bindings)
                  (maybe-mv ,@return-names ,@(and new-x '(nil)))))
               ((maybe-mv ,@return-names1 ,@(and new-x '(first)))
-               (,apply-to-genarrayblock (car x) . ,formal-names))
+               (,apply-to-genblock (car x) . ,formal-names))
               ((maybe-mv ,@return-names2 ,@(and new-x '(rest)))
-               (,apply-to-genarrayblocklist (cdr x) . ,formal-names))
+               (,apply-to-genblocklist (cdr x) . ,formal-names))
               . ,combine-bindings)
            (maybe-mv ,@return-names ,@(and new-x '((cons first rest))))))
-
-       (define ,apply-to-genarrayblock ((x vl-genarrayblock-p)
-                                        . ,raw-formals)
-         :returns ,(maybe-mv-fn `(,@returns
-                                  ,@(and new-x '((new-x vl-genarrayblock-p)))))
-         :measure (vl-genblob-genarrayblock-count x)
-         ,@global-extra-decls
-         (b* (((vl-genarrayblock x))
-              ,@genarrayblock-bindings
-              ((maybe-mv ,@return-names ,@(and new-x '(new-body)))
-               (,apply-to-genblock x.body . ,formal-names))
-              ,@return-from-genarrayblock-bindings)
-           (maybe-mv ,@return-names
-                     ,@(and new-x '((change-vl-genarrayblock x :body new-body))))))
        ///
-       (local (in-theory (disable ,apply-to-genarrayblock
-                                ,apply-to-genarrayblocklist
+       (local (in-theory (disable ,apply-to-genblock
+                                ,apply-to-genblocklist
                                 ,apply-to-gencaselist
                                 ;;,apply-to-elementlist
                                 ,apply-to-generate
@@ -1018,9 +1073,9 @@ etc., are overwritten with whatever is in the genblob.</p>"
        (deffixequiv-mutual ,name
          :hints ((and stable-under-simplificationp
                       (flag::expand-calls-computed-hint
-                       clause '(,apply-to-genarrayblock
+                       clause '(,apply-to-genblock
                                 ,apply-to-gencaselist
-                                ,apply-to-genarrayblocklist
+                                ,apply-to-genblocklist
                                 ;;,apply-to-elementlist
                                 ,apply-to-generate
                                 ,apply-to-generates

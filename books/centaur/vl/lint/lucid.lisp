@@ -468,10 +468,12 @@ created when we process their packages, etc.</p>"
 (local (xdoc::set-default-parents vl-pps-lucidstate))
 
 (define vl-pp-scope-name ((x vl-scope-p) &key (ps 'ps))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable vl-printable-p))))
   (b* ((x    (vl-scope-fix x))
-       (name (vl-scope->name x)))
+       (name (vl-scope->id x)))
     (if name
-        (vl-print-str name)
+        (vl-print name)
       (vl-ps-seq (vl-print "<unnamed ")
                  (vl-print-str (symbol-name (tag x)))
                  (vl-print ">")))))
@@ -1998,7 +2000,8 @@ created when we process their packages, etc.</p>"
     :global nil
     :local
     (or (vl-scopestack-top-level-name ss.super)
-        (vl-scope->name ss.top))))
+        (let ((id (vl-scope->id ss.top)))
+          (and (stringp id) id)))))
 
 (define vl-lucid-some-solo-occp ((x vl-lucidocclist-p))
   :returns (solop booleanp :rule-classes :type-prescription)

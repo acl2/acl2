@@ -321,32 +321,26 @@
 (fty::defvisitor vl-genelement-type-disambiguate
   :template type-disambiguate
   :type vl-genelement
-  :renames ((vl-genelement vl-genelement-type-disambiguate-aux)
-            (vl-genarrayblock vl-genarrayblock-type-disambiguate-aux))
-  :type-fns ((vl-genelement vl-genelement-type-disambiguate)
-             (vl-genarrayblock vl-genarrayblock-type-disambiguate))
+  :renames ((vl-genblock vl-genblock-type-disambiguate-aux))
+  :type-fns ((vl-genblock vl-genblock-type-disambiguate))
   :measure (two-nats-measure :count 0)
 
-  (define vl-genelement-type-disambiguate ((x vl-genelement-p)
-                                           (ss vl-scopestack-p))
-
+  (define vl-genblock-type-disambiguate ((x vl-genblock-p)
+                                         (ss vl-scopestack-p))
+    
     :returns (mv (warnings vl-warninglist-p)
-                 (new-x vl-genelement-p))
-    :measure (two-nats-measure (vl-genelement-count x) 1)
-    (b* ((ss (vl-genelement-case x
-               ;; BOZO are we doing this right for generate loops?
-               :vl-genbegin (vl-scopestack-push (vl-sort-genelements (vl-genblock->elems x.block)) ss)
-               :otherwise ss)))
-      (vl-genelement-type-disambiguate-aux x ss)))
-
-  (define vl-genarrayblock-type-disambiguate ((x vl-genarrayblock-p)
-                                           (ss vl-scopestack-p))
-
-    :returns (mv (warnings vl-warninglist-p)
-                 (new-x vl-genarrayblock-p))
-    :measure (two-nats-measure (vl-genarrayblock-count x) 1)
-    (b* ((ss (vl-scopestack-push (vl-sort-genelements (vl-genblock->elems (vl-genarrayblock->body x))) ss)))
-      (vl-genarrayblock-type-disambiguate-aux x ss))))
+                 (new-x vl-genblock-p))
+    :measure (two-nats-measure (vl-genblock-count x) 1)
+    ;; BOZO This isn't following the scoping discipline for genarrays but we
+    ;; don't expect them to exist yet when we run this transform.  To correct
+    ;; this we'd just add a special case for genarrays (customize
+    ;; vl-genelement-type-disambiguate) that pushes the scope like in
+    ;; vl-follow-hidexpr-aux.
+    (b* ((ss (vl-scopestack-push (vl-sort-genelements (vl-genblock->elems x)
+                                                      :scopetype :vl-genblock
+                                                      :id (vl-genblock->name x))
+                                 ss)))
+      (vl-genblock-type-disambiguate-aux x ss))))
 
 (fty::defvisitors vl-module-type-disambiguate-deps
   :template type-disambiguate

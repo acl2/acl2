@@ -177,18 +177,23 @@
 
    (local (in-theory (enable len)))))
 
-(define vl-make-nameclash-warning ((scopename stringp)
+(define vl-make-nameclash-warning ((scopename vl-maybe-scopeid-p)
                                    (clashname stringp "Some name that has a clash in this scope.")
                                    (locals    vl-scopeitem-alist-p)
                                    (imports   vl-importresult-alist-p)
                                    (warnings  vl-warninglist-p))
   :returns (new-warning vl-warninglist-p)
-  (fatal :type :vl-name-clash
-         :msg "In ~s0: ~s1"
-         :args (list (string-fix scopename)
-                     (vl-nameclash-warning-summary clashname locals imports))))
+  (b* ((scopename (vl-maybe-scopeid-fix scopename)))
+    (fatal :type :vl-name-clash
+           :msg "In ~@0: ~s1"
+           :args (list (cond ((stringp scopename) (vmsg scopename))
+                             ((integerp scopename)
+                              ;; this shouldn't happen
+                              (vmsg "generate loop ~x0" scopename))
+                             (t (vmsg "Unnamed scope")))
+                       (vl-nameclash-warning-summary clashname locals imports)))))
 
-(define vl-make-nameclash-warnings ((scopename  stringp)
+(define vl-make-nameclash-warnings ((scopename  vl-maybe-scopeid-p)
                                     (clashnames string-listp "The names that have clashes in this scope.")
                                     (locals     vl-scopeitem-alist-p)
                                     (imports    vl-importresult-alist-p)
@@ -235,7 +240,7 @@
         (ok)))
     (vl-make-nameclash-warnings
      ;; BOZO consider working harder to provide "Unnamed scope at filename:line..." or similar
-     (or (vl-scope->name x) "Unnamed scope")
+     (vl-scope->id x)
      dupes info.locals info.imports warnings))
 
   :prepwork

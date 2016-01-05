@@ -70,7 +70,9 @@ inside if, case, or loop generate forms.</p>")
    (vl-modinst       (instname (lambda (x namedb) (maybe-add-name x "unnamed_modinst" namedb))))
    (vl-gateinst      (name     (lambda (x namedb) (maybe-add-name x "unnamed_gateinst" namedb))))
    (vl-blockstmt     (name     (lambda (x namedb) (maybe-add-name x "unnamed_blockstmt" namedb))))
-   (vl-genblock      (name     (lambda (x namedb) (maybe-add-name x "unnamed_genblock" namedb))))
+   (vl-genblock      (name     (lambda (x namedb) (if x
+                                                      (mv x namedb)
+                                                    (maybe-add-name x "unnamed_genblock" namedb)))))
    (vl-genarray      (name     (lambda (x namedb) (maybe-add-name x "unnamed_genarray" namedb))))))
 
 

@@ -65,6 +65,7 @@ gen1h.v -- conditional generate block name conflicts with wire declaration
 gen1i.v -- case generate block name conflicts with wire declaration
 gen1j.v -- begin/end generate block name conflicts with wire declaration
 gen1k.v -- default generate block name conflicts with wire declaration
+gen1l.v -- named generate block that won't exist after elaboration conflicts with wire decl
 gen2.v  -- continuous assignment to genvar
 gen2b.v -- continuous assignment from genvar
 gen3.v  -- bare reference to wire declared in a named generate block's scope

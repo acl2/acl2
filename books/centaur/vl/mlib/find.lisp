@@ -260,7 +260,7 @@ the number of gate instances in the list.</p>"
            (rev (vl-gateinstlist->names x)))))
 
 (define vl-genelement->blockname ((x vl-genelement-p))
-  :returns (blockname maybe-stringp)
+  :returns (blockname vl-maybe-scopeid-p)
   :parents (vl-genelement-p)
   (vl-genelement-case x
     ;; BOZO should we be harvesting names from other kinds of generates?
@@ -273,7 +273,7 @@ the number of gate instances in the list.</p>"
   (b* (((when (atom x))
         (nrev-fix nrev))
        (name (vl-genelement->blockname (car x)))
-       (nrev (if name
+       (nrev (if (stringp name)
                  (nrev-push name nrev)
                nrev)))
     (vl-genelementlist->blocknames-nrev (cdr x) nrev)))
@@ -287,7 +287,7 @@ may be shorter than the number of elements in the list.</p>"
   :verify-guards nil
   :returns (names string-listp)
   (mbe :logic (if (consp x)
-                  (if (vl-genelement->blockname (car x))
+                  (if (stringp (vl-genelement->blockname (car x)))
                       (cons (vl-genelement->blockname (car x))
                             (vl-genelementlist->blocknames (cdr x)))
                     (vl-genelementlist->blocknames (cdr x)))
@@ -308,7 +308,7 @@ may be shorter than the number of elements in the list.</p>"
 
   (defthm vl-genelementlist->blocknames-of-cons
     (equal (vl-genelementlist->blocknames (cons a x))
-           (if (vl-genelement->blockname a)
+           (if (stringp (vl-genelement->blockname a))
                (cons (vl-genelement->blockname a)
                      (vl-genelementlist->blocknames x))
              (vl-genelementlist->blocknames x))))
@@ -491,7 +491,7 @@ fast alists binding names to items that can be used for this purpose.</p>")
            (b* (((when (atom x))
                  acc)
                 (name (hons-copy (__element->name__ (car x))))
-                ((when name)
+                ((when (stringp name))
                  (cons (cons name (vl-__type__-fix (car x)))
                        (vl-__type__list-alist (cdr x) acc))))
              (vl-__type__list-alist (cdr x) acc)))

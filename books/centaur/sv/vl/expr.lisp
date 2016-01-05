@@ -537,20 +537,25 @@ e.g. bitselects, partselects, and nonconstant array selects.</p>"
       (b* ((type (vl-scope->scopetype ss.top))
            ((mv err incr)
             (case type
-              ;; These are the two expected cases.  Genblocks are one-to-one
-              ;; with svex module nestings.  Genarrayblocks have an additional
-              ;; nesting level in svex-world: one level for the whole array,
-              ;; one level for the individual blocks.
-              (:vl-genblock (mv nil 1))
-              (:vl-genarrayblock (mv nil 1))
-              (:vl-fundecl         (mv nil 1))
-              (:vl-anonymous-scope (mv nil 1))
-              (:vl-blockstmt (mv nil 0))
-              (:vl-forstmt (mv nil 0))
-              ;; Perhaps someday we'll need to add something about
-              ;; statememts/functions/tasks here, but for the moment all that
-              ;; is taken care of elsewhere (and complicated scoping stuff
-              ;; isn't allowed in those contexts).
+              ;; This says that each generate block and generate array
+              ;; correspond to a single nesting of scopes in terms of SV
+              ;; modules, and that blockstmt and forstmt scopes don't
+              ;; correspond to additional nesting levels.  Basically, for the
+              ;; former, we need to be sure to keep the scopes corresponding,
+              ;; whereas for the latter the vl-svstmt transform takes care of
+              ;; scoping and basically gets rid of local variables, so there
+              ;; are no corresponding scopes in SV world.
+              (:vl-genblock        (mv nil 1))
+              (:vl-genarrayblock   (mv nil 1))
+              (:vl-genarray        (mv nil 1))
+              (:vl-blockstmt       (mv nil 0))
+              (:vl-forstmt         (mv nil 0))
+
+              ;; bozo -- this was 1 but I think it should be 0 for the same
+              ;; reasons as blockstmt/forstmt.
+              (:vl-fundecl         (mv nil 0))
+
+              ;; (:vl-anonymous-scope (mv nil 1))
               (otherwise
                (mv (vmsg "Tried to go ~x0 level~s1 up through a scope of type ~x2"
                          vl-levels (if (eql vl-levels 1) "" "s") type)
@@ -596,10 +601,14 @@ module, you might just be inside the block within the module (so only two
 levels deep).  In translating between these we assume that VL scopes basically
 consist of a single global scope, the single module scope, and some number of
 nested block scopes.  In translating to svex, we require that the number of
-levels up only includes these nested block scopes.  We also need to compensate
-for a peculiarity: in VL, only one level of scopestack is used for a generate
-array, but in svex there's a scope nested around all of the entries in the
-array as well.  Vl-upscope-to-svex-upscope accounts for these issues.</p>
+levels up only includes these nested block scopes.  We also need to be careful
+to be consistent with our scoping conventions -- most particularly, a generate
+array (the elaborated result of a generate loop) has a level of scoping for the
+array itself, and an additional one for each of the blocks in the array (the
+replicated loop bodies).  On the other hand, statement scopes are handled by
+the vl-svstmt transform which eliminates local variables, so subscopes within
+statements are not related to svex scopes. Vl-upscope-to-svex-upscope accounts
+for these issues.</p>
 
 <p>For package and module contexts, we produce an error because variables in
 those scopes aren't yet supported.  We also return an address, however, because

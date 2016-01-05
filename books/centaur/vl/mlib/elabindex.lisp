@@ -166,6 +166,8 @@ recursively, which we don't support for now anyway.)</p>")
 (deftagsum vl-elabkey
   (:package ((name stringp)) :hons t)
   (:item    ((name stringp)) :hons t)
+  (:index   ((val  integerp)) :hons t
+   :short "Index for a generate loop subblock.")
   (:def     ((name stringp)) :hons t)
   :layout :tree)
 
@@ -276,6 +278,10 @@ recursively, which we don't support for now anyway.)</p>")
   :returns (new-x vl-elabscope-p)
   (vl-elabscope-update-subscope (vl-elabkey-item name) val x))
 
+(define vl-elabscope-update-index-subscope ((name integerp) (val vl-elabscope-p) (x vl-elabscope-p))
+  :returns (new-x vl-elabscope-p)
+  (vl-elabscope-update-subscope (vl-elabkey-index name) val x))
+
 (define vl-elabscope-update-item-info ((name stringp) (val vl-scopeitem-p) (x vl-elabscope-p))
   :returns (new-x vl-elabscope-p)
   (change-vl-elabscope
@@ -331,16 +337,22 @@ are empty.</p>")
   (define vl-scope->elabkey ((scope vl-scope-p))
     :returns (key (and (iff (vl-elabkey-p key) key)
                        (vl-maybe-elabkey-p key)))
-    (b* ((name (vl-scope->name scope))
+    (b* ((name (vl-scope->id scope))
          (type (vl-scope->scopetype scope)))
-      (and name
-           (case type
-             ((:vl-module :vl-interface)
-              (vl-elabkey-def name))
-             ((:vl-fundecl :vl-taskdecl :vl-genblock :vl-genarrayblock)
-              (vl-elabkey-item name))
-             (:vl-package (vl-elabkey-package name))
-             (otherwise nil)))))
+      (case type
+        ((:vl-module :vl-interface)
+         (and (stringp name)
+              (vl-elabkey-def name)))
+        ((:vl-fundecl :vl-taskdecl :vl-genblock)
+         (and (stringp name)
+              (vl-elabkey-item name)))
+        (:vl-genarrayblock
+         (and (integerp name)
+              (vl-elabkey-index name)))
+        (:vl-package
+         (and (stringp name)
+              (vl-elabkey-package name)))
+        (otherwise nil))))
 
   (define vl-elabscopes-push-anon ((scope vl-elabscope-p)
                                    (scopes vl-elabscopes-p)
