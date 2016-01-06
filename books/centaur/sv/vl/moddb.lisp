@@ -2218,6 +2218,64 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
                       (sv::svarlist-addr-p (sv::assigns-vars assigns1))))))
 
 
+(define vl-alias->svex-alias ((x vl-alias-p)
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (aliases sv::lhspairs-p))
+  :short "Turn a VL alias into an SVEX alias."
+  :long "<p>This just straightforwardly converts the LHS and RHS to svex
+expressions, then @(see sv::lhs-p) objects.</p>"
+  :prepwork ((local (in-theory (enable (force)))))
+  (b* (((vl-alias x) (vl-alias-fix x))
+       (warnings nil)
+       ((wmv warnings lhs lhs-type :ctx x)
+        (vl-expr-to-svex-lhs x.lhs ss scopes))
+       ((wmv warnings rhs rhs-type :ctx x)
+        (vl-expr-to-svex-lhs x.rhs ss scopes))
+       ((unless (and lhs-type rhs-type))
+        (mv warnings nil))
+       (err (vl-compare-datatypes lhs-type rhs-type))
+       ((when err)
+        (mv (fatal :type :vl-bad-alias
+                   :msg "~a0: Incompatible LHS/RHS types: ~@1."
+                   :args (list x err))
+            nil)))
+    (mv nil (list (cons lhs rhs))))
+
+  ///
+  (defmvtypes vl-alias->svex-alias (nil true-listp))
+
+  (defret vars-of-vl-alias->svex-alias
+    (sv::svarlist-addr-p (sv::lhspairs-vars aliases))
+    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
+
+
+(define vl-aliases->svex-aliases ((x vl-aliaslist-p)
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p)
+                                  (aliases sv::lhspairs-p))
+  :short "Collects svex module components for a list of aliases by collecting
+          results from @(see vl-alias->svex-alias)."
+  :returns (mv (warnings vl-warninglist-p)
+               (aliases1 sv::lhspairs-p))
+  (if (atom x)
+      (mv nil
+          (sv::lhspairs-fix aliases))
+    (b* ((warnings nil)
+         ((wmv warnings aliases1) (vl-alias->svex-alias (car x) ss scopes))
+         ((wmv warnings aliases)
+          (vl-aliases->svex-aliases (cdr x) ss scopes
+                                    (append aliases1 aliases))))
+      (mv warnings aliases)))
+  ///
+
+  (more-returns
+   (aliases1 :name vars-of-vl-aliases->svex-aliases-aliases
+             (implies (sv::svarlist-addr-p (sv::lhspairs-vars aliases))
+                      (sv::svarlist-addr-p (sv::lhspairs-vars aliases1))))))
+
+
 
 
 
@@ -3161,6 +3219,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
           (vl-vardecllist->svex x.vardecls (sv::modalist-fix modalist)
                                 nil)) ;; no :self aliases
          ((wmv warnings assigns) (vl-assigns->svex-assigns x.assigns ss scopes nil))
+         ((wmv warnings aliases) (vl-aliases->svex-aliases x.aliases ss scopes aliases))
          ((wmv warnings wires assigns aliases insts arraymod-alist)
           (vl-modinstlist->svex-assigns/aliases x.modinsts ss scopes wires assigns aliases modname))
          ((wmv warnings wires assigns aliases ginsts gatemod-alist)
