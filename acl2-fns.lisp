@@ -1709,7 +1709,12 @@ notation causes an error and (b) the use of ,. is not permitted."
   #-cltl2 x)
 
 (defmacro safe-open (&rest args)
-  `(our-ignore-errors (open ,@args)))
+  (let ((filename (gensym)))
+    `(our-ignore-errors
+      (let ((,filename ; avoid evaluating first argument twice
+             ,(car args)))
+        (ensure-directories-exist ,filename)
+        (open ,filename ,@(cdr args))))))
 
 (defun our-truename (filename &optional namestringp)
 

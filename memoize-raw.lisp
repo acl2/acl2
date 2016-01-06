@@ -3703,14 +3703,14 @@
   (with-global-memoize-lock
    (cond
     (light
-     (let ((*new-memoize-info-ht* (initial-memoize-info-ht)))
+     (let ((new-memoize-info-ht (initial-memoize-info-ht)))
        (unwind-protect
            (progn
              (mf-maphash (lambda (k v)
-                           (setf (gethash k *new-memoize-info-ht*) v))
+                           (setf (gethash k new-memoize-info-ht) v))
                          *memoize-info-ht*)
-             (setq *memoize-info-ht* *new-memoize-info-ht*))
-         (when (not (eq *memoize-info-ht* *new-memoize-info-ht*))
+             (setq *memoize-info-ht* new-memoize-info-ht))
+         (when (not (eq *memoize-info-ht* new-memoize-info-ht))
            (cond ((eq light :done)
                   (error "Fatal error in rememoize-all!~%Consider evaluating ~
                          ~s before continuing.~%"
