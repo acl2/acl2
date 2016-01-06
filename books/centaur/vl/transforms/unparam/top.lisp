@@ -1147,7 +1147,11 @@ for each usertype is stored in the res field.</p>"
 
     :hints (("goal" :expand ((:free (x) (vl-genblob-genblock-count x))
                              (vl-genblob-gencaselist-count x)
-                             (vl-genblob-generate-count x))))
+                             (vl-genblob-generate-count x)))
+            (and stable-under-simplificationp
+                 '(:expand ((vl-genelementlist->generates (vl-genblock->elems x))
+                            (vl-genelementlist->generates (cdr (vl-genblock->elems x)))
+                            (:free (x) (vl-genblob-generates-count (list x)))))))
     ;; (define vl-genblob-resolve-aux ((x vl-genblob-p)
     ;;                                 (elabindex "in the genblob's own scope")
     ;;                                 (ledger vl-unparam-ledger-p)
@@ -1240,6 +1244,41 @@ for each usertype is stored in the res field.</p>"
             elabindex ledger)))
 
 
+    (define vl-genblock-under-cond-resolve ((x vl-genblock-p)
+                                            (orig-x vl-genelement-p)
+                                            (elabindex)
+                                            (ledger vl-unparam-ledger-p)
+                                            (warnings vl-warninglist-p))
+      :returns (mv (warnings1 vl-warninglist-p)
+                   (keylist vl-unparam-instkeylist-p)
+                   (new-elem vl-genelement-p)
+                   (new-elabindex)
+                   (ledger vl-unparam-ledger-p))
+      :measure (two-nats-measure (vl-genblob-genblock-count x) 20)
+      (b* (((vl-genblock x))
+           (orig-x (vl-genelement-fix orig-x))
+           (ledger (vl-unparam-ledger-fix ledger))
+           ((unless x.condnestp)
+            ;; Not the special nested cond case; handle it as a regular
+            ;; genblock that creates a scope, etc.
+            (b* (((mv warnings keylist new-block elabindex ledger)
+                  (vl-genblock-resolve x elabindex ledger warnings)))
+              (mv warnings keylist
+                  (make-vl-genbegin :block new-block) elabindex ledger)))
+           ;; Check that the element in the block is as expected for a condnest.
+           ((unless (and (tuplep 1 x.elems)
+                         (or (vl-genelement-case (car x.elems) :vl-genif)
+                             (vl-genelement-case (car x.elems) :vl-gencase))))
+            (mv (fatal :type :vl-programming-error
+                       :msg "Block flagged as nested conditional was not: ~a0"
+                       :args (list orig-x))
+                nil orig-x elabindex ledger)))
+        (vl-generate-resolve (car x.elems) elabindex ledger warnings)))
+
+           
+
+
+
 #||
  (trace$
  #!vl (vl-generate-resolve
@@ -1312,11 +1351,8 @@ for each usertype is stored in the res field.</p>"
                            :args (list x x.test))
                     nil x elabindex ledger))
                (testval (vl-resolved->val testval))
-               (subblock (if (eql 0 testval) x.else x.then))
-               ((mv warnings keylist new-block elabindex ledger)
-                (vl-genblock-resolve subblock elabindex ledger warnings)))
-            (mv warnings keylist
-                (make-vl-genbegin :block new-block) elabindex ledger))
+               (subblock (if (eql 0 testval) x.else x.then)))
+            (vl-genblock-under-cond-resolve subblock x elabindex ledger warnings))
 
           :vl-gencase
           ;; BOZO the sizing on this may be wrong
@@ -1327,11 +1363,8 @@ for each usertype is stored in the res field.</p>"
                            :msg "~a0: Failed to evaluate some case expression: ~@1."
                            :args (list x errmsg))
                     nil x elabindex ledger))
-               ((when elem) (mv warnings keylist elem elabindex ledger))
-               ((mv warnings keylist new-block elabindex ledger)
-                (vl-genblock-resolve x.default elabindex ledger warnings)))
-            (mv warnings keylist
-                (make-vl-genbegin :block new-block) elabindex ledger))
+               ((when elem) (mv warnings keylist elem elabindex ledger)))
+            (vl-genblock-under-cond-resolve x.default x elabindex ledger warnings))
 
           :vl-genloop
           (b* ((elabindex (vl-elabindex-sync-scopes))
@@ -1430,9 +1463,9 @@ for each usertype is stored in the res field.</p>"
             (mv errmsg warnings nil (vl-genelement-fix orig-x) elabindex ledger))
            ((unless matchp)
             (vl-gencaselist-resolve (cdr x) test orig-x elabindex ledger warnings))
-           ((mv warnings keylist block elabindex ledger)
-            (vl-genblock-resolve block1 elabindex ledger warnings)))
-        (mv nil warnings keylist (make-vl-genbegin :block block) elabindex ledger)))
+           ((mv warnings keylist elem elabindex ledger)
+            (vl-genblock-under-cond-resolve block1 orig-x elabindex ledger warnings)))
+        (mv nil warnings keylist elem elabindex ledger)))
 
     (define vl-genloop-resolve ((clk natp "recursion limit")
                                 (body vl-genblock-p)

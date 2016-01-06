@@ -93,7 +93,7 @@ FAILING_TEST_TARGETS := \
   iface_basic3/ok \
   iface_subiface/ok \
   udp_wide1/ok \
-  implicitparam/ok
+  stream3/ok
 
 
 SPECFILES := $(wildcard */spec.sv)

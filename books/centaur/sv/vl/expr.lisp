@@ -3575,13 +3575,19 @@ functions can assume all bits of it are good.</p>"
              (bitstream (if (eq x.dir :right)
                             concat
                           (sv::svcall sv::blkrev
-                                      (svex-int target-size)
+                                      (svex-int concat-size)
                                       (svex-int slicesize)
-                                      concat))))
+                                      concat)))
+             (ans (if (> target-size concat-size)
+                      (sv::svcall sv::concat
+                                  (svex-int (- target-size concat-size))
+                                  (svex-int 0)
+                                  bitstream)
+                    bitstream)))
           ;; In SV, we'd now stick the bitstream into a container of the
           ;; appropriate datatype.  But in svex, everything's just kept as a
           ;; bitstream, so we're already done.
-          (mv warnings bitstream))
+          (mv warnings ans))
 
         :vl-tagged
         (mv (fatal :type :vl-expr-to-svex-fail
@@ -4070,7 +4076,7 @@ functions can assume all bits of it are good.</p>"
                    :args (list type (vl-expr-fix x) err))
             nil nil))
        (lhssvex (sv::svex-concat size
-                                   (sv::svex-lhsrewrite svex 0 size)
+                                   (sv::svex-lhsrewrite svex size)
                                    (sv::svex-z)))
        ((unless (sv::lhssvex-p lhssvex))
         (mv (fatal :type :vl-expr->svex-lhs-fail

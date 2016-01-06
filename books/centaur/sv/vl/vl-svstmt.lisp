@@ -456,7 +456,7 @@ because... (BOZO)</p>
                   nil nil))
 
              (lsp-simp (sv::svex-concat
-                        lsp-size (sv::svex-lhsrewrite longest-static-prefix-svex 0 lsp-size)
+                        lsp-size (sv::svex-lhsrewrite longest-static-prefix-svex lsp-size)
                         (sv::svex-z)))
 
              ((unless (sv::lhssvex-p lsp-simp))

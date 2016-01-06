@@ -1059,7 +1059,7 @@ constructed separately.)</p>"
                          port-lhs))
 
        (xsvex (sv::svex-concat x-size
-                                 (sv::svex-lhsrewrite x-svex 0 x-size)
+                                 (sv::svex-lhsrewrite x-svex x-size)
                                  (sv::svex-z))))
     (mv (ok)
         (make-vl-portinfo-regular
@@ -1222,7 +1222,7 @@ constructed separately.)</p>"
        ;;            (sv::lhs-concat xwidth y-lhs nil)
        ;;          y-lhs))
        (xsvex (sv::svex-concat x-size
-                                 (sv::svex-lhsrewrite x-svex 0 x-size)
+                                 (sv::svex-lhsrewrite x-svex x-size)
                                  (sv::svex-z))))
     (mv (ok)
         (make-vl-portinfo-regular
