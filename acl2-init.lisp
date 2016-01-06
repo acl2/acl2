@@ -1645,9 +1645,10 @@ implementations.")
 
 ; Indeed, we have exceeded that in a version of community book
 ; books/centaur/gl/solutions.lisp using ACL2(h) built on CMUCL.  So we use the
-; maximum possible value just below.
+; maximum possible value just below, which for darwin (at least on Matt's
+; Macbook pro) is only 1150.
 
-                        1632
+                        #+darwin 1150 #-darwin 1632
                         (insert-string host-lisp-args)
                         (user-args-string inert-args))))
     (chmod-executable sysout-name)

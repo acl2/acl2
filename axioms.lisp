@@ -18750,11 +18750,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (when (and (stringp str) (stringp val))
     (or #+cmu
-        (and (boundp ext::*environment-list*)
-             (let* ((key (intern str :keyword))
-                    (pair (cdr (assoc-eq key ext::*environment-list*))))
-               (cond (pair (setf (cdr pair) val))
-                     (t (push (cons key val) ext::*environment-list*)))))
+        (progn (when *cmucl-unix-setenv-fn*
+
+; It's not enough to update ext::*environment-list* if we want the process's
+; environment to be updated, as opposed to merely supporting an update seen by
+; run-program.  We use funcall just below in case the "UNIX" package doesn't
+; exist, though most likely it does.  See *cmucl-unix-setenv-fn*.
+
+                 (funcall *cmucl-unix-setenv-fn* str val 1))
+               (when (boundp 'ext::*environment-list*)
+                 (let* ((key (intern str :keyword))
+                        (pair (cdr (assoc-eq key ext::*environment-list*))))
+                   (cond (pair (setf (cdr pair) val))
+                         (t (push (cons key val) ext::*environment-list*))))))
         #+allegro
         (setf (sys::getenv str) val)
         #+clisp
