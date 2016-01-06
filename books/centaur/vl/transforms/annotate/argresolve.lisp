@@ -878,6 +878,10 @@ references, i.e., foo.bar, where:</p>
         ;; Not of the form foo.bar, we won't consider it.
         (mv (ok) arg))
 
+; [Jared] BOZO I don't think this is right.  I think we need to do a normal
+; scopestack lookup here?  Check failtest/iface18.v but also
+; cosims/iface_basic5, etc.
+
        ;; 1. foo must refer to a module instance in the current scope.
        (local-scope (vl-scopestack-case ss :local ss.top :otherwise nil))
        ((unless local-scope)
@@ -945,7 +949,7 @@ references, i.e., foo.bar, where:</p>
     (mv warnings new-arg)))
 
 (define vl-unhierarchicalize-interfaceports
-  ((args     vl-plainarglist-p "plainargs to the instance, already annotated with directions")
+  ((args     vl-plainarglist-p "plainargs to the instance")
    (ports    vl-portlist-p     "corresponding ports for the submodule")
    (ss       vl-scopestack-p)
    (inst     vl-modinst-p      "the module instance itself, context for error messages.")
@@ -957,7 +961,100 @@ references, i.e., foo.bar, where:</p>
         (mv (ok) nil))
        ((mv warnings first) (vl-unhierarchicalize-interfaceport (car args) (car ports) ss inst warnings))
        ((mv warnings rest) (vl-unhierarchicalize-interfaceports (cdr args) (cdr ports) ss inst warnings)))
-    (mv warnings (cons first rest))))
+    (mv warnings (cons first rest)))
+  ///
+  (defret len-of-vl-unhierarchicalize-interfaceports
+    (equal (len new-args)
+           (len args))))
+
+
+(define vl-typecheck-interfaceport
+  :short "Check that interface ports are connected sensibly."
+  ((arg      vl-plainarg-p     "Actual for this port.")
+   (port     vl-port-p         "Corresponding port; not necessarily an interface port.")
+   (ss       vl-scopestack-p)
+   (inst     vl-modinst-p      "The module instance itself, context for error messages.")
+   (warnings vl-warninglist-p))
+  :returns (warnings vl-warninglist-p)
+  :long "<p>See also @(see vl-unhierarchicalize-interfaceport), which
+simplifies arguments of the form @('myiface.mymodport') to just @('myiface').
+We assume that it has been run first.</p>"
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  (b* ((port (vl-port-fix port))
+       ((vl-plainarg arg) (vl-plainarg-fix arg))
+       ((vl-modinst inst) (vl-modinst-fix inst))
+
+       ((unless (mbe :logic (vl-interfaceport-p port)
+                     :exec (eq (tag port) :vl-interfaceport)))
+        ;; Not an interface port, nothing to do.
+        (ok))
+
+       ((vl-interfaceport port))
+       (expr        (vl-plainarg->expr arg))
+       ((unless expr)
+        ;; Blank argument -- this doesn't seem to be allowed; see failtest/port5d.v
+        (fatal :type :vl-bad-instance
+               :msg "~a0: interface port ~s1 is left blank."
+               :args (list inst port.name)))
+
+       ((unless (vl-idexpr-p expr))
+        (fatal :type :vl-bad-instance
+               :msg "~a0: interface port connected to non-identifier: .~s1(~a2)"
+               :args (list inst port.name expr)))
+
+       (varname (vl-idexpr->name expr))
+       (item    (vl-scopestack-find-item varname ss))
+       ((unless item)
+        (fatal :type :vl-bad-instance
+               :msg "~a0: interface port connected to undeclared identifier: .~s1(~s2)"
+               :args (list inst port.name varname)))
+
+       ((when (mbe :logic (vl-modinst-p item)
+                   :exec (eq (tag item) :vl-modinst)))
+        (b* (((vl-modinst item))
+             (iface (vl-scopestack-find-definition item.modname ss))
+             ((unless (and iface (vl-fast-scopedef-is-interface-p iface)))
+              ;; It's a module or UDP instance instead of an interface.  Report
+              ;; it like any other non-interface things.
+              (fatal :type :vl-bad-instance
+                     :msg "~a0: interface port ~s1 is connected to non-interface: ~a2."
+                     :args (list inst port.name item)))
+
+             ((unless (equal item.modname port.ifname))
+              (fatal :type :vl-bad-instance
+                     :msg "~a0: type error: interface port ~s1 (type ~s2) is ~
+                           connected to ~s3 (type ~s4)."
+                     :args (list inst port.name port.ifname varname item.modname))))
+          (ok)))
+
+       ((when (mbe :logic (vl-interfaceport-p item)
+                   :exec (eq (tag item) :vl-interfaceport)))
+        (b* (((vl-interfaceport item))
+             ((unless (equal item.ifname port.ifname))
+              (fatal :type :vl-bad-instance
+                     :msg "~a0: type error: interface port ~s1 (type ~s2) is ~
+                           connected to ~s3 (type ~s4)."
+                     :args (list inst port.name port.ifname varname item.ifname))))
+          (ok))))
+
+    ;; Anything else makes no sense.
+    (fatal :type :vl-bad-instance
+           :msg "~a0: interface port ~s1 is connected to non-interface: ~a2."
+           :args (list inst port.name item))))
+
+(define vl-typecheck-interfaceports
+  ((args     vl-plainarglist-p "plainargs to the instance")
+   (ports    vl-portlist-p     "corresponding ports for the submodule")
+   (ss       vl-scopestack-p)
+   (inst     vl-modinst-p      "the module instance itself, context for error messages.")
+   (warnings vl-warninglist-p))
+  :guard (same-lengthp args ports)
+  :returns (warnings vl-warninglist-p)
+  (b* (((when (atom args))
+        (ok))
+       (warnings (vl-typecheck-interfaceport (car args) (car ports) ss inst warnings)))
+    (vl-typecheck-interfaceports (cdr args) (cdr ports) ss inst warnings)))
+
 
 (define vl-arguments-argresolve
   ((x         "arguments of a module instance, named or plain" vl-arguments-p)
@@ -1001,6 +1098,7 @@ checking, and add direction/name annotations.</p>"
        (plainargs (vl-annotate-plainargs plainargs ports scope))
        (warnings  (vl-check-blankargs plainargs ports inst warnings))
        ((mv warnings plainargs) (vl-unhierarchicalize-interfaceports plainargs ports ss inst warnings))
+       (warnings  (vl-typecheck-interfaceports plainargs ports ss inst warnings))
        (new-x     (make-vl-arguments-plain :args plainargs)))
     (mv (ok) new-x)))
 

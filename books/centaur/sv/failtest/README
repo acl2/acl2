@@ -110,6 +110,7 @@ iface18.v -- tries to instantiate module with interface connected to some other 
 iface19.v -- like iface18.v, but with extra .consumer style modport as well
 iface20.v -- try to use foo.consumer style connection, where foo is itself an interface port (vcs/ncv disagree)
 iface21.v -- trying to use interfaces out of order
+iface22.v -- trying to instantiate interface at the top level
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type
@@ -179,6 +180,9 @@ port2.v -- .foo style connection of declared interface, but submodule has no suc
 port3.v -- .foo style connection of undeclared variable to submodule interface port
 port4.v -- .* style connection of undeclared variable to submodule interface port
 port5.v -- .* connection of interface with different types in supermodule/submodule
+port5b.v -- directly connect interfaces with different types in supermodule/submodule ((vcs accepts it??))
+port5c.v -- interface connection is insane, .myiface(a+b)
+port5d.v -- interface connection is blank, .myiface()
 port6.v -- redundant .foo style connections
 port7.v -- named connections, but submodule has an unnamed port
 port8.v -- try to instance submodule using portdecl names, not external names
