@@ -55,7 +55,19 @@ FAILING_TEST_TARGETS := \
   elab6.vok elab6.svok \
   elab2.vok elab2.svok \
   elab3.vok elab3.svok \
-  stmt1.svok 
+  stmt1.svok  \
+  port5.svok \
+  gen1e.svok \
+  gen1h.svok \
+  gen1i.svok \
+  gen1k.svok \
+  gen1l.vok gen1l.svok
+
+  # gen1f.svok \
+  # gen1e.svok \
+  # gen1g.svok \
+  # gen8.vok gen8.svok \
+  # gen9.svok
 
 
 $(CORE):

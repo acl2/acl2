@@ -261,10 +261,6 @@
                 (if type
                     (make-vl-paramvalue-type :type type)
                   (change-vl-paramvalue-expr x :expr expr))))))
-    
-    
-    
-
 
 
 (fty::defvisitors vl-fundecl-type-disambiguate-deps
@@ -275,25 +271,14 @@
                                       (ss vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x vl-fundecl-p))
+  ;; See the comments in scopestack.lisp.  We follow the One True Way to
+  ;; process a Function: we must process the return type in the outer scope,
+  ;; then push the scope, then process everything else, even the ports.
   (b* (((vl-fundecl x) (vl-fundecl-fix x))
        (warnings nil)
-       ;; Return type.  I think this should be disambiguated using the outer
-       ;; scope.  BOZO test whether the return type can use parameters that
-       ;; are defined within the function.
-       ((wmv warnings rettype) (vl-datatype-type-disambiguate x.rettype ss))
-
-       ;; Ports.  I think we should disambiguate these using the outer scope.
-       ;; BOZO test: can we ever refer to parameters that are defined within
-       ;; the function in its ports?  BOZO if the answer is NO, then Lucid is
-       ;; doing the wrong thing and should be updated!
-       ((wmv warnings portdecls) (vl-portdecllist-type-disambiguate x.portdecls ss))
-
-       ;; Now push the scope.
-       (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss))
-
-       ;; We should now be able to do the typedefs, parameters, vardecls, etc.,
-       ;; without any regard to parse order because shadowcheck should have
-       ;; handled all of that.
+       ((wmv warnings rettype)    (vl-datatype-type-disambiguate x.rettype ss))
+       (ss                        (vl-scopestack-push (vl-fundecl->blockscope x) ss))
+       ((wmv warnings portdecls)  (vl-portdecllist-type-disambiguate x.portdecls ss))
        ((wmv warnings vardecls)   (vl-vardecllist-type-disambiguate x.vardecls ss))
        ((wmv warnings paramdecls) (vl-paramdecllist-type-disambiguate x.paramdecls ss))
        ((wmv warnings typedefs)   (vl-typedeflist-type-disambiguate x.typedefs ss))
@@ -311,20 +296,12 @@
                                        (ss vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x vl-taskdecl-p))
+  ;; See the comments in scopestack.lisp.  We follow the One True Way to
+  ;; process a Task: we push the whole thing and then process all of it.
   (b* (((vl-taskdecl x) (vl-taskdecl-fix x))
        (warnings nil)
-       ;; Ports.  I think we should disambiguate these using the outer scope.
-       ;; BOZO test: can we ever refer to parameters that are defined within
-       ;; the function in its ports?  BOZO if the answer is NO, then Lucid is
-       ;; doing the wrong thing and should be updated!
-       ((wmv warnings portdecls) (vl-portdecllist-type-disambiguate x.portdecls ss))
-
-       ;; Now push the scope.
-       (ss (vl-scopestack-push (vl-taskdecl->blockscope x) ss))
-
-       ;; We should now be able to do the typedefs, parameters, vardecls, etc.,
-       ;; without any regard to parse order because shadowcheck should have
-       ;; handled all of that.
+       (ss                        (vl-scopestack-push (vl-taskdecl->blockscope x) ss))
+       ((wmv warnings portdecls)  (vl-portdecllist-type-disambiguate x.portdecls ss))
        ((wmv warnings vardecls)   (vl-vardecllist-type-disambiguate x.vardecls ss))
        ((wmv warnings paramdecls) (vl-paramdecllist-type-disambiguate x.paramdecls ss))
        ((wmv warnings typedefs)   (vl-typedeflist-type-disambiguate x.typedefs ss))
@@ -344,32 +321,26 @@
 (fty::defvisitor vl-genelement-type-disambiguate
   :template type-disambiguate
   :type vl-genelement
-  :renames ((vl-genelement vl-genelement-type-disambiguate-aux)
-            (vl-genarrayblock vl-genarrayblock-type-disambiguate-aux))
-  :type-fns ((vl-genelement vl-genelement-type-disambiguate)
-             (vl-genarrayblock vl-genarrayblock-type-disambiguate))
+  :renames ((vl-genblock vl-genblock-type-disambiguate-aux))
+  :type-fns ((vl-genblock vl-genblock-type-disambiguate))
   :measure (two-nats-measure :count 0)
 
-  (define vl-genelement-type-disambiguate ((x vl-genelement-p)
-                                           (ss vl-scopestack-p))
-
+  (define vl-genblock-type-disambiguate ((x vl-genblock-p)
+                                         (ss vl-scopestack-p))
+    
     :returns (mv (warnings vl-warninglist-p)
-                 (new-x vl-genelement-p))
-    :measure (two-nats-measure (vl-genelement-count x) 1)
-    (b* ((ss (vl-genelement-case x
-               ;; BOZO are we doing this right for generate loops?
-               :vl-genblock (vl-scopestack-push (vl-sort-genelements x.elems) ss)
-               :otherwise ss)))
-      (vl-genelement-type-disambiguate-aux x ss)))
-
-  (define vl-genarrayblock-type-disambiguate ((x vl-genarrayblock-p)
-                                           (ss vl-scopestack-p))
-
-    :returns (mv (warnings vl-warninglist-p)
-                 (new-x vl-genarrayblock-p))
-    :measure (two-nats-measure (vl-genarrayblock-count x) 1)
-    (b* ((ss (vl-scopestack-push (vl-sort-genelements (vl-genarrayblock->elems x)) ss)))
-      (vl-genarrayblock-type-disambiguate-aux x ss))))
+                 (new-x vl-genblock-p))
+    :measure (two-nats-measure (vl-genblock-count x) 1)
+    ;; BOZO This isn't following the scoping discipline for genarrays but we
+    ;; don't expect them to exist yet when we run this transform.  To correct
+    ;; this we'd just add a special case for genarrays (customize
+    ;; vl-genelement-type-disambiguate) that pushes the scope like in
+    ;; vl-follow-hidexpr-aux.
+    (b* ((ss (vl-scopestack-push (vl-sort-genelements (vl-genblock->elems x)
+                                                      :scopetype :vl-genblock
+                                                      :id (vl-genblock->name x))
+                                 ss)))
+      (vl-genblock-type-disambiguate-aux x ss))))
 
 (fty::defvisitors vl-module-type-disambiguate-deps
   :template type-disambiguate

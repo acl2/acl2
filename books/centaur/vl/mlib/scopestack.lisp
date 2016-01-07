@@ -165,6 +165,43 @@ doesn't make much sense.</li>
 </ul>")
 
 
+; Notes about scoping and generate statements.  BOZO NONE OF THIS IS IMPLEMENTED YET.
+;
+; You can basically ignore generate/endgenerate.  They don't introduce scopes
+; or matter at all really.  SystemVerilog-2012, Section 27.3: "The keywords
+; 'generate' and 'endgenerate' may be used to define a generate region.  A
+; generate region is a textual span in the module description where generate
+; constructs may appear.  Use of generate regions is optional.  There is no
+; semantic difference in the module when a generate region is used..."
+;
+; Unnamed begin/end blocks DO NOT introduce scopes.  We try to get rid of them
+; during make-implicit-wires (BOZO not yet implemented).
+;
+; A named "begin : foo .... end" style generate block DOES introduce a scope;
+; wires declared inside it do not become visible to the rest of the module
+; without hierarchical references.
+;
+; The conditional "if ... else ..." style generate construct DOES introduce new
+; scopes for the separate branches.  Wires declared in these branches do not
+; become visible to the rest of the module that follows the generate.  Except
+; that there's allegedly a special case, see 27.5 (page 755), where if you nest
+; if/else/if things inside of each other, then they don't count as extra scope
+; levels.  This is actually apparently quite complicated.  See especially the
+; comments after Example 1.
+;
+; The conditional "case ... " style generate construct DOES introduce new
+; scopes for each separate branch.  Wires declared in these branches do not
+; become visible to the rest of the module that follows the generate.
+;
+; A for-loop introduces several blocks, each of which has its own scope.
+; Within each such scope, the genvar is to be defined as a parameter, but it
+; only exists during elaboration and does not exist any more after elaboration.
+; If the for loop's body has the form "begin : foo .... end", then you can
+; refer into it with indexed hierarchical references, i.e., foo[0].wirename.
+
+
+
+
 (defsection scopestack-constants
   :parents (scopestack)
   :short "Meta-information about the kinds of scopes and the kinds of elements
@@ -223,6 +260,16 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
                  (modinst :name instname :maybe-stringp t)
                  ;; no gateinsts in interfaces
                  genvar
+                 ;; BOZO our handling of genelements as scope items is probably
+                 ;; not very sensible yet.  We *do* at least look up things like
+                 ;; begin/end blocks and named loops, which is good.  But we should
+                 ;; probably also support things like if/case statements whose blocks
+                 ;; may be named.  But that's really hard -- how are we to collect
+                 ;; those names?  And conflicts are OK, e.g.,
+                 ;;    case (version) 1 : foo ... 2 : foo ... endcase
+                 ;; is fine and has two sub generate blocks both named foo.  So
+                 ;; what does it mean to look up one of these and how do we want
+                 ;; to handle that?
                  (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
                  (interfaceport :acc ifports)
                  modport
@@ -881,12 +928,13 @@ be very cheap in the single-threaded case.</p>"
        :exec (make-fast-alist (vl-design-scope-package-alist-aux x))))
 
 
+
 (defprod vl-scopeinfo
   ((locals  vl-scopeitem-alist-p "Locally defined names bound to their declarations")
    (imports vl-importresult-alist-p
             "Explicitly imported names bound to import result, i.e. package-name and declaration)")
    (star-packages string-listp "Names of packages imported with *")
-   (name maybe-stringp)
+   (id            vl-maybe-scopeid)
    (scopetype vl-scopetype-p :default ':vl-anonymous-scope))
   :layout :tree
   :tag :vl-scopeinfo)
@@ -925,16 +973,16 @@ be very cheap in the single-threaded case.</p>"
        ;; (:vl-interface :vl-module :vl-design :vl-package
        tag))))
 
-(define vl-scope->name ((x vl-scope-p))
-  :returns (name maybe-stringp :rule-classes :type-prescription)
+(define vl-scope->id ((x vl-scope-p))
+  :returns (name vl-maybe-scopeid-p :rule-classes :type-prescription)
   (b* ((x (vl-scope-fix x)))
     (case (tag x)
       (:vl-interface  (vl-interface->name x))
       (:vl-module     (vl-module->name x))
-      (:vl-genblob    (vl-genblob->name x))
+      (:vl-genblob    (vl-genblob->id x))
       (:vl-blockscope (vl-blockscope->name x))
       (:vl-package    (vl-package->name x))
-      (:vl-scopeinfo  (vl-scopeinfo->name x))
+      (:vl-scopeinfo  (vl-scopeinfo->id x))
       ;; bozo does this make sense?
       (:vl-design     "Design Root")
       ;; Don't know a name for a scopeinfo
@@ -1373,7 +1421,7 @@ be very cheap in the single-threaded case.</p>"
                           (b* (((vl-__type__ scope :quietp t)))
                             (make-vl-scopeinfo
                              :scopetype (vl-scope->scopetype scope)
-                             :name (vl-scope->name scope)
+                             :id (vl-scope->id scope)
                              :locals (make-fast-alist
                                       (vl-__type__-scope-__result__-alist scope nil))
                              (:@ :import
@@ -1530,7 +1578,7 @@ be very cheap in the single-threaded case.</p>"
                  (equal (tag item) :vl-genloop)
                  (equal (tag item) :vl-genif)
                  (equal (tag item) :vl-gencase)
-                 (equal (tag item) :vl-genblock)
+                 (equal (tag item) :vl-genbegin)
                  (equal (tag item) :vl-genarray)
                  (equal (tag item) :vl-genbase)
                  (equal (tag item) :vl-genvar)
@@ -1735,10 +1783,11 @@ transform that has used scopestacks.</p>"
     (case (tag x)
       (:vl-modinst    (vl-modinst->instname x))
       (:vl-gateinst   (vl-gateinst->name x))
-      (:vl-genblock   (vl-genblock->name x))
+      (:vl-genbegin   (b* ((name (vl-genblock->name (vl-genbegin->block x))))
+                        (and (stringp name) name)))
       (:vl-genarray   (vl-genarray->name x))
       (:vl-genvar     (vl-genvar->name x))
-      ((:vl-genloop :vl-genif :vl-gencase  :vl-genbase) nil)
+      ((:vl-genloop :vl-genif :vl-gencase :vl-genbase) nil)
       (:vl-interfaceport (vl-interfaceport->name x))
       (:vl-paramdecl     (vl-paramdecl->name x))
       (:vl-vardecl       (vl-vardecl->name x))
@@ -1763,7 +1812,7 @@ named, and the names generated should be unique.</p>"
     :null nil
     :global (hons :root nil)
     :local (b* ((super (vl-scopestack->hashkey x.super)))
-             (hons (or (vl-scope->name x.top)
+             (hons (or (vl-scope->id x.top)
                        (raise "Unnamed scope under ~x0: ~x1~%"
                               (rev super)
                               x.top))
@@ -1778,11 +1827,20 @@ named, and the names generated should be unique.</p>"
     :null   (str::revappend-chars ":null" rchars)
     :global (str::revappend-chars "$root" rchars)
     :local  (b* ((rchars (vl-scopestack->path-aux x.super rchars))
-                 (rchars (cons #\. rchars))
-                 (name1 (or (vl-scope->name x.top)
-                            "<unnamed " (symbol-name (tag x.top)) ">"))
-                 (rchars (str::revappend-chars name1 rchars)))
-              rchars)))
+                 (id (vl-scope->id x.top)))
+              (cond ((stringp id)
+                     (b* ((rchars (cons #\. rchars)))
+                       (str::revappend-chars id rchars)))
+                    ((integerp id)
+                     (b* ((rchars (cons #\[ rchars))
+                          (rchars (if (< id 0) (cons #\- rchars) rchars))
+                          (rchars (str::revappend-natchars (abs id) rchars))
+                          (rchars (cons #\] rchars)))
+                       rchars))
+                    (t ;; (not id)
+                     (str::revappend-chars
+                      (cat "<unnamed " (symbol-name (vl-scope->scopetype x.top)) ">")
+                      rchars))))))
 
 (define vl-scopestack->path
   :short "Debugging aide: get the current path indicated by a scopestack."
@@ -2056,3 +2114,17 @@ way.</p>"
              (member name (vl-scope-namespace x design)))))
 
 (defoption vl-maybe-scope vl-scope)
+
+#||
+
+(trace$ #!vl (vl-scopestack-find-item/context
+              :entry (list 'vl-scopestack-find-item/context
+                           name (vl-scopestack->hashkey name))
+              :exit (b* (((list ?item ?ss ?pkg) values))
+                      (list 'vl-scopestack-find-item/context
+                            (with-local-ps (vl-cw "~a0" item))
+                            (vl-scopestack->hashkey ss)
+                            pkg))))
+
+
+||#

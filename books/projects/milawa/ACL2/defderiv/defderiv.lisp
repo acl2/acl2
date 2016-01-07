@@ -41,6 +41,16 @@
 
 (acl2::defttag acl2::open-output-channel!)
 
+(defun dd.open-output-channel (filename type ACL2::state)
+  (declare (xargs :mode :program :stobjs ACL2::state))
+  (ACL2::mv-let (channel ACL2::state)
+    (ACL2::open-output-channel! filename type ACL2::state)
+    (ACL2::prog2$
+      (or channel
+          (ACL2::er ACL2::hard? 'dd.open-output-channel
+                    "Failed to open file ~x0 for output." filename))
+      (ACL2::mv channel ACL2::state))))
+
 
 
 ;; Derivation cost estimation.
@@ -866,12 +876,12 @@
                                 (dd.defderiv-latex-summary from derive where)
                                 "\\end{derivedrule}" *dd.nl* *dd.nl*)))
     (ACL2::mv-let (channel ACL2::state)
-                  (ACL2::open-output-channel! (dd.cat "autodoc/" filename) :character ACL2::state)
+                  (dd.open-output-channel (dd.cat "autodoc/" filename) :character ACL2::state)
                   (let* ((ACL2::state (ACL2::princ$ derivation channel ACL2::state))
                          (ACL2::state (ACL2::close-output-channel channel ACL2::state))
                          (ACL2::state (dd.write-fn (dd.cat "\\input{" filename "}" *dd.nl*) ACL2::state)))
                     (ACL2::mv-let (channel ACL2::state)
-                                  (ACL2::open-output-channel! (dd.cat "autodoc/" sfilename) :character ACL2::state)
+                                  (dd.open-output-channel (dd.cat "autodoc/" sfilename) :character ACL2::state)
                                   (let* ((ACL2::state (ACL2::princ$ scontents channel ACL2::state))
                                          (ACL2::state (ACL2::close-output-channel channel ACL2::state)))
                                     ACL2::state))))))
@@ -984,12 +994,12 @@
                                 (dd.latex-autobox-formula derive *dd.max-summary-width*) *dd.nl* *dd.nl*
                                 "\\end{formalthm}" *dd.nl* *dd.nl* *dd.nl*)))
     (ACL2::mv-let (channel ACL2::state)
-                  (ACL2::open-output-channel! (dd.cat "autodoc/" filename) :character ACL2::state)
+                  (dd.open-output-channel (dd.cat "autodoc/" filename) :character ACL2::state)
                   (let* ((ACL2::state (ACL2::princ$ derivation channel ACL2::state))
                          (ACL2::state (ACL2::close-output-channel channel ACL2::state))
                          (ACL2::state (dd.write-fn (dd.cat "\\input{" filename "}" *dd.nl*) ACL2::state)))
                     (ACL2::mv-let (channel ACL2::state)
-                                  (ACL2::open-output-channel! (dd.cat "autodoc/" sfilename) :character ACL2::state)
+                                  (dd.open-output-channel (dd.cat "autodoc/" sfilename) :character ACL2::state)
                                   (let* ((ACL2::state (ACL2::princ$ scontents channel ACL2::state))
                                          (ACL2::state (ACL2::close-output-channel channel ACL2::state)))
                                     ACL2::state))))))
@@ -999,7 +1009,7 @@
   (let* ((internal-name (ACL2::string-downcase (ACL2::symbol-name name)))
          (filename      (dd.cat "proofs/" internal-name ".proof")))
     (ACL2::mv-let (channel ACL2::state)
-                  (ACL2::open-output-channel! filename :character ACL2::state)
+                  (dd.open-output-channel filename :character ACL2::state)
      (ACL2::mv-let (col ACL2::state)
                    (ACL2::fmt1! "~f0~%" (list (cons #\0 full-proof)) 0 channel ACL2::state nil)
                    (declare (ignore col))

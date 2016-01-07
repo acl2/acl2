@@ -75,7 +75,6 @@ FAILING_TEST_TARGETS := \
   alias2/ok \
   alias3/ok \
   alias4/ok \
-  bin_pow/ok \
   gates_bufif0/ok \
   gates_bufif1/ok \
   gates_notif0/ok \
@@ -94,7 +93,6 @@ FAILING_TEST_TARGETS := \
   iface_basic3/ok \
   iface_subiface/ok \
   udp_wide1/ok \
-  generate2/ok \
   implicitparam/ok
 
 

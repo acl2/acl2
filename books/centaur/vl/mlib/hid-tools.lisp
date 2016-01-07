@@ -346,17 +346,17 @@ be resolved.</p>"
         (vmsg "too many indices for array ~s0" name)))
     (vmsg "not enough indices for array ~s0" name)))
 
-(define vl-genarrayblocklist-find-block
+(define vl-genblocklist-find-block
   :short "Find the block from a generate array corresponding to some index."
   ((idx integerp)
-   (x   vl-genarrayblocklist-p))
-  :returns (blk (iff (vl-genarrayblock-p blk) blk))
+   (x   vl-genblocklist-p))
+  :returns (blk (iff (vl-genblock-p blk) blk))
   (cond ((atom x)
          nil)
-        ((eql (vl-genarrayblock->index (car x)) (lifix idx))
-         (vl-genarrayblock-fix (car x)))
+        ((eql (vl-genblock->name (car x)) (lifix idx))
+         (vl-genblock-fix (car x)))
         (t
-         (vl-genarrayblocklist-find-block idx (cdr x)))))
+         (vl-genblocklist-find-block idx (cdr x)))))
 
 (local (defthm stringp-when-hidname-and-not-$root
          (implies (vl-hidname-p x)
@@ -414,7 +414,7 @@ be resolved.</p>"
                  (equal (tag item) :vl-genloop)
                  (equal (tag item) :vl-genif)
                  (equal (tag item) :vl-gencase)
-                 (equal (tag item) :vl-genblock)
+                 (equal (tag item) :vl-genbegin)
                  (equal (tag item) :vl-genarray)
                  (equal (tag item) :vl-genbase)
                  (equal (tag item) :vl-genvar)
@@ -507,7 +507,8 @@ top-level hierarchical identifiers.</p>"
          (elabpath (vl-elabpaths-append item-path elabpath))
 
          ((when (or (eq (tag item) :vl-vardecl)
-                    (eq (tag item) :vl-paramdecl)))
+                    (eq (tag item) :vl-paramdecl)
+                    (eq (tag item) :vl-genvar)))
           ;; Found the declaration we want.  We aren't going to go any further:
           ;; there may be additional HID indexing stuff left, but if so it's just
           ;; array or structure indexing for the tail.
@@ -676,7 +677,7 @@ top-level hierarchical identifiers.</p>"
                                    :strictp strictp
                                    :elabpath iface-path)))
 
-         ((when (eq (tag item) :vl-genblock))
+         ((when (eq (tag item) :vl-genbegin))
           (b* (((when (consp indices))
                 ;; Doesn't make any sense: this is a single, named generate
                 ;; block, not an array, so we shouldn't try to index into it.
@@ -689,9 +690,9 @@ top-level hierarchical identifiers.</p>"
                     trace x))
                ;; Else we have something like foo.bar.myblock.mywire or whatever.
                ;; This is fine, we just need to go into the generate block.
-               (genblob (vl-sort-genelements (vl-genblock->elems item)
+               (genblob (vl-sort-genelements (vl-genblock->elems (vl-genbegin->block item))
                                              :scopetype :vl-genblock
-                                             :name name1))
+                                             :id name1))
                (next-ss (vl-scopestack-push genblob item-ss))
                (next-path (cons (vl-elabinstruction-push-named (vl-elabkey-item name1))
                                 elabpath)))
@@ -735,19 +736,43 @@ top-level hierarchical identifiers.</p>"
                 (mv (vl-follow-hidexpr-error "unresolved index into generate array" item-ss)
                     trace x))
                (blocknum (vl-resolved->val index-expr))
-               (block    (vl-genarrayblocklist-find-block blocknum
-                                                          (vl-genarray->blocks item)))
+               (block    (vl-genblocklist-find-block blocknum
+                                                     (vl-genarray->blocks item)))
                ((unless block)
                 ;; Something like foo.bar.mygenarray[8].baz when the array only
                 ;; goes from 3:7 or whatever.
                 (mv (vl-follow-hidexpr-error (vmsg "invalid index into generate array: ~x0" blocknum)
                                              item-ss)
                     trace x))
-               (genblob (vl-sort-genelements (vl-genarrayblock->elems block)
-                                             :scopetype :vl-genarrayblock
-                                             :name name1))
-               (next-ss (vl-scopestack-push genblob item-ss))
-               (next-path (cons (vl-elabinstruction-push-named (vl-elabkey-item name1))
+
+               ;; Our discipline is that we're going to treat
+               ;;   - The array as a whole, and
+               ;;   - The individual block for this index
+               ;;
+               ;; as BOTH being scope levels.  We are therefore going to:
+               ;;   - push both onto the scope stack
+               ;;   - represent both in the elabscopes traversal we're constructing
+               ;;
+               ;; This discipline is meant to ensure consistency between the
+               ;; scopestack view, elabscopes view, and SV view of the scope
+               ;; hierarchy.
+               (array-scope
+                ;; From the scopestack perspective, the scope for the array
+                ;; won't actually have anything in it.  (In elabscopes and SV
+                ;; it will have all of the sub-blocks.)
+                (vl-sort-genelements nil
+                                     :scopetype :vl-genarray
+                                     :id name1))
+               (block-scope
+                (vl-sort-genelements (vl-genblock->elems block)
+                                     :scopetype :vl-genarrayblock
+                                     ;; This "name" is actually an integer, the
+                                     ;; index of the block.
+                                     :id blocknum))
+               (next-ss (vl-scopestack-push block-scope
+                         (vl-scopestack-push array-scope item-ss)))
+               (next-path (list* (vl-elabinstruction-push-named (vl-elabkey-index blocknum))
+                                 (vl-elabinstruction-push-named (vl-elabkey-item name1))
                                 elabpath)))
             (vl-follow-hidexpr-aux rest trace next-ss :strictp strictp :elabpath next-path)))
 
@@ -781,13 +806,6 @@ top-level hierarchical identifiers.</p>"
           ;; could be meaningfully addressed in any other way.  So, we just
           ;; regard any reference to a gate as invalid.
           (mv (vl-follow-hidexpr-error "hierarchical reference to gate instance" item-ss)
-              trace x))
-
-         ((when (eq (tag item) :vl-genvar))
-          ;; It seems that other Verilog tools don't let you hierarchically
-          ;; reference genvars... see also the gen4.v and gen5.v failtests.  We
-          ;; can probably just regard any reference to these as invalid.
-          (mv (vl-follow-hidexpr-error "hierarchical reference to genvar" item-ss)
               trace x)))
 
       (mv (impossible) trace x))

@@ -2097,14 +2097,3 @@ except for the initial attributes.  Used for port declarations within modules."
 
 
 
-(define vl-genelementlist->portdecls ((x vl-genelementlist-p))
-  :returns (portdecls vl-portdecllist-p)
-  (if (atom x)
-      nil
-    (if (and (eq (vl-genelement-kind (car x)) :vl-genbase)
-             (eq (tag (vl-genbase->item (car x))) :vl-portdecl))
-        (cons (vl-genbase->item (car x))
-              (vl-genelementlist->portdecls (cdr x)))
-      (vl-genelementlist->portdecls (cdr x)))))
-
-

@@ -769,6 +769,51 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 4vec-clog2)))))
 
 
+(define a4vec-pow ((base a4vec-p)
+                   (exp a4vec-p))
+  :short "Symbolic version of @(see 4vec-pow)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p base)
+                      (a2vec-p exp))
+             (b* ((base (a4vec->lower base))
+                  (exp  (a4vec->lower exp)))
+               (a4vec-ite (aig-or (aig-not (aig-<-ss exp nil))     ;; exp >= 0
+                                  (aig-or (aig-=-ss base '(t nil)) ;; base == 1
+                                          (aig-=-ss base '(t))))   ;; base == -1
+                          (b* ((pow (aig-expt-su base exp)))
+                            (a4vec pow pow))
+                          (a4vec-ite (aig-=-ss base 0)
+                                     (a4vec-x)
+                                     (a4vec nil nil))))
+             (a4vec-x))
+  ///
+  (local (defthm expt-b-0
+           (equal (expt b 0) 1)
+           :hints(("Goal" :in-theory (enable expt)))))
+
+  (local (defthm expt-neg1-n
+           (equal (expt -1 n)
+                  (- 1 (* 2 (logcar n))))
+           :hints(("Goal" :in-theory (enable expt)))))
+
+  (local (defthm logcar-of-aig-list->s
+           (equal (logcar (aig-list->s x env))
+                  (bool->bit (aig-eval (car x) env)))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defthm logcar-of-aig-list->u
+           (equal (logcar (aig-list->u x env))
+                  (bool->bit (aig-eval (car x) env)))
+           :hints(("Goal" :in-theory (enable aig-list->u)))))
+
+  (defthm a4vec-pow-correct
+    (equal (a4vec-eval (a4vec-pow base exp) env)
+           (4vec-pow (a4vec-eval base env)
+                     (a4vec-eval exp env)))
+    :hints(("Goal" :in-theory (enable 4vec-pow)))))
+                  
+
+
 (define a3vec-== ((x a4vec-p) (y a4vec-p))
   :short "Symbolic version of @(see 3vec-==)."
   :returns (res a4vec-p)

@@ -1614,7 +1614,42 @@ notation causes an error and (b) the use of ,. is not permitted."
 ;                            ENVIRONMENT SUPPORT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The following is first used in acl2-init.lisp, so we define it here.
+; Getenv$ is first used in acl2-init.lisp, so we define it here.
+
+#+cmu
+(defvar *cmucl-unix-setenv-fn*
+
+; Jared Davis has pointed us to the following from
+; https://common-lisp.net/project/cmucl/doc/cmu-user/unix.html#toc235:
+
+;   You probably won't have much cause to use them, but all the Unix system
+;   calls are available. The Unix system call functions are in the Unix
+;   package. The name of the interface for a particular system call is the name
+;   of the system call prepended with unix-. The system usually defines the
+;   associated constants without any prefix name. To find out how to use a
+;   particular system call, try using describe on it. If that is unhelpful,
+;   look at the source in unix.lisp or consult your system maintainer.
+
+; As Jared has also suggested, unix:unix-setenv is presumably a wrapper for the
+; C function setenv, described for example here:
+
+;   http://pubs.opengroup.org/onlinepubs/009695399/functions/setenv.html
+;   http://linux.die.net/man/3/setenv
+
+; Also see *cmucl-unix-getenv-fn*.
+
+  (and (find-package "UNIX")
+       (let ((fn (ignore-errors (intern "UNIX-SETENV" "UNIX"))))
+         (and (boundp fn) fn))))
+
+#+cmu
+(defvar *cmucl-unix-getenv-fn*
+
+; Also see *cmucl-unix-setenv-fn*.
+
+  (and *cmucl-unix-setenv-fn* ; so that getenv$ respects setenv$
+       (let ((fn (ignore-errors (intern "UNIX-GETENV" "UNIX"))))
+         (and (boundp fn) fn))))
 
 (defun getenv$-raw (string)
 
@@ -1623,11 +1658,13 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 ; WARNING: Keep this in sync with the #-acl2-loop-only definition of setenv$.
 
-  #+cmu ; We might consider using unix:unix-getenv for newer CMUCL versions
-  (and (boundp 'ext::*environment-list*)
-       (cdr (assoc (intern string :keyword)
-                   ext::*environment-list*
-                   :test #'eq)))
+  #+cmu
+  (cond (*cmucl-unix-getenv-fn*
+         (funcall *cmucl-unix-getenv-fn* string))
+        ((boundp 'ext::*environment-list*)
+         (cdr (assoc (intern string :keyword)
+                     ext::*environment-list*
+                     :test #'eq))))
   #+(or gcl allegro lispworks ccl sbcl clisp)
   (let ((fn
          #+gcl       'si::getenv
@@ -1672,7 +1709,12 @@ notation causes an error and (b) the use of ,. is not permitted."
   #-cltl2 x)
 
 (defmacro safe-open (&rest args)
-  `(our-ignore-errors (open ,@args)))
+  (let ((filename (gensym)))
+    `(our-ignore-errors
+      (let ((,filename ; avoid evaluating first argument twice
+             ,(car args)))
+        (ensure-directories-exist ,filename)
+        (open ,filename ,@(cdr args))))))
 
 (defun our-truename (filename &optional namestringp)
 
