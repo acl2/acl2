@@ -16,8 +16,16 @@
   (declare (xargs :guard (real/rationalp x)))
   (- (fl (- x))))
 
-(defmacro radixp (r)
-  `(and (integerp ,r) (>= ,r 2)))
+(defnd radixp (b)
+  (and (integerp b) (>= b 2)))
+
+(defrule radixp-forward
+  (implies (radixp b)
+           (and (integerp b) (>= b 2)))
+  :rule-classes :forward-chaining)
+
+(defmacro digitp (x b)
+  `(and (natp ,x) (< ,x ,b)))
 
 (defund chop-r (x k r)
   (declare (xargs :guard (and (real/rationalp x)
@@ -29,6 +37,12 @@
   (/ (fl (* (expt 2 k) x)) (expt 2 k)))
 
 ;; From bits.lisp:
+
+(defund dvecp (x k b)
+  (declare (xargs :guard (and (natp k) (radixp b))))
+  (and (integerp x)
+       (<= 0 x)
+       (< x (expt b k))))
 
 (defund bvecp (x k)
   (declare (xargs :guard (integerp k)))
@@ -42,6 +56,24 @@
   :rule-classes :forward-chaining))
 
 (defun nats (n) (if (zp n) () (cons (1- n) (nats (1- n)))))
+
+(defund digits (x i j b)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp i)
+                              (integerp j)
+                              (radixp b))))
+  (if (or (not (integerp i))
+          (not (integerp j)))
+      0
+      (fl (* (mod x (expt b (1+ i))) (expt b (- j))))))
+
+(defrule digits-nonnegative-integerp-type
+  (implies (radixp b)
+           (natp (digits x i j b)))
+  :enable (digits fl)
+  :rule-classes :type-prescription)
+
+(in-theory (disable (:type-prescription digits)))
 
 (defund bits-exec (x i j)
   ;; The executable version of BITS
@@ -101,10 +133,27 @@
                   0
                 (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
 
-(local (defrule natp-bits
-  (natp (bits x i j))
+(defrule bits-nonnegative-integerp-type
+  (and (<= 0 (bits x i j))
+       (integerp (bits x i j)))
   :enable (bits fl)
-  :rule-classes :type-prescription))
+  :rule-classes :type-prescription)
+
+(in-theory (disable (:type-prescription bits)))
+
+(defund digitn (x n b)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n)
+                              (radixp b))))
+  (digits x n n b))
+
+(defrule digitn-nonnegative-integer
+  (implies (radixp b)
+           (natp (digitn x n b)))
+  :enable digitn
+  :rule-classes (:type-prescription))
+
+(in-theory (disable (:type-prescription digitn)))
 
 (defund bitn-exec (x n)
   (if (evenp (ash x (- n))) 0 1))
@@ -132,11 +181,30 @@
   (mbe :logic (bits x n n)
        :exec  (if (evenp (ash x (- n))) 0 1)))
 
+(defrule bitn-nonnegative-integer
+  (and (integerp (bitn x n))
+       (<= 0 (bitn x n)))
+  :rule-classes (:type-prescription))
+
+(in-theory (disable (:type-prescription bitn)))
+
+(defun sumdigits (x n b)
+  (if (zp n)
+      0
+    (+ (* (expt b (1- n)) (digitn x (1- n) b))
+       (sumdigits x (1- n) b))))
+
 (defun sumbits (x n)
   (if (zp n)
       0
     (+ (* (expt 2 (1- n)) (bitn x (1- n)))
        (sumbits x (1- n)))))
+
+(defun all-digits-p (list k b)
+  (if (zp k)
+      t
+    (and (digitp (nth (1- k) list) b)
+         (all-digits-p list (1- k) b))))
 
 (defun all-bits-p (b k)
   (if (zp k)
@@ -145,35 +213,104 @@
 	     (= (nth (1- k) b) 1))
 	 (all-bits-p b (1- k)))))
 
+(defun sum-d (list k b)
+  (if (zp k)
+      0
+    (+ (* (expt b (1- k)) (nth (1- k) list))
+       (sum-d list (1- k) b))))
+
 (defun sum-b (b k)
   (if (zp k)
       0
     (+ (* (expt 2 (1- k)) (nth (1- k) b))
        (sum-b b (1- k)))))
 
-(defrule bit-diff-measure-lemma
-  (implies
-    (and
-      (= (bitn x 0) (bitn y 0))
-      (integerp x)
-      (integerp y)
-      (not (= x y)))
+(local
+ (defrule digit-diff-measure-lemma
+   (implies
+    (and (= (digitn x 0 b) (digitn y 0 b))
+         (integerp x)
+         (integerp y)
+         (not (= x y))
+         (radixp b))
+    (< (+ (abs (fl (/ x b)))
+          (abs (fl (/ y b))))
+       (+ (abs x)
+          (abs y))))
+   :prep-lemmas (
+     (defrule digitn-0
+       (implies (radixp b)
+                (equal (digitn 0 0 b) 0))
+       :enable (digitn digits))
+     (defrule digitn--1
+       (implies (radixp b)
+                (equal (digitn -1 0 b) (1- b)))
+       :enable (digitn digits fl))
+     (defrule abs-type
+       (implies (integerp x)
+                (integerp (abs x)))
+       :rule-classes :type-prescription)
+     (defrule abs-fl--1
+       (implies (radixp b)
+                (equal (abs (fl (- (/ b)))) 1))
+       :enable fl)
+     (defrule lemma
+       (implies (and (integerp n)
+                     (not (= n 0))
+                     (not (= n -1))
+                     (radixp b))
+                (< (abs (fl (/ n b))) (abs n)))
+       :enable (fl)
+       :rule-classes ()))
+   :use ((:instance lemma (n x))
+         (:instance lemma (n y)))
+   :disable (abs)
+   :rule-classes ()))
+
+(defun digit-diff (x y b)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y)
+                              (radixp b))
+                  :verify-guards nil
+                  :measure (+ (abs (ifix x)) (abs (ifix y)))
+                  :hints (("goal" :use digit-diff-measure-lemma))))
+  (if (or (not (mbt (integerp x)))
+          (not (mbt (integerp y)))
+          (not (mbt (radixp b)))
+          (= x y))
+      ()
+    (if (= (digitn x 0 b) (digitn y 0 b))
+        (1+ (digit-diff (fl (/ x b)) (fl (/ y b)) b))
+      0)))
+
+(defrule digit-diff-nonnegative-integer
+  (implies (and (integerp x)
+                (integerp y)
+                (radixp b)
+                (not (= x y)))
+           (natp (digit-diff x y b)))
+  :induct (digit-diff x y b)
+  :rule-classes :type-prescription)
+
+(verify-guards digit-diff
+  :hints (("goal" :in-theory (e/d (digitn digits fl) (digit-diff)))))
+
+(local
+ (defrule bit-diff-measure-lemma
+   (implies
+    (and (= (bitn x 0) (bitn y 0))
+         (integerp x)
+         (integerp y)
+         (not (= x y)))
     (< (+ (abs (fl (/ x 2)))
           (abs (fl (/ y 2))))
        (+ (abs x)
           (abs y))))
-  :prep-lemmas (
-    (defrule lemma
-      (implies (and (integerp n)
-                    (not (= n 0))
-                    (not (= n -1)))
-               (< (abs (fl (/ n 2))) (abs n)))
-      :enable (fl)
-      :rule-classes ()))
-  :use ((:instance lemma (n x))
-        (:instance lemma (n y)))
-  :disable (abs)
-  :rule-classes ())
+   :prep-lemmas (
+     (defrule bitn-as-digitn
+       (equal (bitn x n) (digitn x n 2))
+       :enable (bitn digitn bits digits)))
+   :use (:instance digit-diff-measure-lemma (b 2))))
 
 (defun bit-diff (x y)
   (declare (xargs :measure (+ (abs (ifix x)) (abs (ifix y)))
@@ -184,6 +321,24 @@
         (1+ (bit-diff (fl (/ x 2)) (fl (/ y 2))))
       0)))
 
+(defrule bit-diff-nonnegative-integer
+  (implies (and (integerp x)
+                (integerp y)
+                (not (= x y)))
+           (natp (bit-diff x y)))
+  :rule-classes :type-prescription)
+
+(defund radix-cat (b x m y n)
+  (declare (xargs :guard (and (radixp b)
+                              (integerp x)
+                              (integerp y)
+                              (natp m)
+                              (natp n))))
+  (if (and (natp m) (natp n))
+      (+ (* (digits x (1- m) 0 b) (expt b n))
+         (digits y (1- n) 0 b))
+    0))
+
 (defund binary-cat (x m y n)
   (declare (xargs :guard (and (integerp x)
                               (integerp y)
@@ -193,11 +348,6 @@
       (+ (* (expt 2 n) (bits x (1- m) 0))
          (bits y (1- n) 0))
     0))
-
-(local (defrule natp-binary-cat
-  (natp (binary-cat x m y n))
-  :enable (binary-cat)
-  :rule-classes :type-prescription))
 
 (defun formal-+ (x y)
   (declare (xargs :guard t))
@@ -212,6 +362,32 @@
     (formal-+ (cadr x)
 	      (cat-size (cddr x)))))
 
+;; We define macros, CAT-R and CAT, that take a list of alternating data values and
+;; sizes.  CAT-SIZE returns the formal sum of the sizes.  The list must contain
+;; at least 1 data/size pair, but we do not need to specify this in the guard,
+;; and leaving it out of the guard simplifies the guard proof.
+
+(defmacro cat-r (b &rest x)
+  (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
+  (cond ((endp (cddr x))
+         `(digits ,(car x) ,(formal-+ -1 (cadr x)) 0 ,b))
+        ((endp (cddddr x))
+         `(radix-cat ,b ,@x))
+        (t
+         `(radix-cat ,b
+                     ,(car x)
+                     ,(cadr x)
+                     (cat-r ,b ,@(cddr x))
+                     ,(cat-size (cddr x))))))
+
+(defrule cat-r-nonnegative-integer-type
+  (implies (radixp b)
+           (natp (cat-r b x m y n)))
+  :enable radix-cat
+  :rule-classes (:type-prescription))
+
+(in-theory (disable (:type-prescription radix-cat)))
+
 (defmacro cat (&rest x)
   (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
   (cond ((endp (cddr x))
@@ -223,6 +399,35 @@
                       ,(cadr x)
                       (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
+
+(defrule cat-nonnegative-integer-type
+  (and (integerp (cat x m y n))
+       (<= 0 (cat x m y n)))
+  :rule-classes (:type-prescription))
+
+(in-theory (disable (:type-prescription binary-cat)))
+
+(defund mulcat-r (l n x b)
+  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x)
+                              (radixp b))
+                  :verify-guards nil))
+  (if (and (integerp n) (> n 0))
+                  (cat-r b (mulcat-r l (1- n) x b)
+                       (* l (1- n))
+                       x
+                       l)
+                0))
+
+(defrule mulcat-r-nonnegative-integer-type
+  (implies (radixp b)
+           (natp (mulcat-r l n x b)))
+  :enable mulcat-r
+  :induct (sub1-induction n)
+  :rule-classes (:type-prescription))
+
+(in-theory (disable (:type-prescription mulcat-r)))
+
+(verify-guards mulcat-r)
 
 (defund mulcat (l n x)
   (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x))
@@ -242,18 +447,59 @@
                           l))
                     (t 0))))
 
-(local (defrule natp-mulcat
-  (natp (mulcat l n x))
-  :enable (mulcat)
-  :rule-classes (:type-prescription)))
+(defrule mulcat-nonnegative-integer-type
+  (and (integerp (mulcat l n x))
+       (<= 0 (mulcat l n x)))
+  :rule-classes (:type-prescription))
+
+(in-theory (disable (:type-prescription mulcat)))
 
 (verify-guards mulcat
   :hints (("goal" :in-theory (enable mulcat binary-cat))))
+
+(defund si-r (r n b)
+  (declare (xargs :guard (and (real/rationalp r)
+                              (integerp n)
+                              (radixp b))))
+  (let ((r (mod (realfix r) (expt b n))))
+    (if (>= r (/ (expt b n) 2))
+        (- r (expt b n))
+      r)))
+
+(defrule si-r-real/rational
+  (implies (radixp b)
+           (real/rationalp (si-r r n b)))
+  :enable si-r
+  :rule-classes :type-prescription)
+
+(defrule si-r-integer
+  (implies (and (integerp r)
+                (radixp b))
+           (integerp (si-r r n b)))
+  :enable si-r
+  :cases ((posp n))
+  :rule-classes :type-prescription)
 
 (defund si (r n)
   (if (= (bitn r (1- n)) 1)
       (- r (expt 2 n))
     r))
+
+(defrule si-integer
+  (implies (integerp r)
+           (integerp (si r n)))
+  :enable si
+  :cases ((posp n))
+  :hints (("subgoal 2" :in-theory (enable bitn bits)))
+  :rule-classes :type-prescription)
+
+(defund sextend-r (m n r b)
+  (declare (xargs :guard (and (real/rationalp r)
+                              (integerp m)
+                              (integerp n)
+                              (radixp b))
+                  :guard-hints (("goal" :in-theory (enable si-r)))))
+  (digits (si-r r n b) (1- m) 0 b))
 
 (defund sextend (m n r)
   (bits (si r n) (1- m) 0))

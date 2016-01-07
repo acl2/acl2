@@ -106,7 +106,7 @@
   :hints (("Goal" :use ((:instance mod*rewrite-2 (a (* a b)) (b c))))))
 
 (defthm mod*rewrite-4
-  (implies (and (integerp a) (integerp b) (integerp c))
+  (implies (and (integerp a) (integerp b) (integerp c) (integerp d))
            (equal (mod (* a b c (mod d (p))) (p))
                   (mod (* a b c d) (p))))
   :hints (("Goal" :use ((:instance mod*rewrite-2 (a (* a b c)) (b d))))))
@@ -124,7 +124,7 @@
   :hints (("Goal" :use ((:instance mod*rewrite-5 (b (* b c d)) (c e))))))
 
 (defthm mod*rewrite-7
-  (implies (and (integerp a) (integerp b) (integerp c) (integerp d))
+  (implies (and (integerp a) (integerp b) (integerp c) (integerp d) (integerp e))
            (equal (mod (* a b c d (mod e (p))) (p))
                   (mod (* a b c d e) (p))))
   :hints (("Goal" :use ((:instance mod*rewrite-2 (a (* a b c d)) (b e))))))
