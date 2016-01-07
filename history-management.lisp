@@ -12093,7 +12093,7 @@
                                        ~x0.  ~@1"
                                       fn
                                       (cdr term))))
-                              (t (value (list *t* nil nil nil)))))
+                              (t (value@par (list *t* nil nil nil)))))
                        (t (value@par (list term nil nil nil)))))))))
      ((runep lmi wrld)
       (let ((term (and (not (eq (car lmi) :INDUCTION))

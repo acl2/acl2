@@ -159,6 +159,13 @@
                   (alistp x))
          :hints(("Goal" :in-theory (enable pseudo-term-substp)))))
 
+; Matt K. mod, 1/7/2016: The use of (logbitp-reasoning) makes ACL2(p) with
+; waterfall-parallelism enabled complain that "the form (LOGBITP-REASONING) was
+; expected to represent an ordinary value, not an error triple (mv erp val
+; state), as would be acceptable in a serial execution of ACL2.  So I'll turn
+; off waterfall parallelism here.
+(local (set-waterfall-parallelism nil))
+
 ;; Check whether a term's sign is known.  Returns :nonnegative, :nonpositive, or nil.
 (define ts-check-sign ((x pseudo-termp)
                        mfc state)

@@ -5300,7 +5300,7 @@
                      state)
                     (declare (ignore val))
                     (assert$ (null erp3)
-                             state)))
+                             (state-mac@par))))
                   (mv@par step-limit 'error nil nil nil nil state))))
     (t
      (pprogn@par ; account for bddnote in case we do not have a hit
