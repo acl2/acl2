@@ -102,6 +102,12 @@
             ;; Avoid tricky case for better compatibility with Unix basename command.
             (mv nil "" state))
 
+;; [BOZO] may not be necessary if UIOP/CMUCL path issues get fixed.
+           ((when (equal path "."))
+            ;; Avoid case where the below doesn't work correctly on CMUCL.
+            ;; This is very unsatisfying.
+            (mv nil "." state))
+
            (pathname (uiop:parse-native-namestring path))
            ((unless (uiop:directory-pathname-p pathname))
             ;; Easy case, can just get the file name.
@@ -142,13 +148,22 @@
             ;; BOZO probably not sensible on Windows
             (mv nil "/" state))
 
+;; [BOZO] may not be necessary if UIOP/CMUCL path issues get fixed.
+           #+cmu
+           ((when (and (eq type :relative)
+                       (not pieces)))
+            ;; CMUCL seems to end up with this for paths like "./"
+            (mv nil "." state))
+
            ((unless (consp pieces))
             (mv (msg "~s0: unsupported result from pathname-directory: ~x1. (path ~s2)"
                      'basename dirpart path)
                 "" state))
 
            (last-piece (car (last pieces)))
-           ((when (eq last-piece :up))
+           ((when
+                #-cmu (eq last-piece :up)
+                #+cmu (eq last-piece :back))
             (mv nil ".." state))
            ((when (stringp last-piece))
             (mv nil last-piece state)))
