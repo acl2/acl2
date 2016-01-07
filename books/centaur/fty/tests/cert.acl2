@@ -31,4 +31,13 @@
 
 (include-book "../portcullis")
 
+; Added by Matt K. 1/7/2016 because I couldn't debug a reproducible failure
+; with ACL2(p) for (defoption maybe-monster ...) or (defoption maybe-monster2
+; ...) in doc.lisp.  I tried my usual trick of :trans1 and then replacing a
+; make-event by evaluation of its body, and I also tried LD; the error
+; disappeared both ways.  Certification was hanging with the line
+;   Waiting for all proof threads to finish
+; repeated indefinitely.  The same issue appeared for terms.lisp.
+(set-waterfall-parallelism nil)
+
 ; cert-flags: ? t :ttags :all
