@@ -28435,14 +28435,17 @@
              (chan state)
              (open-input-channel filename :character state)
              (cond
-              ((null chan)
+              ((or (null chan)
+; The following is to simplify guard verification.
+                   (not (state-p state)))
                (mv nil nil state))
-              (t (state-global-let*
-                  ((guard-checking-on t))
+              (t (pprogn
+                  (f-put-global 'guard-checking-on t state)
                   (mv-let
                     (val state)
-                    (read-file-into-string1 chan state nil
-                                            *read-file-into-string-bound*)
+                    (ec-call ; guard verification here seems unimportant
+                     (read-file-into-string1 chan state nil
+                                             *read-file-into-string-bound*))
                     (pprogn
                      (ec-call ; guard verification here seems unimportant
                       (close-input-channel chan state))

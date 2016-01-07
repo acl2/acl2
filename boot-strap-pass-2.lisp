@@ -88,16 +88,24 @@
 (encapsulate
  ()
 
- (local
-  (defthm stringp-read-file-into-string1
-    (implies (car (read-file-into-string1 channel state ans bound))
-             (stringp (car (read-file-into-string1 channel state ans
-                                                   bound))))))
+; At one the following local lemma seemed to be helpful, but it is not
+; currently necessary.  If we simplify read-file-into-string2, for example by
+; removing ec-call, then perhaps we will need this lemma once again.
+
+;(local
+; (defthm stringp-read-file-into-string1
+;   (implies (car (read-file-into-string1 channel state ans bound))
+;            (stringp (car (read-file-into-string1 channel state ans
+;                                                  bound))))))
 
  (verify-termination-boot-strap read-file-into-string2) ; and guards
  )
 
 (verify-termination-boot-strap read-file-into-string) ; and guards
+
+; miscellaneous
+
+(verify-termination-boot-strap guard-or-termination-theorem-msg) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
