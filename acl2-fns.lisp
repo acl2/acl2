@@ -1640,7 +1640,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   (and (find-package "UNIX")
        (let ((fn (ignore-errors (intern "UNIX-SETENV" "UNIX"))))
-         (and (boundp fn) fn))))
+         (and (fboundp fn) fn))))
 
 #+cmu
 (defvar *cmucl-unix-getenv-fn*
@@ -1649,7 +1649,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   (and *cmucl-unix-setenv-fn* ; so that getenv$ respects setenv$
        (let ((fn (ignore-errors (intern "UNIX-GETENV" "UNIX"))))
-         (and (boundp fn) fn))))
+         (and (fboundp fn) fn))))
 
 (defun getenv$-raw (string)
 
