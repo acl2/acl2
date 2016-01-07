@@ -23,11 +23,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc world-queries
-
   :parents (kestrel-system-utilities system-utilities)
-
   :short "Utilities to query <see topic='@(url world)'>worlds</see>."
-
   :long
   "<p>
   These complement the world query utilities
