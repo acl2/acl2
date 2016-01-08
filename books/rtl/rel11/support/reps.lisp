@@ -28,8 +28,7 @@
 
 ;;Format parameters:
 
-(defun formatp (f)
-  (declare (xargs :guard t))
+(defn formatp (f)
   (and (consp f)
        (consp (cdr f))
        (consp (cddr f))
@@ -71,23 +70,23 @@
   :hints (("Goal" :in-theory (enable formatp prec sigw)))
   :rule-classes (:rewrite :type-prescription))
 
-(defund encodingp (x f)
-  (declare (xargs :guard (formatp f)))
+(defnd encodingp (x f)
   (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
 
 (defrule encodingp-forward
   (implies (encodingp x f)
-           (formatp f))
+           (and (natp x)
+                (formatp f)))
   :enable encodingp
   :rule-classes :forward-chaining)
 
 ;;Examples:
 
-(defund sp () (declare (xargs :guard t)) '(nil 24 8))
+(defnd sp () '(nil 24 8))
 
-(defund dp () (declare (xargs :guard t)) '(nil 53 11))
+(defnd dp () '(nil 53 11))
 
-(defund ep () (declare (xargs :guard t)) '(t 64 15))
+(defnd ep () '(t 64 15))
 
 (in-theory (disable (sp) (dp) (ep)))
 
@@ -139,18 +138,16 @@
 ;;;***************************************************************
 
 (defund normp (x f)
-  (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable encodingp)))))
-  (and (encodingp x f)
+  (declare (xargs :guard (encodingp x f)))
+  (and (mbt (encodingp x f))
        (< 0 (expf x f))
        (< (expf x f) (1- (expt 2 (expw f))))
        (implies (explicitp f) (= (bitn x (1- (prec f))) 1))))
 
 (defund unsupp (x f)
-  (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable encodingp)))))
-  (and (explicitp f)
-       (encodingp x f)
+  (declare (xargs :guard (encodingp x f)))
+  (and (mbt (encodingp x f))
+       (explicitp f)
        (< 0 (expf x f))
        (= (bitn x (1- (prec f))) 0)))
 
@@ -217,7 +214,7 @@
 
 ;;Representable normals:
 
-(defund nrepp (x f)
+(defnd nrepp (x f)
   (and (rationalp x)
        (formatp f)
        (not (= x 0))
@@ -228,6 +225,7 @@
 ;;Encoding function:
 
 (defund nencode (x f)
+  (declare (xargs :guard (nrepp x f)))
   (cat (if (= (sgn x) 1) 0 1)
        1
        (+ (expo x) (bias f))
@@ -432,6 +430,22 @@
   :hints (("Goal" :use ((:instance expo<= (x (abs x)) (n (- (bias f)))))
                   :in-theory (enable expo spn nrepp))))
 
+(defruled abs<spn-as-expo
+  (implies
+   (and
+    (rationalp x)
+    (formatp f))
+   (equal (< (abs x) (spn f))
+          (or (= x 0)
+              (<= (expo x) (- (bias f))))))
+  :enable (spn)
+  :use ((:instance  expo<=
+          (x (abs x))
+          (n (- (bias f))))
+        (:instance expo>=
+          (x (abs x))
+          (n (- 1 (bias f))))))
+
 ;; Largest positive normal:
 
 (defund lpn (f)
@@ -482,32 +496,60 @@
   :rule-classes ((:rewrite :match-free :once))
   :hints (("Goal" :in-theory (enable nrepp) :use (largest-lpn-1 positive-lpn))))
 
+(defruled lpn<abs-as-expo
+  (implies
+   (and (rationalp x)
+        (exactp x (prec f))
+        (formatp f))
+   (equal (< (lpn f) (abs x))
+          (< (bias f) (expo x))))
+  :prep-lemmas (
+    (defrule lemma
+      (implies
+        (formatp f)
+        (equal (expt 2 (expw f))
+               (+ 2 (* 2 (bias f)))))
+      :enable bias))
+  :enable (nrepp expo-lpn)
+  :cases ((< (expo x) (bias f))
+          (> (expo x) (bias f))
+          (= (expo x) (bias f)))
+  :hints (
+   ("subgoal 3" :use (:instance expo-monotone
+                       (x (lpn f))
+                       (y x)))
+   ("subgoal 2" :use (:instance expo-monotone
+                       (x x)
+                       (y (lpn f))))
+   ("subgoal 1" :use (:instance largest-lpn
+                       (x (abs x))))))
+
 ;;;***************************************************************
 ;;;               Denormals and Zeroes
 ;;;***************************************************************
 
 (defund zerp (x f)
-  (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable encodingp)))))
-  (and (encodingp x f)
+  (declare (xargs :guard (encodingp x f)))
+  (and (mbt (encodingp x f))
        (= (expf x f) 0)
        (= (sigf x f) 0)))
 
-(defund zencode (sgn f) (cat sgn 1 0 (+ (sigw f) (expw f))))
+(defund zencode (sgn f)
+  (declare (xargs :guard (and (integerp sgn)
+                              (formatp f))))
+  (cat sgn 1 0 (+ (sigw f) (expw f))))
 
 (defund denormp (x f)
-  (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable encodingp)))))
-  (and (encodingp x f)
+  (declare (xargs :guard (encodingp x f)))
+  (and (mbt (encodingp x f))
        (= (expf x f) 0)
        (not (= (sigf x f) 0))
        (implies (explicitp f) (= (bitn x (1- (prec f))) 0))))
 
 (defund pseudop (x f)
-  (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable encodingp)))))
-  (and (explicitp f)
-       (encodingp x f)
+  (declare (xargs :guard (encodingp x f)))
+  (and (mbt (encodingp x f))
+       (explicitp f)
        (= (expf x f) 0)
        (= (bitn x (1- (prec f))) 1)))
 
@@ -522,6 +564,13 @@
   (if (= (expf x f) 0)
       (ddecode x f)
     (ndecode x f)))
+
+(defruled decode-0
+  (implies
+    (encodingp x f)
+    (equal (equal (decode x f) 0)
+           (zerp x f)))
+  :enable (decode ddecode ndecode zerp manf))
 
 (local-defthm sgn-ddecode-1
   (implies (pseudop x f)
@@ -561,6 +610,7 @@
        (exactp x (+ (1- (prec f)) (bias f) (expo x)))))
 
 (defund dencode (x f)
+  (declare (xargs :guard (drepp x f)))
   (cat (if (= (sgn x) 1) 0 1)
        1
        0
@@ -854,34 +904,32 @@
 ;;;***************************************************************
 
 (defund infp (x f)
-  (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable encodingp)))))
-  (and (encodingp x f)
+  (declare (xargs :guard (encodingp x f)))
+  (and (mbt (encodingp x f))
        (= (expf x f) (1- (expt 2 (expw f))))
        (not (unsupp x f))
        (= (manf x f) 0)))
 
 (defun iencode (sgn f)
+  (declare (xargs :guard (and (integerp sgn)
+                              (formatp f))))
   (if (explicitp f)
       (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 1 1 0 (1- (sigw f)))
     (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 0 (sigw f))))
 
 (defund nanp (x f)
-  (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable encodingp)))))
-  (and (encodingp x f)
+  (declare (xargs :guard (encodingp x f)))
+  (and (mbt (encodingp x f))
        (= (expf x f) (1- (expt 2 (expw f))))
        (not (unsupp x f))
        (not (= (manf x f) 0))))
 
 (defund qnanp (x f)
-  (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable nanp encodingp)))))
+  (declare (xargs :guard (encodingp x f)))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 1)))
 
 (defund snanp (x f)
-  (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable nanp encodingp)))))
+  (declare (xargs :guard (encodingp x f)))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
 (defund qnanize (x f)
@@ -890,6 +938,7 @@
   (logior x (expt 2 (- (prec f) 2))))
 
 (defund indef (f)
+  (declare (xargs :guard (formatp f)))
   (if (explicitp f)
       (cat (1- (expt 2 (+ (expw f) 3)))
            (+ (expw f) 3)
@@ -991,6 +1040,9 @@
 ;;;***************************************************************
 
 (defund rebias (expo old new)
+  (declare (xargs :guard (and (integerp expo)
+                              (posp old)
+                              (posp new))))
   (+ expo (- (expt 2 (1- new)) (expt 2 (1- old)))))
 
 (acl2::with-arith5-nonlinear-help (defrule bvecp-rebias-up

@@ -193,9 +193,11 @@
     0))
 
 (defund exactp (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (defun fp+ (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 
@@ -204,7 +206,8 @@
 ;;;**********************************************************************
 
 (defund rtz (x n)
-  (declare (xargs :guard (integerp n)))
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (* (sgn x)
      (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -457,6 +460,8 @@
 ;;;**********************************************************************
 
 (defund raz (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (* (sgn x)
      (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -732,9 +737,12 @@
 ;;;**********************************************************************
 
 (defun re (x)
+  (declare (xargs :guard (real/rationalp x)))
   (- x (fl x)))
 
 (defund rne (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (let ((z (fl (* (expt 2 (1- n)) (sig x))))
 	(f (re (* (expt 2 (1- n)) (sig x)))))
     (if (< f 1/2)
@@ -1263,6 +1271,8 @@
   :hints (("Goal" :use near-trunc)))
 
 (defund rna (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (< (re (* (expt 2 (1- n)) (sig x)))
 	 1/2)
       (rtz x n)
@@ -1578,6 +1588,8 @@
 ;;;**********************************************************************
 
 (defund rto (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (exactp x (1- n))
       x
     (+ (rtz x (1- n))
@@ -1739,6 +1751,8 @@
 ;;;**********************************************************************
 
 (defun rup (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (>= x 0)
       (raz x n)
     (rtz x n)))
@@ -1755,6 +1769,8 @@
   :hints (("Goal" :use inf-lower-bound)))
 
 (defun rdn (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (>= x 0)
       (rtz x n)
     (raz x n)))
@@ -1770,10 +1786,10 @@
   :rule-classes :linear
   :hints (("Goal" :use minf-lower-bound)))
 
-(defund IEEE-rounding-mode-p (mode)
+(defnd IEEE-rounding-mode-p (mode)
   (member mode '(rtz rup rdn rne)))
 
-(defund common-mode-p (mode)
+(defnd common-mode-p (mode)
   (or (IEEE-rounding-mode-p mode) (equal mode 'raz) (equal mode 'rna)))
 
 (local-defund old-mode (mode)
@@ -1869,6 +1885,7 @@
   :hints (("Goal" :use ((:instance rnd-non-neg (mode (old-mode mode)))))))
 
 (defund flip-mode (m)
+  (declare (xargs :guard (common-mode-p m)))
   (case m
     (rup 'rdn)
     (rdn 'rup)
@@ -2459,9 +2476,11 @@
     0))
 
 (defund exactp (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (defun fp+ (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 ;; From reps.lisp:
@@ -2488,7 +2507,9 @@
 ;;;**********************************************************************
 
 (defund rtz (x n)
-  (declare (xargs :guard (integerp n)))
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
+;  (declare (xargs :guard (integerp n)))
   (* (sgn x)
      (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -2737,6 +2758,8 @@
 ;;;**********************************************************************
 
 (defund raz (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (* (sgn x)
      (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -3018,9 +3041,12 @@
 ;;;**********************************************************************
 
 (defun re (x)
+  (declare (xargs :guard (real/rationalp x)))
   (- x (fl x)))
 
 (defund rne (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (let ((z (fl (* (expt 2 (1- n)) (sig x))))
 	(f (re (* (expt 2 (1- n)) (sig x)))))
     (if (< f 1/2)
@@ -3561,6 +3587,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
   :hints (("Goal" :use near-trunc)))
 
 (defund rna (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (< (re (* (expt 2 (1- n)) (sig x)))
 	 1/2)
       (rtz x n)
@@ -4110,6 +4138,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 ;;;**********************************************************************
 
 (defund rto (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (exactp x (1- n))
       x
     (+ (rtz x (1- n))
@@ -4267,6 +4297,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 ;;;**********************************************************************
 
 (defun rup (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (>= x 0)
       (raz x n)
     (rtz x n)))
@@ -4279,6 +4311,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
   :hints (("Goal" :use inf-lower-bound)))
 
 (defun rdn (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (>= x 0)
       (rtz x n)
     (raz x n)))
@@ -4290,10 +4324,10 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
   :rule-classes :linear
   :hints (("Goal" :use minf-lower-bound)))
 
-(defund IEEE-rounding-mode-p (mode)
+(defnd IEEE-rounding-mode-p (mode)
   (member mode '(rtz rup rdn rne)))
 
-(defund common-mode-p (mode)
+(defnd common-mode-p (mode)
   (or (IEEE-rounding-mode-p mode) (equal mode 'raz) (equal mode 'rna)))
 
 (defthm ieee-mode-is-common-mode
@@ -4302,6 +4336,9 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
   :hints (("Goal" :in-theory (enable common-mode-p))))
 
 (defund rnd (x mode n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (common-mode-p mode)
+                              (integerp n))))
   (case mode
     (raz (raz x n))
     (rna (rna x n))
@@ -4375,6 +4412,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
   :hints (("Goal" :use rnd$-non-neg)))
 
 (defund flip-mode (m)
+  (declare (xargs :guard (common-mode-p m)))
   (case m
     (rup 'rdn)
     (rdn 'rup)
@@ -4578,6 +4616,9 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
                   :use (raz-up rne-up-2 rna-up-2 rtz-upper-bound))))
 
 (defun rnd-const (e mode n)
+  (declare (xargs :guard (and (integerp e)
+                              (common-mode-p mode)
+                              (integerp n))))
   (case mode
     ((rne rna) (expt 2 (- e n)))
     ((rup raz) (1- (expt 2 (1+ (- e n)))))
@@ -4629,6 +4670,11 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
   :hints (("Goal" :use ((:instance round-up-p-thm$ (r z))))))
 
 (defund roundup-pos (x e sticky mode n)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp e)
+                              (integerp sticky)
+                              (common-mode-p mode)
+                              (integerp n))))
   (case mode
     ((rup raz) (or (not (= (bits x (- e n) 0) 0))
                    (= sticky 1)))
@@ -4719,6 +4765,11 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
   :hints (("Goal" :use (rp-2 rp-5))))
 
 (defund roundup-neg (x e sticky mode n)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp e)
+                              (integerp sticky)
+                              (common-mode-p mode)
+                              (integerp n))))
   (case mode
     ((rdn raz) t)
     ((rup rtz) (and (= (bits x (- e n) 0) 0)
@@ -6304,6 +6355,9 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 ;;;**********************************************************************
 
 (defund drnd (x mode f)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (common-mode-p mode)
+                              (formatp f))))
   (rnd x mode (+ (prec f) (expo x) (- (expo (spn f))))))
 
 (local-defthm bias-rewrite

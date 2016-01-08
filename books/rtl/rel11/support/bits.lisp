@@ -1754,9 +1754,10 @@
 ;; proving that they have the same value at bit n for all n.
 
 (defun bit-diff (x y)
-  (declare (xargs :measure (+ (abs (ifix x)) (abs (ifix y)))
-                  :hints (("goal" :use digit-diff-measure-lemma (b 2)))))
-  (if (or (not (integerp x)) (not (integerp y)) (= x y))
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y))
+                  :measure (:? x)))
+  (if (or (not (mbt (integerp x))) (not (mbt (integerp y))) (= x y))
       ()
     (if (= (bitn x 0) (bitn y 0))
         (1+ (bit-diff (fl (/ x 2)) (fl (/ y 2))))
@@ -2610,6 +2611,8 @@
 ;;;**********************************************************************
 
 (defund si (r n)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n))))
   (if (= (bitn r (1- n)) 1)
       (- r (expt 2 n))
     r))
@@ -2655,6 +2658,9 @@
                           (b 2)))))
 
 (defund sextend (m n r)
+  (declare (xargs :guard (and (natp m)
+                              (natp n)
+                              (integerp r))))
   (bits (si r n) (1- m) 0))
 
 (local

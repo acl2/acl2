@@ -20,6 +20,8 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (defund rtz-sqrt (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (natp n))))
   (if (zp n)
       0
     (let* ((lower (rtz-sqrt x (1- n)))
@@ -29,6 +31,8 @@
         lower))))
 
 (defund rto-sqrt (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (posp n))))
   (let ((trunc (rtz-sqrt x (1- n))))
     (if (< (* trunc trunc) x)
         (+ trunc (expt 2 (- n)))
@@ -37,6 +41,8 @@
 (local-in-theory (enable rtz-sqrt rto-sqrt))
 
 (defund qsqrt (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (posp n))))
   (let ((e (1+ (fl (/ (expo x) 2)))))
     (* (expt 2 e)
        (rto-sqrt (/ x (expt 2 (* 2 e))) n))))
