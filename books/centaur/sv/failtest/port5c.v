@@ -9,7 +9,7 @@ endinterface
 module top (output topout, input topin);
 
   IFoo foo1();
-  IFoo bar1();
+  IBar bar1();
 
   wire a, b;
 

@@ -56,7 +56,8 @@ FAILING_TEST_TARGETS := \
   gen1h.svok \
   gen1i.svok \
   gen1k.svok \
-  gen1l.vok gen1l.svok
+  gen1l.vok gen1l.svok \
+  iface26.svok
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core
@@ -81,6 +82,9 @@ all: $(VOK_FILES) $(SVOK_FILES)
 PASSING_VOK := $(filter-out $(FAILING_TEST_TARGETS), $(VOK_FILES))
 PASSING_SVOK := $(filter-out $(FAILING_TEST_TARGETS), $(SVOK_FILES))
 passing: $(PASSING_VOK) $(PASSING_SVOK)
+
+.phony: failing
+failing: $(FAILING_TEST_TARGETS)
 
 clean:
 	rm -f *.vok *.svok *.log

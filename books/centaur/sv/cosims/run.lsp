@@ -34,7 +34,18 @@
 ;; name of directory that spec.sv and input/output.data are in
 (defconst *testname* "gates")
 
+(trace$ (vl-design-argresolve
+         :entry (list 'vl-design-argresolve (with-local-ps (vl-pp-design x)))
+         :exit (list 'vl-design-argresolve (with-local-ps (vl-pp-design x)))))
 
+(trace$ (vl-unhierarchicalize-interfaceport
+         :entry (list 'vl-unhierarchicalize-interfaceport
+                      :arg (with-local-ps (vl-pp-plainarg arg))
+                      :port (with-local-ps (vl-pp-port port))
+                      :inst (with-local-ps (vl-pp-modinst inst nil)))
+         :exit (b* (((list ?warnings new-arg) values))
+                 (list 'vl-unhierarchicalize-interfaceport
+                       (with-local-ps (vl-pp-plainarg new-arg))))))
 
 ||#
 
