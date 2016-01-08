@@ -11904,13 +11904,13 @@
                   :guard (and (plist-worldp wrld)
                               (symbolp fn)
                               (function-symbolp fn wrld)
-                              (eq (symbol-class fn wrld)
 
-; We can call guard-theorem for any :logic mode function.  However, we only
-; trust that the result is a theorem when the function is already
-; guard-verified.
+; We can call guard-theorem for any :logic mode function, since it is perfectly
+; reasonable to ask for the guard theorem even if the guards haven't been
+; verified.  Of course, we only trust that the result is a theorem when the
+; function is already guard-verified.
 
-                                  :COMMON-LISP-COMPLIANT))))
+                              (logicalp fn wrld))))
   (let ((names (or (getpropc fn 'recursivep nil wrld)
                    (list fn))))
     (mv-let (cl-set ttree)
@@ -11920,6 +11920,38 @@
                                 wrld state nil)
       (declare (ignore ttree)) ; assumption-free (see guard-clauses-for-clique)
       (termify-clause-set cl-set))))
+
+(defun guard-or-termination-theorem-msg (kwd args coda)
+  (declare (xargs :guard (and (member-eq kwd '(:gthm :tthm))
+                              (true-listp args))))
+  (let ((fn (car args))
+        (wrld (cadr args))
+        (called-fn (case kwd
+                     (:gthm 'guard-theorem)
+                     (:tthm 'termination-theorem)
+                     (otherwise (er hard! 'guard-or-termination-theorem-msg
+                                    "Implementation error!")))))
+    (if (plist-worldp wrld)
+        (msg "A call of ~x0 (or ~x1) can only be made on a :logic mode ~
+              function symbol, but ~x2 is ~@3.~@4"
+             kwd
+             called-fn
+             fn
+             (cond ((not (symbolp fn))
+                    "not a symbol")
+                   ((not (function-symbolp fn wrld))
+                    "not a function symbol in the current world")
+                   (t ; (programp fn wrld)
+                    "a :program mode function symbol"))
+             coda)
+      (msg "The second argument of the call ~x0 is not a valid logical world."
+           (cons called-fn args)))))
+
+(set-guard-msg guard-theorem
+               (guard-or-termination-theorem-msg :gthm args coda))
+
+(set-guard-msg termination-theorem
+               (guard-or-termination-theorem-msg :tthm args coda))
 
 (defun@par translate-lmi (lmi normalizep ctx wrld state)
 
@@ -12061,7 +12093,7 @@
                                        ~x0.  ~@1"
                                       fn
                                       (cdr term))))
-                              (t (value (list *t* nil nil nil)))))
+                              (t (value@par (list *t* nil nil nil)))))
                        (t (value@par (list term nil nil nil)))))))))
      ((runep lmi wrld)
       (let ((term (and (not (eq (car lmi) :INDUCTION))

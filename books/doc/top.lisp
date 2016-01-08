@@ -199,6 +199,7 @@
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
+(include-book "system/event-names" :dir :system)
 
 ;; [Jared] removing these to speed up the manual build
 ;; BOZO should we put them back in?

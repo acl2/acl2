@@ -363,6 +363,11 @@ ${info Excluding non-SBCL books: [$(CERT_PL_NON_SBCL)]}
 OK_CERTS := $(filter-out $(CERT_PL_NON_SBCL), $(OK_CERTS))
 endif
 
+ifeq (CMU, $(ACL2_HOST_LISP))
+${info Excluding non-CMUCL books: [$(CERT_PL_NON_CMUCL)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_CMUCL), $(OK_CERTS))
+endif
+
 ifeq (GCL, $(ACL2_HOST_LISP))
 ${info Excluding non-GCL books: [$(CERT_PL_NON_GCL)]}
 OK_CERTS := $(filter-out $(CERT_PL_NON_GCL), $(OK_CERTS))

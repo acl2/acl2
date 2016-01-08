@@ -29,4 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (include-book "portcullis")
+
+; Added by Matt K. 1/7/2016 because of problems with defoption in ACL2(p),
+; specifically, in parsetree.lisp.  See long comment about the same issue in
+; books/centaur/fty/tests/cert.acl2.  I actually successfully certified
+; parsetree at the terminal with waterfall-parallelism on, but certification
+; using the build system failed in two different defoption forms.
+(set-waterfall-parallelism nil)
+
 ; cert-flags: ? t :ttags :all

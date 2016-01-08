@@ -6470,6 +6470,71 @@
                           (list *nil*))))
                 fn$inline)))))
 
+(defun macroexpand1*-cmp (x ctx wrld state-vars)
+
+; We expand x repeatedly as long as it is a macro call, though we may stop
+; whenever we like.  We rely on a version of translate with to finish the job;
+; indeed, it should be the case that when translate11 is called on x with the
+; following arguments, it returns the same result regardless of whether
+; macroexpand1*-cmp is first called to do some expansion.
+
+; stobjs-out   - :stobjs-out
+; bindings     - ((:stobjs-out . :stobjs-out))
+; known-stobjs - t
+; flet-alist   - nil
+
+; Warning: Keep this in sync with translate11 -- especially the first cond
+; branch's test below.
+
+  (cond ((or (or (atom x) (eq (car x) 'quote))
+             (not (true-listp (cdr x)))
+             (not (symbolp (car x)))
+             (member-eq (car x) '(mv
+                                  mv-let
+                                  pargs
+                                  translate-and-test
+                                  with-local-stobj
+                                  stobj-let))
+             (assoc-eq (car x) *ttag-fns-and-macros*))
+         (value-cmp x))
+        ((and (getpropc (car x) 'macro-body nil wrld)
+              (not (and (member-eq (car x) '(pand por pargs plet))
+                        (eq (access state-vars state-vars :parallel-execution-enabled)
+                            t)))
+              (not (and (member-eq (car x) (global-val 'untouchable-fns wrld))
+                        (not (eq (access state-vars state-vars :temp-touchable-fns)
+                                 t))
+                        (not (member-eq (car x) (access state-vars state-vars
+                                                        :temp-touchable-fns))))))
+         (mv-let
+          (erp expansion)
+          (macroexpand1-cmp x ctx wrld state-vars)
+          (cond
+           (erp (mv erp expansion))
+           (t (macroexpand1*-cmp expansion ctx wrld state-vars)))))
+        (t (value-cmp x))))
+
+(defun find-stobj-out-and-call (lst known-stobjs ctx wrld state-vars)
+
+; Lst is a list of possibly UNTRANSLATED terms!
+
+  (cond
+   ((endp lst) nil)
+   (t
+    (or (mv-let (erp val)
+          (macroexpand1*-cmp (car lst) ctx wrld state-vars)
+          (and (not erp)
+               (consp val)
+               (symbolp (car val))
+               (not (member-eq (car val) *stobjs-out-invalid*))
+               (let ((stobjs-out (stobjs-out (car val) wrld)))
+                 (and (consp stobjs-out)
+                      (null (cdr stobjs-out))
+                      (stobjp (car stobjs-out) known-stobjs wrld)
+                      (cons (car stobjs-out) (car lst))))))
+        (find-stobj-out-and-call (cdr lst) known-stobjs ctx wrld
+                                 state-vars)))))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -7792,12 +7857,31 @@
                          in an MV form.  The form ~x0 is thus illegal."
                         x))
              (t
-              (trans-er-let*
-               ((args
-                 (translate11-lst (cdr x) new-stobjs-out
-                                  bindings known-stobjs
-                                  'mv flet-alist x ctx wrld state-vars)))
-               (trans-value (listify args))))))))))
+              (mv-let
+                (erp args bindings)
+                (translate11-lst (cdr x) new-stobjs-out
+                                 bindings known-stobjs
+                                 'mv flet-alist x ctx wrld state-vars)
+                (cond
+                 (erp
+                  (let ((st/call (find-stobj-out-and-call (cdr x) known-stobjs
+                                                          ctx wrld state-vars)))
+                    (cond
+                     (st/call
+                      (trans-er+ cform ctx
+                                 "The form ~x0 is being used as an argument ~
+                                  to a call of ~x1.  This form evaluates to a ~
+                                  single-threaded object, ~x2; but for an ~
+                                  argument of ~x1, the stobj variable itself ~
+                                  (here, ~x2) is required, not merely a term ~
+                                  that returns such a single-threaded object. ~
+                                  ~ So you may need to bind ~x2 with LET; see ~
+                                  :DOC stobj."
+                                 (cdr st/call)
+                                 'mv
+                                 (car st/call)))
+                     (t (mv erp args bindings)))))
+                 (t (trans-value (listify args))))))))))))
    ((eq (car x) 'mv-let)
     (translate11-mv-let x nil stobjs-out bindings known-stobjs
                         nil nil ; stobj info
@@ -9426,50 +9510,6 @@
       (t (mv nil
              (cons stobjs-out
                    (replace-stobjs stobjs-out val))))))))
-
-(defun macroexpand1*-cmp (x ctx wrld state-vars)
-
-; We expand x repeatedly as long as it is a macro call, though we may stop
-; whenever we like.  We rely on a version of translate with to finish the job;
-; indeed, it should be the case that when translate11 is called on x with the
-; following arguments, it returns the same result regardless of whether
-; macroexpand1*-cmp is first called to do some expansion.
-
-; stobjs-out   - :stobjs-out
-; bindings     - ((:stobjs-out . :stobjs-out))
-; known-stobjs - t
-; flet-alist   - nil
-
-; Warning: Keep this in sync with translate11 -- especially the first cond
-; branch's test below.
-
-  (cond ((or (or (atom x) (eq (car x) 'quote))
-             (not (true-listp (cdr x)))
-             (not (symbolp (car x)))
-             (member-eq (car x) '(mv
-                                  mv-let
-                                  pargs
-                                  translate-and-test
-                                  with-local-stobj
-                                  stobj-let))
-             (assoc-eq (car x) *ttag-fns-and-macros*))
-         (value-cmp x))
-        ((and (getpropc (car x) 'macro-body nil wrld)
-              (not (and (member-eq (car x) '(pand por pargs plet))
-                        (eq (access state-vars state-vars :parallel-execution-enabled)
-                            t)))
-              (not (and (member-eq (car x) (global-val 'untouchable-fns wrld))
-                        (not (eq (access state-vars state-vars :temp-touchable-fns)
-                                 t))
-                        (not (member-eq (car x) (access state-vars state-vars
-                                                        :temp-touchable-fns))))))
-         (mv-let
-          (erp expansion)
-          (macroexpand1-cmp x ctx wrld state-vars)
-          (cond
-           (erp (mv erp expansion))
-           (t (macroexpand1*-cmp expansion ctx wrld state-vars)))))
-        (t (value-cmp x))))
 
 (defun macroexpand1* (x ctx wrld state)
 

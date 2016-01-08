@@ -1640,7 +1640,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   (and (find-package "UNIX")
        (let ((fn (ignore-errors (intern "UNIX-SETENV" "UNIX"))))
-         (and (boundp fn) fn))))
+         (and (fboundp fn) fn))))
 
 #+cmu
 (defvar *cmucl-unix-getenv-fn*
@@ -1649,7 +1649,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   (and *cmucl-unix-setenv-fn* ; so that getenv$ respects setenv$
        (let ((fn (ignore-errors (intern "UNIX-GETENV" "UNIX"))))
-         (and (boundp fn) fn))))
+         (and (fboundp fn) fn))))
 
 (defun getenv$-raw (string)
 
@@ -1709,7 +1709,12 @@ notation causes an error and (b) the use of ,. is not permitted."
   #-cltl2 x)
 
 (defmacro safe-open (&rest args)
-  `(our-ignore-errors (open ,@args)))
+  (let ((filename (gensym)))
+    `(our-ignore-errors
+      (let ((,filename ; avoid evaluating first argument twice
+             ,(car args)))
+        (ensure-directories-exist ,filename)
+        (open ,filename ,@(cdr args))))))
 
 (defun our-truename (filename &optional namestringp)
 

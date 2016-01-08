@@ -1334,7 +1334,15 @@ ACL2 from scratch.")
                        (invoke-restart 'muffle-warning))))
            ,@forms))
 
-  #-(or sbcl cmu)
+  #+lispworks
+  `(with-redefinition-suppressed
+    (handler-bind
+     ((style-warning (lambda (c)
+                       (declare (ignore c))
+                       (invoke-restart 'muffle-warning))))
+     ,@forms))
+
+  #-(or sbcl cmu lispworks)
   `(with-redefinition-suppressed ,@forms))
 
 (defmacro with-more-warnings-suppressed (&rest forms)
@@ -1348,11 +1356,7 @@ ACL2 from scratch.")
 ; The handler-bind form given in with-warnings-suppressed for sbcl and cmucl is
 ; sufficient; we do not need anything further here.  But even with the addition
 ; of style-warnings (as commented there), that form doesn't seem to work for
-; CCL, Allegro CL, Lispworks, or CLISP.  So we bind some globals instead.
-
-  #+lispworks
-  `(let ((compiler::*compiler-warnings* nil))
-     ,@forms)
+; CCL, Allegro CL, or CLISP.  So we bind some globals instead.
 
   #+allegro
   `(handler-bind
@@ -1369,7 +1373,7 @@ ACL2 from scratch.")
   `(let ((ccl::*suppress-compiler-warnings* t))
      ,@forms)
 
-  #-(or lispworks allegro clisp ccl)
+  #-(or allegro clisp ccl)
   (if (cdr forms) `(progn ,@forms) (car forms)))
 
 (defmacro with-suppression (&rest forms)
