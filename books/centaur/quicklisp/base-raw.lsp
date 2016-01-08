@@ -30,6 +30,10 @@
 
 (in-package "ACL2")
 
+; It may be that we should do this for all Lisps instead of just Allegro.
+#+allegro
+(load "bundle/asdf.lisp")
+
 ; Preload (i.e., compile) all Quicklisp libraries that we're making available.
 ; The goal here is to defeat build parallelism and ensure that the packages are
 ; loaded in a serial manner.  Otherwise, e.g., we can have two Quicklisp
@@ -73,8 +77,25 @@
 (load-system-from-acl2-quicklisp-bundle "bt-semaphore")
 (load-system-from-acl2-quicklisp-bundle "cl-fad")
 (load-system-from-acl2-quicklisp-bundle "external-program")
+
+; [Jared] it looks like there's a difference between how allegro prints numbers
+; which causes some of the tests here to fail.  I'll need to update fastnumio
+; to fix that.  For now just don't include it on Allegro.  Actually it looks
+; like there may be bugs on CMUCL also.
+#+(and (not cmucl)
+       (not allegro))
 (load-system-from-acl2-quicklisp-bundle "fastnumio")
+
 (load-system-from-acl2-quicklisp-bundle "html-template")
+
+#+cmucl
+; [Jared] temporary workaround.  CL+SSL apparently fails to load on my system
+; due to an incompatible OpenSSL version. See also:
+;    https://github.com/cl-plus-ssl/cl-plus-ssl/issues/33
+;
+; Hopefully this will be fixed after the next Quicklisp release.
+(push :hunchentoot-no-ssl *features*)
+
 (load-system-from-acl2-quicklisp-bundle "hunchentoot")
 (load-system-from-acl2-quicklisp-bundle "osicat")
 (load-system-from-acl2-quicklisp-bundle "shellpool")

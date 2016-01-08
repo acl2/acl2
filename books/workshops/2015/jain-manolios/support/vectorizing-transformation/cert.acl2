@@ -1,11 +1,12 @@
+; Added by Matt K. 1/7/2016, because override-hints aren't supported with
+; waterfall parallelism in ACL2(p).
+(set-waterfall-parallelism nil)
+
 (include-book "acl2s/portcullis" :dir :system)
 (include-book "acl2s/cgen/top" :dir :system :ttags :all)
 (include-book "data-structures/list-defthms" :dir :system)
 
 ; cert-flags: ? t :ttags :all
-
-
-
 
 (in-package "ACL2S")
 (acl2s-defaults :set testing-enabled nil)

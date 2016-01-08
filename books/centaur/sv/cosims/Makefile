@@ -88,7 +88,12 @@ FAILING_TEST_TARGETS := \
   inst_size3/ok \
   inst_size4/ok \
   udp_wide1/ok \
-  stream3/ok
+  stream3/ok \
+  iface_gen/ok \
+  iface_gen2/ok \
+  iface_basic6/ok \
+  iface_subiface/ok \
+  udp_wide1/ok
 
 
 SPECFILES := $(wildcard */spec.sv)
@@ -148,6 +153,9 @@ vcs : $(OUTDATAS_VCS)
 
 .PHONY: passing
 passing : $(PASSING_TESTS)
+
+.phony: failing
+failing: $(FAILING_TEST_TARGETS)
 
 all : $(TESTCERTS) ncv vcs
 

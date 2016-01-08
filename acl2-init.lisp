@@ -1645,9 +1645,10 @@ implementations.")
 
 ; Indeed, we have exceeded that in a version of community book
 ; books/centaur/gl/solutions.lisp using ACL2(h) built on CMUCL.  So we use the
-; maximum possible value just below.
+; maximum possible value just below, which for darwin (at least on Matt's
+; Macbook pro) is only 1150.
 
-                        1632
+                        #+darwin 1150 #-darwin 1632
                         (insert-string host-lisp-args)
                         (user-args-string inert-args))))
     (chmod-executable sysout-name)
@@ -1703,23 +1704,25 @@ implementations.")
 ; sufficient for that book.  Fortunately, 16000 was sufficient.
 
 ; These are unusual books, in that they allocate an array of size 2^32.
-; Therefore we only increase the value to 16000 under #+hons; after all, the
-; ACL2 regression (as opposed to ACL2(h)) does not certify the y86 books in
-; ACL2.  If --dynamic-space-size 16000 causes a problem for some ACL2(h) users,
-; a simple solution will be for them to edit saved_acl2 or for them to build
-; ACL2 after defining this variable to be smaller than 16000 (though some
-; community book certifications may fail under under books/models/y86/, which
-; are done by default for ACL2(h)).
+; Indeed, the x86 books do not all certify in 32-bit SBCL; we found an error in
+; a certification attempt for community book
+; books/models/y86/y86-two-level-abs/common/x86-state-concrete.lisp,
+; complaining that the array dimension of 1677721600 is too large.  Therefore
+; we only increase the value to 16000 in 64-bit SBCL.  If --dynamic-space-size
+; 16000 causes a problem for some users, a simple solution will be for them to
+; edit saved_acl2 or for them to build ACL2 after defining this variable to be
+; smaller than 16000 (at the risk of certification failure for some x86 and y86
+; books).
 
 ; On 32-bit systems, 16000 may be too large.  We tried it on a 32-bit Linux
 ; system and got an error upon starting ACL2: "--dynamic-space-size argument is
-; out of range: 16000".  So we revert to our earlier value of 2000 for such
-; systems, even if we are doing an ACL2(h) build.  (The y86 books will likely
-; fail in this case, but we expect ACL2(h) users will generally be on 64-bit
-; systems.)
-
-; BUT: In October 2014 Jared Davis reported a failure for ACL2 (not ACL2(h)),
-; so we make this value 16000 regardless of feature :hons.
+; out of range: 16000".  We have thus reverted to our earlier value of 2000 for
+; such systems.  Harsh Raju Chamarthi reported that this value was still too
+; large for his Linux system, so at his suggestion, we tried lowering the
+; 32-bit value to 1024.  However community book
+; books/centaur/fty/tests/deftranssum.lisp then failed to certify, reporting:
+; "Heap exhausted during allocation: 43372544 bytes available, 67108872
+; requested."
 
   #+x86-64 16000
   #-x86-64 2000)

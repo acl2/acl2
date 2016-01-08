@@ -1,10 +1,10 @@
 (in-package "RTL")
 
+(local (include-book "arithmetic-5/top" :dir :system))
 (include-book "util")
 (local (include-book "basic"))
 (include-book "float")
 (include-book "round")
-(local (include-book "arithmetic-5/top" :dir :system))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 #|
@@ -3490,7 +3490,7 @@
            (exactp (* (expt 2 (- p (1+ (expo q)))) (- (* b q) a)) p))
   :rule-classes ()
   :hints (("Goal" :use (r-exactp-75
-                        (:instance exactp-minus (x (- (* b q) a)) (n p))
+                        (:instance minus-exactp (x (- (* b q) a)) (n p))
                         (:instance exactp-shift (n p) (x (- (* b q) a)) (k (- p (1+ (expo q)))))))))
 
 (local-defthm r-neg-18
@@ -4068,7 +4068,7 @@
            (exactp (* (expt 2 (- p (expo q))) (- (* b q) a)) p))
   :rule-classes ()
   :hints (("Goal" :use (r-exactp-75
-                        (:instance exactp-minus (x (- (* b q) a)) (n p))
+                        (:instance minus-exactp (x (- (* b q) a)) (n p))
                         (:instance exactp-shift (n p) (x (- (* b q) a)) (k (- p (expo q))))))))
 
 (local-defthm r-neg-rne-20
@@ -4498,7 +4498,7 @@
            (exactp (* (expt 2 (- p (expo q))) (- (* b q) a)) p))
   :rule-classes ()
   :hints (("Goal" :use (r-exactp-75
-                        (:instance exactp-minus (x (- (* b q) a)) (n p))
+                        (:instance minus-exactp (x (- (* b q) a)) (n p))
                         (:instance exactp-shift (n p) (x (- (* b q) a)) (k (- p (expo q))))))))
 
 (local-defthm r-neg-rne-up-20

@@ -29,6 +29,11 @@
 (local (include-book "oslib/read-acl2-oracle" :dir :system))
 ; (depends-on "oracle-timelimit-raw.lsp")
 
+; [Jared] I don't think this is going to work on CMUCL.  It's not really
+; multithreaded, right?  So we probably can't use a second thread that
+; interrupts the first.
+
+; cert_param: (non-cmucl)
 
 (defxdoc oracle-timelimit
   :parents (oracle-time miscellaneous) ; the latter helps ACL2-only :doc

@@ -3450,7 +3450,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
              (= y (rne x n)))
   :rule-classes ()
   :hints (("Goal" :use (rne-minus
-                       (:instance exactp-minus (x y))
+                       (:instance minus-exactp (x y))
                        (:instance rf-16 (x (- x)) (y (- y)))))))
 
 (defthm rne-force

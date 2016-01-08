@@ -29,4 +29,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+
+#+cmucl
+; [Jared] temporary workaround.  CL+SSL apparently fails to load on my system
+; due to an incompatible OpenSSL version. See also:
+;    https://github.com/cl-plus-ssl/cl-plus-ssl/issues/33
+;
+; Hopefully this will be fixed after the next Quicklisp release.
+(push :hunchentoot-no-ssl *features*)
+
 (asdf:load-system "hunchentoot")

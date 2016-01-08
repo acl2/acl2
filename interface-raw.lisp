@@ -2808,8 +2808,8 @@
     (setq *deep-gstack* nil)
     (return-from dmr-string *dmr-delete-string*))
   (setf (fill-pointer *dmr-reusable-string*) 0)
-  (let* ((pstk-tokens (loop for x in *pstk-stack*
-                            with result = nil
+  (let* ((pstk-tokens (loop with result = nil
+                            for x in *pstk-stack*
                             do (push (cond ((eq (car x) 'waterfall)
                                             (car (nthcdr 8 x))) ; ctx
                                            ((eq (car x) 'ev-fncall)

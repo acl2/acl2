@@ -1,12 +1,14 @@
 (in-package "RTL")
 
-(include-book "../rel9-rtl-pkg/lib/util")
+(local (include-book "arithmetic-5/top" :dir :system))
+
+(local (include-book "basic"))
+(local (include-book "bits"))
+(include-book "definitions")
 
 (local (encapsulate ()
 
-(local (include-book "../rel9-rtl-pkg/lib/top"))
-
-(local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "../rel9-rtl-pkg/lib/log"))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
@@ -198,8 +200,6 @@
            (equal (fl (* (expt 2 (- n)) (logxor x y)))
                   (logxor (fl (* (expt 2 (- n)) x)) (fl (* (expt 2 (- n)) y)))))
   :hints (("Goal" :use ((:instance fl-logxor (k n) (n 0))))))
-
-(local (include-book "bits"))
 
 (local-defthmd logand-cat-1
   (implies (and (case-split (integerp x1))

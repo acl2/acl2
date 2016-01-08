@@ -2545,7 +2545,8 @@
 
 (defun current-theory-fn (logical-name wrld)
 
-; Warning: Keep this in sync with union-current-theory-fn.
+; Warning: Keep this in sync with union-current-theory-fn and
+; set-difference-current-theory-fn.
 
 ; We return the theory that was enabled in the world created by the
 ; event that introduced logical-name.
@@ -2604,7 +2605,8 @@
 
 (defun union-current-theory-fn (lst2 wrld)
 
-; Warning: Keep this in sync with current-theory-fn.
+; Warning: Keep this in sync with current-theory-fn and
+; set-difference-current-theory-fn.
 
 ; This function returns, with an optimized computation, the value
 ; (union-theories-fn (current-theory :here) lst2 t wrld).
@@ -2655,6 +2657,9 @@
 
 (defun set-difference-current-theory-fn (lst2 wrld)
 
+; Warning: Keep this in sync with current-theory-fn and
+; union-current-theory-fn.
+
 ; This function returns, with an optimized computation, the value
 ; (set-difference-theories-fn (current-theory :here)
 ;                             lst2
@@ -2663,11 +2668,14 @@
 
   (check-theory
    lst2 wrld 'set-difference-current-theory-fn
-   (let ((w ; as in current-theory-fn, we apply decode-logical-name
-          (scan-to-event wrld)))
+   (let* ((wrld1 ; as in current-theory-fn, we apply decode-logical-name
+           (scan-to-event wrld))
+          (redefined (collect-redefined wrld nil))
+          (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
+                                 *acl2-property-unbound* wrld1)))
      (set-difference-augmented-theories-fn1+
-      (current-theory1-augmented w nil nil)
-      (current-theory1 w nil nil)
+      (current-theory1-augmented wrld2 nil nil)
+      (current-theory1 wrld2 nil nil)
       (augment-theory lst2 wrld)
       nil))))
 
@@ -28435,14 +28443,17 @@
              (chan state)
              (open-input-channel filename :character state)
              (cond
-              ((null chan)
+              ((or (null chan)
+; The following is to simplify guard verification.
+                   (not (state-p state)))
                (mv nil nil state))
-              (t (state-global-let*
-                  ((guard-checking-on t))
+              (t (pprogn
+                  (f-put-global 'guard-checking-on t state)
                   (mv-let
                     (val state)
-                    (read-file-into-string1 chan state nil
-                                            *read-file-into-string-bound*)
+                    (ec-call ; guard verification here seems unimportant
+                     (read-file-into-string1 chan state nil
+                                             *read-file-into-string-bound*))
                     (pprogn
                      (ec-call ; guard verification here seems unimportant
                       (close-input-channel chan state))
