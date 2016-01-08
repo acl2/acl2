@@ -591,7 +591,7 @@ because... (BOZO)</p>
                 nil))
            ((vl-operandinfo opinfo))
            ((wmv warnings rhssvex)
-            (vl-expr-to-svex-datatyped rhs lhs opinfo.type ss scopes))
+            (vl-expr-to-svex-datatyped rhs lhs opinfo.type ss scopes :compattype :assign))
            ((wmv ok warnings svstmts ?shift)
             (vl-procedural-assign->svstmts lhs rhssvex blockingp ss scopes)))
         (mv ok warnings svstmts))
@@ -1221,7 +1221,11 @@ a final return statement with an assignment to the output variable.</p>"
                  ;; Note: vl-expr-to-svex-datatyped is going to complain
                  ;; already if we don't get the size, so don't warn here.
                  ((mv warnings svex)
-                  (vl-expr-to-svex-datatyped x nil type ss scopes)))
+                  ;; Note: We use :compattype :assign because the only place
+                  ;; where the datatype argument is used is when computing the
+                  ;; value for an explicitvalueparam, which is basically an
+                  ;; assignment.
+                  (vl-expr-to-svex-datatyped x nil type ss scopes :compattype :assign)))
               (mv warnings svex size))
           (if ctxsize
               (vl-expr-to-svex-selfdet x ctxsize ss scopes)

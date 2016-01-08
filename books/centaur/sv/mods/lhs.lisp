@@ -193,6 +193,8 @@ of assignments.</p>
 LHS object is the concatenations of the bits of all of its lhrange objects, in
 the order given (LSBs-first).</p>")
 
+
+
 (define lhs-eval ((x lhs-p) (env svex-env-p))
   :parents (lhs)
   :returns (val 4vec-p)
@@ -3021,3 +3023,16 @@ bits of @('foo'):</p>
         (mv mask-acc conf-acc))
        ((mv mask-acc conf-acc) (lhs-check-masks (caar x) mask-acc conf-acc)))
     (assigns-check-masks (cdr x) mask-acc conf-acc)))
+
+
+
+
+(define make-simple-lhs (&key (width posp)
+                              ((rsh natp) '0)
+                              (var svar-p))
+  :returns (lhs lhs-p)
+  (list (sv::make-lhrange :w width :atom (sv::make-lhatom-var :name var :rsh rsh)))
+  ///
+  (defret vars-of-make-simple-lhs
+    (equal (lhs-vars lhs) (list (svar-fix var)))
+    :hints(("Goal" :in-theory (enable lhatom-vars)))))

@@ -432,3 +432,16 @@ address with empty index and scope qualifier 0.</p>"
    (new-x :name vars-of-svex-alist-add-delay
           (implies (svarlist-addr-p (svex-alist-vars x))
                    (svarlist-addr-p (svex-alist-vars new-x))))))
+
+
+(define make-simple-svar ((name name-p))
+  :returns (var (and (svar-p var)
+                     (svar-addr-p var)))
+  (sv::address->svar (make-address :path (make-path-wire :name name))))
+
+(define make-scoped-svar ((scope name-p)
+                          (name name-p))
+  :short "Make an svar for a name under a single scope level, e.g. foo.bar"
+  :returns (var (and (svar-p var)
+                     (svar-addr-p var)))
+  (sv::address->svar (make-address :path (make-path-scope :namespace scope :subpath (make-path-wire :name name)))))
