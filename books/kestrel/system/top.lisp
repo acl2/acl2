@@ -15,6 +15,7 @@
 (in-package "ACL2")
 
 (include-book "world-queries")
+(include-book "defun-sk-queries")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
