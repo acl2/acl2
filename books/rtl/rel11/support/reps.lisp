@@ -75,8 +75,9 @@
   (declare (xargs :guard (formatp f)))
   (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
 
-(defrule encodinp-forward
-  (implies (encodingp x f) (formatp f))
+(defrule encodingp-forward
+  (implies (encodingp x f)
+           (formatp f))
   :enable encodingp
   :rule-classes :forward-chaining)
 
@@ -481,7 +482,6 @@
   :rule-classes ((:rewrite :match-free :once))
   :hints (("Goal" :in-theory (enable nrepp) :use (largest-lpn-1 positive-lpn))))
 
-
 ;;;***************************************************************
 ;;;               Denormals and Zeroes
 ;;;***************************************************************
@@ -819,7 +819,7 @@
   :prep-lemmas (
     (defrule lemma
       (implies (and (posp p)
-                    (real/rationalp x)
+                    (rationalp x)
                     (> x 0))
                (iff (and
                       (<= 0 (expo x))

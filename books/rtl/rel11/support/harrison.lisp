@@ -1,11 +1,13 @@
 (in-package "RTL")
 
+(include-book "tools/with-arith5-help" :dir :system)
+(local (acl2::allow-arith5-help))
+(local (in-theory (acl2::enable-arith5)))
+
 (include-book "markstein")
 (local (include-book "basic"))
 (local (include-book "float"))
 (local (include-book "round"))
-
-(local (include-book "arithmetic-5/top" :dir :system))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
@@ -458,7 +460,7 @@
            (<= 0 (* (expt 2 (* 2 p)) ep)))
   :rule-classes ())
 
-(local-defthm h-41
+(local (acl2::with-arith5-nonlinear-help (defthm h-41
   (let ((d (cg (* (expt 2 (* 2 p)) ep))))
     (implies (and (rationalp b)
                   (rationalp yp)
@@ -475,7 +477,9 @@
                   (<= d (expt 2 (1- p))))))
   :rule-classes ()
   :hints (("Goal" :use (h-39 h-40
-                        (:instance n>=cg-linear (n (expt 2 (1- p))) (x (* (expt 2 (* 2 p)) ep)))))))
+                        (:instance n>=cg-linear (n (expt 2 (1- p))) (x (* (expt
+                                                                           2 (* 2 p)) ep)))))))))
+
 
 (local-defthm h-42
   (let ((y (rne yp p))

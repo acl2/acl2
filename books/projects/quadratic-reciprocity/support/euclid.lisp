@@ -6,8 +6,8 @@
 
 ;;   (2) If p is a prime divisor of a*b, then p divides either a or b.
 
-(include-book "rtl/rel11/lib/basic" :dir :system) ;; Properties of fl and mod
-(include-book "rtl/rel11/lib/util" :dir :system)  ;; Utility macros
+(include-book "rtl/rel11/support/basic" :dir :system) ;; Properties of fl and mod
+(include-book "rtl/rel11/support/util" :dir :system)  ;; Utility macros
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
 ;; We first list some basic properties of divisibility.
