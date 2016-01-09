@@ -12,7 +12,8 @@
 ;;;**********************************************************************
 
 (defund dvecp (x k b)
-  (declare (xargs :guard (and (natp k) (radixp b))))
+  (declare (xargs :guard (and (natp k)
+                              (radixp b))))
   (and (integerp x)
        (<= 0 x)
        (< x (expt b k))))
@@ -1277,6 +1278,9 @@
   :rule-classes ())
 
 (defun sumdigits (x n b)
+  (declare (xargs :guard (and (integerp x)
+                              (natp n)
+                              (radixp b))))
   (if (zp n)
       0
     (+ (* (expt b (1- n)) (digitn x (1- n) b))
@@ -1313,11 +1317,14 @@
                   x))
   :enable sumdigits-digits)
 
-(defun all-digits-p (list k b)
-  (if (zp k)
-      t
-    (and (digitp (nth (1- k) list) b)
-         (all-digits-p list (1- k) b))))
+(defnd all-digits-p (list k b)
+  (if (posp k)
+      (and (consp list)
+           (all-digits-p (cdr list) (1- k) b)
+           (digitp (car list) b))
+    (and (true-listp list)
+         (equal k 0)
+         (radixp b))))
 
 (defrule digitp-of-all-digits-p
   (implies (and (all-digits-p list n b)
@@ -1325,41 +1332,55 @@
                 (natp k)
                 (natp n))
            (digitp (nth k list) b))
-  :induct (sub1-induction n)
+  :use (:instance nth-all-digits-p
+         (k n)
+         (i k))
   :rule-classes ())
 
 (defun sum-d (list k b)
+  (declare (xargs :guard (all-digits-p list k b)))
   (if (zp k)
       0
     (+ (* (expt b (1- k)) (nth (1- k) list))
        (sum-d list (1- k) b))))
 
-(acl2::with-arith5-nonlinear-help
- (defruled dvecp-sum-d
-   (implies (and (all-digits-p list n b)
-                 (natp n)
-                 (radixp b))
-            (dvecp (sum-d list n b) n b))
-   :enable (dvecp)
-   :induct (sub1-induction n)))
+(defruled dvecp-sum-d
+   (implies (all-digits-p list k b)
+            (dvecp (sum-d list k b) k b))
+   :prep-lemmas (
+     (acl2::with-arith5-nonlinear-help
+      (defrule lemma
+        (implies (and (all-digits-p list k b)
+                      (natp n)
+                      (<= n k))
+                 (dvecp (sum-d list n b) n b))
+        :enable (dvecp)
+        :induct (sub1-induction n)
+        :hints (("subgoal *1/2" :use (:instance nth-all-digits-p (i (1- n)))))
+        :rule-classes ())))
+   :use (:instance lemma (n k)))
 
 (defruled sum-digitn
-  (implies (and (natp n)
-                (all-digits-p list n b)
+  (implies (and (all-digits-p list n b)
                 (natp k)
-                (< k n)
-                (radixp b))
+                (< k n))
            (equal (digitn (sum-d list n b) k b)
                   (nth k list)))
   :prep-lemmas (
     (defrule lemma1
+      (implies (and (all-digits-p list n b)
+                    (not (equal n 0)))
+               (all-digits-p list (1- n) b))
+      :enable all-digits-p
+      :induct (all-digits-p list n b))
+    (defrule lemma2
       (implies (and (natp k)
                     (dvecp x k b)
                     (digitp d b)
                     (radixp b))
                (equal (digitn (+ x (* (expt b k) d)) k b) d))
       :enable (digitn-def fl))
-    (defrule lemma2
+    (defrule lemma3
       (implies (and
                 (natp k)
                 (natp n)
@@ -1372,20 +1393,19 @@
       :enable digitn-def))
   :enable (dvecp-sum-d)
   :induct (sub1-induction n)
-  :hints (("subgoal *1/2" :cases ((= k (1- n))))))
+  :hints (("subgoal *1/2" :cases ((= k (1- n)))
+                          :use (:instance nth-all-digits-p
+                                 (i (1- n))
+                                 (k n)))))
 
 ;; The next lemma can be used to prove equality of two digit vectors by
 ;; proving that they have the same value at digit n for all n.
 
-(defun digit-diff (x y b)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (radixp b))
-                  :measure (+ (abs (ifix x)) (abs (ifix y)))
-                  :hints (("goal" :use digit-diff-measure-lemma))))
-  (if (or (not (mbt (integerp x)))
-          (not (mbt (integerp y)))
-          (not (mbt (radixp b)))
+(defn digit-diff (x y b)
+  (declare (xargs :measure (:? x y)))
+  (if (or (not (integerp x))
+          (not (integerp y))
+          (not (radixp b))
           (= x y))
       ()
     (if (= (digitn x 0 b) (digitn y 0 b))
@@ -1692,6 +1712,8 @@
   :rule-classes ())
 
 (defun sumbits (x n)
+  (declare (xargs :guard (and (integerp x)
+                              (natp n))))
   (if (zp n)
       0
     (+ (* (expt 2 (1- n)) (bitn x (1- n)))
@@ -1718,19 +1740,24 @@
 		    x))
     :enable sumdigits-thm)
 
-(defun all-bits-p (b k)
-  (if (zp k)
-      t
-    (and (or (= (nth (1- k) b) 0)
-	     (= (nth (1- k) b) 1))
-	 (all-bits-p b (1- k)))))
+(defnd all-bits-p (b k)
+  (if (posp k)
+      (and (consp b)
+           (all-bits-p (cdr b) (1- k))
+           (or (equal (car b) 0)
+               (equal (car b) 1)))
+    (and (true-listp b)
+         (equal k 0))))
 
 (local
  (defrule all-bits-p-as-all-digits-p
    (equal (all-bits-p b k)
-          (all-digits-p b k 2))))
+          (all-digits-p b k 2))
+   :enable (all-bits-p all-digits-p)
+   :induct (all-bits-p b k)))
 
 (defun sum-b (b k)
+  (declare (xargs :guard (all-bits-p b k)))
   (if (zp k)
       0
     (+ (* (expt 2 (1- k)) (nth (1- k) b))
@@ -1739,11 +1766,11 @@
 (local
  (defrule sum-b-as-sum-d
    (equal (sum-b b k)
-          (sum-d b k 2))))
+          (sum-d b k 2))
+   :induct (sum-b b k)))
 
 (defruled sum-bitn
-  (implies (and (natp n)
-		(all-bits-p b n)
+  (implies (and (all-bits-p b n)
 	        (natp k)
 		(< k n))
            (equal (bitn (sum-b b n) k)
@@ -1753,11 +1780,11 @@
 ;; The next lemma can be used to prove equality of two bit vectors by
 ;; proving that they have the same value at bit n for all n.
 
-(defun bit-diff (x y)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y))
-                  :measure (+ (abs (ifix x)) (abs (ifix y)))))
-  (if (or (not (mbt (integerp x))) (not (mbt (integerp y))) (= x y))
+(defn bit-diff (x y)
+  (declare (xargs :measure (:? x y)))
+  (if (or (not (integerp x))
+          (not (integerp y))
+          (= x y))
       ()
     (if (= (bitn x 0) (bitn y 0))
         (1+ (bit-diff (fl (/ x 2)) (fl (/ y 2))))
@@ -1856,6 +1883,19 @@
             (equal (radix-cat b x m y n)
                    (+ (* x (expt b n)) y)))
    :enable radix-cat))
+
+(defn formal-+ (x y)
+  (if (and (acl2-numberp x) (acl2-numberp y))
+      (+ x y)
+    (list '+ x y)))
+
+(defun cat-size (x)
+  (declare (xargs :guard (and (true-listp x)
+                              (evenp (length x)))))
+  (if (endp (cddr x))
+      (cadr x)
+    (formal-+ (cadr x)
+	      (cat-size (cddr x)))))
 
 (defmacro cat-r (b &rest x)
   (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
@@ -2170,14 +2210,16 @@
   :use digitn-cat-r)
 
 (defund mulcat-r (l n x b)
-  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x)
+  (declare (xargs :guard (and (natp l)
+                              (natp n)
+                              (natp x)
                               (radixp b))))
   (if (and (integerp n) (> n 0))
-                  (cat-r b (mulcat-r l (1- n) x b)
-                       (* l (1- n))
-                       x
-                       l)
-                0))
+      (cat-r b (mulcat-r l (1- n) x b)
+             (* l (1- n))
+             x
+             l)
+    0))
 
 (defruled mulcat-r-digits
   (implies (and (integerp l)
@@ -2450,26 +2492,16 @@
                       0))))
   :use bitn-cat)
 
-;; We introduce mbe for MULCAT not because we want particularly fast execution,
-;; but because the existing logic definition does not satisfy the guard of cat,
-;; which can't be changed because of the guard of bits.
-
 (defund mulcat (l n x)
-  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x))))
-  (mbe :logic (if (and (integerp n) (> n 0))
-                  (cat (mulcat l (1- n) x)
-                       (* l (1- n))
-                       x
-                       l)
-                0)
-       :exec  (cond ((eql n 1)
-                     (bits x (1- l) 0))
-                    ((and (integerp n) (> n 0))
-                     (cat (mulcat l (1- n) x)
-                          (* l (1- n))
-                          x
-                          l))
-                    (t 0))))
+  (declare (xargs :guard (and (natp l)
+                              (natp n)
+                              (natp x))))
+  (if (and (integerp n) (> n 0))
+      (cat (mulcat l (1- n) x)
+           (* l (1- n))
+           x
+           l)
+    0))
 
 (local
  (defrule mulcat-as-mulcat-r

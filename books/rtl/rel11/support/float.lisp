@@ -474,23 +474,20 @@
 ;;;                 Sign, Significand, and Exponent
 ;;;**********************************************************************
 
-(defund sgn (x)
-  (declare (xargs :guard t))
+(defnd sgn (x)
   (if (or (not (rationalp x)) (equal x 0))
       0
     (if (< x 0) -1 +1)))
 
-(defund expo (x)
-  (declare (xargs :guard t
-                  :measure (:? x)))
+(defnd expo (x)
+  (declare (xargs :measure (:? x)))
   (cond ((or (not (rationalp x)) (equal x 0)) 0)
 	((< x 0) (expo (- x)))
 	((< x 1) (1- (expo (* 2 x))))
 	((< x 2) 0)
 	(t (1+ (expo (/ x 2))))))
 
-(defund sig (x)
-  (declare (xargs :guard t))
+(defnd sig (x)
   (if (rationalp x)
       (if (< x 0)
           (- (* x (expt 2 (- (expo x)))))

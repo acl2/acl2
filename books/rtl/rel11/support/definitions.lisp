@@ -41,7 +41,8 @@
 ;; From bits.lisp:
 
 (defund dvecp (x k b)
-  (declare (xargs :guard (and (natp k) (radixp b))))
+  (declare (xargs :guard (and (natp k)
+                              (radixp b))))
   (and (integerp x)
        (<= 0 x)
        (< x (expt b k))))
@@ -57,7 +58,8 @@
   :enable bvecp
   :rule-classes :forward-chaining))
 
-(defun nats (n) (if (zp n) () (cons (1- n) (nats (1- n)))))
+(defun nats (n)
+  (if (zp n) () (cons (1- n) (nats (1- n)))))
 
 (defund digits (x i j b)
   (declare (xargs :guard (and (real/rationalp x)
@@ -196,37 +198,80 @@
 (in-theory (disable (:type-prescription bitn)))
 
 (defun sumdigits (x n b)
+  (declare (xargs :guard (and (integerp x)
+                              (natp n)
+                              (radixp b))))
   (if (zp n)
       0
     (+ (* (expt b (1- n)) (digitn x (1- n) b))
        (sumdigits x (1- n) b))))
 
 (defun sumbits (x n)
+  (declare (xargs :guard (and (integerp x)
+                              (natp n))))
   (if (zp n)
       0
     (+ (* (expt 2 (1- n)) (bitn x (1- n)))
        (sumbits x (1- n)))))
 
-(defun all-digits-p (list k b)
-  (if (zp k)
-      t
-    (and (digitp (nth (1- k) list) b)
-         (all-digits-p list (1- k) b))))
+(defnd all-digits-p (list k b)
+  (declare (xargs :guard-hints (("goal" :induct (all-digits-p list k b)))))
+  (if (posp k)
+      (and (consp list)
+           (all-digits-p (cdr list) (1- k) b)
+           (digitp (car list) b))
+    (and (true-listp list)
+         (equal k 0)
+         (radixp b))))
 
-(defun all-bits-p (b k)
-  (if (zp k)
-      t
-    (and (or (= (nth (1- k) b) 0)
-	     (= (nth (1- k) b) 1))
-	 (all-bits-p b (1- k)))))
+(defrule all-digits-p-forward
+  (implies (all-digits-p list k b)
+           (and (true-listp list)
+                (natp k)
+                (<= k (len list))
+                (radixp b)))
+  :enable all-digits-p
+  :induct (all-digits-p list k b)
+  :rule-classes :forward-chaining)
+
+(defrule nth-all-digits-p
+  (implies (and (all-digits-p list k b)
+                (natp i)
+                (integerp k)
+                (< i k))
+           (digitp (nth i list) b))
+  :prep-lemmas (
+    (defrule lemma
+      (implies (and (all-digits-p list (+ k i) b)
+                    (natp i)
+                    (posp k))
+               (digitp (nth i list) b))
+      :enable (all-digits-p)
+      :induct (nth i list)))
+  :use (:instance lemma (k (- k i)))
+  :rule-classes ())
+
+(defnd all-bits-p (b k)
+  (declare (xargs :guard-hints (("goal" :induct (all-bits-p b k)))))
+  (if (posp k)
+      (and (consp b)
+           (all-bits-p (cdr b) (1- k))
+           (or (equal (car b) 0)
+               (equal (car b) 1)))
+    (and (true-listp b)
+         (equal k 0))))
 
 (defun sum-d (list k b)
+  (declare (xargs :guard (all-digits-p list k b)
+                  :guard-hints (("goal" :in-theory (enable all-digits-p)))))
   (if (zp k)
       0
     (+ (* (expt b (1- k)) (nth (1- k) list))
        (sum-d list (1- k) b))))
 
 (defun sum-b (b k)
+  (declare (xargs :guard (all-bits-p b k)
+                  :guard-hints (("goal" :in-theory (enable all-bits-p)))))
   (if (zp k)
       0
     (+ (* (expt 2 (1- k)) (nth (1- k) b))
@@ -274,16 +319,13 @@
    :disable (abs)
    :rule-classes ()))
 
-(defun digit-diff (x y b)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (radixp b))
-                  :verify-guards nil
+(defn digit-diff (x y b)
+  (declare (xargs :verify-guards nil
                   :measure (+ (abs (ifix x)) (abs (ifix y)))
                   :hints (("goal" :use digit-diff-measure-lemma))))
-  (if (or (not (mbt (integerp x)))
-          (not (mbt (integerp y)))
-          (not (mbt (radixp b)))
+  (if (or (not (integerp x))
+          (not (integerp y))
+          (not (radixp b))
           (= x y))
       ()
     (if (= (digitn x 0 b) (digitn y 0 b))
@@ -319,13 +361,11 @@
        :enable (bitn digitn bits digits)))
    :use (:instance digit-diff-measure-lemma (b 2))))
 
-(defun bit-diff (x y)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y))
-                  :verify-guards nil
+(defn bit-diff (x y)
+  (declare (xargs :verify-guards nil
                   :measure (+ (abs (ifix x)) (abs (ifix y)))
                   :hints (("goal" :use bit-diff-measure-lemma))))
-  (if (or (not (mbt (integerp x))) (not (mbt (integerp y))) (= x y))
+  (if (or (not (integerp x)) (not (integerp y)) (= x y))
       ()
     (if (= (bitn x 0) (bitn y 0))
         (1+ (bit-diff (fl (/ x 2)) (fl (/ y 2))))
@@ -338,6 +378,10 @@
            (natp (bit-diff x y)))
   :rule-classes :type-prescription)
 
+(verify-guards bit-diff
+  :hints (("goal" :cases ((equal (fl (/ x 2)) (fl (/ y 2))))
+                  :in-theory (e/d (bitn bits fl) (bit-diff)))))
+
 (defund radix-cat (b x m y n)
   (declare (xargs :guard (and (radixp b)
                               (integerp x)
@@ -349,10 +393,6 @@
          (digits y (1- n) 0 b))
     0))
 
-(verify-guards bit-diff
-  :hints (("goal" :cases ((equal (fl (/ x 2)) (fl (/ y 2))))
-                  :in-theory (e/d (bitn bits fl) (bit-diff)))))
-
 (defund binary-cat (x m y n)
   (declare (xargs :guard (and (integerp x)
                               (integerp y)
@@ -363,14 +403,14 @@
          (bits y (1- n) 0))
     0))
 
-(defun formal-+ (x y)
-  (declare (xargs :guard t))
+(defn formal-+ (x y)
   (if (and (acl2-numberp x) (acl2-numberp y))
       (+ x y)
     (list '+ x y)))
 
 (defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
+  (declare (xargs :guard (and (true-listp x)
+                              (evenp (length x)))))
   (if (endp (cddr x))
       (cadr x)
     (formal-+ (cadr x)
@@ -422,15 +462,17 @@
 (in-theory (disable (:type-prescription binary-cat)))
 
 (defund mulcat-r (l n x b)
-  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x)
+  (declare (xargs :guard (and (natp l)
+                              (natp n)
+                              (natp x)
                               (radixp b))
                   :verify-guards nil))
   (if (and (integerp n) (> n 0))
-                  (cat-r b (mulcat-r l (1- n) x b)
-                       (* l (1- n))
-                       x
-                       l)
-                0))
+      (cat-r b (mulcat-r l (1- n) x b)
+             (* l (1- n))
+             x
+             l)
+    0))
 
 (defrule mulcat-r-nonnegative-integer-type
   (implies (radixp b)
@@ -444,22 +486,16 @@
 (verify-guards mulcat-r)
 
 (defund mulcat (l n x)
-  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x))
+  (declare (xargs :guard (and (natp l)
+                              (natp n)
+                              (natp x))
                   :verify-guards nil))
-  (mbe :logic (if (and (integerp n) (> n 0))
-                  (cat (mulcat l (1- n) x)
-                       (* l (1- n))
-                       x
-                       l)
-                0)
-       :exec  (cond ((eql n 1)
-                     (bits x (1- l) 0))
-                    ((and (integerp n) (> n 0))
-                     (cat (mulcat l (1- n) x)
-                          (* l (1- n))
-                          x
-                          l))
-                    (t 0))))
+  (if (and (integerp n) (> n 0))
+      (cat (mulcat l (1- n) x)
+           (* l (1- n))
+           x
+           l)
+    0))
 
 (defrule mulcat-nonnegative-integer-type
   (and (integerp (mulcat l n x))
@@ -526,8 +562,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x)
-  (declare (xargs :guard t))
+(defnd sgn (x)
   (if (or (not (rationalp x)) (equal x 0))
       0
     (if (< x 0) -1 +1)))
@@ -538,9 +573,8 @@
 	((< x 1) (cons 1 (fl (/ x))))
 	(t (fl x))))
 
-(defund expo (x)
-  (declare (xargs :guard t
-                  :hints (("goal" :in-theory (enable fl)))
+(defnd expo (x)
+  (declare (xargs :hints (("goal" :in-theory (enable fl)))
                   :well-founded-relation e0-ord-<
                   :measure (expo-measure x)))
   (cond ((or (not (rationalp x)) (equal x 0)) 0)
@@ -549,8 +583,7 @@
 	((< x 2) 0)
 	(t (1+ (expo (/ x 2))))))
 
-(defund sig (x)
-  (declare (xargs :guard t))
+(defnd sig (x)
   (if (rationalp x)
       (if (< x 0)
           (- (* x (expt 2 (- (expo x)))))
@@ -558,15 +591,18 @@
     0))
 
 (defund exactp (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (defun fp+ (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (defun fp- (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (= x (expt 2 (expo x)))
       (- x (expt 2 (- (expo x) n)))
     (- x (expt 2 (- (1+ (expo x)) n)))))
@@ -585,13 +621,19 @@
        (> (caddr f) 1)))
 (local (in-theory (enable formatp)))
 
-(defund explicitp (f) (declare (xargs :guard (formatp f))) (car f))
+(defund explicitp (f)
+  (declare (xargs :guard (formatp f)))
+  (car f))
 (local (in-theory (enable explicitp)))
 
-(defund prec (f) (declare (xargs :guard (formatp f))) (cadr f))
+(defund prec (f)
+  (declare (xargs :guard (formatp f)))
+  (cadr f))
 (local (in-theory (enable prec)))
 
-(defund expw (f) (declare (xargs :guard (formatp f))) (caddr f))
+(defund expw (f)
+  (declare (xargs :guard (formatp f)))
+  (caddr f))
 (local (in-theory (enable expw)))
 
 (defund sigw (f)
@@ -614,23 +656,29 @@
 (in-theory (disable (sp) (dp) (ep)))
 
 (defund sgnf (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (bitn x (+ (expw f) (sigw f))))
 
 (defund expf (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
 (local (in-theory (enable expf)))
 
 (defund sigf (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (bits x (1- (sigw f)) 0))
 
 (defund manf (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (bits x (- (prec f) 2) 0))
 
-(defund bias (f) (declare (xargs :guard (formatp f))) (- (expt 2 (- (expw f) 1)) 1))
+(defund bias (f)
+  (declare (xargs :guard (formatp f)))
+  (- (expt 2 (- (expw f) 1)) 1))
 (local (in-theory (enable bias)))
 
 (defund normp (x f)
@@ -648,7 +696,8 @@
        (= (bitn x (1- (prec f))) 0)))
 
 (defund ndecode (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (* (if (= (sgnf x f) 0) 1 -1)
      (expt 2 (- (expf x f) (bias f)))
      (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
@@ -706,13 +755,15 @@
        (= (bitn x (1- (prec f))) 1)))
 
 (defund ddecode (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (* (if (= (sgnf x f) 0) 1 -1)
      (sigf x f)
      (expt 2 (+ 2 (- (bias f)) (- (prec f))))))
 
 (defund decode (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (if (= (expf x f) 0)
       (ddecode x f)
     (ndecode x f)))
@@ -770,7 +821,8 @@
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
 (defund qnanize (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (logior x (expt 2 (- (prec f) 2))))
 
 (defund indef (f)

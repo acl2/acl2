@@ -69,14 +69,14 @@
          (bits y (1- n) 0))
     0))
 
-(defun formal-+ (x y)
-  (declare (xargs :guard t))
+(defn formal-+ (x y)
   (if (and (acl2-numberp x) (acl2-numberp y))
       (+ x y)
     (list '+ x y)))
 
 (defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
+  (declare (xargs :guard (and (true-listp x)
+                              (evenp (length x)))))
   (if (endp (cddr x))
       (cadr x)
     (formal-+ (cadr x)
@@ -95,21 +95,15 @@
                       ,(cat-size (cddr x))))))
 
 (defund mulcat (l n x)
-  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x))))
-  (mbe :logic (if (and (integerp n) (> n 0))
-                  (cat (mulcat l (1- n) x)
-                       (* l (1- n))
-                       x
-                       l)
-                0)
-       :exec  (cond ((eql n 1)
-                     (bits x (1- l) 0))
-                    ((and (integerp n) (> n 0))
-                     (cat (mulcat l (1- n) x)
-                          (* l (1- n))
-                          x
-                          l))
-                    (t 0))))
+  (declare (xargs :guard (and (natp l)
+                              (natp n)
+                              (natp x))))
+  (if (and (integerp n) (> n 0))
+      (cat (mulcat l (1- n) x)
+           (* l (1- n))
+           x
+           l)
+    0))
 
 (defund si (r n)
   (declare (xargs :guard (and (integerp r)
@@ -124,23 +118,20 @@
                               (integerp r))))
   (bits (si r n) (1- m) 0))
 
-(defund sgn (x)
-  (declare (xargs :guard t))
+(defnd sgn (x)
   (if (or (not (rationalp x)) (equal x 0))
       0
     (if (< x 0) -1 +1)))
 
-(defund expo (x)
-  (declare (xargs :guard t
-                  :measure (:? x)))
+(defnd expo (x)
+  (declare (xargs :measure (:? x)))
   (cond ((or (not (rationalp x)) (equal x 0)) 0)
 	((< x 0) (expo (- x)))
 	((< x 1) (1- (expo (* 2 x))))
 	((< x 2) 0)
 	(t (1+ (expo (/ x 2))))))
 
-(defund sig (x)
-  (declare (xargs :guard t))
+(defnd sig (x)
   (if (rationalp x)
       (if (< x 0)
           (- (* x (expt 2 (- (expo x)))))
@@ -148,7 +139,8 @@
     0))
 
 (defund exactp (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (defnd formatp (f)
@@ -160,11 +152,17 @@
        (natp (caddr f))
        (> (caddr f) 1)))
 
-(defund explicitp (f) (declare (xargs :guard (formatp f))) (car f))
+(defund explicitp (f)
+  (declare (xargs :guard (formatp f)))
+  (car f))
 
-(defund prec (f) (declare (xargs :guard (formatp f))) (cadr f))
+(defund prec (f)
+  (declare (xargs :guard (formatp f)))
+  (cadr f))
 
-(defund expw (f) (declare (xargs :guard (formatp f))) (caddr f))
+(defund expw (f)
+  (declare (xargs :guard (formatp f)))
+  (caddr f))
 
 (defund sigw (f)
   (declare (xargs :guard (formatp f)))
@@ -184,22 +182,28 @@
 (in-theory (disable (sp) (dp) (ep)))
 
 (defund sgnf (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (bitn x (+ (expw f) (sigw f))))
 
 (defund expf (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
 
 (defund sigf (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (bits x (1- (sigw f)) 0))
 
 (defund manf (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (bits x (- (prec f) 2) 0))
 
-(defund bias (f) (declare (xargs :guard (formatp f))) (- (expt 2 (- (expw f) 1)) 1))
+(defund bias (f)
+  (declare (xargs :guard (formatp f)))
+  (- (expt 2 (- (expw f) 1)) 1))
 
 (defund normp (x f)
   (declare (xargs :guard (encodingp x f)))
@@ -216,7 +220,8 @@
        (= (bitn x (1- (prec f))) 0)))
 
 (defund ndecode (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (* (if (= (sgnf x f) 0) 1 -1)
      (expt 2 (- (expf x f) (bias f)))
      (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
@@ -273,13 +278,15 @@
        (= (bitn x (1- (prec f))) 1)))
 
 (defund ddecode (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (* (if (= (sgnf x f) 0) 1 -1)
      (sigf x f)
      (expt 2 (+ 2 (- (bias f)) (- (prec f))))))
 
 (defund decode (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (if (= (expf x f) 0)
       (ddecode x f)
     (ndecode x f)))
@@ -335,7 +342,8 @@
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
 (defund qnanize (x f)
-  (declare (xargs :guard (and (integerp x) (formatp f))))
+  (declare (xargs :guard (and (integerp x)
+                              (formatp f))))
   (logior x (expt 2 (- (prec f) 2))))
 
 (defund indef (f)
@@ -485,11 +493,13 @@
        (rto-sqrt (/ x (expt 2 (* 2 e))) n))))
 
 (defun fp+ (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (defun fp- (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (= x (expt 2 (expo x)))
       (- x (expt 2 (- (expo x) n)))
     (- x (expt 2 (- (1+ (expo x)) n)))))
