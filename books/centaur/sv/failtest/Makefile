@@ -50,25 +50,14 @@ FAILING_TEST_TARGETS := \
   inst9.svok \
   inst12.svok \
   param1.svok \
-  port1.svok \
-  iface18.svok iface19.svok \
   elab6.vok elab6.svok \
-  elab2.vok elab2.svok \
-  elab3.vok elab3.svok \
   stmt1.svok  \
-  port5.svok \
   gen1e.svok \
   gen1h.svok \
   gen1i.svok \
   gen1k.svok \
-  gen1l.vok gen1l.svok
-
-  # gen1f.svok \
-  # gen1e.svok \
-  # gen1g.svok \
-  # gen8.vok gen8.svok \
-  # gen9.svok
-
+  gen1l.vok gen1l.svok \
+  iface26.svok
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core
@@ -93,6 +82,9 @@ all: $(VOK_FILES) $(SVOK_FILES)
 PASSING_VOK := $(filter-out $(FAILING_TEST_TARGETS), $(VOK_FILES))
 PASSING_SVOK := $(filter-out $(FAILING_TEST_TARGETS), $(SVOK_FILES))
 passing: $(PASSING_VOK) $(PASSING_SVOK)
+
+.phony: failing
+failing: $(FAILING_TEST_TARGETS)
 
 clean:
 	rm -f *.vok *.svok *.log

@@ -983,7 +983,10 @@ displays.  The module browser's web pages are responsible for defining the
       (if (atom x)
           ps
         (vl-ps-seq (vl-print-str (caar x))
-                   (if (cdar x) (vl-pp-expr (cdar x)) ps)
+                   (if (cdar x)
+                       (vl-ps-seq (vl-print " = ")
+                                  (vl-pp-expr (cdar x)))
+                     ps)
                    (if (atom (cdr x))
                        ps
                      (vl-ps-seq (vl-print ", ")
