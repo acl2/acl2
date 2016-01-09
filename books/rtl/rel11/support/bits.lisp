@@ -1756,7 +1756,7 @@
 (defun bit-diff (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))
-                  :measure (:? x)))
+                  :measure (+ (abs (ifix x)) (abs (ifix y)))))
   (if (or (not (mbt (integerp x))) (not (mbt (integerp y))) (= x y))
       ()
     (if (= (bitn x 0) (bitn y 0))
