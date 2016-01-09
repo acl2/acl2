@@ -1826,6 +1826,7 @@
 ;;;**********************************************************************
 
 (defund exactp (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (local (defrule exactp-as-exactrp
@@ -2137,6 +2138,7 @@ y < 2^p, and hence x and y are p-exact.
   :rule-classes ())
 
 (defun fp+ (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (defthm fp+-positive
@@ -2197,6 +2199,7 @@ y < 2^p, and hence x and y are p-exact.
   :rule-classes ())
 
 (defun fp- (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (if (= x (expt 2 (expo x)))
       (- x (expt 2 (- (expo x) n)))
     (- x (expt 2 (- (1+ (expo x)) n)))))

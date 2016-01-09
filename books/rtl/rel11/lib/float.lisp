@@ -224,6 +224,7 @@
 (defsection-rtl |Exactness| |Floating-Point Numbers|
 
 (defund exactp (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (defthmd exactp2
@@ -362,6 +363,7 @@
   :rule-classes ())
 
 (defun fp+ (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (defthm fp+-positive
@@ -412,6 +414,7 @@
   :rule-classes ())
 
 (defun fp- (x n)
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (if (= x (expt 2 (expo x)))
       (- x (expt 2 (- (expo x) n)))
     (- x (expt 2 (- (1+ (expo x)) n)))))
