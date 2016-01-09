@@ -249,6 +249,18 @@
                                     our-safety)
                             our-safety)
                    0))
+              )
+             #+ccl
+             (:stack-access
+              ,(let ((our-stack-access
+                      (if (boundp 'common-lisp-user::*acl2-stack-access*)
+                          (symbol-value 'common-lisp-user::*acl2-stack-access*)
+                        nil)))
+                 (if our-stack-access
+                     (progn (format t "Note: Setting :STACK-ACCESS to ~s."
+                                    our-stack-access)
+                            our-stack-access)
+                   0))
               )))
 
 (proclaim *acl2-optimize-form*)
