@@ -617,7 +617,6 @@
 ;;;**********************************************************************
 
 (defun re (x)
-  (declare (xargs :guard (real/rationalp x)))
   (- x (fl x)))
 
 (defund near (x n)

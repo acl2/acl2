@@ -601,7 +601,7 @@
 ;exactp
 
 (defund exactp (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+;  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (defthm exactp-0
@@ -988,7 +988,6 @@
                         (:instance expo-monotone (x (- x y)))))))
 
 (defun fp+ (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (defthm fp+-positive

@@ -61,7 +61,6 @@
 ; Russinoff (shown below). August 2005.
 
 (defun fp- (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
   (if (= x (expt 2 (expo x)))
       (- x (expt 2 (- (expo x) n)))
     (- x (expt 2 (- (1+ (expo x)) n)))))
