@@ -201,8 +201,8 @@
 
 (defun binary-zero-sgn (op asgn bsgn rmode)
   (declare (xargs :guard (and (member op '(add sub mul div))
-                              (integerp asgn)
-                              (integerp bsgn)
+                              (bvecp asgn 1)
+                              (bvecp bsgn 1)
                               (IEEE-rounding-mode-p rmode))))
   (case op
     (add (if (= asgn bsgn) asgn (if (eql rmode 'rdn) 1 0)))

@@ -182,23 +182,19 @@
 (in-theory (disable (sp) (dp) (ep)))
 
 (defund sgnf (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)))
   (bitn x (+ (expw f) (sigw f))))
 
 (defund expf (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)))
   (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
 
 (defund sigf (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)))
   (bits x (1- (sigw f)) 0))
 
 (defund manf (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)))
   (bits x (- (prec f) 2) 0))
 
 (defund bias (f)
@@ -220,8 +216,7 @@
        (= (bitn x (1- (prec f))) 0)))
 
 (defund ndecode (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)))
   (* (if (= (sgnf x f) 0) 1 -1)
      (expt 2 (- (expf x f) (bias f)))
      (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
@@ -259,7 +254,7 @@
        (= (sigf x f) 0)))
 
 (defund zencode (sgn f)
-  (declare (xargs :guard (and (integerp sgn)
+  (declare (xargs :guard (and (bvecp sgn 1)
                               (formatp f))))
   (cat sgn 1 0 (+ (sigw f) (expw f))))
 
@@ -278,15 +273,13 @@
        (= (bitn x (1- (prec f))) 1)))
 
 (defund ddecode (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)))
   (* (if (= (sgnf x f) 0) 1 -1)
      (sigf x f)
      (expt 2 (+ 2 (- (bias f)) (- (prec f))))))
 
 (defund decode (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)))
   (if (= (expf x f) 0)
       (ddecode x f)
     (ndecode x f)))
@@ -320,7 +313,7 @@
        (= (manf x f) 0)))
 
 (defun iencode (sgn f)
-  (declare (xargs :guard (and (integerp sgn)
+  (declare (xargs :guard (and (bvecp sgn 1)
                               (formatp f))))
   (if (explicitp f)
       (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 1 1 0 (1- (sigw f)))
@@ -342,8 +335,7 @@
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
 (defund qnanize (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)))
   (logior x (expt 2 (- (prec f) 2))))
 
 (defund indef (f)

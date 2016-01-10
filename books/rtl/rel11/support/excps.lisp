@@ -4,7 +4,7 @@
 (local (acl2::allow-arith5-help))
 (local (in-theory (acl2::enable-arith5)))
 
-(include-book "definitions")
+(include-book "verify-guards")
 (local (include-book "bits"))
 (local (include-book "reps"))
 (local (include-book "round"))
@@ -351,29 +351,27 @@
     (sub (if (infp a af) (sgnf a af) (if (zerop (sgnf b bf)) 1 0)))
     ((mul div) (logxor (sgnf a af) (sgnf b bf)))))
 
-(defrule integerp-binary-inf-sgn
+(defrule bvecp-1-of-binary-inf-sgn
   (implies (member op '(add sub mul div))
-           (integerp (binary-inf-sgn op a af b bg)))
-  :enable binary-inf-sgn
-  :rule-classes :type-prescription)
+           (bvecp (binary-inf-sgn op a af b bg) 1))
+  :enable binary-inf-sgn)
 
 (defund binary-zero-sgn (op asgn bsgn rmode)
   (declare (xargs :guard (and (member op '(add sub mul div))
-                              (integerp asgn)
-                              (integerp bsgn)
+                              (bvecp asgn 1)
+                              (bvecp bsgn 1)
                               (IEEE-rounding-mode-p rmode))))
   (case op
     (add (if (= asgn bsgn) asgn (if (eql rmode 'rdn) 1 0)))
     (sub (if (not (= asgn bsgn)) asgn (if (eql rmode 'rdn) 1 0)))
     ((mul div) (logxor asgn bsgn))))
 
-(defrule integerp-binary-zero-sgn
+(defrule bvecp-1-of-binary-zero-sgn
   (implies (and (member op '(add sub mul div))
-                (integerp asgn)
-                (integerp bsgn))
-           (integerp (binary-zero-sgn op asgn bsgn rmode)))
-  :enable binary-zero-sgn
-  :rule-classes :type-prescription)
+                (bvecp asgn 1)
+                (bvecp bsgn 1))
+           (bvecp (binary-zero-sgn op asgn bsgn rmode) 1))
+  :enable binary-zero-sgn)
 
 (defund binary-eval (op aval bval)
   (declare (xargs :guard (and (member op '(add sub mul div))

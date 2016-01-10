@@ -11,12 +11,7 @@
 ;;;				DVECP
 ;;;**********************************************************************
 
-(defund dvecp (x k b)
-  (declare (xargs :guard (and (natp k)
-                              (radixp b))))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt b k))))
+; (defund dvecp (x k b) ... )
 
 (defrule dvecp-forward
   (implies (dvecp x k b)
@@ -92,11 +87,7 @@
 ;;;				BVECP
 ;;;**********************************************************************
 
-(defund bvecp (x k)
-  (declare (xargs :guard (integerp k)))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt 2 k))))
+; (defund bvecp (x k) ... )
 
 (local
  (defrule bvecp-as-dvecp
@@ -112,7 +103,7 @@
 		(< x (expt 2 k))))
   :rule-classes :forward-chaining)
 
-(defun nats (n) (if (zp n) () (cons (1- n) (nats (1- n)))))
+; (defun nats (n) ... )
 
 (defrule bvecp-member
   (implies (and (natp n)
@@ -165,15 +156,7 @@
 ;;;			    DIGITS
 ;;;**********************************************************************
 
-(defund digits (x i j b)
-  (declare (xargs :guard (and (real/rationalp x)
-                              (integerp i)
-                              (integerp j)
-                              (radixp b))))
-  (if (or (not (integerp i))
-          (not (integerp j)))
-      0
-      (fl (* (mod x (expt b (1+ i))) (expt b (- j))))))
+; (defund digits (x i j b) ... )
 
 (defruled digits-def-2
   (implies (radixp b)
@@ -727,17 +710,8 @@
 ;;;			    BITS
 ;;;**********************************************************************
 
-(defund bits (x i j)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp i)
-                              (integerp j))))
-  (mbe :logic (if (or (not (integerp i))
-                      (not (integerp j)))
-                  0
-                (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-       :exec  (if (< i j)
-                  0
-                (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
+; (defund bits-exec (x i j) ...
+; (defund bits (x i j) ...
 
 (local
  (defrule bits-as-digits
@@ -1054,11 +1028,7 @@
 ;;;				DIGITN
 ;;;**********************************************************************
 
-(defund digitn (x n b)
-  (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n)
-                              (radixp b))))
-  (digits x n n b))
+; (defund digitn (x n b) ... )
 
 (local
  (defrule digitn-default
@@ -1277,14 +1247,7 @@
          (p (1+ m)))
   :rule-classes ())
 
-(defun sumdigits (x n b)
-  (declare (xargs :guard (and (integerp x)
-                              (natp n)
-                              (radixp b))))
-  (if (zp n)
-      0
-    (+ (* (expt b (1- n)) (digitn x (1- n) b))
-       (sumdigits x (1- n) b))))
+; (defun sumdigits (x n b) ... )
 
 (defruled sumdigits-digits
   (implies (and (integerp x)
@@ -1317,14 +1280,7 @@
                   x))
   :enable sumdigits-digits)
 
-(defnd all-digits-p (list k b)
-  (if (posp k)
-      (and (consp list)
-           (all-digits-p (cdr list) (1- k) b)
-           (digitp (car list) b))
-    (and (true-listp list)
-         (equal k 0)
-         (radixp b))))
+; (defnd all-digits-p (list k b) ... )
 
 (defrule digitp-of-all-digits-p
   (implies (and (all-digits-p list n b)
@@ -1337,12 +1293,7 @@
          (i k))
   :rule-classes ())
 
-(defun sum-d (list k b)
-  (declare (xargs :guard (all-digits-p list k b)))
-  (if (zp k)
-      0
-    (+ (* (expt b (1- k)) (nth (1- k) list))
-       (sum-d list (1- k) b))))
+; (defun sum-d (list k b) ... )
 
 (defruled dvecp-sum-d
    (implies (all-digits-p list k b)
@@ -1401,16 +1352,7 @@
 ;; The next lemma can be used to prove equality of two digit vectors by
 ;; proving that they have the same value at digit n for all n.
 
-(defn digit-diff (x y b)
-  (declare (xargs :measure (:? x y)))
-  (if (or (not (integerp x))
-          (not (integerp y))
-          (not (radixp b))
-          (= x y))
-      ()
-    (if (= (digitn x 0 b) (digitn y 0 b))
-        (1+ (digit-diff (fl (/ x b)) (fl (/ y b)) b))
-      0)))
+; (defn digit-diff (x y b) ... )
 
 (defrule digit-diff-diff
   (implies (and (integerp x)
@@ -1546,11 +1488,8 @@
 ;;;				BITN
 ;;;**********************************************************************
 
-(defund bitn (x n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp n))))
-  (mbe :logic (bits x n n)
-       :exec  (if (evenp (ash x (- n))) 0 1)))
+; (defund bitn-exec (x n) ... )
+; (defund bitn (x n) ... )
 
 (local
  (defrule bitn-as-digitn
@@ -1711,13 +1650,7 @@
   :use (:instance digits-plus-digitn (b 2))
   :rule-classes ())
 
-(defun sumbits (x n)
-  (declare (xargs :guard (and (integerp x)
-                              (natp n))))
-  (if (zp n)
-      0
-    (+ (* (expt 2 (1- n)) (bitn x (1- n)))
-       (sumbits x (1- n)))))
+; (defun sumbits (x n) ... )
 
 (local
  (defrule sumbits-as-sumdigits
@@ -1740,14 +1673,7 @@
 		    x))
     :enable sumdigits-thm)
 
-(defnd all-bits-p (b k)
-  (if (posp k)
-      (and (consp b)
-           (all-bits-p (cdr b) (1- k))
-           (or (equal (car b) 0)
-               (equal (car b) 1)))
-    (and (true-listp b)
-         (equal k 0))))
+; (defnd all-bits-p (b k) ... )
 
 (local
  (defrule all-bits-p-as-all-digits-p
@@ -1780,15 +1706,7 @@
 ;; The next lemma can be used to prove equality of two bit vectors by
 ;; proving that they have the same value at bit n for all n.
 
-(defn bit-diff (x y)
-  (declare (xargs :measure (:? x y)))
-  (if (or (not (integerp x))
-          (not (integerp y))
-          (= x y))
-      ()
-    (if (= (bitn x 0) (bitn y 0))
-        (1+ (bit-diff (fl (/ x 2)) (fl (/ y 2))))
-      0)))
+; (defn bit-diff (x y) ... )
 
 (local
  (defrule bit-diff-as-digit-diff
@@ -1884,31 +1802,11 @@
                    (+ (* x (expt b n)) y)))
    :enable radix-cat))
 
-(defn formal-+ (x y)
-  (if (and (acl2-numberp x) (acl2-numberp y))
-      (+ x y)
-    (list '+ x y)))
+; (defn formal-+ (x y) ... )
 
-(defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x)
-                              (evenp (length x)))))
-  (if (endp (cddr x))
-      (cadr x)
-    (formal-+ (cadr x)
-	      (cat-size (cddr x)))))
+; (defun cat-size (x) ... )
 
-(defmacro cat-r (b &rest x)
-  (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
-  (cond ((endp (cddr x))
-         `(digits ,(car x) ,(formal-+ -1 (cadr x)) 0 ,b))
-        ((endp (cddddr x))
-         `(radix-cat ,b ,@x))
-        (t
-         `(radix-cat ,b
-                     ,(car x)
-                     ,(cadr x)
-                     (cat-r ,b ,@(cddr x))
-                     ,(cat-size (cddr x))))))
+; (defmacro cat-r (b &rest x) ... )
 
 (defrule cat-r-dvecp
   (implies (and (<= (+ m n) k)
@@ -2209,17 +2107,7 @@
                       0))))
   :use digitn-cat-r)
 
-(defund mulcat-r (l n x b)
-  (declare (xargs :guard (and (natp l)
-                              (natp n)
-                              (natp x)
-                              (radixp b))))
-  (if (and (integerp n) (> n 0))
-      (cat-r b (mulcat-r l (1- n) x b)
-             (* l (1- n))
-             x
-             l)
-    0))
+; (defund mulcat-r (l n x b) ... )
 
 (defruled mulcat-r-digits
   (implies (and (integerp l)
@@ -2284,15 +2172,7 @@
 ;;;			     CAT
 ;;;**********************************************************************
 
-(defund binary-cat (x m y n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (expt 2 n) (bits x (1- m) 0))
-         (bits y (1- n) 0))
-    0))
+; (defund binary-cat (x m y n) ... )
 
 (local
  (defrule binary-cat-as-radix-cat
@@ -2492,16 +2372,7 @@
                       0))))
   :use bitn-cat)
 
-(defund mulcat (l n x)
-  (declare (xargs :guard (and (natp l)
-                              (natp n)
-                              (natp x))))
-  (if (and (integerp n) (> n 0))
-      (cat (mulcat l (1- n) x)
-           (* l (1- n))
-           x
-           l)
-    0))
+; (defund mulcat (l n x) ... )
 
 (local
  (defrule mulcat-as-mulcat-r
@@ -2547,14 +2418,7 @@
 ;;;		      Signed Integer Encodings with Radix
 ;;;**********************************************************************
 
-(defund si-r (r n b)
-  (declare (xargs :guard (and (real/rationalp r)
-                              (integerp n)
-                              (radixp b))))
-  (let ((r (mod (realfix r) (expt b n))))
-    (if (>= r (/ (expt b n) 2))
-        (- r (expt b n))
-      r)))
+; (defund si-r (r n b) ... )
 
 (defrule si-r-range
   (implies (radixp b)
@@ -2618,12 +2482,7 @@
                           (n i)
                           (m j)))))
 
-(defund sextend-r (m n r b)
-  (declare (xargs :guard (and (real/rationalp r)
-                              (integerp m)
-                              (integerp n)
-                              (radixp b))))
-  (digits (si-r r n b) (1- m) 0 b))
+; (defund sextend-r (m n r b) ... )
 
 (defruled si-r-sextend-r
   (implies (and (integerp r)
@@ -2642,12 +2501,7 @@
 ;;;		      Signed Integer Encodings
 ;;;**********************************************************************
 
-(defund si (r n)
-  (declare (xargs :guard (and (integerp r)
-                              (natp n))))
-  (if (= (bitn r (1- n)) 1)
-      (- r (expt 2 n))
-    r))
+; (defund si (r n) ... )
 
 (local
  (defrule si-as-si-r
@@ -2689,11 +2543,7 @@
                           (m j)
                           (b 2)))))
 
-(defund sextend (m n r)
-  (declare (xargs :guard (and (natp m)
-                              (natp n)
-                              (integerp r))))
-  (bits (si r n) (1- m) 0))
+; (defund sextend (m n r) ... )
 
 (local
  (defrule sextend-as-sextend-r

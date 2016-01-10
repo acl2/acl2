@@ -1,10 +1,12 @@
 (in-package "RTL")
 
+(include-book "tools/with-arith5-help" :dir :system)
+(local (acl2::allow-arith5-help))
+(local (in-theory (acl2::enable-arith5)))
+
 (include-book "util")
 (include-book "std/util/defrule" :dir :system)
 (include-book "ordinals/e0-ordinal" :dir :system)
-
-(local (include-book "arithmetic-5/top" :dir :system))
 
 ;; From basic.lisp:
 
@@ -59,6 +61,7 @@
   :rule-classes :forward-chaining))
 
 (defun nats (n)
+  (declare (xargs :guard (natp n)))
   (if (zp n) () (cons (1- n) (nats (1- n)))))
 
 (defund digits (x i j b)
@@ -341,9 +344,6 @@
   :induct (digit-diff x y b)
   :rule-classes :type-prescription)
 
-(verify-guards digit-diff
-  :hints (("goal" :in-theory (e/d (digitn digits fl) (digit-diff)))))
-
 (local
  (defrule bit-diff-measure-lemma
    (implies
@@ -378,10 +378,6 @@
            (natp (bit-diff x y)))
   :rule-classes :type-prescription)
 
-(verify-guards bit-diff
-  :hints (("goal" :cases ((equal (fl (/ x 2)) (fl (/ y 2))))
-                  :in-theory (e/d (bitn bits fl) (bit-diff)))))
-
 (defund radix-cat (b x m y n)
   (declare (xargs :guard (and (radixp b)
                               (integerp x)
@@ -397,7 +393,8 @@
   (declare (xargs :guard (and (integerp x)
                               (integerp y)
                               (natp m)
-                              (natp n))))
+                              (natp n))
+                  :verify-guards nil))
   (if (and (natp m) (natp n))
       (+ (* (expt 2 n) (bits x (1- m) 0))
          (bits y (1- n) 0))
@@ -483,8 +480,6 @@
 
 (in-theory (disable (:type-prescription mulcat-r)))
 
-(verify-guards mulcat-r)
-
 (defund mulcat (l n x)
   (declare (xargs :guard (and (natp l)
                               (natp n)
@@ -503,9 +498,6 @@
   :rule-classes (:type-prescription))
 
 (in-theory (disable (:type-prescription mulcat)))
-
-(verify-guards mulcat
-  :hints (("goal" :in-theory (enable mulcat binary-cat))))
 
 (defund si-r (r n b)
   (declare (xargs :guard (and (real/rationalp r)
@@ -556,8 +548,7 @@
 (defund sextend (m n r)
   (declare (xargs :guard (and (natp m)
                               (natp n)
-                              (integerp r))
-                  :guard-hints (("goal" :in-theory (enable si)))))
+                              (integerp r))))
   (bits (si r n) (1- m) 0))
 
 ;; From float.lisp:
@@ -573,6 +564,62 @@
 	((< x 1) (cons 1 (fl (/ x))))
 	(t (fl x))))
 
+(local
+ (defrule e0-oridnalp-expo-measure
+   (e0-ordinalp (expo-measure x))
+   :enable fl
+   ))
+
+(local
+ (defrule e0-ord-<-expo-measure
+   (implies (and (real/rationalp x)
+                 (radixp b))
+            (and (implies (< x 0)
+                          (e0-ord-< (expo-measure (- x))
+                                    (expo-measure x)))
+                 (implies (and (< 0 x) (< x 1))
+                          (e0-ord-< (expo-measure (* b x))
+                                    (expo-measure x)))
+                 (implies (<= b x)
+                          (e0-ord-< (expo-measure (* (/ b) x))
+                                    (expo-measure x)))))
+   :prep-lemmas (
+     (acl2::with-arith5-nonlinear-help
+      (defrule lemma
+        (implies (and (real/rationalp x) (>= x 1) (radixp b))
+                 (< (fl (* (/ b) x)) (fl x)))
+        :enable fl)))))
+
+; e from IEEE 754-2008
+(defund expe (x b)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (radixp b))
+                  :hints (("goal" :in-theory (disable expo-measure)))
+                  :well-founded-relation e0-ord-<
+                  :measure (expo-measure (realfix x))))
+  (cond ((not (mbt (real/rationalp x))) 0)
+        ((not (mbt (radixp b))) 0)
+        ((equal x 0) 0)
+        ((< x 0) (expe (- x) b))
+        ((< x 1) (1- (expe (* b x) b)))
+        ((< x b) 0)
+        (t (1+ (expe (/ x b) b)))))
+
+; q from IEEE 754-2008
+(defund expq (x p b)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp p)
+                              (radixp b))))
+  (- (expe x b) (1- p)))
+
+(defrule expq-integer-type
+  (implies (integerp p)
+           (integerp (expq x p b)))
+  :enable expq
+  :rule-classes :type-prescription)
+
+(in-theory (disable (:type-prescription expq)))
+
 (defnd expo (x)
   (declare (xargs :hints (("goal" :in-theory (enable fl)))
                   :well-founded-relation e0-ord-<
@@ -583,6 +630,21 @@
 	((< x 2) 0)
 	(t (1+ (expo (/ x 2))))))
 
+; m from IEEE 754-2008
+(defund sigm (x b)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (radixp b))))
+  (cond ((not (mbt (real/rationalp x))) 0)
+        ((not (mbt (radixp b))) 0)
+        (t (* (abs x) (expt b (- (expe x b)))))))
+
+; c from IEEE 754-2008
+(defund sigc (x p b)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp p)
+                              (radixp b))))
+  (* (sigm x b) (expt b (1- p))))
+
 (defnd sig (x)
   (if (rationalp x)
       (if (< x 0)
@@ -590,15 +652,33 @@
         (* x (expt 2 (- (expo x)))))
     0))
 
+(defnd exactrp (x p b)
+  (and (real/rationalp x)
+       (integerp p)
+       (radixp b)
+       (integerp (sigc x p b))))
+
 (defund exactp (x n)
   (declare (xargs :guard (and (real/rationalp x)
                               (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
+(defun fpr+ (x p b)
+  (declare (xargs :guard (and (exactrp x p b) (> x 0))
+                  :guard-hints (("goal" :in-theory (enable exactrp)))))
+  (+ x (expt b (expq x p b))))
+
 (defun fp+ (x n)
   (declare (xargs :guard (and (real/rationalp x)
                               (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
+
+(defun fpr- (x p b)
+  (declare (xargs :guard (and (exactrp x p b) (> x 0))
+                  :guard-hints (("goal" :in-theory (enable exactrp)))))
+  (if (= x (expt b (expe x b)))
+      (- x (expt b (expq x (1+ p) b)))
+    (- x (expt b (expq x p b)))))
 
 (defun fp- (x n)
   (declare (xargs :guard (and (real/rationalp x)
@@ -609,8 +689,6 @@
 
 ;; From reps.lisp:
 
-(encapsulate ()
-
 (defnd formatp (f)
   (and (consp f)
        (consp (cdr f))
@@ -619,33 +697,48 @@
        (> (cadr f) 1)
        (natp (caddr f))
        (> (caddr f) 1)))
-(local (in-theory (enable formatp)))
 
 (defund explicitp (f)
-  (declare (xargs :guard (formatp f)))
+  (declare (xargs :guard (formatp f)
+                  :guard-hints (("goal" :in-theory (enable formatp)))))
   (car f))
-(local (in-theory (enable explicitp)))
 
 (defund prec (f)
-  (declare (xargs :guard (formatp f)))
+  (declare (xargs :guard (formatp f)
+                  :guard-hints (("goal" :in-theory (enable formatp)))))
   (cadr f))
-(local (in-theory (enable prec)))
+
+(defrule prec-positive-integer-type
+  (implies (formatp f)
+           (posp (prec f)))
+  :enable (formatp prec)
+  :rule-classes :type-prescription)
 
 (defund expw (f)
-  (declare (xargs :guard (formatp f)))
+  (declare (xargs :guard (formatp f)
+                  :guard-hints (("goal" :in-theory (enable formatp)))))
   (caddr f))
-(local (in-theory (enable expw)))
+
+(defrule expw-positive-integer-type
+  (implies (formatp f)
+           (posp (expw f)))
+  :enable (formatp expw)
+  :rule-classes :type-prescription)
 
 (defund sigw (f)
   (declare (xargs :guard (formatp f)))
   (if (explicitp f)
       (prec f)
     (1- (prec f))))
-(local (in-theory (enable sigw)))
+
+(defrule sigw-positive-integer-type
+  (implies (formatp f)
+           (posp (sigw f)))
+  :enable (formatp sigw prec)
+  :rule-classes :type-prescription)
 
 (defnd encodingp (x f)
   (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
-(local (in-theory (enable encodingp)))
 
 (defnd sp () '(nil 24 8))
 
@@ -656,48 +749,70 @@
 (in-theory (disable (sp) (dp) (ep)))
 
 (defund sgnf (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (bitn x (+ (expw f) (sigw f))))
 
+;(defrule sgnf-nonnegative-integer-type
+;  (natp (sgnf x f))
+;  :rule-classes :type-prescription)
+
 (defund expf (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
-(local (in-theory (enable expf)))
+
+;(defrule expf-nonnegative-integer-type
+;  (natp (expf x f))
+;  :rule-classes :type-prescription)
 
 (defund sigf (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (bits x (1- (sigw f)) 0))
 
+;(defrule sigf-nonnegative-integer-type
+;  (natp (sigf x f))
+;  :rule-classes :type-prescription)
+
 (defund manf (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (bits x (- (prec f) 2) 0))
+
+;(defrule manf-nonnegative-integer-type
+;  (natp (sigf x f))
+;  :rule-classes :type-prescription)
 
 (defund bias (f)
   (declare (xargs :guard (formatp f)))
   (- (expt 2 (- (expw f) 1)) 1))
-(local (in-theory (enable bias)))
+
+(defrule bias-positive-integer-type
+  (implies (formatp f)
+           (posp (bias f)))
+  :enable (formatp bias expw)
+  :rule-classes :type-prescription)
 
 (defund normp (x f)
-  (declare (xargs :guard (encodingp x f)))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (and (mbt (encodingp x f))
        (< 0 (expf x f))
        (< (expf x f) (1- (expt 2 (expw f))))
        (implies (explicitp f) (= (bitn x (1- (prec f))) 1))))
 
 (defund unsupp (x f)
-  (declare (xargs :guard (encodingp x f)))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (and (mbt (encodingp x f))
        (explicitp f)
        (< 0 (expf x f))
        (= (bitn x (1- (prec f))) 0)))
 
 (defund ndecode (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (* (if (= (sgnf x f) 0) 1 -1)
      (expt 2 (- (expf x f) (bias f)))
      (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
@@ -712,7 +827,7 @@
 
 (defund nencode (x f)
   (declare (xargs :guard (nrepp x f)
-                  :guard-hints (("goal" :in-theory (enable nrepp exactp)))))
+                  :verify-guards nil))
   (cat (if (= (sgn x) 1) 0 1)
        1
        (+ (expo x) (bias f))
@@ -736,34 +851,36 @@
        (= (sigf x f) 0)))
 
 (defund zencode (sgn f)
-  (declare (xargs :guard (and (integerp sgn)
-                              (formatp f))))
+  (declare (xargs :guard (and (bvecp sgn 1)
+                              (formatp f))
+                  :verify-guards nil))
   (cat sgn 1 0 (+ (sigw f) (expw f))))
 
 (defund denormp (x f)
-  (declare (xargs :guard (encodingp x f)))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (and (mbt (encodingp x f))
        (= (expf x f) 0)
        (not (= (sigf x f) 0))
        (implies (explicitp f) (= (bitn x (1- (prec f))) 0))))
 
 (defund pseudop (x f)
-  (declare (xargs :guard (encodingp x f)))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (and (mbt (encodingp x f))
        (explicitp f)
        (= (expf x f) 0)
        (= (bitn x (1- (prec f))) 1)))
 
 (defund ddecode (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (* (if (= (sgnf x f) 0) 1 -1)
      (sigf x f)
      (expt 2 (+ 2 (- (bias f)) (- (prec f))))))
 
 (defund decode (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)))
   (if (= (expf x f) 0)
       (ddecode x f)
     (ndecode x f)))
@@ -778,7 +895,7 @@
 
 (defund dencode (x f)
   (declare (xargs :guard (drepp x f)
-                  :guard-hints (("goal" :in-theory (enable drepp exactp)))))
+                  :verify-guards nil))
   (cat (if (= (sgn x) 1) 0 1)
        1
        0
@@ -791,21 +908,24 @@
      (expt 2 (+ 2 (- (bias f)) (- (prec f)))))
 
 (defund infp (x f)
-  (declare (xargs :guard (encodingp x f)))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (and (mbt (encodingp x f))
        (= (expf x f) (1- (expt 2 (expw f))))
        (not (unsupp x f))
        (= (manf x f) 0)))
 
 (defun iencode (sgn f)
-  (declare (xargs :guard (and (integerp sgn)
-                              (formatp f))))
+  (declare (xargs :guard (and (bvecp sgn 1)
+                              (formatp f))
+                  :verify-guards nil))
   (if (explicitp f)
       (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 1 1 0 (1- (sigw f)))
     (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 0 (sigw f))))
 
 (defund nanp (x f)
-  (declare (xargs :guard (encodingp x f)))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (and (mbt (encodingp x f))
        (= (expf x f) (1- (expt 2 (expw f))))
        (not (unsupp x f))
@@ -813,20 +933,23 @@
 (local (in-theory (enable nanp)))
 
 (defund qnanp (x f)
-  (declare (xargs :guard (encodingp x f)))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 1)))
 
 (defund snanp (x f)
-  (declare (xargs :guard (encodingp x f)))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp)))))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
 (defund qnanize (x f)
-  (declare (xargs :guard (and (integerp x)
-                              (formatp f))))
+  (declare (xargs :guard (encodingp x f)
+                  :guard-hints (("goal" :in-theory (enable encodingp formatp prec)))))
   (logior x (expt 2 (- (prec f) 2))))
 
 (defund indef (f)
-  (declare (xargs :guard (formatp f)))
+  (declare (xargs :guard (formatp f)
+                  :verify-guards nil))
   (if (explicitp f)
       (cat (1- (expt 2 (+ (expw f) 3)))
            (+ (expw f) 3)
@@ -989,8 +1112,6 @@
                               (common-mode-p mode)
                               (formatp f))))
   (rnd x mode (+ (prec f) (expo x) (- (expo (spn f))))))
-
-)
 
 ;; from sqrt.lisp:
 

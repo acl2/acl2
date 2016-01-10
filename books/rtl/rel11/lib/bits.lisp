@@ -39,7 +39,9 @@
 		(< x (expt 2 k))))
   :rule-classes :forward-chaining)
 
-(defun nats (n) (if (zp n) () (cons (1- n) (nats (1- n)))))
+(defun nats (n)
+  (declare (xargs :guard (natp n)))
+  (if (zp n) () (cons (1- n) (nats (1- n)))))
 
 (defthm bvecp-member
   (implies (and (natp n)

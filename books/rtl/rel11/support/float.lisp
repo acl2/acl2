@@ -30,39 +30,7 @@
 
 (in-theory (disable signum))
 
-(local (defrule e0-oridnalp-expo-measure
-  (e0-ordinalp (expo-measure x))))
-
-(defrule e0-ord-<-expo-measure
-  (implies (and (real/rationalp x)
-                (radixp b))
-           (and (implies (< x 0)
-                         (e0-ord-< (expo-measure (- x))
-                                   (expo-measure x)))
-                (implies (and (< 0 x) (< x 1))
-                         (e0-ord-< (expo-measure (* b x))
-                                   (expo-measure x)))
-                (implies (<= b x)
-                         (e0-ord-< (expo-measure (* (/ b) x))
-                                   (expo-measure x)))))
-  :prep-lemmas (
-    (acl2::with-arith5-nonlinear-help (defrule lemma
-      (implies (and (real/rationalp x) (>= x 1) (radixp b))
-               (< (fl (* (/ b) x)) (fl x)))))))
-
-; e from IEEE 754-2008
-(defund expe (x b)
-  (declare (xargs :guard (and (real/rationalp x) (radixp b))
-                  :hints (("goal" :in-theory (disable expo-measure)))
-                  :well-founded-relation e0-ord-<
-                  :measure (expo-measure (realfix x))))
-  (cond ((not (mbt (real/rationalp x))) 0)
-        ((not (mbt (radixp b))) 0)
-        ((equal x 0) 0)
-        ((< x 0) (expe (- x) b))
-        ((< x 1) (1- (expe (* b x) b)))
-        ((< x b) 0)
-        (t (1+ (expe (/ x b) b)))))
+; (defund expe (x b) ... )
 
 (local (defrule expe-x=0
   (equal (expe 0 b) 0)
@@ -78,12 +46,7 @@
            (equal (expe x b) 0))
   :enable expe))
 
-; m from IEEE 754-2008
-(defund sigm (x b)
-  (declare (xargs :guard (and (real/rationalp x) (radixp b))))
-  (cond ((not (mbt (real/rationalp x))) 0)
-        ((not (mbt (radixp b))) 0)
-        (t (* (abs x) (expt b (- (expe x b)))))))
+; (defund sigm (x b) ... )
 
 (defrule sigm-type
   (implies (radixp b)
@@ -474,25 +437,9 @@
 ;;;                 Sign, Significand, and Exponent
 ;;;**********************************************************************
 
-(defnd sgn (x)
-  (if (or (not (rationalp x)) (equal x 0))
-      0
-    (if (< x 0) -1 +1)))
-
-(defnd expo (x)
-  (declare (xargs :measure (:? x)))
-  (cond ((or (not (rationalp x)) (equal x 0)) 0)
-	((< x 0) (expo (- x)))
-	((< x 1) (1- (expo (* 2 x))))
-	((< x 2) 0)
-	(t (1+ (expo (/ x 2))))))
-
-(defnd sig (x)
-  (if (rationalp x)
-      (if (< x 0)
-          (- (* x (expt 2 (- (expo x)))))
-        (* x (expt 2 (- (expo x)))))
-    0))
+; (defnd sgn (x) ... )
+; (defnd expo (x) ... )
+; (defnd sig (x) ... )
 
 (local (defrule sgn-as-signum
   (equal (sgn x)
@@ -705,10 +652,7 @@
 ;;;                 Integer Significand with its corresponding Exponent
 ;;;**********************************************************************
 
-; q from IEEE 754-2008
-(defund expq (x p b)
-  (declare (xargs :guard (and (real/rationalp x) (integerp p) (radixp b))))
-  (- (expe x b) (1- p)))
+; (defund expq (x p b) ... )
 
 (defrule expq-type
   (implies
@@ -731,10 +675,7 @@
            (equal (expq x p b) (- 1 p)))
   :enable expq))
 
-; c from IEEE 754-2008
-(defund sigc (x p b)
-  (declare (xargs :guard (and (real/rationalp x) (integerp p) (radixp b))))
-  (* (sigm x b) (expt b (1- p))))
+; (defund sigc (x p b) ... )
 
 (local (defrule sigc-x=0
   (equal (sigc 0 p b) 0)
@@ -1077,11 +1018,7 @@
 ;;;                          Exactness with Radix
 ;;;**********************************************************************
 
-(defnd exactrp (x p b)
-  (and (real/rationalp x)
-       (integerp p)
-       (radixp b)
-       (integerp (sigc x p b))))
+; (defnd exactrp (x p b) ... )
 
 (defrule exactrp-forward
   (implies (exactrp x p b)
@@ -1495,9 +1432,7 @@
   :cases ((= x y))
   :rule-classes ())
 
-(defun fpr+ (x p b)
-  (declare (xargs :guard (and (exactrp x p b) (> x 0))))
-  (+ x (expt b (expq x p b))))
+; (defun fpr+ (x p b) ... )
 
 (defrule fpr+-positive
   (implies (and (<= 0 x)
@@ -1653,11 +1588,7 @@
     (:instance exact-digits-1 (x y) (k (min (expq x p b) (expq y p b)))))
   :rule-classes ())
 
-(defun fpr- (x p b)
-  (declare (xargs :guard (and (exactrp x p b) (> x 0))))
-  (if (= x (expt b (expe x b)))
-      (- x (expt b (expq x (1+ p) b)))
-    (- x (expt b (expq x p b)))))
+; (defun fpr- (x p b) ... )
 
 (defrule fpr--non-negative
    (implies (and (rationalp x)
@@ -1822,9 +1753,7 @@
 ;;;                          Exactness
 ;;;**********************************************************************
 
-(defund exactp (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
-  (integerp (* (sig x) (expt 2 (1- n)))))
+; (defund exactp (x n) ... )
 
 (local (defrule exactp-as-exactrp
   (implies (integerp p)
@@ -2134,9 +2063,7 @@ y < 2^p, and hence x and y are p-exact.
   :use (:instance exactrp-diff-cor (p n) (b 2))
   :rule-classes ())
 
-(defun fp+ (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
-  (+ x (expt 2 (- (1+ (expo x)) n))))
+; (defun fp+ (x n) ... )
 
 (defthm fp+-positive
   (implies (<= 0 x)
@@ -2195,11 +2122,7 @@ y < 2^p, and hence x and y are p-exact.
   :use (:instance expe-diff-min (p n) (b 2))
   :rule-classes ())
 
-(defun fp- (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
-  (if (= x (expt 2 (expo x)))
-      (- x (expt 2 (- (expo x) n)))
-    (- x (expt 2 (- (1+ (expo x)) n)))))
+; (defun fp- (x n) ... )
 
 (local (defrule fp--as-fpr-
   (implies (and (rationalp x)

@@ -12,7 +12,7 @@
 
 (in-package "RTL")
 
-(include-book "definitions")
+(include-book "verify-guards")
 
 (include-book "../rel9-rtl-pkg/lib/add")
 

@@ -1,6 +1,6 @@
 (in-package "RTL")
 
-(include-book "definitions")
+(include-book "verify-guards")
 (local (include-book "basic"))
 (local (include-book "bits"))
 
