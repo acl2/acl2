@@ -9,44 +9,7 @@
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
-;; From basic.lisp:
-
-(defund fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
-
-;; From bits.lisp:
-
-(defund bits (x i j)
-    (declare (xargs :guard (and (integerp x)
-                                (integerp i)
-                                (integerp j))
-                    :guard-hints (("Goal" :in-theory (e/d
-                                                      (bits-mbe-lemma-subgoal-1
-                                                       ash
-                                                       bits-mbe-lemma-subgoal-2) ())))))
-    (mbe :logic (if (or (not (integerp i))
-                        (not (integerp j)))
-                    0
-                  (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-         :exec  (if (< i j)
-                    0
-                  (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-
-(defund bitn (x n)
-  (declare (xargs :guard (and (integerp x) (integerp n))))
-  (mbe :logic (bits x n n)
-       :exec  (if (evenp (ash x (- n))) 0 1)))
-
-(defund binary-cat (x m y n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (expt 2 n) (bits x (1- m) 0))
-         (bits y (1- n) 0))
-    0))
+(include-book "defs")
 
 ;;;**********************************************************************
 

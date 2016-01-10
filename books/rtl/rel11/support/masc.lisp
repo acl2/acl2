@@ -1,6 +1,6 @@
 (in-package "RTL")
 
-(include-book "definitions")
+(include-book "verify-guards")
 (local (include-book "basic"))
 (local (include-book "bits"))
 
@@ -346,6 +346,8 @@
 (defund ui (r) r)
 
 (defund si (r n)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n))))
   (if (= (bitn r (1- n)) 1)
       (- r (expt 2 n))
     r))
