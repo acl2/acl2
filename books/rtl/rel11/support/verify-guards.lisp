@@ -53,10 +53,8 @@
 (verify-guards mulcat-r)
 
 (defund mulcat-r (l n x b)
-  (declare (xargs :guard (and (natp l)
-                              (natp n)
-                              (natp x)
-                              (radixp b))))
+  (declare (xargs :guard (and (natp n)
+                              (dvecp x l b))))
   (if (and (integerp n) (> n 0))
       (cat-r b (mulcat-r l (1- n) x b)
              (* l (1- n))

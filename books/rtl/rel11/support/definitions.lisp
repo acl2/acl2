@@ -42,11 +42,12 @@
 
 ;; From bits.lisp:
 
-(defund dvecp (x k b)
-  (declare (xargs :guard (and (natp k)
-                              (radixp b))))
-  (and (integerp x)
-       (<= 0 x)
+(defnd dvecp (x k b)
+;  (declare (xargs :guard (and (natp k)
+;                              (radixp b))))
+  (and (natp x)
+       (natp k)
+       (radixp b)
        (< x (expt b k))))
 
 (defund bvecp (x k)
@@ -379,11 +380,9 @@
   :rule-classes :type-prescription)
 
 (defund radix-cat (b x m y n)
-  (declare (xargs :guard (and (radixp b)
-                              (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
+  (declare (xargs :guard (and (dvecp x m b)
+                              (dvecp y n b))
+                  :guard-hints (("goal" :in-theory (enable dvecp)))))
   (if (and (natp m) (natp n))
       (+ (* (digits x (1- m) 0 b) (expt b n))
          (digits y (1- n) 0 b))
@@ -459,10 +458,8 @@
 (in-theory (disable (:type-prescription binary-cat)))
 
 (defund mulcat-r (l n x b)
-  (declare (xargs :guard (and (natp l)
-                              (natp n)
-                              (natp x)
-                              (radixp b))
+  (declare (xargs :guard (and (natp n)
+                              (dvecp x l b))
                   :verify-guards nil))
   (if (and (integerp n) (> n 0))
       (cat-r b (mulcat-r l (1- n) x b)

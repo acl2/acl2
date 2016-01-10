@@ -15,8 +15,9 @@
 
 (defrule dvecp-forward
   (implies (dvecp x k b)
-           (and (integerp x)
-                (<= 0 x)
+           (and (natp x)
+                (natp k)
+                (radixp b)
                 (< x (expt b k))))
   :enable (dvecp)
   :rule-classes :forward-chaining)
@@ -26,11 +27,12 @@
    (implies (and (not (posp k))
                  (radixp b))
             (equal (dvecp x k b)
-                   (equal x 0)))
+                   (and (equal x 0) (equal k 0))))
    :enable dvecp))
 
 (defrule dvecp-0
-  (implies (radixp b)
+  (implies (and (natp k)
+                (radixp b))
            (dvecp 0 k b))
   :enable dvecp)
 
@@ -61,6 +63,7 @@
  (defruled dvecp-shift-down
    (implies (and (dvecp x n b)
                  (integerp k)
+                 (>= n k)
                  (radixp b))
             (dvecp (fl (/ x (expt b k))) (- n k) b))
    :enable dvecp))
@@ -91,9 +94,10 @@
 
 (local
  (defrule bvecp-as-dvecp
-  (equal
-    (bvecp x k)
-    (dvecp x k 2))
+  (equal (bvecp x k)
+         (if (natp k)
+             (dvecp x k 2)
+           (equal x 0)))
   :enable (bvecp dvecp)))
 
 (defrule bvecp-forward
@@ -119,12 +123,18 @@
 	     (bvecp x m))
     :enable dvecp-monotone)
 
-(defruled bvecp-shift-down
+(acl2::with-arith5-nonlinear-help
+ (defruled bvecp-shift-down
     (implies (and (bvecp x n)
 		  (natp n)
 		  (natp k))
 	     (bvecp (fl (/ x (expt 2 k))) (- n k)))
-    :use (:instance dvecp-shift-down (b 2)))
+    :cases ((>= n k))
+    :hints (("subgoal 2" :use (:instance fl-unique
+                                (x (* x (expt 2 (- k))))
+                                (n 0)))
+            ("subgoal 1" :use (:instance dvecp-shift-down
+                                (b 2))))))
 
 (defruled bvecp-shift-up
     (implies (and (bvecp x (- n k))
@@ -196,7 +206,7 @@
 
 (defrule digits-dvecp
   (implies (and (<= (+ 1 i (- j)) k)
-                (case-split (integerp k))
+                (case-split (natp k))
                 (radixp b))
            (dvecp (digits x i j b) k b))
   :prep-lemmas (
@@ -217,6 +227,7 @@
 
 (defrule digits-dvecp-simple
   (implies (and (equal k (+ 1 i (* -1 j)))
+                (natp k)
                 (radixp b))
            (dvecp (digits x i j b) k b))
   :cases ((and (integerp i) (integerp j)))
@@ -229,7 +240,8 @@
              (and (natp (digits x i j b))
                   (< (digits x i j b) (expt b (1+ (- i j))))))
   :enable (dvecp)
-  :cases ((dvecp (digits x i j b) (1+ (- i j)) b))
+  :cases ((natp (1+ (- i j))))
+  :hints (("subgoal 1" :cases ((dvecp (digits x i j b) (1+ (- i j)) b))))
   :rule-classes ())
 
 (defrule mod-digits-equal
@@ -730,7 +742,10 @@
 
 (defrule bits-bvecp-simple
   (implies (equal k (+ 1 i (* -1 j)))
-           (bvecp (bits x i j) k)))
+           (bvecp (bits x i j) k))
+  :cases ((not (integerp i))
+          (not (integerp j))
+          (< k 0)))
 
 (defrule bits-bounds
     (implies (and (integerp i)
@@ -946,7 +961,8 @@
 		(case-split (integerp k)))
 	   (equal (bits (+ x (* y (expt 2 k))) n m)
 		  (bits y (- n k) (- m k))))
-  :enable digits-plus-mult-1)
+  :enable (digits-plus-mult-1 digits-shift-up-1)
+  :cases ((natp k)))
 
 (defruled bits-plus-mult-2
   (implies (and (< n k)
@@ -1135,7 +1151,7 @@
   (implies (and (dvecp x n b)
                 (radixp b))
            (equal (digitn x n b) 0))
-  :enable digitn)
+  :enable (digitn dvecp-digits-0))
 
 (defrule neg-digitn-1
   (implies (and (integerp x)
@@ -1780,16 +1796,7 @@
 ;;;			     CAT-R
 ;;;**********************************************************************
 
-(defund radix-cat (b x m y n)
-  (declare (xargs :guard (and (radixp b)
-                              (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (digits x (1- m) 0 b) (expt b n))
-         (digits y (1- n) 0 b))
-    0))
+; (defund radix-cat (b x m y n) ... )
 
 (local
  (defruled radix-cat-aux
@@ -1810,7 +1817,7 @@
 
 (defrule cat-r-dvecp
   (implies (and (<= (+ m n) k)
-                (case-split (integerp k))
+                (case-split (natp k))
                 (radixp b))
            (dvecp (cat-r b x m y n) k b))
   :prep-lemmas (
@@ -2120,7 +2127,7 @@
 
 (defrule mulcat-r-dvecp
   (implies (and (>= p (* l n))
-                (case-split (integerp p))
+                (case-split (natp p))
                 (case-split (natp l))
                 (radixp b))
            (dvecp (mulcat-r l n x b) p b))
@@ -2183,7 +2190,9 @@
 (defrule cat-bvecp
   (implies (and (<= (+ m n) k)
 		(case-split (integerp k)))
-	   (bvecp (cat x m y n) k)))
+	   (bvecp (cat x m y n) k))
+  :cases ((and (natp m) (natp n)))
+  :hints (("subgoal 2" :in-theory (enable radix-cat))))
 
 (defrule cat-with-n-0
   (equal (binary-cat x m y 0)
@@ -2199,7 +2208,9 @@
 		(case-split (integerp m))
 		(case-split (<= 0 m)))
 	   (equal (cat 0 m y n) y))
-  :enable cat-r-0)
+  :enable cat-r-0
+  :cases ((natp n))
+  :hints (("subgoal 2" :in-theory (enable radix-cat))))
 
 (defruled cat-bits-1
     (equal (cat (bits x (1- m) 0) m y n)
@@ -2391,7 +2402,9 @@
   (implies (and (>= p (* l n))
 		(case-split (integerp p))
 		(case-split (natp l)))
-	   (bvecp (mulcat l n x) p)))
+	   (bvecp (mulcat l n x) p))
+  :cases ((natp n))
+  :hints (("subgoal 2" :in-theory (enable mulcat-r))))
 
 (defrule mulcat-1
     (implies (natp l)

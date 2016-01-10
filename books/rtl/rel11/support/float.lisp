@@ -170,7 +170,10 @@
                   (case-split (radixp b)))
 	     (dvecp x (1+ (expe x b)) b))
   :enable (dvecp expe-upper-bound)
-  :cases ((real/rationalp x)))
+  :cases ((not (natp (expe x b)))
+          (not (real/rationalp x)))
+  :hints (("subgoal 2" :use (:instance expe>=
+                              (n 0)))))
 
 (defruled mod-expe-2
   (implies (and (< 0 x)
@@ -1809,7 +1812,7 @@
   (implies (bvecp x n)
            (exactp x n))
   :enable (bvecp dvecp)
-  :cases ((integerp n))
+  :cases ((natp n))
   :hints (("subgoal 2" :in-theory (enable exactp))))
 
 (defrule exactp-prod
