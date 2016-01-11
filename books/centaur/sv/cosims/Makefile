@@ -95,7 +95,10 @@ FAILING_TEST_TARGETS := \
   iface_basic3/ok \
   iface_basic6/ok \
   iface_subiface/ok \
-  udp_wide1/ok
+  udp_wide1/ok \
+  ifarray1/ok \
+  ifarray2/ok \
+  ifarray3/ok
 
 
 SPECFILES := $(wildcard */spec.sv)
