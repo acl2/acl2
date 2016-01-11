@@ -746,7 +746,7 @@ constructed separately.)</p>"
   (:interface ((portname stringp)
                (interface vl-interface-p)
                (argindex natp)
-               (conn-name stringp)
+               (conn-expr vl-expr-p)
                (port-lhs sv::lhs-p
                          "Svex expression form of the port.  Not scoped by the
                           instance name.")
@@ -921,6 +921,43 @@ constructed separately.)</p>"
     :hints(("Goal" :in-theory (enable vl-portinfolist-vars)))))
 
 
+(define vl-interfaceref-to-svar ((x vl-expr-p "should be an index expr referencing an interface instance/port")
+                                 (ss vl-scopestack-p))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (svar (implies (not err)
+                              (and (sv::svar-p svar)
+                                   (sv::svar-addr-p svar)))))
+  (b* ((x (vl-expr-fix x)))
+    (vl-expr-case x
+      :vl-index
+      (b* (((when (or (not (vl-partselect-case x.part :none))
+                      (consp x.indices)))
+            (mv (vmsg "Don't yet support referencing interface arrays: ~a0" x)
+                nil))
+           ((mv err hidtrace context tail)
+            (vl-follow-scopeexpr x.scope ss))
+           ((when err)
+            (mv (vmsg "Couldn't resolve interface reference to ~a0: ~@1" x err) nil))
+           (declname (vl-hidexpr-case tail :end tail.name :otherwise nil))
+           ((unless declname)
+            (mv (vmsg "Extra indexing on interface reference ~a0: ~a1. Modports
+                       should have been removed?" x (make-vl-index
+                                                     :scope (make-vl-scopeexpr-end :hid tail)))
+                nil))
+           ((unless (vl-hidtrace-resolved-p hidtrace))
+            (mv (vmsg "Unresolved hid indices on interface reference: ~a0" x) nil))
+           (path (vl-hidtrace-to-path hidtrace nil))
+           ((mv err addr) (vl-scopecontext-to-addr context ss path))
+           ((when err)
+            (mv (vmsg "Couldn't resolve interface reference to ~a0: context was
+                       problematic? ~@1" x err)
+                nil)))
+        (mv nil (sv::address->svar addr)))
+      :otherwise
+      (mv (vmsg "Bad expression for interface reference: ~a0" x) nil))))
+           
+
+
 (define vl-plainarg-portinfo ((x vl-plainarg-p)
                               (y vl-port-p)
                               (argindex natp)
@@ -970,12 +1007,12 @@ constructed separately.)</p>"
               (fail (fatal :type :vl-plainarg->svex-fail
                         :msg "Interface ~s0 for interface port ~s1 not found"
                         :args (list y.ifname y.name))))
-             ((unless (vl-idexpr-p x.expr))
+             ((mv err x-svar) (vl-interfaceref-to-svar x.expr ss))
+             ((when err)
               (fail (fatal :type :vl-plainarg->svex-fail
-                         :msg "Connection to interfaceport ~a0 must be a ~
-                               simple ID, for the moment: ~a1"
-                         :args (list y.name x.expr))))
-             (xvar (svex-var-from-name (vl-idexpr->name x.expr)))
+                           :msg "Failed to resolve argument to interface port ~a0: ~@1"
+                           :args (list y err))))
+             (xvar (sv::make-svex-var :name x-svar))
              (yvar (svex-var-from-name y.name))
              ;; ((mv ok yvar) (svex-add-namespace instname yvar))
              ;; (- (or ok (raise "Programming error: malformed variable in expression ~x0"
@@ -991,7 +1028,7 @@ constructed separately.)</p>"
                :portname y.name
                :interface interface
                :argindex argindex
-               :conn-name (vl-idexpr->name x.expr)
+               :conn-expr x.expr
                :port-lhs ylhs
                :conn-lhs xlhs
                :size ifwidth))))

@@ -89,10 +89,6 @@ FAILING_TEST_TARGETS := \
   inst_size4/ok \
   udp_wide1/ok \
   stream3/ok \
-  iface_gen/ok \
-  iface_gen2/ok \
-  iface_basic6/ok \
-  iface_subiface/ok \
   udp_wide1/ok
 
 

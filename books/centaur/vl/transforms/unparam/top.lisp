@@ -729,59 +729,98 @@ for each usertype is stored in the res field.</p>"
     :otherwise nil))
 
 
+#||
+(trace$ #!vl (vl-plainarg-update-ifports
+              :entry (list 'vl-plainarg-update-ifports
+                           (with-local-ps
+                             (vl-ps-seq (vl-ps-update-show-atts nil)
+                                        (vl-pp-plainarg x1)))
+                           (with-local-ps
+                             (vl-ps-seq (vl-ps-update-show-atts nil)
+                                        (vl-pp-port port1))))
+              :exit (b* (((list new-port ifportalist) values))
+                      (list 'vl-plainarg-update-ifports
+                            (with-local-ps
+                              (vl-ps-seq (vl-ps-update-show-atts nil)
+                                         (vl-pp-port new-port)))
+                            ifportalist))))
+
+||#
+
 (define vl-plainarg-update-ifports ((x1 vl-plainarg-p)
                                     (port1 vl-port-p)
                                     (ss vl-scopestack-p)
                                     (scopes vl-elabscopes-p))
-  :returns (mv (new-port vl-port-p)
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (new-port vl-port-p)
                (ifportalist-chunk vl-ifport-alist-p))
   (b* ((port1 (vl-port-fix port1))
        ((vl-plainarg x1) (vl-plainarg-fix x1))
        ((when (eq (tag port1) :vl-regularport))
-        (mv port1 nil))
-       (name (and x1.expr (vl-ifportexpr->name x1.expr)))
+        (mv nil port1 nil))
+       (name (and x1.expr (vl-expr-case x1.expr :vl-index x1.expr.scope :otherwise nil)))
        ((unless name)
         ;; Think this shouldn't be able to happen after argresolve.
-        (raise "Bad interface port connection: ~s0" (with-local-ps
-                                                     (if x1.expr (vl-pp-expr x1.expr)
-                                                       (vl-print-str "(empty)"))))
-        (mv port1 nil))
+        (mv (vmsg "Bad interface port connection: ~a0" (or x1.expr "(empty)")) port1 nil))
        ((vl-interfaceport port1) port1)
-       ((mv ss-item ?item-ss item-path) (vl-scopestack-find-item/ss/path name ss))
-       (item-scopes (vl-elabscopes-traverse item-path scopes))
-       (item (or (vl-elabscopes-item-info name item-scopes) ss-item))
+       ((mv err trace ?context tail) (vl-follow-scopeexpr name ss))
+       ((when err) (mv (vmsg "Error resolving interface port argument ~a0: ~@1"
+                             x1.expr err)
+                       port1 nil))
+       ((unless (vl-hidexpr-case tail :end))
+        (mv (vmsg "Unexpected indexing on interface port argument ~a0: ~a1 (modports
+                   should have been previously removed)"
+                  x1.expr (make-vl-index
+                           :scope (make-vl-scopeexpr-end :hid tail)))
+            port1 nil))
+                  
+       (name (vl-hidexpr-end->name tail))
+       ((vl-hidstep step) (car trace))
+       (item-scopes (vl-elabscopes-traverse (rev step.elabpath) scopes))
+       (item (or (vl-elabscopes-item-info name item-scopes) step.item))
        ((unless (and item
                      (or (eq (tag item) :vl-interfaceport)
                          (eq (tag item) :vl-modinst))))
-        (raise "Bad interface port connection: ~s0" (with-local-ps (vl-pp-expr x1.expr)))
-        (mv port1 nil))
+        (mv (vmsg "Bad interface port connection: ~a0" x1.expr)
+            port1 nil))
        (ifname (if (eq (tag item) :vl-interfaceport)
                    (vl-interfaceport->ifname item)
                  (vl-modinst->modname item))))
     (if (equal ifname port1.ifname)
-        (mv port1 nil)
-      (mv (change-vl-interfaceport port1 :ifname ifname)
-          (list (cons name ifname)))))
+        (mv nil port1 nil)
+      (mv nil (change-vl-interfaceport port1 :ifname ifname)
+          (list (cons port1.ifname ifname)))))
   ///
   (defret vl-plainarg-update-ifports-preserves-port
     (implies (atom ifportalist-chunk)
              (equal new-port (vl-port-fix port1)))))
+
+(define vmsg-concat ((x1 (or (not x1) (vl-msg-p x1)))
+                     (x2 (or (not x2) (vl-msg-p x2))))
+  :returns (msg (iff (vl-msg-p msg) msg))
+  (if x1
+      (if x2
+          (vmsg "~@0~%@~1" x1 x2)
+        (vl-msg-fix x1))
+    (and x2 (vl-msg-fix x2))))
 
 (define vl-plainarglist-update-ifports
   ((x vl-plainarglist-p "Actuals of the instance")
    (ports vl-portlist-p "Ports of the instantiated module")
    (ss    vl-scopestack-p "In the instantiating scope")
    (scopes vl-elabscopes-p "In the instantiating scope"))
-  :returns (mv (final-portlist vl-portlist-p "With modified interface port names")
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (final-portlist vl-portlist-p "With modified interface port names")
                (inst-ifportalist vl-ifport-alist-p
                                  "The ifport alist for this instance"))
   :measure (len x)
   :guard (eql (len x) (len ports))
-  (b* (((when (atom x)) (mv (vl-portlist-fix ports) nil))
-       ((mv port1 ifportalist1) (vl-plainarg-update-ifports (car x) (car ports) ss scopes))
-       ((mv rest-ports rest-ifportalist)
+  (b* (((when (atom x)) (mv nil (vl-portlist-fix ports) nil))
+       ((mv err1 port1 ifportalist1) (vl-plainarg-update-ifports (car x) (car ports) ss scopes))
+       ((mv err2 rest-ports rest-ifportalist)
         (vl-plainarglist-update-ifports (cdr x) (cdr ports) ss scopes)))
-    (mv (cons port1 rest-ports)
+    (mv (vmsg-concat err1 err2)
+        (cons port1 rest-ports)
         (append-without-guard ifportalist1 rest-ifportalist)))
 
   ///
@@ -799,6 +838,18 @@ for each usertype is stored in the res field.</p>"
                       (vl-portlist-fix ports))))))
 
 
+#||
+
+(trace! #!vl (vl-unparam-inst :entry (list 'vl-unparam-inst
+                                           (with-local-ps (vl-pp-modinst inst nil))
+                                           (vl-scopestack->hashkey (vl-elabindex->ss elabindex)))
+                              :exit (b* (((list ?successp ?warnings ?inst ?instkey ?elabindex ?ledger) values))
+                                      (list 'vl-unparam-inst
+                                            (with-local-ps (vl-pp-modinst inst nil))
+                                            instkey))))
+                                          
+
+||#
 (define vl-unparam-inst
   :parents (unparameterization)
   :short "Compute the final parameter values for a single module instance."
@@ -867,8 +918,15 @@ for each usertype is stored in the res field.</p>"
 
        (args (vl-arguments-plain->args inst.portargs))
 
-       ((mv new-ports inst-ifportalist) (vl-plainarglist-update-ifports
-                                         args mod.ports ss scopes))
+       ((mv err new-ports inst-ifportalist) (vl-plainarglist-update-ifports
+                                             args mod.ports ss scopes))
+
+       ((when err)
+        (mv nil
+            (fatal :type :vl-bad-instance
+                   :msg "~a0: Interfaceport processing failed: ~@1"
+                   :args (list inst err))
+            inst nil elabindex ledger))
 
        ;; ((when (atom mod.paramdecls))
        ;;  ;; Optimization.  In the common case there are no parameter
