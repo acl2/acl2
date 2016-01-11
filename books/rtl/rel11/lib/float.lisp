@@ -26,23 +26,20 @@
 
 (defsection-rtl |Floating-Point Decomposition| |Floating-Point Numbers|
 
-(defund sgn (x)
-  (declare (xargs :guard t))
+(defnd sgn (x)
   (if (or (not (rationalp x)) (equal x 0))
       0
     (if (< x 0) -1 +1)))
 
-(defund expo (x)
-  (declare (xargs :guard t
-                  :measure (:? x)))
+(defnd expo (x)
+  (declare (xargs :measure (:? x)))
   (cond ((or (not (rationalp x)) (equal x 0)) 0)
 	((< x 0) (expo (- x)))
 	((< x 1) (1- (expo (* 2 x))))
 	((< x 2) 0)
 	(t (1+ (expo (/ x 2))))))
 
-(defund sig (x)
-  (declare (xargs :guard t))
+(defnd sig (x)
   (if (rationalp x)
       (if (< x 0)
           (- (* x (expt 2 (- (expo x)))))
@@ -224,6 +221,8 @@
 (defsection-rtl |Exactness| |Floating-Point Numbers|
 
 (defund exactp (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (defthmd exactp2
@@ -362,6 +361,8 @@
   :rule-classes ())
 
 (defun fp+ (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (defthm fp+-positive
@@ -412,6 +413,8 @@
   :rule-classes ())
 
 (defun fp- (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (= x (expt 2 (expo x)))
       (- x (expt 2 (- (expo x) n)))
     (- x (expt 2 (- (1+ (expo x)) n)))))

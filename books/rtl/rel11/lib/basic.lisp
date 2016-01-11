@@ -448,6 +448,8 @@
 (defsection-rtl |Chop| |Basic Arithmetic Functions|
 
 (defund chop (x k)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp k))))
   (/ (fl (* (expt 2 k) x)) (expt 2 k)))
 
 (defthmd chop-mod
