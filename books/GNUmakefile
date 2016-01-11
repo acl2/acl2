@@ -1302,24 +1302,25 @@ dummy:
 
 # We now provide a way (adapted from the old Makefile-generic) for
 # developers to be able to check well-formedness of the ACL2 world
-# after including each book.  Note that the two problematic
+# after including each book.  Note that we skip two problematic
 # directories for world-checking, hacking/ and
-# workshops/2007/dillinger-et-al/code/ override the
-# chk-include-book-worlds target by setting environment variable
-# ACL2_SKIP_CHK_INCLUDE_BOOK_WORLDS in order to skip this check.  The
-# problem seems likely to be that in many of the books in these two
-# directories, the first bad triple is a GLOBAL-VALUE for either the
-# unknown property EXTEND-PROGN! or RETRACT-PROGN!, or else is an
-# unbinding of the PREDEFINED property for PROGN! (indicating a use of
-# :REDEF); presumably these books mess with raw mode.  Since we have
-# had such problems with acl2s/ccg/ccg.lisp (presumably because it includes
-# hacking/hacker), we exclude that book too.
+# workshops/2007/dillinger-et-al/code/.  The problem seems likely to
+# be that in many of the books in these two directories, the first bad
+# triple is a GLOBAL-VALUE for either the unknown property
+# EXTEND-PROGN! or RETRACT-PROGN!, or else is an unbinding of the
+# PREDEFINED property for PROGN! (indicating a use of :REDEF);
+# presumably these books mess with raw mode.  Since we have had such
+# problems with acl2s/ccg/ccg.lisp (presumably because it includes
+# hacking/hacker), we exclude all books in that directory.  Finally,
+# we exclude books in books/build/test/, since some have caused
+# problems; there's nothing of interest in those books from a world
+# perspective, so it's not worth figuring out the problem.
 
 BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
 BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
-BOOKS_BKCHK_OUT := $(filter-out acl2s/ccg/ccg.bkchk.out, $(BOOKS_BKCHK_OUT))
-BOOKS_BKCHK_OUT := $(filter-out acl2s/ccg/doc.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out acl2s/ccg/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)

@@ -19,88 +19,11 @@
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
+(include-book "defs")
 
 ;;;**********************************************************************
 ;;;                      Bit Manipulation
 ;;;**********************************************************************
-
-(defund fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
-
-(defund chop (x k)
-  (/ (fl (* (expt 2 k) x)) (expt 2 k)))
-
-(defund bvecp (x k)
-  (declare (xargs :guard (integerp k)))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt 2 k))))
-
-(defund bits (x i j)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp i)
-                              (integerp j))))
-  (mbe :logic (if (or (not (integerp i))
-                      (not (integerp j)))
-                  0
-                (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-       :exec  (if (< i j)
-                  0
-                (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-
-(defund bitn (x n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp n))))
-  (mbe :logic (bits x n n)
-       :exec  (if (evenp (ash x (- n))) 0 1)))
-
-(defund si (r n)
-  (if (= (bitn r (1- n)) 1)
-      (- r (expt 2 n))
-    r))
-
-(defund binary-cat (x m y n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (expt 2 n) (bits x (1- m) 0))
-         (bits y (1- n) 0))
-    0))
-
-(defun formal-+ (x y)
-  ;;an auxiliary function that does not appear in translate-rtl output.
-  (declare (xargs :guard t))
-  (if (and (acl2-numberp x) (acl2-numberp y))
-      (+ x y)
-    (list '+ x y)))
-
-;;X is a list of alternating data values and sizes.  CAT-SIZE returns the
-;;formal sum of the sizes.  X must contain at least 1 data/size pair, but we do
-;;not need to specify this in the guard, and leaving it out of that guard
-;;simplifies the guard proof.
-
-(defun cat-size (x)
-  ;;an auxiliary function that does not appear in translate-rtl output.
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
-  (if (endp (cddr x))
-      (cadr x)
-    (formal-+ (cadr x)
-	      (cat-size (cddr x)))))
-
-(defmacro cat (&rest x)
-  (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
-  (cond ((endp (cddr x))
-         `(bits ,(car x) ,(formal-+ -1 (cadr x)) 0))
-        ((endp (cddddr x))
-         `(binary-cat ,@x))
-        (t
-         `(binary-cat ,(car x)
-                      ,(cadr x)
-                      (cat ,@(cddr x))
-                      ,(cat-size (cddr x))))))
 
 ;Allows things like (in-theory (disable cat)) to refer to binary-cat.
 (add-macro-alias cat binary-cat)
@@ -345,6 +268,8 @@
 (defund ui (r) r)
 
 (defund si (r n)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n))))
   (if (= (bitn r (1- n)) 1)
       (- r (expt 2 n))
     r))

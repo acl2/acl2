@@ -1,7 +1,7 @@
 #  -*- Fundamental -*- 
 
 # ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-# Copyright (C) 2015, Regents of the University of Texas
+# Copyright (C) 2016, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 # (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -175,12 +175,17 @@ PREFIX =
 PREFIXsaved_acl2 = ${PREFIX}saved_acl2${ACL2_SUFFIX}
 PREFIXosaved_acl2 = ${PREFIX}osaved_acl2${ACL2_SUFFIX}
 
-# One may define ACL2_SAFETY to provide a safety setting.  We recommend
+# One may define ACL2_SAFETY and/or (only useful for CCL) ACL2_STACK_ACCESS
+# to provide a safety or :stack-access setting.  We recommend
 # ACL2_SAFETY = 3
 # for careful error checking.  This can cause significant slowdown and for
 # some Lisp implementations, the regression might not even complete.  For
 # CCL we have had success with safety 3.
+# NOTE: The use of ACL2_STACK_ACCESS relies on recognition by CCL of the
+# :stack-access keyword for optimize expressions, hence will only have
+# effect for CCL versions starting with 16678.
 ACL2_SAFETY =
+ACL2_STACK_ACCESS =
 
 # Set ACL2_COMPILER_DISABLED, say with ACL2_COMPILER_DISABLED=t, to
 # build the image with (SET-COMPILER-ENABLED NIL STATE), thus
@@ -281,6 +286,9 @@ acl2r.lisp:
 	fi
 	if [ "$(ACL2_SAFETY)" != "" ] ; then \
 	echo "(defparameter *acl2-safety* $(ACL2_SAFETY))" >> acl2r.lisp ;\
+	fi
+	if [ "$(ACL2_STACK_ACCESS)" != "" ] ; then \
+	echo "(defparameter *acl2-stack-access* $(ACL2_STACK_ACCESS))" >> acl2r.lisp ;\
 	fi
 	if [ "$(ACL2_SIZE)" != "" ] ; then \
 	echo '(or (find-package "ACL2") (#+(and gcl (not ansi-cl)) defpackage:defpackage #-(and gcl (not ansi-cl)) defpackage "ACL2" (:size $(ACL2_SIZE)) (:use)))' >> acl2r.lisp ;\

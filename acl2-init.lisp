@@ -1,5 +1,5 @@
 ; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -915,7 +915,7 @@ implementations.")
   (concatenate
    'string
    "~% ~a built ~a.~
-    ~% Copyright (C) 2015, Regents of the University of Texas"
+    ~% Copyright (C) 2016, Regents of the University of Texas"
    "~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the LICENSE file distributed with ACL2.~%"
@@ -1648,7 +1648,15 @@ implementations.")
 ; maximum possible value just below, which for darwin (at least on Matt's
 ; Macbook pro) is only 1150.
 
-                        #+darwin 1150 #-darwin 1632
+; Starting with CMUCL snapshot-2016-01, -dynamic-space-size can be 0, meaning
+; that the maximum heap allocation will be used (thanks to Raymond Toy for this
+; option).
+
+                        (if (string>=
+                             (subseq (lisp-implementation-version) 0 16)
+                             "snapshot-2016-01")
+                            0
+                          #+darwin 1150 #-darwin 1632)
                         (insert-string host-lisp-args)
                         (user-args-string inert-args))))
     (chmod-executable sysout-name)

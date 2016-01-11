@@ -1,5 +1,5 @@
 ; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -249,7 +249,18 @@
                                     our-safety)
                             our-safety)
                    0))
-              )))
+              )
+             #+ccl
+             ,@(let ((our-stack-access
+                      (if (boundp 'common-lisp-user::*acl2-stack-access*)
+                          (symbol-value 'common-lisp-user::*acl2-stack-access*)
+                        nil)))
+                 (if our-stack-access
+                     (progn (format t "Note: Setting :STACK-ACCESS to ~s."
+                                    our-stack-access)
+                            `((:stack-access ,our-stack-access)))
+                   nil))
+              ))
 
 (proclaim *acl2-optimize-form*)
 
