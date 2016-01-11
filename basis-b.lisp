@@ -4135,7 +4135,8 @@
               (warning$ 'set-gc-threshold$ nil
                         "Ignoring argument to set-gc-threshold$, ~x0, because ~
                          it specifies a threshold of less than one megabyte.  ~
-                         Using default threshold of one megabyte.")))
+                         Using default threshold of one megabyte."
+                        new-threshold)))
 
 ; Calling set-gen-num-gc-threshold sets the GC threshold for the given
 ; generation of garbage.
