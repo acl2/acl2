@@ -60,6 +60,7 @@ FAILING_TEST_TARGETS := \
   iface26.svok \
   alias1.svok
 
+
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core
 	ls -lah $(COSIM_DIR)/cosim-core

@@ -1,5 +1,5 @@
 ; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -4135,7 +4135,8 @@
               (warning$ 'set-gc-threshold$ nil
                         "Ignoring argument to set-gc-threshold$, ~x0, because ~
                          it specifies a threshold of less than one megabyte.  ~
-                         Using default threshold of one megabyte.")))
+                         Using default threshold of one megabyte."
+                        new-threshold)))
 
 ; Calling set-gen-num-gc-threshold sets the GC threshold for the given
 ; generation of garbage.

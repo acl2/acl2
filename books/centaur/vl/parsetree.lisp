@@ -4022,7 +4022,6 @@ initially kept in a big, mixed list.</p>"
 
 
 
-
 (defsection generates
   :parents nil
 
@@ -4141,8 +4140,15 @@ initially kept in a big, mixed list.</p>"
     (defprod vl-genblock
       :layout :tree
       :short "Representation of an explicit or implicit @('begin/end') generate block."
-      ((name      vl-maybe-scopeid-p  "The name of the block, if named.")
-       (elems     vl-genelementlist-p "Elements within the block.")
+      ((name        vl-maybe-scopeid-p  "The name of the block, if named.")
+       (elems       vl-genelementlist-p "Elements within the block.")
+       (condnestp   booleanp            "Reflects special case where the block
+                                         doesn't create a scope, in case of nested
+                                         conditionals.  See SystemVerilog-2012
+                                         27.5: a block within a conditional construct
+                                         that has only one element, and is not
+                                         surrounded by begin/end keywords, is not
+                                         treated as a separate scope.")
        (loc       vl-location         "Location of the block in the Verilog source code."))
       :measure (two-nats-measure (acl2-count x) 3)
       :long "<p>See the documentation for @(see vl-genbegin).  A

@@ -596,7 +596,7 @@ returns a @(see vl-genblock).</li>
              (items := (vl-parse-modelement))
              (return (vl-modelementlist->genelements items))))
 
-      (defparser vl-parse-generate-block ()
+      (defparser vl-parse-generate-block (directly-under-condp)
         :measure (two-nats-measure (vl-tokstream-measure) 6)
         :verify-guards nil
         (declare (xargs :measure-debug t))
@@ -607,10 +607,21 @@ returns a @(see vl-genblock).</li>
                (return
                 ;; If what we parsed is already a block, just return that,
                 ;; otherwise wrap it as a singleton element in a block.
-                (vl-genelement-case gen
-                  :vl-genbegin gen.block
-                  :otherwise (make-vl-genblock :loc loc
-                                               :elems (list gen)))))
+                (if directly-under-condp
+                    (vl-genelement-case gen
+                      :vl-genbegin gen.block
+                      :vl-genif (make-vl-genblock :loc loc
+                                                   :elems (list gen)
+                                                   :condnestp t)
+                      :vl-gencase (make-vl-genblock :loc loc
+                                                    :elems (list gen)
+                                                    :condnestp t)
+                      :otherwise (make-vl-genblock :loc loc
+                                                   :elems (list gen)))
+                  (vl-genelement-case gen
+                    :vl-genbegin gen.block
+                    :otherwise (make-vl-genblock :loc loc
+                                                 :elems (list gen))))))
              (items := (vl-parse-modelement))
              (return (make-vl-genblock :loc loc
                                        :elems (vl-modelementlist->genelements items)))))
@@ -658,7 +669,7 @@ returns a @(see vl-genblock).</li>
         ;;    | genvar_identifier inc_or_dec_operator
         (seq tokstream
              (header := (vl-parse-genloop-header))
-             (body := (vl-parse-generate-block))
+             (body := (vl-parse-generate-block nil))
              (return (change-vl-genloop header
                                         :body body))))
 
@@ -677,11 +688,11 @@ returns a @(see vl-genblock).</li>
              (:= (vl-match-token :vl-lparen))
              (test := (vl-parse-expression))
              (:= (vl-match-token :vl-rparen))
-             (then :w= (vl-parse-generate-block))
+             (then :w= (vl-parse-generate-block t))
              (when (and (consp (vl-tokstream->tokens))
                         (vl-is-token? :vl-kwd-else))
                (:= (vl-match))
-               (else := (vl-parse-generate-block)))
+               (else := (vl-parse-generate-block t)))
              (return (make-vl-genif
                       :test test
                       :then then
@@ -727,14 +738,14 @@ returns a @(see vl-genblock).</li>
              (when (vl-is-token? :vl-kwd-default)
                (:= (vl-match))
                (:= (vl-match-token :vl-colon))
-               (blk :w= (vl-parse-generate-block))
+               (blk :w= (vl-parse-generate-block t))
                ((rest . rdefault) := (vl-parse-gencaselist))
                (when rdefault
                  (return-raw (vl-parse-error "Multiple default cases in generate case")))
                (return (cons rest blk)))
              (exprs := (vl-parse-1+-expressions-separated-by-commas))
              (:= (vl-match-token :vl-colon))
-             (blk :w= (vl-parse-generate-block))
+             (blk :w= (vl-parse-generate-block t))
              ((rest . default) := (vl-parse-gencaselist))
              (return (cons (cons (cons exprs blk) rest) default))))))
 
@@ -742,7 +753,7 @@ returns a @(see vl-genblock).</li>
    `(defthm-vl-genelements-flag vl-parse-genelement-val-when-error
       ,(vl-val-when-error-claim vl-parse-genelement)
       ,(vl-val-when-error-claim vl-parse-generate)
-      ,(vl-val-when-error-claim vl-parse-generate-block)
+      ,(vl-val-when-error-claim vl-parse-generate-block :args (directly-under-condp))
       ,(vl-val-when-error-claim vl-parse-genelements-until :args (endkwd))
       ,(vl-val-when-error-claim vl-parse-genloop)
       ,(vl-val-when-error-claim vl-parse-genif)
@@ -759,7 +770,7 @@ returns a @(see vl-genblock).</li>
    `(defthm-vl-genelements-flag vl-parse-genelement-warning
       ,(vl-warning-claim vl-parse-genelement)
       ,(vl-warning-claim vl-parse-generate)
-      ,(vl-warning-claim vl-parse-generate-block)
+      ,(vl-warning-claim vl-parse-generate-block :args (directly-under-condp))
       ,(vl-warning-claim vl-parse-genelements-until :args (endkwd))
       ,(vl-warning-claim vl-parse-genloop)
       ,(vl-warning-claim vl-parse-genif)
@@ -786,7 +797,7 @@ returns a @(see vl-genblock).</li>
          (< (VL-TOKSTREAM-MEASURE :TOKSTREAM (MV-NTH 2 (VL-PARSE-GENERATE)))
             (VL-TOKSTREAM-MEASURE))))
        :RULE-CLASSES ((:REWRITE) (:LINEAR)))
-      ,(vl-progress-claim vl-parse-generate-block)
+      ,(vl-progress-claim vl-parse-generate-block :args (directly-under-condp))
       ,(vl-progress-claim vl-parse-genelements-until :args (endkwd) :strongp nil)
       ,(vl-progress-claim vl-parse-genloop)
       ,(vl-progress-claim vl-parse-genif)
@@ -813,7 +824,7 @@ returns a @(see vl-genblock).</li>
       ,(vl-genelement-claim vl-parse-genelement        vl-genelementlist-p)
       ,(vl-genelement-claim vl-parse-generate          (lambda (val)
                                                          (iff (vl-genelement-p val) val)))
-      ,(vl-genelement-claim vl-parse-generate-block    vl-genblock-p)
+      ,(vl-genelement-claim vl-parse-generate-block    vl-genblock-p :args (directly-under-condp))
       ,(vl-genelement-claim vl-parse-genelements-until vl-genelementlist-p :args (endkwd) :true-listp t)
       ,(vl-genelement-claim vl-parse-genloop           vl-genelement-p)
       ,(vl-genelement-claim vl-parse-genif             vl-genelement-p)

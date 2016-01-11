@@ -1517,7 +1517,9 @@ bb cc dd'), which are then reversed.</p>"
         (loghead nbits x))
        (next-nbits (- nbits blocksz))
        (rest (rev-blocks next-nbits blocksz (ash x (- blocksz)))))
-    (logapp next-nbits rest (loghead blocksz x))))
+    (logapp next-nbits rest (loghead blocksz x)))
+  ///
+  (deffixequiv rev-blocks))
 
 (define rev-block-index ((i natp)
                          (nbits natp)

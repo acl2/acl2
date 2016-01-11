@@ -71,11 +71,6 @@ FAILING_TEST_TARGETS := \
   for-nba/ok \
   task/ok \
   task2/ok \
-  alias1/ok \
-  alias2/ok \
-  alias3/ok \
-  alias4/ok \
-  alias5/ok \
   gates_bufif0/ok \
   gates_bufif1/ok \
   gates_notif0/ok \
@@ -87,13 +82,15 @@ FAILING_TEST_TARGETS := \
   gates_rnmos/ok \
   gates_pullup/ok \
   gates_pulldown/ok \
+  iface_subiface/ok \
   inst_size1/ok \
   inst_size2/ok \
   inst_size3/ok \
   inst_size4/ok \
+  udp_wide1/ok \
+  stream3/ok \
   iface_gen/ok \
   iface_gen2/ok \
-  iface_basic3/ok \
   iface_basic6/ok \
   iface_subiface/ok \
   udp_wide1/ok \
