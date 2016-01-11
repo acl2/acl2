@@ -289,9 +289,9 @@ trivial, nitpicky complaints about assignments that aren't really bugs.</p>
 
 <p>This hook can be used with @(see defattach) to customize exactly how
 extension warnings are filtered out and easily experiment with new heuristics.
-See @(see vl-default-extension-warning-hook) for the arguments.  The task of
-your function is to classify the type of warning to issue.  Typically the type
-should be one of the following:</p>
+See @(see vl-classify-extension-warning-default) for the arguments.  The task
+of your function is to classify the type of warning to issue.  Typically the
+type should be one of the following:</p>
 
 <ul>
 <li>@('nil') - do not issue any warnings about this extension,</li>

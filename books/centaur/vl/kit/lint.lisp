@@ -494,10 +494,10 @@ shown.</p>"
 
        ;; Pre-unparameterization Lucidity Check.
        (design (xf-cwtime (vl-design-lucid design
-                                        ;; This is a good time to check parameter uses
-                                        :paramsp t
-                                        ;; This is a bad time to check generates
-                                        :generatesp nil)))
+                                           :modportsp t ;; Good time to check modports
+                                           :paramsp t   ;; Good time to check params
+                                           :generatesp nil ;; Bad time to check generates
+                                           )))
 
        (design (xf-cwtime (vl-design-check-namespace design)))
        (design (xf-cwtime (vl-design-check-case design)))
@@ -530,13 +530,15 @@ shown.</p>"
         (xf-cwtime (vl-design-dupeinst-check design)))
 
        ;; Post-unparameterization Lucidity Check -- this is a bad time for
-       ;; checking parameters (because they've been eliminated) but it's a
-       ;; much better time to do bit-level analysis, because things like
-       ;; foo[width-1:0] should hopefully be resolved now.  Also we can
-       ;; sensibly check generates now.
+       ;; checking parameters (because they've been eliminated) and modports
+       ;; (because the interface names have changed and we won't be able to
+       ;; find them correctly).  But it's a much better time to do bit-level
+       ;; analysis, because things like foo[width-1:0] should hopefully be
+       ;; resolved now.  Also we can sensibly check generates now.
        (design (xf-cwtime (vl-design-lucid design
-                                        :paramsp nil
-                                        :generatesp t)))
+                                           :modportsp nil
+                                           :paramsp nil
+                                           :generatesp t)))
 
 ;;*** do we want to do thsi???  I can't think of why
        ;; (design

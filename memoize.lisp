@@ -155,10 +155,8 @@
                (condition ,condition)
                (formals
                 (and (symbolp fn) ; guard for getprop
-                     (getprop fn 'formals t
-                              'current-acl2-world wrld)))
-               (stobjs-in (getprop fn 'stobjs-in t
-                                   'current-acl2-world wrld))
+                     (getpropc fn 'formals t wrld)))
+               (stobjs-in (getpropc fn 'stobjs-in t wrld))
                (condition-fn (or ,condition-fn
                                  (add-suffix fn "-MEMOIZE-CONDITION")))
                (hints ,hints)
@@ -174,13 +172,13 @@
                        (symbolp fn)
                        (not (eq t formals))
                        (not (eq t stobjs-in))
-                       (not (eq t (getprop fn 'stobjs-out t
+                       (not (eq t (getpropc fn 'stobjs-out t
 
 ; Normally we would avoid getting the stobjs-out of return-last.  But
 ; return-last will eventually be rejected for mamoization anyhow (by
 ; memoize-table-chk).
 
-                                           'current-acl2-world wrld)))
+                                            wrld)))
                        (cltl-def-from-name fn wrld)))
                  (er hard 'memoize
                      "The symbol ~x0 is not a known function symbol, and thus ~
@@ -206,8 +204,7 @@
                       (declare
                        (ignorable ,@formals)
                        (xargs :guard
-                              ,(getprop fn 'guard *t*
-                                        'current-acl2-world wrld)
+                              ,(getpropc fn 'guard *t* wrld)
                               :verify-guards nil
                               ,@(let ((stobjs (remove nil stobjs-in)))
                                   (and stobjs

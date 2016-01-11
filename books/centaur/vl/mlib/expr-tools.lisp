@@ -404,10 +404,9 @@
 
 (defsection vl-one-bit-constants
   :short "Already-sized, one-bit constants."
-
-  :long "<p>Care should be taken when using these constants because they are
-already annotated with their final widths and types, and @(see
-expression-sizing) is a very complex topic.</p>"
+  :long "<p>The names of these constants are historic relics from a time when
+VL's expressions had size annotations.  We should probably get rid of these, it
+looks like they are now mainly used in @(see udp-elim).</p>"
 
   (defconst |*sized-1'b0*|
     (hons-copy (make-vl-literal
@@ -937,8 +936,8 @@ construct fast alists binding identifiers to things, etc.</p>"
 (define vl-valuerange->subexprs ((x vl-valuerange-p))
   :returns (subexprs vl-exprlist-p)
   (vl-valuerange-case x
-    :single (list x.expr)
-    :range  (vl-range->subexprs x.range))
+    :valuerange-single (list x.expr)
+    :valuerange-range  (list x.low x.high))
   ///
   (defret vl-exprlist-count-of-vl-valuerange->subexprs
     (<= (vl-exprlist-count subexprs)
@@ -954,8 +953,9 @@ construct fast alists binding identifiers to things, etc.</p>"
   :returns (new-x vl-valuerange-p)
   :verify-guards nil
   (vl-valuerange-case x
-    :single (vl-expr->valuerange (car subexprs))
-    :range (vl-range->valuerange (vl-range-update-subexprs x.range subexprs)))
+    :valuerange-single (make-vl-valuerange-single :expr (first subexprs))
+    :valuerange-range (make-vl-valuerange-range :low (first subexprs)
+                                                :high (second subexprs)))
   ///
   (verify-guards vl-valuerange-update-subexprs
     :hints ((and stable-under-simplificationp

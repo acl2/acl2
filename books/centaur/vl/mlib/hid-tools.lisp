@@ -56,10 +56,9 @@
   :hints(("Goal" :in-theory (enable tag vl-genelement-kind vl-genelement-p))))
 
 
-
-(defxdoc following-hids
-  :parents (hid-tools)
-  :short "Functions for following hierarchical identifiers."
+(defxdoc hid-tools
+  :parents (mlib)
+  :short "Functions for working with hierarchical identifiers."
 
   :long "<p>Perhaps the most fundamental operation for a hierarchical
 identifier is figure out what it refers to.  This turns out to be a
@@ -87,9 +86,6 @@ hierarchical index that leads into this variable.  For instance, in a case like
 @('foo.bar.myinst.opcode') where @('myinst') is an @('instruction_t') structure
 variable, we will follow only until the declaration of @('myinst') and then we
 will return @('myinst.opcode') as the tail.</dd>
-
-<dd>Tools that want to descend into structures will need to do so using the
-appropriate functions; for instance @(see BOZO) and @(see BOZO).</dd>
 
 
 <dt>Unclear Destination</dt>
@@ -155,14 +151,14 @@ that the end-user can understand the nature and location of the problem.</dd>
 
 </dl>")
 
-(local (xdoc::set-default-parents following-hids))
+(local (xdoc::set-default-parents hid-tools))
 
 
 (defprod vl-hidstep
   :short "A single step along the way of a hierarchical identifier."
-  :long "<p>Some routines for @(see following-hids) produce traces of the items
-they encounter along the way.  A <b>hidstep</b> structure represents a single
-step along a HID.</p>"
+  :long "<p>See @(see hid-tools).  Some routines for following hids produce
+traces of the items they encounter along the way.  A <b>hidstep</b> structure
+represents a single step along a HID.</p>"
   :tag :vl-hidstep
   :layout :tree
   ((name stringp "Name from the hid")
@@ -350,17 +346,17 @@ be resolved.</p>"
         (vmsg "too many indices for array ~s0" name)))
     (vmsg "not enough indices for array ~s0" name)))
 
-(define vl-genarrayblocklist-find-block
+(define vl-genblocklist-find-block
   :short "Find the block from a generate array corresponding to some index."
   ((idx integerp)
-   (x   vl-genarrayblocklist-p))
-  :returns (blk (iff (vl-genarrayblock-p blk) blk))
+   (x   vl-genblocklist-p))
+  :returns (blk (iff (vl-genblock-p blk) blk))
   (cond ((atom x)
          nil)
-        ((eql (vl-genarrayblock->index (car x)) (lifix idx))
-         (vl-genarrayblock-fix (car x)))
+        ((eql (vl-genblock->name (car x)) (lifix idx))
+         (vl-genblock-fix (car x)))
         (t
-         (vl-genarrayblocklist-find-block idx (cdr x)))))
+         (vl-genblocklist-find-block idx (cdr x)))))
 
 (local (defthm stringp-when-hidname-and-not-$root
          (implies (vl-hidname-p x)
@@ -418,9 +414,10 @@ be resolved.</p>"
                  (equal (tag item) :vl-genloop)
                  (equal (tag item) :vl-genif)
                  (equal (tag item) :vl-gencase)
-                 (equal (tag item) :vl-genblock)
+                 (equal (tag item) :vl-genbegin)
                  (equal (tag item) :vl-genarray)
                  (equal (tag item) :vl-genbase)
+                 (equal (tag item) :vl-genvar)
                  (equal (tag item) :vl-interfaceport)
                  (equal (tag item) :vl-paramdecl)
                  (equal (tag item) :vl-vardecl)
@@ -437,7 +434,18 @@ be resolved.</p>"
                       item))))))))
 
 
+#||
+(trace$ #!vl (vl-follow-hidexpr-aux-fn
+              :entry (list 'vl-follow-hidexpr-aux
+                           (with-local-ps (vl-pp-hidexpr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list ?err ?new-trace ?tail)))
+                      (list 'vl-follow-hidexpr-aux
+                            (and err (with-local-ps (vl-cw "~@0" err)))
+                            ;; (with-local-ps (vl-pp-hidexpr tail))
+                            ))))
 
+||#
 (with-output
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil)
           :term nil)
@@ -499,7 +507,8 @@ top-level hierarchical identifiers.</p>"
          (elabpath (vl-elabpaths-append item-path elabpath))
 
          ((when (or (eq (tag item) :vl-vardecl)
-                    (eq (tag item) :vl-paramdecl)))
+                    (eq (tag item) :vl-paramdecl)
+                    (eq (tag item) :vl-genvar)))
           ;; Found the declaration we want.  We aren't going to go any further:
           ;; there may be additional HID indexing stuff left, but if so it's just
           ;; array or structure indexing for the tail.
@@ -668,7 +677,7 @@ top-level hierarchical identifiers.</p>"
                                    :strictp strictp
                                    :elabpath iface-path)))
 
-         ((when (eq (tag item) :vl-genblock))
+         ((when (eq (tag item) :vl-genbegin))
           (b* (((when (consp indices))
                 ;; Doesn't make any sense: this is a single, named generate
                 ;; block, not an array, so we shouldn't try to index into it.
@@ -681,9 +690,9 @@ top-level hierarchical identifiers.</p>"
                     trace x))
                ;; Else we have something like foo.bar.myblock.mywire or whatever.
                ;; This is fine, we just need to go into the generate block.
-               (genblob (vl-sort-genelements (vl-genblock->elems item)
+               (genblob (vl-sort-genelements (vl-genblock->elems (vl-genbegin->block item))
                                              :scopetype :vl-genblock
-                                             :name name1))
+                                             :id name1))
                (next-ss (vl-scopestack-push genblob item-ss))
                (next-path (cons (vl-elabinstruction-push-named (vl-elabkey-item name1))
                                 elabpath)))
@@ -727,19 +736,43 @@ top-level hierarchical identifiers.</p>"
                 (mv (vl-follow-hidexpr-error "unresolved index into generate array" item-ss)
                     trace x))
                (blocknum (vl-resolved->val index-expr))
-               (block    (vl-genarrayblocklist-find-block blocknum
-                                                          (vl-genarray->blocks item)))
+               (block    (vl-genblocklist-find-block blocknum
+                                                     (vl-genarray->blocks item)))
                ((unless block)
                 ;; Something like foo.bar.mygenarray[8].baz when the array only
                 ;; goes from 3:7 or whatever.
                 (mv (vl-follow-hidexpr-error (vmsg "invalid index into generate array: ~x0" blocknum)
                                              item-ss)
                     trace x))
-               (genblob (vl-sort-genelements (vl-genarrayblock->elems block)
-                                             :scopetype :vl-genarrayblock
-                                             :name name1))
-               (next-ss (vl-scopestack-push genblob item-ss))
-               (next-path (cons (vl-elabinstruction-push-named (vl-elabkey-item name1))
+
+               ;; Our discipline is that we're going to treat
+               ;;   - The array as a whole, and
+               ;;   - The individual block for this index
+               ;;
+               ;; as BOTH being scope levels.  We are therefore going to:
+               ;;   - push both onto the scope stack
+               ;;   - represent both in the elabscopes traversal we're constructing
+               ;;
+               ;; This discipline is meant to ensure consistency between the
+               ;; scopestack view, elabscopes view, and SV view of the scope
+               ;; hierarchy.
+               (array-scope
+                ;; From the scopestack perspective, the scope for the array
+                ;; won't actually have anything in it.  (In elabscopes and SV
+                ;; it will have all of the sub-blocks.)
+                (vl-sort-genelements nil
+                                     :scopetype :vl-genarray
+                                     :id name1))
+               (block-scope
+                (vl-sort-genelements (vl-genblock->elems block)
+                                     :scopetype :vl-genarrayblock
+                                     ;; This "name" is actually an integer, the
+                                     ;; index of the block.
+                                     :id blocknum))
+               (next-ss (vl-scopestack-push block-scope
+                         (vl-scopestack-push array-scope item-ss)))
+               (next-path (list* (vl-elabinstruction-push-named (vl-elabkey-index blocknum))
+                                 (vl-elabinstruction-push-named (vl-elabkey-item name1))
                                 elabpath)))
             (vl-follow-hidexpr-aux rest trace next-ss :strictp strictp :elabpath next-path)))
 
@@ -917,6 +950,19 @@ top-level hierarchical identifiers.</p>"
          (implies (vl-module-p x)
                   (vl-scope-p x))))
 
+#||
+
+(trace$ #!vl (vl-follow-hidexpr-fn
+              :entry (list 'vl-follow-hidexpr
+                           (with-local-ps (vl-pp-hidexpr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list ?err ?trace ?context ?tail) values))
+                      (list 'vl-follow-hidexpr
+                            (and err (with-local-ps (vl-cw "~@0" err)))))))
+
+||#
+
+
 (define vl-follow-hidexpr
   :short "Follow a HID to find the associated declaration."
   ((x       vl-hidexpr-p       "Hierarchical identifier to follow.")
@@ -941,7 +987,7 @@ top-level hierarchical identifiers.</p>"
               declaration.  This may include array indexing or structure
               indexing."))
 
-  :long "<p>Prerequisite: see @(see following-hids) for considerable discussion
+  :long "<p>Prerequisite: see @(see hid-tools) for considerable discussion
 about the goals and design of this function.</p>
 
 <p>This is our top-level routine for following hierarchical identifiers.  It
@@ -1115,7 +1161,17 @@ instance, in this case the @('tail') would be
              (vl-subhid-p tail x))
     :hints(("Goal" :in-theory (enable vl-subhid-p)))))
 
+#||
 
+(trace$ #!vl (vl-follow-scopeexpr-fn
+              :entry (list 'vl-follow-scopeexpr
+                           (with-local-ps (vl-pp-scopeexpr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list ?err ?trace ?context ?tail) values))
+                      (list 'vl-follow-scopeexpr
+                            (and err (with-local-ps (vl-cw "~@0" err)))))))
+
+||#
 
 (define vl-follow-scopeexpr
   :short "Follow a scope expression to find the associated declaration."
@@ -1388,21 +1444,20 @@ instance, in this case the @('tail') would be
        (name1 (vl-hidexpr-name1 tail))
        ((when (eq name1 :vl-$root))
         (mv (vmsg "$root is not supported") nil))
+       ;; Check whether there is elaboration info stored for the type as
+       ;; well. If so, use that item instead of the one found in the
+       ;; scopestack by follow-scopeexpr.
        (ref-scopes (vl-elabscopes-traverse (rev ref.elabpath) scopes :allow-empty t))
        (info (vl-elabscopes-item-info name1 ref-scopes))
-       ((when info)
-        (vl-elabinfo-case info
-          :type
-          (if (vl-datatype-resolved-p info.type)
-              (mv nil info.type)
-            (mv (vmsg "Programming error: unresolved type ~s0 in elabinfo"
-                      name1) nil))
-          :otherwise 
-          (mv (vmsg "~x0 info stored for type ~s1"
-                    (vl-elabinfo-kind info) name1) nil)))
-
-       ((when (eq (tag ref.item) :vl-typedef))
-        (b* (((vl-typedef item) ref.item)
+       (item (or info ref.item))
+       
+       ((when (eq (tag item) :vl-typedef))
+        (b* (((vl-typedef item) item)
+             ((when info)
+              (if (vl-datatype-resolved-p item.type)
+                  (mv nil item.type)
+                (mv (vmsg "Programming error: unresolved type ~s0 stored in elaboration"
+                          name1) nil)))
              ((when (zp rec-limit))
               (mv (vmsg "Recursion limit ran out looking up ~
                                       usertype ~a0" x)
@@ -1410,8 +1465,8 @@ instance, in this case the @('tail') would be
           (vl-datatype-usertype-resolve item.type ref.ss
                                         :rec-limit (1- rec-limit)
                                         :scopes ref-scopes)))
-       ((when (eq (tag ref.item) :vl-paramdecl))
-        (b* (((vl-paramdecl item) ref.item))
+       ((when (eq (tag item) :vl-paramdecl))
+        (b* (((vl-paramdecl item) item))
           (vl-paramtype-case item.type
             :vl-typeparam
             ;; Note: I think it would be wrong to recur on the parameter type
@@ -1426,7 +1481,7 @@ instance, in this case the @('tail') would be
             (mv (vmsg "Reference to data parameter ~a0 as type" item)
                 nil)))))
     (mv (vmsg "Didn't find a typedef ~a1, instead found ~a2"
-              nil x ref.item)
+              nil x item)
         nil)))
 
 
@@ -3636,25 +3691,11 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        (info (vl-elabscopes-item-info name1 decl-scopes))
 
        ((mv err type)
-        (b* (((when info)
-              (vl-elabinfo-case info
-                :type
-                (if (vl-datatype-resolved-p info.type)
-                    (mv nil info.type)
-                  (mv (vmsg "Programming error: unresolved type ~s0 in elabinfo"
-                            name1) nil))
-                :param
-                (if (vl-datatype-resolved-p info.type)
-                    (mv nil info.type)
-                  (mv (vmsg "Programming error: unresolved type ~s0 in elabinfo"
-                            name1) nil))
-                :otherwise 
-                (mv (vmsg "~x0 info stored for type ~s1"
-                          (vl-elabinfo-kind info) name1) nil))))
-          (case (tag hidstep.item)
-            (:vl-vardecl (b* ((type1 (vl-vardecl->type hidstep.item)))
+        (b* ((item (or info hidstep.item)))
+          (case (tag item)
+            (:vl-vardecl (b* ((type1 (vl-vardecl->type item)))
                            (vl-datatype-usertype-resolve type1 hidstep.ss :scopes decl-scopes)))
-            (:vl-paramdecl (b* (((vl-paramdecl decl) hidstep.item))
+            (:vl-paramdecl (b* (((vl-paramdecl decl) item))
                              (vl-paramtype-case decl.type
                                :vl-explicitvalueparam
                                (if (vl-datatype-resolved-p decl.type.type)
@@ -3665,7 +3706,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                                :otherwise (mv (vmsg "Bad parameter reference: ~a0" x)
                                               nil))))
             (otherwise
-             (mv (vmsg "~a0: instead of a vardecl, found ~a1" x hidstep.item) nil)))))
+             (mv (vmsg "~a0: instead of a vardecl, found ~a1" x item) nil)))))
 
        ((when err) (mv err nil))
 

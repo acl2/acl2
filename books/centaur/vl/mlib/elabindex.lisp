@@ -47,7 +47,7 @@ types, and parameters."
 <ul>
 <li>@(see vl-elabindex-init) initializes an empty elabindex at the design scope.</li>
 <li>@(see vl-elabindex-update-item-info) adds an entry about a parameter, type, or function name to the current scope.</li>
-<li>@(see vl-elabindex-traverse-to-ss) traverses to the scope represented by the given scopestack.</li>
+<li>@(see vl-elabindex-traverse) traverses to the scope represented by the given scopestack.</li>
 <li>@(see vl-elabindex-push) enters the given scope.</li>
 <li>@(see vl-elabindex-undo) undoes the latest traversal/push that hasn't already been undone.</li>
 <li>@(see vl-elabindex->ss) accesses the scopestack of the current location</li>
@@ -61,7 +61,7 @@ doing this.)</li>
 
 <p>An elabindex is most useful when you are going to be adding new elaboration
 results.  To simply examine elaboration results, you may use a @(see
-vl-elabscope-stack).  This is a data structure used in an elabindex, but also
+vl-elabscopes).  This is a data structure used in an elabindex, but also
 has a set of functions appropriate for using it in an applicative manner.</p>
 
 
@@ -95,13 +95,13 @@ non-treelike traversals of the design.</p>
 
 <h3>Implementation</h3>
 
-<p>An elabindex contains a scopestack and an elabscope-stack.  A scopestack
+<p>An elabindex contains a scopestack and an elabscopes.  A scopestack
 contains all the smarts necessary to look up items correctly (which can be
-nontrivial when you factor in imports, etc.).  The elabscope-stack contains
+nontrivial when you factor in imports, etc.).  The elabscopes contains
 analogous scopes as the scopestack, but these scopes record elaboration
 information and are designed to be easily updated, as well as the subscopes
 contained within.  To make writes to a scope permanent, each time we go up a
-scope, we pop the scope off of the elabscope-stack, but write it into the
+scope, we pop the scope off of the elabscopes, but write it into the
 parent scope so that next time we go into that scope, we'll get our most recent
 updates.</p>
 
@@ -125,9 +125,9 @@ context.</p>
 <ul>
 
 <li>Keep a stack of checkpoints, i.e. before going to the package context, save
-our current elabscope-stack, and restore it when we're done computing the
+our current elabscopes, and restore it when we're done computing the
 parameter.  Problem: we need to save the work we did to compute the parameter,
-so we can't just revert to our previous elabscope-stack.</li>
+so we can't just revert to our previous elabscopes.</li>
 
 <li>Keep a stack of paths that uniquely identify the current location.  When
 going to a new location, push the current location's path onto the stack, and
@@ -160,26 +160,14 @@ back to one.  (An exception, arguably, is a block scope inside a function
 definition.  But this should only matter if the function calls itself
 recursively, which we don't support for now anyway.)</p>")
 
+(local (xdoc::set-default-parents elabindex))
 
-(deftagsum vl-elabinfo
-  (:function ((body  sv::svex)
-              (ports vl-portdecllist)
-              (type  vl-datatype)))
-  (:type    ((type vl-datatype))
-   :short "used for both typedefs and type parameters")
-  (:param   ((type vl-datatype)
-             (value-expr vl-expr)
-             (value-sv   sv::svex)))
-  :measure (two-nats-measure (acl2-count x) 0))
-
-(fty::defalist vl-elabinfo-alist :key-type stringp :val-type vl-elabinfo
-  :measure (two-nats-measure (acl2-count x) 0))
-
-(defoption vl-maybe-elabinfo vl-elabinfo)
 
 (deftagsum vl-elabkey
   (:package ((name stringp)) :hons t)
   (:item    ((name stringp)) :hons t)
+  (:index   ((val  integerp)) :hons t
+   :short "Index for a generate loop subblock.")
   (:def     ((name stringp)) :hons t)
   :layout :tree)
 
@@ -193,7 +181,7 @@ recursively, which we don't support for now anyway.)</p>")
 
   (defprod vl-elabscope
     ((subscopes vl-elabscope-alist)
-     (members vl-elabinfo-alist))
+     (members vl-scopeitem-alist))
     :measure (two-nats-measure (acl2-count x) 1)))
 
 
@@ -230,11 +218,11 @@ recursively, which we don't support for now anyway.)</p>")
   :hints(("Goal" :in-theory (enable vl-elabscope-alist-p)
           :induct (len x))))
 
-(defthm cdr-hons-assoc-equal-of-vl-elabinfo-alist-p
-  (implies (vl-elabinfo-alist-p x)
+(defthm cdr-hons-assoc-equal-of-vl-scopeitem-alist-p
+  (implies (vl-scopeitem-alist-p x)
            (iff (cdr (hons-assoc-equal k x))
                 (hons-assoc-equal k x)))
-  :hints(("Goal" :in-theory (enable vl-elabinfo-alist-p)
+  :hints(("Goal" :in-theory (enable vl-scopeitem-alist-p)
           :induct (len x))))
 
 
@@ -255,9 +243,9 @@ recursively, which we don't support for now anyway.)</p>")
   (vl-elabscope-subscope (vl-elabkey-item name) x))
 
 (define vl-elabscope-item-info ((name stringp) (x vl-elabscope-p))
-  :returns (info (and (iff (vl-elabinfo-p info) info)
-                      (vl-maybe-elabinfo-p info))
-                 :hints(("Goal" :in-theory (enable vl-maybe-elabinfo-p))))
+  :returns (info (and (iff (vl-scopeitem-p info) info)
+                      (vl-maybe-scopeitem-p info))
+                 :hints(("Goal" :in-theory (enable vl-maybe-scopeitem-p))))
   (cdr (hons-get (string-fix name) (vl-elabscope->members x))))
 
 
@@ -290,12 +278,16 @@ recursively, which we don't support for now anyway.)</p>")
   :returns (new-x vl-elabscope-p)
   (vl-elabscope-update-subscope (vl-elabkey-item name) val x))
 
-(define vl-elabscope-update-item-info ((name stringp) (val vl-elabinfo-p) (x vl-elabscope-p))
+(define vl-elabscope-update-index-subscope ((name integerp) (val vl-elabscope-p) (x vl-elabscope-p))
+  :returns (new-x vl-elabscope-p)
+  (vl-elabscope-update-subscope (vl-elabkey-index name) val x))
+
+(define vl-elabscope-update-item-info ((name stringp) (val vl-scopeitem-p) (x vl-elabscope-p))
   :returns (new-x vl-elabscope-p)
   (change-vl-elabscope
    x
    :members (hons-acons (string-fix name)
-                        (vl-elabinfo-fix val)
+                        (vl-scopeitem-fix val)
                         (vl-elabscope->members x))))
 
 
@@ -334,21 +326,33 @@ are empty.</p>")
   :returns (init-scopes vl-elabscopes-p)
   (list (cons nil (make-vl-elabscope))))
 
+(define vl-elabscopes-init-ss ((ss vl-scopestack-p))
+  :short "Makes an empty elabscopes at the same nesting depth as the given scopestack."
+  :returns (init-scopes vl-elabscopes-p)
+  (make-list (vl-scopestack-nesting-level ss)
+             :initial-element (cons nil (make-vl-elabscope))))
+
 
 (defsection vl-elabscopes-push-scope
   (define vl-scope->elabkey ((scope vl-scope-p))
     :returns (key (and (iff (vl-elabkey-p key) key)
                        (vl-maybe-elabkey-p key)))
-    (b* ((name (vl-scope->name scope))
+    (b* ((name (vl-scope->id scope))
          (type (vl-scope->scopetype scope)))
-      (and name
-           (case type
-             ((:vl-module :vl-interface)
-              (vl-elabkey-def name))
-             ((:vl-fundecl :vl-taskdecl :vl-genblock :vl-genarrayblock)
-              (vl-elabkey-item name))
-             (:vl-package (vl-elabkey-package name))
-             (otherwise nil)))))
+      (case type
+        ((:vl-module :vl-interface)
+         (and (stringp name)
+              (vl-elabkey-def name)))
+        ((:vl-fundecl :vl-taskdecl :vl-genblock)
+         (and (stringp name)
+              (vl-elabkey-item name)))
+        (:vl-genarrayblock
+         (and (integerp name)
+              (vl-elabkey-index name)))
+        (:vl-package
+         (and (stringp name)
+              (vl-elabkey-package name)))
+        (otherwise nil))))
 
   (define vl-elabscopes-push-anon ((scope vl-elabscope-p)
                                    (scopes vl-elabscopes-p)
@@ -447,8 +451,8 @@ are empty.</p>")
 (define vl-elabscopes-item-info ((name stringp)
                                  (scopes vl-elabscopes-p)
                                  &key (allow-empty 'nil))
-  :returns (info (and (iff (vl-elabinfo-p info) info)
-                      (vl-maybe-elabinfo-p info)))
+  :returns (info (and (iff (vl-scopeitem-p info) info)
+                      (vl-maybe-scopeitem-p info)))
   (b* ((scopes (vl-elabscopes-fix scopes))
        ((when (consp scopes)) (vl-elabscope-item-info name (cdar scopes))))
     (and (not allow-empty)
@@ -717,7 +721,7 @@ are empty.</p>")
 ;; (define vl-elabscopes-lookup ((name stringp)
 ;;                               (ss vl-scopestack-p)
 ;;                               (scopes vl-elabscopes-p))
-;;   :returns (info (iff (vl-elabinfo-p info) info))
+;;   :returns (info (iff (vl-scopeitem-p info) info))
 ;;   :prepwork ((local (defthm consp-car-when-elabscopes-p
 ;;                       (implies (and (vl-elabscopes-p x)
 ;;                                     (consp x))
@@ -804,7 +808,7 @@ are empty.</p>")
 
 
 
-(define vl-elabindex-update-item-info ((name stringp) (val vl-elabinfo-p)
+(define vl-elabindex-update-item-info ((name stringp) (val vl-scopeitem-p)
                                        &key (elabindex 'elabindex))
   :returns (new-elabindex)
   (b* ((scopes (vl-elabindex->scopes elabindex))

@@ -189,7 +189,7 @@ instantiate other data-structure modules.  Interfaces are treated as a
 combination of struct variable and module instance.</p>
 
 <p>This approach to array indexing also lets us deal straightforwardly with
-instance arrays; see @(see vl-instarray-plainarg-nested-instance-alias) for details.</p>
+instance arrays; see @(see vl-portinfo-instarray-nested-alias) for details.</p>
 
 <h3>Scopes</h3>
 
@@ -1525,7 +1525,7 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
                      '(:in-theory (enable sv::name-p))))
   :short "Produces the wire declaration for the wire of an instance array module
           that consolidates all occurrences of a particular port."
-  :long "<p>See @(see vl-instarray-plainarg-nested-instance-alias) for more
+  :long "<p>See @(see vl-portinfo-instarray-nested-alias) for more
 details on dealing with modinst arrays.</p>"
   (vl-portinfo-case x
     :regular
@@ -3063,6 +3063,10 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
              (local (defthm name-p-when-anonymo
                       (sv::name-p (cons :anonymous x))
                       :hints(("Goal" :in-theory (enable sv::name-p)))))
+             (local (defthm name-p-when-vl-scopeid-p
+                      (implies (vl-scopeid-p x)
+                               (sv::name-p x))
+                      :hints(("Goal" :in-theory (enable sv::name-p)))))
              (local (in-theory (disable double-containment
                                         vl-warninglist-p-when-not-consp
                                         sv::modalist-p-when-not-consp)))
@@ -3081,6 +3085,42 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
              (local (in-theory (enable sv::modalist-vars))))
   :verify-guards nil
 
+  (define vl-genblock->svex-modules ((x vl-genblock-p)
+                                     (elabindex  "outside of the scope")
+                                     (modname sv::modname-p)
+                                     (modalist sv::modalist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (modalist1
+                  (and (sv::modalist-p modalist1)
+                       (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+                                (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
+                 (insts     sv::modinstlist-p)
+                 (new-elabindex))
+    :measure (vl-genblob-genblock-count x)
+    (b* ((modname (sv::modname-fix modname))
+         (modalist (sv::modalist-fix modalist))
+         ((vl-genblock x) (vl-genblock-fix x))
+         (warnings nil)
+         ((unless x.name)
+          (mv (fatal :type :vl-programming-error
+                     :msg "Expected block to be named: ~a0"
+                     :args (list x))
+              modalist
+              nil
+              elabindex))
+         (modname (if (atom modname)
+                      (list modname :genblock x.name)
+                    (append-without-guard modname (list :genblock x.name))))
+         (genblob (vl-sort-genelements x.elems :scopetype :vl-genblock :id x.name))
+         ((wmv warnings mod modalist elabindex)
+          (vl-genblob->svex-modules genblob elabindex modname modalist))
+         (modalist (hons-acons modname mod modalist))
+         (modinst (sv::make-modinst :modname modname
+                                    :instname x.name)))
+      (mv warnings modalist
+          (list modinst)
+          elabindex)))
+
   (define vl-genblob->svex-modules ((x vl-genblob-p)
                                     (elabindex "outside of the genblob scope")
                                     (modname sv::modname-p)
@@ -3094,60 +3134,59 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 <li>@(see vl-modinstlist->svex-assigns/aliases) to process module instances.</li>
 </ul>
 <p>It also creates new modules for any generate blocks/arrays present.</p>"
-  :returns (mv (warnings vl-warninglist-p)
-               (mod (and (sv::module-p mod)
-                         (sv::svarlist-addr-p
-                          (sv::module-vars mod))))
-               (modalist1
-                (and (sv::modalist-p modalist1)
-                     (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                              (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-               (new-elabindex))
-  :measure (vl-genblob-count x)
+    :returns (mv (warnings vl-warninglist-p)
+                 (mod (and (sv::module-p mod)
+                           (sv::svarlist-addr-p
+                            (sv::module-vars mod))))
+                 (modalist1
+                  (and (sv::modalist-p modalist1)
+                       (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+                                (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
+                 (new-elabindex))
+    :measure (vl-genblob-count x)
 
-  (b* ((warnings nil)
-       (elabindex (vl-elabindex-push (vl-genblob-fix x)))
-       ((vl-genblob x))
-       ((wmv ?ok warnings ?new-x elabindex)
-        ;; new-x isn't really relevant since we've already run
-        ;; unparameterization before; we're just doing this to generate the
-        ;; tables.
-        (vl-genblob-elaborate x elabindex))
-       (elabindex (vl-elabindex-sync-scopes))
-       (ss (vl-elabindex->ss))
-       (scopes (vl-elabindex->scopes))
+    (b* ((warnings nil)
+         (elabindex (vl-elabindex-push (vl-genblob-fix x)))
+         ((vl-genblob x))
+         ((wmv ?ok warnings ?new-x elabindex)
+          ;; new-x isn't really relevant since we've already run
+          ;; unparameterization before; we're just doing this to generate the
+          ;; tables.
+          (vl-genblob-elaborate x elabindex))
+         (elabindex (vl-elabindex-sync-scopes))
+         (ss (vl-elabindex->ss))
+         (scopes (vl-elabindex->scopes))
 
-       ((wmv warnings ?width wires aliases datainsts modalist)
-        (vl-vardecllist->svex x.vardecls (sv::modalist-fix modalist)
-                              nil)) ;; no :self aliases
-       ((wmv warnings assigns) (vl-assigns->svex-assigns x.assigns ss scopes nil))
-       ((wmv warnings wires assigns aliases insts arraymod-alist)
-        (vl-modinstlist->svex-assigns/aliases x.modinsts ss scopes wires assigns aliases modname))
-       ((wmv warnings wires assigns aliases ginsts gatemod-alist)
-        (vl-gateinstlist->svex-assigns/aliases x.gateinsts ss scopes wires assigns aliases modname))
-       (modalist (hons-shrink-alist gatemod-alist (hons-shrink-alist arraymod-alist modalist)))
+         ((wmv warnings ?width wires aliases datainsts modalist)
+          (vl-vardecllist->svex x.vardecls (sv::modalist-fix modalist)
+                                nil)) ;; no :self aliases
+         ((wmv warnings assigns) (vl-assigns->svex-assigns x.assigns ss scopes nil))
+         ((wmv warnings wires assigns aliases insts arraymod-alist)
+          (vl-modinstlist->svex-assigns/aliases x.modinsts ss scopes wires assigns aliases modname))
+         ((wmv warnings wires assigns aliases ginsts gatemod-alist)
+          (vl-gateinstlist->svex-assigns/aliases x.gateinsts ss scopes wires assigns aliases modname))
+         (modalist (hons-shrink-alist gatemod-alist (hons-shrink-alist arraymod-alist modalist)))
 
-       ((wmv warnings always-assigns)
-        (vl-alwayslist->svex x.alwayses ss scopes))
-       ((wmv warnings) (vl-initiallist-size-warnings x.initials ss scopes))
-       ((wmv warnings) (vl-finallist-size-warnings x.finals ss scopes))
+         ((wmv warnings always-assigns)
+          (vl-alwayslist->svex x.alwayses ss scopes))
+         ((wmv warnings) (vl-initiallist-size-warnings x.initials ss scopes))
+         ((wmv warnings) (vl-finallist-size-warnings x.finals ss scopes))
 
-       ;; (delays (sv::delay-svarlist->delays (append-without-guard delayvars always-delayvars)))
+         ;; (delays (sv::delay-svarlist->delays (append-without-guard delayvars always-delayvars)))
 
-       ((wmv warnings modalist gen-insts elabindex)
-        (vl-generates->svex-modules
-         x.generates 0 elabindex modname modalist))
+         ((wmv warnings modalist gen-insts elabindex)
+          (vl-generates->svex-modules
+           x.generates elabindex modname modalist))
 
-       (module (sv::make-module :wires wires
+         (module (sv::make-module :wires wires
                                   :insts (append-without-guard gen-insts datainsts ginsts insts)
                                   :assigns (append-without-guard always-assigns assigns)
                                   :aliaspairs aliases))
-       (modalist (hons-shrink-alist arraymod-alist modalist))
-       (elabindex (vl-elabindex-undo)))
-    (mv warnings module modalist elabindex)))
+         (modalist (hons-shrink-alist arraymod-alist modalist))
+         (elabindex (vl-elabindex-undo)))
+      (mv warnings module modalist elabindex)))
 
   (define vl-generates->svex-modules ((x vl-genelementlist-p)
-                                      (index natp)
                                       (elabindex)
                                       (modname sv::modname-p)
                                       (modalist sv::modalist-p))
@@ -3164,120 +3203,94 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil elabindex))
          ((wmv warnings modalist insts1 elabindex)
           (vl-generate->svex-modules
-           (car x) (lnfix index) elabindex modname modalist))
+           (car x) elabindex modname modalist))
          ((wmv warnings modalist insts2 elabindex)
           (vl-generates->svex-modules
-           (cdr x) (1+ (lnfix index)) elabindex modname modalist)))
+           (cdr x) elabindex modname modalist)))
       (mv warnings modalist (append-without-guard insts1 insts2) elabindex)))
 
-    (define vl-generate->svex-modules ((x vl-genelement-p)
-                                       (index natp)
-                                       (elabindex)
-                                       (modname sv::modname-p)
-                                       (modalist sv::modalist-p))
-      :returns (mv (warnings vl-warninglist-p)
-                   (modalist1
-                    (and (sv::modalist-p modalist1)
-                         (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                                  (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                   (insts      sv::modinstlist-p)
-                   (new-elabindex))
-      :measure (vl-genblob-generate-count x)
-      (b* ((warnings nil))
-        (vl-genelement-case x
-          :vl-genblock
-          (b* ((modname (sv::modname-fix modname))
-               (index (lnfix index))
-               (modname (if (atom modname)
-                            (list modname :genblock (or x.name index))
-                          (append-without-guard modname (list :genblock (or x.name index)))))
-               (genblob (vl-sort-genelements x.elems :scopetype :vl-genblock))
-               ((wmv warnings mod modalist elabindex)
-                (vl-genblob->svex-modules genblob elabindex modname modalist)))
-            (mv warnings (hons-acons modname mod modalist)
-                (list (sv::make-modinst :modname modname
-                                          :instname (or x.name (list :anonymous index))))
-                elabindex))
 
-          :vl-genarray
-          (b* ((modname (sv::modname-fix modname))
-               (index (lnfix index))
-               (modname (if (atom modname)
-                            (list modname :genarray (or x.name index))
-                          (append-without-guard modname (list :genarray (or x.name index)))))
-               ;; BOZO This is a weird thing to do, but at the moment we need it
-               ;; to make our scopes work out.  To fix this, see the discussion
-               ;; under vl-path-scope->svex-addr and fix that first.
-               (elabindex (vl-elabindex-push (make-vl-genblob)))
-               ((wmv warnings modalist block-insts elabindex)
-                (vl-genarrayblocks->svex-modules x.blocks elabindex modname modalist))
-               (arraymod (sv::make-module :insts block-insts))
-               (modalist (hons-acons modname arraymod modalist))
-               (elabindex (vl-elabindex-undo)))
-            (mv warnings modalist
-                (list (sv::make-modinst :modname modname
-                                          :instname (or x.name (list :anonymous index))))
-                elabindex))
-          :otherwise
-          (mv (warn :type :vl-module->svex-fail
-                    :msg "Unresolved generate block: ~a0"
-                    :args (list (vl-genelement-fix x)))
-              (sv::modalist-fix modalist) nil
-              elabindex))))
+  (define vl-generate->svex-modules ((x vl-genelement-p)
+                                     (elabindex)
+                                     (modname sv::modname-p)
+                                     (modalist sv::modalist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (modalist1
+                  (and (sv::modalist-p modalist1)
+                       (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+                                (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
+                 (insts      sv::modinstlist-p)
+                 (new-elabindex))
+    :measure (vl-genblob-generate-count x)
+    (b* ((warnings nil)
+         (modalist (sv::modalist-fix modalist))
+         (x (vl-genelement-fix x)))
+      (vl-genelement-case x
+        :vl-genbegin
+        (vl-genblock->svex-modules x.block elabindex modname modalist)
 
-    (define vl-genarrayblocks->svex-modules ((x vl-genarrayblocklist-p)
-                                             (elabindex)
-                                             (modname sv::modname-p)
-                                             (modalist sv::modalist-p))
-      :returns (mv (warnings vl-warninglist-p)
-                   (modalist1
-                    (and (sv::modalist-p modalist1)
-                         (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                                  (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                   (insts sv::modinstlist-p)
-                   (new-elabindex))
-      :measure (vl-genblob-genarrayblocklist-count x)
-      (b* ((warnings nil)
-           ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil elabindex))
-           ((wmv warnings modalist insts1 elabindex)
-            (vl-genarrayblock->svex-modules (car x) elabindex modname modalist))
-           ((wmv warnings modalist insts2 elabindex)
-            (vl-genarrayblocks->svex-modules (cdr x) elabindex modname modalist)))
-        (mv warnings modalist (append-without-guard insts1 insts2) elabindex)))
+        :vl-genarray
+        (b* ((modname (sv::modname-fix modname))
+             ((unless x.name)
+              (mv (fatal :type :vl-programming-error
+                         :msg "Expected generate array to be named: ~a0"
+                         :args (list x))
+                  modalist nil elabindex))
+             (modname (if (atom modname)
+                          (list modname :genarray x.name)
+                        (append-without-guard modname (list :genarray x.name))))
+             ;; This is a weird thing to do, but at the moment we need it to
+             ;; make our scopes work out.  See the discussion under
+             ;; vl-scopecontext-to-addr.
+             (elabindex (vl-elabindex-push (make-vl-genblob :scopetype :vl-genarray
+                                                            :id x.name)))
+             ((wmv warnings modalist block-insts elabindex)
+              (vl-genblocks->svex-modules x.blocks elabindex modname modalist))
+             (arraymod (sv::make-module :insts block-insts))
+             (modalist (hons-acons modname arraymod modalist))
+             (elabindex (vl-elabindex-undo)))
+          (mv warnings modalist
+              (list (sv::make-modinst :modname modname
+                                      :instname x.name))
+              elabindex))
 
-    (define vl-genarrayblock->svex-modules ((x vl-genarrayblock-p)
-                                            (elabindex)
-                                            (modname sv::modname-p)
-                                            (modalist sv::modalist-p))
-      :returns (mv (warnings vl-warninglist-p)
-                   (modalist1
-                    (and (sv::modalist-p modalist1)
-                         (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                                  (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                   (insts sv::modinstlist-p)
-                   (new-elabindex))
-      :measure (vl-genblob-genarrayblock-count x)
-      (b* ((warnings nil)
-           ((vl-genarrayblock x))
-           (modname (sv::modname-fix modname))
-           (modname (append-without-guard modname (list x.index)))
-           (genblob (vl-sort-genelements x.elems :scopetype :vl-genarrayblock))
-           ((wmv warnings mod modalist elabindex)
-            (vl-genblob->svex-modules genblob elabindex modname modalist)))
-        (mv warnings (hons-acons modname mod modalist)
-            (list (sv::make-modinst :modname modname :instname x.index))
-            elabindex)))
-    ///
-    (verify-guards vl-genblob->svex-modules)
+        :otherwise
+        (mv (fatal :type :vl-module->svex-fail
+                   :msg "Unresolved generate block: ~a0"
+                   :args (list (vl-genelement-fix x)))
+            (sv::modalist-fix modalist) nil
+            elabindex))))
 
-    (local (in-theory (disable cons-equal
-                               vl-genblob->svex-modules
-                               vl-generates->svex-modules
-                               vl-generate->svex-modules
-                               vl-genarrayblocks->svex-modules
-                               vl-genarrayblock->svex-modules)))
+  (define vl-genblocks->svex-modules ((x vl-genblocklist-p)
+                                      (elabindex)
+                                      (modname sv::modname-p)
+                                      (modalist sv::modalist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (modalist1
+                  (and (sv::modalist-p modalist1)
+                       (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+                                (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
+                 (insts sv::modinstlist-p)
+                 (new-elabindex))
+    :measure (vl-genblob-genblocklist-count x)
+    (b* ((warnings nil)
+         ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil elabindex))
+         ((wmv warnings modalist insts1 elabindex)
+          (vl-genblock->svex-modules (car x) elabindex modname modalist))
+         ((wmv warnings modalist insts2 elabindex)
+          (vl-genblocks->svex-modules (cdr x) elabindex modname modalist)))
+      (mv warnings modalist (append-without-guard insts1 insts2) elabindex)))
+  ///
+  (verify-guards vl-genblob->svex-modules)
 
-    (deffixequiv-mutual vl-genblob->svex-modules))
+  (local (in-theory (disable cons-equal
+                             vl-genblob->svex-modules
+                             vl-generates->svex-modules
+                             vl-generate->svex-modules
+                             vl-genblocks->svex-modules
+                             vl-genblock->svex-modules)))
+
+  (deffixequiv-mutual vl-genblob->svex-modules))
 
 
 
@@ -3407,7 +3420,6 @@ the concatenation of all its other declared wires.</p>"
   ((x vl-interfacelist-p)
    (elabindex "global scope")
    (modalist sv::modalist-p))
-  :parents (sv::svex)
   :returns (mv (warnings vl-reportcard-p)
                (modalist1 (and (sv::modalist-p modalist1)
                                (implies

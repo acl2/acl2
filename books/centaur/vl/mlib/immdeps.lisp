@@ -921,8 +921,23 @@ elements.")
                   :expand ((vl-genelement-immdeps x ans)
                            (vl-genelementlist-immdeps x ans)
                            (vl-gencaselist-immdeps x ans)
-                           (vl-genarrayblocklist-immdeps x ans)
-                           (vl-genarrayblock-immdeps x ans))))
+                           (vl-genblocklist-immdeps x ans)
+                           (vl-genblock-immdeps x ans))))
+
+  (define vl-genblock-immdeps ((x   vl-genblock-p)
+                               (ans vl-immdeps-p)
+                               &key
+                               ((ss vl-scopestack-p) 'ss))
+    :returns (new-ans vl-immdeps-p)
+    :measure (vl-genblock-count x)
+    :flag :genblock
+    (b* (((vl-genblock x) x)
+         (scope (vl-sort-genelements x.elems
+                                     :scopetype :vl-genblock
+                                     :id x.name))
+         (ss    (vl-scopestack-push scope ss))
+         (ans   (vl-genelementlist-immdeps x.elems ans)))
+      ans))
 
   (define vl-genelement-immdeps ((x   vl-genelement-p)
                                  (ans vl-immdeps-p)
@@ -938,7 +953,18 @@ elements.")
          (ctx x)
          (ans (vl-immdeps-fix ans)))
       (vl-genelement-case x
+        (:vl-genbase  (vl-modelement-immdeps x.item ans))
+        (:vl-genbegin (vl-genblock-immdeps x.block ans))
+        (:vl-genif    (b* ((ans (vl-expr-immdeps x.test ans))
+                           (ans (vl-genblock-immdeps x.then ans))
+                           (ans (vl-genblock-immdeps x.else ans)))
+                        ans))
+        (:vl-gencase  (b* ((ans (vl-expr-immdeps x.test ans))
+                           (ans (vl-gencaselist-immdeps x.cases ans))
+                           (ans (vl-genblock-immdeps x.default ans)))
+                        ans))
         (:vl-genloop
+         ;; BOZO this seems like an awkward place to do this scope stuff.
          (b* (;; Make a fake param for the loop counter, the type and such are irrelevant
               (fake-param (make-vl-paramdecl :name x.var
                                              :type (make-vl-implicitvalueparam)
@@ -948,28 +974,11 @@ elements.")
               (ss         (vl-scopestack-push fake-scope ss))
               (ans        (vl-expr-immdeps x.continue ans))
               (ans        (vl-expr-immdeps x.nextval ans))
-              (ans        (vl-genelement-immdeps x.body ans)))
-           ans))
-        (:vl-genif
-         (b* ((ans (vl-expr-immdeps x.test ans))
-              (ans (vl-genelement-immdeps x.then ans))
-              (ans (vl-genelement-immdeps x.else ans)))
-           ans))
-        (:vl-gencase
-         (b* ((ans (vl-expr-immdeps x.test ans))
-              (ans (vl-gencaselist-immdeps x.cases ans))
-              (ans (vl-genelement-immdeps x.default ans)))
-           ans))
-        (:vl-genblock
-         (b* ((scope (vl-sort-genelements x.elems))
-              (ss    (vl-scopestack-push scope ss))
-              (ans (vl-genelementlist-immdeps x.elems ans)))
+              (ans        (vl-genblock-immdeps x.body ans)))
            ans))
         (:vl-genarray
-         (b* ((ans (vl-genarrayblocklist-immdeps x.blocks ans)))
-           ans))
-        (:vl-genbase
-         (vl-modelement-immdeps x.item ans)))))
+         (b* ((ans (vl-genblocklist-immdeps x.blocks ans)))
+           ans)))))
 
   (define vl-genelementlist-immdeps ((x   vl-genelementlist-p)
                                      (ans vl-immdeps-p)
@@ -999,39 +1008,25 @@ elements.")
           ans)
          ((cons exprs block) (car x))
          (ans (vl-exprlist-immdeps exprs ans))
-         (ans (vl-genelement-immdeps block ans)))
+         (ans (vl-genblock-immdeps block ans)))
       (vl-gencaselist-immdeps (cdr x) ans)))
 
-  (define vl-genarrayblocklist-immdeps ((x   vl-genarrayblocklist-p)
+  (define vl-genblocklist-immdeps ((x   vl-genblocklist-p)
                                         (ans vl-immdeps-p)
                                         &key
                                         ((ss vl-scopestack-p) 'ss))
     :returns (new-ans vl-immdeps-p)
-    :measure (vl-genarrayblocklist-count x)
-    :flag :genarrayblocklist
-    (b* ((x   (vl-genarrayblocklist-fix x))
+    :measure (vl-genblocklist-count x)
+    :flag :genblocklist
+    (b* ((x   (vl-genblocklist-fix x))
          (ans (vl-immdeps-fix ans))
          ((when (atom x))
           ans)
-         (ans (vl-genarrayblock-immdeps (car x) ans)))
-      (vl-genarrayblocklist-immdeps (cdr x) ans)))
-
-  (define vl-genarrayblock-immdeps ((x   vl-genarrayblock-p)
-                                    (ans vl-immdeps-p)
-                                    &key
-                                    ((ss vl-scopestack-p) 'ss))
-    :returns (new-ans vl-immdeps-p)
-    :measure (vl-genarrayblock-count x)
-    :flag :genarrayblock
-    (b* (((vl-genarrayblock x))
-         (scope (vl-sort-genelements x.elems))
-         (ss    (vl-scopestack-push scope ss)))
-      (vl-genelementlist-immdeps x.elems ans)))
+         (ans (vl-genblock-immdeps (car x) ans)))
+      (vl-genblocklist-immdeps (cdr x) ans)))
 
   ///
-
   (verify-guards vl-genelement-immdeps-fn)
-
   (deffixequiv-mutual vl-genelement-immdeps))
 
 

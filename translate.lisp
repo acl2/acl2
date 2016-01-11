@@ -85,10 +85,10 @@
 (table default-hints-table nil nil :clear)
 
 (defun macro-args (x w)
-  (getprop x 'macro-args
-           '(:error "We thought macro-args was only called if there ~
-                     were (zero or more) macro-args.")
-           'current-acl2-world w))
+  (getpropc x 'macro-args
+            '(:error "We thought macro-args was only called if there were ~
+                      (zero or more) macro-args.")
+            w))
 
 (defconst *macro-expansion-ctx* "macro expansion")
 
@@ -933,14 +933,14 @@
 ; boot-strap world.
 
   (cond ((global-val 'boot-strap-flg wrld) t)
-        (t (getprop name 'predefined nil 'current-acl2-world wrld))))
+        (t (getpropc name 'predefined nil wrld))))
 
 (defun acl2-system-namep-state (name state)
 
 ; Warning: keep this in sync with acl2-system-namep.  See comments there.
 
   (cond ((f-get-global 'boot-strap-flg state) t)
-        (t (getprop name 'predefined nil 'current-acl2-world (w state)))))
+        (t (getpropc name 'predefined))))
 
 #+acl2-loop-only
 (encapsulate
@@ -1996,7 +1996,7 @@
 ; 0 and, as laid down in primordial-world, the corresponding event-tuple is
 ; (list 'enter-boot-strap-mode operating-system).
 
-  (let ((index (getprop name 'absolute-event-number nil 'current-acl2-world wrld)))
+  (let ((index (getpropc name 'absolute-event-number nil wrld)))
     (and index
          (access-event-tuple-form
           (cddr
@@ -2008,7 +2008,7 @@
 ; Keep this in sync with get-event.
 
   (declare (xargs :mode :program))
-  (let ((index (getprop name 'absolute-event-number nil 'current-acl2-world wrld)))
+  (let ((index (getpropc name 'absolute-event-number nil wrld)))
     (and index
          (access-event-tuple-skipped-proofs-p
           (cddr
@@ -2107,8 +2107,7 @@
                  (acl2-system-namep fn w)
                  (not (equal (symbol-package-name fn) "ACL2"))))
            (stobj-primitive-p
-            (let ((st (getprop fn 'stobj-function nil
-                               'current-acl2-world w)))
+            (let ((st (getpropc fn 'stobj-function nil w)))
               (and st
                    (member-eq st (stobjs-in fn w)))))
            (guard-checking-off
@@ -4334,11 +4333,11 @@
                (macro-guard-er-msg x ctx wrld))
               (t (mv-let (erp expansion)
                          (ev-w
-                          (getprop (car x) 'macro-body
-                                   '(:error "Apparently macroexpand1 was ~
-                                             called where there was no ~
-                                             macro-body.")
-                                   'current-acl2-world wrld)
+                          (getpropc (car x) 'macro-body
+                                    '(:error "Apparently macroexpand1 was ~
+                                              called where there was no ~
+                                              macro-body.")
+                                    wrld)
                           alist wrld
                           nil ; user-stobj-alist
                           (not (access state-vars state-vars
@@ -4600,8 +4599,8 @@
                                 a known function symbol~@3.  See :MORE-DOC ~
                                 type-spec."
                                entry (cadr entry) (cadr (cadr entry))
-                               (if (eq (getprop (cadr (cadr entry)) 'macro-args
-                                                t 'current-acl2-world wrld)
+                               (if (eq (getpropc (cadr (cadr entry))
+                                                 'macro-args t wrld)
                                        t)
                                    ""
                                  "; rather, it is the name of a macro")))
@@ -5179,11 +5178,11 @@
 ; exported function.
 
   (cond
-   ((getprop name 'stobj nil 'current-acl2-world wrld)
+   ((getpropc name 'stobj nil wrld)
     name)
-   ((getprop name 'stobj-function nil 'current-acl2-world wrld))
-   ((getprop name 'stobj-constant nil 'current-acl2-world wrld))
-   (t (getprop name 'stobj-live-var nil 'current-acl2-world wrld))))
+   ((getpropc name 'stobj-function nil wrld))
+   ((getpropc name 'stobj-constant nil wrld))
+   (t (getpropc name 'stobj-live-var nil wrld))))
 
 (defun stobj-creatorp (name wrld)
 
@@ -5194,8 +5193,8 @@
 ; (cadr def))) near the top of oneify-cltl-code.
 
   (and (symbolp name)
-       (null (getprop name 'formals t 'current-acl2-world wrld))
-       (getprop name 'stobj-function nil 'current-acl2-world wrld)))
+       (null (getpropc name 'formals t wrld))
+       (getpropc name 'stobj-function nil wrld)))
 
 (mutual-recursion
 
@@ -5377,19 +5376,19 @@
 
   (cond ((stringp name) 'package)
         ((function-symbolp name wrld) 'function)
-        ((getprop name 'macro-body nil 'current-acl2-world wrld) 'macro)
-        ((getprop name 'const nil 'current-acl2-world wrld) 'const)
-        ((getprop name 'theorem nil 'current-acl2-world wrld) 'theorem)
-        ((not (eq (getprop name 'theory t 'current-acl2-world wrld) t))
+        ((getpropc name 'macro-body nil wrld) 'macro)
+        ((getpropc name 'const nil wrld) 'const)
+        ((getpropc name 'theorem nil wrld) 'theorem)
+        ((not (eq (getpropc name 'theory t wrld) t))
          'theory)
-        ((getprop name 'label nil 'current-acl2-world wrld) 'label)
-        ((getprop name 'stobj nil 'current-acl2-world wrld)
+        ((getpropc name 'label nil wrld) 'label)
+        ((getpropc name 'stobj nil wrld)
 
 ; Warning: Non-stobjs can have the stobj property, so do not move this cond
 ; clause upward!
 
          'stobj)
-        ((getprop name 'stobj-live-var nil 'current-acl2-world wrld)
+        ((getpropc name 'stobj-live-var nil wrld)
          'stobj-live-var)
         (quietp nil)
         (t (er hard 'logical-name-type
@@ -6233,12 +6232,12 @@
 ; We believe that the first check is subsumed by the others, but we leave it
 ; here for the sake of robustness.
 
-   (eq (getprop fn 'stobj-function nil 'current-acl2-world wrld)
+   (eq (getpropc fn 'stobj-function nil wrld)
        stobj)
 
 ; The 'stobj property of stobj is (*the-live-var* recognizer creator ...).
 
-   (member-eq fn (cdddr (getprop stobj 'stobj nil 'current-acl2-world wrld)))
+   (member-eq fn (cdddr (getpropc stobj 'stobj nil wrld)))
 
 ; At this point, fn could still be a constant.
 
@@ -6322,7 +6321,7 @@
    updaters
    corresp-accessor-fns
    (cdddr ; optimization: pop live-var, recognizer, and creator
-    (getprop stobj 'stobj nil 'current-acl2-world wrld))))
+    (getpropc stobj 'stobj nil wrld))))
 
 (defun chk-stobj-let (bound-vars actuals stobj updaters corresp-accessor-fns
                                  known-stobjs wrld)
@@ -6338,7 +6337,7 @@
      "The name ~x0 is not the name of a known single-threaded object in the ~
       current context."
      stobj))
-   ((getprop stobj 'absstobj-info nil 'current-acl2-world wrld)
+   ((getpropc stobj 'absstobj-info nil wrld)
     (msg
      "The name ~x0 is the name of an abstract stobj."
      stobj))
@@ -6363,9 +6362,9 @@
 ; which is equivalent to taking or returning some stobj other than st.
 ; Abstract stobjs are not a concern here; they don't have "fields".
 
-  (let ((st (getprop fn 'stobj-function nil 'current-acl2-world wrld)))
+  (let ((st (getpropc fn 'stobj-function nil wrld)))
     (and st
-         (not (getprop st 'absstobj-info nil 'current-acl2-world wrld))
+         (not (getpropc st 'absstobj-info nil wrld))
          (or (not (all-nils-or-x st (stobjs-in fn wrld)))
              (not (all-nils-or-x st (stobjs-out fn wrld)))))))
 
@@ -6374,7 +6373,7 @@
 ; Fn is a function symbol of wrld.  We return true when fn is a stobj
 ; recognizer in wrld.
 
-  (let ((stobj (getprop fn 'stobj-function nil 'current-acl2-world wrld)))
+  (let ((stobj (getpropc fn 'stobj-function nil wrld)))
     (and stobj
          (eq fn (get-stobj-recognizer stobj wrld)))))
 
@@ -6453,13 +6452,10 @@
       macro-name)))
 
 (defun corresponding-inline-fn (fn wrld)
-  (let ((macro-body (getprop fn 'macro-body t 'current-acl2-world wrld)))
+  (let ((macro-body (getpropc fn 'macro-body t wrld)))
     (and (not (eq macro-body t))
          (let* ((fn$inline (add-suffix fn *inline-suffix*))
-                (formals (getprop fn$inline 'formals
-                                  t
-                                  'current-acl2-world
-                                  wrld)))
+                (formals (getpropc fn$inline 'formals t wrld)))
            (and (not (eq formals t))
                 (equal (macro-args fn wrld) formals)
                 (equal macro-body
@@ -6473,6 +6469,71 @@
                                               *nil*)))
                           (list *nil*))))
                 fn$inline)))))
+
+(defun macroexpand1*-cmp (x ctx wrld state-vars)
+
+; We expand x repeatedly as long as it is a macro call, though we may stop
+; whenever we like.  We rely on a version of translate with to finish the job;
+; indeed, it should be the case that when translate11 is called on x with the
+; following arguments, it returns the same result regardless of whether
+; macroexpand1*-cmp is first called to do some expansion.
+
+; stobjs-out   - :stobjs-out
+; bindings     - ((:stobjs-out . :stobjs-out))
+; known-stobjs - t
+; flet-alist   - nil
+
+; Warning: Keep this in sync with translate11 -- especially the first cond
+; branch's test below.
+
+  (cond ((or (or (atom x) (eq (car x) 'quote))
+             (not (true-listp (cdr x)))
+             (not (symbolp (car x)))
+             (member-eq (car x) '(mv
+                                  mv-let
+                                  pargs
+                                  translate-and-test
+                                  with-local-stobj
+                                  stobj-let))
+             (assoc-eq (car x) *ttag-fns-and-macros*))
+         (value-cmp x))
+        ((and (getpropc (car x) 'macro-body nil wrld)
+              (not (and (member-eq (car x) '(pand por pargs plet))
+                        (eq (access state-vars state-vars :parallel-execution-enabled)
+                            t)))
+              (not (and (member-eq (car x) (global-val 'untouchable-fns wrld))
+                        (not (eq (access state-vars state-vars :temp-touchable-fns)
+                                 t))
+                        (not (member-eq (car x) (access state-vars state-vars
+                                                        :temp-touchable-fns))))))
+         (mv-let
+          (erp expansion)
+          (macroexpand1-cmp x ctx wrld state-vars)
+          (cond
+           (erp (mv erp expansion))
+           (t (macroexpand1*-cmp expansion ctx wrld state-vars)))))
+        (t (value-cmp x))))
+
+(defun find-stobj-out-and-call (lst known-stobjs ctx wrld state-vars)
+
+; Lst is a list of possibly UNTRANSLATED terms!
+
+  (cond
+   ((endp lst) nil)
+   (t
+    (or (mv-let (erp val)
+          (macroexpand1*-cmp (car lst) ctx wrld state-vars)
+          (and (not erp)
+               (consp val)
+               (symbolp (car val))
+               (not (member-eq (car val) *stobjs-out-invalid*))
+               (let ((stobjs-out (stobjs-out (car val) wrld)))
+                 (and (consp stobjs-out)
+                      (null (cdr stobjs-out))
+                      (stobjp (car stobjs-out) known-stobjs wrld)
+                      (cons (car stobjs-out) (car lst))))))
+        (find-stobj-out-and-call (cdr lst) known-stobjs ctx wrld
+                                 state-vars)))))
 
 (mutual-recursion
 
@@ -6511,7 +6572,7 @@
                  "An FLET form has attempted to bind ~x0.  However, this ~
                   symbol must not be FLET-bound."
                  name))
-     ((getprop name 'predefined nil 'current-acl2-world wrld)
+     ((getpropc name 'predefined nil wrld)
       (trans-er+ form ctx
                  "An FLET form has attempted to bind ~x0, which is predefined ~
                   in ACL2 hence may not be FLET-bound."
@@ -6520,8 +6581,8 @@
      ((or (special-form-or-op-p name)
           (and (or (macro-function name)
                    (fboundp name))
-               (not (getprop name 'macro-body nil 'current-acl2-world wrld))
-               (eq (getprop name 'formals t 'current-acl2-world wrld) t)))
+               (not (getpropc name 'macro-body nil wrld))
+               (eq (getpropc name 'formals t wrld) t)))
       (prog2$ (er hard ctx
                   "It is illegal to FLET-bind ~x0, because it is defined as a ~
                    ~s1 in raw Lisp~#2~[~/ but not in the ACL2 loop~]."
@@ -7796,12 +7857,31 @@
                          in an MV form.  The form ~x0 is thus illegal."
                         x))
              (t
-              (trans-er-let*
-               ((args
-                 (translate11-lst (cdr x) new-stobjs-out
-                                  bindings known-stobjs
-                                  'mv flet-alist x ctx wrld state-vars)))
-               (trans-value (listify args))))))))))
+              (mv-let
+                (erp args bindings)
+                (translate11-lst (cdr x) new-stobjs-out
+                                 bindings known-stobjs
+                                 'mv flet-alist x ctx wrld state-vars)
+                (cond
+                 (erp
+                  (let ((st/call (find-stobj-out-and-call (cdr x) known-stobjs
+                                                          ctx wrld state-vars)))
+                    (cond
+                     (st/call
+                      (trans-er+ cform ctx
+                                 "The form ~x0 is being used as an argument ~
+                                  to a call of ~x1.  This form evaluates to a ~
+                                  single-threaded object, ~x2; but for an ~
+                                  argument of ~x1, the stobj variable itself ~
+                                  (here, ~x2) is required, not merely a term ~
+                                  that returns such a single-threaded object. ~
+                                  ~ So you may need to bind ~x2 with LET; see ~
+                                  :DOC stobj."
+                                 (cdr st/call)
+                                 'mv
+                                 (car st/call)))
+                     (t (mv erp args bindings)))))
+                 (t (trans-value (listify args))))))))))))
    ((eq (car x) 'mv-let)
     (translate11-mv-let x nil stobjs-out bindings known-stobjs
                         nil nil ; stobj info
@@ -7947,9 +8027,7 @@
                    form
                    (if (and (consp form)
                             (symbolp (car form))
-                            (getprop (car form) 'macro-body nil
-                                     'current-acl2-world
-                                     wrld))
+                            (getpropc (car form) 'macro-body nil wrld))
                        (list "  Note that ~x0 is a macro, not a function symbol."
                              (cons #\0 (car form)))
                      ""))))))
@@ -8120,7 +8198,7 @@
                "The ~x0 ~s1 cannot be called unless a trust tag is in effect. ~
                 ~ See :DOC defttag.~@2"
                (car x)
-               (if (getprop (car x) 'macro-body nil 'current-acl2-world wrld)
+               (if (getpropc (car x) 'macro-body nil wrld)
                    "macro"
                  "function")
                (or (cdr (assoc-eq (car x) *ttag-fns-and-macros*))
@@ -8293,7 +8371,7 @@
                                               state-vars)))
                            (trans-value (prog2$-call chk val))))
                          (t (trans-value val))))))))))))))))
-   ((getprop (car x) 'macro-body nil 'current-acl2-world wrld)
+   ((getpropc (car x) 'macro-body nil wrld)
     (cond
      ((and (eq stobjs-out :stobjs-out)
            (member-eq (car x) '(pand por pargs plet))
@@ -8640,8 +8718,7 @@
                                    (msg "~x0 is not a symbol" fn0))
                                   ((member-eq fn *ec-call-bad-ops*)
                                    (msg "~x0 belongs to the above list" fn))
-                                  ((eq (getprop fn0 'macro-args t
-                                                'current-acl2-world wrld)
+                                  ((eq (getpropc fn0 'macro-args t wrld)
                                        t)
                                    (msg "~x0 is not a macro"
                                         fn0))
@@ -8661,6 +8738,25 @@
                                                     a solution might be to ~
                                                     replace ~x0 by ~x1"
                                                    fn0 sym))))))))))
+               ((and
+                 (eq key 'with-guard-checking1-raw)
+                 (or (not (case-match arg2
+                            (('chk-with-guard-checking-arg &) t)
+                            (& nil)))
+                     (not (case-match arg3
+                            (('translate-and-test gate form)
+                             (equal gate (with-guard-checking-gate form)))
+                            (& nil))))
+                 (not (global-val 'boot-strap-flg
+                                  wrld)) ; see ev-rec-return-last
+                 (not (ttag wrld)))
+                (trans-er+? cform x ctx
+                            "The form ~x0 is essentially a call of ~x1, but ~
+                             without certain checks performed.  This is ~
+                             illegal unless there is an active trust tag; see ~
+                             :DOC defttag.  To avoid this error without use ~
+                             of a trust tag, call ~x1 directly."
+                            x 'with-guard-checking))
                ((and keyp
                      (let ((val (return-last-lookup key wrld)))
                        (or (null val)
@@ -8724,8 +8820,7 @@
                     (trans-value
                      (fcons-term* 'return-last
                                   targ1 targ2 targ3)))))))))))
-          ((eq (getprop (car x) 'non-executablep nil 'current-acl2-world
-                        wrld)
+          ((eq (getpropc (car x) 'non-executablep nil wrld)
                t)
            (let ((computed-stobjs-out (compute-stobj-flags (cdr x)
                                                            known-stobjs
@@ -9415,50 +9510,6 @@
       (t (mv nil
              (cons stobjs-out
                    (replace-stobjs stobjs-out val))))))))
-
-(defun macroexpand1*-cmp (x ctx wrld state-vars)
-
-; We expand x repeatedly as long as it is a macro call, though we may stop
-; whenever we like.  We rely on a version of translate with to finish the job;
-; indeed, it should be the case that when translate11 is called on x with the
-; following arguments, it returns the same result regardless of whether
-; macroexpand1*-cmp is first called to do some expansion.
-
-; stobjs-out   - :stobjs-out
-; bindings     - ((:stobjs-out . :stobjs-out))
-; known-stobjs - t
-; flet-alist   - nil
-
-; Warning: Keep this in sync with translate11 -- especially the first cond
-; branch's test below.
-
-  (cond ((or (or (atom x) (eq (car x) 'quote))
-             (not (true-listp (cdr x)))
-             (not (symbolp (car x)))
-             (member-eq (car x) '(mv
-                                  mv-let
-                                  pargs
-                                  translate-and-test
-                                  with-local-stobj
-                                  stobj-let))
-             (assoc-eq (car x) *ttag-fns-and-macros*))
-         (value-cmp x))
-        ((and (getprop (car x) 'macro-body nil 'current-acl2-world wrld)
-              (not (and (member-eq (car x) '(pand por pargs plet))
-                        (eq (access state-vars state-vars :parallel-execution-enabled)
-                            t)))
-              (not (and (member-eq (car x) (global-val 'untouchable-fns wrld))
-                        (not (eq (access state-vars state-vars :temp-touchable-fns)
-                                 t))
-                        (not (member-eq (car x) (access state-vars state-vars
-                                                        :temp-touchable-fns))))))
-         (mv-let
-          (erp expansion)
-          (macroexpand1-cmp x ctx wrld state-vars)
-          (cond
-           (erp (mv erp expansion))
-           (t (macroexpand1*-cmp expansion ctx wrld state-vars)))))
-        (t (value-cmp x))))
 
 (defun macroexpand1* (x ctx wrld state)
 

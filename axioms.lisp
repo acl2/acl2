@@ -1006,6 +1006,12 @@
       `(fgetprop ,symb ,key ,default ,world-alist)
     `(sgetprop ,symb ,key ,default ,world-name ,world-alist)))
 
+(defmacro getpropc (symb key &optional default (wrld '(w state)))
+
+; The "c" in "getpropc" suggests "current-acl2-world".
+
+  `(getprop ,symb ,key ,default 'current-acl2-world ,wrld))
+
 #-acl2-loop-only
 (progn
 
@@ -9742,10 +9748,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (symbolp var)
                               (plist-worldp wrld))))
-  (getprop var 'global-value
-           '(:error "GLOBAL-VAL didn't find a value.  Initialize this ~
+  (getpropc var 'global-value
+            '(:error "GLOBAL-VAL didn't find a value.  Initialize this ~
                      symbol in PRIMORDIAL-WORLD-GLOBALS.")
-           'current-acl2-world wrld))
+            wrld))
 
 ; Declarations.
 
@@ -9763,7 +9769,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (symbolp sym)
                               (plist-worldp wrld))))
-  (not (eq (getprop sym 'formals t 'current-acl2-world wrld) t)))
+  (not (eq (getpropc sym 'formals t wrld) t)))
 
 ; We define translate-declaration-to-guard and accompanying functions in
 ; program mode, including the-fn, simply so that they take up a little less
@@ -10001,8 +10007,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq x 't) t)
         ((and (weak-satisfies-type-spec-p x)
               (or (symbolp wrld)
-                  (eql (length (getprop (cadr x) 'formals nil
-                                        'current-acl2-world wrld))
+                  (eql (length (getpropc (cadr x) 'formals nil wrld))
                        1)))
          (list (cadr x) var))
         ((and (consp x)
@@ -10714,9 +10719,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                  book-path
                                  (strip-cars
                                   (symbol-value 'acl2::*load-compiled-stack*))
-                                 (getprop 'include-book-path 'global-value
-                                          nil 'current-acl2-world
-                                          (w *the-live-state*))))
+                                 (getpropc 'include-book-path 'global-value
+                                           nil
+                                           (w *the-live-state*))))
                            :defpkg-event-form event-form)
                           *ever-known-package-alist*))
               (when proposed-imports
@@ -13516,14 +13521,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (global-table x))
        (plist-worldp (cdr (assoc 'current-acl2-world (global-table x))))
        (symbol-alistp
-        (getprop 'acl2-defaults-table 'table-alist nil
-                 'current-acl2-world
-                 (cdr (assoc 'current-acl2-world (global-table x)))))
+        (getpropc 'acl2-defaults-table 'table-alist nil
+                  (cdr (assoc 'current-acl2-world (global-table x)))))
        (timer-alistp (cdr (assoc 'timer-alist (global-table x))))
        (known-package-alistp
-        (getprop 'known-package-alist 'global-value nil
-                 'current-acl2-world
-                 (cdr (assoc 'current-acl2-world (global-table x)))))
+        (getpropc 'known-package-alist 'global-value nil
+                  (cdr (assoc 'current-acl2-world (global-table x)))))
        (true-listp (t-stack x))
        (32-bit-integer-listp (32-bit-integer-stack x))
        (integerp (big-clock-entry x))
@@ -13549,14 +13552,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         (nth 2 x))
             (plist-worldp (cdr (assoc 'current-acl2-world (nth 2 x))))
             (symbol-alistp
-             (getprop 'acl2-defaults-table 'table-alist nil
-                      'current-acl2-world
-                      (cdr (assoc 'current-acl2-world (nth 2 x)))))
+             (getpropc 'acl2-defaults-table 'table-alist nil
+                       (cdr (assoc 'current-acl2-world (nth 2 x)))))
             (timer-alistp (cdr (assoc 'timer-alist (nth 2 x))))
             (known-package-alistp
-             (getprop 'known-package-alist 'global-value nil
-                      'current-acl2-world
-                      (cdr (assoc 'current-acl2-world (nth 2 x)))))
+             (getpropc 'known-package-alist 'global-value nil
+                       (cdr (assoc 'current-acl2-world (nth 2 x)))))
             (true-listp (nth 3 x))
             (32-bit-integer-listp (nth 4 x))
             (integerp (nth 5 x))
@@ -15390,7 +15391,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
-  (getprop name 'table-alist nil 'current-acl2-world wrld))
+  (getpropc name 'table-alist nil wrld))
 
 (defun ruler-extenders-msg-aux (vals return-last-table)
 
@@ -15529,7 +15530,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The length expression below is just (arity val world) but we don't have arity
 ; yet.
 
-              (= (length (getprop val 'formals t 'current-acl2-world world))
+              (= (length (getpropc val 'formals t world))
                  1)))
         ((eq key :well-founded-relation)
          (and (symbolp val)
@@ -18176,23 +18177,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       str
     (case os
       (:unix str)
-      ((:apple :mswindows)
-       (let ((sep (if (eq os :apple) #\: #\\)))
-         (let* ((relative-p-apple ; relevant only for apple
-                 (eql (char str 0) sep))
-                (str0 (substitute
-                       *directory-separator* sep
-                       (cond
-                        ((eq os :mswindows)
-                         str)
-                        (relative-p-apple (subseq str 1 (length str)))
-                        (t str)))))
-           (cond
-            ((and (eq os :apple)
-                  (not relative-p-apple))
-             (string-append *directory-separator-string* str0))
-            ((and (eq os :mswindows)
-                  (eql (char str0 0) *directory-separator*))
+      (:mswindows
+       (let* ((sep #\\)
+              (str0 (substitute *directory-separator* sep str)))
+         (cond
+          ((and (eq os :mswindows)
+                (eql (char str0 0) *directory-separator*))
 
 ; Warning: Do not append the drive if there is already a drive present.  We
 ; rely on this in LP, where we initialize state global 'system-books-dir
@@ -18200,10 +18190,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; environment variable ACL2_SYSTEM_BOOKS, which might already have a drive that
 ; differs from that of the user.
 
-             (string-append (mswindows-drive nil state)
-                            str0))
-            (t
-             str0)))))
+           (string-append (mswindows-drive nil state)
+                          str0))
+          (t
+           str0))))
       (otherwise (os-er os 'pathname-os-to-unix)))))
 
 #+(and (not acl2-loop-only) ccl)
@@ -18242,30 +18232,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (let ((os (os (w state))))
       (case os
         (:unix str)
-        ((:apple :mswindows)
-         (let ((sep (if (eq os :apple) #\: #\\)))
+        (:mswindows
+         (let ((sep #\\))
            (if (position sep str)
                (illegal 'pathname-unix-to-os
-                "Unable to convert pathname ~p0 for OS ~p1 because ~
+                        "Unable to convert pathname ~p0 for OS ~p1 because ~
                  character ~p2 occurs in that pathname string at position ~p3."
-                (list (cons #\0 str)
-                      (cons #\1 os)
-                      (cons #\2 sep)
-                      (cons #\3 (position sep str))))
+                        (list (cons #\0 str)
+                              (cons #\1 os)
+                              (cons #\2 sep)
+                              (cons #\3 (position sep str))))
              (let* ((sep-is-first (eql (char str 0) *directory-separator*))
-                    (str0 (substitute sep *directory-separator*
-                                      (if (and (eq os :apple)
-                                               sep-is-first)
-                                          (subseq str 1 (length str))
-                                        str))))
-               (if (eq os :apple)
-                   (if sep-is-first
-                       str0
-                     (string-append ":" str0))
-                 (if sep-is-first
-                     (string-append (mswindows-drive nil state)
-                                    str0)
-                   str0))))))
+                    (str0 (substitute sep *directory-separator* str)))
+               (if sep-is-first
+                   (string-append (mswindows-drive nil state)
+                                  str0)
+                 str0)))))
         (otherwise (os-er os 'pathname-unix-to-os))))))
 
 (defun shrink-t-stack (n state-state)
@@ -18768,11 +18750,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (when (and (stringp str) (stringp val))
     (or #+cmu
-        (and (boundp ext::*environment-list*)
-             (let* ((key (intern str :keyword))
-                    (pair (cdr (assoc-eq key ext::*environment-list*))))
-               (cond (pair (setf (cdr pair) val))
-                     (t (push (cons key val) ext::*environment-list*)))))
+        (progn (when *cmucl-unix-setenv-fn*
+
+; It's not enough to update ext::*environment-list* if we want the process's
+; environment to be updated, as opposed to merely supporting an update seen by
+; run-program.  We use funcall just below in case the "UNIX" package doesn't
+; exist, though most likely it does.  See *cmucl-unix-setenv-fn*.
+
+                 (funcall *cmucl-unix-setenv-fn* str val 1))
+               (when (boundp 'ext::*environment-list*)
+                 (let* ((key (intern str :keyword))
+                        (pair (cdr (assoc-eq key ext::*environment-list*))))
+                   (cond (pair (setf (cdr pair) val))
+                         (t (push (cons key val) ext::*environment-list*))))))
         #+allegro
         (setf (sys::getenv str) val)
         #+clisp
@@ -19476,11 +19466,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; primordial-world-globals is called.
 
   (declare (xargs :guard (state-p state)))
-  (getprop 'known-package-alist
-           'global-value
-           nil
-           'current-acl2-world
-           (w state)))
+  (getpropc 'known-package-alist 'global-value))
 
 ;  Prin1
 
@@ -19677,13 +19663,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (implies (and (state-p1 state)
                 (plist-worldp wrld)
                 (known-package-alistp
-                 (getprop 'known-package-alist 'global-value nil
-                          'current-acl2-world
-                          wrld))
-                (symbol-alistp (getprop 'acl2-defaults-table
-                                        'table-alist
-                                        nil 'current-acl2-world
-                                        wrld)))
+                 (getpropc 'known-package-alist 'global-value nil wrld))
+                (symbol-alistp (getpropc 'acl2-defaults-table 'table-alist nil
+                                         wrld)))
            (state-p1 (update-nth 2
                                  (add-pair 'current-acl2-world
                                            wrld (nth 2 state))
@@ -20793,8 +20775,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; guard verification process at this point.
 
 ; (= (length formals) 1)...
-                (let ((formals (getprop (car lst) 'formals nil
-                                        'current-acl2-world wrld)))
+                (let ((formals (getpropc (car lst) 'formals nil wrld)))
                   (and (consp formals)
                        (null (cdr formals))))
                 (unary-function-symbol-listp (cdr lst) wrld)))))
@@ -21815,7 +21796,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (table macro-aliases-table nil nil
        :guard
        (and (symbolp key)
-            (not (eq (getprop key 'macro-args t 'current-acl2-world world) t))
+            (not (eq (getpropc key 'macro-args t world) t))
             (symbolp val)
 
 ; We no longer (as of August 2012) require that val be a function symbol, so
@@ -21931,8 +21912,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        :guard
        (and (symbolp key)
             (not (eq key 'state))
-            (eq (getprop key 'accessor-names t
-                         'current-acl2-world world)
+            (eq (getpropc key 'accessor-names t world)
                 t)
             (symbolp val)
             (not (eq val 'state))))
@@ -23143,23 +23123,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ((guard-checking-on ,val))
     ,form))
 
-(defmacro with-guard-checking1 (val form)
-  `(return-last 'with-guard-checking1-raw ,val ,form))
+(defmacro with-guard-checking1 (val gated-form)
+  `(return-last 'with-guard-checking1-raw ,val ,gated-form))
+
+(defun with-guard-checking-gate (form)
+
+; This is a custom version of check-vars-not-free, used by with-guard-checking.
+
+  (declare (xargs :guard t))
+  `(lambda (term)
+     (or (not (member-eq 'state (all-vars term)))
+         (msg "It is forbidden to use ~x0 in the scope of a call of ~x1, ~
+                 but ~x0 occurs in the [translation of] the form ~x2.  ~
+                 Consider using ~x3 instead."
+              'state
+              'with-guard-checking
+              ',form
+              'with-guard-checking-error-triple))))
 
 (defmacro with-guard-checking (val form)
   (declare (xargs :guard t))
   `(with-guard-checking1
     (chk-with-guard-checking-arg ,val)
-    (translate-and-test ; custom version of check-vars-not-free
-     (lambda (term)
-       (or (not (member-eq 'state (all-vars term)))
-           (msg "It is forbidden to use ~x0 in the scope of a call of ~x1, ~
-                 but ~x0 occurs in the [translation of] the form ~x2.  ~
-                 Consider using ~x3 instead."
-                'state
-                'with-guard-checking
-                ',form
-                'with-guard-checking-error-triple)))
+    (translate-and-test
+     ,(with-guard-checking-gate form)
 
 ; Through Version_7.1, the following events all succeeded, which could be
 ; viewed as a soundness bug.  The problem is clear from this example: we are
@@ -23181,7 +23168,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;
 ;   (assert-event (not (equal (foo state)
 ;                             (f-get-global 'guard-checking-on state))))
-
 
      ,form)))
 
@@ -25999,7 +25985,7 @@ Lisp definition."
 
       '(nil nil)
 
-    (getprop fn 'stobjs-in nil 'current-acl2-world w)))
+    (getpropc fn 'stobjs-in nil w)))
 
 (defmacro oracle-funcall (fn &rest args)
   `(oracle-apply ,fn (list ,@args) state))
@@ -26059,7 +26045,7 @@ Lisp definition."
        (not (eq fn 'if))
        (not (assoc-eq fn *ttag-fns-and-macros*))
        (true-listp args)
-       (let* ((formals (getprop fn 'formals t 'current-acl2-world wrld))
+       (let* ((formals (getpropc fn 'formals t wrld))
               (stobjs-in (stobjs-in fn wrld))
               (untouchable-fns (global-val 'untouchable-fns wrld)))
          (and (not (eq formals t))
@@ -26075,8 +26061,7 @@ Lisp definition."
 ; (stobj-creatorp fn wrld)), but stobj-creatorp is defined later.
 
               (not (and (null formals)
-                        (getprop fn 'stobj-function nil 'current-acl2-world
-                                 wrld)))
+                        (getpropc fn 'stobj-function nil wrld)))
               (true-listp stobjs-in) ; needed for guard of all-nils
               (all-nils stobjs-in)))))
 

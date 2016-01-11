@@ -3893,7 +3893,7 @@
          (er hard! 'stobjs-out
              "Implementation error: Attempted to find stobjs-out for ~x0."
              fn))
-        (t (getprop fn 'stobjs-out '(nil) 'current-acl2-world w))))
+        (t (getpropc fn 'stobjs-out '(nil) w))))
 
 ; The ACL2 Record Facilities
 
@@ -5170,7 +5170,7 @@
 ; nil) of course).
 
   (and (symbolp name)
-       (getprop name 'const nil 'current-acl2-world w)))
+       (getpropc name 'const nil w)))
 
 (defun fix-stobj-array-type (type wrld)
 
@@ -5488,7 +5488,7 @@
 
   (cond ((eq stobj 'state) 'state-p)
         ((not (symbolp stobj)) nil)
-        (wrld (caddr (getprop stobj 'stobj nil 'current-acl2-world wrld)))
+        (wrld (caddr (getpropc stobj 'stobj nil wrld)))
         (t
          #-acl2-loop-only
          (let ((d (get (the-live-var stobj)
@@ -5513,6 +5513,11 @@
               get-stobj-creator must not be called inside the ACL2 loop (as ~
               is the case here) with wrld = nil."
              `(get-stobj-creator ,stobj nil)))))
+
+(defmacro the$ (type val)
+  (cond ((eq type t)
+         val)
+        (t `(the ,type ,val))))
 
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
@@ -5641,13 +5646,14 @@
             (i ,var)
             (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
-            (the ,array-etype
-                 (,vref (the ,simple-type (svref ,var ,n))
-                        (the (and fixnum (integer 0 *)) i))))
+            (the$ ,array-etype
+                  (,vref (the ,simple-type (svref ,var ,n))
+                         (the (and fixnum (integer 0 *)) i))))
            (,updater-name
             (i v ,var)
             (declare (type (and fixnum (integer 0 *)) i)
-                     (type ,array-etype v))
+                     ,@(and (not (eq array-etype t))
+                            `((type ,array-etype v))))
             ,@(and inline (list *stobj-inline-declare*))
             (progn
               #+hons (memoize-flush ,flush-var)
@@ -5655,9 +5661,11 @@
 ; See the long comment below for the updater in the scalar case, about
 ; supporting *1* functions.
 
-              (setf (,vref (the ,simple-type (svref ,var ,n))
+              (setf (,vref ,(if (eq simple-type t)
+                                `(svref ,var ,n)
+                              `(the ,simple-type (svref ,var ,n)))
                            (the (and fixnum (integer 0 *)) i))
-                    (the ,array-etype v))
+                    (the$ ,array-etype v))
               ,var))))
         ((eq scalar-type t)
          `((,accessor-name (,var)
@@ -5689,19 +5697,20 @@
           (not stobj-creator) ; scalar-type is t for stobj-creator
           `((,accessor-name (,var)
                             ,@(and inline (list *stobj-inline-declare*))
-                            (the ,scalar-type
-                                 (aref (the (simple-array ,scalar-type (1))
-                                            (svref ,var ,n))
-                                       0)))
+                            (the$ ,scalar-type
+                                  (aref (the (simple-array ,scalar-type (1))
+                                             (svref ,var ,n))
+                                        0)))
             (,updater-name (v ,var)
-                           (declare (type ,scalar-type v))
+                           ,@(and (not (eq scalar-type t))
+                                  `((declare (type ,scalar-type v))))
                            ,@(and inline (list *stobj-inline-declare*))
                            (progn
                              #+hons (memoize-flush ,flush-var)
                              (setf (aref (the (simple-array ,scalar-type (1))
                                               (svref ,var ,n))
                                          0)
-                                   (the ,scalar-type v))
+                                   (the$ ,scalar-type v))
                              ,var)))))))
      (defstobj-field-fns-raw-defs
        var flush-var inline (1+ n) (cdr field-templates))))))
@@ -5826,7 +5835,7 @@
   (and x
        (symbolp x)
        (if (eq known-stobjs t)
-           (getprop x 'stobj nil 'current-acl2-world w)
+           (getpropc x 'stobj nil w)
          (member-eq x known-stobjs))))
 
 (defun translate-stobj-type-to-guard (x var wrld)
@@ -5945,7 +5954,7 @@
 (defun congruent-stobj-rep (name wrld)
   (assert$
    wrld ; use congruent-stobj-rep-raw if wrld is not available
-   (or (getprop name 'congruent-stobj-rep nil 'current-acl2-world wrld)
+   (or (getpropc name 'congruent-stobj-rep nil wrld)
        name)))
 
 (defun all-but-last (l)

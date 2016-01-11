@@ -680,7 +680,7 @@
         (t (1+ (macro-minimal-arity1 (cdr lst))))))
 
 (defun macro-minimal-arity (sym default wrld)
-  (let ((args (getprop sym 'macro-args default 'current-acl2-world wrld)))
+  (let ((args (getpropc sym 'macro-args default wrld)))
     (macro-minimal-arity1 (if (eq (car args) '&whole)
                               (cddr args)
                             args))))
@@ -736,7 +736,7 @@
              (wrld (w state))
              (len (cond ((function-symbolp sym wrld)
                          (length (formals sym wrld)))
-                        ((getprop sym 'macro-body nil 'current-acl2-world wrld)
+                        ((getpropc sym 'macro-body nil wrld)
                          (macro-minimal-arity
                           sym
                           `(:error "See LD-READ-KEYWORD-COMMAND.")
@@ -2574,7 +2574,7 @@
       (value (er hard ctx
                  "Implementation error: Compile-function called when ~x0."
                  '(not (eq (f-get-global 'compiler-enabled state) t)))))
-     ((eq (getprop fn 'formals t 'current-acl2-world wrld)
+     ((eq (getpropc fn 'formals t wrld)
           t)
       (er soft ctx
           "~x0 is not a defined function in the current ACL2 world."
@@ -4109,9 +4109,9 @@
             (throw-raw-ev-fncall ev-fncall-val))
            (t
             (let* ((linearp (eq (car rune) :linear))
-                   (lemmas (getprop (ffn-symb target)
-                                    (if linearp 'linear-lemmas 'lemmas)
-                                    nil 'current-acl2-world wrld))
+                   (lemmas (getpropc (ffn-symb target)
+                                     (if linearp 'linear-lemmas 'lemmas)
+                                     nil wrld))
                    (lemma (if linearp
                               (find-runed-linear-lemma rune lemmas)
                             (find-runed-lemma rune lemmas))))

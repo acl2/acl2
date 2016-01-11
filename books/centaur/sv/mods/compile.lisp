@@ -57,7 +57,7 @@ their wire indices or vice versa.</li>
 <li>Translate the module hierarchy's assignments and aliases by replacing wire
 names with indices (see @(see modalist-named->indexed)).</li>
 <li>Flatten the assignments, aliases, and stateholding elements
- (see @(see svex-mod->flat-assigns), @(see svex-mod->flat-aliases)).</li>
+ (see @(see svex-mod->flatten)).</li>
 <li>Use the flattened aliases to compute a canonical alias table, mapping every
 wire to a canonical representation (see @(see canonicalize-alias-pairs)).</li>
 <li>Canonicalize the wires in the flattened assignment list and
@@ -67,7 +67,7 @@ have arbitrary LHS expressions as the left-hand sides, into a list of
 assignments to variables.  This involves segmenting each assignment into
 separate assignments to its individual LHS components (see @(see assigns->netassigns)),
 and then for wires that have multiple assignments, resolving these together to
-obtain a single RHS (see @(see netassigns-collect-resolves)).</li>
+obtain a single RHS (see @(see netassigns->resolves)).</li>
 <li>Compose assignments together to obtain the full 0-delay formulas for each
 canonical wire and full update functions for each state bit; that is, formulas
 in terms of primary inputs and previous states (see @(see

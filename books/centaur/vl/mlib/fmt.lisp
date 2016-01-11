@@ -190,9 +190,10 @@ formerly the \"location directive\" and printed a location.</p>")
           :vl-modinst :vl-gateinst :vl-always :vl-initial :vl-final
           :vl-typedef :vl-fwdtypedef :vl-assertion :vl-cassertion
           :vl-property :vl-sequence :vl-import :vl-dpiimport :vl-dpiexport
-          :vl-genblock :vl-genarray
-          :vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-modport)
+          :vl-genarray :vl-genbegin :vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-modport)
          (vl-fmt-tilde-a-case vl-ctxelement-p vl-pp-ctxelement-summary))
+        ((:vl-genvar)
+         (vl-fmt-tilde-a-case vl-genvar-p vl-pp-genvar))
         (:vl-ansi-portdecl
          (vl-fmt-tilde-a-case vl-ansi-portdecl-p vl-pp-ansi-portdecl))
         ((:vl-plainarg)

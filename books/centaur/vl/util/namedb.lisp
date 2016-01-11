@@ -42,10 +42,9 @@
 generate good, fresh names that are not being used elsewhere.</p>
 
 <p>Name databases are a general-purpose mechanism that has nothing to do with
-Verilog.  When we want to generate fresh wire names for Verilog modules, we
-usually use a @(see vl-namefactory-p) instead.  Name factories build on top of
-name databases in a way that is specific to Verilog modules, and often allow us
-to avoid constructing the list of all wire names for a module.</p>
+Verilog.  This was not always true; historically name databases were originally
+part of a larger @('vl-namefactory') structure that had a deep understanding of
+Verilog modules, but that mechanism no longer exists.</p>
 
 <h3>Using Name Databases</h3>
 
@@ -482,10 +481,9 @@ bound in @('pmap').</p>
 currently in use.  We use a fast-alist representation so that we can very
 quickly determine whether a plain name is available.</p>
 
-<p>Meanwhile, the @('pmap') allows us to use something much like the \"historic
-scheme\" (described in @(see vl-namefactory-p)) to quickly generate indexed
-names.  In particular, it binds some prefixes with their highest used index.
-This way, we only need to scan the @('names') once per prefix.</p>
+<p>Meanwhile, the @('pmap') allows us to quickly generate indexed names.  In
+particular, it binds some prefixes with their highest used index.  This way, we
+only need to scan the @('names') once per prefix.</p>
 
 <p>The @('pset') is really just an optimization that allows us to avoid needing
 to shrink the psets.</p>")

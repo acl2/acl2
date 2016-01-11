@@ -531,8 +531,7 @@
   (cond
    ((null induction-rules)
     (let* ((fn (ffn-symb term))
-           (machine (getprop fn 'induction-machine nil
-                             'current-acl2-world wrld)))
+           (machine (getpropc fn 'induction-machine nil wrld)))
       (cond
        ((null machine) nil)
        (t
@@ -556,12 +555,12 @@
         (intrinsic-suggested-induction-cand
          term
          (formals fn wrld)
-         (getprop fn 'quick-block-info
-                  '(:error "See SUGGESTED-INDUCTION-CANDS1.")
-                  'current-acl2-world wrld)
-         (getprop fn 'justification
-                  '(:error "See SUGGESTED-INDUCTION-CANDS1.")
-                  'current-acl2-world wrld)
+         (getpropc fn 'quick-block-info
+                   '(:error "See SUGGESTED-INDUCTION-CANDS1.")
+                   wrld)
+         (getpropc fn 'justification
+                   '(:error "See SUGGESTED-INDUCTION-CANDS1.")
+                   wrld)
          machine
          xterm
          ttree
@@ -592,7 +591,7 @@
   (cond
    ((flambdap (ffn-symb term)) nil)
    (t (suggested-induction-cands1
-       (getprop (ffn-symb term) 'induction-rules nil 'current-acl2-world wrld)
+       (getpropc (ffn-symb term) 'induction-rules nil wrld)
        term type-alist xterm ttree seen ens wrld))))
 )
 
@@ -1452,8 +1451,7 @@
 ; non pr fns supported.
 
   (cond ((null lst) 0)
-        ((getprop (ffn-symb (car lst)) 'primitive-recursive-defunp nil
-                  'current-acl2-world wrld)
+        ((getpropc (ffn-symb (car lst)) 'primitive-recursive-defunp nil wrld)
          (induction-complexity1 (cdr lst) wrld))
         (t (1+ (induction-complexity1 (cdr lst) wrld)))))
 
@@ -2600,7 +2598,7 @@
         ((flambda-applicationp term)
          (union-eq (rec-fnnames (lambda-body (ffn-symb term)) wrld)
                    (rec-fnnames-lst (fargs term) wrld)))
-        ((getprop (ffn-symb term) 'recursivep nil 'current-acl2-world wrld)
+        ((getpropc (ffn-symb term) 'recursivep nil wrld)
          (add-to-set-eq (ffn-symb term)
                         (rec-fnnames-lst (fargs term) wrld)))
         (t (rec-fnnames-lst (fargs term) wrld))))

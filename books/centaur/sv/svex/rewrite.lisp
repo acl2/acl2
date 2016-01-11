@@ -38,8 +38,7 @@
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
-(defxdoc svex-rewrite.lisp :parents (svex-rewriting))
-(local (xdoc::set-default-parents svex-rewrite.lisp))
+(local (xdoc::set-default-parents rewriting))
 
 
 (local (std::add-default-post-define-hook :fix))

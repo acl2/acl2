@@ -231,116 +231,206 @@
 
 ; would expand to:
 
-(encapsulate
- (((evad * *) => *)
-  ((evad-lst * *) => *))
- (set-inhibit-warnings "theory")
- (local (in-theory *defevaluator-form-base-theory*))
- (local (mutual-recursion
-         (defun-nx evad (x a)
-           (declare (xargs :verify-guards nil
-                           :measure (acl2-count x)
-                           :well-founded-relation o<
-                           :mode :logic))
-           (cond ((symbolp x)
-                  (and x (cdr (assoc-eq x a))))
-                 ((atom x) nil)
-                 ((eq (car x) 'quote) (car (cdr x)))
-                 ((consp (car x))
-                  (evad (car (cdr (cdr (car x))))
-                        (pairlis$ (car (cdr (car x)))
-                                  (evad-lst (cdr x) a))))
-                 ((equal (car x) 'car)
-                  (car (evad (car (cdr x)) a)))
-                 ((equal (car x) 'cdr)
-                  (cdr (evad (car (cdr x)) a)))
-                 ((equal (car x) 'cadr)
-                  (cadr (evad (car (cdr x)) a)))
-                 ((equal (car x) 'cddr)
-                  (cddr (evad (car (cdr x)) a)))
-                 ((equal (car x) 'caddr)
-                  (caddr (evad (car (cdr x)) a)))
-                 ((equal (car x) 'cdddr)
-                  (cdddr (evad (car (cdr x)) a)))
-                 ((equal (car x) 'cadddr)
-                  (cadddr (evad (car (cdr x)) a)))
-                 ((equal (car x) 'cddddr)
-                  (cddddr (evad (car (cdr x)) a)))
-                 (t nil)))
-         (defun-nx evad-lst (x-lst a)
-           (declare (xargs :measure (acl2-count x-lst)
-                           :well-founded-relation o<))
-           (cond ((endp x-lst) nil)
-                 (t (cons (evad (car x-lst) a)
-                          (evad-lst (cdr x-lst) a)))))))
- (local (defthm eval-list-kwote-lst
-          (equal (evad-lst (kwote-lst args) a)
-                 (fix-true-list args))))
- (defthmd
-   evad-constraint-0
-   (implies (and (consp x)
-                 (syntaxp (not (equal a ''nil)))
-                 (not (equal (car x) 'quote)))
-            (equal (evad x a)
-                   (evad (cons (car x)
-                               (kwote-lst (evad-lst (cdr x) a)))
-                         nil)))
-   :hints
-   (("Goal" :expand ((:free (x) (hide x)) (evad x a))
-     :in-theory (disable (:executable-counterpart evad)))))
- (defthm evad-constraint-1
-   (implies (symbolp x)
-            (equal (evad x a)
-                   (and x (cdr (assoc-equal x a))))))
- (defthm evad-constraint-2
-   (implies (and (consp x) (equal (car x) 'quote))
-            (equal (evad x a) (cadr x))))
- (defthm evad-constraint-3
-   (implies (and (consp x) (consp (car x)))
-            (equal (evad x a)
-                   (evad (caddar x)
-                         (pairlis$ (cadar x)
-                                   (evad-lst (cdr x) a))))))
- (defthm evad-constraint-4
-   (implies (not (consp x-lst))
-            (equal (evad-lst x-lst a) nil)))
- (defthm evad-constraint-5
-   (implies (consp x-lst)
-            (equal (evad-lst x-lst a)
-                   (cons (evad (car x-lst) a)
-                         (evad-lst (cdr x-lst) a)))))
- (defthm evad-constraint-6
-   (implies (and (consp x) (equal (car x) 'car))
-            (equal (evad x a)
-                   (car (evad (cadr x) a)))))
- (defthm evad-constraint-7
-   (implies (and (consp x) (equal (car x) 'cdr))
-            (equal (evad x a)
-                   (cdr (evad (cadr x) a)))))
- (defthm evad-constraint-8
-   (implies (and (consp x) (equal (car x) 'cadr))
-            (equal (evad x a)
-                   (cadr (evad (cadr x) a)))))
- (defthm evad-constraint-9
-   (implies (and (consp x) (equal (car x) 'cddr))
-            (equal (evad x a)
-                   (cddr (evad (cadr x) a)))))
- (defthm evad-constraint-10
-   (implies (and (consp x) (equal (car x) 'caddr))
-            (equal (evad x a)
-                   (caddr (evad (cadr x) a)))))
- (defthm evad-constraint-11
-   (implies (and (consp x) (equal (car x) 'cdddr))
-            (equal (evad x a)
-                   (cdddr (evad (cadr x) a)))))
- (defthm evad-constraint-12
-   (implies (and (consp x) (equal (car x) 'cadddr))
-            (equal (evad x a)
-                   (cadddr (evad (cadr x) a)))))
- (defthm evad-constraint-13
-   (implies (and (consp x) (equal (car x) 'cddddr))
-            (equal (evad x a)
-                   (cddddr (evad (cadr x) a))))))
+(ENCAPSULATE
+ (((EVAD * *) => *)
+  ((EVAD-LST * *) => *))
+ (SET-INHIBIT-WARNINGS "theory")
+ (LOCAL (IN-THEORY *DEFEVALUATOR-FORM-BASE-THEORY*))
+ (LOCAL (DEFUN-NX APPLY-FOR-DEFEVALUATOR (FN ARGS)
+          (DECLARE (XARGS :VERIFY-GUARDS NIL
+                          :NORMALIZE NIL))
+          (COND ((EQUAL FN 'CAR) (CAR (CAR ARGS)))
+                ((EQUAL FN 'CDR) (CDR (CAR ARGS)))
+                ((EQUAL FN 'CADR) (CADR (CAR ARGS)))
+                ((EQUAL FN 'CDDR) (CDDR (CAR ARGS)))
+                ((EQUAL FN 'CADDR) (CADDR (CAR ARGS)))
+                ((EQUAL FN 'CDDDR) (CDDDR (CAR ARGS)))
+                ((EQUAL FN 'CADDDR)
+                 (CADDDR (CAR ARGS)))
+                ((EQUAL FN 'CDDDDR)
+                 (CDDDDR (CAR ARGS)))
+                (T NIL))))
+ (LOCAL
+  (MUTUAL-RECURSION
+   (DEFUN-NX
+     EVAD (X A)
+     (DECLARE
+      (XARGS
+       :VERIFY-GUARDS NIL
+       :MEASURE (ACL2-COUNT X)
+       :WELL-FOUNDED-RELATION O<
+       :NORMALIZE NIL
+       :HINTS (("goal" :IN-THEORY (ENABLE (:TYPE-PRESCRIPTION ACL2-COUNT))))
+       :MODE :LOGIC))
+     (COND ((SYMBOLP X)
+            (AND X (CDR (ASSOC-EQ X A))))
+           ((ATOM X) NIL)
+           ((EQ (CAR X) 'QUOTE) (CAR (CDR X)))
+           (T (LET ((ARGS (EVAD-LST (CDR X) A)))
+                (COND ((CONSP (CAR X))
+                       (EVAD (CAR (CDR (CDR (CAR X))))
+                             (PAIRLIS$ (CAR (CDR (CAR X))) ARGS)))
+                      (T (APPLY-FOR-DEFEVALUATOR (CAR X)
+                                                 ARGS)))))))
+   (DEFUN-NX EVAD-LST (X-LST A)
+     (DECLARE (XARGS :MEASURE (ACL2-COUNT X-LST)
+                     :WELL-FOUNDED-RELATION O<))
+     (COND ((ENDP X-LST) NIL)
+           (T (CONS (EVAD (CAR X-LST) A)
+                    (EVAD-LST (CDR X-LST) A)))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD EVAD-LST APPLY-FOR-DEFEVALUATOR)))
+ (LOCAL
+  (DEFTHM EVAL-LIST-KWOTE-LST
+    (EQUAL (EVAD-LST (KWOTE-LST ARGS) A)
+           (FIX-TRUE-LIST ARGS))
+    :HINTS (("goal" :EXPAND ((:FREE (X Y) (EVAD-LST (CONS X Y) A))
+                             (EVAD-LST NIL A)
+                             (:FREE (X) (EVAD (LIST 'QUOTE X) A)))
+             :INDUCT (FIX-TRUE-LIST ARGS)))))
+ (LOCAL
+  (DEFTHM FIX-TRUE-LIST-EV-LST
+    (EQUAL (FIX-TRUE-LIST (EVAD-LST X A))
+           (EVAD-LST X A))
+    :HINTS (("goal" :INDUCT (LEN X)
+             :IN-THEORY (E/D ((:INDUCTION LEN)))
+             :EXPAND ((EVAD-LST X A) (EVAD-LST NIL A))))))
+ (LOCAL (DEFTHM EV-COMMUTES-CAR
+          (EQUAL (CAR (EVAD-LST X A))
+                 (EVAD (CAR X) A))
+          :HINTS (("goal" :EXPAND ((EVAD-LST X A) (EVAD NIL A))
+                   :IN-THEORY (ENABLE DEFAULT-CAR)))))
+ (LOCAL (DEFTHM EV-LST-COMMUTES-CDR
+          (EQUAL (CDR (EVAD-LST X A))
+                 (EVAD-LST (CDR X) A))
+          :HINTS (("Goal" :EXPAND ((EVAD-LST X A) (EVAD-LST NIL A))
+                   :IN-THEORY (ENABLE DEFAULT-CDR)))))
+ (DEFTHMD
+   EVAD-CONSTRAINT-0
+   (IMPLIES (AND (CONSP X)
+                 (SYNTAXP (NOT (EQUAL A ''NIL)))
+                 (NOT (EQUAL (CAR X) 'QUOTE)))
+            (EQUAL (EVAD X A)
+                   (EVAD (CONS (CAR X)
+                               (KWOTE-LST (EVAD-LST (CDR X) A)))
+                         NIL)))
+   :HINTS (("Goal" :EXPAND ((:FREE (X) (HIDE X))
+                            (EVAD X A)
+                            (:FREE (ARGS)
+                                   (EVAD (CONS (CAR X) ARGS) NIL)))
+            :IN-THEORY '(EVAL-LIST-KWOTE-LST FIX-TRUE-LIST-EV-LST
+                                             CAR-CONS CDR-CONS))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-0)))
+ (DEFTHM EVAD-CONSTRAINT-1
+   (IMPLIES (SYMBOLP X)
+            (EQUAL (EVAD X A)
+                   (AND X (CDR (ASSOC-EQUAL X A)))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-1)))
+ (DEFTHM EVAD-CONSTRAINT-2
+   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'QUOTE))
+            (EQUAL (EVAD X A) (CADR X)))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-2)))
+ (DEFTHM EVAD-CONSTRAINT-3
+   (IMPLIES (AND (CONSP X) (CONSP (CAR X)))
+            (EQUAL (EVAD X A)
+                   (EVAD (CADDR (CAR X))
+                         (PAIRLIS$ (CADR (CAR X))
+                                   (EVAD-LST (CDR X) A)))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-3)))
+ (DEFTHM EVAD-CONSTRAINT-4
+   (IMPLIES (NOT (CONSP X-LST))
+            (EQUAL (EVAD-LST X-LST A) NIL))
+   :HINTS (("Goal" :EXPAND ((EVAD-LST X-LST A)))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-4)))
+ (DEFTHM EVAD-CONSTRAINT-5
+   (IMPLIES (CONSP X-LST)
+            (EQUAL (EVAD-LST X-LST A)
+                   (CONS (EVAD (CAR X-LST) A)
+                         (EVAD-LST (CDR X-LST) A))))
+   :HINTS (("Goal" :EXPAND ((EVAD-LST X-LST A)))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-5)))
+ (DEFTHM
+   EVAD-CONSTRAINT-6
+   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CAR))
+            (EQUAL (EVAD X A)
+                   (CAR (EVAD (CADR X) A))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)
+                            (:FREE (X) (HIDE X))
+                            (:FREE (FN ARGS)
+                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-6)))
+ (DEFTHM
+   EVAD-CONSTRAINT-7
+   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDR))
+            (EQUAL (EVAD X A)
+                   (CDR (EVAD (CADR X) A))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)
+                            (:FREE (X) (HIDE X))
+                            (:FREE (FN ARGS)
+                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-7)))
+ (DEFTHM
+   EVAD-CONSTRAINT-8
+   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADR))
+            (EQUAL (EVAD X A)
+                   (CADR (EVAD (CADR X) A))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)
+                            (:FREE (X) (HIDE X))
+                            (:FREE (FN ARGS)
+                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-8)))
+ (DEFTHM
+   EVAD-CONSTRAINT-9
+   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDDR))
+            (EQUAL (EVAD X A)
+                   (CDDR (EVAD (CADR X) A))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)
+                            (:FREE (X) (HIDE X))
+                            (:FREE (FN ARGS)
+                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-9)))
+ (DEFTHM
+   EVAD-CONSTRAINT-10
+   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADDR))
+            (EQUAL (EVAD X A)
+                   (CADDR (EVAD (CADR X) A))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)
+                            (:FREE (X) (HIDE X))
+                            (:FREE (FN ARGS)
+                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-10)))
+ (DEFTHM
+   EVAD-CONSTRAINT-11
+   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDDDR))
+            (EQUAL (EVAD X A)
+                   (CDDDR (EVAD (CADR X) A))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)
+                            (:FREE (X) (HIDE X))
+                            (:FREE (FN ARGS)
+                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-11)))
+ (DEFTHM
+   EVAD-CONSTRAINT-12
+   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADDDR))
+            (EQUAL (EVAD X A)
+                   (CADDDR (EVAD (CADR X) A))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)
+                            (:FREE (X) (HIDE X))
+                            (:FREE (FN ARGS)
+                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-12)))
+ (DEFTHM
+   EVAD-CONSTRAINT-13
+   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDDDDR))
+            (EQUAL (EVAD X A)
+                   (CDDDDR (EVAD (CADR X) A))))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)
+                            (:FREE (X) (HIDE X))
+                            (:FREE (FN ARGS)
+                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-13))))
 
 ; We are actually only interested in ADR lists whose lengths lie between 2 and
 ; 5, and there are only a finite number of them.  Proofs are easier if we just

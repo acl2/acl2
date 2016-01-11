@@ -88,16 +88,24 @@
 (encapsulate
  ()
 
- (local
-  (defthm stringp-read-file-into-string1
-    (implies (car (read-file-into-string1 channel state ans bound))
-             (stringp (car (read-file-into-string1 channel state ans
-                                                   bound))))))
+; At one the following local lemma seemed to be helpful, but it is not
+; currently necessary.  If we simplify read-file-into-string2, for example by
+; removing ec-call, then perhaps we will need this lemma once again.
+
+;(local
+; (defthm stringp-read-file-into-string1
+;   (implies (car (read-file-into-string1 channel state ans bound))
+;            (stringp (car (read-file-into-string1 channel state ans
+;                                                  bound))))))
 
  (verify-termination-boot-strap read-file-into-string2) ; and guards
  )
 
 (verify-termination-boot-strap read-file-into-string) ; and guards
+
+; miscellaneous
+
+(verify-termination-boot-strap guard-or-termination-theorem-msg) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
@@ -1077,7 +1085,7 @@
   (declare (xargs :stobjs state
                   :guard (symbolp name)))
   (let ((wrld (w state)))
-    (or (getprop name 'theorem nil 'current-acl2-world wrld)
+    (or (getpropc name 'theorem nil wrld)
         (mv-let (flg prop)
                 (constraint-info name wrld)
                 (cond ((eq prop *unknown-constraints*)
@@ -1233,7 +1241,7 @@
        ((':formula name)
         (meta-extract-formula name st))
        ((':lemma fn n)
-        (let* ((lemmas (getprop fn 'lemmas nil 'current-acl2-world (w st)))
+        (let* ((lemmas (getpropc fn 'lemmas nil (w st)))
                (rule (nth n lemmas)))
 
 ; The use of rewrite-rule-term below relies on the fact that the 'LEMMAS
@@ -1295,8 +1303,7 @@
             (cdr fns)
             wrld
             (cons (let* ((fn (car fns))
-                         (justification (getprop fn 'justification nil
-                                                 'current-acl2-world wrld))
+                         (justification (getpropc fn 'justification nil wrld))
                          (ms (and (consp justification) ; for guard
                                   (consp (cdr justification)) ; for guard
                                   (access justification justification :subset))))
@@ -1318,8 +1325,7 @@
           nil))
         ((and (eq (cadar wrld) 'symbol-class)
               (eq (cddar wrld) :COMMON-LISP-COMPLIANT)
-              (getprop (caar wrld) 'predefined nil 'current-acl2-world
-                       installed-wrld))
+              (getpropc (caar wrld) 'predefined nil installed-wrld))
          (new-verify-guards-fns1 (cdr wrld)
                                  installed-wrld
                                  (cons (caar wrld) acc)))
@@ -1466,8 +1472,8 @@
         (t (cons-absolute-event-numbers
             (cdr fns-alist)
             wrld
-            (acons (or (getprop (caar fns-alist) 'absolute-event-number nil
-                                'current-acl2-world wrld)
+            (acons (or (getpropc (caar fns-alist) 'absolute-event-number nil
+                                 wrld)
                        (er hard? 'cons-absolute-event-numbers
                            "The 'absolute-event-number property is missing ~
                             for ~x0."

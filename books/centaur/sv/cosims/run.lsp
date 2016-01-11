@@ -34,7 +34,18 @@
 ;; name of directory that spec.sv and input/output.data are in
 (defconst *testname* "gates")
 
+(trace$ (vl-design-argresolve
+         :entry (list 'vl-design-argresolve (with-local-ps (vl-pp-design x)))
+         :exit (list 'vl-design-argresolve (with-local-ps (vl-pp-design x)))))
 
+(trace$ (vl-unhierarchicalize-interfaceport
+         :entry (list 'vl-unhierarchicalize-interfaceport
+                      :arg (with-local-ps (vl-pp-plainarg arg))
+                      :port (with-local-ps (vl-pp-port port))
+                      :inst (with-local-ps (vl-pp-modinst inst nil)))
+         :exit (b* (((list ?warnings new-arg) values))
+                 (list 'vl-unhierarchicalize-interfaceport
+                       (with-local-ps (vl-pp-plainarg new-arg))))))
 
 ||#
 
@@ -124,5 +135,38 @@
                           (if (car values)
                               (list (vl::vl-cw-warning (car values)) rest)
                             (list rest)))))))
+
+#!VL
+(trace$ (vl-design-elaborate
+         :entry (with-local-ps (vl-pp-design x))
+         :exit (with-local-ps (vl-pp-design value))))
+
+
+#!VL
+(trace$ (vl-inside-expr-case-to-svex
+         :entry (list 'vl-inside-expr-case-to-svex
+                      :elem elem
+                      :elem-selfsize elem-selfsize
+                      :elem-type elem-type
+                      :range range)
+         :exit (list 'vl-inside-expr-case-to-svex
+                     (second values))))
+
+#!VL
+(trace$ (vl-inside-expr-cases-to-svex
+         :entry (list 'vl-inside-expr-case-to-svex
+                      :elem elem
+                      :elem-selfsize elem-selfsize
+                      :elem-type elem-type
+                      :set set)
+         :exit (list 'vl-inside-expr-case-to-svex
+                     (second values))))
+
+#!VL
+(trace$ (vl-expr-to-svex-opaque
+         :entry (list 'vl-expr-to-svex-opaque x)
+         :exit (list 'vl-expr-to-svex-opaque (second values))))
+
+
 
 ||#

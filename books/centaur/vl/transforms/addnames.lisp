@@ -39,10 +39,10 @@
   :short "Name any unnamed gate or module instances, block statements,
 generates, etc."
 
-  :long "<p>The names are safely generated using a @(see vl-namefactory-p) and
-will have names such as @('modinst_11') and @('gateinst_46').  We also insert
-generate blocks around any single base generate elements that are inside if,
-case, or loop generate forms.</p>")
+  :long "<p>The names are safely generated using a @(see vl-namedb) and will
+have names such as @('unnamed_modinst_11') and @('unnamed_gateinst_46').  We
+also insert generate blocks around any single base generate elements that are
+inside if, case, or loop generate forms.</p>")
 
 (define maybe-add-name ((x maybe-stringp)
                         (basename stringp)
@@ -70,7 +70,9 @@ case, or loop generate forms.</p>")
    (vl-modinst       (instname (lambda (x namedb) (maybe-add-name x "unnamed_modinst" namedb))))
    (vl-gateinst      (name     (lambda (x namedb) (maybe-add-name x "unnamed_gateinst" namedb))))
    (vl-blockstmt     (name     (lambda (x namedb) (maybe-add-name x "unnamed_blockstmt" namedb))))
-   (vl-genblock      (name     (lambda (x namedb) (maybe-add-name x "unnamed_genblock" namedb))))
+   (vl-genblock      (name     (lambda (x namedb) (if x
+                                                      (mv x namedb)
+                                                    (maybe-add-name x "unnamed_genblock" namedb)))))
    (vl-genarray      (name     (lambda (x namedb) (maybe-add-name x "unnamed_genarray" namedb))))))
 
 
@@ -80,35 +82,37 @@ case, or loop generate forms.</p>")
 
 (fty::defvisitor vl-generate-addnames
   :template addnames
-  :type vl-genelement
-  :prod-fns ((vl-genloop     (body    vl-genelement-addnames-blocknorm))
-             (vl-genif       (then    vl-genelement-addnames-blocknorm)
-                             (else    vl-genelement-addnames-blocknorm))
-             (vl-gencase     (default vl-genelement-addnames-blocknorm))
-             (vl-gencaselist (val     vl-genelement-addnames-blocknorm)))
+  :type vl-genelement)
 
-  :measure (two-nats-measure :count 0)
+;; [Jared] I think the following is unnecessary with the new representation, because
+;; we basically automatically have a proper block for thens/elses/cases/loop bodies.
 
-  (define vl-genelement-addnames-blocknorm ((x vl-genelement-p)
-                                            (namedb vl-namedb-p))
-    :returns (mv (new-x vl-genelement-p)
-                 (new-namedb vl-namedb-p))
-    :measure (two-nats-measure (vl-genelement-count x) 1)
-    (b* (((mv x namedb) (vl-genelement-addnames x namedb)))
-      (vl-genelement-case x
-        :vl-genblock
-        ;; It's already a block, leave it.
-        (mv x namedb)
-        :otherwise ;; Change genbase or generate into a genblock when nested in
-                   ;; an if, loop, or case.
-        (b* (((mv name namedb) (vl-namedb-indexed-name "unnamed_genblock" namedb)))
-          (mv (make-vl-genblock
-               :name name
-               :elems (list x)
-               :loc (vl-genelement->loc x))
-              namedb))))))
+  ;; :prod-fns ((vl-genloop     (body    vl-genelement-addnames-blocknorm))
+  ;;            (vl-genif       (then    vl-genelement-addnames-blocknorm)
+  ;;                            (else    vl-genelement-addnames-blocknorm))
+  ;;            (vl-gencase     (default vl-genelement-addnames-blocknorm))
+  ;;            (vl-gencaselist (val     vl-genelement-addnames-blocknorm)))
 
+  ;; :measure (two-nats-measure :count 0)
 
+  ;; (define vl-genelement-addnames-blocknorm ((x vl-genelement-p)
+  ;;                                           (namedb vl-namedb-p))
+  ;;   :returns (mv (new-x vl-genelement-p)
+  ;;                (new-namedb vl-namedb-p))
+  ;;   :measure (two-nats-measure (vl-genelement-count x) 1)
+  ;;   (b* (((mv x namedb) (vl-genelement-addnames x namedb)))
+  ;;     (vl-genelement-case x
+  ;;       :vl-genblock
+  ;;       ;; It's already a block, leave it.
+  ;;       (mv x namedb)
+  ;;       :otherwise ;; Change genbase or generate into a genblock when nested in
+  ;;                  ;; an if, loop, or case.
+  ;;       (b* (((mv name namedb) (vl-namedb-indexed-name "unnamed_genblock" namedb)))
+  ;;         (mv (make-vl-genblock
+  ;;              :name name
+  ;;              :elems (list x)
+  ;;              :loc (vl-genelement->loc x))
+  ;;             namedb))))))
 
 (fty::defvisitors vl-design-addnames-aux
   :template addnames

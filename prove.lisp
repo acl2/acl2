@@ -126,8 +126,7 @@
   (mv-let
     (wonp cr-rune lemma unify-subst)
     (find-abbreviation-lemma term geneqv
-                             (getprop (ffn-symb term) 'lemmas nil
-                                      'current-acl2-world wrld)
+                             (getpropc (ffn-symb term) 'lemmas nil wrld)
                              ens
                              wrld)
     (cond
@@ -257,8 +256,7 @@
              ((and (all-quoteps expanded-args)
                    (enabled-xfnp fn ens wrld)
                    (or (flambda-applicationp term)
-                       (not (getprop fn 'constrainedp nil
-                                     'current-acl2-world wrld))))
+                       (not (getpropc fn 'constrainedp nil wrld))))
               (cond ((flambda-applicationp term)
                      (expand-abbreviations
                       (lambda-body fn)
@@ -548,9 +546,8 @@
 ; rewrite rules when the result is a conjunction or disjunction (depending on
 ; bool) -- even when the rule being applied is not an abbreviation rule.  Below
 ; are event sequences that illustrate this extra work being done.  In both
-; cases, evaluation of (getprop 'foo 'lemmas nil 'current-acl2-world (w state))
-; shows that we are expanding with a rewrite-rule structure that is not of
-; subclass 'abbreviation.
+; cases, evaluation of (getpropc 'foo 'lemmas) shows that we are expanding with
+; a rewrite-rule structure that is not of subclass 'abbreviation.
 
 ; (defstub bar (x) t)
 ; (defun foo (x) (and (bar (car x)) (bar (cdr x))))
@@ -616,8 +613,7 @@
                 (wonp cr-rune lemma unify-subst)
                 (find-and-or-lemma
                  term bool
-                 (getprop (ffn-symb term) 'lemmas nil
-                          'current-acl2-world wrld)
+                 (getpropc (ffn-symb term) 'lemmas nil wrld)
                  ens wrld)
                 (cond
                  (wonp
@@ -4238,10 +4234,8 @@
          (or (contains-constrained-constantp-lst (fargs term) wrld)
              (contains-constrained-constantp (lambda-body (ffn-symb term))
                                              wrld)))
-        ((and (getprop (ffn-symb term) 'constrainedp nil
-                       'current-acl2-world wrld)
-              (null (getprop (ffn-symb term) 'formals t
-                             'current-acl2-world wrld)))
+        ((and (getpropc (ffn-symb term) 'constrainedp nil wrld)
+              (null (getpropc (ffn-symb term) 'formals t wrld)))
          t)
         (t (contains-constrained-constantp-lst (fargs term) wrld))))
 
@@ -5306,7 +5300,7 @@
                      state)
                     (declare (ignore val))
                     (assert$ (null erp3)
-                             state)))
+                             (state-mac@par))))
                   (mv@par step-limit 'error nil nil nil nil state))))
     (t
      (pprogn@par ; account for bddnote in case we do not have a hit
@@ -5705,8 +5699,7 @@
          ((symbolp x)
           (union-equal (enabled-lmi-names1
                         ens
-                        (getprop x 'runic-mapping-pairs nil
-                                 'current-acl2-world wrld))
+                        (getpropc x 'runic-mapping-pairs nil wrld))
                        (enabled-lmi-names ens (cdr lmi-lst) wrld)))
          ((enabled-runep x ens wrld)
           (add-to-set-equal x (enabled-lmi-names ens (cdr lmi-lst) wrld)))

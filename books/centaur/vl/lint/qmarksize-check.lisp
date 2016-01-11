@@ -57,7 +57,7 @@ seeing that the size of the test expression isn't 1.</p>")
   :returns (warnings vl-warninglist-p)
   (vl-expr-case x
     :vl-qmark (b* (((mv warnings test-size)
-                    (vl-expr-selfsize x.test ss nil))
+                    (vl-expr-selfsize x.test ss (vl-elabscopes-init-ss ss)))
                    ((unless test-size)
                     ;; Presumably we already warned about being unable to size it.
                     warnings)

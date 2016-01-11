@@ -34,7 +34,7 @@
 (include-book "centaur/fty/basetypes" :dir :system)
 
 (defprod vl-simpconfig
-  :parents (vl-simplify)
+  :parents (vl-design->svex-design)
   :short "Options for how to simplify Verilog modules."
   :tag :vl-simpconfig
 

@@ -249,7 +249,18 @@
                                     our-safety)
                             our-safety)
                    0))
-              )))
+              )
+             #+ccl
+             ,@(let ((our-stack-access
+                      (if (boundp 'common-lisp-user::*acl2-stack-access*)
+                          (symbol-value 'common-lisp-user::*acl2-stack-access*)
+                        nil)))
+                 (if our-stack-access
+                     (progn (format t "Note: Setting :STACK-ACCESS to ~s."
+                                    our-stack-access)
+                            `((:stack-access ,our-stack-access)))
+                   nil))
+              ))
 
 (proclaim *acl2-optimize-form*)
 
@@ -1334,7 +1345,15 @@ ACL2 from scratch.")
                        (invoke-restart 'muffle-warning))))
            ,@forms))
 
-  #-(or sbcl cmu)
+  #+lispworks
+  `(with-redefinition-suppressed
+    (handler-bind
+     ((style-warning (lambda (c)
+                       (declare (ignore c))
+                       (invoke-restart 'muffle-warning))))
+     ,@forms))
+
+  #-(or sbcl cmu lispworks)
   `(with-redefinition-suppressed ,@forms))
 
 (defmacro with-more-warnings-suppressed (&rest forms)
@@ -1348,11 +1367,7 @@ ACL2 from scratch.")
 ; The handler-bind form given in with-warnings-suppressed for sbcl and cmucl is
 ; sufficient; we do not need anything further here.  But even with the addition
 ; of style-warnings (as commented there), that form doesn't seem to work for
-; CCL, Allegro CL, Lispworks, or CLISP.  So we bind some globals instead.
-
-  #+lispworks
-  `(let ((compiler::*compiler-warnings* nil))
-     ,@forms)
+; CCL, Allegro CL, or CLISP.  So we bind some globals instead.
 
   #+allegro
   `(handler-bind
@@ -1369,7 +1384,7 @@ ACL2 from scratch.")
   `(let ((ccl::*suppress-compiler-warnings* t))
      ,@forms)
 
-  #-(or lispworks allegro clisp ccl)
+  #-(or allegro clisp ccl)
   (if (cdr forms) `(progn ,@forms) (car forms)))
 
 (defmacro with-suppression (&rest forms)
@@ -2208,6 +2223,20 @@ You are using version ~s.~s.~s."
 
 (defparameter *acl2-panic-exit-status* nil)
 
+#+ccl
+(defun common-lisp-user::acl2-exit-lisp-ccl-report (status)
+  (declare (ignore status))
+  (format t
+          "~%(ccl::total-bytes-allocated) = ~s~%(ccl::gctime) ~
+           = ~s~%(ccl::gccounts) = ~s~%~%"
+          (ccl::total-bytes-allocated)
+          (multiple-value-list (ccl::gctime))
+          (multiple-value-list (ccl::gccounts))))
+
+#+cltl2
+(defvar common-lisp-user::*acl2-exit-lisp-hook*
+  nil)
+
 (defun exit-lisp (&optional (status '0 status-p))
 
 ; Parallelism blemish: In ACL2(p), LispWorks 6.0.1 hasn't always successfully
@@ -2218,6 +2247,9 @@ You are using version ~s.~s.~s."
 ; calls to send-die-to-worker-threads and stop-multiprocessing, they should be
 ; removed.
 
+  (when (fboundp common-lisp-user::*acl2-exit-lisp-hook*)
+    (funcall common-lisp-user::*acl2-exit-lisp-hook* status)
+    (setq common-lisp-user::*acl2-exit-lisp-hook* nil))
   #+(and acl2-par lispworks)
   (when mp::*multiprocessing*
     (send-die-to-worker-threads)

@@ -483,3 +483,21 @@ cleaned up and merged.</p>"
        ((when keep1)
         (hons-acons name1 keep1 rest)))
     rest))
+
+(define vl-remove-from-reportcard
+  :short "Filter a reportcard to only remove the warnings of certain types."
+  ((types symbol-listp)
+   (x vl-reportcard-p))
+  :returns (sub-reportcard vl-reportcard-p "Fast alist.")
+  :measure (vl-reportcard-count x)
+  (b* ((x (vl-reportcard-fix x))
+       ((when (atom x))
+        nil)
+       ((cons name1 warnings1) (car x))
+       (remove1 (vl-remove-warnings types warnings1))
+       (rest  (vl-remove-from-reportcard types (cdr x)))
+       ((when remove1)
+        (hons-acons name1 remove1 rest)))
+    rest))
+
+

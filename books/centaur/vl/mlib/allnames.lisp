@@ -61,6 +61,17 @@
           (hons-acons k t x))
       x)))
 
+(define vl-maybe-scopeid-nameset-add ((k vl-maybe-scopeid-p)
+                                      (x nameset-p))
+  :returns (new-x nameset-p)
+  (b* ((k (vl-maybe-scopeid-fix k))
+       (x (nameset-fix x)))
+    (if (stringp k)
+        (if (hons-get k x)
+            x
+          (hons-acons k t x))
+      x)))
+
 (fty::defvisitor-template allnames ((x :object)
                                     (nameset nameset-p))
   :returns (new-nameset (:acc nameset :fix (nameset-fix nameset))
@@ -71,8 +82,10 @@
   ;; safer to gether up all names from all expressions, arguments, named
   ;; parameter actuals, etc.
 
-  ;; BOZO especially what about block names, and also new names for properties,
-  ;; sequences, etc...
+  ;; BOZO what about names for properties, sequences, etc...
+
+  ;; We should at least keep this in sync with scopeitems (i.e. anything that
+  ;; can be looked up by name should have its name listed here).
   ((vl-interfaceport (name nameset-add))
    (vl-regularport   (name maybe-nameset-add))
    (vl-portdecl      (name nameset-add))
@@ -86,7 +99,7 @@
    (vl-fwdtypedef    (name nameset-add))
    (vl-typedef       (name nameset-add))
    (vl-genvar        (name nameset-add))
-   (vl-genblock      (name maybe-nameset-add))
+   (vl-genblock      (name vl-maybe-scopeid-nameset-add))
    (vl-genarray      (name maybe-nameset-add))
    (vl-module        (name nameset-add)
                      (origname nameset-add))
@@ -95,6 +108,7 @@
    (vl-package       (name nameset-add))
    (vl-interface     (name nameset-add))
    (vl-program       (name nameset-add))
+   (vl-dpiimport     (name nameset-add))
    ))
 
 (fty::defvisitors vl-design-allnames

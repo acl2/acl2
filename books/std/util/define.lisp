@@ -264,6 +264,12 @@ difference can sometimes cause problems in later theorems.  Setting
 @(':no-function t') will avoid binding @('__function__') for better backwards
 compatibility.</dd>
 
+<dt>@(':hooks hooks')</dt>
+
+<dd>(Advanced feature).  Override which @(see post-define-hook)s are to be
+executed.  For instance, @(':hooks nil') can be used to disable all such
+hooks.</dd>
+
 </dl>
 
 <h4>@('Returns') Specifications</h4>
@@ -863,10 +869,50 @@ form is usually an adequate work-around.</p>")
 
 ; ----------------- Hooks -----------------------------------------------------
 
-; WARNING: Undocumented, experimental feature; all details may change.
+(defxdoc post-define-hook
+  :parents (define)
+  :short "A way to extend @(see define) to carry out additional behaviors."
+  :long "<p>The @(see define) macro can be configured with ``hooks'' to
+automatically generate and submit certain additional events.  For instance, the
+@(see fty::fixequiv-hook) extends define to automatically prove certain
+congruence rules.</p>
 
-; Hook function signature:
-;    my-hook-name : defguts * user-args * state -> (mv er val state)
+<p>This is an advanced and somewhat experimental feature.  To introduce a new
+post-define hook, first define a function of the signature:</p>
+
+@({
+     (my-hook-fn defguts user-args state) -> (mv er val state)
+})
+
+<p>Here:</p>
+
+<ul>
+
+<li>the @('defguts') argument is a structure which will have information from
+the @('define') itself, see the comments in @('std/util/define.lisp') for
+details</li>
+
+<li>the @('user-args') are any arguments that can be passed to your hook
+function at @('define') time via the @(':hooks') argument, or via the default
+post-define hook mechanism.</li>
+
+<li>the return value is an ordinary ACL2 error triple, where the @('val')
+should be some additional events to submit.</li>
+
+</ul>
+
+<p>Once your function is defined, you can register it as a post-define hook as
+follows:</p>
+
+@({
+     (add-post-define-hook :myhook my-hook-fn)
+})
+
+<p>And subsequently it will be legal to use @(':hooks ((:myhook ...))') or
+similar.  Define can also be configured with default post-define hooks, see
+@('add-default-post-define-hook') in the @('std/util/define.lisp') source code;
+also see the @('std/util/tests/define.lisp') file for some working
+examples.</p>")
 
 (defun remove-from-alist (key alist)
   (cond ((atom alist)

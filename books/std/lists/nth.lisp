@@ -323,4 +323,22 @@
 (defmacro equal-by-nths-hint ()
   '(equal-by-nths-hint-fn clause))
 
+(defthm acl2-count-of-nth-linear
+  ;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+  (implies (consp x)
+           (< (acl2-count (nth i x))
+              (acl2-count x)))
+  :rule-classes :linear)
 
+(defthm acl2-count-of-nth-linear-weak
+  ;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+  (<= (acl2-count (nth i x))
+      (acl2-count x))
+  :rule-classes :linear)
+
+(defthm acl2-count-of-nth-rewrite
+  ;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+  (equal (< (acl2-count (nth i x))
+            (acl2-count x))
+         (or (consp x)
+             (> (acl2-count x) 0))))

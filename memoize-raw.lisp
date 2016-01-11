@@ -1070,7 +1070,7 @@
              (integerp (car pair))
              (car pair)))
       (let ((formals
-             (getprop fn 'formals t 'current-acl2-world (w *the-live-state*))))
+             (getpropc fn 'formals t (w *the-live-state*))))
         (and (not (eq t formals))
              (length formals)))
       (let ((def (memoize-look-up-def-raw fn t)))
@@ -1092,7 +1092,7 @@
              (cdr pair)))
       (let* ((state *the-live-state*)
              (w (w state)))
-        (and (not (eq t (getprop fn 'formals t 'current-acl2-world w)))
+        (and (not (eq t (getpropc fn 'formals t w)))
              (len (stobjs-out fn w))))
       (and (get fn 'acl2-saved-def)
 
@@ -2542,7 +2542,7 @@
                   fn)
      (eval `(old-untrace ,fn)))
 
-   (when (getprop fn 'constrainedp nil 'current-acl2-world wrld)
+   (when (getpropc fn 'constrainedp nil wrld)
      (error "Memoize-fn: ~s is constrained; you may instead wish to memoize a ~
              caller or to memoize its attachment (see :DOC defattach)."
             fn))
@@ -3168,7 +3168,7 @@
 ; This function is used not only below, but also in community book
 ; books/centaur/memoize/old/profile.lisp (actually profile-raw.lsp).
 
-  (let ((formals (getprop fn 'formals t 'current-acl2-world wrld)))
+  (let ((formals (getpropc fn 'formals t wrld)))
     (if (eq formals t)
         (let ((cl-defun (if cl-defun-p
                             cl-defun
@@ -3309,7 +3309,7 @@
              (t formals)))
            (stobjs-in
             (if (eq stobjs-in :default)
-                (let ((s (getprop fn 'stobjs-in t 'current-acl2-world wrld)))
+                (let ((s (getpropc fn 'stobjs-in t wrld)))
                   (if (eq s t)
                       (make-list (len formals)) ; assume no stobjs
                     s))
@@ -3321,7 +3321,7 @@
 ; Note that the never-memoize-p check made in memoize-fn-init guarantees that
 ; here, we are not taking the stobjs-out of functions in *stobjs-out-invalid*.
 
-                       (getprop fn 'stobjs-out t 'current-acl2-world wrld)))
+                       (getpropc fn 'stobjs-out t wrld)))
                   (if (eq s t)
                       (let ((n (mf-len-outputs fn)))
                         (cond (n (make-list n))
@@ -3703,14 +3703,14 @@
   (with-global-memoize-lock
    (cond
     (light
-     (let ((*new-memoize-info-ht* (initial-memoize-info-ht)))
+     (let ((new-memoize-info-ht (initial-memoize-info-ht)))
        (unwind-protect
            (progn
              (mf-maphash (lambda (k v)
-                           (setf (gethash k *new-memoize-info-ht*) v))
+                           (setf (gethash k new-memoize-info-ht) v))
                          *memoize-info-ht*)
-             (setq *memoize-info-ht* *new-memoize-info-ht*))
-         (when (not (eq *memoize-info-ht* *new-memoize-info-ht*))
+             (setq *memoize-info-ht* new-memoize-info-ht))
+         (when (not (eq *memoize-info-ht* new-memoize-info-ht))
            (cond ((eq light :done)
                   (error "Fatal error in rememoize-all!~%Consider evaluating ~
                          ~s before continuing.~%"

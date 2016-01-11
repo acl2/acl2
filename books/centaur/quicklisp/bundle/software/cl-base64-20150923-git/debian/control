@@ -1,0 +1,19 @@
+Source: cl-base64
+Section: lisp
+Priority: optional
+Maintainer: Kevin M. Rosenberg <kmr@debian.org>
+Build-Depends-Indep: dh-lisp
+Build-Depends: debhelper (>= 7.0.0)
+Standards-Version: 3.9.5.0
+Homepage: http://files.kpe.io/cl-base64/
+Vcs-Git: git://git.kpe.io/cl-base64.git
+Vcs-Browser: http://git.kpe.io/?p=cl-base64.git
+
+Package: cl-base64
+Architecture: all
+Depends: ${misc:Depends}, cl-kmrcl
+Description: Common Lisp package to encode and decode base64 with URI support
+ This package provides highly optimized base64 encoding and decoding.
+ Besides conversion to and from strings, integer conversions are supported.
+ Encoding with Uniform Resource Identifiers is supported by using
+ a modified encoding table that uses only URI-compatible characters.

@@ -48,7 +48,7 @@
 (include-book "misc/records" :dir :system)
 
 (defxdoc memory
-  :parents (acl2::data-structures)
+  :parents (acl2::data-structures acl2::misc/records)
   :short "Special records designed for array-like usage."
   :long "<p>Loading the library:</p>
 

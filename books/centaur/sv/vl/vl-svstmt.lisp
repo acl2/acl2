@@ -1179,7 +1179,8 @@ a final return statement with an assignment to the output variable.</p>"
                            (with-local-ps (vl-pp-expr x))
                            (vl-scopestack->hashkey ss)
                            (strip-cars scopes)
-                           ctxsize)
+                           ctxsize
+                           (and type (with-local-ps (vl-pp-datatype type))))
               :exit (b* (((list ?ok ?constp ?warnings ?new-x ?svex) values))
                       (list 'vl-elaborated-expr-consteval
                             ok constp
@@ -1202,22 +1203,31 @@ a final return statement with an assignment to the output variable.</p>"
                (svex sv::svex-p))
   (b* ((x (vl-expr-fix x))
        (type (vl-maybe-datatype-fix type))
-       ((mv warnings signedness) (vl-expr-typedecide x ss scopes))
+       ((when (and type (not (vl-datatype-resolved-p type))))
+        (mv nil nil
+            (list (make-vl-warning
+                   :type :vl-expression-type-unresolved
+                   :msg "Datatype ~a0 unresolved when evaluating expression ~a1"
+                   :args (list type x)))
+            x (svex-x)))
+       ((mv warnings signedness)
+        (if type
+            (b* (((mv ?caveat signedness) (vl-datatype-signedness type)))
+              (mv nil signedness))
+          (vl-expr-typedecide x ss scopes)))
        ((wmv warnings svex size)
         (if type
-            (b* (((unless (vl-datatype-resolved-p type))
-                  (mv (list (make-vl-warning
-                             :type :vl-expression-type-unresolved
-                             :msg "Datatype ~a0 unresolved when evaluating expression ~a1"
-                             :args (list type x)))
-                      (sv::svex-x) nil))
-                 ((mv ?err size) (vl-datatype-size type))
+            (b* (((mv ?err size) (vl-datatype-size type))
                  ;; Note: vl-expr-to-svex-datatyped is going to complain
                  ;; already if we don't get the size, so don't warn here.
                  ((mv warnings svex)
                   (vl-expr-to-svex-datatyped x nil type ss scopes)))
               (mv warnings svex size))
-          (vl-expr-to-svex-selfdet x ctxsize ss scopes)))
+          (if ctxsize
+              (vl-expr-to-svex-selfdet x ctxsize ss scopes)
+            (b* (((mv warnings svex ?type size)
+                  (vl-expr-to-svex-untyped x ss scopes)))
+              (mv warnings svex size)))))
        ((unless (and (posp size) signedness))
         ;; presumably already warned about this?
         (mv nil nil warnings x (svex-x)))
@@ -1225,7 +1235,9 @@ a final return statement with an assignment to the output variable.</p>"
        (val (sv::svex-case svex :quote svex.val :otherwise nil))
        ((unless val)
         (mv t nil warnings x svex))
-       (new-x (make-vl-literal :val (vl-4vec-to-value val size :signedness signedness))))
+       (new-x (make-vl-literal
+               :val (vl-4vec-to-value val size :signedness signedness)
+               :atts (cons (cons "VL_ORIG_EXPR" x) (vl-expr->atts x)))))
     (mv t t warnings new-x svex)))
 
 (define vl-consteval ((x vl-expr-p)
@@ -1945,11 +1957,21 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
        ;; Note: Because we want to warn about latches in a combinational
        ;; context, we do a rewrite pass before substituting.
-       (blkst-rw (sv::svex-alist-rewrite-fixpoint st.blkst))
-       (nbst-rw  (sv::svex-alist-rewrite-fixpoint st.nonblkst))
-       (read-masks (sv::svexlist-mask-alist
-                    (append (sv::svex-alist-vals blkst-rw)
-                            (sv::svex-alist-vals nbst-rw))))
+       (blkst-rw (time$ (sv::svex-alist-rewrite-fixpoint st.blkst)
+                        :mintime 1/2
+                        :msg "; vl-always->svex at ~s0: rewriting blocking assignments: ~st sec, ~sa bytes~%"
+                        :args (list (vl-location-string x.loc))))
+                 
+       (nbst-rw  (time$ (sv::svex-alist-rewrite-fixpoint st.nonblkst)
+                        :mintime 1/2
+                        :msg "; vl-always->svex at ~s0: rewriting nonblocking assignments: ~st sec, ~sa bytes~%"
+                        :args (list (vl-location-string x.loc))))
+       (read-masks (time$ (sv::svexlist-mask-alist
+                           (append (sv::svex-alist-vals blkst-rw)
+                                   (sv::svex-alist-vals nbst-rw)))
+                          :mintime 1/2
+                          :msg "; vl-always->svex at ~s0: read masks: ~st sec, ~sa bytes~%"
+                          :args (list (vl-location-string x.loc))))
        ((mv blkst-write-masks nbst-write-masks)
         (sv::svstmtlist-write-masks svstmts nil nil))
        (write-masks (fast-alist-clean
@@ -2010,7 +2032,10 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((warnings nil)
        ((when (atom x)) (mv (ok) nil))
        ((wmv warnings assigns1)
-        (vl-always->svex (car x) ss scopes))
+        (time$ (vl-always->svex (car x) ss scopes)
+               :mintime 1
+               :msg "; vl-always->svex at ~s0 total: ~st sec, ~sa bytes~%"
+               :args (list (vl-location-string (vl-always->loc (car x))))))
        ((wmv warnings assigns2)
         (vl-alwayslist->svex (cdr x) ss scopes)))
     (mv warnings

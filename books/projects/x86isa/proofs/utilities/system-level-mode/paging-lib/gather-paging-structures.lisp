@@ -3059,7 +3059,7 @@
              (b* ((mv-nth-index (second x86-term))
                   (inner-fn-call (third x86-term))
                   (inner-fn (first inner-fn-call))
-                  ((when (or (not (equal mv-nth-index ''2))
+                  ((when (if (equal mv-nth-index ''2)
                              (not (member-p inner-fn
                                             '(IA32E-LA-TO-PA-PT
                                               IA32E-LA-TO-PA-PD
@@ -3067,7 +3067,12 @@
                                               IA32E-LA-TO-PA-PML4T
                                               IA32E-ENTRIES-FOUND-LA-TO-PA
                                               PAGE-TABLE-ENTRY-NO-PAGE-FAULT-P$INLINE
-                                              PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE)))))
+                                              PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE
+                                              RM08
+                                              RB)))
+                           (if (equal mv-nth-index ''1)
+                               (not (member-p inner-fn '(WM08 WB)))
+                             t)))
                    (cw "~%~p0: Unexpected mv-nth x86-term encountered:~p1~%" thm-name x86-term)
                    x86-term)
                   (sub-x86 (first (last inner-fn-call))))

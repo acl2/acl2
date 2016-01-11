@@ -1344,6 +1344,8 @@
          0))
   :rule-classes nil)
 
+#|
+; Once upon a time this was useful but it is not now.
 (defthm type-set-clique-speedup-13
   (implies (not (zp nnn))
            (e0-ord-<
@@ -1356,7 +1358,7 @@
             (cons (cons (cons (+ 1 (nfix nnn)) any4)
                         any5)
                   any6)))
-  :rule-classes nil)
+  :rule-classes nil)|#
 
 (defthm type-set-clique-speedup-11
   (implies (consp hyps)
@@ -1381,11 +1383,11 @@
                    ("Subgoal 16" :do-not '(preprocess)
                     :by type-set-clique-speedup-16)
                    ("Subgoal 13" :do-not '(preprocess)
-                    :by type-set-clique-speedup-13)
+                    :by type-set-clique-speedup-11) ; was 13
                    ("Subgoal 11" :do-not '(preprocess)
                     :by type-set-clique-speedup-11)
-                   ("Subgoal 10" :do-not '(preprocess)
-                    :by type-set-clique-speedup-11)
+;                  ("Subgoal 10" :do-not '(preprocess)
+;                   :by type-set-clique-speedup-11)
                    )))
 
 ; X is a term and type-alist is a type alist mapping terms to their

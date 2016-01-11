@@ -1219,9 +1219,7 @@
 ; Otherwise, translate11 guarantees that if (car form) is f, then it is an
 ; abbreviation for f$inline.
 
-                               (assert$ (getprop (car x) 'macro-body
-                                                 nil
-                                                 'current-acl2-world w)
+                               (assert$ (getpropc (car x) 'macro-body nil w)
                                         (*1*-symbol (add-suffix (car form)
                                                                 *inline-suffix*))))
                            args))))))
@@ -1416,7 +1414,7 @@
     (interface-er
      "Implementation error: Unexpected call of throw-or-attach in oneify:~%~x0"
      x))
-   ((and (getprop (car x) 'macro-body nil 'current-acl2-world w)
+   ((and (getpropc (car x) 'macro-body nil w)
          (not (member-eq (car x) fns)))
     (oneify (macroexpand1! x) fns w program-p))
    ((eq (car x) 'wormhole-eval)
@@ -1440,8 +1438,7 @@
    (t
     (let ((arg-forms (oneify-lst (cdr x) fns w program-p))
           (fn (cond ((and (eq program-p 'invariant-risk)
-                          (not (getprop (car x) 'invariant-risk nil
-                                        'current-acl2-world w)))
+                          (not (getpropc (car x) 'invariant-risk nil w)))
                      (car x))
                     (t (*1*-symbol (car x))))))
       (cons fn arg-forms)))))
@@ -1654,8 +1651,8 @@
 
                            (not (and stobj-flag
 ; But is it an abstract concrete stobj?
-                                     (getprop stobj-flag 'absstobj-info nil
-                                              'current-acl2-world wrld)))))
+                                     (getpropc stobj-flag 'absstobj-info nil
+                                               wrld)))))
           (fn (car def))
           (*1*fn (*1*-symbol fn))
           (cl-compliant-p-optimization
@@ -1745,7 +1742,7 @@
          ,(cons fn formals)))
       (t
        (let* ((invariant-risk
-               (getprop fn 'invariant-risk nil 'current-acl2-world wrld))
+               (getpropc fn 'invariant-risk nil wrld))
               (super-stobjs-in ; At a "leaf" of a stobj-based computation?
                (if stobj-flag
 
@@ -2087,12 +2084,8 @@
 ; only to stobj updaters and resize functions.
 
                                        (let ((stobjs-out
-                                              (getprop
-                                               fn
-                                               'stobjs-out
-                                               nil
-                                               'current-acl2-world
-                                               wrld)))
+                                              (getpropc fn 'stobjs-out nil
+                                                        wrld)))
                                          (cond
                                           ((and stobjs-out ; property is there
                                                 (all-nils stobjs-out))
@@ -2815,8 +2808,8 @@
     (setq *deep-gstack* nil)
     (return-from dmr-string *dmr-delete-string*))
   (setf (fill-pointer *dmr-reusable-string*) 0)
-  (let* ((pstk-tokens (loop for x in *pstk-stack*
-                            with result = nil
+  (let* ((pstk-tokens (loop with result = nil
+                            for x in *pstk-stack*
                             do (push (cond ((eq (car x) 'waterfall)
                                             (car (nthcdr 8 x))) ; ctx
                                            ((eq (car x) 'ev-fncall)
@@ -6680,7 +6673,7 @@
 ; 'redefined property, which only happens just after the user has said that
 ; it's OK to redefine it.
 
-        ((getprop name 'redefined nil 'current-acl2-world wrld)
+        ((getpropc name 'redefined nil wrld)
          nil)
         (t
          (let ((reason
@@ -7235,8 +7228,7 @@
                               (if *check-built-in-constants-debug*
                                   (list key :logic logic-val :raw raw-val)
                                 key)))
-                         (cond ((getprop key 'macro-body nil
-                                         'current-acl2-world wrld)
+                         (cond ((getpropc key 'macro-body nil wrld)
                                 (push x macro-result))
                                ((eq (symbol-class key wrld)
                                     :program)
@@ -7250,12 +7242,10 @@
                  (when (not (or (gethash key ht-logic)
                                 (assoc key *primitive-formals-and-guards* :test
                                        'eq)))
-                   (cond ((getprop key 'macro-body nil
-                                   'current-acl2-world wrld)
+                   (cond ((getpropc key 'macro-body nil wrld)
                           (push key macro-result))
                          (t (let ((c ; avoid symbol-class (defaults to :program)
-                                   (getprop key 'symbol-class nil
-                                            'current-acl2-world wrld)))
+                                   (getpropc key 'symbol-class nil wrld)))
                               (when c
                                 (let ((x
                                        (if *check-built-in-constants-debug*
@@ -7334,7 +7324,7 @@
                (set-difference-eq bad
                                   *boot-strap-invariant-risk-symbols*)))))
 
-(defun check-built-in-constants ()
+(defun check-built-in-constants (&aux (state *the-live-state*))
 
 ; Certain defconsts are problematic because they build in values that one
 ; cannot know until the system is built!  Getting their values right requires
@@ -7373,103 +7363,89 @@
               check-built-in-constants."))
     (cond
      ((not (equal *force-xrune*
-                  (fn-rune-nume 'force nil t (w *the-live-state*))))
+                  (fn-rune-nume 'force nil t (w state))))
       (interface-er str
                     '*force-xrune*
                     *force-xrune*
-                    (fn-rune-nume 'force nil t (w *the-live-state*)))))
+                    (fn-rune-nume 'force nil t (w state)))))
     (cond
-     ((not (equal *force-xnume* (fn-rune-nume 'force t t (w *the-live-state*))))
+     ((not (equal *force-xnume* (fn-rune-nume 'force t t (w state))))
       (interface-er str
                     '*force-xnume*
                     *force-xnume*
-                    (fn-rune-nume 'force t t (w *the-live-state*)))))
+                    (fn-rune-nume 'force t t (w state)))))
     (cond
      ((not
        (equal *immediate-force-modep-xnume*
-              (fn-rune-nume 'immediate-force-modep t t (w *the-live-state*))))
+              (fn-rune-nume 'immediate-force-modep t t (w state))))
       (interface-er str
                     '*immediate-force-modep-xnume*
                     *immediate-force-modep-xnume*
-                    (fn-rune-nume 'immediate-force-modep t t (w *the-live-state*)))))
+                    (fn-rune-nume 'immediate-force-modep t t (w state)))))
     (cond
      ((not
        (equal *tau-system-xnume*
-              (fn-rune-nume 'tau-system t t (w *the-live-state*))))
+              (fn-rune-nume 'tau-system t t (w state))))
       (interface-er str
                     '*tau-system-xnume*
                     *tau-system-xnume*
-                    (fn-rune-nume 'tau-system t t (w *the-live-state*)))))
+                    (fn-rune-nume 'tau-system t t (w state)))))
     (cond
      ((not
        (equal *tau-acl2-numberp-pair*
-              (getprop 'acl2-numberp 'tau-pair nil
-                       'current-acl2-world (w *the-live-state*))))
+              (getpropc 'acl2-numberp 'tau-pair)))
       (interface-er str
                     '*tau-acl2-numberp-pair*
                     *tau-acl2-numberp-pair*
-                    (getprop 'acl2-numberp 'tau-pair nil
-                             'current-acl2-world (w *the-live-state*)))))
+                    (getpropc 'acl2-numberp 'tau-pair))))
     (cond
      ((not
        (equal *tau-integerp-pair*
-              (getprop 'integerp 'tau-pair nil
-                       'current-acl2-world (w *the-live-state*))))
+              (getpropc 'integerp 'tau-pair)))
       (interface-er str
                     '*tau-integerp-pair*
                     *tau-integerp-pair*
-                    (getprop 'integerp 'tau-pair nil
-                             'current-acl2-world (w *the-live-state*)))))
+                    (getpropc 'integerp 'tau-pair))))
     (cond
      ((not
        (equal *tau-rationalp-pair*
-              (getprop 'rationalp 'tau-pair nil
-                       'current-acl2-world (w *the-live-state*))))
+              (getpropc 'rationalp 'tau-pair)))
       (interface-er str
                     '*tau-rationalp-pair*
                     *tau-rationalp-pair*
-                    (getprop 'rationalp 'tau-pair nil
-                             'current-acl2-world (w *the-live-state*)))))
+                    (getpropc 'rationalp 'tau-pair))))
     (cond
      ((not
        (equal *tau-natp-pair*
-              (getprop 'natp 'tau-pair nil
-                       'current-acl2-world (w *the-live-state*))))
+              (getpropc 'natp 'tau-pair)))
       (interface-er str
                     '*tau-natp-pair*
                     *tau-natp-pair*
-                    (getprop 'natp 'tau-pair nil
-                             'current-acl2-world (w *the-live-state*)))))
+                    (getpropc 'natp 'tau-pair))))
     (cond
      ((not
        (equal *tau-posp-pair*
-              (getprop 'posp 'tau-pair nil
-                       'current-acl2-world (w *the-live-state*))))
+              (getpropc 'posp 'tau-pair)))
       (interface-er str
                     '*tau-posp-pair*
                     *tau-posp-pair*
-                    (getprop 'posp 'tau-pair nil
-                             'current-acl2-world (w *the-live-state*)))))
+                    (getpropc 'posp 'tau-pair))))
     (cond
      ((not
        (equal *tau-minusp-pair*
-              (getprop 'minusp 'tau-pair nil
-                       'current-acl2-world (w *the-live-state*))))
+              (getpropc 'minusp 'tau-pair)))
       (interface-er str
                     '*tau-minusp-pair*
                     *tau-minusp-pair*
-                    (getprop 'minusp 'tau-pair nil
-                             'current-acl2-world (w *the-live-state*)))))
+                    (getpropc 'minusp 'tau-pair))))
     (cond
      ((not
        (equal *tau-booleanp-pair*
-              (getprop 'booleanp 'tau-pair nil
-                       'current-acl2-world (w *the-live-state*))))
+              (getpropc 'booleanp 'tau-pair)))
       (interface-er str
                     '*tau-booleanp-pair*
                     *tau-booleanp-pair*
-                    (getprop 'booleanp 'tau-pair nil
-                             'current-acl2-world (w *the-live-state*)))))
+                    (getpropc 'booleanp 'tau-pair))))
     (cond
      ((not
        (and (equal
@@ -7489,22 +7465,22 @@
        (equal *primitive-monadic-booleans*
               (collect-monadic-booleans
                (strip-cars *primitive-formals-and-guards*)
-               (ens *the-live-state*)
-               (w *the-live-state*))))
+               (ens state)
+               (w state))))
       (interface-er str
                     '*primitive-monadic-booleans*
                     *primitive-monadic-booleans*
                     (collect-monadic-booleans
                      (strip-cars *primitive-formals-and-guards*)
-                     (ens *the-live-state*)
-                     (w *the-live-state*)))))
+                     (ens state)
+                     (w state)))))
     (cond
-     ((not (getprop 'booleanp 'tau-pair nil 'current-acl2-world (w *the-live-state*)))
+     ((not (getpropc 'booleanp 'tau-pair))
       (interface-er
        "Our code for tau-term assumes that BOOLEANP is a tau predicate.  But ~
         it has no tau-pair property!")))
     (let ((good-lst (chk-initial-built-in-clauses *initial-built-in-clauses*
-                                                  (w *the-live-state*) nil nil)))
+                                                  (w state) nil nil)))
       (cond
        (good-lst
         (interface-er
@@ -7598,7 +7574,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ;       (error "Check failed!")))
     ))
 
-(defun-one-output check-none-ideal (trips acc)
+(defun-one-output check-none-ideal (trips acc &aux (state *the-live-state*))
   (cond
    ((null trips)
     (cond ((null acc) nil)
@@ -7629,11 +7605,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                  (nth 5 trip))))
       (cond ((and fn
                   (symbolp fn)
-                  (eq (symbol-class fn
-                                    (w *the-live-state*))
+                  (eq (symbol-class fn (w state))
                       :ideal)
-                  (not (eq (getprop fn 'non-executablep nil
-                                    'current-acl2-world (w *the-live-state*))
+                  (not (eq (getpropc fn 'non-executablep)
                            t)))
              (check-none-ideal (cdr trips) (cons fn acc)))
             (t (check-none-ideal (cdr trips) acc)))))))
@@ -8045,8 +8019,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
              (format t *acl2-error-msg*))
            (when (not (member-eq 'set-debugger-enable-fn
 ;                                (global-val 'untouchable-fns (w state))
-                                 (getprop 'untouchable-fns 'global-value nil
-                                          'current-acl2-world (w state))))
+                                 (getpropc 'untouchable-fns 'global-value)))
              (format t
                      "~%To enable breaks into the debugger (also see :DOC ~
                       acl2-customization):~&~s~&"
@@ -8910,11 +8883,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                            (oneify-cltl-code
                                             (cadr (cddr trip)) ; defun-mode
                                             x
-                                            (getprop (car x)
-                                                     'stobj-function
-                                                     nil
-                                                     'current-acl2-world
-                                                     wrld)
+                                            (getpropc (car x) 'stobj-function
+                                                      nil wrld)
                                             wrld))))
                                 (cond (chan0 (push *1*def defs))
                                       (t (print-object$ *1*def chan
@@ -9203,8 +9173,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                         stobjs-out for ~x0."
                        fn))
         (t (let ((w (w *the-live-state*)))
-             (or (getprop fn 'stobjs-out nil 'current-acl2-world w)
-                 (and (getprop fn 'symbol-class nil 'current-acl2-world w)
+             (or (getpropc fn 'stobjs-out nil w)
+                 (and (getpropc fn 'symbol-class nil w)
                       '(nil)))))))
 
 ; The definition of fix-trace and its subfunction fix-trace-untrace can go
@@ -9345,7 +9315,11 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 ; See also the centaur/misc/memory-mgmt books.
 
-  (expt 2 30))
+  (min (expt 2 30)
+
+ ; CCL requires a fixnum for ccl::lisp-heap-gc-threshold.
+
+       most-positive-fixnum))
 
 (let ((physical-memory-cached-answer nil))
 (defun physical-memory () ; in KB
@@ -9371,8 +9345,12 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; bytes before the next GC, unless the current memory usage is more than
 ; (3/4)G, in which case we allocate the minimum of (1/4)G.
 
-         (max (- *max-mem-usage* (ccl::%usedbytes))
-              *gc-min-threshold*)))
+         (min (max (- *max-mem-usage* (ccl::%usedbytes))
+                   *gc-min-threshold*)
+
+; CCL requires a fixnum for ccl::lisp-heap-gc-threshold.
+
+              most-positive-fixnum)))
 
 ; Now set the "threshold" to the number of bytes computed above (unless that
 ; would be a no-op).
@@ -9405,11 +9383,16 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
           (min (floor memsize 8)
                (expt 2 31)))
     (setq *gc-min-threshold* ; no change if we were here already
-          (cond ((null threshold) (floor *max-mem-usage* 4))
-                ((posp threshold) threshold)
-                (t (error "The GC threshold must be a positive integer, but ~
-                           ~s is not!"
-                          threshold))))
+          (min (cond ((null threshold)
+                      (floor *max-mem-usage* 4))
+                     ((posp threshold) threshold)
+                     (t (error "The GC threshold must be a positive integer, ~
+                                but ~s is not!"
+                               threshold)))
+
+ ; CCL requires a fixnum for ccl::lisp-heap-gc-threshold.
+
+               most-positive-fixnum))
     (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
     (ccl::use-lisp-heap-gc-threshold)
     nil))

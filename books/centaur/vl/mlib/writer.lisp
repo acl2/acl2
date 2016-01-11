@@ -77,6 +77,21 @@ instead of @('show-atts').</p>"
         (misc  (vl-ps->misc)))
     (vl-ps-update-misc (acons :vl-hide-atts hidep misc))))
 
+(define vl-ps->use-origexprs-p (&key (ps 'ps))
+  :parents (verilog-printing)
+  :short "Should we print VL_ORIG_EXPR fields?"
+  :long "<p>See also @(see vl-ps-update-use-origexprs).</p>"
+  (cdr (assoc-equal :vl-use-origexprs (vl-ps->misc))))
+
+(define vl-ps-update-use-origexprs ((usep booleanp) &key (ps 'ps))
+  :parents (verilog-printing)
+  :short "Set whether we should print expressions as VL_ORIG_EXPRs, when
+they have such annotations."
+  :verbosep t
+  (let ((misc (vl-ps->misc)))
+    (vl-ps-update-misc (acons :vl-use-origexprs (and usep t) misc))))
+
+
 (define vl-simple-id-tail-string-p ((x stringp)
                                     (i natp)
                                     (len (eql len (length x))))
@@ -595,6 +610,23 @@ displays.  The module browser's web pages are responsible for defining the
                          (not (stringp x))))
          :hints(("Goal" :in-theory (enable vl-hidname-p)))))
 
+(local (defthm vl-expr-count-of-hons-assoc-equal
+         (implies (and (cdr (hons-assoc-equal name atts))
+                       (vl-atts-p atts))
+                  (< (Vl-expr-count (cdr (hons-assoc-equal name atts)))
+                     (vl-atts-count atts)))
+         :hints (("goal" :induct (hons-assoc-equal name atts)
+                  :expand ((vl-atts-count atts)
+                           (vl-atts-p atts))
+                  :in-theory (enable hons-assoc-equal
+                                     vl-maybe-expr-count)))
+         :rule-classes :linear))
+
+(local (defthm alistp-when-vl-atts-p-rw
+         (implies (vl-atts-p x)
+                  (alistp x))
+         :hints(("Goal" :in-theory (enable (tau-system))))))
+
 (defines vl-pp-expr
   :parents (verilog-printing)
   :short "Main pretty-printer for an expression."
@@ -693,8 +725,12 @@ displays.  The module browser's web pages are responsible for defining the
   (define vl-pp-valuerange ((x vl-valuerange-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-valuerange-count x) 10)
     (vl-valuerange-case x
-      :range (vl-pp-range x.range)
-      :single (vl-pp-expr x.expr)))
+      :valuerange-single (vl-pp-expr x.expr)
+      :valuerange-range (vl-ps-seq (vl-print "[")
+                                   (vl-pp-expr x.low)
+                                   (vl-print ":")
+                                   (vl-pp-expr x.high)
+                                   (vl-print "]"))))
 
   (define vl-pp-valuerangelist ((x vl-valuerangelist-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-valuerangelist-count x) 10)
@@ -756,6 +792,10 @@ displays.  The module browser's web pages are responsible for defining the
     :measure (two-nats-measure (vl-expr-count x) 10)
     :ruler-extenders :all
     (b* ((atts (vl-expr->atts x))
+         (origexpr (cdr (assoc-equal "VL_ORIG_EXPR" atts)))
+         ((when (and origexpr
+                     (vl-ps->use-origexprs-p)))
+          (vl-pp-expr origexpr))
          (unspecial-atts (vl-remove-keys (vl-pp-expr-special-atts) atts)))
       (vl-expr-case x
 
@@ -943,7 +983,10 @@ displays.  The module browser's web pages are responsible for defining the
       (if (atom x)
           ps
         (vl-ps-seq (vl-print-str (caar x))
-                   (if (cdar x) (vl-pp-expr (cdar x)) ps)
+                   (if (cdar x)
+                       (vl-ps-seq (vl-print " = ")
+                                  (vl-pp-expr (cdar x)))
+                     ps)
                    (if (atom (cdr x))
                        ps
                      (vl-ps-seq (vl-print ", ")
@@ -1129,23 +1172,24 @@ real Verilog file.</p>"
   (with-local-ps (vl-pp-expr x)))
 
 (define vl-pp-origexpr ((x vl-expr-p) &key (ps 'ps))
-  :parents (origexprs verilog-printing)
+  :parents (verilog-printing)
   :short "Pretty-print the \"original,\" un-transformed version of an
 expression."
   :long "<p>This is like @(see vl-pp-expr) but, if @('x') has a
 @('VL_ORIG_EXPR') attribute (see @(see origexprs)), we actually pretty-print
 the original version of @('x') rather than the current version (which may be
-simplified, and hence not correspond as closely to the original source
-code.)</p>
-
-<p>This only works if the @(see origexprs) transform is run early in the
-transformation sequence.  When there's no @('VL_ORIG_EXPR') attribute, we just
-print @('x') as is.</p>"
-  (b* ((atts   (vl-expr->atts x))
-       (lookup (cdr (hons-assoc-equal "VL_ORIG_EXPR" atts)))
-       ((when lookup)
-        (vl-pp-expr lookup)))
-    (vl-pp-expr x)))
+simplified, and hence not correspond as closely to the original source code.)
+Specifically, the elaboration transform may replace certain subexpressions with
+constants and leave behind an annotation giving the original version of
+@('x').</p>"
+  (b* ((misc (vl-ps->misc))
+       (prev-p (vl-ps->use-origexprs-p)))
+    (vl-ps-seq
+     (if (not prev-p)
+         (vl-ps-update-use-origexprs t)
+       ps)
+     (vl-pp-expr x)
+     (vl-ps-update-misc misc))))
 
 (define vl-pps-origexpr ((x vl-expr-p))
   :returns (pretty-x stringp :rule-classes :type-prescription)
@@ -3528,54 +3572,66 @@ expression into a string."
                (vl-pp-modelementlist (cdr x)))))
 
 (defines vl-pp-genelement
+
   (define vl-pp-genelement ((x vl-genelement-p) &key (ps 'ps))
     :measure (vl-genelement-count x)
     (vl-genelement-case x
-      :vl-genloop
-      (vl-ps-seq (vl-println "")
-                 (vl-print "for (")
-                 (vl-print-str x.var)
-                 (vl-print "=")
-                 (vl-pp-expr x.initval)
-                 (vl-print "; ")
-                 (vl-pp-expr x.continue)
-                 (vl-print "; ")
-                 (vl-print-str x.var)
-                 (vl-print "=")
-                 (vl-pp-expr x.nextval)
-                 (vl-print ")")
-                 (vl-pp-genelement x.body))
-      :vl-genif
-      (vl-ps-seq (vl-println "")
-                 (vl-print "if (")
-                 (vl-pp-expr x.test)
-                 (vl-print ")")
-                 (vl-pp-genelement x.then)
-                 (vl-print "else")
-                 (vl-pp-genelement x.else))
-      :vl-gencase
-      (vl-ps-seq (vl-println "")
-                 (vl-print "case (")
-                 (vl-pp-expr x.test)
-                 (vl-pp-gencaselist x.cases)
-                 (vl-println "")
-                 (vl-print "default: ")
-                 (vl-pp-genelement x.default))
-      :vl-genblock
+      :vl-genbase  (vl-pp-modelement x.item)
+      :vl-genbegin (vl-pp-genblock x.block)
+      :vl-genloop  (vl-ps-seq (vl-println "")
+                              (vl-print "for (")
+                              (vl-print-str x.var)
+                              (vl-print "=")
+                              (vl-pp-expr x.initval)
+                              (vl-print "; ")
+                              (vl-pp-expr x.continue)
+                              (vl-print "; ")
+                              (vl-print-str x.var)
+                              (vl-print "=")
+                              (vl-pp-expr x.nextval)
+                              (vl-print ")")
+                              (vl-pp-genblock x.body))
+      :vl-genif    (vl-ps-seq (vl-println "")
+                              (vl-print "if (")
+                              (vl-pp-expr x.test)
+                              (vl-print ")")
+                              (vl-pp-genblock x.then)
+                              (vl-print "else")
+                              (vl-pp-genblock x.else))
+      :vl-gencase  (vl-ps-seq (vl-println "")
+                              (vl-print "case (")
+                              (vl-pp-expr x.test)
+                              (vl-pp-gencaselist x.cases)
+                              (vl-println "")
+                              (vl-print "default: ")
+                              (vl-pp-genblock x.default))
+      :vl-genarray (vl-ps-seq (vl-println "")
+                              (vl-print "begin")
+                              (if x.name
+                                  (vl-ps-seq (vl-print " : ")
+                                             (vl-print-wirename x.name))
+                                ps)
+                              (vl-println "")
+                              (vl-pp-genblocklist x.blocks)
+                              (vl-println "end"))))
+
+  (define vl-pp-genblock ((x vl-genblock-p) &key (ps 'ps))
+    :measure (vl-genblock-count x)
+    (b* (((vl-genblock x)))
       (vl-ps-seq (vl-println "")
                  (vl-print "begin")
                  (if x.name
                      (vl-ps-seq (vl-print " : ")
-                                (vl-print-wirename x.name))
+                                (if (stringp x.name)
+                                    (vl-print-wirename x.name)
+                                  (vl-ps-seq (vl-print "\\[")
+                                             (vl-print x.name)
+                                             (vl-print "]"))))
                    ps)
                  (vl-println "")
                  (vl-pp-genelementlist x.elems)
                  (vl-println "end")
-                 (vl-println ""))
-      :vl-genarray
-      (vl-pp-genarrayblocklist x.blocks x.name)
-
-      :vl-genbase (vl-pp-modelement x.item)))
+                 (vl-println ""))))
 
   (define vl-pp-genelementlist ((x vl-genelementlist-p) &key (ps 'ps))
     :measure (vl-genelementlist-count x)
@@ -3592,38 +3648,16 @@ expression into a string."
         (vl-ps-seq (vl-println "")
                    (vl-pp-exprlist (caar x))
                    (vl-print ": ")
-                   (vl-pp-genelement (cdar x))
+                   (vl-pp-genblock (cdar x))
                    (vl-pp-gencaselist (cdr x))))))
 
-  (define vl-pp-genarrayblocklist ((x vl-genarrayblocklist-p) (name maybe-stringp)
+  (define vl-pp-genblocklist ((x vl-genblocklist-p)
                                    &key (ps 'ps))
-    :measure (vl-genarrayblocklist-count x)
+    :measure (vl-genblocklist-count x)
     (if (atom x)
         ps
-      (vl-ps-seq (vl-pp-genarrayblock (car x) name)
-                 (vl-pp-genarrayblocklist (cdr x) name))))
-
-  (define vl-pp-genarrayblock ((x vl-genarrayblock-p)
-                               (name maybe-stringp)
-                               &key (ps 'ps))
-    :measure (vl-genarrayblock-count x)
-    (b* (((vl-genarrayblock x)))
-      (vl-ps-seq (vl-println "")
-                 (vl-print "if(1) begin")
-                 (if name
-                     (vl-ps-seq (vl-print " : ")
-                                (vl-print "\\")
-                                (vl-print-wirename name)
-                                (vl-print "[")
-                                (if (< x.index 0)
-                                    (vl-print "-")
-                                  ps)
-                                (vl-print-nat (abs x.index))
-                                (vl-print "] "))
-                   ps)
-                 (vl-println "")
-                 (vl-pp-genelementlist x.elems)
-                 (vl-println "end")))))
+      (vl-ps-seq (vl-pp-genblock (car x))
+                 (vl-pp-genblocklist (cdr x))))))
 
 (define vl-pp-assertionlist ((x vl-assertionlist-p) &key (ps 'ps))
   (if (atom x)

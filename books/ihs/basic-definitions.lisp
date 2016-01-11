@@ -209,7 +209,7 @@ for inlined functions on Lisps like SBCL.</p>"
   (- x y))
 
 (define binary--
-  :parents (logops-definition)
+  :parents (logops-definitions)
   :short "@('(binary-- x y)') is the same as @('(- x y)'), but may symbolically
 simulate more efficiently in @(see gl)."
   ((x acl2-numberp)

@@ -1,6 +1,3 @@
-// I'm not sure if this rule is written down anywhere, but NCVerilog and VCS
-// both reject this.
-
 interface myiface ();
 
   logic [2:0] item;
@@ -16,7 +13,7 @@ endmodule
 
 module middleman () ;
 
-  myconsumer cs ( .iface(top.iface.consumer) );  // oops, can't use interface from another module
+  myconsumer cs ( .iface(top.iface.consumer) );  // oops, hierarchical reference to non-existing interface
 
 endmodule
 

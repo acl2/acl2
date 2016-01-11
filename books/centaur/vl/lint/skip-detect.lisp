@@ -507,11 +507,11 @@ collecting any problems that have been reported.</p>"
 
 <ul>
 
-<li>@('ctxexprs') is an @(see vl-exprctxalist-p) that associates expressions
+<li>@('ctxexprs') is an @(see vl-ctxexprlist) that associates expressions
 with their contexts.  Generally we expect that this alist includes every
 expression in a module.</li>
 
-<li>@('global-pats') is the @(see sd-patalist-p) that was constructed for all
+<li>@('global-pats') is the @(see sd-patalist) that was constructed for all
 names in the module, which is needed by @(see sd-patalist-compare).</li>
 
 </ul>

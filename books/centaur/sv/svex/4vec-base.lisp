@@ -143,7 +143,7 @@ make-4vec) and @(see make-honsed-4vec).</p>
 
 <tr><td>0</td>       <td>0,0,0,0,0,0,...infinitely many 0s...</td></tr>
 <tr><td>-1</td>      <td>1,1,1,1,1,1,...infinitely many 1s...</td></tr>
-<tr><td>(0 . -1)</td><td>X,X,X,X,X,X,...infinitely many Xs...</td></tr>
+<tr><td>(0 . -1)</td><td>Z,Z,Z,Z,Z,Z,...infinitely many Zs...</td></tr>
 
 
 <tr><td>4</td>      <td>0,0,1,0,0,0,...infinitely many 0s...</td></tr>
@@ -191,6 +191,7 @@ make-4vec) and @(see make-honsed-4vec).</p>
            (integerp (car x))
            (integerp (cdr x))
            (not (equal (car x) (cdr x))))))
+
 
 (local (in-theory (enable 4vec-p)))
 
@@ -303,6 +304,8 @@ want when building @(see expressions).</p>
     :equiv 4vec-equiv
     :define t
     :forward t))
+
+(fty::defoption maybe-4vec 4vec)
 
 (local (in-theory (enable 4vec-fix 4vec-equiv)))
 

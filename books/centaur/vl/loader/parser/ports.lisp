@@ -709,8 +709,7 @@ begin with one of:</p>
   :short "SystemVerilog-2012 only.  Top-level function for parsing port lists
 in both ANSI and non-ANSI styles."
 
-  :long "<p>See @(see sv-ansi-portdecls) and @(see sv-non-ansi-portdecls).  We
-match the following, contrived grammar rule:</p>
+  :long "<p>We match the following, contrived grammar rule:</p>
 
 @({
    vl_module_port_list ::= list_of_ports
@@ -1421,15 +1420,9 @@ rate, if this is correct, then when we are parsing a port and see @('identifier
 . identifier'), we can be sure it is an interface.</p>
 
 <p>The other tricky possibility is that we have a port such as @('foo_t foo').
-In this case, @('foo_t') might be an interface or a data type.  However, by
-adopting the VCS/NCV rule of \"types have to be declared first\", we can, at
-parse time, simply ask whether the initial identifier happens to be the name of
-a defined type.  This is implemented in @(see vl-parse-ansi-port-header).</p>
-
-<p>With interfaces out of the way, we only need to distinguish between variable
-port and net port types.  This is relatively easy since we can again just ask
-if the first identifier we see happens to be the name of a data type.  This is
-implemented in @(see vl-parse-port-declaration-head-2012).</p>")
+In this case, @('foo_t') might be an interface or a data type.  We do basic
+parsing in @(see vl-parse-port-declaration-head-2012) and then resolve whether
+we got a datatype or interface after parsing, in @(see port-resolve).</p>")
 
 (local (xdoc::set-default-parents parse-port-types))
 
@@ -1494,8 +1487,6 @@ an identifier (i.e., a port name) must follow."
                          | 'var' data_type
                          | 'var' [signing] {packed_dimension}
 })
-
-<p>We assume that we have already ruled out interface ports.</p>
 
 <p>(*) Since VL doesn't support user-defined net types, we don't implement the
 second @('net_port_type') case.</p>
@@ -2104,16 +2095,5 @@ except for the initial attributes.  Used for port declarations within modules."
 
 
 
-
-
-(define vl-genelementlist->portdecls ((x vl-genelementlist-p))
-  :returns (portdecls vl-portdecllist-p)
-  (if (atom x)
-      nil
-    (if (and (eq (vl-genelement-kind (car x)) :vl-genbase)
-             (eq (tag (vl-genbase->item (car x))) :vl-portdecl))
-        (cons (vl-genbase->item (car x))
-              (vl-genelementlist->portdecls (cdr x)))
-      (vl-genelementlist->portdecls (cdr x)))))
 
 

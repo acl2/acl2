@@ -159,24 +159,22 @@
        ((vl-fundecl lookup.item))
        (fnscopes (vl-elabscopes-traverse (rev lookup.elabpath) scopes))
        (info (vl-elabscopes-item-info lookup.item.name fnscopes))
+       (item (or info lookup.item))
+       ((unless (eq (tag item) :vl-fundecl))
+        ;; note: it looks like we're doing this twice but it's different this time
+        (mv (fatal :type :vl-selfsize-fail
+                   :msg "In function call ~a0, function name does not ~
+                        refer to a fundecl but instead ~a1"
+                   :args (list x item))
+            nil))
+       ((vl-fundecl item))
        ((mv err rettype)
-        (b* (((when info)
-              (vl-elabinfo-case info
-                :function (if (vl-datatype-resolved-p info.type)
-                              (mv nil info.type)
-                            (mv (vmsg "Programming error: returntype ~
-                                       in elabinfo not resolved"
-                                      lookup.item.name)
-                                nil))
-                :otherwise (mv (vmsg "~x0 stored instead of function"
-                                     (vl-elabinfo-kind info) lookup.item.name)
-                               nil))))
-          (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss)))
+        (vl-datatype-usertype-resolve item.rettype lookup.ss))
        ((when err)
         (mv (fatal :type :vl-typedecide-fail
                    :msg "In function call ~a0, the function's return ~
                          type ~a1 had unresolvable usertypes: ~@2"
-                   :args (list x lookup.item.rettype err))
+                   :args (list x item.rettype err))
             nil))
        ((unless (vl-datatype-packedp rettype))
         (mv (ok) nil))
@@ -341,17 +339,15 @@
   (define vl-expr-typedecide-aux
     ((x        vl-expr-p)
      (ss       vl-scopestack-p)
-     (scopes   vl-elabscopes-p) (mode     (or (eq mode :probably-wrong)
+     (scopes   vl-elabscopes-p)
+     (mode     (or (eq mode :probably-wrong)
                    (eq mode :probably-right))))
     :parents (vl-expr-typedecide)
     :short "Core of computing expression signedness."
 
-    :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>These are the same arguments as @(see vl-expr-typedecide) except for
-@('mode').  You should probably read @(see expression-sizing-minutia) to
-understand the valid modes:</p>
+    :long "<p>These are the same arguments as @(see vl-expr-typedecide) except
+for @('mode').  You should probably read @(see
+vl2014::expression-sizing-minutia) to understand the valid modes:</p>
 
 <ul>
 
@@ -455,7 +451,7 @@ produce unsigned values.</li>
                    :signedness (mv (ok) (if x.to.signedp :vl-signed :vl-unsigned))
                    :otherwise (vl-expr-typedecide-aux x.expr ss scopes mode))
 
-        ;; By the spec, it seems this always returns a 1-bit unsigned (test this)
+        ;; It seems this should always returns a 1-bit unsigned.
         :vl-inside (mv (ok) :vl-unsigned)
 
         ;; Tagged unions aren't vector types
@@ -544,7 +540,7 @@ produce unsigned values.</li>
 
 
 (define vl-expr-typedecide
-  :parents (vl-expr-size)
+  :parents (expr-tools)
   :short "Computation of expression signedness (main routine)."
   ((x        vl-expr-p)
    (ss vl-scopestack-p)
@@ -553,10 +549,7 @@ produce unsigned values.</li>
                (type     (and (vl-maybe-exprsign-p type)
                               (equal (vl-exprsign-p type) (if type t nil)))))
 
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We determine the signedness of an expression.  This function must
+  :long "<p>We determine the signedness of an expression.  This function must
 <b>only</b> be used on \"top-level\" and self-determined portions of
 expressions.  That is, consider an assignment like:</p>
 

@@ -33,14 +33,19 @@
 (include-book "rsh-concat")
 (include-book "eval")
 (include-book "vars")
-(defxdoc concat-rw.lisp :parents (svex-rewriting))
-(local (xdoc::set-default-parents svex-rewrite.lisp))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
-
 (local (std::add-default-post-define-hook :fix))
+
+
+(defxdoc rewriting-concatenations
+  :parents (rewriting)
+  :short "Special support for rewriting concatenations."
+  :long "<p>BOZO it would be nice to describe what this is for.</p>")
+
+(local (xdoc::set-default-parents rewriting-concatenations))
 
 (local (defthm 2vec-of-4vec->lower
            (implies (2vec-p x)

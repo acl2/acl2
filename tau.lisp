@@ -2221,8 +2221,7 @@
 ; formals.  That rule will be stored under fn on the property 'big-switch.
 
 (defun tau-simple-implicants (sign pred wrld)
-  (getprop pred (if sign 'pos-implicants 'neg-implicants)
-           nil 'current-acl2-world wrld))
+  (getpropc pred (if sign 'pos-implicants 'neg-implicants) nil wrld))
 
 ; Obviously Contradictory Recognizer Sets
 
@@ -2374,8 +2373,7 @@
 
   (cond
    ((enabled-xfnp fn ens wrld)
-    (let* ((ubk (getprop fn 'unevalable-but-known nil
-                         'current-acl2-world wrld))
+    (let* ((ubk (getpropc fn 'unevalable-but-known nil wrld))
            (temp (if ubk
                      (assoc-equal (car evg-lst) ubk)
                      nil)))
@@ -6697,10 +6695,10 @@
                             (putprop p
                                      'unevalable-but-known
                                      (cons (cons b nil) ; records that (p 'b) = nil
-                                           (getprop p
-                                                    'unevalable-but-known
-                                                    nil
-                                                    'current-acl2-world wrld))
+                                           (getpropc p
+                                                     'unevalable-but-known
+                                                     nil
+                                                     wrld))
                                      wrld)))
                        ((eq val nil)
                         (mv nil nil wrld))
@@ -6714,10 +6712,10 @@
                             (putprop p
                                      'unevalable-but-known
                                      (cons (cons b t) ; records that (p 'b) = t
-                                           (getprop p
-                                                    'unevalable-but-known
-                                                    nil
-                                                    'current-acl2-world wrld))
+                                           (getpropc p
+                                                     'unevalable-but-known
+                                                     nil
+                                                     wrld))
                                      wrld)))
                        ((eq val nil)
                         (mv t nil wrld))
@@ -7039,15 +7037,14 @@
 ; measures (:? v1 ... vk), since classicalp is called by
 ; get-non-classical-fns-from-list in support of get-non-classical-fns-aux.
 
-  (getprop fn 'classicalp
+  (getpropc fn 'classicalp
 
 ; We guarantee a 'classicalp property of nil for all non-classical
 ; functions.  We make no claims about the existence of a 'classicalp
 ; property for classical functions; in fact, as of Version_2.5 our
 ; intention is to put no 'classicalp property for classical functions.
 
-           t
-           'current-acl2-world wrld))
+           t wrld))
 
 ;; RAG - This function tests whether a list of names is made up purely
 ;; of classical function names (i.e., not descended from the
@@ -7103,12 +7100,11 @@
 ; putprop-unless.
 
 ;   (thm (equal (putprop-if-different sym prop val wrld)
-;               (let ((exception (getprop sym prop *acl2-property-unbound*
-;                                         'current-acl2-world wrld)))
+;               (let ((exception (getpropc sym prop *acl2-property-unbound*
+;                                          wrld)))
 ;                 (putprop-unless sym prop val exception wrld))))
 
-  (if (equal (getprop sym prop *acl2-property-unbound*
-                      'current-acl2-world wrld)
+  (if (equal (getpropc sym prop *acl2-property-unbound* wrld)
              val)
       wrld
       (putprop sym prop val wrld)))
@@ -7162,7 +7158,7 @@
 ; This is an attempt to minimize the differences between regenerations of tau
 ; databases under different enabled structures.
 
-  (let ((old-pair (getprop fn 'tau-pair-saved nil 'current-acl2-world wrld)))
+  (let ((old-pair (getpropc fn 'tau-pair-saved nil wrld)))
     (if old-pair
         (putprop fn 'tau-pair old-pair wrld)
         (let* ((nexti (global-val 'tau-next-index wrld))
@@ -7187,7 +7183,7 @@
 ; :domain in the :pos-implicants is ignored.
 
   (let* ((wrld1 (putprop-tau-pair fn wrld))
-         (tau-pair (getprop fn 'tau-pair nil 'current-acl2-world wrld1))
+         (tau-pair (getpropc fn 'tau-pair nil wrld1))
          (wrld2 (putprop fn 'pos-implicants
                          (make tau
                                :pos-evg nil
@@ -7234,7 +7230,7 @@
                (and (not (variablep atm))
                     (not (fquotep atm))
                     (symbolp (ffn-symb atm))
-                    (getprop (ffn-symb atm) 'tau-pair nil 'current-acl2-world wrld)
+                    (getpropc (ffn-symb atm) 'tau-pair nil wrld)
                     (quotep (fargn atm 1))))))
 
 (defun set-tau-runes (flg val wrld)
@@ -7272,7 +7268,7 @@
   (declare (ignore hyps))
   (let ((fn (ffn-symb (fargn concl 1))))
     (cond
-     ((getprop fn 'tau-pair nil 'current-acl2-world wrld)
+     ((getpropc fn 'tau-pair nil wrld)
 
 ; We still add rune to the global-value of tau-runes even though the rune
 ; doesn't otherwise change our world.  The reason is simply that we think the
@@ -7290,7 +7286,7 @@
                 (evg (cadr (fargn atm 1))))
             (putprop fn 'unevalable-but-known
                      (cons (cons evg (if sign nil t))
-                           (getprop fn 'unevalable-but-known nil 'current-acl2-world wrld))
+                           (getpropc fn 'unevalable-but-known nil wrld))
                      (set-tau-runes nil rune wrld)))))
 
 ; On Tau-Like Terms
@@ -7382,7 +7378,7 @@
        ((fn e)
         (cond
          ((symbolp fn)
-          (let ((tau-pair (getprop fn 'tau-pair nil 'current-acl2-world wrld)))
+          (let ((tau-pair (getpropc fn 'tau-pair nil wrld)))
             (cond
              (tau-pair
               (let ((next-criterion (tau-like-subject-criterion criterion e)))
@@ -7880,8 +7876,8 @@
 
                      (cond
                       ((eql form 1)
-                       (let ((sigs (getprop fn 'signature-rules-form-1 nil
-                                            'current-acl2-world wrld)))
+                       (let ((sigs (getpropc fn 'signature-rules-form-1 nil
+                                             wrld)))
                          (if (member-equal rule sigs)
                              wrld
                              (set-tau-runes nil rune
@@ -7889,8 +7885,8 @@
                                                      'signature-rules-form-1
                                                      (cons rule sigs)
                                                      wrld)))))
-                      (t (let ((sigs (getprop fn 'signature-rules-form-2 nil
-                                              'current-acl2-world wrld)))
+                      (t (let ((sigs (getpropc fn 'signature-rules-form-2 nil
+                                               wrld)))
                            (if (member-equal rule (nth i sigs))
                                wrld
                                (set-tau-runes
@@ -7972,8 +7968,8 @@
 
         (symbolp fn)
         (not (equal fn 'quote))
-        (not (getprop fn 'tau-pair nil 'current-acl2-world wrld))
-        (not (getprop fn 'big-switch nil 'current-acl2-world wrld))
+        (not (getpropc fn 'tau-pair nil wrld))
+        (not (getpropc fn 'big-switch nil wrld))
         (symbol-listp vars)
         (no-duplicatesp vars)
         test-vars
@@ -8540,8 +8536,7 @@
   (let ((subject-fn (access bounder-correctness bc :subject-fn)))
     (cond
      ((equal form 1)
-      (let* ((bounders0 (getprop subject-fn 'tau-bounders-form-1 nil
-                                 'current-acl2-world wrld))
+      (let* ((bounders0 (getpropc subject-fn 'tau-bounders-form-1 nil wrld))
              (bounders1 (add-bounder-to-bounders bc bounders0)))
         (if (equal bounders0 bounders1)
             wrld
@@ -8551,8 +8546,7 @@
                                     bounders1
                                     wrld)))))
      (t
-      (let* ((slots (getprop subject-fn 'tau-bounders-form-2 nil
-                             'current-acl2-world wrld))
+      (let* ((slots (getpropc subject-fn 'tau-bounders-form-2 nil wrld))
              (bounders0 (nth j slots))
              (bounders1 (add-bounder-to-bounders bc bounders0)))
         (if (equal bounders0 bounders1)
@@ -9110,7 +9104,7 @@
 ; Return the def-body originally added for fn in wrld, identified as the body
 ; whose rune has base symbol fn.
 
-  (original-def-body1 fn (getprop fn 'def-bodies nil 'current-acl2-world wrld)))
+  (original-def-body1 fn (getpropc fn 'def-bodies nil wrld)))
 
 (defun tau-like-propositionp (var term wrld)
 
@@ -9759,8 +9753,7 @@
               (t (tau-subrs def-rune fn formals rhs ens wrld)))))
         (mv-let (msgp wrld)
                 (tau-rules-from-type-prescriptions
-                 (getprop fn 'type-prescriptions nil
-                          'current-acl2-world wrld)
+                 (getpropc fn 'type-prescriptions nil wrld)
                  fn ens wrld wrld0)
                 (cond
                  (msgp (mv msgp wrld0))
@@ -9914,15 +9907,15 @@
 ; We follow the Tau Msgp Protocol and return (mv msgp wrld').  No Change Loser
 ; on wrld0.
 
-  (let* ((classes (getprop name 'classes nil 'current-acl2-world wrld0))
+  (let* ((classes (getpropc name 'classes nil wrld0))
          (terms-and-runes
           (corollaries-and-runes-of-enabled-rules
            (or (not auto-modep)
                (assoc-eq :tau-system classes))
            classes
-           (getprop name 'runic-mapping-pairs nil 'current-acl2-world wrld0)
+           (getpropc name 'runic-mapping-pairs nil wrld0)
            ens
-           (getprop name 'theorem nil 'current-acl2-world wrld0))))
+           (getpropc name 'theorem nil wrld0))))
     (tau-visit-defthm1 first-visitp terms-and-runes ens wrld0 wrld0)))
 
 (defun tau-visit-event (first-visitp ev-type namex auto-modep ens
@@ -10105,10 +10098,10 @@
            (cond
             (temp (mv (cdr temp) calist))
             (t (let ((val (apply-conjunctive-tau-rules1
-                           (getprop 'tau-conjunctive-rules
-                                    'global-value
-                                    nil
-                                    'current-acl2-world wrld)
+                           (getpropc 'tau-conjunctive-rules
+                                     'global-value
+                                     nil
+                                     wrld)
                            tau
                            ens
                            wrld
@@ -11574,13 +11567,11 @@
                       (not (fquotep (fargn term 2)))
                       (not (flambdap (ffn-symb (fargn term 2))))
                       (or (nth (cadr (fargn term 1))
-                               (getprop (ffn-symb (fargn term 2))
-                                        'signature-rules-form-2 nil
-                                        'current-acl2-world wrld))
+                               (getpropc (ffn-symb (fargn term 2))
+                                         'signature-rules-form-2 nil wrld))
                           (nth (cadr (fargn term 1))
-                               (getprop (ffn-symb (fargn term 2))
-                                        'tau-bounders-form-2 nil
-                                        'current-acl2-world wrld))))
+                               (getpropc (ffn-symb (fargn term 2))
+                                         'tau-bounders-form-2 nil wrld))))
 
 ; We are dealing with (MV-NTH 'i (fn a1 ... ak)), or a synonym of MV-NTH, where
 ; the ith slot of fn has some signature rules.  We confine our attention to
@@ -11590,17 +11581,15 @@
 
                  (let* ((fn (ffn-symb (fargn term 2)))
                         (sigrules (nth (cadr (fargn term 1))
-                                       (getprop fn
-                                                'signature-rules-form-2
-                                                nil
-                                                'current-acl2-world
-                                                wrld)))
+                                       (getpropc fn
+                                                 'signature-rules-form-2
+                                                 nil
+                                                 wrld)))
                         (bounders (nth (cadr (fargn term 1))
-                                       (getprop fn
-                                                'tau-bounders-form-2
-                                                nil
-                                                'current-acl2-world
-                                                wrld))))
+                                       (getpropc fn
+                                                 'tau-bounders-form-2
+                                                 nil
+                                                 wrld))))
                    (mv-let
                     (actual-tau-lst calist)
                     (tau-term-lst nil
@@ -11665,15 +11654,12 @@
                     (mv *tau-t* calist))
                    ((eq temp nil)
                     (mv *tau-nil* calist))
-                   (t (mv (getprop 'booleanp 'pos-implicants nil
-                                   'current-acl2-world wrld)
+                   (t (mv (getpropc 'booleanp 'pos-implicants nil wrld)
                           calist))))))))
             (t (let* ((fn (ffn-symb term))
-                      (sigrules (getprop fn 'signature-rules-form-1 nil
-                                         'current-acl2-world wrld))
+                      (sigrules (getpropc fn 'signature-rules-form-1 nil wrld))
 
-                      (bounders (getprop fn 'tau-bounders-form-1 nil
-                                         'current-acl2-world wrld)))
+                      (bounders (getpropc fn 'tau-bounders-form-1 nil wrld)))
                  (cond
                   ((and (null sigrules)
                         (null bounders)
@@ -11810,8 +11796,7 @@
    ((and (nvariablep term)
          (not (fquotep term))
          (not (flambdap (ffn-symb term))))
-    (let* ((bs (getprop (ffn-symb term)
-                        'big-switch nil 'current-acl2-world wrld)))
+    (let* ((bs (getpropc (ffn-symb term) 'big-switch nil wrld)))
       (cond
        (bs
         (let ((switch-val (nth (access big-switch-rule bs :switch-var-pos)
@@ -12470,10 +12455,10 @@
 
   (cond
    ((endp preds) (list (merge-sort-lexorder ans) max-block))
-   (t (let ((pos-size (tau-size (getprop (car preds) 'pos-implicants nil
-                                         'current-acl2-world wrld)))
-            (neg-size (tau-size (getprop (car preds) 'neg-implicants nil
-                                         'current-acl2-world wrld))))
+   (t (let ((pos-size (tau-size (getpropc (car preds) 'pos-implicants nil
+                                          wrld)))
+            (neg-size (tau-size (getpropc (car preds) 'neg-implicants nil
+                                          wrld))))
         (tau-get-stats-on-implicant-sizes
          (cdr preds)
          wrld
@@ -12732,10 +12717,8 @@
                                         multi-sig-cnt-1 multi-sig-cnt-2
                                         multi-sig-cnt-alist
                                         rules-with-dependent-hyps)
-  (let ((sigs1 (getprop fn 'signature-rules-form-1 nil
-                        'current-acl2-world wrld))
-        (sigs2 (getprop fn 'signature-rules-form-2 nil
-                        'current-acl2-world wrld)))
+  (let ((sigs1 (getpropc fn 'signature-rules-form-1 nil wrld))
+        (sigs2 (getpropc fn 'signature-rules-form-2 nil wrld)))
     (mv-let
      (fn-cnt-1 fn-cnt-2 fn-cnt-1-and-2)
      (cond
@@ -12835,8 +12818,8 @@
               ,(nth (floor (length implicants) 2) implicants))
             (nth (floor (length implicants) 2) implicants)))
       (:conjunctive-rules
-       ,(length (getprop 'tau-conjunctive-rules 'global-value
-                         nil 'current-acl2-world wrld)))
+       ,(length (getpropc 'tau-conjunctive-rules 'global-value
+                         nil wrld)))
       ,@(tau-get-stats-on-signatures fns wrld 0 0 0 0 0 nil nil)
       (:big-switches ,(collect-tau-big-switches wrld nil))
       (:mv-nth-synonyms ,(global-val 'tau-mv-nth-synonyms wrld))
@@ -12890,12 +12873,10 @@
     (cond
      ((and (symbolp fn)
            (arity fn wrld))
-      (let ((tau-pair (getprop fn 'tau-pair nil 'current-acl2-world wrld))
-            (sigs1 (getprop fn 'signature-rules-form-1 nil
-                            'current-acl2-world wrld))
-            (sigs2 (getprop fn 'signature-rules-form-2 nil
-                            'current-acl2-world wrld))
-            (big-switch (getprop fn 'big-switch nil 'current-acl2-world wrld))
+      (let ((tau-pair (getpropc fn 'tau-pair nil wrld))
+            (sigs1 (getpropc fn 'signature-rules-form-1 nil wrld))
+            (sigs2 (getpropc fn 'signature-rules-form-2 nil wrld))
+            (big-switch (getpropc fn 'big-switch nil wrld))
             (mv-nth-synonym (member-eq fn (global-val 'tau-mv-nth-synonyms
                                                       wrld))))
         (cond
@@ -12905,11 +12886,11 @@
              ,(car tau-pair))
             (pos-implicants
              ,(decode-tau
-               (getprop fn 'pos-implicants *tau-empty* 'current-acl2-world wrld)
+               (getpropc fn 'pos-implicants *tau-empty* wrld)
                'v))
             (neg-implicants
              ,(decode-tau
-               (getprop fn 'neg-implicants *tau-empty* 'current-acl2-world wrld)
+               (getpropc fn 'neg-implicants *tau-empty* wrld)
                'v))
             (signatures
              ,(let ((sigs1 (decode-tau-signature-rules nil fn sigs1 wrld))

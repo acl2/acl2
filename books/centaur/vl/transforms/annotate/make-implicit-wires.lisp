@@ -69,9 +69,9 @@ a separate transform.</p>
 
 <h3>Note: Special Transform!</h3>
 
-<p>This transform is unique and we generally expect to run it as the first step
-after parsing.  Normally it is invoked as part of @(see annotate).  It is also
-closely related to @(see shadowcheck)&mdash;indeed, it invokes
+<p>This transform is unique and we generally expect to run it as a very early
+step after parsing.  Normally it is invoked as part of @(see annotate).  It is
+also closely related to @(see shadowcheck)&mdash;indeed, it invokes
 shadowcheck&mdash; and the two should generally be regarded as a single,
 unified transition from just-parsed modules to a more canonical form.</p>
 
@@ -295,10 +295,9 @@ which occur in the left-hand sides of continuous assignments.  For assignments,
 we always issue a non-fatal warning that says Verilog-XL doesn't add implicit
 nets here, and we always process the left-hand side first (like NCVerilog).  We
 add the wire declarations at the locations in which they are implicitly
-declared, and mark them with the @('VL_IMPLICIT') attribute, which is useful in
-@(see typo-detection).</p>")
-
-
+declared, and mark them with the @('VL_IMPLICIT') attribute.  Historically this
+attribute was used in a ``typo detection'' @(see lint) check, which has become
+defunct but can probably be easily revived.</p>")
 
 ; FEATURE-CREEP WARNING.
 ;
@@ -323,20 +322,15 @@ declared, and mark them with the @('VL_IMPLICIT') attribute, which is useful in
   (define vl-expr-names-for-implicit-nrev ((x vl-expr-p) nrev)
     :measure (vl-expr-count x)
     :flag :expr
+    ;; Don't try to understand this.  It's just an nrev-optimized version of
+    ;; vl-expr-names-for-implicit, which is very tricky.  See its docs below.
     (vl-expr-case x
       (:vl-index
-       ;; Want only plain names with no selects/indexing, and don't want to
-       ;; descend into any select/indexing subexpressions.
        (if (and (vl-idscope-p x.scope)
                 (vl-partselect-case x.part :none)
                 (atom x.indices))
            (nrev-push (vl-idscope->name x.scope) nrev)
          (nrev-fix nrev)))
-      ;; The pattern case is subtle.  See particularly vl-patternkey and
-      ;; vl-patternkey-ambiguity.  Historically we had problems with pattern
-      ;; keys like "foo" fooling us into introducing implicit wires.  Now our
-      ;; parser makes sure to treat those as structure names, so we can just
-      ;; fall through to the default here and it works out correctly.
       (:otherwise
        (vl-exprlist-names-for-implicit-nrev (vl-expr->subexprs x) nrev))))
 
@@ -630,7 +624,7 @@ Our version of VCS says this isn't yet implemented.</li>
        ((mv warnings st) (vl-blockitemlist-update-implicit (cdr x) st warnings)))
     (mv warnings st)))
 
-(define vl-genelement-make-implicit-wires
+(define vl-genbase-make-implicit-wires
   :short "Make implicit wires for a single modelement."
   ((x        vl-genelement-p
              "Base genelement to process.")
@@ -837,126 +831,119 @@ Our version of VCS says this isn't yet implemented.</li>
 ;;                   (vl-modelementlist-p x))
 ;;          :hints(("Goal" :induct (len x)))))
 
-
-(defines vl-make-implicit-wires-aux
+(defines vl-genblock-make-implicit-wires
   :verify-guards nil
 
-  (define vl-make-implicit-wires-generate
-    :short "Make implicit wires for a generate statement."
-    ((x        vl-genelement-p)
-     (st       vl-implicitst-p)
-     (warnings vl-warninglist-p))
-    :returns (mv (new-warnings vl-warninglist-p)
-                 (new-x        vl-genelement-p "Extended with implicit declarations."))
+  (define vl-genblock-make-implicit-wires ((x        vl-genblock-p)
+                                           (st       vl-implicitst-p)
+                                           (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x    vl-genblock-p))
+    :measure (vl-genblock-count x)
     :long "<p>Per SystemVerilog-2012 Section 6.10: wires that are implicitly
            declared within a generate block are local to that generate block.
            So we collect the implicit declarations for each particular generate
-           block without leaking them into the outer context.</p>
+           block without leaking them into the outer context.</p>"
+    (b* (((vl-genblock x))
+         ((mv warnings new-st new-elems)
+          (vl-genelementlist-make-implicit-wires x.elems st nil warnings))
+         (- (vl-implicitsts-restore-fast-alists st new-st))
+         (new-x (change-vl-genblock x :elems (rev new-elems))))
+      (mv warnings new-x)))
 
-           <p>This function should be called from outside (including
-           vl-make-implicit-wires-aux) on non-genbase elements.  However,
-           recursive calls may be on genbases, which are then assumed to be
-           stand-alone elements that are in a generate construct by
-           themselves.</p>"
+  (define vl-genelementlist-make-implicit-wires ((x        vl-genelementlist-p)
+                                                 (st       vl-implicitst-p)
+                                                 (newitems vl-genelementlist-p)
+                                                 (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (st       vl-implicitst-p)
+                 (newitems vl-genelementlist-p))
+    :measure (vl-genelementlist-count x)
+    (b* ((st       (vl-implicitst-fix st))
+         (newitems (vl-genelementlist-fix newitems))
+         ((when (atom x))
+          (mv (ok) st newitems))
+         ((mv warnings st newitems) (vl-genelement-make-implicit-wires (car x) st newitems warnings))
+         ((mv warnings st newitems) (vl-genelementlist-make-implicit-wires (cdr x) st newitems warnings)))
+      (mv warnings st newitems)))
+
+  (define vl-genelement-make-implicit-wires ((x        vl-genelement-p)
+                                             (st       vl-implicitst-p)
+                                             (newitems vl-genelementlist-p)
+                                             (warnings vl-warninglist-p))
     :measure (vl-genelement-count x)
-    (vl-genelement-case x
+    :returns (mv (new-warnings vl-warninglist-p)
+                 (st           vl-implicitst-p)
+                 (newitems     vl-genelementlist-p))
+    (b* ((newitems (vl-genelementlist-fix newitems))
+         (st       (vl-implicitst-fix st)))
+      (vl-genelement-case x
+        :vl-genbase
+        (vl-genbase-make-implicit-wires x st newitems warnings)
 
-      :vl-genloop
-      (b* (((vl-implicitst st))
-           ;; Bind the loop index var in the state first.
-           (new-decls              (hons-acons x.var nil st.decls))
-           (local-st               (change-vl-implicitst st :decls new-decls))
-           ((mv warnings new-body) (vl-make-implicit-wires-generate x.body local-st warnings))
-           (-                      (vl-implicitsts-restore-fast-alists st local-st))
-           (new-x                  (change-vl-genloop x :body new-body)))
-        (mv warnings new-x))
+        ;; BOZO totally wrong -- acts like every block is a scope, even unnamed blocks.
+        :vl-genbegin
+        (b* (((vl-implicitst st))
+             ((mv warnings new-block) (vl-genblock-make-implicit-wires x.block st warnings))
+             (name                    (vl-genblock->name x.block))
+             (new-decls               (if name (hons-acons name nil st.decls) st.decls))
+             (st                      (change-vl-implicitst st :decls new-decls))
+             (new-x                   (change-vl-genbegin x :block new-block)))
+          (mv warnings st (cons new-x newitems)))
 
-      :vl-genif
-      (b* (((mv warnings new-then) (vl-make-implicit-wires-generate x.then st warnings))
-           ((mv warnings new-else) (vl-make-implicit-wires-generate x.else st warnings))
-           (new-x                  (change-vl-genif x :then new-then :else new-else)))
-        (mv warnings new-x))
+        :vl-genloop
+        (b* (((vl-implicitst st))
+             ;; Bind the loop index var in the state first.
+             (new-decls              (hons-acons x.var nil st.decls))
+             (local-st               (change-vl-implicitst st :decls new-decls))
+             ((mv warnings new-body) (vl-genblock-make-implicit-wires x.body local-st warnings))
+             (-                      (vl-implicitsts-restore-fast-alists st local-st))
+             (new-x                  (change-vl-genloop x :body new-body)))
+          ;; BOZO this state isn't going to be quite right -- should also declare
+          ;; names from blocks... actually maybe we should just do that as part
+          ;; of genblock-make-implicit-wires and have it return an updated state?
+          (mv warnings st (cons new-x newitems)))
 
-      :vl-gencase
-      (b* (((mv warnings new-cases)   (vl-make-implicit-wires-gencaselist x.cases st warnings))
-           ((mv warnings new-default) (vl-make-implicit-wires-generate x.default st warnings))
-           (new-x                     (change-vl-gencase x :cases new-cases :default new-default)))
-        (mv warnings new-x))
+        :vl-genif
+        (b* (((mv warnings new-then) (vl-genblock-make-implicit-wires x.then st warnings))
+             ((mv warnings new-else) (vl-genblock-make-implicit-wires x.else st warnings))
+             (new-x                  (change-vl-genif x :then new-then :else new-else)))
+          ;; BOZO do something about declaring the named generate blocks from x.then/x.else
+          (mv warnings st (cons new-x newitems)))
 
-      :vl-genblock
-      (b* (((mv warnings new-st new-elems) (vl-make-implicit-wires-aux x.elems st nil warnings))
-           (- (vl-implicitsts-restore-fast-alists st new-st))
-           (new-x (change-vl-genblock x :elems new-elems)))
-        (mv warnings new-x))
+        :vl-gencase
+        (b* (((mv warnings new-cases)   (vl-gencaselist-make-implicit-wires x.cases st warnings))
+             ((mv warnings new-default) (vl-genblock-make-implicit-wires x.default st warnings))
+             (new-x                     (change-vl-gencase x :cases new-cases :default new-default)))
+          ;; BOZO do something about declaring the named generate blocks from the cases/default
+          (mv warnings st (cons new-x newitems)))
 
-      :vl-genbase
-      (b* (((mv warnings new-st new-elems) (vl-genelement-make-implicit-wires x st nil warnings))
-           (- (vl-implicitsts-restore-fast-alists st new-st))
-           (new-x (make-vl-genblock :elems new-elems :loc (vl-modelement->loc x.item))))
-        (mv warnings new-x))
+        :otherwise
+        ;; This should be fine, don't really need to support genarray things
+        ;; here, because this is part of annotate.
+        (mv (fatal :type :vl-programming-error
+                   :msg "~a0: Didn't expect to see this kind of generate element yet."
+                   :args (list (vl-genelement-fix x)))
+            st
+            (cons (vl-genelement-fix x) newitems)))))
 
-      :otherwise
-      (mv (warn :type :vl-programming-error
-                :msg "~a0: Didn't expect to see this kind of generate element yet."
-                :args (list (vl-genelement-fix x)))
-          (vl-genelement-fix x))))
-
-  (define vl-make-implicit-wires-gencaselist ((x        vl-gencaselist-p)
+  (define vl-gencaselist-make-implicit-wires ((x        vl-gencaselist-p)
                                               (st       vl-implicitst-p)
                                               (warnings vl-warninglist-p))
     :returns (mv (new-warnings vl-warninglist-p)
                  (new-x        vl-gencaselist-p "Extended with implicit declarations."))
     :measure (vl-gencaselist-count x)
     (b* ((x (vl-gencaselist-fix x))
-         ((when (atom x)) (mv (vl-warninglist-fix warnings) nil))
-         ((mv warnings new-elem) (vl-make-implicit-wires-generate (cdar x) st warnings))
-         ((mv warnings new-rest) (vl-make-implicit-wires-gencaselist (cdr x) st warnings))
+         ((when (atom x))
+          (mv (ok) nil))
+         ((mv warnings new-elem) (vl-genblock-make-implicit-wires (cdar x) st warnings))
+         ((mv warnings new-rest) (vl-gencaselist-make-implicit-wires (cdr x) st warnings))
          (new-x (cons (cons (caar x) new-elem) new-rest)))
       (mv warnings new-x)))
 
-  (define vl-make-implicit-wires-aux
-    :short "Main function for adding implicit wires."
-    ((x        vl-genelementlist-p "Elements to process in parse order.")
-     (st       vl-implicitst-p)
-     (newitems vl-genelementlist-p
-               "Accumulator for rewriting X and inserting implicit variable
-                declarations right where they occur.")
-     (warnings vl-warninglist-p))
-    :returns (mv (new-warnings vl-warninglist-p)
-                 (new-st       vl-implicitst-p)
-                 (newitems     vl-genelementlist-p))
-    :measure (vl-genelementlist-count x)
-
-    :long "<p>Note that to keep this code simple, we don't try to defend
-           against multiply declared names here.</p>
-
-           <p>We don't try to add any port declarations here, because we have
-           to sort of get through the whole module to make sure there isn't an
-           explicit declaration later on.  We handle that in @(see
-           vl-make-implicit-wires-main).</p>"
-
-    (b* ((x        (vl-genelementlist-fix x))
-         (st       (vl-implicitst-fix st))
-         (warnings (vl-warninglist-fix warnings))
-         (newitems (vl-genelementlist-fix newitems))
-
-         ((when (atom x))
-          (mv warnings st newitems))
-
-         (elem (car x))
-
-         ((unless (vl-genelement-case elem :vl-genbase))
-          (b* (((mv warnings new-elem)
-                (vl-make-implicit-wires-generate elem st warnings))
-               (newitems (cons new-elem newitems)))
-            (vl-make-implicit-wires-aux (cdr x) st newitems warnings)))
-
-         ((mv warnings st newitems)
-          (vl-genelement-make-implicit-wires elem st newitems warnings)))
-      (vl-make-implicit-wires-aux (cdr x) st newitems warnings)))
   ///
-  (verify-guards vl-make-implicit-wires-aux)
-  (deffixequiv-mutual vl-make-implicit-wires-aux))
+  (verify-guards vl-genblock-make-implicit-wires)
+  (deffixequiv-mutual vl-genblock-make-implicit-wires))
 
 
 (define vl-make-port-implicit-wires
@@ -1017,7 +1004,7 @@ Our version of VCS says this isn't yet implemented.</li>
                                     :ss        ss))
        (newitems nil)
        ;; Add regular implicit wires.  This reverses the items.
-       ((mv warnings st newitems) (vl-make-implicit-wires-aux loaditems st newitems warnings))
+       ((mv warnings st newitems) (vl-genelementlist-make-implicit-wires loaditems st newitems warnings))
        ;; Add port implicit wires.  This reverses them again so they're back in parse order.
        ((vl-implicitst st))
        (newitems (vl-make-port-implicit-wires newitems st.decls nil))
@@ -1046,6 +1033,248 @@ Our version of VCS says this isn't yet implemented.</li>
 ;;                                (vl-print-warnings (butlast warnings-out
 ;;                                                            (len warnings)))))))))
 
+(defsection implicit-wires-generate-scoping
+  :short "Some details about generate block scoping quirks which affect
+implicit wire handling and other aspects of scoping."
+
+  :long "<p>AFAICT none of the following is discussed in the SystemVerilog-2012
+standard.</p>
+
+<p>Unlike any other kind of @('generate') statement, it seems that plain old
+@('begin ... end') style generate blocks with no names are treated by
+commercial simulators in a special way.  In particular, they don't (at least at
+the top level; see below) introduce new scopes.</p>
+
+<p>This has implications for correctly introducing implicit wires and also for
+scoping in general.  We want to be smart enough to prohibit things like:</p>
+
+@({
+     module m;
+       not(v, w);       // implicit declaration of w
+       begin
+         wire w = 1;    // illegal (redefinition of w)
+       end
+     endmodule
+})
+
+<p>while at the same time allowing legal things like:</p>
+
+@({
+     module m;
+       not(v, w);       // implicit declaration of w
+       begin : myblock
+         wire w = 1;    // fine (this is a new scope)
+       end
+     endmodule
+})
+
+
+<h5>Top-level begin/end: no name = no scope</h5>
+
+<p>On both NCV and VCS, at least at the top level of a module, an unnamed block
+does NOT appear to introduce a new scope.  Instead, wires declared inside it
+become visible to the rest of the module after the generate, just as if they
+were declared before the begin/end block.</p>
+
+<p>Moreover, the following seem to be roughly(*) equivalent,</p>
+
+@({
+     module m ;                    module m ;
+       begin
+         ...              vs.           ...
+       end
+     endmodule                     endmodule
+})
+
+<p>(*) Exceptions we're aware of: begin/end blocks aren't allowed to have
+ports, specify blocks, and specparams (Section 27.3) and parameter declarations
+inside of begin/end blocks are supposed to be treated as localparams.  Testing
+suggests that these restrictions still hold for unnamed top-level begin/end
+blocks.  See especially @(see vl-convert-sub-generate-paramdecls).</p>
+
+
+<h5>Interior begin/end: no name = unclear scope</h5>
+
+<p>We find that NCV and VCS <b>disagree</b> about the handling of scopes for
+nested begin/end generate blocks.  In particular, consider something like:</p>
+
+@({
+    module m ;
+    begin
+      wire [3:0] w1 = 0;
+      begin
+        wire [3:0] w2 = 1;
+      end
+      wire [3:0] w3 = w1;
+      wire [3:0] w4 = w2;
+    end
+    endmodule
+})
+
+<p>This code is happily accepted by NCVerilog, suggesting that the inner
+begin/end block is not given its own scope.  However, VCS instead produces an
+error saying that @('w2') is not declared, which suggests that VCS treats
+interior begin/end blocks as new scopes.  Note however that VCS still treats
+top-level begin/end blocks as not being new scopes.  Messy.</p>
+
+<p>In VL we choose to follow the behavior of NCVerilog since it is seems more
+consistent.  That is, we will universally regard any unnamed begin/end generate
+blocks as <b>not</b> introducing a scope.</p>
+
+
+<h5>Eliminating begin/end blocks</h5>
+
+<p>Since we are going to treat unnamed begin/end blocks as not having their own
+scopes, there's really no reason to keep them around.</p>
+
+<p>It also seems like a good idea to get rid of them.  If we keep unnamed
+begin/end blocks around, then when building scopes for @(see vl-scopestack)s,
+we would need to would need to collect all the items from (say) the module, and
+then also dive down into the begin/end blocks and (recursively) collect up the
+items within them.  It seems much nicer and simpler to inline the contents of
+these generate blocks into their surroundings.  Similarly we would need to do
+this sort of thing for packages.</p>
+
+<p>We do this inlining as part of introducing implicit wires.  This seems like
+a reasonable place: it certainly needs to happen before or during implicit wire
+introduction in order to get implicit wires right.  It also needs to happen
+before we create scopestacks for shadowchecking.</p>")
+
+;; BOZO implement generate handling as described above...
+
+(local (xdoc::set-default-parents implicit-wires-generate-scoping))
+
+(defines vl-genelementlist-flatten
+  :short "Special flattening of unnamed @('begin/end') blocks."
+  :long "<p>See @(see implicit-wires-generate-scoping).  Here we flatten the
+         unnamed begin/end blocks and take care of weird special cases like
+         checking that generates have no ports, converting @('parameter')s to
+         @('localparam')s within generates, etc.</p>"
+  :verify-guards nil
+  (define vl-genblock-flatten ((x vl-genblock-p)
+                               (warnings vl-warninglist-p))
+    ;; Used for IF, CASE, and FOR loop bodies
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x    vl-genblock-p))
+    :measure (vl-genblock-count x)
+    (b* (((vl-genblock x))
+         ((mv warnings new-elems) (vl-genelementlist-flatten x.elems t nil warnings)))
+      (mv warnings (change-vl-genblock x :elems (rev new-elems)))))
+
+  (define vl-genelementlist-flatten ((x vl-genelementlist-p)
+                                     (genp booleanp)
+                                     (newitems vl-genelementlist-p)
+                                     (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (newitems vl-genelementlist-p))
+    :measure (vl-genelementlist-count x)
+    (b* (((when (atom x))
+          (mv (ok) (vl-genelementlist-fix newitems)))
+         ((mv warnings newitems) (vl-genelement-flatten (car x) genp newitems warnings)))
+      (vl-genelementlist-flatten (cdr x) genp newitems warnings)))
+
+  (define vl-genelement-flatten ((x        vl-genelement-p     "Single item to process.")
+                                 (genp     booleanp            "Are we currently in a generate block?")
+                                 (newitems vl-genelementlist-p "Accumulator for replacement items.")
+                                 (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (newitems vl-genelementlist-p "Extended with @('x') or its replacement."))
+    :measure (vl-genelement-count x)
+    (b* ((x        (vl-genelement-fix x))
+         (newitems (vl-genelementlist-fix newitems)))
+      (vl-genelement-case x
+        :vl-genbase
+        (b* (((unless genp)
+              ;; Not inside a generate, don't do anything.
+              (mv (ok) (cons x newitems)))
+             
+             ((when (mbe :logic (vl-portdecl-p x.item)
+                         :exec (eq (tag x.item) :vl-portdecl)))
+              ;; SystemVerilog-2012 27.2, page 749. "A generate may not
+              ;; contain port declarations."
+              (mv (fatal :type :vl-bad-portdecl
+                         :msg "~a0: port declarations are not allowed in generates."
+                         :args (list x))
+                  (cons x newitems)))
+             
+             ((when (mbe :logic (vl-paramdecl-p x.item)
+                         :exec (eq (tag x.item) :vl-paramdecl)))
+              ;; SystemVerilog-2012 27.2, page 749.  "Parameters declared in
+              ;; generate blocks shall be treated as localparams."
+              (b* ((new-item 
+                    (if (vl-paramdecl->localp x.item)
+                        x.item
+                      (change-vl-paramdecl
+                       x.item
+                       :localp t
+                       ;; Attribute just for debugging.
+                       :atts (cons (cons "VL_LOCALIZED_DUE_TO_GENERATE" nil)
+                                   (vl-paramdecl->atts x.item)))))
+                   (new-x (change-vl-genbase x :item new-item)))
+                (mv (ok) (cons new-x newitems))))
+
+             ;; BOZO if support for specify blocks or specparam declarations
+             ;; is ever added, we will need to extend this to prohibit them
+             ;; per 27.2.  For now they're not implemented.
+             )
+
+          ;; If we get here, this is some other kind of module element.  There
+          ;; aren't any nested generates.  Just keep it.
+          (mv (ok) (cons x newitems)))
+
+        :vl-genbegin
+        (b* (((vl-genblock x.block))
+             ((unless x.block.name)
+              ;; Unnamed begin/end block gets flattened into the current scope.
+              (vl-genelementlist-flatten x.block.elems t newitems warnings))
+             ;; Named begin/end block gets its own scope, so we don't want to
+             ;; get rid of it; just flatten the elements inside of it
+             ;; (independently of the current newitems).
+             ((mv warnings newelems) (vl-genelementlist-flatten x.block.elems t nil warnings))
+             (new-block              (change-vl-genblock x.block :elems (rev newelems))))
+          (mv (ok) (cons (change-vl-genbegin x :block new-block) newitems)))
+
+        :vl-genif
+        (b* (((mv warnings new-then) (vl-genblock-flatten x.then warnings))
+             ((mv warnings new-else) (vl-genblock-flatten x.else warnings))
+             (new-x (change-vl-genif x :then new-then :else new-else)))
+          (mv (ok) (cons new-x newitems)))
+
+        :vl-gencase
+        (b* (((mv warnings new-cases) (vl-gencaselist-flatten x.cases warnings))
+             ((mv warnings new-default) (vl-genblock-flatten x.default warnings))
+             (new-x (change-vl-gencase x :default new-default :cases new-cases)))
+          (mv (ok) (cons new-x newitems)))
+
+        :vl-genloop
+        (b* (((mv warnings new-body) (vl-genblock-flatten x.body warnings))
+             (new-x (change-vl-genloop x :body new-body)))
+          (mv (ok) (cons new-x newitems)))
+        
+        :vl-genarray
+        (mv (fatal :type :vl-programming-error
+                   :msg "Didn't expect to see genarray before elaboration: ~a0."
+                   :args (list x))
+            (cons x newitems)))))
+
+  (define vl-gencaselist-flatten ((cases vl-gencaselist-p)
+                                  (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-cases vl-gencaselist-p))
+    :measure (vl-gencaselist-count cases)
+    (b* ((cases (vl-gencaselist-fix cases))
+         ((when (atom cases))
+          (mv (ok) nil))
+         ((cons exprs1 block1) (car cases))
+         ((mv warnings new-block1) (vl-genblock-flatten block1 warnings))
+         ((mv warnings rest) (vl-gencaselist-flatten (cdr cases) warnings)))
+      (mv warnings (cons (cons exprs1 new-block1) rest))))
+  ///
+  (verify-guards vl-genelementlist-flatten
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable tag-reasoning))))))
+
+
 
 (define vl-module-make-implicit-wires ((x  vl-module-p)
                                        (ss vl-scopestack-p))
@@ -1055,8 +1284,10 @@ Our version of VCS says this isn't yet implemented.</li>
                          (append (vl-modelementlist->genelements
                                   (vl-parse-temps->paramports x.parse-temps))
                                  (vl-parse-temps->loaditems x.parse-temps))))
+       ((mv warnings rev-flatitems)
+        (vl-genelementlist-flatten x.loaditems nil nil x.warnings))
        ((mv newitems warnings)
-        (vl-make-implicit-wires-main x.loaditems x.ifports ss x.warnings))
+        (vl-make-implicit-wires-main (rev rev-flatitems) x.ifports ss warnings))
        (parse-temps (and x.parse-temps
                          (change-vl-parse-temps x.parse-temps
                                                 :paramports nil
@@ -1082,8 +1313,10 @@ Our version of VCS says this isn't yet implemented.</li>
                                   (vl-parse-temps->paramports x.parse-temps))
                                  (vl-parse-temps->loaditems x.parse-temps))))
        (ifports (vl-collect-interface-ports x.ports))
+       ((mv warnings rev-flatitems)
+        (vl-genelementlist-flatten x.loaditems nil nil x.warnings))
        ((mv newitems warnings)
-        (vl-make-implicit-wires-main x.loaditems ifports ss x.warnings))
+        (vl-make-implicit-wires-main (rev rev-flatitems) ifports ss warnings))
        (parse-temps (and x.parse-temps
                          (change-vl-parse-temps x.parse-temps
                                                 :paramports nil
@@ -1353,4 +1586,3 @@ Our version of VCS says this isn't yet implemented.</li>
 ;;     ;; That's it, all done with the local scope.
 ;;     (fast-alist-free local-decls)
 ;;     warnings))
-

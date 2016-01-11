@@ -38,7 +38,7 @@ allow extending table guards.
              %redundant%)
             (old-guard
              %er1%)
-            ((getprop name 'table-alist nil 'current-acl2-world %wrld%)
+            ((getpropc name 'table-alist nil %wrld%)
              %er2%)
             (t
              %rest%))
@@ -47,7 +47,7 @@ allow extending table guards.
              %redundant%)
             ((and old-guard (not (ttag %wrld%)))
              %er1%)
-            ((and (getprop name 'table-alist nil 'current-acl2-world %wrld%)
+            ((and (getpropc name 'table-alist nil %wrld%)
                   (not (ttag %wrld%)))
              %er2%)
             (t

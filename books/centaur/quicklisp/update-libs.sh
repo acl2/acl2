@@ -72,6 +72,10 @@ $BUILD_DIR/wait.pl quicklisp.lsp
 echo "Cleaning Bundle..."
 ./clean.sh
 
+export XDG_CONFIG_HOME=`pwd`/asdf-home/config
+export XDG_DATA_HOME=`pwd`/asdf-home/data
+export XDG_CACHE_HOME=`pwd`/asdf-home/cache
+
 echo "Updating Bundle..."
 $STARTJOB -c "$LISP < update-libs.lsp &> update-libs.out"
 cat update-libs.out

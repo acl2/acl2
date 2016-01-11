@@ -89,7 +89,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
   :short "Fixing function for non-empty @(see vl-bitlist)s."
   :long "<p>This is just a technical helper function that supports the @(see
          fty::fty-discipline).  It is used to ensure that the @('bits') of a
-         @(see vl-weirdint-p) are always nonempty.</p>"
+         @(see vl-weirdint) are always nonempty.</p>"
   :returns (x-fix vl-bitlist-p)
   :inline t
   (mbe :logic
@@ -644,8 +644,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
                            acl2::nfix-when-not-natp
                            (:t acl2::acl2-count-of-consp-positive))))
 
-(local (xdoc::set-default-parents nil))
-
+(local (xdoc::set-default-parents))
 
 (deftypes expressions-and-datatypes
   :parents (syntax)
@@ -1040,10 +1039,9 @@ and generally makes it easier to write safe expression-processing code.</p>")
            <h3>Internal Use of Attributes by VL</h3>
 
            <p>Certain VL transformations may occasionally add attributes
-           throughout modules.  For instance, the @(see designwires)
-           transformation will add @('VL_DESIGN_WIRE') attributes to the
-           declarations that were found in the original design, so that you can
-           distinguish them from, e.g., temporary wires that VL adds later.</p>
+           throughout modules.  For instance, the @(see make-implicit-wires)
+           transformation will add @('VL_IMPLICIT') attributes to the wire
+           declarations that added implicitly.</p>
 
            <p>We once tried to record the different kinds of attributes that VL
            used here, but that list became quickly out of date as we forgot to
@@ -1264,36 +1262,25 @@ and generally makes it easier to write safe expression-processing code.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-  (defflexsum vl-valuerange
+  (deftagsum vl-valuerange
     :parents (vl-inside)
     :measure (two-nats-measure (acl2-count x) 105)
+    :base-case-override :valuerange-single
     :short "A value or a range used in an @('inside') expression.  For instance,
             the @('8') or @('[16:20]') from @('a inside { 8, [16:20] }')."
-    (:range
+    (:valuerange-range
+     :base-name vl-valuerange-range
      :short "A range of values from an @('inside') expression's set.  For
              instance, the @('[16:20]') part of @('a inside { 8, [16:20] }')."
-     :cond (and (consp x)
-                (eq (car x) :vl-range))
-     :fields ((range :type vl-range
-                     :acc-body x
-                     :acc-name vl-valuerange->range
-                     :doc "The whole range, e.g., @('[16:20]'), as an atomic
-                           @(see vl-range)."))
-     :ctor-body range
-     :ctor-name vl-range->valuerange
-     :extra-binder-names (msb lsb)
-     :long "<p>Note that the @(see b*) binder sets up extra bindings for
-            @('.msb') and @('.lsb'), so you can typically access the guts of
-            the interior range directly.</p>")
-    (:single
+     ((low  vl-expr-p "Always the left component, e.g., @('16') in @('[16:20]').")
+      (high vl-expr-p "Always the high component, e.g., @('20') in @('[16:20]').")))
+
+    (:valuerange-single
+     :base-name vl-valuerange-single
      :short "A single value from an @('inside') expression's set.  For
              instance, the @('8') part of @('a inside { 8, [16:20] }')."
-     :cond t
-     :fields ((expr :type vl-expr
-                    :acc-body x
-                    :acc-name vl-valuerange->expr))
-     :ctor-body expr
-     :ctor-name vl-expr->valuerange))
+     ((expr vl-expr-p))))
+
 
   (fty::deflist vl-valuerangelist
     :measure (two-nats-measure (acl2-count x) 10)
@@ -1995,26 +1982,6 @@ and generally makes it easier to write safe expression-processing code.</p>")
   :enabled t
   (vl-plusminus->minusp (vl-arrayrange->plusminus x)))
 
-
-(define vl-valuerange-range->msb ((x vl-valuerange-p))
-  :parents (vl-valuerange)
-  :guard (eq (vl-valuerange-kind x) :range)
-  :short "Directly get the @('msb') of a @(see vl-valuerange-range)'s range."
-  :long "<p>This is also available as a @('.msb') @(see b*) binding.</p>"
-  :inline t
-  :enabled t
-  (vl-range->msb (vl-valuerange->range x)))
-
-(define vl-valuerange-range->lsb ((x vl-valuerange-p))
-  :parents (vl-valuerange)
-  :guard (eq (vl-valuerange-kind x) :range)
-  :short "Directly get the @('lsb') of a @(see vl-valuerange-range)'s range."
-  :long "<p>This is also available as a @('.lsb') @(see b*) binding.</p>"
-  :inline t
-  :enabled t
-  (vl-range->lsb (vl-valuerange->range x)))
-
-
 (define vl-packeddimension-range->msb ((x vl-packeddimension-p))
   :parents (vl-packeddimension)
   :guard (eq (vl-packeddimension-kind x) :range)
@@ -2619,6 +2586,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :hints(("Goal" :in-theory (enable vl-datatype->udims)))))
 
 (define vl-datatype-update-pdims ((pdims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :parents (vl-datatype)
   :enabled t
   :prepwork ((local (in-theory (enable vl-datatype-update-dims))))
   :returns (newx (and (vl-datatype-p newx)
@@ -2632,6 +2600,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
                   :vl-usertype (change-vl-usertype x :pdims pdims))))
 
 (define vl-datatype-update-udims ((udims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :parents (vl-datatype)
   :enabled t
   :prepwork ((local (in-theory (enable vl-datatype-update-dims))))
   :returns (newx (and (vl-datatype-p newx)

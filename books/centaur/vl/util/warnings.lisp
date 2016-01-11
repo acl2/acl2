@@ -392,8 +392,14 @@ particular interest.</p>"
                   :rule-classes :type-prescription))
    :ctor-body (if args (cons msg args) msg)))
 
-(defmacro vmsg (msg &rest args)
-  `(make-vl-msg :msg ,msg :args (list . ,args)))
+(defsection vmsg
+  :parents (warnings)
+  :short "Similar to @(see acl2::msg); constructs a @(see vl-msg) that can be used
+          with @('~@') directives in VL's @(see formatted-printing) routines."
+  :long "@(def vmsg)"
+
+  (defmacro vmsg (msg &rest args)
+    `(make-vl-msg :msg ,msg :args (list . ,args))))
 
 
 (define vl-warning-add-ctx ((x vl-warning-p)

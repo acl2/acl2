@@ -199,6 +199,7 @@ expect or preserve @(see fast-alists)."
     (safer-==? 4vec-wildeq-safe    (x y)               "wildcard equality (X-monotonic version)")
     (==??      4vec-symwildeq      (x y)               "wildcard equality for casez")
     (clog2     4vec-clog2          (x)                 "ceiling of log2")
+    (pow       4vec-pow            (x y)               "exponentiation")
     (?         4vec-?              (test then else)    "if-then-else")
     (bit?      4vec-bit?           (test then else)    "bitwise if-then-else")))
 
