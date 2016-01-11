@@ -28,48 +28,29 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-interface alu_iface (input logic[1:0] op);
-  logic [3:0] a;
-  logic [3:0] b;
-  logic [4:0] out;
-endinterface
-
-// Test of a module that takes an interface array
-
-module alu (alu_iface aif[5:0]);
-
-  for(genvar i = 0; i < 6; ++i)
-  begin
-    assign aif[i].out = (aif[i].op == 0) ? aif[i].a + aif[i].b
-                      : (aif[i].op == 1) ? aif[i].a - aif[i].b
-                      : (aif[i].op == 2) ? aif[i].a & aif[i].b
-                      : aif[i].a | aif[i].b;
-  end
-
-endmodule
-
 module spec (input logic [127:0] in,
-             output wire [127:0] out);
+	     output wire [127:0] out);
 
-  logic [1:0] op;
+  wire [8:0] a9;
+  wire [3:0] a4;
+  wire a1;
 
-  alu_iface ifaces [5:0] (op);
+  wire [8:0] b9;
+  wire [3:0] b4;
+  wire b1;
 
-  assign {ifaces[5].a, ifaces[5].b,
-          ifaces[4].a, ifaces[4].b,
-          ifaces[3].a, ifaces[3].b,
-          ifaces[2].a, ifaces[2].b,
-          ifaces[1].a, ifaces[1].b,
-          ifaces[0].a, ifaces[0].b,
-          op } = in;
+  wire [8:0] c9;
+  wire [3:0] c4;
+  wire c1;
 
-  alu sub (ifaces);
+  assign { a9, a4, a1 } = in;
 
-  assign out = { ifaces[5].out,
-                 ifaces[4].out,
-                 ifaces[3].out,
-                 ifaces[2].out,
-                 ifaces[1].out,
-                 ifaces[0].out };
+  // Basic tests of a = b = c style multiple aliases
 
-endmodule
+  alias b9 = a9 = c9;
+  alias b4 = a4 = c4;
+  alias b1 = a1 = c1;
+
+  assign out = { c9, c4, c1, b9, b4, b1 };
+
+endmodule // spec

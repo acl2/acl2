@@ -75,6 +75,7 @@ FAILING_TEST_TARGETS := \
   alias2/ok \
   alias3/ok \
   alias4/ok \
+  alias5/ok \
   gates_bufif0/ok \
   gates_bufif1/ok \
   gates_notif0/ok \
@@ -98,7 +99,8 @@ FAILING_TEST_TARGETS := \
   udp_wide1/ok \
   ifarray1/ok \
   ifarray2/ok \
-  ifarray3/ok
+  ifarray3/ok \
+  ifarray4/ok
 
 
 SPECFILES := $(wildcard */spec.sv)

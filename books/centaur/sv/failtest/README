@@ -22,6 +22,9 @@ top module.
 
 Test summary:
 
+alias1.v -- try to alias wires of different widths
+alias2.v -- try to redeclare wire that is implicitly declared by alias
+
 ansi1.v -- illegal mixing of ansi and non-ansi ports
 ansi2.v -- illegal mixing of ansi and non-ansi ports
 
@@ -116,8 +119,9 @@ iface24.v -- trying to instantiate interface port with primitive instance name (
 iface25.v -- trying to instantiate interface port with submodule instance name (tricky case for VL)
 iface26.v -- modports declared within an interface's generate block
 
-
-
+ifarray1.v -- passing [5:0] interface array to [4:0] submodule array
+ifarray2.v -- passing wrong type of interface array to submodule
+ifarray3.v -- submodule tries to take `myiface [4:0] foo` instead of `myiface foo [4:0]`
 
 ifport1.v -- port type refers to a module's wire instead of a valid type
 ifport2.v -- variable declaration refers a module's wire, not a valid type
@@ -199,7 +203,6 @@ port10.v -- too many positional ports (I guess this is redundant with inst2.v)
 port11.v -- instantiate undefiend submodule
 port12.v -- too few named port connections to submodule
 port13.v -- nested concatenations (which aren't allowed) in port expression
-
 
 pp1.v -- try to use undefined preprocessor macro
 
