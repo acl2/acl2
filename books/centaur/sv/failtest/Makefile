@@ -57,7 +57,8 @@ FAILING_TEST_TARGETS := \
   gen1i.svok \
   gen1k.svok \
   gen1l.vok gen1l.svok \
-  iface26.svok
+  iface26.svok \
+  alias1.svok
 
 
 $(CORE):
