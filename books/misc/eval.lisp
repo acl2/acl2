@@ -144,9 +144,9 @@ customize this, as in @(see make-event).</p>")
         ,form
         (declare (ignore val))
         (value (eq erp nil)))
-      :with-output-off ,with-output-off)
-    ,@(and check-expansion-p
-           `(:check-expansion ,check-expansion))
+      :with-output-off ,with-output-off
+      ,@(and check-expansion-p
+             `(:check-expansion ,check-expansion)))
     :on-behalf-of ,must-succeed-form))
 
 (defxdoc must-fail
@@ -204,9 +204,9 @@ expected to fail instead of succeed.  Please see the documentation for
       (if (eq (cert-op state) :write-acl2xu)
           nil
         (f-get-global 'ld-skip-proofsp state))
-      :with-output-off ,with-output-off)
-    ,@(and check-expansion-p
-           `(:check-expansion ,check-expansion))
+      :with-output-off ,with-output-off
+      ,@(and check-expansion-p
+             `(:check-expansion ,check-expansion)))
     :on-behalf-of ,must-fail-form))
 
 (defmacro thm? (&rest args)
