@@ -6,6 +6,9 @@ Copyright 2006,2007 Greg Pfeil
 Distributed under the MIT license (see LICENSE file)
 |#
 
+#.(unless (or #+asdf3.1 (version<= "3.1" (asdf-version)))
+    (error "You need ASDF >= 3.1 to load this system correctly."))
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   #+(or armedbear
         (and allegro multiprocessing)
@@ -48,7 +51,7 @@ Distributed under the MIT license (see LICENSE file)
                         #+(and thread-support sbcl)      "impl-sbcl"
                         #+(and thread-support scl)       "impl-scl"
                         #-thread-support                 "impl-null")
-                 #+(and thread-support lispworks (not lispworks6))
+                 #+(and thread-support lispworks (not (or lispworks6 lispworks7)))
                  (:file "impl-lispworks-condition-variables")
                  #+(and thread-support digitool)
                  (:file "condition-variables")
@@ -65,4 +68,4 @@ Distributed under the MIT license (see LICENSE file)
 
 (defmethod perform ((o test-op) (c (eql (find-system :bordeaux-threads))))
   (load-system :bordeaux-threads/test :force '(:bordeaux-threads/test))
-  (uiop:symbol-call :5am :run! :bordeaux-threads))
+  (symbol-call :5am :run! :bordeaux-threads))

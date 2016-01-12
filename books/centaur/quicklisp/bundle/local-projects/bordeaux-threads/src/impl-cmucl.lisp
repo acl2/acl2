@@ -41,18 +41,29 @@ Distributed under the MIT license (see LICENSE file)
 ;;; Resource contention: locks and recursive locks
 
 (defun make-lock (&optional name)
-  (mp:make-lock (or name "Anonymous lock")))
+  (mp:make-lock (or name "Anonymous lock")
+                :kind :error-check))
 
 (defun acquire-lock (lock &optional (wait-p t))
   (if wait-p
-      (mp::lock-wait lock "Lock")
-      (mp::lock-wait-with-timeout lock "Lock" 0)))
+      (mp::lock-wait lock "Lock wait")
+      (mp::lock-wait-with-timeout lock "Lock wait" 0)))
 
 (defun release-lock (lock)
   (setf (mp::lock-process lock) nil))
 
 (defmacro with-lock-held ((place) &body body)
-  `(mp:with-lock-held (,place) ,@body))
+  `(mp:with-lock-held (,place "Lock wait") ,@body))
+
+(defun make-recursive-lock (&optional name)
+  (mp:make-lock (or name "Anonymous recursive lock")
+                :kind :recursive))
+
+(defun acquire-recursive-lock (lock &optional (wait-p t))
+  (acquire-lock lock))
+
+(defun release-recursive-lock (lock)
+  (release-lock lock))
 
 (defmacro with-recursive-lock-held ((place &key timeout) &body body)
   `(mp:with-lock-held (,place "Lock Wait" :timeout ,timeout) ,@body))
