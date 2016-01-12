@@ -119,6 +119,8 @@ iface23.v -- trying to instantiate submodule with interface defined in generate 
 iface24.v -- trying to instantiate interface port with primitive instance name (tricky case for VL; crashes ncv)
 iface25.v -- trying to instantiate interface port with submodule instance name (tricky case for VL)
 iface26.v -- modports declared within an interface's generate block
+iface27.v -- try to do "foo + bar", where foo is an interface
+
 
 ifarray1.v -- passing [5:0] interface array to [4:0] submodule array
 ifarray2.v -- passing wrong type of interface array to submodule
