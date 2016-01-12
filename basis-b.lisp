@@ -4126,36 +4126,57 @@
         #+sbcl
         (setf (sb-ext:bytes-consed-between-gcs) (1- new-threshold))
         #+(and lispworks lispworks-64bit)
-        (progn
+        (let
+
+; In the case of 64-bit LispWorks, we set the threshold to at least 2^20 (1 MB)
+; for generation 3, since we believe that any smaller might not provide good
+; performance, and we set proportionally smaller thresholds for generations 1
+; and 2.
+
+            ((gen0-threshold
+
+; For generation 0, we want to reduce the generation-3 threshold by a factor
+; off 2^10.  The corresponding value for dividing the minimum new-threshold of
+; 2^20 would thus be 2^20/2^10 = 2^10.  However, LispWorks requires a larger
+; minimum value for system:set-gen-num-gc-threshold; since 2^13 was even too
+; small, we have chosen 2^14.  But we still attempt to divide new-threshold by
+; 2^10.
+
+              (max (expt 2 14) (floor new-threshold (expt 2 10))))
+             (gen1-threshold
+              (max (expt 2 17) (floor new-threshold (expt 2 3))))
+             (gen2-threshold
+              (max (expt 2 18) (floor new-threshold (expt 2 2))))
+             (gen3-threshold
+              (max (expt 2 20) new-threshold)))
+
           (when (< new-threshold (expt 2 20))
             (let ((state *the-live-state*))
 
 ; Avoid warning$-cw, since this function is called by LP outside the loop.
 
               (warning$ 'set-gc-threshold$ nil
-                        "Ignoring argument to set-gc-threshold$, ~x0, because ~
-                         it specifies a threshold of less than one megabyte.  ~
-                         Using default threshold of one megabyte.")))
+                        "Using default thresholds that are greater than the ~
+                         requested value ~x0, as follows for generations 0, ~
+                         1, 2 and 3, respectively: ~&1."
+                        new-threshold
+                        (list gen0-threshold
+                              gen1-threshold
+                              gen2-threshold
+                              gen3-threshold))))
 
 ; Calling set-gen-num-gc-threshold sets the GC threshold for the given
 ; generation of garbage.
 
-          (system:set-gen-num-gc-threshold 0
-                                           (max (expt 2 10)
-                                                (/ new-threshold (expt 2 10))))
-          (system:set-gen-num-gc-threshold 1
-                                           (max (expt 2 17)
-                                                (/ new-threshold (expt 2 3))))
-          (system:set-gen-num-gc-threshold 2
-                                           (max (expt 2 18)
-                                                (/ new-threshold (expt 2 2))))
+          (system:set-gen-num-gc-threshold 0 gen0-threshold)
+          (system:set-gen-num-gc-threshold 1 gen1-threshold)
+          (system:set-gen-num-gc-threshold 2 gen2-threshold)
 
 ; This call to set-blocking-gen-num accomplishes two things: (1) It sets the
 ; third generation as the "final" generation -- nothing can be promoted to
 ; generation four or higher.  (2) It sets the GC threshold for generation 3.
 
-          (system:set-blocking-gen-num 3 :gc-threshold (max (expt 2 20)
-                                                            new-threshold)))
+          (system:set-blocking-gen-num 3 :gc-threshold gen3-threshold))
         #-(or ccl sbcl (and lispworks lispworks-64bit))
         (when verbose-p
           (let ((state *the-live-state*))
