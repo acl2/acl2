@@ -826,11 +826,13 @@ ifdef ACL2_COMP
 # projects/security/des/ depends on GL and hence centaur/, we don't
 # exclude its books.)  We might not need to skip the y86 books, but
 # since some Lisps have trouble certifying those, we play it safe and
-# skip them.
+# skip them.  Books under build/test/ present a problem because of
+# dollar signs ($) in filenames, which doesn't seem worth solving.
 $(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
 OK_CERTS := $(filter-out centaur/%, \
               $(filter-out models/y86%, \
-                $(OK_CERTS)))
+                $(filter-out build/test%, \
+                  $(OK_CERTS)))
 
 ifndef NO_RESCAN
 
@@ -879,6 +881,13 @@ BOOKS_SKIP_COMP += centaur/misc/memory-mgmt.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/core.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/extra-operations.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += std/strings/pretty-tests.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/ubdds/subset.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/ubdds/param.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/ubdds/witness.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/vl2014/loader/top.$(ACL2_COMP_EXT)
+
+# Some attempts fail presumably due to dollar signs in filenames:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard build/test/*.cert))
 
 # dft-ex.acl2 specifies no compilation; getprop.lisp can give stack
 # overflow in during the load of the expansion file -- perhaps not
@@ -891,9 +900,8 @@ BOOKS_SKIP_COMP += workshops/1999/knuth-91/aof.$(ACL2_COMP_EXT) \
 
 # The .acl2 files specify no compilation:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2002/cowles-flat/support/*.cert))
-
-# The .acl2 files specify no compilation:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/*.cert))
+BOOKS_SKIP_COMP += demos/meta-wf-guarantee-example.$(ACL2_COMP_EXT)
 
 # The .acl2 file for ccg.lisp specifies no compilation, so we exclude
 # that books and books that include it.
@@ -911,6 +919,12 @@ BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2
 # system/pcert/acl2x-pcert-test-2-include.lisp.  So we simply exclude
 # that directory.
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard system/pcert/*.cert))
+
+# I've seen an error with the following that seemed difficult to
+# debug, but it doesn't seem important to figure that out, so let's
+# just skip it; could have something to do with the use of pcert on an
+# included book.
+BOOKS_SKIP_COMP += make-event/local-elided-include.$(ACL2_COMP_EXT)
 
 # The .acl2 files specify no compilation:
 BOOKS_SKIP_COMP += workshops/2006/kaufmann-moore/support/rhs1-iff.$(ACL2_COMP_EXT) \
