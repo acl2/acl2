@@ -85,6 +85,7 @@ gen5.v  -- trying to use genvar from another module in generate for-loop
 gen6.v  -- reference "wrong" genvar inside generate for loop
 gen7.v  -- generate loop mentions var on initializer rhs, i.e., for(i = i; ...)
 gen8.v  -- nested generate loops that use the same variable (explicitly prohibited)
+gen8b.v -- nested generate loops that use the same variable, but with local genvar declarations
 gen9.v  -- generate loop without declaring its genvar
 gen9b.v -- generate loop variable declared inline as integer instead of genvar
 gen10.v -- generate block with a port declaration (explicitly forbidden)
