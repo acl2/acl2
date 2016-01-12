@@ -4067,7 +4067,7 @@ initially kept in a big, mixed list.</p>"
               @(see vl-genblock)s.  This is really handy when it comes to
               scoping.  We can ensure that all of these blocks have a name, and
               we can deal with begin/end blocks and if/case blocks in a uniform
-              way in @(see vl-scopestacks).  (We still have to handle generate
+              way in @(see scopestack)s.  (We still have to handle generate
               arrays separately, but there's no getting around that.)</p>
 
               <p>We wouldn't be able to have this kind of uniformity if a
