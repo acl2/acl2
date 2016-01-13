@@ -1176,12 +1176,11 @@ real Verilog file.</p>"
   :short "Pretty-print the \"original,\" un-transformed version of an
 expression."
   :long "<p>This is like @(see vl-pp-expr) but, if @('x') has a
-@('VL_ORIG_EXPR') attribute (see @(see origexprs)), we actually pretty-print
-the original version of @('x') rather than the current version (which may be
-simplified, and hence not correspond as closely to the original source code.)
-Specifically, the elaboration transform may replace certain subexpressions with
-constants and leave behind an annotation giving the original version of
-@('x').</p>"
+@('VL_ORIG_EXPR') attribute, we actually pretty-print the original version of
+@('x') rather than the current version (which may be simplified, and hence not
+correspond as closely to the original source code.)  Specifically, the
+elaboration transform may replace certain subexpressions with constants and
+leave behind an annotation giving the original version of @('x').</p>"
   (b* ((misc (vl-ps->misc))
        (prev-p (vl-ps->use-origexprs-p)))
     (vl-ps-seq

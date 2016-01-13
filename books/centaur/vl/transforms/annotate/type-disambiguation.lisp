@@ -321,8 +321,10 @@
 (fty::defvisitor vl-genelement-type-disambiguate
   :template type-disambiguate
   :type vl-genelement
-  :renames ((vl-genblock vl-genblock-type-disambiguate-aux))
-  :type-fns ((vl-genblock vl-genblock-type-disambiguate))
+  :renames ((vl-genblock vl-genblock-type-disambiguate-aux)
+            (vl-genelement vl-genelement-type-disambiguate-aux))
+  :type-fns ((vl-genblock vl-genblock-type-disambiguate)
+             (vl-genelement vl-genelement-type-disambiguate))
   :measure (two-nats-measure :count 0)
 
   (define vl-genblock-type-disambiguate ((x vl-genblock-p)
@@ -340,7 +342,26 @@
                                                       :scopetype :vl-genblock
                                                       :id (vl-genblock->name x))
                                  ss)))
-      (vl-genblock-type-disambiguate-aux x ss))))
+      (vl-genblock-type-disambiguate-aux x ss)))
+
+  (define vl-genelement-type-disambiguate ((x vl-genelement-p)
+                                         (ss vl-scopestack-p))
+    
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-genelement-p))
+    :measure (two-nats-measure (vl-genelement-count x) 1)
+    (vl-genelement-case x
+      :vl-genloop
+      (b* (((unless x.genvarp)
+            (vl-genelement-type-disambiguate-aux x ss))
+           (loop-scope (vl-sort-genelements
+                        (list (vl-genbase
+                               (make-vl-genvar :name x.var :loc x.loc)))
+                        :scopetype :vl-genarray
+                        :id (vl-genblock->name x.body)))
+           (ss (vl-scopestack-push loop-scope ss)))
+        (vl-genelement-type-disambiguate-aux x ss))
+      :otherwise (vl-genelement-type-disambiguate-aux x ss))))
 
 (fty::defvisitors vl-module-type-disambiguate-deps
   :template type-disambiguate

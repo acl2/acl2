@@ -46,8 +46,6 @@
 
 ; cert_param: (non-cmucl)
 
-
-
 ; (depends-on "ls-raw.lsp")
 
 (defttag oslib)

@@ -748,63 +748,9 @@ a non-fatal warning explaining the problem.</p>"
           (ok))))
     (vl-check-blankargs (cdr args) (cdr ports) inst warnings)))
 
-;; (define vl-patmatch-two-level-hid ((x vl-expr-p))
-;;   :parents (vl-unhierarchicalize-interfaceport)
-;;   :short "Match an expression of the form @('foo.bar')."
-;;   :returns (mv (foo maybe-stringp :rule-classes :type-prescription
-;;                     "NIL means the pattern match failed.")
-;;                (bar maybe-stringp :rule-classes :type-prescription))
-;;   (b* ((hid (vl-expr-case x
-;;               :vl-index (if (or x.indices
-;;                                 (not (vl-partselect-case x.part :none)))
-;;                             ;; Something like foo.bar[3] -- not what we want
-;;                             nil
-;;                           (vl-scopeexpr-case x.scope
-;;                             ;; Something like foo::bar.baz -- don't think this is what we want.
-;;                             :colon nil
-;;                             ;; Else we have just a plain hid.
-;;                             :end x.scope.hid))
-;;               :otherwise nil))
-;;        ((unless hid)
-;;         (mv nil nil))
-;;        ((unless (and (vl-hidexpr-case hid :dot)
-;;                      (vl-hidexpr-case (vl-hidexpr-dot->rest hid) :end)))
-;;         ;; Not exactly two levels -- not what we want.
-;;         (mv nil nil))
-;;        (idx1  (vl-hidexpr-dot->first hid))
-;;        ((when (vl-hidindex->indices idx1))
-;;         ;; Something like foo[3].bar, not something we want
-;;         (mv nil nil))
-;;        (name1 (vl-hidindex->name idx1))
-;;        ((when (vl-hidname-equiv name1 :vl-$root))
-;;         ;; $root.bar, not something we want
-;;         (mv nil nil))
-;;        (name2 (vl-hidexpr-end->name (vl-hidexpr-dot->rest hid))))
-;;     (mv name1 name2))
-;;   :prepwork
-;;   ((local (defthm vl-hidname-root-or-string
-;;             (implies (vl-hidname-p x)
-;;                      (equal (equal x :vl-$root)
-;;                             (not (stringp x))))
-;;             :hints(("Goal" :in-theory (enable vl-hidname-p))))))
-;;   ///
-;;   (defret vl-patmatch-two-level-hid-finds-two-names
-;;     (iff bar foo))
-;;   (defret stringp-of-vl-patmatch-two-level-hid-finds
-;;     (and (iff (stringp foo) foo)
-;;          (iff (stringp bar) foo))))
-
 ;; BOZO implement automatic -case macros for transparent sums, so that we can
 ;; get things like vl-scopedef-case, vl-scopeitem-case, vl-port-case.  Tricky
 ;; for nested transsums, I guess.
-
-(define vl-scopedef-interface-p ((x vl-scopedef-p))
-  :inline t
-  :enabled t
-  :prepwork ((local (in-theory (enable tag-reasoning))))
-  :hooks nil
-  (mbe :logic (vl-interface-p x)
-       :exec (eq (tag x) :vl-interface)))
 
 (define vl-scopeitem-modinst-p ((x vl-scopeitem-p))
   :inline t

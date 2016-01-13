@@ -327,7 +327,9 @@ be resolved.</p>"
              be the list of @('([7:0] [15:0] [3:0])').")
    &key
    (strictp booleanp
-            "Should we require every index to be resolved?"))
+            "Should we require every index to be resolved?")
+   (direct-okp booleanp
+               "Is it OK to directly refer to the whole array?"))
   :returns
   (err (iff (vl-msg-p err) err))
   (b* ((name (string-fix name))
@@ -336,7 +338,9 @@ be resolved.</p>"
             nil
           (vmsg "indexing into non-array ~s0" name)))
        ((when (atom indices))
-        (vmsg "no indices given for array ~s0" name))
+        (if direct-okp
+            nil
+          (vmsg "no indices given for array ~s0" name)))
        ((when (same-lengthp indices dims))
         (vl-follow-hidexpr-dimscheck-aux name indices dims
                                          :strictp strictp))
@@ -432,6 +436,17 @@ be resolved.</p>"
                  (x (b* (((mv item ?item-ss ?path)
                           (vl-scopestack-find-item/ss/path name ss)))
                       item))))))))
+
+
+
+
+(define vl-scopedef-interface-p ((x vl-scopedef-p))
+  :inline t
+  :enabled t
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  :hooks nil
+  (mbe :logic (vl-interface-p x)
+       :exec (eq (tag x) :vl-interface)))
 
 
 #||
@@ -579,8 +594,14 @@ top-level hierarchical identifiers.</p>"
          ((when (eq (tag item) :vl-modinst))
           (b* (((vl-modinst item))
                (dims    (and item.range (list (vl-range->packeddimension item.range))))
+               (ifacep  (let ((def (vl-scopestack-find-definition item.modname ss)))
+                          (and def (vl-scopedef-interface-p def))))
                ;; Start by checking for sensible array indexing.
-               (err (vl-follow-hidexpr-dimscheck name1 indices dims :strictp strictp))
+               (err (vl-follow-hidexpr-dimscheck
+                     name1 indices dims
+                     :strictp strictp
+                     ;; It seems OK to refer directly to an interface.
+                     :direct-okp ifacep))
                ((when err)
                 (mv (vl-follow-hidexpr-error err item-ss)
                     trace x))
