@@ -31,7 +31,7 @@
 (in-package "ACL2")
 
 ; It may be that we should do this for all Lisps instead of just Allegro.
-#+allegro
+#+(or allegro lispworks)
 (load "bundle/asdf.lisp")
 
 ; Preload (i.e., compile) all Quicklisp libraries that we're making available.

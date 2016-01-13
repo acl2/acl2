@@ -13126,6 +13126,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (raw-include-book-dir!-alist . :ignore)
     (raw-include-book-dir-alist . :ignore)
     (raw-proof-format . nil)
+    (raw-warning-format . nil)
     (redo-flat-fail . nil)
     (redo-flat-succ . nil)
     (redundant-with-raw-code-okp . nil)

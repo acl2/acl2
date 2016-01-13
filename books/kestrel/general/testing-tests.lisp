@@ -22,7 +22,7 @@
  (defun f (x) x)
  (must-fail (defun f (x) (cons x x)))
  (defun g (x y) (f (cons x y)))
- (must-fail (defthm th (natp (1+ x)))))
+ (must-fail! (defthm th (natp (1+ x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,7 +32,7 @@
  (defun f (x) x)
  (must-fail (defun f (x) (cons x x)))
  (defun g (x y) (f (cons x y)))
- (must-fail (defthm th (natp (1+ x)))))
+ (must-fail! (defthm th (natp (1+ x)))))
 
 (must-succeed**
  (summary) ; :with-output-off
@@ -40,7 +40,7 @@
  (defun f (x) x)
  (must-fail (defun f (x) (cons x x)))
  (defun g (x y) (f (cons x y)))
- (must-fail (defthm th (natp (1+ x)))))
+ (must-fail! (defthm th (natp (1+ x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

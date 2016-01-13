@@ -1262,76 +1262,98 @@
              (inv-rec (cdr table-entry))
              (theory-inv (access theory-invariant-record inv-rec :tterm)))
         (mv-let
-         (erp okp latches)
-         (ev theory-inv
-             (list (cons 'ens ens)
-                   (cons 'state (coerce-state-to-object state)))
-             state
-             nil
-             nil t)
-         (declare (ignore latches))
-         (cond
-          (erp (let ((msg (msg
-                           "Theory invariant ~x0 could not be evaluated on ~
-                            the theory produced by ~@1.  Theory invariant, ~
-                            ~P32, produced the error message:~%~@4~@5"
+          (erp okp latches)
+          (ev theory-inv
+              (list (cons 'ens ens)
+                    (cons 'state (coerce-state-to-object state)))
+              state
+              nil
+              nil t)
+          (declare (ignore latches))
+          (cond
+           (erp (let* ((produced-by-msg
+                        (cond ((eq theory-expr :from-hint)
+                               "an :in-theory hint")
+                              ((eq theory-expr :install)
+                               "the current event")
+                              (t (msg "~x0" theory-expr))))
+                       (theory-invariant-term
+                        (access theory-invariant-record inv-rec
+                                :untrans-term))
+                       (msg (msg
+                             "Theory invariant ~x0 could not be evaluated on ~
+                             the theory produced by ~@1.  Theory invariant, ~
+                             ~P32, produced the error message:~%~@4~@5"
+                             inv-name
+                             produced-by-msg
+                             (term-evisc-tuple nil state)
+                             theory-invariant-term
+                             okp ; error message
+                             (if (access theory-invariant-record inv-rec :error)
+                                 "~|This theory invariant violation causes an ~
+                                 error."
+                               ""))))
+                  (mv-let@par
+                   (errp-acc state)
+                   (cond
+                    ((access theory-invariant-record inv-rec :error)
+                     (mv-let@par (erp val state)
+                                 (er@par soft ctx "~@0" msg)
+                                 (declare (ignore erp val))
+                                 (mv@par t state)))
+                    (t (pprogn@par (warning$@par ctx "Theory"
+                                     `("~@0"
+                                       (:error-msg ,okp)
+                                       (:produced-by-msg ,produced-by-msg)
+                                       (:theory-invariant-name ,inv-name)
+                                       (:theory-invariant-term
+                                        ,theory-invariant-term))
+                                     msg)
+                                   (mv@par errp-acc state))))
+                   (chk-theory-invariant1@par theory-expr ens
+                                              (cdr invariant-alist)
+                                              errp-acc ctx state))))
+           (okp (chk-theory-invariant1@par theory-expr ens (cdr invariant-alist)
+                                           errp-acc ctx state))
+           (t (let* ((produced-by-msg
+                      (cond ((eq theory-expr :from-hint)
+                             "an :in-theory hint")
+                            ((eq theory-expr :install)
+                             "the current event")
+                            (t (msg "~x0" theory-expr))))
+                     (theory-invariant-term
+                      (access theory-invariant-record inv-rec
+                              :untrans-term))
+                     (msg (msg
+                           "Theory invariant ~x0 failed on the theory ~
+                            produced by ~@1.  Theory invariant ~x0 is ~P32.~@4"
                            inv-name
-                           (cond ((eq theory-expr :from-hint)
-                                  "an :in-theory hint")
-                                 ((eq theory-expr :install)
-                                  "the current event")
-                                 (t (msg "~x0" theory-expr)))
+                           produced-by-msg
                            (term-evisc-tuple nil state)
-                           (access theory-invariant-record inv-rec
-                                   :untrans-term)
-                           okp
+                           theory-invariant-term
                            (if (access theory-invariant-record inv-rec :error)
                                "~|This theory invariant violation causes an ~
-                                error."
-                             ""))))
-                 (mv-let@par
-                  (errp-acc state)
-                  (cond
-                   ((access theory-invariant-record inv-rec :error)
-                    (mv-let@par (erp val state)
-                                (er@par soft ctx "~@0" msg)
-                                (declare (ignore erp val))
-                                (mv@par t state)))
-                   (t (pprogn@par (warning$@par ctx "Theory" "~@0" msg)
-                                  (mv@par errp-acc state))))
-                  (chk-theory-invariant1@par theory-expr ens
-                                             (cdr invariant-alist)
-                                             errp-acc ctx state))))
-          (okp (chk-theory-invariant1@par theory-expr ens (cdr invariant-alist)
-                                          errp-acc ctx state))
-          (t (let ((msg (msg
-                         "Theory invariant ~x0 failed on the theory produced ~
-                          by ~@1.  Theory invariant ~x0 is ~P32.~@4"
-                         inv-name
-                         (cond ((eq theory-expr :from-hint)
-                                "an :in-theory hint")
-                               ((eq theory-expr :install)
-                                "the current event")
-                               (t (msg "~x0" theory-expr)))
-                         (term-evisc-tuple nil state)
-                         (access theory-invariant-record inv-rec :untrans-term)
-                         (if (access theory-invariant-record inv-rec :error)
-                             "~|This theory invariant violation causes an ~
                                error."
-                           ""))))
-               (mv-let@par
-                (errp-acc state)
-                (cond
-                 ((access theory-invariant-record inv-rec :error)
-                  (mv-let@par (erp val state)
-                              (er@par soft ctx "~@0" msg)
-                              (declare (ignore erp val))
-                              (mv@par t state)))
-                 (t (pprogn@par (warning$@par ctx "Theory" "~@0" msg)
-                                (mv@par errp-acc state))))
-                (chk-theory-invariant1@par theory-expr ens
-                                           (cdr invariant-alist)
-                                           errp-acc ctx state))))))))))
+                             ""))))
+                (mv-let@par
+                 (errp-acc state)
+                 (cond
+                  ((access theory-invariant-record inv-rec :error)
+                   (mv-let@par (erp val state)
+                               (er@par soft ctx "~@0" msg)
+                               (declare (ignore erp val))
+                               (mv@par t state)))
+                  (t (pprogn@par (warning$@par ctx "Theory"
+                                   `("~@0"
+                                     (:produced-by-msg ,produced-by-msg)
+                                     (:theory-invariant-name ,inv-name)
+                                     (:theory-invariant-term
+                                      ,theory-invariant-term))
+                                   msg)
+                                 (mv@par errp-acc state))))
+                 (chk-theory-invariant1@par theory-expr ens
+                                            (cdr invariant-alist)
+                                            errp-acc ctx state))))))))))
 
 (defun@par chk-theory-invariant (theory-expr ens ctx state)
 
@@ -5877,8 +5899,10 @@
   (((cnt-s . cnt-f) . (stack-s . stack-f))
    xrune-stack
    xrunep
+   totals
    .
-   totals)
+   old-accp-info ; previous accp-info, supporting accumulated-persistence-oops
+   )
   t)
 
 ; Cnt-s is the total number of lemmas tried that have led to a successful
@@ -6233,9 +6257,30 @@
                                           :stack-s nil
                                           :stack-f nil
                                           :xrunep ,collect-hyp-and-conc-xrunes
-                                          :totals '(nil))
+                                          :totals '(nil)
+                                          :old-accp-info
+                                          (let ((info (wormhole-data whs)))
+                                            (cond (info
+; We avoid holding on to every past structure; one seems like enough.
+                                                   (change accp-info info
+                                                           :old-accp-info
+                                                           nil))
+                                                  (t nil))))
                                   nil)))
           nil)))))
+
+(defmacro accumulated-persistence-oops ()
+  (wormhole-eval
+   'accumulated-persistence
+   '(lambda (whs)
+      (let* ((info (wormhole-data whs))
+             (old (and info
+                       (access accp-info info :old-accp-info))))
+        (cond (old (set-wormhole-data whs old))
+              (t (prog2$ (cw "No change: Unable to apply ~
+                              accumulated-persistence-oops.~|")
+                         whs)))))
+   nil))
 
 (defmacro set-accumulated-persistence (flg)
   `(accumulated-persistence ,flg))

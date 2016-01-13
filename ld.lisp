@@ -4553,6 +4553,13 @@
                flg)))
     `(f-put-global 'raw-proof-format ,flg state)))
 
+(defmacro set-raw-warning-format (flg)
+  (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))
+  (let ((flg (if (atom flg)
+                 (list 'quote flg)
+               flg)))
+    `(f-put-global 'raw-warning-format ,flg state)))
+
 (defmacro set-print-clause-ids (flg)
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))
   (let ((flg (if (atom flg)

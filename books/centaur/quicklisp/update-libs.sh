@@ -66,7 +66,8 @@ rm -f quicklisp.lsp
 rm -rf temp-quicklisp-inst
 
 echo "Downloading Quicklisp..."
-curl http://beta.quicklisp.org/quicklisp.lisp -o quicklisp.lsp
+#curl http://beta.quicklisp.org/quicklisp.lisp -o quicklisp.lsp
+wget http://beta.quicklisp.org/quicklisp.lisp -O quicklisp.lsp
 $BUILD_DIR/wait.pl quicklisp.lsp
 
 echo "Cleaning Bundle..."
@@ -79,6 +80,16 @@ export XDG_CACHE_HOME=`pwd`/asdf-home/cache
 echo "Updating Bundle..."
 $STARTJOB -c "$LISP < update-libs.lsp &> update-libs.out"
 cat update-libs.out
+
+
+# Start of bordeaux-threads hack
+echo "Getting patched bordeaux-threads.  BOZO get rid of this step"
+echo "after the Lispworks patch gets into the main Quicklisp dist."
+svn export https://github.com/sionescu/bordeaux-threads/trunk bundle/local-projects/bordeaux-threads
+rm -rf bundle/software/bordeaux-threads-v0.8.4-git
+# End of bordeaux-threads hack
+
+
 
 rm -rf temp-quicklisp-inst
 rm quicklisp.lsp

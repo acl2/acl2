@@ -18,6 +18,8 @@
 (include-book "std/basic/top" :dir :system)
 (include-book "std/util/top" :dir :system)
 
+(local (set-default-parents world-queries))
+
 (program)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,11 +33,8 @@
   in the <see topic='@(url system-utilities)'>built-in system utilities</see>.
   </p>")
 
-(local (set-default-parents world-queries))
-
 (define theorem-symbolp ((sym symbolp) (w plist-worldp))
   :returns (yes/no booleanp)
-  :parents (world-queries)
   :short
   "True iff the symbol @('sym') names a theorem,
   i.e. it has a @('theorem') property."
@@ -43,26 +42,22 @@
 
 (define function-namep (x (w plist-worldp))
   :returns (yes/no booleanp)
-  :parents (world-queries)
   :short "True iff @('x') is a symbol that names a function."
   (and (symbolp x) (function-symbolp x w)))
 
 (define theorem-namep (x (w plist-worldp))
   :returns (yes/no booleanp)
-  :parents (world-queries)
   :short "True iff @('x') is a symbol that names a theorem."
   (and (symbolp x) (theorem-symbolp x w)))
 
 (define definedp ((fun (function-namep fun w)) (w plist-worldp))
   :returns (yes/no booleanp)
-  :parents (world-queries)
   :short
   "True iff the function @('fun') is defined,
   i.e. it has an @('unnormalized-body') property."
   (not (eq t (getprop fun 'unnormalized-body t 'current-acl2-world w))))
 
 (defsection guard-verifiedp
-  :parents (world-queries)
   :short "True iff @('f') is @(tsee guard)-verified."
   :long "@(def guard-verifiedp)"
   (defmacro guard-verifiedp (f w)
@@ -70,12 +65,10 @@
 
 (define fundef-enabledp ((fun (function-namep fun (w state))) state)
   :returns (yes/no booleanp)
-  :parents (world-queries)
   :short "True iff the definition of the function @('fun') is enabled."
   (not (member-equal `(:definition ,fun) (disabledp fun))))
 
 (define rune-enabledp ((rune (runep rune (w state))) state)
   :returns (yes/no booleanp)
-  :parents (world-queries)
   :short "True iff the @(see rune) @('rune') is enabled."
   (not (member-equal rune (disabledp (cadr rune)))))
