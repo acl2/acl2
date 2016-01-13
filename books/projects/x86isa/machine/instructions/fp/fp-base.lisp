@@ -22,6 +22,10 @@
   :short "Misc. utilities for the specification of floating-point operations"
   )
 
+(defsection basic-floating-point-utilities
+  :parents (floating-point-specifications)
+  )
+
 (local (xdoc::set-default-parents basic-floating-point-utilities))
 
 ;; ======================================================================
