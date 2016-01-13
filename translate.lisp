@@ -4007,28 +4007,28 @@
 
   (warning1-form t))
 
-(defmacro warning$-cw1 (&rest args)
+(defmacro warning$-cw1 (ctx summary str+ &rest fmt-args)
+
+; Warning: Keep this in sync with warning$.
 
 ; This macro assumes that wrld and state-vars are bound to a world and
 ; state-vars record, respectively.
 
-; Warning: Keep this in sync with warning$.
-
   (list 'warning1-cw
-        (car args)
+        ctx
 
 ; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
 ; load-time-value, when replacing (consp (cadr args)) with (and (consp (cadr
 ; args)) (stringp (car (cadr args)))).  But it seems fine to have the semantics
 ; of warning$ be that conses are quoted in the second argument position.
 
-        (if (consp (cadr args))
-            (kwote (cadr args))
-          (cadr args))
-        (caddr args)
+        (if (consp summary)
+            (kwote summary)
+          summary)
+        str+
         (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
                              #\5 #\6 #\7 #\8 #\9)
-                           (cdddr args))
+                           fmt-args)
         'wrld
         'state-vars))
 

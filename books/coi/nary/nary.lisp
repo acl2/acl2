@@ -419,11 +419,11 @@
             (term-contains var (cdr term))))
     (equal var term)))
 
-(defun non-consp-list (list)
+(defun no-function-applicationsp (list)
   (declare (type t list))
   (or (not (consp list))
-      (and (not (consp (car list)))
-           (non-consp-list (cdr list)))))
+      (and (or (not (consp (car list))) (quotep (car list)))
+           (no-function-applicationsp (cdr list)))))
 
 (defun equiv-exp (val term)
   (declare (type t val term))
@@ -441,7 +441,7 @@
    ;; Because we don't currently support evaluation of terms we need
    ;; to make sure that the user doesn't hang themselves ..
    ;; (not (cw "Bound: ~p0~%" (caddr term)))
-   (non-consp-list (caddr term))
+   (no-function-applicationsp (caddr term))
 
    ))
 

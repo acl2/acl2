@@ -12506,12 +12506,17 @@
             (cond
              (new-disables
               (warning$ ctx ("Theory")
-                        "The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 ~
-                         are~] disabled by the theory expression ~x1, but ~
-                         because ~#0~[this built-in function is~/these ~
-                         built-in functions are~] given certain special ~
-                         handling, some expansions of ~#0~[its~/their~] calls ~
-                         may still occur.  See :DOC theories-and-primitives."
+                        `("The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 ~
+                           are~] disabled by the theory expression ~x1, but ~
+                           because ~#0~[this built-in function is~/these ~
+                           built-in functions are~] given certain special ~
+                           handling, some expansions of ~#0~[its~/their~] ~
+                           calls may still occur.  See :DOC ~
+                           theories-and-primitives."
+                          (:doc theories-and-primitives)
+                          (:new-disables ,(strip-base-symbols new-disables))
+                          (:rule-class :definition)
+                          (:theory-expression ,expr))
                         (strip-base-symbols new-disables)
                         expr))
              (t state)))
@@ -12525,13 +12530,17 @@
             (cond
              (new-disables
               (warning$ ctx ("Theory")
-                        "The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 is~/s ~
-                         for ~&0 are~] disabled by the theory expression ~x1, ~
-                         but because ~#0~[this built-in function is~/these ~
-                         built-in functions are~] given certain special ~
-                         handling, some evaluations of ~#0~[its~/their~] ~
-                         calls may still occur.  See :DOC ~
-                         theories-and-primitives."
+                        `("The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 ~
+                           is~/s for ~&0 are~] disabled by the theory ~
+                           expression ~x1, but because ~#0~[this built-in ~
+                           function is~/these built-in functions are~] given ~
+                           certain special handling, some evaluations of ~
+                           ~#0~[its~/their~] calls may still occur.  See :DOC ~
+                           theories-and-primitives."
+                          (:doc theories-and-primitives)
+                          (:new-disables ,(strip-base-symbols new-disables))
+                          (:rule-class :executable-counterpart)
+                          (:theory-expression ,expr))
                         (strip-base-symbols new-disables)
                         expr))
              (t state))))))
@@ -12570,12 +12579,16 @@
            (cond
             (new-disables
              (warning$@par ctx ("Theory")
-               "The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 are~] ~
-                disabled by the theory expression ~x1, but because ~#0~[this ~
-                built-in function is~/these built-in functions are~] given ~
-                certain special handling, some expansions of ~
-                ~#0~[its~/their~] calls may still occur.  See :DOC ~
-                theories-and-primitives."
+               `("The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 are~] ~
+                  disabled by the theory expression ~x1, but because ~
+                  ~#0~[this built-in function is~/these built-in functions ~
+                  are~] given certain special handling, some expansions of ~
+                  ~#0~[its~/their~] calls may still occur.  See :DOC ~
+                  theories-and-primitives."
+                 (:doc theories-and-primitives)
+                 (:new-disables ,(strip-base-symbols new-disables))
+                 (:rule-class :definition)
+                 (:theory-expression ,expr))
                (strip-base-symbols new-disables)
                expr))
             (t nil)))
@@ -12589,12 +12602,16 @@
            (cond
             (new-disables
              (warning$@par ctx ("Theory")
-               "The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 is~/s for ~&0 ~
-                are~] disabled by the theory expression ~x1, but because ~
-                ~#0~[this built-in function is~/these built-in functions ~
-                are~] given certain special handling, some evaluations of ~
-                ~#0~[its~/their~] calls may still occur.  See :DOC ~
-                theories-and-primitives."
+               `("The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 is~/s for ~&0 ~
+                  are~] disabled by the theory expression ~x1, but because ~
+                  ~#0~[this built-in function is~/these built-in functions ~
+                  are~] given certain special handling, some evaluations of ~
+                  ~#0~[its~/their~] calls may still occur.  See :DOC ~
+                  theories-and-primitives."
+                 (:doc theories-and-primitives)
+                 (:new-disables ,(strip-base-symbols new-disables))
+                 (:rule-class :executable-counterpart)
+                 (:theory-expression ,expr))
                (strip-base-symbols new-disables)
                expr))
             (t nil))))))
