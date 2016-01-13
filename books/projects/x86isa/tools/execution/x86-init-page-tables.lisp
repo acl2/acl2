@@ -50,7 +50,8 @@
   ((addr-qword-lst "Required to be a @(see physical-addr-qword-alistp)")
    x86)
 
-  :guard (physical-addr-qword-alistp addr-qword-lst)
+  :guard (and (not (programmer-level-mode x86))
+              (physical-addr-qword-alistp addr-qword-lst))
 
   :parents (Setting-up-Page-Tables)
   :short "Load 64-bit entries into the physical memory"
@@ -60,8 +61,13 @@
         (t (b* ((addr  (caar addr-qword-lst))
                 (qword (cdar addr-qword-lst))
                 (x86 (wm-low-64 addr qword x86)))
-               (load-qwords-into-physical-memory
-                (cdr addr-qword-lst) x86)))))
+             (load-qwords-into-physical-memory
+              (cdr addr-qword-lst) x86))))
+
+  ///
+  (defthm programmer-level-mode-unchanged-after-load-qwords-into-physical-memory
+    (equal (xr :programmer-level-mode 0 (load-qwords-into-physical-memory addr-qword-lst x86))
+           (xr :programmer-level-mode 0 x86))))
 
 (define physical-addr-qword-alist-listp (list)
   :parents (Setting-up-Page-Tables)
@@ -79,12 +85,17 @@
   :short "Load lists of @(see physical-addr-qword-alistp) into the
   physical memory"
   :long "This function can be used to initialize the page tables."
-  :guard (physical-addr-qword-alist-listp addr-qword-list-list)
+  :guard (and (not (programmer-level-mode x86))
+              (physical-addr-qword-alist-listp addr-qword-list-list))
   :returns (x86 x86p :hyp :guard)
   (if (endp addr-qword-list-list)
       x86
     (b* ((x86 (load-qwords-into-physical-memory (car addr-qword-list-list) x86)))
-        (load-qwords-into-physical-memory-list (cdr addr-qword-list-list) x86))))
+      (load-qwords-into-physical-memory-list (cdr addr-qword-list-list) x86)))
+  ///
+  (defthm programmer-level-mode-unchanged-after-load-qwords-into-physical-memory-list
+    (equal (xr :programmer-level-mode 0 (load-qwords-into-physical-memory-list addr-qword-lst-lst x86))
+           (xr :programmer-level-mode 0 x86))))
 
 ;; ======================================================================
 
@@ -232,7 +243,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
         ;; by this entry
         (!ia32e-pml4e-slice :pml4e-u/s 1 64-bit-entry)))
 
-      64-bit-entry)
+    64-bit-entry)
 
   ///
 
@@ -453,9 +464,9 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
                                           (* 512 table-number)
                                           nil))
               (acc (cons table acc)))
-             (construct-pdp-tables (+ 1 table-number)
-                                   (+ 1 pdpt-base-addr)
-                                   acc)))
+           (construct-pdp-tables (+ 1 table-number)
+                                 (+ 1 pdpt-base-addr)
+                                 acc)))
         (t acc))
   ///
 
@@ -514,31 +525,32 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
 (defun is-la-mapped-to-pa? (n)
   ;; Note that cr3 is 0, which is where the page tables are located.
   (with-local-stobj
-   x86
-   (mv-let
-    (result x86)
-    (b* ((x86
-          (load-qwords-into-physical-memory-list *1-gig-page-tables* x86))
+    x86
+    (mv-let
+      (result x86)
+      (b* ((x86 (xw :programmer-level-mode 0 nil x86))
+           (x86
+            (load-qwords-into-physical-memory-list *1-gig-page-tables* x86))
 
-         (cr0        (ctri *cr0*       x86))
-         (cr4        (ctri *cr4*       x86))
-         (ia32e-efer (msri *ia32_efer-idx* x86))
+           (cr0        (ctri *cr0*       x86))
+           (cr4        (ctri *cr4*       x86))
+           (ia32e-efer (msri *ia32_efer-idx* x86))
 
-         (cr0        (!cr0-slice       :cr0-pg        1 cr0))
-         (cr4        (!cr4-slice       :cr4-pae       1 cr4))
-         (ia32e-efer (!ia32_efer-slice :ia32_efer-lme 1 ia32e-efer))
+           (cr0        (!cr0-slice       :cr0-pg        1 cr0))
+           (cr4        (!cr4-slice       :cr4-pae       1 cr4))
+           (ia32e-efer (!ia32_efer-slice :ia32_efer-lme 1 ia32e-efer))
 
-         (x86 (!ctri *cr0*           cr0        x86))
-         (x86 (!ctri *cr4*           cr4        x86))
-         (x86 (!msri *ia32_efer-idx* ia32e-efer x86))
-         (r-w-x :r)
-         (cpl 0))
+           (x86 (!ctri *cr0*           cr0        x86))
+           (x86 (!ctri *cr4*           cr4        x86))
+           (x86 (!msri *ia32_efer-idx* ia32e-efer x86))
+           (r-w-x :r)
+           (cpl 0))
         (mv-let (flag addr x86)
-                (la-to-pa n r-w-x cpl x86)
-                (mv (and (equal flag nil)
-                         (equal addr n))
-                    x86)))
-    result)))
+          (la-to-pa n r-w-x cpl x86)
+          (mv (and (equal flag nil)
+                   (equal addr n))
+              x86)))
+      result)))
 
 (defthm is-la-mapped-to-pa?-thm-1
   (is-la-mapped-to-pa? 2047))
