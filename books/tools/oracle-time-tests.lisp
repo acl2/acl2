@@ -34,21 +34,27 @@
       (+ (fib (- n 1))
          (fib (- n 2))))))
 
+; [Jared] Fib seems to execute really slowly on CMUCL, so use smaller numbers
+; for it.
+(defconst *fib-small* #+cmucl 25 #-cmucl 30)
+(defconst *fib-med*   #+cmucl 28 #-cmucl 35)
+(defconst *fib-large* #+cmucl 30 #-cmucl 38)
+
 ;; Test of basic forms
 (make-event
- (b* (((mv time1 bytes1 ans1 state) (oracle-time (fib 30)))
-      ((mv time2 bytes2 ans2 state) (oracle-time (fib 35) :ret foo))
-      ((mv time3 bytes3 ans3 state) (oracle-time (fib 38) :ret (mv foo)))
-      (- (cw "(fib 30): ~x0 sec, ~x1 bytes~%" time1 bytes1))
-      (- (cw "(fib 35): ~x0 sec, ~x1 bytes~%" time2 bytes2))
-      (- (cw "(fib 38): ~x0 sec, ~x1 bytes~%" time3 bytes3))
+ (b* (((mv time1 bytes1 ans1 state) (oracle-time (fib *fib-small*)))
+      ((mv time2 bytes2 ans2 state) (oracle-time (fib *fib-med*) :ret foo))
+      ((mv time3 bytes3 ans3 state) (oracle-time (fib *fib-large*) :ret (mv foo)))
+      (- (cw "(fib *fib-small*): ~x0 sec, ~x1 bytes~%" time1 bytes1))
+      (- (cw "(fib *fib-med*): ~x0 sec, ~x1 bytes~%" time2 bytes2))
+      (- (cw "(fib *fib-large*): ~x0 sec, ~x1 bytes~%" time3 bytes3))
       ((unless (and (< time1 time2)
                     (< time2 time3)))
        (er soft 'oracle-time
            "Fib test timings don't seem plausible."))
-      ((unless (and (equal ans1 (fib 30))
-                    (equal ans2 (fib 35))
-                    (equal ans3 (fib 38))))
+      ((unless (and (equal ans1 (fib *fib-small*))
+                    (equal ans2 (fib *fib-med*))
+                    (equal ans3 (fib *fib-large*))))
        (er soft 'oracle-time
            "Fib results aren't right.")))
    (value '(value-triple :success))))
@@ -85,14 +91,14 @@
            time35 ?bytes35 ans35
            state)
        (oracle-time
-        (b* (((mv time38 bytes38 ans38 state) (oracle-time (fib 38)))
-             ((mv time35 bytes35 ans35 state) (oracle-time (fib 35))))
+        (b* (((mv time38 bytes38 ans38 state) (oracle-time (fib *fib-large*)))
+             ((mv time35 bytes35 ans35 state) (oracle-time (fib *fib-med*))))
           (mv time38 bytes38 ans38 time35 bytes35 ans35 state))
         :ret (mv time38 bytes38 ans38 time35 bytes35 ans35 state)))
-      ((unless (eql ans38 (fib 38)))
-       (er soft 'oracle-time "Wrong answer for (fib 38).~%"))
-      ((unless (eql ans35 (fib 35)))
-       (er soft 'oracle-time "Wrong answer for (fib 35).~%"))
+      ((unless (eql ans38 (fib *fib-large*)))
+       (er soft 'oracle-time "Wrong answer for (fib *fib-large*).~%"))
+      ((unless (eql ans35 (fib *fib-med*)))
+       (er soft 'oracle-time "Wrong answer for (fib *fib-med*).~%"))
       ((unless (and (< time35 time38)
                     (< time38 time-total)))
        (er soft 'oracle-time "Implausible timings for nested test.~%")))

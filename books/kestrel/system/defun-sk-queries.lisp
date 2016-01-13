@@ -20,6 +20,8 @@
 (include-book "std/util/top" :dir :system)
 (include-book "kestrel/system/world-queries" :dir :system)
 
+(local (set-default-parents defun-sk-queries))
+
 (program)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,17 +87,13 @@
   have the same form as in @(tsee defun-sk)).
   </p>")
 
-(local (set-default-parents defun-sk-queries))
-
 (std::defenum defun-sk-quantifierp (exists forall)
-  :parents (defun-sk-queries)
   :short
   "<see topic='@(url exists)'>Existential</see>
   and <see topic='@(url forall)'>universal</see>
   quantifiers.")
 
 (std::defenum defun-sk-rewrite-kindp (:default :direct :custom)
-  :parents (defun-sk-queries)
   :short
   "Kinds of rewrite rules associated to
   @(tsee defun-sk) functions with the
@@ -108,7 +106,6 @@
   </p>")
 
 (std::defaggregate defun-sk-info
-  :parents (defun-sk-queries)
   :short
   "@(tsee defun-sk)-specific constituents of a @(tsee defun-sk) function."
   ((quantifier "Quantifier."
@@ -137,7 +134,6 @@
 
 (define maybe-defun-sk-info-p (x)
   :returns (yes/no booleanp)
-  :parents (defun-sk-queries)
   :short
   "True iff @('x') is a @(tsee defun-sk-info) record or is @('nil')."
   (or (defun-sk-info-p x)
@@ -145,7 +141,6 @@
 
 (define defun-sk-check-signature-result (sig-result)
   :returns (mv (yes/no booleanp) (bound-vars symbol-listp))
-  :parents (defun-sk-queries)
   :short
   "Check the result information of the @(see signature)
   of the @(tsee encapsulate) of a @(tsee defun-sk) function,
@@ -170,7 +165,6 @@
   :returns (mv (yes/no booleanp)
                (bound-vars symbol-listp)
                (classicalp booleanp))
-  :parents (defun-sk-queries)
   :short
   "Check the @(see signature)
   of the @(tsee encapsulate) of a @(tsee defun-sk) function,
@@ -226,7 +220,6 @@
                                     (bound-vars symbol-listp)
                                     (args symbol-listp))
   :returns (mv (yes/no booleanp) witness-body (strengthen booleanp))
-  :parents (defun-sk-queries)
   :short
   "Check the local definition of the witness function
   in the @(tsee encapsulate) of a @(tsee defun-sk) function,
@@ -266,7 +259,6 @@
                                           (args symbol-listp)
                                           witness-body)
   :returns (yes/no booleanp)
-  :parents (defun-sk-queries)
   :short
   "Check the (optional) strengthening theorem
   in the @(tsee encapsulate) of a @(tsee defun-sk) function."
@@ -295,7 +287,6 @@
                untrans-matrix
                (quantifier defun-sk-quantifierp)
                (non-executable booleanp))
-  :parents (defun-sk-queries)
   :short
   "Check the (non-local) definition of the @(tsee defun-sk) function
   in its @(tsee encapsulate),
@@ -386,7 +377,6 @@
   :returns (mv (yes/no booleanp)
                (rewrite-name symbolp)
                (rewrite-kind defun-sk-rewrite-kindp))
-  :parents (defun-sk-queries)
   :short
   "Check the rewrite rule in the @('encapsulate')
   of a @(tsee defun-sk) function,
@@ -463,7 +453,6 @@
                                   (non-executable booleanp)
                                   (w plist-worldp))
   :returns (matrix pseudo-termp)
-  :parents (defun-sk-queries)
   :short
   "Retrieve the matrix of a @(tsee defun-sk) function,
   in <see topic='@(url term)'>translated form</see>."
@@ -528,7 +517,6 @@
 (define defun-sk-check ((fun (function-namep fun w))
                         (w plist-worldp))
   :returns (record? maybe-defun-sk-info-p)
-  :parents (defun-sk-queries)
   :short
   "Check if the function @('fun') is a @(tsee defun-sk) function."
   :long

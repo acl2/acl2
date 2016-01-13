@@ -1090,7 +1090,7 @@ were declared before the begin/end block.</p>
 ports, specify blocks, and specparams (Section 27.3) and parameter declarations
 inside of begin/end blocks are supposed to be treated as localparams.  Testing
 suggests that these restrictions still hold for unnamed top-level begin/end
-blocks.  See especially @(see vl-convert-sub-generate-paramdecls).</p>
+blocks.  See especially @(see vl-genelementlist-flatten).</p>
 
 
 <h5>Interior begin/end: no name = unclear scope</h5>
@@ -1187,7 +1187,7 @@ before we create scopestacks for shadowchecking.</p>")
         (b* (((unless genp)
               ;; Not inside a generate, don't do anything.
               (mv (ok) (cons x newitems)))
-             
+
              ((when (mbe :logic (vl-portdecl-p x.item)
                          :exec (eq (tag x.item) :vl-portdecl)))
               ;; SystemVerilog-2012 27.2, page 749. "A generate may not
@@ -1196,12 +1196,12 @@ before we create scopestacks for shadowchecking.</p>")
                          :msg "~a0: port declarations are not allowed in generates."
                          :args (list x))
                   (cons x newitems)))
-             
+
              ((when (mbe :logic (vl-paramdecl-p x.item)
                          :exec (eq (tag x.item) :vl-paramdecl)))
               ;; SystemVerilog-2012 27.2, page 749.  "Parameters declared in
               ;; generate blocks shall be treated as localparams."
-              (b* ((new-item 
+              (b* ((new-item
                     (if (vl-paramdecl->localp x.item)
                         x.item
                       (change-vl-paramdecl
@@ -1250,7 +1250,7 @@ before we create scopestacks for shadowchecking.</p>")
         (b* (((mv warnings new-body) (vl-genblock-flatten x.body warnings))
              (new-x (change-vl-genloop x :body new-body)))
           (mv (ok) (cons new-x newitems)))
-        
+
         :vl-genarray
         (mv (fatal :type :vl-programming-error
                    :msg "Didn't expect to see genarray before elaboration: ~a0."

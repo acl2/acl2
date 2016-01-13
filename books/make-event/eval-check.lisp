@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "misc/eval" :dir :system)
+(include-book "xdoc/top" :dir :system) ; redundant
 
 (defmacro must-eval-to! (form expr)
   `(must-eval-to ,form ,expr
@@ -27,7 +28,24 @@
                  :with-output-off nil
                  :check-expansion t))
 
+(defxdoc must-succeed!
+  :parents (errors)
+  :short "A variant of @(tsee must-succeed)"
+  :long "<p>See @(see must-succeed).  @('Must-succeed!') is a convenient
+ wrapper for calling @('must-succeed') using @(':with-output-off nil') and
+ @(':check-expansion t').</p>")
+
 (defmacro must-fail! (form)
   `(must-fail ,form
               :with-output-off nil
               :check-expansion t))
+
+(defxdoc must-fail!
+  :parents (errors)
+  :short "A variant of @(tsee must-fail) suitable for inclusion in books"
+  :long "<p>See @(see must-fail), including the ``CAVEAT'' about an issue with
+ the use of @('must-fail') in @(see books), which can be solved by using
+ @('must-fail!').  @('Must-fail!') is a convenient wrapper for calling
+ @('must-fail') using @(':with-output-off nil') and @(':check-expansion
+ t').</p>")
+

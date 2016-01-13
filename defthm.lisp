@@ -1111,15 +1111,25 @@
                           (count (let ((pair (assoc-eq var var-count-alist)))
                                    (assert$ pair (cdr pair)))))
                      (warning$ ctx ("Double-rewrite")
-                               "In a ~x0 rule generated from ~x1~@2, ~
-                                equivalence relation~#3~[ ~&3~ is~/s ~&3 ~
-                                are~] maintained at ~n4 problematic ~
-                                occurrence~#5~[~/s~] of variable ~x6 in ~@7, ~
-                                but not at any binding occurrence of ~x6.  ~
-                                Consider replacing ~#5~[that ~
-                                occurrence~/those ~n4 occurrences~] of ~x6 in ~
-                                ~@7 with ~x8.  See :doc double-rewrite for ~
-                                more information on this issue."
+                               `("In a ~x0 rule generated from ~x1~@2, ~
+                                  equivalence relation~#3~[ ~&3~ is~/s ~&3 ~
+                                  are~] maintained at ~n4 problematic ~
+                                  occurrence~#5~[~/s~] of variable ~x6 in ~
+                                  ~@7, but not at any binding occurrence of ~
+                                  ~x6.  Consider replacing ~#5~[that ~
+                                  occurrence~/those ~n4 occurrences~] of ~x6 ~
+                                  in ~@7 with ~x8.  See :doc double-rewrite ~
+                                  for more information on this issue."
+                                 (:doc double-rewrite)
+                                 (:equivalence-relations
+                                  ,(cdar var-equivs-alist))
+                                 (:location ,location)
+                                 ,@(and (not (equal max-term-msg ""))
+                                        `((:max-term-msg ,max-term-msg)))
+                                 (:new-rule ,name)
+                                 (:number-of-problematic-occurrences ,count)
+                                 (:rule-class ,token)
+                                 (:variable ,var))
                                token name
                                max-term-msg
                                (cdar var-equivs-alist)
@@ -1218,11 +1228,14 @@
      (cond
       (non-rec-fns-lhs
        (warning$ ctx "Non-rec"
-                 "A ~x0 rule generated from ~x1 will be ~
-                 triggered only by terms containing the non-recursive ~
-                 function symbol~#2~[ ~&2.  Unless this function ~
-                 is~/s ~&2.  Unless these functions are~] disabled, ~
-                 this rule is unlikely ever to be used."
+                 `("A ~x0 rule generated from ~x1 will be triggered only by ~
+                    terms containing the non-recursive function symbol~#2~[ ~
+                    ~&2.  Unless this function is~/s ~&2.  Unless these ~
+                    functions are~] disabled, this rule is unlikely ever to ~
+                    be used."
+                   (:non-recursive-fns-lhs ,(hide-lambdas non-rec-fns-lhs))
+                   (:name ,name)
+                   (:rule-class ,token))
                  token name (hide-lambdas non-rec-fns-lhs)))
       (t state))
      (er-progn
@@ -1230,13 +1243,18 @@
        ((and free-vars (null match-free))
         (pprogn
          (warning$ ctx "Free"
-                   "A ~x0 rule generated from ~x1 contains the free ~
+                   `("A ~x0 rule generated from ~x1 contains the free ~
                     variable~#2~[ ~&2.  This variable~/s ~&2.  These ~
                     variables~] will be chosen by searching for ~#3~[an ~
                     instance~/instances~] of ~*4 in the context of the term ~
                     being rewritten.  This is generally a severe restriction ~
                     on the applicability of a ~x0 rule.  See :DOC ~
                     free-variables."
+                     (:doc free-variables)
+                     (:free-variables ,free-vars)
+                     (:instantiated-hyps ,(untranslate-lst inst-hyps t wrld))
+                     (:name ,name)
+                     (:rule-class ,token))
                    token name free-vars
                    inst-hyps
                    (tilde-*-untranslate-lst-phrase inst-hyps t wrld))
@@ -1296,38 +1314,50 @@
        (cond
         (non-rec-fns-inst-hyps
          (warning$ ctx "Non-rec"
-                   "As noted, we will instantiate the free ~
-                    variable~#0~[~/s~], ~&0, of a ~x1 rule generated from ~
-                    ~x2, by searching for the ~#3~[hypothesis~/set of ~
-                    hypotheses~] shown above.  However, ~#3~[this hypothesis ~
-                    mentions~/these hypotheses mention~] the function ~
-                    symbol~#4~[ ~&4, which is~/s ~&4, which are~] defun'd ~
-                    non-recursively.  Unless disabled, ~#4~[this function ~
-                    symbol is~/these function symbols are~] unlikely to occur ~
-                    in the conjecture being proved and hence the search for ~
-                    the required ~#3~[hypothesis~/hypotheses~] will likely ~
-                    fail."
+                   `("As noted, we will instantiate the free ~
+                      variable~#0~[~/s~], ~&0, of a ~x1 rule generated from ~
+                      ~x2, by searching for the ~#3~[hypothesis~/set of ~
+                      hypotheses~] shown above.  However, ~#3~[this ~
+                      hypothesis mentions~/these hypotheses mention~] the ~
+                      function symbol~#4~[ ~&4, which is~/s ~&4, which are~] ~
+                      defun'd non-recursively.  Unless disabled, ~#4~[this ~
+                      function symbol is~/these function symbols are~] ~
+                      unlikely to occur in the conjecture being proved and ~
+                      hence the search for the required ~
+                      ~#3~[hypothesis~/hypotheses~] will likely fail."
+                     (:free-variables ,free-vars)
+                     (:instantiated-hyps ,inst-hyps)
+                     (:non-recursive-fns-lhs ,(hide-lambdas non-rec-fns-lhs))
+                     (:name ,name)
+                     (:rule-class ,token))
                    free-vars token name inst-hyps
                    (hide-lambdas non-rec-fns-inst-hyps)))
         (t state))
        (cond
         (subsumed-rule-names
          (warning$ ctx ("Subsume")
-                   "A newly proposed ~x0 rule generated from ~x1 probably ~
-                    subsumes the previously added :REWRITE rule~#2~[~/s~] ~
-                    ~&2, in the sense that the new rule will now probably be ~
-                    applied whenever the old rule~#2~[~/s~] would have been."
+                   `("A newly proposed ~x0 rule generated from ~x1 probably ~
+                     subsumes the previously added :REWRITE rule~#2~[~/s~] ~
+                     ~&2, in the sense that the new rule will now probably be ~
+                     applied whenever the old rule~#2~[~/s~] would have been."
+                     (:new-rule ,name)
+                     (:rule-class-new ,token)
+                     (:rule-class-old :rewrite)
+                     (:subsumed-rules ,subsumed-rule-names))
                    token name subsumed-rule-names))
         (t state))
        (cond
         (subsuming-rule-names
          (warning$ ctx ("Subsume")
-                   "The previously added rule~#1~[~/s~] ~&1 subsume~#1~[s~/~] ~
-                    a newly proposed ~x0 rule generated from ~x2, in the ~
-                    sense that the old rule~#1~[ rewrites a more general ~
-                    target~/s rewrite more general targets~].  Because the ~
-                    new rule will be tried first, it may nonetheless find ~
-                    application."
+                   `("The previously added rule~#1~[~/s~] ~&1 ~
+                     subsume~#1~[s~/~] a newly proposed ~x0 rule generated ~
+                     from ~x2, in the sense that the old rule~#1~[ rewrites a ~
+                     more general target~/s rewrite more general targets~].  ~
+                     Because the new rule will be tried first, it may ~
+                     nonetheless find application."
+                     (:new-rule ,name)
+                     (:rule-class ,token)
+                     (:subsuming-rules ,subsuming-rule-names))
                    token
                    subsuming-rule-names
                    name))
@@ -1907,23 +1937,29 @@
                       (cond
                        ((equal max-terms bad-max-terms)
                         (warning$ ctx "Non-rec"
-                                  "A :LINEAR rule generated from ~x0 will be ~
-                                   triggered only by terms containing the ~
-                                   non-recursive function symbol~#1~[ ~&1.  Unless ~
-                                   this function is~/s ~&1.  Unless these functions ~
-                                   are~] disabled, such triggering terms are ~
-                                   unlikely to arise and so ~x0 is unlikely to ever ~
-                                   be used."
+                                  `("A :LINEAR rule generated from ~x0 will ~
+                                     be triggered only by terms containing ~
+                                     the non-recursive function symbol~#1~[ ~
+                                     ~&1.  Unless this function is~/s ~&1.  ~
+                                     Unless these functions are~] disabled, ~
+                                     such triggering terms are unlikely to ~
+                                     arise and so ~x0 is unlikely to ever be ~
+                                     used."
+                                    (:name ,name)
+                                    (:non-recursive-fns
+                                     ,(hide-lambdas non-rec-fns))
+                                    (:rule-class :linear))
                                   name (hide-lambdas non-rec-fns)))
                        (bad-max-terms
                         (warning$ ctx "Non-rec"
                                   "A :LINEAR rule generated from ~x0 will be ~
-                                   triggered by the terms ~&1. ~N2 of these terms, ~
-                                   namely ~&3, contain~#3~[s~/~] the non-recursive ~
-                                   function symbol~#4~[ ~&4.  Unless this function ~
-                                   is~/s ~&4.  Unless these functions are~] ~
-                                   disabled, ~x0 is unlikely to be triggered via ~
-                                   ~#3~[this term~/these terms~]."
+                                   triggered by the terms ~&1. ~N2 of these ~
+                                   terms, namely ~&3, contain~#3~[s~/~] the ~
+                                   non-recursive function symbol~#4~[ ~&4.  ~
+                                   Unless this function is~/s ~&4.  Unless ~
+                                   these functions are~] disabled, ~x0 is ~
+                                   unlikely to be triggered via ~#3~[this ~
+                                   term~/these terms~]."
                                   name
                                   max-terms
                                   (length bad-max-terms)
@@ -2832,14 +2868,19 @@
              ((and free-vars (null match-free))
               (pprogn
                (warning$ ctx "Free"
-                         "When the :FORWARD-CHAINING rule generated from ~x0 ~
-                          is triggered by ~x1 it contains the free ~
-                          variable~#2~[ ~&2.  This variable~/s ~&2.  These ~
-                          variables~] will be chosen by searching for ~#3~[an ~
-                          instance~/instances~] of ~&3 among the hypotheses of ~
-                          the conjecture being rewritten.  This is generally a ~
-                          severe restriction on the applicability of the ~
-                          forward chaining rule."
+                         `("When the :FORWARD-CHAINING rule generated from ~
+                            ~x0 is triggered by ~x1 it contains the free ~
+                            variable~#2~[ ~&2.  This variable~/s ~&2.  These ~
+                            variables~] will be chosen by searching for ~
+                            ~#3~[an instance~/instances~] of ~&3 among the ~
+                            hypotheses of the conjecture being rewritten.  ~
+                            This is generally a severe restriction on the ~
+                            applicability of the forward chaining rule."
+                           (:free-variables ,free-vars)
+                           (:instantiated-hyps ,inst-hyps)
+                           (:name ,name)
+                           (:rule-class :forward-chaining)
+                           (:trigger ,(car terms)))
                          name (car terms) free-vars inst-hyps)
                (free-variable-error? :forward-chaining name ctx wrld state)))
              (t (value nil)))
@@ -2881,10 +2922,13 @@
              (cond
               (non-rec-fns
                (warning$ ctx ("Non-rec")
-                         "The term ~x0 contains the non-recursive function ~
-                          symbol~#1~[ ~&1.  Unless this function is~/s ~&1.  ~
-                          Unless these functions are~] disabled, ~x0 is ~
-                          unlikely ever to occur as a trigger for ~x2."
+                         `("The term ~x0 contains the non-recursive function ~
+                            symbol~#1~[ ~&1.  Unless this function is~/s ~&1. ~
+                            ~ Unless these functions are~] disabled, ~x0 is ~
+                            unlikely ever to occur as a trigger for ~x2."
+                           (:name ,name)
+                           (:non-recursive-fns ,(hide-lambdas non-rec-fns))
+                           (:trigger-term ,(car terms)))
                          (car terms)
                          (hide-lambdas non-rec-fns)
                          name))
@@ -2892,17 +2936,24 @@
              (cond
               (non-rec-fns-inst-hyps
                (warning$ ctx ("Non-rec")
-                         "As noted, when triggered by ~x0, we will instantiate ~
-                          the free variable~#1~[~/s~], ~&1, of the rule ~x2, ~
-                          by searching for the ~#3~[hypothesis~/set of ~
-                          hypotheses~] shown above.  However, ~#3~[this ~
-                          hypothesis mentions~/these hypotheses mention~] the ~
-                          function symbol~#4~[ ~&4, which is~/s ~&4, which ~
-                          are~] defun'd non-recursively. Unless disabled, ~
-                          ~#4~[this function symbol is~/these function symbols ~
-                          are~] unlikely to occur in the conjecture being ~
-                          proved and hence the search for the required ~
-                          ~#3~[hypothesis~/hypotheses~] will likely fail."
+                         `("As noted, when triggered by ~x0, we will ~
+                            instantiate the free variable~#1~[~/s~], ~&1, of ~
+                            the rule ~x2, by searching for the ~
+                            ~#3~[hypothesis~/set of hypotheses~] shown above. ~
+                            ~ However, ~#3~[this hypothesis mentions~/these ~
+                            hypotheses mention~] the function symbol~#4~[ ~
+                            ~&4, which is~/s ~&4, which are~] defun'd ~
+                            non-recursively. Unless disabled, ~#4~[this ~
+                            function symbol is~/these function symbols are~] ~
+                            unlikely to occur in the conjecture being proved ~
+                            and hence the search for the required ~
+                            ~#3~[hypothesis~/hypotheses~] will likely fail."
+                           (:free-variables ,free-vars)
+                           (:instantiated-hyps ,inst-hyps)
+                           (:name ,name)
+                           (:non-recursive-fns-inst-hyps
+                            ,(hide-lambdas non-rec-fns-inst-hyps))
+                           (:trigger-term ,(car terms)))
                          (car terms) free-vars name inst-hyps
                          (hide-lambdas non-rec-fns-inst-hyps)))
               (t state))
@@ -5385,26 +5436,35 @@
              (cond
               (warned-non-rec-fns
                (warning$ ctx ("Non-rec")
-                         "The hypothesis of the :type-prescription rule ~
-                          generated from ~x0 contains the non-recursive ~
-                          function symbol~#1~[~/s~] ~&1.  Since the ~
-                          hypotheses of :type-prescription rules are relieved ~
-                          by type reasoning alone (and not rewriting) ~
-                          ~#1~[this function is~/these functions are~] liable ~
-                          to make the rule inapplicable.  See :DOC ~
-                          type-prescription."
+                         `("The hypothesis of the :type-prescription rule ~
+                            generated from ~x0 contains the non-recursive ~
+                            function symbol~#1~[~/s~] ~&1.  Since the ~
+                            hypotheses of :type-prescription rules are ~
+                            relieved by type reasoning alone (and not ~
+                            rewriting) ~#1~[this function is~/these functions ~
+                            are~] liable to make the rule inapplicable.  See ~
+                            :DOC type-prescription."
+                           (:doc type-prescription)
+                           (:name ,name)
+                           (:non-recursive-fns
+                            ,(hide-lambdas warned-non-rec-fns))
+                           (:rule-class :type-prescription))
                          name (hide-lambdas warned-non-rec-fns)))
               (t state))
              (cond
               (warned-free-vars
                (warning$ ctx ("Free")
-                         "The :type-prescription rule generated from ~x0 ~
-                          contains the free variable~#1~[ ~&1.  This ~
-                          variable~/s ~&1.  These variables~] will be chosen ~
-                          by searching for instances of ~&2 among the ~
-                          hypotheses of conjectures being rewritten.  This is ~
-                          generally a severe restriction on the applicability ~
-                          of the :type-prescription rule."
+                         `("The :type-prescription rule generated from ~x0 ~
+                            contains the free variable~#1~[ ~&1.  This ~
+                            variable~/s ~&1.  These variables~] will be ~
+                            chosen by searching for instances of ~&2 among ~
+                            the hypotheses of conjectures being rewritten.  ~
+                            This is generally a severe restriction on the ~
+                            applicability of the :type-prescription rule."
+                           (:free-variables ,warned-free-vars)
+                           (:instantiated-hyps ,inst-hyps)
+                           (:name ,name)
+                           (:rule-class :type-prescription))
                          name warned-free-vars inst-hyps))
               (t state))
              (cond
