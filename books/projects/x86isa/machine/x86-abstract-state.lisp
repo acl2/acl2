@@ -4237,6 +4237,7 @@
              (length    (caaddr (caddr x86-model-field))))
             `((DEFINE ,getter ((I :TYPE (INTEGER 0 ,(1- length)))
                                X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XR ,keyword I X86)
@@ -4245,6 +4246,7 @@
               (DEFINE ,setter ((I :TYPE (INTEGER 0 ,(1- length)))
                                (V :TYPE (,(car (cadr type)) ,size))
                                X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XW ,keyword I V X86)
@@ -4264,12 +4266,14 @@
              (keyword   (intern name "KEYWORD"))
              (size      (cadr type)))
             `((DEFINE ,getter (X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XR ,keyword 0 X86)
                      :EXEC (,getter* X86)))
               (DEFINE ,setter ((V :TYPE (,(car type) ,size))
                                X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XW ,keyword 0 V X86)
@@ -4289,12 +4293,14 @@
              (min      (cadr type))
              (max      (caddr type)))
             `((DEFINE ,getter (X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XR ,keyword 0 X86)
                      :EXEC (,getter* X86)))
               (DEFINE ,setter ((V :TYPE (INTEGER ,min ,max))
                                X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XW ,keyword 0 V X86)
@@ -4314,12 +4320,14 @@
              (setter*    (mk-name setter "*"))
              (keyword    (intern name "KEYWORD")))
             `((DEFINE ,getter (X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XR ,keyword 0 X86)
                      :EXEC (,getter* X86)))
               (DEFINE ,setter ((V :TYPE (SATISFIES ,predicate))
                                X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XW ,keyword 0 V X86)
@@ -4337,11 +4345,13 @@
              (setter*   (mk-name setter "*"))
              (keyword   (intern name "KEYWORD")))
             `((DEFINE ,getter (X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XR ,keyword 0 X86)
                      :EXEC (,getter* X86)))
               (DEFINE ,setter (V X86)
+                :PARENTS NIL
                 :INLINE T
                 :ENABLED T
                 (MBE :LOGIC (XW ,keyword 0 V X86)
