@@ -21,7 +21,7 @@
   other value of @('X86ISA_EXEC') except @('t'), then instructions
   like @('SYSCALL') and @('RDRAND') will not be available for
   execution, though reasoning about them will still be possible. See
-  @(see Build-Instructions) for details.</p>
+  @(see x86isa-build-instructions) for details.</p>
 
 <p>First, obtain the x86 machine-code version of the program
 you want to execute on the model. Note that we support only <a
