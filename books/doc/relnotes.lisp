@@ -397,8 +397,10 @@ books work only for ACL2 built on CCL or SBCL.</p>
  @('n') as inputs.</p>
 
  <p>The books @('rtl/rel11/support/basic.lisp'),
- @('rtl/rel11/support/bits.lisp'), and
- @('rtl/rel11/support/float.lisp') are now certifiable by ACL2(r).</p>
+ @('rtl/rel11/support/bits.lisp'),
+ @('rtl/rel11/support/float.lisp'),
+ @('rtl/rel11/support/reps.lisp'), and
+ @('rtl/rel11/support/masc.lisp') are now certifiable by ACL2(r).</p>
 
  <p>Some books from @('rtl/rel11/rel9-rtl-pkg/lib'), like
  @('reps.lisp'), @('rom-helpers.lisp'), and
