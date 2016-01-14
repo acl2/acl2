@@ -152,7 +152,7 @@
        ;; (- (cw "~%~%X86-SYSCALL: If SYSCALL does not return the result you ~
        ;;         expected, then you might want to check whether these ~
        ;;         books were compiled using X86ISA_EXEC set to t. See ~
-       ;;         :doc build-instructions.~%~%"))
+       ;;         :doc x86isa-build-instructions.~%~%"))
 
 
        ((when (ms x86))

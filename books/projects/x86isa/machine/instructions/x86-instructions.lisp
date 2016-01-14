@@ -313,7 +313,7 @@ Digital Random Number Generator Guide</a> for more details.</p>"
        ;; (- (cw "~%~%HW_RND_GEN: If RDRAND does not return the result you ~
        ;;         expected (or returned an error), then you might want to check whether these ~
        ;;         books were compiled using x86isa_exec set to t. See ~
-       ;;         :doc build-instructions.~%~%"))
+       ;;         :doc x86isa-build-instructions.~%~%"))
 
        ((when (ms x86))
         (!!ms-fresh :x86-rdrand (ms x86)))
