@@ -413,7 +413,8 @@ copy-distribution:
 #TAGS:
 #	@echo 'Skipping building of a tags table.'
 
-TAGS:   acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp ${sources}
+# We include acl2r.lisp so that we build ACL2(h) and not ACL2(c).
+TAGS:   acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp ${sources} acl2r.lisp
 	rm -f TAGS
 	rm -f workxxx
 	echo '(load "init.lisp")' > workxxx
