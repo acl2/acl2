@@ -3410,6 +3410,19 @@ functions can assume all bits of it are good.</p>"
                              :args (list x))
                       (svex-x)))
 
+                 ((when (member-equal simple-name '("$signed" "$unsigned")))
+                  ;; Same as a signedness cast -- don't need to do anything but check arity.
+                  (b* (((unless (and (consp x.args)
+                                     (not (consp (cdr x.args)))
+                                     (not x.typearg)))
+                        (mv (fatal :type :vl-expr-to-svex-fail
+                                   :msg "Bad arity for system call ~a0"
+                                   :args (list x))
+                            (svex-x)))
+                       ((mv warnings svex &)
+                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                    (mv warnings svex)))
+
                  ((when (vl-unary-syscall-p "$clog2" x))
                   (b* (((wmv warnings arg-svex ?size)
                         (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))

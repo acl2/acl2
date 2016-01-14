@@ -432,7 +432,12 @@ produce unsigned values.</li>
         :vl-stream      (mv (ok) nil)
 
         :vl-call        (if x.systemp
-                            (vl-syscall-typedecide x)
+                            (b* ((name (vl-simple-id-name x.name))
+                                 ((when (equal name "$signed"))
+                                  (mv (ok) :vl-signed))
+                                 ((when (equal name "$unsigned"))
+                                  (mv (ok) :vl-unsigned)))
+                              (vl-syscall-typedecide x))
                           (vl-funcall-typedecide x ss scopes))
 
         :vl-cast (vl-casttype-case x.to

@@ -79,6 +79,7 @@ bin_wildeq -
 bin_wildneq - 
 buf - 
 casestmt - 
+casts1 - 
 colon-comment - 
 dynwrite - 
 elab - 
