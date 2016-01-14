@@ -99,16 +99,20 @@
     (b* (((vl-genblob x) (vl-genblob-fix x))
          (reclimit (lnfix reclimit))
          (ss (vl-scopestack-push x ss))
-         (membs1 (vl-vardecllist-mockmembers x.vardecls))
-         ((mv err1 membs2) (vl-modinstlist-interface-mockmembers x.modinsts ss))
-         ((mv err2 membs3) (vl-generatelist-interface-mockmembers x.generates ss))
+         (var-membs (vl-vardecllist-mockmembers x.vardecls))
+         ((mv err1 inst-membs) (vl-modinstlist-interface-mockmembers x.modinsts ss))
+         ((mv err2 gen-membs) (vl-generatelist-interface-mockmembers x.generates ss))
          ;; note: we don't need to look at regularports because they have
          ;; corresponding vardecls that we've already dealt with.
-         ((mv err3 membs4) (vl-interfaceportlist-mockmembers x.ifports ss))
-         (struct (make-vl-struct :members (append-without-guard membs1
-                                                                membs2
-                                                                membs3
-                                                                membs4)))
+         ((mv err3 ifport-membs) (vl-interfaceportlist-mockmembers x.ifports ss))
+         ;;  We have arranged the order of these structmembers to correspond to
+         ;;  the aliases as they are produced in vl-genblob->svex-modules.
+         ;;  This seems good in order to have a consistent view of these
+         ;;  interfaces, but we're not sure it's actually necessary.
+         (struct (make-vl-struct :members (append-without-guard gen-membs
+                                                                ifport-membs
+                                                                inst-membs
+                                                                var-membs)))
          (type (if (stringp x.id)
                    (make-vl-usertype :name (vl-idscope x.id)
                                      :res struct)

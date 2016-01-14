@@ -675,8 +675,9 @@ top-level hierarchical identifiers.</p>"
           ;; to look at the modport (if any) and prohibit names that aren't
           ;; mentioned in it.
           (b* (((vl-interfaceport item))
-               ((when (or (consp indices)
-                          (consp item.udims)))
+               (err (vl-follow-hidexpr-dimscheck
+                     name1 indices item.udims :strictp strictp :direct-okp t))
+               ((when err)
                 ;; BOZO.  What kind of index checking do we want to do?  Probably
                 ;; it is ok to index only partly into an interface port, because
                 ;; if it's okay to have an array of interfaces coming in, then
@@ -684,7 +685,7 @@ top-level hierarchical identifiers.</p>"
                 ;; submodule, etc.  So maybe we need to just check that we have
                 ;; no more indices than are allowed, and then check ranges on any
                 ;; indices that we do happen to have...
-                (mv (vl-follow-hidexpr-error "BOZO implement support for interface arrays." item-ss)
+                (mv (vl-follow-hidexpr-error err item-ss)
                     trace x))
                ((when (eq kind :end))
                 ;; Stopping at this interface port.  Unlike module instances,
@@ -2415,7 +2416,17 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 
 
 
+#||
 
+(trace$ #!vl (vl-index-expr-typetrace
+              :entry (list 'vl-index-expr-typetrace
+                           (with-local-ps (vl-pp-expr x))
+                           (vl-scopestack->hashkey ss))
+              :exit (b* (((list err ?opinfo) values))
+                      (list 'vl-index-expr-typetrace
+                          (and err (with-local-ps (vl-cw "~@0" err)))))))
+
+||#
 
 
 (define vl-index-expr-typetrace
