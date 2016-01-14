@@ -35,9 +35,12 @@
 ;; when debugging the release note markup.
 (include-book "centaur/nrev/portcullis" :dir :system)
 (include-book "centaur/vl/portcullis" :dir :system)
+(include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)
 (include-book "centaur/bed/portcullis" :dir :system)
 (include-book "centaur/bitops/portcullis" :dir :system)
+(include-book "build/portcullis" :dir :system)
+(include-book "rtl/rel11/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -49,19 +52,772 @@
 
 (defxdoc note-7-2-books
 
-; (Matt K.: Not sure this deserves explicit mention, so I'll make it a comment.
-; If someone prefers to move it into the :long string, that's fine with me.)  A
-; simple fix for the acl2-doc Emacs browser allows handling of topics with
-; square brackets.  This fix was necessary because the new topic,
-; "SV::4VEC-[=", broke acl2-doc; it wouldn't initialize.  The fix simply
-; replaces characters #\[ and #\] with #\< and #\>, respectively.  It's not a
-; perfect fix, but it seems awkward to try to escape #\[ (which Emacs Lisp
-; thinks starts a vector).  See system/doc/render-doc-base.lisp.
+; Shilpi Goel
+; A note on how I prepared :doc note-7-2-books
+;
+; Of course, the easiest (and the fairest?) way to prepare the books
+; release notes is for everyone to update them the way Matt updates the
+; ACL2 release notes --- as and when updates are made.  But we all don't
+; do that.
+;
+; In this note, I've mentioned some useful git filtering commands that
+; I used to sift through the commit messages. Please feel free to add
+; suggestions, advice, etc. or delete this note altogether.
 
+; Actually, this wasn't too bad to do, considering the huge amount of
+; work that was done in the community between 7.1 and 7.2 releases. It
+; took me about six hours, in two 3 hour increments. Note though that
+; note-7-2-vl was prepared by Jared Davis.
+;
+; # Get a commit log from the date of last release onwards; in this
+;   case, the date was May 5, 2015.
+;
+; > git log --since="May 5, 2015" --no-merges > note-7-2-books-raw.txt
+;
+; # Get a list of all authors that contributed during this period:
+;
+; > fgrep "Author:" note-7-2-books-raw.txt | sort | uniq
+;
+; # Separate out commit messages by author --- the assumption is that an
+;   author will usually work on the same corpus of books and it'll be
+;   easier to consolidate commmits made to them.
+;
+; > git log --since="May 5, 2015" --no-merges --author=shigoel > shigoel.txt
+;
+;   and so on for every author in the list above.
+;
+; # Check if any commits were missed out during this separation of
+;   commits by authors: the outputs of the following two commands must
+;   be the same. Note that the second command assumes that the only
+;   *.txt files in the current directory are those created during this
+;   process.
+;
+; > fgrep "Author:" note-7-2-books-raw.txt | wc -l
+;
+; > fgrep "Author:" --exclude=note-7-2-books-raw.txt *.txt | wc -l
+;
+; # Look in [books]/system/doc/acl2-doc.lisp (the book where users are
+;   free to contribute documentation) for clues about where the books
+;   release notes must be placed. For 7.2 release (and for others before
+;   it till 6.4 release), this is in [books]/doc/relnotes.lisp, as is
+;   noted in *acl2-broken-links-alist*.
+;
+; # Start writing the release notes by going over the author-specific
+;   text files.
+;
+;   - I mentioned the authors of "New Libraries" but I did not mention
+;     the names of those who made changes to existing libraries, unless
+;     their contribution was "overwhelming" or "total" in some
+;     way. E.g., Dmitry Nadezhin made considerable changes to the RTL
+;     books between 7.1 and 7.2 and so I've mentioned his name in the
+;     release notes under RTL.
+;
+;   - In case a commit message is unhelpful in determining whether that
+;     commit is weighty enough to warrant a mention in the release
+;     notes, it can be useful to get a list of files changed by an
+;     author along with the commit SHA and date.
+;
+;     > git log --since="May 5, 2015" --no-merges --stat --author="Foo"
+;
+;   - It can also help to read discussions on closed pull requests and
+;     steal stuff from there (see
+;     https://github.com/acl2/acl2/pulls?q=is%3Apr+is%3Aclosed). You can
+;     choose to filter the pull requests by author, term, etc., and even
+;     sort them.
+;
+;   - If you want to go crazy and do a thoroughly good job, you can
+;     examine the patch introduced at each commit. You might want to
+;     redirect the output to a temp file for the following command.
+;
+;     > git log --since="May 5, 2015" --no-merges -p --author="Foo"
+;
+;   - Sometimes, it can be helpful to see whether a new file was added
+;     in a commit or merely modified. Use --name-status for that.
+;
+;     > git log --since="May 5, 2015" --no-merges --author="Foo" --name-status
+;
+;   - To see the history of a particular file:
+;
+;     > git log --since="May 5, 2015" --no-merges --stat filename
+;
   :parents (note-7-2)
-  :short "Release notes for the ACL2 Community Books for ACL2 7.2 (xx 20xx)"
-  :long "<p>Stub: to be written.  (It would be nice to mention the licensing
- change to the rtl books.)</p>")
+  :short "Release notes for the ACL2 Community Books for ACL2 7.2 (Jan 2016)"
+  :long "<p>The following is a brief summary of changes made to the @(see
+ community-books) between the releases of ACL2 7.1 and 7.2.</p>
+
+ <p>The <a
+ href='https://github.com/acl2/acl2/wiki/Release-version-numbers'>acl2-books
+ Wiki page on Release Version Numbers</a> gives the Git/SVN revision
+ numbers corresponding to releases.  See also @(see note-7-2) for the
+ changes made to ACL2 itself.  For additional details, you may also
+ see the raw <a href='https://github.com/acl2/acl2/commits/master'>commit
+ log</a>.</p>
+
+ <h3>New Libraries</h3>
+
+<h4>@(see kestrel-books)</h4>
+
+ <p>Kestrel Institute's contributions are now available under
+ @('kestrel/') directory. This directory contains some system
+ utilities to complement the built-in @(see system-utilities). It also
+ includes some general utilities to build and execute tests, retrieve
+ constituents of ACL2 events like @(see defun-sk), etc.</p>
+
+ <h4>@(see RTL::|Modeling Algorithms in SystemC and ACL2|)</h4>
+
+ <p>David Russinoff has contributed a library, @('projects/masc/'),
+ for modeling algorithms in SystemC and ACL2.</p>
+
+ <h4>SOFT</h4>
+
+ <p>Alessandro Coglio has contributed a tool called SOFT (Second-Order
+ Functions and Theorems) that mimics second-order behavior. See
+ @('tools/soft.lisp').</p>
+
+ <h4>stateman</h4>
+
+ <p>J Strother Moore's @('stateman') books are located in
+ @('projects/stateman/'). @('Stateman') is a utility that uses
+ metafunctions to manage large terms tepresenting machine states.</p>
+
+ <h4>@(see sv)</h4>
+
+ <p>SV is a new hardware verification library from Centaur Technology
+that includes a vector-based expression representation, efficient
+symbolic simulation integrated with @(see gl), and support for many
+SystemVerilog features.  It replaces @(see esim) as a backend to @(see
+vl); see @(see sv::sv-versus-esim) for a comparison.</p>
+
+ <h4>@(see x86isa)</h4>
+
+ <p>Shilpi Goel, Warren A. Hunt, Jr., and Matt Kaufmann have
+ contributed a library, @('projects/x86isa/'), containing the
+ specification of the x86 instruction set architecture and utilities
+ to simulate and reason about x86 machine code.</p>
+
+ <h4>Other new books</h4>
+
+ <p>A toy cache coherency protocol called VI and its proof of
+  correctness has been contributed by Ben Selfridge and David Rager in
+  @('projects/cache-coherence/'). This effort takes an approach that
+  starts with a goal invariant and develops many helper invariants
+  while trying to prove this goal invariant.</p>
+
+ <p>David Russinoff has contributed a proof of the group axioms for
+ the addition operation on the elliptic curver known as
+ @('Curve25519'); these books can be found in
+ @('projects/curve25519/'). Another library in @('projects/shnf')
+ contains a formalization of the theory of sparse Horner normal form
+ for integer polynomials.</p>
+
+ <p>Ben Selfridge has contributed his library @('projects/sb-machine')
+ that contains a formalization of the formalize the x86-TSO memory
+ model. This model contains a machine with multiple processors, a
+ shared memory, and store buffers.</p>
+
+ <p>The book @('demos/meta-wf-guarantee-example.lisp') has an example
+ that demonstrates the use of @(':well-formedness-guarantee') for
+ @(see meta) rules</p>
+
+ <p>The book @('misc/install-not-normalized.lisp') installs an
+ unnormalized definition; see @(see install-not-normalized).</p>
+
+ <p>The book @('hints/hint-wrapper.lisp') allows you to supply hints
+ in the statement of a theorem; see @(see hint-wrapper).</p>
+
+ <p>@('system/event-names.lisp') defines @(see ep) and @(see ep-) to
+  return the list of event names (resp., excluding those events built
+  into ACL2) with a given case-insensitive prefix.</p>
+
+ <p>@('system/termp.lisp') contains work done to verify the guards of
+  the ACL2 built-in function @(see termp).</p>
+
+ <p>A new book @('tools/flag.lisp') creates a flag-based induction
+ scheme for a mutual recursion; see @(see make-flag).</p>
+
+ <p>New timing tools like @(see oracle-time) and @('oracle-timelimit')
+ in @('tools/oracle-time.lisp') provide the run time and bytes
+ allocated during the execution of a form.</p>
+
+ <p>A new book @('tools/removable-runes.lisp') automatically computes
+    runes to disable in order to speed up a proof. See @(see
+    removable-runes).</p>
+
+ <h4>Libraries in @('workshops/2015/')</h4>
+
+ <p>Supporting materials for some accepted papers in the <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/workshop-2015/'>ACL2
+ Workshop, 2015</a> can be found in the directory
+ @('workshops/2015/').</p>
+
+ <ul>
+
+ <li>Cuong Chau, Matt Kaufmann, and Warren Hunt contributed their
+ books on Fourier Series Formalization in ACL2(r) in subdirectory
+ @('chau-kaufmann-hunt/').</li>
+
+ <li>David Hardin contributed his books involving reasoning about LLVM
+ code using Codewalker in the subdirectory @('hardin/').</li>
+
+ <li>Panagiotis Manolios and Mitesh Jain submitted their work on
+ proving skipping refinement with ACL2s in the subdirectory
+ @('jain-manolios/').</li>
+
+ <li>Yan Peng and Mark Greenstreet contributed their libraries to
+ extend ACL2 with SMT solvers using SMTLINK in the subdirectory
+ @('peng-greenstreet/').</li>
+
+ </ul>
+
+ <h3>Changes to Existing Libraries</h3>
+
+ <h4>@(see ACL2-sedan) related books</h4>
+
+ <p>The book @('acl2s/defdata/defdata-attach.lisp'), which is used to
+ attach or modify metadata for a @(see defdata) type, now truely uses
+ defattach for enumerators, i.e., enumerators have constant names that
+ can be attached to different enumerator functions. This facility thus
+ deprecates enum/test and separate test-enumerators. For now, most
+ enumerators are in @(see program) mode and non-guard-verified, and
+ hence, defattaching them requires trust-tags.</p>
+
+ <p>The @(see cgen) books have been updated as follows:</p>
+
+ <ul>
+
+ <li>Support has been added for collecting statistics on which
+    hypotheses are failing in vacuous tests.</li>
+
+ <li>First-class support (e.g., for equality) has been added for
+    membership relation/constraint, i.e., member/enum has the same
+    status as range types.</li>
+
+ <li>Nested testable events like @('thm'), @('defthm'), etc. are not
+    supported anymore. This results in the simplification of the
+    @('event-stack') global to just a @('event-ctx') global, which
+    stores the @('ctx-form'). This simplification also allows us to
+    aim for a global timeout on cgen/testing thm/defthm forms.</li>
+
+ <li>Support for complex-rationals has been added in number
+    ranges.</li>
+
+ </ul>
+
+ <p>The @(see acl2s::defunc) books have been udpated as follows:</p>
+
+ <ul>
+
+  <li>The @('print-summary') event prints total time taken by
+    @('defunc') events.  Now time is only printed twice, once for
+    @('test?') and once for @('defunc') logical events. Both these
+    times are computed using @(see read-run-time) ACL2 function and is
+    the accurate run time (not wall-clock time).</li>
+
+  <li>A new timeout abort event is inserted at the beginning of the
+    defunc/static/non-static events set (generated by
+    @('defunc-events-with-staticp-flag') function) . This event checks
+    if the elapsed time has exceeded the timeout limit and if it has,
+    then it aborts with an error and thus we fall through the outer
+    @(':OR') to the next choice.</li>
+
+  <li>The @('program-mode-p') predicate function now checks the
+   following: Is there a program-mode sub-function in the body?</li>
+
+  <li>The @('cgen-timeout') parameter is used to restrict time spent
+   by all the body contract testing as a global timeout.</li>
+
+ </ul>
+
+ <h4>@(see b*)</h4>
+
+ <p>The syntax for FUN binders @(see patbind-fun) has been extended to
+    allow inline/notinline declarations on the resulting @('FLET')
+    forms.</p>
+
+ <p>@('b*') now requires that variables be bound to a form and it will
+ no longer treat @('nil') and @('t') as aliases for @('&'). Error
+ messages produced by @('b*') have been made more informative.</p>
+
+ <h4>@(see bitops)</h4>
+
+ <p> Reduction XOR related functions have been added to the
+ @('bitops') library in @(see bitops::parity). Lemmas in @(see
+ bitops::bitops/ihsext-basics) have been cleaned up. Theorems about
+ @(see unsigned-byte-p) have been added for @(see
+ bitops::rotate-right) and @(see bitops::rotate-left).</p>
+
+ <p>A small book about @(see floor) has been added:
+ @('centaur/bitops/floor.lisp').</p>
+
+ <p>More slice and merge functions have been added in @(see
+ bitops::bitops/merge). Some @(see integer-length) rules in
+ @('centaur/bitops/integer-length.lisp') have been changed to allow
+ better free variable matching.</p>
+
+ <h4>coi</h4>
+
+ <p>A new book for reasoning about modular arithmetic using @('nary')
+ congruences has been contributed; see
+ @('coi/nary/nary-mod.lisp').</p>
+
+ <p>Books in @('coi') have been updated so as to avoid name conflicts
+ with @('std') books.</p>
+
+ <h4>@(see fty)</h4>
+
+ <p>The @('fty') books have been re-organized --- @('deftypes.lisp')
+ has been split up into different files, and tests have been moved to
+ a subdirectory @('tests/'). Performance problems with certain macros,
+ mostly related to reasoning about tag and kind functions, have been
+ fixed.</p>
+
+ <p>@(see fty::deftranssum) has been extended to support nested @(see
+ fty::defprod)s.</p>
+
+ <h4>@(see quicklisp)</h4>
+
+ <p>The bundled quicklisp libraries have been updated.  The quicklisp
+books work only for ACL2 built on CCL or SBCL.</p>
+
+ <h4>@(see rtl)</h4>
+
+ <p>The @('rtl/rel11') books have seen many updates, courtesy of
+ Dmitry Nadezhin.</p>
+
+ <p>Guards have been added to functions in
+ @('rtl/rel11/lib/'). General cleanup of the @('rtl/rel11/') books,
+ like removing unnecessary hypotheses and @(see include-book)s, has
+ also been done.</p>
+
+ <p>New radix-aware versions of functions in @('rtl/rel11/support/')
+ directory have been added. E.g., the old function @('bitn') has a
+ fixed radix of 2 and takes @('x') and @('n') as input arguments and
+ the new radix-aware version corresponding to this function is
+ @('digitn'), which takes the radix @('b') in addition to @('x') and
+ @('n') as inputs.</p>
+
+ <p>The books @('rtl/rel11/support/basic.lisp'),
+ @('rtl/rel11/support/bits.lisp'), and
+ @('rtl/rel11/support/float.lisp') are now certifiable by ACL2(r).</p>
+
+ <p>Some books from @('rtl/rel11/rel9-rtl-pkg/lib'), like
+ @('reps.lisp'), @('rom-helpers.lisp'), and
+ @('simple-loop-helpers.lisp'), along with their supporters, have been
+ moved to @('rtl/rel11/support/').</p>
+
+ <p>Bugs in @('rtl/rel11/lib/excps.lisp') related to divide-by-zero
+ exception and the @('ep') exponent width in the function
+ @('convert-nan-to-op') have been fixed.</p>
+
+ <h4>@(see std)</h4>
+
+ <p>A new macro called @(see impliez) has been added in
+ @('std/basic/defs.lisp'). This macro expands to an @(see if), so
+ unlike @(see implies), guards in the consequent can be verified
+ assuming the antecedent.</p>
+
+ <p>New theorems about @(see acl2-count) and @(see nth) have been
+ added to @('std/lists/nth.lisp').</p>
+
+ <p>The guards of @(see list-equiv) in @('std/lists/list-defuns.lisp')
+ have been verified. The function @(see list-fix) was tweaked so that
+ it avoids consing if its input is indeed a @('true-listp'). A new
+ function @(see llist-fix), which is logically @('list-fix') but is
+ the identity function for execution, has been also added.</p>
+
+ <p>A possibly better non-CCL raw Lisp implementation of @(see
+ bitsets::bignum-extract) has been added.</p>
+
+ <p>A new rule @('pick-a-point-subset-constraint-helper') was added in
+    @('std/osets') to allow pick-a-point proofs to be used even when
+    subset is disabled.</p>
+
+ <p>For @(see std::define), @('defretd') has been added to go with
+ @(see std::defret). Also, @('defret') now allows the @('otf-flg')
+ flag. @(':guard t') declarations in @('define') have been eliminated
+ if guards have already been provided. Also, information displayed by
+ @(see pe) of functions introduced using @('define') has been cleaned
+ up using @(see pe-table).</p>
+
+ <p>A new macro @(see std::rule) is a @('THM')-like version of @(see
+ std::defrule).  @('Rule') and @('defrule') produce leaner output now,
+ almost identical to that produced by @('thm') and @('defthm').</p>
+
+ <h4>@(see vl)</h4>
+
+ <p>For details about changes made to VL, see @(see note-7-2-vl).</p>
+
+ <h4>@(see xdoc)</h4>
+
+ <p>Topics with missing parents are now placed under a new topic @(see
+ xdoc::missing-parents) instead of under @('top').</p>
+
+ <p>The title of xdoc manuals can be easily configured by editing
+ @('xdoc/fancy/config.js'). No warning about a redefined topic is
+ produced when the topic is identical to the original one.</p>
+
+ <p>@('xdoc') now loads @('acl2-doc-wrap') instead of @('acl2-doc') so
+ that the loaded documentation doesn't overwrite the user's
+ topics.</p>
+
+ <p>A bug in @('see') that did not allow properly escaping the printed
+ name of a symbol has been fixed. The implementation of @(see
+ xdoc::defsection) had another bug that caused 'Definitions and
+ Theorems' section to be added to topics even when there were no
+ definitions or theorems in that section; this bug has been fixed as
+ well. Also, @('defsection') does not explicitly turn on error
+ printing during event submission anymore.</p>
+
+ <p>The output from @(see xdoc::save) now shows more timing
+ information.</p>
+
+ <p>Legacy stuff like @('write-acl2-xdoc'), @(':import') option with
+ @(see xdoc::save), and @('xdoc-verbose') has been removed.</p>
+
+ <h4>Other Libraries</h4>
+
+ <p>A new book @('projects/codewalker/demo-fact-partial.lisp') is a
+ variant of @('projects/codewalker/demo-fact.lisp') that provides a
+ guide to how Codewalker might be modified so that termination proofs
+ can be avoided or delayed.</p>
+
+ <p>Multiple values and stobjs are now supported in the
+ @('coi/defung/') libraries.</p>
+
+ <p>@(see Must-fail) and related utilities in @('misc/eval.lisp')
+ produce much less output by default. Also,
+ @('make-event/eval-check.lisp') no longer duplicates code from
+ @('misc/eval.lisp').  Instead, it defines @('!') utilities that
+ behave like the counterparts previously defined (without the @('!')
+ suffix).</p>
+
+ <p>A bug in @(see remove-hyps) that occurred when no proof steps are
+ required in a proof has been fixed.</p>
+
+ <p>A new @('tarai-measure') has been added in
+ @('coi/termination/assuming/complex.lisp'), which is allows this book
+ to certify quickly in ACL2(r) as well. Consequently, this book was
+ removed from @('SLOW_BOOKS') in @('books/GNUmakefile').</p>
+
+ <p>Some floating-point support has been added to the JVM M5 model;
+ see @('models/jvm/m5/m5.lisp').</p>
+
+ <p>@(see GL) now displays a more informative error message about
+ duplicated indices in @(':g-bindings').</p>
+
+ <p>@(see Satlink) now uses @('drat-trim'), available at
+ @('tools/drat-trim/'), instead of @('drup-trim').</p>
+
+ <p>The book @('tools/untranslate-for-exec.lisp') has been improved to
+ handle nested mv-lets.</p>
+
+ <h4>Deleted Books and Stubs</h4>
+
+ <p>The book @('defexec/other-apps/records/records-bsd.lisp') has been
+ deleted --- it was out of sync with @('records.lisp') in the same
+ directory.</p>
+
+ <p>The book @('make-event/assert-check-include-1.lisp') has been
+ deleted.</p>
+
+ <p>The book @('misc/dead-events.lisp') has been moved to
+ @('tools/dead-events.lisp'), and a relocation stub has been added in
+ the older location.</p>
+
+ <p>In the directory @('misc/'), @('*-bsd.lisp') books are now
+ @('reloc_stub') books.</p>
+
+ <p>Books in @('projects/concurrent-programs/german-protocol/') have
+ been moved to @('projects/cache-coherence/german-protocol/').</p>
+
+ <p>The @('rtl/rel10') has been removed from the community
+ books. These books were not in use anywhere in the contributed
+ books.</p>
+
+ <p>The book @('system/gather-dcls.lisp') has been deleted after its
+ contents were moved to
+ @('system/verified-termination-and-guards.lisp').</p>
+
+ <h3>Licensing Changes</h3>
+
+ <p>The following books now have BSD-3-Clause license.</p>
+
+ <ul>
+
+ <li>@('arithmetic-2/') and @('arithmetic-3/')</li>
+
+ <li>@('misc/rtl-untranslate.lisp')</li>
+
+ <li>M5 books @('models/jvm/m5/')</li>
+
+ <li>@('rtl') books</li>
+
+ <li>@('system/cantor-pairing-bijective.lisp')</li>
+
+ <li>@('tools/with-arith5-help.lisp')</li>
+
+ </ul>
+
+ <h3>Build System Updates</h3>
+
+ <h4>@(see build::cert.pl)</h4>
+
+ <p>The @('cert.pl') documentation at @('build/doc.lisp') has been
+ moved to its own @('BUILD') package.</p>
+
+ <p>@('cert.pl') now produces successful certification messages that
+ include times and color coding.  @('cert.pl') has also been patched
+ to correctly handle filenames with dollar signs. It has new options
+ for removing @('.cert.out') files after successful certifications and
+ for sending them to a temporary directory.</p>
+
+ <p>A new @(see build::cert_param) for SMTLINK, @('uses-smtlink'), has
+    been added so that books using it will not be certified unless
+    supporting software such as Z3 is installed. Another
+    @('cert_param') called @('non-gcl') has been added.</p>
+
+ <p>A new @('CERT_PL_SHOW_HOSTNAME') environment variable has been
+ added to @('cert.pl') that can show the hostname after each book gets
+ certified.</p>
+
+ <h4>make system</h4>
+
+ <p>The topic @(see Books-certification) gives clearer instructions on
+ building the books and the manual.</p>
+
+ <ul>
+
+ <li>@('make manual') now just builds @('doc/top.cert') and
+ @('system/doc/acl2-manual.cert').</li>
+
+ <li>@('make everything') now just depends on all the books it was
+ going to build.</li>
+
+ <li>@('make quicklisp') now just causes an error if
+ @('USE_QUICKLISP') is not set.</li>
+
+ </ul>
+
+ <h3>Miscellaneous</h3>
+
+ <p>A new tool @('build/memsum.pl') analyzes memory usage during
+ regressions.</p>
+
+ <p>A new tool @('build/slowevents.pl') attempts to identify the
+ slowest events in a book or a set of books.</p>")
+
+(defxdoc note-7-2-vl
+  :parents (note-7-2-books)
+  :short "Notes about changes to @(see vl) and @(see sv) in ACL2 7.2."
+
+  :long "<p>Below we describe changes since the ACL2 7.1 release to the
+unstable, development version of @(see VL).  Note that the stable version,
+@(see vl2014), is essentially unchanged except for minor bugfixes.  See also
+@(see note-7-1-vl) for some background about VL and VL2014.</p>
+
+
+<h3>Extended SystemVerilog Support</h3>
+
+<p>Much of the development work has focused on supporting additional features
+of SystemVerilog.</p>
+
+<p><b>Interfaces.</b> VL and SV now have much better support for interfaces.
+They can now contain functions, tasks, assignments, etc.  Modports are now
+generally understood: they participate in scopes, are sanity checked for name
+clashes, are supported in submodule instantiation, etc.  Interface usage in
+submodule instances are properly type checked and are generally supported in VL
+and through SV.  Note that interface arrays are not yet supported.</p>
+
+<p><b>Assertions.</b> VL's parser and pretty-printer now support many
+SystemVerilog assertion features, including at least sequence/property
+expressions (see @(see vl::property-expressions)), procedural assertions (see
+@(see vl::vl-assertstmt) and @(see vl::vl-cassertstmt)), sequence and property
+declarations (see @(see vl::vl-sequence) and @(see vl::vl-property)), and
+module-level assertions (see @(see vl::vl-assertion) and @(see
+vl::vl-cassertion)).  Note that all of this assertion-related stuff is
+currently ignored by the SV flow.  However, modules with assertions should at
+least no longer result in parse errors, and these structures may some day be a
+useful basis for implementing assertion checking tools.</p>
+
+<p><b>Aliases.</b> Alias constructs should now work in VL and are also
+supported by SV.</p>
+
+<p><b>Expressions.</b> The @('**') (exponent/power) operator, @('inside')
+operator are now supported in both @(see vl) and SV.  Note that NCV/VCS
+disagree about the sizing of @('inside') operators and that in general these
+operators may be buggy on commercial tools.  Added support for a few additional
+system functions like @('$dimensions'), etc.</p>
+
+<p><b>Statements.</b> The parsing and representation of @(see vl::statements)
+has been extended in various ways.  Note that our support for statements in SV
+is still rather limited, so just because we can parse these things doesn't
+necessarily mean they will be handled all the way through the SV flow:</p>
+
+<ul>
+
+<li>@('break') and @('continue') statements are now implemented.</li>
+
+<li>Statement labels are now supported.</li>
+
+<li>There is better support for subroutine call statements; so we can now parse
+things like @('void'(...)') and otherwise do slightly better with calls of
+tasks/functions in statements.</li>
+
+<li>We now permit function calls/task enables with explicit parens but no
+arguments.  (In Verilog-2005, was is syntactically legal to write statements
+like @('mytask;') but not @('mytask();') with the explicit parens, even though
+they seem like they should be equivalent.  In SystemVerilog both forms are
+allowed, but we had previously only supported the @('mytask;') version.)</li>
+
+<li>Block statements (@('begin/end'), @('fork/join'), ...) can now have
+typedefs.  We can now parse @('fork/join_any') and @('fork/join_none')
+statements.</li>
+
+<li>@('final') statements are now allowed.  Much like @('initial') statements,
+these are simply ignored in the SV flow.</li>
+
+</ul>
+
+
+<p><b>DPI import/exports.</b> DPI import/exports, used to connect SystemVerilog
+to C programs, are now tolerated by VL's parser and are now to some degree
+understood by other parts of VL.  For instance, they are known to @(see
+vl::scopestack)s and can be considered when checking for name clashes,
+introducing implicit wires, etc.  See @(see vl::vl-dpiimport) and @(see
+vl::vl-dpiexport).</p>
+
+
+<p><b>Instances.</b> Module and gate instance arrays can now use the
+single-expression ranges, i.e., we now support things like:</p>
+
+@({
+      and foo [3] (o, a, b);
+      submod foo [3] (a, b, c);
+})
+
+<p>Note that SystemVerilog also allows multiple-dimension instance arrays, but
+those are still unsupported.</p>
+
+
+<p><b>Other.</b> Many bugfixes (e.g., to the parser, scoping, etc) have
+resulted in VL being able to successfully load additional designs.</p>
+
+
+<h3>Scoping and @(see vl::annotate) improvements.</h3>
+
+<p>The SV and Linter flows now use a unified @(see vl::annotate) meta-transform
+to prepare the design for analysis.  This transform has been significantly
+improved to do a better job with scoping issues related to functions, tasks,
+generate constructs, and statements.  This provides broad improvements to what
+VL can successfully parse and translate.</p>
+
+<p>The @(see vl::make-implicit-wires) transformation, which plays a
+surprisingly important role in getting scoping right, now more closely matches
+commercial tools like NCV and VCS.  We are particularly more careful about how
+implicit wires are inferred from expressions involving indexing/selection like
+@('foo[w]').  In general, in a structure pattern like @(''{foo : 3}'), it's
+tricky to tell whether @('foo') is a structure member or a parameter.  VL now
+handles this much better and our strategy is documented; see @(see
+vl::vl-patternkey-ambiguity).  It also used to be that such patterns could fool
+VL into inferring implicit wires for @('foo')!  This has been fixed.</p>
+
+<p>Much of @('make-implicit-wires') has been moved into the related @(see
+vl::shadowcheck) transform.  The representation of functions and tasks has been
+adjusted to better support correct scoping and shadowchecking, and shadowcheck
+now understands user-defined types.  Shadowcheck was also incorrectly handling
+certain situations with package imports, which has been fixed.  It also now
+checks for name clashes in all scopes and produces good warnings in this case.
+Finally, shadowcheck treats the global scope in a less incorrect way, fixing
+many problems with global package imports.</p>
+
+<p>VL's scoping of generates also used to be completely wrong.  While it still
+has some known bugs, it has been significantly improved.  The scoping of
+@('genvars') is also improved.  Bugs have also been fixed related to
+disambiguating types from expressions in functions and tasks, and also in the
+handling of types versus interfaces in ports.</p>
+
+
+<h3>Generates, Elaboration</h3>
+
+<p>One of the trickiest parts of VL is elaboration, where parameters are
+expanded into constants, generate blocks are resolved, etc.  To evaluate a
+parameter like</p>
+
+@({
+     parameter foo = $bits(mypkg::mytype_t) + blah2size(settings.blah);
+})
+
+<p>we need to evaluate its expression.  This can involve looking up the values
+of other parameters from other places in the hierarchy, evaluating system and
+user-defined functions, etc.  Functions are defined in terms of statements, so
+we need to understand statements as well.  This all gets to be a very messy
+mutual recursion.</p>
+
+<p>VL's implementation of elaboration now reuses much of the SV code for
+converting Verilog expressions into @(see sv::svex)es, and is now able to
+resolve many significantly more complex parameters and generates.</p>
+
+
+<h3>Linter</h3>
+
+<p>The @(see vl::lint) tool now uses much more of the SV code.  It shares the
+@(see vl::annotate) code with the SV flow and also uses SV-based elaboration,
+which provides much better handling of generates and allows it to
+unparameterize modules involving types and other complex expressions.  The very
+useful size warnings from VL2014 have also been ported to work with the new SV
+code base.</p>
+
+<p>Various warning heuristics and messages have been tweaked.  We no longer
+complain about duplicate interface instances, since that's perfectly
+reasonable.  Parse errors have some additional context.  Lucid has been
+extended to understand new features like interfaces and modports, DPI
+imports/exports, and final blocks.</p>
+
+
+<h3>Test Suites</h3>
+
+<p>Significant work has gone into testing VL.  VL now has three test
+suites:</p>
+
+<ul>
+
+<li><b>centaur/vl/linttest</b> &mdash; tests of Linter functionality.  This
+notably includes a lot of tests of scoping and sizing issues.</li>
+
+<li><b>centaur/sv/cosims</b> &mdash; tests comparing VL+SV behavior against
+that of commercial simulators such as NCV and VCS.  These are our main tests of
+SV.  You can also search for @('no_ncv') or @('no_vcs') to discover places
+where VL disagrees with one tool or another (e.g., because the commercial tools
+don't agree.)</li>
+
+<li><b>centaur/sv/failtest</b> &mdash; tests that ensure VL+SV report fatal
+errors for modules that have some bad problem.  This turns out to be a nice way
+to test many scoping issues and make sure that we will reject bad
+constructs.</li>
+
+</ul>
+
+<p>Running @('make vl') in the @('acl2/books') directory now automatically also
+runs all of the linttests and failtests.  It doesn't automatically run the
+cosims, since that requires commercial simulators.)</p>
+
+<p>Each of the test suites has been extended considerably, especially in the
+tricky areas of scoping, implicit wire creation, generate handling, and also in
+order to test new features like interface support.  Many of the old VL2014
+@('systest') tests have also been ported to the new @('cosims') format.</p>
+
+
+
+<h3>Other Notes</h3>
+
+<p>VL and SV are still evolving rapidly and a lot is in flux.</p>
+
+<p>There has been significant renaming of files, moving of files, and deleting
+of dead files.  The documentation has gotten a lot of work in some areas, but
+of course there is more to do.</p>
+
+<p>Numerous minor bugfixes in all areas of VL are not mentioned, but can be
+found in the change log.</p>")
 
 (defxdoc note-7-1-books
   :parents (note-7-1)
@@ -125,7 +881,7 @@
  <p>The new directory @('projects/fifo') has a list-based FIFO implementation,
  that has some properties proven about it.</p>
 
- <p>The new book @('books/tools/include-an-arithmetic-book.lisp') provides
+ <p>The new book @('tools/include-an-arithmetic-book.lisp') provides
  short-hand includes of the arithmetic libraries, including various
  configurations of @('arithmetic-5').</p>
 
