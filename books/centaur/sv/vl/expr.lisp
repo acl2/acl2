@@ -1366,6 +1366,9 @@ the way.</li>
                     ;; the vardecl (hid), with no selects.
                     (vl-seltrace-to-svex-var nil x ss)))
                 (mv err base-var)))
+             ((when (member (tag item) '(:vl-modinst
+                                         :vl-interfaceport)))
+              (vl-seltrace-to-svex-var nil x ss))
              (paramval (b* (((unless (eq (tag item) :vl-paramdecl)) nil)
                             ((vl-paramdecl item)))
                          (vl-paramtype-case item.type

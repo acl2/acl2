@@ -795,15 +795,6 @@ for each usertype is stored in the res field.</p>"
     (implies (atom ifportalist-chunk)
              (equal new-port (vl-port-fix port1)))))
 
-(define vmsg-concat ((x1 (or (not x1) (vl-msg-p x1)))
-                     (x2 (or (not x2) (vl-msg-p x2))))
-  :returns (msg (iff (vl-msg-p msg) msg))
-  (if x1
-      (if x2
-          (vmsg "~@0~%@~1" x1 x2)
-        (vl-msg-fix x1))
-    (and x2 (vl-msg-fix x2))))
-
 (define vl-plainarglist-update-ifports
   ((x vl-plainarglist-p "Actuals of the instance")
    (ports vl-portlist-p "Ports of the instantiated module")

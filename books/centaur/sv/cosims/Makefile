@@ -82,7 +82,6 @@ FAILING_TEST_TARGETS := \
   gates_rnmos/ok \
   gates_pullup/ok \
   gates_pulldown/ok \
-  iface_subiface/ok \
   inst_size1/ok \
   inst_size2/ok \
   inst_size3/ok \

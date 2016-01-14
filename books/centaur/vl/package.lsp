@@ -213,6 +213,7 @@
 
             str::cat
             str::natstr
+            str::intstr
             str::implode
             str::explode
 
