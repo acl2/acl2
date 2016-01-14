@@ -881,9 +881,9 @@ found in the change log.</p>")
  <p>The new directory @('projects/fifo') has a list-based FIFO implementation,
  that has some properties proven about it.</p>
 
- <p>The new book @('tools/include-an-arithmetic-book.lisp') provides
- short-hand includes of the arithmetic libraries, including various
- configurations of @('arithmetic-5').</p>
+ <p>The new book @('books/tools/include-an-arithmetic-book.lisp')
+ provides short-hand includes of the arithmetic libraries, including
+ various configurations of @('arithmetic-5').</p>
 
  <p>The @('misc/assert') book is now documented; see for instance @(see
  assert!).</p>
