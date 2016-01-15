@@ -3069,13 +3069,19 @@
                                               PAGE-TABLE-ENTRY-NO-PAGE-FAULT-P$INLINE
                                               PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE
                                               RM08
-                                              RB)))
+                                              RB
+                                              RB-1)))
                            (if (equal mv-nth-index ''1)
                                (not (member-p inner-fn '(WM08 WB)))
                              t)))
                    (cw "~%~p0: Unexpected mv-nth x86-term encountered:~p1~%" thm-name x86-term)
                    x86-term)
-                  (sub-x86 (first (last inner-fn-call))))
+                  (sub-x86
+                   (if (equal inner-fn 'RB-1)
+                       ;; The last argument of RB-1 is acc, not
+                       ;; x86. x86 is the next to last argument.
+                       (first (last (butlast inner-fn-call 1)))
+                     (first (last inner-fn-call)))))
                sub-x86))
             ((or (equal outer-fn 'WM-LOW-64)
                  (equal outer-fn 'XW))
