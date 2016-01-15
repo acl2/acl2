@@ -399,7 +399,6 @@ rules:</p>
                     (eq type1 :vl-kwd-always_comb)))
           (vl-parse-always-construct atts))
 
-
          ((when (vl-plausible-start-of-assertion-item-p))
           ;; These are for things like actual 'assert property ...' and
           ;; similar, not for property/sequence declarations.
@@ -424,6 +423,19 @@ rules:</p>
          ((when (eq type1 :vl-kwd-let))
           (vl-parse-error "BOZO not yet implemented: let declarations"))
 
+         ((when (eq type1 :vl-semi))
+          ;; SystemVerilog-2012 seems to allow allows empty items to occur most anywhere:
+          ;;
+          ;;    package_or_generate_item_declaration ::= .... | ';'
+          ;;
+          ;; And these are allowed all over, e.g., in module_or_generate_item,
+          ;; interface_or_generate_item.  We'll match these but just throw them
+          ;; away.  This maybe isn't quite right, as it throws away the attributes
+          ;; that are associated with the semicolon, but it seems unlikely that
+          ;; we will care about that.
+          (seq tokstream
+               (:= (vl-match))
+               (return nil)))
 
          ((when (eq type1 :vl-idtoken))
           ;; It's either a udp/module/interface instance, a variable decl, or a
@@ -600,6 +612,14 @@ returns a @(see vl-genblock).</li>
         :measure (two-nats-measure (vl-tokstream-measure) 6)
         :verify-guards nil
         (declare (xargs :measure-debug t))
+        ;; SystemVerilog-2012:
+        ;;
+        ;;    generate_block ::= generate_item
+        ;;                     | [ identifier ':' ] begin [ ':' identifier ]
+        ;;                          {generate_item}
+        ;;                       'end' [ ':' identifier ]
+        ;;
+        ;; BOZO we don't currently support pre-labels.
         (seq tokstream
              (loc := (vl-current-loc))
              (gen :w= (vl-parse-generate))

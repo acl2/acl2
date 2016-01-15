@@ -64,11 +64,13 @@ gen1d.v -- gate instance name redeclared as genvar
 gen1e.v -- loop generate block name conflicts with wire declaration
 gen1f.v -- unnamed generate block tries to redeclare wire (but it's in the same scope)
 gen1g.v -- unnamed generate block declared wire that is later redeclared outside it
-gen1h.v -- conditional generate block name conflicts with wire declaration
+gen1h.v -- conditional generate block name conflicts with earlier wire declaration
+gen1h2.v -- conditional generate block name conflicts with later wire declaration
 gen1i.v -- case generate block name conflicts with wire declaration
 gen1j.v -- begin/end generate block name conflicts with wire declaration
 gen1k.v -- default generate block name conflicts with wire declaration
 gen1l.v -- named generate block that won't exist after elaboration conflicts with wire decl
+gen1l2.v -- named generate block that won't exist after elaboration conflicts with later, similar block
 gen2.v  -- continuous assignment to genvar
 gen2b.v -- continuous assignment from genvar
 gen3.v  -- bare reference to wire declared in a named generate block's scope
@@ -121,7 +123,6 @@ iface25.v -- trying to instantiate interface port with submodule instance name (
 iface26.v -- modports declared within an interface's generate block
 iface27.v -- try to do "foo + bar", where foo is an interface
 
-
 ifarray1.v -- passing [5:0] interface array to [4:0] submodule array
 ifarray2.v -- passing wrong type of interface array to submodule
 ifarray3.v -- submodule tries to take `myiface [4:0] foo` instead of `myiface foo [4:0]`
@@ -137,6 +138,9 @@ implicit3.v -- explicit logic var declaration clashes with ansi-style wire input
 implicit4.v -- explicit wire declaration clashes with ansi-style wire input port
 implicit5.v -- explicit wire declaration clashes with ansi-style integer output port
 implicit6.v -- explicit wire declaration clashes with ansi-style wire input port
+implicit7.v -- implicit wires should not be inferred from rhs of assignment
+implicit7b.v -- implicit wires should not be inferred from rhs of assignment (plus some generate stuff)
+implicit7c.v -- implicit wires should not be inferred from rhs of assignment (plus other generate stuff)
 
 import1.v -- import non-existing name from existing package
 import2.v -- import * from non-existing package

@@ -29,28 +29,20 @@
 // Original authors: Sol Swords <sswords@centtech.com>
 //                   Jared Davis <jared@centtech.com>
 
-
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
   logic a;
   parameter version = 1;
-  parameter mode = 1;
-
-   // Very tricky: the nested conditional generate does NOT introduce
-   // an extra scope.  Thus it is legal to refer to foo.a directly,
-   // even though you might think it should be something like
-   // genblock_0.foo.a or whatever the stupid name generation scheme
-   // is.
 
   if (version == 1)
-    if (mode == 1) begin : foo
-      wire [3:0] a = in[3:0];
+    if (version == 1) begin : foo
+      wire [3:0] foo = in[3:0];
     end
   else
     wire b;
 
-  assign a = ~foo.a;
-  assign out = { a, foo.a };
+  assign a = ~foo.foo;
+  assign out = { a, foo.foo };
 
 endmodule

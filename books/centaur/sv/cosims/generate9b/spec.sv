@@ -26,31 +26,48 @@
 //   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //   DEALINGS IN THE SOFTWARE.
 //
-// Original authors: Sol Swords <sswords@centtech.com>
-//                   Jared Davis <jared@centtech.com>
-
+// Original authors: Jared Davis <jared@centtech.com>
 
 module spec (input logic [127:0] in,
 	     output wire [127:0] out);
 
-  logic a;
   parameter version = 1;
-  parameter mode = 1;
+  parameter crisis = 0;
 
-   // Very tricky: the nested conditional generate does NOT introduce
-   // an extra scope.  Thus it is legal to refer to foo.a directly,
-   // even though you might think it should be something like
-   // genblock_0.foo.a or whatever the stupid name generation scheme
-   // is.
+  wire [3:0] A9, A8, A7, A6, A5, A4, A3, A2, A1, A0;
+  wire [3:0] B9, B8, B7, B6, B5, B4, B3, B2, B1, B0;
+
+  assign { B9, B8, B7, B6, B5, B4, B3, B2, B1, B0,
+           A9, A8, A7, A6, A5, A4, A3, A2, A1, A0 } = in;
+
+  // More tests of direct conditional nesting.
 
   if (version == 1)
-    if (mode == 1) begin : foo
-      wire [3:0] a = in[3:0];
-    end
-  else
-    wire b;
+     if (crisis == 0)
+     begin : xxxlabel
+       wire [3:0] xxx = A0;
+     end
+     else if (crisis == 1)
+     begin : xxxlabel
+       wire [3:0] xxx = A1;
+     end
 
-  assign a = ~foo.a;
-  assign out = { a, foo.a };
+  if (version == 1)
+     if (crisis == 0)
+     begin : yyylabel
+       wire [3:0] yyy = A2;
+     end
+     else if (crisis == 1)
+     begin : yyylabel
+       wire [3:0] yyy = A3;
+     end
+     else ; // gets associated with crisis stuff
+  else
+  begin : yyylabel
+    wire [3:0] yyy = A4;
+  end
+
+  assign out = { yyylabel.yyy, xxxlabel.xxx };
+
 
 endmodule
