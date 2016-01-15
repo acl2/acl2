@@ -9,6 +9,10 @@ module top ;
   // "It is not possible to have two nested loop generate constructs that
   // use the same genvar."
 
+  // Note: see also cosims/generate11 and cosims/generate10b.  NCV and VL say
+  // that it's OK for loops to use the same variable when there are explicit
+  // genvar declarations in the loops.  (VCS disagrees).
+
   generate
     for(i = 0; i < 4; i = i+1)
     begin:a

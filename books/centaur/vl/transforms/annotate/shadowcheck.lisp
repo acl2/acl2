@@ -343,7 +343,14 @@ the named blocks within any if/case/loop generate constructs.</p>"
            (append (vl-gencaselist->nameclash-scopeitem-alist x.cases)
                    (vl-genblock-under-cond->nameclash-scopeitem-alist x.default)))
           :vl-genloop
-          ;; Just want to get the body's name, if any.
+          ;; Just want to get the body's name, if any.  I considered also getting
+          ;; the generate variable name in the case of x.genvarp, however that
+          ;; doesn't seem correct.  For instance, consider cosims/generate10; we
+          ;; find that it's OK to do:
+          ;;    for(genvar i = ...) ...;
+          ;;    for(genvar i = ...) ...;
+          ;; So it doesn't seem like such a genvar should be considered to take
+          ;; part in the scope that is outside the for loop.
           (let ((name (vl-genblock->name x.body)))
             (and (stringp name)
                  (list (cons name x)))))))
