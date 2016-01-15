@@ -1,6 +1,6 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+# ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2016, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -388,7 +388,7 @@ compile:
 	@$(MAKE) check_compile_ok
 
 .PHONY: copy-distribution
-copy-distribution:
+copy-distribution: acl2r.lisp
 # WARNING: Execute this from an ACL2 source directory.
 # You must manually rm -r ${DIR} before this or it will fail without doing
 # any damage.
@@ -396,7 +396,6 @@ copy-distribution:
 # match what lisp returns from truename.
 	rm -f workxxx
 	rm -f workyyy
-	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}")' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
