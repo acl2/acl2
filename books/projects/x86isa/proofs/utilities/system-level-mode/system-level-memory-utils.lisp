@@ -420,20 +420,6 @@
 ;; ======================================================================
 
 (local
- (defthm mv-nth-2-rb-1-and-xlate-equiv-x86s
-   (implies (all-paging-entries-found-p l-addrs (double-rewrite x86))
-            (xlate-equiv-x86s
-             (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc))
-             (double-rewrite x86)))))
-
-(defthm mv-nth-2-rb-and-xlate-equiv-x86s
-  (implies (all-paging-entries-found-p l-addrs (double-rewrite x86))
-           (xlate-equiv-x86s
-            (mv-nth 2 (rb l-addrs r-w-x x86))
-            (double-rewrite x86)))
-  :hints (("Goal" :in-theory (e/d* () (rb-1)))))
-
-(local
  (defthm rm08-returns-no-error-in-system-level-mode
    (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
                  (paging-entries-found-p lin-addr (double-rewrite x86))
@@ -618,6 +604,35 @@
                             (acc nil)))
            :in-theory (e/d* () (mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint rb-1)))))
 
+(local
+ (defthm mv-nth-2-rb-1-and-xlate-equiv-x86s
+   (implies (all-paging-entries-found-p l-addrs (double-rewrite x86))
+            (xlate-equiv-x86s
+             (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc))
+             (double-rewrite x86)))))
+
+(defthm mv-nth-2-rb-and-xlate-equiv-x86s
+  (implies (all-paging-entries-found-p l-addrs (double-rewrite x86))
+           (xlate-equiv-x86s
+            (mv-nth 2 (rb l-addrs r-w-x x86))
+            (double-rewrite x86)))
+  :hints (("Goal" :in-theory (e/d* () (rb-1)))))
+
+(defthm wb-values-and-xlate-equiv-structures-disjoint
+  (implies (and
+            (bind-free
+             (find-an-xlate-equiv-x86
+              'wb-values-and-xlate-equiv-structures-disjoint
+              'x86-2 x86-1)
+             (x86-2))
+            (paging-entries-found-p lin-addr (double-rewrite x86-1))
+            (xlate-equiv-x86s (double-rewrite x86-1) x86-2))
+           (equal
+            (mv-nth 0 (wm08 lin-addr val x86-1))
+            (mv-nth 0 (wm08 lin-addr val x86-2))))
+  :hints (("Goal"
+           :use ((:instance xlate-equiv-x86s-open-for-cpl))
+           :in-theory (e/d* (wm08) (force (force))))))
 
 (defun-nx wb-and-xlate-equiv-structures-ind-hint
   (l-addrs bytes x86)
@@ -631,21 +646,6 @@
        (cdr bytes)
        (mv-nth 1 (wm08 (car l-addrs) (car bytes) x86))))))
 
-(defthm wb-values-and-xlate-equiv-structures-disjoint
-  (implies (and
-            (bind-free
-             (find-an-xlate-equiv-x86
-              'wb-values-and-xlate-equiv-structures-disjoint
-              'x86-2 x86-1)
-             (x86-2))
-            (all-paging-entries-found-p lin-addr (double-rewrite x86-1))
-            (not (programmer-level-mode x86-1))
-            (not (programmer-level-mode x86-2)))
-           (equal
-            (mv-nth 0 (wm08 lin-addr val x86-1))
-            (mv-nth 0 (wm08 lin-addr val x86-2))))
-  :hints (("Goal" :in-theory (e/d* (wm08) (force (force))))))
-
 (defthm mv-nth-1-wb-and-xlate-equiv-structures-disjoint
   (implies (and (all-paging-entries-found-p l-addrs (double-rewrite x86))
                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
@@ -658,7 +658,8 @@
            :in-theory
            (e/d* (all-paging-entries-found-p
                   mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
-                 (wm08-values-and-xlate-equiv-structures-disjoint)))))
+                 (wm08-values-and-xlate-equiv-structures-disjoint
+                  wb-values-and-xlate-equiv-structures-disjoint)))))
 
 ;; (defthm paging-entries-found-p-after-wb
 ;;   ;; No need...
@@ -877,7 +878,7 @@
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
                 (all-paging-entries-found-p l-addrs (double-rewrite x86))
                 (no-page-faults-during-translation-p l-addrs :w cpl (double-rewrite x86))
-                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl x86)
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl (double-rewrite x86))
                 (byte-listp bytes))
            (equal (mv-nth 0 (wb (create-addr-bytes-alist l-addrs bytes) x86)) nil))
   :hints (("Goal"
@@ -1361,6 +1362,30 @@
                   nil))
   :hints (("Goal" :in-theory (e/d* () (rb-1 force (force))))))
 
+(defthm wb-returns-no-error-in-system-level-mode-after-wb
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
+                (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
+                (no-page-faults-during-translation-p l-addrs-1 :w cpl (double-rewrite x86))
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs-1 :w cpl x86)
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs-2 :w cpl x86)
+                (byte-listp bytes-1))
+           (equal (mv-nth 0 (wb (create-addr-bytes-alist l-addrs-1 bytes-1)
+                                (mv-nth 1 (wb (create-addr-bytes-alist l-addrs-2 bytes-2)
+                                              x86))))
+                  nil))
+  :hints (("Goal"
+           :induct (wb-and-xlate-equiv-structures-ind-hint
+                    l-addrs-1 bytes-1
+                    (mv-nth 1 (wb (create-addr-bytes-alist l-addrs-2 bytes-2) x86)))
+           :in-theory (e/d* (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                             all-paging-entries-found-p
+                             no-page-faults-during-translation-p)
+                            (force
+                             (force)
+                             wb-values-and-xlate-equiv-structures-disjoint
+                             wm08-values-and-xlate-equiv-structures-disjoint)))))
+
 ;; ----------------------------------------------------------------------
 
 ;; RB WoW Theorems:
@@ -1575,6 +1600,7 @@
 ;;                               mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
 ;;                               rb-1-accumulator-thm))))))
 
+;; NEED:
 ;; (defthm rb-value-in-system-level-mode-after-rb
 ;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
 ;;                 (all-paging-entries-found-p l-addrs-1 x86)
@@ -1719,6 +1745,7 @@
 ;;                        mv-nth-2-rm08-and-xlate-equiv-x86s
 ;;                        (force)))))))
 
+;; NEED
 ;; (defthm rb-rb-split-reads-in-system-level-mode
 ;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
 ;;                 (canonical-address-listp l-addrs-1)
