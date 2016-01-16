@@ -562,9 +562,8 @@ programmer-level mode.</p>" )
 
 ;; Events related to RB:
 
-(defthm rb-nil
-  (implies (x86p x86)
-           (equal (mv-nth 1 (rb nil r-w-x x86)) nil)))
+(defthm rb-nil-lemma
+  (equal (mv-nth 1 (rb nil r-w-x x86)) nil))
 
 ;; The following theorems help in relieving the hypotheses of
 ;; get-prefixes opener lemmas.
