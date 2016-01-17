@@ -453,10 +453,18 @@ public class jvm2m5 implements
 
     @Override
     public Void visitInvokeDynamic(ConstantPool.CONSTANT_InvokeDynamic_info c, Boolean inConstantPool) {
-        if (inConstantPool) {
-            return nl("(invoke-dynamic)");
+        try {
+            ConstantPool.CONSTANT_NameAndType_info infoNameAndType = c.getNameAndTypeInfo();
+            String name = infoNameAndType.getName();
+            String desc = infoNameAndType.getType();
+            if (inConstantPool) {
+                return nl("(invoke-dynamic \"" + name + ":" + desc + "\" " + c.bootstrap_method_attr_index + ")");
+            }
+            sb.append(name + ":" + desc + " " + c.bootstrap_method_attr_index);
+            return null;
+        } catch (ConstantPoolException e) {
+            throw new RuntimeException(e);
         }
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -464,7 +472,7 @@ public class jvm2m5 implements
         if (inConstantPool) {
             return nl("(long " + c.value + ")");
         }
-        sb.append(c.value).append("f");
+        sb.append(c.value).append("l");
         return null;
     }
 
