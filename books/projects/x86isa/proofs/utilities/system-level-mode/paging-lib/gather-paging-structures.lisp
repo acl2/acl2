@@ -3090,17 +3090,26 @@
              (b* ((sub-x86 (first (last x86-term))))
                sub-x86))))))
 
+;; (defun find-an-xlate-equiv-x86 (thm-name x86-var x86-term)
+;;   ;; bind-free for an x86 in xlate-equiv-x86s or
+;;   ;; xlate-equiv-structures: should check just for the page traversal
+;;   ;; functions and wm-low-64.
+;;   ;; TO-DO: Logic mode...
+;;   (declare (xargs :mode :program))
+;;   (b* ((equiv-x86-1 (find-an-xlate-equiv-x86-aux thm-name x86-term))
+;;        (equiv-x86-2 (find-an-xlate-equiv-x86-aux thm-name equiv-x86-1)))
+;;     (if (equal equiv-x86-1 equiv-x86-2)
+;;         `((,x86-var . ,equiv-x86-1))
+;;       (find-an-xlate-equiv-x86 thm-name x86-var equiv-x86-2))))
+
 (defun find-an-xlate-equiv-x86 (thm-name x86-var x86-term)
   ;; bind-free for an x86 in xlate-equiv-x86s or
   ;; xlate-equiv-structures: should check just for the page traversal
   ;; functions and wm-low-64.
   ;; TO-DO: Logic mode...
   (declare (xargs :mode :program))
-  (b* ((equiv-x86-1 (find-an-xlate-equiv-x86-aux thm-name x86-term))
-       (equiv-x86-2 (find-an-xlate-equiv-x86-aux thm-name equiv-x86-1)))
-    (if (equal equiv-x86-1 equiv-x86-2)
-        `((,x86-var . ,equiv-x86-1))
-      (find-an-xlate-equiv-x86 thm-name x86-var equiv-x86-2))))
+  (b* ((equiv-x86 (find-an-xlate-equiv-x86-aux thm-name x86-term)))
+    `((,x86-var . ,equiv-x86))))
 
 (defthm gather-all-paging-structure-qword-addresses-wm-low-64-different-x86-disjoint
   (implies (and (bind-free

@@ -136,6 +136,33 @@
                             (e-2 (mv-nth 2 (read-page-directory-entry lin-addr x86-2)))))))
   :rule-classes :congruence)
 
+(defthm xw-mem-disjoint-and-xlate-equiv-structures
+  (implies (and (pairwise-disjoint-p-aux
+                 (list index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index)
+                (good-paging-structures-x86p (double-rewrite x86))
+                (unsigned-byte-p 8 val))
+           (xlate-equiv-structures (xw :mem index val x86) (double-rewrite x86))))
+
+(defthm wm-low-64-and-xlate-equiv-structures-disjoint
+  (implies (and (pairwise-disjoint-p-aux
+                 (addr-range 8 index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index)
+                (good-paging-structures-x86p (double-rewrite x86)))
+           (xlate-equiv-structures (wm-low-64 index val x86) (double-rewrite x86))))
+
+(defthm wm-low-64-and-xlate-equiv-structures-entry-addr
+  (implies (and (member-list-p index (gather-all-paging-structure-qword-addresses x86))
+                (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
+                (good-paging-structures-x86p (double-rewrite x86))
+                (physical-address-p index)
+                (unsigned-byte-p 64 val))
+           (xlate-equiv-structures (wm-low-64 index val x86) (double-rewrite x86))))
+
 (defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-entries-found-la-to-pa
   (implies (good-paging-structures-x86p (double-rewrite x86))
            (equal

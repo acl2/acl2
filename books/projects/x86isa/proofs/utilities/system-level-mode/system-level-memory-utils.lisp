@@ -558,13 +558,6 @@ wb:
      (mv-nth 2 (rm08 (car l-addrs) r-w-x x86-2))
      (append acc (list (mv-nth 1 (rm08 (car l-addrs) r-w-x x86-1)))))))
 
-;; (defthm relating-rm08-and-rb-1-errors
-;;   (implies (and (mv-nth 0 (rm08 (car l-addrs) r-w-x x86))
-;;                 (canonical-address-listp l-addrs)
-;;                 (consp l-addrs))
-;;            (equal (mv-nth 0 (rb-1 l-addrs r-w-x x86 acc))
-;;                   (mv-nth 0 (rm08 (car l-addrs) r-w-x x86)))))
-
 (local
  (defthm mv-nth-0-rb-1-and-xlate-equiv-x86s-disjoint
    (implies (and
@@ -676,6 +669,8 @@ wb:
 (local
  (defthm mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
    (implies (and
+             ;; To prevent loops...
+             (syntaxp (not (eq x86-1 'x86)))
              (bind-free
               (find-an-xlate-equiv-x86
                'mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
@@ -704,6 +699,8 @@ wb:
   ;; equality of all memory locations, apart from those that contain
   ;; the paging structures.
   (implies (and
+            ;; To prevent loops...
+            (syntaxp (not (eq x86-1 'x86)))
             (bind-free
              (find-an-xlate-equiv-x86
               'mv-nth-1-rb-and-xlate-equiv-x86s-disjoint
@@ -780,111 +777,6 @@ wb:
                   mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
                  (wm08-values-and-xlate-equiv-structures
                   wb-values-and-xlate-equiv-structures)))))
-
-;; (defthm paging-entries-found-p-after-wb
-;;   ;; No need...
-;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;                 (equal addr-lst (create-addr-bytes-alist l-addrs-2 bytes))
-;;                 (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
-;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-;;                  l-addrs-2 :w cpl (double-rewrite x86)))
-;;            (equal (paging-entries-found-p lin-addr-1 (mv-nth 1 (wb addr-lst x86)))
-;;                   (paging-entries-found-p lin-addr-1 (double-rewrite x86))))
-;;   :hints (("Goal" :in-theory (e/d* (all-paging-entries-found-p
-;;                                     mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
-;;                                    ()))))
-
-;; (defthm all-paging-entries-found-p-after-wb
-;;   ;; No need...
-;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;                 (equal addr-lst (create-addr-bytes-alist l-addrs-2 bytes))
-;;                 (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
-;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs-2 :w cpl (double-rewrite x86)))
-;;            (equal (all-paging-entries-found-p l-addrs-1 (mv-nth 1 (wb addr-lst x86)))
-;;                   (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))))
-;;   :hints (("Goal" :in-theory (e/d* (all-paging-entries-found-p
-;;                                     mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
-;;                                    ()))))
-
-;; ======================================================================
-
-;; A couple of RoW theorems in terms of rm08 and wm08 to get an idea
-;; of what kind of lemmas are needed for such proofs in the
-;; system-level mode:
-
-(defthmd rm08-wm08-disjoint-in-system-level-mode
-  (implies (and (paging-entries-found-p addr-1 x86)
-                (paging-entries-found-p addr-2 x86)
-                (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (not
-                 ;; The physical addresses corresponding to addr-1 and
-                 ;; addr-2 are different.
-                 (equal (mv-nth 1
-                                (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86))
-                        (mv-nth 1
-                                (ia32e-entries-found-la-to-pa addr-2 :w cpl x86))))
-                (pairwise-disjoint-p-aux
-                 ;; The read isn't being done from the page tables.
-                 (list (mv-nth 1
-                               (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86)))
-                 (open-qword-paddr-list-list
-                  (gather-all-paging-structure-qword-addresses x86)))
-                (pairwise-disjoint-p-aux
-                 ;; The write isn't being done to the page tables ---
-                 ;; this means that the translation-governing entries
-                 ;; for addr-1 cannot be affected by the write.
-                 (list (mv-nth 1
-                               (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
-                 (open-qword-paddr-list-list
-                  (gather-all-paging-structure-qword-addresses x86)))
-                (unsigned-byte-p 8 val))
-           (equal (mv-nth 1 (rm08 addr-1 r-x (mv-nth 1 (wm08 addr-2 val x86))))
-                  (mv-nth 1 (rm08 addr-1 r-x x86))))
-  :hints (("Goal"
-           :use ((:instance gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
-                            (addrs (gather-all-paging-structure-qword-addresses x86))
-                            (index (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
-                            (val val)
-                            (x86 x86)))
-           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-                             rm08
-                             wm08)
-                            (signed-byte-p
-                             unsigned-byte-p
-                             gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)))))
-
-(defthmd rm08-wm08-equal-in-system-level-mode
-  (implies (and (paging-entries-found-p addr-1 x86)
-                (paging-entries-found-p addr-2 x86)
-                (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (equal
-                 ;; the physical addresses corresponding to addr-1 and
-                 ;; addr-2 are the same.
-                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86))
-                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
-                (pairwise-disjoint-p-aux
-                 ;; the write isn't being done to the page tables ---
-                 ;; this means that the translation-governing entries
-                 ;; for addr-1 cannot be affected by the write.
-                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
-                 (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
-                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-1 r-x cpl x86)))
-                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
-                (unsigned-byte-p 8 val))
-           (equal (mv-nth 1 (rm08 addr-1 r-x (mv-nth 1 (wm08 addr-2 val x86))))
-                  val))
-  :hints (("Goal"
-           :use ((:instance gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
-                            (addrs (gather-all-paging-structure-qword-addresses x86))
-                            (index (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
-                            (val val)
-                            (x86 x86)))
-           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-                             rm08
-                             wm08)
-                            (signed-byte-p
-                             unsigned-byte-p
-                             gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)))))
 
 ;; ======================================================================
 
@@ -1012,15 +904,246 @@ wb:
 
 ;; ======================================================================
 
+;; I should have all the rules that I want about rb and wb by now.
+(in-theory (e/d () (rb wb)))
+
+;; RB returns no error after another RB:
+
+(defthm rb-returns-no-error-in-system-level-mode-after-rb
+  ;; Follows from rb-returns-no-error-in-system-level-mode. I don't
+  ;; really need this theorem.
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
+                (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
+                (no-page-faults-during-translation-p l-addrs-1 r-w-x-1 cpl (double-rewrite x86))
+                (not (programmer-level-mode x86)))
+           (equal (mv-nth 0 (rb l-addrs-1 r-w-x-1 (mv-nth 2 (rb l-addrs-2 r-w-x-2 x86))))
+                  nil))
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+;; Reading via RB after another RB:
+
+(defthm rb-value-in-system-level-mode-after-rb
+  ;; Should follow from mv-nth-1-rb-and-xlate-equiv-x86s-disjoint and
+  ;; mv-nth-2-rb-and-xlate-equiv-x86s. I don't really need this
+  ;; theorem.
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
+                (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                 l-addrs-1 r-w-x-1 cpl (double-rewrite x86))
+                (not (programmer-level-mode x86)))
+           (equal (mv-nth 1 (rb l-addrs-1 r-w-x-1 (mv-nth 2 (rb l-addrs-2 r-w-x-2 x86))))
+                  (mv-nth 1 (rb l-addrs-1 r-w-x-1 x86))))
+  :hints (("Goal"
+           :in-theory (e/d* () (force (force))))))
+
+;; WB returns no error after another WB:
+
+(defthm wb-returns-no-error-in-system-level-mode-after-wb
+  ;; Follows from wb-returns-no-error-in-system-level-mode; I don't
+  ;; really need this theorem.
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
+                (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
+                (no-page-faults-during-translation-p l-addrs-1 :w cpl (double-rewrite x86))
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs-1 :w cpl (double-rewrite x86))
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs-2 :w cpl (double-rewrite x86))
+                (byte-listp bytes-1)
+                (not (programmer-level-mode x86)))
+           (equal (mv-nth 0 (wb (create-addr-bytes-alist l-addrs-1 bytes-1)
+                                (mv-nth 1 (wb (create-addr-bytes-alist l-addrs-2 bytes-2)
+                                              x86))))
+                  nil))
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+;; ----------------------------------------------------------------------
+
+;; Proving rb-rb-split-reads-in-system-level-mode:
+
+(local
+ (defthm rb-nil-lemma
+   (equal (mv-nth 1 (rb nil r-w-x x86))
+          nil)
+   :hints (("Goal" :in-theory (e/d* (rb) ())))))
+
+(defthmd rb-rb-split-reads-in-system-level-mode
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (all-paging-entries-found-p l-addrs (double-rewrite x86))
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs r-w-x cpl (double-rewrite x86))
+                (no-page-faults-during-translation-p l-addrs r-w-x cpl (double-rewrite x86))
+                (equal l-addrs (append l-addrs-1 l-addrs-2))
+                (canonical-address-listp l-addrs-1)
+                (canonical-address-listp l-addrs-2)
+                (not (programmer-level-mode x86)))
+           (equal (mv-nth 1 (rb l-addrs r-w-x x86))
+                  (append (mv-nth 1 (rb l-addrs-1 r-w-x x86))
+                          (mv-nth 1 (rb l-addrs-2 r-w-x x86)))))
+  :hints (("Goal"
+           :in-theory (e/d* (rb
+                             all-paging-entries-found-p
+                             no-page-faults-during-translation-p)
+                            (force (force))))))
+
+;; ======================================================================
+
+;; A couple of RoW theorems in terms of rm08 and wm08 to get an idea
+;; of what kind of lemmas are needed for such proofs in the
+;; system-level mode:
+
+;; (i-am-here)
+
+;; (local (include-book "std/lists/nthcdr" :dir :system))
+
+;; (define translate-all-l-addrs (l-addrs r-w-x cpl x86)
+;;   :guard (and (canonical-address-listp l-addrs)
+;;               (member r-w-x '(:r :w :x))
+;;               (unsigned-byte-p 2 cpl))
+;;   :non-executable t
+;;   (if (endp l-addrs)
+;;       nil
+;;     (b* (((mv flg p-addr x86)
+;;           (ia32e-entries-found-la-to-pa (car l-addrs) r-w-x cpl x86))
+;;          ((when flg)
+;;           nil))
+;;       (cons p-addr (translate-all-l-addrs (cdr l-addrs) r-w-x cpl x86)))))
+
+;; (defthm wb-nil-lemma
+;;   (equal (mv-nth 1 (wb nil x86))
+;;          x86)
+;;   :hints (("Goal" :in-theory (e/d* (wb) ()))))
+
+;; (defthmd rb-wb-disjoint-in-system-level-mode
+;;   ;; TODO: Formulate an induction scheme.
+;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                 (all-paging-entries-found-p l-addrs-1 x86)
+;;                 (all-paging-entries-found-p l-addrs-2 x86)
+;;                 (not
+;;                  ;; The physical addresses corresponding to l-addrs-1
+;;                  ;; and l-addrs-2 are different.
+;;                  (equal (translate-all-l-addrs l-addrs-1 r-w-x cpl x86)
+;;                         (translate-all-l-addrs l-addrs-2    :w cpl x86)))
+;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;                  ;; The read isn't being done from the page tables.
+;;                  l-addrs-1 r-w-x cpl (double-rewrite x86))
+;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;                  ;; The write isn't being done to the page tables.
+;;                  l-addrs-2 :w cpl (double-rewrite x86))
+;;                 (byte-listp bytes))
+;;            (equal (mv-nth 1 (rb l-addrs-1 r-w-x
+;;                                 (mv-nth 1 (wb (create-addr-bytes-alist l-addrs-2 bytes) x86))))
+;;                   (mv-nth 1 (rb l-addrs-1 r-w-x x86))))
+;;   :hints (("Goal" :in-theory (e/d* () (signed-byte-p unsigned-byte-p)))))
+
+
+;; (defthm rb-wb-equal-in-system-level-mode
+;;   (implies (and (all-paging-entries-found-p l-addrs-1 x86)
+;;                 (all-paging-entries-found-p l-addrs-2 x86)
+;;                 (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+
+;;                 (equal
+;;                  ;; The physical addresses corresponding to l-addrs-1 and
+;;                  ;; l-addrs-2 are the same.
+;;                  (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl x86))
+;;                  (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+
+;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;                  ;; The read/write isn't being done from/to the page tables.
+;;                  l-addrs-2 r-w-x cpl (double-rewrite x86))
+;;                 (no-page-faults-during-translation-p l-addrs-1 r-w-x cpl (double-rewrite x86))
+;;                 (no-page-faults-during-translation-p l-addrs-2 r-w-x cpl (double-rewrite x86))
+;;                 (byte-listp bytes))
+;;            (equal (mv-nth 1 (rb l-addrs-1 r-w-x
+;;                                 (mv-nth 1 (wb (create-addr-bytes-alist l-addrs-2 bytes) x86))))
+;;                   bytes))
+;;   :hints (("Goal" :in-theory (e/d* () (signed-byte-p unsigned-byte-p)))))
+
+(defthmd rm08-wm08-disjoint-in-system-level-mode
+  (implies (and (paging-entries-found-p addr-1 x86)
+                (paging-entries-found-p addr-2 x86)
+                (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (not
+                 ;; The physical addresses corresponding to addr-1 and
+                 ;; addr-2 are different.
+                 (equal (mv-nth 1
+                                (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl x86))
+                        (mv-nth 1
+                                (ia32e-entries-found-la-to-pa addr-2 :w cpl x86))))
+                (pairwise-disjoint-p-aux
+                 ;; The read isn't being done from the page tables.
+                 (list (mv-nth 1
+                               (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (pairwise-disjoint-p-aux
+                 ;; The write isn't being done to the page tables ---
+                 ;; this means that the translation-governing entries
+                 ;; for addr-1 cannot be affected by the write.
+                 (list (mv-nth 1
+                               (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (unsigned-byte-p 8 val))
+           (equal (mv-nth 1 (rm08 addr-1 r-w-x (mv-nth 1 (wm08 addr-2 val x86))))
+                  (mv-nth 1 (rm08 addr-1 r-w-x x86))))
+  :hints (("Goal"
+           :use ((:instance gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
+                            (addrs (gather-all-paging-structure-qword-addresses x86))
+                            (index (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+                            (val val)
+                            (x86 x86)))
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             rm08
+                             wm08)
+                            (signed-byte-p
+                             unsigned-byte-p
+                             gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)))))
+
+(defthmd rm08-wm08-equal-in-system-level-mode
+  (implies (and (paging-entries-found-p addr-1 x86)
+                (paging-entries-found-p addr-2 x86)
+                (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (equal
+                 ;; the physical addresses corresponding to addr-1 and
+                 ;; addr-2 are the same.
+                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl x86))
+                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+                (pairwise-disjoint-p-aux
+                 ;; the write isn't being done to the page tables ---
+                 ;; this means that the translation-governing entries
+                 ;; for addr-1 cannot be affected by the write.
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+                 (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
+                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-1 r-w-x cpl x86)))
+                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+                (unsigned-byte-p 8 val))
+           (equal (mv-nth 1 (rm08 addr-1 r-w-x (mv-nth 1 (wm08 addr-2 val x86))))
+                  val))
+  :hints (("Goal"
+           :use ((:instance gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
+                            (addrs (gather-all-paging-structure-qword-addresses x86))
+                            (index (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+                            (val val)
+                            (x86 x86)))
+           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
+                             rm08
+                             wm08)
+                            (signed-byte-p
+                             unsigned-byte-p
+                             gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)))))
+
+;; ======================================================================
+
+
 ;; Relating top-level memory accessors and updaters with rb and wb in
 ;; system-level mode:
 
 (defthm rm08-to-rb-in-system-level-mode
   (implies (and (not (programmer-level-mode x86))
                 (paging-entries-found-p lin-addr (double-rewrite x86)))
-           (equal (rm08 lin-addr r-x x86)
+           (equal (rm08 lin-addr r-w-x x86)
                   (b* (((mv flg bytes x86)
-                        (rb (create-canonical-address-list 1 lin-addr) r-x x86))
+                        (rb (create-canonical-address-list 1 lin-addr) r-w-x x86))
                        (result (combine-bytes bytes)))
                     (mv flg result x86))))
   :hints (("Goal"
@@ -1066,7 +1189,8 @@ wb:
                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                              no-page-faults-during-translation-p
                              rm16
-                             rm08)
+                             rm08
+                             rb)
                             (cons-equal
                              signed-byte-p
                              unsigned-byte-p
@@ -1094,6 +1218,7 @@ wb:
                              no-page-faults-during-translation-p
                              wm16
                              wm08
+                             wb
                              byte-ify)
                             (signed-byte-p
                              unsigned-byte-p
@@ -1140,6 +1265,7 @@ wb:
                              no-page-faults-during-translation-p
                              rm32
                              rm08
+                             rb
                              rm32-rb-system-level-mode-proof-helper)
                             (signed-byte-p
                              unsigned-byte-p
@@ -1171,6 +1297,7 @@ wb:
                              no-page-faults-during-translation-p
                              wm32
                              wm08
+                             wb
                              byte-ify)
                             (signed-byte-p
                              unsigned-byte-p
@@ -1237,7 +1364,8 @@ wb:
                              no-page-faults-during-translation-p
                              rm64-to-rb-in-system-level-mode-helper
                              rm64
-                             rm08)
+                             rm08
+                             rb)
                             (signed-byte-p
                              unsigned-byte-p
                              bitops::logior-equal-0
@@ -1267,7 +1395,7 @@ wb:
            :in-theory (e/d* (all-paging-entries-found-p
                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                              no-page-faults-during-translation-p
-                             wm64 wm32 wm08
+                             wm64 wm32 wm08 wb
                              byte-ify)
                             (signed-byte-p
                              unsigned-byte-p
@@ -1278,111 +1406,5 @@ wb:
                              cons-equal
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
-
-;; ======================================================================
-
-(local (in-theory (e/d () (rm08-to-rb-in-system-level-mode
-                           wm08-to-wb-in-system-level-mode))))
-
-;; ======================================================================
-
-;; I should have all the rules that I want about rb and wb by now.
-(in-theory (e/d () (rb wb)))
-
-;; RB returns no error after another RB:
-
-(defthm rb-returns-no-error-in-system-level-mode-after-rb
-  ;; Follows from rb-returns-no-error-in-system-level-mode.
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
-                (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
-                (no-page-faults-during-translation-p l-addrs-1 r-w-x-1 cpl (double-rewrite x86))
-                (not (programmer-level-mode x86)))
-           (equal (mv-nth 0 (rb l-addrs-1 r-w-x-1 (mv-nth 2 (rb l-addrs-2 r-w-x-2 x86))))
-                  nil))
-  :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-;; Reading via RB after another RB:
-
-(defthm rb-value-in-system-level-mode-after-rb
-  ;; TODO: Why do I need the use hint? Ugh.
-  ;; Should follow from mv-nth-1-rb-and-xlate-equiv-x86s-disjoint and
-  ;; mv-nth-2-rb-and-xlate-equiv-x86s.
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
-                (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
-                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-                 l-addrs-1 r-w-x-1 cpl (double-rewrite x86))
-                (not (programmer-level-mode x86)))
-           (equal (mv-nth 1 (rb l-addrs-1 r-w-x-1 (mv-nth 2 (rb l-addrs-2 r-w-x-2 x86))))
-                  (mv-nth 1 (rb l-addrs-1 r-w-x-1 x86))))
-  :hints (("Goal"
-           :use ((:instance mv-nth-1-rb-and-xlate-equiv-x86s-disjoint
-                            (l-addrs l-addrs-1)
-                            (r-w-x r-w-x-1)
-                            (x86-1 (mv-nth 2 (rb l-addrs-2 r-w-x-2 x86)))
-                            (x86-2 x86)))
-           :in-theory (e/d* () (force (force) mv-nth-1-rb-and-xlate-equiv-x86s-disjoint)))))
-
-;; WB returns no error after another WB:
-
-(defthm wb-returns-no-error-in-system-level-mode-after-wb
-  ;; Follows from wb-returns-no-error-in-system-level-mode.
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
-                (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
-                (no-page-faults-during-translation-p l-addrs-1 :w cpl (double-rewrite x86))
-                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs-1 :w cpl (double-rewrite x86))
-                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs-2 :w cpl (double-rewrite x86))
-                (byte-listp bytes-1)
-                (not (programmer-level-mode x86)))
-           (equal (mv-nth 0 (wb (create-addr-bytes-alist l-addrs-1 bytes-1)
-                                (mv-nth 1 (wb (create-addr-bytes-alist l-addrs-2 bytes-2)
-                                              x86))))
-                  nil))
-  :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-;; ----------------------------------------------------------------------
-
-;; Proving rb-rb-split-reads-in-system-level-mode:
-
-(local
- (defthm rb-nil-lemma
-   (equal (mv-nth 1 (rb nil r-w-x x86))
-          nil)
-   :hints (("Goal" :in-theory (e/d* (rb) ())))))
-
-(defthm rb-rb-split-reads-in-system-level-mode
-  ;; TODO: Why do I need the use hint? Ugh.
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (all-paging-entries-found-p l-addrs (double-rewrite x86))
-                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs r-w-x cpl (double-rewrite x86))
-                (no-page-faults-during-translation-p l-addrs r-w-x cpl (double-rewrite x86))
-                (equal l-addrs (append l-addrs-1 l-addrs-2))
-                (canonical-address-listp l-addrs-1)
-                (canonical-address-listp l-addrs-2)
-                (not (programmer-level-mode x86)))
-           (equal (mv-nth 1 (rb l-addrs r-w-x x86))
-                  (append (mv-nth 1 (rb l-addrs-1 r-w-x x86))
-                          (mv-nth 1 (rb l-addrs-2 r-w-x x86)))))
-  :hints (("Goal"
-           :in-theory (e/d* (rb
-                             all-paging-entries-found-p
-                             no-page-faults-during-translation-p)
-                            (force
-                             (force)
-                             mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
-                             mv-nth-1-rb-and-xlate-equiv-x86s-disjoint)))
-          ("Subgoal *1/8"
-           :use ((:instance mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
-                            (l-addrs l-addrs-2)
-                            (x86-1 (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86)))
-                            (x86-2 x86)
-                            (acc nil)))
-           :in-theory (e/d* (rb)
-                            (force
-                             (force)
-                             mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
-                             mv-nth-1-rb-and-xlate-equiv-x86s-disjoint)))))
 
 ;; ======================================================================
