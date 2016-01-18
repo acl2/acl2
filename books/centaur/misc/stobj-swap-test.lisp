@@ -39,7 +39,8 @@
 (defstobj foo$
   (f1 :type integer :initially 0)
   (f2 :type string :initially "Hello")
-  (f3 :type character :initially #\a))
+  (f3 :type character :initially #\a)
+  (f4 :type (array integer (3)) :initially 0 :resizable t))
 
 (defstobj-clone foo$2 foo$ :suffix "2")
 
@@ -73,11 +74,52 @@
 
     (mv okp foo$ foo$2)))
 
-(defconsts (*ok* foo$ foo$2)
-  (my-test foo$ foo$2))
+(defun my-test2 ()
+  (declare (xargs :guard t))
+  (with-local-stobj foo$
+    (mv-let (ans foo$)
 
-(assert! *ok*)
+      (with-local-stobj foo$2
+        (mv-let (ans foo$ foo$2)
+          (my-test foo$ foo$2)
+          (mv ans foo$)))
 
+      ans)))
 
+(defun my-test3 ()
+  (declare (xargs :verify-guards nil))
+  (with-local-stobj foo$
+    (mv-let (ans foo$)
+      (with-local-stobj foo$2
+        (mv-let (ans foo$ foo$2)
+          (my-test foo$ foo$2)
+          (mv ans foo$)))
+      ans)))
 
+(local (in-theory (disable my-test my-test2 my-test3)))
 
+(local
+ (encapsulate ()
+   (defconsts (*pre-ok* foo$ foo$2) (my-test foo$ foo$2)) (assert! *pre-ok*)
+   (defconsts *pre-ok2* (my-test2)) (assert! *pre-ok2*)
+   (defconst *pre-ok2b* (my-test2)) (assert! *pre-ok2b*)
+   (defconsts *pre-ok3* (my-test3)) (assert! *pre-ok2*)
+   (defconst *pre-ok3b* (my-test3)) (assert! *pre-ok3b*)
+   (defthmd pre-crock (equal (mv-nth 0 (my-test foo$ foo$2)) t)
+     :hints(("Goal" :in-theory (enable my-test))))
+   (defthmd pre-crock2 (equal (my-test2) t))
+   (defthmd pre-crock3 (equal (my-test3) t))))
+
+(comp t)
+
+(local
+ (encapsulate ()
+   (defconsts (*post-ok* foo$ foo$2) (my-test foo$ foo$2)) (assert! *post-ok*)
+   (defconsts *post-ok2* (my-test2)) (assert! *post-ok2*)
+   (defconst *post-ok2b* (my-test2)) (assert! *post-ok2b*)
+   (defconsts *post-ok3* (my-test3)) (assert! *post-ok2*)
+   (defconst *post-ok3b* (my-test3)) (assert! *post-ok3b*)
+   (defthmd post-crock (equal (mv-nth 0 (my-test foo$ foo$2)) t)
+     :hints(("Goal" :in-theory (enable my-test))))
+   (defthmd post-crock2 (equal (my-test2) t))
+   (defthmd post-crock3 (equal (my-test3) t))))
