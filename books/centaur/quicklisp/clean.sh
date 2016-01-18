@@ -32,6 +32,9 @@
 
 set -e
 
+# Modification by Matt K. to go with ACL2 release: Comment out lines
+# that assume we are in a git repository.
+
 DIFF=`git status --porcelain bundle`
 if [ ! -z "$DIFF" ]
 then

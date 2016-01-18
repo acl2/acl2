@@ -28,5 +28,10 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+; See comments about the following form in books/centaur/vl/cert.acl2, related
+; to a problem that ACL2(p) has with FTY (also see
+; books/centaur/fty/tests/cert.acl2).
+(set-waterfall-parallelism nil)
+
 (include-book "portcullis")
 ; cert-flags: ? t :ttags :all

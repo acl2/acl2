@@ -47,10 +47,10 @@ top of github.com/acl2/acl2.  Alternatively you get a (read-only) copy
 from git as follows:
 
 ```
-git clone git://github.com/acl2-devel/acl2-devel acl2; cd acl2; git checkout 7.1
+git clone git://github.com/acl2-devel/acl2-devel acl2; cd acl2; git checkout 7.2
 ```
 
-Your current directory is now a copy of ACL2 Version 7.1.  This
+Your current directory is now a copy of ACL2 Version 7.2.  This
 directory is intended for ACL2 use, not for modification using git
 (discussed in Contributing, below).  Please see the [ACL2 home
 page][ACL2], specifically its [installation
