@@ -32,16 +32,19 @@
 
 set -e
 
-DIFF=`git status --porcelain bundle`
-if [ ! -z "$DIFF" ]
-then
-    echo "Cowardly refusing to clean because there are uncommitted changes in bundle/"
-    git status bundle | sed 's/^/   | /'
-    exit 1
-fi
+# Modification by Matt K. to go with ACL2 release: Comment out lines
+# that assume we are in a git repository.
 
-echo "Cleaning quicklisp/bundle"
-git clean -f bundle
+# DIFF=`git status --porcelain bundle`
+# if [ ! -z "$DIFF" ]
+# then
+#     echo "Cowardly refusing to clean because there are uncommitted changes in bundle/"
+#     git status bundle | sed 's/^/   | /'
+#     exit 1
+# fi
+# 
+# echo "Cleaning quicklisp/bundle"
+# git clean -f bundle
 
 echo "Cleaning asdf-home/cache/common-lisp"
 rm -rf asdf-home/cache/common-lisp
