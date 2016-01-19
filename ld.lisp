@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -4552,6 +4552,13 @@
                  (list 'quote flg)
                flg)))
     `(f-put-global 'raw-proof-format ,flg state)))
+
+(defmacro set-raw-warning-format (flg)
+  (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))
+  (let ((flg (if (atom flg)
+                 (list 'quote flg)
+               flg)))
+    `(f-put-global 'raw-warning-format ,flg state)))
 
 (defmacro set-print-clause-ids (flg)
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))

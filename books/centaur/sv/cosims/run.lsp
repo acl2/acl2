@@ -34,6 +34,33 @@
 ;; name of directory that spec.sv and input/output.data are in
 (defconst *testname* "gates")
 
+(with-redef (defconst vl::*vl-shadowcheck-debug* t))
+
+(trace$ #!VL (vl-shadowcheck-genelement
+              :entry (list 'vl-shadowcheck-genelement
+                           (with-local-ps (vl-pp-genelement x)))
+              :exit (list 'vl-shadowcheck-genelement)))
+
+(trace$ #!VL (vl-shadowcheck-genblock
+              :entry (list 'vl-shadowcheck-genblock
+                           :condnestp (vl-genblock->condnestp x)
+                           :block (with-local-ps (vl-pp-genblock x)))
+              :exit (list 'vl-shadowcheck-genblock)))
+
+
+(trace$ #!VL
+        (vl-genelement-make-implicit-wires
+         :entry (list 'vl-genelement-make-implicit-wires
+                      (with-local-ps (vl-pp-genelement x))
+                      :imp (vl-vardecllist->names impitems))
+         :exit (list 'vl-genelement-make-implicit-wires
+                     (b* (((list ?new-warnings ?st ?new-x ?new-impitems) values))
+                       (list (with-local-ps (vl-pp-genelement new-x))
+                             :imp (vl-vardecllist->names new-impitems))))))
+
+(vl::vl-trace-warnings)
+
+
 (trace$ (vl-design-argresolve
          :entry (list 'vl-design-argresolve (with-local-ps (vl-pp-design x)))
          :exit (list 'vl-design-argresolve (with-local-ps (vl-pp-design x)))))

@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -4876,21 +4876,41 @@
                 :temp-touchable-fns ,temp-touchable-fns
                 :parallel-execution-enabled ,parallel-execution-enabled))))
 
-(defun warning1-body (ctx summary str alist state)
-  (let ((channel (f-get-global 'proofs-co state)))
+(defun warning1-body (ctx summary str+ alist state)
+
+; Str+ is either a string or a pair (str . raw-alist), where raw-alist is to be
+; used in place of str and the input alist if we are in raw-warning-format
+; mode.
+
+  (let ((channel (f-get-global 'proofs-co state))
+        (str ; nil if we are to use raw-warning-format
+         (cond ((consp str+)
+                (assert$ (and (stringp (car str+))
+                              (alistp (cdr str+)))
+                         (cond ((f-get-global 'raw-warning-format state)
+                                nil)
+                               (t (car str+)))))
+               (t str+))))
     (pprogn
      (if summary
          (push-warning summary state)
        state)
-     (mv-let
-      (col state)
-      (fmt "ACL2 Warning~#0~[~/ [~s1]~]"
-           (list (cons #\0 (if summary 1 0))
-                 (cons #\1 summary))
-           channel state nil)
-      (mv-let (col state)
-              (fmt-in-ctx ctx col channel state)
-              (fmt-abbrev str alist col channel state "~%~%"))))))
+     (cond ((null str)
+            (fms "~y0"
+                 (list (cons #\0 (list :warning summary
+                                       (cons (list :ctx ctx)
+                                             (cdr str+)))))
+                 channel state nil))
+           (t ; hence (stringp str)
+            (mv-let
+              (col state)
+              (fmt "ACL2 Warning~#0~[~/ [~s1]~]"
+                   (list (cons #\0 (if summary 1 0))
+                         (cons #\1 summary))
+                   channel state nil)
+              (mv-let (col state)
+                (fmt-in-ctx ctx col channel state)
+                (fmt-abbrev str alist col channel state "~%~%"))))))))
 
 (defmacro warning1-form (commentp)
 
@@ -4933,7 +4953,9 @@
 
   (warning1-form nil))
 
-(defmacro warning$ (&rest args)
+(defmacro warning$ (ctx summary str+ &rest fmt-args)
+
+; Warning: Keep this in sync with warning$-cw1.
 
 ; A typical use of this macro might be:
 ; (warning$ ctx "Loops" "The :REWRITE rule ~x0 loops forever." name) or
@@ -4945,20 +4967,20 @@
 ; warning is enabled.
 
   (list 'warning1
-        (car args)
+        ctx
 
 ; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
 ; load-time-value, when replacing (consp (cadr args)) with (and (consp (cadr
 ; args)) (stringp (car (cadr args)))).  But it seems fine to have the semantics
 ; of warning$ be that conses are quoted in the second argument position.
 
-        (if (consp (cadr args))
-            (kwote (cadr args))
-          (cadr args))
-        (caddr args)
+        (if (consp summary)
+            (kwote summary)
+          summary)
+        str+
         (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
                              #\5 #\6 #\7 #\8 #\9)
-                           (cdddr args))
+                           fmt-args)
         'state))
 
 (defmacro warning-disabled-p (summary)

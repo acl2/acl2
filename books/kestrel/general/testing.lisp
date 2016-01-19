@@ -18,31 +18,32 @@
 (in-package "ACL2")
 
 (include-book "std/util/top" :dir :system)
+(include-book "make-event/eval-check" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc must-succeed*
+(defsection must-succeed*
 
   :parents (kestrel-general-utilities errors)
 
   :short
-  "A version of @(tsee must-succeed)
+  "A variant of @(tsee must-succeed)
   that takes multiple forms
   and uses default options."
 
-  :long "@(def must-succeed*)")
+  :long "@(def must-succeed*)"
 
-(defmacro must-succeed* (&rest forms)
-  `(must-succeed (progn ,@forms)))
+  (defmacro must-succeed* (&rest forms)
+    `(must-succeed (progn ,@forms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc must-succeed**
+(defsection must-succeed**
 
   :parents (kestrel-general-utilities errors)
 
   :short
-  "A version of @(tsee must-succeed)
+  "A variant of @(tsee must-succeed)
   that takes multiple forms
   and explicit options."
 
@@ -53,16 +54,16 @@
   of @(tsee must-succeed).
   The remaining arguments are the forms.
   </p>
-  @(def must-succeed**)")
+  @(def must-succeed**)"
 
-(defmacro must-succeed** (with-output-off check-expansion &rest forms)
-  `(must-succeed (progn ,@forms)
-                 :with-output-off ,with-output-off
-                 :check-expansion ,check-expansion))
+  (defmacro must-succeed** (with-output-off check-expansion &rest forms)
+    `(must-succeed (progn ,@forms)
+                   :with-output-off ,with-output-off
+                   :check-expansion ,check-expansion)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc must-be-redundant
+(defsection must-be-redundant
 
   :parents (kestrel-general-utilities errors)
 
@@ -75,10 +76,28 @@
   The forms are put into an @(tsee encapsulate),
   along with a @(tsee set-enforce-redundancy) command that precedes them.
   </p>
-  @(def must-be-redundant)")
+  @(def must-be-redundant)"
 
-(defmacro must-be-redundant (&rest forms)
-  `(encapsulate
-     ()
-     (set-enforce-redundancy t)
-     ,@forms))
+  (defmacro must-be-redundant (&rest forms)
+    `(encapsulate
+       ()
+       (set-enforce-redundancy t)
+       ,@forms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection must-fail$
+
+  :parents (kestrel-general-utilities errors)
+
+  :short "A @(see local) variant of @(tsee must-fail)."
+
+  :long
+  "<p>
+  This is useful to overcome the problem discussed in the caveat
+  in the documentation of @(tsee must-fail).
+  </p>
+  @(def must-fail$)"
+
+  (defmacro must-fail$ (&rest args)
+    `(local (must-fail ,@args))))

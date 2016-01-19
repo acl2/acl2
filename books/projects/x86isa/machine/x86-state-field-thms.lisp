@@ -265,6 +265,11 @@ re-arrange these nests of updates.</p>
    `(PROGN
      ,@(x86-stobj-field-thms-fn *pruned-x86-model-modified-mem*)))
 
+  (defthm booleanp-programmer-level-mode-type
+    (implies (force (x86p x86))
+             (booleanp (xr :programmer-level-mode i x86)))
+    :rule-classes :type-prescription)
+
   ;; Type of writers in terms of XW:
 
   (defthm x86p-xw

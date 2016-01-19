@@ -61,7 +61,7 @@ HW_RND_GEN)\).</p>"
   :long "<p><b>IMPORTANT:</b> The following raw Lisp definitions will
 not be available unless the x86 books have been build with the
 environment variable @('X86ISA_EXEC') set to @('t'). See @(see
-Build-Instructions) for details.</p>
+x86isa-build-instructions) for details.</p>
 
 <ul>
 <li>@(see HW_RND_GEN)</li>

@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1050,7 +1050,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 7.1"
+                      "ACL2 Version 7.2"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
@@ -2225,6 +2225,12 @@ You are using version ~s.~s.~s."
 
 #+ccl
 (defun common-lisp-user::acl2-exit-lisp-ccl-report (status)
+
+; Gary Byers says (email, 1/12/2016) that he believes that the first of 5
+; values returned by (GCTIME) is the sum of the other four, which are full and
+; then 3 levels of ephemeral/generational.  He also says that these are
+; reported in internal-time-units, which are microseconds on x8664.
+
   (declare (ignore status))
   (format t
           "~%(ccl::total-bytes-allocated) = ~s~%(ccl::gctime) ~

@@ -1657,7 +1657,7 @@ an unknown.</p>"
 
 (define 4vec-pow ((base 4vec-p) (exp 4vec-p))
   :short "Power operator (** in SystemVerilog)."
-  :long "<p>See Table 11-4 in IEEE System Verilog Spec."
+  :long "<p>See Table 11-4 in IEEE System Verilog Spec.</p>"
   :returns (res 4vec-p)
   (if (and (2vec-p base)
            (2vec-p exp))

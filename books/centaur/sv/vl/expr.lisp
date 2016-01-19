@@ -2819,10 +2819,11 @@ the way.</li>
        (args (mbe :logic (list-fix args) :exec args)))
     (if err
         (fatal :type type :msg "~@0: ~@1"
-               :args (list (vmsg msg args) err)
+               :args (list (make-vl-msg :msg msg
+                                        :args args)
+                           err)
                :fn fn)
       (ok))))
-
 
 (defines vl-expr-to-svex
   :ruler-extenders :all

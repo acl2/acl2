@@ -2437,7 +2437,7 @@ memory.</li>
                       (logior (the (unsigned-byte 16) val15-0)
                               (the (unsigned-byte 48)
                                 (ash (the (unsigned-byte 64) val48-16) 16))))))
-           (mv (and flg0 flg1) val x86)))
+         (mv (and flg0 flg1) val x86)))
       (8 (rm64 addr r-w-x x86))
       ;; Use case: The instructions LGDT and LIDT need to read 10
       ;; bytes at once.
@@ -2459,7 +2459,7 @@ memory.</li>
                       (logior (the (unsigned-byte 16) val15-0)
                               (the (unsigned-byte 80)
                                 (ash (the (unsigned-byte 64) val79-16) 16))))))
-           (mv (and flg0 flg1) val x86)))
+         (mv (and flg0 flg1) val x86)))
       (16 (rm128 addr r-w-x x86))
       (otherwise
        (mv 'unsupported-nbytes nbytes x86)))
@@ -2529,7 +2529,7 @@ memory.</li>
                  x86))
             ((mv flg1 x86)
              (wm32 (+ 2 addr) (the (unsigned-byte 32) val48-16) x86)))
-           (mv (and flg0 flg1) x86)))
+         (mv (and flg0 flg1) x86)))
       (8 (wm64 addr val x86))
       (10
        ;; Use case: Instructions like SGDT and SIDT write 10 bytes to
@@ -2558,7 +2558,7 @@ memory.</li>
                  x86))
             ((mv flg1 x86)
              (wm64 (+ 2 addr) (the (unsigned-byte 64) val79-16) x86)))
-           (mv (and flg0 flg1) x86)))
+         (mv (and flg0 flg1) x86)))
       (16 (wm128 addr val x86))
       (otherwise
        (mv 'unsupported-nbytes x86))))
@@ -2581,8 +2581,7 @@ memory.</li>
       (4 (wim32 addr val x86))
       (8 (wim64 addr val x86))
       (otherwise
-       (mv 'unsupported-nbytes x86))))
-  )
+       (mv 'unsupported-nbytes x86)))))
 
 ;; ======================================================================
 

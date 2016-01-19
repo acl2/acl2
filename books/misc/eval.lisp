@@ -27,7 +27,7 @@
              (let ((expr-val (check-vars-not-free
                               (form-val-use-nowhere-else)
                               ,expr)))
-               (cond ((eq form-val-use-nowhere-else expr-val)
+               (cond ((equal form-val-use-nowhere-else expr-val)
                       (value (list 'value-triple (list 'quote expr-val))))
                      (t (er soft
                             (msg "( MUST-EVAL-TO ~@0 ~@1)"
@@ -127,7 +127,9 @@ suppressed, but you can customize this.  Typical example:</p>
 
 <p><b>check-expansion</b>.  By default the form won't be re-run and re-checked
 at @(see include-book) time.  But you can use @(':check-expansion') to
-customize this, as in @(see make-event).</p>")
+customize this, as in @(see make-event).</p>
+
+<p>Also see @(see must-succeed!).</p>")
 
 (defmacro must-succeed (&whole must-succeed-form
                                form
@@ -144,13 +146,13 @@ customize this, as in @(see make-event).</p>")
         ,form
         (declare (ignore val))
         (value (eq erp nil)))
-      :with-output-off ,with-output-off)
-    ,@(and check-expansion-p
-           `(:check-expansion ,check-expansion))
+      :with-output-off ,with-output-off
+      ,@(and check-expansion-p
+             `(:check-expansion ,check-expansion)))
     :on-behalf-of ,must-succeed-form))
 
 (defxdoc must-fail
-    :parents (errors)
+  :parents (errors)
   :short "A top-level @(see assert$)-like command.  Ensures that a command
 which returns an @(see error-triple)&mdash;e.g., @(see defun) or @(see
 defthm)&mdash;will not be successful."
@@ -174,7 +176,17 @@ theories, etc. to your books.  Basic examples:</p>
 
 <p>Must-fail is almost just like @(see must-succeed), except that the event is
 expected to fail instead of succeed.  Please see the documentation for
-@('must-succeed') for syntax, options, and additional discussion.</p>")
+@('must-succeed') for syntax, options, and additional discussion.</p>
+
+<p>CAVEAT: If a book contains a non-@(see local) form that causes proofs to be
+done, such as one of the form @('(must-fail (thm ...))'), then it might not be
+possible to include that book.  That is because proofs are generally skipped
+during @(tsee include-book), and any @('thm') will succeed if proofs are
+skipped.  One fix is to make such forms @(see local).  Another fix is to use a
+wrapper @(tsee must-fail!) that creates a call of @('must-fail') with
+@(':check-expansion') to @('t'); that causes proofs to be done even when
+including a book (because of the way that @('must-fail') is implemented using
+@(tsee make-event)).</p>")
 
 (defmacro must-fail (&whole must-fail-form
                             form
@@ -204,9 +216,9 @@ expected to fail instead of succeed.  Please see the documentation for
       (if (eq (cert-op state) :write-acl2xu)
           nil
         (f-get-global 'ld-skip-proofsp state))
-      :with-output-off ,with-output-off)
-    ,@(and check-expansion-p
-           `(:check-expansion ,check-expansion))
+      :with-output-off ,with-output-off
+      ,@(and check-expansion-p
+             `(:check-expansion ,check-expansion)))
     :on-behalf-of ,must-fail-form))
 
 (defmacro thm? (&rest args)

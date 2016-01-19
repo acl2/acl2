@@ -305,10 +305,10 @@ really good thing to do to keep the model simple.</p>"
           ;; execution will stop here.  I don't need to display this
           ;; error message elsewhere in this function.
           (b* ((- (cw "~%Error: File Descriptor Field ill-formed. Maybe these books were ~
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions.~%~%"))
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions.~%~%"))
                (x86 (!ms (list (rip x86)
                                "File Descriptor Field ill-formed. Maybe these books were built
-with X86ISA_EXEC set to nil? See :doc Build-Instructions."
+with X86ISA_EXEC set to nil? See :doc x86isa-build-instructions."
                                (ms x86))
                          x86)))
               (mv -1 x86)))
@@ -463,10 +463,10 @@ with X86ISA_EXEC set to nil? See :doc Build-Instructions."
          ;; error message elsewhere in this function.
          ((when (not (file-descriptor-fieldp obj-fd-field)))
           (b* ((- (cw "~%Error: File Descriptor Field ill-formed. Maybe these books were ~
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions.~%~%"))
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions.~%~%"))
                (x86 (!ms (list (rip x86)
                                "File Descriptor Field ill-formed. Maybe these books were
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
                                (ms x86))
                          x86)))
               (mv -1 x86)))
@@ -594,10 +594,10 @@ not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
          ;; error message elsewhere in this function.
          ((when (not (natp new-fd)))
           (b* ((- (cw "~%Error: File Descriptor ill-formed. Maybe these books were ~
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions.~%~%"))
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions.~%~%"))
                (x86 (!ms (list (rip x86)
                                "File Descriptor ill-formed. Maybe these books were
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
+not built with X86ISA_EXEC set to t? See :doc x86sa-build-instructions."
                                (ms x86))
                          x86)))
               (mv -1 x86)))
@@ -700,10 +700,10 @@ not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
     (b* ((obj-fd-field (read-x86-file-des fd x86))
          ((when (not (file-descriptor-fieldp obj-fd-field)))
           (b* ((- (cw "~%Error: File Descriptor Field ill-formed. Maybe these books were ~
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions.~%~%"))
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions.~%~%"))
                (x86 (!ms (list (rip x86)
                                "File Descriptor Field ill-formed. Maybe these books were
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
                                (ms x86))
                          x86)))
               (mv -1 x86)))
@@ -781,10 +781,10 @@ not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
          (obj-fd-field (read-x86-file-des fd x86))
          ((when (not (file-descriptor-fieldp obj-fd-field)))
           (b* ((- (cw "~%Error: File Descriptor Field ill-formed. Maybe these books were ~
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions.~%~%"))
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions.~%~%"))
                (x86 (!ms (list (rip x86)
                                "File Descriptor Field ill-formed. Maybe these books were
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
                                (ms x86))
                          x86)))
               (mv -1 x86)))
@@ -910,10 +910,10 @@ not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
          (obj-fd-field (read-x86-file-des oldfd x86))
          ((when (not (file-descriptor-fieldp obj-fd-field)))
           (b* ((- (cw "~%Error: File Descriptor Field ill-formed. Maybe these books were ~
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions.~%~%"))
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions.~%~%"))
                (x86 (!ms (list (rip x86)
                                "File Descriptor Field ill-formed. Maybe these books were ~
-not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
+not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
                                (ms x86))
                          x86)))
               (mv -1 x86)))
@@ -1113,8 +1113,8 @@ not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
 
 <p><b>IMPORTANT:</b> The following raw Lisp definitions will not be
 available unless the x86 books have been build with the environment
-variable @('X86ISA_EXEC') set to @('t'). See @(see Build-Instructions) for
-details.</p>
+variable @('X86ISA_EXEC') set to @('t'). See @(see
+x86isa-build-instructions) for details.</p>
 
 <ul>
 <li>@(see env-read)</li>

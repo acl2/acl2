@@ -107,7 +107,7 @@ else
   :short "Recognizer for pairs of general-purpose register indices and
   values"
   :long "<p>Note that the register values are required to be @('n64p'), as
-  opposed to @('i64p') (which is what is required for @(see !rgfi).</p>"
+  opposed to @('i64p') (which is what is required for @('!rgfi')).</p>"
 
   :enabled t
   (if (atom alst)
