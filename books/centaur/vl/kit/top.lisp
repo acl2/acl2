@@ -57,14 +57,13 @@
 
 (defconst *vl-generic-help*
   "VL Verilog Toolkit
-Copyright (C) 2008-2013 Centaur Technology <http://www.centtech.com>
+Copyright (C) 2008-2016 Centaur Technology <http://www.centtech.com>
 
 Usage: vl <command> [arguments]
 
 Commands:
 
   help    Print this message, or get help on a particular VL command
-  json    Convert Verilog designs into JSON files (for easy parsing)
   lint    Find potential bugs in a Verilog design
   pp      Preprocess Verilog designs
   gather  Collect Verilog files into a single file
@@ -80,15 +79,13 @@ Use 'vl help <command>' for help on a specific command.
     :parents (vl)
     :short "A command-line program for using VL in basic ways."
 
-    :long ,(cat "<p>@(see VL) is mainly an ACL2 library, and a lot of its
+    :long ,(cat "<p>@(see VL) is mainly an ACL2 library and most of its
 functionality and features are available only from within ACL2.  However, to
 make VL more widely approachable, we have bundled up certain pieces of it into
 a command line program, which we call the Kit.</p>
 
-<p>The kit is ordinarily built by running @('make vl') in the @('acl2/books')
-directory.  The source files are found in @('acl2/books/centaur/vl/kit') but
-the resulting executable is put into @('acl2/books/centaur/vl/bin') and is
-simply named @('vl').</p>
+<p>You can build the VL Kit by running @('make vl') in the @('acl2/books')
+directory.  This should produce @('acl2/books/centaur/vl/bin/vl').</p>
 
 <p>This @('vl') program is really just a wrapper for several sub-commands:</p>
 
@@ -106,7 +103,6 @@ commands.</p>
 
   (defconst *vl-help-messages*
     (list (cons "help"   *vl-generic-help*)
-          ;(cons "json"   *vl-json-help*)
           (cons "lint"   *vl-lint-help*)
           (cons "pp"     *vl-pp-help*)
           (cons "gather" *vl-gather-help*)

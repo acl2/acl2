@@ -36,9 +36,10 @@
 (value-triple (set-gc-strategy :delay))
 
 (include-book "shell")
-(include-book "../server/server")
+(include-book "../server/top")
 (include-book "../util/gc")
 (include-book "centaur/getopt/top" :dir :system)
+(local (include-book "xdoc/display" :dir :system))
 
 (make-event
  (let ((public-dir (oslib::catpath *browser-dir* "public")))
@@ -94,15 +95,12 @@ Usage:    vl server [OPTIONS]
 Options:" *nls* *nls* *vl-server-opts-usage* *nls*))
 
 (defconsts (*vl-server-readme* state)
-  (b* (((mv contents state) (acl2::read-file-characters "server.readme" state))
-       ((when (stringp contents))
-        (raise contents)
-        (mv "" state)))
-    (mv (implode contents) state)))
-
+  (b* ((topic (xdoc::find-topic 'vl::server (xdoc::get-xdoc-table (w state))))
+       ((mv text state) (xdoc::topic-to-text topic nil state)))
+    (mv text state)))
 
 (define vl-server ((cmdargs string-listp) &optional (state 'state))
-  :parents (kit)
+  :parents (kit server)
   :short "The @('vl server') command."
 
   (b* (((mv errmsg opts extra-args)

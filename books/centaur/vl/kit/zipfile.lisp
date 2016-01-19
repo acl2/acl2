@@ -38,25 +38,12 @@
 (local (include-book "std/io/base" :dir :system))
 (local (include-book "../util/arithmetic"))
 
-(defxdoc vlzip-files
-  :parents (kit)
-  :short "The .vlzip format can be used to save a pre-parsed Verilog design."
-
-  :long "<p>This is the file format used by the @(see server).  It contains a
-pre-parsed Verilog design, all the source code used to create it, and other
-information.  See @(see vl-zip) structures for details.</p>
-
-<p>We write out @(see vl-zip) structures in a special format so that we can
-read the VL syntax version, creation date, and design name without having to
-read the contents of the design.  This allows us to (in the VL server) quickly
-recognize which @('.vlzip') files are compatible with our current syntax
-version.</p>")
-
-(local (xdoc::set-default-parents vlzip-files))
-
-(defprod vl-zip
+(defprod vl-zipfile
+  :parents (vl-zip)
   :tag :vl-zip
-  :short "Contents of a .vlzip file."
+  :short "Representation of a @('.vlzip') file's contents.  These files can be
+used to store pre-parsed Verilog designs."
+
   ((name    stringp :rule-classes :type-prescription
             "A name for this project.")
    (syntax  stringp :rule-classes :type-prescription
@@ -70,14 +57,26 @@ version.</p>")
    (filemap vl-filemap-p
             "Raw contents of the actual files that were loaded.")
    (defines vl-defines-p
-            "Ending @('`define')s after preprocessing.")))
+            "Ending @('`define')s after preprocessing."))
 
-(defoption vl-maybe-zip vl-zip-p)
+  :long "<p>This is the file format used by the @(see server).  It contains a
+pre-parsed Verilog design, all the source code used to create it, and other
+information.</p>
+
+<p>We write out @(see vl-zipfile) structures in a special format so that we can
+read the VL syntax version, creation date, and design name without having to
+read the contents of the design.  This allows us to (in the VL server) quickly
+recognize which @('.vlzip') files are compatible with our current syntax
+version.</p>")
+
+(local (xdoc::set-default-parents vl-zipfile))
+
+(defoption vl-maybe-zipfile vl-zipfile-p)
 
 (defttag :open-output-channel!)
 
 (define vl-write-zip ((filename stringp)
-                      (contents vl-zip-p)
+                      (contents vl-zipfile-p)
                       &key (state 'state))
   :returns state
   (b* (((mv acl2::channel state)
@@ -85,7 +84,7 @@ version.</p>")
        ((unless acl2::channel)
         (raise "Failed to open file for writing: ~s0~%" filename)
         state)
-       ((vl-zip contents))
+       ((vl-zipfile contents))
        ;; Header stuff that we expect to be able to read quickly
        (state (acl2::print-legibly    (list :about   "This is a .vlzip file created by the VL Verilog Toolkit.")))
        (state (acl2::print-legibly    (list :name    contents.name)))
@@ -223,7 +222,7 @@ file.</p>"
   :short "Read a whole vlzip file."
   ((filename stringp) &key (state 'state))
   :returns (mv (errmsg     "NIL on failure or a @(see msg) on any error.")
-               (zip        (iff (vl-zip-p zip) (not errmsg)))
+               (zip        (iff (vl-zipfile-p zip) (not errmsg)))
                (new-state  state-p1 :hyp (state-p1 state)))
   (b* ((filename (string-fix filename))
        ((mv channel state)
@@ -261,13 +260,13 @@ file.</p>"
            (mv (msg "Can't load ~x0: invalid :filemap~%" filename) nil state))
           ((unless (vl-defines-p defines))
            (mv (msg "Can't load ~x0: invalid :defines~%" filename) nil state))
-          (zip (make-vl-zip :name name
-                            :syntax syntax
-                            :date date
-                            :ltime ltime
-                            :design design
-                            :filemap filemap
-                            :defines defines)))
+          (zip (make-vl-zipfile :name name
+                                :syntax syntax
+                                :date date
+                                :ltime ltime
+                                :design design
+                                :filemap filemap
+                                :defines defines)))
        (mv nil zip state))
      :mintime 1)))
 
@@ -275,13 +274,13 @@ file.</p>"
 (local (make-event
         (b* (((mv date state) (oslib::date))
              ((mv ltime state) (oslib::universal-time))
-             (zip (make-vl-zip :name "Test file."
-                               :syntax *vl-current-syntax-version*
-                               :date date
-                               :ltime ltime
-                               :design (make-vl-design :version *vl-current-syntax-version*)
-                               :filemap nil
-                               :defines nil))
+             (zip (make-vl-zipfile :name "Test file."
+                                   :syntax *vl-current-syntax-version*
+                                   :date date
+                                   :ltime ltime
+                                   :design (make-vl-design :version *vl-current-syntax-version*)
+                                   :filemap nil
+                                   :defines nil))
              (state (vl-write-zip "test.vlzip" zip))
              ((mv err zip2 state) (vl-read-zip "test.vlzip"))
              ((when err)
