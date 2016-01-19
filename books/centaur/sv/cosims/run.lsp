@@ -50,17 +50,19 @@
 ||#
 
 (in-package "SV")
-; (acl2::set-ld-error-action '(:exit 1) state)
 
 (defconsts (*testname* state)
   (b* ((constval (fgetprop '*testname* 'acl2::const nil (w state)))
        ((when constval)
         ;; Make this event redundant if testname is already bound :)
         (mv (acl2::unquote constval) state))
-       ((mv er val state) (getenv$ "COSIM_TESTDIR" state)))
-    (and er (raise "Failed: ~@0" er))
+       ;; When running non-interactively we read the cosim name from the
+       ;; environment.  In this case, try to set up some sanity checking.
+       ((mv & & state) (acl2::set-ld-error-action '(:exit 1) state))
+       ((mv & & state) (acl2::set-slow-alist-action :break))
+       ((mv er val state) (getenv$ "COSIM_TESTDIR" state))
+       (- (and er (raise "Failed: ~@0" er))))
     (mv val state)))
-
 
 (defconsts (*svex-design* *orig-design* state)
   #!vl
