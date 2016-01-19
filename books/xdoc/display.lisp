@@ -351,8 +351,25 @@
     (tokens-to-terminal rest wrap-col open-tags list-nums acc)))
 
 
+(defun revappend-full-symbol (sym ans)
+  (b* ((ans (str::revappend-chars (symbol-package-name sym) ans))
+       (ans (str::revappend-chars "::" ans))
+       (ans (str::revappend-chars (symbol-name sym) ans)))
+    ans))
 
-(defun display-topic (x all-topics state)
+(defun revappend-parents (parents ans)
+  (b* (((when (atom parents))
+        ans)
+       ((when (atom (cdr parents)))
+        (revappend-full-symbol (car parents) ans))
+       (ans (revappend-full-symbol (car parents) ans))
+       (ans (if (consp (cddr parents))
+                (str::revappend-chars ", " ans)
+              (str::revappend-chars " and " ans))))
+    (revappend-parents (cdr parents) ans)))
+
+(defun topic-to-text (x all-topics state)
+  "Returns (MV TEXT STATE)"
   (b* ((name (cdr (assoc :name x)))
 ;       (- (cw "Preprocessing...~%"))
        ;; Use NIL as the topics-fal as a simple way to suppress autolinks...
@@ -372,34 +389,42 @@
         ;; Don't consult XDOC-VERBOSE-P here.  The user has explicitly asked to
         ;; be shown this topic but we can't show it to them.  They need to be
         ;; told why.
-        (cw "Error displaying xdoc topic:~%~%")
-        (b* ((state (princ$ err *standard-co* state))
-             (state (newline *standard-co* state))
-             (state (newline *standard-co* state)))
-          state))
+        (mv (str::cat "Error displaying xdoc topic: " *nls* *nls* err *nls* *nls*)
+            state))
 ;       (- (cw "Tokens are ~x0.~%" tokens))
 ;       (- (cw "Merging tokens...~%"))
        (merged-tokens (reverse (merge-text tokens nil 0 nil)))
 ;       (- (cw "Merged tokens are ~x0.~%" merged-tokens))
        (terminal (str::rchars-to-string
                   (tokens-to-terminal merged-tokens 70 nil nil nil)))
-       (state (princ$ (symbol-package-name name) *standard-co* state))
-       (state (princ$ "::" *standard-co* state))
-       (state (princ$ (symbol-name name) *standard-co* state))
-       (from  (cdr (assoc :from x)))
-       (state (if from
-                  (princ$ (str::cat " -- " from) *standard-co* state)
-                state))
-       (parents (cdr (assoc :parents x)))
-       (state (if parents
-                  (fms "Parents: ~&0.~%" (list (cons #\0 parents))
-                       *standard-co* state nil)
-                (newline *standard-co* state)))
-       (state (newline *standard-co* state))
-       (state (princ$ terminal *standard-co* state))
-       (state (newline *standard-co* state)))
-    state))
 
+       (ans nil)
+       (ans (str::revappend-chars (symbol-package-name name) ans))
+       (ans (str::revappend-chars "::" ans))
+       (ans (str::revappend-chars (symbol-name name) ans))
+       (from  (cdr (assoc :from x)))
+       (ans (if from
+                (b* ((ans (str::revappend-chars " -- " ans))
+                     (ans (str::revappend-chars from ans))
+                     (ans (cons #\Newline ans)))
+                  ans)
+              ans))
+       (parents (cdr (assoc :parents x)))
+       (ans (if parents
+                (b* ((ans (str::revappend-chars "Parents: " ans))
+                     (ans (revappend-parents parents ans))
+                     (ans (list* #\Newline #\. ans)))
+                  ans)
+              ans))
+       (ans (cons #\Newline ans))
+       (ans (str::revappend-chars terminal ans))
+       (ans (cons #\Newline ans)))
+    (mv (str::rchars-to-string ans) state)))
+
+(defun display-topic (x all-topics state)
+  (b* (((mv text state) (topic-to-text x all-topics state))
+       (state (princ$ text *standard-co* state)))
+    state))
 
 
 ; We previously tried to see if there was an acl2 doc topic.  But now that we
