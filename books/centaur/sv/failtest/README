@@ -20,6 +20,14 @@ top module.
 
 -------------------------------------------------------------------------------
 
+Jared todo:
+
+  - Add something to an interface.  (foo = ifname + bar)
+  - Add tests of $bits(myinterface) or similar, $dimensions, etc.
+  - Add tests of crazy things hooked up to gates (arrays of stuff, ..?)
+    and other ports
+
+
 Test summary:
 
 alias1.v -- try to alias wires of different widths

@@ -832,7 +832,7 @@ $(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
 OK_CERTS := $(filter-out centaur/%, \
               $(filter-out models/y86%, \
                 $(filter-out build/test%, \
-                  $(OK_CERTS)))
+                  $(OK_CERTS))))
 
 ifndef NO_RESCAN
 
@@ -876,7 +876,8 @@ BOOKS_SKIP_COMP += centaur/misc/memory-mgmt-logic.$(ACL2_COMP_EXT)
 
 # These depend on centaur/misc/memory-mgmt-logic, which will be
 # uncertified in other lisps and hence we won't get the target
-# compiled file:
+# compiled file (but see comment at the end of this list before
+# making further additions):
 BOOKS_SKIP_COMP += centaur/misc/memory-mgmt.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/core.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/extra-operations.$(ACL2_COMP_EXT)
@@ -885,6 +886,12 @@ BOOKS_SKIP_COMP += centaur/ubdds/subset.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/param.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/witness.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/vl2014/loader/top.$(ACL2_COMP_EXT)
+# Note: The list above (of books that depend on
+# centaur/misc/memory-mgmt-logic) is incomplete.  In particular,
+# failures can be expected for centaur/ubdds/lite and
+# centaur/esim/defmodules.  If we add those, then we get more
+# failures; six attempts didn't reach closure.  Future releases might
+# attempt to do a better job with this.
 
 # Some attempts fail presumably due to dollar signs in filenames:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard build/test/*.cert))
@@ -944,6 +951,7 @@ BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
 
 # Has readtime conditionals #+cmucl and #-cmucl:
 BOOKS_SKIP_COMP += std/io/read-string-tests.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += tools/oracle-time-tests.$(ACL2_COMP_EXT)
 
 # CLISP says: "Lisp stack overflow":
 BOOKS_SKIP_COMP += workshops/2006/rager/support/ptest-mergesort.$(ACL2_COMP_EXT)

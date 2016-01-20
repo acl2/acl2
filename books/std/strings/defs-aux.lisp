@@ -133,6 +133,8 @@
     revappend-natchars
     natstr
     natstr-list
+    intstr
+    intstr-list
     natsize-slow
     natsize-fast
     natsize

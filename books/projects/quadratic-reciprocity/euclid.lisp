@@ -18,71 +18,65 @@
 
 ;; We first list some basic properties of divisibility.
 
-(defun divides (x y)
-  (and (not (= x 0))
+(defn divides (x y)
+  (and (acl2-numberp x)
+       (not (= x 0))
+       (acl2-numberp y)
        (integerp (/ y x))))
 
 (defthm divides-leq
-    (implies (and (not (zp x))
-		  (not (zp y))
+    (implies (and (> x 0)
+		  (> y 0)
 		  (divides x y))
 	     (<= x y))
   :rule-classes ())
 
 (defthm divides-minus
-    (implies (and (not (zp x))
-		  (integerp y))
-	     (implies (divides x y)
-		      (divides x (- y))))
+  (implies (divides x y)
+           (divides x (- y)))
   :rule-classes ())
 
 (defthm divides-sum
-    (implies (and (integerp x)
-		  (integerp y)
-		  (integerp z)
-		  (divides x y)
+    (implies (and (divides x y)
 		  (divides x z))
 	     (divides x (+ y z)))
   :rule-classes ())
 
 (defthm divides-product
-    (implies (and (integerp x)
-		  (integerp y)
-		  (integerp z)
+    (implies (and (integerp z)
 		  (divides x y))
 	     (divides x (* y z)))
   :rule-classes ())
 
 (defthm divides-transitive
-    (implies (and (integerp x)
-		  (integerp y)
-		  (integerp z)
-		  (divides x y)
+    (implies (and (divides x y)
 		  (divides y z))
 	     (divides x z))
   :rule-classes ())
 
 (defthm divides-self
-    (implies (and (integerp x)
+    (implies (and (acl2-numberp x)
 		  (not (= x 0)))
 	     (divides x x)))
 
 (defthm divides-0
-    (implies (and (integerp x)
+    (implies (and (acl2-numberp x)
 		  (not (= x 0)))
 	     (divides x 0)))
 
 (defthm divides-mod-equal
-    (implies (and (integerp a)
-		  (integerp b)
-		  (not (zp n)))
+    (implies (and (real/rationalp a)
+		  (real/rationalp b)
+                  (real/rationalp n)
+                  (not (= n 0)))
 	     (iff (divides n (- a b))
 		  (= (mod a n) (mod b n))))
   :rule-classes ())
 
 (defthm divides-mod-0
-    (implies (and (integerp a)
-		  (not (zp n)))
+    (implies (and (acl2-numberp a)
+		  (acl2-numberp n)
+		  (not (= n 0)))
 	     (iff (divides n a)
 		  (= (mod a n) 0)))
   :rule-classes ()
@@ -95,8 +89,8 @@
 ;; (In the book "mersenne", in which we are concerned with efficiency, we shall
 ;; introduce an equivalent version that checks for divisors only up to sqrt(n).)
 
-(defun least-divisor (k n)
-  (declare (xargs :measure (nfix (- n k))))
+(defn least-divisor (k n)
+  (declare (xargs :measure (:? k n)))
   (if (and (integerp n)
 	   (integerp k)
 	   (< 1 k)
@@ -128,10 +122,10 @@
 	     (<= (least-divisor k n) d))
   :rule-classes ())
 
-(defun primep (n)
+(defn primep (n)
   (and (integerp n)
        (>= n 2)
-       (= (least-divisor 2 n) n)))
+       (equal (least-divisor 2 n) n)))
 
 (defthm primep-gt-1
     (implies (primep p)
@@ -159,11 +153,13 @@
 ;; returns a prime that is greater than its argument:
 
 (defun fact (n)
+  (declare (xargs :guard (natp n)))
   (if (zp n)
       1
     (* n (fact (1- n)))))
 
 (defun greater-prime (n)
+  (declare (xargs :guard (natp n)))
   (least-divisor 2 (1+ (fact n))))
 
 (defthm greater-prime-divides
@@ -195,7 +191,9 @@
 ;; which we define according to Euclid's algorithm.
 
 (defun g-c-d-nat (x y)
-  (declare (xargs :measure (nfix (+ x y))))
+  (declare (xargs :guard (and (natp x)
+                              (natp y))
+                  :measure (:? x y)))
   (if (zp x)
       y
     (if (zp y)
@@ -205,6 +203,8 @@
 	(g-c-d-nat (- x y) y)))))
 
 (defun g-c-d (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y))))
   (g-c-d-nat (abs x) (abs y)))
 
 (defthm g-c-d-nat-pos
@@ -244,7 +244,9 @@
 (mutual-recursion
 
  (defun r-nat (x y)
-   (declare (xargs :measure (nfix (+ x y))))
+   (declare (xargs :guard (and (natp x)
+                               (natp y))
+                   :measure (:? x y)))
   (if (zp x)
       0
     (if (zp y)
@@ -253,8 +255,10 @@
 	  (- (r-nat x (- y x)) (s-nat x (- y x)))
 	(r-nat (- x y) y)))))
 
-(defun s-nat (x y)
-   (declare (xargs :measure (nfix (+ x y))))
+ (defun s-nat (x y)
+   (declare (xargs :guard (and (natp x)
+                               (natp y))
+                   :measure (:? x y)))
   (if (zp x)
       1
     (if (zp y)
@@ -274,11 +278,15 @@
   :rule-classes ())
 
 (defun r (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y))))
   (if (< x 0)
       (- (r-nat (abs x) (abs y)))
     (r-nat (abs x) (abs y))))
 
 (defun s (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y))))
   (if (< y 0)
       (- (s-nat (abs x) (abs y)))
     (s-nat (abs x) (abs y))))

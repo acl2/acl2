@@ -82,20 +82,12 @@ FAILING_TEST_TARGETS := \
   gates_rnmos/ok \
   gates_pullup/ok \
   gates_pulldown/ok \
-  iface_subiface/ok \
   inst_size1/ok \
   inst_size2/ok \
   inst_size3/ok \
   inst_size4/ok \
   udp_wide1/ok \
-  stream3/ok \
-  iface_basic6/ok \
-  iface_subiface/ok \
-  udp_wide1/ok \
-  ifarray1/ok \
-  ifarray2/ok \
-  ifarray3/ok \
-  ifarray4/ok
+  stream3/ok
 
 
 SPECFILES := $(wildcard */spec.sv)

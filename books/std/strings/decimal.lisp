@@ -520,6 +520,36 @@ consing together characters in reverse order.</p>"
   (defthm natstr-nonempty
     (not (equal (natstr n) ""))))
 
+(define intstr
+  :short "Convert an integer into a string with its digits."
+  ((i integerp))
+  :returns (str stringp :rule-classes :type-prescription)
+  :long "<p>For instance, @('(intstr -123)') is @('\"-123\"').</p>"
+  :inline t
+  (let ((i (mbe :logic (ifix i) :exec i)))
+    (if (< i 0)
+        (implode (cons #\- (natchars (- i))))
+      (implode (natchars i))))
+  ///
+  (defthm intstr-nonempty
+    (not (equal (intstr i) "")))
+
+  (local (defthm l0
+           (implies (digit-listp x)
+                    (not (equal x (cons #\- y))))))
+
+  (local (defthm l2
+           (implies (equal (char x 0) #\-)
+                    (not (equal x "0")))))
+
+  (defthm intstr-one-to-one-positive
+    (equal (equal (intstr n) (intstr m))
+           (equal (ifix n) (ifix m)))
+    :hints(("Goal"
+            :in-theory (enable natstr)
+            :use ((:instance natstr-one-to-one (n 0) (m m))
+                  (:instance natstr-one-to-one (n n) (m 0)))))))
+
 (define natstr-list
   :short "Convert a list of natural numbers into a list of strings."
   ((x nat-listp))
@@ -537,6 +567,24 @@ consing together characters in reverse order.</p>"
     (equal (natstr-list (cons a x))
            (cons (natstr a)
                  (natstr-list x)))))
+
+(define intstr-list
+  :short "Convert a list of integers into a list of strings."
+  ((x integer-listp))
+  :returns (strs string-listp)
+  (if (atom x)
+      nil
+    (cons (intstr (car x))
+          (intstr-list (cdr x))))
+  ///
+  (defthm intstr-list-when-atom
+    (implies (atom x)
+             (equal (intstr-list x)
+                    nil)))
+  (defthm intstr-list-of-cons
+    (equal (intstr-list (cons a x))
+           (cons (intstr a)
+                 (intstr-list x)))))
 
 
 (define natsize-slow ((x natp))
