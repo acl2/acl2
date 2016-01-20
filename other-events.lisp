@@ -26754,7 +26754,7 @@
 
 (defmacro channel-to-string (form channel-var
                                   &optional
-                                  extra-var fmt-controls iprint-action
+                                  extra-var fmt-controls
                                   outside-loop-p)
 
 ; Form is a call of fms, fmt, or fmt1 (or their "!" versions) on variables.  To
@@ -26781,11 +26781,8 @@
 ; *acl2-unwind-protect-stack*) for any state global modified by
 ; fmt-control-bindings.
 
-; Note that fmt-controls and iprint-action are evaluated, but channel-var and
-; extra-var are not evaluated.
-
-; Any non-nil value of iprint-action is coerced to t before being passed to
-; (a function underneath) set-iprint.
+; Note that fmt-controls is evaluated, but channel-var and extra-var are not
+; evaluated.
 
 ; This macro is not recommended for users, as it has been designed specifically
 ; for the fmt family of functions.  If one wishes to use this or a similar
@@ -26798,11 +26795,11 @@
 ;   (remove-untouchable temp-touchable-vars nil)
 ;   (set-temp-touchable-vars t state)
 ;   (defun fms-to-string-fn-again
-;     (str alist evisc-tuple fmt-control-alist iprint-action)
+;     (str alist evisc-tuple fmt-control-alist)
 ;     (declare (xargs :mode :program))
 ;     (channel-to-string
 ;      (fms str alist chan-do-not-use-elsewhere state evisc-tuple)
-;      chan-do-not-use-elsewhere nil fmt-control-alist iprint-action))
+;      chan-do-not-use-elsewhere nil fmt-control-alist))
 ;   (defmacro fmt-to-string-again
 ;     (str alist &key evisc-tuple fmt-control-alist iprint)
 ;     (declare (xargs :guard (member-eq iprint '(t nil))))
@@ -26817,7 +26814,6 @@
                               (symbolp channel-var)
                               (symbolp extra-var)
                               (symbolp fmt-controls)
-                              (symbolp iprint-action)
                               (not (eq 'result extra-var))
                               (not (eq 'state extra-var)))))
   (let* ((body0 ; error triple (mv nil val state), where val may cons extra-var
@@ -26845,15 +26841,7 @@
             `(unwind-protect
                  (state-free-global-let*
                   ,(fmt-control-bindings fmt-controls)
-                  (mv-let (msg state)
-                          (set-iprint-fn1
-                           (case ,iprint-action
-                             (:default :same)
-                             ((nil) :reset)
-                             (otherwise :reset-enable))
-                           state)
-                          (declare (ignore msg))
-                          ,body0))
+                  ,body0)
                (when (open-output-channel-p ,channel-var :character state)
                  (close-output-channel ,channel-var state))))
            (t
@@ -26865,15 +26853,7 @@
               "channel-to-string"
               (state-global-let*
                ,(fmt-control-bindings fmt-controls)
-               (mv-let (msg state)
-                       (set-iprint-fn1
-                        (case ,iprint-action
-                          (:default :same)
-                          ((nil) :reset)
-                          (otherwise :reset-enable))
-                        state)
-                       (declare (ignore msg))
-                       ,body0))
+               ,body0)
               (cond ((open-output-channel-p ,channel-var :character state)
                      (close-output-channel ,channel-var state))
                     (t state))
@@ -26898,70 +26878,59 @@
        ,(cond (extra-var `(mv (car result) (cdr result)))
               (t 'result))))))
 
-(defun fms-to-string-fn (str alist evisc-tuple fmt-control-alist iprint-action)
+(defun fms-to-string-fn (str alist evisc-tuple fmt-control-alist)
   (channel-to-string
    (fms str alist chan-do-not-use-elsewhere state evisc-tuple)
-   chan-do-not-use-elsewhere nil fmt-control-alist iprint-action))
+   chan-do-not-use-elsewhere nil fmt-control-alist))
 
-(defmacro fms-to-string (str alist &key evisc-tuple fmt-control-alist iprint)
-  (declare (xargs :guard (member-eq iprint '(t nil))))
-  `(fms-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+(defmacro fms-to-string (str alist &key evisc-tuple fmt-control-alist)
+  `(fms-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist))
 
-(defun fms!-to-string-fn (str alist evisc-tuple fmt-control-alist iprint-action)
+(defun fms!-to-string-fn (str alist evisc-tuple fmt-control-alist)
   (channel-to-string
    (fms! str alist chan-do-not-use-elsewhere state evisc-tuple)
-   chan-do-not-use-elsewhere nil fmt-control-alist iprint-action))
+   chan-do-not-use-elsewhere nil fmt-control-alist))
 
-(defmacro fms!-to-string (str alist &key evisc-tuple fmt-control-alist iprint)
-  (declare (xargs :guard (member-eq iprint '(t nil))))
-  `(fms!-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+(defmacro fms!-to-string (str alist &key evisc-tuple fmt-control-alist)
+  `(fms!-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist))
 
-(defun fmt-to-string-fn (str alist evisc-tuple fmt-control-alist iprint-action)
+(defun fmt-to-string-fn (str alist evisc-tuple fmt-control-alist)
   (channel-to-string
    (fmt str alist chan-do-not-use-elsewhere state evisc-tuple)
-   chan-do-not-use-elsewhere col fmt-control-alist iprint-action))
+   chan-do-not-use-elsewhere col fmt-control-alist))
 
-(defmacro fmt-to-string (str alist &key evisc-tuple fmt-control-alist iprint)
-  (declare (xargs :guard (member-eq iprint '(t nil))))
-  `(fmt-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+(defmacro fmt-to-string (str alist &key evisc-tuple fmt-control-alist)
+  `(fmt-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist))
 
-(defun fmt!-to-string-fn (str alist evisc-tuple fmt-control-alist
-                              iprint-action)
+(defun fmt!-to-string-fn (str alist evisc-tuple fmt-control-alist)
   (channel-to-string
    (fmt! str alist chan-do-not-use-elsewhere state evisc-tuple)
-   chan-do-not-use-elsewhere col fmt-control-alist iprint-action))
+   chan-do-not-use-elsewhere col fmt-control-alist))
 
-(defmacro fmt!-to-string (str alist &key evisc-tuple fmt-control-alist iprint)
-  (declare (xargs :guard (member-eq iprint '(t nil))))
-  `(fmt!-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+(defmacro fmt!-to-string (str alist &key evisc-tuple fmt-control-alist)
+  `(fmt!-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist))
 
-(defun fmt1-to-string-fn (str alist col evisc-tuple fmt-control-alist
-                              iprint-action)
+(defun fmt1-to-string-fn (str alist col evisc-tuple fmt-control-alist)
   (channel-to-string
    (fmt1 str alist col chan-do-not-use-elsewhere state evisc-tuple)
-   chan-do-not-use-elsewhere col fmt-control-alist iprint-action))
+   chan-do-not-use-elsewhere col fmt-control-alist))
 
-(defmacro fmt1-to-string (str alist col &key evisc-tuple fmt-control-alist
-                              iprint)
-  (declare (xargs :guard (member-eq iprint '(t nil))))
-  `(fmt1-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist ,iprint))
+(defmacro fmt1-to-string (str alist col &key evisc-tuple fmt-control-alist)
+  `(fmt1-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist))
 
-(defun fmt1!-to-string-fn (str alist col evisc-tuple fmt-control-alist
-                            iprint-action)
+(defun fmt1!-to-string-fn (str alist col evisc-tuple fmt-control-alist)
   (channel-to-string
    (fmt1! str alist col chan-do-not-use-elsewhere state evisc-tuple)
-   chan-do-not-use-elsewhere col fmt-control-alist iprint-action))
+   chan-do-not-use-elsewhere col fmt-control-alist))
 
-(defmacro fmt1!-to-string (str alist col &key evisc-tuple fmt-control-alist
-                               iprint)
-  (declare (xargs :guard (member-eq iprint '(t nil))))
-  `(fmt1!-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist ,iprint))
+(defmacro fmt1!-to-string (str alist col &key evisc-tuple fmt-control-alist)
+  `(fmt1!-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist))
 
 #-acl2-loop-only
 (defun hard-error-is-error (ctx str alist)
   (error "~a" (channel-to-string
                (error-fms-channel t ctx str alist chan state)
-               chan nil nil :default t)))
+               chan nil nil t)))
 
 ; Essay on Memoization with Attachments (relevant for #+hons version only)
 
