@@ -1366,6 +1366,9 @@ the way.</li>
                     ;; the vardecl (hid), with no selects.
                     (vl-seltrace-to-svex-var nil x ss)))
                 (mv err base-var)))
+             ((when (member (tag item) '(:vl-modinst
+                                         :vl-interfaceport)))
+              (vl-seltrace-to-svex-var nil x ss))
              (paramval (b* (((unless (eq (tag item) :vl-paramdecl)) nil)
                             ((vl-paramdecl item)))
                          (vl-paramtype-case item.type
@@ -2934,6 +2937,24 @@ vector.</p>"
                          (and (posp size)
                               (vl-size-to-unsigned-logic size))
                          size)))
+
+        :vl-call
+        (b* (((when x.systemp)
+              (b* (((mv warnings svex size)
+                    (vl-expr-to-svex-selfdet x nil ss scopes)))
+                (mv warnings svex
+                    (and (posp size)
+                         (vl-size-to-unsigned-logic size))
+                    size)))
+             ((wmv warnings svex ftype)
+              (vl-funcall-to-svex x ss scopes))
+             ((unless ftype)
+              (mv warnings svex nil nil))
+             ((mv warnings size) (vl-datatype-size-warn ftype x warnings)))
+          (mv warnings
+              svex ftype size))
+
+        
         :otherwise
         (b* (((wmv warnings svex size)
               (vl-expr-to-svex-selfdet x nil ss scopes)))
@@ -3408,6 +3429,19 @@ functions can assume all bits of it are good.</p>"
                              :args (list x))
                       (svex-x)))
 
+                 ((when (member-equal simple-name '("$signed" "$unsigned")))
+                  ;; Same as a signedness cast -- don't need to do anything but check arity.
+                  (b* (((unless (and (consp x.args)
+                                     (not (consp (cdr x.args)))
+                                     (not x.typearg)))
+                        (mv (fatal :type :vl-expr-to-svex-fail
+                                   :msg "Bad arity for system call ~a0"
+                                   :args (list x))
+                            (svex-x)))
+                       ((mv warnings svex &)
+                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                    (mv warnings svex)))
+
                  ((when (vl-unary-syscall-p "$clog2" x))
                   (b* (((wmv warnings arg-svex ?size)
                         (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
@@ -3507,6 +3541,27 @@ functions can assume all bits of it are good.</p>"
                 :exit (b* (((list ?warnings ?svex ?type) values))
                         (list 'vl-index-expr-to-svex
                               (with-local-ps (vl-print-warnings warnings))))))
+
+#!vl
+(defun traces (names)
+  (if (Atom names)
+      nil
+    (cons (let ((fn (car names)))
+            `(trace$ (,fn :entry '(,fn)
+                          :exit (b* ((warnings (car values)))
+                                  (list ',fn (with-local-ps (vl-print-warnings warnings)))))))
+          (traces (cdr names)))))
+
+#!vl
+(defmacro do-traces (&rest names)
+  (cons 'er-progn
+        (traces names)))
+
+#!vl
+(do-traces vl-expr-to-svex-datatyped-fn
+           vl-expr-to-svex-untyped
+           vl-index-expr-to-svex
+           vl-streamexpr-to-svex)
 ||#
 
   (define vl-index-expr-to-svex ((x vl-expr-p)

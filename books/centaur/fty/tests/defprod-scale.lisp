@@ -38,14 +38,35 @@
     (cons `(,(intern$ (cat "FIELD" (str::natstr n)) "FTY") integerp)
           (make-prod-fields (- n 1)))))
 
-(defun make-prod-fn (n prefix)
+(defun make-prod-fn (n prefix layout)
   `(defprod ,(intern$ (cat prefix (str::natstr n)) "FTY")
      :tag ,(intern$ (cat prefix (str::natstr n)) "KEYWORD")
-     :layout :tree
+     :layout ,layout
      (,@(make-prod-fields n))))
 
-(defmacro make-prod (n &key (prefix '"PROD"))
-  (make-prod-fn n prefix))
+(defmacro make-prod (n &key (prefix '"PROD") (layout ':tree))
+  (make-prod-fn n prefix layout))
+
+
+;; This is pretty well tuned now.  The only thing we're doing that still takes
+;; any time is EQUAL-OF-PROD100.  It seems like ACL2 is spending a good bit of
+;; time in FIND-SUBSUMER-REPLACEMENT.  Not much to do about that.
+
+
+
+;; We found that in some cases products with :layout :alist were getting slowed
+;; down by traversing long lists of congruences on cdr, in ACL2 system function
+;; geneqv-lst.  We'll attempt to replicate this: first, we need many
+;; congruences on CDR.  DEFLIST makes this easy.
+
+(defun make-deflists (n)
+  (if (zp n)
+      nil
+    (cons `(deflist ,(intern$ (cat "INTLIST" (str::natstr n)) "FTY") :elt-type integerp)
+          (make-deflists (1- n)))))
+
+(make-event (cons 'progn (make-deflists 100)))
+
 
 
 ;; Original times on compute-1-3:          0.14, 0.16, 0.25, 0.42, 0.88, 4.18, 43.35
@@ -53,6 +74,7 @@
 ;; Disable tmp/type-pres/fwd-chaining:     0.17, 0.21, 0.33, 0.40, 0.79, 2.72, 14.13
 ;; After transsum fixes (tag-reasoning):   0.20, 0.18, 0.30, 0.51, 0.98, 3.24, 15.42
 ;; After kind-possibilities hacking:       0.16, 0.20, 0.31, 0.52, 1.00, 3.29, 15.45
+;; After adding 100 deflists:              0.19, 0.19, 0.30, 0.49, 0.97, 3.48, 17.31 
 (tm (make-prod 1))
 (tm (make-prod 2))
 (tm (make-prod 5))
@@ -61,6 +83,11 @@
 (tm (make-prod 50))
 (tm (make-prod 100))
 
-;; This is pretty well tuned now.  The only thing we're doing that still takes
-;; any time is EQUAL-OF-PROD100.  It seems like ACL2 is spending a good bit of
-;; time in FIND-SUBSUMER-REPLACEMENT.  Not much to do about that.
+;; Now trying with alist:                  0.26, 0.32, 0.61, 2.42, 23.15
+(tm (make-prod 1 :layout :alist :prefix "AL"))
+(tm (make-prod 2  :layout :alist :prefix "AL"))
+(tm (make-prod 5  :layout :alist :prefix "AL"))
+(tm (make-prod 10  :layout :alist :prefix "AL"))
+(tm (make-prod 20  :layout :alist :prefix "AL"))
+;; (tm (make-prod 50  :layout :alist :prefix "AL"))
+;; (tm (make-prod 100  :layout :alist :prefix "AL"))
