@@ -4882,35 +4882,42 @@
 ; used in place of str and the input alist if we are in raw-warning-format
 ; mode.
 
-  (let ((channel (f-get-global 'proofs-co state))
-        (str ; nil if we are to use raw-warning-format
-         (cond ((consp str+)
-                (assert$ (and (stringp (car str+))
-                              (alistp (cdr str+)))
-                         (cond ((f-get-global 'raw-warning-format state)
-                                nil)
-                               (t (car str+)))))
-               (t str+))))
+  (let ((channel (f-get-global 'proofs-co state)))
     (pprogn
      (if summary
          (push-warning summary state)
        state)
-     (cond ((null str)
-            (fms "~y0"
-                 (list (cons #\0 (list :warning summary
-                                       (cons (list :ctx ctx)
-                                             (cdr str+)))))
-                 channel state nil))
-           (t ; hence (stringp str)
-            (mv-let
-              (col state)
-              (fmt "ACL2 Warning~#0~[~/ [~s1]~]"
-                   (list (cons #\0 (if summary 1 0))
-                         (cons #\1 summary))
-                   channel state nil)
-              (mv-let (col state)
-                (fmt-in-ctx ctx col channel state)
-                (fmt-abbrev str alist col channel state "~%~%"))))))))
+     (cond
+      ((f-get-global 'raw-warning-format state)
+       (cond ((consp str+)
+              (fms "~y0"
+                   (list (cons #\0 (list :warning summary
+                                         (cons (list :ctx ctx)
+                                               (cdr str+)))))
+                   channel state nil))
+             (t
+              (fms "(:WARNING ~x0~t1~y2)~%"
+                   (list (cons #\0 summary)
+                         (cons #\1 10) ; (length "(:WARNING ")
+                         (cons #\2
+                               (list (cons :ctx ctx)
+                                     (cons :fmt-string str+)
+                                     (cons :fmt-alist alist))))
+                   channel state nil))))
+      (t (let ((str (cond ((consp str+)
+                           (assert$ (and (stringp (car str+))
+                                         (alistp (cdr str+)))
+                                    (car str+)))
+                          (t str+))))
+           (mv-let
+             (col state)
+             (fmt "ACL2 Warning~#0~[~/ [~s1]~]"
+                  (list (cons #\0 (if summary 1 0))
+                        (cons #\1 summary))
+                  channel state nil)
+             (mv-let (col state)
+               (fmt-in-ctx ctx col channel state)
+               (fmt-abbrev str alist col channel state "~%~%")))))))))
 
 (defmacro warning1-form (commentp)
 
@@ -6413,6 +6420,13 @@
 
                     ,@(cond ((eq st 'state)
                              '((*inside-with-local-state* t)
+                               (*wormholep*
+
+; We are in a local state, so it is irrelevant whether or not we are in a
+; wormhole, since (conceptually at least) the local state will be thrown away
+; after making changes to it.
+
+                                nil)
                                (*file-clock* *file-clock*)
                                (*t-stack* *t-stack*)
                                (*t-stack-length* *t-stack-length*)
