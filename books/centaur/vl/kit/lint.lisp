@@ -34,12 +34,7 @@
 (include-book "../lint/check-case")
 (include-book "../lint/check-namespace")
 (include-book "../mlib/hierarchy")
-
-;(include-book "../lint/drop-missing-submodules")
 (include-book "../lint/drop-user-submodules")
-;(include-book "../lint/lint-stmt-rewrite")
-;; Not used anymore (?)
-;; (include-book "../lint/remove-toohard")
 (include-book "../lint/suppress-warnings")
 (include-book "../lint/condcheck")
 (include-book "../lint/duplicate-detect")
@@ -51,58 +46,122 @@
 (include-book "../lint/selfassigns")
 (include-book "../lint/skip-detect")
 (include-book "../lint/logicassign")
-
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
 (include-book "../transforms/annotate/top")
 (include-book "../transforms/addnames")
-
-;(include-book "../transforms/assign-trunc")
-;(include-book "../transforms/blankargs")
-;(include-book "../transforms/clean-params")
 (include-book "../transforms/clean-warnings")
-;(include-book "../transforms/drop-blankports")
-;(include-book "../transforms/expr-split")
-;(include-book "../transforms/expand-functions")
-;(include-book "../transforms/oprewrite")
-;(include-book "../transforms/resolve-ranges")
-;(include-book "../transforms/replicate-insts")
-;(include-book "../transforms/selresolve")
-;(include-book "../transforms/sizing")
-;(include-book "../transforms/unused-vars")
-
 (include-book "centaur/sv/vl/moddb" :dir :system)
 (include-book "../../misc/sneaky-load")
-
 (include-book "../mlib/json")
-
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "progutils")
-
+(local (include-book "xdoc/display" :dir :system))
 (local (include-book "../mlib/modname-sets"))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (non-parallel-book))
+(local (in-theory (disable (:e tau-system))))
 
-(defsection lint
-  :parents (vl)
+(defsection vl-lint
+  :parents (kit)
   :short "A linting tool for Verilog and SystemVerilog."
 
-  :long "<p>A <a
-href='http://en.wikipedia.org/wiki/Lint_%28software%29'>linter</a> is a tool
-that looks for possible bugs in a program.  We have used @(see VL) to implement
-a linter for Verilog and SystemVerilog designs.  It can scan your Verilog
-designs for potential bugs like size mismatches, unused wires, etc.</p>
+  :long "<h3>Introduction</h3>
 
-<p>Note: Most of the documentation here is about the implementation of various
-linter checks.  If you just want to run the linter on your own Verilog designs,
-you should see the VL @(see kit).  After building the kit, you should be able
-to run, e.g., @('vl lint --help') to see the @(see *vl-lint-help*)
-message.</p>")
+<p>A <a href='http://en.wikipedia.org/wiki/Lint_%28software%29'>linter</a> is a
+tool that looks for possible bugs in a program.  We have used @(see VL) to
+implement a linter for Verilog and SystemVerilog designs.  It can warn you
+about things such as:</p>
+
+<ul>
+<li>Wires driven by multiple sources</li>
+<li>Width mismatches in assignments and subexpressions</li>
+<li>Strange expressions like @('a & a')</li>
+<li>Duplicated module elements</li>
+<li>Unused and unset wires and parts of wires</li>
+<li>Possible confusion about operator precedence</li>
+<li>Strange statements that sometimes indicate copy/paste errors</li>
+</ul>
+
+<h3>Running the Linter</h3>
+
+<p>For detailed usage run @('vl lint --help') or see @(see *vl-lint-help*).</p>
+
+<p>A typical invocation might look like this:</p>
+
+@({
+      vl lint my_mod1.v my_mod2.v \     <-- starting files to load
+               -s libs/my_lib1 \        <-- search paths for finding
+               -s libs/my_lib2               additional modules
+})
+
+<p>The linter will print some progress messages as it runs, then writes its
+report in both <b>text</b> and <b>json</b> formats.</p>
+
+<h5>Output Text Files</h5>
+
+<p>The linter generally produces many warnings.  To try to filter this out and
+make it easy to focus on the most important warnings, we split the output into
+several files.  Here is a summary;</p>
+
+<dl>
+<dt>Generic warnings: (probably the most interesting)</dt>
+<dd>vl-basic.txt - basic warnings</dd>
+
+<dt>Size warnings: (often interesting)</dt>
+<dd>vl-trunc.txt - truncations and extensions in assignments</dd>
+<dd>vl-fussy.txt - size mismatches inside of expressions like @('a & b')</dd>
+<dd>vl-trunc-minor.txt - unlikely to be problems</dd>
+<dd>vl-fussy-minor.txt - unlikely to be problems</dd>
+
+<dt>Code cleanup: (helpful when refactoring)</dt>
+<dd>vl-lucid.txt - unused/undriven and multiply driven wires</dd>
+<dd>vl-same-ports.txt - redundant submodule instances</dd>
+<dd>vl-same-ports-minor.txt - unlikely to be problems</dd>
+
+<dt>Code smells (sometimes interesting)</dt>
+<dd>vl-smells.txt - weird expressions, duplicate rhs expressions</dd>
+
+<dt>Skipped wire detection (only occasionally useful)</dt>
+<dd>vl-skipdet.txt - high-scoring expressions, more likely to be problems</dd>
+<dd>vl-skipdet-minor.txt - low-scoring expressions, unlikely to be problems</dd>
+
+<dt>Other unclassified warnings</dt>
+<dd>vl-other.txt - tool errors, misc garble</dd>
+</dl>
+
+<h5>Output JSON files</h5>
+
+<p>All warnings produced by the linter are also put into @('vl-warnings.json').
+This file is intended for use in scripts that process the linter's output, such
+as lint warning emailers or similar.</p>
+
+
+<h3>Suppressing False Positives</h3>
+
+<p>You can tell the linter to ignore certain things by adding comments to your
+Verilog source files.  For instance:</p>
+
+@({
+    //@VL LINT_IGNORE_TRUNCATION     // to suppress the truncation warning
+    assign foo[3:0] = bar[5:0];
+
+    //@VL LINT_IGNORE                // to suppress all warnings
+    assign foo[3:0] = bar[5:0];
+})
+
+<p>This feature is probably fancier than anyone needs; see @(see
+lint-warning-suppression) for details.</p>
+
+<p>Note that there are also some command-line options to suppress all warnings
+for particular modules, or all warnings of particular types, etc.  See @(see
+*vl-lint-help*) for details.</p>")
+
+(local (xdoc::set-default-parents vl-lint))
 
 (defoptions vl-lintconfig
-  :parents (lint)
   :short "Command-line options for running @('vl lint')."
   :tag :vl-lint-opts
 
@@ -234,7 +293,6 @@ message.</p>")
                 :rule-classes :type-prescription)))
 
 (defval *vl-lint-help*
-  :parents (lint)
   :short "Usage message for vl lint."
   :showdef nil
   :showval t
@@ -251,6 +309,10 @@ Usage:    vl lint [OPTIONS] file.v [file2.v ...]
 
 Options:" *nls* *nls* *vl-lintconfig-usage* *nls*))
 
+(defconsts (*vl-lint-readme* state)
+  (b* ((topic (xdoc::find-topic 'vl::vl-lint (xdoc::get-xdoc-table (w state))))
+       ((mv text state) (xdoc::topic-to-text topic nil state)))
+    (mv text state)))
 
 ;; (define vl-filter-mods-with-good-paramdecls
 ;;   ((x    vl-modulelist-p "List of modules to filter.")
@@ -290,7 +352,6 @@ Options:" *nls* *nls* *vl-lintconfig-usage* *nls*))
   ((mods vl-modulelist-p "Modules to print warnings for.")
    (show symbol-listp    "Types of warnings to show.")
    (hide symbol-listp    "Types of warnings to hide."))
-  :parents (lint)
   :short "Print warnings of interest to standard output, while hiding other
 warnings."
 
@@ -323,7 +384,6 @@ shown.</p>"
 
 
 (defaggregate vl-lintresult
-  :parents (lint)
   :short "Results from running the linter."
   :tag :vl-lintresult
   ((design    vl-design-p
@@ -1086,16 +1146,9 @@ wide addition instead of a 10-bit wide addition.")))
     state))
 
 
-(defconsts (*vl-lint-readme* state)
-  (b* (((mv contents state) (acl2::read-file-characters "lint.readme" state))
-       ((when (stringp contents))
-        (raise contents)
-        (mv "" state)))
-    (mv (implode contents) state)))
 
-(define vl-lint ((args string-listp) &key (state 'state))
-  :parents (kit lint)
-  :short "The @('vl lint') command."
+(define vl-lint-top ((args string-listp) &key (state 'state))
+  :short "Top-level @('vl lint') command."
 
   (b* (((mv errmsg config start-files)
         (parse-vl-lintconfig args))

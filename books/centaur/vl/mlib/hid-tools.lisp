@@ -114,11 +114,11 @@ array of module instances like @('mymod myarr [width-1:0] (...)') and we are
 trying to follow a hierarchical reference like @('foo.bar.myarr[7].baz'), then
 we will not know whether this is valid until we have resolved @('width').</dd>
 
-<dd>In some applications, e.g., for @(see lint)-like tools, it may be best to
-allow these potentially invalid indices.  After all, we \"know\" that this
-reference is either invalid or is a reference to @('baz') within @('mymod').
-In that case, we may well wish to assume that the index will be valid and just
-go on and find @('baz').</dd>
+<dd>In some applications, e.g., for @(see vl-lint), it may be best to allow
+these potentially invalid indices.  After all, we \"know\" that this reference
+is either invalid or is a reference to @('baz') within @('mymod').  In that
+case, we may well wish to assume that the index will be valid and just go on
+and find @('baz').</dd>
 
 <dd>However, some other applications have more stringent soundness constraints.
 If we are writing transforms that are meant to build conservative, safe, formal

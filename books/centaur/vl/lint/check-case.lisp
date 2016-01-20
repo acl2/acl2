@@ -36,7 +36,7 @@
 (local (include-book "../util/osets"))
 
 (defsection check-case
-  :parents (lint)
+  :parents (vl-lint)
   :short "Basic checker to ensure that wire names don't differ only by case."
 
   :long "<p>Stylistically, we don't think wire names ought to differ only by

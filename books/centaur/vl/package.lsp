@@ -226,6 +226,7 @@
             hardware-verification
             esim
             sv
+            acl2
 
             ;; acl2-customization file stuff
             why

@@ -37,7 +37,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc lvaluecheck
-  :parents (lint lvalues)
+  :parents (vl-lint lvalues)
   :short "Checks to ensure that expressions used in lvalue positions are valid
 in the sense of @(see vl-expr-net-lvalue-p) or @(see
 vl-expr-variable-lvalue-p), depending on the context."
@@ -69,10 +69,10 @@ That is, if you have:</p>
 <p>Because then you're trying to connect the adder's output to @('a + b'),
 which is a lot like writing @('assign a + b = c').</p>
 
-<p>So, in this simple @(see lint) check we simply walk over the design and look
-for places where it seems like non-lvalues are being used where lvalues are
-probably expected.  This is purely heuristic so the warnings we generate are
-never fatal.</p>
+<p>So, in this simple @(see vl-lint) check we simply walk over the design and
+look for places where it seems like non-lvalues are being used where lvalues
+are probably expected.  This is purely heuristic so the warnings we generate
+are never fatal.</p>
 
 <p>We assume that at least @(see argresolve) has been run.</p>")
 

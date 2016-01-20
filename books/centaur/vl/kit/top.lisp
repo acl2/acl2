@@ -29,10 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-;; (include-book "json")
 (include-book "lint")
 (include-book "shell")
-(include-book "pp")
 (include-book "gather")
 (include-book "zip")
 (include-book "server")
@@ -65,7 +63,6 @@ Commands:
 
   help    Print this message, or get help on a particular VL command
   lint    Find potential bugs in a Verilog design
-  pp      Preprocess Verilog designs
   gather  Collect Verilog files into a single file
   server  Start a VL web server for web-based module browsing
   shell   Interactive VL shell (for experts)
@@ -77,19 +74,40 @@ Use 'vl help <command>' for help on a specific command.
 (make-event
  `(defsection kit
     :parents (vl)
-    :short "A command-line program for using VL in basic ways."
+    :short "A command-line program for using @(see VL) in basic ways."
 
-    :long ,(cat "<p>@(see VL) is mainly an ACL2 library and most of its
-functionality and features are available only from within ACL2.  However, to
-make VL more widely approachable, we have bundled up certain pieces of it into
-a command line program, which we call the Kit.</p>
+    :long ,(cat "<p>The VL Toolkit (``kit'') is a standalone program that lets
+you use various parts of VL from the command-line.  It currently includes:</p>
 
-<p>You can build the VL Kit by running @('make vl') in the @('acl2/books')
-directory.  This should produce @('acl2/books/centaur/vl/bin/vl').</p>
+<ul>
+<li>A Verilog/SystemVerilog linter, @(see vl-lint)</li>
+<li>A server that powers a web-based module browser, @(see vl-server)</li>
+<li>A shell for launching @(see acl2) with VL pre-loaded, @(see vl-shell)</li>
+<li>Some miscellaneous commands.</li>
+</ul>
 
-<p>This @('vl') program is really just a wrapper for several sub-commands:</p>
+<p>Note that the kit is intended to be a <b>convenient, but not complete</b>
+way to use VL.  We generally intend VL to be a useful ACL2 library, not a
+standalone program.  Most VL functions don't have any command-line
+wrappers.</p>
 
-@({" *vl-generic-help* " })")))
+<h3>Installation</h3>
+
+<p>To build the kit, just run @('make vl') in the @('acl2/books') directory.
+This should produce an executable at @('acl2/books/centaur/vl/bin/vl').</p>
+
+<h3>Usage</h3>
+
+<p>The top-level @('vl') program is really just a wrapper for several
+sub-commands:</p>
+
+@({" *vl-generic-help* " })
+
+<h3>Extending the Kit</h3>
+
+<p>If you develop your own VL functionality, you can create an extended kit
+that knows how to run your additional commands.  See in particular @(see
+vl-toolkit-other-command).</p>")))
 
 
 (defsection vl-toolkit-help-message
@@ -104,7 +122,6 @@ commands.</p>
   (defconst *vl-help-messages*
     (list (cons "help"   *vl-generic-help*)
           (cons "lint"   *vl-lint-help*)
-          (cons "pp"     *vl-pp-help*)
           (cons "gather" *vl-gather-help*)
           (cons "server" *vl-server-help*)
           (cons "shell"  *vl-shell-help*)
@@ -135,9 +152,9 @@ commands.</p>
 
 
 (define vl-help ((args string-listp) &key (state 'state))
-  :parents (kit)
-  :short "The @('vl help') command."
-
+  :parents (vl-main)
+  :short "Show help on how to use VL @(see kit) commands."
+  :long "<p>This just implements the @('vl help') command.</p>"
   (b* (((unless (or (atom args)
                     (atom (cdr args))))
         (die "Usage: vl help <command>~%")
@@ -154,8 +171,9 @@ commands.</p>
 
 
 (defsection vl-toolkit-other-command
-  :parents (kit)
-  :short "Handler for additional vl toolkit commands."
+  :parents (vl-main)
+  :short "Attachable handler for extending the VL @(see kit) with additional
+commands."
 
   :long "<p>By default this just dies with an error message that says the
 command is unknown.  But it is attachable, so advanced users can extend the
@@ -180,16 +198,21 @@ toolkit with their own commands.</p>
                                           state)
   :parents (vl-toolkit-other-command)
   :ignore-ok t
-  (progn$
-   (die "Unknown command ~s0.~%" command)
-   state)
+  (progn$ (die "Unknown command ~s0.~%" command)
+          state)
   ///
   (defattach vl-toolkit-other-command vl-toolkit-other-command-default))
 
 
 (define vl-main (&key (state 'state))
   :parents (kit)
-  :short "The top-level @('vl') meta-command."
+  :short "Top level entry point into the @(see kit).  This just handles the
+command-line parsing and invokes the right sub-command for the @('vl')
+executable."
+
+  :long "<p>Note that the kit is extensible and it is relatively easy to add
+new commands even without releasing your code.  See in particular @(see
+vl-toolkit-other-command).</p>"
 
   (b* ((state
         ;; Since the VL executable is a non-interactive program, there's no
@@ -214,23 +237,13 @@ toolkit with their own commands.</p>
           (exit-ok)
           state))
 
-       ;; ((when (equal cmd "json"))
-       ;;  (b* ((state (vl-json args)))
-       ;;    (exit-ok)
-       ;;    state))
-
        ((when (equal cmd "lint"))
-        (b* ((state (vl-lint args)))
-          (exit-ok)
-          state))
-
-       ((when (equal cmd "pp"))
-        (b* ((state (vl-pp args)))
+        (b* ((state (vl-lint-top args)))
           (exit-ok)
           state))
 
        ((when (equal cmd "gather"))
-        (b* ((state (vl-gather args)))
+        (b* ((state (vl-gather-top args)))
           (exit-ok)
           state))
 
@@ -240,12 +253,12 @@ toolkit with their own commands.</p>
           state))
 
        ((when (equal cmd "server"))
-        (b* ((state (vl-server args)))
+        (b* ((state (vl-server-top args)))
           ;; Do not call exit here, same reason as 'shell'
           state))
 
        ((when (equal cmd "shell"))
-        (b* ((state (vl-shell args)))
+        (b* ((state (vl-shell-top args)))
           ;; Do NOT exit here.  If you do, commands like :q quit entirely
           ;; instead of dropping you into raw Lisp.
           state))

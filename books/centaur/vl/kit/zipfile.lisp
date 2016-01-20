@@ -59,8 +59,8 @@ used to store pre-parsed Verilog designs."
    (defines vl-defines-p
             "Ending @('`define')s after preprocessing."))
 
-  :long "<p>This is the file format used by the @(see server).  It contains a
-pre-parsed Verilog design, all the source code used to create it, and other
+  :long "<p>This is the file format used by the @(see vl-server).  It contains
+a pre-parsed Verilog design, all the source code used to create it, and other
 information.</p>
 
 <p>We write out @(see vl-zipfile) structures in a special format so that we can

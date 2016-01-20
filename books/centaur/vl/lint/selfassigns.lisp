@@ -35,7 +35,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc selfassigns
-  :parents (lint)
+  :parents (vl-lint)
   :short "Simple check for self-assignments."
 
   :long "<p>This is just a heuristic check that adds warnings if it sees

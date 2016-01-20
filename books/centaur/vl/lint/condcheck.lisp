@@ -37,7 +37,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc condcheck
-  :parents (lint)
+  :parents (vl-lint)
   :short "Check for @('?:')-expressions with strange conditions."
 
   :long "<p>This is a heuristic for generating warnings.  We look for things

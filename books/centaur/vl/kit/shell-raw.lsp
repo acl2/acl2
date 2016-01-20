@@ -33,7 +33,7 @@
 (defun vl::vl-shell-fn (argv state)
   (declare (ignore argv))
   (format t "VL Verilog Toolkit
-Copyright (C) 2008-2014 Centaur Technology <http://www.centtech.com>
+Copyright (C) 2008-2016 Centaur Technology <http://www.centtech.com>
 
 ,-------------------------,
 |  VL Interactive Shell   |     This is an interactive ACL2 shell with VL pre-

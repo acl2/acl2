@@ -3796,8 +3796,8 @@ be non-sliceable, at least if it's an input.</p>"
          represent the actual DPI import statements so that they don't lead to
          parse errors.  We also regard import statements as real, legitimate
          scope items that can be looked up in a @(see scopestack), which allows
-         applications like @(see lint) checking to recognize that calls of
-         these functions/tasks are not undefined.</p>")
+         applications like @(see vl-lint) to recognize that calls of these
+         functions/tasks are not undefined.</p>")
 
 (fty::deflist vl-dpiimportlist
   :elt-type vl-dpiimport

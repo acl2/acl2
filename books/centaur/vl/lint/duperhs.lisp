@@ -36,7 +36,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc duperhs-check
-  :parents (lint)
+  :parents (vl-lint)
   :short "Check for assignments with the same right-hand side."
   :long "<p>This is a trivially simple check for cases like:</p>
 

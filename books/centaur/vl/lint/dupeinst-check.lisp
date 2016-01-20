@@ -36,7 +36,7 @@
 (local (include-book "../util/arithmetic"))
 
 (defxdoc dupeinst-check
-  :parents (lint)
+  :parents (vl-lint)
   :short "Check for module instances that are driving wires in identical ways."
 
   :long "<p>This is a trivially simple check for cases like:</p>

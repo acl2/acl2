@@ -39,7 +39,7 @@
 (local (in-theory (enable tag-reasoning)))
 
 (defxdoc truncation-warnings
-  :parents (lint)
+  :parents (vl-lint)
   :short "Warnings about implicit truncation and extensions in assignments,
 casts, and so forth."
 

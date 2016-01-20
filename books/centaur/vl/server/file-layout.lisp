@@ -37,7 +37,7 @@
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 
 (defsection file-layout
-  :parents (server)
+  :parents (vl-server)
   :short "Where we look for translation data."
 
   :long "<p>The VL server looks in a particular root directory for its

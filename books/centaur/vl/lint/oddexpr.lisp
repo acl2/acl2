@@ -36,7 +36,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defsection oddexpr-check
-  :parents (lint)
+  :parents (vl-lint)
   :short "Check for odd expressions that might indicate precedence problems."
 
   :long "<p>This is some rough code for finding expressions that might have

@@ -43,16 +43,19 @@
 (defxdoc vl-zip
   :parents (kit)
   :short "Parse a SystemVerilog design and save it as a @('.vlzip') file,
-typically for use with the VL @(see server)."
+typically for use with the @(see vl-server)."
 
   :long "<p>The VL @(see kit) provides a @('zip') command that you can use to
 parse a Verilog/SystemVerilog design and then write it out into a @('.vlzip')
 file.  These files are complete snapshots of what VL has parsed, and also
 include the full, raw source code files that have been loaded.</p>
 
-<p>These files are typically used by the VL @(see server) for viewing with the
+<p>These files are typically used by the @(see vl-server) for viewing with the
 VL Module Browser.  They can alternately be reloaded into ACL2 sessions using
-@(see vl-read-zip), which requires very little of VL to be loaded.</p>")
+@(see vl-read-zip), which requires very little of VL to be loaded.</p>
+
+<p>For detailed usage information, run @('vl zip --help') or see @(see
+*vl-zip-help*).</p>")
 
 (local (xdoc::set-default-parents vl-zip))
 
@@ -158,7 +161,11 @@ VL Module Browser.  They can alternately be reloaded into ACL2 sessions using
                 :rule-classes :type-prescription)
    ))
 
-(defconst *vl-zip-help* (str::cat "
+(defval *vl-zip-help*
+  :short "Detailed usage information for the @('vl zip') command."
+  :showval t
+  :showdef nil
+  (str::cat "
 vl zip:  Parse Verilog files and write it out as a .vlzip file.
 
 Example:  vl zip engine.v wrapper.v core.v \\

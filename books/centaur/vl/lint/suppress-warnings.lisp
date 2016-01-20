@@ -35,9 +35,9 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defsection lint-warning-suppression
-  :parents (lint warnings)
+  :parents (vl-lint warnings)
   :short "An attribute- mechanism for suppressing particular @(see warnings)
-when using @(see lint)."
+when using @(see vl-lint)."
 
   :long "<p>This is quick and dirty, but probably is actually a pretty
 effective and reasonable way to deal with suppressing unwanted warnings from

@@ -59,7 +59,7 @@
 
 
 (defxdoc lucid
-  :parents (lint)
+  :parents (vl-lint)
   :short "Check for unused, unset, spurious wires, and multiply driven wires.")
 
 

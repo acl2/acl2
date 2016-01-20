@@ -906,7 +906,7 @@ in it, such as a function, task, or block statement."
   :enabled t
   :long "<p>The @('-aux') function is memoized.  In a single-threaded context,
 there would be no need to call @(see make-fast-alist) again.  But for
-multi-threaded code, e.g., the VL @(see server), the alist may only be fast in
+multi-threaded code, e.g., the @(see vl-server), the alist may only be fast in
 some threads.  Calling @('make-fast-alist') again corrects for this and should
 be very cheap in the single-threaded case.</p>"
   (mbe :logic (vl-package-scope-item-alist x nil)
@@ -1999,7 +1999,7 @@ vl-design-elaborate).</p>
 <p>Historically we only looked at top level modules and ignored interfaces.  We
 now gather both modules <b>and</b> interfaces that are never used.  One nice
 consequence of this is that it means elaboration won't throw away any unused
-interfaces, which means we can get their @(see warnings) during @(see lint)
+interfaces, which means we can get their @(see warnings) during @(see vl-lint)
 checking.</p>
 
 <p>Note that keeping interfaces here seems to match the behavior of NCVerilog
