@@ -1018,7 +1018,6 @@
                              xlate-equiv-structures)
                             ()))))
 
-
 (defthm-usb n64p-rm-low-64-paging-entry
   :hyp (and (good-paging-structures-x86p (double-rewrite x86))
             (member-list-p addr (gather-all-paging-structure-qword-addresses x86)))

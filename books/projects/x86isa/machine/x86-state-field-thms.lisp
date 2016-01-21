@@ -372,7 +372,7 @@ re-arrange these nests of updates.</p>
                     v)))
 
   (defthm xr-xw-inter-field
-    (implies (not (equal fld1 fld2))
+    (implies (case-split (not (equal fld1 fld2)))
              (equal (xr fld2 i2 (xw fld1 i1 v x86))
                     (xr fld2 i2 x86))))
 

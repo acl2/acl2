@@ -146,7 +146,35 @@
                 (unsigned-byte-p 8 val))
            (xlate-equiv-structures (xw :mem index val x86) (double-rewrite x86))))
 
+(defthm xlate-equiv-x86s-and-xw-mem-disjoint
+  (implies (and
+            ;; To prevent loops...
+            (syntaxp (not (eq x86-1 'x86)))
+            (bind-free
+             (find-an-xlate-equiv-x86
+              'xlate-equiv-x86s-and-xw-mem-disjoint 'x86-2 x86-1)
+             (x86-2))
+            (xlate-equiv-x86s (double-rewrite x86-1) x86-2)
+            (pairwise-disjoint-p-aux
+             (list index)
+             (open-qword-paddr-list-list
+              (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+            (good-paging-structures-x86p (double-rewrite x86-1))
+            (physical-address-p index)
+            (unsigned-byte-p 8 val))
+           (xlate-equiv-x86s (xw :mem index val x86-1)
+                             (xw :mem index val x86-2)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-x86s)
+                                   (all-mem-except-paging-structures-equal-and-xw-mem-except-paging-structure))
+           :use ((:instance gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
+                            (x86 x86-1)
+                            (x86-equiv x86-2))
+                 (:instance all-mem-except-paging-structures-equal-and-xw-mem-except-paging-structure
+                            (x x86-1)
+                            (y x86-2))))))
+
 (defthm wm-low-64-and-xlate-equiv-structures-disjoint
+  ;; TODO: I need a similar theorem for xlate-equiv-x86s.
   (implies (and (pairwise-disjoint-p-aux
                  (addr-range 8 index)
                  (open-qword-paddr-list-list
@@ -156,6 +184,7 @@
            (xlate-equiv-structures (wm-low-64 index val x86) (double-rewrite x86))))
 
 (defthm wm-low-64-and-xlate-equiv-structures-entry-addr
+  ;; TODO: I need a similar theorem for xlate-equiv-x86s.
   (implies (and (member-list-p index (gather-all-paging-structure-qword-addresses x86))
                 (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                 (good-paging-structures-x86p (double-rewrite x86))
