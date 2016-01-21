@@ -168,6 +168,16 @@ inc7.v -- pre-increment in submodule port instance
 inc8.v -- pre+post increment of same variable (invalid lvalue)
 inc9.v -- pre+post increment of same variable (invalid lvalue)
 inc10.v -- weird ambiguity: + w2++ (vcs/ncverilog disagree on interpretation)
+inc11.v -- trying to increment lhs of a blocking assignment
+inc11b.v -- increment in blocking assignment delay control (ncv rejects, vcs accepts)
+inc11c.v -- increment in rhs of blocking assignment with delay control
+inc11d.v -- increment in rhs of blocking assignment with event control
+inc11e.v -- increment in rhs of procedural assignment (spec vague but seems like it should be forbidden, ncv rejects, vcs accepts)
+inc11f.v -- increment in rhs of procedural assignment (explicitly forbidden, ncv and vcs reject)
+inc12.v -- trying to increment in a call statement's id (plausibly ok, but ncv/vcs reject)
+inc13.v -- increment in an if statement's condition (just awful, but ncv/vcs allow)
+inc14.v -- increment in a case statement match expression (just awful, but ncv/vcs allow)
+inc14b.v -- increment in a case statement test expression (just awful, but ncv/vcs allow)
 
 inst1.v -- wrong port name when instancing submodule
 inst2.v -- too many positional arguments on submodule instance

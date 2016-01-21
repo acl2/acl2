@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2016-01-04.0")
+  "VL Syntax 2016-01-20")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -2718,7 +2718,9 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                "Indicates that this call was wrapped in @('void '(...)').")
       (atts    vl-atts-p
                "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
-                this statement."))
+                this statement.")
+      (loc     vl-location-p
+               "Location of this statement in the source code."))
      :long "<p>This is similar to a @(see vl-call) expression.</p>")
 
     (:vl-disablestmt
@@ -3053,7 +3055,9 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
              "The value to return, if any.")
       (atts  vl-atts-p
              "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
-              this statement.")))
+              this statement.")
+      (loc   vl-location-p
+             "Location of this statement in the source code.")))
 
     (:vl-assertstmt
      :base-name vl-assertstmt
