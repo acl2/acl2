@@ -246,10 +246,10 @@ these are the only operators we're dealing with.</p>"
           (vl-exprlist-has-incexprs-p (cdr x))))))
 
 
-(defines vl-expr-increment-elim-aux
+(defines vl-expr-increwrite-aux
   :verify-guards nil
 
-  (define vl-expr-increment-elim-aux
+  (define vl-expr-increwrite-aux
     :short "Core routine for eliminating increment, decrement, and assignment
             expressions.  Doesn't try to defend against ambiguities."
     ((x    vl-expr-p
@@ -315,7 +315,7 @@ these are the only operators we're dealing with.</p>"
          ;; Rewrite the arguments first, because if we run into something like
          ;; (a=(b++)), we want to dive all the way down into b++, extract the b
          ;; = b+1 assignment into POST, and then just deal with (a=b).
-         ((mv args pre post) (vl-exprlist-increment-elim-aux (vl-expr->subexprs x) pre post loc))
+         ((mv args pre post) (vl-exprlist-increwrite-aux (vl-expr->subexprs x) pre post loc))
          (new-x              (vl-expr-update-subexprs x args))
          ((unless (vl-incexpr-p new-x))
           ;; Not an increment/decrement/assignment expr, so now that we've
@@ -349,7 +349,7 @@ these are the only operators we're dealing with.</p>"
                 pre)
           post)))
 
-  (define vl-exprlist-increment-elim-aux
+  (define vl-exprlist-increwrite-aux
     ((x    vl-exprlist-p "Expressions to rewrite.")
      (pre  vl-stmtlist-p)
      (post vl-stmtlist-p)
@@ -361,14 +361,14 @@ these are the only operators we're dealing with.</p>"
     :measure (vl-exprlist-count x)
     (b* (((when (atom x))
           (mv nil (vl-stmtlist-fix pre) (vl-stmtlist-fix post)))
-         ((mv car pre post) (vl-expr-increment-elim-aux (car x) pre post loc))
-         ((mv cdr pre post) (vl-exprlist-increment-elim-aux (cdr x) pre post loc)))
+         ((mv car pre post) (vl-expr-increwrite-aux (car x) pre post loc))
+         ((mv cdr pre post) (vl-exprlist-increwrite-aux (cdr x) pre post loc)))
       (mv (cons car cdr) pre post)))
   ///
-  (verify-guards vl-expr-increment-elim-aux)
-  (deffixequiv-mutual vl-expr-increment-elim-aux))
+  (verify-guards vl-expr-increwrite-aux)
+  (deffixequiv-mutual vl-expr-increwrite-aux))
 
-(define vl-expr-increment-elim
+(define vl-expr-increwrite
   :short "Main function for rewriting expressions."
   ((x    vl-expr-p
          "Expression to rewrite.  May contain increments, decrements, or
@@ -394,10 +394,10 @@ these are the only operators we're dealing with.</p>"
         ;; anywhere in here, so we don't need to recons anything.
         (mv x nil nil))
        ((mv new-x pre-rev post-rev)
-        (vl-expr-increment-elim-aux x nil nil loc)))
+        (vl-expr-increwrite-aux x nil nil loc)))
     (mv new-x (rev pre-rev) (rev post-rev))))
 
-(define vl-exprlist-increment-elim
+(define vl-exprlist-increwrite
   :short "Main function for rewriting expression lists."
   ((x    vl-exprlist-p
          "Expressions to rewrite.  May contain increments, decrements, or
@@ -423,28 +423,28 @@ these are the only operators we're dealing with.</p>"
         ;; anywhere in here, so we don't need to recons anything.
         (mv x nil nil))
        ((mv new-x pre-rev post-rev)
-        (vl-exprlist-increment-elim-aux x nil nil loc)))
+        (vl-exprlist-increwrite-aux x nil nil loc)))
     (mv new-x (rev pre-rev) (rev post-rev))))
 
 
-(defines vl-stmt-increment-elim
+(defines vl-stmt-increwrite
 
-  (define vl-stmtlist-increment-elim ((x vl-stmtlist-p))
+  (define vl-stmtlist-increwrite ((x vl-stmtlist-p))
     :returns (new-x vl-stmtlist-p)
     :measure (two-nats-measure (vl-stmtlist-count x) 0)
     :verify-guards nil
     (b* (((when (atom x))
           nil)
-         ((mv new-car pre post) (vl-stmt-increment-elim (car x))))
+         ((mv new-car pre post) (vl-stmt-increwrite (car x))))
       (append pre
               (list new-car)
               post
-              (vl-stmtlist-increment-elim (cdr x)))))
+              (vl-stmtlist-increwrite (cdr x)))))
 
-  (define vl-stmt-increment-elim-flat ((x vl-stmt-p))
+  (define vl-stmt-increwrite-flat ((x vl-stmt-p))
     :returns (new-x vl-stmt-p "Possibly a new begin/end block if necessary.")
     :measure (two-nats-measure (vl-stmt-count x) 1)
-    (b* (((mv new-x pre post) (vl-stmt-increment-elim x))
+    (b* (((mv new-x pre post) (vl-stmt-increwrite x))
          ((when (and (not pre)
                      (not post)))
           ;; Nothing much to do.
@@ -453,7 +453,7 @@ these are the only operators we're dealing with.</p>"
       (make-vl-blockstmt :blocktype :vl-beginend
                          :stmts stmts)))
 
-  (define vl-caselist-increment-elim ((x vl-caselist-p))
+  (define vl-caselist-increwrite ((x vl-caselist-p))
     :returns (new-x vl-caselist-p)
     :measure (two-nats-measure (vl-caselist-count x) 0)
     (b* ((x (vl-caselist-fix x))
@@ -462,11 +462,11 @@ these are the only operators we're dealing with.</p>"
          ;; Note that we don't allow increments in the match-exprs.  See the
          ;; commentary in :vl-casestmt below for more on this.
          ((cons match-exprs body) (car x))
-         (new-body (vl-stmt-increment-elim-flat body)))
+         (new-body (vl-stmt-increwrite-flat body)))
       (cons (cons match-exprs new-body)
-            (vl-caselist-increment-elim (cdr x)))))
+            (vl-caselist-increwrite (cdr x)))))
 
-  (define vl-stmt-increment-elim ((x vl-stmt-p))
+  (define vl-stmt-increwrite ((x vl-stmt-p))
     :returns (mv (new-x vl-stmt-p
                         "Updated version of @('x') with no internal
                          increment/decrement/assignment expressions.")
@@ -508,9 +508,9 @@ these are the only operators we're dealing with.</p>"
              ;; to tolerate increments in non-blocking assignments, which may
              ;; not make a whole lot of sense.  I think, though, that we should
              ;; regard checking for blocking/nonblocking sanity as something
-             ;; that is definitely beyond the scope of increment-elim, so we'll
+             ;; that is definitely beyond the scope of increwrite, so we'll
              ;; allow it too.
-             ((mv new-expr pre post) (vl-expr-increment-elim x.expr x.loc))
+             ((mv new-expr pre post) (vl-expr-increwrite x.expr x.loc))
              (new-x (change-vl-assignstmt x :expr new-expr)))
           (mv new-x pre post))
 
@@ -518,7 +518,7 @@ these are the only operators we're dealing with.</p>"
         ;; I don't think we want to allow increments in the ID or typearg?  But
         ;; it might be OK to have them there.  See failtest/inc12.v.  It seems
         ;; OK to have them in the arguments.
-        (b* (((mv new-args pre post) (vl-exprlist-increment-elim x.args x.loc))
+        (b* (((mv new-args pre post) (vl-exprlist-increwrite x.args x.loc))
              (new-x (change-vl-callstmt x :args new-args)))
           (mv new-x pre post))
 
@@ -529,8 +529,8 @@ these are the only operators we're dealing with.</p>"
         ;; then: are they supposed to take effect before ELSE branch conditions
         ;; are computed?  What a mess.  Let's just not allow them in the
         ;; condition for now.  See also failtest/inc13.v
-        (b* ((new-true  (vl-stmt-increment-elim-flat x.truebranch))
-             (new-false (vl-stmt-increment-elim-flat x.falsebranch))
+        (b* ((new-true  (vl-stmt-increwrite-flat x.truebranch))
+             (new-false (vl-stmt-increwrite-flat x.falsebranch))
              (new-x     (change-vl-ifstmt x
                                           :truebranch new-true
                                           :falsebranch new-false)))
@@ -544,8 +544,8 @@ these are the only operators we're dealing with.</p>"
         ;; really makes any sense and it's unclear how that's supposed to
         ;; affect the semantics of subsequent cases.  So let's not allow them
         ;; in these places, just as we don't allow them in if statement tests.
-        (b* ((new-caselist (vl-caselist-increment-elim x.caselist))
-             (new-default  (vl-stmt-increment-elim-flat x.default))
+        (b* ((new-caselist (vl-caselist-increwrite x.caselist))
+             (new-default  (vl-stmt-increwrite-flat x.default))
              (new-x        (change-vl-casestmt x
                                                :caselist new-caselist
                                                :default new-default)))
@@ -568,7 +568,7 @@ these are the only operators we're dealing with.</p>"
         ;; seems to accept it but also seems to go into an infinite loop during
         ;; simulation.  Well whatever, let's go ahead and allow this; it's not
         ;; like we're going to do anything sensible with a foreverstmt anyway.
-        (b* ((new-body (vl-stmt-increment-elim-flat x.body))
+        (b* ((new-body (vl-stmt-increwrite-flat x.body))
              (new-x    (change-vl-foreverstmt x :body new-body)))
           (mv new-x nil nil))
 
@@ -578,13 +578,13 @@ these are the only operators we're dealing with.</p>"
         ;; maybe even for better reasons, e.g., the wait condition is similar
         ;; to an event expression, and SystemVerilog-2012 11.3.6 talks about
         ;; not allowing assignments in these...
-        (b* ((new-body (vl-stmt-increment-elim-flat x.body))
+        (b* ((new-body (vl-stmt-increwrite-flat x.body))
              (new-x    (change-vl-waitstmt x :body new-body)))
           (mv new-x nil nil))
 
         :vl-repeatstmt
         ;; Disallow increments in the condition for similar reasons to wait.
-        (b* ((new-body (vl-stmt-increment-elim-flat x.body))
+        (b* ((new-body (vl-stmt-increwrite-flat x.body))
              (new-x    (change-vl-repeatstmt x :body new-body)))
           (mv new-x nil nil))
 
@@ -598,7 +598,7 @@ these are the only operators we're dealing with.</p>"
         (b* (((unless x.val)
               ;; Just a plain "return" with no value, nothing to do.
               (mv x nil nil))
-             ((mv new-val pre post) (vl-expr-increment-elim x.val x.loc))
+             ((mv new-val pre post) (vl-expr-increwrite x.val x.loc))
              (new-x                 (change-vl-returnstmt x :val new-val)))
           (mv new-x pre post))
 
@@ -606,7 +606,7 @@ these are the only operators we're dealing with.</p>"
         ;; Hard to properly support increments in the condition.  Where to put
         ;; pre-assigns?  Where to put post-assigns?  (Into the loop body
         ;; probably, but also afterward?)  Just prohibit them for now.
-        (b* ((new-body (vl-stmt-increment-elim-flat x.body))
+        (b* ((new-body (vl-stmt-increwrite-flat x.body))
              (new-x    (change-vl-whilestmt x :body new-body)))
           (mv new-x nil nil))
 
@@ -615,7 +615,7 @@ these are the only operators we're dealing with.</p>"
         ;; other initialization and loop test stuff seems tricky: where to put
         ;; pre/post assigns.  So only allow increments in the body, at least
         ;; for now.
-        (b* ((new-body (vl-stmt-increment-elim-flat x.body))
+        (b* ((new-body (vl-stmt-increwrite-flat x.body))
              (new-x    (change-vl-forstmt x :body new-body)))
           (mv new-x nil nil))
 
@@ -636,7 +636,7 @@ these are the only operators we're dealing with.</p>"
         ;; and convert all the declaration-time assignments to be statements
         ;; that come before the rest of the block?  This is tricky due to parse
         ;; order stuff, but that might be the most sensible thing to do.
-        (b* ((new-stmts (vl-stmtlist-increment-elim x.stmts))
+        (b* ((new-stmts (vl-stmtlist-increwrite x.stmts))
              (new-x     (change-vl-blockstmt x :stmts new-stmts)))
           (mv new-x nil nil))
 
@@ -644,7 +644,7 @@ these are the only operators we're dealing with.</p>"
         ;; Things like @(posedge clk) <body>.  SystemVerilog-2012 11.3.6 pretty
         ;; clearly says we can't have increments in an event expression.  So
         ;; just process the body.
-        (b* ((new-body (vl-stmt-increment-elim-flat x.body))
+        (b* ((new-body (vl-stmt-increwrite-flat x.body))
              (new-x    (change-vl-timingstmt x :body new-body)))
           (mv new-x nil nil))
 
@@ -660,33 +660,23 @@ these are the only operators we're dealing with.</p>"
         :vl-assertstmt (mv x nil nil)
         :vl-cassertstmt (mv x nil nil))))
   ///
-  (verify-guards vl-stmt-increment-elim)
-  (deffixequiv-mutual vl-stmt-increment-elim))
+  (verify-guards vl-stmt-increwrite)
+  (deffixequiv-mutual vl-stmt-increwrite))
 
 
-;; Remaining
-
-#||
-
-
-(fty::defvisitor-template increment-elim ((x :object))
+(fty::defvisitor-template increwrite ((x :object))
   :returns (new-x :update)
-  :type-fns ((vl-stmt vl-stmt-increment-elim-flat)
-             (vl-assertion :skip)
-             (vl-cassertion :skip))
-  :fnname-template <type>-increment-elim)
+  :type-fns ((vl-stmt vl-stmt-increwrite-flat)
+             (vl-assertion-p :skip)
+             (vl-cassertion-p :skip))
+  :field-fns ((parse-temps :skip))
+  :fnname-template <type>-increwrite)
 
-(fty::defvisitors vl-increment-elim
-  :template increment-elim
-  :types (vl-design)
-  :debug t)
+(fty::defvisitors vl-increwrite
+  :template increwrite
+  :types (vl-design))
 
-
-
-
-
-
-
+;; Any increments that survived that are bad, so warn about them.
 
 (defines vl-expr-incexprs
   :short "Gather all increment/decrement/assignment expressions from an expression."
@@ -712,115 +702,26 @@ these are the only operators we're dealing with.</p>"
   (verify-guards vl-expr-incexprs)
   (deffixequiv-mutual vl-expr-incexprs))
 
-(define vl-prohibit-incexprs ((ctx      vl-context-p)
-                              (x        vl-exprlist-p)
-                              (warnings vl-warninglist-p))
-  :returns (new-warnings vl-warninglist-p)
-  (b* ((incexprs (vl-exprlist-incexprs x))
+(define vl-expr-prohibit-incexprs ((x vl-expr-p)
+                                   (ss vl-scopestack-p))
+  :returns (warnings vl-warninglist-p)
+  (declare (ignorable ss))
+  (b* ((warnings nil)
+       (incexprs (vl-expr-incexprs x))
        ((when (atom incexprs))
         (ok)))
     (fatal :type :vl-illegal-incexpr
-           :msg  "~a0: increment, decrement, and internal assignment expressions ~
-                  like (a=b) or (a+=b) are not allowed here, but found ~a1."
-           :args (list (vl-context-fix ctx) (car incexprs)))))
+           :msg "found an increment, decrement, or internal assignment expressions ~
+                 where it is not allowed: ~a0."
+           :args (list (car incexprs)))))
 
-(defmacro def-vl-prohibit-incexprs (name)
-  (b* ((mksym-package-symbol (pkg-witness "VL"))
-       (type     (mksym name '-p))
-       (fix      (mksym name '-fix))
-       (allexprs (mksym name '-allexprs))
-       (fn       (mksym name '-prohibit-incexprs)))
-    `(define ,fn ((x ,type) &key ((warnings vl-warninglist-p) 'warnings))
-       :returns (new-warnings vl-warninglist-p)
-       (b* ((x (,fix x)))
-         (vl-prohibit-incexprs (vl-context x) (,allexprs x) warnings)))))
-
-(defmacro def-vl-prohibit-incexprs-list (name &key element)
-  (b* ((mksym-package-symbol (pkg-witness "VL"))
-       (type    (mksym name '-p))
-       (fn      (mksym name '-prohibit-incexprs))
-       (elem-fn (mksym element '-prohibit-incexprs)))
-    `(define ,fn
-       ((x ,type) &key ((warnings vl-warninglist-p) 'warnings))
-       :returns (new-warnings vl-warninglist-p)
-       (b* (((when (atom x))
-             (ok))
-            (warnings (,elem-fn (car x))))
-         (,fn (cdr x))))))
-
-(def-vl-prohibit-incexprs vl-port)
-(def-vl-prohibit-incexprs-list vl-portlist :element vl-port)
-
-(def-vl-prohibit-incexprs vl-portdecl)
-(def-vl-prohibit-incexprs-list vl-portdecllist :element vl-portdecl)
-
-(def-vl-prohibit-incexprs vl-vardecl)
-(def-vl-prohibit-incexprs-list vl-vardecllist :element vl-vardecl)
-
-(def-vl-prohibit-incexprs vl-paramdecl)
-(def-vl-prohibit-incexprs-list vl-paramdecllist :element vl-paramdecl)
-
-(def-vl-prohibit-incexprs vl-assign)
-(def-vl-prohibit-incexprs-list vl-assignlist :element vl-assign)
-
-(def-vl-prohibit-incexprs vl-alias)
-(def-vl-prohibit-incexprs-list vl-aliaslist :element vl-alias)
-
-
-
-(define vl-module-increment-elim ((x vl-module-p))
-  :returns (new-x vl-module-p)
-  (b* (((vl-module x))
-       (warnings x.warnings)
-       ;; Imports have no expressions, nothing to do there
-       (warnings (vl-portlist-prohibit-incexprs      x.ports))
-       (warnings (vl-portdecllist-prohibit-incexprs  x.portdecls))
-       (warnings (vl-vardecllist-prohibit-incexprs   x.vardecls))
-       (warnings (vl-paramdecllist-prohibit-incexprs x.paramdecls))
-       ;; bozo support functions
-       ;; bozo support tasks
-       (warnings (vl-assignlist-prohibit-incexprs    x.assigns))
-       (warnings (vl-aliaslist-prohibit-incexprs     x.aliases))
-
-       )
-    
-
-    ;; (VL-FUNDECLLIST-P FUNDECLS)
-    ;; (VL-TASKDECLLIST-P TASKDECLS)
-    ;; (VL-ASSIGNLIST-P ASSIGNS)
-    ;; (VL-ALIASLIST-P ALIASES)
-    ;; (VL-MODINSTLIST-P MODINSTS)
-    ;; (VL-GATEINSTLIST-P GATEINSTS)
-    ;; (VL-ALWAYSLIST-P ALWAYSES)
-    ;; (VL-INITIALLIST-P INITIALS)
-    ;; (VL-GENELEMENTLIST-P GENERATES)
-    (cw "BOZO implement vl-module-increment-elim.")
-    (change-vl-module x
-                      :warnings warnings)))
-
-(defprojection vl-modulelist-increment-elim ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p)
-  (vl-module-increment-elim x))
+(def-expr-check prohibit-incexprs)
 
 (define vl-design-increment-elim ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* (((vl-design x))
-       (warnings x.warnings)
-       (mods                    (vl-modulelist-increment-elim x.mods))
-       ((mv warnings fundecls)  (vl-fundecllist-increment-elim x.fundecls))
-       ((mv warnings taskdecls) (vl-taskdecllist-increment-elim x.taskdecls))
-
-        
-       )
-    (change-vl-design x
-                      :mods mods
-                      :fun
-                      
-
-       
-  (progn$
-   (cw "BOZO implement increment elim.")
-   (vl-design-fix x)))
+  :short "Top-level @(see increment-elim) transform."
+  (b* ((x (vl-design-increwrite x))
+       (x (vl-design-prohibit-incexprs x)))
+    x))
 
 
-||#
