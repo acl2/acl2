@@ -850,12 +850,14 @@ shown.</p>"
         :vl-warn-same-rhs
         :vl-const-expr
         :vl-warn-vardecl-assign
+        :vl-warn-oddexpr
         ))
 
 (defconst *smell-minor-warnings*
   (list :vl-warn-partselect-same
         :vl-warn-instances-same-minor
-        :vl-const-expr-minor))
+        :vl-const-expr-minor
+        :vl-warn-empty-dotstar))
 
 (defconst *fussy-size-warnings*
   (list :vl-fussy-size-warning-1
