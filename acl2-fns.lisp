@@ -1456,89 +1456,26 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defvar *defpkg-virgins* nil)
 
-(defmacro maybe-make-package (name)
+(defun maybe-make-package (name)
 
-; When we moved to Version_4.3, with LispWorks once again a supported host
-; Lisp, we modified the macro maybe-introduce-empty-pkg-1 to avoid the use of
-; defpackage; see the comment in that macro.  Unfortunately, the new approach
-; didn't work for CMUCL (at least, for version 19e).  The following example
-; shows why; even with an eval-when form specifying :compile-toplevel, the
-; compiled code seems to skip the underlying package-creation form, as shown
-; below.  Therefore we revert to the use of defpackage for CMUCL, which appears
-; not to cause problems.
+; We formerly had a long comment here explaining that this definition CMU
+; Common Lisp 19e.  At that time, maybe-make-package was a macro with a #+cmu
+; body of `(defpackage ,name (:use)).  But CMU Common Lisp 21a does not have
+; this problem, so we have changed maybe-make-package from a macro to a
+; function, which allows its callers to be functions as well.  That, in turn,
+; may avoid compilation required for macro calls in some Lisps, including CCL.
 
-;   % cat pkg-bug-cmucl.lisp
-;
-;   (in-package "CL-USER")
-;
-;   (eval-when (:load-toplevel :execute :compile-toplevel)
-;              (cond ((not (find-package "MYPKG"))
-;                     (print "*** About to make package ***")
-;                     (terpri)
-;                     (make-package "MYPKG" :use nil))))
-;
-;   (defparameter *foo* 'mypkg::x)
-;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
-;   CMU Common Lisp 19e (19E), running on kindness
-;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
-;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
-;   See <http://www.cons.org/cmucl/> for support information.
-;   Loaded subsystems:
-;       Python 1.1, target Intel x86
-;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
-;   * (load "pkg-bug-cmucl.lisp")
-;
-;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp".
-;
-;   "*** About to make package ***"
-;   T
-;   * (compile-file "pkg-bug-cmucl.lisp")
-;
-;   ; Python version 1.1, VM version Intel x86 on 04 JUL 11 09:57:13 am.
-;   ; Compiling: /v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp 04 JUL 11 09:56:24 am
-;
-;   ; Byte Compiling Top-Level Form:
-;
-;   ; pkg-bug-cmucl.x86f written.
-;   ; Compilation finished in 0:00:00.
-;
-;   #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f"
-;   NIL
-;   NIL
-;   * (quit)
-;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
-;   CMU Common Lisp 19e (19E), running on kindness
-;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
-;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
-;   See <http://www.cons.org/cmucl/> for support information.
-;   Loaded subsystems:
-;       Python 1.1, target Intel x86
-;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
-;   * (load "pkg-bug-cmucl.x86f")
-;
-;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f".
-;
-;
-;   Error in function LISP::FOP-PACKAGE:  The package "MYPKG" does not exist.
-;      [Condition of type SIMPLE-ERROR]
-;
-;   Restarts:
-;     0: [CONTINUE] Return NIL from load of "pkg-bug-cmucl.x86f".
-;     1: [ABORT   ] Return to Top-Level.
-;
-;   Debug  (type H for help)
-;
-;   (LISP::FOP-PACKAGE)
-;   Source: Error finding source:
-;   Error in function DEBUG::GET-FILE-TOP-LEVEL-FORM:  Source file no longer exists:
-;     target:code/load.lisp.
-;   0]
+  (when (not (find-package name))
+    (make-package name :use nil)))
 
-  #-cmu
-  `(when (not (find-package ,name))
-     (make-package ,name :use nil))
-  #+cmu
-  `(defpackage ,name (:use)))
+(defun maybe-make-three-packages (name)
+  (maybe-make-package name)
+  (maybe-make-package (concatenate 'string
+                                   acl2::*global-package-prefix*
+                                   name))
+  (maybe-make-package (concatenate 'string
+                                   acl2::*1*-package-prefix*
+                                   name)))
 
 (defmacro maybe-introduce-empty-pkg-1 (name)
 
@@ -1555,22 +1492,14 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; defpackage when a package already exists.  Indeed, the defpackage approach
 ; that we use for GCL does not work for LispWorks 6.0.
 
-; So, we have quite different definitions of this macro for GCL and LispWorks.
-; All other Lisps we have encountered seem happy with the approach we have
-; adopted for Lispworks, so we adopt that approach for them, too.
+; So, we have quite a different definition of this macro for GCL as opposed to
+; the other Lisps.
 
   #-gcl
   `(eval-when
     #+cltl2 (:load-toplevel :execute :compile-toplevel)
     #-cltl2 (load eval compile) ; though probably #-gcl implies #+cltl2
-    (progn
-      (maybe-make-package ,name)
-      (maybe-make-package ,(concatenate 'string
-                                        acl2::*global-package-prefix*
-                                        name))
-      (maybe-make-package ,(concatenate 'string
-                                        acl2::*1*-package-prefix*
-                                        name))))
+    (maybe-make-three-packages ,name))
   #+gcl
   (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
     `(progn
@@ -1595,13 +1524,13 @@ notation causes an error and (b) the use of ,. is not permitted."
                   (return-from package-has-no-imports nil))))
   t)
 
-(defmacro maybe-introduce-empty-pkg-2 (name)
-  `(when (and (not (member ,name *defpkg-virgins*
-                           :test 'equal))
-              (not (assoc ,name *ever-known-package-alist*
+(defun maybe-introduce-empty-pkg-2 (name)
+  (when (and (not (member name *defpkg-virgins*
                           :test 'equal))
-              (package-has-no-imports ,name))
-     (push ,name *defpkg-virgins*)))
+             (not (assoc name *ever-known-package-alist*
+                         :test 'equal))
+             (package-has-no-imports name))
+    (push name *defpkg-virgins*)))
 
 ; The GCL proclaim mechanism puts symbols in package "ACL2-PC" into file
 ; acl2-proclaims.lisp.  So Lisp needs to know about that package when it loads

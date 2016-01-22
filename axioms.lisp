@@ -10754,19 +10754,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         (unintern sym))
             (delete-package (find-package name)))))))))
 
-(defmacro defpkg-raw (name imports book-path event-form)
+(defun defpkg-raw (name imports book-path event-form)
 
 ; Defpkg checks that name is a string.  Event-form is a cons.  So we don't need
 ; to worry about capture below.
 
-  `(let ((package-entry (find-package-entry ,name *ever-known-package-alist*))
-         (*safe-mode-verified-p* t))
-     (cond
-      ((and package-entry
-            (let ((old-event-form
-                   (package-entry-defpkg-event-form package-entry)))
-              (and (equal (cadr old-event-form) (cadr ,event-form))
-                   (equal (caddr old-event-form) (caddr ,event-form)))))
+  (let ((package-entry (find-package-entry name *ever-known-package-alist*))
+        (*safe-mode-verified-p* t))
+    (cond
+     ((and package-entry
+           (let ((old-event-form
+                  (package-entry-defpkg-event-form package-entry)))
+             (and (equal (cadr old-event-form) (cadr event-form))
+                  (equal (caddr old-event-form) (caddr event-form)))))
 
 ; This shorcut is potentially a big concern!  We are checking that the name and
 ; term of the defpkg form agrees with an old defpkg form.  But these two forms
@@ -10776,11 +10776,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; chk-package-reincarnation-import-restrictions, and if there is a discrepancy
 ; between the current and old package, we'll find out then.
 
-       ,name)
-      (t
-       (maybe-introduce-empty-pkg-1 ,name)
-       (maybe-introduce-empty-pkg-2 ,name)
-       (defpkg-raw1 ,name ,imports ,book-path ,event-form)))))
+      name)
+     (t
+      (maybe-make-three-packages name)
+      (maybe-introduce-empty-pkg-2 name)
+      (defpkg-raw1 name imports book-path event-form)))))
 )
 
 #-acl2-loop-only
