@@ -2114,6 +2114,364 @@ how VL module instances are translated.</p>"
             nil)))
     (mv nil val)))
 
+(defines vl-streaming-unpack-to-svex-assign
+  :verify-guards nil
+  :prepwork ((local (in-theory (disable acl2::consp-under-iff-when-true-listp
+                                        sv::svarlist-addr-p-when-subsetp-equal
+                                        rationalp-implies-acl2-numberp
+                                        acl2::list-fix-when-len-zero
+                                        acl2::true-listp-member-equal
+                                        sv::svarlist-addr-p-by-badguy
+                                        sv::svarlist-addr-p-when-not-consp
+                                        vl-warninglist-p-when-not-consp
+                                        vl-warninglist-p-when-subsetp-equal
+                                        sv::assigns-p-when-not-consp))))
+  (define vl-streaming-unpack-to-svex-assign
+    ((lhs vl-expr-p)
+     (rhs sv::svex-p)
+     (rhs-size natp "remaining number of least-significant bits in the RHS that
+                     haven't been used yet")
+     (ss vl-scopestack-p)
+     (scopes vl-elabscopes-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (assigns (implies (sv::svarlist-addr-p (sv::svex-vars rhs))
+                                   (and (sv::assigns-p assigns)
+                                        (sv::svarlist-addr-p (sv::assigns-vars assigns)))))
+                 (size (equal size (mv-nth 3 (vl-expr-to-svex-untyped lhs ss scopes)))
+                       :hints ((and stable-under-simplificationp
+                                    '(:expand ((vl-expr-to-svex-untyped lhs ss scopes)
+                                               (:free (a b) (sv::assigns-vars (cons a b)))))))))
+    :measure (vl-expr-count lhs)
+    :guard (b* (((mv & & & lhs-size) (vl-expr-to-svex-untyped lhs ss scopes)))
+             (and (natp lhs-size)
+                  (>= rhs-size lhs-size)))
+;; Illustration: suppose LHS is {<< 5 {{<< 3 {a}}, b}}, rhs is c, a is 9 bits,
+;; b is 7 bits, c is 24 bits.  Steps:
+;;  Recur on the list {{<< 3 {a}}, b}  with rhs {<< 5 {c}}.
+;;   Recur on the first element {<< 3 {a}}; size is 9 and size of RHS is 24
+;;          so RHS becomes {<< 5 {c}} >> 15, size 9.
+;;    Recur on the list {a} with rhs {<< 3 {{<< 5 {c}} >> 14}}.
+;;     Recur on a: base case -- convert a and produce:
+;;      a = {<< 3 {{<< 5 {c}} >> 14}}
+;;   Recur on the second element b; since a used 9 bits, b is 7 bits, and rhs is 24 bits,
+;;          so RHS becomes {<< 5 {c}} >> 8, size 6    (because 24-9-7=8).
+;;         base case -- convert b and produce b = {<< 5 {c}} >> 8.
+
+  (b* ((lhs (vl-expr-fix lhs))
+       (warnings nil)
+       (rhs-size (lnfix rhs-size))
+       ((wmv warnings ?svex ?type lhs-size)
+        (vl-expr-to-svex-untyped lhs ss scopes))
+       ;; We know lhs-size exists by the guard.
+       ;; Adjust the shift and size of the RHS to recur
+       (shift (- rhs-size lhs-size))
+       (shifted-rhs (sv::svcall sv::rsh (svex-int shift) rhs)))
+
+    (vl-expr-case lhs
+      :vl-stream
+      (b* (((mv err slicesize)
+            (if (eq lhs.dir :left)
+                (vl-slicesize-resolve lhs.size ss scopes)
+              ;; irrelevant
+              (mv nil 1)))
+           ((when err)
+            (mv (fatal :type :vl-expr-to-svex-fail
+                       :msg "Failed to resolve slice size of streaming ~
+                               concat expression ~a0: ~@1"
+                       :args (list lhs err))
+                nil lhs-size))
+           (new-rhs (if (eq lhs.dir :left)
+                        (sv::svcall sv::blkrev
+                                    (svex-int lhs-size)
+                                    (svex-int slicesize)
+                                    shifted-rhs)
+                      shifted-rhs))
+           ((mv warnings assigns)
+            (vl-streamexprlist-unpack-to-svex-assign 
+             lhs.parts new-rhs lhs-size ss scopes)))
+        (mv warnings assigns lhs-size))
+      :otherwise
+      (b* (((wmv warnings svex-lhs ?lhs-type)
+            (vl-expr-to-svex-lhs lhs ss scopes)))
+        (mv warnings (list (cons svex-lhs (sv::make-driver :value shifted-rhs))) lhs-size)))))
+
+  (define vl-streamexpr-unpack-to-svex-assign
+    ((lhspart vl-streamexpr-p)
+     (rhs sv::svex-p)
+     (rhs-size natp)
+     (ss vl-scopestack-p)
+     (scopes vl-elabscopes-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (assigns (implies (sv::svarlist-addr-p (sv::svex-vars rhs))
+                                   (and (sv::assigns-p assigns)
+                                        (sv::svarlist-addr-p (sv::assigns-vars assigns)))))
+                 (lhspart-size (implies (mv-nth 2 (vl-streamexpr-to-svex lhspart ss scopes))
+                                        (equal lhspart-size
+                                               (mv-nth 2 (vl-streamexpr-to-svex lhspart ss scopes))))
+                               :hints ((and stable-under-simplificationp
+                                            '(:expand ((vl-streamexpr-to-svex lhspart ss scopes)))))))
+    :guard (b* (((mv & & size) (vl-streamexpr-to-svex lhspart ss scopes)))
+             (and size (>= rhs-size size)))
+    :measure (vl-streamexpr-count lhspart)
+    (b* (((vl-streamexpr lhspart) (vl-streamexpr-fix lhspart))
+         (rhs-size (lnfix rhs-size)))
+      ;; We know there's no 'with' because vl-streamexpr-to-svex wouldn't have produced a size.
+
+      (vl-streaming-unpack-to-svex-assign lhspart.expr rhs rhs-size ss scopes)))
+      
+         
+
+  (define vl-streamexprlist-unpack-to-svex-assign
+    ((lhsparts vl-streamexprlist-p)
+     (rhs sv::svex-p)
+     (rhs-size natp)
+     (ss vl-scopestack-p)
+     (scopes vl-elabscopes-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (assigns (implies (sv::svarlist-addr-p (sv::svex-vars rhs))
+                                   (and (sv::assigns-p assigns)
+                                        (sv::svarlist-addr-p (sv::assigns-vars assigns))))))
+    :measure (vl-streamexprlist-count lhsparts)
+    :guard (b* (((mv & & size) (vl-streamexprlist-to-svex lhsparts ss scopes)))
+             (and size (>= rhs-size size)))
+    (b* ((lhsparts (vl-streamexprlist-fix lhsparts))
+         (rhs-size (lnfix rhs-size))
+         ((when (atom lhsparts)) (mv nil nil))
+         (warnings nil)
+         ((wmv warnings assigns1 size1)
+          (vl-streamexpr-unpack-to-svex-assign (car lhsparts) rhs rhs-size ss scopes))
+         ((wmv warnings assigns2)
+          (vl-streamexprlist-unpack-to-svex-assign (cdr lhsparts) rhs (- rhs-size size1) ss scopes)))
+      (mv warnings (append-without-guard assigns1 assigns2))))
+  ///
+  (verify-guards vl-streaming-unpack-to-svex-assign
+    :hints (("goal" :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:expand ((vl-expr-to-svex-untyped lhs ss scopes)
+                            (vl-streaming-concat-to-svex lhs ss scopes)
+                            (vl-streamexprlist-to-svex lhsparts ss scopes)
+                            (vl-streamexpr-to-svex lhspart ss scopes)))))
+    :otf-flg t)
+
+  (deffixequiv-mutual vl-streaming-unpack-to-svex-assign))
+
+
+(define vl-streaming-unpack-to-svex-assign-top
+  ((lhs vl-expr-p)
+   (rhs sv::svex-p)
+   (orig-x vl-assign-p)
+   (rhs-size natp "remaining number of least-significant bits in the RHS that
+                     haven't been used yet")
+   (ss vl-scopestack-p)
+   (scopes vl-elabscopes-p))
+  :short "Resolve an assignment where the LHS is a streaming concatenation, after
+          converting the RHS expression to svex (untyped)."
+
+  :returns (mv (warnings vl-warninglist-p)
+               (assigns (implies (sv::svarlist-addr-p (sv::svex-vars rhs))
+                                 (and (sv::assigns-p assigns)
+                                      (sv::svarlist-addr-p (sv::assigns-vars assigns))))))
+  :guard (vl-expr-case lhs :vl-stream)
+  :guard-hints ((and stable-under-simplificationp
+                     '(:expand ((vl-expr-to-svex-untyped lhs ss scopes)
+                                (vl-streaming-concat-to-svex lhs ss scopes)))))
+  (b* (((vl-stream lhs) (vl-expr-fix lhs))
+       (rhs-size (lnfix rhs-size))
+       (orig-x (vl-assign-fix orig-x))
+       (warnings nil)
+       ((wmv warnings ?lhs-svex ?lhs-type lhs-size)
+        (vl-expr-to-svex-untyped lhs ss scopes))
+       ((unless lhs-size)
+        (mv (fatal :type :vl-bad-stream-assignment
+                   :msg "~a0: couldn't size LHS streaming concatenation"
+                   :args (list orig-x))
+            nil))
+       ((mv err slicesize)
+        (if (eq lhs.dir :left)
+            (vl-slicesize-resolve lhs.size ss scopes)
+          ;; irrelevant
+          (mv nil 1)))
+       ((when err)
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "Failed to resolve slice size of streaming ~
+                               concat expression ~a0: ~@1"
+                   :args (list lhs err))
+            nil))
+       ((mv warnings rhs rhs-size)
+        (cond ((< rhs-size lhs-size)
+               ;; Concat onto the RHS enough zeros so that it matches.
+               (mv (fatal :type :vl-bad-stream-assignment
+                          :msg "~a0: SystemVerilog prohibits streaming assignments
+                                   where a streaming concatenation expression (either
+                                   LHS or RHS) is larger than the other."
+                          :args (list orig-x))
+                   (sv::svcall sv::concat (svex-int (- lhs-size rhs-size))
+                               (svex-int 0)
+                               rhs)
+                   lhs-size))
+              (t (mv warnings rhs rhs-size))))
+       (rhs-bitstream (if (eq lhs.dir :left)
+                          (sv::svcall sv::blkrev
+                                      (svex-int rhs-size)
+                                      (svex-int slicesize)
+                                      rhs)
+                        rhs))
+       (rhs-shift (if (< lhs-size rhs-size)
+                      (sv::svcall sv::rsh (svex-int (- rhs-size lhs-size)) rhs-bitstream)
+                    rhs-bitstream))
+       ((wmv warnings assigns)
+        (vl-streamexprlist-unpack-to-svex-assign lhs.parts rhs-shift lhs-size ss scopes)))
+    (mv warnings assigns))
+
+  :long "<p>To see how simulators treat streaming concatenations on the LHS, it
+is most instructive to look at some examples.</p>
+
+<p>First, consider the example in \"sv/cosims/stream3/test.sv\":</p>
+
+@({
+  logic [3:0] in;
+  logic [3:0] out;
+  assign {<< 3 {out}} = in;
+ })
+
+<p>When @('{<< 3 {a}}') occurs on the RHS of an assignment (and @('a') is 4
+bits wide), it basically means the same thing as @('{ a[2:0], a[3] }').  So we
+might think that we'd get the same results for @('guess1') if we assign it
+as:</p>
+
+@({
+ logic [3:0] guess1;
+ assign { guess1[2:0], guess1[3] } = in;
+})
+
+<p>But this isn't the case, at least in the major commercial simulators, VCS
+and NCVerilog. Instead, when we run it on the following inputs:</p>
+
+@({
+ 0001
+ 0010
+ 0100
+ 1000
+ })
+
+<p>we get the following outputs:</p>
+
+@({
+ out: 0010, guess1: 1000
+ out: 0100, guess1: 0001
+ out: 1000, guess1: 0010
+ out: 0001, guess1: 0100
+ })
+
+<p>Actually, what this corresponds to is:</p>
+
+@({
+ assign out = { in[2:0], in[3] };
+ })
+<p>or:</p>
+@({
+ assign out = {<< 3 {in}};
+ })
+
+<p>This doesn't make a lot of sense, but the pattern holds generally: if you
+see a streaming concatenation on the LHS, it means the same as if you put it on
+the RHS.  (A complication in testing this rule is that the LHS and RHS need to
+be the same size for both to be allowed.)</p>
+
+<p>This rule is complicated by the fact that streaming concatenations can be
+nested, and can have more than one expression concatenated together.  It is
+also not clear how to treat cases where the RHS has more bits than the LHS.  We
+reverse engineered the behavior of VCS using the example in
+\"sv/cosims/stream4/test.sv\". (NCVerilog doesn't fully support multiple
+streaming expressions inside a concatenation on the LHS.)</p>
+
+@({
+  logic [31:0] in;
+  logic [8:0] out1;
+  logic [6:0] out2;
+  assign {<< 5 {{<< 3 {out1}}, out2}} = in[31:0];
+ })
+
+<p>When run on the input pattern</p>
+@({
+ 00000000000000000000000000000001
+ 00000000000000000000000000000010
+ 00000000000000000000000000000100
+ ...
+})
+<p>this produces the results:</p>
+
+@({
+ out1 000010000, out2 0000000
+ out1 000100000, out2 0000000
+ out1 000000001, out2 0000000
+ out1 000000010, out2 0000000
+ out1 000000100, out2 0000000
+ out1 000000000, out2 1000000
+ out1 001000000, out2 0000000
+ out1 010000000, out2 0000000
+ out1 100000000, out2 0000000
+ out1 000001000, out2 0000000
+ out1 000000000, out2 0000010
+ out1 000000000, out2 0000100
+ out1 000000000, out2 0001000
+ out1 000000000, out2 0010000
+ out1 000000000, out2 0100000
+ out1 000000000, out2 0000000
+ out1 000000000, out2 0000000
+ out1 000000000, out2 0000000
+ out1 000000000, out2 0000000
+ out1 000000000, out2 0000001
+})
+
+<p>This turns out to be equivalent to the following:
+
+@({
+ logic [31:0] temp1;
+ logic [15:0] temp2;
+ logic [8:0] temp3;
+ logic [6:0] temp4;
+ assign temp1 = {<< 5 {in[31:0]}};
+ assign temp2 = temp1 >> 16;
+ assign {temp3, temp4} = temp2;
+ assign out2 = temp4;
+ assign out1 = {<< 3 {temp3}};
+ })
+
+<p>It's not clear why we should think this is the correct behavior, but we at
+least can derive an algorithm from it:</p>
+
+<ol> <li>Move the outermost streaming concatenation operator to the
+RHS (obtaining temp1, in the example).</li>
+
+<li>Compute the bit widths of LHS and RHS and right-shift the RHS by
+@('rhswidth - lhswidth') (obtaining temp2, in thie example).</p>
+
+<li>Chop up the RHS into chunks matching the sizes of the concatenated
+subexpressions of the LHS (obtaining temp3, temp4).</li>
+
+<li>Make a new assignment of each chunk to its corresponding LHS subexpression,
+and for each assignment created that has a LHS streaming concatenation, repeat
+this process.  (Thus we assign out2 to temp4 and end up assigning out1 to
+@('{<< 3 {temp3}}').</li>
+
+</ol>
+
+<p>Note that when repeating the process for the last step, we can skip step 2,
+because the sizes match by construction.</p>")
+
+
+
+
+                                                   
+           
+           
+  
+  
+  
+                                          
+
+
 
 #||
 
@@ -2125,6 +2483,9 @@ how VL module instances are translated.</p>"
   :exit (list 'vl-assign->svex-assign
               (cadr values))))
 ||#
+
+
+
 
 (define vl-assign->svex-assign ((x vl-assign-p)
                                 (ss vl-scopestack-p)
@@ -2140,6 +2501,18 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
   :prepwork ((local (in-theory (enable (force)))))
   (b* (((vl-assign x) (vl-assign-fix x))
        (warnings nil)
+       ((when (vl-expr-case x.lvalue :vl-stream))
+        (b* (((wmv warnings rhs ?rhs-type rhs-size)
+              (vl-expr-to-svex-untyped x.expr ss scopes))
+             ((unless rhs-size)
+              (mv warnings nil))
+             ((wmv warnings delay :ctx x) (vl-maybe-gatedelay->delay x.delay))
+             (rhs (if delay (sv::svex-add-delay rhs delay) rhs))
+             
+             ((wmv warnings assigns)
+              (vl-streaming-unpack-to-svex-assign-top x.lvalue rhs x rhs-size ss scopes)))
+          (mv warnings assigns)))
+
        ((wmv warnings lhs lhs-type :ctx x)
         (vl-expr-to-svex-lhs x.lvalue ss scopes))
        ((unless lhs-type) (mv warnings nil))
@@ -2153,7 +2526,6 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
     (mv nil (list (cons lhs (sv::make-driver :value svex-rhs)))))
 
   ///
-  (defmvtypes vl-assign->svex-assign (nil true-listp))
 
   (defret vars-of-vl-assign->svex-assign-assigns
     (sv::svarlist-addr-p (sv::assigns-vars assigns))
@@ -2174,7 +2546,7 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
          ((wmv warnings assigns1) (vl-assign->svex-assign (car x) ss scopes))
          ((wmv warnings assigns)
           (vl-assigns->svex-assigns (cdr x) ss scopes
-                                    (append assigns1 assigns))))
+                                    (append-without-guard assigns1 assigns))))
       (mv warnings assigns)))
   ///
 
