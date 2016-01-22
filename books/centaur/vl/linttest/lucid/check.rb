@@ -297,4 +297,14 @@ normal(:'fancy_mp_param$width=5', "mp2")
 normal(:'fancy_mp_param$width=5', "mp3")
 unused(:'fancy_mp_param$width=5', "mp4")
 
+
+normal(:fcasttest_package, "yes_usedfun1")
+normal(:fcasttest_package, "yes_usedfun2")
+unused(:fcasttest_package, "not_usedfun")
+
+normal(:fcasttest, "yes_usedfun1")
+normal(:fcasttest, "yes_usedfun2")
+
+
+
 test_passed()

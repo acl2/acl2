@@ -660,3 +660,45 @@ module fancy_mp_paramtest ;
 
 endmodule
 
+
+
+// This next test is based on a real example that was acting crazy.
+
+package fcasttest_package;
+
+  function yes_usedfun1 (input logic [3:0] a);
+    logic [3:0] b = a;
+    top_f_used = b;
+  endfunction
+
+  function yes_usedfun2 (input logic [3:0] a);
+    logic [3:0] b = a;
+    top_f_used = b;
+  endfunction
+
+  function not_usedfun (input logic [3:0] a);
+    logic [3:0] b = a;
+    top_f_used = b;
+  endfunction
+
+endpackage
+
+module fcasttest ;
+
+  import fcasttest_package::*;
+
+  logic [3:0] xx;
+
+  typedef logic [3:0] foo_t;
+
+  parameter size = 4;
+  for(genvar i = 0; i < size; ++i) begin
+    logic [3:0] blah1 = yes_usedfun1(xx);
+    logic [3:0] blah2 = foo_t'(yes_usedfun2(xx));
+  end
+
+
+endmodule
+
+
+
