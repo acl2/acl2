@@ -180,12 +180,11 @@ because... (BOZO)</p>
         (b* ((w (svex-lookup 'w al))
              (a (svex-lookup 'a al))
              (b (svex-lookup 'b al))
-             ((when (or (equal b (svex-x))
-                        (equal b (svex-z))))
+             ((when (svex-case b :quote))
               ;; (concat w a Z) = rhs --> a = (concat w rhs (rsh w a))
               (svex-resolve-single-assignment
                a (svcall concat w rhs (svcall rsh w a)) wholevar))
-             ((when (equal a (svex-x)))
+             ((when (svex-case a :quote))
               ;; (concat w Z b) = rhs --> b = (rsh w rhs)
               (svex-resolve-single-assignment
                b (svcall rsh w rhs) wholevar)))

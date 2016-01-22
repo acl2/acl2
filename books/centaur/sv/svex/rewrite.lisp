@@ -87,19 +87,32 @@
              (not (member v (svex-vars (svex-norm-call fn args)))))))
 
 
-(define svex-locally-rewrite ((mask 4vmask-p) (x svex-p) (limit natp))
+(define svex-locally-rewrite
+  ((mask  4vmask-p "The <b>one-level local</b> care mask for @('x').  For example:
+                    if the global mask for @('(concat 5 a b)') is @('#xf0f'), and
+                    we are rewriting this occurrence of @('a'), then the mask will
+                    be @('#xf'), even if in other places we care about upper bits
+                    of @('a').  Note that @('(concat 5 a b)') may occur in several
+                    places with smaller local masks than @('#xf0f'), but we still
+                    only use its global mask to compute the local mask for each
+                    of its arguments.  That is, local masks only are aware of 1
+                    level of function calls.")
+   (x     svex-p)
+   (limit natp))
   :returns (newx svex-p)
   :measure (nfix limit)
-  (b* (((when (zp limit)) (svex-fix x))
-       ((unless (eq (svex-kind x) :call))
-        (svex-fix x))
-       ((svex-call x) x)
-       ((mv successp pat subst)
-        (svex-rewrite-fncall-once mask x.fn x.args t))
-       ((unless successp) (svex-fix x)))
-    ;; The pattern is small -- just the RHS of a rewrite rule, so svex-subst
-    ;; (not -memo) is good
-    (svex-locally-rewrite mask (svex-subst pat subst) (1- limit)))
+  (b* ((x (svex-fix x)))
+    (svex-case x
+      :quote (svex-quote (4vec-mask-to-zero mask x.val))
+      :var x
+      :call
+      (b* (((when (zp limit)) x)
+           ((mv successp pat subst)
+            (svex-rewrite-fncall-once mask x.fn x.args t))
+           ((unless successp) (svex-fix x)))
+        ;; The pattern is small -- just the RHS of a rewrite rule, so svex-subst
+        ;; (not -memo) is good
+        (svex-locally-rewrite mask (svex-subst pat subst) (1- limit)))))
   ///
   (defthm svex-locally-rewrite-correct
     (equal (4vec-mask mask (svex-eval (svex-locally-rewrite mask x limit) env))
@@ -203,12 +216,12 @@
       (svex-case x
         :var (mbe :logic (svex-fix (svex-lookup x.name sigma))
                   :exec (svex-lookup x.name sigma))
-        :quote (mbe :logic (svex-fix x) :exec x)
+        :quote (svex-quote (4vec-mask-to-zero mask x.val))
         :call (b* ((masks (svex-argmasks -1 x.fn x.args))
                    ;; Note: we could use mask instead of -1 above, but in cases
                    ;; where the rewrites of different terms have common
                    ;; subterms, it might cause them to diverge.
-                   ;; There are still possible divergences, however.
+                   ;; BOZO We should do experiments with this
                    (args (svexlist-rewrite-under-subst clk masks x.args sigma)))
                 (svex-rewrite-fncall clk mask x.fn args)))))
 
@@ -867,8 +880,13 @@
     :measure (svex-count x)
     (b* ((x (mbe :logic (svex-fix x) :exec x))
          (kind (svex-kind x))
-         ((when (eq kind :quote)) x)
          (mask (svex-mask-lookup x masks))
+         ((when (eq kind :quote))
+          ;; Normalizing constants under the global masks may help to make
+          ;; terms like (logand x #xFFFF0000) and (logand x #xFFFFFFFF) turn
+          ;; into the same logand, if it turns out that we never care about the
+          ;; lower 16 bits.
+          (svex-quote (4vec-mask-to-zero mask (svex-quote->val x))))
          ((when (eql mask 0)) (svex-x))
          ((when (eq kind :var)) x)
          ((svex-call x) x)

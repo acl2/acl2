@@ -231,7 +231,7 @@
 ;; the term occurs; it can't apply a rewrite that's only valid in some of its
 ;; contexts.  To rewrite a function call (f a b c), we first do a global
 ;; rewrite of (a b c) under their global masks, followed by a local rewrite of
-;; args under the masks induced by (f a b c) under its global mask.  These
+;; the resulting args under the masks induced by (f a b c) under its global mask.  These
 ;; local masks may be more permissive of rewrites than the global ones.
 ;; However, now we need to be careful not to add unnecessary nodes to the graph
 ;; by rewriting these arguments locally to new terms that they can't be
@@ -241,6 +241,47 @@
 ;; presumably we would have done it already.)  So good local rules are ones that
 ;;  - are context- (mask-) sensitive, but
 ;;  - can only replace a term with a subterm (or a constant).
+;;
+;; This is subtle and sometimes we can still rewrite terms in different ways in
+;; different contexts.  For instance, consider a nice replacement that is
+;; justified by some local mask, say something like:
+;;
+;;     (concat 5 x y) --> y    when we happen to only care about bits past 5
+;;     (concat 5 x y) --> x    when we happen to only care about bits before 5
+;;
+;; We can see these rules rewriting (concat 5 x y) in different ways, e.g.,:
+;;
+;;     (bitand (rsh (concat 5 x y) 5)
+;;             (concat 5 (concat 5 x y) z))
+;;       -->
+;;     (bitand (rsh y 5)
+;;             (concat 5 x z))
+;;
+;; But even though the replacement terms differ, they both existed in the
+;; original DAG.  This wouldn't necessarily be the case if we considered local
+;; masks more than one-level deep, e.g., if we were smart enough to rewrite:
+;;
+;;     (bitand (rsh (id (concat 5 x y)) 5)
+;;             (concat 5 (id (concat 5 x y)) z))
+;;       -->
+;;     (bitand (rsh (id y) 5)
+;;             (concat 5 (id x) z))
+;;
+;; But too stupid to rewrite away the ID (heh), then notice how the above
+;; rewrite has forked the ID call into two different terms whereas previously
+;; both occurrences were the same (and therefore were the same DAG node).
+;;
+;; Question: would it be OK to rewrite a term into several different constants
+;; that were not previously subterms under different local contexts?
+;;
+;; Answer: Yes, because the we are only going to consider the global outer care
+;; mask, along with whatever we can infer locally. Like in the example above,
+;; replacing a single constant with other constants can't cause function call
+;; terms to be multiplied.  So if we measure a term size only by the count of
+;; function calls, it's fine to replace constants by different ones.  (And it's
+;; OK to measure term size by the count of function calls, because changing
+;; constants can only impact the memory representation linearly.)
+
 (defun def-svex-rewrite-fn (name lhs checks rhs hints localp)
   (declare (xargs :mode :program))
   (b* ((fnname (intern-in-package-of-symbol
@@ -3374,7 +3415,7 @@
                (subst svex-alist-p))
   (b* ((xeval (svex-xeval (svex-call fn args)))
        ((when (4vec-xfree-under-mask xeval mask))
-        (mv t (svex-quote xeval) nil)))
+        (mv t (svex-quote (4vec-mask-to-zero mask xeval)) nil)))
     (svex-rewrite-cases mask
                         (mbe :exec fn :logic (fnsym-fix fn))
                         args

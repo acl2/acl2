@@ -26,38 +26,65 @@
 //   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //   DEALINGS IN THE SOFTWARE.
 //
-// Original author: Sol Swords <sswords@centtech.com>
-
-module test ();
-
-   localparam nCycles = 1040;
-
-  reg [127:0] inputs [nCycles-1:0];
-  reg [127:0] outputs [nCycles-1:0];
-
-  reg [127:0] in;
-  reg [127:0] out;
-
-  reg clk;
-
-   spec specinst (.*);
+// Original authors: Sol Swords <sswords@centtech.com>
+//                   Jared Davis <jared@centtech.com>
 
 
-  integer i;
-   initial begin
-     $dumpfile("test.vcd");
-     $dumpvars();
-     clk = 0;
-     $readmemb(`infile, inputs);
-     for (i=0; i<nCycles; i++) begin
-       in = inputs[i];
-       #2;
-       clk = 1;
-       #5;
-       clk = 0;
-       #3;
-       outputs[i] = out;
-     end
-     $writememb(`outfile, outputs);
-   end
+module spec (input logic [127:0] in,
+	     output wire [127:0] out);
+
+  logic [8:0] out0;
+  logic [6:0] out1;
+   assign in1 = in;
+   assign {<< 5 {{<< 3 {out0}}, out1}} = in[31:0];
+
+  logic [8:0] out2;
+  logic [6:0] out3;
+
+   assign {<< 5 {{>> {out2}}, out3}} = in[31:0];
+
+
+  logic [8:0] out4;
+  logic [6:0] out5;
+
+   assign {>> 5 {{<< 3 {out4}}, out5}} = in[31:0];
+
+  logic [4:0] out6;
+  logic [3:0] out7;
+  logic [2:0] out8;
+  logic [3:0] out9;
+
+   assign {<< 5 {{>> {{<< 3 {out6}}, {<< 2 {out7}}}}, {<< 4 {{>> {out8}}, {>> {out9}}}}}} = in[31:0];
+
+
+  logic [8:0] out10;
+  logic [6:0] out11;
+   assign in1 = in;
+   assign {<< 5 {{<< 3 {out10}}, out11}} = in[15:0];
+
+  logic [8:0] out12;
+  logic [6:0] out13;
+
+   assign {<< 5 {{>> {out12}}, out13}} = in[15:0];
+
+
+  logic [8:0] out14;
+  logic [6:0] out15;
+
+   assign {>> {{<< 3 {out14}}, out15}} = in[15:0];
+
+  logic [4:0] out16;
+  logic [3:0] out17;
+  logic [2:0] out18;
+  logic [3:0] out19;
+
+   assign {<< 5 {{>> {{<< 3 {out16}}, {<< 2 {out17}}}}, {<< 4 {{>> {out18}}, {>> {out19}}}}}} = in[15:0];
+
+
+
+
+   assign out = {out19, out18, out17, out16, out15, out14, out13, out12, out11, out10,
+		 out9, out8, out7, out6, out5, out4, out3, out2, out1, out0};
+
+
 endmodule

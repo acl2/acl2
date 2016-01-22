@@ -87,7 +87,6 @@ FAILING_TEST_TARGETS := \
   inst_size3/ok \
   inst_size4/ok \
   udp_wide1/ok \
-  stream3/ok \
   increment/ok
 
 SPECFILES := $(wildcard */spec.sv)
