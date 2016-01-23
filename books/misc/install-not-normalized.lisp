@@ -48,16 +48,19 @@ This comment motivates the macro install-not-normalized, defined below.
 
 (in-package "ACL2")
 
+(defun install-not-normalized-name (name)
+  (declare (xargs :guard (symbolp name)))
+  (intern-in-package-of-symbol (concatenate 'string
+                                            (symbol-name name)
+                                            "$NOT-NORMALIZED")
+                               name))
+
 (defun install-not-normalized-fn-1 (name wrld clique)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
   (let* ((formals (formals name wrld))
          (body (getprop name 'unnormalized-body nil 'current-acl2-world wrld))
-         (defthm-name (intern-in-package-of-symbol
-                       (concatenate 'string
-                                    (symbol-name name)
-                                    "$NOT-NORMALIZED")
-                       name))
+         (defthm-name (install-not-normalized-name name))
          (controller-alist (let* ((def-bodies
                                     (getprop name 'def-bodies nil
                                              'current-acl2-world wrld))
@@ -125,6 +128,12 @@ This comment motivates the macro install-not-normalized, defined below.
            '(set-irrelevant-formals-ok t) ; perhaps not necessary, but harmless
            (install-not-normalized-fn ',name (w state) ,nestp))))
 
+(defun fn-is-body-name (name)
+  (declare (xargs :guard (symbolp name)))
+  (intern-in-package-of-symbol
+   (concatenate 'string (symbol-name name) "$IS-BODY")
+   name))
+
 (defmacro fn-is-body (name &key hints thm-name rule-classes)
   (declare (xargs :guard (and name (symbolp name))))
   `(make-event
@@ -133,9 +142,7 @@ This comment motivates the macro install-not-normalized, defined below.
            (formals (formals name wrld))
            (body (getprop name 'unnormalized-body nil 'current-acl2-world wrld)))
       (list* 'defthm
-             (or ',thm-name (intern-in-package-of-symbol
-                             (concatenate 'string (symbol-name name) "$IS-BODY")
-                             name))
+             (or ',thm-name (fn-is-body-name name))
              (list 'equal
                    (cons name formals)
                    body)
@@ -376,7 +383,13 @@ This comment motivates the macro install-not-normalized, defined below.
  @(':controller-alist') when more than one name is handled.  The name of the
  rule generated for function @('F') is the symbol @('F$NOT-NORMALIZED'), that
  is, the result of modifying the @(tsee symbol-name) of @('F') by adding the
- suffix @('\"$NOT-NORMALIZED\"').</p>
+ suffix @('\"$NOT-NORMALIZED\"').  To obtain that name programmatically:</p>
+
+ @({
+ ACL2 !>(install-not-normalized-name 'foo)
+ FOO$NOT-NORMALIZED
+ ACL2 !>
+ })
 
  <p>For a somewhat related utility, see @(see fn-is-body).</p>
 
@@ -395,11 +408,19 @@ This comment motivates the macro install-not-normalized, defined below.
 
  <p>Evaluation of the form above generates a @(tsee defthm) event whose name is
  @('thm-name') &mdash; by default, the result of adding the suffix \"$IS-BODY\"
- to @('fn'), which is a function symbol.  That event is of the form
- @('(equal (fn x1 ... xn) <body>)'), where @('(x1 ... xn)') is the list of
- formal parameters of @('fn') and @('<body>') is the body of @('fn').  If
- @(':hints') or @(':rule-classes') are supplied, they will be attached to the
- generated @('defthm') form.</p>
+ to @('fn'), which is a function symbol.  To obtain that name
+ programmatically:</p>
+
+ @({
+ ACL2 !>(fn-is-body-name 'foo)
+ FOO$IS-BODY
+ ACL2 !>
+ })
+
+ <p>That event is of the form @('(equal (fn x1 ... xn) <body>)'), where @('(x1
+ ... xn)') is the list of formal parameters of @('fn') and @('<body>') is the
+ body of @('fn').  If @(':hints') or @(':rule-classes') are supplied, they will
+ be attached to the generated @('defthm') form.</p>
 
  <p>For a somewhat related utility, see @(see install-not-normalized).</p>
 
