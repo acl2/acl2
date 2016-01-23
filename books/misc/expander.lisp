@@ -470,11 +470,25 @@ directly with ACL2.</p>
 
 ;;;;;;; Tool 2
 
+(defun geneqv-from-g?equiv (g?equiv wrld)
+
+; We write g?equiv to indicate that we have either a geneqv or else a symbol
+; that is an equivalence relation (where nil represents equal).
+
+  (if (symbolp g?equiv)
+      (cadr (car (last (getprop
+                        g?equiv
+                        'congruences
+                        nil
+                        'current-acl2-world
+                        wrld))))
+    g?equiv))
+
 (defmacro tool2 (term hyps
                       &key
-                      hints equiv (prove-assumptions 't) inhibit-output
+                      hints g?equiv (prove-assumptions 't) inhibit-output
                       (must-rewrite-flg 't))
-  `(tool2-fn ',term ',hyps ',equiv state ',hints ',prove-assumptions
+  `(tool2-fn ',term ',hyps ',g?equiv state ',hints ',prove-assumptions
              ',inhibit-output t t ,must-rewrite-flg))
 
 (defun tool2-print (print-flg runes rewritten-term state)
@@ -569,7 +583,7 @@ directly with ACL2.</p>
                                 must-rewrite-flg))))))
 
 (defun tool2-fn1
-  (term hyps equiv ctx ens wrld state thints prove-assumptions
+  (term hyps g?equiv ctx ens wrld state thints prove-assumptions
         inhibit-output translate-flg print-flg must-rewrite-flg)
 
 ; Returns error triple with value (list* runes rewritten-term assumptions).
@@ -697,12 +711,7 @@ directly with ACL2.</p>
                                              (expander-repeat-limit state)
                                              0
                                              type-alist
-                                             (cadr (car (last (getprop
-                                                               equiv
-                                                               'congruences
-                                                               nil
-                                                               'current-acl2-world
-                                                               wrld))))
+                                             (geneqv-from-g?equiv g?equiv wrld)
                                              wrld state step-limit
                                              simplify-clause-pot-lst rcnst gstack
                                              nil
@@ -812,7 +821,7 @@ directly with ACL2.</p>
                                                  (value val)))))))))))))))))))))))))))))))))
 
 (defun tool2-fn0
-  (term hyps equiv ctx ens wrld state hints prove-assumptions
+  (term hyps g?equiv ctx ens wrld state hints prove-assumptions
         inhibit-output translate-flg print-flg must-rewrite-flg)
 
 ; Same as tool2-fn, except the user must supply the ctx, ens, and wrld.
@@ -829,11 +838,11 @@ directly with ACL2.</p>
     (initialize-brr-stack state)
     (er-let*
      ((thints (translate-hints 'tool2 hints ctx wrld state)))
-     (tool2-fn1 term hyps equiv ctx ens wrld state thints prove-assumptions
+     (tool2-fn1 term hyps g?equiv ctx ens wrld state thints prove-assumptions
                 inhibit-output translate-flg print-flg must-rewrite-flg)))))
 
 (defun tool2-fn
-  (term hyps equiv state hints prove-assumptions inhibit-output translate-flg
+  (term hyps g?equiv state hints prove-assumptions inhibit-output translate-flg
         print-flg must-rewrite-flg)
 
 ; Returns error triple with value (list* runes rewritten-term assumptions).
@@ -848,14 +857,14 @@ directly with ACL2.</p>
   (let ((ctx 'TOOL2)
         (wrld (w state))
         (ens (ens state)))
-    (tool2-fn0 term hyps equiv ctx ens wrld state hints prove-assumptions
+    (tool2-fn0 term hyps g?equiv ctx ens wrld state hints prove-assumptions
                inhibit-output translate-flg print-flg must-rewrite-flg)))
 
 
 ;;;;;;; Hooking them together
 
 (defun tool2-fn-lst
-  (term runes hyps-lst assns equiv state hints prove-assumptions inhibit-output
+  (term runes hyps-lst assns g?equiv state hints prove-assumptions inhibit-output
         print-flg must-rewrite-flg)
 
 ; Returns the result of mapping tool2-fn over the list hyps-lst, pairing each
@@ -869,16 +878,16 @@ directly with ACL2.</p>
    (t
     (mv-let
      (erp x state)
-     (tool2-fn term (car hyps-lst) equiv state hints prove-assumptions
+     (tool2-fn term (car hyps-lst) g?equiv state hints prove-assumptions
                inhibit-output nil print-flg must-rewrite-flg)
      (cond
       (erp
-       (tool2-fn-lst term runes (cdr hyps-lst) assns equiv state
+       (tool2-fn-lst term runes (cdr hyps-lst) assns g?equiv state
                      hints prove-assumptions inhibit-output print-flg
                      must-rewrite-flg))
       (t
        (er-let*
-        ((rst (tool2-fn-lst term runes (cdr hyps-lst) assns equiv
+        ((rst (tool2-fn-lst term runes (cdr hyps-lst) assns g?equiv
                             state
                             hints prove-assumptions inhibit-output print-flg
                             must-rewrite-flg)))
@@ -889,7 +898,7 @@ directly with ACL2.</p>
                      rst)))))))))
 
 (defun simplify-hyps
-  (remaining-hyps rewritten-previous-hyps-rev runes assns equiv state hints
+  (remaining-hyps rewritten-previous-hyps-rev runes assns g?equiv state hints
                   prove-assumptions inhibit-output print-flg must-rewrite-flg)
 
 ; Returns the result of mapping tool2-fn over each hyp in remaining-hyps, where
@@ -904,17 +913,17 @@ directly with ACL2.</p>
        ((x (tool2-fn (car remaining-hyps)
                      (revappend rewritten-previous-hyps-rev
                                 (cdr remaining-hyps))
-                     equiv state hints prove-assumptions
+                     g?equiv state hints prove-assumptions
                      inhibit-output nil print-flg must-rewrite-flg)))
        (simplify-hyps (cdr remaining-hyps)
                       (cons (cadr x) rewritten-previous-hyps-rev)
                       (union-equal (car x) runes)
                       (union-equal (cddr x) assns)
-                      equiv state hints prove-assumptions inhibit-output
+                      g?equiv state hints prove-assumptions inhibit-output
                       print-flg must-rewrite-flg)))))
 
 (defun tool-fn
-  (term hyps simplify-hyps-p equiv state hints prove-assumptions inhibit-output
+  (term hyps simplify-hyps-p g?equiv state hints prove-assumptions inhibit-output
         print-flg must-rewrite-flg ctx)
 
 ; Term and hyps are in translated form.  Returns a list of tuples
@@ -923,7 +932,7 @@ directly with ACL2.</p>
   (er-let* ((runes-hyps-assns
              (cond
               ((eq simplify-hyps-p :no-split)
-               (simplify-hyps hyps nil nil nil equiv state hints
+               (simplify-hyps hyps nil nil nil g?equiv state hints
                               prove-assumptions inhibit-output print-flg
                               must-rewrite-flg))
               ((eq simplify-hyps-p t)
@@ -952,7 +961,7 @@ directly with ACL2.</p>
                                  (car runes-hyps-assns)
                                  (cadr runes-hyps-assns)
                                  (cddr runes-hyps-assns)
-                                 equiv state hints prove-assumptions
+                                 g?equiv state hints prove-assumptions
                                  inhibit-output print-flg must-rewrite-flg)))
                (cond
                 ((not (= (length x) (length (cadr runes-hyps-assns))))
