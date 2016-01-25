@@ -568,8 +568,8 @@ my $instrs = "";
 # I think this strange :q/lp dance is needed for lispworks or something?
 $instrs .= "(acl2::value :q)\n";
 $instrs .= "(acl2::in-package \"ACL2\")\n";
-$instrs .= "#+acl2-hons (profile-fn 'prove)\n";
-$instrs .= "#+acl2-hons (profile-fn 'certify-book-fn)\n";
+$instrs .= "#+hons (profile-fn 'prove)\n";
+$instrs .= "#+hons (profile-fn 'certify-book-fn)\n";
 $instrs .= "(acl2::lp)\n";
 # We used to comment this out, but maybe it's better to leave this enabled by default?
 $instrs .= "(set-debugger-enable :bt)\n";
@@ -625,12 +625,12 @@ $instrs .= "#!ACL2 (set-ld-error-action (quote :continue) state)\n";
 my $cert_flags = parse_certify_flags($acl2file, $usercmds);
 $instrs .= "\n; certify-book command flags: $cert_flags\n";
 
-my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" $cert_flags $PCERT $ACL2X))
-                                 (value (prog2\$ #+acl2-hons (memsum)
-                                                 #-acl2-hons nil
+my $cert_cmds = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" $cert_flags $PCERT $ACL2X))
+                                 (value (prog2\$ #+hons (memsum)
+                                                 #-hons nil
                                                  (exit 43))))\n";
 
-$instrs .= $cert_cmd;
+$instrs .= $cert_cmds;
 
 if ($DEBUG) {
     print "-- ACL2 Instructions: $lisptmp --\n";
