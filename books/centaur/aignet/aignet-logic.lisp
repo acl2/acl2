@@ -36,7 +36,6 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "data-structures/list-defthms" :dir :system)
 (include-book "std/lists/equiv" :dir :system)
 (include-book "tools/defmacfun" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
@@ -46,6 +45,7 @@
 (include-book "clause-processors/unify-subst" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable set::double-containment)))
 (local (in-theory (disable nth update-nth

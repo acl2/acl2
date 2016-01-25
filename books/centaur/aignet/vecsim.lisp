@@ -32,6 +32,7 @@
 (include-book "eval")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (disable nth update-nth set::double-containment)))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 

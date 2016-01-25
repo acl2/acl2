@@ -33,12 +33,11 @@
 (include-book "centaur/aig/aig-base" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (include-book "std/alists/alist-keys" :dir :system)
-(local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (in-theory (disable nth update-nth
-                           set::double-containment)))
-
-(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (include-book "ihs/logops-definitions" :dir :system)
+(local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
+(local (in-theory (disable nth update-nth set::double-containment)))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 
 (local (in-theory (disable ;acl2::update-nth-update-nth

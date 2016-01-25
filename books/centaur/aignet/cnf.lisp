@@ -38,6 +38,7 @@
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (include-book "centaur/aignet/bit-lemmas" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
