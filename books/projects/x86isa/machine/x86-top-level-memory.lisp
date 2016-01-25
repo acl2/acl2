@@ -1217,8 +1217,14 @@ memory.</li>
 
     ///
 
-    (defthm consp-create-addr-bytes-alist
+    (defthm consp-create-addr-bytes-alist-in-terms-of-len
       (implies (and (not (zp (len byte-list)))
+                    (equal (len addr-list) (len byte-list)))
+               (consp (create-addr-bytes-alist addr-list byte-list)))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm consp-create-addr-bytes-alist
+      (implies (and (or (consp addr-list) (consp byte-list))
                     (equal (len addr-list) (len byte-list)))
                (consp (create-addr-bytes-alist addr-list byte-list)))
       :rule-classes (:rewrite :type-prescription))
