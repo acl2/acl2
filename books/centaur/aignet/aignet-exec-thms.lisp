@@ -33,13 +33,13 @@
 (include-book "litp")
 (include-book "snodes")
 (include-book "std/util/defmvtypes" :dir :system)
-(include-book "data-structures/list-defthms" :dir :system)
 (include-book "tools/defmacfun" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "tools/stobj-frame" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable nth update-nth
                            acl2::nfix-when-not-natp
