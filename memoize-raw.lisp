@@ -1124,23 +1124,6 @@
 (defun 10-days ()
   (let ((n (* *10-days-in-seconds*
               (ceiling *float-ticks/second*))))
-    (when (> n most-positive-mfixnum)
-
-; It's OK to comment out the following error and only do the setq.  But we
-; have the error here in order to catch confusion on our part.  In one
-; experiment circa Sept 2014 on a 2.66 GHz Mac we got this:
-
-; ? (10-days)
-; 1855425871872000
-; ? most-positive-mfixnum
-; 1152921504606846975
-; ? 
-
-      (error "~s is too large: ~s.  This is a surprise!~%Please ~
-              contact the ACL2 implementors."
-             '(10-days)
-             n)
-      (setq n most-positive-mfixnum))
     n))
 
 (defg *10-days*
@@ -1224,6 +1207,25 @@
                 (force-output *standard-output*))))
     #-RDTSC (setq *float-ticks/second*
                   *float-internal-time-units-per-second*)
+
+    ;; We found that occasionally *float-ticks/second* is insane, probably
+    ;; due to RDTSC flakiness when switching processors, etc.  So, if it is
+    ;; really clearly insane, try to fudge it back to something reasonably
+    ;; sensible.
+    (when (> *float-ticks/second*
+             (* 20
+                1000 ;; khz
+                1000 ;; mhz
+                1000 ;; ghz
+                ))
+      (format t "*** Tick-based timing seems to be broken.~%")
+      (format t "*** Our estimated *float-ticks/second* is ~s; seems too large.~%"
+              *float-ticks/second*)
+      (format t "*** Is your processor really running at ~s GHz?~%"
+              (/ *float-ticks/second* (* 1000 1000 1000)))
+      (format t "*** Fudging speed to 2 GHz.  Profiling may be inaccurate.~%")
+      (setq *float-ticks/second* (* 2.0 1000 1000 1000)))
+
     (setq *10-days* (10-days))
     (setq *float-ticks/second-initialized* t)
     (check-type *float-ticks/second*
