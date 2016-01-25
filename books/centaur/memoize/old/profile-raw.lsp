@@ -38,7 +38,7 @@
             ev-rec-lst ev-rec-acl2-unwind-protect ev-fncall-w ev ev-lst
             ev-w ev-w-lst ev-for-trans-eval ev-w-for-trans-eval ev-fncall!
             trans-eval trans-eval1 ev-for-trans-eval ev-w-for-trans-eval
-            trans-eval-lst ld-fn ld-fn1 ld-fn-body ld-loop ld-read-eval-print
+            ld-fn ld-fn1 ld-fn-body ld-loop ld-read-eval-print
             acl2-raw-eval
 
             protected-eval

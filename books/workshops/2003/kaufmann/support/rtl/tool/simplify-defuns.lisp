@@ -63,7 +63,7 @@
          (hint-settings state)
          (cond ((null hint-settings)
                 (mv nil state))
-               (t (thanks-for-the-hint nil hint-settings state))) ;BB
+               (t (thanks-for-the-hint nil hint-settings nil state))) ;BB
          (er-let* ((pspv (load-hint-settings-into-pspv
                           t hint-settings saved-pspv nil wrld ctx state)))
            (cond

@@ -9041,6 +9041,14 @@
          (assert$ (<= len (fixnum-bound))
                   (string-prefixp-1 root len string)))))
 
+#-acl2-loop-only ; actually only needed for ccl
+(defun *1*-symbolp (x)
+  (and (symbolp x)
+       (let ((pkg-name (ignore-errors (symbol-package-name x))))
+         (and pkg-name
+              (string-prefixp *1*-pkg-prefix* ; i.e., *1*-package-prefix*
+                              pkg-name)))))
+
 (defun relativize-book-path (filename system-books-dir)
 
 ; System-books-dir is presumably the value of state global 'system-books-dir.
