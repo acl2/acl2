@@ -4511,22 +4511,8 @@
           (formal-bindings (cdr vars)))))
 
 (defrec io-record
-
-; WARNING:  We rely on the shape of this record in io-record-forms.
-
-; Note: As of Version_3.4 we do not use any io-marker other than :ctx.  Earlier
-; versions might not have made any real use of those either, writing but not
-; reading them.
-
   (io-marker . form)
   t)
-
-(defmacro io-record-forms (io-records)
-
-; WARNING:  If you change this macro, consider changing (defrec io-record ...)
-; too.
-
-  `(strip-cdrs ,io-records))
 
 (defun push-io-record (io-marker form state)
   (f-put-global 'saved-output-reversed
@@ -4555,7 +4541,8 @@
                      (cursor-at-top 'nil cursor-at-top-argp)
                      (pop-up 'nil pop-up-argp)
                      (default-bindings 'nil)
-                     (chk-translatable 't))
+                     (chk-translatable 't)
+                     (io-marker 'nil))
 
 ; Typical use (io? error nil (mv col state) (x y) (fmt ...)), meaning execute
 ; the fmt statement unless 'error is on 'inhibit-output-lst.  The mv expression
@@ -4692,7 +4679,7 @@
                     :ld-prompt nil))))
      (t `(pprogn
           (cond ((saved-output-token-p ',token state)
-                 (push-io-record nil ; io-marker
+                 (push-io-record ,io-marker
                                  (list 'let
                                        (list ,@(formal-bindings vars))
                                        ',expansion)
