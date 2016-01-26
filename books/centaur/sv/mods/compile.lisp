@@ -932,7 +932,7 @@ should address this again later.</p>"
                                      &key (rewrite 't))
   :returns (mv (updates svex-alist-p)
                (nextstates svex-alist-p))
-  (b* ((updates (cwtime (svex-assigns-compose assigns) :mintime 1))
+  (b* ((updates (cwtime (svex-assigns-compose assigns :rewrite rewrite) :mintime 1))
        (masks (svexlist-mask-alist (svex-alist-vals updates)))
        ((with-fast updates))
        (next-states (cwtime (svex-compose-delays delays updates masks) :mintime 1))

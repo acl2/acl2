@@ -62,9 +62,39 @@
              (setf (hl-falslot-key slot) ans)))
       ans)))
 
+(defun hl-hspace-fast-alist-pop* (prev-binding alist hs)
+  (declare (type hl-hspace hs)
+           (type cons alist))
+  (let* ((faltable (hl-hspace-faltable hs))
+         (slot     (hl-faltable-general-lookup alist faltable))
+         (val      (hl-falslot-val slot))
+         (ans      (cdr alist)))
+    (cond ((not val)
+           ;; Discipline failure, no valid backing alist.
+           (hl-slow-alist-warning 'hl-hspace-fast-alist-pop*))
+          (t
+           ;; Break the old association from ALIST to VAL.
+           (setf (hl-falslot-key slot) nil)
+
+           ;; Smash the current value of the key in the backing hash table with
+           ;; its previous binding.
+           (if prev-binding
+               (setf (gethash (caar alist) (the hash-table val))
+                     prev-binding)
+             (remhash (caar alist) (the hash-table val)))
+           ;; Associate the resulting ANS with the updated VAL (which is
+           ;; already in the slot).
+           (setf (hl-falslot-key slot) ans)))
+    ans))
+
+
 (defun fast-alist-pop (x)
   (hl-maybe-initialize-default-hs)
   (hl-hspace-fast-alist-pop x *default-hs*))
+
+(defun fast-alist-pop* (prev-binding x)
+  (hl-maybe-initialize-default-hs)
+  (hl-hspace-fast-alist-pop* prev-binding x *default-hs*))
 
 
 #|

@@ -6054,7 +6054,12 @@ checked to see if it is a valid bitselect and returned as a separate value."
 
   (b* (((mv err & idx bitsel)
         (moddb-path->wireidx/decl path modidx moddb))
-       ((when err) (raise "~@0" err))
+       ((when err)
+        (b* (((stobj-get name)
+              ((elab-mod (moddb->modsi modidx moddb)))
+              (elab-mod->name elab-mod)))
+          (raise "Error looking up ~x1: ~@0~%from module: ~x2"
+                          err path name)))
        ((when bitsel) (raise "Didn't expect a bit select: ~x0" path)))
     idx)
   ///
@@ -7509,8 +7514,8 @@ checked to see if it is a valid bitselect and returned as a separate value."
          (mod (modalist-lookup name modalist))
          ((unless mod)
           (mv nil (list name) nil nil))
-         (local-aliases (and mod (module->aliaspairs mod)))
-         (local-assigns (and mod (module->assigns mod)))
+         (local-aliases (module->aliaspairs mod))
+         (local-assigns (module->assigns mod))
          ;; (local-delays  (and mod (module->delays mod)))
          ((mv varfails1 abs-aliases) (lhspairs->absindexed local-aliases scope moddb))
          ((mv varfails2 abs-assigns) (assigns->absindexed local-assigns scope moddb))

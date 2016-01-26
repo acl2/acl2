@@ -1470,6 +1470,98 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 3vec-? 3vec-p))
            (bitops::logbitp-reasoning))))
 
+(define a3vec-?* ((x a4vec-p)
+                 (y a4vec-p)
+                 y3p
+                 (z a4vec-p)
+                 z3p)
+  :short "Symbolic version of @(see 3vec-?*)."
+  :returns (res a4vec-p)
+
+  ;; ~test.upper --> false
+  ;; test.lower --> true
+  ;; otherwise x.
+  ;;
+  ;; ans upper:
+  ;; ( ( testfalse & elses.upper)       ;; test is false --> else
+  ;;   | ( testtrue & thens.upper) )    ;; test is true --> then
+  ;; | ( (~testfalse & ~testtrue)
+  ;;      & (elses.upper | thens.upper | elses.lower | thens.lower)
+  ;;      )
+  ;;
+  ;; ans lower:
+  ;; ( testfalse & elses.lower)       ;; test is false --> else
+  ;;   | ( testtrue & thens.lower)    ;; test is true --> then
+  ;;   | ( (~testfalse & ~testtrue)
+  ;;        & elses.upper & thens.upper & elses.lower & thens.lower )
+
+
+  (b* (((a4vec a) x)
+       ((a4vec b) y)
+       ((a4vec c) z)
+       ;; common subexpressions between the two
+       (a=1 (aig-not (aig-iszero-s a.lower)))
+       (a=0 (aig-iszero-s a.upper))
+       (a=x (aig-nor a=1 a=0))
+
+       ;; upper
+       (boolcase (aig-logior-ss (aig-ite-bss-fn a=1 b.upper nil)
+                                (aig-ite-bss-fn a=0 c.upper nil)))
+       (upper (aig-logior-ss
+               boolcase
+               (aig-ite-bss a=x
+                            (aig-logior-ss (aig-logior-ss b.upper c.upper)
+                                           (aig-logxor-ss
+                                            (if y3p nil b.lower) ;; implied by not b.upper
+                                            (if z3p nil c.lower)))
+                            nil)))
+
+       ;; lower
+       (boolcase (aig-logior-ss (aig-ite-bss-fn a=1 b.lower nil)
+                                (aig-ite-bss-fn a=0 c.lower nil)))
+       (lower (aig-logior-ss
+               boolcase
+               (aig-ite-bss a=x
+                            (aig-logand-ss (aig-logand-ss b.lower c.lower)
+                                           (aig-lognot-s
+                                            (aig-logxor-ss
+                                             (if y3p '(t) b.upper)
+                                             (if z3p '(t) c.upper))))
+                            nil))))
+    (a4vec upper lower))
+  ///
+  (local (in-theory (disable iff not acl2::zip-open)))
+  (local (in-theory (disable bitops::logand-natp-type-2
+                             bitops::logand-natp-type-1
+                             bitops::logior-natp-type
+                             bitops::logand->=-0-linear-2
+                             bitops::logand->=-0-linear-1
+                             bitops::upper-bound-of-logand
+                             aig-list->s
+                             bitops::logbitp-when-bit
+                             bitops::logbitp-nonzero-of-bit
+                             bitops::logbitp-when-bitmaskp
+                             bitops::lognot-negp
+                             bitops::lognot-natp
+                             bitops::logior-<-0-linear-2
+                             bitops::logior-<-0-linear-1
+                             bitops::lognot-<-const
+                             acl2::aig-env-lookup)))
+
+
+  (defthm a3vec-?*-correct
+    (implies (and (case-split (implies y3p (3vec-p (a4vec-eval y env))))
+                  (case-split (implies z3p (3vec-p (a4vec-eval z env))))
+                  (3vec-p (a4vec-eval x env)))
+             (equal (a4vec-eval (a3vec-?* x y y3p z z3p) env)
+                    (3vec-?* (a4vec-eval x env)
+                            (a4vec-eval y env)
+                            (a4vec-eval z env))))
+    :hints(("Goal" :in-theory (enable 3vec-?* 3vec-p))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil))))))
+
 (define a3vec-bit? ((x a4vec-p)
                     (y a4vec-p)
                     y3p

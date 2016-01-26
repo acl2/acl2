@@ -497,7 +497,7 @@
             rsh
             lsh)
            (3valued-syntaxp (second x.args)))
-          ((concat ? bit?)
+          ((concat ? ?* bit?)
            (and (3valued-syntaxp (second x.args))
                 (3valued-syntaxp (third x.args))))
           ((blkrev)
@@ -587,6 +587,13 @@
                   (3vec-p y))
              (3vec-p (4vec-? c x y)))
     :hints (("goal" :in-theory (enable 3vec-p 4vec-? 3vec-? 3vec-fix))
+            (bitops::logbitp-reasoning)))
+
+  (defthm 3vec-p-of-4vec-?*
+    (implies (and (3vec-p x)
+                  (3vec-p y))
+             (3vec-p (4vec-?* c x y)))
+    :hints (("goal" :in-theory (enable 3vec-p 4vec-?* 3vec-?* 3vec-fix))
             (bitops::logbitp-reasoning)))
 
   (defthm 3vec-p-of-4vec-bit?
@@ -3261,11 +3268,27 @@
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask)))
            (bitops::logbitp-reasoning)))
 
+  (def-svex-rewrite qmark*-nest-1
+    :lhs (?* a (?* a b c) c)
+    :rhs (?* a b c)
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask)))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:in-theory (enable b-xor)))))
+
   (def-svex-rewrite qmark-nest-2
     :lhs (? a b (? a b c))
     :rhs (? a b c)
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask)))
            (bitops::logbitp-reasoning)))
+
+  (def-svex-rewrite qmark*-nest-2
+    :lhs (?* a b (?* a b c))
+    :rhs (?* a b c)
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask)))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:in-theory (enable b-xor)))))
 
   (local (in-theory (disable svex-eval-when-quote
                              svex-eval-when-fncall
@@ -3286,6 +3309,18 @@
            (bitops::logbitp-reasoning
             :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
 
+  (def-svex-rewrite qmark*-select-1
+    :lhs (?* a b c)
+    :checks ((not (eql 0 (4vec->lower (3vec-fix (svex-xeval a))))))
+    :rhs b
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
+                                           3vec-fix 4vec-[=)
+                                   (svex-eval-gte-xeval))
+            :use ((:instance svex-eval-gte-xeval
+                   (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
+           (bitops::logbitp-reasoning
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
+
   (def-svex-rewrite qmark-select-0
     :lhs (? a b c)
     :checks ((eql 0 (4vec->upper (3vec-fix (svex-xeval a)))))
@@ -3296,7 +3331,75 @@
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
            (bitops::logbitp-reasoning
-            :add-hints (:in-theory (enable* bitops::logbitp-case-splits))))))
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
+
+  (def-svex-rewrite qmark*-select-0
+    :lhs (?* a b c)
+    :checks ((eql 0 (4vec->upper (3vec-fix (svex-xeval a)))))
+    :rhs c
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
+                                           3vec-fix 4vec-[=)
+                                   (svex-eval-gte-xeval))
+            :use ((:instance svex-eval-gte-xeval
+                   (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
+           (bitops::logbitp-reasoning
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
+
+  (def-svex-rewrite qmark*-same
+    :lhs (?* a b b)
+    :rhs b
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
+                                           3vec-fix 4vec-[=)
+                                   (svex-eval-gte-xeval))
+            :use ((:instance svex-eval-gte-xeval
+                   (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
+           (bitops::logbitp-reasoning
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
+
+
+#||
+  ;; NOTE: (bozo?)  These are very particular rules for ?* and they don't
+  ;; follow the usual conventions that ensure that we don't blow up.  The
+  ;; reason for this is that ?* is used in procedural statement processing for things like:
+  ;; always_comb begin
+  ;;   a = b;
+  ;;   if (c)
+  ;;      a[5:0] = d;
+  ;;  end
+  ;;  In this case the update function for a is something like:
+  ;;   a = (?* c (concat 6 d (rsh 6 b)) b)
+  ;;  We've run into cases where in examples like this, c depends on upper bits
+  ;;  of a, so we want to make sure we can disentangle this dependency so we
+  ;;  don't get hung up on a false combinational loop.
+  (def-svex-rewrite qmark*-concat-same-1
+    :lhs (?* a (concat w b c) (concat w d c))
+    :rhs (concat w (?* a b d) c)
+    :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 4vec-concat svex-apply 3vec-fix 4vec-mask))
+           (logbitp-reasoning)))
+
+  (def-svex-rewrite qmark*-concat-same-2
+    :lhs (?* a (concat w b c) (concat w b d))
+    :rhs (concat w b (?* a c d))
+    :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 4vec-concat svex-apply 3vec-fix 4vec-mask))
+           (logbitp-reasoning)))
+
+  (def-svex-rewrite qmark*-concat-reduce1
+    :lhs (?* a (concat w b c) b)
+    :checks ((svex-case w :quote (4vec-index-p w.val) :otherwise nil))
+    :rhs (concat w b (?* a c (rsh w b)))
+    :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 4vec-concat 4vec-rsh svex-apply 3vec-fix 4vec-mask svex-eval-when-quote 4vec-index-p))
+           (svex-generalize-lookups)
+           (logbitp-reasoning)))
+
+  (def-svex-rewrite qmark*-concat-reduce2
+    :lhs (?* a (concat w b (rsh w c)) c)
+    :checks ((svex-case w :quote (4vec-index-p w.val) :otherwise nil))
+    :rhs (concat w (?* a b c) (rsh w c))
+    :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 4vec-concat 4vec-rsh svex-apply 3vec-fix 4vec-mask svex-eval-when-quote 4vec-index-p))
+           (svex-generalize-lookups)
+           (logbitp-reasoning)))
+||#
+)
 
 
 

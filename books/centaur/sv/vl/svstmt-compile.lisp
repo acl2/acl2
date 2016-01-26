@@ -39,6 +39,7 @@
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 
@@ -786,15 +787,11 @@ exists there.</p>"
     (implies (consp (svstate->blkst st))
              (svstates-compatible new-st st))))
 
+
+
 (define svex-svstmt-ite ((test svex-p)
                          (then svex-p)
                          (else svex-p))
-  ;; Bozo: Semantics are somewhat wrong (inconsistent) in the case where the
-  ;; test is non-Boolean and the values of the two branches are equal.  In that
-  ;; case, if then and else are syntactically equal, then the restult is
-  ;; exactly their value, but otherwise it is the unfloat.  We don't want to
-  ;; give up the optimization where if two branches are the same it reduces to
-  ;; one of them; maybe the right answer is to make a new operator.
   :returns (ite svex-p)
   (b* ((test (svex-fix test))
        (then (svex-fix then))
@@ -802,11 +799,51 @@ exists there.</p>"
     (or (svex-case test
           :quote (if (eql (4vec-reduction-or test.val) -1)
                      then
-                   else)
+                   (if (eql (4vec-reduction-or test.val) 0)
+                       else
+                     nil))
           :otherwise nil)
         (and (hons-equal then else) then)
-        (svex-call '? (list test then else))))
+        (svex-call '?* (list test then else))))
   ///
+  (local (defthm svex-fix-under-iff
+           (iff (svex-fix x) t)
+           :hints (("Goal" :use RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))))
+
+  (local (defthm 4vec-?*-when-reduction-or-true
+           (implies (equal (4vec-reduction-or test) -1)
+                    (equal (4vec-?* test then else)
+                           (4vec-fix then)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or 3vec-reduction-or
+                                             4vec-?* 3vec-?* 3vec-fix)))))
+
+  (local (defthm 4vec-?*-when-reduction-or-false
+           (implies (equal (4vec-reduction-or test) 0)
+                    (equal (4vec-?* test then else)
+                           (4vec-fix else)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or 3vec-reduction-or
+                                             4vec-?* 3vec-?* 3vec-fix)))))
+
+  (local (defthm 4vec-?*-when-equal
+           (implies (4vec-equiv then else)
+                    (equal (4vec-?* test then else)
+                           (4vec-fix then)))
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 3vec-fix)))))
+           
+
+
+  (defret svex-svstmt-ite-correct
+    (equal (svex-eval ite env)
+           (4vec-?* (svex-eval test env)
+                    (svex-eval then env)
+                    (svex-eval else env)))
+    :hints(("Goal" :in-theory (enable ;; 4vec-?* 3vec-?* 4vec-reduction-or 3vec-reduction-or
+                                      ;; 3vec-fix
+                                      svex-apply svexlist-eval)))
+    :otf-flg t)
+
+
   (defret vars-of-svex-svstmt-ite
     (implies (And (not (member v (svex-vars test)))
                   (not (member v (svex-vars then)))
@@ -827,7 +864,7 @@ exists there.</p>"
                     (svex-eval then env)))
     :hints(("Goal" :in-theory (enable svex-apply))
            (and stable-under-simplificationp
-                '(:in-theory (enable 4vec-? 3vec-? 4vec-reduction-or 3vec-reduction-or)))))
+                '(:in-theory (enable 4vec-?* 3vec-?* 4vec-reduction-or 3vec-reduction-or)))))
 
   (defret svex-svstmt-ite-when-cond-false
     (implies (equal (4vec-reduction-or (svex-eval test env)) 0)
@@ -835,7 +872,7 @@ exists there.</p>"
                     (svex-eval else env)))
     :hints(("Goal" :in-theory (enable svex-apply))
            (and stable-under-simplificationp
-                '(:in-theory (enable 4vec-? 3vec-? 4vec-reduction-or 3vec-reduction-or))))))
+                '(:in-theory (enable 4vec-?* 3vec-?* 4vec-reduction-or 3vec-reduction-or))))))
 
 
 (define svex-svstmt-or ((a svex-p)
@@ -852,6 +889,79 @@ exists there.</p>"
     (svex-call 'bitor (list (svex-call 'uor (list a))
                             (svex-call 'uor (list b)))))
   ///
+  
+  (local (defthm reduction-or-of-or-when-not-second
+           (implies (and (equal (4vec->upper y) 0)
+                         (equal (4vec->lower y) 0))
+                    (equal (4vec-reduction-or (4vec-bitor x y))
+                           (4vec-reduction-or x)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix)))))
+
+  (local (defthm reduction-or-of-or-when-not-first
+           (implies (and (equal (4vec->upper x) 0)
+                         (equal (4vec->lower x) 0))
+                    (equal (4vec-reduction-or (4vec-bitor x y))
+                           (4vec-reduction-or y)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix)))))
+
+  (local (defthm reduction-or-of-or-when-first
+           (implies (and (equal (4vec->upper x) (4vec->lower x))
+                         (not (equal (4vec->lower x) 0)))
+                    (equal (4vec-reduction-or (4vec-bitor x y))
+                           -1))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix))
+                  (logbitp-reasoning))))
+
+  (local (defthm reduction-or-of-or-when-second
+           (implies (and (equal (4vec->upper y) (4vec->lower y))
+                         (not (equal (4vec->lower y) 0)))
+                    (equal (4vec-reduction-or (4vec-bitor x y))
+                           -1))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix))
+                  (logbitp-reasoning))))
+
+  (local (defthm reduction-or-idempotent
+           (equal (4vec-reduction-or (4vec-reduction-or x))
+                  (4vec-reduction-or x))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             3vec-fix)))))
+
+  (local (defthm bitor-of-reduction-or
+           (equal (4vec-bitor (4vec-reduction-or x) (4vec-reduction-or y))
+                  (4vec-reduction-or (4vec-bitor x y)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix))
+                  (logbitp-reasoning))))
+
+  (defret svex-svstmt-or-correct
+    (equal (4vec-reduction-or (svex-eval or env))
+           (4vec-reduction-or
+            (4vec-bitor (svex-eval a env)
+                        (svex-eval b env))))
+    :hints(("Goal" :in-theory (enable ;; 4vec-bitor 3vec-bitor 3vec-fix
+                                      ;; 4vec-reduction-or 3vec-reduction-or
+                                      svex-apply svexlist-eval))))
+
   (defret vars-of-svex-svstmt-or
     (implies (And (not (member v (svex-vars a)))
                   (not (member v (svex-vars b))))
@@ -930,19 +1040,19 @@ exists there.</p>"
 
 
 
-  (local (defthm 4vec-?-when-reduction-or-true
+  (local (defthm 4vec-?*-when-reduction-or-true
            (implies (equal (4vec-reduction-or test) -1)
-                    (equal (4vec-? test then else)
+                    (equal (4vec-?* test then else)
                            (4vec-fix then)))
-           :hints(("Goal" :in-theory (enable 4vec-? 3vec-?
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*
                                              4vec-reduction-or
                                              3vec-reduction-or)))))
 
-  (local (defthm 4vec-?-when-reduction-or-false
+  (local (defthm 4vec-?*-when-reduction-or-false
            (implies (equal (4vec-reduction-or test) 0)
-                    (equal (4vec-? test then else)
+                    (equal (4vec-?* test then else)
                            (4vec-fix else)))
-           :hints(("Goal" :in-theory (enable 4vec-? 3vec-?
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*
                                              4vec-reduction-or
                                              3vec-reduction-or)))))
 
