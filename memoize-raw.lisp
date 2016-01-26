@@ -1211,7 +1211,9 @@
     ;; We found that occasionally *float-ticks/second* is insane, probably
     ;; due to RDTSC flakiness when switching processors, etc.  So, if it is
     ;; really clearly insane, try to fudge it back to something reasonably
-    ;; sensible.
+    ;; sensible.  See community book centaur/memoize/timer.lsp for relevant
+    ;; comments.
+    #+RDTSC
     (when (> *float-ticks/second*
              (* 20
                 1000 ;; khz
