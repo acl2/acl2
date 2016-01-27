@@ -130,7 +130,7 @@
   (if (atom args)
       nil
     (cons (b* (((when (eql 0 (mbe :logic (4vmask-fix (car masks)) :exec (car masks))))
-                (svex-x)))
+                0))
             (svex-locally-rewrite (car masks) (car args) 10))
           (svex-args-rewrite-locally (cdr args) (cdr masks))))
   ///
@@ -193,7 +193,7 @@
     :well-founded-relation acl2::nat-list-<
     :measure (list clk 0)
     (b* ((mask (mbe :logic (4vmask-fix mask) :exec mask))
-         ((when (eql mask 0)) (svex-x))
+         ((when (eql mask 0)) 0)
          (masks (svex-argmasks mask fn args))
          (args (svex-args-rewrite-locally args masks))
          ((mv okp rhs sigma) (svex-rewrite-fncall-once mask fn args nil))
@@ -212,7 +212,7 @@
     :guard (subsetp-equal (svex-vars x) (svex-alist-keys sigma))
     :measure (list clk (svex-count x))
     (b* ((mask (mbe :logic (4vmask-fix mask) :exec mask))
-         ((when (eql mask 0)) (svex-x)))
+         ((when (eql mask 0)) 0))
       (svex-case x
         :var (mbe :logic (svex-fix (svex-lookup x.name sigma))
                   :exec (svex-lookup x.name sigma))
@@ -887,7 +887,7 @@
           ;; into the same logand, if it turns out that we never care about the
           ;; lower 16 bits.
           (svex-quote (4vec-mask-to-zero mask (svex-quote->val x))))
-         ((when (eql mask 0)) (svex-x))
+         ((when (eql mask 0)) 0)
          ((when (eq kind :var)) x)
          ((svex-call x) x)
          (args (svexlist-rewrite x.args masks))

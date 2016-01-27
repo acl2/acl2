@@ -419,17 +419,14 @@ b = (a << 1) | (b << 1)
 (define svex-mask-alist-expand ((x svex-mask-alist-p))
   :returns (mask-al svex-mask-alist-p)
   (b* (((mv toposort al) (cwtime (svexlist-toposort (svex-mask-alist-keys x) nil nil)))
-       (- (fast-alist-free al))
-       ((with-fast x)))
-    (cwtime (svexlist-compute-masks toposort x)))
+       (- (fast-alist-free al)))
+    (cwtime (svexlist-compute-masks toposort (make-fast-alist x))))
   ///
 
   (fty::deffixequiv svex-mask-alist-expand)
 
   (defthm svex-mask-alist-expand-complete
-    (svex-mask-alist-complete (svex-mask-alist-expand x)))
-
-  )
+    (svex-mask-alist-complete (svex-mask-alist-expand x))))
 
 (define svars-extract-updates ((vars svarlist-p)
                                (updates svex-alist-p))
