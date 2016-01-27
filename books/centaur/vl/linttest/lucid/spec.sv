@@ -516,7 +516,7 @@ module trickyscope;
   integer loopvar1;
   always_comb
   begin
-    for (int loopvar1=0; loopvar1 < 4 ; loopvar1=loopvar1+1)
+    for (loopvar1=0; loopvar1 < 4 ; loopvar1=loopvar1+1)
     begin
       $display("Hello %d", loopvar1);
     end
@@ -528,9 +528,18 @@ module trickyscope;
   integer loopvar2;
 
   always_comb
-  for(int loopvar3 = 0; loopvar2 < 4; loopvar2=10)
+  for(int loopvar3 = 0; loopvar2 < 4; loopvar3=10)
   begin
     $display("Didnt use loopvar3.");
+  end
+
+  integer loopvar4;
+  always_comb
+  begin
+    for (int loopvar4=0; loopvar4 < 4 ; loopvar4=loopvar4+1)
+    begin
+      $display("Hello %d", loopvar4);
+    end
   end
 
 endmodule
@@ -702,3 +711,42 @@ endmodule
 
 
 
+module gen3 ;
+
+  begin : myblock
+    wire [3:0] aa;
+  end
+
+  wire [3:0] bb = aa;  // oops, should be myblock.aa
+
+endmodule
+
+
+
+
+module cosim_gen7 ( input logic [127:0] in, output wire [127:0] out);
+
+  parameter version = 1;
+  parameter mode = 1;
+
+  logic aa1_unset;
+  logic aa1_unused;
+  logic aa1_spurious;
+
+  // Very tricky: the nested conditional generate does NOT introduce an extra
+  // scope.  Thus it is legal to refer to foo.a directly, even though you might
+  // think it should be something like genblock_0.foo.a or whatever the stupid
+  // name generation scheme is.
+
+  if (version == 1)
+    if (mode == 1) begin : foo
+      wire [3:0] bb1_unset;
+      wire [3:0] bb1_unused = aa1_unset;
+      wire [3:0] bb1_spurious;
+    end
+    else
+       wire cc1_unused = in;
+
+  assign aa1_unused = foo.bb1_unset;
+
+endmodule

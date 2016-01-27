@@ -259,12 +259,9 @@ spurious(:useprim, "w1_spurious ")
 
 unused(:trickyscope, "counter_unused ")
 normal(:trickyscope, "loopvar1")
-
-# BOZO this should get flagged as unused
-normal(:trickyscope, "loopvar3")
-
-# BOZO this should get flagged as unset, probably?
-normal(:trickyscope, "loopvar2")
+unset(:trickyscope, "loopvar2")
+unused(:trickyscope, "loopvar3")
+spurious(:trickyscope, "loopvar4")
 
 
 unset(:minuscolon, "normal2")
@@ -304,6 +301,29 @@ unused(:fcasttest_package, "not_usedfun")
 
 normal(:fcasttest, "yes_usedfun1")
 normal(:fcasttest, "yes_usedfun2")
+
+
+spurious(:gen3, "Variable aa ")
+unused(:gen3, "Variable bb ")
+
+unset(:cosim_gen7, "Variable aa1_unset")
+unused(:cosim_gen7, "Variable aa1_unused")
+spurious(:cosim_gen7, "Variable bb1_spurious")
+spurious(:cosim_gen7, "Variable aa1_spurious")
+unused(:cosim_gen7, "Variable cc1_unused")
+unused(:cosim_gen7, "Variable bb1_unused")
+normal(:cosim_gen7, "version")
+normal(:cosim_gen7, "mode")
+
+# Currently this fails.  It's correctly handled in the second pass of lucid,
+# but incorrectly handled by the first pass because the scoping is too hard: we
+# the assignment to aa1_unused is the only place where bb1_unset is used, and
+# when we try to look up "foo" there, it's not in the scopestack because it's
+# hidden under these transparent IFs that haven't been expanded away yet.  We
+# might be able to avoid this by working much harder to do the scope lookups
+# and marking all possible candidates that we find.
+
+#unset(:cosim_gen7, "Variable bb1_unset")
 
 
 

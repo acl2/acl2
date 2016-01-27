@@ -60,7 +60,28 @@
 
 (defxdoc lucid
   :parents (vl-lint)
-  :short "Check for unused, unset, spurious wires, and multiply driven wires.")
+  :short "Check for unused, unset, spurious wires, and multiply driven wires."
+  :long "<p>Lucid is a @(see vl-lint) check that scans your design for:</p>
+
+<ul>
+<li>Spurious wires&mdash;never used or set anywhere,</li>
+<li>Unset variables&mdash;used without being driven (scary),</li>
+<li>Unused variables&mdash;driven but never used, and</li>
+<li>Multiply driven wires&mdash;which are often not desired.</li>
+</ul>
+
+<p>These warnings are often about entire wires, but Lucid also carries out a
+bit-level analysis and can often detect when only a portion of a wire is
+unused, unset, or multiply driven.</p>
+
+<p>Typically Lucid is invoked as part of @(see vl-lint); its warnings are found
+in the file @('vl-lucid.txt').</p>
+
+<p>We have found Lucid to be most useful when refactoring designs and moving
+functionality from one module to another.  In these situations, it is often
+very easy to accidentally leave some wires (or logic) behind, so seeing what is
+undriven or unset can be really handy.</p>")
+
 
 
 ; State Representation --------------------------------------------------------
@@ -248,16 +269,20 @@ created when we process their packages, etc.</p>"
     (b* ((x (vl-stmt-fix x))
          ((when (vl-atomicstmt-p x))
           (vl-luciddb-fix db))
-         ((when
-              ;; NOTE -- This must be kept in sync with vl-stmt-lucidcheck!!
-              ;; Note: used to check whether there were any declarations, and
-              ;; otherwise skip putting it on the scopestack. I am guessing
-              ;; this isn't an important optimiztion.
-              (eq (vl-stmt-kind x) :vl-blockstmt))
+         ((when (vl-stmt-case x :vl-blockstmt))
+          ;; NOTE -- This must be kept in sync with vl-stmt-lucidcheck!!
+          ;; Obeys the One True Way to process a Block Statement
           (b* ((blockscope (vl-blockstmt->blockscope x))
                (ss         (vl-scopestack-push blockscope ss))
                (db         (vl-scope-luciddb-init blockscope ss db)))
-            (vl-stmtlist-luciddb-init (vl-blockstmt->stmts x) ss db))))
+            (vl-stmtlist-luciddb-init (vl-blockstmt->stmts x) ss db)))
+         ((when (vl-stmt-case x :vl-forstmt))
+          ;; NOTE -- This must be kept in sync with vl-stmt-lucidcheck!!
+          ;; Obeys the One True Way to process a For Statement.
+          (b* ((blockscope (vl-forstmt->blockscope x))
+               (ss         (vl-scopestack-push blockscope ss))
+               (db         (vl-scope-luciddb-init blockscope ss db)))
+            (vl-stmtlist-luciddb-init (vl-compoundstmt->stmts x) ss db))))
       (vl-stmtlist-luciddb-init (vl-compoundstmt->stmts x) ss db)))
 
   (define vl-stmtlist-luciddb-init ((x  vl-stmtlist-p)
@@ -434,6 +459,19 @@ created when we process their packages, etc.</p>"
          (db (vl-genblob-luciddb-init-subscopes x ss db)))
       db))
 
+  (define vl-genblock-luciddb-init ((x  vl-genblock-p)
+                                    (ss vl-scopestack-p)
+                                    (db vl-luciddb-p))
+    :returns (db vl-luciddb-p)
+    :measure (two-nats-measure (vl-genblob-genblock-count x) 0)
+    (b* (((vl-genblock x))
+         (blob (vl-genblock->genblob x))
+         ((when x.condnestp)
+          ;; Special case where this block doesn't introduce a scope.  Don't
+          ;; push a scope, just go process the elements.
+          (vl-genblob-luciddb-init-subscopes blob ss db)))
+      (vl-genblob-luciddb-init blob ss db)))
+
   (define vl-genelementlist-luciddb-init ((x  vl-genelementlist-p)
                                           (ss vl-scopestack-p)
                                           (db vl-luciddb-p))
@@ -443,13 +481,6 @@ created when we process their packages, etc.</p>"
           (vl-luciddb-fix db))
          (db (vl-genelement-luciddb-init (car x) ss db)))
       (vl-genelementlist-luciddb-init (cdr x) ss db)))
-
-  (define vl-genblock-luciddb-init ((x  vl-genblock-p)
-                                    (ss vl-scopestack-p)
-                                    (db vl-luciddb-p))
-    :returns (db vl-luciddb-p)
-    :measure (two-nats-measure (vl-genblob-genblock-count x) 0)
-    (vl-genblob-luciddb-init (vl-genblock->genblob x) ss db))
 
   (define vl-genelement-luciddb-init ((x  vl-genelement-p)
                                       (ss vl-scopestack-p)
@@ -1607,7 +1638,9 @@ created when we process their packages, etc.</p>"
           st)
 
         :vl-forstmt
-        (b* ((st (vl-vardecllist-lucidcheck x.initdecls ss st))
+        ;; NOTE -- this must be kept in sync with vl-stmt-luciddb-init!
+        (b* ((ss (vl-scopestack-push (vl-forstmt->blockscope x) ss))
+             (st (vl-vardecllist-lucidcheck x.initdecls ss st))
              (st (vl-stmtlist-lucidcheck x.initassigns ss st ctx))
              (st (vl-rhsexpr-lucidcheck x.test ss st ctx))
              (st (vl-stmtlist-lucidcheck x.stepforms ss st ctx))
@@ -2044,7 +2077,6 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list aliaslist :element alias)
 
-
 (defines vl-genblob-lucidcheck
   :verify-guards nil
 
@@ -2114,7 +2146,13 @@ created when we process their packages, etc.</p>"
                                   (st vl-lucidstate-p))
     :returns (st vl-lucidstate-p)
     :measure (two-nats-measure (vl-genblob-genblock-count x) 0)
-    (vl-genblob-lucidcheck (vl-genblock->genblob x) ss st))
+    (b* (((vl-genblock x))
+         (blob (vl-genblock->genblob x))
+         ((when x.condnestp)
+          ;; Special case where the block doesn't introduce a scope.  Don't
+          ;; push a scope, just go process the elements.
+          (vl-genblob-lucidcheck-aux blob ss st)))
+      (vl-genblob-lucidcheck (vl-genblock->genblob x) ss st)))
 
   (define vl-genelement-lucidcheck ((x vl-genelement-p)
                                     (ss vl-scopestack-p)
@@ -3244,19 +3282,19 @@ doesn't have to recreate the default heuristics.</p>"
             (path (with-local-ps (vl-pp-scopestack-path key.scopestack)))
             (w (cond ((and (not usedp) (not setp))
                       (make-vl-warning :type :vl-lucid-spurious
-                                       :msg "~w0 is never used or set anywhere. (~s1)"
+                                       :msg "Genvar ~w0 is never used or set anywhere. (~s1)"
                                        :args (list name path)
                                        :fn __function__
                                        :fatalp nil))
                      ((and usedp (not setp))
                       (make-vl-warning :type :vl-lucid-unset
-                                       :msg "~w0 is never set. (~s1)"
+                                       :msg "Genvar ~w0 is never set. (~s1)"
                                        :args (list name path)
                                        :fn __function__
                                        :fatalp nil))
                      (t
                       (make-vl-warning :type :vl-lucid-unused
-                                       :msg "~w0 is never used. (~s1)"
+                                       :msg "Genvar ~w0 is never used. (~s1)"
                                        :args (list name path)
                                        :fn __function__
                                        :fatalp nil)))))

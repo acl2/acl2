@@ -827,7 +827,8 @@ shown.</p>"
         :vl-warn-unused-var
         :vl-warn-blank
         :vl-undefined-names
-        :vl-port-mismatch))
+        :vl-port-mismatch
+        :vl-warn-scary-translate-comment))
 
 (defconst *trunc-warnings*
   (list :vl-warn-extension
