@@ -559,7 +559,11 @@ memory.</li>
         t
       (and (consp lst)
            (canonical-address-p (car lst))
-           (canonical-address-listp (cdr lst)))))
+           (canonical-address-listp (cdr lst))))
+    ///
+    (defthm cdr-canonical-address-listp
+      (implies (canonical-address-listp x)
+               (canonical-address-listp (cdr x)))))
 
   (define addr-byte-alistp (alst)
     :short "Recognizer of a list of address and byte pairs"
@@ -643,7 +647,7 @@ memory.</li>
       (implies (forced-and (byte-listp lst1)
                            (byte-listp lst2))
                (byte-listp (append lst1 lst2)))
-      :rule-classes :type-prescription))
+      :rule-classes (:rewrite :type-prescription)))
 
   (define combine-bytes (bytes)
     :guard (byte-listp bytes)
