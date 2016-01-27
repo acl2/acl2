@@ -180,6 +180,7 @@ inc14.v -- increment in a case statement match expression (just awful, but ncv/v
 inc14b.v -- increment in a case statement test expression (just awful, but ncv/vcs allow)
 inc15.v -- parse error: ~a++ isn't ok (vcs rejects, ncv allows)
 inc15b.v -- parse error: ++a++ isn't ok (vcs and ncv reject)
+inc15c.v -- parse error: (a + b)++ isn't ok
 
 inst1.v -- wrong port name when instancing submodule
 inst2.v -- too many positional arguments on submodule instance

@@ -1202,6 +1202,22 @@ Or, if the token stream is empty, we just return @(see *vl-fakeloc*)</p>"
           *vl-fakeloc*)
         tokstream)))
 
+
+(define vl-linestart-indent
+  :short "Compatible with @(see seq).  If we are at the first token on a line,
+          return its column number.  Otherwise return NIL."
+  (&key (tokstream 'tokstream))
+  :returns (mv (errmsg        (not errmsg))
+               (startcol      maybe-natp :rule-classes :type-prescription)
+               (new-tokstream (equal new-tokstream tokstream)))
+  (b* ((tokens (vl-tokstream->tokens))
+       ((unless (and (consp tokens)
+                     (vl-token->breakp (car tokens))))
+        (mv nil nil tokstream))
+       (echar1 (car (vl-token->etext (car tokens))))
+       (col1   (vl-echarpack->col (vl-echar-raw->pack echar1))))
+    (mv nil col1 tokstream)))
+
 ;; (defmacro vl-copy-tokens (&key (tokstream 'tokstream))
 ;;   "Returns (MV ERROR TOKENS TOKENS PSTATE) for SEQ compatibility."
 ;;   (declare (xargs :guard t))

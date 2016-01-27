@@ -196,7 +196,8 @@ on.</p>")
 
 
 (define vl-lex-escaped-identifier
-  ((echars vl-echarlist-p))
+  ((echars vl-echarlist-p)
+   (breakp booleanp))
   :returns (mv token/nil remainder)
   :long "<p>Per 3.7.2, escaped identifiers cannot be keywords.  So we do not
  need to consult the keyword table.</p>"
@@ -209,16 +210,20 @@ on.</p>")
         (mv (cw "Lexer error (~s0): stray backslash?~%"
                 (vl-location-string (vl-echar->loc (car echars))))
             echars))
-       (token (make-vl-idtoken :etext prefix :name name)))
+       (token (make-vl-idtoken :etext prefix
+                               :name name
+                               :breakp (and breakp t))))
     (mv token remainder)))
 
-(def-token/remainder-thms vl-lex-escaped-identifier)
+(def-token/remainder-thms vl-lex-escaped-identifier
+  :formals (echars breakp))
 
 
 (define vl-lex-simple-identifier-or-keyword
   :parents (lex-identifiers lex-keywords)
   :short "Match either a keyword or an ordinary, simple identifier."
   ((echars vl-echarlist-p     "The characters we're lexing.")
+   (breakp booleanp)
    (table  vl-keyword-table-p "The table of keywords we're currently using."))
   :returns (mv token/nil remainder)
   (b* (((unless (and (consp echars)
@@ -228,13 +233,14 @@ on.</p>")
         (vl-read-simple-identifier echars))
        (str     (hons-copy (vl-echarlist->string prefix)))
        (lookup  (vl-keyword-lookup str table))
+       (breakp (and breakp t))
        (token   (if lookup
-                    (make-vl-plaintoken :etext prefix :type lookup)
-                  (make-vl-idtoken :etext prefix :name str))))
+                    (make-vl-plaintoken :etext prefix :type lookup :breakp breakp)
+                  (make-vl-idtoken :etext prefix :name str :breakp breakp))))
       (mv token remainder)))
 
 (def-token/remainder-thms vl-lex-simple-identifier-or-keyword
-  :formals (echars table)
+  :formals (echars breakp table)
   :extra-tokenhyp (vl-keyword-table-p table)
   :extra-appendhyp (vl-keyword-table-p table))
 
@@ -245,6 +251,7 @@ on.</p>")
   :short "Try to match a system identifier (or some other special token
 like @('$') or @('$root')."
   ((echars    vl-echarlist-p       "The characters we're lexing.")
+   (breakp    booleanp)
    (dollarops vl-plaintoken-alistp "Any special @('$') tokens."))
   :returns (mv token/nil remainder)
 
@@ -261,16 +268,17 @@ just invalid in Verilog-2005.</p>"
        (etext (cons (car echars) tail))
        (name (hons-copy (vl-echarlist->string etext))) ;; Includes $
        (look (hons-assoc-equal name dollarops))
+       (breakp (and breakp t))
        ((when look)
-        (mv (make-vl-plaintoken :type (cdr look) :etext etext)
+        (mv (make-vl-plaintoken :type (cdr look) :etext etext :breakp breakp)
             remainder))
        ((unless tail)
         (mv nil echars)))
     ;; Not some special token, so just a system function.
-    (mv (make-vl-sysidtoken :etext etext :name name)
+    (mv (make-vl-sysidtoken :etext etext :name name :breakp breakp)
         remainder)))
 
 (def-token/remainder-thms vl-lex-system-identifier
-  :formals (echars dollarops)
+  :formals (echars breakp dollarops)
   :extra-tokenhyp (vl-plaintoken-alistp dollarops)
   :extra-appendhyp (vl-plaintoken-alistp dollarops))

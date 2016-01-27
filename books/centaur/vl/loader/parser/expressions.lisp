@@ -80,6 +80,29 @@
                            acl2::keyval-alist-p
                            stringp-when-true-listp)))
 
+(define vl-extend-atts-with-linestart ((linestart maybe-natp)
+                                       (atts      vl-atts-p))
+  :returns (new-atts vl-atts-p)
+  (b* ((atts (vl-atts-fix atts))
+       ((unless linestart)
+        atts)
+       (indent (vl-make-index linestart)))
+    ;; Most things will start on column 0, or column 1, or column 2, or ...,
+    ;; but probably very few things ever start past column 50 or 80, so honsing
+    ;; here should achieve very good sharing.
+    (cons (hons "VL_LINESTART" indent)
+          atts)))
+
+(define vl-extend-expr-with-linestart ((linestart maybe-natp)
+                                       (expr      vl-expr-p))
+  :returns (new-expr vl-expr-p)
+  (b* ((expr (vl-expr-fix expr))
+       ((unless linestart)
+        expr)
+       (atts (vl-expr->atts expr))
+       (atts (vl-extend-atts-with-linestart linestart atts)))
+    (vl-expr-update-atts expr atts)))
+
 (defines vl-expr-has-any-atts-p
   :short "Check whether an expression has any attributes."
   :long "<p>The parser uses this to ensure that we don't encounter any nested
@@ -424,20 +447,10 @@ don't want to complain about it.</p>
 
 <p>But these expressions will be identical after parsing unless we somehow
 remember where explicit parens were.  To facilitate this, we set the
-@('VL_EXPLICIT_PARENS') attribute on non-atoms that have explicit parens.</p>
-
-<p>Note that we don't bother to set @('VL_EXPLICIT_PARENS') on atoms, e.g., the
-following really are still parsed equivalently:</p>
-
-@({
-    (a) & b      vs.    a & b
-})
-
-<p>This is possibly unfortunate, but atoms don't have attributes so what else
-would we do?</p>"
+@('VL_EXPLICIT_PARENS') attribute on non-atoms that have explicit parens.</p>"
 
   (b* ((atts (vl-expr->atts x))
-       (atts (cons (cons "VL_EXPLICIT_PARENS" nil) atts)))
+       (atts (cons (hons "VL_EXPLICIT_PARENS" nil) atts)))
     (vl-expr-update-atts x atts)))
 
 (defparser vl-maybe-parse-base-primary ()
@@ -494,21 +507,27 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
   :fails never
   :count strong-on-value
   (seq tokstream
+
+       (linestart := (vl-linestart-indent))
+
        (when (vl-is-token? :vl-inttoken)
          (int := (vl-match))
-         (return (make-vl-literal :val (vl-make-guts-from-inttoken int))))
+         (return (make-vl-literal :val (vl-make-guts-from-inttoken int)
+                                  :atts (vl-extend-atts-with-linestart linestart nil))))
 
        (when (vl-is-token? :vl-realtoken)
          (real := (vl-match))
          (return
           (b* ((value (vl-echarlist->string (vl-realtoken->etext real))))
-            (make-vl-literal :val (make-vl-real :value value)))))
+            (make-vl-literal :val (make-vl-real :value value)
+                             :atts (vl-extend-atts-with-linestart linestart nil)))))
 
        (when (vl-is-token? :vl-stringtoken)
          (str := (vl-match))
          (return
           (b* ((value (vl-stringtoken->expansion str)))
-            (make-vl-literal :val (make-vl-string :value value)))))
+            (make-vl-literal :val (make-vl-string :value value)
+                             :atts (vl-extend-atts-with-linestart linestart nil)))))
 
        (when (eq (vl-loadconfig->edition config) :verilog-2005)
          ;; That's it for regular Verilog.
@@ -519,18 +538,21 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
          (ext := (vl-match))
          (return
           (b* ((value (vl-extinttoken->value ext)))
-            (make-vl-literal :val (make-vl-extint :value value)))))
+            (make-vl-literal :val (make-vl-extint :value value)
+                             :atts (vl-extend-atts-with-linestart linestart nil)))))
 
        (when (vl-is-token? :vl-timetoken)
          (time := (vl-match))
          (return
           (b* (((vl-timetoken time) time))
             (make-vl-literal :val (make-vl-time :quantity time.quantity
-                                              :units time.units)))))
+                                                :units time.units)
+                             :atts (vl-extend-atts-with-linestart linestart nil)))))
 
        (when (vl-is-token? :vl-kwd-null)
          (:= (vl-match))
-         (return (hons-copy (make-vl-special :key :vl-null))))
+         (return (hons-copy (make-vl-special :key :vl-null
+                                             :atts (vl-extend-atts-with-linestart linestart nil)))))
 
        ;; (when (vl-is-token? :vl-kwd-default)
        ;;   (:= (vl-match))
@@ -544,7 +566,8 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
 
        (when (vl-is-token? :vl-$)
          (:= (vl-match))
-         (return (hons-copy (make-vl-special :key :vl-$))))
+         (return (hons-copy (make-vl-special :key :vl-$
+                                             :atts (vl-extend-atts-with-linestart linestart nil)))))
 
        (return nil))
   ///
@@ -868,10 +891,10 @@ definition of @('attribute_instance'):</p>
 })"
     :measure (two-nats-measure (vl-tokstream-measure) 0)
     (seq tokstream
-          (:= (vl-match-token :vl-beginattr))
-          (data := (vl-parse-attribute-instance-aux))
-          (:= (vl-match-token :vl-endattr))
-          (return data)))
+         (:= (vl-match-token :vl-beginattr))
+         (data := (vl-parse-attribute-instance-aux))
+         (:= (vl-match-token :vl-endattr))
+         (return data)))
 
   (defparser vl-parse-0+-attribute-instances-aux ()
     :parents (vl-parse-0+-attribute-instances)
@@ -926,6 +949,7 @@ values.</p>"
             ;; Stupid hack for performance.  Usually there are no attributes,
             ;; so we don't need to do anything more.
             (return nil))
+          (linestart := (vl-linestart-indent))
           (loc := (vl-current-loc))
           (original-atts := (vl-parse-0+-attribute-instances-aux))
           (return-raw
@@ -948,6 +972,7 @@ values.</p>"
                                  (alist-keys original-atts)))
                     :fatalp nil
                     :fn __function__))
+                (atts (vl-extend-atts-with-linestart linestart atts))
                 (tokstream (vl-tokstream-add-warning w)))
              (mv nil atts tokstream)))))
 
@@ -993,13 +1018,13 @@ values.</p>"
     :measure (two-nats-measure (vl-tokstream-measure) 400)
     (seq tokstream
          (key :s= (vl-parse-patternkey))
-          (:= (vl-match-token :vl-colon))
-          (val :s= (vl-parse-expression))
-          (when (vl-is-token? :vl-comma)
-            (:= (vl-match))
-            (rest := (vl-parse-1+-keyval-expression-pairs)))
-          (return (cons (cons key val)
-                        rest))))
+         (:= (vl-match-token :vl-colon))
+         (val :s= (vl-parse-expression))
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match))
+           (rest := (vl-parse-1+-keyval-expression-pairs)))
+         (return (cons (cons key val)
+                       rest))))
 
   (defparser vl-parse-expression-without-failure ()
     :measure (two-nats-measure (vl-tokstream-measure) 350)
@@ -1013,23 +1038,25 @@ values.</p>"
   (defparser vl-parse-system-function-call ()
     :measure (two-nats-measure (vl-tokstream-measure) 20)
     (seq tokstream
-          (fn := (vl-match-token :vl-sysidtoken))
-          (when (vl-is-token? :vl-lparen)
-            (:= (vl-match))
-            (arg1 :w= (vl-parse-expression-without-failure))
-            (when (not arg1)
-              (typearg :w= (vl-parse-simple-type)))
-            (when (vl-is-token? :vl-comma)
+         (linestart := (vl-linestart-indent))
+         (fn := (vl-match-token :vl-sysidtoken))
+         (when (vl-is-token? :vl-lparen)
+           (:= (vl-match))
+           (arg1 :w= (vl-parse-expression-without-failure))
+           (when (not arg1)
+             (typearg :w= (vl-parse-simple-type)))
+           (when (vl-is-token? :vl-comma)
               (:= (vl-match))
               (args := (vl-parse-1+-expressions-separated-by-commas)))
-            (:= (vl-match-token :vl-rparen)))
-          (return
-           (let ((fname (vl-sysidtoken->name fn)))
-             (make-vl-call
-              :name (make-vl-scopeexpr-end :hid (make-vl-hidexpr-end :name fname))
-              :typearg typearg
-              :args (if arg1 (cons arg1 args) args)
-              :systemp t)))))
+           (:= (vl-match-token :vl-rparen)))
+         (return
+          (let ((fname (vl-sysidtoken->name fn)))
+            (make-vl-call
+             :name (make-vl-scopeexpr-end :hid (make-vl-hidexpr-end :name fname))
+             :typearg typearg
+             :args (if arg1 (cons arg1 args) args)
+             :systemp t
+             :atts (vl-extend-atts-with-linestart linestart nil))))))
 
 
 ; Mintypmax and Assignment Expressions.
@@ -1110,7 +1137,44 @@ values.</p>"
           (when (eq (vl-loadconfig->edition config) :verilog-2005)
             (return min))
 
-          ;; Add assignment handling here.
+; Linestart strategy for binary operators.  It's pretty reasonable for someone
+; to write either:
+;
+;    assign foo = (a & b)              // "preferred form"
+;               | (b & c);
+;
+;    assign foo = (a & b) |
+;                 (b & c);
+;
+; So we try to identify linebreaks on *either* side of an operator.  We then
+; extend the atts of the expression we create with both linestarts.  How does
+; that work?
+;
+;   Case 1: no linebreaks -- both linestart1 and linestart2 are nil, and (per
+;           vl-extend-atts-with-linestart) puts nothing into the attributes.
+;
+;   Case 2: one linebreak before (preferred form) -- linestart2 is nil and
+;           contributes nothing; linestart1 gets recorded as the linestart for
+;           this expression which makes sense and agrees with our idea of the
+;           preferred form.
+;
+;   Case 3: one linebreak after (non-preferred form) -- linestart1 is nil and
+;           contributes nothing; linestart2 gets recorded as the linestart for
+;           this expression.  Effectively this makes the non-preferred form
+;           look like it was preferred form, but that still seems pretty good.
+;
+;   Case 4: two linebreaks -- before and after the operator -- we effectively
+;           shadow linestart2 with linestart1, coercing something that is
+;           weirdly indented like:
+;
+;              assign foo = blah
+;                         &
+;                           blah2
+;
+;           into the preferred form as if they hadn't written the linebreak
+;           after the &.
+
+          (linestart1 := (vl-linestart-indent))
           (op := (vl-parse-op 2 '((:vl-equalsign  . :vl-binary-assign)        ; a = b
                                   (:vl-pluseq     . :vl-binary-plusassign)    ; (a += b)
                                   (:vl-minuseq    . :vl-binary-minusassign)   ; (a -= b)
@@ -1126,11 +1190,16 @@ values.</p>"
                                   (:vl-ashreq     . :vl-binary-ashrassign)))) ; (a >>>= b)
           (unless op
             (return min))
+          (linestart2 := (vl-linestart-indent))
 
           (rhs := (vl-parse-expression))
-          (return (make-vl-binary :op op
-                                  :left min
-                                  :right rhs))))
+          (return (b* ((atts nil)
+                       (atts (vl-extend-atts-with-linestart linestart2 atts))
+                       (atts (vl-extend-atts-with-linestart linestart1 atts)))
+                    (make-vl-binary :op op
+                                    :left min
+                                    :right rhs
+                                    :atts atts)))))
 
 
   (defparser vl-parse-range-expression ()
@@ -1176,10 +1245,12 @@ and return a single @(':vl-concat') expression."
 syntax of a concatenation.</p>"
     :measure (two-nats-measure (vl-tokstream-measure) 0)
     (seq tokstream
-          (:= (vl-match-token :vl-lcurly))
-          (args := (vl-parse-1+-expressions-separated-by-commas))
-          (:= (vl-match-token :vl-rcurly))
-          (return (make-vl-concat :parts args))))
+         (linestart := (vl-linestart-indent))
+         (:= (vl-match-token :vl-lcurly))
+         (args := (vl-parse-1+-expressions-separated-by-commas))
+         (:= (vl-match-token :vl-rcurly))
+         (return (make-vl-concat :parts args
+                                 :atts (vl-extend-atts-with-linestart linestart nil)))))
 
 
   (defparser vl-parse-stream-expression ()
@@ -1332,11 +1403,10 @@ which are used streaming concatenations.</p>
          ((mv err expr tokstream) (vl-parse-expression))
          ((unless err)
           (mv err (make-vl-slicesize-expr :expr expr) tokstream))
-         (tokstream (vl-tokstream-restore backup))
-         ((mv err type tokstream) (vl-parse-simple-type))
-         ((when err)
-          (mv err nil tokstream)))
-      (mv err (make-vl-slicesize-type :type type) tokstream)))
+         (tokstream (vl-tokstream-restore backup)))
+      (seq tokstream
+           (type := (vl-parse-simple-type))
+           (return (make-vl-slicesize-type :type type)))))
 
   (defparser vl-parse-any-sort-of-concatenation ()
     :short "Match single, multiple, or streaming concatenations, or empty
@@ -1376,48 +1446,53 @@ always start with one of these @('stream_operators').</p>
 
     :measure (two-nats-measure (vl-tokstream-measure) 0)
     (seq tokstream
-          (:= (vl-match-token :vl-lcurly))
+         (linestart := (vl-linestart-indent))
+         (:= (vl-match-token :vl-lcurly))
 
-          (when (and (vl-is-token? :vl-rcurly) ;; {}
-                     (not (eq (vl-loadconfig->edition config) :verilog-2005)))
-            (:= (vl-match))
-            (return (make-vl-special :key :vl-emptyqueue)))
+         (when (and (vl-is-token? :vl-rcurly) ;; {}
+                    (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+           (:= (vl-match))
+           (return (make-vl-special :key :vl-emptyqueue
+                                    :atts (vl-extend-atts-with-linestart linestart nil))))
 
-          (when (and (vl-is-some-token? '(:vl-shl :vl-shr))
-                     (not (eq (vl-loadconfig->edition config) :verilog-2005)))
-            (op := (vl-match))
-            (unless (vl-is-token? :vl-lcurly)
-              (slicesize :s= (vl-parse-slice-size)))
-            (args := (vl-parse-stream-concatenation))
-            (:= (vl-match-token :vl-rcurly))
-            (return
-             (b* ((dir (vl-token->type op)))
-               (make-vl-stream :dir (if (eq dir :vl-shl) :left :right)
-                               :size (or slicesize (make-vl-slicesize-none))
-                               :parts args))))
+         (when (and (vl-is-some-token? '(:vl-shl :vl-shr))
+                    (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+           (op := (vl-match))
+           (unless (vl-is-token? :vl-lcurly)
+             (slicesize :s= (vl-parse-slice-size)))
+           (args := (vl-parse-stream-concatenation))
+           (:= (vl-match-token :vl-rcurly))
+           (return
+            (b* ((dir (vl-token->type op)))
+              (make-vl-stream :dir (if (eq dir :vl-shl) :left :right)
+                              :size (or slicesize (make-vl-slicesize-none))
+                              :parts args
+                              :atts (vl-extend-atts-with-linestart linestart nil)))))
 
-          (e1 :s= (vl-parse-expression))
+         (e1 :s= (vl-parse-expression))
 
-          (when (vl-is-token? :vl-lcurly)
-            ;; A multiple concatenation
-            (:= (vl-match))
-            (parts := (vl-parse-1+-expressions-separated-by-commas))
-            (:= (vl-match-token :vl-rcurly))
-            (:= (vl-match-token :vl-rcurly))
-            (return (make-vl-multiconcat
-                     :reps e1
-                     :parts parts)))
+         (when (vl-is-token? :vl-lcurly)
+           ;; A multiple concatenation
+           (:= (vl-match))
+           (parts := (vl-parse-1+-expressions-separated-by-commas))
+           (:= (vl-match-token :vl-rcurly))
+           (:= (vl-match-token :vl-rcurly))
+           (return (make-vl-multiconcat :reps e1
+                                        :parts parts
+                                        :atts (vl-extend-atts-with-linestart linestart nil))))
 
-          ;; Otherwise, a regular concat -- does it have extra args?
-          (when (vl-is-token? :vl-comma)
-            (:= (vl-match))
-            (rest := (vl-parse-1+-expressions-separated-by-commas))
-            (:= (vl-match-token :vl-rcurly))
-            (return (make-vl-concat :parts (cons e1 rest))))
+         ;; Otherwise, a regular concat -- does it have extra args?
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match))
+           (rest := (vl-parse-1+-expressions-separated-by-commas))
+           (:= (vl-match-token :vl-rcurly))
+           (return (make-vl-concat :parts (cons e1 rest)
+                                   :atts (vl-extend-atts-with-linestart linestart nil))))
 
-          ;; Nope, just a concat of one expression.
-          (:= (vl-match-token :vl-rcurly))
-          (return (make-vl-concat :parts (list e1)))))
+         ;; Nope, just a concat of one expression.
+         (:= (vl-match-token :vl-rcurly))
+         (return (make-vl-concat :parts (list e1)
+                                 :atts (vl-extend-atts-with-linestart linestart nil)))))
 
 
 
@@ -1571,29 +1646,30 @@ identifier, so we convert it into a hidpiece.</p>"
   (defparser vl-parse-function-call ()
     :measure (two-nats-measure (vl-tokstream-measure) 10)
     (seq tokstream
-          (id :s= (vl-parse-scoped-hid))
-          (atts :w= (vl-parse-0+-attribute-instances))
-          (:= (vl-match-token :vl-lparen))
+         (linestart := (vl-linestart-indent))
+         (id :s= (vl-parse-scoped-hid))
+         (atts :w= (vl-parse-0+-attribute-instances))
+         (:= (vl-match-token :vl-lparen))
 
-          (when (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
-                     (vl-is-token? :vl-rparen))
-            ;; SystemVerilog-2012 extension: function calls can now have no
-            ;; arguments at all.  They can also have other fancy
-            ;; list_of_arguments stuff, like named argument lists, but I'm not
-            ;; going to try to support that yet.
-            (:= (vl-match-token :vl-rparen))
-            (return (make-vl-call :name id
-                                  :args nil
-                                  :systemp nil
-                                  :atts atts)))
+         (when (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                    (vl-is-token? :vl-rparen))
+           ;; SystemVerilog-2012 extension: function calls can now have no
+           ;; arguments at all.  They can also have other fancy
+           ;; list_of_arguments stuff, like named argument lists, but I'm not
+           ;; going to try to support that yet.
+           (:= (vl-match-token :vl-rparen))
+           (return (make-vl-call :name id
+                                 :args nil
+                                 :systemp nil
+                                 :atts (vl-extend-atts-with-linestart linestart atts))))
 
-          (args := (vl-parse-1+-expressions-separated-by-commas))
-          (:= (vl-match-token :vl-rparen))
-          (return
-           (make-vl-call :name id
-                         :args args
-                         :systemp nil
-                         :atts atts))))
+         (args := (vl-parse-1+-expressions-separated-by-commas))
+         (:= (vl-match-token :vl-rparen))
+         (return
+          (make-vl-call :name id
+                        :args args
+                        :systemp nil
+                        :atts (vl-extend-atts-with-linestart linestart atts)))))
 
 ; primary ::=
 ;    number
@@ -1645,23 +1721,24 @@ identifier, so we convert it into a hidpiece.</p>"
     :measure (two-nats-measure (vl-tokstream-measure) 10)
     :guard (vl-scopenamelist-p scopes)
     (seq tokstream
-          (hid :s= (vl-parse-hierarchical-identifier recursivep))
-          (bexprs :w= (vl-parse-0+-bracketed-expressions))
-          (when (vl-plausible-start-of-range-p)
-            (:= (vl-match))
-            (range := (vl-parse-range-expression))
-            (:= (vl-match-token :vl-rbrack)))
-          (return
-           (let* ((ans (vl-tack-scopes-onto-hid scopes hid)))
-             (if range
-                 (vl-build-range-select ans bexprs range)
-               (make-vl-index :scope ans :indices bexprs :part (make-vl-partselect-none)))))))
+         (hid :s= (vl-parse-hierarchical-identifier recursivep))
+         (bexprs :w= (vl-parse-0+-bracketed-expressions))
+         (when (vl-plausible-start-of-range-p)
+           (:= (vl-match))
+           (range := (vl-parse-range-expression))
+           (:= (vl-match-token :vl-rbrack)))
+         (return
+          (let* ((ans (vl-tack-scopes-onto-hid scopes hid)))
+            (if range
+                (vl-build-range-select ans bexprs range)
+              (make-vl-index :scope ans
+                             :indices bexprs
+                             :part (make-vl-partselect-none)))))))
 
   (defparser vl-parse-indexed-id-2012 ()
     :measure (two-nats-measure (vl-tokstream-measure) 12)
     ;; This is for [ class_qualifier | package_scope ] hierarchical_identifier select
     ;; Support is somewhat partial right now...
-
     (seq tokstream
          (when (vl-is-some-token? '(:vl-kwd-local :vl-$unit))
            (first := (vl-match))
@@ -1679,9 +1756,12 @@ identifier, so we convert it into a hidpiece.</p>"
 
   (defparser vl-parse-indexed-id ()
     :measure (two-nats-measure (vl-tokstream-measure) 13)
-    (if (eq (vl-loadconfig->edition config) :verilog-2005)
-        (vl-parse-indexed-id-2005 nil nil)
-      (vl-parse-indexed-id-2012)))
+    (seq tokstream
+         (linestart := (vl-linestart-indent))
+         (ans := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                     (vl-parse-indexed-id-2005 nil nil)
+                   (vl-parse-indexed-id-2012)))
+         (return (vl-extend-expr-with-linestart linestart ans))))
 
   (defparser vl-parse-assignment-pattern ()
     :measure (two-nats-measure (vl-tokstream-measure) 500)
@@ -1806,6 +1886,7 @@ identifier, so we convert it into a hidpiece.</p>"
 
          ((when (eq type :vl-lparen))
           ;; '(' mintypmax_expression ')'
+          ;; BOZO maybe think more about how to handle linestart here.
           (seq tokstream
                 (:= (vl-match))
                 (expr := (vl-parse-mintypmax-expression))
@@ -1814,11 +1895,12 @@ identifier, so we convert it into a hidpiece.</p>"
 
          ((when (eq type :vl-quote))
           (seq tokstream
+               (linestart := (vl-linestart-indent))
                (:= (vl-match))
                (:= (vl-match-token :vl-lcurly))
                ;; Assignment pattern with no type cast.
                (pat := (vl-parse-assignment-pattern))
-               (return (make-vl-pattern :pat pat)))))
+               (return (make-vl-pattern :pat pat :atts (vl-extend-atts-with-linestart linestart nil))))))
 
       (vl-parse-error "Failed to match a primary expression.")))
 
@@ -1839,6 +1921,8 @@ identifier, so we convert it into a hidpiece.</p>"
     ;; left-hand side of a cast is not itself a cast.
     (seq tokstream
           (primary :s= (vl-parse-primary-main))
+          ;; I don't think we want to bother looking for linestarts here because
+          ;; it would be weird to break foo'(bar) across lines at the quote.
           (when (vl-is-token? :vl-quote)
             (:= (vl-match))
             (when (vl-is-token? :vl-lparen)
@@ -2032,6 +2116,17 @@ identifier, so we convert it into a hidpiece.</p>"
 
     (seq tokstream
 
+; For a unary operator I think it makes sense to only to look for a linestart
+; before the operator.  It's of course legal to write something like
+;
+;      assign foo = |
+;                   bar;
+;
+; But that's really weird and not anything we'd want to pretty-print.  In fact,
+; hell, that might even be worth warning about.  We could stick in an attribute,
+; I guess... "some day."
+
+         (linestart := (vl-linestart-indent))
          (op := (if (eq (vl-loadconfig->edition config) :verilog-2005)
                     (vl-parse-op 1 '((:vl-plus   . :vl-unary-plus)   ;;; +
                                      (:vl-minus  . :vl-unary-minus)  ;;; -
@@ -2078,7 +2173,7 @@ identifier, so we convert it into a hidpiece.</p>"
            ;; later in the increment-elim transform.  If at some point we
            ;; decide this is unacceptable, the easiest fix would be to check
            ;; something like vl-expr-lvaluep here, and only check for post
-           ;; increment operators in that case.
+           ;; increment operators in that case.  See failtest/inc15c.v.
            (return-raw
             (b* ((backup (vl-tokstream-save))
                  ((mv err val tokstream)
@@ -2101,10 +2196,11 @@ identifier, so we convert it into a hidpiece.</p>"
           ;; We had a prefix unary-operator, so we don't need to try to handle
           ;; post-increment/decrement operators here, because no matter what
           ;; the prefix was, it isn't a valid lvalue.  That is, it's malformed
-          ;; to try to write stuff like (|a)++ or (++a)++.
+          ;; to try to write stuff like (|a)++ or (++a)++.  See also
+          ;; failtest/inc15.v and failtest/inc15b.v.
           (return (make-vl-unary :op   op
-                                 :atts atts
-                                 :arg primary))))
+                                 :atts (vl-extend-atts-with-linestart linestart atts)
+                                 :arg  primary))))
 
 
 ; power_expression ::=
@@ -2116,10 +2212,15 @@ identifier, so we convert it into a hidpiece.</p>"
           (first :s= (vl-parse-unary-expression))
           (unless (vl-is-token? :vl-power)
             (return (list first)))
+          (linestart1 := (vl-linestart-indent))
           (:= (vl-match))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-power-expression-aux))
-          (return (list* first :vl-binary-power atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first :vl-binary-power atts tail)))))
 
   (defparser vl-parse-power-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 70)
@@ -2138,14 +2239,19 @@ identifier, so we convert it into a hidpiece.</p>"
     :measure (two-nats-measure (vl-tokstream-measure) 80)
     (seq tokstream
           (first :s= (vl-parse-power-expression))
+          (linestart1 := (vl-linestart-indent))
           (op := (vl-parse-op 2 '((:vl-times . :vl-binary-times)
                                   (:vl-div   . :vl-binary-div)
                                   (:vl-rem   . :vl-binary-rem))))
           (unless op
             (return (list first)))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-mult-expression-aux))
-          (return (list* first op atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first op atts tail)))))
 
   (defparser vl-parse-mult-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 90)
@@ -2163,13 +2269,18 @@ identifier, so we convert it into a hidpiece.</p>"
     :measure (two-nats-measure (vl-tokstream-measure) 100)
     (seq tokstream
           (first :s= (vl-parse-mult-expression))
+          (linestart1 := (vl-linestart-indent))
           (op := (vl-parse-op 2 '((:vl-plus  . :vl-binary-plus)
                                   (:vl-minus . :vl-binary-minus))))
           (unless op
             (return (list first)))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-add-expression-aux))
-          (return (list* first op atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first op atts tail)))))
 
   (defparser vl-parse-add-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 110)
@@ -2187,15 +2298,20 @@ identifier, so we convert it into a hidpiece.</p>"
     :measure (two-nats-measure (vl-tokstream-measure) 120)
     (seq tokstream
           (first :s= (vl-parse-add-expression))
+          (linestart1 := (vl-linestart-indent))
           (op := (vl-parse-op 2 '((:vl-shl  . :vl-binary-shl)
                                   (:vl-shr  . :vl-binary-shr)
                                   (:vl-ashl . :vl-binary-ashl)
                                   (:vl-ashr . :vl-binary-ashr))))
           (unless op
             (return (list first)))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-shift-expression-aux))
-          (return (list* first op atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first op atts tail)))))
 
   (defparser vl-parse-shift-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 130)
@@ -2217,25 +2333,32 @@ identifier, so we convert it into a hidpiece.</p>"
     (seq tokstream
           (first :s= (vl-parse-shift-expression))
           (when (vl-is-token? :vl-kwd-inside)
+            (linestart1 := (vl-linestart-indent))
             (:= (vl-match))
+            (linestart2 := (vl-linestart-indent))
             ;; Inside operators are special because the second argument is
             ;; a value range list.
             (:= (vl-match-token :vl-lcurly))
             (set := (vl-parse-1+-open-value-ranges))
             (:= (vl-match-token :vl-rcurly))
-            (return (list (make-vl-inside :elem first :set set))))
+            (return (b* ((atts nil)
+                         (atts (vl-extend-atts-with-linestart linestart2 atts))
+                         (atts (vl-extend-atts-with-linestart linestart1 atts)))
+                      (list (make-vl-inside :elem first :set set :atts atts)))))
 
+          (linestart1 := (vl-linestart-indent))
           (op := (vl-parse-op 2 '((:vl-lt  . :vl-binary-lt)
                                   (:vl-lte . :vl-binary-lte)
                                   (:vl-gt  . :vl-binary-gt)
-                                  (:vl-gte . :vl-binary-gte)
-                                  )))
+                                  (:vl-gte . :vl-binary-gte))))
           (unless op
             (return (list first)))
-
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-compare-expression-aux))
-          (return (list* first op atts tail))))
+          (return (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                       (atts (vl-extend-atts-with-linestart linestart1 atts)))
+                    (list* first op atts tail)))))
 
   (defparser vl-parse-compare-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 150)
@@ -2277,6 +2400,7 @@ identifier, so we convert it into a hidpiece.</p>"
     :measure (two-nats-measure (vl-tokstream-measure) 160)
     (seq tokstream
           (first :s= (vl-parse-compare-expression))
+          (linestart1 := (vl-linestart-indent))
           (op := (vl-parse-op 2 '((:vl-eq      . :vl-binary-eq)
                                   (:vl-neq     . :vl-binary-neq)
                                   (:vl-ceq     . :vl-binary-ceq)
@@ -2285,9 +2409,13 @@ identifier, so we convert it into a hidpiece.</p>"
                                   (:vl-wildneq . :vl-binary-wildneq))))
           (unless op
             (return (list first)))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-equality-expression-aux))
-          (return (list* first op atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first op atts tail)))))
 
   (defparser vl-parse-equality-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 170)
@@ -2306,10 +2434,15 @@ identifier, so we convert it into a hidpiece.</p>"
           (first :s= (vl-parse-equality-expression))
           (unless (vl-is-token? :vl-bitand)
             (return (list first)))
+          (linestart1 := (vl-linestart-indent))
           (:= (vl-match))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-bitand-expression-aux))
-          (return (list* first :vl-binary-bitand atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first :vl-binary-bitand atts tail)))))
 
   (defparser vl-parse-bitand-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 190)
@@ -2327,13 +2460,18 @@ identifier, so we convert it into a hidpiece.</p>"
     :measure (two-nats-measure (vl-tokstream-measure) 200)
     (seq tokstream
           (first :s= (vl-parse-bitand-expression))
+          (linestart1 := (vl-linestart-indent))
           (op := (vl-parse-op 2 '((:vl-xor . :vl-binary-xor)
                                   (:vl-xnor . :vl-binary-xnor))))
+          (linestart2 := (vl-linestart-indent))
           (unless op
             (return (list first)))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-bitxor-expression-aux))
-          (return (list* first op atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first op atts tail)))))
 
   (defparser vl-parse-bitxor-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 210)
@@ -2352,10 +2490,15 @@ identifier, so we convert it into a hidpiece.</p>"
           (first :s= (vl-parse-bitxor-expression))
           (unless (vl-is-token? :vl-bitor)
             (return (list first)))
+          (linestart1 := (vl-linestart-indent))
           (:= (vl-match))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-bitor-expression-aux))
-          (return (list* first :vl-binary-bitor atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first :vl-binary-bitor atts tail)))))
 
   (defparser vl-parse-bitor-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 230)
@@ -2374,10 +2517,15 @@ identifier, so we convert it into a hidpiece.</p>"
           (first :s= (vl-parse-bitor-expression))
           (unless (vl-is-token? :vl-logand)
             (return (list first)))
+          (linestart1 := (vl-linestart-indent))
           (:= (vl-match))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-logand-expression-aux))
-          (return (list* first :vl-binary-logand atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first :vl-binary-logand atts tail)))))
 
   (defparser vl-parse-logand-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 250)
@@ -2396,10 +2544,15 @@ identifier, so we convert it into a hidpiece.</p>"
           (first :s= (vl-parse-logand-expression))
           (unless (vl-is-token? :vl-logor)
             (return (list first)))
+          (linestart1 := (vl-linestart-indent))
           (:= (vl-match))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (tail := (vl-parse-logor-expression-aux))
-          (return (list* first :vl-binary-logor atts tail))))
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (list* first :vl-binary-logor atts tail)))))
 
   (defparser vl-parse-logor-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 270)
@@ -2422,6 +2575,9 @@ identifier, so we convert it into a hidpiece.</p>"
   (defparser vl-parse-qmark-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 280)
     (seq tokstream
+
+; BOZO develop a good strategy for preserving qmark linebreaks!
+
           (first :s= (vl-parse-logor-expression))
           (unless (vl-is-token? :vl-qmark)
             (return first))
@@ -2460,19 +2616,21 @@ identifier, so we convert it into a hidpiece.</p>"
           (when (eq (vl-loadconfig->edition config) :verilog-2005)
             ;; Implies/equiv aren't supported in Verilog-2005.
             (return first))
+          (linestart1 := (vl-linestart-indent))
           (op := (vl-parse-op 2 '((:vl-arrow . :vl-implies)
                                   (:vl-equiv . :vl-equiv))))
           (unless op
             (return first))
+          (linestart2 := (vl-linestart-indent))
           (atts :w= (vl-parse-0+-attribute-instances))
           (second :s= (vl-parse-impl-expression))
-          (return (make-vl-binary :op op
-                                  :left first
-                                  :right second
-                                  :atts atts))))
-
-
-
+          (return
+           (b* ((atts (vl-extend-atts-with-linestart linestart2 atts))
+                (atts (vl-extend-atts-with-linestart linestart1 atts)))
+             (make-vl-binary :op op
+                             :left first
+                             :right second
+                             :atts atts)))))
 
 
   (defparser vl-parse-expression ()
@@ -2484,10 +2642,12 @@ identifier, so we convert it into a hidpiece.</p>"
             (return expr))
 
           ;; tagged_union_expression ::= tagged id [expression]
+          (linestart := (vl-linestart-indent))
           (:= (vl-match))
           (id := (vl-match-token :vl-idtoken))
           (return-raw
-           (b* ((tag (vl-idtoken->name id))
+           (b* ((tag     (vl-idtoken->name id))
+                (atts    (vl-extend-atts-with-linestart linestart nil))
                 (backup  (vl-tokstream-save))
                 ((mv err expr tokstream)
                  (seq tokstream
@@ -2496,7 +2656,7 @@ identifier, so we convert it into a hidpiece.</p>"
                 ((when err)
                  ;; No subsequent expression is fine.
                  (b* ((tokstream (vl-tokstream-restore backup)))
-                   (mv nil (make-vl-tagged :tag tag) tokstream)))
+                   (mv nil (make-vl-tagged :tag tag :atts atts) tokstream)))
 
                 ;; Well, what a nightmare.  This is completely ambiguous, and
                 ;; VCS/NCVerilog don't implement it yet, so there's no way to
@@ -2515,7 +2675,7 @@ identifier, so we convert it into a hidpiece.</p>"
                    add explicit parens, e.g., write 'tagged foo (1 + 2)'
                    instead."))
 
-                (ans (make-vl-tagged :tag tag :expr expr)))
+                (ans (make-vl-tagged :tag tag :expr expr :atts atts)))
              (mv nil ans tokstream))))))
 
 
