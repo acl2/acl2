@@ -1682,13 +1682,6 @@ explicit declarations.</p>")
     (impossible)
     (mv st warnings)))
 
-(define vl-genblock->scope ((x vl-genblock-p))
-  :returns (blob vl-genblob-p)
-  (b* (((vl-genblock x)))
-    (vl-sort-genelements x.elems
-                         :scopetype :vl-genblock
-                         :id x.name)))
-
 
 (defines vl-shadowcheck-genelement
   :short "Main function for checking name shadowing."
@@ -1743,7 +1736,7 @@ explicit declarations.</p>")
                                                 :type (make-vl-explicitvalueparam
                                                        :type *vl-plain-old-integer-type*)
                                                 :loc x.loc))
-             (body-scope     (vl-genblock->scope x.body))
+             (body-scope     (vl-genblock->genblob x.body))
              (extended-scope (change-vl-genblob body-scope
                                                 :paramdecls (cons var-paramdecl (vl-genblob->paramdecls body-scope))))
              ((mv st warnings) (vl-shadowcheck-push-scope extended-scope st warnings))
@@ -1797,7 +1790,7 @@ explicit declarations.</p>")
          ;; special case condnest case.
          ((mv st warnings) (if x.condnestp
                                (mv st warnings)
-                             (vl-shadowcheck-push-scope (vl-genblock->scope x) st warnings)))
+                             (vl-shadowcheck-push-scope (vl-genblock->genblob x) st warnings)))
          ((mv st warnings) (vl-shadowcheck-genelementlist x.elems st warnings))
          (st               (if x.condnestp
                                st

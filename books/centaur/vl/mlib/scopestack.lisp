@@ -1839,7 +1839,7 @@ named, and the names generated should be unique.</p>"
                        rchars))
                     (t ;; (not id)
                      (str::revappend-chars
-                      (cat "<unnamed " (symbol-name (vl-scope->scopetype x.top)) ">")
+                      (cat "<unnamed-" (symbol-name (vl-scope->scopetype x.top)) ">")
                       rchars))))))
 
 (define vl-scopestack->path

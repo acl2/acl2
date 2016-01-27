@@ -354,30 +354,194 @@ created when we process their packages, etc.</p>"
        (db (vl-taskdecl-luciddb-init (car x) ss db)))
     (vl-taskdecllist-luciddb-init (cdr x) ss db)))
 
-(def-genblob-transform vl-genblob-luciddb-init ((ss vl-scopestack-p)
-                                                (db vl-luciddb-p))
-  ;; BOZO this is probably almost right.  We probably should add some
-  ;; additional handling to initialize genvars somehow.  Actually, maybe really
-  ;; we just need to be including genvars in scopestacks.  Is there some reason
-  ;; we aren't doing that?
-  :no-new-x t
-  :returns ((db vl-luciddb-p))
-  (b* (((vl-genblob x) (vl-genblob-fix x))
-       (ss (vl-scopestack-push x ss))
-       (db (vl-scope-luciddb-init x ss db))
-       ;; Note: don't need to do anything more with vardecls, paramdecls,
-       ;; assignments, instances, aliases, modports, etc.  These are all just
-       ;; local declarations that are handled by vl-scope-luciddb-init.
-       ;; However, we *do* need to initialize anything that potentially has
-       ;; subscopes.
-       (db (vl-generates-luciddb-init x.generates ss db))
-       (db (vl-fundecllist-luciddb-init x.fundecls ss db))
-       (db (vl-taskdecllist-luciddb-init x.taskdecls ss db))
-       (db (vl-alwayslist-luciddb-init x.alwayses ss db))
-       (db (vl-initiallist-luciddb-init x.initials ss db))
-       (db (vl-finallist-luciddb-init x.finals ss db)))
-    db)
-  :apply-to-generates vl-generates-luciddb-init)
+(local (defthm vl-genblob-count-of-vl-genblock->genblob-l0*
+         (implies (EQUAL (VL-GENELEMENT-KIND X) :VL-GENLOOP)
+                  (< (VL-GENBLOB-COUNT (VL-GENBLOCK->GENBLOB (VL-GENLOOP->BODY X)))
+                     (VL-GENBLOB-GENERATE-COUNT X)))
+         :rule-classes ((:rewrite) (:linear))
+         :hints(("Goal" :expand ((vl-genblock->genblob (vl-genloop->body x)))))))
+
+(local (defthm vl-genblob-count-of-vl-genblock->genblob-l1*
+         (< (VL-GENBLOB-COUNT (VL-GENBLOCK->GENBLOB X))
+            (VL-GENBLOB-GENBLOCK-COUNT X))
+         ;; BOZO probably we should rework the vl-genblock-count stuff to use
+         ;; vl-genblock->genblob instead of calling vl-sort-genelements itself.
+         :rule-classes ((:rewrite) (:linear))
+         :hints(("Goal" :expand ((vl-genblob-genblock-count x)
+                                 (vl-genblock->genblob x))))))
+
+(define vl-lucid-paramdecl-for-genloop ((name     stringp)
+                                        (loc      vl-location-p))
+  :returns (decl vl-paramdecl-p)
+  (make-vl-paramdecl :name name
+                     :localp t
+                     :type (make-vl-explicitvalueparam :type *vl-plain-old-integer-type*)
+                     :loc loc))
+
+(define vl-lucid-genvar-scope ((name    stringp)
+                               (loc     vl-location-p))
+  :returns (ss vl-scope-p)
+  (b* ((genvar (make-vl-genvar :name name :loc loc))
+       (blob   (make-vl-genblob :genvars (list genvar)
+                                :scopetype :vl-genarray
+                                :id (str::cat "<generate-array-" name ">"))))
+    blob))
+
+(defines vl-genblob-luciddb-init
+  :verify-guards nil
+
+  (define vl-genblob-luciddb-init-subscopes ((x vl-genblob-p)
+                                             (ss vl-scopestack-p)
+                                             (db vl-luciddb-p))
+    :returns (db vl-luciddb-p)
+    :measure (two-nats-measure (vl-genblob-count x) 0)
+    ;; Here we assume that
+    ;;
+    ;;  (1) the scope for the genblob has already been pushed onto the scopestack
+    ;;  (2) all local declarations within the scope have already been initialized
+    ;;      in the luciddb.
+    ;;
+    ;; We therefore don't have to do anything more with the vardecls,
+    ;; paramdecls, assignments, instances, aliases, modports, etc.  (Those are
+    ;; handled by vl-scope-luciddb-init).
+    ;;
+    ;; However, we *do* need to initialize anything that potentially has
+    ;; subscopes, for instance, a function declaration's body has its own scope
+    ;; so we need to descend into it.
+    (b* ((ss (vl-scopestack-fix ss))
+         (db (vl-luciddb-fix db))
+         ((vl-genblob x) (vl-genblob-fix x))
+         (db (vl-genelementlist-luciddb-init x.generates ss db))
+         (db (vl-fundecllist-luciddb-init x.fundecls ss db))
+         (db (vl-taskdecllist-luciddb-init x.taskdecls ss db))
+         (db (vl-alwayslist-luciddb-init x.alwayses ss db))
+         (db (vl-initiallist-luciddb-init x.initials ss db))
+         (db (vl-finallist-luciddb-init x.finals ss db)))
+      db))
+
+  (define vl-genblob-luciddb-init ((x  vl-genblob-p)
+                                   (ss vl-scopestack-p)
+                                   (db vl-luciddb-p))
+    :returns (db vl-luciddb-p)
+    :measure (two-nats-measure (vl-genblob-count x) 1)
+    ;; Fully initialize the database for a genblob that introduces its own scope.
+    ;; Pushes a new scope.
+    (b* ((x  (vl-genblob-fix x))
+         (ss (vl-scopestack-fix ss))
+         (db (vl-luciddb-fix db))
+         (ss (vl-scopestack-push x ss))
+         (db (vl-scope-luciddb-init x ss db))
+         (db (vl-genblob-luciddb-init-subscopes x ss db)))
+      db))
+
+  (define vl-genelementlist-luciddb-init ((x  vl-genelementlist-p)
+                                          (ss vl-scopestack-p)
+                                          (db vl-luciddb-p))
+    :returns (db vl-luciddb-p)
+    :measure (two-nats-measure (vl-genblob-generates-count x) 0)
+    (b* (((when (atom x))
+          (vl-luciddb-fix db))
+         (db (vl-genelement-luciddb-init (car x) ss db)))
+      (vl-genelementlist-luciddb-init (cdr x) ss db)))
+
+  (define vl-genblock-luciddb-init ((x  vl-genblock-p)
+                                    (ss vl-scopestack-p)
+                                    (db vl-luciddb-p))
+    :returns (db vl-luciddb-p)
+    :measure (two-nats-measure (vl-genblob-genblock-count x) 0)
+    (vl-genblob-luciddb-init (vl-genblock->genblob x) ss db))
+
+  (define vl-genelement-luciddb-init ((x  vl-genelement-p)
+                                      (ss vl-scopestack-p)
+                                      (db vl-luciddb-p))
+    :returns (db vl-luciddb-p)
+    :measure (two-nats-measure (vl-genblob-generate-count x) 0)
+    (b* ((x  (vl-genelement-fix x))
+         (db (vl-luciddb-fix db)))
+      (vl-genelement-case x
+        :vl-genbase
+        (progn$
+         ;; We shouldn't encounter these because vl-genblock->genblob should
+         ;; properly sort out all the genbases into other kinds of elements.
+         (raise "Programming error: should not encounter :vl-genbase, but
+                 found ~s0.~%" (with-local-ps (vl-cw "~a0~%" x)))
+         db)
+        :vl-genbegin
+        (vl-genblock-luciddb-init x.block ss db)
+        :vl-genif
+        (b* ((db (vl-genblock-luciddb-init x.then ss db))
+             (db (vl-genblock-luciddb-init x.else ss db)))
+          db)
+        :vl-genarray
+        ;; Note: elaboration adds a parameter declaration for the loop variable
+        ;; into each block, so we don't need to do this part.  However, we still
+        ;; add a scope for a local genvar, if applicable.  This makes it so that
+        ;; lucidcheck can blindly mark the loop variable as used/set and things
+        ;; work out whether there's it's defined locally or earlier.
+        (b* (((mv ss db)
+              (b* (((unless x.genvarp)
+                    (mv ss db))
+                   (scope (vl-lucid-genvar-scope x.var x.loc))
+                   (ss    (vl-scopestack-push scope ss))
+                   (db    (vl-scope-luciddb-init scope ss db)))
+                (mv ss db))))
+          (vl-genblocklist-luciddb-init x.blocks ss db))
+        :vl-genloop
+        ;; Subtle.  See SystemVerilog-2012 Section 27.4 and also see the
+        ;; related case in vl-shadowcheck-genelement.  So before we go into the
+        ;; body, we'll create a new scope with the parameter declaration in it.
+        ;; ALSO, if this loop has its own local genvar declaration, we'll add
+        ;; an extra layer of scope for that, because it just seems like the
+        ;; most sensible way to do it.
+        (b* ((blob (vl-genblock->genblob x.body))
+             ((mv ss db)
+              (b* (((unless x.genvarp)
+                    (mv ss db))
+                   (scope (vl-lucid-genvar-scope x.var x.loc))
+                   (ss    (vl-scopestack-push scope ss))
+                   (db    (vl-scope-luciddb-init scope ss db)))
+                (mv ss db)))
+             (var-paramdecl (vl-lucid-paramdecl-for-genloop x.var x.loc))
+             (extended-blob (change-vl-genblob blob
+                                               :paramdecls (cons var-paramdecl (vl-genblob->paramdecls blob))))
+             ;; Use the extended blob to initialize all locals (which will
+             ;; result in the paramdecl getting initialized)
+             (ss (vl-scopestack-push extended-blob ss))
+             (db (vl-scope-luciddb-init extended-blob ss db))
+             ;; Now add in any sub-scopes, using the non-extended blob (which
+             ;; is legitimate since the paramdecl doesn't introduce subscopes,
+             ;; and makes termination easy)
+             (db (vl-genblob-luciddb-init-subscopes blob ss db)))
+          db)
+        :vl-gencase
+        (b* ((db (vl-gencaselist-luciddb-init x.cases ss db))
+             (db (vl-genblock-luciddb-init x.default ss db)))
+          db))))
+
+  (define vl-gencaselist-luciddb-init ((x vl-gencaselist-p)
+                                       (ss vl-scopestack-p)
+                                       (db vl-luciddb-p))
+    :returns (db vl-luciddb-p)
+    :measure (two-nats-measure (vl-genblob-gencaselist-count x) 0)
+    (b* ((x (vl-gencaselist-fix x))
+         ((when (atom x))
+          (vl-luciddb-fix db))
+         ((cons ?exprs block) (car x))
+         (db (vl-genblock-luciddb-init block ss db)))
+      (vl-gencaselist-luciddb-init (cdr x) ss db)))
+
+  (define vl-genblocklist-luciddb-init ((x vl-genblocklist-p)
+                                        (ss vl-scopestack-p)
+                                        (db vl-luciddb-p))
+    :returns (db vl-luciddb-p)
+    :measure (two-nats-measure (vl-genblob-genblocklist-count x) 0)
+    (b* (((when (atom x))
+          (vl-luciddb-fix db))
+         (db (vl-genblock-luciddb-init (car x) ss db)))
+      (vl-genblocklist-luciddb-init (cdr x) ss db)))
+  ///
+  (verify-guards vl-genblob-luciddb-init)
+  (deffixequiv-mutual vl-genblob-luciddb-init))
 
 (define vl-module-luciddb-init ((x  vl-module-p)
                                 (ss vl-scopestack-p)
@@ -474,7 +638,7 @@ created when we process their packages, etc.</p>"
        (name (vl-scope->id x)))
     (if name
         (vl-print name)
-      (vl-ps-seq (vl-print "<unnamed ")
+      (vl-ps-seq (vl-print "<unnamed-")
                  (vl-print-str (symbol-name (tag x)))
                  (vl-print ">")))))
 
@@ -655,7 +819,8 @@ created when we process their packages, etc.</p>"
         (vl-scopestack-find-item/ss name ss))
        ((unless item)
         ;; BOZO eventually turn into a proper bad-id warning
-        (cw "Warning: missing item ~s0.~%" name)
+        (cw "Warning: missing item ~s0 in ~x1.~%" name
+            (vl-scopestack->path ss))
         st)
        (key (make-vl-lucidkey :item item :scopestack item-ss))
        (occ (make-vl-lucidocc-solo :ctx ctx :ss ss)))
@@ -1592,6 +1757,27 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list interfaceportlist :element interfaceport)
 
+
+(defines vl-stmt-has-nonempty-return
+
+  (define vl-stmt-has-nonempty-return ((x vl-stmt-p))
+    :measure (vl-stmt-count x)
+    (if (vl-atomicstmt-p x)
+        (vl-stmt-case x
+          :vl-returnstmt (if x.val t nil)
+          :otherwise nil)
+      (vl-stmtlist-has-some-nonempty-return (vl-compoundstmt->stmts x))))
+
+  (define vl-stmtlist-has-some-nonempty-return ((x vl-stmtlist-p))
+    :measure (vl-stmtlist-count x)
+    (if (atom x)
+        nil
+      (or (vl-stmt-has-nonempty-return (car x))
+          (vl-stmtlist-has-some-nonempty-return (cdr x)))))
+
+  ///
+  (deffixequiv-mutual vl-stmt-has-nonempty-return))
+
 (def-vl-lucidcheck fundecl
   ;; We mark input ports as SET and output ports as USED since otherwise we
   ;; could end up thinking that inputs aren't set, which would be silly.  We
@@ -1618,7 +1804,12 @@ created when we process their packages, etc.</p>"
        (st    (vl-portdecllist-lucidcheck x.portdecls ss st))
        ;; (st (vl-importlist-lucidcheck x.imports ss st))
        (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
-       (st (vl-vardecllist-lucidcheck x.vardecls ss st)))
+       (st (vl-vardecllist-lucidcheck x.vardecls ss st))
+       ;; Seems easier to handle this here than inside the statement
+       ;; processing stuff.
+       (st (if (vl-stmt-has-nonempty-return x.body)
+               (vl-lucid-mark-simple :set x.name ss st ctx)
+             st)))
     (vl-stmt-lucidcheck x.body ss st ctx)))
 
 (def-vl-lucidcheck-list fundecllist :element fundecl)
@@ -1854,84 +2045,183 @@ created when we process their packages, etc.</p>"
 (def-vl-lucidcheck-list aliaslist :element alias)
 
 
-(define vl-gencaselist->flat-match-exprs ((x vl-gencaselist-p))
-  :measure (vl-gencaselist-count x)
-  :returns (exprs vl-exprlist-p)
-  (let ((x (vl-gencaselist-fix x)))
-    (if (atom x)
-        nil
-      (append (caar x)
-              (vl-gencaselist->flat-match-exprs (cdr x))))))
+(defines vl-genblob-lucidcheck
+  :verify-guards nil
 
-(def-genblob-transform vl-genblob-lucidcheck ((ss vl-scopestack-p)
-                                              (st vl-lucidstate-p))
-  :no-new-x t
-  ;; BOZO this is probably almost right.  We should probably be doing more with
-  ;; GENIF and GENCASE stuff to mark the condition expressions as used.  I
-  ;; think def-genblob-transform has keywords we could use for that.
-  :returns ((st vl-lucidstate-p))
-  (b* (((vl-genblob x)     (vl-genblob-fix x))
-       (ss                 (vl-scopestack-push x ss))
-       (st (vl-portdecllist-lucidcheck  x.portdecls  ss st))
-       (st (vl-assignlist-lucidcheck    x.assigns    ss st))
-       (st (vl-aliaslist-lucidcheck     x.aliases    ss st))
-       (st (vl-vardecllist-lucidcheck   x.vardecls   ss st))
-       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
-       (st (vl-fundecllist-lucidcheck   x.fundecls   ss st))
-       (st (vl-taskdecllist-lucidcheck  x.taskdecls  ss st))
-       (st (vl-modinstlist-lucidcheck   x.modinsts   ss st))
-       (st (vl-gateinstlist-lucidcheck  x.gateinsts  ss st))
-       (st (vl-alwayslist-lucidcheck    x.alwayses   ss st))
-       (st (vl-initiallist-lucidcheck   x.initials   ss st))
-       (st (vl-finallist-lucidcheck     x.finals     ss st))
-       (st (vl-typedeflist-lucidcheck   x.typedefs   ss st))
-       ;; Nothing to do for imports, they just affect the scopestack.
-       ;; Nothing to do for fwdtypedefs
-       (st (vl-modportlist-lucidcheck   x.modports   ss st))
-       ;; Nothing to do for genvars, they just affect the scopestack
-       ;; BOZO add assertions
-       ;; BOZO add cassertions
-       ;; BOZO add properties
-       ;; BOZO add sequences
-       (st (vl-dpiimportlist-lucidcheck x.dpiimports ss st))
-       (st (vl-dpiexportlist-lucidcheck x.dpiexports ss st))
-       (st (vl-generates-lucidcheck     x.generates  ss st))
-       ;; BOZO anything to do for normal ports?
-       (st (vl-interfaceportlist-lucidcheck x.ifports ss st)))
-    st)
-  :apply-to-generates vl-generates-lucidcheck
-  :return-from-genif-bindings
-  ;; For IF generate constructs we should also consider the names used in the
-  ;; TEST expression as being used.
-  ((x   (vl-genelement-fix x))
-   (ctx (vl-lucid-ctx ss x))
-   (st  (vl-rhsexpr-lucidcheck x.test ss st ctx)))
-  :return-from-genarray-bindings
-  ;; For a genarray (a normalized generate loop), we should regard the iterator
-  ;; variable as both used and set.
-  ((x   (vl-genelement-fix x))
-   (ctx (vl-lucid-ctx ss x))
-   (st  (vl-lucid-mark-simple :used x.var ss st ctx))
-   (st  (vl-lucid-mark-simple :set x.var ss st ctx)))
-  :return-from-genloop-bindings
-  ;; For a generate loop (an not-yet-normalized generate loop), we should mark
-  ;; the variable itself as both set and used (because it is implicitly being
-  ;; used to create some number of blocks).  We should also mark any variables
-  ;; used in the initializer, continue, and nextval expressions as being used.
-  ((x   (vl-genelement-fix x))
-   (ctx (vl-lucid-ctx ss x))
-   (st  (vl-lucid-mark-simple :used x.var ss st ctx))
-   (st  (vl-lucid-mark-simple :set x.var ss st ctx))
-   (st  (vl-rhsexpr-lucidcheck x.initval ss st ctx))
-   (st  (vl-rhsexpr-lucidcheck x.continue ss st ctx))
-   (st  (vl-rhsexpr-lucidcheck x.nextval ss st ctx)))
-  :return-from-gencase-bindings
-  ;; For a generate case we need to consider the test expression and all match
-  ;; expressions as being used.
-  ((x   (vl-genelement-fix x))
-   (ctx (vl-lucid-ctx ss x))
-   (st  (vl-rhsexpr-lucidcheck x.test ss st ctx))
-   (st  (vl-rhsexprlist-lucidcheck (vl-gencaselist->flat-match-exprs x.cases) ss st ctx))))
+  (define vl-genblob-lucidcheck-aux ((x vl-genblob-p)
+                                     (ss vl-scopestack-p)
+                                     (st vl-lucidstate-p))
+    :returns (st vl-lucidstate-p)
+    :measure (two-nats-measure (vl-genblob-count x) 0)
+    ;; Assumes the scope for the genblob has already been pushed onto the
+    ;; scopestack.  This is a stupid hack that helps with the genloop case.
+    (b* (((vl-genblob x) (vl-genblob-fix x))
+         (ss (vl-scopestack-fix ss))
+         (st (vl-lucidstate-fix st))
+         (st (vl-portdecllist-lucidcheck  x.portdecls  ss st))
+         (st (vl-assignlist-lucidcheck    x.assigns    ss st))
+         (st (vl-aliaslist-lucidcheck     x.aliases    ss st))
+         (st (vl-vardecllist-lucidcheck   x.vardecls   ss st))
+         (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
+         (st (vl-fundecllist-lucidcheck   x.fundecls   ss st))
+         (st (vl-taskdecllist-lucidcheck  x.taskdecls  ss st))
+         (st (vl-modinstlist-lucidcheck   x.modinsts   ss st))
+         (st (vl-gateinstlist-lucidcheck  x.gateinsts  ss st))
+         (st (vl-alwayslist-lucidcheck    x.alwayses   ss st))
+         (st (vl-initiallist-lucidcheck   x.initials   ss st))
+         (st (vl-finallist-lucidcheck     x.finals     ss st))
+         (st (vl-typedeflist-lucidcheck   x.typedefs   ss st))
+         ;; Nothing to do for imports, they just affect the scopestack.
+         ;; Nothing to do for fwdtypedefs
+         (st (vl-modportlist-lucidcheck   x.modports   ss st))
+         ;; Nothing to do for genvars, they just affect the scopestack
+         ;; BOZO add assertions
+         ;; BOZO add cassertions
+         ;; BOZO add properties
+         ;; BOZO add sequences
+         (st (vl-dpiimportlist-lucidcheck x.dpiimports ss st))
+         (st (vl-dpiexportlist-lucidcheck x.dpiexports ss st))
+         (st (vl-genelementlist-lucidcheck x.generates  ss st))
+         ;; BOZO anything to do for normal ports?
+         (st (vl-interfaceportlist-lucidcheck x.ifports ss st)))
+      st))
+
+  (define vl-genblob-lucidcheck ((x  vl-genblob-p)
+                                 (ss vl-scopestack-p)
+                                 (st vl-lucidstate-p))
+    :returns (st vl-lucidstate-p)
+    :measure (two-nats-measure (vl-genblob-count x) 1)
+    ;; Pushes the scope and checks everything within it.
+    (b* ((x  (vl-genblob-fix x))
+         (ss (vl-scopestack-fix ss))
+         (st (vl-lucidstate-fix st))
+         (ss (vl-scopestack-push x ss))
+         (st (vl-genblob-lucidcheck-aux x ss st)))
+      st))
+
+  (define vl-genelementlist-lucidcheck ((x  vl-genelementlist-p)
+                                        (ss vl-scopestack-p)
+                                        (st vl-lucidstate-p))
+    :returns (st vl-lucidstate-p)
+    :measure (two-nats-measure (vl-genblob-generates-count x) 0)
+    (b* (((when (atom x))
+          (vl-lucidstate-fix st))
+         (st (vl-genelement-lucidcheck (car x) ss st)))
+      (vl-genelementlist-lucidcheck (cdr x) ss st)))
+
+  (define vl-genblock-lucidcheck ((x  vl-genblock-p)
+                                  (ss vl-scopestack-p)
+                                  (st vl-lucidstate-p))
+    :returns (st vl-lucidstate-p)
+    :measure (two-nats-measure (vl-genblob-genblock-count x) 0)
+    (vl-genblob-lucidcheck (vl-genblock->genblob x) ss st))
+
+  (define vl-genelement-lucidcheck ((x vl-genelement-p)
+                                    (ss vl-scopestack-p)
+                                    (st vl-lucidstate-p))
+    :returns (st vl-lucidstate-p)
+    :measure (two-nats-measure (vl-genblob-generate-count x) 0)
+    (b* ((x  (vl-genelement-fix x))
+         (ss (vl-scopestack-fix ss))
+         (st (vl-lucidstate-fix st)))
+      (vl-genelement-case x
+        :vl-genbase
+        ;; We shouldn't encounter these because vl-genblock->genblob should
+        ;; properly sort out all the genbases into the other fields.
+        (progn$
+         (raise "Programming error: should not encounter :vl-genbase, but
+                 found ~s0.~%" (with-local-ps (vl-cw "~a0~%" x)))
+         st)
+        :vl-genbegin
+        (vl-genblock-lucidcheck x.block ss st)
+        :vl-genif
+        ;; For IF generate constructs we should also consider the names used in
+        ;; the TEST expression as being used.
+        (b* ((ctx (vl-lucid-ctx ss x))
+             (st (vl-rhsexpr-lucidcheck x.test ss st ctx))
+             (st (vl-genblock-lucidcheck x.then ss st)))
+          (vl-genblock-lucidcheck x.else ss st))
+        :vl-genarray
+        ;; Note: elaboration adds a parameter declaration for the loop variable
+        ;; into each block, so we don't need to fudge the scope.  However, we
+        ;; still add a scope for a local genvar if applicable, to match
+        ;; luciddb-init.
+        (b* ((ctx (vl-lucid-ctx ss x))
+             (ss  (b* (((unless x.genvarp)
+                        ss)
+                       (scope (vl-lucid-genvar-scope x.var x.loc))
+                       (ss    (vl-scopestack-push scope ss)))
+                    ss))
+             ;; Mark the genvar as used and set (important in case it's outside the loop body.)
+             (st  (vl-lucid-mark-simple :used x.var ss st ctx))
+             (st  (vl-lucid-mark-simple :set x.var ss st ctx)))
+          (vl-genblocklist-lucidcheck x.var x.blocks ss st ctx))
+        :vl-genloop
+        ;; Subtle.  See SystemVerilog-2012 Section 27.4 and also see the
+        ;; related case in vl-shadowcheck-genelement.  We'll create a new scope
+        ;; with the parameter declaration in it.
+        (b* ((ctx (vl-lucid-ctx ss x))
+             (ss  (b* (((unless x.genvarp)
+                        ss)
+                       (scope (vl-lucid-genvar-scope x.var x.loc))
+                       (ss    (vl-scopestack-push scope ss)))
+                    ss))
+             ;; Mark the genvar as used and set (important in case it's outside the loop body.)
+             (st  (vl-lucid-mark-simple :used x.var ss st ctx))
+             (st  (vl-lucid-mark-simple :set x.var ss st ctx))
+             (st  (vl-rhsexpr-lucidcheck x.initval ss st ctx))
+             (st  (vl-rhsexpr-lucidcheck x.continue ss st ctx))
+             (st  (vl-rhsexpr-lucidcheck x.nextval ss st ctx))
+             (blob (vl-genblock->genblob x.body))
+             (var-paramdecl (vl-lucid-paramdecl-for-genloop x.var x.loc))
+             (extended-blob (change-vl-genblob blob
+                                               :paramdecls (cons var-paramdecl (vl-genblob->paramdecls blob))))
+             (ss (vl-scopestack-push extended-blob ss))
+             ;; Mark the parameter as used and set inside the loop body.
+             (st (vl-lucid-mark-simple :used x.var ss st ctx))
+             (st (vl-lucid-mark-simple :set x.var ss st ctx)))
+          (vl-genblob-lucidcheck-aux blob ss st))
+        :vl-gencase
+        (b* ((ctx (vl-lucid-ctx ss x))
+             (st  (vl-rhsexpr-lucidcheck x.test ss st ctx))
+             (st  (vl-gencaselist-lucidcheck x.cases ss st ctx)))
+          (vl-genblock-lucidcheck x.default ss st)))))
+
+  (define vl-gencaselist-lucidcheck ((x   vl-gencaselist-p)
+                                     (ss  vl-scopestack-p)
+                                     (st  vl-lucidstate-p)
+                                     (ctx vl-context1-p))
+    :returns (st vl-lucidstate-p)
+    :measure (two-nats-measure (vl-genblob-gencaselist-count x) 0)
+    (b* ((x (vl-gencaselist-fix x))
+         ((when (atom x))
+          (vl-lucidstate-fix st))
+         ((cons exprs block) (car x))
+         (st (vl-rhsexprlist-lucidcheck exprs ss st ctx))
+         (st (vl-genblock-lucidcheck block ss st)))
+      (vl-gencaselist-lucidcheck (cdr x) ss st ctx)))
+
+  (define vl-genblocklist-lucidcheck ((var stringp)
+                                      (x   vl-genblocklist-p)
+                                      (ss  vl-scopestack-p)
+                                      (st  vl-lucidstate-p)
+                                      (ctx vl-context1-p))
+    :returns (st vl-lucidstate-p)
+    :measure (two-nats-measure (vl-genblob-genblocklist-count x) 0)
+    (b* (((when (atom x))
+          (vl-lucidstate-fix st))
+         (blob1 (vl-genblock->genblob (car x)))
+         ;; Push the scopestack manually and use the aux function so that
+         ;; we can regard the loop parameter as used and set.
+         (st (b* ((ss (vl-scopestack-push blob1 ss))
+                  (st (vl-genblob-lucidcheck-aux blob1 ss st))
+                  (st (vl-lucid-mark-simple :used var ss st ctx))
+                  (st (vl-lucid-mark-simple :set var ss st ctx)))
+               st)))
+      (vl-genblocklist-lucidcheck var (cdr x) ss st ctx)))
+  ///
+  (verify-guards vl-genblob-lucidcheck)
+  (deffixequiv-mutual vl-genblob-lucidcheck))
 
 
 (def-vl-lucidcheck module
@@ -2816,7 +3106,9 @@ doesn't have to recreate the default heuristics.</p>"
   :returns (warnings vl-warninglist-p)
   (b* ((used     (vl-lucidocclist-fix used))
        (set      (vl-lucidocclist-fix set))
-
+       (vartype  (if (eq (tag item) :vl-vardecl)
+                     "Variable"
+                   "Parameter"))
        (name     (if (eq (tag item) :vl-vardecl)
                      (vl-vardecl->name item)
                    (vl-paramdecl->name item)))
@@ -2828,8 +3120,8 @@ doesn't have to recreate the default heuristics.</p>"
         ;; to issue only a single warning about this spurious variable, rather
         ;; than separate unused/unset warnings.
         (warn :type :vl-lucid-spurious
-              :msg "~w0 is never used or set anywhere. (~s1)"
-              :args (list name
+              :msg "~s0 ~w1 is never used or set anywhere. (~s2)"
+              :args (list vartype name
                           (with-local-ps (vl-pp-scopestack-path ss)))))
 
        (used-solop (vl-lucid-some-solo-occp used))
@@ -2849,8 +3141,8 @@ doesn't have to recreate the default heuristics.</p>"
               ;; No uses of this variable at all.  No need to do any special
               ;; bit-level analysis.
               (warn :type :vl-lucid-unused
-                    :msg "~w0 is set but is never used. (~s1)"
-                    :args (list name
+                    :msg "~s0 ~w1 is set but is never used. (~s2)"
+                    :args (list vartype name
                                 (with-local-ps (vl-pp-scopestack-path ss)))))
              ((when used-solop)
               ;; The variable is used somewhere all by itself without any
@@ -2872,8 +3164,8 @@ doesn't have to recreate the default heuristics.</p>"
               ;; All of the bits get used somewhere so this is fine.
               warnings))
           (warn :type :vl-lucid-unused
-                :msg "~w0 has some bits that are never used: ~s1. (~s2)"
-                :args (list name
+                :msg "~s0 ~w1 has some bits that are never used: ~s2. (~s3)"
+                :args (list vartype name
                             (vl-lucid-summarize-bits unused-bits)
                             (with-local-ps (vl-pp-scopestack-path ss))))))
 
@@ -2881,8 +3173,8 @@ doesn't have to recreate the default heuristics.</p>"
        (warnings
         (b* (((when (atom set))
               (warn :type :vl-lucid-unset
-                    :msg "~w0 is used but is never initialized. (~s1)"
-                    :args (list name
+                    :msg "~s0 ~w1 is used but is never initialized. (~s2)"
+                    :args (list vartype name
                                 (with-local-ps (vl-pp-scopestack-path ss)))))
              ((when set-solop)
               warnings)
@@ -2895,8 +3187,8 @@ doesn't have to recreate the default heuristics.</p>"
              ((unless unset-bits)
               warnings))
           (warn :type :vl-lucid-unset
-                :msg "~w0 has some bits that are never set: ~s1. (~s2)"
-                :args (list name
+                :msg "~s0 ~w1 has some bits that are never set: ~s2. (~s3)"
+                :args (list vartype name
                             (vl-lucid-summarize-bits unset-bits)
                             (with-local-ps (vl-pp-scopestack-path ss))
                             )))))

@@ -668,17 +668,17 @@ package fcasttest_package;
 
   function yes_usedfun1 (input logic [3:0] a);
     logic [3:0] b = a;
-    top_f_used = b;
+    return b;
   endfunction
 
   function yes_usedfun2 (input logic [3:0] a);
     logic [3:0] b = a;
-    top_f_used = b;
+    return b;
   endfunction
 
   function not_usedfun (input logic [3:0] a);
     logic [3:0] b = a;
-    top_f_used = b;
+    return b;
   endfunction
 
 endpackage
