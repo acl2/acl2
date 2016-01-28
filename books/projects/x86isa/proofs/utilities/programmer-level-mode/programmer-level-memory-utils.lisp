@@ -198,11 +198,6 @@ programmer-level mode.</p>" )
 
 ;; Theorems about rb and wb:
 
-(defthm rb-returns-true-listp
-  (implies (x86p x86)
-           (true-listp (mv-nth 1 (rb addresses r-w-x x86))))
-  :rule-classes (:rewrite :type-prescription))
-
 (local
  (defthm rm08-wb-not-member-p
    (implies (and (not (member-p addr (strip-cars addr-lst)))
@@ -454,16 +449,6 @@ programmer-level mode.</p>" )
 
 ;; Events related to WB:
 
-(defthm wb-nil
-  (implies (x86p x86)
-           (equal (mv-nth 1 (wb nil x86)) x86)))
-
-(defthmd wb-not-consp-addr-byte-alistp
-  (implies (and (addr-byte-alistp addr-lst)
-                (not (consp addr-lst)))
-           (equal (wb addr-lst x86)
-                  (mv nil x86))))
-
 (defthm wb-and-wb-combine-wbs
   (implies (and (addr-byte-alistp addr-list1)
                 (addr-byte-alistp addr-list2)
@@ -531,20 +516,6 @@ programmer-level mode.</p>" )
 
 ;; Write-bytes-to-memory and wb:
 
-(defthmd create-addr-bytes-alist-acons
-  (implies
-   (and (< 0 (len bytes))
-        (canonical-address-p (+ lin-addr (len bytes)))
-        (canonical-address-p lin-addr))
-   (equal
-    (create-addr-bytes-alist (create-canonical-address-list (len bytes) lin-addr) bytes)
-    (acons
-     lin-addr (car bytes)
-     (create-addr-bytes-alist (create-canonical-address-list
-                               (1- (len bytes))
-                               (1+ lin-addr))
-                              (cdr bytes))))))
-
 (defthm write-bytes-to-memory-is-wb
   (implies (and (canonical-address-p (+ (len bytes) lin-addr))
                 (byte-listp bytes)
@@ -561,9 +532,6 @@ programmer-level mode.</p>" )
 ;; ======================================================================
 
 ;; Events related to RB:
-
-(defthm rb-nil-lemma
-  (equal (mv-nth 1 (rb nil r-w-x x86)) nil))
 
 ;; The following theorems help in relieving the hypotheses of
 ;; get-prefixes opener lemmas.

@@ -2,6 +2,8 @@
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
+(include-book "../general-memory-utils")
+(include-book "../x86-row-wow-thms")
 (include-book "paging-lib/paging-top")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -122,97 +124,6 @@ wb:
                    (cons lin-addr
                          (create-canonical-address-list (+ -1 n) (+ 1 lin-addr)))))
    :hints (("Goal" :in-theory (e/d* () (signed-byte-p))))))
-
-(defthmd create-canonical-address-list-end-addr-is-canonical
-  (implies (and (equal (len (create-canonical-address-list count addr)) count)
-                (posp count)
-                (equal end-addr (+ -1 addr count)))
-           (canonical-address-p end-addr)))
-
-(defthm true-listp-create-addr-bytes-alist
-  (true-listp (create-addr-bytes-alist l-addrs bytes))
-  :rule-classes :type-prescription)
-
-(defthm create-addr-bytes-alist-bytes=nil
-  (equal (create-addr-bytes-alist l-addrs nil) nil))
-
-(defthm create-addr-bytes-alist-l-addrs=nil
-  (equal (create-addr-bytes-alist nil bytes) nil))
-
-(defthm cdr-of-create-addr-bytes-alist
-  (equal (cdr (create-addr-bytes-alist l-addrs bytes))
-         (create-addr-bytes-alist (cdr l-addrs) (cdr bytes))))
-
-(defthm caar-of-create-addr-bytes-alist
-  (implies (equal (len l-addrs) (len bytes))
-           (equal (car (car (create-addr-bytes-alist l-addrs bytes)))
-                  (car l-addrs))))
-
-(defthm cdar-of-create-addr-bytes-alist
-  (implies (equal (len l-addrs) (len bytes))
-           (equal (cdr (car (create-addr-bytes-alist l-addrs bytes)))
-                  (car bytes))))
-
-(local
- (defthm nth-pos-1-and-cdr
-   (implies (and (not (equal e (car x)))
-                 (member-p e x)
-                 (natp n))
-            (equal (nth (pos-1 e x n) y)
-                   (nth (pos-1 e (cdr x) n) (cdr y))))))
-
-(defthm nth-pos-and-cdr
-  (implies (and (not (equal e (car x)))
-                (member-p e x))
-           (equal (nth (pos e x) y)
-                  (nth (pos e (cdr x)) (cdr y))))
-  :hints (("Goal" :in-theory (e/d* (pos) ()))))
-
-(local
- (defthm nth-pos-1-and-cdr-and-minus
-   (implies (and (not (equal e (car x)))
-                 (member-p e x)
-                 (natp n))
-            (equal (nth (- (pos-1 e x n) n) y)
-                   (nth (- (pos-1 e (cdr x) n) n) (cdr y))))))
-
-(local
- (defthm assoc-equal-and-nth-pos-1
-   (implies (and (equal (len l-addrs) (len bytes))
-                 (member-p e l-addrs)
-                 (natp n))
-            (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
-                   (nth (- (pos-1 e l-addrs n) n) bytes)))
-   :hints (("Goal"
-            :induct (create-addr-bytes-alist l-addrs bytes)
-            :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus)))
-           ("Subgoal *1/2"
-            :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus))
-            :use ((:instance nth-pos-1-and-cdr-and-minus
-                             (e e)
-                             (x l-addrs)
-                             (y bytes)
-                             (n n)))))))
-
-(defthm assoc-equal-and-nth-pos
-  (implies (and (equal (len l-addrs) (len bytes))
-                (member-p e l-addrs))
-           (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
-                  (nth (pos e l-addrs) bytes)))
-  :hints (("Goal" :in-theory (e/d* (pos) (assoc-equal-and-nth-pos-1))
-           :use ((:instance assoc-equal-and-nth-pos-1
-                            (n 0))))))
-
-(defthm len-of-strip-cdrs
-  (equal (len (strip-cdrs as)) (len as)))
-
-(defthm len-of-strip-cars
-  (equal (len (strip-cars as)) (len as)))
-
-(defthm wb-nil-lemma
-  (equal (mv-nth 1 (wb nil x86))
-         x86)
-  :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
 ;; ======================================================================
 
@@ -1267,10 +1178,6 @@ wb:
                              all-paging-entries-found-p
                              no-page-faults-during-translation-p)
                             (force (force))))))
-
-(defthmd mv-nth-2-rb-1-and-accumulator
-  (equal (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-1))
-         (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-2))))
 
 (local
  (defthmd rb-rb-split-reads-in-system-level-mode-state-helper

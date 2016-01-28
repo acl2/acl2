@@ -723,11 +723,11 @@ memory.</li>
         (b* ((n (mbe :logic (nfix n) :exec n))
              (val (mbe :logic (ifix val) :exec val)))
 
-            (if (zp n)
-                (reverse acc)
-              (b* ((acc (cons (loghead 8 val) acc))
-                   (val (logtail 8 val)))
-                  (byte-ify-general (1- n) val acc))))
+          (if (zp n)
+              (reverse acc)
+            (b* ((acc (cons (loghead 8 val) acc))
+                 (val (logtail 8 val)))
+              (byte-ify-general (1- n) val acc))))
       nil)
 
     ///
@@ -905,7 +905,7 @@ memory.</li>
                 (rm08 addr r-w-x x86))
                ((when flg)
                 (mv flg acc x86)))
-              (rb-1 (cdr addresses) r-w-x x86 (append acc (list byte)))))
+            (rb-1 (cdr addresses) r-w-x x86 (append acc (list byte)))))
 
       (mv t acc x86))
 
@@ -1009,7 +1009,7 @@ memory.</li>
                 (wm08 addr byte x86))
                ((when flg)
                 (mv flg x86)))
-              (wb (cdr addr-lst) x86)))
+            (wb (cdr addr-lst) x86)))
 
       (mv t x86))
 
@@ -1221,6 +1221,10 @@ memory.</li>
 
     ///
 
+    (defthm true-listp-create-addr-bytes-alist
+      (true-listp (create-addr-bytes-alist l-addrs bytes))
+      :rule-classes :type-prescription)
+
     (defthm consp-create-addr-bytes-alist-in-terms-of-len
       (implies (and (not (zp (len byte-list)))
                     (equal (len addr-list) (len byte-list)))
@@ -1232,6 +1236,26 @@ memory.</li>
                     (equal (len addr-list) (len byte-list)))
                (consp (create-addr-bytes-alist addr-list byte-list)))
       :rule-classes (:rewrite :type-prescription))
+
+    (defthm create-addr-bytes-alist-bytes=nil
+      (equal (create-addr-bytes-alist l-addrs nil) nil))
+
+    (defthm create-addr-bytes-alist-l-addrs=nil
+      (equal (create-addr-bytes-alist nil bytes) nil))
+
+    (defthmd cdr-of-create-addr-bytes-alist
+      (equal (cdr (create-addr-bytes-alist l-addrs bytes))
+             (create-addr-bytes-alist (cdr l-addrs) (cdr bytes))))
+
+    (defthmd caar-of-create-addr-bytes-alist
+      (implies (equal (len l-addrs) (len bytes))
+               (equal (car (car (create-addr-bytes-alist l-addrs bytes)))
+                      (car l-addrs))))
+
+    (defthmd cdar-of-create-addr-bytes-alist
+      (implies (equal (len l-addrs) (len bytes))
+               (equal (cdr (car (create-addr-bytes-alist l-addrs bytes)))
+                      (car bytes))))
 
     (defthm addr-byte-alistp-create-addr-bytes-alist
       (implies (and (canonical-address-listp addrs)
@@ -1358,7 +1382,7 @@ memory.</li>
              (equal (mv-nth 1 (rb (create-canonical-address-list n lin-addr) r-w-x x86))
                     (b* ((low  (mv-nth 1 (rb (create-canonical-address-list       m       lin-addr) r-w-x x86)))
                          (high (mv-nth 1 (rb (create-canonical-address-list (- n m) (+ m lin-addr)) r-w-x x86))))
-                        (append low high)))))
+                      (append low high)))))
 
   (defthmd push-ash-inside-logior
     (equal (ash (logior x y) n)

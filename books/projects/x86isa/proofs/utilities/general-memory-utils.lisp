@@ -299,6 +299,20 @@
            (canonical-address-p addr))
   :rule-classes :forward-chaining)
 
+(defthmd create-addr-bytes-alist-acons
+  (implies
+   (and (< 0 (len bytes))
+        (canonical-address-p (+ lin-addr (len bytes)))
+        (canonical-address-p lin-addr))
+   (equal
+    (create-addr-bytes-alist (create-canonical-address-list (len bytes) lin-addr) bytes)
+    (acons
+     lin-addr (car bytes)
+     (create-addr-bytes-alist (create-canonical-address-list
+                               (1- (len bytes))
+                               (1+ lin-addr))
+                              (cdr bytes))))))
+
 ;; ----------------------------------------------------------------------
 
 (define assoc-list ((slst true-listp)
@@ -971,5 +985,98 @@
 ;;                    (assoc-list x
 ;;                                (append (acl2::rev (create-addr-bytes-alist a b))
 ;;                                        term)))))))
+
+;; ======================================================================
+
+;; Some lemmas about rb and wb that are applicable in both
+;; programmer-level and system-level mode.
+
+(defthmd mv-nth-2-rb-1-and-accumulator
+  (equal (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-1))
+         (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-2))))
+
+(defthm rb-nil-lemma
+  (equal (mv-nth 1 (rb nil r-w-x x86)) nil))
+
+(defthm rb-returns-true-listp
+  (implies (x86p x86)
+           (true-listp (mv-nth 1 (rb addresses r-w-x x86))))
+  :rule-classes (:rewrite :type-prescription))
+
+(defthm wb-nil-lemma
+  (equal (mv-nth 1 (wb nil x86)) x86))
+
+(defthmd wb-not-consp-addr-byte-alistp
+  (implies (and (addr-byte-alistp addr-lst)
+                (not (consp addr-lst)))
+           (equal (wb addr-lst x86)
+                  (mv nil x86))))
+
+;; ======================================================================
+
+;; Other misc. lemmas about pos, nth, etc. that are useful in both the
+;; modes:
+
+(defthm len-of-strip-cdrs
+  (equal (len (strip-cdrs as)) (len as)))
+
+(defthm len-of-strip-cars
+  (equal (len (strip-cars as)) (len as)))
+
+(defthmd create-canonical-address-list-end-addr-is-canonical
+  (implies (and (equal (len (create-canonical-address-list count addr)) count)
+                (posp count)
+                (equal end-addr (+ -1 addr count)))
+           (canonical-address-p end-addr)))
+
+(local
+ (defthm nth-pos-1-and-cdr
+   (implies (and (not (equal e (car x)))
+                 (member-p e x)
+                 (natp n))
+            (equal (nth (pos-1 e x n) y)
+                   (nth (pos-1 e (cdr x) n) (cdr y))))))
+
+(defthm nth-pos-and-cdr
+  (implies (and (not (equal e (car x)))
+                (member-p e x))
+           (equal (nth (pos e x) y)
+                  (nth (pos e (cdr x)) (cdr y))))
+  :hints (("Goal" :in-theory (e/d* (pos) ()))))
+
+(local
+ (defthm nth-pos-1-and-cdr-and-minus
+   (implies (and (not (equal e (car x)))
+                 (member-p e x)
+                 (natp n))
+            (equal (nth (- (pos-1 e x n) n) y)
+                   (nth (- (pos-1 e (cdr x) n) n) (cdr y))))))
+
+(local
+ (defthm assoc-equal-and-nth-pos-1
+   (implies (and (equal (len l-addrs) (len bytes))
+                 (member-p e l-addrs)
+                 (natp n))
+            (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
+                   (nth (- (pos-1 e l-addrs n) n) bytes)))
+   :hints (("Goal"
+            :induct (create-addr-bytes-alist l-addrs bytes)
+            :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus)))
+           ("Subgoal *1/2"
+            :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus))
+            :use ((:instance nth-pos-1-and-cdr-and-minus
+                             (e e)
+                             (x l-addrs)
+                             (y bytes)
+                             (n n)))))))
+
+(defthm assoc-equal-and-nth-pos
+  (implies (and (equal (len l-addrs) (len bytes))
+                (member-p e l-addrs))
+           (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
+                  (nth (pos e l-addrs) bytes)))
+  :hints (("Goal" :in-theory (e/d* (pos) (assoc-equal-and-nth-pos-1))
+           :use ((:instance assoc-equal-and-nth-pos-1
+                            (n 0))))))
 
 ;; ======================================================================
