@@ -677,7 +677,8 @@ comments following this last example.</p>
        (masks-exp1 (cwtime (svex-mask-alist-expand masks-start) :mintime 0))
 
        ;; Now rewrite the loop-updates under those masks
-       (updates-rw (cwtime (svexlist-rewrite (svex-alist-vals loop-updates) masks-exp1)))
+       (updates-rw
+        (cwtime (svexlist-rewrite-under-masks (svex-alist-vals loop-updates) masks-exp1)))
        (- (cw "Masked updates count: ~x0~%" (cwtime (svexlist-opcount updates-rw))))
        (- (fast-alist-free masks-exp1))
        (masks-exp (cwtime (svex-mask-alist-expand
