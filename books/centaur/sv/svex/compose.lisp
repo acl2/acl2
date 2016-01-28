@@ -87,12 +87,7 @@ full update functions.")
 (local (xdoc::set-default-parents compose.lisp))
 
 
-(defalist svex-svex-memo :key-type svex :val-type svex)
 
-(defthm svex-p-of-lookup-in-svex-svex-memo
-  (implies (and (svex-svex-memo-p memo)
-                (hons-assoc-equal k memo))
-           (svex-p (cdr (hons-assoc-equal k memo)))))
 
 ;; Note: This isn't memoized to the extent that it might be: it's memoized at
 ;; the level of named wires, i.e. subexpressions of assignments may be
@@ -659,6 +654,9 @@ comments following this last example.</p>
 
 "
   (b* (
+       (- (cw "Loop variable count: ~x0~%" (len loop-updates)))
+       (- (cw "Mask bits count: ~x0~%" count))
+
        ;; Initially, the masks are those of updates, i.e. those induced by
        ;; saying all bits of the update functions of named wires are cares.
        ;;  In the last example in the documentation, the mask for a is initially
@@ -680,6 +678,7 @@ comments following this last example.</p>
 
        ;; Now rewrite the loop-updates under those masks
        (updates-rw (cwtime (svexlist-rewrite (svex-alist-vals loop-updates) masks-exp1)))
+       (- (cw "Masked updates count: ~x0~%" (cwtime (svexlist-opcount updates-rw))))
        (- (fast-alist-free masks-exp1))
        (masks-exp (cwtime (svex-mask-alist-expand
                            (svex-updates-pair-masks (pairlis$ (svex-alist-keys loop-updates)
@@ -695,7 +694,6 @@ comments following this last example.</p>
         (b* (((when (eql 0 new-count))
               (cw "mask count reached 0~%")
               (mv masks-exp nil))
-             (- (cw "mask bits count: ~x0~%" new-count))
              ((when (and count (>= new-count (lnfix count))))
               (cw "Mask bits count didn't decrease~%")
               (mv masks-exp nil))
@@ -827,6 +825,7 @@ we've seen before with a mask that overlaps with that one.</p>"
        ;;; Rewriting here at first presumably won't disrupt decompositions
        ;;; because the expressions should be relatively small and independent,
        ;;; to first approximation.
+       ;; (- (sneaky-save 'orig-assigns x))
        (xvals (if rewrite (cwtime (svexlist-rewrite-top xvals) :mintime 0) xvals))
        (x (pairlis$ (svex-alist-keys x) xvals))
        (- (cw "Count after initial rewrite: ~x0~%" (svexlist-opcount xvals)))
@@ -844,10 +843,13 @@ we've seen before with a mask that overlaps with that one.</p>"
        (updates (pairlis$ (svex-alist-keys updates) updates-vals))
        (upd-subset (with-fast-alist updates (svars-extract-updates vars updates)))
        ;; (- (acl2::sneaky-save 'updates updates))
+       (- (cw "Looping subset count: ~x0~%" (cwtime (svexlist-opcount (svex-alist-vals upd-subset)))))
+       (- (cw "Mask bits count (starting): ~x0~%" (svexlist-masks-measure vars masks)))
        ((acl2::with-fast updates))
        ((mv final-masks rest)
         (cwtime (svexlist-compose-to-fix-rec2 masks upd-subset nil) :mintime 1))
        ;; (- (sneaky-save 'assigns x)
+       ;;    (sneaky-save 'updates updates)
        ;;    (sneaky-save 'final-masks final-masks)
        ;;    (sneaky-save 'loop-vars vars))
        (- (with-fast-alist x

@@ -33,8 +33,8 @@
 (include-book "xeval")
 (include-book "4vmask")
 (include-book "centaur/bitops/trailing-0-count" :dir :system)
+(include-book "rsh-concat")
 (local (include-book "lattice"))
-(local (include-book "rsh-concat"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -2536,20 +2536,20 @@
            :hints(("Goal" :in-theory (enable 4vec-non-z-mask
                                              4vec-fix-is-4vec-of-fields)))))
 
-  (local (defund svex-rsh (offset x)
+  (local (defund svex-dumb-rsh (offset x)
            (svex-call 'rsh (list (svex-quote (2vec (nfix offset))) x))))
 
-  (local (defthm 4vec-non-z-mask-of-svex-rsh
-           (equal (4vec-non-z-mask (svex-eval (svex-rsh offset x) env))
+  (local (defthm 4vec-non-z-mask-of-svex-dumb-rsh
+           (equal (4vec-non-z-mask (svex-eval (svex-dumb-rsh offset x) env))
                   (logtail offset (4vec-non-z-mask (svex-eval x env))))
-           :hints(("Goal" :in-theory (enable svex-apply svex-rsh svexlist-eval
+           :hints(("Goal" :in-theory (enable svex-apply svex-dumb-rsh svexlist-eval
                                              4vec-rsh 4vec-non-z-mask)))))
 
 
-  (local (defthm 4vec-non-z-mask-of-svex-rsh-xeval
-           (equal (4vec-non-z-mask (svex-xeval (svex-rsh offset x)))
+  (local (defthm 4vec-non-z-mask-of-svex-dumb-rsh-xeval
+           (equal (4vec-non-z-mask (svex-xeval (svex-dumb-rsh offset x)))
                   (logtail offset (4vec-non-z-mask (svex-xeval x))))
-           :hints(("Goal" :in-theory (enable svex-apply svex-rsh svexlist-xeval
+           :hints(("Goal" :in-theory (enable svex-apply svex-dumb-rsh svexlist-xeval
                                              4vec-rsh 4vec-non-z-mask)))))
 
 
@@ -2557,14 +2557,14 @@
   (local (defthm 4vec-rsh-of-svex-eval
            (implies (natp offset)
                     (equal (4vec-rsh (2vec offset) (svex-eval x env))
-                           (svex-eval (svex-rsh offset x) env)))
-           :hints(("Goal" :in-theory (enable svex-rsh svex-apply svexlist-eval)))))
+                           (svex-eval (svex-dumb-rsh offset x) env)))
+           :hints(("Goal" :in-theory (enable svex-dumb-rsh svex-apply svexlist-eval)))))
 
   (local (defthm 4vec-rsh-of-svex-xeval
            (implies (natp offset)
                     (equal (4vec-rsh (2vec offset) (svex-xeval x))
-                           (svex-xeval (svex-rsh offset x))))
-           :hints(("Goal" :in-theory (enable svex-rsh svex-apply svexlist-xeval)))))
+                           (svex-xeval (svex-dumb-rsh offset x))))
+           :hints(("Goal" :in-theory (enable svex-dumb-rsh svex-apply svexlist-xeval)))))
 
   (local (defthm 4vec-[=-z
            (equal (4vec-[= (4vec-z) x)
@@ -2738,9 +2738,9 @@
                  (4VEC-RSH (2VEC (NFIX OFFSET))
                            (SVEX-EVAL Y ENV)))))
      :hints(("Goal" :use ((:instance res-to-concat-lemma1
-                           (y (svex-rsh offset y))
-                           (x (svex-rsh offset x))))
-             :in-theory (e/d (svex-rsh svex-apply svexlist-eval svexlist-xeval)
+                           (y (svex-dumb-rsh offset y))
+                           (x (svex-dumb-rsh offset x))))
+             :in-theory (e/d (svex-dumb-rsh svex-apply svexlist-eval svexlist-xeval)
                              (4vec-rsh-of-svex-eval
                               4vec-rsh-of-svex-xeval))))))
 
@@ -2785,9 +2785,9 @@
                  (4VEC-RSH (2VEC (NFIX OFFSET))
                            (SVEX-EVAL Y ENV)))))
      :hints(("Goal" :use ((:instance res-to-concat-lemma1-resand
-                           (y (svex-rsh offset y))
-                           (x (svex-rsh offset x))))
-             :in-theory (e/d (svex-rsh svex-apply svexlist-eval)
+                           (y (svex-dumb-rsh offset y))
+                           (x (svex-dumb-rsh offset x))))
+             :in-theory (e/d (svex-dumb-rsh svex-apply svexlist-eval)
                              (4vec-rsh-of-svex-eval
                               4vec-rsh-of-svex-xeval))))))
 
@@ -2832,9 +2832,9 @@
                  (4VEC-RSH (2VEC (NFIX OFFSET))
                            (SVEX-EVAL Y ENV)))))
      :hints(("Goal" :use ((:instance res-to-concat-lemma1-resor
-                           (y (svex-rsh offset y))
-                           (x (svex-rsh offset x))))
-             :in-theory (e/d (svex-rsh svex-apply svexlist-eval)
+                           (y (svex-dumb-rsh offset y))
+                           (x (svex-dumb-rsh offset x))))
+             :in-theory (e/d (svex-dumb-rsh svex-apply svexlist-eval)
                              (4vec-rsh-of-svex-eval
                               4vec-rsh-of-svex-xeval))))))
 
@@ -2857,7 +2857,7 @@
 
 
   (local (defthm mask-of-xeval-of-rsh
-           (equal (4vec-non-z-mask (svex-xeval (svex-rsh offset x)))
+           (equal (4vec-non-z-mask (svex-xeval (svex-dumb-rsh offset x)))
                   (logtail (nfix offset) (4vec-non-z-mask (svex-xeval x))))
            :hints(("Goal" :in-theory (enable svex-xeval)))))
 
@@ -2890,7 +2890,7 @@
                     (equal (4vec-rsh (2vec (nfix offset)) (svex-eval x env))
                            (4vec-z)))
            :hints (("goal" :use ((:instance 4vec-non-z-mask-equal-0
-                                  (x (svex-xeval (svex-rsh (nfix offset) x)))))
+                                  (x (svex-xeval (svex-dumb-rsh (nfix offset) x)))))
                     :in-theory (disable 4vec-non-z-mask-equal-0)))))
 
   (local (include-book "tools/trivial-ancestors-check" :dir :system))
@@ -2915,14 +2915,14 @@
             (and stable-under-simplificationp
                  '(:in-theory (enable svex-apply svexlist-eval)))
             (and stable-under-simplificationp
-                 '(:in-theory (e/d (svex-rsh svex-apply svexlist-eval)
+                 '(:in-theory (e/d (svex-dumb-rsh svex-apply svexlist-eval)
                                    (4vec-rsh-of-svex-eval
                                     4vec-rsh-of-svex-xeval))))
             (and stable-under-simplificationp
                  '(;; :in-theory (e/d (logtail-of-non-z-mask
                    ;;                  svex-eval-equal-z)
-                   ;;                 (4vec-non-z-mask-of-svex-rsh
-                   ;;                  4vec-non-z-mask-of-svex-rsh-xeval
+                   ;;                 (4vec-non-z-mask-of-svex-dumb-rsh
+                   ;;                  4vec-non-z-mask-of-svex-dumb-rsh-xeval
                    ;;                  4vec-non-z-mask-of-4vec-rsh
                    ;;                  mask-of-xeval-of-rsh))
                    :do-not '(generalize)))
@@ -3245,6 +3245,207 @@
 (local (acl2::use-trivial-ancestors-check))
 
 
+(define normalize-concat-aux ((x-width natp)
+                          (x svex-p)
+                          (y svex-p))
+  :measure (svex-count x)
+  :returns (concat svex-p)
+  :verify-guards nil
+  (b* ((x-width (lnfix x-width))
+       ((mv matched a-width a b) (match-concat x))
+       ((unless matched) (svcall concat (svex-quote (2vec x-width)) x y))
+       ((when (< a-width x-width))
+        (normalize-concat-aux
+         a-width
+         a
+         (normalize-concat-aux (- x-width a-width) b y))))
+    (normalize-concat-aux x-width a y))
+  ///
+  (verify-guards normalize-concat-aux)
+
+  (defret normalize-concat-aux-correct
+    (equal (svex-eval concat env)
+           (4vec-concat (2vec (nfix x-width))
+                        (svex-eval x env)
+                        (svex-eval y env)))
+    :hints(("Goal" :in-theory (enable match-concat-correct-rewrite-svex-eval-of-x
+                                      svex-apply svexlist-eval 4veclist-nth-safe))))
+
+  (defret normalize-concat-aux-vars
+    (implies (and (not (member v (svex-vars x)))
+                  (not (member v (svex-vars y))))
+             (not (member v (svex-vars concat))))))
+
+(define normalize-concat ((x svex-p))
+  :measure (svex-count x)
+  :returns (concat svex-p)
+  :verify-guards nil
+  (b* (((mv matched a-width a b) (match-concat x))
+       ((unless matched) (svex-fix x)))
+    (normalize-concat-aux a-width a (normalize-concat b)))
+  ///
+  (verify-guards normalize-concat)
+  (defret normalize-concat-correct
+    (equal (svex-eval concat env)
+           (svex-eval x env))
+    :hints(("Goal" :in-theory (enable match-concat-correct-rewrite-svex-eval-of-x
+                                      svex-apply svexlist-eval 4veclist-nth-safe))))
+
+  (defret normalize-concat-vars
+    (implies (not (member v (svex-vars x)))
+             (not (member v (svex-vars concat))))))
+
+
+(define merge-branches-base ((test svex-p)
+                             (x svex-p)
+                             (y svex-p)
+                             (x-shift natp)
+                             (y-shift natp))
+  :returns (res svex-p)
+  (b* ((x-shift (lnfix x-shift))
+       (y-shift (lnfix y-shift))
+       ((mv x-match x-shift1 x-sub) (match-rsh x))
+       ((mv y-match y-shift1 y-sub) (match-rsh y))
+       ((mv x-core x-shift)
+        (if x-match
+            (mv x-sub (+ x-shift1 x-shift))
+          (mv x x-shift)))
+       ((mv y-core y-shift)
+        (if y-match
+            (mv y-sub (+ y-shift1 y-shift))
+          (mv y y-shift)))
+       ((when (and (svex-equiv x-core y-core)
+                   (eql x-shift y-shift)))
+        (svex-rsh x-shift x-core)))
+    (svcall ?* test (svex-rsh x-shift x-core)
+            (svex-rsh y-shift y-core)))
+  ///
+  (local (defthm 4vec-?*-of-same
+           (equal (4vec-?* test x x)
+                  (4vec-fix x))
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 3vec-fix)))))
+
+  (defret merge-branches-base-correct
+    (equal (svex-eval res env)
+           (4vec-?* (svex-eval test env)
+                    (4vec-rsh (2vec (nfix x-shift))
+                              (svex-eval x env))
+                    (4vec-rsh (2vec (nfix y-shift))
+                              (svex-eval y env))))
+    :hints(("Goal" :in-theory (enable svex-apply svexlist-eval
+                                      match-rsh-correct-rewrite-svex-eval-of-x))))
+
+  (defret vars-of-merge-branches-base
+    (implies (and (not (member v (svex-vars test)))
+                  (not (member v (svex-vars x)))
+                  (not (member v (svex-vars y))))
+             (not (member v (svex-vars res))))))
+
+
+(define merge-branches ((test svex-p)
+                        (x svex-p)
+                        (y svex-p)
+                        (x-shift natp)
+                        (y-shift natp))
+  :returns (res svex-p)
+  :verify-guards nil
+  :measure (+ (svex-count x) (svex-count y))
+  (b* ((x-shift (lnfix x-shift))
+       (y-shift (lnfix y-shift))
+       ((mv x-match x-width x1 x2) (match-concat x))
+       ((when (and x-match (<= x-width x-shift)))
+        (merge-branches test x2 y (- x-shift x-width) y-shift))
+       ((mv y-match y-width y1 y2) (match-concat y))
+       ((when (and y-match (<= y-width y-shift)))
+        (merge-branches test x y2 x-shift (- y-shift y-width)))
+
+       (x1 (if x-match x1 x))
+       (y1 (if y-match y1 y))
+       (x-width (and x-match (- x-width x-shift)))
+       (y-width (and y-match (- y-width y-shift)))
+
+       (part1 (merge-branches-base test x1 y1 x-shift y-shift))
+
+       ((when (and x-match
+                   (or (not y-match)
+                       (< x-width y-width))))
+        (svex-concat x-width part1
+                     (merge-branches test x2 y 0 (+ x-width y-shift))))
+
+       ((when (and y-match
+                   (or (not x-match)
+                       (< y-width x-width))))
+        (svex-concat y-width part1
+                     (merge-branches test x y2 (+ y-width x-shift) 0)))
+
+       ((when (and x-match y-match))
+        ;; widths equal
+        (svex-concat x-width part1
+                     (merge-branches test x2 y2 0 0))))
+    ;; neither matched
+    part1)
+  ///
+  (verify-guards merge-branches)
+  
+
+  (local (defthm 4vec-?*-of-same
+           (equal (4vec-?* test x x)
+                  (4vec-fix x))
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 3vec-fix)))))
+
+
+  (local (defthm 4vec-concat-of-?*-branches-1
+           (implies (equal y (4vec-?* test c d))
+                    (equal (4vec-concat width (4vec-?* test a b) y)
+                           (4vec-?* test
+                                    (4vec-concat width a c)
+                                    (4vec-concat width b d))))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-?* 3vec-?* 3vec-fix))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-concat-of-shifts-merge
+           (implies (and (natp w) (natp shift)
+                         (equal shift2 (+ shift w)))
+                    (equal (4vec-concat (2vec w)
+                                        (4vec-rsh (2vec shift) x)
+                                        (4vec-rsh (2vec shift2) x))
+                           (4vec-rsh (2vec shift) x)))
+           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-concat))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-concat-of-concat-merge
+           (implies (and (natp w1) (natp w2) (natp shift)
+                         (equal shift2 (+ shift w1)))
+                    (equal (4vec-concat (2vec w1)
+                                        (4vec-rsh (2vec shift) x)
+                                        (4vec-concat (2vec w2)
+                                                     (4vec-rsh (2vec shift2) x)
+                                                     y))
+                           (4vec-concat (2vec (+ w1 w2))
+                                        (4vec-rsh (2vec shift) x)
+                                        y)))
+           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-concat))
+                  (logbitp-reasoning))))
+
+  (defret merge-branches-correct
+    (equal (svex-eval res env)
+           (4vec-?* (svex-eval test env)
+                    (4vec-rsh (2vec (nfix x-shift))
+                              (svex-eval x env))
+                    (4vec-rsh (2vec (nfix y-shift))
+                              (svex-eval y env))))
+    :hints(("Goal" :in-theory (enable svex-apply svexlist-eval
+                                      match-rsh-correct-rewrite-svex-eval-of-x
+                                      match-concat-correct-rewrite-svex-eval-of-x))))
+
+  (defret vars-of-merge-branches
+    (implies (and (not (member v (svex-vars test)))
+                  (not (member v (svex-vars x)))
+                  (not (member v (svex-vars y))))
+             (not (member v (svex-vars res))))))
+       
+
+
 (encapsulate nil
   (local (in-theory (disable 2vec-p
                              bitops::logeqv
@@ -3356,7 +3557,6 @@
            (bitops::logbitp-reasoning
             :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
 
-
 #||
   ;; NOTE: (bozo?)  These are very particular rules for ?* and they don't
   ;; follow the usual conventions that ensure that we don't blow up.  The
@@ -3399,7 +3599,25 @@
            (svex-generalize-lookups)
            (logbitp-reasoning)))
 ||#
+
+  (def-svex-rewrite ?*-merge-branches
+    :lhs (?* test x y)
+    :checks ((bind res (merge-branches test
+                                       (normalize-concat x)
+                                       (normalize-concat y)
+                                       0 0))
+             (not (svex-case res
+                    :call (and (eq res.fn '?*)
+                               (hons-equal (first res.args) test)
+                               (hons-equal (second res.args) x)
+                               (hons-equal (third res.args) y))
+                    :otherwise nil)))
+    :rhs res)
+
 )
+
+
+  
 
 
 
@@ -3520,7 +3738,7 @@
        ((when (4vec-xfree-under-mask xeval mask))
         (mv t (svex-quote (4vec-mask-to-zero mask xeval)) nil)))
     (svex-rewrite-cases mask
-                        (mbe :exec fn :logic (fnsym-fix fn))
+                        (mbe :logic (fnsym-fix fn) :exec fn)
                         args
                         localp))
   ///
@@ -3578,5 +3796,25 @@
 
 (acl2::sneaky-alist state)
 (acl2::sneaky-clear)
+
+(loop for x in *svex-rewrite-table* do
+      (loop for y in (cdr x) do (profile-fn y)))
+(loop for x in sv::*svex-op-table* do
+      (let ((name (intern$ (str::cat "SVMASK-FOR-" (symbol-name (car x))) "SV")))
+        (profile-fn (deref-macro-name name (macro-aliases (w *the-live-state*))))))
+(profile 'svex-rewrite-fncall)
+(profile 'svex-rewrite-fncall-once)
+(profile 'svex-rewrite-under-subst)
+(profile 'svex-locally-rewrite)
+
+(profile 'svex-argmasks)
+(profile 'svexlist-compute-masks)
+(profile 'svexlist-mask-alist)
+(profile 'svexlist-toposort)
+(profile 'svexlist-mask-acons)
+
+(profile 'svex-to-rsh-of-concat-table)
+(profile 'rsh-of-concat-table-lookup)
+(profile 'svex-subst)
 
 ||#

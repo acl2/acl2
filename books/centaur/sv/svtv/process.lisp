@@ -523,6 +523,11 @@
                    0 nphases ins ovlines outs initst updates-for-outs next-states in-vars)
                   :mintime 1))
 
+       (has-duplicate-outputs (acl2::hons-dups-p (svex-alist-keys outexprs)))
+       ((when has-duplicate-outputs)
+        (raise "Duplicated output variable: ~x0" (car has-duplicate-outputs))
+        (mv nil moddb aliases))
+
        (outexprs (if simplify
                      (svex-alist-normalize-concats
                       (svex-alist-rewrite-fixpoint

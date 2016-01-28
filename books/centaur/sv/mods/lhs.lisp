@@ -1378,44 +1378,6 @@ the order given (LSBs-first).</p>")
                    (append a b)))))
 
 
-(define svex-rsh ((sh natp) (x svex-p))
-  :returns (rsh svex-p)
-  (if (zp sh)
-      (svex-fix x)
-    (svex-call 'rsh (list (svex-quote (2vec sh)) x)))
-  ///
-  (deffixequiv svex-rsh)
-
-  (defthm svex-rsh-correct
-    (equal (svex-eval (svex-rsh sh x) env)
-           (svex-eval (svex-call 'rsh (list (svex-quote (2vec (nfix sh))) x)) env))
-    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval)
-            :expand ((:free (f a) (svex-eval (svex-call f a) env))
-                     (svex-eval 0 env)))))
-
-  (defthm svex-rsh-vars
-    (implies (not (member v (svex-vars x)))
-             (not (member v (svex-vars (svex-rsh sh x)))))))
-
-(define svex-concat ((w natp) (x svex-p) (y svex-p))
-  :returns (concat svex-p)
-  (if (zp w)
-      (svex-fix y)
-    (svex-call 'concat (list (svex-quote (2vec w)) x y)))
-  ///
-  (deffixequiv svex-concat)
-
-  (defthm svex-concat-correct
-    (equal (svex-eval (svex-concat w x y) env)
-           (svex-eval (svex-call 'concat (list (svex-quote (2vec (nfix w))) x y)) env))
-    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval)
-            :expand ((:free (f a) (svex-eval (svex-call f a) env))
-                     (svex-eval 0 env)))))
-
-  (defthm svex-concat-vars
-    (implies (and (not (member v (svex-vars x)))
-                  (not (member v (svex-vars y))))
-             (not (member v (svex-vars (svex-concat w x y)))))))
 
 
 
