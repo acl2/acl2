@@ -1982,7 +1982,121 @@ wb:
 
 ;; ======================================================================
 
+(defthmd rm08-from-linear-addresses-that-map-to-the-same-physical-address
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (equal
+                 ;; The physical addresses corresponding to addr-1 and
+                 ;; addr-2 are the same.
+                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x-1 cpl x86))
+                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 r-w-x-2 cpl x86)))
+                (paging-entries-found-p addr-1 (double-rewrite x86))
+                (paging-entries-found-p addr-2 (double-rewrite x86))
+                (pairwise-disjoint-p-aux
+                 ;; The read isn't being done from the page tables.
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x-1 cpl x86)))
+                 (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
+                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-1 r-w-x-1 cpl x86)))
+                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-2 r-w-x-2 cpl x86))))
+           (and
+            (equal
+             (mv-nth 0 (rm08 addr-1 r-w-x-1 x86))
+             (mv-nth 0 (rm08 addr-2 r-w-x-2 x86)))
+            (equal
+             (mv-nth 1 (rm08 addr-1 r-w-x-1 x86))
+             (mv-nth 1 (rm08 addr-2 r-w-x-2 x86)))
+            (xlate-equiv-x86s
+             (mv-nth 2 (rm08 addr-1 r-w-x-1 x86))
+             (mv-nth 2 (rm08 addr-2 r-w-x-2 x86)))))
+  :hints (("Goal" :in-theory (e/d* (rm08)
+                                   (signed-byte-p
+                                    unsigned-byte-p)))))
+
+(defthmd wm08-from-linear-addresses-that-map-to-the-same-physical-address
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (equal
+                 ;; The physical addresses corresponding to addr-1 and
+                 ;; addr-2 are the same.
+                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 :w cpl x86))
+                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
+                (paging-entries-found-p addr-1 (double-rewrite x86))
+                (paging-entries-found-p addr-2 (double-rewrite x86))
+                (pairwise-disjoint-p-aux
+                 ;; The write isn't being done to the page tables.
+                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 :w cpl x86)))
+                 (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
+                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-1 :w cpl x86)))
+                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86))))
+           (and
+            (equal (mv-nth 0 (wm08 addr-1 val x86))
+                   (mv-nth 0 (wm08 addr-2 val x86)))
+            (xlate-equiv-x86s (mv-nth 1 (wm08 addr-1 val x86))
+                              (mv-nth 1 (wm08 addr-2 val x86)))))
+  :hints (("Goal" :in-theory (e/d* (wm08)
+                                   (signed-byte-p
+                                    unsigned-byte-p)))))
+
+;; ======================================================================
+
 ;; RoW theorems in terms of rb and wb:
+
+(define translate-all-l-addrs (l-addrs r-w-x cpl x86)
+  :guard (and (canonical-address-listp l-addrs)
+              (member r-w-x '(:r :w :x))
+              (unsigned-byte-p 2 cpl))
+  :enabled t
+  :non-executable t
+  (if (endp l-addrs)
+      nil
+    (b* (((mv ?flg p-addr x86)
+          (ia32e-entries-found-la-to-pa (car l-addrs) r-w-x cpl x86))
+         ;; ((when flg)
+         ;;  nil)
+         )
+      (cons p-addr (translate-all-l-addrs (cdr l-addrs) r-w-x cpl x86))))
+  ///
+  (defthm translate-all-l-addrs-and-xlate-equiv-structures
+    (implies (xlate-equiv-structures x86-1 x86-2)
+             (equal (translate-all-l-addrs l-addrs r-w-x cpl x86-1)
+                    (translate-all-l-addrs l-addrs r-w-x cpl x86-2)))
+    :rule-classes :congruence)
+
+  (defthm translate-all-l-addrs-and-cdr
+    (equal (cdr (translate-all-l-addrs l-addrs r-w-x cpl x86))
+           (translate-all-l-addrs (cdr l-addrs) r-w-x cpl x86)))
+
+  (defthm translate-all-l-addrs-and-car
+    (implies (consp l-addrs)
+             (equal (car (translate-all-l-addrs l-addrs r-w-x cpl x86))
+                    (mv-nth 1 (ia32e-entries-found-la-to-pa (car l-addrs) r-w-x cpl x86)))))
+
+  (defthm consp-translate-all-l-addrs
+    (equal (consp (translate-all-l-addrs l-addrs r-w-x cpl x86))
+           (consp l-addrs)))
+
+  (defthm len-of-translate-all-l-addrs
+    (equal (len (translate-all-l-addrs l-addrs r-w-x cpl x86))
+           (len l-addrs)))
+
+  (defthm member-p-of-translate-all-l-addrs-implies-consp-l-addrs
+    (implies (member-p e (translate-all-l-addrs l-addrs r-w-x cpl x86))
+             (consp l-addrs))
+    :rule-classes :forward-chaining)
+
+  (defthm translate-all-l-addrs-when-len-l-addrs=0
+    (implies (equal (len l-addrs) 0)
+             (equal (translate-all-l-addrs l-addrs r-w-x cpl x86)
+                    nil)))
+
+  (defthm translate-all-l-addrs-member-p-lemma
+    (implies (and (disjoint-p (translate-all-l-addrs l-addrs-1 r-w-x-1 cpl x86)
+                              (translate-all-l-addrs l-addrs-2 r-w-x-2 cpl x86))
+                  (member-p index l-addrs-1))
+             (disjoint-p
+              (list (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x-1 cpl x86)))
+              (translate-all-l-addrs l-addrs-2 r-w-x-2 cpl x86)))
+    :hints (("Goal"
+             :induct (translate-all-l-addrs l-addrs-1 r-w-x-1 cpl x86)
+             :in-theory (e/d* (disjoint-p member-p) ())))))
 
 (defthmd rm08-wm08-disjoint-in-system-level-mode
   (implies (and (paging-entries-found-p addr-1 (double-rewrite x86))
@@ -2064,53 +2178,7 @@ wb:
                              unsigned-byte-p
                              gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)))))
 
-(define translate-all-l-addrs (l-addrs r-w-x cpl x86)
-  :guard (and (canonical-address-listp l-addrs)
-              (member r-w-x '(:r :w :x))
-              (unsigned-byte-p 2 cpl))
-  :enabled t
-  :non-executable t
-  (if (endp l-addrs)
-      nil
-    (b* (((mv ?flg p-addr x86)
-          (ia32e-entries-found-la-to-pa (car l-addrs) r-w-x cpl x86))
-         ;; ((when flg)
-         ;;  nil)
-         )
-      (cons p-addr (translate-all-l-addrs (cdr l-addrs) r-w-x cpl x86))))
-  ///
-  (defthm translate-all-l-addrs-and-xlate-equiv-structures
-    (implies (xlate-equiv-structures x86-1 x86-2)
-             (equal (translate-all-l-addrs l-addrs r-w-x cpl x86-1)
-                    (translate-all-l-addrs l-addrs r-w-x cpl x86-2)))
-    :rule-classes :congruence)
-
-  (defthm translate-all-l-addrs-and-cdr
-    (equal (cdr (translate-all-l-addrs l-addrs r-w-x cpl x86))
-           (translate-all-l-addrs (cdr l-addrs) r-w-x cpl x86)))
-
-  (defthm translate-all-l-addrs-and-car
-    (implies (consp l-addrs)
-             (equal (car (translate-all-l-addrs l-addrs r-w-x cpl x86))
-                    (mv-nth 1 (ia32e-entries-found-la-to-pa (car l-addrs) r-w-x cpl x86)))))
-
-  (defthm consp-translate-all-l-addrs
-    (equal (consp (translate-all-l-addrs l-addrs r-w-x cpl x86))
-           (consp l-addrs)))
-
-  (defthm len-of-translate-all-l-addrs
-    (equal (len (translate-all-l-addrs l-addrs r-w-x cpl x86))
-           (len l-addrs)))
-
-  (defthm member-p-of-translate-all-l-addrs-implies-consp-l-addrs
-    (implies (member-p e (translate-all-l-addrs l-addrs r-w-x cpl x86))
-             (consp l-addrs))
-    :rule-classes :forward-chaining)
-
-  (defthm translate-all-l-addrs-when-len-l-addrs=0
-    (implies (equal (len l-addrs) 0)
-             (equal (translate-all-l-addrs l-addrs r-w-x cpl x86)
-                    nil))))
+;; ----------------------------------------------------------------------
 
 (local
  (defthm rm08-and-wb-disjoint-lemma
@@ -2167,169 +2235,124 @@ wb:
             (equal (mv-nth 1 (rb-1 l-addrs r-w-x x86 acc))
                    acc))))
 
-(defthm translate-all-l-addrs-member-p-lemma
-  (implies (and (disjoint-p (translate-all-l-addrs l-addrs-1 r-w-x-1 cpl x86)
-                            (translate-all-l-addrs l-addrs-2 r-w-x-2 cpl x86))
-                (member-p index l-addrs-1))
-           (disjoint-p
-            (list (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x-1 cpl x86)))
-            (translate-all-l-addrs l-addrs-2 r-w-x-2 cpl x86)))
-  :hints (("Goal"
-           :induct (translate-all-l-addrs l-addrs-1 r-w-x-1 cpl x86)
-           :in-theory (e/d* (disjoint-p member-p) ()))))
+#||
+(MV-NTH 1
+        (RB-1 (CDR L-ADDRS-1)
+              R-W-X
+              (MV-NTH 1
+                      (WB ADDR-BYTES
+                          (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86))))
+              NIL))
+
+==
+
+(MV-NTH
+ 1
+ (RB-1 (CDR L-ADDRS-1) R-W-X
+       (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X
+                       (MV-NTH 1 (WB ADDR-BYTES X86)))) NIL))
+
+----------------------------------------------------------------------
+
+L.H.S.:
+
+The congruence rule mv-nth-1-rb-and-xlate-equiv-x86s-disjoint says
+that in the x86 position of rb-1, we need preserve only
+xlate-equiv-x86s.
+
+So, if we apply the rewrite rule
+mv-nth-1-wb-and-xlate-equiv-x86s-disjoint to the following:
+
+(MV-NTH 1 (WB ADDR-BYTES (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86))))
+
+we will get (also using the rewrite rule mv-nth-2-rm08-and-xlate-equiv-x86s):
+
+(MV-NTH 1 (WB ADDR-BYTES x86))
+
+----------------------------------------------------------------------
+
+R.H.S.:
+
+Again, the congruence rule mv-nth-1-rb-and-xlate-equiv-x86s-disjoint
+says that in the x86 position of rb-1, we need preserve only
+xlate-equiv-x86s.
+
+So, if we apply the rewrite rule mv-nth-2-rm08-and-xlate-equiv-x86s to
+the following:
+
+(MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X (MV-NTH 1 (WB ADDR-BYTES X86))))
+
+we will get:
+
+(MV-NTH 1 (WB ADDR-BYTES X86))
+
+(XLATE-EQUIV-X86S
+ (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X (MV-NTH 1 (WB ADDR-BYTES X86))))
+ (MV-NTH 1 (WB ADDR-BYTES X86)))
+
+----------------------------------------------------------------------
+
+||#
 
 (local
- (DEFTHM RB-1-WB-DISJOINT-IN-SYSTEM-LEVEL-MODE-1-2-5
-   #||
-   (MV-NTH 1
-           (RB-1 (CDR L-ADDRS-1)
-                 R-W-X
-                 (MV-NTH 1
-                         (WB ADDR-BYTES
-                             (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86))))
-                 NIL))
-
-   ==
-
-   (MV-NTH
-    1
-    (RB-1 (CDR L-ADDRS-1) R-W-X
-          (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X
-                          (MV-NTH 1 (WB ADDR-BYTES X86)))) NIL))
-
-   ----------------------------------------------------------------------
-
-   L.H.S.:
-
-   The congruence rule mv-nth-1-rb-and-xlate-equiv-x86s-disjoint says
-   that in the x86 position of rb-1, we need preserve only
-   xlate-equiv-x86s.
-
-   So, if we apply the rewrite rule
-   mv-nth-1-wb-and-xlate-equiv-x86s-disjoint to the following:
-
-   (MV-NTH 1 (WB ADDR-BYTES (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86))))
-
-   we will get (also using the rewrite rule mv-nth-2-rm08-and-xlate-equiv-x86s):
-
-   (MV-NTH 1 (WB ADDR-BYTES x86))
-
-   ----------------------------------------------------------------------
-
-   R.H.S.:
-
-   Again, the congruence rule mv-nth-1-rb-and-xlate-equiv-x86s-disjoint
-   says that in the x86 position of rb-1, we need preserve only
-   xlate-equiv-x86s.
-
-   So, if we apply the rewrite rule mv-nth-2-rm08-and-xlate-equiv-x86s to
-   the following:
-
-   (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X (MV-NTH 1 (WB ADDR-BYTES X86))))
-
-   we will get:
-
-   (MV-NTH 1 (WB ADDR-BYTES X86))
-
-   (XLATE-EQUIV-X86S
-    (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X (MV-NTH 1 (WB ADDR-BYTES X86))))
-    (MV-NTH 1 (WB ADDR-BYTES X86)))
-
-   ----------------------------------------------------------------------
-
-   ||#
-   (IMPLIES
-    (AND
-     (CONSP L-ADDRS-1)
-     (EQUAL
-      (MV-NTH 1
-              (RB-1 (CDR L-ADDRS-1)
-                    R-W-X
-                    (MV-NTH 1
-                            (WB ADDR-BYTES
-                                (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86))))
-                    NIL))
-      (MV-NTH 1 (RB-1 (CDR L-ADDRS-1) R-W-X X86 NIL)))
-     (PAGING-ENTRIES-FOUND-P (CAR L-ADDRS-1)
-                             X86)
-     (ALL-PAGING-ENTRIES-FOUND-P (CDR L-ADDRS-1)
-                                 X86)
-     (ALL-PAGING-ENTRIES-FOUND-P (STRIP-CARS ADDR-BYTES)
-                                 X86)
-     (DISJOINT-P (TRANSLATE-ALL-L-ADDRS L-ADDRS-1 R-W-X
-                                        (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                        X86)
-                 (TRANSLATE-ALL-L-ADDRS (STRIP-CARS ADDR-BYTES)
-                                        :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                        X86))
-     (PAIRWISE-DISJOINT-P-AUX
-      (LIST
-       (MV-NTH
+ (defthmd rb-1-wb-disjoint-in-system-level-mode-helper
+   (implies
+    (and
+     (consp l-addrs-1)
+     (equal
+      (mv-nth 1
+              (rb-1 (cdr l-addrs-1)
+                    r-w-x
+                    (mv-nth 1
+                            (wb addr-bytes
+                                (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86))))
+                    nil))
+      (mv-nth 1 (rb-1 (cdr l-addrs-1) r-w-x x86 nil)))
+     (paging-entries-found-p (car l-addrs-1) x86)
+     (all-paging-entries-found-p (cdr l-addrs-1) x86)
+     (all-paging-entries-found-p (strip-cars addr-bytes) x86)
+     (disjoint-p
+      (translate-all-l-addrs l-addrs-1 r-w-x
+                             (loghead 2 (xr :seg-visible 1 x86))
+                             x86)
+      (translate-all-l-addrs (strip-cars addr-bytes)
+                             :w (loghead 2 (xr :seg-visible 1 x86))
+                             x86))
+     (pairwise-disjoint-p-aux
+      (list
+       (mv-nth
         1
-        (IA32E-ENTRIES-FOUND-LA-TO-PA (CAR L-ADDRS-1)
-                                      R-W-X
-                                      (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                      X86)))
-      (OPEN-QWORD-PADDR-LIST-LIST
-       (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
-     (MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
-      (CDR L-ADDRS-1)
-      R-W-X
-      (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-      X86)
-     (MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
-      (STRIP-CARS ADDR-BYTES)
-      :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-      X86)
-     (TRUE-LISTP ACC)
-     (NOT (MV-NTH 0 (RM08 (CAR L-ADDRS-1) R-W-X X86))))
-    (EQUAL (MV-NTH 1
-                   (RB-1 L-ADDRS-1
-                         R-W-X (MV-NTH 1 (WB ADDR-BYTES X86))
-                         NIL))
-           (CONS (MV-NTH 1 (RM08 (CAR L-ADDRS-1) R-W-X X86))
-                 (MV-NTH 1
-                         (RB-1 (CDR L-ADDRS-1) R-W-X X86 NIL)))))
-   :INSTRUCTIONS
-   ((:DV 2 1 2)
-    :X :TOP :BASH (:DV 1)
-    (:REWRITE RM08-AND-WB-DISJOINT-LEMMA
-              ((CPL (BITOPS::PART-SELECT-WIDTH-LOW (SEG-VISIBLEI 1 X86)
-                                                   2 0))))
-    :TOP
-    :BASH :BASH :BASH :DEMOTE (:DV 1 6 1)
-    :X :UP :S
-    :TOP (:IN-THEORY (E/D (DISJOINT-P) NIL))
-    :BASH :BASH :BASH (:DV 1)
-    (:REWRITE RM08-AND-WB-DISJOINT-LEMMA
-              ((CPL (BITOPS::PART-SELECT-WIDTH-LOW (SEG-VISIBLEI 1 X86)
-                                                   2 0))))
-    :TOP
-    :BASH :BASH :BASH :DEMOTE (:DV 1 6 1)
-    :X
-    :TOP (:IN-THEORY (E/D (DISJOINT-P) NIL))
-    :BASH :BASH :BASH
-    (:IN-THEORY (E/D NIL
-                     (MV-NTH-1-RB-1-AND-XLATE-EQUIV-X86S-DISJOINT)))
-    (:USE
-     (:INSTANCE MV-NTH-1-RB-1-AND-XLATE-EQUIV-X86S-DISJOINT
-                (L-ADDRS (CDR L-ADDRS-1))
-                (R-W-X R-W-X)
-                (X86-1 (MV-NTH 2
-                               (RM08 (CAR L-ADDRS-1)
-                                     R-W-X (MV-NTH 1 (WB ADDR-BYTES X86)))))
-                (X86-2 (MV-NTH 1 (WB ADDR-BYTES X86)))
-                (ACC NIL))
-     (:INSTANCE
-      MV-NTH-1-RB-1-AND-XLATE-EQUIV-X86S-DISJOINT
-      (L-ADDRS (CDR L-ADDRS-1))
-      (R-W-X R-W-X)
-      (X86-1 (MV-NTH 1
-                     (WB ADDR-BYTES
-                         (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86)))))
-      (X86-2 (MV-NTH 1 (WB ADDR-BYTES X86)))
-      (ACC NIL)))
-    :BASH)))
+        (ia32e-entries-found-la-to-pa
+         (car l-addrs-1) r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86)))
+      (open-qword-paddr-list-list
+       (gather-all-paging-structure-qword-addresses x86)))
+     (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+      (cdr l-addrs-1) r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86)
+     (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+      (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86)
+     (not (mv-nth 0 (rm08 (car l-addrs-1) r-w-x x86))))
+    (equal (mv-nth 1 (rb-1 l-addrs-1 r-w-x (mv-nth 1 (wb addr-bytes x86)) nil))
+           (cons (mv-nth 1 (rm08 (car l-addrs-1) r-w-x x86))
+                 (mv-nth 1 (rb-1 (cdr l-addrs-1) r-w-x x86 nil)))))
+   :hints (("Goal" :in-theory (e/d* (disjoint-p)
+                                    (mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint))
+            :use
+            ((:instance mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
+                        (l-addrs (cdr l-addrs-1))
+                        (r-w-x r-w-x)
+                        (x86-1 (mv-nth 2
+                                       (rm08 (car l-addrs-1)
+                                             r-w-x (mv-nth 1 (wb addr-bytes x86)))))
+                        (x86-2 (mv-nth 1 (wb addr-bytes x86)))
+                        (acc nil))
+             (:instance mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
+                        (l-addrs (cdr l-addrs-1))
+                        (r-w-x r-w-x)
+                        (x86-1 (mv-nth 1
+                                       (wb addr-bytes
+                                           (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86)))))
+                        (x86-2 (mv-nth 1 (wb addr-bytes x86)))
+                        (acc nil)))))))
 
 (defthmd rb-1-wb-disjoint-in-system-level-mode
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
@@ -2352,6 +2375,7 @@ wb:
   :hints (("Goal"
            :induct (rb-1-wb-disjoint-ind-hint l-addrs-1 (strip-cars addr-bytes) bytes r-w-x x86 acc)
            :in-theory (e/d* (rb-1
+                             rb-1-wb-disjoint-in-system-level-mode-helper
                              wb
                              rm08-wm08-disjoint-in-system-level-mode
                              all-paging-entries-found-p
@@ -2359,10 +2383,12 @@ wb:
                             (signed-byte-p unsigned-byte-p)))
           ("Subgoal *1/2.4'"
            :in-theory (e/d* (rb-1
+                             rb-1-wb-disjoint-in-system-level-mode-helper
                              wb
                              rm08-wm08-disjoint-in-system-level-mode
                              all-paging-entries-found-p
-                             mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
+                             mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                             disjoint-p)
                             (signed-byte-p
                              unsigned-byte-p
                              relating-rm08-and-rb-1-error))
@@ -2394,216 +2420,142 @@ wb:
            :in-theory (e/d* (rb rb-1-wb-disjoint-in-system-level-mode)
                             (rb-1 signed-byte-p unsigned-byte-p force (force))))))
 
-;; (i-am-here)
+;; ----------------------------------------------------------------------
 
-(defthm rm08-from-linear-addresses-that-map-to-the-same-physical-address
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (equal
-                 ;; The physical addresses corresponding to addr-1 and
-                 ;; addr-2 are the same.
-                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x-1 cpl x86))
-                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 r-w-x-2 cpl x86)))
-                (paging-entries-found-p addr-1 (double-rewrite x86))
-                (paging-entries-found-p addr-2 (double-rewrite x86))
-                (pairwise-disjoint-p-aux
-                 ;; The read isn't being done from the page tables.
-                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 r-w-x-1 cpl x86)))
-                 (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
-                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-1 r-w-x-1 cpl x86)))
-                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-2 r-w-x-2 cpl x86))))
-           (and
-            (equal
-             (mv-nth 0 (rm08 addr-1 r-w-x-1 x86))
-             (mv-nth 0 (rm08 addr-2 r-w-x-2 x86)))
-            (equal
-             (mv-nth 1 (rm08 addr-1 r-w-x-1 x86))
-             (mv-nth 1 (rm08 addr-2 r-w-x-2 x86)))
-            (xlate-equiv-x86s
-             (mv-nth 2 (rm08 addr-1 r-w-x-1 x86))
-             (mv-nth 2 (rm08 addr-2 r-w-x-2 x86)))))
-  :hints (("Goal" :in-theory (e/d* (rm08)
-                                   (signed-byte-p
-                                    unsigned-byte-p)))))
-
-(defthm wm08-from-linear-addresses-that-map-to-the-same-physical-address
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (equal
-                 ;; The physical addresses corresponding to addr-1 and
-                 ;; addr-2 are the same.
-                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 :w cpl x86))
-                 (mv-nth 1 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86)))
-                (paging-entries-found-p addr-1 (double-rewrite x86))
-                (paging-entries-found-p addr-2 (double-rewrite x86))
-                (pairwise-disjoint-p-aux
-                 ;; The write isn't being done to the page tables.
-                 (list (mv-nth 1 (ia32e-entries-found-la-to-pa addr-1 :w cpl x86)))
-                 (open-qword-paddr-list-list (gather-all-paging-structure-qword-addresses x86)))
-                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-1 :w cpl x86)))
-                (not (mv-nth 0 (ia32e-entries-found-la-to-pa addr-2 :w cpl x86))))
-           (and
-            (equal (mv-nth 0 (wm08 addr-1 val x86))
-                   (mv-nth 0 (wm08 addr-2 val x86)))
-            (xlate-equiv-x86s (mv-nth 1 (wm08 addr-1 val x86))
-                              (mv-nth 1 (wm08 addr-2 val x86)))))
-  :hints (("Goal" :in-theory (e/d* (wm08)
-                                   (signed-byte-p
-                                    unsigned-byte-p)))))
 
 (local
- (DEFTHMD RM08-AND-WB-MEMBER-LEMMA-ERROR-HELPER
-   (IMPLIES
-    (AND
-     (CONSP ADDR-BYTES)
-     (EQUAL
-      (MV-NTH 1
-              (IA32E-ENTRIES-FOUND-LA-TO-PA INDEX R-W-X
-                                            (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                            X86))
-      (MV-NTH
-       1
-       (IA32E-ENTRIES-FOUND-LA-TO-PA (CAR (STRIP-CARS ADDR-BYTES))
-                                     :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                     X86)))
-     (PAGING-ENTRIES-FOUND-P INDEX X86)
-     (ALL-PAGING-ENTRIES-FOUND-P (STRIP-CARS ADDR-BYTES)
-                                 X86)
-     (CONSP (STRIP-CARS ADDR-BYTES))
-     (NO-DUPLICATES-P
-      (TRANSLATE-ALL-L-ADDRS (STRIP-CARS ADDR-BYTES)
-                             :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                             X86))
-     (NO-DUPLICATES-P (STRIP-CARS ADDR-BYTES))
-     (MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
-      (STRIP-CARS ADDR-BYTES)
-      :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-      X86)
-     (NOT
-      (MV-NTH 0
-              (IA32E-ENTRIES-FOUND-LA-TO-PA INDEX R-W-X
-                                            (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                            X86)))
-     (NO-PAGE-FAULTS-DURING-TRANSLATION-P
-      (STRIP-CARS ADDR-BYTES)
-      :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-      X86)
-     (ADDR-BYTE-ALISTP ADDR-BYTES))
-    (NOT (MV-NTH 0
-                 (RM08 INDEX
-                       R-W-X (MV-NTH 1 (WB ADDR-BYTES X86))))))
-   :INSTRUCTIONS
-   ((:DV 2 1 2 3 2)
-    :X :TOP
-    (:IN-THEORY
-     (E/D (NO-PAGE-FAULTS-DURING-TRANSLATION-P
-           MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
-           ALL-PAGING-ENTRIES-FOUND-P
-           POS RM08-WM08-EQUAL-IN-SYSTEM-LEVEL-MODE
-           DISJOINT-P)
-          NIL))
-    :BASH (:DV 1)
-    (:REWRITE RM08-AND-WB-DISJOINT-LEMMA
-              ((CPL (BITOPS::PART-SELECT-WIDTH-LOW
-                     (SEG-VISIBLEI 1
-                                   (MV-NTH 1
-                                           (WM08 (CAR (CAR ADDR-BYTES))
-                                                 (CDR (CAR ADDR-BYTES))
-                                                 X86)))
-                     2 0))))
-    :TOP :BASH :BASH
-    :BASH :BASH :BASH (:CHANGE-GOAL NIL T)
-    :BASH (:DV 2 1)
-    (:REWRITE
-     GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES-WITH-XLATE-EQUIV-STRUCTURES)
-    :TOP :BASH
-    :BASH :BASH)))
+ (defthmd rm08-and-wb-member-lemma-error-helper
+   (implies
+    (and
+     (equal (mv-nth 1 (ia32e-entries-found-la-to-pa
+                       index r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+            (mv-nth 1 (ia32e-entries-found-la-to-pa
+                       (car (strip-cars addr-bytes))
+                       :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+     (paging-entries-found-p index x86)
+     (all-paging-entries-found-p (strip-cars addr-bytes) x86)
+     (no-duplicates-p
+      (translate-all-l-addrs
+       (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+     (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+      (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86)
+     (not (mv-nth 0 (ia32e-entries-found-la-to-pa
+                     index r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86)))
+     (no-page-faults-during-translation-p
+      (strip-cars addr-bytes)
+      :w (loghead 2 (xr :seg-visible 1 x86))
+      x86))
+    (not (mv-nth 0 (rm08 index r-w-x (mv-nth 1 (wb addr-bytes x86))))))
+   :hints (("Goal"
+            :do-not-induct t
+            :expand (wb addr-bytes x86)
+            :in-theory (e/d* (no-page-faults-during-translation-p
+                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                              all-paging-entries-found-p
+                              pos rm08-wm08-equal-in-system-level-mode
+                              disjoint-p)
+                             (rm08-from-linear-addresses-that-map-to-the-same-physical-address
+                              rm08-and-wb-disjoint-lemma))
+            :use ((:instance rm08-and-wb-disjoint-lemma
+                             (index index)
+                             (r-w-x r-w-x)
+                             (addr-bytes (cdr addr-bytes))
+                             (x86 (mv-nth 1
+                                          (wm08 (car (car addr-bytes))
+                                                (cdr (car addr-bytes))
+                                                x86)))
+                             (cpl (bitops::part-select-width-low
+                                   (seg-visiblei
+                                    1
+                                    (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
+                                   2 0)))
+                  (:instance gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
+                             (x86 (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
+                             (x86-equiv x86)))))))
 
 (local
- (DEFTHMd RM08-AND-WB-MEMBER-LEMMA-VALUE-HELPER
-   (IMPLIES
-    (AND
-     (CONSP ADDR-BYTES)
-     (EQUAL
-      (MV-NTH 1
-              (IA32E-ENTRIES-FOUND-LA-TO-PA INDEX R-W-X
-                                            (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                            X86))
-      (MV-NTH
+ (defthmd rm08-and-wb-member-lemma-value-helper
+   (implies
+    (and
+     (consp addr-bytes)
+     (equal
+      (mv-nth 1
+              (ia32e-entries-found-la-to-pa index r-w-x
+                                            (loghead 2 (xr :seg-visible 1 x86))
+                                            x86))
+      (mv-nth
        1
-       (IA32E-ENTRIES-FOUND-LA-TO-PA (CAR (STRIP-CARS ADDR-BYTES))
-                                     :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                     X86)))
-     (PAGING-ENTRIES-FOUND-P INDEX X86)
-     (ALL-PAGING-ENTRIES-FOUND-P (STRIP-CARS ADDR-BYTES)
-                                 X86)
-     (CONSP (STRIP-CARS ADDR-BYTES))
-     (NO-DUPLICATES-P
-      (TRANSLATE-ALL-L-ADDRS (STRIP-CARS ADDR-BYTES)
-                             :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                             X86))
-     (NO-DUPLICATES-P (STRIP-CARS ADDR-BYTES))
-     (MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
-      (STRIP-CARS ADDR-BYTES)
-      :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-      X86)
-     (NOT
-      (MV-NTH 0
-              (IA32E-ENTRIES-FOUND-LA-TO-PA INDEX R-W-X
-                                            (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                            X86)))
-     (NO-PAGE-FAULTS-DURING-TRANSLATION-P
-      (STRIP-CARS ADDR-BYTES)
-      :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-      X86)
-     (EQUAL (LEN (STRIP-CARS ADDR-BYTES))
-            (LEN (STRIP-CDRS ADDR-BYTES)))
-     (ADDR-BYTE-ALISTP ADDR-BYTES))
-    (EQUAL
-     (MV-NTH 1
-             (RM08 INDEX
-                   R-W-X (MV-NTH 1 (WB ADDR-BYTES X86))))
-     (NTH
-      (POS
-       (MV-NTH
+       (ia32e-entries-found-la-to-pa (car (strip-cars addr-bytes))
+                                     :w (loghead 2 (xr :seg-visible 1 x86))
+                                     x86)))
+     (paging-entries-found-p index x86)
+     (all-paging-entries-found-p (strip-cars addr-bytes)
+                                 x86)
+     (consp (strip-cars addr-bytes))
+     (no-duplicates-p
+      (translate-all-l-addrs (strip-cars addr-bytes)
+                             :w (loghead 2 (xr :seg-visible 1 x86))
+                             x86))
+     (no-duplicates-p (strip-cars addr-bytes))
+     (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+      (strip-cars addr-bytes)
+      :w (loghead 2 (xr :seg-visible 1 x86))
+      x86)
+     (not
+      (mv-nth 0
+              (ia32e-entries-found-la-to-pa index r-w-x
+                                            (loghead 2 (xr :seg-visible 1 x86))
+                                            x86)))
+     (no-page-faults-during-translation-p
+      (strip-cars addr-bytes)
+      :w (loghead 2 (xr :seg-visible 1 x86))
+      x86)
+     (equal (len (strip-cars addr-bytes))
+            (len (strip-cdrs addr-bytes)))
+     (addr-byte-alistp addr-bytes))
+    (equal
+     (mv-nth 1
+             (rm08 index
+                   r-w-x (mv-nth 1 (wb addr-bytes x86))))
+     (nth
+      (pos
+       (mv-nth
         1
-        (IA32E-ENTRIES-FOUND-LA-TO-PA (CAR (STRIP-CARS ADDR-BYTES))
-                                      :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                      X86))
-       (TRANSLATE-ALL-L-ADDRS (STRIP-CARS ADDR-BYTES)
-                              :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                              X86))
-      (STRIP-CDRS ADDR-BYTES))))
-   :INSTRUCTIONS
-   ((:DV 2 1 2 3 2)
-    :X :TOP
-    (:IN-THEORY
-     (E/D (NO-PAGE-FAULTS-DURING-TRANSLATION-P
-           MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
-           ALL-PAGING-ENTRIES-FOUND-P
-           POS RM08-WM08-EQUAL-IN-SYSTEM-LEVEL-MODE
-           DISJOINT-P)
-          NIL))
-    :BASH (:DV 1)
-    (:REWRITE RM08-AND-WB-DISJOINT-LEMMA
-              ((CPL (BITOPS::PART-SELECT-WIDTH-LOW
-                     (SEG-VISIBLEI 1
-                                   (MV-NTH 1
-                                           (WM08 (CAR (CAR ADDR-BYTES))
-                                                 (CDR (CAR ADDR-BYTES))
-                                                 X86)))
-                     2 0))))
-    :TOP
-    :BASH :BASH
-    :BASH :BASH
-    :BASH
-    (:USE
-     (:INSTANCE
-      GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES-WITH-XLATE-EQUIV-STRUCTURES
-      (X86 X86)
-      (X86-EQUIV (MV-NTH 1
-                         (WM08 (CAR (CAR ADDR-BYTES))
-                               (CDR (CAR ADDR-BYTES))
-                               X86)))))
-    :BASH :BASH)))
+        (ia32e-entries-found-la-to-pa (car (strip-cars addr-bytes))
+                                      :w (loghead 2 (xr :seg-visible 1 x86))
+                                      x86))
+       (translate-all-l-addrs (strip-cars addr-bytes)
+                              :w (loghead 2 (xr :seg-visible 1 x86))
+                              x86))
+      (strip-cdrs addr-bytes))))
+
+   :hints (("Goal"
+            :do-not-induct t
+            :expand (wb addr-bytes x86)
+            :in-theory (e/d* (no-page-faults-during-translation-p
+                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                              all-paging-entries-found-p
+                              pos rm08-wm08-equal-in-system-level-mode
+                              disjoint-p)
+                             (rm08-from-linear-addresses-that-map-to-the-same-physical-address
+                              rm08-and-wb-disjoint-lemma))
+            :use ((:instance rm08-and-wb-disjoint-lemma
+                             (index index)
+                             (r-w-x r-w-x)
+                             (addr-bytes (cdr addr-bytes))
+                             (x86 (mv-nth 1
+                                          (wm08 (car (car addr-bytes))
+                                                (cdr (car addr-bytes))
+                                                x86)))
+                             (cpl (bitops::part-select-width-low
+                                   (seg-visiblei
+                                    1
+                                    (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
+                                   2 0)))
+                  (:instance gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
+                             (x86 (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
+                             (x86-equiv x86)))))))
+
 
 (defun-nx rm08-and-wb-member-lemma-ind-hint
   (index addr-bytes r-w-x cpl x86)
@@ -2678,183 +2630,65 @@ wb:
                               rm08-and-wb-member-lemma-value-helper)
                              ())))))
 
-;; (local
-;;  (defthm nth-pos-1-and-cdr-and-minus
-;;    (implies (and (not (equal e (car x)))
-;;                  (member-p e x)
-;;                  (natp n))
-;;             (equal (nth (- (pos-1 e x n) n) y)
-;;                    (nth (- (pos-1 e (cdr x) n) n) (cdr y))))))
-
-;; (local
-;;  (defthm assoc-equal-and-nth-pos-1
-;;    (implies (and (equal (len l-addrs) (len bytes))
-;;                  (member-p e l-addrs)
-;;                  (natp n))
-;;             (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
-;;                    (nth (- (pos-1 e l-addrs n) n) bytes)))
-;;    :hints (("Goal"
-;;             :induct (create-addr-bytes-alist l-addrs bytes)
-;;             :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus)))
-;;            ("Subgoal *1/2"
-;;             :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus))
-;;             :use ((:instance nth-pos-1-and-cdr-and-minus
-;;                              (e e)
-;;                              (x l-addrs)
-;;                              (y bytes)
-;;                              (n n)))))))
-
-;; (defthm assoc-equal-and-nth-pos
-;;   (implies (and (equal (len l-addrs) (len bytes))
-;;                 (member-p e l-addrs))
-;;            (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
-;;                   (nth (pos e l-addrs) bytes)))
-;;   :hints (("Goal" :in-theory (e/d* (pos) (assoc-equal-and-nth-pos-1))
-;;            :use ((:instance assoc-equal-and-nth-pos-1
-;;                             (n 0))))))
-
-;; (defthm len-of-strip-cdrs
-;;   (equal (len (strip-cdrs as)) (len as)))
-
-;; (defthm len-of-strip-cars
-;;   (equal (len (strip-cars as)) (len as)))
-
 (local
- (DEFTHMD rb-1-wb-subset-in-system-level-mode-helper
-   (IMPLIES
-    (AND
-     (CONSP L-ADDRS-1)
-     (EQUAL
-      (MV-NTH 1
-              (RB-1 (CDR L-ADDRS-1)
-                    R-W-X
-                    (MV-NTH 1
-                            (WB ADDR-BYTES
-                                (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86))))
-                    NIL))
-      (ASSOC-LIST
-       (TRANSLATE-ALL-L-ADDRS (CDR L-ADDRS-1)
-                              R-W-X
-                              (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                              X86)
-       (CREATE-ADDR-BYTES-ALIST
-        (TRANSLATE-ALL-L-ADDRS (STRIP-CARS ADDR-BYTES)
-                               :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                               X86)
-        (STRIP-CDRS ADDR-BYTES))))
-     (PAGING-ENTRIES-FOUND-P (CAR L-ADDRS-1)
-                             X86)
-     (ALL-PAGING-ENTRIES-FOUND-P (CDR L-ADDRS-1)
-                                 X86)
-     (ALL-PAGING-ENTRIES-FOUND-P (STRIP-CARS ADDR-BYTES)
-                                 X86)
-     (MEMBER-P
-      (MV-NTH 1
-              (IA32E-ENTRIES-FOUND-LA-TO-PA (CAR L-ADDRS-1)
-                                            R-W-X
-                                            (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                            X86))
-      (TRANSLATE-ALL-L-ADDRS (STRIP-CARS ADDR-BYTES)
-                             :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                             X86))
-     (SUBSET-P (TRANSLATE-ALL-L-ADDRS (CDR L-ADDRS-1)
-                                      R-W-X
-                                      (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                      X86)
-               (TRANSLATE-ALL-L-ADDRS (STRIP-CARS ADDR-BYTES)
-                                      :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                      X86))
-     (NO-DUPLICATES-P
-      (TRANSLATE-ALL-L-ADDRS (STRIP-CARS ADDR-BYTES)
-                             :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                             X86))
-     (NO-DUPLICATES-P (STRIP-CARS ADDR-BYTES))
-     (MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
-      (STRIP-CARS ADDR-BYTES)
-      :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-      X86)
-     (PAIRWISE-DISJOINT-P-AUX
-      (LIST
-       (MV-NTH
-        1
-        (IA32E-ENTRIES-FOUND-LA-TO-PA (CAR L-ADDRS-1)
-                                      R-W-X
-                                      (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                      X86)))
-      (OPEN-QWORD-PADDR-LIST-LIST
-       (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
-     (MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
-      (CDR L-ADDRS-1)
-      R-W-X
-      (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-      X86)
-     (NOT
-      (MV-NTH 0
-              (IA32E-ENTRIES-FOUND-LA-TO-PA (CAR L-ADDRS-1)
-                                            R-W-X
-                                            (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                            X86)))
-     (NO-PAGE-FAULTS-DURING-TRANSLATION-P (CDR L-ADDRS-1)
-                                          R-W-X
-                                          (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                          X86)
-     (NO-PAGE-FAULTS-DURING-TRANSLATION-P
-      (STRIP-CARS ADDR-BYTES)
-      :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-      X86)
-     (ADDR-BYTE-ALISTP ADDR-BYTES)
-     (TRUE-LISTP ACC))
-    (EQUAL
-     (MV-NTH 1
-             (RB-1 L-ADDRS-1
-                   R-W-X (MV-NTH 1 (WB ADDR-BYTES X86))
-                   NIL))
-     (CONS
-      (NTH
-       (POS
-        (MV-NTH
+ (defthmd rb-1-wb-subset-in-system-level-mode-helper
+   (implies
+    (and (consp l-addrs-1)
+         (paging-entries-found-p (car l-addrs-1) x86)
+         (all-paging-entries-found-p (cdr l-addrs-1) x86)
+         (all-paging-entries-found-p (strip-cars addr-bytes) x86)
+         (member-p
+          (mv-nth 1 (ia32e-entries-found-la-to-pa
+                     (car l-addrs-1) r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+          (translate-all-l-addrs (strip-cars addr-bytes)
+                                 :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+         (no-duplicates-p
+          (translate-all-l-addrs
+           (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+         (no-duplicates-p (strip-cars addr-bytes))
+         (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+          (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86)
+         (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+          (cdr l-addrs-1) r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86)
+         (not
+          (mv-nth 0
+                  (ia32e-entries-found-la-to-pa
+                   (car l-addrs-1) r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86)))
+         (no-page-faults-during-translation-p
+          (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86)
+         (addr-byte-alistp addr-bytes))
+    (equal
+     (mv-nth 1 (rb-1 l-addrs-1 r-w-x (mv-nth 1 (wb addr-bytes x86)) nil))
+     (cons
+      (nth
+       (pos
+        (mv-nth
          1
-         (IA32E-ENTRIES-FOUND-LA-TO-PA (CAR L-ADDRS-1)
-                                       R-W-X
-                                       (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                       X86))
-        (TRANSLATE-ALL-L-ADDRS (STRIP-CARS ADDR-BYTES)
-                               :W (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                               X86))
-       (STRIP-CDRS ADDR-BYTES))
-      (MV-NTH 1
-              (RB-1 (CDR L-ADDRS-1)
-                    R-W-X
-                    (MV-NTH 1
-                            (WB ADDR-BYTES
-                                (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86))))
-                    NIL)))))
-   :INSTRUCTIONS
-   ((:DV 2 1 2)
-    :X :TOP
-    (:IN-THEORY
-     (E/D (NO-PAGE-FAULTS-DURING-TRANSLATION-P
-           MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P
-           ALL-PAGING-ENTRIES-FOUND-P)
-          NIL))
-    :BASH
-    (:IN-THEORY (E/D NIL
-                     (MV-NTH-1-WB-AND-XLATE-EQUIV-X86S-DISJOINT)))
-    (:USE (:INSTANCE MV-NTH-1-WB-AND-XLATE-EQUIV-X86S-DISJOINT
-                     (X86-1 (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86)))
-                     (X86-2 X86)
-                     (ADDR-BYTES ADDR-BYTES)))
-    (:USE
-     (:INSTANCE
-      MV-NTH-1-RB-1-AND-XLATE-EQUIV-X86S-DISJOINT
-      (X86-1 (MV-NTH 1
-                     (WB ADDR-BYTES
-                         (MV-NTH 2 (RM08 (CAR L-ADDRS-1) R-W-X X86)))))
-      (X86-2 (MV-NTH 1 (WB ADDR-BYTES X86)))
-      (L-ADDRS (CDR L-ADDRS-1))
-      (R-W-X R-W-X)
-      (ACC NIL)))
-    :BASH)))
+         (ia32e-entries-found-la-to-pa
+          (car l-addrs-1) r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+        (translate-all-l-addrs (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+       (strip-cdrs addr-bytes))
+      (mv-nth 1
+              (rb-1 (cdr l-addrs-1) r-w-x
+                    (mv-nth 1 (wb addr-bytes (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86)))) nil)))))
+   :hints (("Goal"
+            :do-not-induct t
+            :expand (rb-1 l-addrs-1 r-w-x (mv-nth 1 (wb addr-bytes x86)) nil)
+            :in-theory (e/d* (no-page-faults-during-translation-p
+                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                              all-paging-entries-found-p)
+                             (mv-nth-1-wb-and-xlate-equiv-x86s-disjoint
+                              ))
+            :use ((:instance mv-nth-1-wb-and-xlate-equiv-x86s-disjoint
+                             (x86-1 (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86)))
+                             (x86-2 x86)
+                             (addr-bytes addr-bytes))
+                  (:instance mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
+                             (x86-1 (mv-nth 1 (wb addr-bytes (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86)))))
+                             (x86-2 (mv-nth 1 (wb addr-bytes x86)))
+                             (l-addrs (cdr l-addrs-1))
+                             (r-w-x r-w-x)
+                             (acc nil)))))))
 
 (defun-nx rb-1-wb-subset-ind-hint
   (l-addrs-1 addr-bytes r-w-x cpl x86 acc)
@@ -2875,7 +2709,6 @@ wb:
 (defthmd rb-1-wb-subset-in-system-level-mode
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
                 (all-paging-entries-found-p l-addrs-1 x86)
-                ;; Shouldn't need the following hyp...
                 (all-paging-entries-found-p (strip-cars addr-bytes) x86)
 
                 (subset-p
@@ -2900,10 +2733,8 @@ wb:
                  ;; The write isn't being done to the page tables.
                  (strip-cars addr-bytes) :w cpl (double-rewrite x86))
                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-                 ;; Shouldn't need the following hyp...
                  l-addrs-1 r-w-x cpl (double-rewrite x86))
                 (no-page-faults-during-translation-p l-addrs-1 r-w-x cpl (double-rewrite x86))
-                ;; Shouldn't need the following hyp...
                 (no-page-faults-during-translation-p (strip-cars addr-bytes) :w cpl (double-rewrite x86))
                 (addr-byte-alistp addr-bytes)
                 (true-listp acc))
@@ -2932,7 +2763,6 @@ wb:
 (defthm rb-wb-subset-in-system-level-mode
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
                 (all-paging-entries-found-p l-addrs-1 x86)
-                ;; Shouldn't need the following hyp...
                 (all-paging-entries-found-p (strip-cars addr-bytes) x86)
 
                 (subset-p
@@ -2957,10 +2787,8 @@ wb:
                  ;; The write isn't being done to the page tables.
                  (strip-cars addr-bytes) :w cpl (double-rewrite x86))
                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-                 ;; Shouldn't need the following hyp...
                  l-addrs-1 r-w-x cpl (double-rewrite x86))
                 (no-page-faults-during-translation-p l-addrs-1 r-w-x cpl (double-rewrite x86))
-                ;; Shouldn't need the following hyp...
                 (no-page-faults-during-translation-p (strip-cars addr-bytes) :w cpl (double-rewrite x86))
                 (addr-byte-alistp addr-bytes))
            (equal (mv-nth 1 (rb l-addrs-1 r-w-x (mv-nth 1 (wb addr-bytes x86))))
