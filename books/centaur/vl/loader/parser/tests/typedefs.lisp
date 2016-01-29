@@ -790,8 +790,8 @@
                     :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a" = 1) ("b" = 2)))
                     :post-usertypes ("foo"))
 
-(test-parse-typedef :input "typedef enum {a[3] = 1, b = 2} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a" (:range 0 3) = 1) ("b" = 2)))
+(test-parse-typedef :input "typedef enum {a[3] = 1, b = 2} foo;" ;; subtle, a[3] means a[0:2]!!!
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a" (:range 0 2) = 1) ("b" = 2)))
                     :post-usertypes ("foo"))
 
 (test-parse-typedef :input "typedef enum {a[3:0] = 1, b[1:2] = 2} foo;"
