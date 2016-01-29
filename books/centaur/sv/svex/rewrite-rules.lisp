@@ -1721,9 +1721,11 @@
   (b* (((rsh-of-concat-table x))
        (shift (lnfix shift))
        (alist-lookup (hons-get shift x.alist))
-       ((when alist-lookup) (cdr alist-lookup)))
-    (svex-call 'rsh (list (svex-quote (2vec (- shift x.alist-width)))
-                          x.tail))))
+       ((when alist-lookup) (cdr alist-lookup))
+       ((unless (<= x.alist-width shift))
+        (raise "Error -- rsh-of-concat table should contain all indices less than alist-width")
+        (svex-call 'rsh (list (svex-quote (2vec (- shift x.alist-width))) x.tail))))
+    (svex-rsh (- shift x.alist-width) x.tail)))
 
 (define svex-to-rsh-of-concat-accumulate
   ((width natp "Number of bits remaining to accumulate")
@@ -3712,24 +3714,24 @@
 (acl2::sneaky-alist state)
 (acl2::sneaky-clear)
 
-(loop for x in *svex-rewrite-table* do
+(loop for x in sv::*svex-rewrite-table* do
       (loop for y in (cdr x) do (profile-fn y)))
+(profile-fn 'sv::svex-rewrite-fncall)
+(profile-fn 'sv::svex-rewrite-fncall-once)
+(profile-fn 'sv::svex-rewrite-under-subst)
+(profile-fn 'sv::svex-rewrite)
+(profile-fn 'sv::svex-argmasks)
+
+(profile-fn 'sv::svexlist-compute-masks)
+(profile-fn 'sv::svexlist-mask-alist)
+(profile-fn 'sv::svexlist-toposort)
+(profile-fn 'sv::svexlist-mask-acons)
 (loop for x in sv::*svex-op-table* do
       (let ((name (intern$ (str::cat "SVMASK-FOR-" (symbol-name (car x))) "SV")))
         (profile-fn (deref-macro-name name (macro-aliases (w *the-live-state*))))))
-(profile 'svex-rewrite-fncall)
-(profile 'svex-rewrite-fncall-once)
-(profile 'svex-rewrite-under-subst)
-(profile 'svex-locally-rewrite)
 
-(profile 'svex-argmasks)
-(profile 'svexlist-compute-masks)
-(profile 'svexlist-mask-alist)
-(profile 'svexlist-toposort)
-(profile 'svexlist-mask-acons)
-
-(profile 'svex-to-rsh-of-concat-table)
-(profile 'rsh-of-concat-table-lookup)
-(profile 'svex-subst)
-
+(profile-fn 'sv::svex-to-rsh-of-concat-table)
+(profile-fn 'sv::rsh-of-concat-table-lookup)
+(profile-fn 'sv::svex-subst)
+(profile-fn 'sv::svexlist-multirefs-top)
 ||#

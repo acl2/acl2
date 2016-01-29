@@ -51,6 +51,7 @@
                        (not (booleanp x))))
             (and (eq (car x) :var)
                  (consp (cdr x))
+                 (integerp (cddr x))
                  (not (and (or (stringp (cadr x))
                                (and (symbolp (cadr x))
                                     (not (booleanp (cadr x)))))
@@ -63,20 +64,26 @@
                 but our representation is optimized for @(see stringp) or @(see
                 symbolp) names.")
     (delay :type natp
-           :acc-body (if (atom x) 0 (cddr x))
+           :acc-body (if (atom x) 0 (if (< (cddr x) 0) (lognot (cddr x)) (cddr x)))
            :default 0
-           :doc "An natural valued index for this variable, used for instance
+           :doc "A natural valued index for this variable, used for instance
                  to support the encoding of, e.g., previous versus current
                  register values in FSMs.  The default delay (which enjoys an
                  optimized representation) is 0.  See below for some motivation
-                 and explanation."))
+                 and explanation.")
+    (nonblocking :type booleanp
+               :acc-body (if (atom x) nil (< (cddr x) 0))
+               :doc "A flag used in statement processing to indicate a reference
+                     to a variable after nonblocking assignments have been done.
+                      Not used in other contexts."))
    :ctor-body
    (if (and (or (stringp name)
                 (and (symbolp name)
                      (not (booleanp name))))
+            (not nonblocking)
             (eql delay 0))
        name
-     (hons :var (hons name delay)))
+     (hons :var (hons name (if nonblocking (lognot delay) delay))))
    :long "<p>Each variable in an @(see svex) represents a @(see 4vec).</p>
 
 <p>In most s-expression formats, e.g., s-expressions in Lisp or in the @(see

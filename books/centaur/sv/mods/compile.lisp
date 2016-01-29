@@ -940,7 +940,8 @@ should address this again later.</p>"
        ((unless rewrite)
         (mv updates next-states))
        (rewritten (svex-alist-rewrite-fixpoint (append updates next-states)
-                                               :verbosep t))
+                                               :verbosep t
+                                               :count 2))
        (updates-len (len updates))
        (updates (take updates-len rewritten))
        (next-states (nthcdr updates-len rewritten)))

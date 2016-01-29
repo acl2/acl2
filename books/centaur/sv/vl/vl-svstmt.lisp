@@ -34,6 +34,7 @@
 (include-book "centaur/vl/mlib/filter" :dir :system)
 (include-book "svstmt-compile")
 (include-book "centaur/fty/visitor" :dir :system)
+(include-book "centaur/misc/sneaky-load" :dir :system)
 ;; (include-book "vl-fns-called")
 ;; (include-book "vl-paramrefs")
 ;; (include-book "centaur/vl/transforms/always/util" :dir :system)
@@ -344,6 +345,70 @@ because... (BOZO)</p>
 ;;           (mv ok warnings svstmts (and ok size)))
 
 
+#!sv
+(defines svex-set-nonblocking
+  :verify-guards nil
+  (define svex-set-nonblocking ((x svex-p))
+    :measure (svex-count x)
+    :returns (new-x (and (svex-p new-x)
+                         (implies (svarlist-addr-p (svex-vars x))
+                                  (svarlist-addr-p (svex-vars new-x))))
+                    :hints('(:in-theory (e/d (svar-addr-p)
+                                             (svex-set-nonblocking
+                                              svexlist-set-nonblocking)))))
+    (b* ((x (svex-fix x)))
+      (svex-case x
+        :var (change-svex-var x :name (change-svar x.name :nonblocking t))
+        :quote x
+        :call (change-svex-call x :args (svexlist-set-nonblocking x.args)))))
+
+  (define svexlist-set-nonblocking ((x svexlist-p))
+    :measure (svexlist-count x)
+    :returns (new-x (and (svexlist-p new-x)
+                         (implies (svarlist-addr-p (svexlist-vars x))
+                                  (svarlist-addr-p (svexlist-vars new-x)))))
+    (if (atom x)
+        nil
+      (cons (svex-set-nonblocking (car x))
+            (svexlist-set-nonblocking (cdr x)))))
+  ///
+  (verify-guards svex-set-nonblocking)
+  (deffixequiv-mutual svex-set-nonblocking))
+
+
+#!sv
+(defines svex-unset-nonblocking
+  :verify-guards nil
+  (define svex-unset-nonblocking ((x svex-p))
+    :measure (svex-count x)
+    :returns (new-x (and (svex-p new-x)
+                         (implies (svarlist-addr-p (svex-vars x))
+                                  (svarlist-addr-p (svex-vars new-x))))
+                    :hints('(:in-theory (e/d (svar-addr-p)
+                                             (svex-unset-nonblocking
+                                              svexlist-unset-nonblocking)))))
+    (b* ((x (svex-fix x)))
+      (svex-case x
+        :var (change-svex-var x :name (change-svar x.name :nonblocking nil))
+        :quote x
+        :call (change-svex-call x :args (svexlist-unset-nonblocking x.args)))))
+
+  (define svexlist-unset-nonblocking ((x svexlist-p))
+    :measure (svexlist-count x)
+    :returns (new-x (and (svexlist-p new-x)
+                         (implies (svarlist-addr-p (svexlist-vars x))
+                                  (svarlist-addr-p (svexlist-vars new-x)))))
+    (if (atom x)
+        nil
+      (cons (svex-unset-nonblocking (car x))
+            (svexlist-unset-nonblocking (cdr x)))))
+  ///
+  (verify-guards svex-unset-nonblocking)
+  (deffixequiv-mutual svex-unset-nonblocking)
+  (memoize 'svex-unset-nonblocking :condition '(svex-case (svex-fix x) :call)))
+  
+
+
 
 (defines vl-procedural-assign->svstmts
 
@@ -419,6 +484,11 @@ because... (BOZO)</p>
              ((mv err longest-static-prefix-svex lsp-type dynselect-expr)
               (vl-operandinfo-to-svex-longest-static-prefix
                opinfo indices ss scopes))
+             (longest-static-prefix-svex (if blockingp
+                                             longest-static-prefix-svex
+                                           (sv::svex-set-nonblocking
+                                            longest-static-prefix-svex)))
+
              (dynselect-trunc (sv::svcall sv::concat (svex-int dyn-size) dynselect-expr (svex-x)))
              ((when err)
               (mv nil
@@ -1860,6 +1930,101 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 ||#
 
+#!sv
+(define svex-alist-unset-nonblocking ((x svex-alist-p))
+  :returns (new-x (and (svex-alist-p new-x)
+                       (implies (svarlist-addr-p (svex-alist-keys x))
+                                (svarlist-addr-p (svex-alist-keys new-x)))
+                       (implies (svarlist-addr-p (svex-alist-vars x))
+                                (svarlist-addr-p (svex-alist-vars new-x))))
+                  :hints(("Goal" :in-theory (enable svar-addr-p))))
+  :prepwork ((local (defthmd svex-alist-vars-expand1
+                      (equal (svex-alist-vars x)
+                             (and (consp (svex-alist-fix x))
+                                  (union (svex-vars (cdar (svex-alist-fix x)))
+                                         (svex-alist-vars (cdr (svex-alist-fix x))))))
+                      :hints(("Goal" :in-theory (enable svex-alist-vars
+                                                        svex-alist-fix)))))
+             (local (defthm svex-alist-vars-expand
+                      (implies (consp (svex-alist-fix x))
+                               (equal (svex-alist-vars x)
+                                      (union (svex-vars (cdar (svex-alist-fix x)))
+                                             (svex-alist-vars (cdr (svex-alist-fix x))))))
+                      :hints(("Goal" :use  svex-alist-vars-expand1))))
+             (local (defthmd svex-alist-keys-expand1
+                      (equal (svex-alist-keys x)
+                             (and (consp (svex-alist-fix x))
+                                  (cons (caar (svex-alist-fix x))
+                                        (svex-alist-keys (cdr (svex-alist-fix x))))))
+                      :hints(("Goal" :in-theory (enable svex-alist-keys
+                                                        svex-alist-fix)))))
+             (local (defthm svex-alist-keys-expand
+                      (implies (consp (svex-alist-fix x))
+                               (equal (svex-alist-keys x)
+                                      (cons (caar (svex-alist-fix x))
+                                            (svex-alist-keys (cdr (svex-alist-fix x))))))
+                      :hints(("Goal" :use svex-alist-keys-expand1)))))
+  :measure (len (svex-alist-fix x))
+  (b* ((x (svex-alist-fix x)))
+    (if (atom x)
+        nil
+      (cons (cons (change-svar (caar x) :nonblocking nil)
+                  (svex-unset-nonblocking (cdar x)))
+            (svex-alist-unset-nonblocking (cdr x))))))
+
+#!sv
+(define 4vmask-alist-unset-nonblocking ((x 4vmask-alist-p))
+  ;; :returns (new-x (and (4vmask-alist-p new-x)
+  ;;                      (implies (svarlist-addr-p (4vmask-alist-keys x))
+  ;;                               (svarlist-addr-p (4vmask-alist-keys new-x)))
+  ;;                      (implies (svarlist-addr-p (4vmask-alist-vars x))
+  ;;                               (svarlist-addr-p (4vmask-alist-vars new-x))))
+  ;;                 :hints(("Goal" :in-theory (enable svar-addr-p))))
+  ;; :prepwork ((local (defthmd 4vmask-alist-vars-expand1
+  ;;                     (equal (4vmask-alist-vars x)
+  ;;                            (and (consp (4vmask-alist-fix x))
+  ;;                                 (union (svex-vars (cdar (4vmask-alist-fix x)))
+  ;;                                        (4vmask-alist-vars (cdr (4vmask-alist-fix x))))))
+  ;;                     :hints(("Goal" :in-theory (enable 4vmask-alist-vars
+  ;;                                                       4vmask-alist-fix)))))
+  ;;            (local (defthm 4vmask-alist-vars-expand
+  ;;                     (implies (consp (4vmask-alist-fix x))
+  ;;                              (equal (4vmask-alist-vars x)
+  ;;                                     (union (svex-vars (cdar (4vmask-alist-fix x)))
+  ;;                                            (4vmask-alist-vars (cdr (4vmask-alist-fix x))))))
+  ;;                     :hints(("Goal" :use  4vmask-alist-vars-expand1))))
+  ;;            (local (defthmd 4vmask-alist-keys-expand1
+  ;;                     (equal (4vmask-alist-keys x)
+  ;;                            (and (consp (4vmask-alist-fix x))
+  ;;                                 (cons (caar (4vmask-alist-fix x))
+  ;;                                       (4vmask-alist-keys (cdr (4vmask-alist-fix x))))))
+  ;;                     :hints(("Goal" :in-theory (enable 4vmask-alist-keys
+  ;;                                                       4vmask-alist-fix)))))
+  ;;            (local (defthm 4vmask-alist-keys-expand
+  ;;                     (implies (consp (4vmask-alist-fix x))
+  ;;                              (equal (4vmask-alist-keys x)
+  ;;                                     (cons (caar (4vmask-alist-fix x))
+  ;;                                           (4vmask-alist-keys (cdr (4vmask-alist-fix x))))))
+  ;;                     :hints(("Goal" :use 4vmask-alist-keys-expand1)))))
+  :returns (new-x 4vmask-alist-p)
+  :measure (len (4vmask-alist-fix x))
+  (b* ((x (4vmask-alist-fix x)))
+    (if (atom x)
+        nil
+      (cons (cons (change-svar (caar x) :nonblocking nil)
+                  (cdar x))
+            (4vmask-alist-unset-nonblocking (cdr x))))))
+  
+
+
+
+#!sv
+(local (defthm svex-lookup-of-badguy-in-alist
+         (implies (not (member (svar-fix v) (svex-alist-keys a)))
+                  (not (svex-lookup v a)))))
+
+;; (local (in-theory (disable sv::member-svex-alist-keys)))
+
 (define vl-always->svex ((x vl-always-p)
                          (ss vl-scopestack-p)
                          (scopes vl-elabscopes-p))
@@ -1907,18 +2072,22 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                           nil)) ;; fnname
        ((unless ok) (mv warnings nil))
        ;; Only use the nonblocking-delay strategy for flops, not latches
+       (locstring (vl-location-string x.loc))
        ((wmv ok warnings st)
         (time$ (sv::svstmtlist-compile-top svstmts :reclimit *vl-svstmt-compile-reclimit*
                                            :nb-delayp nil)
                :mintime 1/2
                :msg "; vl-always->svex: compiling statement at ~s0: ~st sec, ~sa bytes~%"
-               :args (list (vl-location-string x.loc))))
+               :args (list locstring)))
        ((unless ok) (mv warnings nil))
 
        ((sv::svstate st) (sv::svstate-clean st))
 
        (- (sv::svstack-free st.blkst))
        (st.blkst (make-fast-alist (sv::svstack-to-svex-alist st.blkst)))
+       (st.nonblkst (sv::svex-alist-unset-nonblocking st.nonblkst))
+       (- (clear-memoize-table 'sv::svex-unset-nonblocking)
+          (clear-memoize-table 'sv::svex-set-nonblocking))
        (blk-written-vars (sv::svex-alist-keys st.blkst))
        (nb-written-vars  (sv::svex-alist-keys st.nonblkst))
 
@@ -1941,25 +2110,32 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
        (nb-read-vars (sv::svex-alist-vars st.nonblkst))
 
+       (loc-of-interest nil)
+
        ;; Note: Because we want to warn about latches in a combinational
        ;; context, we do a rewrite pass before substituting.
-       (blkst-rw (time$ (sv::svex-alist-rewrite-fixpoint st.blkst)
-                        :mintime 1/2
+       (- (and loc-of-interest
+               (acl2::sneaky-save 'blkst st.blkst))
+          (and loc-of-interest
+               (acl2::sneaky-save 'nonblkst st.nonblkst)))
+       (blkst-rw (time$ (sv::svex-alist-rewrite-fixpoint st.blkst :verbosep t)
+                        :mintime (if loc-of-interest 0 1/2)
                         :msg "; vl-always->svex at ~s0: rewriting blocking assignments: ~st sec, ~sa bytes~%"
-                        :args (list (vl-location-string x.loc))))
+                        :args (list locstring)))
                  
-       (nbst-rw  (time$ (sv::svex-alist-rewrite-fixpoint st.nonblkst)
-                        :mintime 1/2
+       (nbst-rw  (time$ (sv::svex-alist-rewrite-fixpoint st.nonblkst :verbosep t)
+                        :mintime (if loc-of-interest 0 1/2)
                         :msg "; vl-always->svex at ~s0: rewriting nonblocking assignments: ~st sec, ~sa bytes~%"
-                        :args (list (vl-location-string x.loc))))
+                        :args (list locstring)))
        (read-masks (time$ (sv::svexlist-mask-alist
                            (append (sv::svex-alist-vals blkst-rw)
                                    (sv::svex-alist-vals nbst-rw)))
-                          :mintime 1/2
+                          :mintime (if loc-of-interest 0 1/2)
                           :msg "; vl-always->svex at ~s0: read masks: ~st sec, ~sa bytes~%"
-                          :args (list (vl-location-string x.loc))))
+                          :args (list locstring)))
        ((mv blkst-write-masks nbst-write-masks)
         (sv::svstmtlist-write-masks svstmts nil nil))
+       (nbst-write-masks (sv::4vmask-alist-unset-nonblocking nbst-write-masks))
        (write-masks (fast-alist-clean
                      (combine-mask-alists blkst-write-masks nbst-write-masks)))
 
@@ -1997,8 +2173,15 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                         blkst-subst))
 
        (updates (append nbst-trigger blkst-trigger))
+       (- (and loc-of-interest
+               (acl2::sneaky-save 'updates updates)))
+       (- (and loc-of-interest (break$)))
+       (updates-rw (time$ (sv::svex-alist-rewrite-fixpoint updates :verbosep t)
+                          :mintime (if loc-of-interest 0 1/2)
+                          :msg "; vl-always->svex at ~s0: rewriting final updates: ~st sec, ~sa bytes~%"
+                          :args (list (vl-location-string x.loc))))
 
-       (updates-rw (sv::svex-alist-rewrite-fixpoint updates))
+
 
        ;; Compilation was ok.  Now we need to turn the state back into a list
        ;; of assigns.  Do this by getting the masks of what portion of each

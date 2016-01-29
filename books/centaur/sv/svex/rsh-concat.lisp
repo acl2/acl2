@@ -37,7 +37,7 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-
+(local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable ash logapp)))
 
 (defthm 4vec-concat-associative
@@ -243,14 +243,18 @@
   :returns (rsh svex-p)
   (if (zp sh)
       (svex-fix x)
-    (svex-call 'rsh (list (svex-quote (2vec sh)) x)))
+    (b* (((mv matchedp shift subexp) (match-rsh x)))
+      (if matchedp
+          (svex-call 'rsh (list (svex-quote (2vec (+ shift sh))) subexp))
+        (svex-call 'rsh (list (svex-quote (2vec sh)) x)))))
   ///
   (deffixequiv svex-rsh)
 
   (defthm svex-rsh-correct
     (equal (svex-eval (svex-rsh sh x) env)
            (svex-eval (svex-call 'rsh (list (svex-quote (2vec (nfix sh))) x)) env))
-    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval)
+    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval
+                                      match-rsh-correct-rewrite-svex-eval-of-x)
             :expand ((:free (f a) (svex-eval (svex-call f a) env))
                      (svex-eval 0 env)))))
 
