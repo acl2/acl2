@@ -191,6 +191,42 @@ relevant'') in the default case.</p>"
            (4vec-x))
     :hints(("Goal" :in-theory (enable 4vec-mask 4vec-equiv)))))
 
+(define 4vec-mask-to-zero
+  :short "Reduce a constant @(see 4vec) using a @(see 4vmask); any irrelevant
+          bits become 0s."
+  ((mask  4vmask-p "Mask of bits that we care about.")
+   (value 4vec-p   "Original value to be masked."))
+  :returns (masked-value 4vec-p "@('value') with irrelevant bits replaced by 0s.")
+  (b* ((mask (4vmask-fix mask))
+       ((4vec value) value))
+    (4vec (logand mask value.upper)
+          (logand mask value.lower)))
+  ///
+  (deffixequiv 4vec-mask-to-zero)
+
+  (defthm 4vec-mask-to-zero-idempotent
+    (equal (4vec-mask-to-zero mask (4vec-mask-to-zero mask value))
+           (4vec-mask-to-zero mask value)))
+
+  (defthm 4vec-mask-to-zero-minus-1
+    (equal (4vec-mask-to-zero -1 value)
+           (4vec-fix value))
+    :hints(("Goal" :in-theory (enable 4vec-mask-to-zero 4vec-equiv))))
+
+  (defthm 4vec-mask-to-zero-zero
+    (equal (4vec-mask-to-zero 0 value)
+           0)
+    :hints(("Goal" :in-theory (enable 4vec-mask-to-zero 4vec-equiv))))
+
+
+  (defthm 4vec-mask-of-4vec-mask-to-zero
+    (equal (4vec-mask mask (4vec-mask-to-zero mask value))
+           (4vec-mask mask value))
+    :hints(("Goal" :in-theory (enable 4vec-mask))
+           (logbitp-reasoning))))
+
+
+
 (define 4vmask-empty ((x 4vmask-p))
   :short "@(call 4vmask-empty) recognizes the empty @(see 4vmask)."
   :inline t

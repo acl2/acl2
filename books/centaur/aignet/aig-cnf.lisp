@@ -41,7 +41,7 @@
 (include-book "refcounts")
 (include-book "centaur/aig/accumulate-nodes-vars" :dir :system)
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
-
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (e/d (aiglist-to-aignet)
                        (create-sat-lits
                         (create-sat-lits)

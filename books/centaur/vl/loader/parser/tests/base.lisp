@@ -96,6 +96,20 @@
       (:vl-$          '(key :vl-$))
       (:vl-emptyqueue '(key :vl-emptyqueue)))))
 
+(local (defthm vl-atts-p-of-remove-from-alist
+         (implies (vl-atts-p atts)
+                  (vl-atts-p (remove-from-alist key atts)))
+         :hints(("Goal" :in-theory (enable remove-from-alist)))))
+
+(local (defthm vl-atts-count-of-remove-from-alist
+         (implies (vl-atts-p atts)
+                  (<= (vl-atts-count (remove-from-alist key atts))
+                      (vl-atts-count atts)))
+         :rule-classes ((:rewrite) (:linear))
+         :hints(("Goal"
+                 :in-theory (enable vl-atts-count remove-from-alist)
+                 :induct (remove-from-alist key atts)))))
+
 (defines vl-pretty-exprs
   :flag nil
 
@@ -224,74 +238,75 @@
 
   (define vl-pretty-expr ((x vl-expr-p))
     :measure (vl-expr-count x)
-    (vl-expr-case x
-      :vl-special (vl-pretty-specialkey x.key)
-      :vl-literal (vl-pretty-value x.val)
-      :vl-index
-      (b* (((when (vl-idexpr-p x))
-            (list 'id (vl-idexpr->name x))))
-        (list :index
-              (vl-pretty-atts x.atts)
-              (vl-pretty-scopeexpr x.scope)
-              (vl-pretty-exprlist x.indices)
-              (vl-pretty-partselect x.part)))
-      :vl-unary   (list x.op
-                        (vl-pretty-atts x.atts)
-                        (vl-pretty-expr x.arg))
-      :vl-binary  (list x.op
-                        (vl-pretty-atts x.atts)
-                        (vl-pretty-expr x.left)
-                        (vl-pretty-expr x.right))
-      :vl-qmark   (list :vl-qmark
-                        (vl-pretty-atts x.atts)
-                        (vl-pretty-expr x.test)
-                        (vl-pretty-expr x.then)
-                        (vl-pretty-expr x.else))
-      :vl-mintypmax (list :vl-mintypmax
-                          (vl-pretty-atts x.atts)
-                          (vl-pretty-expr x.min)
-                          (vl-pretty-expr x.typ)
-                          (vl-pretty-expr x.max))
-      :vl-concat (list* :vl-concat
-                        (vl-pretty-atts x.atts)
-                        (vl-pretty-exprlist x.parts))
-      :vl-multiconcat (list* :vl-multiconcat
-                             (vl-pretty-atts x.atts)
-                             (vl-pretty-expr x.reps)
-                             (vl-pretty-exprlist x.parts))
-      :vl-stream (list* (if (eq x.dir :left)
-                            :vl-stream-left
-                          :vl-stream-right)
-                        (vl-pretty-atts x.atts)
-                        (if (vl-slicesize-case x.size :none)
-                            (vl-pretty-streamexprlist x.parts)
-                          (cons (vl-pretty-slicesize x.size)
-                                (vl-pretty-streamexprlist x.parts))))
-      :vl-call (list* (if x.systemp :vl-syscall :vl-funcall)
-                      (vl-pretty-atts x.atts)
-                      (vl-pretty-scopeexpr x.name)
-                      (if x.typearg
-                          (cons (vl-pretty-maybe-datatype x.typearg)
-                                (vl-pretty-exprlist x.args))
-                        (vl-pretty-exprlist x.args)))
-      :vl-cast (list :cast
-                     (vl-pretty-atts x.atts)
-                     (vl-pretty-casttype x.to)
-                     (vl-pretty-expr x.expr))
-      :vl-inside (list* :inside
-                        (vl-pretty-atts x.atts)
-                        (vl-pretty-expr x.elem)
-                        (vl-pretty-valuerangelist x.set))
-      :vl-tagged (list* :vl-tagged
-                        (vl-pretty-atts x.atts)
-                        x.tag
-                        (if x.expr
-                            (list (vl-pretty-maybe-expr x.expr))
-                          nil))
-      :vl-pattern (list* :pattern
-                         (vl-pretty-atts x.atts)
-                         (vl-pretty-maybe-datatype x.pattype)
-                         (vl-pretty-assignpat x.pat))))
+    (let ((atts (remove-from-alist "VL_LINESTART" (vl-expr->atts x))))
+      (vl-expr-case x
+        :vl-special (vl-pretty-specialkey x.key)
+        :vl-literal (vl-pretty-value x.val)
+        :vl-index
+        (b* (((when (vl-idexpr-p x))
+              (list 'id (vl-idexpr->name x))))
+          (list :index
+                (vl-pretty-atts atts)
+                (vl-pretty-scopeexpr x.scope)
+                (vl-pretty-exprlist x.indices)
+                (vl-pretty-partselect x.part)))
+        :vl-unary   (list x.op
+                          (vl-pretty-atts atts)
+                          (vl-pretty-expr x.arg))
+        :vl-binary  (list x.op
+                          (vl-pretty-atts atts)
+                          (vl-pretty-expr x.left)
+                          (vl-pretty-expr x.right))
+        :vl-qmark   (list :vl-qmark
+                          (vl-pretty-atts atts)
+                          (vl-pretty-expr x.test)
+                          (vl-pretty-expr x.then)
+                          (vl-pretty-expr x.else))
+        :vl-mintypmax (list :vl-mintypmax
+                            (vl-pretty-atts atts)
+                            (vl-pretty-expr x.min)
+                            (vl-pretty-expr x.typ)
+                            (vl-pretty-expr x.max))
+        :vl-concat (list* :vl-concat
+                          (vl-pretty-atts atts)
+                          (vl-pretty-exprlist x.parts))
+        :vl-multiconcat (list* :vl-multiconcat
+                               (vl-pretty-atts atts)
+                               (vl-pretty-expr x.reps)
+                               (vl-pretty-exprlist x.parts))
+        :vl-stream (list* (if (eq x.dir :left)
+                              :vl-stream-left
+                            :vl-stream-right)
+                          (vl-pretty-atts atts)
+                          (if (vl-slicesize-case x.size :none)
+                              (vl-pretty-streamexprlist x.parts)
+                            (cons (vl-pretty-slicesize x.size)
+                                  (vl-pretty-streamexprlist x.parts))))
+        :vl-call (list* (if x.systemp :vl-syscall :vl-funcall)
+                        (vl-pretty-atts atts)
+                        (vl-pretty-scopeexpr x.name)
+                        (if x.typearg
+                            (cons (vl-pretty-maybe-datatype x.typearg)
+                                  (vl-pretty-exprlist x.args))
+                          (vl-pretty-exprlist x.args)))
+        :vl-cast (list :cast
+                       (vl-pretty-atts atts)
+                       (vl-pretty-casttype x.to)
+                       (vl-pretty-expr x.expr))
+        :vl-inside (list* :inside
+                          (vl-pretty-atts atts)
+                          (vl-pretty-expr x.elem)
+                          (vl-pretty-valuerangelist x.set))
+        :vl-tagged (list* :vl-tagged
+                          (vl-pretty-atts atts)
+                          x.tag
+                          (if x.expr
+                              (list (vl-pretty-maybe-expr x.expr))
+                            nil))
+        :vl-pattern (list* :pattern
+                           (vl-pretty-atts atts)
+                           (vl-pretty-maybe-datatype x.pattype)
+                           (vl-pretty-assignpat x.pat)))))
 
   (define vl-pretty-atts ((x vl-atts-p))
     :measure (vl-atts-count x)

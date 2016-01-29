@@ -35,6 +35,8 @@
 (include-book "centaur/aig/aig-base" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
+
 ;; Translating from Hons AIGs to aignets.
 
 ;; We need a memoization table so that we don't revisit AIG nodes we've already

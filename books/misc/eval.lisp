@@ -27,7 +27,7 @@
              (let ((expr-val (check-vars-not-free
                               (form-val-use-nowhere-else)
                               ,expr)))
-               (cond ((eq form-val-use-nowhere-else expr-val)
+               (cond ((equal form-val-use-nowhere-else expr-val)
                       (value (list 'value-triple (list 'quote expr-val))))
                      (t (er soft
                             (msg "( MUST-EVAL-TO ~@0 ~@1)"

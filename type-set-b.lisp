@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -7624,13 +7624,14 @@
 ; one, change that one!
 
                      (mv-let
-                      (ts2 ttree2)
+                      (ts2 ttree2 extended-p)
                       (type-set-with-rules
                        (getpropc fn 'type-prescriptions nil w)
                        x force-flg
                        dwp ; see comment in rewrite-atm about "use of dwp"
                        type-alist ancestors ens w
-                       *ts-unknown* ttree pot-lst pt backchain-limit)
+                       *ts-unknown* ttree pot-lst pt backchain-limit nil)
+                      (declare (ignore extended-p))
                       (mv (ts-intersection ts ts2) ttree2))))))))
         ((eq fn 'if)
 
@@ -7746,14 +7747,15 @@
 ; WARNING:  There is another call of type-set-with-rules above, in the
 ; recog-tuple case.  If you change this one, change that one!
 
-         (mv-let (ts1 ttree1)
+         (mv-let (ts1 ttree1 extended-p)
                  (type-set-with-rules
                   (getpropc fn 'type-prescriptions nil w)
                   x force-flg
                   dwp ; see comment in rewrite-atm about "use of dwp"
                   type-alist ancestors ens w
                   *ts-unknown* ttree
-                  pot-lst pt backchain-limit)
+                  pot-lst pt backchain-limit nil)
+                 (declare (ignore extended-p))
                  (type-set-finish x ts0 ttree0 ts1 ttree1
                                   type-alist)))))))))
 
@@ -8276,7 +8278,7 @@
             pot-lst pt backchain-limit))))
 
 (defun type-set-with-rule (tp term force-flg dwp type-alist ancestors ens w
-                              ttree pot-lst pt backchain-limit)
+                              ttree pot-lst pt backchain-limit extended-p)
 
 ; We apply the type-prescription, tp, to term, if possible, and return a
 ; type-set, an extended type-alist and a ttree.  If the rule is inapplicable,
@@ -8301,68 +8303,77 @@
       (unify-ans
        (with-accumulated-persistence
         (access type-prescription tp :rune)
-        (ts type-alist-out ttree-out)
+        (ts type-alist-out ttree-out extended-p-out)
         (not (ts= *ts-unknown* ts))
-        (let* ((hyps (access type-prescription tp :hyps))
-               (type-alist
-                (cond
-                 ((null hyps) type-alist)
-                 (t (extend-type-alist-with-bindings unify-subst
-                                                     force-flg
-                                                     nil ; dwp
-                                                     type-alist
-                                                     ancestors
-                                                     ens w
+        (let ((hyps (access type-prescription tp :hyps)))
+          (mv-let
+            (type-alist extended-p)
+            (cond
+             ((or (null hyps)
+                  extended-p)
+              (mv type-alist extended-p))
+             (t (mv (extend-type-alist-with-bindings
+                     unify-subst
+                     force-flg
+                     nil ; dwp
+                     type-alist
+                     ancestors
+                     ens w
 
 ; We lie here by passing in the nil tag-tree, so that we can avoid
 ; contaminating the resulting type-alist with a copy of ttree.  We'll make sure
 ; that ttree gets into the answer returned by type-alist-with-rules, which is
 ; the only function that calls type-set-with-rule.
 
-                                                     nil
-                                                     pot-lst pt
-                                                     backchain-limit)))))
-          (mv-let
-           (relieve-hyps-ans type-alist ttree)
-           (type-set-relieve-hyps (access type-prescription tp :rune)
-                                  term
-                                  hyps
-                                  (access type-prescription tp
-                                          :backchain-limit-lst)
-                                  force-flg
-                                  nil ; dwp
-                                  unify-subst
-                                  type-alist
-                                  ancestors
-                                  ens w
+                     nil
+                     pot-lst pt
+                     backchain-limit)
+                    t)))
+            (mv-let
+              (relieve-hyps-ans type-alist ttree)
+              (type-set-relieve-hyps (access type-prescription tp :rune)
+                                     term
+                                     hyps
+                                     (access type-prescription tp
+                                             :backchain-limit-lst)
+                                     force-flg
+                                     nil ; dwp
+                                     unify-subst
+                                     type-alist
+                                     ancestors
+                                     ens w
 
 ; We pass in nil here to avoid contaminating the type-alist returned by this
 ; call of type-set-relieve-hyps.
 
-                                  nil
-                                  ttree
-                                  pot-lst pt backchain-limit 1)
-           (cond
-            (relieve-hyps-ans
-             (with-accumulated-persistence
-              (access type-prescription tp :rune)
-              (ts type-alist ttree)
-              (ts= ts *ts-unknown*)
-              (type-set-with-rule1 unify-subst
-                                   (access type-prescription tp :vars)
-                                   force-flg
-                                   nil ; dwp
-                                   type-alist ancestors ens w
-                                   (access type-prescription tp :basic-ts)
-                                   (push-lemma
-                                    (access type-prescription tp :rune)
-                                    ttree)
-                                   pot-lst pt backchain-limit)
-              :conc
-              hyps))
-            (t (mv *ts-unknown* type-alist ttree)))))))
-      (t (mv *ts-unknown* type-alist ttree)))))
-   (t (mv *ts-unknown* type-alist ttree))))
+                                     nil
+                                     ttree
+                                     pot-lst pt backchain-limit 1)
+              (cond
+               (relieve-hyps-ans
+                (mv-let
+                  (ts type-alist ttree)
+                  (with-accumulated-persistence
+                   (access type-prescription tp :rune)
+                   (ts type-alist ttree)
+                   (ts= ts *ts-unknown*)
+                   (type-set-with-rule1
+                    unify-subst
+                    (access type-prescription tp :vars)
+                    force-flg
+                    nil ; dwp
+                    type-alist ancestors ens w
+                    (access type-prescription tp :basic-ts)
+                    (push-lemma
+                     (access type-prescription tp :rune)
+                     ttree)
+                    pot-lst pt backchain-limit)
+                   :conc
+                   hyps)
+                  (mv ts type-alist ttree extended-p)))
+               (t (mv *ts-unknown* type-alist ttree extended-p))))))))
+      (t (mv *ts-unknown* type-alist ttree nil)))))
+   (t (mv *ts-unknown* type-alist ttree nil))))
 
 (defun type-set-with-rule1 (alist vars force-flg dwp type-alist ancestors ens w
                                   basic-ts ttree pot-lst pt backchain-limit)
@@ -8402,7 +8413,7 @@
                                 pot-lst pt backchain-limit))))
 
 (defun type-set-with-rules (tp-lst term force-flg dwp type-alist ancestors ens
-                            w ts ttree pot-lst pt backchain-limit)
+                            w ts ttree pot-lst pt backchain-limit extended-p)
 
 ; We try to apply each type-prescription in tp-lst, intersecting
 ; together all the type sets we get and accumulating all the ttrees.
@@ -8416,8 +8427,7 @@
      (type-set-primitive term force-flg dwp type-alist ancestors ens w ttree
                          pot-lst pt backchain-limit)
      (let ((ts2 (ts-intersection ts1 ts)))
-       (mv ts2 (if (ts= ts2 ts) ttree ttree1)))))
-
+       (mv ts2 (if (ts= ts2 ts) ttree ttree1) extended-p))))
    ((ts-subsetp ts
                 (access type-prescription (car tp-lst) :basic-ts))
 
@@ -8433,13 +8443,13 @@
 
     (type-set-with-rules (cdr tp-lst)
                          term force-flg dwp type-alist ancestors ens w ts ttree
-                         pot-lst pt backchain-limit))
+                         pot-lst pt backchain-limit extended-p))
    (t
      (mv-let
-       (ts1 type-alist1 ttree1)
+       (ts1 type-alist1 ttree1 extended-p)
        (type-set-with-rule (car tp-lst)
                            term force-flg dwp type-alist ancestors ens w ttree
-                           pot-lst pt backchain-limit)
+                           pot-lst pt backchain-limit extended-p)
        (let ((ts2 (ts-intersection ts1 ts)))
          (type-set-with-rules (cdr tp-lst)
                               term force-flg dwp type-alist1 ancestors ens w
@@ -8448,7 +8458,7 @@
                                        (equal type-alist type-alist1))
                                   ttree
                                   ttree1)
-                              pot-lst pt backchain-limit))))))
+                              pot-lst pt backchain-limit extended-p))))))
 
 ;; RAG - I added an entry for floor1, which is the only primitive
 ;; non-recognizer function we added for the reals.  [Ruben added entries for

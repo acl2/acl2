@@ -50,7 +50,7 @@
   :long "<p>See @(see assert!).  The only difference between @('assert!-stobj')
  and @('assert!') is that for @('assert!-stobj'), the assertion should evaluate
  to multiple values @('(mv val st)'), where @('val') is an ordinary value and
- @('st') is a @(see stobj).</p>")
+ @('st') is a user-defined @(see stobj) (not @(tsee state)).</p>")
 
 (defun assert!-body (assertion form)
 

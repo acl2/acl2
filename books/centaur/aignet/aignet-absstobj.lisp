@@ -29,19 +29,16 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-
 (include-book "aignet-exec")
-
 (include-book "aignet-logic-interface")
-
 (include-book "centaur/misc/absstobjs" :dir :system)
 (include-book "tools/clone-stobj" :dir :system)
-
 (local (include-book "aignet-exec-thms"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "clause-processors/generalize" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable set::double-containment)))
 (local (in-theory (disable nth update-nth

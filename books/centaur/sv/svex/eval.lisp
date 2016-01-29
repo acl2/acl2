@@ -201,6 +201,7 @@ expect or preserve @(see fast-alists)."
     (clog2     4vec-clog2          (x)                 "ceiling of log2")
     (pow       4vec-pow            (x y)               "exponentiation")
     (?         4vec-?              (test then else)    "if-then-else")
+    (?*        4vec-?*             (test then else)    "if-then-else (for statements)")
     (bit?      4vec-bit?           (test then else)    "bitwise if-then-else")))
 
 (encapsulate
@@ -378,17 +379,20 @@ svex-eval).</p>"
                   :exec
                   ;; Shortcuts for ?, bit?, bitand, bitor
                   (case x.fn
-                    (? (b* (((unless (eql (len x.args) 3))
-                             (svex-apply x.fn (svexlist-eval x.args env)))
-                            (test (3vec-fix (svex-eval (first x.args) env)))
-                            ((4vec test))
-                            ((when (eql test.upper 0))
-                             (svex-eval (third x.args) env))
-                            ((when (not (eql test.lower 0)))
-                             (svex-eval (second x.args) env)))
-                         (4vec-? test
-                                 (svex-eval (second x.args) env)
-                                 (svex-eval (third x.args) env))))
+                    ((? ?*)
+                     (b* (((unless (eql (len x.args) 3))
+                           (svex-apply x.fn (svexlist-eval x.args env)))
+                          (test (3vec-fix (svex-eval (first x.args) env)))
+                          ((4vec test))
+                          ((when (eql test.upper 0))
+                           (svex-eval (third x.args) env))
+                          ((when (not (eql test.lower 0)))
+                           (svex-eval (second x.args) env))
+                          (then (svex-eval (second x.args) env))
+                          (else (svex-eval (third x.args) env)))
+                       (case x.fn
+                         (? (4vec-? test then else))
+                         (?* (4vec-?* test then else)))))
                     (bit?
                      (b* (((unless (eql (len x.args) 3))
                            (svex-apply x.fn (svexlist-eval x.args env)))
@@ -460,6 +464,15 @@ svex-eval).</p>"
                          (equal (4vec-bit? test then else)
                                 (4vec-fix then))))
            :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit?)))))
+
+  (local (defthm 4vec-?*-cases
+           (and (implies (equal (4vec->upper (3vec-fix test)) 0)
+                         (equal (4vec-?* test then else)
+                                (4vec-fix else)))
+                (implies (not (equal (4vec->lower (3vec-fix test)) 0))
+                         (equal (4vec-?* test then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*)))))
 
   (local (defthm 4vec-bitand-case
            (implies (equal test 0)

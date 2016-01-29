@@ -49,7 +49,7 @@
              (vl-descalist-p descalist))))
 
 (defaggregate vls-data
-  :parents (server)
+  :parents (vl-server)
   :short "Data that is available to @(see vls-commands)."
   :tag :vls-data
   ((orig vl-design-p
@@ -81,7 +81,7 @@
   :long "<p>A @('vls-data-p') structure just aggregates a bunch of data that is
 produced when we run the translator.</p>
 
-<p>These structures are typically produced by the @(see server) as part of
+<p>These structures are typically produced by the @(see vl-server) as part of
 its translation-loading scheme.</p>")
 
 ;; (defthm vls-data->orig-depalist-elim

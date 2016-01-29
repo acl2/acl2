@@ -92,15 +92,15 @@ verification with ACL2.  This is the basis for much of Centaur's formal
 verification efforts.</li>
 
 <li>The VL @(see kit) is a standalone command-line program that you can build
-on top of ACL2 and VL.  It provides various high-level commands to, e.g., @(see
-lint)ing, preprocess, collect source code into a single file, and so on.  It
-also provides an interactive shell for an instant way to start up ACL2 with VL
+on top of ACL2 and VL.  It provides some high-level commands that you can use
+to do things like lint your design directly from the command line.  It also
+provides an interactive shell for an instant way to start up ACL2 with VL
 already loaded.</li>
 
 <li>VL has been used to build a web-based ``module browser'' that lets you see
 the source code for our modules with, e.g., hyperlinks for navigating between
 wires and following wires.  This is now integrated into the VL @(see kit); see
-@(see server).</li>
+@(see vl-server).</li>
 
 <li>(unreleased) We have used VL to implement <i>samev</i>, a sequential
 equivalence checking tool with a tick-based timing model that handles both RTL
@@ -178,7 +178,7 @@ SystemVerilog features like structures, arrays, interfaces, and hierarchical
 identifiers.  It does not currently handle transistor-level constructs or
 simulation constructs like dynamic arrays, tasks, classes, etc.</li>
 
-<li>The @(see lint)er flow can cope with richer SystemVerilog designs.  It is
+<li>The @(see vl-lint) flow can cope with richer SystemVerilog designs.  It is
 not especially bothered by transistor-level constructs.  It cannot handle some
 simulation constructs, but is able to ignore many constructs when it does not
 truly understand them.</li>
@@ -258,11 +258,11 @@ e.g., perhaps a module declares @('wire [3:0] foo') and then later declares
 @('integer foo'), or perhaps we are trying to instantiate a module that is not
 defined.</li>
 
-<li>Our @(see lint) checks might notice \"code smells\" where even though the
-input Verilog is semantically well-formed, it is somehow strange and looks like
-it could be an error.  For instance, perhaps there are multiple assignments to
-the same wire, or expressions like @('a & b') where @('a') and @('b') have
-different sizes.</li>
+<li>Our @(see vl-lint) checks might notice \"code smells\" where even though
+the input Verilog is semantically well-formed, it is somehow strange and looks
+like it could be an error.  For instance, perhaps there are multiple
+assignments to the same wire, or expressions like @('a & b') where @('a') and
+@('b') have different sizes.</li>
 
 </ul>
 
@@ -446,8 +446,8 @@ any superior design elements as having fatal warnings somewhere below.  See
 they are created (e.g., between print statements or other kinds of
 tracing.)</li>
 
-<li>Warnings are heavily used in VL's @(see lint)er, which features some
-special mechanisms for <b>suppressing warnings</b>; see @(see
+<li>Warnings are heavily used in @(see vl-lint), which features some special
+mechanisms for <b>suppressing warnings</b>; see @(see
 lint-warning-suppression).</li>
 
 </ul>")

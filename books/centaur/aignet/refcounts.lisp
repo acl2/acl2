@@ -35,6 +35,7 @@
 (local (include-book "clause-processors/just-expand" :dir :system))
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 
 (local (in-theory (disable nth update-nth

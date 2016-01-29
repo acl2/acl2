@@ -389,34 +389,42 @@
   (assert (typep (1- (expt 2 60)) 'fixnum))
   (assert (not (typep (expt 2 60) 'fixnum)))
 
-  (defun scary-unsafe-write-hex-bignum-ccl (val stream)
-    ;; Assumption: val must be a bignum.
-    ;; Assumption: val must be nonzero.
-    (let ((pos (ccl::uvsize val))
-          (chunk))
-      (declare (type fixnum pos)
-               (type (unsigned-byte 32) chunk))
-      ;; I think it is possible to have bignums with zero chunks at the front:
-      ;; a pure-zero leading chunk may be needed if we want to represent a
-      ;; positive (unsigned) number like 2^63, where the most significant bit
-      ;; happens to lie on a 32-bit chunk boundary, and would therefore look
-      ;; like a sign bit.  To deal with this, skip over any leading pure-zero
-      ;; chunks and don't print them.
-      (loop do
-            (decf pos)
-            (setq chunk (ccl::uvref val pos))
-            (unless (eql chunk 0)
-              (loop-finish)))
-      ;; POS now points to the first nonzero chunk.
-      ;; CHUNK is the contents of the first nonzero chunk.
-      (write-hex-u32-without-leading-zeroes chunk stream)
-      ;; We now need to print the remaining chunks, if any, in full.
-      (loop do
-            (decf pos)
-            (when (< pos 0)
-              (loop-finish))
-            (setq chunk (ccl::uvref val pos))
-            (write-hex-u32-with-leading-zeroes chunk stream)))))
+  ;; The Clozure folks have implemented a very fast routine for hex printing
+  ;; in newer versions of CCL.  If it's available then go ahead and use it.
+  (if (fboundp 'ccl::write-unsigned-byte-hex-digits)
+      (progn
+        (declaim (inline scary-unsafe-write-hex-bignum-ccl))
+        (defun scary-unsafe-write-hex-bignum-ccl (val stream)
+          (ccl::write-unsigned-byte-hex-digits val stream)))
+
+    (defun scary-unsafe-write-hex-bignum-ccl (val stream)
+      ;; Assumption: val must be a bignum.
+      ;; Assumption: val must be nonzero.
+      (let ((pos (ccl::uvsize val))
+            (chunk))
+        (declare (type fixnum pos)
+                 (type (unsigned-byte 32) chunk))
+        ;; I think it is possible to have bignums with zero chunks at the front:
+        ;; a pure-zero leading chunk may be needed if we want to represent a
+        ;; positive (unsigned) number like 2^63, where the most significant bit
+        ;; happens to lie on a 32-bit chunk boundary, and would therefore look
+        ;; like a sign bit.  To deal with this, skip over any leading pure-zero
+        ;; chunks and don't print them.
+        (loop do
+              (decf pos)
+              (setq chunk (ccl::uvref val pos))
+              (unless (eql chunk 0)
+                (loop-finish)))
+        ;; POS now points to the first nonzero chunk.
+        ;; CHUNK is the contents of the first nonzero chunk.
+        (write-hex-u32-without-leading-zeroes chunk stream)
+        ;; We now need to print the remaining chunks, if any, in full.
+        (loop do
+              (decf pos)
+              (when (< pos 0)
+                (loop-finish))
+              (setq chunk (ccl::uvref val pos))
+              (write-hex-u32-with-leading-zeroes chunk stream))))))
 
 
 ; SBCL specific bignum printing.

@@ -35,9 +35,32 @@
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "progutils")
 (include-book "oslib/catpath" :dir :system)
+(local (include-book "xdoc/display" :dir :system))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
+(defxdoc vl-gather
+  :parents (kit)
+  :short "Collect SystemVerilog files from across your design into a single
+file."
+
+  :long "<p>You can use the @('vl gather') command to collect up Verilog
+designs, which might be split across several files in many directories, into a
+single file that is otherwise unsimplified.</p>
+
+<p>This kind of consolidation may be useful for a number of reasons, e.g., it
+may allow you to quickly do things like grepping through the entire design,
+grab a snapshot of the entire design, etc.</p>
+
+<p>Note that if you just want to process designs with VL, there's normally no
+reason that you need to use this command.  VL's @(see loader) can be given
+@(see vl-loadconfig) options like @('search-path') and @('include-dirs') to
+allow it to find modules from many directories.</p>
+
+<p>For usage information, run @('vl gather --help') or see @(see
+*vl-gather-help*).</p>")
+
+(local (xdoc::set-default-parents vl-gather))
 
 (defoptions vl-gather-opts
   :parents (vl-gather)
@@ -133,8 +156,10 @@
                 :rule-classes :type-prescription)
    ))
 
-
-(defconst *vl-gather-help* (str::cat "
+(defval *vl-gather-help*
+  :showdef nil
+  :showval t
+  (str::cat "
 vl gather:  Collect Verilog files into a single file.
 
 Example:  vl gather engine.v wrapper.v core.v \\
@@ -185,11 +210,15 @@ Options:" *nls* *nls* *vl-gather-opts-usage* *nls*))
   (defthm string-listp-of-vl-modulelist-original-sources
     (string-listp (vl-modulelist-original-sources x filemap))))
 
+
 (define vl-design-original-source ((x       vl-design-p)
                                    (filemap vl-filemap-p))
   :returns (original-source stringp :rule-classes :type-prescription)
   (b* ((x    (vl-design-fix x))
        (mods (vl-design->mods x)))
+    ;; BOZO this probably needs to get updated for SystemVerilog-2012.  We'll want
+    ;; to go get other things from the design, like the interfaces, programs, and
+    ;; also top-level parameters, etc.
     (str::join (vl-modulelist-original-sources mods filemap)
                (implode '(#\Newline #\Newline)))))
 
@@ -229,15 +258,12 @@ Options:" *nls* *nls* *vl-gather-opts-usage* *nls*))
     state))
 
 (defconsts (*vl-gather-readme* state)
-  (b* (((mv contents state) (acl2::read-file-characters "gather.readme" state))
-       ((when (stringp contents))
-        (raise contents)
-        (mv "" state)))
-    (mv (implode contents) state)))
+  (b* ((topic (xdoc::find-topic 'vl::vl-gather (xdoc::get-xdoc-table (w state))))
+       ((mv text state) (xdoc::topic-to-text topic nil state)))
+    (mv text state)))
 
-(define vl-gather ((argv string-listp) &key (state 'state))
-  :parents (kit)
-  :short "The @('vl gather') command."
+(define vl-gather-top ((argv string-listp) &key (state 'state))
+  :short "Top-level @('vl gather') command."
   (b* (((mv errmsg opts start-files)
         (parse-vl-gather-opts argv))
        ((when errmsg)

@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -10754,19 +10754,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         (unintern sym))
             (delete-package (find-package name)))))))))
 
-(defmacro defpkg-raw (name imports book-path event-form)
+(defun defpkg-raw (name imports book-path event-form)
 
 ; Defpkg checks that name is a string.  Event-form is a cons.  So we don't need
 ; to worry about capture below.
 
-  `(let ((package-entry (find-package-entry ,name *ever-known-package-alist*))
-         (*safe-mode-verified-p* t))
-     (cond
-      ((and package-entry
-            (let ((old-event-form
-                   (package-entry-defpkg-event-form package-entry)))
-              (and (equal (cadr old-event-form) (cadr ,event-form))
-                   (equal (caddr old-event-form) (caddr ,event-form)))))
+  (let ((package-entry (find-package-entry name *ever-known-package-alist*))
+        (*safe-mode-verified-p* t))
+    (cond
+     ((and package-entry
+           (let ((old-event-form
+                  (package-entry-defpkg-event-form package-entry)))
+             (and (equal (cadr old-event-form) (cadr event-form))
+                  (equal (caddr old-event-form) (caddr event-form)))))
 
 ; This shorcut is potentially a big concern!  We are checking that the name and
 ; term of the defpkg form agrees with an old defpkg form.  But these two forms
@@ -10776,11 +10776,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; chk-package-reincarnation-import-restrictions, and if there is a discrepancy
 ; between the current and old package, we'll find out then.
 
-       ,name)
-      (t
-       (maybe-introduce-empty-pkg-1 ,name)
-       (maybe-introduce-empty-pkg-2 ,name)
-       (defpkg-raw1 ,name ,imports ,book-path ,event-form)))))
+      name)
+     (t
+      (maybe-make-three-packages name)
+      (maybe-introduce-empty-pkg-2 name)
+      (defpkg-raw1 name imports book-path event-form)))))
 )
 
 #-acl2-loop-only
@@ -12962,7 +12962,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 7.1
+; ACL2 Version 7.2
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -12988,7 +12988,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 7.1"
+                                "ACL2 Version 7.2"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -24477,10 +24477,10 @@ Lisp definition."
 (defconst *hint-keywords*
 
 ; This constant contains all the legal hint keywords as well as
-; :computed-hints-replacement.
+; :computed-hint-replacement.
 
   (append *top-hint-keywords*
-          '(:computed-hints-replacement
+          '(:computed-hint-replacement
             :error
             :no-op
             :no-thanks

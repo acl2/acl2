@@ -161,10 +161,8 @@
 
 (include-book "centaur/vl/doc" :dir :system)
 
-;; This rule causes type determination to take forever in VL for some reason
-(in-theory (disable consp-append
-                    true-listp-append
-                    (:t append)))
+;; Try to avoid some expensive type-prescription problems
+(in-theory (disable true-listp-append (:t append)))
 
 (include-book "centaur/vl/kit/top" :dir :system)
 (include-book "centaur/vl/mlib/atts" :dir :system)
@@ -241,14 +239,16 @@
 (include-book "centaur/memoize/old/profile" :dir :system)
 (include-book "centaur/memoize/old/watch" :dir :system)
 
-(include-book "data-structures/top" :dir :system)
-(include-book "data-structures/memories/memory" :dir :system)
 (include-book "acl2s/doc" :dir :system)
 
 (include-book "projects/doc" :dir :system)
 
 (include-book "kestrel/top" :dir :system)
 
+;; [Jared] keep these near the end to avoid expensive type prescription rules,
+;; especially related to consp-append.
+(include-book "data-structures/top" :dir :system)
+(include-book "data-structures/memories/memory" :dir :system)
 
 
 #||

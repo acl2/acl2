@@ -133,7 +133,6 @@ we ignore file names.</p>"
                   (item-map vl-commentmap-p)
                   &key (ps 'ps))
        :returns (mv (item-map vl-commentmap-p) ps)
-       :parents (vl-make-item-map-for-ppc-module)
        (b* (((when (atom x))
              (mv (vl-commentmap-fix item-map) ps))
             ((mv str ps)
@@ -165,7 +164,7 @@ we ignore file names.</p>"
                               (item-map vl-commentmap-p)
                               &key (ps 'ps))
   :returns (mv (item-map vl-commentmap-p) ps)
-       :parents (vl-make-item-map-for-ppc-module)
+  :parents (vl-make-item-map-for-ppc-module)
   (b* (((when (atom x))
         (mv (vl-commentmap-fix item-map) ps))
        ((mv str ps)
@@ -254,7 +253,7 @@ we ignore file names.</p>"
   (b* (((when (atom x))
         ps)
        ((when (atom (cdr x)))
-        (vl-print-markup (cdr (first x))))
+        (vl-ps-seq (vl-print-markup (cdr (first x)))))
        ((when (atom (cddr x)))
         (vl-ps-seq (vl-print-markup (cdr (first x)))
                    (vl-print-markup (cdr (second x)))))
@@ -272,14 +271,13 @@ we ignore file names.</p>"
     (vl-ps-seq (vl-print-markup (cdr (first x)))
                (vl-pp-encoded-commentmap (cdr x)))))
 
-(define vl-make-item-map-for-ppc-module
-  ((x        vl-module-p)
-   (ss       vl-scopestack-p "Should already be extended with @('x').")
-   &key (ps 'ps))
-  :returns (mv (map vl-commentmap-p) ps)
-  :parents (vl-ppc-module)
-  :short "Build a commentmap that has the encoded items for a module."
-  (b* (((vl-module x) x)
+(define vl-genblob-populate-item-map ((x    vl-genblob-p)
+                                      (ss   vl-scopestack-p)
+                                      (imap vl-commentmap-p)
+                                      &key (ps 'ps))
+  :returns (mv (imap vl-commentmap-p)
+               ps)
+  (b* (((vl-genblob x))
 
        ;; For efficiency, our ppmap functions destroy the current contents of
        ;; the printer's state, so we are going to go ahead and save them before
@@ -288,16 +286,15 @@ we ignore file names.</p>"
        (col    (vl-ps->col))
        (misc   (vl-ps->misc))
 
-       (ps     (vl-pp-set-portnames x.portdecls)) ;; modifies ps->misc
-
-       (imap nil)
-
        ;; Note: portdecls need to come before vardecls, so that after stable
        ;; sorting any implicit portdecls are still listed before their
        ;; correspondign vardecl; Verilog-XL won't tolerate it the other way;
        ;; see make-implicit-wires for more details.  The vardecls should come
        ;; before any instances/assignments, so that things are declared before
        ;; use.
+
+       ;; BOZO check this for completeness
+       (ps (vl-progindent-block-start))
        ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
        ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
        ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
@@ -313,18 +310,15 @@ we ignore file names.</p>"
        ((mv imap ps) (vl-sequencelist-ppmap x.sequences imap))
        ((mv imap ps) (vl-assertionlist-ppmap x.assertions imap))
        ((mv imap ps) (vl-cassertionlist-ppmap x.cassertions imap))
-
-       ;; Why are we reversing the imap when we're going to sort it anyway?  I
-       ;; think the answer is that some module elements may share a location,
-       ;; and since our sort is stable we want to preserve their original order
-       ;; in the lists above, if possible.
-       (imap (rev imap))
+       ((mv imap ps) (vl-modportlist-ppmap x.modports imap))
+       (ps (vl-progindent-block-end))
 
        ;; Now that we are done generating the ppmap, restore the previous state
        ;; of the ps.
-       (ps   (vl-ps-update-rchars rchars))
-       (ps   (vl-ps-update-col col))
-       (ps   (vl-ps-update-misc misc)))
+
+       (ps (vl-ps-update-rchars rchars))
+       (ps (vl-ps-update-col col))
+       (ps (vl-ps-update-misc misc)))
     (mv imap ps)))
 
 (define vl-ppc-module ((x  vl-module-p)
@@ -345,10 +339,19 @@ submodules in HTML mode.</p>"
 
   (b* (((vl-module x) (vl-module-fix x))
        (ss (vl-scopestack-push x ss))
+       (ps (vl-pp-set-portnames x.portdecls)) ;; modifies ps->misc
 
        ;; The item map binds module item locations to their printed
        ;; representations.
-       ((mv imap ps) (vl-make-item-map-for-ppc-module x ss))
+
+       (imap nil)
+       ((mv imap ps) (vl-genblob-populate-item-map (vl-module->genblob x) ss imap))
+       (imap
+        ;; Note: why are we reversing the imap when we're going to sort it
+        ;; anyway?  I think the answer is that some module elements may share a
+        ;; location, and since our sort is stable we want to preserve their
+        ;; original order in the lists above, if possible.
+        (rev imap))
 
        (comments (vl-add-newlines-after-block-comments x.comments))
        (comments (if (vl-ps->htmlp)
@@ -360,13 +363,13 @@ submodules in HTML mode.</p>"
        (guts     (vl-remove-empty-commentmap-entries guts)))
 
     (vl-ps-seq (vl-when-html (vl-println-markup "<div class=\"vl_src\">"))
-               (vl-pp-atts x.atts)
+               (if x.atts (vl-pp-atts x.atts) ps)
                (vl-ps-span "vl_key" (vl-print "module "))
                (vl-print-modname x.name)
                (vl-print " (")
                (vl-pp-portlist x.ports)
                (vl-println ");")
-               (vl-pp-encoded-commentmap guts)
+               (vl-progindent-block (vl-pp-encoded-commentmap guts))
                (vl-ps-span "vl_key" (vl-println "endmodule"))
                (vl-println "")
                (vl-when-html (vl-println-markup "</div>")))))
@@ -400,50 +403,23 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
 
 
 
-(define vl-make-item-map-for-ppc-interface
-  ((x vl-interface-p)
-   (ss vl-scopestack-p "Already extended with @('x').")
-   &key (ps 'ps))
-  ;; This is based on vl-make-item-map-for-ppc-module.
-  ;; See the comments there for an explanation.
-  :returns (mv (map vl-commentmap-p) ps)
-  (b* (((vl-interface x))
-       (rchars (vl-ps->rchars))
-       (col    (vl-ps->col))
-       (misc   (vl-ps->misc))
-       (imap nil)
-       ;; bozo imports
-
-       ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
-       ((mv imap ps) (vl-modportlist-ppmap x.modports imap))
-
-       ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
-       ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
-       ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap))
-       ((mv imap ps) (vl-taskdecllist-ppmap x.taskdecls imap))
-       ;; bozo typedefs
-       ;; bozo dpiimports/dpiexports
-       ((mv imap ps) (vl-propertylist-ppmap x.properties imap))
-       ((mv imap ps) (vl-sequencelist-ppmap x.sequences imap))
-       ((mv imap ps) (vl-modinstlist-ppmap x.modinsts ss imap))
-       ((mv imap ps) (vl-assignlist-ppmap x.assigns imap))
-       ;; bozo aliases
-       ((mv imap ps) (vl-assertionlist-ppmap x.assertions imap))
-       ((mv imap ps) (vl-cassertionlist-ppmap x.cassertions imap))
-       ((mv imap ps) (vl-alwayslist-ppmap x.alwayses imap))
-       ((mv imap ps) (vl-initiallist-ppmap x.initials imap))
-       ((mv imap ps) (vl-finallist-ppmap x.finals imap))
-       ;; bozo generates, genvars
-       (imap (rev imap))
-       (ps   (vl-ps-update-rchars rchars))
-       (ps   (vl-ps-update-col col))
-       (ps   (vl-ps-update-misc misc)))
-    (mv imap ps)))
-
 (define vl-ppc-interface ((x vl-interface-p) (ss vl-scopestack-p)  &key (ps 'ps))
   (b* (((vl-interface x) (vl-interface-fix x))
        (ss (vl-scopestack-push x ss))
-       ((mv imap ps) (vl-make-item-map-for-ppc-interface x ss))
+       (ps (vl-pp-set-portnames x.portdecls)) ;; modifies ps->misc
+
+       ;; The item map binds module item locations to their printed
+       ;; representations.
+
+       (imap nil)
+       ((mv imap ps) (vl-genblob-populate-item-map (vl-interface->genblob x) ss imap))
+       (imap
+        ;; Note: why are we reversing the imap when we're going to sort it
+        ;; anyway?  I think the answer is that some module elements may share a
+        ;; location, and since our sort is stable we want to preserve their
+        ;; original order in the lists above, if possible.
+        (rev imap))
+
        (comments     (vl-add-newlines-after-block-comments x.comments))
        (comments     (if (vl-ps->htmlp)
                          (vl-html-encode-commentmap comments (vl-ps->tabsize))
@@ -451,11 +427,9 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
        (guts         (cwtime (vl-commentmap-entry-sort (append comments imap))
                              :mintime 1/2
                              :name vl-commentmap-entry-sort)))
-    (vl-ps-seq (vl-ps-span "vl_cmt"
-                           (vl-print "// ")
-                           (vl-print-loc x.minloc)
-                           (vl-println ""))
-               (if x.atts
+
+
+    (vl-ps-seq (if x.atts
                    (vl-ps-seq (vl-pp-atts x.atts)
                               (vl-print " "))
                  ps)

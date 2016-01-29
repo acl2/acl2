@@ -34,6 +34,7 @@
 (include-book "tools/defmacfun" :dir :system)
 (local (include-book "clause-processors/instantiate" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (set-state-ok t)
 
 (local (in-theory (disable acl2::nth-with-large-index

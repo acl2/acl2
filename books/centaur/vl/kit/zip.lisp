@@ -29,18 +29,37 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "zipformat")
+(include-book "zipfile")
 (include-book "../loader/top")
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "progutils")
 (include-book "oslib/catpath" :dir :system)
 (include-book "oslib/date" :dir :system)
+(local (include-book "xdoc/display" :dir :system))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
+(defxdoc vl-zip
+  :parents (kit)
+  :short "Parse a SystemVerilog design and save it as a @('.vlzip') file,
+typically for use with the @(see vl-server)."
+
+  :long "<p>The VL @(see kit) provides a @('zip') command that you can use to
+parse a Verilog/SystemVerilog design and then write it out into a @('.vlzip')
+file.  These files are complete snapshots of what VL has parsed, and also
+include the full, raw source code files that have been loaded.</p>
+
+<p>These files are typically used by the @(see vl-server) for viewing with the
+VL Module Browser.  They can alternately be reloaded into ACL2 sessions using
+@(see vl-read-zip), which requires very little of VL to be loaded.</p>
+
+<p>For detailed usage information, run @('vl zip --help') or see @(see
+*vl-zip-help*).</p>")
+
+(local (xdoc::set-default-parents vl-zip))
+
 (defoptions vl-zip-opts
-  :parents (vl-zip)
   :short "Options for running @('vl zip')."
   :tag :vl-model-opts
 
@@ -142,8 +161,11 @@
                 :rule-classes :type-prescription)
    ))
 
-
-(defconst *vl-zip-help* (str::cat "
+(defval *vl-zip-help*
+  :short "Detailed usage information for the @('vl zip') command."
+  :showval t
+  :showdef nil
+  (str::cat "
 vl zip:  Parse Verilog files and write it out as a .vlzip file.
 
 Example:  vl zip engine.v wrapper.v core.v \\
@@ -174,28 +196,26 @@ Options:" *nls* *nls* *vl-zip-opts-usage* *nls*))
        ((vl-loadresult result) result)
        ((mv date state) (oslib::date))
        ((mv ltime state) (oslib::universal-time))
-       (zip (make-vl-zip :name    opts.name
-                         :syntax  *vl-current-syntax-version*
-                         :date    date
-                         :ltime   ltime
-                         :design  result.design
-                         :filemap result.filemap
-                         :defines result.defines))
+       (zip (make-vl-zipfile :name    opts.name
+                             :syntax  *vl-current-syntax-version*
+                             :date    date
+                             :ltime   ltime
+                             :design  result.design
+                             :filemap result.filemap
+                             :defines result.defines))
        (- (cw "Writing output file ~x0~%" opts.output))
        (state (cwtime (vl-write-zip opts.output zip)))
        (- (cw "All done.")))
     state))
 
 (defconsts (*vl-zip-readme* state)
-  (b* (((mv contents state) (acl2::read-file-characters "zip.readme" state))
-       ((when (stringp contents))
-        (raise contents)
-        (mv "" state)))
-    (mv (implode contents) state)))
+  (b* ((topic (xdoc::find-topic 'vl::vl-zip (xdoc::get-xdoc-table (w state))))
+       ((mv text state) (xdoc::topic-to-text topic nil state)))
+    (mv text state)))
 
 (define vl-zip-top ((argv string-listp) &key (state 'state))
-  :parents (kit)
-  :short "The @('vl zip') command."
+  :short "Top-level @('vl zip') command."
+
   (b* (((mv errmsg opts start-files)
         (parse-vl-zip-opts argv))
        ((when errmsg)

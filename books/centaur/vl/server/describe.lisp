@@ -37,7 +37,7 @@
 (local (include-book "../util/arithmetic"))
 
 (defxdoc vl-describe
-  :parents (server)
+  :parents (vl-server)
   :short "@(call vl-describe) describes the uses of @('name') in the module
 @('x')."
 

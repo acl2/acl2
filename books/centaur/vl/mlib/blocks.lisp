@@ -313,6 +313,14 @@ fields can be reinstalled into the interface using @(see vl-genblob->interface).
           (vl-typenames-to-tmplsubsts
            *vl-interface/genblob-fields*))))))
 
+(define vl-genblock->genblob ((x vl-genblock-p))
+  :short "Convert a @(see vl-genblock) into a @(see vl-genblob)."
+  :returns (blob vl-genblob-p)
+  (b* (((vl-genblock x)))
+    (vl-sort-genelements x.elems
+                         :scopetype :vl-genblock
+                         :id x.name)))
+
 
 (defconst *vl-package/genblob-fields*
   '(fundecl
@@ -712,7 +720,10 @@ etc., are overwritten with whatever is in the genblob.</p>"
       (implies (consp x)
                (< (vl-genblob-genblocklist-count (cdr x))
                   count))
-      :rule-classes :linear)))
+      :rule-classes :linear))
+  ///
+  (deffixequiv-mutual vl-genblob-count))
+
 
 ;; Example def-genblob-transform:
 

@@ -51,8 +51,9 @@
         (nwarnings '0))
   `(assert!
     (b* ((echars (vl-echarlist-from-str ,input))
+         (breakp nil)
          (st     (vl-lexstate-init ,config))
-         ((mv tok remainder warnings) (vl-lex-token echars st nil))
+         ((mv tok remainder warnings) (vl-lex-token echars breakp st nil))
          (- (cw "Echars: ~x0~%Tok: ~x1~%Remainder: ~x2~%Warnings:~x3~%"
                 echars tok remainder warnings)))
         (debuggable-and ,@(if successp
@@ -260,14 +261,15 @@
   (b* (((strtest test) test)
        (echars    (vl-echarlist-from-str test.input))
        (st        (vl-lexstate-init config))
-       ((mv tok remainder) (vl-lex-string echars st))
+       (breakp    nil)
+       ((mv tok remainder) (vl-lex-string echars breakp st))
        (- (cw "Echars: ~x0~%"      (vl-echarlist->string echars)))
        (- (cw "Result: ~x0~%"      (and (vl-stringtoken-p tok)
                                         (vl-stringtoken->expansion tok))))
        (- (cw "Remainder: ~x0~%~%" (vl-echarlist->string remainder)))
 
        ;; Also check vl-lex-token instead of just vl-lex-string...
-       ((mv lextok lexrem warnings) (vl-lex-token echars st nil))
+       ((mv lextok lexrem warnings) (vl-lex-token echars breakp st nil))
 
        ((unless test.successp)
         (debuggable-and (not tok)
@@ -519,15 +521,16 @@ line\""
                    (config vl-loadconfig-p))
   (b* (((itest test) test)
        (echars (vl-echarlist-from-str test.input))
+       (breakp nil)
        (?st    (vl-lexstate-init config))
-       ((mv tok remainder warnings) (vl-lex-integer echars nil))
+       ((mv tok remainder warnings) (vl-lex-integer echars breakp nil))
        (- (cw "input: ~x0~%" test.input))
        (- (cw "tok: ~x0~%" (and tok
                                 (vl-inttoken-p tok)
                                 (vl-echarlist->string (vl-inttoken->etext tok)))))
        (- (cw "rem: ~x0~%" remainder))
        (- (cw "warnings: ~x0.~%" warnings))
-       ((mv lextok lexrem lexwrn) (vl-lex-token echars st nil))
+       ((mv lextok lexrem lexwrn) (vl-lex-token echars breakp st nil))
        ((unless test.successp)
         (debuggable-and (not tok)
                         (equal remainder echars)
@@ -814,9 +817,10 @@ line\""
                                      (config '*vl-default-loadconfig*))
   `(assert!
     (b* ((echars             (vl-echarlist-from-str ,input))
+         (breakp             nil)
          (?st                (vl-lexstate-init ,config))
          ((mv tok remainder warnings)
-          (vl-lex-token echars st nil))
+          (vl-lex-token echars breakp st nil))
          (-                  (cw "Echars: ~x0~%Tok: ~x1~%Remainder: ~x2~%~%" echars tok remainder)))
         (debuggable-and ,@(if successp
                               `((vl-realtoken-p tok)

@@ -38,6 +38,7 @@
 (include-book "filemap")
 (include-book "inject-comments")
 (include-book "inject-warnings")
+(include-book "translateoff")
 (include-book "../mlib/flat-warnings")
 (include-book "../mlib/print-warnings")
 (include-book "../mlib/scopestack")
@@ -550,6 +551,7 @@ descriptions.</li>
        ;; descs.
        ((mv descs pstate)
         (b* ((warnings (vl-parsestate->warnings pstate))
+             (warnings (vl-commentmap-translate-off-warnings comment-map warnings))
              ((mv descs warnings)
               (vl-descriptionlist-inject-warnings descs warnings))
              (pstate (change-vl-parsestate pstate :warnings warnings)))

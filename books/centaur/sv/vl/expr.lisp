@@ -1366,6 +1366,9 @@ the way.</li>
                     ;; the vardecl (hid), with no selects.
                     (vl-seltrace-to-svex-var nil x ss)))
                 (mv err base-var)))
+             ((when (member (tag item) '(:vl-modinst
+                                         :vl-interfaceport)))
+              (vl-seltrace-to-svex-var nil x ss))
              (paramval (b* (((unless (eq (tag item) :vl-paramdecl)) nil)
                             ((vl-paramdecl item)))
                          (vl-paramtype-case item.type
@@ -2816,10 +2819,11 @@ the way.</li>
        (args (mbe :logic (list-fix args) :exec args)))
     (if err
         (fatal :type type :msg "~@0: ~@1"
-               :args (list (vmsg msg args) err)
+               :args (list (make-vl-msg :msg msg
+                                        :args args)
+                           err)
                :fn fn)
       (ok))))
-
 
 (defines vl-expr-to-svex
   :ruler-extenders :all
@@ -2872,6 +2876,7 @@ the way.</li>
              )
 
 
+
   (define vl-expr-to-svex-untyped ((x vl-expr-p)
                                    (ss vl-scopestack-p)
                                    (scopes vl-elabscopes-p))
@@ -2892,7 +2897,7 @@ vector.</p>"
                  (type (and (vl-maybe-datatype-p type)
                             (implies type
                                      (vl-datatype-resolved-p type))))
-                 (size maybe-natp))
+                 (size maybe-natp :rule-classes :type-prescription))
     :measure (two-nats-measure (vl-expr-count x) 20)
     (b* ((warnings nil)
          (x (vl-expr-fix x)))
@@ -2933,6 +2938,34 @@ vector.</p>"
                          (and (posp size)
                               (vl-size-to-unsigned-logic size))
                          size)))
+
+        :vl-call
+        (b* (((when x.systemp)
+              (b* (((mv warnings svex size)
+                    (vl-expr-to-svex-selfdet x nil ss scopes)))
+                (mv warnings svex
+                    (and (posp size)
+                         (vl-size-to-unsigned-logic size))
+                    size)))
+             ((wmv warnings svex ftype)
+              (vl-funcall-to-svex x ss scopes))
+             ((unless ftype)
+              (mv warnings svex nil nil))
+             ((mv warnings size) (vl-datatype-size-warn ftype x warnings)))
+          (mv warnings
+              svex ftype size))
+        
+        :vl-stream
+        (b* (((mv warnings svex size)
+              (vl-streaming-concat-to-svex x ss scopes)))
+          ;; BOZO A streaming concat shouldn't really exist in the middle of
+          ;; some other expression unless there is a cast around it.  However,
+          ;; we want to call vl-expr-to-svex-untyped in some top-level contexts
+          ;; where a streaming concat should be allowed.  In those contexts the
+          ;; size is important but not the type.  So here we'll return NIL as
+          ;; the type even if we got a good size.
+          (mv warnings svex nil size))
+
         :otherwise
         (b* (((wmv warnings svex size)
               (vl-expr-to-svex-selfdet x nil ss scopes)))
@@ -2940,6 +2973,54 @@ vector.</p>"
               (and (posp size)
                    (vl-size-to-unsigned-logic size))
               size)))))
+
+
+#||
+ (trace$ #!vl (vl-streaming-concat-to-svex
+  :entry (list 'vl-streaming-concat-to-svex
+                (with-local-ps (vl-pp-expr x)))
+  :exit (cons 'vl-streaming-concat-to-svex (cdr values))))
+
+||#
+  (define vl-streaming-concat-to-svex ((x vl-expr-p)
+                                       (ss vl-scopestack-p)
+                                       (scopes vl-elabscopes-p))
+    :guard (vl-expr-case x :vl-stream)
+    :measure (two-nats-measure (vl-expr-count x) 15)
+    :returns (mv (warnings vl-warninglist-p)
+                 (svex (and (sv::svex-p svex)
+                            (sv::svarlist-addr-p (sv::svex-vars svex))))
+                 (size maybe-natp))
+    (b* (((vl-stream x) (vl-expr-fix x))
+         ((unless (mbt (vl-expr-case x :vl-stream)))
+          ;; termination
+          (mv nil (svex-x) nil))
+         (warnings nil)
+         ((mv err slicesize) (if (eq x.dir :left)
+                                 (vl-slicesize-resolve x.size ss scopes)
+                               ;; irrelevant
+                               (mv nil 1)))
+         ((when err)
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Failed to resolve slice size of streaming ~
+                               concat expression ~a0: ~@1"
+                     :args (list x err))
+              (svex-x) nil))
+         ((wmv warnings concat concat-size) (vl-streamexprlist-to-svex x.parts ss scopes))
+         ((unless concat-size)
+          ;; Already warned, presumably.
+          (mv warnings (svex-x) nil))
+
+         (bitstream (if (eq x.dir :right)
+                        concat
+                      (sv::svcall sv::blkrev
+                                  (svex-int concat-size)
+                                  (svex-int slicesize)
+                                  concat))))
+      ;; In SV, we'd now stick the bitstream into a container of the
+      ;; appropriate datatype.  But in svex, everything's just kept as a
+      ;; bitstream, so we're already done.
+      (mv warnings bitstream concat-size)))
 
 
   (define vl-expr-to-svex-selfdet ((x vl-expr-p)
@@ -3407,6 +3488,19 @@ functions can assume all bits of it are good.</p>"
                              :args (list x))
                       (svex-x)))
 
+                 ((when (member-equal simple-name '("$signed" "$unsigned")))
+                  ;; Same as a signedness cast -- don't need to do anything but check arity.
+                  (b* (((unless (and (consp x.args)
+                                     (not (consp (cdr x.args)))
+                                     (not x.typearg)))
+                        (mv (fatal :type :vl-expr-to-svex-fail
+                                   :msg "Bad arity for system call ~a0"
+                                   :args (list x))
+                            (svex-x)))
+                       ((mv warnings svex &)
+                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                    (mv warnings svex)))
+
                  ((when (vl-unary-syscall-p "$clog2" x))
                   (b* (((wmv warnings arg-svex ?size)
                         (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
@@ -3506,6 +3600,27 @@ functions can assume all bits of it are good.</p>"
                 :exit (b* (((list ?warnings ?svex ?type) values))
                         (list 'vl-index-expr-to-svex
                               (with-local-ps (vl-print-warnings warnings))))))
+
+#!vl
+ (defun traces (names)
+  (if (Atom names)
+      nil
+    (cons (let ((fn (car names)))
+            `(trace$ (,fn :entry '(,fn)
+                          :exit (b* ((warnings (car values)))
+                                  (list ',fn (with-local-ps (vl-print-warnings warnings)))))))
+          (traces (cdr names)))))
+
+#!vl
+ (defmacro do-traces (&rest names)
+  (cons 'er-progn
+        (traces names)))
+
+#!vl
+ (do-traces vl-expr-to-svex-datatyped-fn
+           vl-expr-to-svex-untyped
+           vl-index-expr-to-svex
+           vl-streamexpr-to-svex)
 ||#
 
   (define vl-index-expr-to-svex ((x vl-expr-p)
@@ -3779,19 +3894,9 @@ functions can assume all bits of it are good.</p>"
             (svex-x))
 
         :vl-stream
-        (b* (((mv err slicesize) (if (eq x.dir :left)
-                                     (vl-slicesize-resolve x.size ss scopes)
-                                   ;; irrelevant
-                                   (mv nil 1)))
-             ((when err)
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Failed to resolve slice size of streaming ~
-                               concat expression ~a0: ~@1"
-                         :args (list x err))
-                  (svex-x)))
-             ((wmv warnings concat concat-size) (vl-streamexprlist-to-svex x.parts ss scopes))
-             ((unless concat-size)
-              ;; Already warned, presumably.
+        (b* (((wmv warnings bitstream concat-size)
+              (vl-streaming-concat-to-svex x ss scopes))
+             ((unless (posp concat-size))
               (mv warnings (svex-x)))
              ((mv err target-size) (vl-datatype-size type))
              ((when (or err (not (posp target-size))))
@@ -3807,20 +3912,19 @@ functions can assume all bits of it are good.</p>"
                                        SystemVerilog says this is an error."
                                  :args (list x type))
                          warnings))
-
-             (bitstream (if (eq x.dir :right)
-                            concat
-                          (sv::svcall sv::blkrev
-                                      (svex-int concat-size)
-                                      (svex-int slicesize)
-                                      concat)))
-             (ans (if (> target-size concat-size)
-                      (sv::svcall sv::concat
-                                  (svex-int (- target-size concat-size))
-                                  (svex-int 0)
-                                  bitstream)
-                    bitstream)))
-          ;; In SV, we'd now stick the bitstream into a container of the
+             (ans (cond
+                   ((> target-size concat-size)
+                    (sv::svcall sv::concat
+                                (svex-int (- target-size concat-size))
+                                (svex-int 0)
+                                bitstream))
+                   ((< target-size concat-size)
+                    ;; This is an error, but NCV still runs it.
+                    (sv::svcall sv::rsh
+                                (svex-int (- concat-size target-size))
+                                bitstream))
+                   (t bitstream))))
+          ;; In SystemVerilog, we'd now stick the bitstream into a container of the
           ;; appropriate datatype.  But in svex, everything's just kept as a
           ;; bitstream, so we're already done.
           (mv warnings ans))
@@ -3873,47 +3977,11 @@ functions can assume all bits of it are good.</p>"
       (vl-arrayrange-case x.part
         :none (mv warnings svex size) ;; already warned if size is nil
         :otherwise
-        (b* (((unless type) (mv warnings svex nil)) ;; already warned
-             ((mv err ?caveat basetype dim1) (vl-datatype-remove-dim type))
-             ((when err)
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Bad type ~a0 from expression ~a1 in streaming concat: ~@2"
-                         :args (list type x.expr err))
-                  (svex-x) nil))
-             ((mv err basesize) (vl-datatype-size basetype))
-             ((when (or* err (not (posp basesize))))
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Unsizable basetype ~a0 from expression ~a1 in ~
-                               streaming concat: ~@2"
-                         :args (list type x.expr (or* err
-                                                     (if basesize "zero size" "unsizable"))))
-                  (svex-x) nil))
-             ((when (vl-packeddimension-case dim1 :unsized))
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Array range on unsized array expression ~a0 in streaming concat"
-                         :args (list x.expr))
-                  (svex-x) nil))
-             ((vl-range dimrange) (vl-packeddimension->range dim1))
-             ((unless (vl-range-resolved-p dimrange))
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Array range unresolved on unsized array ~
-                               expression ~a0 in streaming concat"
-                         :args (list x.expr))
-                  (svex-x) nil))
-             (dim-msb (vl-resolved->val dimrange.msb))
-             (dim-lsb (vl-resolved->val dimrange.lsb))
-             ((mv err relative-lsb width)
-              (vl-arrayrange->rel-lsb-and-width x.part dim-lsb dim-msb))
-             ((when err)
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Bad array range in streaming concat on expression ~a0: ~@1"
-                         :args (list x.expr err))
-                  (svex-x) nil))
-             (shift (* relative-lsb basesize))
-             (size (* width basesize)))
-          (mv warnings
-              (sv::svcall sv::rsh (svex-int shift) svex)
-              size)))))
+        (mv (fatal :type :vl-unsupported-expression
+                   :msg "Streaming concatenations using the 'with' keyword ~
+                         are unsupported: ~a0"
+                   :args (list (vl-streamexpr-fix x)))
+            (svex-x) nil))))
 #||
 
  (trace$ #!vl (vl-assignpat-to-svex
@@ -4266,7 +4334,19 @@ functions can assume all bits of it are good.</p>"
 ||#
 
 
+#||
 
+(trace$ #!vl (vl-expr-to-svex-lhs
+              :entry (list 'vl-expr-to-svex-lhs
+                           (with-local-ps (vl-pp-expr x)))
+              :exit (list 'vl-expr-to-svex-lhs (cadr values))))
+
+(trace$ #!vl (vl-expr-to-svex-untyped
+              :entry (list 'vl-expr-to-svex-untyped
+                           (with-local-ps (vl-pp-expr x)))
+              :exit (list 'vl-expr-to-svex-untyped (cadr values) (cadddr values))))
+
+||#
 
 (define vl-expr-to-svex-lhs ((x vl-expr-p)
                              (ss vl-scopestack-p)
@@ -4286,11 +4366,15 @@ functions can assume all bits of it are good.</p>"
                           ((unless (posp size))
                            (mv warnings svex nil)))
                        (mv warnings svex
-                           (make-vl-coretype :name :vl-logic
-                                             :pdims (list (vl-range->packeddimension
-                                                           (make-vl-range
-                                                            :msb (vl-make-index (1- size))
-                                                            :lsb (vl-make-index 0)))))))
+                           (vl-size-to-unsigned-logic size)))
+          :vl-stream (b* (((wmv warnings svex size)
+                           (vl-streaming-concat-to-svex x ss scopes))
+                          ((unless (posp size))
+                           (mv (fatal :type :vl-expr-to-svex-fail
+                                      :msg "Bad LHS: zero-size streaming concat"
+                                      :args (list (vl-expr-fix x)))
+                               (svex-x) nil)))
+                       (mv warnings svex (vl-size-to-unsigned-logic size)))
           :otherwise (mv (fatal :type :vl-expr-to-svex-fail
                                 :msg "Bad LHS expression: ~a0"
                                 :args (list (vl-expr-fix x)))

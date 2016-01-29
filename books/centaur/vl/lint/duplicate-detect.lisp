@@ -35,7 +35,7 @@
 (local (include-book "../util/arithmetic"))
 
 (defsection duplicate-detect
-  :parents (lint)
+  :parents (vl-lint)
   :short "Check for instances and assignments that are literally identical."
 
   :long "<p>This is a heuristic for generating warnings.  We look for

@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -4433,27 +4433,51 @@
 ; (defmacro av (form)
 ;   `(all-vars-untrans ',form state))
 
-(defun trans-eval-lst (lst ctx state aok)
-  (cond ((endp lst)
-         (value :invisible))
-        (t (er-progn (trans-eval (car lst) ctx state aok)
-                     (trans-eval-lst (cdr lst) ctx state aok)))))
+(defun print-saved-output-lst (io-record-lst io-markers stop-markers ctx state)
+  (cond
+   ((endp io-record-lst)
+    (value :invisible))
+   (t
+    (let ((io-marker (access io-record (car io-record-lst)
+                             :io-marker)))
+      (cond
+       ((member-equal io-marker stop-markers)
+        (value :invisible))
+       ((or (eq io-markers :all)
+            (member-equal io-marker io-markers))
+        (er-progn (trans-eval (access io-record (car io-record-lst)
+                                      :form)
+                              ctx state t)
+                  (print-saved-output-lst (cdr io-record-lst)
+                                          (if stop-markers
+                                              :all ; print till we're stopped
+                                            io-markers)
+                                          stop-markers
+                                          ctx
+                                          state)))
+       (t (print-saved-output-lst (cdr io-record-lst) io-markers stop-markers
+                                  ctx state)))))))
 
-(defun print-saved-output (inhibit-output-lst gag-mode state)
-  (let ((saved-output
-         (reverse (io-record-forms (f-get-global 'saved-output-reversed
-                                                 state))))
+(defun print-saved-output (inhibit-output-lst gag-mode io-markers stop-markers
+                                              state)
+
+; Normally io-markers is :all, indicating the set of all io-markers; but
+; instead it can be a list of io-markers.
+
+  (let ((saved-output (reverse (f-get-global 'saved-output-reversed
+                                             state)))
         (channel (standard-co state))
-        (ctx  'print-saved-output))
+        (ctx 'print-saved-output))
     (cond
      ((or (null saved-output)
           (and (null (cdr saved-output))
-               (eq (access io-record
-                           (car (f-get-global 'saved-output-reversed state))
+               (eq (access io-record (car saved-output)
                            :io-marker)
                    :ctx)))
       (er-progn (if saved-output
-                    (trans-eval (car saved-output) ctx state t)
+                    (trans-eval (access io-record (car saved-output)
+                                        :form)
+                                ctx state t)
                   (value nil))
                 (pprogn (fms "There is no saved output to print.  ~
                               See :DOC set-saved-output.~|"
@@ -4480,16 +4504,45 @@
                                      state))
                      (state-global-let*
                       ((saved-output-p nil))
-                      (trans-eval-lst saved-output ctx state t)))))))))))
+                      (print-saved-output-lst saved-output io-markers
+                                              stop-markers ctx state)))))))))))
 
-(defmacro pso ()
-  '(print-saved-output '(proof-tree) nil state))
+(defun convert-io-markers-lst (io-markers acc)
+  (cond ((endp io-markers) acc)
+        (t (convert-io-markers-lst (cdr io-markers)
+                                   (cons (if (stringp (car io-markers))
+                                             (parse-clause-id (car io-markers))
+                                           (car io-markers))
+                                         acc)))))
 
-(defmacro psog ()
-  '(print-saved-output '(proof-tree) t state))
+(defun convert-io-markers (io-markers)
+  (cond ((member-eq io-markers '(nil :all))
+         io-markers)
+        ((and io-markers
+              (atom io-markers))
+         (convert-io-markers-lst (list io-markers) nil))
+        (t (convert-io-markers-lst io-markers nil))))
 
-(defmacro pso! ()
-  '(print-saved-output nil nil state))
+(defmacro pso (&optional (io-markers ':all)
+                         stop-markers)
+  `(print-saved-output '(proof-tree) nil
+                       (convert-io-markers ,io-markers)
+                       (convert-io-markers ,stop-markers)
+                       state))
+
+(defmacro psog (&optional (io-markers ':all)
+                          stop-markers)
+  `(print-saved-output '(proof-tree) t
+                       (convert-io-markers ,io-markers)
+                       (convert-io-markers ,stop-markers)
+                       state))
+
+(defmacro pso! (&optional (io-markers ':all)
+                          stop-markers)
+  `(print-saved-output nil nil
+                       (convert-io-markers ,io-markers)
+                       (convert-io-markers ,stop-markers)
+                       state))
 
 (defmacro set-saved-output (save-flg inhibit-flg)
   (let ((save-flg-original save-flg)
@@ -4612,7 +4665,10 @@
 (defmacro wof (filename form) ; Acronym: With Output File
   `(with-standard-co-and-proofs-co-to-file ,filename ,form))
 
-(defmacro psof (filename)
+(defmacro psof (filename
+                &optional
+                (io-markers ':all)
+                (stop-markers 'nil))
   (declare (xargs :guard (or (stringp filename)
                              (and (consp filename)
                                   (consp (cdr filename))
@@ -4626,7 +4682,7 @@
                enabled, because in that case most prover output is printed to ~
                *standard-co* (using wormholes), so cannot be redirected."))
          (t (wof ,(if (consp filename) (cadr filename) filename)
-                 (pso)))))
+                 (pso ,io-markers ,stop-markers)))))
 
 (defun set-gag-mode-fn (action state)
 

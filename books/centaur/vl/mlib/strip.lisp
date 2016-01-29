@@ -40,9 +40,9 @@
   :short "Functions for throwing away attributes, widths, locations, etc., so
 that expressions and module elements can be compared using @(see equal)."
 
-  :long "<p>In many basic kinds of @(see lint)ing and well-formedness checking,
-it is useful to be able to compare module elements using @('equal').  But
-@('equal') can report that elements are different because of, e.g., their
+  :long "<p>In many basic kinds of @(see vl-lint) checks and well-formedness
+checking, it is useful to be able to compare module elements using @('equal').
+But @('equal') can report that elements are different because of, e.g., their
 location information, widths and other annotations on expressions, and other
 kinds of semantically irrelevant attributes.</p>
 

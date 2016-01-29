@@ -36,7 +36,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc check-namespace
-  :parents (lint)
+  :parents (vl-lint)
   :short "A check for basic, incorrect constructs like name clashes."
   :long "<p>This does basic sanity checking to ensure that port and module item
 names are not duplicated and that port declarations overlap with their

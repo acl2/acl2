@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3967,7 +3967,8 @@
               (state-mac@par))
             (io?-prove@par
              (cl-id clause)
-             (waterfall-print-clause-body cl-id clause state))))))
+             (waterfall-print-clause-body cl-id clause state)
+             :io-marker cl-id)))))
 
 #+acl2-par
 (defun some-parent-is-checkpointp (hist state)
@@ -4026,7 +4027,8 @@
        (io? prove nil state
             (pspv ttree new-hist clauses signal cl-id processor msg)
             (waterfall-msg1 processor cl-id signal clauses new-hist msg ttree
-                            pspv state))
+                            pspv state)
+            :io-marker cl-id)
 
 ; Parallelism wart: consider replacing print-splitter-rules-summary below.  A
 ; version of printing that does not involve wormholes will be required.  See
@@ -4044,13 +4046,15 @@
                    state
                    (pspv ttree new-hist clauses signal cl-id processor msg)
                    (waterfall-msg1 processor cl-id signal clauses new-hist msg
-                                   ttree pspv state)))
+                                   ttree pspv state)
+                   :io-marker cl-id))
              (t 'nothing-to-print
 ;               (io? prove t
 ;                    state
 ;                    (cl-id ttree clauses)
 ;                    (print-splitter-rules-summary
-;                     cl-id clauses ttree (proofs-co state) state))
+;                     cl-id clauses ttree (proofs-co state) state)
+;                    :io-marker cl-id)
                 )))
       (increment-timer@par 'print-time state)
       (mv@par (cond ((eq processor 'push-clause)
@@ -5576,15 +5580,18 @@
                                       (override-hints wrld)
                                       state))
 
-(defun@par thanks-for-the-hint (goal-already-printed-p hint-settings state)
+(defun@par thanks-for-the-hint (goal-already-printed-p hint-settings cl-id
+                                                       state)
 
 ; This function prints the note that we have noticed the hint.  We have to
 ; decide whether the clause to which this hint was attached was printed out
 ; above or below us.  We return state.  Goal-already-printed-p is either t,
 ; nil, or a pair (cons :backtrack processor) where processor is a member of
-; *preprocess-clause-ledge*.
+; *preprocess-clause-ledge*.  Cl-id may be a clause-id, but any value (in
+; particular, nil) is legal, as it is only used in construction of the
+; :io-marker of a io-record.
 
-  (declare (ignorable state))
+  (declare (ignorable state cl-id))
   (cond ((cdr (assoc-eq :no-thanks hint-settings))
          (mv@par (delete-assoc-eq :no-thanks hint-settings) state))
         ((alist-keys-subsetp hint-settings '(:backtrack))
@@ -5638,7 +5645,8 @@
                                 (cdr goal-already-printed-p)))))))
                   (proofs-co state)
                   state
-                  nil))))
+                  nil)
+             :io-marker cl-id)))
           (mv@par hint-settings state)))))
 
 ; We now develop the code for warning users about :USEing enabled
@@ -6839,7 +6847,7 @@
 
   (mv-let@par
    (hint-settings state)
-   (thanks-for-the-hint@par goal-already-printedp hint-settings state)
+   (thanks-for-the-hint@par goal-already-printedp hint-settings cl-id state)
    (pprogn@par
     (waterfall-print-clause@par goal-already-printedp cl-id clause state)
     (mv-let@par
@@ -7230,7 +7238,8 @@
         (io? prove nil state
              (cl-id revert-info)
              (waterfall-or-hit-msg-c cl-id nil (car revert-info) nil nil
-                                     state)))
+                                     state)
+             :io-marker cl-id))
 
        (mv@par step-limit
                'abort
@@ -7276,7 +7285,8 @@
                                                nil
                                                (car choice) ; new goal cl-id
                                                summary
-                                               state)))
+                                               state)
+                       :io-marker cl-id))
                  (mv@par step-limit
                          'continue
                          (cdr choice) ; chosen pspv
@@ -7311,7 +7321,8 @@
               (increment-timer 'prove-time state)
               (waterfall-or-hit-msg-a cl-id user-hinti d-cl-id i branch-cnt
                                       state)
-              (increment-timer 'print-time state))))
+              (increment-timer 'print-time state))
+             :io-marker cl-id))
        (sl-let@par
         (d-signal d-new-pspv d-new-jppl-flg state)
         (waterfall1-wrapper@par
@@ -7379,7 +7390,8 @@
                  (pprogn
                   (increment-timer 'prove-time state)
                   (waterfall-or-hit-msg-b cl-id d-cl-id branch-cnt state)
-                  (increment-timer 'print-time state))))
+                  (increment-timer 'print-time state))
+                 :io-marker cl-id))
            (mv@par step-limit
                    'continue
                    d-new-pspv

@@ -2,6 +2,70 @@
 
 (include-book "reduce")
 
+;; [Jared] These rules were causing some proofs to be really slow.
+
+(local (deftheory jared-disables
+         #!acl2
+         '((:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-RATIONALP-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NON-0-BASE)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-4E)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B-EXPT)
+           (:TYPE-PRESCRIPTION RATIONALP-EXPT-TYPE-PRESCRIPTION)
+           not-integerp-1a-expt
+           not-integerp-2a-expt
+           not-integerp-3a-expt
+           not-integerp-4a-expt
+           not-integerp-1d-expt
+           not-integerp-2d-expt
+           not-integerp-3d-expt
+           not-integerp-4d-expt
+           not-integerp-1a
+           not-integerp-2a
+           not-integerp-3a
+           not-integerp-4a
+           not-integerp-1d
+           not-integerp-2d
+           not-integerp-3d
+           not-integerp-4d
+           not-integerp-1f
+           not-integerp-2f
+           not-integerp-3f
+           not-integerp-4f
+           default-plus-1
+           default-plus-2
+           default-times-1
+           default-times-2
+           default-less-than-1
+           default-less-than-2
+           default-expt-2
+           default-expt-1
+           default-minus
+           default-mod-ratio
+           mod-zero
+           |(mod (if a b c) x)|
+           rtl::mod-bnd-1
+           rtl::mod-bnd-2
+           (:type-prescription rtl::natp-dx)
+           rtl::mod-does-nothing
+           )))
+
+(local (in-theory (disable jared-disables)))
+
 (defund tripp$ (x)
   (and (true-listp x)
        (= (len x) 3)
@@ -592,7 +656,9 @@
                   (f+ (f+ (fexpt (dx (eval3$ p)) 3) 
                           (f* (a) (fexpt (dx (eval3$ p)) 2)))
                       (dx (eval3$ p)))))
-  :hints (("Goal" :use (ecp-term-frcp-11) :in-theory (enable frcp-expt dx tripp$))))
+  :hints (("Goal" :use (ecp-term-frcp-11)
+           :in-theory (e/d (frcp-expt dx tripp$)
+                           (jared-disables)))))
 
 (local-defthmd ecp-term-frcp-13
   (implies (and (tripp$ p)

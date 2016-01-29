@@ -231,7 +231,7 @@
 ;; the term occurs; it can't apply a rewrite that's only valid in some of its
 ;; contexts.  To rewrite a function call (f a b c), we first do a global
 ;; rewrite of (a b c) under their global masks, followed by a local rewrite of
-;; args under the masks induced by (f a b c) under its global mask.  These
+;; the resulting args under the masks induced by (f a b c) under its global mask.  These
 ;; local masks may be more permissive of rewrites than the global ones.
 ;; However, now we need to be careful not to add unnecessary nodes to the graph
 ;; by rewriting these arguments locally to new terms that they can't be
@@ -241,6 +241,47 @@
 ;; presumably we would have done it already.)  So good local rules are ones that
 ;;  - are context- (mask-) sensitive, but
 ;;  - can only replace a term with a subterm (or a constant).
+;;
+;; This is subtle and sometimes we can still rewrite terms in different ways in
+;; different contexts.  For instance, consider a nice replacement that is
+;; justified by some local mask, say something like:
+;;
+;;     (concat 5 x y) --> y    when we happen to only care about bits past 5
+;;     (concat 5 x y) --> x    when we happen to only care about bits before 5
+;;
+;; We can see these rules rewriting (concat 5 x y) in different ways, e.g.,:
+;;
+;;     (bitand (rsh (concat 5 x y) 5)
+;;             (concat 5 (concat 5 x y) z))
+;;       -->
+;;     (bitand (rsh y 5)
+;;             (concat 5 x z))
+;;
+;; But even though the replacement terms differ, they both existed in the
+;; original DAG.  This wouldn't necessarily be the case if we considered local
+;; masks more than one-level deep, e.g., if we were smart enough to rewrite:
+;;
+;;     (bitand (rsh (id (concat 5 x y)) 5)
+;;             (concat 5 (id (concat 5 x y)) z))
+;;       -->
+;;     (bitand (rsh (id y) 5)
+;;             (concat 5 (id x) z))
+;;
+;; But too stupid to rewrite away the ID (heh), then notice how the above
+;; rewrite has forked the ID call into two different terms whereas previously
+;; both occurrences were the same (and therefore were the same DAG node).
+;;
+;; Question: would it be OK to rewrite a term into several different constants
+;; that were not previously subterms under different local contexts?
+;;
+;; Answer: Yes, because the we are only going to consider the global outer care
+;; mask, along with whatever we can infer locally. Like in the example above,
+;; replacing a single constant with other constants can't cause function call
+;; terms to be multiplied.  So if we measure a term size only by the count of
+;; function calls, it's fine to replace constants by different ones.  (And it's
+;; OK to measure term size by the count of function calls, because changing
+;; constants can only impact the memory representation linearly.)
+
 (defun def-svex-rewrite-fn (name lhs checks rhs hints localp)
   (declare (xargs :mode :program))
   (b* ((fnname (intern-in-package-of-symbol
@@ -456,7 +497,7 @@
             rsh
             lsh)
            (3valued-syntaxp (second x.args)))
-          ((concat ? bit?)
+          ((concat ? ?* bit?)
            (and (3valued-syntaxp (second x.args))
                 (3valued-syntaxp (third x.args))))
           ((blkrev)
@@ -546,6 +587,13 @@
                   (3vec-p y))
              (3vec-p (4vec-? c x y)))
     :hints (("goal" :in-theory (enable 3vec-p 4vec-? 3vec-? 3vec-fix))
+            (bitops::logbitp-reasoning)))
+
+  (defthm 3vec-p-of-4vec-?*
+    (implies (and (3vec-p x)
+                  (3vec-p y))
+             (3vec-p (4vec-?* c x y)))
+    :hints (("goal" :in-theory (enable 3vec-p 4vec-?* 3vec-?* 3vec-fix))
             (bitops::logbitp-reasoning)))
 
   (defthm 3vec-p-of-4vec-bit?
@@ -3220,11 +3268,27 @@
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask)))
            (bitops::logbitp-reasoning)))
 
+  (def-svex-rewrite qmark*-nest-1
+    :lhs (?* a (?* a b c) c)
+    :rhs (?* a b c)
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask)))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:in-theory (enable b-xor)))))
+
   (def-svex-rewrite qmark-nest-2
     :lhs (? a b (? a b c))
     :rhs (? a b c)
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask)))
            (bitops::logbitp-reasoning)))
+
+  (def-svex-rewrite qmark*-nest-2
+    :lhs (?* a b (?* a b c))
+    :rhs (?* a b c)
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask)))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:in-theory (enable b-xor)))))
 
   (local (in-theory (disable svex-eval-when-quote
                              svex-eval-when-fncall
@@ -3245,6 +3309,18 @@
            (bitops::logbitp-reasoning
             :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
 
+  (def-svex-rewrite qmark*-select-1
+    :lhs (?* a b c)
+    :checks ((not (eql 0 (4vec->lower (3vec-fix (svex-xeval a))))))
+    :rhs b
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
+                                           3vec-fix 4vec-[=)
+                                   (svex-eval-gte-xeval))
+            :use ((:instance svex-eval-gte-xeval
+                   (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
+           (bitops::logbitp-reasoning
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
+
   (def-svex-rewrite qmark-select-0
     :lhs (? a b c)
     :checks ((eql 0 (4vec->upper (3vec-fix (svex-xeval a)))))
@@ -3255,7 +3331,75 @@
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
            (bitops::logbitp-reasoning
-            :add-hints (:in-theory (enable* bitops::logbitp-case-splits))))))
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
+
+  (def-svex-rewrite qmark*-select-0
+    :lhs (?* a b c)
+    :checks ((eql 0 (4vec->upper (3vec-fix (svex-xeval a)))))
+    :rhs c
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
+                                           3vec-fix 4vec-[=)
+                                   (svex-eval-gte-xeval))
+            :use ((:instance svex-eval-gte-xeval
+                   (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
+           (bitops::logbitp-reasoning
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
+
+  (def-svex-rewrite qmark*-same
+    :lhs (?* a b b)
+    :rhs b
+    :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
+                                           3vec-fix 4vec-[=)
+                                   (svex-eval-gte-xeval))
+            :use ((:instance svex-eval-gte-xeval
+                   (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
+           (bitops::logbitp-reasoning
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
+
+
+#||
+  ;; NOTE: (bozo?)  These are very particular rules for ?* and they don't
+  ;; follow the usual conventions that ensure that we don't blow up.  The
+  ;; reason for this is that ?* is used in procedural statement processing for things like:
+  ;; always_comb begin
+  ;;   a = b;
+  ;;   if (c)
+  ;;      a[5:0] = d;
+  ;;  end
+  ;;  In this case the update function for a is something like:
+  ;;   a = (?* c (concat 6 d (rsh 6 b)) b)
+  ;;  We've run into cases where in examples like this, c depends on upper bits
+  ;;  of a, so we want to make sure we can disentangle this dependency so we
+  ;;  don't get hung up on a false combinational loop.
+  (def-svex-rewrite qmark*-concat-same-1
+    :lhs (?* a (concat w b c) (concat w d c))
+    :rhs (concat w (?* a b d) c)
+    :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 4vec-concat svex-apply 3vec-fix 4vec-mask))
+           (logbitp-reasoning)))
+
+  (def-svex-rewrite qmark*-concat-same-2
+    :lhs (?* a (concat w b c) (concat w b d))
+    :rhs (concat w b (?* a c d))
+    :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 4vec-concat svex-apply 3vec-fix 4vec-mask))
+           (logbitp-reasoning)))
+
+  (def-svex-rewrite qmark*-concat-reduce1
+    :lhs (?* a (concat w b c) b)
+    :checks ((svex-case w :quote (4vec-index-p w.val) :otherwise nil))
+    :rhs (concat w b (?* a c (rsh w b)))
+    :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 4vec-concat 4vec-rsh svex-apply 3vec-fix 4vec-mask svex-eval-when-quote 4vec-index-p))
+           (svex-generalize-lookups)
+           (logbitp-reasoning)))
+
+  (def-svex-rewrite qmark*-concat-reduce2
+    :lhs (?* a (concat w b (rsh w c)) c)
+    :checks ((svex-case w :quote (4vec-index-p w.val) :otherwise nil))
+    :rhs (concat w (?* a b c) (rsh w c))
+    :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 4vec-concat 4vec-rsh svex-apply 3vec-fix 4vec-mask svex-eval-when-quote 4vec-index-p))
+           (svex-generalize-lookups)
+           (logbitp-reasoning)))
+||#
+)
 
 
 
@@ -3374,7 +3518,7 @@
                (subst svex-alist-p))
   (b* ((xeval (svex-xeval (svex-call fn args)))
        ((when (4vec-xfree-under-mask xeval mask))
-        (mv t (svex-quote xeval) nil)))
+        (mv t (svex-quote (4vec-mask-to-zero mask xeval)) nil)))
     (svex-rewrite-cases mask
                         (mbe :exec fn :logic (fnsym-fix fn))
                         args

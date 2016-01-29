@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2016-01-04.0")
+  "VL Syntax 2016-01-26")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -2718,7 +2718,9 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                "Indicates that this call was wrapped in @('void '(...)').")
       (atts    vl-atts-p
                "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
-                this statement."))
+                this statement.")
+      (loc     vl-location-p
+               "Location of this statement in the source code."))
      :long "<p>This is similar to a @(see vl-call) expression.</p>")
 
     (:vl-disablestmt
@@ -3053,7 +3055,9 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
              "The value to return, if any.")
       (atts  vl-atts-p
              "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
-              this statement.")))
+              this statement.")
+      (loc   vl-location-p
+             "Location of this statement in the source code.")))
 
     (:vl-assertstmt
      :base-name vl-assertstmt
@@ -3796,8 +3800,8 @@ be non-sliceable, at least if it's an input.</p>"
          represent the actual DPI import statements so that they don't lead to
          parse errors.  We also regard import statements as real, legitimate
          scope items that can be looked up in a @(see scopestack), which allows
-         applications like @(see lint) checking to recognize that calls of
-         these functions/tasks are not undefined.</p>")
+         applications like @(see vl-lint) to recognize that calls of these
+         functions/tasks are not undefined.</p>")
 
 (fty::deflist vl-dpiimportlist
   :elt-type vl-dpiimport
@@ -4121,6 +4125,7 @@ initially kept in a big, mixed list.</p>"
        :short "A loop generate construct, after elaboration."
        ((name      maybe-stringp     "Name of the block array, if named.")
         (var       stringp           "Iterator variable name.")
+        (genvarp   booleanp          "Was the variable declared using the genvar keyword, locally")
         (blocks    vl-genblocklist-p "Blocks produced by the loop")
         (loc       vl-location-p     "Where the loop came from in the Verilog source code."))
        :long "<p>This is a post-elaboration representation of a generate for

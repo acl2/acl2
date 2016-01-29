@@ -493,8 +493,9 @@ binder.</p>")))))
                 prods-doc
                 case-doc
                 `((xdoc::order-subtopics ,x.name
-                                         (,x.pred ,x.kind ,x.case ,x.fix ,x.equiv ,x.count
-                                                  . ,type-names))))
+                                         ,(remove nil
+                                                  (list* x.pred x.kind x.case x.fix x.equiv x.count
+                                                         type-names)))))
         state)))
 
 (defun defflexsum->defxdoc (x parents kwd-alist base-pkg state)
@@ -525,8 +526,8 @@ binder.</p>")))))
     (mv (append (and (not sum-name-shared-with-prod-name) main-doc)
                 prods-doc
                 `((xdoc::order-subtopics ,x.name
-                                         (,x.pred ,x.fix ,x.kind ,x.equiv ,x.count
-                                          . ,type-names))))
+                                         ,(remove nil (list* x.pred x.fix x.kind x.equiv x.count
+                                                             type-names)))))
         state)))
 
 (defun defoption->defxdoc (x parents kwd-alist base-pkg state)
@@ -565,7 +566,7 @@ binder.</p>")))))
                 prods-doc
                 case-doc
                 `((xdoc::order-subtopics ,x.name
-                                         (,x.pred ,x.fix ,x.equiv ,x.count))))
+                                         ,(remove nil (list x.pred x.fix x.equiv x.count)))))
         state)))
 
 (defun flextranssum-members->xdoc (members acc state)

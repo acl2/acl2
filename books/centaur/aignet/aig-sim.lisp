@@ -29,11 +29,11 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-
 (include-book "from-hons-aig")
 (include-book "eval")
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (disable nth update-nth
                            acl2::nth-with-large-index
                            set::double-containment)))

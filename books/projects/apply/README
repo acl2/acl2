@@ -1,0 +1,125 @@
+THIS IS A WORK IN PROGRESS!  DO NOT RELY ON THESE BOOKS FOR SERIOUS WORK!
+
+This directory contains three certified books
+
+ apply-prim.lisp
+ apply.lisp
+ chronology.lisp
+
+The book apply.lisp formalizes a tamed version of apply, making it possible to
+define functions like:
+
+(defun$ sumlist (lst fn)
+  (cond ((endp lst) 0)
+        (t (+ (apply$ fn (list (car lst)))   ; <--- Note apply$
+              (sumlist (cdr lst) fn)))))
+
+and prove and use such theorems about them as:
+
+(defthm sumlist-ap
+  (equal (sumlist (ap a b) u)
+         (+ (sumlist a u)
+            (sumlist b u))))
+
+and
+
+(defthm sum-of-squares
+  (implies (natp n)
+           (equal (sumlist (nats n)
+                           '(lambda (x)
+                              (binary-* x x)))
+                  (+ (/ (expt n 3) 3)
+                     (/ (expt n 2) 2)
+                     (/ n 6)))))
+
+You can see a selection of such ``mapping functions'' and theorems about them
+in chronology.lisp.
+
+At the moment the only documentation of these utilities are the examples in
+chronology.lisp.  Good luck!  Like we said, this is a work in progress!
+
+There are three major problems with this prototype formalization of apply aside
+from the absence of documentation.
+
+FIRST, it is not executable.  You cannot execute (sumlist '(1 2 3) 'identity)
+even though it is possible to prove (with a hint) that it is 6.  We intend to
+fix this by changes in ACL2 itself, if this work matures to the point where we
+think it worthwhile.
+
+SECOND, if your mapping function uses a user-defined function symbol, as in
+
+(defun sq (x) (* x x)) 
+
+(thm (implies (natp n)   ; this formula is not a theorem
+              (equal (sumlist (nats n)
+                              'sq)        ; <--- note user-defined symbol!
+                     (+ (/ (expt n 3) 3)
+                        (/ (expt n 2) 2)
+                        (/ n 6)))))
+
+it is necessary to add an additional hypothesis supposing that
+SQ can be applied:
+
+(thm (implies (and (applicablep sq)   ; this formula is a theorem
+                   (natp n))
+              (equal (sumlist (nats n)
+                              'sq)
+                     (+ (/ (expt n 3) 3)
+                        (/ (expt n 2) 2)
+                        (/ n 6)))))
+
+By the way, to prove the above you should define
+
+(defun nats (n)
+  (cond ((zp n) '(0))
+        (t (cons n (nats (- n 1))))))
+
+and include the community book "arithmetic-5/top".
+
+THIRD, it is possible that some applicablity hypotheses may be unsatisfiable!
+That is, it is possible with this version of the apply book that hypotheses
+like (applicablep sq) make theorems vacuously valid.  We are currently working
+on restricting the make-applicable utility (defined in apply.lisp) to ensure
+that there is a constructive model of apply$ that makes these hypotheses true.
+
+This work was described in a series of ACL2 Seminars starting in January, 2016.
+Check the ACL2 seminar web page:
+
+http://www.cs.utexas.edu/users/moore/acl2/seminar/index.html
+
+where you might find slides and additional demos.  The abstract for the series
+is given below.
+
+Adding Apply to ACL2
+Matt Kaufmann
+J Strother Moore
+
+Abstract: This is the first of three proposed seminars reporting ongoing joint
+work with Matt Kaufmann.
+
+Apply is a Common Lisp function that takes a function and a list of arguments
+and returns the result of applying the function to those arguments.  Naively
+axiomatizing apply to handle all definable functions in ACL2's first order
+logic produces an inconsistent theory.  One source of inconsistency is that it
+is possible to define non-terminating ``non-recursive'' functions.  Another has
+to do with ACL2's notion of local events in encapsulate and include-book.  In
+this talk we present a ``tame'' apply and a solution to the local problem.
+
+Our apply is provided in a certified ACL2 book and is thus guaranteed sound but
+has some serious drawbacks including (a) it may be so restrictive that it is of
+no use to the ACL2 user, (b) theorems proved about it may be vacuous in the
+sense that they have unsatisfiable hypotheses, and (c) it cannot be executed.
+Addressing
+(c) would require changes to ACL2 itself, which would
+not be worthwhile if the answers to (a) and (b) are
+unsatisfactory.
+
+In part 1 of this series we will address the pragmatic adequacy of our
+restricted apply by defining various mapping functions and proofs and uses of
+various lemmas about them.
+
+In part 2, we will explain tameness and how apply is defined in a certifiable
+way.
+
+In part 3 we will explore why we believe that this solution (or a modification
+of it) is non-vacuous.

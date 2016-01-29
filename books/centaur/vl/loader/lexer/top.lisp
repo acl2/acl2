@@ -155,6 +155,8 @@ continuations and comments in macro text.</p>")
           plain token."
   ((echars "Characters we are lexing"
            vl-echarlist-p)
+   (breakp "Did we just see a linebreak?"
+           booleanp)
    (string "Exact string we are looking for."
            (and (stringp string)
                 (not (equal string ""))))
@@ -174,19 +176,22 @@ continuations and comments in macro text.</p>")
         (mv nil echars warnings))
        (len   (length string))
        (etext (first-n len echars)))
-    (mv (make-vl-plaintoken :etext etext :type type)
+    (mv (make-vl-plaintoken :etext etext :type type :breakp breakp)
         (rest-n len echars)
         warnings))
   ///
   (def-token/remainder-thms vl-lex-plain
-    :formals (echars string type warnings)
-    :extra-tokenhyp (force (vl-plaintokentype-p type))
-    :extra-appendhyp (force (vl-plaintokentype-p type))))
+    :formals (echars breakp string type warnings)
+    :extra-tokenhyp (and (force (vl-plaintokentype-p type))
+                         (force (booleanp breakp)))
+    :extra-appendhyp (and (force (vl-plaintokentype-p type))
+                          (force (booleanp breakp)))))
 
 
 (define vl-lex-plain-alist
   :parents (vl-lex)
   ((echars vl-echarlist-p)
+   (breakp booleanp)
    (alist vl-plaintoken-alistp)
    (warnings vl-warninglist-p))
   :returns (mv token/nil
@@ -202,69 +207,73 @@ order, you can search for long prefixes first, e.g., @('>>>') before
   (b* (((when (atom alist))
         (mv nil echars (ok)))
        ((mv token remainder warnings)
-        (vl-lex-plain echars (caar alist) (cdar alist) warnings))
+        (vl-lex-plain echars breakp (caar alist) (cdar alist) warnings))
        ((when token)
         (mv token remainder warnings)))
-    (vl-lex-plain-alist echars (cdr alist) warnings))
+    (vl-lex-plain-alist echars breakp (cdr alist) warnings))
   ///
   (def-token/remainder-thms vl-lex-plain-alist
-    :formals (echars alist warnings)
-    :extra-tokenhyp (force (vl-plaintoken-alistp alist))
-    :extra-appendhyp (force (vl-plaintoken-alistp alist))))
-
+    :formals (echars breakp alist warnings)
+    :extra-tokenhyp (and (force (vl-plaintoken-alistp alist))
+                         (force (booleanp breakp)))
+    :extra-appendhyp (and (force (vl-plaintoken-alistp alist))
+                          (force (booleanp breakp)))))
 
 (define vl-lex-token1
   :parents (vl-lex)
   :short "Try to parse a single token at the front of @('echars')."
 
-  ((char1  "The first character in the stream.  It helps a lot with guard
-            verification to have this separate from @('echars')."
-           characterp)
-   (echars "The characters we're lexing."
-           (and (vl-echarlist-p echars)
-                (consp echars)))
+  ((char1    "The first character in the stream.  It helps a lot with guard
+              verification to have this separate from @('echars')."
+              characterp)
+   (echars   "The characters we're lexing."
+             (and (vl-echarlist-p echars)
+                  (consp echars)))
+   (breakp   "Are we starting a new line?"
+             booleanp)
    (st       "Low-level configuration options."
              vl-lexstate-p)
    (warnings vl-warninglist-p))
   :guard (eql char1 (vl-echar->char (car echars)))
   :returns (mv token/nil remainder (warnings vl-warninglist-p))
   :inline t
+  (declare (ignorable breakp))
   (if (char<= char1 #\9)
       ;; Code is 57 or less.
 
       (b* (((when (vl-whitespace-p char1)) ;; codes 9, 10, 12, 32
-            (b* (((mv prefix remainder) (vl-read-while-whitespace echars)))
+            (b* (((mv prefix remainder) (vl-read-while-whitespace echars))) ;; Don't care about breakp
               (mv (make-vl-plaintoken :etext prefix :type :vl-ws)
                   remainder
                   (ok))))
 
            ((when (vl-decimal-digit-p char1)) ;; codes 48...57
-            (vl-lex-number echars st warnings)))
+            (vl-lex-number echars breakp st warnings)))
 
         (case char1
           ;; Other special characters whose codes are less than 57.
 
           (#\! ;; 33
-           (vl-lex-plain-alist echars (vl-lexstate->bangops st) warnings))
+           (vl-lex-plain-alist echars breakp (vl-lexstate->bangops st) warnings))
 
           (#\" ;; 34
            (mv-let (tok rem)
-             (vl-lex-string echars st)
+             (vl-lex-string echars breakp st)
              (mv tok rem (ok))))
 
           (#\# ;; 35
-           (vl-lex-plain-alist echars (vl-lexstate->poundops st) warnings))
+           (vl-lex-plain-alist echars breakp (vl-lexstate->poundops st) warnings))
 
           (#\$ ;; 36
            (b* (((mv tok remainder)
-                 (vl-lex-system-identifier echars (vl-lexstate->dollarops st))))
+                 (vl-lex-system-identifier echars breakp (vl-lexstate->dollarops st))))
              (mv tok remainder (ok))))
 
           (#\% ;; 37
-           (vl-lex-plain-alist echars (vl-lexstate->remops st) warnings))
+           (vl-lex-plain-alist echars breakp (vl-lexstate->remops st) warnings))
 
           (#\& ;; 38
-           (vl-lex-plain-alist echars (vl-lexstate->andops st) warnings))
+           (vl-lex-plain-alist echars breakp (vl-lexstate->andops st) warnings))
 
           (#\' ;; 39
            ;; Quotes mark is tricky.  Could be a casting operator, a structure literal,
@@ -281,48 +290,48 @@ order, you can search for long prefixes first, e.g., @('>>>') before
            ;; produce a two-token sequence, :vl-quote :vl-lcurly.  Similarly,
            ;; for '( we'll just produce :vl-quote :vl-lparen.
            (b* (((mv tok remainder warnings)
-                 (vl-lex-number echars st warnings))
+                 (vl-lex-number echars breakp st warnings))
                 ((when tok)
                  (mv tok remainder warnings))
                 ((unless (vl-lexstate->quotesp st))
                  (mv nil remainder warnings)))
-             (vl-lex-plain echars "'" :vl-quote warnings)))
+             (vl-lex-plain echars breakp "'" :vl-quote warnings)))
 
           (#\( ;; 40
-           (vl-lex-plain-alist echars
+           (vl-lex-plain-alist echars breakp
                                '(("(*" . :vl-beginattr)
                                  ("("  . :vl-lparen))
                                warnings))
 
           (#\) ;; 41
-           (vl-lex-plain echars ")" :vl-rparen warnings))
+           (vl-lex-plain echars breakp ")" :vl-rparen warnings))
 
           (#\* ;; 42
-           (vl-lex-plain-alist echars (vl-lexstate->starops st) warnings))
+           (vl-lex-plain-alist echars breakp (vl-lexstate->starops st) warnings))
 
           (#\+ ;; 43
-           (vl-lex-plain-alist echars (vl-lexstate->plusops st) warnings))
+           (vl-lex-plain-alist echars breakp (vl-lexstate->plusops st) warnings))
 
           (#\, ;; 44
-           (vl-lex-plain echars "," :vl-comma warnings))
+           (vl-lex-plain echars breakp "," :vl-comma warnings))
 
           (#\- ;; 45
-           (vl-lex-plain-alist echars (vl-lexstate->dashops st) warnings))
+           (vl-lex-plain-alist echars breakp (vl-lexstate->dashops st) warnings))
 
           (#\. ;; 46
-           (vl-lex-plain-alist echars (vl-lexstate->dotops st) warnings))
+           (vl-lex-plain-alist echars breakp (vl-lexstate->dotops st) warnings))
 
           (#\/ ;; 47
            (cond ((vl-matches-string-p "//" echars)
                   (mv-let (tok rem)
-                    (vl-lex-oneline-comment echars)
+                    (vl-lex-oneline-comment echars) ;; Don't care about breakp
                     (mv tok rem (ok))))
                  ((vl-matches-string-p "/*" echars)
                   (mv-let (tok rem)
-                    (vl-lex-block-comment echars)
+                    (vl-lex-block-comment echars) ;; Don't care about breakp
                     (mv tok rem (ok))))
                  (t
-                  (vl-lex-plain-alist echars (vl-lexstate->divops st) warnings))))
+                  (vl-lex-plain-alist echars breakp (vl-lexstate->divops st) warnings))))
 
           (otherwise
            (mv nil echars (ok)))))
@@ -331,7 +340,7 @@ order, you can search for long prefixes first, e.g., @('>>>') before
 
     (if (vl-simple-id-head-p char1) ;; codes 65...90, 95, 97...122
         (mv-let (tok rem)
-          (vl-lex-simple-identifier-or-keyword echars (vl-lexstate->kwdtable st))
+          (vl-lex-simple-identifier-or-keyword echars breakp (vl-lexstate->kwdtable st))
           (mv tok rem (ok)))
 
       ;; Most of this stuff is pretty rare, so it probably isn't too
@@ -348,54 +357,56 @@ order, you can search for long prefixes first, e.g., @('>>>') before
              ;; //foo comment.  But if we just do the vl-lex-plain-alist here,
              ;; we will instead see a :/ operator followed by /.  So, as a
              ;; stupid hack to avoid problems, handle :// explicitly.
-             (mv (make-vl-plaintoken :etext (list (car echars)) :type :vl-colon)
+             (mv (make-vl-plaintoken :etext (list (car echars))
+                                     :type :vl-colon
+                                     :breakp breakp)
                  (cdr echars)
                  (ok))
-           (vl-lex-plain-alist echars (vl-lexstate->colonops st) warnings)))
+           (vl-lex-plain-alist echars breakp (vl-lexstate->colonops st) warnings)))
 
         (#\; ;; 59
-         (vl-lex-plain echars ";" :vl-semi warnings))
+         (vl-lex-plain echars breakp ";" :vl-semi warnings))
 
         (#\< ;; 60
-         (vl-lex-plain-alist echars (vl-lexstate->lessops st) warnings))
+         (vl-lex-plain-alist echars breakp (vl-lexstate->lessops st) warnings))
 
         (#\= ;; 61
-         (vl-lex-plain-alist echars (vl-lexstate->eqops st) warnings))
+         (vl-lex-plain-alist echars breakp (vl-lexstate->eqops st) warnings))
 
         (#\> ;; 62
-         (vl-lex-plain-alist echars (vl-lexstate->gtops st) warnings))
+         (vl-lex-plain-alist echars breakp (vl-lexstate->gtops st) warnings))
 
         (#\? ;; 63
-         (vl-lex-plain echars "?" :vl-qmark warnings))
+         (vl-lex-plain echars breakp "?" :vl-qmark warnings))
 
         (#\@ ;; 64
-         (vl-lex-plain echars "@" :vl-atsign warnings))
+         (vl-lex-plain echars breakp "@" :vl-atsign warnings))
 
         (#\[ ;; 91
-         (vl-lex-plain echars "[" :vl-lbrack warnings))
+         (vl-lex-plain echars breakp "[" :vl-lbrack warnings))
 
         (#\\ ;; 92
          (mv-let (tok rem)
-           (vl-lex-escaped-identifier echars)
+           (vl-lex-escaped-identifier echars breakp)
            (mv tok rem (ok))))
 
         (#\] ;; 93
-         (vl-lex-plain echars "]" :vl-rbrack warnings))
+         (vl-lex-plain echars breakp "]" :vl-rbrack warnings))
 
         (#\^ ;; 94
-         (vl-lex-plain-alist echars (vl-lexstate->xorops st) warnings))
+         (vl-lex-plain-alist echars breakp (vl-lexstate->xorops st) warnings))
 
         (#\{ ;; 123
-         (vl-lex-plain echars "{" :vl-lcurly warnings))
+         (vl-lex-plain echars breakp "{" :vl-lcurly warnings))
 
         (#\| ;; 124
-         (vl-lex-plain-alist echars (vl-lexstate->barops st) warnings))
+         (vl-lex-plain-alist echars breakp (vl-lexstate->barops st) warnings))
 
         (#\} ;; 125
-         (vl-lex-plain echars "}" :vl-rcurly warnings))
+         (vl-lex-plain echars breakp "}" :vl-rcurly warnings))
 
         (#\~ ;; 126
-         (vl-lex-plain-alist echars
+         (vl-lex-plain-alist echars breakp
                              ;; Agrees across Verilog-2005 and SystemVerilog-2012
                              '(("~&"   . :vl-nand)
                                ("~|"   . :vl-nor)
@@ -414,20 +425,23 @@ order, you can search for long prefixes first, e.g., @('>>>') before
            :hints(("Goal" :in-theory (enable vl-read-while-whitespace)))))
 
   (def-token/remainder-thms vl-lex-token1
-    :formals (char1 echars st warnings)
+    :formals (char1 echars breakp st warnings)
     :extra-tokenhyp
     (and (force (consp echars))
          (force (equal char1 (vl-echar->char (car echars))))
+         (force (booleanp breakp))
          (force (vl-lexstate-p st)))
     :extra-appendhyp
     (and (force (consp echars))
          (force (equal char1 (vl-echar->char (car echars))))
+         (force (booleanp breakp))
          (force (vl-lexstate-p st)))
     :extra-strongcounthyp
     (force (equal char1 (vl-echar->char (car echars))))))
 
 
 (define vl-lex-token ((echars   vl-echarlist-p)
+                      (breakp   booleanp)
                       (st       vl-lexstate-p)
                       (warnings vl-warninglist-p))
   :parents (vl-lex)
@@ -439,18 +453,28 @@ order, you can search for long prefixes first, e.g., @('>>>') before
         (mv nil echars (ok)))
        (echar1 (car echars))
        (char1  (vl-echar->char echar1)))
-    (vl-lex-token1 char1 echars st warnings))
+    (vl-lex-token1 char1 echars breakp st warnings))
   ///
   (def-token/remainder-thms vl-lex-token
-    :formals (echars st warnings)
-    :extra-tokenhyp (vl-lexstate-p st)
-    :extra-appendhyp (vl-lexstate-p st)))
+    :formals (echars breakp st warnings)
+    :extra-tokenhyp (and (vl-lexstate-p st)
+                         (force (booleanp breakp)))
+    :extra-appendhyp (and (vl-lexstate-p st)
+                          (force (booleanp breakp)))))
 
+
+(define vl-echarlist-has-newline-p ((x vl-echarlist-p))
+  :returns (newline-p booleanp :rule-classes :type-prescription)
+  (if (atom x)
+      nil
+    (or (eql (vl-echar->char (car x)) #\Newline)
+        (vl-echarlist-has-newline-p (cdr x)))))
 
 (define vl-lex-main-exec
   :parents (vl-lex)
   :short "Tail recursive implementation."
   ((echars   vl-echarlist-p)
+   (breakp   booleanp)
    (nrev     (vl-tokenlist-p (nrev-copy nrev)))
    (st       vl-lexstate-p)
    (warnings vl-warninglist-p))
@@ -461,10 +485,12 @@ order, you can search for long prefixes first, e.g., @('>>>') before
        ((when (atom echars))
         (mv t nrev (ok)))
        ((mv tok remainder warnings)
-        (vl-lex-token echars st warnings))
+        (vl-lex-token echars breakp st warnings))
        ((when tok)
-        (let ((nrev (nrev-push tok nrev)))
-          (vl-lex-main-exec remainder nrev st warnings)))
+        (let* ((nrev   (nrev-push tok nrev))
+               (breakp (and (eq (vl-token->type tok) :vl-ws)
+                            (vl-echarlist-has-newline-p (vl-token->etext tok)))))
+          (vl-lex-main-exec remainder breakp nrev st warnings)))
        (- (cw "About to cause an error.~%"))
        (prev-chars (nrev-copy nrev))
        (prev-chop  (nthcdr (nfix (- (length prev-chars) 30)) prev-chars))
@@ -479,6 +505,7 @@ order, you can search for long prefixes first, e.g., @('>>>') before
         warnings)))
 
 (define vl-lex-main ((echars   vl-echarlist-p)
+                     (breakp   booleanp)
                      (st       vl-lexstate-p)
                      (warnings vl-warninglist-p))
   :parents (vl-lex)
@@ -490,17 +517,19 @@ order, you can search for long prefixes first, e.g., @('>>>') before
        (b* (((when (atom echars))
              (mv t nil (ok)))
             ((mv first echars warnings)
-             (vl-lex-token echars st warnings))
+             (vl-lex-token echars breakp st warnings))
             ((unless first)
              (mv nil nil warnings))
+            (breakp (and (eq (vl-token->type first) :vl-ws)
+                         (vl-echarlist-has-newline-p (vl-token->etext first))))
             ((mv successp rest warnings)
-             (vl-lex-main echars st warnings)))
+             (vl-lex-main echars breakp st warnings)))
          (mv successp (cons first rest) warnings))
        :exec
        (with-local-stobj nrev
          (mv-let (successp tokens warnings nrev)
            (b* (((mv successp nrev warnings)
-                 (vl-lex-main-exec echars nrev st warnings))
+                 (vl-lex-main-exec echars breakp nrev st warnings))
                 ((mv tokens nrev)
                  (nrev-finish nrev)))
              (mv successp tokens warnings nrev))
@@ -509,29 +538,29 @@ order, you can search for long prefixes first, e.g., @('>>>') before
   (local (in-theory (enable vl-lex-main-exec)))
 
   (local (defthm vl-lex-main-exec-successp-removal
-           (equal (mv-nth 0 (vl-lex-main-exec echars acc st warnings))
-                  (mv-nth 0 (vl-lex-main echars st warnings)))))
+           (equal (mv-nth 0 (vl-lex-main-exec echars breakp acc st warnings))
+                  (mv-nth 0 (vl-lex-main echars breakp st warnings)))))
 
   (local (defthm vl-lex-main-exec-tokens-removal
-           (equal (mv-nth 1 (vl-lex-main-exec echars acc st warnings))
-                  (append acc (mv-nth 1 (vl-lex-main echars st warnings))))))
+           (equal (mv-nth 1 (vl-lex-main-exec echars breakp acc st warnings))
+                  (append acc (mv-nth 1 (vl-lex-main echars breakp st warnings))))))
 
   (local (defthm vl-lex-main-exec-warnings-removal
-           (equal (mv-nth 2 (vl-lex-main-exec echars acc st warnings))
-                  (mv-nth 2 (vl-lex-main echars st warnings)))))
+           (equal (mv-nth 2 (vl-lex-main-exec echars breakp acc st warnings))
+                  (mv-nth 2 (vl-lex-main echars breakp st warnings)))))
 
   (defthm vl-lex-main-exec-redefinition
-    (equal (vl-lex-main-exec echars acc st warnings)
+    (equal (vl-lex-main-exec echars breakp acc st warnings)
            (mv-let (successp tokens warnings)
-                   (vl-lex-main echars st warnings)
+                   (vl-lex-main echars breakp st warnings)
                    (mv successp (append acc tokens) warnings))))
 
   (defthm type-of-vl-lex-main-successp
-    (booleanp (mv-nth 0 (vl-lex-main echars st warnings)))
+    (booleanp (mv-nth 0 (vl-lex-main echars breakp st warnings)))
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-lex-main-tokens
-    (true-listp (mv-nth 1 (vl-lex-main echars st warnings)))
+    (true-listp (mv-nth 1 (vl-lex-main echars breakp st warnings)))
     :rule-classes :type-prescription)
 
   (verify-guards vl-lex-main)
@@ -539,16 +568,18 @@ order, you can search for long prefixes first, e.g., @('>>>') before
   (defthm vl-tokenlist-p-of-vl-lex-main
     ;; Correctness Claim 1.  The lexer produces a list of tokens.
     (implies (and (force (vl-echarlist-p echars))
+                  (force (booleanp breakp))
                   (force (vl-lexstate-p st)))
-             (vl-tokenlist-p (mv-nth 1 (vl-lex-main echars st warnings)))))
+             (vl-tokenlist-p (mv-nth 1 (vl-lex-main echars breakp st warnings)))))
 
   (defthm vl-tokenlist->etext-of-vl-lex-main
     ;; Correctness Claim 2.  If we flatten the resulting tokens, we obtain the
     ;; original characters.
-    (b* (((mv okp tokens ?warnings) (vl-lex-main echars st warnings)))
+    (b* (((mv okp tokens ?warnings) (vl-lex-main echars breakp st warnings)))
       (implies (and okp
                     (force (vl-echarlist-p echars))
                     (force (true-listp echars))
+                    (force (booleanp breakp))
                     (force (vl-lexstate-p st)))
                (equal (vl-tokenlist->etext tokens)
                       echars)))))
@@ -579,7 +610,7 @@ order, you can search for long prefixes first, e.g., @('>>>') before
                          vl-warninglist-p))
   (b* ((st (vl-lexstate-init config))
        ((mv okp tokens warnings)
-        (vl-lex-main echars st warnings)))
+        (vl-lex-main echars t st warnings)))
     (mv okp tokens warnings))
   ///
   (defthm vl-tokenlist->etext-of-vl-lex

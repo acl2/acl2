@@ -30,7 +30,7 @@
 
 module test ();
 
-   localparam nCycles = 1024;
+   localparam nCycles = 1040;
 
   reg [127:0] inputs [nCycles-1:0];
   reg [127:0] outputs [nCycles-1:0];

@@ -409,17 +409,43 @@ expression with a @(see vl-context-p) describing its origin.</p>")
 (defun def-expr-check-fn (name formals ctx-included-in-warnings)
   (acl2::template-subst-top
    `(progn
+
+      (define vl-ctxexprlist-<check>-nrev ((x vl-ctxexprlist-p) nrev)
+        (b* (((when (atom x))
+              (nrev-fix nrev))
+             (nrev (nrev-append (b* (((vl-ctxexpr x) (car x)))
+                                  ,(if ctx-included-in-warnings
+                                       `(vl-expr-<check> . ,formals)
+                                     `(vl-warninglist-add-ctx
+                                       (vl-expr-<check> . ,formals)
+                                       x.ctx)))
+                                nrev)))
+          (vl-ctxexprlist-<check>-nrev (cdr x) nrev)))
+
       (define vl-ctxexprlist-<check> ((x vl-ctxexprlist-p))
         :returns (warnings vl-warninglist-p)
-        (if (atom x)
-            nil
-          (append (b* (((vl-ctxexpr x) (car x)))
-                    ,(if ctx-included-in-warnings
-                         `(vl-expr-<check> . ,formals)
-                       `(vl-warninglist-add-ctx
-                         (vl-expr-<check> . ,formals)
-                         x.ctx)))
-                  (vl-ctxexprlist-<check> (cdr x)))))
+        :verify-guards nil
+        (mbe :logic
+             (if (atom x)
+                 nil
+               (append (b* (((vl-ctxexpr x) (car x)))
+                         ,(if ctx-included-in-warnings
+                              `(vl-expr-<check> . ,formals)
+                            `(vl-warninglist-add-ctx
+                              (vl-expr-<check> . ,formals)
+                              x.ctx)))
+                       (vl-ctxexprlist-<check> (cdr x))))
+             :exec
+             (with-local-nrev
+               (vl-ctxexprlist-<check>-nrev x nrev)))
+        ///
+        (defthm vl-ctxexprlist-<check>-nrev-removal
+          (equal (vl-ctxexprlist-<check>-nrev x nrev)
+                 (append (list-fix nrev) (vl-ctxexprlist-<check> x)))
+          :hints(("Goal" :in-theory (enable vl-ctxexprlist-<check>-nrev))))
+
+        (verify-guards vl-ctxexprlist-<check>))
+
       (define vl-module-<check> ((x vl-module-p)
                                  (ss vl-scopestack-p))
         :returns (new-x vl-module-p)
@@ -482,4 +508,23 @@ expression with a @(see vl-context-p) describing its origin.</p>")
                           (formals '(x.expr x.ss))
                           ctx-included-in-warnings)
   (def-expr-check-fn name formals ctx-included-in-warnings))
+
+(logic)
+
+(local
+ (encapsulate
+   ()
+   (define vl-expr-my-check ((x  vl-expr-p)
+                             (ss vl-scopestack-p))
+     :returns (warnings vl-warninglist-p)
+     (let ((warnings nil)
+           (x (vl-expr-fix x))
+           (ss (vl-scopestack-fix ss)))
+       (if (vl-expr-case x :vl-index)
+           (list (make-vl-warning :type :vl-warn-index
+                                  :msg "Blah something"
+                                  :args (list x ss)))
+         (ok))))
+
+   (def-expr-check my-check)))
 

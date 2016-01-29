@@ -31,7 +31,6 @@
 
 (in-package "ACL2")
 (include-book "aiger-help")
-(include-book "data-structures/list-defthms" :dir :system)
 (include-book "aig-vars-ext")
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (include-book "centaur/misc/sneaky-load" :dir :system)
@@ -39,6 +38,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "misc/definline" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (include-book "clause-processors/instantiate" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

@@ -50,6 +50,18 @@
 ;  - Book release notes are typically very disorganized.  This shouldn't be
 ;    considered a bug until we are very close to a release.
 
+(defxdoc note-7-3-books
+  :parents (note-7-3)
+  :short "Release notes for the ACL2 Community Books for ACL2 7.3 (xxx 201x)"
+  :long "<p>The following is a brief summary of changes made to the @(see
+ community-books) between the releases of ACL2 7.2 and 7.3.</p>
+
+ <p>See also @(see note-7-2) for the changes made to ACL2 itself.  For
+ additional details, you may also see the raw <a
+ href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
+
+ ")
+
 (defxdoc note-7-2-books
 
 ; Shilpi Goel
@@ -145,13 +157,9 @@
   :long "<p>The following is a brief summary of changes made to the @(see
  community-books) between the releases of ACL2 7.1 and 7.2.</p>
 
- <p>The <a
- href='https://github.com/acl2/acl2/wiki/Release-version-numbers'>acl2-books
- Wiki page on Release Version Numbers</a> gives the Git/SVN revision
- numbers corresponding to releases.  See also @(see note-7-2) for the
- changes made to ACL2 itself.  For additional details, you may also
- see the raw <a href='https://github.com/acl2/acl2/commits/master'>commit
- log</a>.</p>
+ <p>See also @(see note-7-2) for the changes made to ACL2 itself.  For
+ additional details, you may also see the raw <a
+ href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
 
  <h3>New Libraries</h3>
 
@@ -762,7 +770,7 @@ resolve many significantly more complex parameters and generates.</p>
 
 <h3>Linter</h3>
 
-<p>The @(see vl::lint) tool now uses much more of the SV code.  It shares the
+<p>The @(see vl::vl-lint) tool now uses much more of the SV code.  It shares the
 @(see vl::annotate) code with the SV flow and also uses SV-based elaboration,
 which provides much better handling of generates and allows it to
 unparameterize modules involving types and other complex expressions.  The very
@@ -1176,7 +1184,7 @@ found in the change log.</p>")
  </ul>
 
 
- <h3>@(see vl::lint) Improvements</h3>
+ <h3>@(see vl::vl-lint) Improvements</h3>
 
  <p>The loader works harder to attach parse-time warnings to the appropriate
  modules.</p>
@@ -1895,12 +1903,12 @@ found in the change log.</p>")
 
  </ul>
 
- <p>Besides these improvements to the core library, there have been various user
- interface improvements.  For instance, the VL @(see vl::server) has been
+ <p>Besides these improvements to the core library, there have been various
+ user interface improvements.  For instance, the @(see vl::vl-server) has been
  entirely rewritten and is now included in the @(see vl::kit); it allows you to
  view Verilog modules in a web browser.  The loader has been made more
  user-friendly and more gracefully handles search paths, errors, etc.  The
- @(see vl::lint)er has been tweaked to provide better output and to run more
+ @(see vl::vl-lint)er has been tweaked to provide better output and to run more
  quickly.</p>")
 
 

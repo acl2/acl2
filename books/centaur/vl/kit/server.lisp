@@ -36,14 +36,92 @@
 (value-triple (set-gc-strategy :delay))
 
 (include-book "shell")
-(include-book "../server/server")
+(include-book "../server/top")
 (include-book "../util/gc")
 (include-book "centaur/getopt/top" :dir :system)
+(local (include-book "xdoc/display" :dir :system))
+
+(defxdoc vl-server
+  :parents (kit)
+  :short "The VL server powers the Module Browser, a web-based interface for
+viewing Verilog designs."
+
+  :long "<h3>Introduction</h3>
+
+<p>The VL Server lets you to browser through a Verilog or SystemVerilog design
+from a web browser.  Some nice features:</p>
+
+<ul>
+ <li>Easily jump from module to module via hyperlinks</li>
+ <li>Click on wires to see how they're used</li>
+ <li>Get pictures (that you can print) of a module's inputs and outputs</li>
+</ul>
+
+<p>The VL server is normally built as part of the VL @(see kit).  That is, to
+start the server you can run @('vl server [options]'), where @('vl') is the VL
+command-line program described in @(see kit).</p>
+
+<h5>Security Warning</h5>
+
+<p>The server has NO AUTHENTICATION MECHANISM.  Anyone who can see your machine
+on the network can browse your Verilog modules.  Moreover, the module browser
+software MAY HAVE SECURITY VULNERABILITIES that could allow an attacker to gain
+access to your computer.  You should ONLY run the module browser after first
+consulting your network administrator to ensure that appropriate firewalls are
+in place.  You should NEVER run the module browser on an untrusted
+network (e.g., the internet).  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+
+
+<h3>Getting Started</h3>
+
+<box><p>See @('demo.sh') in @('acl2/books/centaur/vl/kit/server-demo') for
+an interactive demo of the following commands.</p></box>
+
+<p>The server reads Verilog designs from @('.vlzip') files that are produced by
+the @(see vl-zip) command.  So, the first step to use the VL Server is to use
+VL to zip up your designs using a command such as:</p>
+
+@({
+     vl zip foo.sv \
+        --search ./lib1 \
+        --search ./lib2 \
+        --name foo \
+        --output=./translations/foo.vlzip
+})
+
+<p>You can see @(see vl-zip) for more details.  Once your @('.vlzip') files
+have been generated, you can point the VL server to the directory that contains
+them, using a command such as:</p>
+
+@({
+     vl server --port 3375 --root=./translations
+})
+
+<p>Once the server is running, you should be able to connect your web browser
+to it by entering a URL such as:</p>
+
+@({
+     http://localhost:3375/
+})
+
+<p>The server will occasionally rescan its @('--root') directory for new
+@('.vlzip') files, and you can choose the file you want to browse from the main
+page.</p>
+
+
+<h5>Other Options</h5>
+
+<p>For detailed usage information, you can run @('vl server --help') or see
+@(see *vl-server-help*).</p>")
+
+(local (xdoc::set-default-parents vl-server))
 
 (make-event
  (let ((public-dir (oslib::catpath *browser-dir* "public")))
    `(defoptions vl-server-opts
-      :parents (vl-server)
       :short "Options for running @('vl server')."
       :tag :vl-server-opts
 
@@ -86,7 +164,10 @@
                 a different directory.")
                 :default ,public-dir)))))
 
-(defconst *vl-server-help* (str::cat "
+(defval *vl-server-help*
+  :showdef nil
+  :showval t
+  (str::cat "
 vl server:  Runs the VL Server (which supports the Module Browser).
 
 Usage:    vl server [OPTIONS]
@@ -94,16 +175,12 @@ Usage:    vl server [OPTIONS]
 Options:" *nls* *nls* *vl-server-opts-usage* *nls*))
 
 (defconsts (*vl-server-readme* state)
-  (b* (((mv contents state) (acl2::read-file-characters "server.readme" state))
-       ((when (stringp contents))
-        (raise contents)
-        (mv "" state)))
-    (mv (implode contents) state)))
+  (b* ((topic (xdoc::find-topic 'vl::server (xdoc::get-xdoc-table (w state))))
+       ((mv text state) (xdoc::topic-to-text topic nil state)))
+    (mv text state)))
 
-
-(define vl-server ((cmdargs string-listp) &optional (state 'state))
-  :parents (kit)
-  :short "The @('vl server') command."
+(define vl-server-top ((cmdargs string-listp) &optional (state 'state))
+  :short "Top-level @('vl server') command."
 
   (b* (((mv errmsg opts extra-args)
         (parse-vl-server-opts cmdargs))
@@ -144,7 +221,7 @@ Options:" *nls* *nls* *vl-server-opts-usage* *nls*))
                  :public-dir opts.public
                  :root-dir   opts.root)))
     (cw "Starting VL Shell for the server.~%")
-    (vl-shell nil)))
+    (vl-shell-top nil)))
 
 
 

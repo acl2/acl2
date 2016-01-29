@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -13983,17 +13983,17 @@
                           ~#1~[is~/are~] unrecognized.  See :DOC hints."
                         expanded-hint-keywords
                         (set-difference-eq keys expanded-hint-keywords)))
-                     ((member-eq :computed-hints-replacement keys)
+                     ((member-eq :computed-hint-replacement keys)
 
 ; If translate-hint is called correctly, then we expect this case not to arise
 ; for well-formed hints.  For example, in eval-and-translate-hint-expression we
-; remove an appropriate use of :computed-hints-replacement.
+; remove an appropriate use of :computed-hint-replacement.
 
                       (er@par soft ctx
                         "The hint keyword ~x0 has been used incorrectly.  ~
                           Its only appropriate use is as a leading hint ~
                           keyword in computed hints.  See :DOC computed-hints."
-                        :computed-hints-replacement))
+                        :computed-hint-replacement))
                      ((not (no-duplicatesp-equal keys))
                       (er@par soft ctx
                         "You have duplicate occurrences of the hint keyword ~
@@ -14437,7 +14437,7 @@
              keyword hint, as reported above."
             (tilde-@-clause-id-phrase cl-id)))
          ((eq (car new-keyword-alist)
-              :computed-hints-replacement)
+              :computed-hint-replacement)
           (er@par soft ctx
             "An override-hint, ~x0, has produced an illegal value from ~
              keyword-alist ~x1.  That value, ~x2, is illegal because it ~
@@ -14722,7 +14722,7 @@
                   (cond ((equal val val1) "")
                         (t (msg "In turn, override-hints transformed these ~
                                  hint-settings~#0~[ (without the leading ~
-                                 :COMPUTED-HINTS-REPLACEMENT value)~/~] into ~
+                                 :COMPUTED-HINT-REPLACEMENT value)~/~] into ~
                                  ~x1.  "
                                 (if (equal val0 val1) 1 0)
                                 val))))

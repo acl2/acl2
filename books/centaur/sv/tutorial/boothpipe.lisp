@@ -54,8 +54,8 @@
 ; booth-support.lisp if you want the details.)
 
 (in-package "SV")
-(include-book "centaur/gl/bfr-satlink" :dir :system)
 (include-book "../top")
+(include-book "centaur/gl/bfr-satlink" :dir :system)
 (include-book "support")
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)

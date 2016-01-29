@@ -124,6 +124,7 @@ SystemVerilog-2012.</p>")
   :short "Match @('real_number') or @('time_literal')."
 
   ((echars vl-echarlist-p "Characters we're lexing.")
+   (breakp booleanp)
    (st     vl-lexstate-p  "Governs whether @('time_literal')s are valid."))
   :returns (mv token? remainder)
 
@@ -165,13 +166,14 @@ extra possibilities, e.g., @('37.45us') is a time literal whereas @('37.45')
 followed by something else is a real number.</p>"
 
   (b* (;; Match initial unsigned_number part
+       (breakp (and breakp t))
        ((mv ipart ipart-rest) (vl-read-unsigned-number echars))
        ((unless ipart)        (mv nil echars))
 
        ;; Check for 123e+45 -- if so, can only be a real number
        ((mv tail tail-rest)   (vl-read-real-tail ipart-rest))
        ((when tail)
-        (mv (make-vl-realtoken :etext (append ipart tail))
+        (mv (make-vl-realtoken :etext (append ipart tail) :breakp breakp)
             tail-rest))
 
        ((vl-lexstate st) st)
@@ -184,7 +186,8 @@ followed by something else is a real number.</p>"
         (mv (make-vl-timetoken
              :etext    (append ipart units)
              :quantity (vl-echarlist->string ipart)
-             :units    (vl-timeunit-lookup (vl-echarlist->string units)))
+             :units    (vl-timeunit-lookup (vl-echarlist->string units))
+             :breakp   breakp)
             units-rest))
 
        ;; Not simply an integer with an expt/time tail, so now try
@@ -197,7 +200,8 @@ followed by something else is a real number.</p>"
        ;; Check for 123.45e+67 -- if so, can only be a real number
        ((mv tail tail-rest) (vl-read-real-tail fpart-rest))
        ((when tail)
-        (mv (make-vl-realtoken :etext (append ipart dot fpart tail))
+        (mv (make-vl-realtoken :etext (append ipart dot fpart tail)
+                               :breakp breakp)
             tail-rest))
 
        ;; Check for 123.45us -- if so, can only be a time literal
@@ -208,15 +212,17 @@ followed by something else is a real number.</p>"
         (mv (make-vl-timetoken
              :etext    (append ipart dot fpart units)
              :quantity (vl-echarlist->string (append ipart dot fpart))
-             :units    (vl-timeunit-lookup (vl-echarlist->string units)))
+             :units    (vl-timeunit-lookup (vl-echarlist->string units))
+             :breakp   breakp)
             units-rest)))
 
     ;; Else we found 123.45 with no expt/time tail -- it's a valid real number
-    (mv (make-vl-realtoken :etext (append ipart dot fpart))
+    (mv (make-vl-realtoken :etext (append ipart dot fpart)
+                           :breakp breakp)
         fpart-rest))
   ///
   (def-token/remainder-thms vl-lex-time-or-real-number
-    :formals (echars st)))
+    :formals (echars breakp st)))
 
 
 
@@ -678,6 +684,7 @@ therefore detect and warn about this very unusual case.</p>"
 (define vl-lex-integer
   :short "Match any @('integral_number')."
   ((echars   vl-echarlist-p)
+   (breakp   booleanp)
    (warnings vl-warninglist-p))
   :returns (mv token?
                remainder
@@ -711,6 +718,7 @@ grammar is:</p>
 
   :verify-guards nil
   (b* ((warnings (vl-warninglist-fix warnings))
+       (breakp   (and breakp t))
 
        ;; We first try to read any numeric portion of echars into NUMBER.
        ;; When there is no number, REMAINDER1 == ECHARS and NUMBER == NIL.
@@ -777,7 +785,8 @@ grammar is:</p>
                                         :signedp t
                                         :value val-fix
                                         :bits nil
-                                        :wasunsized t)))
+                                        :wasunsized t
+                                        :breakp breakp)))
             (mv token remainder1 warnings)))
 
          ;; Otherwise there is a base.  This means that if there is a NUMBER,
@@ -837,7 +846,8 @@ grammar is:</p>
                                           :signedp signedp
                                           :value val-fix
                                           :bits nil
-                                          :wasunsized unsizedp))
+                                          :wasunsized unsizedp
+                                          :breakp breakp))
                (warnings
                 ;; Truncation warnings.
                 (cond ((not unsizedp)
@@ -908,7 +918,8 @@ grammar is:</p>
                                   :signedp signedp
                                   :value value
                                   :bits bits
-                                  :wasunsized unsizedp)))
+                                  :wasunsized unsizedp
+                                  :breakp breakp)))
       (mv token remainder2 warnings))
 
   ///
@@ -921,16 +932,19 @@ grammar is:</p>
   (with-output
    :gag-mode :goals
    (def-token/remainder-thms vl-lex-integer
-     :formals (echars warnings))))
+     :formals (echars breakp warnings))))
+
 
 
 
 (define vl-lex-unbased-unsized-literal
   :short "@('unbased_unsized_literal ::= '0 | '1 | 'z_or_x')."
   :long "<p>Embedded spaces are not allowed.</p>"
-  ((echars vl-echarlist-p))
+  ((echars vl-echarlist-p)
+   (breakp booleanp))
   :returns (mv token? remainder)
-  (b* (((mv prefix val remainder)
+  (b* ((breakp (and breakp t))
+       ((mv prefix val remainder)
         (b* (((mv prefix remainder) (vl-read-literal "'0" echars))
              ((when prefix)         (mv prefix :vl-0val remainder))
              ((mv prefix remainder) (vl-read-literal "'1" echars))
@@ -943,16 +957,18 @@ grammar is:</p>
              ((when prefix)         (mv prefix :vl-zval remainder)))
           (mv nil nil echars)))
        ((when prefix)
-        (mv (make-vl-extinttoken :etext prefix :value val)
+        (mv (make-vl-extinttoken :etext prefix :value val :breakp breakp)
             remainder)))
     (mv nil echars))
   ///
-  (def-token/remainder-thms vl-lex-unbased-unsized-literal))
+  (def-token/remainder-thms vl-lex-unbased-unsized-literal
+    :formals (echars breakp)))
 
 
 (define vl-lex-number
   :short "Match @('number'), @('time_literal'), and @('unbased_unsized_literal')."
   ((echars   vl-echarlist-p)
+   (breakp   booleanp)
    (st       vl-lexstate-p)
    (warnings vl-warninglist-p))
   :returns (mv token?
@@ -965,18 +981,18 @@ grammar is:</p>
        ;; fooled by things like 123.45 or 123us: we don't want to turn just
        ;; "123" into an integer and leave the ".45" or "us" sitting there in
        ;; the remainder.
-       ((mv token remainder) (vl-lex-time-or-real-number echars st))
+       ((mv token remainder) (vl-lex-time-or-real-number echars breakp st))
        ((when token) (mv token remainder warnings))
 
        ;; Ordinary numbers
-       ((mv token remainder warnings) (vl-lex-integer echars warnings))
+       ((mv token remainder warnings) (vl-lex-integer echars breakp warnings))
        ((when token) (mv token remainder warnings))
 
        ((unless (vl-lexstate->extintsp st))
         (mv nil echars warnings))
-       ((mv token remainder) (vl-lex-unbased-unsized-literal echars)))
+       ((mv token remainder) (vl-lex-unbased-unsized-literal echars breakp)))
     (mv token remainder warnings))
   ///
   (def-token/remainder-thms vl-lex-number
-    :formals (echars st warnings)))
+    :formals (echars breakp st warnings)))
 

@@ -917,18 +917,8 @@ hierarchical identifiers that point at modports.</p>"
                    :args (list inst port.name expr))
             arg))
        ((vl-index expr))
-       ((when (or (consp expr.indices)
-                  (not (vl-partselect-case expr.part :none))))
-        ;; Something like foo[3] or foo[5:0] or foo.bar[3] or foo.bar[5:0].  I
-        ;; don't think this can make sense as a way to refer to a modport, so
-        ;; leave this alone and don't try to convert it.  BOZO may need to change
-        ;; this to support interface arrays.
-        (mv (fatal :type :vl-bad-instance
-                   :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
-                   :args (list inst port.name expr))
-            arg))
 
-       ;; If we get here, we have a plain scope expression, so try to follow
+       ;; If we get here, we have a scope expression, so try to follow
        ;; it.  This is a bit limited.  Doing it here, instead of during
        ;; elaboration, means we won't be able to handle things like:
        ;;
@@ -994,10 +984,19 @@ hierarchical identifiers that point at modports.</p>"
        ;; to sanity check that the "foo.bar.mypipe" part is a compatible
        ;; interface and that the "consumer" part is a valid modport name for
        ;; this interface.
+
        ((unless (vl-scopeitem-modport-p step1.item))
         ;; See also failtest/ifport2.v, 
         (mv (fatal :type :vl-bad-instance
                    :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
+                   :args (list inst port.name expr))
+            arg))
+       ;; There shouldn't be any indices on the outside, because modports don't
+       ;; come in arrays.
+       ((when (or (consp expr.indices)
+                  (not (vl-partselect-case expr.part :none))))
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: array indexing can't be applied to modport: .~s1(~a2)"
                    :args (list inst port.name expr))
             arg))
        ((vl-modport step1.item))

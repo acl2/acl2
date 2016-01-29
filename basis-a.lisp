@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -4511,22 +4511,8 @@
           (formal-bindings (cdr vars)))))
 
 (defrec io-record
-
-; WARNING:  We rely on the shape of this record in io-record-forms.
-
-; Note: As of Version_3.4 we do not use any io-marker other than :ctx.  Earlier
-; versions might not have made any real use of those either, writing but not
-; reading them.
-
   (io-marker . form)
   t)
-
-(defmacro io-record-forms (io-records)
-
-; WARNING:  If you change this macro, consider changing (defrec io-record ...)
-; too.
-
-  `(strip-cdrs ,io-records))
 
 (defun push-io-record (io-marker form state)
   (f-put-global 'saved-output-reversed
@@ -4555,7 +4541,8 @@
                      (cursor-at-top 'nil cursor-at-top-argp)
                      (pop-up 'nil pop-up-argp)
                      (default-bindings 'nil)
-                     (chk-translatable 't))
+                     (chk-translatable 't)
+                     (io-marker 'nil))
 
 ; Typical use (io? error nil (mv col state) (x y) (fmt ...)), meaning execute
 ; the fmt statement unless 'error is on 'inhibit-output-lst.  The mv expression
@@ -4692,7 +4679,7 @@
                     :ld-prompt nil))))
      (t `(pprogn
           (cond ((saved-output-token-p ',token state)
-                 (push-io-record nil ; io-marker
+                 (push-io-record ,io-marker
                                  (list 'let
                                        (list ,@(formal-bindings vars))
                                        ',expansion)
@@ -4882,35 +4869,42 @@
 ; used in place of str and the input alist if we are in raw-warning-format
 ; mode.
 
-  (let ((channel (f-get-global 'proofs-co state))
-        (str ; nil if we are to use raw-warning-format
-         (cond ((consp str+)
-                (assert$ (and (stringp (car str+))
-                              (alistp (cdr str+)))
-                         (cond ((f-get-global 'raw-warning-format state)
-                                nil)
-                               (t (car str+)))))
-               (t str+))))
+  (let ((channel (f-get-global 'proofs-co state)))
     (pprogn
      (if summary
          (push-warning summary state)
        state)
-     (cond ((null str)
-            (fms "~y0"
-                 (list (cons #\0 (list :warning summary
-                                       (cons (list :ctx ctx)
-                                             (cdr str+)))))
-                 channel state nil))
-           (t ; hence (stringp str)
-            (mv-let
-              (col state)
-              (fmt "ACL2 Warning~#0~[~/ [~s1]~]"
-                   (list (cons #\0 (if summary 1 0))
-                         (cons #\1 summary))
-                   channel state nil)
-              (mv-let (col state)
-                (fmt-in-ctx ctx col channel state)
-                (fmt-abbrev str alist col channel state "~%~%"))))))))
+     (cond
+      ((f-get-global 'raw-warning-format state)
+       (cond ((consp str+)
+              (fms "~y0"
+                   (list (cons #\0 (list :warning summary
+                                         (cons (list :ctx ctx)
+                                               (cdr str+)))))
+                   channel state nil))
+             (t
+              (fms "(:WARNING ~x0~t1~y2)~%"
+                   (list (cons #\0 summary)
+                         (cons #\1 10) ; (length "(:WARNING ")
+                         (cons #\2
+                               (list (cons :ctx ctx)
+                                     (cons :fmt-string str+)
+                                     (cons :fmt-alist alist))))
+                   channel state nil))))
+      (t (let ((str (cond ((consp str+)
+                           (assert$ (and (stringp (car str+))
+                                         (alistp (cdr str+)))
+                                    (car str+)))
+                          (t str+))))
+           (mv-let
+             (col state)
+             (fmt "ACL2 Warning~#0~[~/ [~s1]~]"
+                  (list (cons #\0 (if summary 1 0))
+                        (cons #\1 summary))
+                  channel state nil)
+             (mv-let (col state)
+               (fmt-in-ctx ctx col channel state)
+               (fmt-abbrev str alist col channel state "~%~%")))))))))
 
 (defmacro warning1-form (commentp)
 
@@ -6413,6 +6407,13 @@
 
                     ,@(cond ((eq st 'state)
                              '((*inside-with-local-state* t)
+                               (*wormholep*
+
+; We are in a local state, so it is irrelevant whether or not we are in a
+; wormhole, since (conceptually at least) the local state will be thrown away
+; after making changes to it.
+
+                                nil)
                                (*file-clock* *file-clock*)
                                (*t-stack* *t-stack*)
                                (*t-stack-length* *t-stack-length*)

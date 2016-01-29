@@ -1,4 +1,4 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -6953,6 +6953,11 @@
   (defun-overrides mfc-ap-fn (term mfc state forcep)
     (mfc-ap-raw term mfc state forcep)))
 
+#+ccl
+(defun stack-access-defeat-hook-default (fn)
+  (declare (xargs :guard (symbolp fn)))
+  (*1*-symbolp fn))
+
 (defun-one-output exit-boot-strap-mode ()
 
 ; We need not unwind the *acl2-unwind-protect-stack* because it must be nil for
@@ -6978,7 +6983,13 @@
   (checkpoint-world1 t (w *the-live-state*) *the-live-state*)
   #+hons
   (progn (initialize-never-memoize-ht)
-         (acl2h-init-memoizations)))
+         (acl2h-init-memoizations))
+  #+ccl
+  (when (boundp 'ccl::*stack-access-defeat-hook*)
+    (locally (declare (special ccl::*stack-access-defeat-hook*))
+             (setq ccl::*stack-access-defeat-hook*
+                   'stack-access-defeat-hook-default)))
+  nil)
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)
   `((standard-oi . ,standard-oi)
@@ -8430,6 +8441,42 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 ;                   COMPILING, SAVING, AND RESTORING
 
+#+ccl
+(defun stack-access-defeat-hook-cert-ht ()
+
+; This function either returns nil or, if ccl::*stack-access-winners* is bound
+; to a hash-table, a hash-table whose keys are names of currently-known
+; "winners".  Each such name is the name of a function FN that is a key of
+; ccl::*stack-access-winners* such that FN is the current symbol-function of
+; FN.
+
+  (let ((ccl-ht
+         (and (boundp 'ccl::*stack-access-winners*)
+              (symbol-value 'ccl::*stack-access-winners*))))
+    (and (hash-table-p ccl-ht)
+         (let ((ht (make-hash-table :test 'eq)))
+           (maphash (lambda (key val)
+                      (when (and val
+                                 (symbolp val)
+                                 (fboundp val)
+                                 (eq key (symbol-function val)))
+                        (setf (gethash val ht) t)))
+                    ccl-ht)
+           ht))))
+
+#+ccl
+(defvar *stack-access-defeat-hook-cert-ht* nil)
+
+#+ccl
+(defun stack-access-defeat-hook-cert (fn)
+
+; This function assumes that *stack-access-defeat-hook-cert-ht* is bound to a
+; hash-table of names of "winners"; see function
+; stack-access-defeat-hook-cert-ht.
+
+  (and (symbolp fn)
+       (not (gethash fn *stack-access-defeat-hook-cert-ht*))))
+
 (defun acl2-compile-file (full-book-name os-expansion-filename)
 
 ; Full-book-name is a Unix-style pathname.  Os-expansion-filename is a pathname
@@ -8466,7 +8513,14 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; example where this binding reduced the .dx64fsl size from 13696271 to 24493.
 
            #+ccl (ccl::*save-source-locations* nil))
-       (compile-file os-expansion-filename :output-file ofile))
+       (cond
+        #+ccl
+        (*stack-access-defeat-hook-cert-ht*
+         (let ((ccl::*stack-access-defeat-hook*
+                'stack-access-defeat-hook-cert))
+           (declare (special ccl::*stack-access-defeat-hook*))
+           (compile-file os-expansion-filename :output-file ofile)))
+        (t (compile-file os-expansion-filename :output-file ofile))))
 
 ; Warning: Keep the following "compile on the fly" readtime conditional in sync
 ; with the one in initialize-state-globals.  Here, we avoid loading the
@@ -8959,7 +9013,10 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
   (let* ((os-full-book-name (pathname-unix-to-os full-book-name state))
          (os-full-book-name-compiled
-          (convert-book-name-to-compiled-name os-full-book-name state)))
+          (convert-book-name-to-compiled-name os-full-book-name state))
+         #+ccl
+         (*stack-access-defeat-hook-cert-ht*
+          (stack-access-defeat-hook-cert-ht)))
     (when (probe-file os-full-book-name-compiled)
       (delete-file os-full-book-name-compiled))
     (acl2-compile-file full-book-name expansion-filename)

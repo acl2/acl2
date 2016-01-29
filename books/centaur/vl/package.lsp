@@ -213,6 +213,7 @@
 
             str::cat
             str::natstr
+            str::intstr
             str::implode
             str::explode
 
@@ -226,6 +227,7 @@
             hardware-verification
             esim
             sv
+            acl2
 
             ;; acl2-customization file stuff
             why

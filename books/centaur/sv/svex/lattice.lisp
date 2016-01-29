@@ -227,6 +227,7 @@ acl2::4v-monotonicity).</p>"
                             3vec-reduction-and
                             3vec-?
                             3vec-bit?
+                            3vec-?*
                             3vec-==
                             4vec-onset
                             4vec-offset
@@ -270,6 +271,7 @@ acl2::4v-monotonicity).</p>"
   (def-4vec-monotonicity 4vec-==)
   (def-4vec-monotonicity 4vec-?)
   (def-4vec-monotonicity 4vec-bit?)
+  (def-4vec-monotonicity 4vec-?*)
   (def-4vec-monotonicity 4vec-bit-extract)
   (def-4vec-monotonicity 4vec-rev-blocks)
   (def-4vec-monotonicity 4vec-wildeq-safe)

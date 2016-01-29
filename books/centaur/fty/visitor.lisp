@@ -1015,15 +1015,67 @@
 ;; top-level types that we want to visit.  Steps to determining the proper
 ;; sequence of defvisitor forms:
 ;;
+;; General priority ordering of things:
+;;
+;;   if myprod has fielda (type atype):
+;;     - if myprod has an entry in prod-fns and fielda has an entry there, do what it says
+;;     - otherwise if fielda has an entry in field-fns do what it says
+;;     - otherwise if atype has an entry in type-fns do what it says
+;;     - otherwise maybe call our generated visitor for atype, or ignore it
+;;
+;; Determining what needs to be visited.
+;;
+;; Vocabulary:  "Visiting" a type means: we need to generate a function for this type.
+;;
+;; We consider each top-level type and find out everything that needs to be
+;; visited to support it.  (If it turns out that a top-level type doesn't need
+;; to be visited, abort with an error.)
+;;
+;; Here is how to mark-types, starting with some type foo, to find out whether
+;; foo needs to be visited, and which other transitive member types within foo,
+;; need to be visited:
+;;
+;;    Definition. The (possibly named) members of foo are
+;;      - For a product, its (field name, field type) pairs
+;;      - For a list, only just its element type (no field name)
+;;      - For an alist, its key-type and val-types (no field names)
+;;      - For a sum, its possible types (no field names)
+;;
+;;    Consider in turn each member of foo, memname : memtype
+;;
+;;      Let action be:
+;;        - if foo is a product:
+;;           - if prod-fns[foo][memname] exists, then prod-fns[foo][memname]
+;;           - if field-fns[memname] exists, then field-fns[memname]
+;;        - if type-fns[memtype] exists, then type-fns[memtype].
+;;        - otherwise NONE
+;;
+;;     If action is SKIP: do nothing
+;;     else if action is NONE:
+;;               marktypes(memtype)               // because its members may need visiting
+;;               mark foo if memtype is marked    // propagates visiting upwards
+;;     else mark foo.                             // foo is a "leaf type" that must be visited
+;;
+;; Note that the above will mark a type, foo, even in the case where
+;; type-fns[foo] is provided by the user.  We often make use of this in order
+;; to customize the behavior for a type: the defvisitor form can generate a
+;; default function that visits all of the type's members, and then our wrapper
+;; can fix up whatever is wrong with that.
+;;
+;; Implementation of this idea:
+;;
 ;; 1. Create a graph mapping types to member types, starting from the top-level
 ;;    types and going down to the leaves that have predefined functions for
 ;;    them.  While doing this, accumulate a list of types that are encountered
-;;    that have a member in the type/prod/field-fns.  Call these types the leaf
-;;    types.
+;;    that have a (non-skip) member in the type/prod/field-fns.  This is like
+;;    the algorithm above, except that we only get the leaf types in this step.
 ;;
 ;; 2. Reverse the graph.  Starting from the leaf types, mark all reachable
 ;;    types in the reverse graph.  These are the types that need visitor
-;;    functions defined.
+;;    functions defined.  This marks the same types that are marked by the
+;;    algorithm above.
+;;
+;; ---- End of "visiting" ----
 ;;
 ;; 3. Check the top-level types and produce an error if any weren't marked.
 ;;
@@ -1040,6 +1092,12 @@
 
 ;; Step 1.  Create graph mapping types to member types ------------------------
 
+
+;; visitor-field-collect-member-types and
+;; visitor-membertype-collect-member-types are like finding the ACTION above.
+;; Instead of returning the action, we return the list of types to recur on
+;; (either one or none), and the leaf-p flag (which applies to the containing
+;; type, not the member type).
 (define visitor-membertype-collect-member-types (type x wrld)
   :returns (mv subtypes is-leaf-p)
   (b* (((visitorspec x))
@@ -1066,6 +1124,9 @@
           ;; We don't add a subtype or leaftype for this, but if it's a
           ;; non-skip entry we make this sum/product a leaftype.
           (mv nil (and fn (not (eq fn :skip))))))
+       ;; See how to determine ACTION above.  Here there is no :field-fns or
+       ;; :prod-fns override, so just fall through to looking at the field's
+       ;; type.
        ((mv subtypes is-leaf)
         (visitor-membertype-collect-member-types field.type x wrld)))
     (mv subtypes is-leaf)))
@@ -1110,22 +1171,22 @@
     (mv (union-eq subtypes1 subtypes2)
         (or is-leaf1 is-leaf2))))
 
-(define visitor-transsumtype-remove-already-bound-member-types (typenames x)
-  ;; styled losely after visitor-membertype-collect-member-types
+(define visitor-transsum-members-without-actions (typenames x)
+  ;; Which member types of a transsum should we recur through when we are marking
+  ;; types to be visited?  Only the ones where the action is NONE.
   (b* (((when (atom typenames))
         nil)
        ((visitorspec x))
        (type-entry (assoc (car typenames) x.type-fns))
-       ((when (and (cdr type-entry)
-                   (not (eq (cdr type-entry) :skip))))
-        ;; BOZO I have no idea what :skip means here or if we're handling it correctly.
-        (visitor-transsumtype-remove-already-bound-member-types (cdr typenames) x))
-       )
+       ((when (cdr type-entry))
+        ;; The action is not NONE.
+        (visitor-transsum-members-without-actions (cdr typenames) x)))
     (cons (car typenames)
-          (visitor-transsumtype-remove-already-bound-member-types (cdr typenames) x))))
+          (visitor-transsum-members-without-actions (cdr typenames) x))))
 
-(define visitor-transsum-member-types-has-leaf (typenames x)
-  ;; If any of the typenames has a type-fns entry that isn't :skip, we want to consider the transsum a leaftype.
+(define visitor-transsum-is-leaf (typenames x)
+  ;; When should the transsum be considered a leaf?  When it has any member that
+  ;; has an action that is not SKIP and not NONE.
   (b* (((when (atom typenames)) nil)
        ((visitorspec x))
        (type (car typenames))
@@ -1133,15 +1194,15 @@
        ((when (and (cdr type-entry)
                    (not (eq (cdr type-entry) :skip))))
         t))
-    (visitor-transsum-member-types-has-leaf (cdr typenames) x)))
+    (visitor-transsum-is-leaf (cdr typenames) x)))
 
 (define visitor-transsumtype-collect-member-types (type x wrld)
   :returns (mv subtypes is-leaf-p)
   (declare (ignorable x wrld))
   (b* (((flextranssum type))
        (all-subtypes (flextranssum-memberlist->typenames type.members))
-       (new-subtypes (visitor-transsumtype-remove-already-bound-member-types all-subtypes x))
-       (is-leaf-p    (visitor-transsum-member-types-has-leaf all-subtypes x)))
+       (new-subtypes (visitor-transsum-members-without-actions all-subtypes x))
+       (is-leaf-p    (visitor-transsum-is-leaf all-subtypes x)))
     (mv new-subtypes is-leaf-p)))
 
 (define visitor-type-collect-member-types ((typename)

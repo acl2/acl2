@@ -146,17 +146,20 @@ and we get, for instance:</p>
              :exec
              ;; Shortcuts for ?, bit?, bitand, bitor
              (case expr.fn
-               (? (b* (((unless (eql (len expr.args) 3))
-                        (svex-apply expr.fn (svexlist-xeval expr.args)))
-                       (test (3vec-fix (svex-xeval (first expr.args))))
-                       ((4vec test))
-                       ((when (eql test.upper 0))
-                        (svex-xeval (third expr.args)))
-                       ((when (not (eql test.lower 0)))
-                        (svex-xeval (second expr.args))))
-                    (4vec-? test
-                            (svex-xeval (second expr.args))
-                            (svex-xeval (third expr.args)))))
+               ((? ?*)
+                     (b* (((unless (eql (len expr.args) 3))
+                           (svex-apply expr.fn (svexlist-xeval expr.args)))
+                          (test (3vec-fix (svex-xeval (first expr.args))))
+                          ((4vec test))
+                          ((when (eql test.upper 0))
+                           (svex-xeval (third expr.args)))
+                          ((when (not (eql test.lower 0)))
+                           (svex-xeval (second expr.args)))
+                          (then (svex-xeval (second expr.args)))
+                          (else (svex-xeval (third expr.args))))
+                       (case expr.fn
+                         (? (4vec-? test then else))
+                         (?* (4vec-?* test then else)))))
                (bit?
                 (b* (((unless (eql (len expr.args) 3))
                       (svex-apply expr.fn (svexlist-xeval expr.args)))
@@ -215,6 +218,15 @@ and we get, for instance:</p>
                          (equal (4vec-? test then else)
                                 (4vec-fix then))))
            :hints(("Goal" :in-theory (enable 4vec-? 3vec-?)))))
+
+  (local (defthm 4vec-?*-cases
+           (and (implies (equal (4vec->upper (3vec-fix test)) 0)
+                         (equal (4vec-?* test then else)
+                                (4vec-fix else)))
+                (implies (not (equal (4vec->lower (3vec-fix test)) 0))
+                         (equal (4vec-?* test then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*)))))
 
   (local (defthm 4vec-bit?-cases
            (and (implies (equal test 0)

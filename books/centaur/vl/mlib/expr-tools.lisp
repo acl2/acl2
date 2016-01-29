@@ -1200,11 +1200,11 @@ construct fast alists binding identifiers to things, etc.</p>"
 (define vl-expr->subexprs ((x vl-expr-p))
   :returns (subexprs vl-exprlist-p)
   (vl-expr-case x
-    :vl-index
-    (append-without-guard (vl-scopeexpr->subexprs x.scope)
-                          x.indices
-                          (vl-partselect->subexprs x.part))
-
+    :vl-special nil
+    :vl-literal nil
+    :vl-index (append-without-guard (vl-scopeexpr->subexprs x.scope)
+                                    x.indices
+                                    (vl-partselect->subexprs x.part))
     :vl-unary (list x.arg)
     :vl-binary (list x.left x.right)
     :vl-qmark (list x.test x.then x.else)
@@ -1219,8 +1219,7 @@ construct fast alists binding identifiers to things, etc.</p>"
                :otherwise (list x.expr))
     :vl-inside (cons x.elem (vl-valuerangelist->subexprs x.set))
     :vl-tagged (and x.expr (list x.expr))
-    :vl-pattern (vl-assignpat->subexprs x.pat)
-    :otherwise nil)
+    :vl-pattern (vl-assignpat->subexprs x.pat))
   ///
   (defret vl-exprlist-count-of-vl-expr->subexprs
     (< (vl-exprlist-count subexprs)

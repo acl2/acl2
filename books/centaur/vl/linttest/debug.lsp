@@ -47,7 +47,7 @@
           (vl-pps-exprlist (cdr x)))))
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./temp/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./lucid/temp.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
@@ -70,8 +70,15 @@
        (state (vl-lint-report-wrap res state)))
     (mv res state)))
 
+(trace$ (vl-lucid-maybe-push-genvar-scope
+         :entry (list 'vl-lucid-maybe-push-genvar-scope name
+                      :genvarp genvarp
+                      :ss (vl-scopestack->path ss))
+         :exit (list 'vl-lucid-maybe-push-genvar-scope
+                     :ss (vl-scopestack->path value))))
+
 (trace$ (vl-genblob-luciddb-init
-         :entry (list 'vl-genblob-luciddb-init (vl-genblob->name x)
+         :entry (list 'vl-genblob-luciddb-init (vl-genblob->id x)
                       :ss (vl-scopestack->path ss)
                       :db (with-local-ps (vl-pp-luciddb db)))
          :exit (list 'vl-genblob-luciddb-init
@@ -81,10 +88,6 @@
          :entry (list 'vl-luciddb-init '<design>)
          :exit (list 'vl-luciddb-init
                      (with-local-ps (vl-pp-luciddb value)))))
-
-  :short "Construct the initial @(see lucid) database for a design."
-  ((x vl-design-p))
-  :returns (db vl-luciddb-p)
 
 (trace$ (vl-lucid-dissect-database
          :entry (list 'vl-lucid-dissect-database

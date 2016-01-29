@@ -564,6 +564,7 @@ printing.</p>"
 (define vl-lex-string
   :short "Lexing of string literals."
   ((echars vl-echarlist-p)
+   (breakp booleanp)
    (st     vl-lexstate-p))
   :returns (mv token/nil remainder)
   (b* (((unless (and (consp echars)
@@ -573,8 +574,10 @@ printing.</p>"
         (vl-read-string echars st))
        ((unless string)
         (mv nil echars))
-       (token (make-vl-stringtoken :etext prefix :expansion string)))
+       (token (make-vl-stringtoken :etext prefix
+                                   :expansion string
+                                   :breakp (and breakp t))))
       (mv token remainder)))
 
 (def-token/remainder-thms vl-lex-string
-  :formals (echars st))
+  :formals (echars breakp st))

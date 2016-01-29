@@ -34,7 +34,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc logicassign
-  :parents (lint)
+  :parents (vl-lint)
   :short "Basic check for declaration-time assignments to @('logic') variables."
 
   :long "<p>SystemVerilog encourages logic designers to use @('logic')

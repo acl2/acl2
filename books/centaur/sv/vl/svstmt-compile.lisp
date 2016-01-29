@@ -38,6 +38,8 @@
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 
@@ -54,6 +56,10 @@
                   (iff (cdr (hons-assoc-equal k x))
                        (hons-assoc-equal k x)))
          :hints(("Goal" :in-theory (enable svex-alist-p hons-assoc-equal)))))
+
+;; bozo -- prove svarlist-p-of-mergesort
+(local (fty::deflist svarlist :elt-type svar :true-listp t :elementp-of-nil nil))
+
 
 (defthm svex-lookup-in-fast-alist-fork
   (implies (and (svex-alist-p x)
@@ -198,7 +204,11 @@ substitution are left in place."
     (iff (svex-lookup v (svstack-to-svex-alist (svstack-clean x)))
          (svex-lookup v (svstack-to-svex-alist x)))
     :hints(("Goal" :in-theory (enable svstack-to-svex-alist
-                                      svex-lookup)))))
+                                      svex-lookup))))
+
+  (defret consp-of-svstack-clean
+    (equal (consp new-x)
+           (consp x))))
 
 (define svstack-fork ((x svstack-p))
   :returns (new-x svstack-p)
@@ -224,13 +234,59 @@ substitution are left in place."
     (equal (consp new-x) (consp x))))
 
 
+(define svstack-nonempty-fix ((x svstack-p))
+  :returns (new-x svstack-p)
+  (b* ((x (svstack-fix x)))
+    (if (atom x)
+        (list nil)
+      x))
+  ///
+  (defret consp-of-svstack-nonempty-fix
+    (consp new-x))
+
+  (defret svstack-nonempty-fix-when-consp
+    (implies (consp x)
+             (equal (svstack-nonempty-fix x) (svstack-fix x)))))
+
+
 (defprod svstate
   :parents (svstmt-compile)
   :short "Structure containing currently assigned variable values for blocking
           and nonblocking assignments."
   :layout :tree
-  ((blkst    svstack-p "State of blocking-assigned variables" :default '(nil))
-   (nonblkst svex-alist-p "State of nonblocking-assigned variables")))
+  ((blkst    svstack-p "State of blocking-assigned variables" :default '(nil)
+             :reqfix (svstack-nonempty-fix blkst))
+   (nonblkst svex-alist-p "State of nonblocking-assigned variables"))
+  :require (consp blkst))
+
+
+
+(define svstate-vars ((st svstate-p))
+  :returns (vars (and (svarlist-p vars)
+                      (setp vars)))
+  (b* (((svstate st))
+       (blkst-alist (svstack-to-svex-alist st.blkst)))
+    (union (union (svex-alist-vars blkst-alist)
+                  (mergesort (svex-alist-keys blkst-alist)))
+           (union (svex-alist-vars st.nonblkst)
+                  (mergesort (svex-alist-keys st.nonblkst)))))
+  ///
+  (defret vars-of-accessors-of-svstate-vars
+    (implies (not (member v vars))
+             (b* (((svstate st))
+                  (blkst-alist (svstack-to-svex-alist st.blkst)))
+               (and (not (member v (svex-alist-vars blkst-alist)))
+                    (not (member v (svex-alist-keys blkst-alist)))
+                    (not (member v (svex-alist-vars st.nonblkst)))
+                    (not (member v (svex-alist-keys st.nonblkst)))))))
+
+  (defret svar-lookup-of-accessors-of-svstate-vars
+    (implies (not (member (svar-fix v) vars))
+             (b* (((svstate st))
+                  (blkst-alist (svstack-to-svex-alist st.blkst)))
+               (and (not (svex-lookup v blkst-alist))
+                    (not (svex-lookup v st.nonblkst)))))))
+
 
 (define svstate-free ((x svstate-p))
   :enabled t
@@ -245,22 +301,27 @@ substitution are left in place."
     (change-svstate x :blkst (svstack-clean x.blkst)
                     :nonblkst (fast-alist-clean x.nonblkst)))
   ///
-  (defthm vars-of-svstate-clean-blkst
-    (implies (not (member v (svex-alist-vars (svstack-to-svex-alist (svstate->blkst x)))))
-             (not (member v (svex-alist-vars (svstack-to-svex-alist (svstate->blkst (svstate-clean x))))))))
-  (defthm vars-of-svstate-clean-nonblkst
-    (implies (not (member v (svex-alist-vars (svstate->nonblkst x))))
-             (not (member v (svex-alist-vars (svstate->nonblkst (svstate-clean x)))))))
-  (defthm keys-of-svstate-clean-blkst
-    (iff (svex-lookup v (svstack-to-svex-alist (svstate->blkst (svstate-clean x))))
-         (svex-lookup v (svstack-to-svex-alist (svstate->blkst x))))
-    :hints((and stable-under-simplificationp
-                '(:in-theory (enable svex-lookup)))))
-  (defthm keys-of-svstate-clean-nonblkst
-    (iff (svex-lookup v (svstate->nonblkst (svstate-clean x)))
-         (svex-lookup v (svstate->nonblkst x)))
-    :hints((and stable-under-simplificationp
-                '(:in-theory (enable svex-lookup))))))
+  ;; (defthm vars-of-svstate-clean-blkst
+  ;;   (implies (not (member v (svex-alist-vars (svstack-to-svex-alist (svstate->blkst x)))))
+  ;;            (not (member v (svex-alist-vars (svstack-to-svex-alist (svstate->blkst (svstate-clean x))))))))
+  ;; (defthm vars-of-svstate-clean-nonblkst
+  ;;   (implies (not (member v (svex-alist-vars (svstate->nonblkst x))))
+  ;;            (not (member v (svex-alist-vars (svstate->nonblkst (svstate-clean x)))))))
+  ;; (defthm keys-of-svstate-clean-blkst
+  ;;   (iff (svex-lookup v (svstack-to-svex-alist (svstate->blkst (svstate-clean x))))
+  ;;        (svex-lookup v (svstack-to-svex-alist (svstate->blkst x))))
+  ;;   :hints((and stable-under-simplificationp
+  ;;               '(:in-theory (enable svex-lookup)))))
+  ;; (defthm keys-of-svstate-clean-nonblkst
+  ;;   (iff (svex-lookup v (svstate->nonblkst (svstate-clean x)))
+  ;;        (svex-lookup v (svstate->nonblkst x)))
+  ;;   :hints((and stable-under-simplificationp
+  ;;               '(:in-theory (enable svex-lookup)))))
+
+  (defret vars-of-svstate-clean
+    (implies (not (member v (svstate-vars x)))
+             (not (member v (svstate-vars new-x))))
+    :hints(("Goal" :in-theory (enable svstate-vars)))))
 
 (define svstate-fork ((x svstate-p))
   :returns (new-x svstate-p)
@@ -268,14 +329,15 @@ substitution are left in place."
     (change-svstate x :blkst (svstack-fork x.blkst)
                     :nonblkst (fast-alist-fork x.nonblkst nil)))
   ///
-  (defret svstate-fork-preserves-blkst-consp
-    (implies (consp (svstate->blkst x))
-             (consp (svstate->blkst new-x)))
-    :hints(("Goal" :expand ((svstack-fork (svstate->blkst x))))))
 
   (defret svstate-fork-blkst-len
     (equal (len (svstate->blkst new-x))
-           (len (svstate->blkst x)))))
+           (len (svstate->blkst x))))
+
+  (defret vars-of-svstate-fork
+    (implies (not (member v (svstate-vars x)))
+             (not (member v (svstate-vars new-x))))
+    :hints(("Goal" :in-theory (enable svstate-vars)))))
 
 (define 4vec-replace-range ((x 4vec-p "the non-replaced part")
                             &key
@@ -314,6 +376,21 @@ substitution are left in place."
 
 (define svstacks-compatible ((then-st svstack-p)
                              (else-st svstack-p))
+  :short "Predicate that describes two svstacks that are in the same scope, but
+          may have different values for the bound variables."
+  :long "<p>When we arrive at an IF, we create two versions of the state, one
+for the THEN and one for the ELSE. When we are done symbolically simulating
+both, we merge the two states.  These two resulting states are back in the
+outer scope (the scopes for the then and else branches have been popped off)
+and they may have different values assigned to variables at some scopes, but
+the only place they may differ in which variables are bound is at the
+outermost (global) scope.  This is because inside the inner block, there is no
+way to declare a variable for an outer scope other than the global one.</p>
+
+<p>Symbolically simulating an assignment statement preserves svstack
+compatibility because it will only create a variable at the global scope; a
+local scope can get a modified value of the variable, but only if it already
+exists there.</p>"
   (if (atom then-st)
       (atom else-st)
     (and (consp else-st)
@@ -348,6 +425,236 @@ substitution are left in place."
     (svstacks-compatible (svstate->blkst (svstate-fork x))
                          (svstate->blkst x))
     :hints(("Goal" :in-theory (enable svstate-fork)))))
+
+(define svstates-compatible ((x svstate-p)
+                             (y svstate-p))
+  (svstacks-compatible (svstate->blkst x)
+                       (svstate->blkst y))
+  ///
+  (defequiv svstates-compatible)
+  (defcong svstates-compatible svstacks-compatible (svstate->blkst x) 1)
+  (defcong svstacks-compatible svstates-compatible (svstate blkst nonblkst) 1
+    :hints(("Goal" :in-theory (enable svstack-nonempty-fix
+                                      svstacks-compatible))))
+
+  (defthm svstate-normalize-nonblkst-under-svstates-compatible
+    (implies (syntaxp (not (equal nonblkst ''nil)))
+             (svstates-compatible (svstate blkst nonblkst)
+                                  (svstate blkst nil))))
+
+  (defthm svstate-reconstruct-under-svstates-compatible
+    (svstates-compatible (svstate (svstate->blkst st) nonblkst)
+                         st))
+
+  (defthm svstates-compatible-blkst-of-svstate-fork
+    (svstates-compatible (svstate-fork x) (double-rewrite x))
+    :hints(("Goal" :in-theory (enable svstate-fork)))))
+
+(defprod svjumpstate
+  ((breakcond svex-p "Condition under which we have hit an unmerged break")
+   (breakst svstate-p "Current symbolic execution state, assuming we've hit a break")
+   (continuecond svex-p "Condition under which we have hit a continue")
+   (continuest svstate-p "Current symbolic execution state, assuming we've hit a continue")
+   (returncond svex-p "Condition under which we have hit a return")
+   (returnst svstate-p "Current symbolic execution state, assuming we've hit a return")))
+
+
+(define svjumpstate-vars ((x svjumpstate-p))
+  :returns (vars (and (svarlist-p vars)
+                      (setp vars)))
+  :prepwork ((local (in-theory (disable acl2::true-listp-append))))
+  (b* (((svjumpstate x)))
+    (union (union (svex-vars x.breakcond)
+                  (svstate-vars x.breakst))
+           (union (union (svex-vars x.continuecond)
+                         (svstate-vars x.continuest))
+                  (union (svex-vars x.returncond)
+                         (svstate-vars x.returnst)))))
+  ///
+  (defthm svjumpstate-vars-of-svjumpstate
+    (equal (svjumpstate-vars (svjumpstate breakcond breakst continuecond continuest returncond returnst))
+           (union (union (svex-vars breakcond)
+                         (svstate-vars breakst))
+                  (union (union (svex-vars continuecond)
+                                (svstate-vars continuest))
+                         (union (svex-vars returncond)
+                                (svstate-vars returnst))))))
+  (defret vars-of-accessors-of-svjumpstate-vars
+    (implies (not (member v vars))
+             (b* (((svjumpstate x)))
+               (and (not (member v (svex-vars x.breakcond)))
+                    (not (member v (svstate-vars x.breakst)))
+                    (not (member v (svex-vars x.continuecond)))
+                    (not (member v (svstate-vars x.continuest)))
+                    (not (member v (svex-vars x.returncond)))
+                    (not (member v (svstate-vars x.returnst))))))))
+
+(define make-empty-svjumpstate ((st svstate-p))
+  :returns (jst svjumpstate-p)
+  ;; Note: We don't bother to fork st into these places.  We aren't going to
+  ;; use these for lookups except when merging, at which point we'll ensure
+  ;; that the component alists are fast.
+  (make-svjumpstate :breakcond 0
+                    :breakst st
+                    :continuecond 0
+                    :continuest st
+                    :returncond 0
+                    :returnst st)
+  ///
+  (defret vars-of-make-empty-svjumpstate
+    (implies (not (member v (svstate-vars st)))
+             (not (member v (svjumpstate-vars jst))))
+    :hints(("Goal" :in-theory (enable svjumpstate-vars))))
+
+  (defret accs-of-make-empty-svjumpstate
+    (b* (((svjumpstate jst)))
+      (and (equal jst.breakcond 0)
+           (equal jst.breakst (svstate-fix st))
+           (equal jst.continuecond 0)
+           (equal jst.continuest (svstate-fix st))
+           (equal jst.returncond 0)
+           (equal jst.returnst (svstate-fix st))))))
+  
+
+
+
+
+(define svjumpstate-levels ((x svjumpstate-p))
+  :returns (levels posp :rule-classes :type-prescription)
+  :prepwork ((local (defthm len-when-consp
+                      (implies (consp x)
+                               (not (equal (len x) 0))))))
+  (b* (((svjumpstate x))
+       ((svstate x.breakst))
+       ((svstate x.continuest))
+       ((svstate x.returnst)))
+    (min (len x.breakst.blkst)
+         (min (len x.continuest.blkst)
+              (len x.returnst.blkst))))
+  ///
+  )
+
+(define svjumpstates-compatible ((x svjumpstate-p)
+                                    (y svjumpstate-p))
+  (b* (((svjumpstate x))
+       ((svjumpstate y)))
+    (and (svstates-compatible x.breakst y.breakst)
+         (svstates-compatible x.continuest y.continuest)
+         (svstates-compatible x.returnst y.returnst)))
+  ///
+  (defequiv svjumpstates-compatible)
+  (defcong svjumpstates-compatible svstates-compatible (svjumpstate->breakst x) 1)
+  (defcong svstates-compatible svjumpstates-compatible (svjumpstate breakcond breakst
+                                                                    continuecond continuest
+                                                                    returncond returnst)
+    2)
+  (defcong svjumpstates-compatible svstates-compatible (svjumpstate->continuest x) 1)
+  (defcong svstates-compatible svjumpstates-compatible (svjumpstate breakcond breakst
+                                                                    continuecond continuest
+                                                                    returncond returnst)
+    4)
+  (defcong svjumpstates-compatible svstates-compatible (svjumpstate->returnst x) 1)
+  (defcong svstates-compatible svjumpstates-compatible (svjumpstate breakcond breakst
+                                                                    continuecond continuest
+                                                                    returncond returnst)
+    6))
+
+(define svjumpstate-svstate-compatible ((jst svjumpstate-p)
+                                        (st svstate-p))
+  (b* (((svjumpstate jst)))
+    (and (svstates-compatible jst.breakst st)
+         (svstates-compatible jst.continuest st)
+         (svstates-compatible jst.returnst st)))
+  ///
+  (defcong svjumpstates-compatible equal (svjumpstate-svstate-compatible jst st) 1)
+  (defcong svstates-compatible equal (svjumpstate-svstate-compatible jst st) 2)
+
+  (defthm svjumpstate-svstate-compatible-of-make-empty
+    (svjumpstate-svstate-compatible (make-empty-svjumpstate st) st)
+    :hints(("Goal" :in-theory (enable make-empty-svjumpstate))))
+
+  (local (defthm svstates-compatible-commutative-rw
+           (equal (equal (svstates-compatible a b)
+                         (svstates-compatible b a))
+                  t)
+           :hints (("goal" :cases ((svstates-compatible a b))))))
+
+  (defthm svjumpstates-compatible-rewrite-to-svjumpstate-svstate-compatible
+    (implies (svjumpstate-svstate-compatible jst1 st)
+             (equal (svjumpstates-compatible jst1 jst2)
+                    (svjumpstate-svstate-compatible jst2 st)))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible))))
+
+  (defthm svjumpstates-compatible-rewrite-to-svjumpstate-svstate-compatible-1
+    (implies (svjumpstate-svstate-compatible jst2 st)
+             (equal (svjumpstates-compatible jst1 jst2)
+                    (svjumpstate-svstate-compatible jst1 st)))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible))))
+
+  (defthm svjumpstate-svstate-compatible-implies-rewrite-accs
+    (implies (svjumpstate-svstate-compatible jst st)
+             (And (svstates-compatible (svjumpstate->breakst jst) st)
+                  (svstates-compatible (svjumpstate->continuest jst) st)
+                  (svstates-compatible (svjumpstate->returnst jst) st))))
+
+  (defthm svjumpstates-compatible-of-svjumpstate
+    (implies (and (svjumpstate-svstate-compatible jst breakst)
+                  (svjumpstate-svstate-compatible jst continuest)
+                  (svjumpstate-svstate-compatible jst returnst))
+             (and (equal (svjumpstates-compatible
+                          (svjumpstate breakcond breakst continuecond continuest returncond returnst)
+                          jst)
+                         t)
+                  (equal (svjumpstates-compatible
+                          jst
+                          (svjumpstate breakcond breakst continuecond continuest returncond returnst))
+                         t)))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible))))
+
+
+  (defthm svjumpstates-compatible-of-make-empty-svjumpstate
+    (and (equal (svjumpstates-compatible (make-empty-svjumpstate st) jst)
+                (svjumpstate-svstate-compatible jst (double-rewrite st)))
+         (equal (svjumpstates-compatible jst (make-empty-svjumpstate st))
+                (svjumpstate-svstate-compatible jst (double-rewrite st))))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible
+                                      make-empty-svjumpstate))))
+
+  (defthm svjumpstates-svstate-compatible-of-svjumpstate
+    (equal (svjumpstate-svstate-compatible
+            (svjumpstate breakcond breakst continuecond continuest returncond returnst)
+            st)
+           (and (svstates-compatible st breakst)
+                (svstates-compatible st continuest)
+                (svstates-compatible st returnst)))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible))))
+
+  (defthm svjumpstate-svstate-compatible-of-make-empty-svjumpstate
+    (equal (svjumpstate-svstate-compatible (make-empty-svjumpstate st1) st2)
+           (svstates-compatible (double-rewrite st1) st2))
+    :hints(("Goal" :in-theory (enable make-empty-svjumpstate)))))
+
+(define svjumpstate-free ((x svjumpstate-p))
+  :returns (new-x (equal new-x (svjumpstate-fix x)))
+  (b* (((svjumpstate x) (svjumpstate-fix x)))
+    (svstate-free x.breakst)
+    (svstate-free x.continuest)
+    (svstate-free x.returnst)
+    x))
+
+(define svjumpstate-fork ((x svjumpstate-p))
+  :returns (new-x svjumpstate-p)
+  (b* (((svjumpstate x) x))
+    (change-svjumpstate x
+                           :breakst (svstate-fork x.breakst)
+                           :continuest (svstate-fork x.continuest)
+                           :returnst (svstate-fork x.returnst)))
+  ///
+  (defret svjumpstate-fork-preserves-compatible
+    (svjumpstates-compatible new-x (double-rewrite x))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible)))))
+
+
 
 
 (define svstmt-assign->subst ((lhs lhs-p  "E.g., {a[3:0], b[2:1]}, reverse order lhs.")
@@ -458,6 +765,15 @@ substitution are left in place."
            (and stable-under-simplificationp
                 '(:in-theory (enable svex-lookup lhs-vars lhatom-vars)))))
 
+
+    (defthm vars-of-svstmt-assign->subst
+      (implies (and (not (member v (svstate-vars st)))
+                    (not (member v (lhs-vars lhs)))
+                    (not (member v (svex-vars rhs))))
+               (not (member v (svstate-vars (svstmt-assign->subst lhs rhs offset blockingp st)))))
+      :hints(("Goal" :in-theory (e/d (svstate-vars)
+                                     (svstmt-assign->subst)))))
+
   (defret consp-blkst-of-svstmt-assign->subst
     (implies (consp (svstate->blkst st))
              (consp (svstate->blkst new-st))))
@@ -467,17 +783,218 @@ substitution are left in place."
         (len (svstate->blkst new-st)))
     :rule-classes :linear)
 
-  (defret svstacks-compatible-of-svstmt-assign->subst
+  (defret svstates-compatible-of-svstmt-assign->subst
     (implies (consp (svstate->blkst st))
-             (svstacks-compatible (svstate->blkst new-st)
-                                  (svstate->blkst st)))))
+             (svstates-compatible new-st st))))
 
 
-(define svstmt-merge-branches-aux ((key-alist svex-alist-p)
+
+(define svex-svstmt-ite ((test svex-p)
+                         (then svex-p)
+                         (else svex-p))
+  :returns (ite svex-p)
+  (b* ((test (svex-fix test))
+       (then (svex-fix then))
+       (else (svex-fix else)))
+    (or (svex-case test
+          :quote (if (eql (4vec-reduction-or test.val) -1)
+                     then
+                   (if (eql (4vec-reduction-or test.val) 0)
+                       else
+                     nil))
+          :otherwise nil)
+        (and (hons-equal then else) then)
+        (svex-call '?* (list test then else))))
+  ///
+  (local (defthm svex-fix-under-iff
+           (iff (svex-fix x) t)
+           :hints (("Goal" :use RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))))
+
+  (local (defthm 4vec-?*-when-reduction-or-true
+           (implies (equal (4vec-reduction-or test) -1)
+                    (equal (4vec-?* test then else)
+                           (4vec-fix then)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or 3vec-reduction-or
+                                             4vec-?* 3vec-?* 3vec-fix)))))
+
+  (local (defthm 4vec-?*-when-reduction-or-false
+           (implies (equal (4vec-reduction-or test) 0)
+                    (equal (4vec-?* test then else)
+                           (4vec-fix else)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or 3vec-reduction-or
+                                             4vec-?* 3vec-?* 3vec-fix)))))
+
+  (local (defthm 4vec-?*-when-equal
+           (implies (4vec-equiv then else)
+                    (equal (4vec-?* test then else)
+                           (4vec-fix then)))
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 3vec-fix)))))
+           
+
+
+  (defret svex-svstmt-ite-correct
+    (equal (svex-eval ite env)
+           (4vec-?* (svex-eval test env)
+                    (svex-eval then env)
+                    (svex-eval else env)))
+    :hints(("Goal" :in-theory (enable ;; 4vec-?* 3vec-?* 4vec-reduction-or 3vec-reduction-or
+                                      ;; 3vec-fix
+                                      svex-apply svexlist-eval)))
+    :otf-flg t)
+
+
+  (defret vars-of-svex-svstmt-ite
+    (implies (And (not (member v (svex-vars test)))
+                  (not (member v (svex-vars then)))
+                  (not (member v (svex-vars else))))
+             (not (member v (svex-vars ite)))))
+
+  (defret svex-svstmt-ite-under-iff
+    (iff ite t))
+
+  (local (defthm svex-fix-under-iff
+           (iff (svex-fix x) t)
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))))
+
+  (defret svex-svstmt-ite-when-cond-true
+    (implies (equal (4vec-reduction-or (svex-eval test env)) -1)
+             (equal (svex-eval ite env)
+                    (svex-eval then env)))
+    :hints(("Goal" :in-theory (enable svex-apply))
+           (and stable-under-simplificationp
+                '(:in-theory (enable 4vec-?* 3vec-?* 4vec-reduction-or 3vec-reduction-or)))))
+
+  (defret svex-svstmt-ite-when-cond-false
+    (implies (equal (4vec-reduction-or (svex-eval test env)) 0)
+             (equal (svex-eval ite env)
+                    (svex-eval else env)))
+    :hints(("Goal" :in-theory (enable svex-apply))
+           (and stable-under-simplificationp
+                '(:in-theory (enable 4vec-?* 3vec-?* 4vec-reduction-or 3vec-reduction-or))))))
+
+
+(define svex-svstmt-or ((a svex-p)
+                        (b svex-p))
+  :returns (or svex-p)
+  (b* ((a (svex-fix a))
+       (b (svex-fix b))
+       ((when (svex-case a :quote (2vec-p a.val) :otherwise nil))
+        (b* ((a (2vec->val (svex-quote->val a))))
+          (if (eql a 0) b -1)))
+       ((when (svex-case b :quote (2vec-p b.val) :otherwise nil))
+        (b* ((b (2vec->val (svex-quote->val b))))
+          (if (eql b 0) a -1))))
+    (svex-call 'bitor (list (svex-call 'uor (list a))
+                            (svex-call 'uor (list b)))))
+  ///
+  
+  (local (defthm reduction-or-of-or-when-not-second
+           (implies (and (equal (4vec->upper y) 0)
+                         (equal (4vec->lower y) 0))
+                    (equal (4vec-reduction-or (4vec-bitor x y))
+                           (4vec-reduction-or x)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix)))))
+
+  (local (defthm reduction-or-of-or-when-not-first
+           (implies (and (equal (4vec->upper x) 0)
+                         (equal (4vec->lower x) 0))
+                    (equal (4vec-reduction-or (4vec-bitor x y))
+                           (4vec-reduction-or y)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix)))))
+
+  (local (defthm reduction-or-of-or-when-first
+           (implies (and (equal (4vec->upper x) (4vec->lower x))
+                         (not (equal (4vec->lower x) 0)))
+                    (equal (4vec-reduction-or (4vec-bitor x y))
+                           -1))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix))
+                  (logbitp-reasoning))))
+
+  (local (defthm reduction-or-of-or-when-second
+           (implies (and (equal (4vec->upper y) (4vec->lower y))
+                         (not (equal (4vec->lower y) 0)))
+                    (equal (4vec-reduction-or (4vec-bitor x y))
+                           -1))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix))
+                  (logbitp-reasoning))))
+
+  (local (defthm reduction-or-idempotent
+           (equal (4vec-reduction-or (4vec-reduction-or x))
+                  (4vec-reduction-or x))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             3vec-fix)))))
+
+  (local (defthm bitor-of-reduction-or
+           (equal (4vec-bitor (4vec-reduction-or x) (4vec-reduction-or y))
+                  (4vec-reduction-or (4vec-bitor x y)))
+           :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                             3vec-reduction-or
+                                             4vec-bitor
+                                             3vec-bitor
+                                             3vec-fix))
+                  (logbitp-reasoning))))
+
+  (defret svex-svstmt-or-correct
+    (equal (4vec-reduction-or (svex-eval or env))
+           (4vec-reduction-or
+            (4vec-bitor (svex-eval a env)
+                        (svex-eval b env))))
+    :hints(("Goal" :in-theory (enable ;; 4vec-bitor 3vec-bitor 3vec-fix
+                                      ;; 4vec-reduction-or 3vec-reduction-or
+                                      svex-apply svexlist-eval))))
+
+  (defret vars-of-svex-svstmt-or
+    (implies (And (not (member v (svex-vars a)))
+                  (not (member v (svex-vars b))))
+             (not (member v (svex-vars or))))))
+
+(define svex-svstmt-andc1 ((a svex-p)
+                           (b svex-p))
+  :returns (or svex-p)
+  (b* ((a (svex-fix a))
+       (b (svex-fix b))
+       ((when (svex-case a :quote (2vec-p a.val) :otherwise nil))
+        (b* ((a (2vec->val (svex-quote->val a))))
+          (if (eql a 0) b 0)))
+       ((when (svex-case b :quote (2vec-p b.val) :otherwise nil))
+        (b* ((b (2vec->val (svex-quote->val b))))
+          (if (eql b 0) 0 (svex-call 'bitnot (list (svex-call 'uor (list a))))))))
+    (svex-call 'bitand (list (svex-call 'bitnot (list (svex-call 'uor (list a))))
+                             (svex-call 'uor (list b)))))
+  ///
+  (defret vars-of-svex-svstmt-andc1
+    (implies (And (not (member v (svex-vars a)))
+                  (not (member v (svex-vars b))))
+             (not (member v (svex-vars or))))))
+
+
+
+
+(define svex-alist-merge-branches ((key-alist svex-alist-p)
                                    (cond svex-p)
                                    (then-st svex-alist-p)
                                    (else-st svex-alist-p)
                                    (st-acc  svex-alist-p))
+  ;; No longer makes a fast alist.
   :measure (len (Svex-alist-fix key-alist))
   :returns (merged-st svex-alist-p)
   :verbosep t
@@ -487,17 +1004,14 @@ substitution are left in place."
         (svex-alist-fix st-acc))
        (key (caar key-alist))
        ((when (svex-fastlookup key st-acc))
-        (svstmt-merge-branches-aux (cdr key-alist) cond then-st else-st st-acc))
+        (svex-alist-merge-branches (cdr key-alist) cond then-st else-st st-acc))
        (then-val (or (svex-fastlookup key then-st)
                      (make-svex-var :name key)))
        (else-val (or (svex-fastlookup key else-st)
                      (make-svex-var :name key)))
-       (val (if (mbe :logic (svex-equiv then-val else-val)
-                     :exec (hons-equal then-val else-val))
-                then-val
-              (svex-call '? (list cond then-val else-val))))
+       (val (svex-svstmt-ite cond then-val else-val))
        (st-acc  (hons-acons key val st-acc)))
-    (svstmt-merge-branches-aux (cdr key-alist) cond then-st else-st st-acc))
+    (svex-alist-merge-branches (cdr key-alist) cond then-st else-st st-acc))
   ///
   (local (in-theory (enable cdr-lookup-when-svex-alist-p)))
 
@@ -526,41 +1040,41 @@ substitution are left in place."
 
 
 
-  (local (defthm 4vec-?-when-reduction-or-true
+  (local (defthm 4vec-?*-when-reduction-or-true
            (implies (equal (4vec-reduction-or test) -1)
-                    (equal (4vec-? test then else)
+                    (equal (4vec-?* test then else)
                            (4vec-fix then)))
-           :hints(("Goal" :in-theory (enable 4vec-? 3vec-?
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*
                                              4vec-reduction-or
                                              3vec-reduction-or)))))
 
-  (local (defthm 4vec-?-when-reduction-or-false
+  (local (defthm 4vec-?*-when-reduction-or-false
            (implies (equal (4vec-reduction-or test) 0)
-                    (equal (4vec-? test then else)
+                    (equal (4vec-?* test then else)
                            (4vec-fix else)))
-           :hints(("Goal" :in-theory (enable 4vec-? 3vec-?
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*
                                              4vec-reduction-or
                                              3vec-reduction-or)))))
 
 
-  (defthm svstmt-merge-branches-aux-lookup-under-iff
-    (iff (svex-lookup k (svstmt-merge-branches-aux key-alist cond then-st else-st st-acc))
+  (defthm svex-alist-merge-branches-lookup-under-iff
+    (iff (svex-lookup k (svex-alist-merge-branches key-alist cond then-st else-st st-acc))
          (or (svex-lookup k st-acc)
              (svex-lookup k key-alist)))
     :hints(("Goal" :in-theory (e/d (svex-lookup)
-                                   ((:d svstmt-merge-branches-aux)))
-            :induct (svstmt-merge-branches-aux key-alist
+                                   ((:d svex-alist-merge-branches)))
+            :induct (svex-alist-merge-branches key-alist
                                                cond
                                                then-st
                                                else-st
                                                st-acc)
-            :expand ((svstmt-merge-branches-aux key-alist cond then-st else-st st-acc)
+            :expand ((svex-alist-merge-branches key-alist cond then-st else-st st-acc)
                      (hons-assoc-equal (svar-fix k) (svex-alist-fix key-alist)))
             :do-not-induct t)))
 
-  (defthm svstmt-merge-branches-aux-when-cond-true-lookup
+  (defthm svex-alist-merge-branches-when-cond-true-lookup
     (implies (equal (4vec-reduction-or (svex-eval cond env)) -1)
-             (equal (svex-eval (svex-lookup k (svstmt-merge-branches-aux key-alist
+             (equal (svex-eval (svex-lookup k (svex-alist-merge-branches key-alist
                                                                          cond
                                                                          then-st
                                                                          else-st
@@ -574,20 +1088,20 @@ substitution are left in place."
                             (svex-env-lookup k env))
                         (4vec-x)))))
     :hints(("Goal" :in-theory (e/d (svex-lookup)
-                                   ((:d svstmt-merge-branches-aux)))
-            :induct (svstmt-merge-branches-aux key-alist
+                                   ((:d svex-alist-merge-branches)))
+            :induct (svex-alist-merge-branches key-alist
                                                cond
                                                then-st
                                                else-st
                                                st-acc)
-            :expand ((svstmt-merge-branches-aux key-alist cond then-st else-st st-acc)
+            :expand ((svex-alist-merge-branches key-alist cond then-st else-st st-acc)
                      (hons-assoc-equal (svar-fix k) (svex-alist-fix key-alist))))
            (and stable-under-simplificationp
                 '(:in-theory (enable svex-apply)))))
 
-  (defthm svstmt-merge-branches-aux-when-cond-false-lookup
+  (defthm svex-alist-merge-branches-when-cond-false-lookup
     (implies (equal (4vec-reduction-or (svex-eval cond env)) 0)
-             (equal (svex-eval (svex-lookup k (svstmt-merge-branches-aux key-alist
+             (equal (svex-eval (svex-lookup k (svex-alist-merge-branches key-alist
                                                                          cond
                                                                          then-st
                                                                          else-st
@@ -601,13 +1115,13 @@ substitution are left in place."
                             (svex-env-lookup k env))
                         (4vec-x)))))
     :hints(("Goal" :in-theory (e/d (svex-lookup)
-                                   ((:d svstmt-merge-branches-aux)))
-            :induct (svstmt-merge-branches-aux key-alist
+                                   ((:d svex-alist-merge-branches)))
+            :induct (svex-alist-merge-branches key-alist
                                                cond
                                                then-st
                                                else-st
                                                st-acc)
-            :expand ((svstmt-merge-branches-aux key-alist cond then-st else-st st-acc)
+            :expand ((svex-alist-merge-branches key-alist cond then-st else-st st-acc)
                      (hons-assoc-equal (svar-fix k) (svex-alist-fix key-alist)))
             :do-not-induct t)
            (and stable-under-simplificationp
@@ -623,49 +1137,55 @@ substitution are left in place."
                     (not (svex-lookup v (cdr (svex-alist-fix x)))))
            :hints(("Goal" :in-theory (enable svex-lookup hons-assoc-equal)))))
 
-  (defthm keys-of-svstmt-merge-branches-aux
+  (defthm keys-of-svex-alist-merge-branches
     (implies (and (not (member v (svex-alist-keys then-st)))
                   (not (member v (svex-alist-keys else-st)))
                   (not (member v (svex-alist-keys st-acc)))
                   (not (member v (svex-alist-keys key-alist))))
              (not (member v (svex-alist-keys
-                             (svstmt-merge-branches-aux
+                             (svex-alist-merge-branches
                               key-alist cond then-st else-st st-acc)))))
     :hints(("Goal" :in-theory (enable svex-alist-keys)
-            :induct (svstmt-merge-branches-aux
+            :induct (svex-alist-merge-branches
                      key-alist cond then-st else-st st-acc)
             :do-not-induct t)))
 
-  (defthm svex-lookup-of-svstmt-merge-branches-aux
+  (defthm svex-lookup-of-svex-alist-merge-branches
     (implies (and (not (member v (svex-alist-keys then-st)))
                   (not (member v (svex-alist-keys else-st)))
                   (not (member v (svex-alist-keys st-acc)))
                   (not (member v (svex-alist-keys key-alist)))
                   (svar-p v))
-             (not (svex-lookup v (svstmt-merge-branches-aux
+             (not (svex-lookup v (svex-alist-merge-branches
                                   key-alist cond then-st else-st st-acc))))
     :hints(("Goal" :in-theory (enable svex-alist-keys)
-            :induct (svstmt-merge-branches-aux
+            :induct (svex-alist-merge-branches
                      key-alist cond then-st else-st st-acc)
             :do-not-induct t)))
 
-  (defthm vars-of-svstmt-merge-branches-aux
+  (local (defthm caar-when-not-lookup
+           (implies (and (not (svex-lookup v alist))
+                         (consp (svex-alist-fix alist)))
+                    (not (equal v (caar (svex-alist-fix alist)))))
+           :hints(("Goal" :in-theory (enable svex-lookup svex-alist-fix)))))
+
+  (defthm vars-of-svex-alist-merge-branches
     (implies (and (not (member v (svex-vars cond)))
                   (not (member v (svex-alist-vars then-st)))
                   (not (member v (svex-alist-vars else-st)))
                   (not (member v (svex-alist-vars st-acc)))
                   (not (member v (svex-alist-keys key-alist))))
              (not (member v (svex-alist-vars
-                             (svstmt-merge-branches-aux
+                             (svex-alist-merge-branches
                               key-alist cond then-st else-st st-acc)))))
     :hints(("Goal" :in-theory (enable svex-alist-vars
                                       svex-alist-keys)
-            :induct (svstmt-merge-branches-aux
+            :induct (svex-alist-merge-branches
                      key-alist cond then-st else-st st-acc)
             :do-not-induct t))))
 
 
-(define svstmt-merge-branches-svstack ((cond svex-p)
+(define svstack-merge-branches ((cond svex-p)
                                            (then-st svstack-p)
                                            (else-st svstack-p))
   :measure (max (len then-st) (len else-st))
@@ -675,20 +1195,25 @@ substitution are left in place."
   :verbosep t
   (b* (((when (or (atom then-st) (atom else-st)))
         nil)
-       (first nil)
-       (first (svstmt-merge-branches-aux (car then-st) cond (car then-st) (car else-st) first))
-       (first (svstmt-merge-branches-aux (car else-st) cond (car then-st) (car else-st) first)))
-    (cons first (svstmt-merge-branches-svstack cond (cdr then-st) (cdr else-st))))
+       (then-alist (car then-st))
+       (else-alist (car else-st))
+       (first
+        (b* (((with-fast then-alist else-alist))
+             (first nil)
+             (first (svex-alist-merge-branches then-alist cond then-alist else-alist first))
+             (first (svex-alist-merge-branches else-alist cond then-alist else-alist first)))
+          first)))
+    (cons first (svstack-merge-branches cond (cdr then-st) (cdr else-st))))
   ///
 
 
-  (defthm svstmt-merge-branches-svstack-lookup-under-iff
+  (defthm svstack-merge-branches-lookup-under-iff
     (implies (double-rewrite (svstacks-compatible then-st else-st))
              (iff (svex-lookup k (svstack-to-svex-alist
-                                  (svstmt-merge-branches-svstack cond then-st else-st)))
+                                  (svstack-merge-branches cond then-st else-st)))
                   (or (svex-lookup k (svstack-to-svex-alist then-st))
                       (svex-lookup k (svstack-to-svex-alist else-st)))))
-    :hints (("goal" :induct (svstmt-merge-branches-svstack cond then-st else-st))
+    :hints (("goal" :induct (svstack-merge-branches cond then-st else-st))
             (and stable-under-simplificationp
                  '(:expand ((svstacks-compatible then-st else-st))))))
 
@@ -706,11 +1231,11 @@ substitution are left in place."
                                          (set-equiv (svex-alist-keys x) (svex-alist-keys y)))
                                     (not (svex-lookup k x)))))))
 
-  (defthm svstmt-merge-branches-svstack-when-cond-true-lookup
+  (defthm svstack-merge-branches-when-cond-true-lookup
     (implies (and (equal (4vec-reduction-or (svex-eval cond env)) -1)
                   (svstacks-compatible then-st else-st))
              (equal (svex-eval (svex-lookup k (svstack-to-svex-alist
-                                               (svstmt-merge-branches-svstack
+                                               (svstack-merge-branches
                                                 cond
                                                 then-st
                                                 else-st)))
@@ -721,16 +1246,16 @@ substitution are left in place."
                           (svex-env-lookup k env)
                         (4vec-x)))))
     :hints(("Goal" :in-theory (enable svex-lookup-of-svstack-to-svex-alist-consp)
-            :induct (svstmt-merge-branches-svstack cond then-st else-st))
+            :induct (svstack-merge-branches cond then-st else-st))
            (and stable-under-simplificationp
                 '(:expand ((svstacks-compatible then-st else-st))))
            ))
 
-  (defthm svstmt-merge-branches-svstack-when-cond-false-lookup
+  (defthm svstack-merge-branches-when-cond-false-lookup
     (implies (and (equal (4vec-reduction-or (svex-eval cond env)) 0)
                   (svstacks-compatible then-st else-st))
              (equal (svex-eval (svex-lookup k (svstack-to-svex-alist
-                                               (svstmt-merge-branches-svstack
+                                               (svstack-merge-branches
                                                 cond
                                                 then-st
                                                 else-st)))
@@ -741,31 +1266,31 @@ substitution are left in place."
                           (svex-env-lookup k env)
                         (4vec-x)))))
     :hints(("Goal" :in-theory (enable svex-lookup-of-svstack-to-svex-alist-consp)
-            :induct (svstmt-merge-branches-svstack cond then-st else-st))
+            :induct (svstack-merge-branches cond then-st else-st))
            (and stable-under-simplificationp
                 '(:expand ((svstacks-compatible then-st else-st))))
            ))
 
-  (defthm keys-of-svstmt-merge-branches-svstack
+  (defthm keys-of-svstack-merge-branches
     (implies (and (not (member v (svex-alist-keys (svstack-to-svex-alist then-st))))
                   (not (member v (svex-alist-keys (svstack-to-svex-alist else-st)))))
              (not (member v (svex-alist-keys
-                             (svstack-to-svex-alist (svstmt-merge-branches-svstack
+                             (svstack-to-svex-alist (svstack-merge-branches
                                                       cond then-st else-st))))))
     :hints(("Goal" :in-theory (enable svex-alist-keys)
-            :induct (svstmt-merge-branches-svstack cond then-st else-st)
+            :induct (svstack-merge-branches cond then-st else-st)
             :do-not-induct t)))
 
-  (defthm svex-lookup-of-svstmt-merge-branches-svstack
+  (defthm svex-lookup-of-svstack-merge-branches
     (implies (and (not (member v (svex-alist-keys (svstack-to-svex-alist then-st))))
                   (not (member v (svex-alist-keys (svstack-to-svex-alist else-st))))
                   (svar-p v))
              (not (svex-lookup v
                                (svstack-to-svex-alist
-                                (svstmt-merge-branches-svstack
+                                (svstack-merge-branches
                                  cond then-st else-st)))))
     :hints(("Goal" :in-theory (enable svex-alist-keys)
-            :induct (svstmt-merge-branches-svstack cond then-st else-st)
+            :induct (svstack-merge-branches cond then-st else-st)
             :do-not-induct t)))
 
   (local (defthm svex-alist-vars-of-apppend
@@ -781,7 +1306,7 @@ substitution are left in place."
                     (svex-lookup v b)))
            :hints(("Goal" :in-theory (enable svex-lookup)))))
 
-  (defthm vars-of-svstmt-merge-branches-svstack
+  (defthm vars-of-svstack-merge-branches
     (implies (and (not (member v (svex-vars cond)))
                   (not (member v (svex-alist-vars (svstack-to-svex-alist then-st))))
                   (not (member v (svex-alist-vars (svstack-to-svex-alist else-st))))
@@ -790,11 +1315,11 @@ substitution are left in place."
                   (double-rewrite (svstacks-compatible then-st else-st)))
              (not (member v (svex-alist-vars
                              (svstack-to-svex-alist
-                              (svstmt-merge-branches-svstack
+                              (svstack-merge-branches
                                 cond then-st else-st))))))
     :hints(("Goal" :in-theory (enable svex-alist-vars
                                       svex-alist-keys)
-            :induct (svstmt-merge-branches-svstack cond then-st else-st)
+            :induct (svstack-merge-branches cond then-st else-st)
             :do-not-induct t)
            (and stable-under-simplificationp
                 '(:in-theory (e/d (svstack-to-svex-alist)
@@ -804,86 +1329,87 @@ substitution are left in place."
                   :use ((:instance member-svex-alist-keys (k v) (x (car then-st)))
                         (:instance member-svex-alist-keys (k v) (x (car else-st))))))))
 
-  (defret svstmt-merge-branches-svstack-compatible
+  (defret svstack-merge-branches-compatible
     (implies (double-rewrite (svstacks-compatible then-st else-st))
              (svstacks-compatible merged-st (double-rewrite then-st)))
     :hints(("Goal" :in-theory (enable svstacks-compatible))
            (acl2::set-reasoning)))
 
-  (defret svstmt-merge-branches-svstack-consp
+  (defret svstack-merge-branches-consp
     (implies (and (consp then-st)
                   (consp else-st))
              (consp merged-st)))
   
-  (defret svstmt-merge-branches-svstack-len
+  (defret svstack-merge-branches-len
     (Equal (len merged-st) (min (len then-st) (len else-st)))))
 
 
 
-(define svstmt-merge-branches ((cond svex-p)
-                               (then-st svstate-p)
-                               (else-st svstate-p))
+(define svstate-merge-branches ((cond svex-p)
+                                (then-st svstate-p)
+                                (else-st svstate-p))
   :returns (merged-st svstate-p)
-  (b* (((svstate then-st))
-       ((svstate else-st))
-       (blkst (svstmt-merge-branches-svstack cond then-st.blkst else-st.blkst))
+  (b* (((svstate then-st) (svstate-fix then-st))
+       ((svstate else-st) (svstate-fix else-st))
+       ((when (hons-equal then-st else-st)) then-st)
+       (blkst (svstack-merge-branches cond then-st.blkst else-st.blkst))
        (nonblkst nil)
-       (nonblkst (svstmt-merge-branches-aux then-st.nonblkst cond then-st.nonblkst else-st.nonblkst nonblkst))
-       (nonblkst (svstmt-merge-branches-aux else-st.nonblkst cond then-st.nonblkst else-st.nonblkst nonblkst)))
+       (nonblkst (svex-alist-merge-branches then-st.nonblkst cond then-st.nonblkst else-st.nonblkst nonblkst))
+       (nonblkst (svex-alist-merge-branches else-st.nonblkst cond then-st.nonblkst else-st.nonblkst nonblkst)))
     (svstate-free then-st)
     (svstate-free else-st)
     (make-svstate :blkst blkst :nonblkst nonblkst))
   ///
-  (defthm svstmt-merge-branches-lookup-blkst-when-false
+  (defthm svstate-merge-branches-lookup-blkst-when-false
     (implies (and (equal (4vec-reduction-or (svex-eval cond env)) 0)
                   (svstacks-compatible (svstate->blkst then-st)
                                        (svstate->blkst else-st)))
              (equal
-              (svex-eval (svex-lookup k (svstack-to-svex-alist (svstate->blkst (svstmt-merge-branches cond then-st else-st)))) env)
+              (svex-eval (svex-lookup k (svstack-to-svex-alist (svstate->blkst (svstate-merge-branches cond then-st else-st)))) env)
               (if (svex-lookup k (svstack-to-svex-alist (svstate->blkst else-st)))
                   (svex-eval (svex-lookup k (svstack-to-svex-alist (svstate->blkst else-st))) env)
                 (if (svex-lookup k (svstack-to-svex-alist (svstate->blkst then-st)))
                     (svex-env-lookup k env)
                   (4vec-x))))))
 
-  (defthm svstmt-merge-branches-lookup-nonblkst-when-false
+  (defthm svstate-merge-branches-lookup-nonblkst-when-false
     (implies (equal (4vec-reduction-or (svex-eval cond env)) 0)
              (equal
-              (svex-eval (svex-lookup k (svstate->nonblkst (svstmt-merge-branches cond then-st else-st))) env)
+              (svex-eval (svex-lookup k (svstate->nonblkst (svstate-merge-branches cond then-st else-st))) env)
               (if (svex-lookup k (svstate->nonblkst else-st))
                   (svex-eval (svex-lookup k (svstate->nonblkst else-st)) env)
                 (if (svex-lookup k (svstate->nonblkst then-st))
                     (svex-env-lookup k env)
                   (4vec-x))))))
 
-  (defthm svstmt-merge-branches-lookup-blkst-under-iff
+  (defthm svstate-merge-branches-lookup-blkst-under-iff
     (implies (double-rewrite (svstacks-compatible (svstate->blkst then-st)
                                                   (svstate->blkst else-st)))
-             (iff (svex-lookup k (svstack-to-svex-alist (svstate->blkst (svstmt-merge-branches cond then-st else-st))))
+             (iff (svex-lookup k (svstack-to-svex-alist (svstate->blkst (svstate-merge-branches cond then-st else-st))))
                   (or (svex-lookup k (svstack-to-svex-alist (svstate->blkst then-st)))
                       (svex-lookup k (svstack-to-svex-alist (svstate->blkst else-st)))))))
 
-  (defthm svstmt-merge-branches-lookup-nonblkst-under-iff
-    (iff (svex-lookup k (svstate->nonblkst (svstmt-merge-branches cond then-st else-st)))
+  (defthm svstate-merge-branches-lookup-nonblkst-under-iff
+    (iff (svex-lookup k (svstate->nonblkst (svstate-merge-branches cond then-st else-st)))
          (or (svex-lookup k (svstate->nonblkst then-st))
              (svex-lookup k (svstate->nonblkst else-st)))))
 
-  (defthm svstmt-merge-branches-lookup-blkst-when-true
+  (defthm svstate-merge-branches-lookup-blkst-when-true
     (implies (and (svstacks-compatible (svstate->blkst then-st)
                                        (svstate->blkst else-st))
                   (equal (4vec-reduction-or (svex-eval cond env)) -1))
              (equal
-              (svex-eval (svex-lookup k (svstack-to-svex-alist (svstate->blkst (svstmt-merge-branches cond then-st else-st)))) env)
+              (svex-eval (svex-lookup k (svstack-to-svex-alist (svstate->blkst (svstate-merge-branches cond then-st else-st)))) env)
               (if (svex-lookup k (svstack-to-svex-alist (svstate->blkst then-st)))
                   (svex-eval (svex-lookup k (svstack-to-svex-alist (svstate->blkst then-st))) env)
                 (if (svex-lookup k (svstack-to-svex-alist (svstate->blkst else-st)))
                     (svex-env-lookup k env)
                   (4vec-x))))))
 
-  (defthm svstmt-merge-branches-lookup-nonblkst-when-true
+  (defthm svstate-merge-branches-lookup-nonblkst-when-true
     (implies (equal (4vec-reduction-or (svex-eval cond env)) -1)
              (equal
-              (svex-eval (svex-lookup k (svstate->nonblkst (svstmt-merge-branches cond then-st else-st))) env)
+              (svex-eval (svex-lookup k (svstate->nonblkst (svstate-merge-branches cond then-st else-st))) env)
               (if (svex-lookup k (svstate->nonblkst then-st))
                   (svex-eval (svex-lookup k (svstate->nonblkst then-st)) env)
                 (if (svex-lookup k (svstate->nonblkst else-st))
@@ -913,110 +1439,255 @@ substitution are left in place."
            :hints(("Goal" :in-theory (enable svex-env-lookup
                                              svex-env-boundp)))))
 
-  (defthm svstmt-merge-branches-blkst-when-true
+  (defthm svstate-merge-branches-blkst-when-true
     (implies (and (equal (4vec-reduction-or (svex-eval cond env)) -1)
                   (svstacks-compatible (svstate->blkst then-st)
                                        (svstate->blkst else-st)))
              (svex-envs-similar
-              (append (svex-alist-eval (svstack-to-svex-alist (svstate->blkst (svstmt-merge-branches cond then-st else-st))) env) env)
+              (append (svex-alist-eval (svstack-to-svex-alist (svstate->blkst (svstate-merge-branches cond then-st else-st))) env) env)
               (append (svex-alist-eval (svstack-to-svex-alist (svstate->blkst then-st)) env) env)))
-    :hints(("Goal" :in-theory (disable svstmt-merge-branches))
+    :hints(("Goal" :in-theory (disable svstate-merge-branches))
            (acl2::witness)))
 
-  (defthm svstmt-merge-branches-nonblkst-when-true
+  (defthm svstate-merge-branches-nonblkst-when-true
     (implies (equal (4vec-reduction-or (svex-eval cond env)) -1)
              (svex-envs-similar
-              (append (svex-alist-eval (svstate->nonblkst (svstmt-merge-branches cond then-st else-st)) env) env)
+              (append (svex-alist-eval (svstate->nonblkst (svstate-merge-branches cond then-st else-st)) env) env)
               (append (svex-alist-eval (svstate->nonblkst then-st) env) env)))
-    :hints(("Goal" :in-theory (disable svstmt-merge-branches))
+    :hints(("Goal" :in-theory (disable svstate-merge-branches))
            (acl2::witness)))
 
-  (defthm svstmt-merge-branches-blkst-when-false
+  (defthm svstate-merge-branches-blkst-when-false
     (implies (and (equal (4vec-reduction-or (svex-eval cond env)) 0)
                   (svstacks-compatible (svstate->blkst then-st)
                                        (svstate->blkst else-st)))
              (svex-envs-similar
-              (append (svex-alist-eval (svstack-to-svex-alist (svstate->blkst (svstmt-merge-branches cond then-st else-st))) env) env)
+              (append (svex-alist-eval (svstack-to-svex-alist (svstate->blkst (svstate-merge-branches cond then-st else-st))) env) env)
               (append (svex-alist-eval (svstack-to-svex-alist (svstate->blkst else-st)) env) env)))
-    :hints(("Goal" :in-theory (disable svstmt-merge-branches))
+    :hints(("Goal" :in-theory (disable svstate-merge-branches))
            (acl2::witness)))
 
-  (defthm svstmt-merge-branches-nonblkst-when-false
+  (defthm svstate-merge-branches-nonblkst-when-false
     (implies (equal (4vec-reduction-or (svex-eval cond env)) 0)
              (svex-envs-similar
-              (append (svex-alist-eval (svstate->nonblkst (svstmt-merge-branches cond then-st else-st)) env) env)
+              (append (svex-alist-eval (svstate->nonblkst (svstate-merge-branches cond then-st else-st)) env) env)
               (append (svex-alist-eval (svstate->nonblkst else-st) env) env)))
-    :hints(("Goal" :in-theory (disable svstmt-merge-branches))
+    :hints(("Goal" :in-theory (disable svstate-merge-branches))
            (acl2::witness)))
 
-  (defthm keys-of-svstmt-merge-branches-blkst
-    (implies (and (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst then-st)))))
-                  (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst else-st))))))
-             (not (member v (svex-alist-keys
-                             (svstack-to-svex-alist
-                              (svstate->blkst (svstmt-merge-branches cond then-st else-st)))))))
-    :hints(("Goal" :in-theory (disable member-svex-alist-keys))))
+  ;; (defthm keys-of-svstate-merge-branches-blkst
+  ;;   (implies (and (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst then-st)))))
+  ;;                 (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst else-st))))))
+  ;;            (not (member v (svex-alist-keys
+  ;;                            (svstack-to-svex-alist
+  ;;                             (svstate->blkst (svstate-merge-branches cond then-st else-st)))))))
+  ;;   :hints(("Goal" :in-theory (disable member-svex-alist-keys))))
 
-  (defthm svex-lookup-of-svstmt-merge-branches-blkst
-    (implies (and (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst then-st)))))
-                  (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst else-st)))))
-                  (svar-p v))
-             (not (svex-lookup v (svstack-to-svex-alist
-                                  (svstate->blkst
-                                   (svstmt-merge-branches cond then-st else-st))))))
-    :hints(("Goal" :in-theory (disable member-svex-alist-keys))))
+  ;; (defthm svex-lookup-of-svstate-merge-branches-blkst
+  ;;   (implies (and (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst then-st)))))
+  ;;                 (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst else-st)))))
+  ;;                 (svar-p v))
+  ;;            (not (svex-lookup v (svstack-to-svex-alist
+  ;;                                 (svstate->blkst
+  ;;                                  (svstate-merge-branches cond then-st else-st))))))
+  ;;   :hints(("Goal" :in-theory (disable member-svex-alist-keys))))
 
-  (defthm vars-of-svstmt-merge-branches-blkst
-    (implies (and (not (member v (svex-vars cond)))
-                  (not (member v (svex-alist-vars (svstack-to-svex-alist (svstate->blkst then-st)))))
-                  (not (member v (svex-alist-vars (svstack-to-svex-alist (svstate->blkst else-st)))))
-                  (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst then-st)))))
-                  (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst else-st)))))
-                  (double-rewrite (svstacks-compatible (svstate->blkst then-st)
-                                                       (svstate->blkst else-st))))
-             (not (member v (svex-alist-vars
-                             (svstack-to-svex-alist
-                              (svstate->blkst
-                               (svstmt-merge-branches cond then-st else-st))))))))
+  ;; (defthm vars-of-svstate-merge-branches-blkst
+  ;;   (implies (and (not (member v (svex-vars cond)))
+  ;;                 (not (member v (svex-alist-vars (svstack-to-svex-alist (svstate->blkst then-st)))))
+  ;;                 (not (member v (svex-alist-vars (svstack-to-svex-alist (svstate->blkst else-st)))))
+  ;;                 (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst then-st)))))
+  ;;                 (not (member v (svex-alist-keys (svstack-to-svex-alist (svstate->blkst else-st)))))
+  ;;                 (double-rewrite (svstacks-compatible (svstate->blkst then-st)
+  ;;                                                      (svstate->blkst else-st))))
+  ;;            (not (member v (svex-alist-vars
+  ;;                            (svstack-to-svex-alist
+  ;;                             (svstate->blkst
+  ;;                              (svstate-merge-branches cond then-st else-st))))))))
 
-  (defthm keys-of-svstmt-merge-branches-nonblkst
-    (implies (and (not (member v (svex-alist-keys (svstate->nonblkst then-st))))
-                  (not (member v (svex-alist-keys (svstate->nonblkst else-st)))))
-             (not (member v (svex-alist-keys
-                             (svstate->nonblkst (svstmt-merge-branches cond then-st else-st)))))))
+  ;; (defthm keys-of-svstate-merge-branches-nonblkst
+  ;;   (implies (and (not (member v (svex-alist-keys (svstate->nonblkst then-st))))
+  ;;                 (not (member v (svex-alist-keys (svstate->nonblkst else-st)))))
+  ;;            (not (member v (svex-alist-keys
+  ;;                            (svstate->nonblkst (svstate-merge-branches cond then-st else-st)))))))
 
-  (defthm vars-of-svstmt-merge-branches-nonblkst
-    (implies (and (not (member v (svex-vars cond)))
-                  (not (member v (svex-alist-vars (svstate->nonblkst then-st))))
-                  (not (member v (svex-alist-vars (svstate->nonblkst else-st))))
-                  (not (member v (svex-alist-keys (svstate->nonblkst then-st))))
-                  (not (member v (svex-alist-keys (svstate->nonblkst else-st)))))
-             (not (member v (svex-alist-vars
-                             (svstate->nonblkst
-                              (svstmt-merge-branches cond then-st else-st)))))))
+  ;; (defthm vars-of-svstate-merge-branches-nonblkst
+  ;;   (implies (and (not (member v (svex-vars cond)))
+  ;;                 (not (member v (svex-alist-vars (svstate->nonblkst then-st))))
+  ;;                 (not (member v (svex-alist-vars (svstate->nonblkst else-st))))
+  ;;                 (not (member v (svex-alist-keys (svstate->nonblkst then-st))))
+  ;;                 (not (member v (svex-alist-keys (svstate->nonblkst else-st)))))
+  ;;            (not (member v (svex-alist-vars
+  ;;                            (svstate->nonblkst
+  ;;                             (svstate-merge-branches cond then-st else-st)))))))
 
-  (defret svstmt-merge-branches-blkst-compatible
-    (implies (double-rewrite (svstacks-compatible (svstate->blkst then-st)
-                                                  (svstate->blkst else-st)))
-             (svstacks-compatible (svstate->blkst merged-st)
-                                  (double-rewrite (svstate->blkst then-st)))))
+  (defret vars-of-svstate-merge-branches
+    (implies (and (double-rewrite (svstates-compatible then-st else-st))
+                  (not (member v (svex-vars cond)))
+                  (not (member v (svstate-vars then-st)))
+                  (not (member v (svstate-vars else-st))))
+             (not (member v (svstate-vars merged-st))))
+    :hints(("Goal" :in-theory (enable svstate-vars svstates-compatible))))
 
-  (defret svstmt-merge-branches-preserves-blkst-consp
+  (defret svstate-merge-branches-blkst-compatible
+    (implies (double-rewrite (svstates-compatible then-st else-st))
+             (svstates-compatible merged-st (double-rewrite then-st)))
+    :hints(("Goal" :in-theory (enable svstates-compatible))))
+
+  (defret svstate-merge-branches-preserves-blkst-consp
     (implies (and (consp (svstate->blkst then-st))
                   (consp (svstate->blkst else-st)))
              (consp (svstate->blkst merged-st))))
 
-  (defret svstmt-merge-branches-blkst-len
+  (defret svstate-merge-branches-blkst-len
     (Equal (len (svstate->blkst merged-st))
            (min (len (svstate->blkst then-st))
                 (len (svstate->blkst else-st))))))
 
 
+(define svjumpstate-merge-svstate-branches ((cond svex-p)
+                                            (thencond svex-p)
+                                            (elsecond svex-p)
+                                            (thenst svstate-p)
+                                            (elsest svstate-p))
+  ;; For the (common) special case when one or both of the existing jump
+  ;; conditions is syntactically 0, we don't want to do the work of a merge,
+  ;; because that means the corresponding jumpstate is actually just
+  ;; irrelevant.
+  :returns (merged-st svstate-p)
+  (b* ((thencond (svex-fix thencond))
+       (elsecond (svex-fix elsecond))
+       (thenst (svstate-fix thenst))
+       (elsest (svstate-fix elsest))
+       ((when (eql 0 elsecond)) thenst)
+       ((when (eql 0 thencond)) elsest))
+    (svstate-merge-branches cond thenst elsest))
+  ///
+  (defret vars-of-svjumpstate-merge-svstate-branches
+    (implies (and (svstates-compatible thenst elsest)
+                  (not (member v (svex-vars cond)))
+                  (not (member v (svstate-vars thenst)))
+                  (not (member v (svstate-vars elsest))))
+             (not (member v (svstate-vars merged-st)))))
+
+  (defret svjumpstate-merge-svstate-branches-preserves-compatible
+    (implies (svstates-compatible thenst elsest)
+             (svstates-compatible merged-st thenst))))
+
+(define svjumpstate-merge-branches ((cond svex-p)
+                                    (then svjumpstate-p)
+                                    (else svjumpstate-p))
+  :returns (ite svjumpstate-p)
+  :prepwork ((local (in-theory (disable acl2::true-listp-append
+                                        acl2::subsetp-member
+                                        (:t append) append
+                                        acl2::consp-of-append))))
+  (b* (((svjumpstate then))
+       ((svjumpstate else)))
+    (make-svjumpstate
+     :breakcond (svex-svstmt-ite cond then.breakcond else.breakcond)
+     :breakst (svjumpstate-merge-svstate-branches cond then.breakcond else.breakcond then.breakst else.breakst)
+     :continuecond (svex-svstmt-ite cond then.continuecond else.continuecond)
+     :continuest (svjumpstate-merge-svstate-branches cond then.continuecond else.continuecond then.continuest else.continuest)
+     :returncond (svex-svstmt-ite cond then.returncond else.returncond)
+     :returnst (svjumpstate-merge-svstate-branches cond then.returncond else.returncond then.returnst else.returnst)))
+  ///
+  (defret vars-of-svjumpstate-merge-branches
+    (implies (and (double-rewrite (svjumpstates-compatible then else))
+                  (not (member v (svex-vars cond)))
+                  (not (member v (svjumpstate-vars then)))
+                  (not (member v (svjumpstate-vars else))))
+             (not (member v (svjumpstate-vars ite))))
+    :hints(("Goal" :in-theory (enable svjumpstate-vars
+                                      svjumpstates-compatible))))
+
+  (defret svjumpstate-merge-branches-preserves-compatible
+    (implies (double-rewrite (svjumpstates-compatible then else))
+             (svjumpstates-compatible ite (double-rewrite then)))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible)))))
+
+
+(define svjumpstate-sequence-svstates ((cond1 svex-p)
+                                       (cond2 svex-p)
+                                       (st1 svstate-p)
+                                       (st2 svstate-p))
+  :returns (seq svstate-p)
+  (b* ((cond1 (svex-fix cond1))
+       (cond2 (svex-fix cond2))
+       (st1 (svstate-fix st1))
+       (st2 (svstate-fix st2))
+       ((when (eql 0 cond1)) st2)
+       ((when (eql 0 cond2)) st1))
+    (svstate-merge-branches cond1 st1 st2))
+  ///
+  (defret vars-of-svjumpstate-sequence-svstates
+    (implies (and (not (member v (svstate-vars st1)))
+                  (not (member v (svstate-vars st2)))
+                  (not (member v (svex-vars cond1)))
+                  (svstates-compatible st1 st2))
+             (not (member v (svstate-vars seq)))))
+
+  (defret svstates-compatible-of-svjumpstate-sequence-svstates
+    (implies (svstates-compatible st1 st2)
+             (svstates-compatible seq st1))))
+
+(define svjumpstate-sequence ((jst1 svjumpstate-p)
+                              (jst2 svjumpstate-p))
+  ;; If we are running:
+  ;;    stmt1; stmt2
+  ;; and stmt1 produces jst1, stmt2 produces jst2, produce the jumpstate that
+  ;; correctly reflects the sequence.  That is, for each jump cond/state,
+  ;;
+  ;; newcond = stmt1.jumpcond | ("statement 1 didn't do ANY jump" & stmt2.jumpcond)
+  ;; newst   = stmt1.jumpcond ? stmt1.jumpst : stmt2.jumpst
+  ;;
+  ;; Note that the continuecond, breakcond, and returncond are all kept
+  ;; mutually exclusive: we should never create a jumpst where there is any
+  ;; overlap between them. (Except that we really aren't defending against
+  ;; tests becoming X/Z and if that happens then who knows what we do.)
+
+  :returns (seq svjumpstate-p)
+  (b* (((svjumpstate jst1))
+       ((svjumpstate jst2))
+       (jst1.anyjump (svex-svstmt-or jst1.breakcond (svex-svstmt-or jst1.continuecond
+                                                                    jst1.returncond))))
+    (make-svjumpstate
+     :breakcond (svex-svstmt-or jst1.breakcond
+                                (svex-svstmt-andc1 jst1.anyjump jst2.breakcond))
+     :breakst (svjumpstate-sequence-svstates jst1.breakcond jst2.breakcond
+                                             jst1.breakst jst2.breakst)
+     :continuecond (svex-svstmt-or jst1.continuecond
+                                (svex-svstmt-andc1 jst1.anyjump jst2.continuecond))
+     :continuest (svjumpstate-sequence-svstates jst1.continuecond jst2.continuecond
+                                                jst1.continuest jst2.continuest)
+     :returncond (svex-svstmt-or jst1.returncond
+                                (svex-svstmt-andc1 jst1.anyjump jst2.returncond))
+     :returnst (svjumpstate-sequence-svstates jst1.returncond jst2.returncond
+                                              jst1.returnst jst2.returnst)))
+  ///
+  (defret vars-of-svjumpstate-sequence
+    (implies (and (not (member v (svjumpstate-vars jst1)))
+                  (not (member v (svjumpstate-vars jst2)))
+                  (double-rewrite (svjumpstates-compatible jst1 jst2)))
+             (not (member v (svjumpstate-vars seq))))
+    :hints(("Goal" :in-theory (enable svjumpstate-vars
+                                      svjumpstates-compatible))))
+
+  (defret svjumpstates-compatible-of-svjumpstate-sequence
+    (implies (double-rewrite (svjumpstates-compatible jst1 jst2))
+             (svjumpstates-compatible seq (double-rewrite jst1)))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible)))))
+
 
 
 (define svar-subtract-delay ((x svar-p) (delay natp))
   :returns (xx svar-p)
-  (change-svar x :delay (nfix (- (svar->delay x) (lnfix delay)))))
+  (change-svar x :delay (nfix (- (svar->delay x) (lnfix delay))))
+  ///
+  (defret svar-addr-p-of-svar-subtract-delay
+    (iff (svar-addr-p xx)
+         (svar-addr-p x))
+    :hints(("Goal" :in-theory (enable svar-addr-p)))))
 
 (defthm member-of-svarlist-add-delay
   (iff (member v (svarlist-add-delay x delay))
@@ -1041,6 +1712,242 @@ substitution are left in place."
   (defret svex-alist-vars-of-initialize-locals
     (equal (svex-alist-vars scope) nil)))
 
+;; (define svjumpstate-push-scope ((locals svarlist-p)
+;;                                    (x svjumpstate-p))
+;;   :returns (new-x svjumpstate-p)
+;;   (b* (((svjumpstate x))
+;;        ((svstate x.breakst))
+;;        ((svstate x.continuest))
+;;        ((svstate x.returnst)))
+;;     (change-svjumpstate
+;;      x
+;;      :breakst
+;;      (change-svstate x.breakst
+;;                      :blkst (cons (svstmt-initialize-locals locals) x.breakst.blkst))
+;;      :continuest
+;;      (change-svstate x.continuest
+;;                      :blkst (cons (svstmt-initialize-locals locals) x.continuest.blkst))
+;;      :returnst
+;;      (change-svstate x.returnst
+;;                      :blkst (cons (svstmt-initialize-locals locals) x.returnst.blkst))))
+;;   ///
+;;   (local (in-theory (enable cdr-lookup-when-svex-alist-p)))
+;;   (local (defthm svex-lookup-of-append-under-iff
+;;            (iff (svex-lookup v (append a b))
+;;                 (or (svex-lookup v a)
+;;                     (svex-lookup v b)))
+;;            :hints(("Goal" :in-theory (enable svex-lookup)))))
+
+;;   (defret svjumpstate-vars-of-push-scope
+;;     (implies (and (not (member v (svjumpstate-vars x)))
+;;                   (not (member v (svarlist-fix locals))))
+;;              (not (member v (svjumpstate-vars new-x))))
+;;     :hints(("Goal" :in-theory (e/d (svjumpstate-vars
+;;                                     svstack-to-svex-alist)
+;;                                    (acl2::true-listp-append
+;;                                     acl2::subsetp-member
+;;                                     (:t append) append
+;;                                     acl2::consp-of-append))))))
+
+(define svstate-push-scope ((x svstate-p)
+                            (locals svarlist-p))
+  :returns (new-x svstate-p)
+  (b* (((svstate x)))
+    (change-svstate x :blkst (cons (svstmt-initialize-locals locals) x.blkst)))
+  ///
+  (local (in-theory (enable cdr-lookup-when-svex-alist-p)))
+  (local (defthm svex-lookup-of-append-under-iff
+           (iff (svex-lookup v (append a b))
+                (or (svex-lookup v a)
+                    (svex-lookup v b)))
+           :hints(("Goal" :in-theory (enable svex-lookup)))))
+  (defret vars-of-svstate-push-scope
+    (implies (and (not (member v (svstate-vars x)))
+                  (not (member v (svarlist-fix locals))))
+             (not (member v (svstate-vars  new-x))))
+    :hints(("Goal" :in-theory (enable svstate-vars
+                                      svstack-to-svex-alist)))))
+
+(define svstate-pop-scope ((x svstate-p))
+  :returns (new-x svstate-p)
+  (b* (((svstate x)))
+    (change-svstate x :blkst (if (consp (cdr x.blkst))
+                                 (cdr x.blkst)
+                               (list nil))))
+  ///
+  (local (in-theory (enable cdr-lookup-when-svex-alist-p)))
+  (local (defthm svex-lookup-of-append-under-iff
+           (iff (svex-lookup v (append a b))
+                (or (svex-lookup v a)
+                    (svex-lookup v b)))
+           :hints(("Goal" :in-theory (enable svex-lookup)))))
+  (defret vars-of-svate-pop-scope
+    (implies (not (member v (svstate-vars x)))
+             (not (member v (svstate-vars new-x))))
+    :hints(("Goal" :in-theory (enable svstate-vars svstack-to-svex-alist))))
+
+  (defthm svstates-compatible-of-pop-of-push
+    (svstates-compatible (svstate-pop-scope (svstate-push-scope x locals))
+                         x)
+    :hints(("Goal" :in-theory (enable svstates-compatible
+                                      svstate-push-scope))))
+
+  (defthm svstates-compatible-of-pop
+    (implies (svstates-compatible x y)
+             (equal (svstates-compatible (svstate-pop-scope x)
+                                         (svstate-pop-scope y))
+                    t))
+    :hints(("Goal" :in-theory (enable svstates-compatible svstacks-compatible))))
+
+
+  (defcong svstates-compatible svstates-compatible
+    (svstate-pop-scope x) 1
+    :hints(("Goal" :in-theory (enable svstates-compatible
+                                      svstacks-compatible)))))
+
+
+(define svjumpstate-pop-scope ((x svjumpstate-p))
+  :returns (new-x svjumpstate-p)
+  (b* (((svjumpstate x)))
+    ;; BOZO this should be guarded with (< 0 (svjumpstate-levels x))
+    ;; but then we'd have to prove stuff about the levels for all operations.
+    (change-svjumpstate
+     x
+     :breakst (svstate-pop-scope x.breakst)
+     :continuest (svstate-pop-scope x.continuest)
+     :returnst (svstate-pop-scope x.returnst)))
+  ///
+  (local (in-theory (enable cdr-lookup-when-svex-alist-p)))
+  (local (defthm svex-lookup-of-append-under-iff
+           (iff (svex-lookup v (append a b))
+                (or (svex-lookup v a)
+                    (svex-lookup v b)))
+           :hints(("Goal" :in-theory (enable svex-lookup)))))
+
+  (defret svjumpstate-vars-of-pop-scope
+    (implies (not (member v (svjumpstate-vars x)))
+             (not (member v (svjumpstate-vars new-x))))
+    :hints(("Goal" :in-theory (e/d (svjumpstate-vars
+                                    svstack-to-svex-alist)
+                                   (acl2::true-listp-append
+                                    acl2::subsetp-member
+                                    (:t append) append
+                                    acl2::consp-of-append)))))
+
+  (defret svjumpstate-pop-scope-compatible-with-svstate-pop-scope
+    (implies (svjumpstate-svstate-compatible jst st)
+             (svjumpstate-svstate-compatible (svjumpstate-pop-scope jst)
+                                             (svstate-pop-scope st)))
+    :hints(("Goal" :in-theory (enable svjumpstate-svstate-compatible))))
+
+  (defret svjumpstate-pop-scope-compatible-with-svstate-pop-scope-free
+    (implies (svjumpstate-svstate-compatible jst st)
+             (equal (svjumpstate-svstate-compatible (svjumpstate-pop-scope jst) st1)
+                    (svstates-compatible (svstate-pop-scope st) st1)))
+    :hints(("Goal" :in-theory (enable svjumpstate-svstate-compatible))))
+
+  (defcong svjumpstates-compatible svjumpstates-compatible
+    (svjumpstate-pop-scope jst) 1
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible)))))
+                           
+
+
+(define svar-delayed-member ((v svar-p) (x svarlist-p))
+  (if (atom x)
+      nil
+    (if (equal (svar->name v) (svar->name (car x)))
+        (svarlist-fix x)
+      (svar-delayed-member v (cdr x)))))
+
+
+#||
+
+
+(define clean-svstack ((x svstack-p))
+  (if (atom x)
+      nil
+    (cons (svex-alist-rewrite-fixpoint (fast-alist-free (fast-alist-fork (car x) nil)))
+          (clean-svstack (cdr x)))))
+
+(trace$ (svstmt-compile :entry (list 'svstmt-compile
+                                     (svstmt-kind x))
+                        :exit (b* (((list ?ok ?warnings st jst) values))
+                                (list 'svstmt-compile
+                                      (clean-svstack (svstate->blkst st))
+                                      :returncond (car (svexlist-rewrite-fixpoint
+                                                        (list (svjumpstate->returncond jst))))
+                                      :returnst
+                                      (clean-svstack
+                                       (svstate->blkst (svjumpstate->returnst jst)))))
+                        :hide nil
+                        :evisc-tuple '(nil 6 12 nil)))
+
+
+(define svex-compose-svstack-trace ((x svex-p) (a svstack-p))
+  :enabled t
+  (svex-compose-svstack x a))
+
+(trace$ (svex-compose-svstack-trace
+         :entry (list 'svex-compose-svstack (car (svexlist-rewrite-fixpoint (list x))) (clean-svstack a))
+         :exit (list 'svex-compose-svstack (car (svexlist-rewrite-fixpoint (list (car values)))))))
+
+
+(define base16-munge (x)
+  (if (atom x)
+      (if (integerp x)
+          (if (<= 0 x)
+              (str::hexify x)
+            (list '- (str::hexify (loghead (max 32 (+ 1 (integer-length x))) x))))
+        x)
+    (cons (base16-munge (car x))
+          (base16-munge (cdr x))))
+  ///
+  (memoize 'base16-munge :condition '(consp x)))
+                                         
+
+;; More specialized -- compose everything with assignments to "a" and "b"
+(defconst *svstmt-compile-env* (make-fast-alist '(("a" . #b1001) ("b" . #b0101))))
+
+(define clean-svstack-env ((x svstack-p)
+                           (env svex-alist-p))
+  (if (atom x)
+      nil
+    (cons (svex-alist-rewrite-fixpoint
+           (svex-alist-compose (fast-alist-free (fast-alist-fork (car x) nil)) env))
+          (clean-svstack-env (cdr x) env))))
+
+
+(define svjumpstate-trace ((x svjumpstate-p)
+                           (env svex-alist-p))
+  (b* (((svjumpstate x)))
+    (append (and (not (eql 0 x.breakcond))
+                 (list :breakcond (car (svexlist-rewrite-fixpoint
+                                        (list
+                                         (svex-compose x.breakcond env))))
+                       :breakst (clean-svstack-env (svstate->blkst x.breakst) env)))
+            (and (not (eql 0 x.continuecond))
+                 (list :continuecond (car (svexlist-rewrite-fixpoint
+                                        (list
+                                         (svex-compose x.continuecond env))))
+                       :continuest (clean-svstack-env (svstate->blkst x.continuest) env)))
+            (and (not (eql 0 x.returncond))
+                 (list :returncond (car (svexlist-rewrite-fixpoint
+                                        (list
+                                         (svex-compose x.returncond env))))
+                       :returnst (clean-svstack-env (svstate->blkst x.returnst) env))))))
+
+(trace$ (svstmt-compile :entry (base16-munge
+                                (list 'svstmt-compile
+                                      (svstmt-kind x)))
+                        :exit (base16-munge
+                               (b* (((list ?ok ?warnings st jst) values))
+                                 (list* 'svstmt-compile
+                                       (clean-svstack-env (svstate->blkst st) *svstmt-compile-env*)
+                                       (svjumpstate-trace jst *svstmt-compile-env*))))
+                        :hide nil
+                        :evisc-tuple '(nil 8 12 nil)))
+
+||#
 
 (defines svstmt-compile
   :verify-guards nil
@@ -1051,7 +1958,8 @@ substitution are left in place."
     :parents (svstmt)
     :returns (mv (ok)
                  (warnings1 vl::vl-warninglist-p)
-                 (st1 svstate-p))
+                 (st1 svstate-p)
+                 (jst svjumpstate-p))
     :measure (two-nats-measure reclimit (svstmt-count x))
     (b* ((x              (svstmt-fix x))
          ((svstate st)   (svstate-fix st))
@@ -1089,20 +1997,24 @@ substitution are left in place."
                 (fast-alist-free conf-acc))
              ((when conf-acc)
               (svstate-free st)
-              (mv nil
-                  (vl::warn :type :svstmt-compile-fail
-                            :msg "Overlapping writes in the same assignment: ~
+              (b* ((st (make-svstate)))
+                (mv nil
+                    (vl::warn :type :svstmt-compile-fail
+                              :msg "Overlapping writes in the same assignment: ~
                               ~a0 (conflicts: ~a1)"
-                            :args (list x conf-acc))
-                  (make-svstate)))
-             ;;
+                              :args (list x conf-acc))
+                    st
+                    (make-empty-svjumpstate st))))
+                    
+                           
              (composed-rhs (svex-compose-svstack x.rhs st.blkst))
              (composed-rhs (if (and (eq nb-delayp t)
                                     (not x.blockingp))
                                (svex-add-delay composed-rhs 1)
                              composed-rhs))
              (st (svstmt-assign->subst x.lhs composed-rhs 0 x.blockingp st)))
-          (mv t warnings st))
+          (mv t warnings st
+              (make-empty-svjumpstate st)))
         :if
         (b* (;; We need to compose ST into the condition to handle cases
              ;; like:
@@ -1110,54 +2022,140 @@ substitution are left in place."
              ;;    if (A) { ... } else {...}
              (cond-compose (svex-compose-svstack x.cond st.blkst))
              (st2 (svstate-fork st))
-             ((vl::wmv ok warnings then-st)
+             ((vl::wmv ok warnings then-st then-jst)
               (svstmtlist-compile x.then st reclimit nb-delayp))
              ((unless ok)
-              (svstate-free st2)
-              (mv nil warnings (make-svstate)))
-             ((vl::wmv ok warnings else-st)
+              (b* ((st (make-svstate)))
+                (svstate-free st2)
+                (mv nil warnings st (make-empty-svjumpstate st))))
+             ((vl::wmv ok warnings else-st else-jst)
               (svstmtlist-compile x.else st2 reclimit nb-delayp))
              ((unless ok)
-              (svstate-free then-st)
-              (mv nil warnings (make-svstate)))
-             (st (svstmt-merge-branches cond-compose then-st else-st)))
-          (mv t warnings st))
+              (b* ((st (make-svstate)))
+                (svstate-free then-st)
+                (mv nil warnings st (make-empty-svjumpstate st))))
+             (st (svstate-merge-branches cond-compose then-st else-st))
+             (jst (svjumpstate-merge-branches cond-compose then-jst else-jst)))
+          (mv t warnings st jst))
         :while
         (b* ((cond-compose (svex-compose-svstack x.cond st.blkst))
              (cond-rw (svex-maskfree-rewrite cond-compose))
              ((when (eql cond-rw 0))
-              (mv t warnings st))
+              ;; Loop condition is syntactically just always false so there is
+              ;; no reason to run anything.
+              (mv t warnings st (make-empty-svjumpstate st)))
              ((when (zp reclimit))
               (svstate-free st)
-              (mv nil
-                  (warn :type :svstmt-compile-fail
-                        :msg "couldn't determine bound on while loop ~
+              (b* ((st (make-svstate)))
+                (mv nil
+                    (warn :type :svstmt-compile-fail
+                          :msg "couldn't determine bound on while loop ~
                               unrollings: ~a0. rewritten condition ~a1."
-                        :args (list x cond-rw))
-                  (make-svstate)))
+                          :args (list x cond-rw))
+                    st (make-empty-svjumpstate st))))
+
+             ;; Even though the loop condition is not syntactically obviously
+             ;; 0, it may be some symbolic expression that is sometimes zero,
+             ;; so we don't know for sure that we are going to do any loop
+             ;; iterations.  The following state/jumpstates are for this case.
              (norun-st (svstate-fork st))
-             ((vl::wmv ok warnings run-st)
+             (norun-jst (make-empty-svjumpstate norun-st))
+
+             ((vl::wmv ok warnings run-st body-jst)
               (svstmtlist-compile x.body st reclimit nb-delayp))
              ((unless ok)
               (svstate-free norun-st)
-              (mv nil warnings (make-svstate)))
-             ((vl::wmv ok warnings run-st)
+              (b* ((st (make-svstate)))
+                (mv nil warnings st (make-empty-svjumpstate st))))
+             
+             ;; Before processing the next forms and the rest of the loop
+             ;; iterations, we merge the continue statement into the current
+             ;; run state.  That way the next iteration starts from a correct
+             ;; state whether the first iteration exited normally or skipped
+             ;; part of its execution.
+             ((svjumpstate body-jst))
+             (run-st (svstate-fork
+                      (svstate-merge-branches
+                       body-jst.continuecond body-jst.continuest run-st)))
+
+             
+             ((vl::wmv ok warnings run-st ?next-jst)
+              ;; The for loop step can only be certain things,
+              ;; break/continue/return not among them.  So for now at least, we
+              ;; ignore the jumpstate from this part.
+              (svstmtlist-compile x.next run-st reclimit nb-delayp))
+
+             (- (b* (((svjumpstate next-jst)))
+                  (and (or (not (eql 0 next-jst.breakcond))
+                           (not (eql 0 next-jst.continuecond))
+                           (not (eql 0 next-jst.returncond)))
+                       (raise "Unexpectedly encountered a break/continue/return
+                               in a for loop iterator"))))
+
+             ((unless ok)
+              (svstate-free norun-st)
+              (b* ((st (make-svstate)))
+                (mv nil warnings st (make-empty-svjumpstate st))))
+
+             ;; We could possibly avoid evaluating the rest of the loop if we
+             ;; found that there was a break statement that was always taken.
+             ;; But that seems very unlikely, because even in a loop like "for
+             ;; (i=0;....) if (data[i]==0) break;" we don't know anything about
+             ;; data when we're processing the body, so we won't know for sure
+             ;; that we are breaking.
+             ((vl::wmv ok warnings run-st loop-jst)
               (svstmt-compile x run-st (1- reclimit) nb-delayp))
              ((unless ok)
               (svstate-free norun-st)
-              (mv nil warnings (make-svstate)))
-             (st (svstmt-merge-branches cond-rw run-st norun-st)))
-          (mv ok warnings st))
+              (b* ((st (make-svstate)))
+                (mv nil warnings st (make-empty-svjumpstate st))))
+
+             ;; Convention: the loop-jst we get back from compiling the rest of
+             ;; the loop will never have any unmerged continue conditions
+             ;; (because we merge them before processing each loop iteration)
+             ;; and will never have any unmerged break conditions (because we
+             ;; will merge them right here before returning).  So, the only way
+             ;; that loop-jst can have a jump is if it has a return.
+
+             ;; We now merge the break condition.  Possibilities:
+             ;;   (1) The first iteration had a break -- the rest of the loop
+             ;;       doesn't happen.
+             ;;   (2) The first iteration had no break -- the rest of the loop
+             ;;       happens.
+             (run-st (svstate-fork
+                      (svstate-merge-branches
+                       body-jst.breakcond body-jst.breakst run-st)))
+             ;; Clear out continue/break since we've now merged them all.
+             ;; Subtle: We clear the continue condition before sequentially
+             ;; merging the iter1 and loop jump states, but clear the break
+             ;; condition after.  Why? If we hit a break in body-jst, we need
+             ;; to account for that by not allowing a return from loop-jst.
+             (iter1-jst (change-svjumpstate body-jst
+                                            :continuecond 0))
+             (run-jst (svjumpstate-sequence iter1-jst loop-jst))
+             (run-jst (change-svjumpstate run-jst :breakcond 0))
+
+             ;; Now we just have to account for any cases where we didn't run
+             ;; anything (even a single iteration) because the loop condition
+             ;; turned out to be false.
+             (st (svstate-merge-branches cond-rw run-st norun-st))
+             (jst (svjumpstate-merge-branches cond-rw run-jst norun-jst)))
+          (mv ok warnings st jst))
         :scope
-        (b* ((subscope-blkst (cons (svstmt-initialize-locals x.locals) st.blkst))
-             (subscope-st (change-svstate st :blkst subscope-blkst))
-             ((vl::wmv ok warnings subscope-st)
+        (b* ((subscope-st (svstate-push-scope st x.locals))
+             ((vl::wmv ok warnings subscope-st subscope-jst)
               (svstmtlist-compile x.body subscope-st reclimit nb-delayp))
-             ((unless ok) (mv nil warnings st))
-             (blkst (mbe :logic (cdr (svstate->blkst subscope-st))
-                         :exec (and (consp (svstate->blkst subscope-st))
-                                    (cdr (svstate->blkst subscope-st))))))
-          (mv t warnings (change-svstate subscope-st :blkst blkst))))))
+             ((unless ok) (mv nil warnings subscope-st subscope-jst))
+             (st (svstate-pop-scope subscope-st))
+             (jst (svjumpstate-pop-scope subscope-jst)))
+          (mv t warnings st jst))
+        :jump
+        (b* ((empty-jst (make-empty-svjumpstate st)))
+          (case x.type
+            (:break (mv t warnings st (change-svjumpstate empty-jst :breakcond 1)))
+            (:continue (mv t warnings st (change-svjumpstate empty-jst :continuecond 1)))
+            (:return (mv t warnings st (change-svjumpstate empty-jst :returncond 1)))
+            (otherwise (mv (acl2::impossible) warnings st empty-jst)))))))
 
   (define svstmtlist-compile ((x        svstmtlist-p)
                               (st       svstate-p)
@@ -1165,268 +2163,202 @@ substitution are left in place."
                               (nb-delayp))
     :returns (mv (ok)
                  (warnings1 vl::vl-warninglist-p)
-                 (st1       svstate-p))
+                 (st1       svstate-p)
+                 (jst       svjumpstate-p))
     :measure (two-nats-measure reclimit (svstmtlist-count x))
     (b* ((warnings nil)
          ((when (atom x))
           (mv t
               (vl::ok)
-              (svstate-fix st)))
-         ((vl::wmv okp1 warnings st)
+              (svstate-fix st)
+              (make-empty-svjumpstate st)))
+         ((vl::wmv okp warnings st jst1)
           (svstmt-compile (car x) st reclimit nb-delayp))
-         ((unless okp1)
-          (mv nil warnings st)))
-      (svstmtlist-compile (cdr x) st reclimit nb-delayp)))
+         ((unless okp)
+          (mv nil warnings st jst1))
+         ((vl::wmv okp warnings st jst2)
+          (svstmtlist-compile (cdr x) st reclimit nb-delayp))
+         ((unless okp)
+          (mv nil warnings st jst2))
+         (jst (svjumpstate-sequence jst1 jst2)))
+      (mv t warnings st jst)))
   ///
   (verify-guards svstmtlist-compile :guard-debug t)
 
 
-  (defthm-svstmt-compile-flag
-    (defthm svstmt-compile-preserves-blkst-len
-      (b* (((mv ?ok ?warnings ?new-st)
-            (svstmt-compile x st reclimit nb-delayp)))
-        (implies ok
-                 (<= (len (svstate->blkst st))
-                     (len (svstate->blkst new-st)))))
-      :rule-classes :linear
-      :flag svstmt-compile)
-    (defthm svstmtlist-compile-preserves-blkst-len
-      (b* (((mv ?ok ?warnings ?new-st)
-            (svstmtlist-compile x st reclimit nb-delayp)))
-        (implies ok
-                 (<= (len (svstate->blkst st))
-                     (len (svstate->blkst new-st)))))
-      :rule-classes :linear
-      :flag svstmtlist-compile))
+  ;; (defthm-svstmt-compile-flag
+  ;;   (defthm svstmt-compile-preserves-blkst-len
+  ;;     (b* (((mv ?ok ?warnings ?new-st)
+  ;;           (svstmt-compile x st reclimit nb-delayp)))
+  ;;       (implies ok
+  ;;                (<= (len (svstate->blkst st))
+  ;;                    (len (svstate->blkst new-st)))))
+  ;;     :rule-classes :linear
+  ;;     :flag svstmt-compile)
+  ;;   (defthm svstmtlist-compile-preserves-blkst-len
+  ;;     (b* (((mv ?ok ?warnings ?new-st)
+  ;;           (svstmtlist-compile x st reclimit nb-delayp)))
+  ;;       (implies ok
+  ;;                (<= (len (svstate->blkst st))
+  ;;                    (len (svstate->blkst new-st)))))
+  ;;     :rule-classes :linear
+  ;;     :flag svstmtlist-compile))
 
-  (local (defthm len-when-consp
-           (implies (consp x)
-                    (< 0 (len x)))
-           :rule-classes :type-prescription))
+  ;; (local (defthm len-when-consp
+  ;;          (implies (consp x)
+  ;;                   (< 0 (len x)))
+  ;;          :rule-classes :type-prescription))
 
-  (defthm svstmt-compile-preserves-blkst-consp
-    (b* (((mv ?ok ?warnings ?new-st)
-          (svstmt-compile x st reclimit nb-delayp)))
-      (implies (and ok (consp (svstate->blkst st)))
-               (consp (svstate->blkst new-st))))
-    :hints (("goal" :use ((:instance svstmt-compile-preserves-blkst-len))
-             :in-theory (e/d (len) (svstmt-compile-preserves-blkst-len)))))
+  ;; (defthm svstmt-compile-preserves-blkst-consp
+  ;;   (b* (((mv ?ok ?warnings ?new-st)
+  ;;         (svstmt-compile x st reclimit nb-delayp)))
+  ;;     (implies (and ok (consp (svstate->blkst st)))
+  ;;              (consp (svstate->blkst new-st))))
+  ;;   :hints (("goal" :use ((:instance svstmt-compile-preserves-blkst-len))
+  ;;            :in-theory (e/d (len) (svstmt-compile-preserves-blkst-len)))))
 
-  (defthm svstmtlist-compile-preserves-blkst-consp
-    (b* (((mv ?ok ?warnings ?new-st)
-          (svstmtlist-compile x st reclimit nb-delayp)))
-      (implies (and ok (consp (svstate->blkst st)))
-               (consp (svstate->blkst new-st))))
-    :hints (("goal" :use ((:instance svstmtlist-compile-preserves-blkst-len))
-             :in-theory (e/d (len) (svstmtlist-compile-preserves-blkst-len)))))
+  ;; (defthm svstmtlist-compile-preserves-blkst-consp
+  ;;   (b* (((mv ?ok ?warnings ?new-st)
+  ;;         (svstmtlist-compile x st reclimit nb-delayp)))
+  ;;     (implies (and ok (consp (svstate->blkst st)))
+  ;;              (consp (svstate->blkst new-st))))
+  ;;   :hints (("goal" :use ((:instance svstmtlist-compile-preserves-blkst-len))
+  ;;            :in-theory (e/d (len) (svstmtlist-compile-preserves-blkst-len)))))
 
 
 
-  (local (defthm svstacks-compatible-of-cdr-when-cons
-           (implies (svstacks-compatible x (cons a b))
-                    (svstacks-compatible (cdr x) b))
-           :hints(("Goal" :in-theory (enable svstacks-compatible)))))
+  ;; (local (defthm svstacks-compatible-of-cdr-when-cons
+  ;;          (implies (svstacks-compatible x (cons a b))
+  ;;                   (svstacks-compatible (cdr x) b))
+  ;;          :hints(("Goal" :in-theory (enable svstacks-compatible)))))
 
   (defthm-svstmt-compile-flag
     (defthm svstmt-compile-preserves-blkst-compatible
-      (b* (((mv ?ok ?warnings ?new-st)
+      (b* (((mv ?ok ?warnings ?new-st ?jst)
             (svstmt-compile x st reclimit nb-delayp)))
-        (implies (and ok
-                      (consp (svstate->blkst st)))
-                 (svstacks-compatible (svstate->blkst new-st)
-                                      (double-rewrite (svstate->blkst st)))))
+        (implies ok
+                 (and (svstates-compatible new-st (double-rewrite st))
+                      (svjumpstates-compatible jst (double-rewrite (make-empty-svjumpstate st))))))
+      :hints ('(:expand ((svstmt-compile x st reclimit nb-delayp))
+                :do-not-induct t)
+              (and stable-under-simplificationp
+                   '(:in-theory (enable svjumpstate-svstate-compatible)))
+              )
       :flag svstmt-compile)
     (defthm svstmtlist-compile-preserves-blkst-compatible
-      (b* (((mv ?ok ?warnings ?new-st)
+      (b* (((mv ?ok ?warnings ?new-st ?jst)
             (svstmtlist-compile x st reclimit nb-delayp)))
-        (implies (and ok
-                      (consp (svstate->blkst st)))
-                 (svstacks-compatible (svstate->blkst new-st)
-                                      (double-rewrite (svstate->blkst st)))))
+        (implies ok
+                 (and (svstates-compatible new-st (double-rewrite st))
+                      (svjumpstates-compatible jst (double-rewrite (make-empty-svjumpstate st))))))
+      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp))))
       :flag svstmtlist-compile))
 
 
-   (local (defthm rewrite-not-quote
-            (implies (and (bind-free '((env1 . env1)))
-                          (equal (svex-kind val) :quote)
-                          (not (equal (svex-eval x env1) (svex-quote->val val))))
-                     (not (Equal (svex-maskfree-rewrite x) val)))
-            :hints (("goal" :use ((:instance svex-maskfree-rewrite-correct
-                                   (env env1)))
-                     :in-theory (disable svex-maskfree-rewrite-correct)))))
+  (local (defthm member-union
+           (iff (member v (union a b))
+                (or (member v (sfix a))
+                    (member v (sfix b))))))
 
+  ;; (defthm-svstmt-compile-flag
+  ;;   (defthm vars-of-svstmt-compile
+  ;;     (b* (((mv ?ok ?warnings ?new-st ?jst)
+  ;;           (svstmt-compile x st reclimit nb-delayp)))
+  ;;       (implies (and (not (member v (svstmt-vars x)))
+  ;;                     (not (member v (svstate-vars st)))
+  ;;                     (not (member v (svarlist-add-delay (svstmt-vars x) 1)))
+  ;;                     ;; (not (member v (svarlist-add-delay (svstate-vars st) 1)))
+  ;;                     ok)
+  ;;                (and (not (member v (svstate-vars new-st)))
+  ;;                     (not (member v (svjumpstate-vars jst))))))
+  ;;     :hints ('(:expand ((svstmt-compile x st reclimit nb-delayp)
+  ;;                        (svstmt-vars x))
+  ;;               :do-not-induct t)
+  ;;             )
+  ;;     :flag svstmt-compile)
+  ;;   (defthm svstmtlist-compile-preserves-blkst-compatible
+  ;;     (b* (((mv ?ok ?warnings ?new-st ?jst)
+  ;;           (svstmtlist-compile x st reclimit nb-delayp)))
+  ;;       (implies (and (not (member v (svstmtlist-vars x)))
+  ;;                     (not (member v (svstate-vars st)))
+  ;;                     (not (svar-delayed-member v (svstmtlist-vars x)))
+  ;;                     ;; (not (member v (svarlist-add-delay (svstate-vars st) 1)))
+  ;;                     ok)
+  ;;                (and (not (member v (svstate-vars new-st)))
+  ;;                     (not (member v (svjumpstate-vars jst))))))
+  ;;     :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp))))
+  ;;     :flag svstmtlist-compile))
 
-  (local (defthm svex-fix-under-iff
-           (svex-fix x)
-           :hints (("goal" :use ((:theorem (svex-p (svex-fix x))))
-                    :in-theory nil)
-                   (and stable-under-simplificationp
-                        '(:in-theory (enable))))))
+  (local (DEFTHM
+           SVARLIST-ADDR-P-BY-BADGUY-strong
+           (IMPLIES (NOT (MEMBER (SVARLIST-ADDR-P-BADGUY X)
+                                 (double-rewrite (SVARLIST-FIX X))))
+                    (SVARLIST-ADDR-P X))
+           :HINTS (("goal" :INDUCT (SVARLIST-FIX X)
+                    :EXPAND ((SVARLIST-ADDR-P X)
+                             (SVARLIST-ADDR-P-BADGUY X)
+                             (SVARLIST-FIX X))
+                    :IN-THEORY (ENABLE (:I SVARLIST-FIX))))))
 
-  (local (defthm svex-env-boundp-of-svex-alist-eval
-           (iff (svex-env-boundp k (svex-alist-eval x env))
-                (svex-lookup k x))
-           :hints(("Goal" :in-theory (enable svex-env-boundp
-                                             svex-lookup
-                                             svex-alist-fix
-                                             svex-alist-eval)))))
-
-  (local (defthm svex-env-lookup-of-append
-           (Equal (svex-env-lookup k (append a b))
-                  (if (svex-env-boundp k a)
-                      (svex-env-lookup k a)
-                    (svex-env-lookup k b)))
-           :hints(("Goal" :in-theory (enable svex-env-lookup
-                                             svex-env-boundp)))))
-
-   (local (defthm svex-envs-similar-of-append-eval-fork
-            (implies (svex-alist-p x)
-                     (svex-envs-similar (append (svex-alist-eval (fast-alist-fork x nil) env) env1)
-                                        (append (svex-alist-eval x env) env1)))
-            :hints ((acl2::witness)
-                    (and stable-under-simplificationp
-                         '(:in-theory (enable svex-lookup))))))
-
-  (deffixequiv-mutual svstmt-compile)
-
-  
-  (local (in-theory (enable svstate-fork svstate-clean)))
-
-  (local (in-theory (disable member append acl2::subsetp-member
-                             fast-alist-fork
-                             acl2::consp-of-car-when-alistp
-                             not)))
-
-
-  (local (defthm svex-lookup-svstack-of-cdr
-           (implies (not (svex-lookup v (svstack-to-svex-alist x)))
-                    (not (svex-lookup v (svstack-to-svex-alist (cdr x)))))
-           :hints(("Goal" :in-theory (enable svstack-to-svex-alist svex-lookup
-                                             cdr-lookup-when-svex-alist-p)))))
-
-  (local (defthm member-vars-svstack-of-cdr
-           (implies (not (member v (svex-alist-vars (svstack-to-svex-alist x))))
-                    (not (member v (svex-alist-vars (svstack-to-svex-alist (cdr x))))))
-           :hints(("Goal" :in-theory (enable svstack-to-svex-alist)))))
-
+  (local (in-theory (disable member-equal
+                             MEMBER-OF-SVARLIST-ADD-DELAY
+                             acl2::member-of-append
+                             acl2::member-equal-append
+                             SVARLIST-ADDR-P-BY-BADGUY-STRONG
+                             svarlist-addr-p-when-subsetp-equal)))
 
   (defthm-svstmt-compile-flag
-    (defthm vars-of-svstmt-compile-blkst
-      (b* (((mv & & final-st) (svstmt-compile x st reclimit nb-delayp))
-           (st (svstate->blkst st))
-           (final-st (svstate->blkst final-st)))
-        (implies (and (not (member v (svstmt-vars x)))
-                      (svar-p v)
-                      (consp st)
-                      (not (svex-lookup v (svstack-to-svex-alist st))))
-                 (and (not (svex-lookup v (svstack-to-svex-alist final-st)))
-                      (implies (not (member v (svex-alist-vars (svstack-to-svex-alist st))))
-                               (not (member v (svex-alist-vars (svstack-to-svex-alist final-st))))))))
-      :hints ('(:expand (svstmt-vars x))
-              (and stable-under-simplificationp
-                   '(:expand ((:free (a b) (svstack-to-svex-alist (cons a b)))))))
+    (defthm vars-of-svstmt-compile
+      (b* (((mv ?ok ?warnings ?new-st ?jst)
+            (svstmt-compile x st reclimit nb-delayp)))
+        (implies (and (svarlist-addr-p (svstmt-vars x))
+                      (svarlist-addr-p (svstate-vars st))
+                      ;; (not (member v (svarlist-add-delay (svstate-vars st) 1)))
+                      ok)
+                 (and (svarlist-addr-p (svstate-vars new-st))
+                      (svarlist-addr-p (svjumpstate-vars jst)))))
+      :hints ('(:expand ((svstmt-compile x st reclimit nb-delayp)
+                         (svstmt-vars x))
+                :do-not-induct t)
+              )
       :flag svstmt-compile)
-    (defthm vars-of-svstmtlist-compile-blkst
-      (b* (((mv & & final-st) (svstmtlist-compile x st reclimit nb-delayp))
-           (st (svstate->blkst st))
-           (final-st (svstate->blkst final-st)))
-        (implies (and (not (member v (svstmtlist-vars x)))
-                      (svar-p v)
-                      (consp st)
-                      (not (svex-lookup v (svstack-to-svex-alist st))))
-                 (and (not (svex-lookup v (svstack-to-svex-alist final-st)))
-                      (implies (not (member v (svex-alist-vars (svstack-to-svex-alist st))))
-                               (not (member v (svex-alist-vars (svstack-to-svex-alist final-st))))))))
-      :hints ('(:expand (svstmtlist-vars x)))
-      :flag svstmtlist-compile)
-     :hints ((acl2::just-expand-mrec-default-hint
-              'svstmt-compile id nil world)))
+    (defthm vars-of-svstmtlist-compile
+      (b* (((mv ?ok ?warnings ?new-st ?jst)
+            (svstmtlist-compile x st reclimit nb-delayp)))
+        (implies (and (svarlist-addr-p (svstmtlist-vars x))
+                      (svarlist-addr-p (svstate-vars st))
+                      ;; (not (member v (svarlist-add-delay (svstate-vars st) 1)))
+                      ok)
+                 (and (svarlist-addr-p (svstate-vars new-st))
+                      (svarlist-addr-p (svjumpstate-vars jst)))))
+      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp))))
+      :flag svstmtlist-compile))
 
-  (defthm-svstmt-compile-flag
-    (defthm vars-of-svstmt-compile-nonblkst
-      (b* (((mv & & final-st) (svstmt-compile x st reclimit nb-delayp))
-           (nonblkst (svstate->nonblkst st))
-           (st (svstate->blkst st))
-           (final-st (svstate->nonblkst final-st)))
-        (implies (and (not (eq nb-delayp t))
-                      (not (member v (svstmt-vars x)))
-                      (svar-p v)
-                      (consp st)
-                      (not (svex-lookup v nonblkst))
-                      (not (svex-lookup v (svstack-to-svex-alist st))))
-                 (and (not (svex-lookup v final-st))
-                      (implies (and (not (member v (svex-alist-vars (svstack-to-svex-alist st))))
-                                    (not (member v (svex-alist-vars nonblkst))))
-                               (not (member v (svex-alist-vars final-st)))))))
-      :hints ('(:expand (svstmt-vars x))
-              (and stable-under-simplificationp
-                   '(:expand ((:free (a b) (svstack-to-svex-alist (cons a b)))))))
-      :flag svstmt-compile)
-    (defthm vars-of-svstmtlist-compile-nonblkst
-      (b* (((mv & & final-st) (svstmtlist-compile x st reclimit nb-delayp))
-           (nonblkst (svstate->nonblkst st))
-           (st (svstate->blkst st))
-           (final-st (svstate->nonblkst final-st)))
-        (implies (and (not (eq nb-delayp t))
-                      (not (member v (svstmtlist-vars x)))
-                      (svar-p v)
-                      (consp st)
-                      (not (svex-lookup v nonblkst))
-                      (not (svex-lookup v (svstack-to-svex-alist st))))
-                 (and (not (svex-lookup v final-st))
-                      (implies (and (not (member v (svex-alist-vars (svstack-to-svex-alist st))))
-                                    (not (member v (svex-alist-vars nonblkst))))
-                               (not (member v (svex-alist-vars final-st)))))))
-      :hints ('(:expand (svstmtlist-vars x)))
-      :flag svstmtlist-compile)
-     :hints ((acl2::just-expand-mrec-default-hint
-              'svstmt-compile id nil world)))
+  (deffixequiv-mutual svstmt-compile))
 
+(defconst *svstmt-compile-reclimit* 100000)
 
-  (defthm-svstmt-compile-flag
-    (defthm vars-of-svstmt-compile-nonblkst-nbdelay
-      (b* (((mv & & final-st) (svstmt-compile x st reclimit nb-delayp))
-           (nonblkst (svstate->nonblkst st))
-           (st (svstate->blkst st))
-           (final-st (svstate->nonblkst final-st)))
-        (implies (and (not (member v (svstmt-vars x)))
-                      (not (member v (svarlist-add-delay (svstmt-vars x) 1)))
-                      (svar-p v)
-                      (consp st)
-                      (not (svex-lookup v nonblkst))
-                      (not (svex-lookup v (svstack-to-svex-alist st))))
-                 (and (not (svex-lookup v final-st))
-                      (implies (and (not (member v (svex-alist-vars (svstack-to-svex-alist st))))
-                                    (not (member v (svex-alist-vars nonblkst)))
-                                    (not (member v (svarlist-add-delay (svex-alist-vars (svstack-to-svex-alist st)) 1)))
-                                    (not (member v (svarlist-add-delay (svex-alist-keys (svstack-to-svex-alist st)) 1))))
-                               (not (member v (svex-alist-vars final-st)))))))
-      :hints ('(:expand (svstmt-vars x))
-              (and stable-under-simplificationp
-                   '(:expand ((:free (a b) (svstack-to-svex-alist (cons a b)))))))
-      :flag svstmt-compile)
-    (defthm vars-of-svstmtlist-compile-nonblkst-nbdelay
-      (b* (((mv & & final-st) (svstmtlist-compile x st reclimit nb-delayp))
-           (nonblkst (svstate->nonblkst st))
-           (st (svstate->blkst st))
-           (final-st (svstate->nonblkst final-st)))
-        (implies (and (not (member v (svstmtlist-vars x)))
-                      (not (member v (svarlist-add-delay (svstmtlist-vars x) 1)))
-                      (svar-p v)
-                      (consp st)
-                      (not (svex-lookup v nonblkst))
-                      (not (svex-lookup v (svstack-to-svex-alist st))))
-                 (and (not (svex-lookup v final-st))
-                      (implies (and (not (member v (svex-alist-vars (svstack-to-svex-alist st))))
-                                    (not (member v (svex-alist-vars nonblkst)))
-                                    (not (member v (svarlist-add-delay (svex-alist-vars (svstack-to-svex-alist st)) 1)))
-                                    (not (member v (svarlist-add-delay (svex-alist-keys (svstack-to-svex-alist st)) 1))))
-                               (not (member v (svex-alist-vars final-st)))))))
-      :hints ('(:expand (svstmtlist-vars x)))
-      :flag svstmtlist-compile)
-     :hints ((acl2::just-expand-mrec-default-hint
-              'svstmt-compile id nil world)))
-  )
+(define svstmtlist-compile-top ((x svstmtlist-p)
+                                &key ((reclimit natp) '*svstmt-compile-reclimit*)
+                                (nb-delayp 't))
+  :Returns (mv (ok)
+               (warnings vl-warninglist-p)
+               (final-st svstate-p))
+  (b* (((mv ok warnings st jst)
+        (svstmtlist-compile x (make-svstate) reclimit nb-delayp))
+       ((svjumpstate jst))
+       (final-st (svstate-fork (svstate-merge-branches
+                                jst.returncond jst.returnst st))))
+    (svjumpstate-free jst)
+    (svstate-free st)
+    (mv ok warnings final-st))
+  ///
+  (defret vars-of-svstmtlist-compile-top
+    (implies (and (svarlist-addr-p (svstmtlist-vars x))
+                  ok)
+             (svarlist-addr-p (svstate-vars final-st)))))
+             
+       
 
 
 
@@ -1458,7 +2390,8 @@ substitution are left in place."
         (svstmtlist-write-masks x.body masks nb-masks)
         :scope
         ;; BOZO overly conservative
-        (svstmtlist-write-masks x.body masks nb-masks))))
+        (svstmtlist-write-masks x.body masks nb-masks)
+        :jump (mv masks nb-masks))))
 
   (define svstmtlist-write-masks ((x        svstmtlist-p)
                                   (masks    4vmask-alist-p)
