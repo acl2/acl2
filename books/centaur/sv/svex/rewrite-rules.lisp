@@ -1738,9 +1738,7 @@
   (b* (((when (zp width))
         (rsh-of-concat-alist-fix acc))
        (acc (hons-acons (lnfix offset)
-                        (svex-call 'rsh
-                                   (list (svex-quote (2vec (lnfix local-offset)))
-                                         concat))
+                        (svex-rsh local-offset concat)
                         acc)))
     (svex-to-rsh-of-concat-accumulate
      (1- width) (+ 1 (lnfix offset)) (+ 1 (lnfix local-offset)) concat acc))
@@ -1757,10 +1755,9 @@
            (if (and (integerp k)
                     (<= (nfix offset) k)
                     (< k (+ (nfix offset) (nfix width))))
-               (cons k (svex-call 'rsh
-                                  (list (svex-quote (2vec (+ (nfix local-offset)
-                                                             (- k (nfix offset)))))
-                                        concat)))
+               (cons k (svex-rsh (+ (nfix local-offset)
+                                    (- k (nfix offset)))
+                                 concat))
              (hons-assoc-equal k (rsh-of-concat-alist-fix acc))))))
 
 
@@ -2355,22 +2352,21 @@
                               (eql 0 (logtail offset ymask))
                               (< (bitops::trailing-0-count-from xmask offset)
                                  (bitops::trailing-0-count-from ymask offset))))))
-        (svex-call resfn (list (svex-call 'rsh (list (svex-quote (2vec offset)) x))
-                               (svex-call 'rsh (list (svex-quote (2vec offset)) y)))))
+        (svex-call resfn (list (svex-rsh offset x)
+                               (svex-rsh offset y))))
        ((when (<= (integer-length xmask) offset))
         (if (logbitp offset xmask)
-            (svex-call 'rsh (list (svex-quote (2vec offset)) x))
-          (svex-call 'rsh (list (svex-quote (2vec offset)) y))))
+            (svex-rsh offset x)
+          (svex-rsh offset y)))
        ((when (<= (integer-length ymask) offset))
         (if (logbitp offset ymask)
-            (svex-call 'rsh (list (svex-quote (2vec offset)) y))
-          (svex-call 'rsh (list (svex-quote (2vec offset)) x))))
+            (svex-rsh offset y)
+          (svex-rsh offset x)))
        (ycount (bitops::trailing-0-count-from ymask offset)))
-    (svex-call 'concat (list (svex-quote (2vec ycount))
-                             (svex-call 'rsh (list (svex-quote (2vec offset)) x))
-                             (res-to-concat (lifix ymask) (lifix xmask)
-                                            (+ offset ycount)
-                                            y x resfn))))
+    (svex-concat ycount (svex-rsh offset x)
+                 (res-to-concat (lifix ymask) (lifix xmask)
+                                (+ offset ycount)
+                                y x resfn)))
   ///
 
   (deffixequiv res-to-concat
@@ -3160,56 +3156,79 @@
 
 (local (acl2::use-trivial-ancestors-check))
 
+(local (defthm 4vec-mask-of-4vec-concat
+         (implies (natp width)
+                  (equal (4vec-mask mask (4vec-concat (2vec width) x y))
+                         (4vec-concat (2vec width)
+                                      (4vec-mask (loghead width (4vmask-fix mask)) x)
+                                      (4vec-mask (logtail width (4vmask-fix mask)) y))))
+         :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat))
+                (logbitp-reasoning))))
 
 (define normalize-concat-aux ((x-width natp)
-                          (x svex-p)
-                          (y svex-p))
+                              (x svex-p)
+                              (y svex-p)
+                              (mask 4vmask-p))
   :measure (svex-count x)
   :returns (concat svex-p)
   :verify-guards nil
   (b* ((x-width (lnfix x-width))
+       (mask (4vmask-fix mask))
+       ((when (eql 0 (loghead x-width mask)))
+        (svex-concat x-width 0 y))
        ((mv matched a-width a b) (match-concat x))
-       ((unless matched) (svcall concat (svex-quote (2vec x-width)) x y))
+       ((unless matched) (svex-concat x-width x y))
        ((when (< a-width x-width))
         (normalize-concat-aux
          a-width
          a
-         (normalize-concat-aux (- x-width a-width) b y))))
-    (normalize-concat-aux x-width a y))
+         (normalize-concat-aux (- x-width a-width) b y (logtail a-width mask))
+         mask)))
+    (normalize-concat-aux x-width a y mask))
   ///
   (verify-guards normalize-concat-aux)
 
+  
+
   (defret normalize-concat-aux-correct
-    (equal (svex-eval concat env)
-           (4vec-concat (2vec (nfix x-width))
-                        (svex-eval x env)
-                        (svex-eval y env)))
+    (equal (4vec-mask mask (svex-eval concat env))
+           (4vec-mask mask (4vec-concat (2vec (nfix x-width))
+                                        (svex-eval x env)
+                                        (svex-eval y env))))
     :hints(("Goal" :in-theory (enable match-concat-correct-rewrite-svex-eval-of-x
-                                      svex-apply svexlist-eval 4veclist-nth-safe))))
+                                      svex-apply svexlist-eval 4veclist-nth-safe)
+            :induct t)))
 
   (defret normalize-concat-aux-vars
     (implies (and (not (member v (svex-vars x)))
                   (not (member v (svex-vars y))))
-             (not (member v (svex-vars concat))))))
+             (not (member v (svex-vars concat)))))
 
-(define normalize-concat ((x svex-p))
+  (deffixequiv normalize-concat-aux))
+
+(define normalize-concat ((x svex-p)
+                          (mask 4vmask-p))
   :measure (svex-count x)
   :returns (concat svex-p)
   :verify-guards nil
-  (b* (((mv matched a-width a b) (match-concat x))
+  (b* ((mask (4vmask-fix mask))
+       ((when (eql mask 0)) 0)
+       ((mv matched a-width a b) (match-concat x))
        ((unless matched) (svex-fix x)))
-    (normalize-concat-aux a-width a (normalize-concat b)))
+    (normalize-concat-aux a-width a (normalize-concat b (logtail a-width mask)) mask))
   ///
   (verify-guards normalize-concat)
   (defret normalize-concat-correct
-    (equal (svex-eval concat env)
-           (svex-eval x env))
+    (equal (4vec-mask mask (svex-eval concat env))
+           (4vec-mask mask (svex-eval x env)))
     :hints(("Goal" :in-theory (enable match-concat-correct-rewrite-svex-eval-of-x
                                       svex-apply svexlist-eval 4veclist-nth-safe))))
 
   (defret normalize-concat-vars
     (implies (not (member v (svex-vars x)))
-             (not (member v (svex-vars concat))))))
+             (not (member v (svex-vars concat)))))
+
+  (deffixequiv normalize-concat))
 
 
 (define merge-branches-base ((test svex-p)
@@ -3268,6 +3287,10 @@
   :measure (+ (svex-count x) (svex-count y))
   (b* ((x-shift (lnfix x-shift))
        (y-shift (lnfix y-shift))
+       ((when (and (eql x-shift y-shift)
+                   (hons-equal (svex-fix x)
+                               (svex-fix y))))
+        (svex-rsh x-shift x))
        ((mv x-match x-width x1 x2) (match-concat x))
        ((when (and x-match (<= x-width x-shift)))
         (merge-branches test x2 y (- x-shift x-width) y-shift))
@@ -3516,11 +3539,19 @@
            (logbitp-reasoning)))
 ||#
 
+  (local (defthm 4vec-mask-of-?*
+           (equal (4vec-mask mask (4vec-?* x y z))
+                  (4vec-?* x (4vec-mask mask y)
+                           (4vec-mask mask z)))
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 3vec-fix 4vec-mask))
+                  (logbitp-reasoning))))
+
   (def-svex-rewrite ?*-merge-branches
     :lhs (?* test x y)
-    :checks ((bind res (merge-branches test
-                                       (normalize-concat x)
-                                       (normalize-concat y)
+    :checks ((not (2vec-p (svex-xeval test)))
+             (bind res (merge-branches test
+                                       (normalize-concat x mask)
+                                       (normalize-concat y mask)
                                        0 0))
              (not (svex-case res
                     :call (and (eq res.fn '?*)
@@ -3528,9 +3559,7 @@
                                (hons-equal (second res.args) x)
                                (hons-equal (third res.args) y))
                     :otherwise nil)))
-    :rhs res)
-
-)
+    :rhs res))
 
 
   

@@ -26,45 +26,25 @@
 //   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //   DEALINGS IN THE SOFTWARE.
 //
-// Original author: Jared Davis <jared@centtech.com>
-
-// Note: Originally this was the spec module.  When we changed the
-// cosim framework to use svex-design-compile directly rather than
-// basing it on SVTVs, this stopped working because the in/out signals
-// got normalized to other names.  This is basically a bug with our
-// cosim framework -- instead of directly setting "in" and looking up
-// "out", we should properly normalize them using the alias table
-// (defsvtv takes care of this for us).  But instead of complicating
-// the cosim framework to fix this, we just wrap the body of the test
-// in a submodule.
-module sub (input logic [127:0] in,
-	    output wire [127:0] out);
-   
-  wire [8:0] a9;
-  wire [3:0] a4;
-  wire a1;
-
-  assign { a9, a4, a1 } = in;
-
-  // Aliasing directly with output port
-
-  alias out[0] = a1;
-  alias a1 = out[1];
-
-  alias out[5:2] = a4;
-
-  alias a9 = out[ 18:10 ];
-
-endmodule // sub
+// Original authors: Sol Swords <sswords@centtech.com>
 
 module spec (input logic [127:0] in,
-	     output wire [127:0] out);
+	     output wire [127:0] out,
+	     input clk);
 
-  logic [127:0] in1;
-  logic [127:0] out1;
 
-   sub mysub (in1, out1);
-   assign in1 = in;
-   assign out = out1;
+   localparam n = 12;
 
-endmodule // spec
+  logic [0:n-1] arr;
+
+
+   always_ff @(posedge clk) begin
+     for (int a = 0; a < n; ++a)
+       if (in[2*a] ^ in[2*a+1]) begin
+         arr[a] <= in[a];
+       end
+   end
+
+   assign out = arr;
+
+endmodule

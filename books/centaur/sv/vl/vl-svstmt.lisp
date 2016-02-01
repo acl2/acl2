@@ -2110,6 +2110,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
        (nb-read-vars (sv::svex-alist-vars st.nonblkst))
 
+       ;; convenient insertion point for tracking some problematic loop
        (loc-of-interest nil)
 
        ;; Note: Because we want to warn about latches in a combinational
@@ -2135,7 +2136,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                           :args (list locstring)))
        ((mv blkst-write-masks nbst-write-masks)
         (sv::svstmtlist-write-masks svstmts nil nil))
-       (nbst-write-masks (sv::4vmask-alist-unset-nonblocking nbst-write-masks))
+       (nbst-write-masks (make-fast-alist
+                          (sv::4vmask-alist-unset-nonblocking (fast-alist-free nbst-write-masks))))
        (write-masks (fast-alist-clean
                      (combine-mask-alists blkst-write-masks nbst-write-masks)))
 
