@@ -1456,7 +1456,10 @@ for each usertype is stored in the res field.</p>"
                            :args (list x errmsg))
                     nil x elabindex ledger)))
             (mv warnings keylist
-                (make-vl-genarray :name body.name :var x.var :blocks arrayblocks
+                (make-vl-genarray :name body.name
+                                  :var x.var
+                                  :genvarp x.genvarp
+                                  :blocks arrayblocks
                                   :loc x.loc)
                 elabindex
                 ledger)))))

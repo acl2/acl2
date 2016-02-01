@@ -5591,7 +5591,7 @@
 ; particular, nil) is legal, as it is only used in construction of the
 ; :io-marker of a io-record.
 
-  (declare (ignorable state))
+  (declare (ignorable state cl-id))
   (cond ((cdr (assoc-eq :no-thanks hint-settings))
          (mv@par (delete-assoc-eq :no-thanks hint-settings) state))
         ((alist-keys-subsetp hint-settings '(:backtrack))

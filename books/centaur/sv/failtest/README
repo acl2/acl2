@@ -49,6 +49,8 @@ elab2.v -- hid into generate of submodule
 elab3.v -- parameter argument to submodule calls function from that submodule that depends on parameters
 elab6.v -- hierarchical reference into generate block before wire declaration
 
+enum1.v -- enum tries to have member foo[0] (explicitly forbidden)
+
 fn1.v -- shadowing too hard in function
 fn2.v -- function input names duplicated (ansi syntax)
 fn2b.v -- function input names duplicated (classic syntax)
@@ -180,6 +182,7 @@ inc14.v -- increment in a case statement match expression (just awful, but ncv/v
 inc14b.v -- increment in a case statement test expression (just awful, but ncv/vcs allow)
 inc15.v -- parse error: ~a++ isn't ok (vcs rejects, ncv allows)
 inc15b.v -- parse error: ++a++ isn't ok (vcs and ncv reject)
+inc15c.v -- parse error: (a + b)++ isn't ok
 
 inst1.v -- wrong port name when instancing submodule
 inst2.v -- too many positional arguments on submodule instance

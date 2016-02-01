@@ -181,7 +181,7 @@
       (:vl-module    (vl-ppc-module    x ss))
       (:vl-udp       (vl-ppc-udp       x))
       (:vl-interface (vl-ppc-interface x ss))
-      (:vl-package   (vl-ppc-package   x))
+      (:vl-package   (vl-ppc-package   x ss))
       (:vl-program   (vl-ppc-program   x))
       (:vl-config    (vl-ppc-config    x))
 

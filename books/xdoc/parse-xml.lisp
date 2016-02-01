@@ -401,7 +401,7 @@
   (b* (((when (atom x))
         (if open-tags
             (mv (str::cat (opentok-name (car open-tags)) " tag is never closed.")
-                nil open-tags)
+                loc open-tags)
           (mv nil nil nil)))
        ((when (opentok-p (car x)))
         (find-tag-imbalance (cdr x) (cons (car x) open-tags) (+ 1 loc)))

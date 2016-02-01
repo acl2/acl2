@@ -24477,10 +24477,10 @@ Lisp definition."
 (defconst *hint-keywords*
 
 ; This constant contains all the legal hint keywords as well as
-; :computed-hints-replacement.
+; :computed-hint-replacement.
 
   (append *top-hint-keywords*
-          '(:computed-hints-replacement
+          '(:computed-hint-replacement
             :error
             :no-op
             :no-thanks

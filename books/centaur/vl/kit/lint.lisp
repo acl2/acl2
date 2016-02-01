@@ -827,7 +827,8 @@ shown.</p>"
         :vl-warn-unused-var
         :vl-warn-blank
         :vl-undefined-names
-        :vl-port-mismatch))
+        :vl-port-mismatch
+        :vl-warn-scary-translate-comment))
 
 (defconst *trunc-warnings*
   (list :vl-warn-extension
@@ -850,12 +851,14 @@ shown.</p>"
         :vl-warn-same-rhs
         :vl-const-expr
         :vl-warn-vardecl-assign
+        :vl-warn-oddexpr
         ))
 
 (defconst *smell-minor-warnings*
   (list :vl-warn-partselect-same
         :vl-warn-instances-same-minor
-        :vl-const-expr-minor))
+        :vl-const-expr-minor
+        :vl-warn-empty-dotstar))
 
 (defconst *fussy-size-warnings*
   (list :vl-fussy-size-warning-1

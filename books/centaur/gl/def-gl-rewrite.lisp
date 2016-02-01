@@ -95,7 +95,7 @@ rewrite rule that is only used inside GL:</p>
 
 <p>This defines a disabled ACL2 rewrite rule called my-rewrite-rule, and adds
 my-rewrite-rule to the table of rules GL is allowed to use. (GL will still use
-it even though it is disabled, as long it is in that table.)</p>
+it even though it is disabled, as long as it is in that table.)</p>
 
 <p>Def-gl-rewrite supports syntaxp hypotheses, but the term representation used
 is different from ACL2's.  Instead of being bound to TERMPs, the variables are

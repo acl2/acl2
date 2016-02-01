@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2016-01-20")
+  "VL Syntax 2016-01-26")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -4125,6 +4125,7 @@ initially kept in a big, mixed list.</p>"
        :short "A loop generate construct, after elaboration."
        ((name      maybe-stringp     "Name of the block array, if named.")
         (var       stringp           "Iterator variable name.")
+        (genvarp   booleanp          "Was the variable declared using the genvar keyword, locally")
         (blocks    vl-genblocklist-p "Blocks produced by the loop")
         (loc       vl-location-p     "Where the loop came from in the Verilog source code."))
        :long "<p>This is a post-elaboration representation of a generate for

@@ -46,6 +46,14 @@ function logic [15:0] encode4 (input [3:0] a);
               a == 3, a == 2, a == 1, a == 0 };
 endfunction
 
+typedef enum logic [3:0] {
+   IDLE,
+   LIGHT_SPEED,
+   LUDICROUS_SPEED[1:0],
+   PLAID
+} speed_t;
+
+
 function logic [3:0] decode4 (logic [15:0] enc);
   integer i;
   for(i = 15; i > 0; i--) begin
@@ -96,7 +104,7 @@ interface IBus ;
 endinterface
 
 
-interface IPlane ;
+interface IPlane (input clk, input clk2);
 
   import PlanePkg::*;
 
@@ -110,6 +118,16 @@ interface IPlane ;
   wheel_t backWheel;
   wheel_t bottomWheel;
   wheel_t topWheel;     // Might not be a good idea
+
+  parameter gasTanks = 17;
+
+  for(genvar i = 0; i < gasTanks; ++i)
+  begin : gasline
+    logic enable;
+    logic lineClk = clk & enable;
+    typedef enum logic { REGULAR = 0, UNLEADED = 1} gastype_t;
+
+  end
 
 endinterface
 
@@ -140,18 +158,97 @@ module EventGen (IBus bus, input [3:0] mode, input clk);
 endmodule
 
 
+module onehotMux4(output [7:0] o,
+                  input sel1, sel2, sel3, sel4,
+                  input [7:0] data1, data2, data3, data4);
+
+  assign o = {8{sel1}} & data1
+           | {8{sel2}} & data2
+	   | {8{sel3}} & data3
+           | {8{sel4}} & data4;
+
+endmodule
+
+
 module top () ;
 
   IBus theBus();
 
   reg clk;
   always #100 clk = ~clk;
+  wire clk2 = clk;
+
+  IPlane EnolaGay (clk, clk2);
+  IPlane TheCanary(.clk, .*);
+  IPlane AirforceOne(.*);
 
   wire [3:0] mode;
   assign mode = (3 + 4) * theBus.opcode[2:0] << theBus.flags[0];
 
-  EventGen generator (theBus, mode, clk);
+  EventGen generator (.bus(theBus),
+                      .mode(mode),
+                      .clk);
+
+  typedef struct packed {
+    logic [3:0]  inco;
+    logic [3:0]  herent;
+  } importantType_t;
+
+  importantType_t realWiresHaveHorribleNamesLikeThisA,
+                  realWiresHaveHorribleNamesLikeThisB,
+                  realWiresHaveHorribleNamesLikeThisC,
+                  realWiresHaveHorribleNamesLikeThisD,
+                  realWiresHaveHorribleNamesLikeThisE,
+		  realWiresHaveHorribleNamesLikeThisF,
+		  realWiresHaveHorribleNamesLikeThisG,
+		  realWiresHaveHorribleNamesLikeThisH,
+		  realWiresHaveHorribleNamesLikeThisI,
+		  realWiresHaveHorribleNamesLikeThisJ,
+		  realWiresHaveHorribleNamesLikeThisK,
+		  realWiresHaveHorribleNamesLikeThisL,
+		  realWiresHaveHorribleNamesLikeThisM,
+		  realWiresHaveHorribleNamesLikeThisN,
+		  realWiresHaveHorribleNamesLikeThisO,
+		  realWiresHaveHorribleNamesLikeThisP,
+                  realWiresHaveHorribleNamesLikeThisQ;
+
+  lottaports soManyUglyPorts(
+                  realWiresHaveHorribleNamesLikeThisA,
+                  realWiresHaveHorribleNamesLikeThisB,
+                  realWiresHaveHorribleNamesLikeThisC,
+                  realWiresHaveHorribleNamesLikeThisD,
+                  realWiresHaveHorribleNamesLikeThisE,
+		  realWiresHaveHorribleNamesLikeThisF,
+		  realWiresHaveHorribleNamesLikeThisG,
+		  realWiresHaveHorribleNamesLikeThisH,
+		  realWiresHaveHorribleNamesLikeThisI,
+		  realWiresHaveHorribleNamesLikeThisJ,
+		  realWiresHaveHorribleNamesLikeThisK,
+		  realWiresHaveHorribleNamesLikeThisL,
+		  realWiresHaveHorribleNamesLikeThisM,
+		  realWiresHaveHorribleNamesLikeThisN,
+		  realWiresHaveHorribleNamesLikeThisO,
+		  realWiresHaveHorribleNamesLikeThisP,
+                  realWiresHaveHorribleNamesLikeThisQ
+             );
+
+  lottaports soManyMoreUglyPorts(.*);
 
 endmodule
 
 
+
+module lottaports (input [7:0] a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
+                   output logic [7:0] q);
+
+  // Wow, this has a lot of ports.
+
+endmodule
+
+
+
+module safetyValve;
+
+  initial $finish();
+
+endmodule

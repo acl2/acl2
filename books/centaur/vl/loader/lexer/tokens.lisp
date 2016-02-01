@@ -255,7 +255,10 @@ we're ever actually running @(see vl-tokenlist-p).</p>"
                (true-listp etext))
           "The actual text that gave rise to this token from the Verilog source
            code.  Having this text is useful for error reporting, e.g., it
-           includes location information."))
+           includes location information.")
+
+   (breakp booleanp :rule-classes :type-prescription
+           "Was this the first token on a line."))
 
   :long "<p>Our lexer returns \"plain tokens\" when it encounters whitespace,
 comments, operators, punctuation, and keywords.  We call these tokens
@@ -302,7 +305,10 @@ like @(see vl-token->etext).</p>"
               "An ordinary ACL2 string object that holds the \"expanded\"
                version of the string literal.  That is, character sequences
                like @('\\n') in the @('etext') become real newline characters
-               in the @('expansion')."))
+               in the @('expansion').")
+
+   (breakp booleanp :rule-classes :type-prescription
+           "Was this the first token on a line."))
 
   :long "<p>The expansion is carried out per Table 3-1, on page 14 of the
 Verilog-2005 standard.  BOZO is that still valid for SystemVerilog?</p>")
@@ -320,7 +326,10 @@ Verilog-2005 standard.  BOZO is that still valid for SystemVerilog?</p>")
 
    (name stringp
          :rule-classes :type-prescription
-         "An ACL2 string with the name of this literal."))
+         "An ACL2 string with the name of this literal.")
+
+   (breakp booleanp :rule-classes :type-prescription
+           "Was this the first token on a line."))
 
   :long "<p>Note that we distinguish between plain identifiers and system
 identifiers, such as @('$display').  We only generate a @('vl-idtoken') for a
@@ -352,7 +361,10 @@ updated references to the standard.</p>")
 
    (name stringp
          :rule-classes :type-prescription
-         "An ACL2 string with the name of this system identifier.")))
+         "An ACL2 string with the name of this system identifier.")
+
+   (breakp booleanp :rule-classes :type-prescription
+           "Was this the first token on a line.")))
 
 
 (defaggregate vl-realtoken
@@ -363,7 +375,10 @@ updated references to the standard.</p>")
   ((etext (and (vl-echarlist-p etext)
                (consp etext)
                (true-listp etext))
-          "The characters that gave rise to this token."))
+          "The characters that gave rise to this token.")
+
+   (breakp booleanp :rule-classes :type-prescription
+           "Was this the first token on a line."))
 
   :long "<p>We don't really support real numbers in most of our tools, so the
 token just includes the original characters and does not try to interpret them
@@ -428,7 +443,10 @@ bits.</p>"
                 VL acts like a 32-bit implementation and the resulting integer
                 will have width 32.  Mainly intended for use in linting or
                 other kinds of heuristic checking.  See also @(see
-                vl-constint) and @(see vl-weirdint)."))
+                vl-constint) and @(see vl-weirdint).")
+
+   (breakp booleanp :rule-classes :type-prescription
+           "Was this the first token on a line."))
 
   :require ((vl-inttoken-constraint-p-of-vl-inttoken-parts
              (vl-inttoken-constraint-p width value bits)))
@@ -465,6 +483,9 @@ bits.</p>"
                (true-listp etext))
           "The characters that gave rise to this token.")
 
+   (breakp booleanp :rule-classes :type-prescription
+           "Was this the first token on a line.")
+
    (value vl-bit-p
           "The kind of extended integer this is.")))
 
@@ -489,7 +510,10 @@ bits.</p>"
 
    (units  vl-timeunit-p
            "The kind of time unit this is, e.g., seconds, milliseconds,
-            microseconds, ...")))
+            microseconds, ...")
+
+   (breakp booleanp :rule-classes :type-prescription
+           "Was this the first token on a line.")))
 
 
 (define vl-token-p (x)
@@ -709,12 +733,10 @@ token.</p>"
        ;; up better than this.  To improve this, we would probably have to
        ;; rework defaggregate to make the field layout more flexible.
        (case (tag x)
-         (:vl-inttoken
+         ((:vl-inttoken :vl-timetoken)
           (caadr x))
-         ((:vl-idtoken :vl-sysidtoken :vl-stringtoken :vl-timetoken :vl-extinttoken)
-          (cadr x))
-         (otherwise ;; plain, real
-          (cdr x))))
+         (otherwise
+          (cadr x))))
   ///
   (encapsulate
     ()
@@ -723,10 +745,11 @@ token.</p>"
                   (equal (vl-sysidtoken->etext x) (cadr x))
                   (equal (vl-inttoken->etext x) (caadr x))
                   (equal (vl-stringtoken->etext x) (cadr x))
-                  (equal (vl-realtoken->etext x) (cdr x))
-                  (equal (vl-timetoken->etext x) (cadr x))
+                  (equal (vl-realtoken->etext x) (cadr x))
+                  (equal (vl-timetoken->etext x) (caadr x))
                   (equal (vl-extinttoken->etext x) (cadr x))
-                  (equal (vl-plaintoken->etext x) (cdr x)))
+                  (equal (vl-plaintoken->etext x) (cadr x))
+                  )
              :enable (vl-idtoken->etext
                       vl-sysidtoken->etext
                       vl-inttoken->etext
@@ -760,7 +783,7 @@ token.</p>"
              (true-listp (vl-token->etext x))))
 
   (local (defrule crock
-           (let ((token (make-vl-plaintoken :type type :etext etext)))
+           (let ((token (make-vl-plaintoken :type type :etext etext :breakp breakp)))
              (implies (vl-plaintokentype-p type)
                       (and (not (vl-idtoken-p token))
                            (not (vl-sysidtoken-p token))
@@ -783,42 +806,51 @@ token.</p>"
     (implies (and (force (vl-echarlist-p etext))
                   (force (consp etext))
                   (force (true-listp etext))
+                  (force (booleanp breakp))
                   (force (vl-plaintokentype-p type)))
              (equal (vl-token->etext (make-vl-plaintoken :type type
-                                                         :etext etext))
+                                                         :etext etext
+                                                         :breakp breakp))
                     etext)))
 
   (defrule vl-token->etext-of-vl-stringtoken
     (implies (and (force (vl-echarlist-p etext))
                   (force (consp etext))
                   (force (true-listp etext))
+                  (force (booleanp breakp))
                   (force (stringp expansion)))
              (equal (vl-token->etext (make-vl-stringtoken :etext etext
-                                                          :expansion expansion))
+                                                          :expansion expansion
+                                                          :breakp breakp))
                     etext)))
 
   (defrule vl-token->etext-of-vl-idtoken
     (implies (and (force (vl-echarlist-p etext))
                   (force (consp etext))
                   (force (true-listp etext))
+                  (force (booleanp breakp))
                   (force (stringp name)))
              (equal (vl-token->etext (make-vl-idtoken :etext etext
-                                                      :name name))
+                                                      :name name
+                                                      :breakp breakp))
                     etext)))
 
   (defrule vl-token->etext-of-vl-sysidtoken
     (implies (and (force (vl-echarlist-p etext))
                   (force (consp etext))
                   (force (true-listp etext))
+                  (force (booleanp breakp))
                   (force (stringp name)))
              (equal (vl-token->etext (make-vl-sysidtoken :etext etext
-                                                         :name name))
+                                                         :name name
+                                                         :breakp breakp))
                     etext)))
 
   (defrule vl-token->etext-of-vl-inttoken
     (implies (and (force (vl-echarlist-p etext))
                   (force (consp etext))
                   (force (true-listp etext))
+                  (force (booleanp breakp))
                   (force (posp width))
                   (force (booleanp signedp))
                   (force (maybe-natp value))
@@ -830,14 +862,17 @@ token.</p>"
                                                        :signedp signedp
                                                        :value value
                                                        :bits bits
-                                                       :wasunsized wasunsized))
+                                                       :wasunsized wasunsized
+                                                       :breakp breakp))
                     etext)))
 
   (defrule vl-token->etext-of-vl-realtoken
     (implies (and (force (vl-echarlist-p etext))
                   (force (consp etext))
-                  (force (true-listp etext)))
-             (equal (vl-token->etext (make-vl-realtoken :etext etext))
+                  (force (true-listp etext))
+                  (force (booleanp breakp)))
+             (equal (vl-token->etext (make-vl-realtoken :etext etext
+                                                        :breakp breakp))
                     etext)))
 
   (defrule vl-token->etext-of-vl-timetoken
@@ -845,19 +880,23 @@ token.</p>"
                   (force (consp etext))
                   (force (true-listp etext))
                   (force (stringp quantity))
-                  (force (vl-timeunit-p units)))
+                  (force (vl-timeunit-p units))
+                  (force (booleanp breakp)))
              (equal (vl-token->etext (make-vl-timetoken :etext etext
                                                         :quantity quantity
-                                                        :units units))
+                                                        :units units
+                                                        :breakp breakp))
                     etext)))
 
   (defrule vl-token->etext-of-vl-extinttoken
     (implies (and (force (vl-echarlist-p etext))
                   (force (consp etext))
                   (force (true-listp etext))
-                  (force (vl-bit-p value)))
+                  (force (vl-bit-p value))
+                  (force (booleanp breakp)))
              (equal (vl-token->etext (make-vl-extinttoken :etext etext
-                                                          :value value))
+                                                          :value value
+                                                          :breakp breakp))
                     etext))))
 
 
@@ -873,6 +912,74 @@ character.</p>"
 
   :inline t
   (vl-echar->loc (car (vl-token->etext x))))
+
+
+
+(define vl-token->breakp
+  :short "Identify whether a token was the first token on a line."
+  ((x vl-token-p))
+  :returns (breakp booleanp :rule-classes :type-prescription)
+  :inline t
+  :verify-guards nil
+  (mbe :logic
+       (if (cond ((vl-inttoken-p x)     (vl-inttoken->breakp x))
+                 ((vl-idtoken-p x)      (vl-idtoken->breakp x))
+                 ((vl-sysidtoken-p x)   (vl-sysidtoken->breakp x))
+                 ((vl-stringtoken-p x)  (vl-stringtoken->breakp x))
+                 ((vl-realtoken-p x)    (vl-realtoken->breakp x))
+                 ((vl-timetoken-p x)    (vl-timetoken->breakp x))
+                 ((vl-extinttoken-p x)  (vl-extinttoken->breakp x))
+                 ((vl-plaintoken-p x)   (vl-plaintoken->breakp x)))
+           t
+         nil)
+       :exec
+       ;; BOZO I wish I could do better than this.  But the number of fields in
+       ;; each structure impacts the layout, so it's hard to get things to line
+       ;; up better than this.  To improve this, we would probably have to
+       ;; rework defaggregate to make the field layout more flexible.
+       (case (tag x)
+         (:vl-inttoken
+          (cddddr x))
+         ((:vl-idtoken :vl-sysidtoken :vl-stringtoken :vl-timetoken)
+          (cdddr x))
+         (:vl-extinttoken
+          (caddr x))
+         (otherwise ;; plain, real
+          (cddr x))))
+  ///
+  (encapsulate
+    ()
+    (local (defruled crock
+             (and (equal (vl-inttoken->breakp x) (cddddr x))
+                  (equal (vl-idtoken->breakp x) (cdddr x))
+                  (equal (vl-sysidtoken->breakp x) (cdddr x))
+                  (equal (vl-stringtoken->breakp x) (cdddr x))
+                  (equal (vl-timetoken->breakp x) (cdddr x))
+                  (equal (vl-extinttoken->breakp x) (caddr x))
+                  (equal (vl-realtoken->breakp x) (cddr x))
+                  (equal (vl-plaintoken->breakp x) (cddr x)))
+             :enable (vl-idtoken->breakp
+                      vl-sysidtoken->breakp
+                      vl-inttoken->breakp
+                      vl-stringtoken->breakp
+                      vl-realtoken->breakp
+                      vl-timetoken->breakp
+                      vl-extinttoken->breakp
+                      vl-plaintoken->breakp)))
+
+    (verify-guards vl-token->breakp$inline
+      :hints(("Goal" :in-theory (enable vl-token-p))
+             (and stable-under-simplificationp
+                  '(:in-theory (enable crock
+                                       vl-inttoken-p
+                                       vl-idtoken-p
+                                       vl-stringtoken-p
+                                       vl-realtoken-p
+                                       vl-timetoken-p
+                                       vl-extinttoken-p
+                                       vl-sysidtoken-p
+                                       vl-plaintoken-p
+                                       tag)))))))
 
 (deflist vl-tokenlist-p (x)
   :elementp-of-nil nil
