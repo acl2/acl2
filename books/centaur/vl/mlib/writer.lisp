@@ -93,9 +93,35 @@ be displayed."
   :long "<p>We want the default to be @('t'), so we look for @('hide-atts')
 instead of @('show-atts').</p>"
   :verbosep t
-  (let ((hidep (not showp))
-        (misc  (vl-ps->misc)))
+  (let* ((hidep (not showp))
+         (misc  (vl-ps->misc))
+         (misc  (remove-from-alist :vl-hide-atts misc)))
     (vl-ps-update-misc (acons :vl-hide-atts hidep misc))))
+
+
+(define vl-ps->mimic-linebreaks-p (&key (ps 'ps))
+  :short "Should we try to emulate linebreaks from the original input?"
+  :long "<p>See also @(see vl-ps-update-mimic-linebreaks).</p>"
+  (let ((disregardp (cdr (assoc-equal :vl-disregard-linebreaks (vl-ps->misc)))))
+    (not disregardp)))
+
+(define vl-ps-update-mimic-linebreaks ((mimicp booleanp) &key (ps 'ps))
+  :short "Set whether we should emulate linebreaks from the original input."
+  :long "<p>We want the default to be @('t'), so we look for
+@('disregard-linebreaks') instead of @('mimic-linebreaks').</p>"
+  :verbosep t
+  (let* ((disregardp (not mimicp))
+         (misc  (vl-ps->misc))
+         (misc  (remove-from-alist :vl-disregard-linebreaks misc)))
+    (vl-ps-update-misc (acons :vl-disregard-linebreaks disregardp misc))))
+
+(defmacro without-mimicking-linebreaks (&rest args)
+  `(let* ((__vl-ps-mimic-linebreaks-prev (vl-ps->mimic-linebreaks-p))
+          (ps (vl-ps-update-mimic-linebreaks nil))
+          (ps (vl-ps-seq . ,args))
+          (ps (vl-ps-update-mimic-linebreaks __vl-ps-mimic-linebreaks-prev)))
+     ps))
+
 
 (define vl-ps->use-origexprs-p (&key (ps 'ps))
   :short "Should we print VL_ORIG_EXPR fields?"
@@ -108,11 +134,6 @@ they have such annotations."
   :verbosep t
   (let ((misc (vl-ps->misc)))
     (vl-ps-update-misc (acons :vl-use-origexprs (and usep t) misc))))
-
-
-
-
-
 
 
 ; Statement printing.  I want to do at least something to allow nested
@@ -742,6 +763,12 @@ displays.  The module browser's web pages are responsible for defining the
        (look (assoc-equal "VL_LINESTART" (vl-atts-fix atts)))
        ((unless look)
         ps)
+       ((unless (vl-ps->mimic-linebreaks-p))
+        ;; It's useful to be able to suppress linebreak mimicry, especially
+        ;; when printing things like argument lists, where the arguments are
+        ;; likely to have their own linebreaks but we're going to print them in
+        ;; a custom way anyway.
+        ps)
        ;; See vl-extend-atts-with-linestart.  The attribute should say how far
        ;; to indent to.
        (indent (if (and (vl-expr-p (cdr look))
@@ -1189,8 +1216,12 @@ displays.  The module browser's web pages are responsible for defining the
                                 ps))
                   (vl-println "{")
                   (vl-progindent-block (vl-pp-structmemberlist x.members))
-                  (vl-print "} ")
-                  (vl-pp-packeddimensionlist x.pdims)))
+                  (vl-progindent)
+                  (vl-print "}")
+                  (if (consp x.pdims)
+                      (vl-ps-seq (vl-print " ")
+                                 (vl-pp-packeddimensionlist x.pdims))
+                    ps)))
 
       (:vl-union
        (vl-ps-seq (vl-ps-span "vl_key"
@@ -1206,6 +1237,7 @@ displays.  The module browser's web pages are responsible for defining the
                                 ps))
                   (vl-println "{")
                   (vl-progindent-block (vl-pp-structmemberlist x.members))
+                  (vl-progindent)
                   (vl-print "} ")
                   (vl-pp-packeddimensionlist x.pdims)))
 
@@ -1214,8 +1246,12 @@ displays.  The module browser's web pages are responsible for defining the
                   (vl-pp-datatype x.basetype)
                   (vl-println " {")
                   (vl-progindent-block (vl-pp-enumitemlist x.items))
-                  (vl-println "} ")
-                  (vl-pp-packeddimensionlist x.pdims)))
+                  (vl-progindent)
+                  (vl-print "}")
+                  (if (consp x.pdims)
+                      (vl-ps-seq (vl-print " ")
+                                 (vl-pp-packeddimensionlist x.pdims))
+                    ps)))
 
       (:vl-usertype
        (vl-ps-seq (vl-pp-scopeexpr x.name)
@@ -1237,7 +1273,8 @@ displays.  The module browser's web pages are responsible for defining the
   (define vl-pp-structmember ((x vl-structmember-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-structmember-count x) 10)
     :ruler-extenders :all
-    (b* (((vl-structmember x) x))
+    (b* (((vl-structmember x) x)
+         (udims (vl-datatype->udims x.type)))
       (vl-ps-seq (vl-progindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
                  (if x.rand
@@ -1248,8 +1285,10 @@ displays.  The module browser's web pages are responsible for defining the
                  (vl-pp-datatype x.type)
                  (vl-print " ")
                  (vl-print-wirename x.name)
-                 (vl-print " ")
-                 (vl-pp-packeddimensionlist (vl-datatype->udims x.type))
+                 (if (consp udims)
+                     (vl-ps-seq (vl-print " ")
+                                (vl-pp-packeddimensionlist udims))
+                   ps)
                  (if x.rhs
                      (vl-ps-seq (vl-print " = ")
                                 (vl-pp-expr x.rhs))
@@ -1273,7 +1312,7 @@ displays.  The module browser's web pages are responsible for defining the
     :measure (two-nats-measure (vl-enumitem-count x) 10)
     :ruler-extenders :all
     (b* (((vl-enumitem x) x))
-      (vl-ps-seq (vl-indent 4)
+      (vl-ps-seq (vl-progindent)
                  (vl-print-wirename x.name)
                  (if x.range
                      ;; Special case to print [5:5] style ranges as just [5]
@@ -2027,43 +2066,44 @@ expression into a string."
                     (vl-pp-namedarglist (cdr x) force-newlinesp)))))
 
 (define vl-pp-arguments ((x vl-arguments-p) &key (ps 'ps))
-  (b* ((namedp         (vl-arguments-case x :vl-arguments-named))
-       (args           (vl-arguments-case x
-                         :vl-arguments-named (vl-arguments-named->args x)
-                         :vl-arguments-plain (vl-arguments-plain->args x)))
-       (force-newlinep (longer-than-p 5 args))
-       ((when namedp)
-        (vl-ps-seq
-         ;; We'll arbitrarily put the .* at the beginning of the list.
-         (if (vl-arguments-named->starp x)
-             (vl-ps-seq (vl-print ".*")
-                        (cond ((atom args)          ps)
-                              ((not force-newlinep) (vl-println? ", "))
-                              (t                    (vl-println ","))))
-           ps)
-         (vl-pp-namedarglist args force-newlinep)))
-       ((when (and (consp args)
-                   (not (consp (cdr args)))
-                   (not (vl-plainarg->expr (car args)))))
-        ;; Horrible corner case!  Positional arg list with just one
-        ;; argument and a blank actual.  No way to print this.  If
-        ;; possible we'll trust the portname and try to turn it into a
-        ;; named argument list.
-        (if (vl-plainarg->portname (car args))
-            (b* ((namedarg (make-vl-namedarg :name (vl-plainarg->portname (car args))
-                                             :expr nil
-                                             :atts (vl-plainarg->atts (car args)))))
-              (cw "; Warning: horrible corner case in vl-pp-arguments, ~
+  (without-mimicking-linebreaks
+    (b* ((namedp         (vl-arguments-case x :vl-arguments-named))
+         (args           (vl-arguments-case x
+                           :vl-arguments-named (vl-arguments-named->args x)
+                           :vl-arguments-plain (vl-arguments-plain->args x)))
+         (force-newlinep (longer-than-p 5 args))
+         ((when namedp)
+          (vl-ps-seq
+           ;; We'll arbitrarily put the .* at the beginning of the list.
+           (if (vl-arguments-named->starp x)
+               (vl-ps-seq (vl-print ".*")
+                          (cond ((atom args)          ps)
+                                ((not force-newlinep) (vl-println? ", "))
+                                (t                    (vl-println ","))))
+             ps)
+           (vl-pp-namedarglist args force-newlinep)))
+         ((when (and (consp args)
+                     (not (consp (cdr args)))
+                     (not (vl-plainarg->expr (car args)))))
+          ;; Horrible corner case!  Positional arg list with just one
+          ;; argument and a blank actual.  No way to print this.  If
+          ;; possible we'll trust the portname and try to turn it into a
+          ;; named argument list.
+          (if (vl-plainarg->portname (car args))
+              (b* ((namedarg (make-vl-namedarg :name (vl-plainarg->portname (car args))
+                                               :expr nil
+                                               :atts (vl-plainarg->atts (car args)))))
+                (cw "; Warning: horrible corner case in vl-pp-arguments, ~
                    printing named.~%")
-              (vl-pp-namedarglist (list namedarg) force-newlinep))
-          ;; We don't even have a name.  How did this happen?
-          (progn$
-           ;; BOZO should just print something ugly instead of causing an error
-           (raise "Trying to print a plain argument list, of length 1, which ~
+                (vl-pp-namedarglist (list namedarg) force-newlinep))
+            ;; We don't even have a name.  How did this happen?
+            (progn$
+             ;; BOZO should just print something ugly instead of causing an error
+             (raise "Trying to print a plain argument list, of length 1, which ~
                    contains a \"blank\" entry.  But there is actually no way ~
                    to express this in Verilog.")
-           ps))))
-    (vl-pp-plainarglist args force-newlinep)))
+             ps))))
+      (vl-pp-plainarglist args force-newlinep))))
 
 
 (define vl-pp-paramvalue ((x vl-paramvalue-p) &key (ps 'ps))
@@ -2109,13 +2149,14 @@ expression into a string."
                     (vl-pp-namedparamvaluelist (cdr x) force-newlinesp)))))
 
 (define vl-pp-paramargs ((x vl-paramargs-p) &key (ps 'ps))
-  (vl-paramargs-case x
-    :vl-paramargs-named
-    (b* ((force-newlinep (longer-than-p 5 x.args)))
-      (vl-pp-namedparamvaluelist x.args force-newlinep))
-    :vl-paramargs-plain
-    (b* ((force-newlinep (longer-than-p 5 x.args)))
-      (vl-pp-paramvaluelist x.args force-newlinep))))
+  (without-mimicking-linebreaks
+    (vl-paramargs-case x
+      :vl-paramargs-named
+      (b* ((force-newlinep (longer-than-p 5 x.args)))
+        (vl-pp-namedparamvaluelist x.args force-newlinep))
+      :vl-paramargs-plain
+      (b* ((force-newlinep (longer-than-p 5 x.args)))
+        (vl-pp-paramvaluelist x.args force-newlinep)))))
 
 
 (define vl-pp-modinst-atts-begin ((x vl-atts-p) &key (ps 'ps))
@@ -3401,10 +3442,10 @@ expression into a string."
                            (vl-print " "))
                (vl-print-wirename x.name)
                (vl-println ";")
-               (vl-pp-portdecllist x.portdecls)
                ;; BOZO this order might not be right, maybe need something
                ;; smarter that takes locations into account
-               (vl-progindent-block (vl-pp-importlist x.imports)
+               (vl-progindent-block (vl-pp-portdecllist x.portdecls)
+                                    (vl-pp-importlist x.imports)
                                     (vl-pp-paramdecllist x.paramdecls)
                                     (vl-pp-typedeflist x.typedefs)
                                     (vl-pp-vardecllist x.vardecls)
@@ -3824,6 +3865,31 @@ expression into a string."
 
 
 
+(define vl-pp-genblob-guts ((x vl-genblob-p)
+                            (ss vl-scopestack-p)
+                            &key (ps 'ps))
+  (b* (((vl-genblob x)))
+    (vl-ps-seq (vl-pp-paramdecllist x.paramdecls)
+               (vl-pp-typedeflist x.typedefs)
+               (vl-pp-portdecllist x.portdecls)
+               (vl-pp-vardecllist x.vardecls)
+               (vl-println "")
+               (vl-pp-dpiimportlist x.dpiimports)
+               (vl-pp-dpiexportlist x.dpiexports)
+               (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
+               (vl-pp-taskdecllist x.taskdecls)
+               (vl-pp-assignlist x.assigns)
+               (vl-pp-modinstlist x.modinsts ss)
+               (vl-pp-gateinstlist x.gateinsts)
+               (vl-pp-alwayslist x.alwayses)
+               (vl-pp-initiallist x.initials)
+               (vl-pp-finallist x.finals)
+               (vl-pp-genelementlist x.generates)
+               (vl-pp-propertylist x.properties)
+               (vl-pp-sequencelist x.sequences)
+               (vl-pp-assertionlist x.assertions)
+               (vl-pp-cassertionlist x.cassertions))))
+
 (define vl-pp-module
   ((x    vl-module-p     "Module to pretty-print.")
    (ss   vl-scopestack-p)
@@ -3845,26 +3911,7 @@ instead of @(see ps).</p>"
                (vl-print " (")
                (vl-pp-portlist x.ports)
                (vl-println ");")
-               (vl-progindent-block (vl-pp-paramdecllist x.paramdecls)
-                                    (vl-pp-typedeflist x.typedefs)
-                                    (vl-pp-portdecllist x.portdecls)
-                                    (vl-pp-vardecllist x.vardecls)
-                                    (vl-println "")
-                                    (vl-pp-dpiimportlist x.dpiimports)
-                                    (vl-pp-dpiexportlist x.dpiexports)
-                                    (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
-                                    (vl-pp-taskdecllist x.taskdecls)
-                                    (vl-pp-assignlist x.assigns)
-                                    (vl-pp-modinstlist x.modinsts ss)
-                                    (vl-pp-gateinstlist x.gateinsts)
-                                    (vl-pp-alwayslist x.alwayses)
-                                    (vl-pp-initiallist x.initials)
-                                    (vl-pp-finallist x.finals)
-                                    (vl-pp-genelementlist x.generates)
-                                    (vl-pp-propertylist x.properties)
-                                    (vl-pp-sequencelist x.sequences)
-                                    (vl-pp-assertionlist x.assertions)
-                                    (vl-pp-cassertionlist x.cassertions))
+               (vl-progindent-block (vl-pp-genblob-guts (vl-module->genblob x) ss))
                (vl-progindent)
                (vl-ps-span "vl_key" (vl-println "endmodule"))
                (vl-println ""))))
@@ -3882,23 +3929,7 @@ instead of @(see ps).</p>"
                (vl-print " (")
                (vl-pp-portlist x.ports)
                (vl-println ");")
-               (vl-progindent-block (vl-pp-paramdecllist x.paramdecls)
-                                    (vl-pp-portdecllist x.portdecls)
-                                    (vl-pp-vardecllist x.vardecls)
-                                    (vl-pp-dpiimportlist x.dpiimports)
-                                    (vl-pp-dpiexportlist x.dpiexports)
-                                    (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
-                                    (vl-pp-taskdecllist x.taskdecls)
-                                    (vl-pp-assignlist x.assigns)
-                                    (vl-pp-modinstlist x.modinsts ss)
-                                    (vl-pp-gateinstlist x.gateinsts)
-                                    (vl-pp-alwayslist x.alwayses)
-                                    (vl-pp-initiallist x.initials)
-                                    (vl-pp-finallist x.finals)
-                                    (vl-pp-propertylist x.properties)
-                                    (vl-pp-sequencelist x.sequences)
-                                    (vl-pp-assertionlist x.assertions)
-                                    (vl-pp-cassertionlist x.cassertions))
+               (vl-progindent-block (vl-pp-genblob-guts x ss))
                (vl-progindent)
                (vl-ps-span "vl_key" (vl-println "endgenblob"))
                (vl-println ""))))
@@ -3973,29 +4004,26 @@ module elements and its comments.</p>"
     (vl-ps-seq (vl-pp-config (car x))
                (vl-pp-configlist (cdr x)))))
 
-
-(define vl-pp-package ((x vl-package-p) &key (ps 'ps))
+(define vl-pp-package ((x vl-package-p)
+                       (ss vl-scopestack-p)
+                       &key (ps 'ps))
   (b* (((vl-package x) x))
     (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
                (vl-ps-span "vl_key" (vl-print "package "))
                (vl-print-modname x.name)
                (vl-println " ;")
-               (vl-pp-importlist x.imports)
-               (vl-pp-paramdecllist x.paramdecls)
-               (vl-pp-typedeflist x.typedefs)
-               (vl-pp-fundecllist x.fundecls)
-               (vl-pp-taskdecllist x.taskdecls)
-               (vl-pp-vardecllist x.vardecls)
-               (vl-pp-dpiimportlist x.dpiimports)
-               (vl-pp-dpiexportlist x.dpiexports)
+               (vl-progindent-block (vl-pp-genblob-guts (vl-package->genblob x) ss))
+               (vl-progindent)
                (vl-ps-span "vl_key" (vl-println "endpackage"))
                (vl-println ""))))
 
-(define vl-pp-packagelist ((x vl-packagelist-p) &key (ps 'ps))
+(define vl-pp-packagelist ((x vl-packagelist-p)
+                           (ss vl-scopestack-p)
+                           &key (ps 'ps))
   (if (atom x)
       ps
-    (vl-ps-seq (vl-pp-package (car x))
-               (vl-pp-packagelist (cdr x)))))
+    (vl-ps-seq (vl-pp-package (car x) ss)
+               (vl-pp-packagelist (cdr x) ss))))
 
 
 (define vl-pp-interface ((x vl-interface-p) (ss vl-scopestack-p) &key (ps 'ps))
@@ -4010,29 +4038,8 @@ module elements and its comments.</p>"
                (vl-print " (")
                (vl-pp-portlist x.ports)
                (vl-println ");")
-
-               (vl-println "// BOZO print interface imports")
-               (vl-println "// BOZO print interface modports")
-               (vl-pp-paramdecllist  x.paramdecls)
-               (vl-pp-typedeflist    x.typedefs)
-               (vl-pp-portdecllist   x.portdecls)
-               (vl-pp-vardecllist    x.vardecls)
-               (vl-pp-dpiimportlist  x.dpiimports)
-               (vl-pp-dpiexportlist  x.dpiexports)
-               (vl-pp-fundecllist    x.fundecls)
-               (vl-pp-taskdecllist   x.taskdecls)
-               (vl-pp-propertylist   x.properties)
-               (vl-pp-sequencelist   x.sequences)
-               (vl-pp-modinstlist    x.modinsts ss)
-               (vl-pp-assignlist     x.assigns)
-               (vl-println "// BOZO print interface aliases")
-               (vl-pp-assertionlist  x.assertions)
-               (vl-pp-cassertionlist x.cassertions)
-               (vl-pp-alwayslist     x.alwayses)
-               (vl-pp-initiallist    x.initials)
-               (vl-pp-finallist      x.finals)
-               (vl-println "// BOZO print interface genvars")
-               (vl-pp-genelementlist x.generates)
+               (vl-progindent-block (vl-pp-genblob-guts (vl-interface->genblob x) ss))
+               (vl-progindent)
                (vl-ps-span "vl_key" (vl-println "endinterface"))
                (vl-println ""))))
 
@@ -4068,14 +4075,15 @@ module elements and its comments.</p>"
     (vl-ps-seq (vl-pp-fwdtypedeflist x.fwdtypes)
                (vl-pp-paramdecllist x.paramdecls)
                (vl-pp-typedeflist x.typedefs)
+               (vl-pp-vardecllist x.vardecls)
                (vl-pp-fundecllist x.fundecls)
                (vl-pp-taskdecllist x.taskdecls)
-               (vl-pp-packagelist x.packages)
+               (vl-pp-packagelist x.packages ss)
                (vl-pp-importlist x.imports)
-               (vl-pp-programlist x.programs)
-               (vl-pp-interfacelist x.interfaces ss)
-               (vl-pp-udplist x.udps)
-               (vl-pp-modulelist x.mods ss)
-               (vl-pp-configlist x.configs)
                (vl-pp-dpiimportlist x.dpiimports)
-               (vl-pp-dpiexportlist x.dpiexports))))
+               (vl-pp-dpiexportlist x.dpiexports)
+               (vl-pp-interfacelist x.interfaces ss)
+               (vl-pp-modulelist x.mods ss)
+               (vl-pp-udplist x.udps)
+               (vl-pp-programlist x.programs)
+               (vl-pp-configlist x.configs))))

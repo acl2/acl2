@@ -9,6 +9,9 @@
 ; also introduce a metafunction for simplifying (apply$-prim 'fn args) and
 ; verify it.
 
+; At some point we may fix these books to work with ACL2(r).
+; cert_param: (non-acl2r)
+
 (in-package "ACL2")
 
 ; Handling the Primitives

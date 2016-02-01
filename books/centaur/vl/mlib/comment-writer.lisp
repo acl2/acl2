@@ -297,6 +297,7 @@ we ignore file names.</p>"
        (ps (vl-progindent-block-start))
        ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
        ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
+       ((mv imap ps) (vl-typedeflist-ppmap x.typedefs imap))
        ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
        ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap))
        ((mv imap ps) (vl-taskdecllist-ppmap x.taskdecls imap))
@@ -436,10 +437,9 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
                (vl-ps-span "vl_key"
                            (vl-print "interface "))
                (vl-print-modname x.name)
-               (vl-println "; ")
-               (if x.ports
-                   (vl-println "// BOZO add pretty-printing of ports!")
-                 ps)
+               (vl-print " (")
+               (vl-pp-portlist x.ports)
+               (vl-println ");")
                (vl-pp-encoded-commentmap guts)
                (if x.generates
                    (vl-println "// BOZO add pretty-printing of generate statements!")
@@ -453,8 +453,22 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
     (vl-ps-seq (vl-ppc-interface (car x) ss)
                (vl-ppc-interfacelist (cdr x) ss))))
 
-(define vl-ppc-package ((x vl-package-p) &key (ps 'ps))
-  (b* (((vl-package x)))
+(define vl-ppc-package ((x vl-package-p) (ss vl-scopestack-p) &key (ps 'ps))
+  (b* (((vl-package x) (vl-package-fix x))
+       (ss (vl-scopestack-push x ss))
+       (ps (vl-pp-set-portnames nil))
+
+       (imap nil)
+       ((mv imap ps) (vl-genblob-populate-item-map (vl-package->genblob x) ss imap))
+       (imap (rev imap))
+
+       (comments     (vl-add-newlines-after-block-comments x.comments))
+       (comments     (if (vl-ps->htmlp)
+                         (vl-html-encode-commentmap comments (vl-ps->tabsize))
+                       comments))
+       (guts         (cwtime (vl-commentmap-entry-sort (append comments imap))
+                             :mintime 1/2
+                             :name vl-commentmap-entry-sort)))
     (vl-ps-seq
      (if x.atts
          (vl-ps-seq (vl-pp-atts x.atts)
@@ -463,8 +477,8 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
      (vl-ps-span "vl_key"
                  (vl-print "package "))
      (vl-print-modname x.name)
-     (vl-println "")
-     (vl-print "BOZO implement printing of packages!\n")
+     (vl-println ";")
+     (vl-pp-encoded-commentmap guts)
      (vl-println "")
      (vl-ps-span "vl_key" (vl-println "endpackage")))))
 

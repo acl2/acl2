@@ -387,19 +387,28 @@
           (:= (vl-match))
           (value := (vl-parse-expression)))
 
-        (return (make-vl-enumitem
-                 :name (vl-idtoken->name name)
-                 :range (cond ((not left)
-                               nil)
-                              ((not right)
-                               ;; See Table 6-10 on Page 80.  A single index should introduce
-                               ;; names foo0 through fooN-1.
-                               (make-vl-range :msb (vl-make-index 0)
-                                              :lsb (vl-make-index (vl-inttoken->value left))))
-                              (t
-                               (make-vl-range :msb (vl-make-index (vl-inttoken->value left))
-                                              :lsb (vl-make-index (vl-inttoken->value right)))))
-                 :value value))))
+        (when (and left
+                   (not right)
+                   (equal (vl-inttoken->value left) 0))
+          ;; See Table 6-10 on Page 80.  A special case is that a single index,
+          ;; like foo[3], should introduce names foo0, foo1, foo2 (but not
+          ;; foo3).  A corner case is foo[0].  Per the table, "N shall be a
+          ;; positive integral number."  If it isn't, it doesn't make sense.
+          (return-raw
+           (vl-parse-error "Illegal enum item index [0].")))
+
+        (return
+         (make-vl-enumitem
+          :name (vl-idtoken->name name)
+          :range (cond ((not left)
+                        nil)
+                       ((not right)
+                        (make-vl-range :msb (vl-make-index 0)
+                                       :lsb (vl-make-index (- (vl-inttoken->value left) 1))))
+                       (t
+                        (make-vl-range :msb (vl-make-index (vl-inttoken->value left))
+                                       :lsb (vl-make-index (vl-inttoken->value right)))))
+          :value value))))
 
 (defparser vl-parse-1+-enum-name-declarations-separated-by-commas ()
   :result (vl-enumitemlist-p val)

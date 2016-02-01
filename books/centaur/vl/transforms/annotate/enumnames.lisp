@@ -41,7 +41,8 @@
 
   :long "<p>Enum types are unique among datatypes in that using one has a side
 effect of declaring some names with assigned values.  We deal with these early
-on by declaring these names as parameters.  For example:</p>
+on, as part of @(see annotate), by declaring these names as parameters.  For
+example:</p>
 
 @({
     typedef enum logic [3:0] { red=1, blue, green, yellow[4:0]=5, orange[3:5] };
@@ -72,13 +73,23 @@ it seems you can't call a function in there.</p>
 declared in an enum type.  This transformation then applies this to every enum
 found in the datatype of a variable, parameter, or typedef declaration.</p>")
 
-(define vl-enumname-range-declarations ((name stringp)
-                                        (top natp)
-                                        (bottom natp)
-                                        (nextval vl-expr-p)
-                                        (basetype vl-datatype-p)
-                                        (loc vl-location-p))
-  :returns (mv (params vl-paramdecllist-p)
+(local (xdoc::set-default-parents enum-names))
+
+(define vl-enumname-range-declarations
+  :short "For example: given a ranged enum item like @('foo[3:0]'), we create
+          the parameters for @('foo3'), @('foo2'), @('foo1'), and @('foo0')."
+  ((name     stringp)
+   (top      natp)
+   (bottom   natp)
+   (nextval  vl-expr-p
+             "We use an expression, instead of a constant, so that we can
+              support enums where the values being assigned to an enum item
+              depend on other parameters.  For example:
+                   @('enum { foo = myparam, bar, baz }').")
+   (basetype vl-datatype-p)
+   (atts     vl-atts-p)
+   (loc      vl-location-p))
+  :returns (mv (params      vl-paramdecllist-p)
                (new-nextval vl-expr-p))
   :measure (abs (- (nfix top) (nfix bottom)))
   (b* ((top (lnfix top))
@@ -91,46 +102,44 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
                (make-vl-explicitvalueparam
                 :type basetype
                 :default (vl-expr-fix nextval))
+               :atts atts
                :loc loc))
        (nextval (make-vl-binary :op :vl-binary-plus
                                 :left (vl-idexpr name1)
                                 :right (vl-make-index 1)))
        ((when (eql top bottom))
         (mv (list first) nextval))
-       ((mv decls nextval)
-        (vl-enumname-range-declarations
-         name
-         (if (< top bottom) (1+ top) (1- top))
-         bottom
-         nextval
-         basetype loc)))
+       ((mv decls nextval) (vl-enumname-range-declarations
+                            name
+                            (if (< top bottom) (1+ top) (1- top))
+                            bottom nextval basetype atts loc)))
     (mv (cons first decls) nextval)))
 
-
-(define vl-enumname-declarations ((x vl-enumitem-p)
-                                  (nextval vl-expr-p)
+(define vl-enumname-declarations ((x        vl-enumitem-p)
+                                  (nextval  vl-expr-p)
                                   (basetype vl-datatype-p)
-                                  (loc vl-location-p))
+                                  (atts     vl-atts-p)
+                                  (loc      vl-location-p))
   :returns (mv (warnings vl-warninglist-p)
                (params vl-paramdecllist-p)
                (new-nextval vl-expr-p))
   (b* (((vl-enumitem x))
+       (nextval (vl-expr-fix nextval))
        (warnings nil)
-       (val (or x.value (vl-expr-fix nextval)))
-       (nextval (make-vl-binary :op :vl-binary-plus
-                                :left (vl-idexpr x.name)
-                                :right (vl-make-index 1)))
+       (val (or x.value nextval))
        ((unless x.range)
-        (mv (ok)
-            (list (make-vl-paramdecl
-                   :name x.name
-                   :localp t
-                   :type
-                   (make-vl-explicitvalueparam
-                    :type basetype
-                    :default val)
-                   :loc loc))
-            nextval))
+        (b* ((decl (make-vl-paramdecl :name x.name
+                                      :localp t
+                                      :type
+                                      (make-vl-explicitvalueparam :type basetype
+                                                                  :default val)
+                                      :atts atts
+                                      :loc loc))
+             (nextval (make-vl-binary :op :vl-binary-plus
+                                      :left (vl-idexpr x.name)
+                                      :right (vl-make-index 1))))
+          (mv (ok) (list decl) nextval)))
+
        ((unless (vl-range-resolved-p x.range))
         (mv (warn :type :vl-enum-declarations-fail
                   :msg "Non-constant range on enum item ~s0"
@@ -139,54 +148,63 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
             nextval))
        ((vl-range x.range))
        ((mv decls nextval)
-        (vl-enumname-range-declarations
-         x.name
-         (vl-resolved->val x.range.msb)
-         (vl-resolved->val x.range.lsb)
-         nextval basetype loc)))
+        (vl-enumname-range-declarations x.name
+                                        (vl-resolved->val x.range.msb)
+                                        (vl-resolved->val x.range.lsb)
+                                        val basetype atts loc)))
     (mv (ok) decls nextval)))
 
-(define vl-enumitemlist-enumname-declarations ((x vl-enumitemlist-p)
-                                               (lastval vl-expr-p)
+(define vl-enumitemlist-enumname-declarations ((x        vl-enumitemlist-p)
+                                               (lastval  vl-expr-p)
                                                (basetype vl-datatype-p)
-                                               (loc vl-location-p))
+                                               (atts     vl-atts-p)
+                                               (loc      vl-location-p))
   :returns (mv (warnings vl-warninglist-p)
                (paramdecls vl-paramdecllist-p))
   (b* (((when (atom x)) (mv nil nil))
        ((mv warnings decls nextval)
-        (vl-enumname-declarations (car x) lastval basetype loc))
+        (vl-enumname-declarations (car x) lastval basetype atts loc))
        ((mv warnings-rest decls-rest)
-        (vl-enumitemlist-enumname-declarations (cdr x) nextval basetype loc)))
+        (vl-enumitemlist-enumname-declarations (cdr x) nextval basetype atts loc)))
     (mv (append-without-guard warnings warnings-rest)
         (append-without-guard decls decls-rest))))
 
 
 (defines vl-datatype-enumname-declarations
-  (define vl-datatype-enumname-declarations ((x vl-datatype-p)
-                                             (loc vl-location-p))
+  (define vl-datatype-enumname-declarations ((x           vl-datatype-p)
+                                             (typedefname maybe-stringp)
+                                             (loc         vl-location-p))
     :returns (mv (warnings vl-warninglist-p)
                  (paramdecls vl-paramdecllist-p))
     :measure (vl-datatype-count x)
+    :guard-debug t
     (vl-datatype-case x
-      :vl-enum (b* ((warnings nil)
+      :vl-enum (b* ((warnings    nil)
+                    (typedefname (maybe-string-fix typedefname))
+                    ;; For debugging, mark each declaration that we introduce
+                    ;; with a VL_ENUMITEM attribute that, if possible, will say
+                    ;; the name of the typedef that declares the enum.
+                    (atts (list (cons "VL_ENUMITEM"
+                                      (and typedefname
+                                           (make-vl-literal :val (make-vl-string :value typedefname))))))
                     ((wmv warnings decls :ctx (vl-datatype-fix x))
-                     (vl-enumitemlist-enumname-declarations
-                      x.items (vl-make-index 0) x.basetype loc)))
+                     (vl-enumitemlist-enumname-declarations x.items (vl-make-index 0) x.basetype
+                                                            atts loc)))
                  (mv warnings decls))
-      :vl-struct (vl-structmemberlist-enumname-declarations x.members loc)
-      :vl-union (vl-structmemberlist-enumname-declarations x.members loc)
+      :vl-struct (vl-structmemberlist-enumname-declarations x.members typedefname loc)
+      :vl-union (vl-structmemberlist-enumname-declarations x.members typedefname loc)
       :otherwise (mv nil nil)))
   (define vl-structmemberlist-enumname-declarations ((x vl-structmemberlist-p)
+                                                     (typedefname maybe-stringp)
                                                      (loc vl-location-p))
     :returns (mv (warnings vl-warninglist-p)
                  (paramdecls vl-paramdecllist-p))
     :measure (vl-structmemberlist-count x)
     (b* (((when (atom x)) (mv nil nil))
          ((mv warnings1 decls1)
-          (vl-datatype-enumname-declarations (vl-structmember->type (car x))
-                                                 loc))
+          (vl-datatype-enumname-declarations (vl-structmember->type (car x)) typedefname loc))
          ((mv warnings-rest decls-rest)
-          (vl-structmemberlist-enumname-declarations (cdr x) loc)))
+          (vl-structmemberlist-enumname-declarations (cdr x) typedefname loc)))
       (mv (append-without-guard warnings1 warnings-rest)
           (append-without-guard decls1 decls-rest))))
   ///
@@ -201,22 +219,22 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
       ;; it shouldn't hurt to make the declarations, even if it's going to get
       ;; overridden?
       :vl-typeparam (if x.type.default
-                        (vl-datatype-enumname-declarations x.type.default x.loc)
+                        (vl-datatype-enumname-declarations x.type.default nil x.loc)
                       (mv nil nil))
-      :vl-explicitvalueparam (vl-datatype-enumname-declarations x.type.type x.loc)
+      :vl-explicitvalueparam (vl-datatype-enumname-declarations x.type.type nil x.loc)
       :otherwise (mv nil nil))))
 
 (define vl-vardecl-enumname-declarations ((x vl-vardecl-p))
   :returns (mv (warnings vl-warninglist-p)
                (paramdecls vl-paramdecllist-p))
   (b* (((vl-vardecl x)))
-    (vl-datatype-enumname-declarations x.type x.loc)))
+    (vl-datatype-enumname-declarations x.type nil x.loc)))
 
 (define vl-typedef-enumname-declarations ((x vl-typedef-p))
   :returns (mv (warnings vl-warninglist-p)
                (paramdecls vl-paramdecllist-p))
   (b* (((vl-typedef x)))
-    (vl-datatype-enumname-declarations x.type x.minloc)))
+    (vl-datatype-enumname-declarations x.type x.name x.minloc)))
 
 ;; BOZO Do we need to also cover function/task decls, portdecls, etc?
 
