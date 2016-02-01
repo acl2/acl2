@@ -11,6 +11,7 @@
 (include-book "utilities/system-level-mode/physical-memory-utils" :ttags :all)
 (include-book "utilities/system-level-mode/paging-lib/paging-top" :ttags :all)
 (include-book "utilities/system-level-mode/system-level-memory-utils" :ttags :all)
+(include-book "utilities/system-level-mode/normalize-memory-accesses" :ttags :all)
 
 ;; Program proofs:
 

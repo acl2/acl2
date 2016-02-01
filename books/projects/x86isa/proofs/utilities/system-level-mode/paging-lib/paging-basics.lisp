@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 (include-book "../physical-memory-utils")
-(include-book "gl-lemmas")
+(include-book "../gl-lemmas")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

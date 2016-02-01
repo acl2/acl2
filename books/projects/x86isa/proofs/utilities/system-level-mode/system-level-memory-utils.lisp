@@ -8,7 +8,6 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
-(local (include-book "centaur/gl/gl" :dir :system))
 
 ;; ======================================================================
 
@@ -39,6 +38,11 @@ wm08:
 2. State returned by wm08 is xlate-equiv-structures with original state (address disjoint from paging structures)
    [mv-nth-1-wm08-and-xlate-equiv-structures-disjoint]
 
+3. State returned by a wm08 is xlate-equiv-x86s with that returned by
+   another wm08, if the same location is modified in the same way in
+   both the writes:
+   [mv-nth-1-wm08-and-xlate-equiv-x86s-disjoint]
+
 rb:
 
 1. Equality of error of rb from two xlate-equiv-x86s (addresses disjoint from paging structures)
@@ -64,7 +68,12 @@ wb:
 2. State returned by wb is xlate-equiv-structures with original state (addresses disjoint from paging structures)
    [mv-nth-1-wb-and-xlate-equiv-structures-disjoint]
 
-3. Conditions under which wb returns no error in the system-level mode
+3. State returned by a wb is xlate-equiv-x86s with that returned by
+   another wb, if the same locations are modified in the same way in
+   both the writes:
+   [mv-nth-1-wb-and-xlate-equiv-x86s-disjoint]
+
+4. Conditions under which wb returns no error in the system-level mode
    [wb-returns-no-error-in-system-level-mode]
 
 ||#
@@ -1119,12 +1128,6 @@ wb:
 
 ;; WB returns no error after another WB:
 
-(DEFTHM STRIP-CARS-OF-CREATE-ADDR-BYTES-ALIST-new
-  (IMPLIES (AND (true-listp addrs)
-                (EQUAL (LEN ADDRS) (LEN BYTES)))
-           (EQUAL (STRIP-CARS (CREATE-ADDR-BYTES-ALIST ADDRS BYTES))
-                  ADDRS)))
-
 (local
  (defthm wb-returns-no-error-in-system-level-mode-after-wb
    ;; (:CONGRUENCE ALL-PAGING-ENTRIES-FOUND-P-AND-XLATE-EQUIV-STRUCTURES)
@@ -1156,7 +1159,7 @@ wb:
 
 ;; Proving rb-rb-split-reads-in-system-level-mode:
 
-(defthmd rb-rb-split-reads-in-system-level-mode
+(defthmd rb-rb-split-reads-in-system-level-mode-aux
   ;; The hyps are in terms of l-addrs instead of l-addrs-1 and
   ;; l-addrs-2 here because likely, that's how we'd want to use this
   ;; rule --- in terms of the larger set of addresses, unlike
@@ -1178,6 +1181,30 @@ wb:
                              all-paging-entries-found-p
                              no-page-faults-during-translation-p)
                             (force (force))))))
+
+(defthm rb-rb-split-reads-in-system-level-mode
+  (implies
+   (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+        (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
+        (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
+        (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+         l-addrs-1 r-w-x cpl (double-rewrite x86))
+        (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+         l-addrs-2 r-w-x cpl (double-rewrite x86))
+        (no-page-faults-during-translation-p
+         l-addrs-1 r-w-x cpl (double-rewrite x86))
+        (no-page-faults-during-translation-p
+         l-addrs-2 r-w-x cpl (double-rewrite x86))
+        (canonical-address-listp l-addrs-1)
+        (canonical-address-listp l-addrs-2))
+   (equal (append (mv-nth 1 (rb l-addrs-1 r-w-x x86))
+                  (mv-nth 1 (rb l-addrs-2 r-w-x x86)))
+          (mv-nth 1 (rb (append l-addrs-1 l-addrs-2) r-w-x x86))))
+  :hints
+  (("goal"
+    :use ((:instance rb-rb-split-reads-in-system-level-mode-aux
+                     (l-addrs (append l-addrs-1 l-addrs-2))))
+    :in-theory (e/d* () (force (force))))))
 
 (local
  (defthmd rb-rb-split-reads-in-system-level-mode-state-helper
@@ -1264,628 +1291,6 @@ wb:
                              no-page-faults-during-translation-p
                              acl2::list-fix)
                             (force (force))))))
-
-;; ======================================================================
-
-;; Relating top-level memory accessors and updaters with rb and wb in
-;; system-level mode:
-
-(defthmd rm08-to-rb-in-system-level-mode
-  (implies (force (paging-entries-found-p lin-addr (double-rewrite x86)))
-           (equal (rm08 lin-addr r-w-x x86)
-                  (b* (((mv flg bytes x86)
-                        (rb (create-canonical-address-list 1 lin-addr) r-w-x x86))
-                       (result (combine-bytes bytes)))
-                    (mv flg result x86))))
-  :hints (("Goal"
-           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-                             rm08
-                             rb)
-                            (signed-byte-p
-                             unsigned-byte-p)))))
-
-(defthmd wm08-to-wb-in-system-level-mode
-  (implies (forced-and (paging-entries-found-p lin-addr (double-rewrite x86))
-                       (unsigned-byte-p 8 byte))
-           (equal (wm08 lin-addr byte x86)
-                  (wb (create-addr-bytes-alist
-                       (create-canonical-address-list 1 lin-addr)
-                       (list byte))
-                      x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (ia32e-la-to-pa-and-ia32e-entries-found-la-to-pa
-                             wm08
-                             wb)
-                            (signed-byte-p
-                             unsigned-byte-p)))))
-
-;; (i-am-here)
-
-;; ;; ----------------------------------------------------------------------
-
-;; (defthmd rm16-to-rb-in-system-level-mode
-;;   (implies
-;;    (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;         (equal l-addrs (create-canonical-address-list 2 lin-addr))
-;;         (equal (len l-addrs) 2)
-;;         (all-paging-entries-found-p l-addrs (double-rewrite x86))
-;;         (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs r-w-x cpl (double-rewrite x86))
-;;         (no-page-faults-during-translation-p l-addrs r-w-x cpl (double-rewrite x86)))
-;;    (equal (rm16 lin-addr r-w-x x86)
-;;           (b* (((mv flg bytes x86)
-;;                 (rb l-addrs r-w-x x86))
-;;                (result (combine-bytes bytes)))
-;;             (mv flg result x86))))
-;;   :hints (("Goal"
-;;            :in-theory (e/d* (all-paging-entries-found-p
-;;                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-;;                              no-page-faults-during-translation-p
-;;                              rm16
-;;                              rm08
-;;                              rb)
-;;                             (cons-equal
-;;                              signed-byte-p
-;;                              unsigned-byte-p
-;;                              bitops::logior-equal-0
-;;                              rm08-to-rb-in-system-level-mode
-;;                              (:meta acl2::mv-nth-cons-meta)
-;;                              mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
-;;                              force (force))))))
-
-;; (defthmd wm16-to-wb-in-system-level-mode
-;;   (implies
-;;    (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;         (equal l-addrs (create-canonical-address-list 2 lin-addr))
-;;         (equal (len l-addrs) 2)
-;;         (all-paging-entries-found-p l-addrs (double-rewrite x86))
-;;         (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl (double-rewrite x86))
-;;         (no-page-faults-during-translation-p l-addrs :w cpl (double-rewrite x86)))
-;;    (equal (wm16 lin-addr word x86)
-;;           (b* (((mv flg x86)
-;;                 (wb (create-addr-bytes-alist l-addrs (byte-ify 2 word)) x86)))
-;;             (mv flg x86))))
-;;   :hints (("Goal"
-;;            :in-theory (e/d* (all-paging-entries-found-p
-;;                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-;;                              no-page-faults-during-translation-p
-;;                              wm16
-;;                              wm08
-;;                              wb
-;;                              byte-ify)
-;;                             (signed-byte-p
-;;                              unsigned-byte-p
-;;                              bitops::logior-equal-0
-;;                              wm08-to-wb-in-system-level-mode
-;;                              (:meta acl2::mv-nth-cons-meta))))))
-
-;; ;; ----------------------------------------------------------------------
-
-;; (local
-;;  (def-gl-thm rm32-rb-system-level-mode-proof-helper
-;;    :hyp (and (n08p a)
-;;              (n08p b)
-;;              (n08p c)
-;;              (n08p d))
-;;    :concl (equal (logior a (ash b 8) (ash (logior c (ash d 8)) 16))
-;;                  (logior a (ash (logior b (ash (logior c (ash d 8)) 8)) 8)))
-;;    :g-bindings
-;;    (gl::auto-bindings
-;;     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)))))
-
-;; (local (in-theory (e/d () (rm32-rb-system-level-mode-proof-helper))))
-
-;; (defthmd rm32-to-rb-in-system-level-mode
-;;   (implies
-;;    (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;         (equal l-addrs (create-canonical-address-list 4 lin-addr))
-;;         (equal (len l-addrs) 4)
-;;         (all-paging-entries-found-p l-addrs (double-rewrite x86))
-;;         (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs r-w-x cpl (double-rewrite x86))
-;;         (no-page-faults-during-translation-p l-addrs r-w-x cpl (double-rewrite x86)))
-;;    (equal (rm32 lin-addr r-w-x x86)
-;;           (b* (((mv flg bytes x86)
-;;                 (rb l-addrs r-w-x x86))
-;;                (result (combine-bytes bytes)))
-;;             (mv flg result x86))))
-;;   :hints (("Goal"
-;;            :use ((:instance create-canonical-address-list-end-addr-is-canonical
-;;                             (addr lin-addr)
-;;                             (count 4)
-;;                             (end-addr (+ 3 lin-addr))))
-;;            :in-theory (e/d* (all-paging-entries-found-p
-;;                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-;;                              no-page-faults-during-translation-p
-;;                              rm32
-;;                              rm08
-;;                              rb
-;;                              rm32-rb-system-level-mode-proof-helper)
-;;                             (signed-byte-p
-;;                              unsigned-byte-p
-;;                              bitops::logior-equal-0
-;;                              rm08-to-rb-in-system-level-mode
-;;                              (:meta acl2::mv-nth-cons-meta)
-;;                              mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
-;;                              force (force))))))
-
-;; (defthmd wm32-to-wb-in-system-level-mode
-;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;                 (equal l-addrs (create-canonical-address-list 4 lin-addr))
-;;                 (equal (len l-addrs) 4)
-;;                 (all-paging-entries-found-p l-addrs (double-rewrite x86))
-;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl (double-rewrite x86))
-;;                 (no-page-faults-during-translation-p l-addrs :w cpl (double-rewrite x86)))
-;;            (equal (wm32 lin-addr dword x86)
-;;                   (b* (((mv flg x86)
-;;                         (wb (create-addr-bytes-alist l-addrs (byte-ify 4 dword))
-;;                             x86)))
-;;                     (mv flg x86))))
-;;   :hints (("Goal"
-;;            :use ((:instance create-canonical-address-list-end-addr-is-canonical
-;;                             (addr lin-addr)
-;;                             (count 4)
-;;                             (end-addr (+ 3 lin-addr))))
-;;            :in-theory (e/d* (all-paging-entries-found-p
-;;                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-;;                              no-page-faults-during-translation-p
-;;                              wm32
-;;                              wm08
-;;                              wb
-;;                              byte-ify)
-;;                             ((:REWRITE ALL-PAGING-ENTRIES-FOUND-P-MEMBER-P)
-;;                              (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-;;                              (:REWRITE CAR-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:REWRITE ACL2::LOGHEAD-IDENTITY)
-;;                              (:REWRITE MEMBER-P-CANONICAL-ADDRESS-LISTP)
-;;                              (:REWRITE DEFAULT-+-2)
-;;                              (:REWRITE MEMBER-LIST-P-AND-PAIRWISE-DISJOINT-P-AUX)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
-;;                              (:DEFINITION MEMBER-LIST-P)
-;;                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-;;                              (:REWRITE DEFAULT-<-1)
-;;                              (:TYPE-PRESCRIPTION SEG-VISIBLEI-IS-N16P)
-;;                              (:DEFINITION OPEN-QWORD-PADDR-LIST-LIST)
-;;                              (:REWRITE DEFAULT-+-1)
-;;                              (:DEFINITION OPEN-QWORD-PADDR-LIST)
-;;                              (:TYPE-PRESCRIPTION X86P)
-;;                              (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST)
-;;                              (:TYPE-PRESCRIPTION BOOLEANP-PROGRAMMER-LEVEL-MODE-TYPE)
-;;                              (:TYPE-PRESCRIPTION MEMBER-P)
-;;                              (:REWRITE ACL2::LOGTAIL-IDENTITY)
-;;                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-;;                              (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-;;                              (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
-;;                              (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST-IN-TERMS-OF-LEN)
-;;                              (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
-;;                              (:DEFINITION BINARY-APPEND)
-;;                              (:REWRITE MEMBER-P-CDR)
-;;                              (:REWRITE OPEN-QWORD-PADDR-LIST-LIST-AND-MEMBER-LIST-P)
-;;                              (:TYPE-PRESCRIPTION MEMBER-LIST-P)
-;;                              (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
-;;                              (:TYPE-PRESCRIPTION NATP)
-;;                              (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
-;;                              (:REWRITE DEFAULT-<-2)
-;;                              (:REWRITE ALL-SEG-VISIBLES-EQUAL-AUX-OPEN)
-;;                              (:REWRITE CDR-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
-;;                              (:DEFINITION ADDR-RANGE)
-;;                              (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-;;                              (:REWRITE ACL2::IFIX-WHEN-INTEGERP)
-;;                              (:TYPE-PRESCRIPTION X86P-MV-NTH-1-WVM08)
-;;                              (:REWRITE ACL2::CONSP-OF-CAR-WHEN-ATOM-LISTP)
-;;                              (:REWRITE SUBSET-LIST-P-AND-MEMBER-LIST-P)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-1)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-0)
-;;                              (:TYPE-PRESCRIPTION TRUE-LISTP-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION CONSP-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES)
-;;                              (:REWRITE PAIRWISE-DISJOINT-P-AUX-AND-APPEND)
-;;                              (:TYPE-PRESCRIPTION XW)
-;;                              (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-;;                              (:REWRITE CAR-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION ATOM-LISTP)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
-;;                              (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
-;;                              (:REWRITE MEMBER-LIST-P-NO-DUPLICATES-LIST-P-AND-MEMBER-P)
-;;                              (:LINEAR MEMBER-P-POS-VALUE)
-;;                              (:LINEAR MEMBER-P-POS-1-VALUE)
-;;                              (:LINEAR ACL2::INDEX-OF-<-LEN)
-;;                              (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P-PHYSICAL-ADDRESS-LISTP)
-;;                              (:REWRITE NO-PAGE-FAULTS-DURING-TRANSLATION-P-MEMBER-P)
-;;                              (:TYPE-PRESCRIPTION IFIX)
-;;                              (:REWRITE DISJOINT-P-SUBSET-P)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
-;;                              (:REWRITE CDR-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-ENTRIES-FOUND-LA-TO-PA)
-;;                              (:REWRITE MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P-MEMBER-P)
-;;                              (:REWRITE NO-PAGE-FAULTS-DURING-TRANSLATION-P-SUBSET-P)
-;;                              (:REWRITE MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P-SUBSET-P)
-;;                              (:REWRITE ALL-PAGING-ENTRIES-FOUND-P-SUBSET-P)
-;;                              (:REWRITE MEMBER-P-AND-MULT-8-QWORD-PADDR-LISTP)
-;;                              (:REWRITE MEMBER-LIST-P-AND-MULT-8-QWORD-PADDR-LIST-LISTP)
-;;                              (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P)
-;;                              (:REWRITE XW-XW-INTRA-FIELD-ARRANGE-WRITES)
-;;                              (:REWRITE XLATE-EQUIV-X86S-AND-XW-MEM-DISJOINT)
-;;                              (:REWRITE CONSP-CREATE-ADDR-BYTES-ALIST-IN-TERMS-OF-LEN)
-;;                              (:REWRITE XW-XW-INTRA-SIMPLE-FIELD-SHADOW-WRITES)
-;;                              (:REWRITE IA32E-ENTRIES-FOUND-LA-TO-PA-XW-STATE)
-;;                              (:LINEAR N52P-MV-NTH-1-IA32E-LA-TO-PA)
-;;                              (:REWRITE X86P-MV-NTH-2-IA32E-LA-TO-PA)
-;;                              (:DEFINITION MULT-8-QWORD-PADDR-LIST-LISTP)
-;;                              (:DEFINITION MULT-8-QWORD-PADDR-LISTP)
-;;                              (:LINEAR N52P-MV-NTH-1-IA32E-ENTRIES-FOUND-LA-TO-PA)
-;;                              (:REWRITE LEN-OF-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:DEFINITION CANONICAL-ADDRESS-LISTP)
-;;                              (:REWRITE CONSP-OF-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-LA-TO-PA)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-15*-WHEN-LOW-12-BITS-=-4081)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-15*-WHEN-LOW-12-BITS-<-4081)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-=-4090)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-=-4089)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-<-4093)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-<-4089)
-;;                              (:LINEAR
-;;                               IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-!=-ALL-ONES)
-;;                              (:REWRITE IA32E-ENTRIES-FOUND-LA-TO-PA-XW-VALUE)
-;;                              (:LINEAR ACL2::LOGHEAD-UPPER-BOUND)
-;;                              (:TYPE-PRESCRIPTION MEMBER-EQUAL)
-;;                              (:TYPE-PRESCRIPTION XLATE-EQUIV-X86S)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-0)
-;;                              (:TYPE-PRESCRIPTION MULT-8-QWORD-PADDR-LISTP)
-;;                              (:REWRITE XLATE-EQUIV-X86S-AND-XW)
-;;                              (:REWRITE GOOD-PAGING-STRUCTURES-X86P-XW-FLD!=MEM-AND-CTR)
-;;                              (:REWRITE MULT-8-QWORD-PADDR-LIST-LISTP-AND-APPEND-2)
-;;                              (:REWRITE MULT-8-QWORD-PADDR-LIST-LISTP-AND-APPEND-1)
-;;                              (:REWRITE CANONICAL-ADDRESS-LISTP-FIRST-INPUT-TO-ALL-PAGING-ENTRIES-FOUND-P)
-;;                              (:REWRITE GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES-XW-FLD!=MEM-AND-CTR)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-3)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-2)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-1)
-;;                              signed-byte-p
-;;                              unsigned-byte-p
-;;                              bitops::logior-equal-0
-;;                              wm08-to-wb-in-system-level-mode
-;;                              cons-equal
-;;                              (:meta acl2::mv-nth-cons-meta)
-;;                              force (force)
-;;                              ia32e-la-to-pa-lower-12-bits-error
-;;                              loghead-zero-smaller
-;;                              ia32e-la-to-pa-lower-12-bits-value-of-address-when-error
-;;                              good-paging-structures-x86p-implies-x86p)))))
-
-;; ;; ----------------------------------------------------------------------
-
-;; (local
-;;  (def-gl-thm rm64-to-rb-in-system-level-mode-helper
-;;    :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-;;              (n08p e) (n08p f) (n08p g) (n08p h))
-;;    :concl (equal
-;;            (logior a
-;;                    (ash (logior b (ash (logior c (ash d 8)) 8)) 8)
-;;                    (ash (logior e (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 32))
-;;            (logior
-;;             a
-;;             (ash (logior
-;;                   b
-;;                   (ash (logior
-;;                         c
-;;                         (ash (logior d
-;;                                      (ash
-;;                                       (logior e
-;;                                               (ash
-;;                                                (logior f
-;;                                                        (ash (logior g (ash h 8)) 8)) 8)) 8)) 8)) 8)) 8)))
-;;    :g-bindings
-;;    (gl::auto-bindings
-;;     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
-;;           (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8)))
-;;    :rule-classes :linear))
-
-;; (local (in-theory (e/d () (rm64-to-rb-in-system-level-mode-helper))))
-
-;; (defthmd rm64-to-rb-in-system-level-mode
-;;   ;; TO-DO: Speed this up.
-;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;                 (equal l-addrs (create-canonical-address-list 8 lin-addr))
-;;                 (equal (len l-addrs) 8)
-;;                 (all-paging-entries-found-p l-addrs (double-rewrite x86))
-;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs r-w-x cpl (double-rewrite x86))
-;;                 (no-page-faults-during-translation-p l-addrs r-w-x cpl (double-rewrite x86)))
-;;            (equal (rm64 lin-addr r-w-x x86)
-;;                   (b* (((mv flg bytes x86)
-;;                         (rb l-addrs r-w-x x86))
-;;                        (result (combine-bytes bytes)))
-;;                     (mv flg result x86))))
-;;   :hints (("Goal"
-;;            :use ((:instance create-canonical-address-list-end-addr-is-canonical
-;;                             (addr lin-addr)
-;;                             (count 8)
-;;                             (end-addr (+ 7 lin-addr))))
-;;            :in-theory (e/d* (all-paging-entries-found-p
-;;                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-;;                              no-page-faults-during-translation-p
-;;                              rm32-to-rb-in-system-level-mode
-;;                              rm64-to-rb-in-system-level-mode-helper
-;;                              rm64
-;;                              rm08
-;;                              rb)
-;;                             ((:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2)
-;;                              (:LINEAR ASH-MONOTONE-2)
-;;                              (:REWRITE ACL2::NATP-WHEN-INTEGERP)
-;;                              (:REWRITE BITOPS::ASH-<-0)
-;;                              (:REWRITE ACL2::ASH-0)
-;;                              (:REWRITE ACL2::ZIP-OPEN)
-;;                              (:TYPE-PRESCRIPTION BITOPS::LOGIOR-NATP-TYPE)
-;;                              (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE)
-;;                              (:TYPE-PRESCRIPTION MEMI-IS-N08P)
-;;                              (:TYPE-PRESCRIPTION N08P-MV-NTH-1-RVM08)
-;;                              (:REWRITE ACL2::NATP-WHEN-GTE-0)
-;;                              (:REWRITE ACL2::IFIX-NEGATIVE-TO-NEGP)
-;;                              (:LINEAR <=-LOGIOR)
-;;                              (:DEFINITION OPEN-QWORD-PADDR-LIST-LIST)
-;;                              (:REWRITE MEMBER-LIST-P-AND-PAIRWISE-DISJOINT-P-AUX)
-;;                              (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-ENTRIES-FOUND-LA-TO-PA)
-;;                              (:DEFINITION OPEN-QWORD-PADDR-LIST)
-;;                              (:LINEAR BITOPS::LOGIOR->=-0-LINEAR)
-;;                              (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1)
-;;                              (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-;;                              (:REWRITE ACL2::LOGHEAD-IDENTITY)
-;;                              (:REWRITE DEFAULT-<-1)
-;;                              (:REWRITE LOGHEAD-ZERO-SMALLER)
-;;                              (:REWRITE ALL-SEG-VISIBLES-EQUAL-AUX-OPEN)
-;;                              (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-;;                              (:REWRITE ACL2::IFIX-WHEN-INTEGERP)
-;;                              (:DEFINITION MEMBER-LIST-P)
-;;                              (:REWRITE ACL2::NEGP-WHEN-LESS-THAN-0)
-;;                              (:REWRITE DEFAULT-+-2)
-;;                              (:REWRITE DEFAULT-+-1)
-;;                              (:DEFINITION BINARY-APPEND)
-;;                              (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
-;;                              (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
-;;                              (:REWRITE ACL2::NEGP-WHEN-INTEGERP)
-;;                              (:TYPE-PRESCRIPTION ASH)
-;;                              (:REWRITE DEFAULT-<-2)
-;;                              (:DEFINITION ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION MEMBER-LIST-P)
-;;                              (:TYPE-PRESCRIPTION MEMBER-P)
-;;                              (:REWRITE OPEN-QWORD-PADDR-LIST-LIST-AND-MEMBER-LIST-P)
-;;                              (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
-;;                              (:TYPE-PRESCRIPTION IFIX)
-;;                              (:DEFINITION BYTE-LISTP)
-;;                              (:LINEAR N08P-MV-NTH-1-RVM08)
-;;                              (:TYPE-PRESCRIPTION TRUE-LISTP-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION CONSP-ADDR-RANGE)
-;;                              (:REWRITE MEMBER-P-CDR)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
-;;                              (:REWRITE ACL2::CONSP-OF-CAR-WHEN-ATOM-LISTP)
-;;                              (:REWRITE PAIRWISE-DISJOINT-P-AUX-AND-APPEND)
-;;                              (:TYPE-PRESCRIPTION NATP)
-;;                              (:REWRITE CAR-ADDR-RANGE)
-;;                              (:REWRITE SUBSET-LIST-P-AND-MEMBER-LIST-P)
-;;                              (:TYPE-PRESCRIPTION GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES)
-;;                              (:DEFINITION MULT-8-QWORD-PADDR-LIST-LISTP)
-;;                              (:LINEAR MEMI-IS-N08P)
-;;                              (:TYPE-PRESCRIPTION ATOM-LISTP)
-;;                              (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P-PHYSICAL-ADDRESS-LISTP)
-;;                              (:DEFINITION MULT-8-QWORD-PADDR-LISTP)
-;;                              (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-;;                              (:TYPE-PRESCRIPTION SEG-VISIBLEI-IS-N16P)
-;;                              (:REWRITE ALL-PAGING-ENTRIES-FOUND-P-MEMBER-P)
-;;                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-;;                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-;;                              (:TYPE-PRESCRIPTION NEGP)
-;;                              (:LINEAR SIZE-OF-COMBINE-BYTES)
-;;                              (:REWRITE MEMBER-P-AND-MULT-8-QWORD-PADDR-LISTP)
-;;                              (:REWRITE MEMBER-LIST-P-AND-MULT-8-QWORD-PADDR-LIST-LISTP)
-;;                              (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
-;;                              (:REWRITE MEMBER-LIST-P-NO-DUPLICATES-LIST-P-AND-MEMBER-P)
-;;                              (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P)
-;;                              (:REWRITE MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P-MEMBER-P)
-;;                              (:REWRITE DISJOINT-P-SUBSET-P)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
-;;                              (:REWRITE CDR-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P)
-;;                              (:REWRITE CONSTANT-UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-;;                              (:REWRITE ALL-MEM-EXCEPT-PAGING-STRUCTURES-EQUAL-AUX-OPEN)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
-;;                              (:LINEAR BITOPS::UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-1)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-0)
-;;                              (:REWRITE CANONICAL-ADDRESS-LISTP-FIRST-INPUT-TO-ALL-PAGING-ENTRIES-FOUND-P)
-;;                              (:TYPE-PRESCRIPTION BYTE-LISTP)
-;;                              (:REWRITE NO-PAGE-FAULTS-DURING-TRANSLATION-P-MEMBER-P)
-;;                              (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-;;                              (:REWRITE
-;;                               GOOD-PAGING-STRUCTURES-X86P-IMPLIES-MULT-8-QWORD-PADDR-LIST-LISTP-PAGING-STRUCTURE-ADDRS)
-;;                              (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-;;                              (:REWRITE N08P-MV-NTH-1-RVM08)
-;;                              (:TYPE-PRESCRIPTION MULT-8-QWORD-PADDR-LIST-LISTP)
-;;                              (:LINEAR ACL2::LOGHEAD-UPPER-BOUND)
-;;                              (:REWRITE MEMBER-P-CANONICAL-ADDRESS-LISTP)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-0)
-;;                              (:TYPE-PRESCRIPTION MULT-8-QWORD-PADDR-LISTP)
-;;                              (:REWRITE MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P-SUBSET-P)
-;;                              (:REWRITE MULT-8-QWORD-PADDR-LIST-LISTP-AND-APPEND-2)
-;;                              (:REWRITE MULT-8-QWORD-PADDR-LIST-LISTP-AND-APPEND-1)
-;;                              (:REWRITE RIGHT-SHIFT-TO-LOGTAIL)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-3)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-2)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-1)
-;;                              (:REWRITE SUBSET-P-CDR-Y)
-;;                              (:REWRITE ACL2::REDUCE-INTEGERP-+-CONSTANT)
-;;                              (:TYPE-PRESCRIPTION ZIP)
-;;                              (:DEFINITION FIX)
-;;                              (:LINEAR N32P-MV-NTH-1-RM32)
-;;                              (:REWRITE SUBSET-P-TWO-CREATE-CANONICAL-ADDRESS-LISTS-SAME-BASE-ADDRESS)
-;;                              (:REWRITE CONSP-OF-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:REWRITE CDR-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:REWRITE LEN-OF-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:TYPE-PRESCRIPTION X86P-RM32)
-;;                              (:REWRITE CAR-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:REWRITE X86P-RM32)
-;;                              (:REWRITE SUBSET-P-TWO-CREATE-CANONICAL-ADDRESS-LISTS-GENERAL)
-;;                              (:TYPE-PRESCRIPTION BOOLEANP)
-;;                              (:TYPE-PRESCRIPTION N32P-MV-NTH-1-RM32)
-;;                              (:LINEAR MEMBER-P-POS-VALUE)
-;;                              (:LINEAR MEMBER-P-POS-1-VALUE)
-;;                              (:LINEAR ACL2::INDEX-OF-<-LEN)
-;;                              (:REWRITE RB-1-RETURNS-X86-PROGRAMMER-LEVEL-MODE)
-;;                              (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS)
-;;                              (:REWRITE RB-1-ACCUMULATOR-THM)
-;;                              signed-byte-p
-;;                              unsigned-byte-p
-;;                              bitops::logior-equal-0
-;;                              rm08-to-rb-in-system-level-mode
-;;                              (:meta acl2::mv-nth-cons-meta)
-;;                              mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
-;;                              force (force))))))
-
-;; (defthmd wm64-to-wb-in-system-level-mode
-;;   ;; TO-DO: Speed this up.
-;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;                 (equal l-addrs (create-canonical-address-list 8 lin-addr))
-;;                 (equal (len l-addrs) 8)
-;;                 (all-paging-entries-found-p l-addrs x86)
-;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl x86)
-;;                 (no-page-faults-during-translation-p l-addrs :w cpl x86))
-;;            (equal (wm64 lin-addr qword x86)
-;;                   (b* (((mv flg x86)
-;;                         (wb (create-addr-bytes-alist l-addrs (byte-ify 8 qword))
-;;                             x86)))
-;;                     (mv flg x86))))
-;;   :hints (("Goal"
-;;            :use ((:instance create-canonical-address-list-end-addr-is-canonical
-;;                             (addr lin-addr)
-;;                             (count 8)
-;;                             (end-addr (+ 7 lin-addr))))
-;;            :in-theory (e/d* (all-paging-entries-found-p
-;;                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-;;                              no-page-faults-during-translation-p
-;;                              wm64 wm32 wm08 wb
-;;                              byte-ify)
-;;                             ((:REWRITE ALL-PAGING-ENTRIES-FOUND-P-MEMBER-P)
-;;                              (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-;;                              (:REWRITE CAR-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:REWRITE ACL2::LOGHEAD-IDENTITY)
-;;                              (:REWRITE MEMBER-P-CANONICAL-ADDRESS-LISTP)
-;;                              (:REWRITE DEFAULT-+-2)
-;;                              (:REWRITE MEMBER-LIST-P-AND-PAIRWISE-DISJOINT-P-AUX)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
-;;                              (:DEFINITION MEMBER-LIST-P)
-;;                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-;;                              (:REWRITE DEFAULT-<-1)
-;;                              (:TYPE-PRESCRIPTION SEG-VISIBLEI-IS-N16P)
-;;                              (:DEFINITION OPEN-QWORD-PADDR-LIST-LIST)
-;;                              (:REWRITE DEFAULT-+-1)
-;;                              (:DEFINITION OPEN-QWORD-PADDR-LIST)
-;;                              (:TYPE-PRESCRIPTION X86P)
-;;                              (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST)
-;;                              (:TYPE-PRESCRIPTION BOOLEANP-PROGRAMMER-LEVEL-MODE-TYPE)
-;;                              (:TYPE-PRESCRIPTION MEMBER-P)
-;;                              (:REWRITE ACL2::LOGTAIL-IDENTITY)
-;;                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-;;                              (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-;;                              (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
-;;                              (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST-IN-TERMS-OF-LEN)
-;;                              (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
-;;                              (:DEFINITION BINARY-APPEND)
-;;                              (:REWRITE MEMBER-P-CDR)
-;;                              (:REWRITE OPEN-QWORD-PADDR-LIST-LIST-AND-MEMBER-LIST-P)
-;;                              (:TYPE-PRESCRIPTION MEMBER-LIST-P)
-;;                              (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
-;;                              (:TYPE-PRESCRIPTION NATP)
-;;                              (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
-;;                              (:REWRITE DEFAULT-<-2)
-;;                              (:REWRITE ALL-SEG-VISIBLES-EQUAL-AUX-OPEN)
-;;                              (:REWRITE CDR-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
-;;                              (:DEFINITION ADDR-RANGE)
-;;                              (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-;;                              (:REWRITE ACL2::IFIX-WHEN-INTEGERP)
-;;                              (:TYPE-PRESCRIPTION X86P-MV-NTH-1-WVM08)
-;;                              (:REWRITE ACL2::CONSP-OF-CAR-WHEN-ATOM-LISTP)
-;;                              (:REWRITE SUBSET-LIST-P-AND-MEMBER-LIST-P)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-1)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-0)
-;;                              (:TYPE-PRESCRIPTION TRUE-LISTP-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION CONSP-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES)
-;;                              (:REWRITE PAIRWISE-DISJOINT-P-AUX-AND-APPEND)
-;;                              (:TYPE-PRESCRIPTION XW)
-;;                              (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-;;                              (:REWRITE CAR-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION ATOM-LISTP)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
-;;                              (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
-;;                              (:REWRITE MEMBER-LIST-P-NO-DUPLICATES-LIST-P-AND-MEMBER-P)
-;;                              (:LINEAR MEMBER-P-POS-VALUE)
-;;                              (:LINEAR MEMBER-P-POS-1-VALUE)
-;;                              (:LINEAR ACL2::INDEX-OF-<-LEN)
-;;                              (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P-PHYSICAL-ADDRESS-LISTP)
-;;                              (:REWRITE NO-PAGE-FAULTS-DURING-TRANSLATION-P-MEMBER-P)
-;;                              (:TYPE-PRESCRIPTION IFIX)
-;;                              (:REWRITE DISJOINT-P-SUBSET-P)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
-;;                              (:REWRITE CDR-ADDR-RANGE)
-;;                              (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-ENTRIES-FOUND-LA-TO-PA)
-;;                              (:REWRITE MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P-MEMBER-P)
-;;                              (:REWRITE NO-PAGE-FAULTS-DURING-TRANSLATION-P-SUBSET-P)
-;;                              (:REWRITE MAPPED-LIN-ADDRS-DISJOINT-FROM-PAGING-STRUCTURE-ADDRS-P-SUBSET-P)
-;;                              (:REWRITE ALL-PAGING-ENTRIES-FOUND-P-SUBSET-P)
-;;                              (:REWRITE MEMBER-P-AND-MULT-8-QWORD-PADDR-LISTP)
-;;                              (:REWRITE MEMBER-LIST-P-AND-MULT-8-QWORD-PADDR-LIST-LISTP)
-;;                              (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P)
-;;                              (:REWRITE XW-XW-INTRA-FIELD-ARRANGE-WRITES)
-;;                              (:REWRITE XLATE-EQUIV-X86S-AND-XW-MEM-DISJOINT)
-;;                              (:REWRITE CONSP-CREATE-ADDR-BYTES-ALIST-IN-TERMS-OF-LEN)
-;;                              (:REWRITE XW-XW-INTRA-SIMPLE-FIELD-SHADOW-WRITES)
-;;                              (:REWRITE IA32E-ENTRIES-FOUND-LA-TO-PA-XW-STATE)
-;;                              (:LINEAR N52P-MV-NTH-1-IA32E-LA-TO-PA)
-;;                              (:REWRITE X86P-MV-NTH-2-IA32E-LA-TO-PA)
-;;                              (:DEFINITION MULT-8-QWORD-PADDR-LIST-LISTP)
-;;                              (:DEFINITION MULT-8-QWORD-PADDR-LISTP)
-;;                              (:LINEAR N52P-MV-NTH-1-IA32E-ENTRIES-FOUND-LA-TO-PA)
-;;                              (:REWRITE LEN-OF-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:DEFINITION CANONICAL-ADDRESS-LISTP)
-;;                              (:REWRITE CONSP-OF-CREATE-CANONICAL-ADDRESS-LIST)
-;;                              (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-LA-TO-PA)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-15*-WHEN-LOW-12-BITS-=-4081)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-15*-WHEN-LOW-12-BITS-<-4081)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-=-4090)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-=-4089)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-<-4093)
-;;                              (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-<-4089)
-;;                              (:LINEAR
-;;                               IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-!=-ALL-ONES)
-;;                              (:REWRITE IA32E-ENTRIES-FOUND-LA-TO-PA-XW-VALUE)
-;;                              (:LINEAR ACL2::LOGHEAD-UPPER-BOUND)
-;;                              (:TYPE-PRESCRIPTION MEMBER-EQUAL)
-;;                              (:TYPE-PRESCRIPTION XLATE-EQUIV-X86S)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-0)
-;;                              (:TYPE-PRESCRIPTION MULT-8-QWORD-PADDR-LISTP)
-;;                              (:REWRITE XLATE-EQUIV-X86S-AND-XW)
-;;                              (:REWRITE GOOD-PAGING-STRUCTURES-X86P-XW-FLD!=MEM-AND-CTR)
-;;                              (:REWRITE MULT-8-QWORD-PADDR-LIST-LISTP-AND-APPEND-2)
-;;                              (:REWRITE MULT-8-QWORD-PADDR-LIST-LISTP-AND-APPEND-1)
-;;                              (:REWRITE CANONICAL-ADDRESS-LISTP-FIRST-INPUT-TO-ALL-PAGING-ENTRIES-FOUND-P)
-;;                              (:REWRITE GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES-XW-FLD!=MEM-AND-CTR)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-3)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-2)
-;;                              (:REWRITE PHYSICAL-ADDRESS-P-LIMITS-THM-1)
-;;                              signed-byte-p
-;;                              unsigned-byte-p
-;;                              bitops::logior-equal-0
-;;                              wm08-to-wb-in-system-level-mode
-;;                              mv-nth-1-wm08-and-xlate-equiv-structures-disjoint
-;;                              wm32-to-wb-in-system-level-mode
-;;                              cons-equal
-;;                              (:meta acl2::mv-nth-cons-meta)
-;;                              force (force))))))
 
 ;; ======================================================================
 

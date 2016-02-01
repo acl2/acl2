@@ -1266,7 +1266,7 @@ memory.</li>
       :rule-classes (:type-prescription :rewrite))
 
     (defthm strip-cars-of-create-addr-bytes-alist
-      (implies (and (canonical-address-listp addrs)
+      (implies (and (true-listp addrs)
                     (equal (len addrs) (len bytes)))
                (equal (strip-cars (create-addr-bytes-alist addrs bytes))
                       addrs)))
@@ -1403,7 +1403,18 @@ memory.</li>
 
 ;; ======================================================================
 
-;; Defining the 16, 32, and 64-bit memory read/write functions:
+;; Defining the 16, 32, and 64, and 128 bit memory read/write
+;; functions:
+
+;; I haven't used physical memory functions like rm-low-* and wm-low-*
+;; in the system-level mode below because the *-low-* functions take
+;; one physical address as input and assume that the values to be read
+;; or written are from contiguous physical memory locations. In the
+;; functions below, there's no guarantee that the translation of
+;; contiguous linear addresses will produce contiguous physical
+;; addresses (though, IRL, that's likely the case). That's why there
+;; are long and ugly sequences of memi and !memi below instead of nice
+;; and pretty wrappers.
 
 (define rm16
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -1460,8 +1471,7 @@ memory.</li>
                       (the (signed-byte #.*max-linear-address-size+1*)
                         (1+ (the (signed-byte #.*max-linear-address-size*)
                               lin-addr))))
-
-                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                     ((mv flag (the (unsigned-byte #.*physical-address-size*) ?p-addr1) x86)
                       (la-to-pa 1+lin-addr r-w-x cpl x86))
                      ((when flag) (mv flag 0 x86))
 

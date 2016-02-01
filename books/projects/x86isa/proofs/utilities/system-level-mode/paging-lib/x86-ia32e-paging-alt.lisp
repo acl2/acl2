@@ -5,7 +5,7 @@
 
 (include-book "gather-paging-structures" :ttags :all)
 (include-book "clause-processors/find-subterms" :dir :system)
-(include-book "gl-lemmas")
+(include-book "../gl-lemmas")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
