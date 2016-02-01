@@ -3035,6 +3035,10 @@ memory.</li>
 ;; functions, I have an MBE inside write-canonical-address-to-memory,
 ;; where the :logic part is defined in terms of WB.
 
+;; Note that write-canonical-address-to-memory is optimized in the
+;; programmer-level mode only --- in the system-level mode, it's
+;; merely a call of wm64.
+
 (define write-canonical-address-to-memory-user-exec
   ((lin-addr          :type (signed-byte  #.*max-linear-address-size*))
    (canonical-address :type (signed-byte  #.*max-linear-address-size*))
@@ -3145,92 +3149,17 @@ memory.</li>
                  (write-canonical-address-to-memory-user-exec
                   lin-addr canonical-address x86))
 
-          (let* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                 (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
-
-            (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                  (la-to-pa lin-addr :w cpl x86))
-                 ((when flag) (mv flag x86))
-                 ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                  (+ 1 lin-addr))
-                 ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                  (la-to-pa 1+lin-addr :w cpl x86))
-                 ((when flag) (mv flag x86))
-                 ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                  (+ 2 lin-addr))
-                 ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                  (la-to-pa 2+lin-addr :w cpl x86))
-                 ((when flag) (mv flag x86))
-                 ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                  (+ 3 lin-addr))
-                 ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                  (la-to-pa 3+lin-addr :w cpl x86))
-                 ((when flag) (mv flag x86))
-                 ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                  (+ 4 lin-addr))
-                 ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                  (la-to-pa 4+lin-addr :w cpl x86))
-                 ((when flag) (mv flag x86))
-                 ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                  (+ 5 lin-addr))
-                 ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                  (la-to-pa 5+lin-addr :w cpl x86))
-                 ((when flag) (mv flag x86))
-                 ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
-                  (+ 6 lin-addr))
-                 ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
-                  (la-to-pa 6+lin-addr :w cpl x86))
-                 ((when flag) (mv flag x86))
-                 ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
-                  (+ 7 lin-addr))
-                 ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
-                  (la-to-pa 7+lin-addr :w cpl x86))
-                 ((when flag) (mv flag x86))
-
-                 (byte0 (mbe :logic (part-select canonical-address :low 0 :width 8)
-                             :exec (the (unsigned-byte 8)
-                                     (logand #xff canonical-address))))
-                 (byte1 (mbe :logic (part-select canonical-address :low 8 :width 8)
-                             :exec (the (unsigned-byte 8)
-                                     (logand #xff (ash canonical-address -8)))))
-                 (byte2 (mbe :logic (part-select canonical-address :low 16 :width 8)
-                             :exec (the (unsigned-byte 8)
-                                     (logand #xff (ash canonical-address -16)))))
-                 (byte3 (mbe :logic (part-select canonical-address :low 24 :width 8)
-                             :exec (the (unsigned-byte 8)
-                                     (logand #xff (ash canonical-address -24)))))
-
-                 ((the (signed-byte 32) canonical-address-high-int)
-                  (mbe
-                   :logic
-                   (n16-to-i16 (part-select canonical-address :low 32 :high 47))
-                   :exec
-                   (the (signed-byte 16)
-                     (ash canonical-address -32))))
-
-                 (byte4 (mbe :logic (part-select canonical-address-high-int :low 0 :width 8)
-                             :exec (the (unsigned-byte 8)
-                                     (logand #xff canonical-address-high-int))))
-                 (byte5 (mbe :logic (part-select canonical-address-high-int :low 8 :width 8)
-                             :exec (the (unsigned-byte 8)
-                                     (logand #xff (ash canonical-address-high-int -8)))))
-                 (byte6 (mbe :logic (part-select canonical-address-high-int :low 16 :width 8)
-                             :exec (the (unsigned-byte 8)
-                                     (logand #xff (ash canonical-address-high-int -16)))))
-                 (byte7 (mbe :logic (part-select canonical-address-high-int :low 24 :width 8)
-                             :exec (the (unsigned-byte 8)
-                                     (logand #xff (ash canonical-address-high-int -24)))))
-
-                 (x86 (!memi p-addr0 byte0 x86))
-                 (x86 (!memi p-addr1 byte1 x86))
-                 (x86 (!memi p-addr2 byte2 x86))
-                 (x86 (!memi p-addr3 byte3 x86))
-                 (x86 (!memi p-addr4 byte4 x86))
-                 (x86 (!memi p-addr5 byte5 x86))
-                 (x86 (!memi p-addr6 byte6 x86))
-                 (x86 (!memi p-addr7 byte7 x86)))
-
-                (mv nil x86))))
+          (b* ((canonical-address-unsigned-val
+                (mbe :logic (loghead 64 canonical-address)
+                     :exec (logand #.*2^64-1* canonical-address))))
+            ;; Note that calling wm64 here will be a tad expensive ---
+            ;; for one, there's an extra function call. Also, the
+            ;; programmer-level-mode field will have to be checked
+            ;; again inside wm64. However, this is better for
+            ;; reasoning than laying down the code again. As it is,
+            ;; performance in the system-level mode is quite less than
+            ;; that in programmer-level mode.
+            (wm64 lin-addr canonical-address-unsigned-val x86)))
 
       (mv 'write-canonical-address-to-memory-error x86)))
 

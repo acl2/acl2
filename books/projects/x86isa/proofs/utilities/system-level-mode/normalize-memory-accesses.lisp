@@ -630,9 +630,9 @@
     (all-paging-entries-found-p l-addrs (double-rewrite x86))
     (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl (double-rewrite x86))
     (no-page-faults-during-translation-p l-addrs :w cpl (double-rewrite x86)))
-   (equal (wm32 lin-addr word x86)
+   (equal (wm32 lin-addr dword x86)
           (b* (((mv & x86)
-                (wb (create-addr-bytes-alist l-addrs (byte-ify 4 word)) x86)))
+                (wb (create-addr-bytes-alist l-addrs (byte-ify 4 dword)) x86)))
             (mv nil x86))))
   :hints (("Goal"
            :do-not-induct t
@@ -670,23 +670,23 @@
         (all-paging-entries-found-p l-addrs (double-rewrite x86))
         (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl (double-rewrite x86))
         (no-page-faults-during-translation-p l-addrs :w cpl (double-rewrite x86)))
-   (equal (wm64 lin-addr dword x86)
+   (equal (wm64 lin-addr qword x86)
           (b* (((mv & x86)
-                (wm08 lin-addr (part-select dword :low 0 :width 8) x86))
+                (wm08 lin-addr (part-select qword :low 0 :width 8) x86))
                ((mv & x86)
-                (wm08 (+ 1 lin-addr) (part-select dword :low 8 :width 8) x86))
+                (wm08 (+ 1 lin-addr) (part-select qword :low 8 :width 8) x86))
                ((mv & x86)
-                (wm08 (+ 2 lin-addr) (part-select dword :low 16 :width 8) x86))
+                (wm08 (+ 2 lin-addr) (part-select qword :low 16 :width 8) x86))
                ((mv & x86)
-                (wm08 (+ 3 lin-addr) (part-select dword :low 24 :width 8) x86))
+                (wm08 (+ 3 lin-addr) (part-select qword :low 24 :width 8) x86))
                ((mv & x86)
-                (wm08 (+ 4 lin-addr) (part-select dword :low 32 :width 8) x86))
+                (wm08 (+ 4 lin-addr) (part-select qword :low 32 :width 8) x86))
                ((mv & x86)
-                (wm08 (+ 5 lin-addr) (part-select dword :low 40 :width 8) x86))
+                (wm08 (+ 5 lin-addr) (part-select qword :low 40 :width 8) x86))
                ((mv & x86)
-                (wm08 (+ 6 lin-addr) (part-select dword :low 48 :width 8) x86))
+                (wm08 (+ 6 lin-addr) (part-select qword :low 48 :width 8) x86))
                ((mv & x86)
-                (wm08 (+ 7 lin-addr) (part-select dword :low 56 :width 8) x86)))
+                (wm08 (+ 7 lin-addr) (part-select qword :low 56 :width 8) x86)))
             (mv nil x86))))
   :hints (("Goal"
            :use ((:instance create-canonical-address-list-end-addr-is-canonical
@@ -718,9 +718,9 @@
     (all-paging-entries-found-p l-addrs (double-rewrite x86))
     (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl (double-rewrite x86))
     (no-page-faults-during-translation-p l-addrs :w cpl (double-rewrite x86)))
-   (equal (wm64 lin-addr word x86)
+   (equal (wm64 lin-addr qword x86)
           (b* (((mv & x86)
-                (wb (create-addr-bytes-alist l-addrs (byte-ify 8 word)) x86)))
+                (wb (create-addr-bytes-alist l-addrs (byte-ify 8 qword)) x86)))
             (mv nil x86))))
   :hints (("Goal"
            :do-not-induct t
@@ -737,19 +737,52 @@
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
-;; TO-DO: Prove that write-canonical-address-to-memory conditionally
-;; rewrites to wb.
+;; ----------------------------------------------------------------------
+
+(defthmd write-canonical-address-to-memory-to-wb-in-system-level-mode
+  (implies
+   (forced-and
+    (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+    (equal l-addrs (create-canonical-address-list 8 lin-addr))
+    (equal (len l-addrs) 8)
+    (all-paging-entries-found-p l-addrs (double-rewrite x86))
+    (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p l-addrs :w cpl (double-rewrite x86))
+    (no-page-faults-during-translation-p l-addrs :w cpl (double-rewrite x86))
+    (not (xr :programmer-level-mode 0 x86)))
+   (equal (write-canonical-address-to-memory lin-addr signed-canonical-address x86)
+          (b* (((mv & x86)
+                (wb (create-addr-bytes-alist l-addrs (byte-ify 8 signed-canonical-address)) x86)))
+            (mv nil x86))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance create-canonical-address-list-end-addr-is-canonical
+                            (addr lin-addr)
+                            (count 8)
+                            (end-addr (+ 7 lin-addr))))
+           :in-theory (e/d* (write-canonical-address-to-memory
+                             wm64-to-wb-in-system-level-mode
+                             remove-loghead-from-byte-ify)
+                            (signed-byte-p
+                             unsigned-byte-p
+                             bitops::logior-equal-0
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 ;; ======================================================================
 
-(local (in-theory (e/d (rm08-to-rb-in-system-level-mode
+(local (in-theory (e/d (
+                        ;; Reads
+                        rm08-to-rb-in-system-level-mode
                         rm16-to-rb-in-system-level-mode
                         rm32-to-rb-in-system-level-mode
                         rm64-to-rb-in-system-level-mode
+                        ;; Writes
                         wm08-to-wb-in-system-level-mode
                         wm16-to-wb-in-system-level-mode
                         wm32-to-wb-in-system-level-mode
-                        wm64-to-wb-in-system-level-mode)
+                        wm64-to-wb-in-system-level-mode
+                        write-canonical-address-to-memory-to-wb-in-system-level-mode
+                        )
                        ())))
 
 ;; ======================================================================

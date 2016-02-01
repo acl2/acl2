@@ -1734,7 +1734,6 @@ we will get:
 
 ;; ----------------------------------------------------------------------
 
-
 (local
  (defthmd rm08-and-wb-member-lemma-error-helper
    (implies
@@ -2114,3 +2113,217 @@ we will get:
                                          force (force))))))
 
 ;; ======================================================================
+
+#||
+
+We need the following kind of lemmas in this book to make it similar
+in functionality to programmer-level-memory-utils.
+
+(defthm rb-wb-disjoint
+  (implies (and (disjoint-p addresses (strip-cars addr-lst))
+                (programmer-level-mode x86))
+           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal" :in-theory (e/d (disjoint-p) ()))))
+
+(defthmd rb-wb-equal
+  (implies (and (equal addresses (strip-cars (remove-duplicate-keys addr-lst)))
+                (programmer-level-mode x86)
+                (addr-byte-alistp addr-lst))
+           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
+                  (assoc-list addresses (reverse addr-lst))))
+  :hints (("Goal" :in-theory (e/d (wm08 rm08) ()))))
+
+(defthm rb-wb-subset
+  (implies (and (subset-p addresses (strip-cars addr-lst))
+                (programmer-level-mode x86)
+                ;; [Shilpi]: Ugh, this hyp. below is so annoying. I
+                ;; could remove it if I proved something like
+                ;; subset-p-strip-cars-of-remove-duplicate-keys,
+                ;; commented out below.
+                (canonical-address-listp addresses)
+                (addr-byte-alistp addr-lst))
+           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
+                  (assoc-list addresses (reverse addr-lst))))
+  :hints (("Goal" :induct (assoc-list addresses (reverse addr-lst)))))
+
+(defthmd rb-rb-subset
+  ;; [Shilpi]: This theorem can be generalized so that the conclusion mentions
+  ;; addr1, where addr1 <= addr.  Also, this is an expensive rule. Keep it
+  ;; disabled generally.
+  (implies (and (equal (mv-nth 1 (rb (create-canonical-address-list i addr) r-w-x x86))
+                       bytes)
+                (canonical-address-p (+ -1 i addr))
+                (canonical-address-p addr)
+                (xr :programmer-level-mode 0 x86)
+                (posp i)
+                (< j i))
+           (equal (mv-nth 1 (rb (create-canonical-address-list j addr) r-w-x x86))
+                  (take j bytes)))
+  :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p) ()))))
+
+(defthm rb-rb-split-reads
+  (implies (and (canonical-address-p addr)
+                (xr :programmer-level-mode 0 x86)
+                (natp j)
+                (natp k))
+           (equal (mv-nth 1 (rb (create-canonical-address-list (+ k j) addr) r-w-x x86))
+                  (append (mv-nth 1 (rb (create-canonical-address-list k addr) r-w-x x86))
+                          (mv-nth 1 (rb (create-canonical-address-list j (+ k addr)) r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p)
+                                   ((:meta acl2::mv-nth-cons-meta))))))
+
+(defthm program-at-wb-disjoint
+  (implies (and (programmer-level-mode x86)
+                (canonical-address-listp addresses)
+                (disjoint-p addresses (strip-cars addr-lst)))
+           (equal (program-at addresses r-w-x (mv-nth 1 (wb addr-lst x86)))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at) (rb)))))
+
+
+(defthm program-at-write-x86-file-des
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (write-x86-file-des i v x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at write-x86-file-des write-x86-file-des-logic)
+                                  (rb)))))
+
+(defthm program-at-delete-x86-file-des
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (delete-x86-file-des i x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at delete-x86-file-des delete-x86-file-des-logic)
+                                  (rb)))))
+
+(defthm program-at-write-x86-file-contents
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (write-x86-file-contents i v x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at write-x86-file-contents write-x86-file-contents-logic)
+                                  (rb)))))
+
+(defthm program-at-delete-x86-file-contents
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (delete-x86-file-contents i x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at delete-x86-file-contents delete-x86-file-contents-logic)
+                                  (rb)))))
+
+(defthm program-at-pop-x86-oracle
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (mv-nth 1 (pop-x86-oracle x86)))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
+                                  (rb)))))
+
+(defthm program-at-write-user-rflags
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (write-user-rflags flags mask x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (write-user-rflags)
+                                  (force (force))))))
+
+
+(defthm wb-and-wb-combine-wbs
+  (implies (and (addr-byte-alistp addr-list1)
+                (addr-byte-alistp addr-list2)
+                (programmer-level-mode x86))
+           (equal (mv-nth 1 (wb addr-list2 (mv-nth 1 (wb addr-list1 x86))))
+                  (mv-nth 1 (wb (append addr-list1 addr-list2) x86))))
+  :hints (("Goal" :do-not '(generalize)
+           :in-theory (e/d (wb-and-wm08) (append acl2::mv-nth-cons-meta)))))
+
+(defthmd wb-remove-duplicate-writes
+  (implies (and (syntaxp
+                 (not
+                  (and (consp addr-list)
+                       (eq (car addr-list) 'remove-duplicate-keys))))
+                (addr-byte-alistp addr-list)
+                (programmer-level-mode x86))
+           (equal (wb addr-list x86)
+                  (wb (remove-duplicate-keys addr-list) x86)))
+  :hints (("Goal" :do-not '(generalize)
+           :in-theory (e/d (wm08)
+                           (acl2::mv-nth-cons-meta))
+           :induct (wb-duplicate-writes-induct addr-list x86))))
+
+(defthm rb-in-terms-of-nth-and-pos
+  (implies (and (bind-free (find-info-from-program-at-term
+                            'rb-in-terms-of-nth-and-pos
+                            mfc state)
+                           (n prog-addr bytes))
+                (program-at (create-canonical-address-list n prog-addr) bytes x86)
+                (member-p addr (create-canonical-address-list n prog-addr))
+                (syntaxp (quotep n))
+                (programmer-level-mode x86))
+           (equal (car (mv-nth 1 (rb (list addr) :x x86)))
+                  (nth (pos addr (create-canonical-address-list n prog-addr)) bytes)))
+  :hints (("Goal" :in-theory (e/d (program-at)
+                                  (acl2::mv-nth-cons-meta
+                                   rm08-in-terms-of-rb
+                                   member-p-canonical-address-p-canonical-address-listp
+                                   rb))
+           :use ((:instance rm08-in-terms-of-rb
+                            (r-w-x :x))
+                 (:instance member-p-canonical-address-p-canonical-address-listp
+                            (e addr))
+                 (:instance rm08-in-terms-of-nth-pos-and-rb
+                            (r-w-x :x)
+                            (addresses (create-canonical-address-list n prog-addr)))))))
+
+(defthm rb-in-terms-of-rb-subset-p
+  (implies
+   (and (bind-free (find-info-from-program-at-term
+                    'rb-in-terms-of-rb-subset-p
+                    mfc state)
+                   (n prog-addr bytes))
+        (program-at (create-canonical-address-list n prog-addr) bytes x86)
+        (subset-p addresses (create-canonical-address-list n prog-addr))
+        (consp addresses)
+        (syntaxp (quotep n))
+        (programmer-level-mode x86))
+   (equal (mv-nth 1 (rb addresses :x x86))
+          (append (list (nth (pos
+                              (car addresses)
+                              (create-canonical-address-list n prog-addr))
+                             bytes))
+                  (mv-nth 1 (rb (cdr addresses) :x x86)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (subset-p)
+                           (canonical-address-p
+                            acl2::mv-nth-cons-meta
+                            rb-in-terms-of-nth-and-pos))
+           :use ((:instance rb-unwinding-thm
+                            (r-w-x :x))
+                 (:instance rb-in-terms-of-nth-and-pos
+                            (addr (car addresses)))))))
+
+(defthm combine-bytes-rb-in-terms-of-rb-subset-p
+  (implies
+   (and (bind-free (find-info-from-program-at-term
+                    'combine-bytes-rb-in-terms-of-rb-subset-p
+                    mfc state)
+                   (n prog-addr bytes))
+        (program-at (create-canonical-address-list n prog-addr) bytes x86)
+        (subset-p addresses (create-canonical-address-list n prog-addr))
+        (consp addresses)
+        (syntaxp (quotep n))
+        (programmer-level-mode x86))
+   (equal
+    (combine-bytes (mv-nth 1 (rb addresses :x x86)))
+    (combine-bytes
+     (append (list (nth (pos (car addresses)
+                             (create-canonical-address-list n prog-addr))
+                        bytes))
+             (mv-nth 1 (rb (cdr addresses) :x x86))))))
+  :hints (("Goal" :in-theory (union-theories
+                              '()
+                              (theory 'minimal-theory))
+           :use ((:instance rb-in-terms-of-rb-subset-p)))))
+
+(globally-disable '(rb wb canonical-address-p program-at
+                       unsigned-byte-p signed-byte-p))
+
+||#

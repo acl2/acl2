@@ -1012,6 +1012,21 @@
            (equal (wb addr-lst x86)
                   (mv nil x86))))
 
+;; Write-bytes-to-memory and wb:
+
+(defthm write-bytes-to-memory-is-wb
+  (implies (and (canonical-address-p (+ (len bytes) lin-addr))
+                (byte-listp bytes)
+                (canonical-address-p lin-addr))
+           (equal (write-bytes-to-memory lin-addr bytes x86)
+                  (wb (create-addr-bytes-alist
+                       (create-canonical-address-list (len bytes) lin-addr)
+                       bytes)
+                      x86)))
+  :hints (("Goal" :in-theory (e/d (write-bytes-to-memory
+                                   wb-and-wm08)
+                                  (acl2::mv-nth-cons-meta)))))
+
 ;; ======================================================================
 
 ;; Other misc. lemmas about pos, nth, etc. that are useful in both the

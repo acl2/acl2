@@ -514,21 +514,6 @@ programmer-level mode.</p>" )
                            (acl2::mv-nth-cons-meta))
            :induct (wb-duplicate-writes-induct addr-list x86))))
 
-;; Write-bytes-to-memory and wb:
-
-(defthm write-bytes-to-memory-is-wb
-  (implies (and (canonical-address-p (+ (len bytes) lin-addr))
-                (byte-listp bytes)
-                (canonical-address-p lin-addr))
-           (equal (write-bytes-to-memory lin-addr bytes x86)
-                  (wb (create-addr-bytes-alist
-                       (create-canonical-address-list (len bytes) lin-addr)
-                       bytes)
-                      x86)))
-  :hints (("Goal" :in-theory (e/d (write-bytes-to-memory
-                                   wb-and-wm08)
-                                  (acl2::mv-nth-cons-meta)))))
-
 ;; ======================================================================
 
 ;; Events related to RB:
