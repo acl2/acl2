@@ -1349,8 +1349,6 @@ wb:
 
 ;; ======================================================================
 
-;; RoW theorems in terms of rb and wb:
-
 (define translate-all-l-addrs (l-addrs r-w-x cpl x86)
   :guard (and (canonical-address-listp l-addrs)
               (member r-w-x '(:r :w :x))
@@ -1409,6 +1407,8 @@ wb:
     :hints (("Goal"
              :induct (translate-all-l-addrs l-addrs-1 r-w-x-1 cpl x86)
              :in-theory (e/d* (disjoint-p member-p) ())))))
+
+;; ======================================================================
 
 (defthmd rm08-wm08-disjoint-in-system-level-mode
   (implies (and (paging-entries-found-p addr-1 (double-rewrite x86))
@@ -1491,6 +1491,8 @@ wb:
                              gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)))))
 
 ;; ----------------------------------------------------------------------
+
+;; rb-wb-disjoint-in-system-level-mode:
 
 (local
  (defthm rm08-and-wb-disjoint-lemma
@@ -1734,139 +1736,7 @@ we will get:
 
 ;; ----------------------------------------------------------------------
 
-(local
- (defthmd rm08-and-wb-member-lemma-error-helper
-   (implies
-    (and
-     (equal (mv-nth 1 (ia32e-entries-found-la-to-pa
-                       index r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
-            (mv-nth 1 (ia32e-entries-found-la-to-pa
-                       (car (strip-cars addr-bytes))
-                       :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
-     (paging-entries-found-p index x86)
-     (all-paging-entries-found-p (strip-cars addr-bytes) x86)
-     (no-duplicates-p
-      (translate-all-l-addrs
-       (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
-     (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-      (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86)
-     (not (mv-nth 0 (ia32e-entries-found-la-to-pa
-                     index r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86)))
-     (no-page-faults-during-translation-p
-      (strip-cars addr-bytes)
-      :w (loghead 2 (xr :seg-visible 1 x86))
-      x86))
-    (not (mv-nth 0 (rm08 index r-w-x (mv-nth 1 (wb addr-bytes x86))))))
-   :hints (("Goal"
-            :do-not-induct t
-            :expand (wb addr-bytes x86)
-            :in-theory (e/d* (no-page-faults-during-translation-p
-                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-                              all-paging-entries-found-p
-                              pos rm08-wm08-equal-in-system-level-mode
-                              disjoint-p)
-                             (rm08-from-linear-addresses-that-map-to-the-same-physical-address
-                              rm08-and-wb-disjoint-lemma))
-            :use ((:instance rm08-and-wb-disjoint-lemma
-                             (index index)
-                             (r-w-x r-w-x)
-                             (addr-bytes (cdr addr-bytes))
-                             (x86 (mv-nth 1
-                                          (wm08 (car (car addr-bytes))
-                                                (cdr (car addr-bytes))
-                                                x86)))
-                             (cpl (bitops::part-select-width-low
-                                   (seg-visiblei
-                                    1
-                                    (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
-                                   2 0)))
-                  (:instance gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
-                             (x86 (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
-                             (x86-equiv x86)))))))
-
-(local
- (defthmd rm08-and-wb-member-lemma-value-helper
-   (implies
-    (and
-     (consp addr-bytes)
-     (equal
-      (mv-nth 1
-              (ia32e-entries-found-la-to-pa index r-w-x
-                                            (loghead 2 (xr :seg-visible 1 x86))
-                                            x86))
-      (mv-nth
-       1
-       (ia32e-entries-found-la-to-pa (car (strip-cars addr-bytes))
-                                     :w (loghead 2 (xr :seg-visible 1 x86))
-                                     x86)))
-     (paging-entries-found-p index x86)
-     (all-paging-entries-found-p (strip-cars addr-bytes)
-                                 x86)
-     (consp (strip-cars addr-bytes))
-     (no-duplicates-p
-      (translate-all-l-addrs (strip-cars addr-bytes)
-                             :w (loghead 2 (xr :seg-visible 1 x86))
-                             x86))
-     (no-duplicates-p (strip-cars addr-bytes))
-     (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-      (strip-cars addr-bytes)
-      :w (loghead 2 (xr :seg-visible 1 x86))
-      x86)
-     (not
-      (mv-nth 0
-              (ia32e-entries-found-la-to-pa index r-w-x
-                                            (loghead 2 (xr :seg-visible 1 x86))
-                                            x86)))
-     (no-page-faults-during-translation-p
-      (strip-cars addr-bytes)
-      :w (loghead 2 (xr :seg-visible 1 x86))
-      x86)
-     (equal (len (strip-cars addr-bytes))
-            (len (strip-cdrs addr-bytes)))
-     (addr-byte-alistp addr-bytes))
-    (equal
-     (mv-nth 1
-             (rm08 index
-                   r-w-x (mv-nth 1 (wb addr-bytes x86))))
-     (nth
-      (pos
-       (mv-nth
-        1
-        (ia32e-entries-found-la-to-pa (car (strip-cars addr-bytes))
-                                      :w (loghead 2 (xr :seg-visible 1 x86))
-                                      x86))
-       (translate-all-l-addrs (strip-cars addr-bytes)
-                              :w (loghead 2 (xr :seg-visible 1 x86))
-                              x86))
-      (strip-cdrs addr-bytes))))
-
-   :hints (("Goal"
-            :do-not-induct t
-            :expand (wb addr-bytes x86)
-            :in-theory (e/d* (no-page-faults-during-translation-p
-                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-                              all-paging-entries-found-p
-                              pos rm08-wm08-equal-in-system-level-mode
-                              disjoint-p)
-                             (rm08-from-linear-addresses-that-map-to-the-same-physical-address
-                              rm08-and-wb-disjoint-lemma))
-            :use ((:instance rm08-and-wb-disjoint-lemma
-                             (index index)
-                             (r-w-x r-w-x)
-                             (addr-bytes (cdr addr-bytes))
-                             (x86 (mv-nth 1
-                                          (wm08 (car (car addr-bytes))
-                                                (cdr (car addr-bytes))
-                                                x86)))
-                             (cpl (bitops::part-select-width-low
-                                   (seg-visiblei
-                                    1
-                                    (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
-                                   2 0)))
-                  (:instance gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
-                             (x86 (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
-                             (x86-equiv x86)))))))
-
+;; rb-wb-subset-in-system-level-mode:
 
 (defun-nx rm08-and-wb-member-lemma-ind-hint
   (index addr-bytes r-w-x cpl x86)
@@ -1888,6 +1758,246 @@ we will get:
        (mv-nth 1 (wm08 (car (strip-cars addr-bytes)) (car (strip-cdrs addr-bytes)) x86))))))
 
 (local
+ (defthm rm08-and-wb-member-lemma-for-error-field
+   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                 (paging-entries-found-p index (double-rewrite x86))
+                 (all-paging-entries-found-p (strip-cars addr-bytes) (double-rewrite x86))
+                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                  (strip-cars addr-bytes) :w cpl (double-rewrite x86))
+                 (not (mv-nth 0 (ia32e-entries-found-la-to-pa index r-w-x cpl x86)))
+                 (no-page-faults-during-translation-p
+                  (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
+            (equal (mv-nth 0 (rm08 index r-w-x (mv-nth 1 (wb addr-bytes x86))))
+                   nil))
+   :hints (("Goal"
+            :induct (rm08-and-wb-member-lemma-ind-hint index addr-bytes r-w-x cpl x86)
+            :in-theory (e/d* (wb
+                              rm08
+                              rm08-wm08-disjoint-in-system-level-mode
+                              rm08-wm08-equal-in-system-level-mode
+                              all-paging-entries-found-p
+                              no-page-faults-during-translation-p
+                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                              member-p)
+                             ())))))
+
+;; (defthm strip-cdrs-of-rev-is-rev-of-strip-cdrs
+;;   ;; strip-cars-of-rev-is-rev-of-strip-cars already exists.
+;;   (equal (strip-cdrs (acl2::rev as))
+;;          (acl2::rev (strip-cdrs as))))
+
+;; (defthm translate-all-l-addrs-of-rev-is-rev-of-translate-all-l-addrs
+;;   (equal (translate-all-l-addrs (acl2::rev l-addrs) r-w-x cpl x86)
+;;          (acl2::rev (translate-all-l-addrs l-addrs r-w-x cpl x86))))
+
+;; (defun-nx rm08-and-wb-member-lemma-ind-hint-value
+;;   (index addr-bytes r-w-x cpl x86)
+
+;;   (if (endp addr-bytes)
+;;       (mv 0 0 x86)
+
+;;     (if (equal
+;;          ;; If the physical addresses corresponding to index and the
+;;          ;; first address of addr-bytes are the same:
+;;          (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x cpl x86))
+;;          (mv-nth 1 (ia32e-entries-found-la-to-pa (car (strip-cars addr-bytes)) :w cpl x86)))
+
+;;         (if
+;;             ;; If the physical address corresponding to index is
+;;             ;; unique, i.e., no linear address in (cdr addr-bytes)
+;;             ;; maps to the same physical address as index: note that
+;;             ;; this covers the case of duplicate linear addresses
+;;             ;; too.
+;;             (not
+;;              (member-p
+;;               (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x cpl x86))
+;;               (translate-all-l-addrs (strip-cars (cdr addr-bytes)) :w cpl x86)))
+
+;;             (mv (car (strip-cars addr-bytes))
+;;                 (car (strip-cdrs addr-bytes))
+;;                 (mv-nth 1 (wm08 (car (strip-cars addr-bytes)) (car (strip-cdrs addr-bytes)) x86)))
+
+;;           ;; The physical address corresponding to index is not
+;;           ;; unique, so the byte corresponding to the first match will
+;;           ;; not be the final value of the memory location pointed to
+;;           ;; by index.
+;;           (b* ((pos-of-final-match
+;;                 (pos
+;;                  (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x cpl x86))
+;;                  (acl2::rev (translate-all-l-addrs (strip-cars (cdr addr-bytes)) :w cpl x86))))
+;;                (final-match-addr
+;;                 (nth
+;;                  pos-of-final-match
+;;                  (acl2::rev (translate-all-l-addrs (strip-cars (cdr addr-bytes)) :w cpl x86))))
+;;                (final-match-byte
+;;                 (nth
+;;                  pos-of-final-match
+;;                  (acl2::rev (strip-cdrs (cdr addr-bytes))))))
+
+;;             (mv final-match-addr
+;;                 final-match-byte
+;;                 (mv-nth 1 (wm08 final-match-addr final-match-byte
+;;                                 (mv-nth 1 (wb <all-the-writes-preceding-final-match> x86)))))))
+
+;;       (rm08-and-wb-member-lemma-ind-hint-value
+;;        index
+;;        (cdr addr-bytes)
+;;        r-w-x
+;;        cpl
+;;        (mv-nth 1 (wm08 (car (strip-cars addr-bytes)) (car (strip-cdrs addr-bytes)) x86))))))
+
+
+;; (local
+;;  (defthm rm08-and-wb-member-lemma
+;;    ;; '((0 . A) (1 . B) (0 . X) (2 . D))
+;;    ;; (nth (pos 0 (reverse '(0 1 0 2))) (reverse '(A B X D)))
+;;    (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                  (paging-entries-found-p index (double-rewrite x86))
+;;                  (all-paging-entries-found-p (strip-cars addr-bytes) (double-rewrite x86))
+;;                  (member-p
+;;                   ;; The physical addresses corresponding to index is
+;;                   ;; a member of those corresponding to (strip-cars addr-bytes).
+;;                   (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x cpl x86))
+;;                   (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
+;;                  ;; Note that the following two hypotheses about
+;;                  ;; uniqueness of linear and physical addresses means
+;;                  ;; that I need a "wb-remove-duplicate-writes" kinda
+;;                  ;; theorem about wb in the system-level mode.
+;;                  ;; (no-duplicates-p
+;;                  ;;  ;; All physical addresses being written to are
+;;                  ;;  ;; unique.
+;;                  ;;  (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
+;;                  ;; (no-duplicates-p
+;;                  ;;  ;; All linear addresses being written to are unique.
+;;                  ;;  (strip-cars addr-bytes))
+;;                  (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;                   ;; The write isn't being done to the page tables.
+;;                   (strip-cars addr-bytes) :w cpl (double-rewrite x86))
+;;                  ;; Can I not remove the following hyp?
+;;                  (not (mv-nth 0 (ia32e-entries-found-la-to-pa index r-w-x cpl x86)))
+;;                  (no-page-faults-during-translation-p
+;;                   ;; If the write doesn't succeed, the read can't read
+;;                   ;; what was written, duh.
+;;                   (strip-cars addr-bytes) :w cpl (double-rewrite x86))
+;;                  (equal (len (strip-cars addr-bytes)) (len (strip-cdrs addr-bytes)))
+;;                  (addr-byte-alistp addr-bytes))
+;;             (equal (mv-nth 1 (rm08 index r-w-x (mv-nth 1 (wb addr-bytes x86))))
+;;                    (nth
+;;                     (pos
+;;                      (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x cpl x86))
+;;                      (reverse (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86))))
+;;                     (reverse (strip-cdrs addr-bytes)))))
+;;    :hints (("Goal"
+;;             :induct (rm08-and-wb-member-lemma-ind-hint index (reverse addr-bytes) r-w-x cpl x86)
+;;             :in-theory (e/d* (wb
+;;                               rm08-wm08-disjoint-in-system-level-mode
+;;                               rm08-wm08-equal-in-system-level-mode
+;;                               all-paging-entries-found-p
+;;                               no-page-faults-during-translation-p
+;;                               mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;                               member-p)
+;;                              ()))
+;;            ("Subgoal *1/2" :expand (wb addr-bytes x86)
+;;             :in-theory (e/d* (pos
+;;                               rm08-wm08-disjoint-in-system-level-mode
+;;                               rm08-wm08-equal-in-system-level-mode
+;;                               no-page-faults-during-translation-p)
+;;                              ())))))
+
+
+(defthm uniqueness-of-physical-address-implies-that-of-linear-address
+  (implies
+   (not
+    ;; Physical addresses corresponding to lin-addr-1 and
+    ;; lin-addr-2 are different.
+    (equal (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr-1 r-w-x cpl x86))
+           (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr-2 r-w-x cpl x86))))
+   (not (equal lin-addr-1 lin-addr-2)))
+  :rule-classes nil)
+
+(defthmd uniqueness-of-physical-addresses-implies-that-of-linear-addresses-aux
+  (implies (not (member-p (mv-nth 1 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86))
+                          (translate-all-l-addrs l-addrs r-w-x cpl x86)))
+           (not (member-p lin-addr l-addrs)))
+  :hints (("Goal"
+           :in-theory (e/d* (member-p
+                             no-duplicates-p
+                             translate-all-l-addrs)
+                            ()))))
+
+(defthm uniqueness-of-physical-addresses-implies-that-of-linear-addresses
+  (implies (no-duplicates-p
+            ;; All physical addresses being written to are unique.
+            (translate-all-l-addrs l-addrs r-w-x cpl (double-rewrite x86)))
+           (no-duplicates-p l-addrs))
+  :hints (("Goal"
+           :in-theory (e/d* (uniqueness-of-physical-addresses-implies-that-of-linear-addresses-aux)
+                            ())))
+  :rule-classes (:rewrite :forward-chaining))
+
+(defthmd consp-strip-cdrs
+  (implies (consp as)
+           (consp (strip-cdrs as)))
+  :rule-classes (:rewrite :type-prescription))
+
+(local
+ (defthmd rm08-and-wb-member-lemma-helper
+   (implies
+    (and
+     (equal cpl (loghead 2 (xr :seg-visible 1 x86)))
+     (consp addr-bytes)
+     (equal
+      (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x cpl x86))
+      (mv-nth 1 (ia32e-entries-found-la-to-pa (car (strip-cars addr-bytes)) :w cpl x86)))
+     (paging-entries-found-p index x86)
+     (all-paging-entries-found-p (strip-cars addr-bytes) x86)
+     (consp (strip-cars addr-bytes))
+     (no-duplicates-p (translate-all-l-addrs (strip-cars addr-bytes) :w cpl x86))
+     (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+      (strip-cars addr-bytes) :w cpl x86)
+     (not (mv-nth 0 (ia32e-entries-found-la-to-pa index r-w-x cpl x86)))
+     (no-page-faults-during-translation-p (strip-cars addr-bytes) :w cpl x86)
+     (addr-byte-alistp addr-bytes)
+     (consp (strip-cdrs addr-bytes)))
+    (equal (mv-nth 1 (rm08 index r-w-x (mv-nth 1 (wb addr-bytes x86))))
+           (car (strip-cdrs addr-bytes))))
+   :hints (("Goal"
+            :do-not-induct t
+            :expand (wb addr-bytes x86)
+            :in-theory (e/d* (no-page-faults-during-translation-p
+                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                              all-paging-entries-found-p
+                              pos rm08-wm08-equal-in-system-level-mode
+                              disjoint-p)
+                             (rm08-from-linear-addresses-that-map-to-the-same-physical-address
+                              rm08-and-wb-disjoint-lemma
+                              uniqueness-of-physical-addresses-implies-that-of-linear-addresses))
+            :use ((:instance rm08-and-wb-disjoint-lemma
+                             (index index)
+                             (r-w-x r-w-x)
+                             (addr-bytes (cdr addr-bytes))
+                             (x86 (mv-nth 1
+                                          (wm08 (car (car addr-bytes))
+                                                (cdr (car addr-bytes))
+                                                x86)))
+                             (cpl (bitops::part-select-width-low
+                                   (seg-visiblei
+                                    1
+                                    (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
+                                   2 0)))
+                  (:instance gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
+                             (x86 (mv-nth 1 (wm08 (car (car addr-bytes)) (cdr (car addr-bytes)) x86)))
+                             (x86-equiv x86))
+                  (:instance uniqueness-of-physical-addresses-implies-that-of-linear-addresses
+                             (l-addrs (strip-cars addr-bytes))
+                             (r-w-x :w)
+                             (cpl (loghead 2 (xr :seg-visible 1 x86)))
+                             (x86 x86))
+                  (:instance consp-strip-cdrs
+                             (as addr-bytes)))))))
+
+
+(local
  (defthm rm08-and-wb-member-lemma
    (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
                  (paging-entries-found-p index (double-rewrite x86))
@@ -1905,13 +2015,9 @@ we will get:
                   ;; All physical addresses being written to are
                   ;; unique.
                   (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
-                 (no-duplicates-p
-                  ;; All linear addresses being written to are unique.
-                  (strip-cars addr-bytes))
                  (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                   ;; The write isn't being done to the page tables.
                   (strip-cars addr-bytes) :w cpl (double-rewrite x86))
-                 ;; Can I not remove the following hyp?
                  (not (mv-nth 0 (ia32e-entries-found-la-to-pa index r-w-x cpl x86)))
                  (no-page-faults-during-translation-p
                   ;; If the write doesn't succeed, the read can't read
@@ -1919,15 +2025,12 @@ we will get:
                   (strip-cars addr-bytes) :w cpl (double-rewrite x86))
                  (equal (len (strip-cars addr-bytes)) (len (strip-cdrs addr-bytes)))
                  (addr-byte-alistp addr-bytes))
-            (and
-             (equal (mv-nth 0 (rm08 index r-w-x (mv-nth 1 (wb addr-bytes x86))))
-                    nil)
-             (equal (mv-nth 1 (rm08 index r-w-x (mv-nth 1 (wb addr-bytes x86))))
-                    (nth
-                     (pos
-                      (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x cpl x86))
-                      (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
-                     (strip-cdrs addr-bytes)))))
+            (equal (mv-nth 1 (rm08 index r-w-x (mv-nth 1 (wb addr-bytes x86))))
+                   (nth
+                    (pos
+                     (mv-nth 1 (ia32e-entries-found-la-to-pa index r-w-x cpl x86))
+                     (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
+                    (strip-cdrs addr-bytes))))
    :hints (("Goal"
             :induct (rm08-and-wb-member-lemma-ind-hint index addr-bytes r-w-x cpl x86)
             :in-theory (e/d* (wb
@@ -1937,8 +2040,8 @@ we will get:
                               no-page-faults-during-translation-p
                               mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                               member-p
-                              rm08-and-wb-member-lemma-error-helper
-                              rm08-and-wb-member-lemma-value-helper)
+                              pos
+                              rm08-and-wb-member-lemma-helper)
                              ())))))
 
 (local
@@ -1956,7 +2059,6 @@ we will get:
          (no-duplicates-p
           (translate-all-l-addrs
            (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
-         (no-duplicates-p (strip-cars addr-bytes))
          (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
           (strip-cars addr-bytes) :w (loghead 2 (xr :seg-visible 1 x86)) x86)
          (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
@@ -2021,25 +2123,14 @@ we will get:
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
                 (all-paging-entries-found-p l-addrs-1 x86)
                 (all-paging-entries-found-p (strip-cars addr-bytes) x86)
-
                 (subset-p
                  ;; The physical addresses corresponding to l-addrs-1
                  ;; are a subset of those corresponding to (strip-cars addr-bytes).
                  (translate-all-l-addrs l-addrs-1 r-w-x cpl x86)
                  (translate-all-l-addrs (strip-cars addr-bytes) :w cpl x86))
-
-                ;; Note that the following two hypotheses about
-                ;; uniqueness of linear and physical addresses means
-                ;; that I need a "wb-remove-duplicate-writes" kinda
-                ;; theorem about wb in the system-level mode.
                 (no-duplicates-p
-                 ;; All physical addresses being written to are
-                 ;; unique.
+                 ;; All physical addresses being written to are unique.
                  (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
-                (no-duplicates-p
-                 ;; All linear addresses being written to are unique.
-                 (strip-cars addr-bytes))
-
                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                  ;; The write isn't being done to the page tables.
                  (strip-cars addr-bytes) :w cpl (double-rewrite x86))
@@ -2073,27 +2164,16 @@ we will get:
 
 (defthm rb-wb-subset-in-system-level-mode
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (all-paging-entries-found-p l-addrs-1 x86)
-                (all-paging-entries-found-p (strip-cars addr-bytes) x86)
-
+                (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
+                (all-paging-entries-found-p (strip-cars addr-bytes) (double-rewrite x86))
                 (subset-p
                  ;; The physical addresses corresponding to l-addrs-1
                  ;; are a subset of those corresponding to (strip-cars addr-bytes).
-                 (translate-all-l-addrs l-addrs-1 r-w-x cpl x86)
-                 (translate-all-l-addrs (strip-cars addr-bytes) :w cpl x86))
-
-                ;; Note that the following two hypotheses about
-                ;; uniqueness of linear and physical addresses means
-                ;; that I need a "wb-remove-duplicate-writes" kinda
-                ;; theorem about wb in the system-level mode.
-                (no-duplicates-p
-                 ;; All physical addresses being written to are
-                 ;; unique.
+                 (translate-all-l-addrs l-addrs-1 r-w-x cpl (double-rewrite x86))
                  (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
                 (no-duplicates-p
-                 ;; All linear addresses being written to are unique.
-                 (strip-cars addr-bytes))
-
+                 ;; All physical addresses being written to are unique.
+                 (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                  ;; The write isn't being done to the page tables.
                  (strip-cars addr-bytes) :w cpl (double-rewrite x86))
@@ -2104,9 +2184,9 @@ we will get:
                 (addr-byte-alistp addr-bytes))
            (equal (mv-nth 1 (rb l-addrs-1 r-w-x (mv-nth 1 (wb addr-bytes x86))))
                   (assoc-list
-                   (translate-all-l-addrs l-addrs-1 r-w-x cpl x86)
+                   (translate-all-l-addrs l-addrs-1 r-w-x cpl (double-rewrite x86))
                    (create-addr-bytes-alist
-                    (translate-all-l-addrs (strip-cars addr-bytes) :w cpl x86)
+                    (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86))
                     (strip-cdrs addr-bytes)))))
   :hints (("Goal" :in-theory (e/d* (rb rb-1-wb-subset-in-system-level-mode)
                                    (rb-1 signed-byte-p unsigned-byte-p
@@ -2180,35 +2260,6 @@ in functionality to programmer-level-memory-utils.
            (equal (program-at addresses r-w-x (mv-nth 1 (wb addr-lst x86)))
                   (program-at addresses r-w-x x86)))
   :hints (("Goal" :in-theory (e/d (program-at) (rb)))))
-
-
-(defthm program-at-write-x86-file-des
-  (implies (programmer-level-mode x86)
-           (equal (program-at addresses r-w-x (write-x86-file-des i v x86))
-                  (program-at addresses r-w-x x86)))
-  :hints (("Goal" :in-theory (e/d (program-at write-x86-file-des write-x86-file-des-logic)
-                                  (rb)))))
-
-(defthm program-at-delete-x86-file-des
-  (implies (programmer-level-mode x86)
-           (equal (program-at addresses r-w-x (delete-x86-file-des i x86))
-                  (program-at addresses r-w-x x86)))
-  :hints (("Goal" :in-theory (e/d (program-at delete-x86-file-des delete-x86-file-des-logic)
-                                  (rb)))))
-
-(defthm program-at-write-x86-file-contents
-  (implies (programmer-level-mode x86)
-           (equal (program-at addresses r-w-x (write-x86-file-contents i v x86))
-                  (program-at addresses r-w-x x86)))
-  :hints (("Goal" :in-theory (e/d (program-at write-x86-file-contents write-x86-file-contents-logic)
-                                  (rb)))))
-
-(defthm program-at-delete-x86-file-contents
-  (implies (programmer-level-mode x86)
-           (equal (program-at addresses r-w-x (delete-x86-file-contents i x86))
-                  (program-at addresses r-w-x x86)))
-  :hints (("Goal" :in-theory (e/d (program-at delete-x86-file-contents delete-x86-file-contents-logic)
-                                  (rb)))))
 
 (defthm program-at-pop-x86-oracle
   (implies (programmer-level-mode x86)
