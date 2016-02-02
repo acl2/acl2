@@ -991,6 +991,10 @@
 ;; Some lemmas about rb and wb that are applicable in both
 ;; programmer-level and system-level mode.
 
+(defthmd mv-nth-0-rb-1-and-accumulator
+  (equal (mv-nth 0 (rb-1 l-addrs r-w-x x86 acc-1))
+         (mv-nth 0 (rb-1 l-addrs r-w-x x86 acc-2))))
+
 (defthmd mv-nth-2-rb-1-and-accumulator
   (equal (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-1))
          (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-2))))

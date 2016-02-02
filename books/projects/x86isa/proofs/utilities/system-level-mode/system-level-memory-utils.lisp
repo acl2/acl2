@@ -76,6 +76,13 @@ wb:
 4. Conditions under which wb returns no error in the system-level mode
    [wb-returns-no-error-in-system-level-mode]
 
+program-at:
+
+1. Program-at after a wb returns the same result as though wb didn't
+   ever take place, as long as the wb didn't mess up the paging
+   structures or the program.
+   [program-at-wb-disjoint-in-system-level-mode]
+
 ||#
 
 (local (xdoc::set-default-parents system-level-memory-utils))
@@ -1615,12 +1622,11 @@ we will get:
      (consp l-addrs-1)
      (equal
       (mv-nth 1
-              (rb-1 (cdr l-addrs-1)
-                    r-w-x
-                    (mv-nth 1
-                            (wb addr-bytes
-                                (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86))))
-                    nil))
+              (rb-1
+               (cdr l-addrs-1)
+               r-w-x
+               (mv-nth 1 (wb addr-bytes (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86))))
+               nil))
       (mv-nth 1 (rb-1 (cdr l-addrs-1) r-w-x x86 nil)))
      (paging-entries-found-p (car l-addrs-1) x86)
      (all-paging-entries-found-p (cdr l-addrs-1) x86)
@@ -1667,6 +1673,103 @@ we will get:
                                            (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86)))))
                         (x86-2 (mv-nth 1 (wb addr-bytes x86)))
                         (acc nil)))))))
+
+(local
+ (defthmd rb-1-wb-disjoint-in-system-level-mode-error
+   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                 (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
+                 (all-paging-entries-found-p (strip-cars addr-bytes) (double-rewrite x86))
+                 (disjoint-p
+                  ;; the physical addresses corresponding to l-addrs-1
+                  ;; and (strip-cars addr-bytes) are different.
+                  (translate-all-l-addrs l-addrs-1 r-w-x cpl (double-rewrite x86))
+                  (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
+                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                  ;; the read isn't being done from the page tables.
+                  l-addrs-1 r-w-x cpl (double-rewrite x86))
+                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                  ;; the write isn't being done to the page tables.
+                  (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
+            (equal (mv-nth 0 (rb-1 l-addrs-1 r-w-x (mv-nth 1 (wb addr-bytes x86)) acc))
+                   (mv-nth 0 (rb-1 l-addrs-1 r-w-x x86 acc))))
+   :hints (("Goal"
+            :induct (rb-1-wb-disjoint-ind-hint l-addrs-1 (strip-cars addr-bytes) bytes r-w-x x86 acc)
+            :in-theory (e/d* (rb-1
+                              rb-1-wb-disjoint-in-system-level-mode-helper
+                              wb
+                              rm08-wm08-disjoint-in-system-level-mode
+                              all-paging-entries-found-p
+                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
+                             (signed-byte-p
+                              unsigned-byte-p
+                              mv-nth-0-rb-1-and-xlate-equiv-x86s-disjoint)))
+           ("Subgoal *1/2.5"
+            :in-theory (e/d* (rb-1
+                              rb-1-wb-disjoint-in-system-level-mode-helper
+                              wb
+                              rm08-wm08-disjoint-in-system-level-mode
+                              all-paging-entries-found-p
+                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                              disjoint-p)
+                             (mv-nth-0-rb-1-and-xlate-equiv-x86s-disjoint
+                              signed-byte-p
+                              unsigned-byte-p
+                              relating-rm08-and-rb-1-error))
+            :use ((:instance relating-rm08-and-rb-1-error
+                             (x86 (mv-nth 1 (wb addr-bytes x86)))
+                             (l-addrs l-addrs-1)
+                             (r-w-x r-w-x)
+                             (acc acc))))
+           ("Subgoal *1/2.4"
+            :expand (rb-1 l-addrs-1 r-w-x (mv-nth 1 (wb addr-bytes x86)) acc)
+            :use ((:instance mv-nth-0-rb-1-and-xlate-equiv-x86s-disjoint
+                             (l-addrs (cdr l-addrs-1))
+                             (r-w-x r-w-x)
+                             (x86-1 (mv-nth 2 (rm08 (car l-addrs-1) r-w-x (mv-nth 1 (wb addr-bytes x86)))))
+                             (x86-2 (mv-nth 1 (wb addr-bytes x86)))
+                             (acc (append acc (list (mv-nth 1 (rm08 (car l-addrs-1) r-w-x (mv-nth 1 (wb addr-bytes x86))))))))
+                  (:instance mv-nth-0-rb-1-and-xlate-equiv-x86s-disjoint
+                             (l-addrs (cdr l-addrs-1))
+                             (r-w-x r-w-x)
+                             (x86-1 (mv-nth 1 (wb addr-bytes (mv-nth 2 (rm08 (car l-addrs-1) r-w-x x86)))))
+                             (x86-2 (mv-nth 1 (wb addr-bytes x86)))
+                             (acc (append acc (list (mv-nth 1 (rm08 (car l-addrs-1) r-w-x x86)))))))
+            :in-theory (e/d* (rb-1
+                              rb-1-wb-disjoint-in-system-level-mode-helper
+                              wb
+                              rm08-wm08-disjoint-in-system-level-mode
+                              all-paging-entries-found-p
+                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                              disjoint-p)
+                             (mv-nth-0-rb-1-and-xlate-equiv-x86s-disjoint
+                              mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
+                              signed-byte-p
+                              unsigned-byte-p
+                              relating-rm08-and-rb-1-error))))))
+
+(defthm rb-wb-disjoint-in-system-level-mode-error
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (all-paging-entries-found-p l-addrs-1 (double-rewrite x86))
+                (all-paging-entries-found-p (strip-cars addr-bytes) (double-rewrite x86))
+                (disjoint-p
+                 ;; The physical addresses corresponding to l-addrs-1
+                 ;; and (strip-cars addr-bytes) are different.
+                 (translate-all-l-addrs l-addrs-1 r-w-x cpl (double-rewrite x86))
+                 (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                 ;; The read isn't being done from the page tables.
+                 l-addrs-1 r-w-x cpl (double-rewrite x86))
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                 ;; The write isn't being done to the page tables.
+                 (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
+           (equal (mv-nth 0 (rb l-addrs-1 r-w-x (mv-nth 1 (wb addr-bytes x86))))
+                  (mv-nth 0 (rb l-addrs-1 r-w-x x86))))
+  :hints (("Goal"
+           :use ((:instance rb-1-wb-disjoint-in-system-level-mode-error
+                            (acc nil)))
+           :in-theory (e/d* (rb)
+                            (mv-nth-0-rb-1-and-xlate-equiv-x86s-disjoint
+                             signed-byte-p unsigned-byte-p rb-1)))))
 
 (defthmd rb-1-wb-disjoint-in-system-level-mode
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
@@ -1733,6 +1836,36 @@ we will get:
   :hints (("Goal"
            :in-theory (e/d* (rb rb-1-wb-disjoint-in-system-level-mode)
                             (rb-1 signed-byte-p unsigned-byte-p force (force))))))
+
+(defthm program-at-wb-disjoint-in-system-level-mode
+  ;; Follows directly from rb-wb-disjoint-in-system-level-mode and
+  ;; rb-wb-disjoint-in-system-level-mode-error.
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (all-paging-entries-found-p l-addrs (double-rewrite x86))
+                (all-paging-entries-found-p (strip-cars addr-bytes) (double-rewrite x86))
+                (disjoint-p
+                 ;; The physical addresses corresponding to l-addrs
+                 ;; and (strip-cars addr-bytes) are different.
+                 (translate-all-l-addrs l-addrs :x cpl (double-rewrite x86))
+                 (translate-all-l-addrs (strip-cars addr-bytes) :w cpl (double-rewrite x86)))
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                 ;; The read isn't being done from the page tables.
+                 l-addrs :x cpl (double-rewrite x86))
+                (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                 ;; The write isn't being done to the page tables.
+                 (strip-cars addr-bytes) :w cpl (double-rewrite x86))
+                (addr-byte-alistp addr-bytes))
+           (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-bytes x86)))
+                  (program-at l-addrs bytes x86)))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance rb-wb-disjoint-in-system-level-mode
+                            (l-addrs-1 l-addrs)
+                            (r-w-x :x)
+                            (addr-bytes addr-bytes)
+                            (x86 x86)))
+           :in-theory (e/d (program-at)
+                           (rb-wb-disjoint-in-system-level-mode)))))
 
 ;; ----------------------------------------------------------------------
 
