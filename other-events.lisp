@@ -23909,10 +23909,18 @@
             (cond (result (mv "Iprinting has been disabled." state))
                   (t (mv "Iprinting remains disabled." state)))))
    ((eq x t)
-    (mv-let (result state)
-            (enable-iprint-ar state)
-            (cond (result (mv "Iprinting has been enabled." state))
-                  (t (mv "Iprinting remains enabled." state)))))
+    (cond
+     ((not (eql (1+ (iprint-hard-bound state))
+                (car (dimensions 'iprint-ar
+                                 (f-get-global 'iprint-ar state)))))
+      (pprogn (warning$ 'set-iprint "Iprint"
+                        "Resetting iprinting, because the :HARD-BOUND is ~
+                         changing.")
+              (set-iprint-fn1 :reset-enable state)))
+     (t (mv-let (result state)
+          (enable-iprint-ar state)
+          (cond (result (mv "Iprinting has been enabled." state))
+                (t (mv "Iprinting remains enabled." state)))))))
    ((member-eq x '(:reset :reset-enable))
     (pprogn
      (f-put-global 'iprint-ar

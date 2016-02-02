@@ -1122,7 +1122,7 @@
                                    old-iprint-ar
 
 ; If we change the :order to < from :none, then we need to reverse iprint-alist
-; just below.  But first read the comment in disable-iprint-ar to see why we
+; just below.  But first read the comment in disable-iprint-ar to see why
 ; changing the :order from :none requires some thought.
 
                                    iprint-alist))))))
