@@ -49,16 +49,16 @@
   (implies (consp x)
            (equal (equal (len x) 0) nil)))
 
-(defthm consp-rb
-  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-                (consp l-addrs)
-                (all-paging-entries-found-p l-addrs (double-rewrite x86))
-                (no-page-faults-during-translation-p l-addrs r-w-x cpl (double-rewrite x86)))
-           (consp (mv-nth 1 (rb l-addrs r-w-x x86))))
-  :hints (("Goal"
-           :use ((:instance len-of-rb-in-system-level-mode))
-           :in-theory (e/d* () (len-of-rb-in-system-level-mode))))
-  :rule-classes (:type-prescription :rewrite))
+;; (defthm consp-rb
+;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                 (consp l-addrs)
+;;                 (all-paging-entries-found-p l-addrs (double-rewrite x86))
+;;                 (no-page-faults-during-translation-p l-addrs r-w-x cpl (double-rewrite x86)))
+;;            (consp (mv-nth 1 (rb l-addrs r-w-x x86))))
+;;   :hints (("Goal"
+;;            :use ((:instance len-of-rb-in-system-level-mode))
+;;            :in-theory (e/d* () (len-of-rb-in-system-level-mode))))
+;;   :rule-classes (:type-prescription :rewrite))
 
 (local
  (defthmd dumb-rule-about-canonical-address-p-of-lin-addr-from-l-addrs

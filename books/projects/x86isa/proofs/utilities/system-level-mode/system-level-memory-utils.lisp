@@ -86,6 +86,12 @@ program-at:
    structures or the program.
    [program-at-wb-disjoint-in-system-level-mode]
 
+2. Some RoW rules
+   [program-at-pop-x86-oracle-in-system-level-mode]
+   [program-at-!flgi-in-system-level-mode]
+   [program-at-!flgi-undefined-in-system-level-mode]
+   [program-at-write-user-rflags-in-system-level-mode]
+
 ||#
 
 (local (xdoc::set-default-parents system-level-memory-utils))
@@ -1870,6 +1876,34 @@ we will get:
            :in-theory (e/d (program-at)
                            (rb-wb-disjoint-in-system-level-mode)))))
 
+(defthm program-at-pop-x86-oracle-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (equal (program-at addresses r-w-x (mv-nth 1 (pop-x86-oracle x86)))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
+                                  (rb)))))
+
+(defthm program-at-!flgi-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (equal (program-at addresses r-w-x (!flgi flg val x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at !flgi)
+                                  (force (force))))))
+
+(defthm program-at-!flgi-undefined-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (equal (program-at addresses r-w-x (!flgi-undefined flg x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at !flgi !flgi-undefined)
+                                  (force (force))))))
+
+(defthm program-at-write-user-rflags-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (equal (program-at addresses r-w-x (write-user-rflags flags mask x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (write-user-rflags)
+                                  (force (force))))))
+
 ;; ======================================================================
 
 ;; Proving rb-wb-subset-in-system-level-mode:
@@ -2719,6 +2753,219 @@ we will get:
                             mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                             no-page-faults-during-translation-p)
                            (acl2::mv-nth-cons-meta)))))
+
+;; ======================================================================
+
+;; Proofs of rb-in-terms-of-nth-and-pos-in-system-level-mode,
+;; rb-in-terms-of-rb-subset-p-in-system-level-mode, and
+;; combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode:
+
+(defthmd car-of-rb
+  (implies (canonical-address-listp l-addrs)
+           (equal (car (mv-nth 1 (rb l-addrs r-w-x x86)))
+                  (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+(local
+ (defthm rb-in-terms-of-nth-and-pos-in-system-level-mode-helper
+   (implies (and (syntaxp
+                  (and (consp anything)
+                       (eq (car anything)
+                           'create-canonical-address-list)))
+                 (canonical-address-listp anything)
+                 (signed-byte-p 48 addr))
+            (equal (car (mv-nth 1 (rb (cons addr anything) r-w-x x86)))
+                   (car (mv-nth 1 (rb (list addr) r-w-x x86)))))
+   :hints (("Goal" :use ((:instance car-of-rb
+                                    (l-addrs (cons addr anything))))))))
+
+(defthm consp-rb
+  (implies (and (consp l-addrs)
+                (no-page-faults-during-translation-p
+                 l-addrs r-w-x (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)) (double-rewrite x86))
+                (all-paging-entries-found-p l-addrs (double-rewrite x86)))
+           (consp (mv-nth 1 (rb l-addrs r-w-x x86))))
+  :hints (("Goal" :in-theory (e/d* (rb
+                                    all-paging-entries-found-p
+                                    no-page-faults-during-translation-p)
+                                   ())))
+  :rule-classes (:type-prescription :rewrite))
+
+(defthmd paging-entry-found-p-and-integerp-lin-addr
+  (implies (and (bind-free (find-binding-from-entry-found-p 'x86 mfc state) (x86))
+                (paging-entries-found-p lin-addr x86))
+           (integerp lin-addr))
+  :hints (("Goal" :use ((:instance entry-found-p-and-lin-addr)))))
+
+(defun find-info-from-program-at-term (thm mfc state)
+  ;; From programmer-level-memory-utils.
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable thm state))
+  (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
+       ((when (not call))
+        ;; (cw "~%~p0: Program-At term not encountered.~%" thm)
+        nil)
+       (addresses (cadr call))
+       ((when (not (equal (car addresses)
+                          'create-canonical-address-list)))
+        ;; (cw "~%~p0: Program-At without Create-Canonical-Address-List encountered.~%" thm)
+        nil)
+       (n (cadr addresses))
+       (prog-addr (caddr addresses))
+       (bytes (caddr call)))
+    `((n . ,n)
+      (prog-addr . ,prog-addr)
+      (bytes . ,bytes))))
+
+(defthm rb-in-terms-of-nth-and-pos-in-system-level-mode
+  (implies (and
+            (bind-free (find-info-from-program-at-term
+                        'rb-in-terms-of-nth-and-pos-in-system-level-mode
+                        mfc state)
+                       (n prog-addr bytes))
+            (program-at (create-canonical-address-list n prog-addr)
+                        bytes x86)
+            (member-p addr (create-canonical-address-list n prog-addr))
+            (syntaxp (quotep n))
+            (canonical-address-p prog-addr)
+            (all-paging-entries-found-p
+             (create-canonical-address-list n prog-addr) (double-rewrite x86))
+            (no-page-faults-during-translation-p
+             (create-canonical-address-list n prog-addr) :x
+             (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)) (double-rewrite x86))
+            (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+             (create-canonical-address-list n prog-addr) :x
+             (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)) (double-rewrite x86)))
+           (equal (car (mv-nth 1 (rb (list addr) :x x86)))
+                  (nth (pos addr (create-canonical-address-list n prog-addr)) bytes)))
+  :hints (("Goal"
+           :in-theory (e/d* (program-at
+                             paging-entry-found-p-and-integerp-lin-addr
+                             no-page-faults-during-translation-p
+                             all-paging-entries-found-p
+                             mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
+                            (acl2::mv-nth-cons-meta
+                             member-p-canonical-address-p-canonical-address-listp
+                             rb)))
+          ("Subgoal *1/7"
+           :expand (rb (cons prog-addr
+                             (create-canonical-address-list
+                              (+ -1 n) (+ 1 prog-addr)))
+                       :x x86)
+           :in-theory (e/d* (program-at
+                             paging-entry-found-p-and-integerp-lin-addr
+                             rb
+                             no-page-faults-during-translation-p
+                             all-paging-entries-found-p
+                             mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
+                            (acl2::mv-nth-cons-meta
+                             member-p-canonical-address-p-canonical-address-listp)))))
+
+(defthmd rb-unwinding-thm-in-system-level-mode
+  (implies
+   (and
+    (consp l-addrs)
+    (all-paging-entries-found-p l-addrs (double-rewrite x86))
+    (no-page-faults-during-translation-p
+     l-addrs r-w-x (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86))
+     (double-rewrite x86))
+    (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+     l-addrs r-w-x
+     (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86))
+     (double-rewrite x86)))
+   (equal (mv-nth 1 (rb l-addrs r-w-x x86))
+          (cons (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))
+                (mv-nth 1 (rb (cdr l-addrs) r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d* (rb
+                                    all-paging-entries-found-p
+                                    mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                                    no-page-faults-during-translation-p)
+                                   ()))))
+
+(defthm rb-in-terms-of-rb-subset-p-in-system-level-mode
+  (implies
+   (and
+    (bind-free (find-info-from-program-at-term
+                'rb-in-terms-of-rb-subset-p-in-system-level-mode
+                mfc state)
+               (n prog-addr bytes))
+    (program-at (create-canonical-address-list n prog-addr) bytes x86)
+    (subset-p addresses (create-canonical-address-list n prog-addr))
+    (consp addresses)
+    (all-paging-entries-found-p
+     (create-canonical-address-list n prog-addr) (double-rewrite x86))
+    (no-page-faults-during-translation-p
+     (create-canonical-address-list n prog-addr)
+     :x (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)) (double-rewrite x86))
+    (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+     (create-canonical-address-list n prog-addr)
+     :x (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)) (double-rewrite x86))
+    (syntaxp (quotep n)))
+   (equal (mv-nth 1 (rb addresses :x x86))
+          (append (list (nth (pos
+                              (car addresses)
+                              (create-canonical-address-list n prog-addr))
+                             bytes))
+                  (mv-nth 1 (rb (cdr addresses) :x x86)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (subset-p)
+                           (canonical-address-p
+                            acl2::mv-nth-cons-meta
+                            rb-in-terms-of-nth-and-pos-in-system-level-mode))
+           :use ((:instance rb-in-terms-of-nth-and-pos-in-system-level-mode
+                            (addr (car addresses)))
+                 (:instance rb-unwinding-thm-in-system-level-mode
+                            (l-addrs addresses)
+                            (r-w-x :x))))))
+
+(defthm combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode
+  (implies
+   (and
+    (bind-free (find-info-from-program-at-term
+                'combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode
+                mfc state)
+               (n prog-addr bytes))
+    (program-at (create-canonical-address-list n prog-addr) bytes x86)
+    (subset-p addresses (create-canonical-address-list n prog-addr))
+    (consp addresses)
+    (all-paging-entries-found-p
+     (create-canonical-address-list n prog-addr) (double-rewrite x86))
+    (no-page-faults-during-translation-p
+     (create-canonical-address-list n prog-addr)
+     :x (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)) (double-rewrite x86))
+    (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+     (create-canonical-address-list n prog-addr)
+     :x (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)) (double-rewrite x86))
+    (syntaxp (quotep n)))
+   (equal
+    (combine-bytes (mv-nth 1 (rb addresses :x x86)))
+    (combine-bytes
+     (append (list (nth (pos (car addresses)
+                             (create-canonical-address-list n prog-addr))
+                        bytes))
+             (mv-nth 1 (rb (cdr addresses) :x x86))))))
+  :hints (("Goal" :in-theory (union-theories
+                              '()
+                              (theory 'minimal-theory))
+           :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-mode)))))
+
+;; (i-am-here)
+
+;; (defthmd rb-rb-subset
+;;   ;; [Shilpi]: This theorem can be generalized so that the conclusion mentions
+;;   ;; addr1, where addr1 <= addr.  Also, this is an expensive rule. Keep it
+;;   ;; disabled generally.
+;;   (implies (and (equal (mv-nth 1 (rb (create-canonical-address-list i addr) r-w-x x86))
+;;                        bytes)
+;;                 (canonical-address-p (+ -1 i addr))
+;;                 (canonical-address-p addr)
+;;                 (xr :programmer-level-mode 0 x86)
+;;                 (posp i)
+;;                 (< j i))
+;;            (equal (mv-nth 1 (rb (create-canonical-address-list j addr) r-w-x x86))
+;;                   (take j bytes)))
+;;   :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p) ()))))
 
 ;; ======================================================================
 
