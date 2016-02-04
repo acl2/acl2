@@ -1147,7 +1147,7 @@
                   (pairwise-disjoint-p-aux (list index) (open-qword-paddr-list-list addrs))
                   (physical-address-p index))
              (equal (gather-all-paging-structure-qword-addresses (xw :mem index val x86))
-                    addrs)))
+                    addrs)))  
 
   (defthm gather-all-paging-structure-qword-addresses-wm-low-64-disjoint
     (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
@@ -2132,7 +2132,14 @@
                      (mult-8-qword-paddr-list-listp addrss))
                 (equal (all-mem-except-paging-structures-equal-aux i addrss (wm-low-64 index val x) y)
                        (all-mem-except-paging-structures-equal-aux i addrss x y)))
-       :hints (("Goal" :in-theory (e/d* (member-list-p) ()))))))
+       :hints (("Goal" :in-theory (e/d* (member-list-p) ()))))
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-xw-mem-commute-writes
+       (implies (not (equal index-1 index-2))
+                (all-mem-except-paging-structures-equal-aux
+                 i addrss
+                 (xw :mem index-1 val-1 (xw :mem index-2 val-2 x))
+                 (xw :mem index-2 val-2 (xw :mem index-1 val-1 x)))))))
 
   (if (good-paging-structures-x86p x86-1)
 
@@ -2206,7 +2213,14 @@
                          (gather-all-paging-structure-qword-addresses x)))
              (equal (all-mem-except-paging-structures-equal (wm-low-64 index val x) y)
                     (all-mem-except-paging-structures-equal (double-rewrite x) y)))
-    :hints (("Goal" :in-theory (e/d* () (all-mem-except-paging-structures-equal-aux))))))
+    :hints (("Goal" :in-theory (e/d* () (all-mem-except-paging-structures-equal-aux)))))
+
+  (defthm all-mem-except-paging-structures-equal-and-xw-mem-commute-writes
+    (implies (not (equal index-1 index-2))
+             (all-mem-except-paging-structures-equal
+              (xw :mem index-1 val-1 (xw :mem index-2 val-2 x))
+              (xw :mem index-2 val-2 (xw :mem index-1 val-1 x))))
+    :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
 (define xlate-equiv-structures (x86-1 x86-2)
   :parents (xlate-equiv-x86s)
