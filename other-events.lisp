@@ -4379,11 +4379,47 @@
                                         (list new-form))))))
           ((eq (car form) 'make-event)
            (cond ((and make-event-chk
+
+; Here we are doing just a bit of a sanity check.  It's not used when
+; redefinition is active, nor is it complete; see below.  But it's cheap and
+; it could catch some errors.
+
                        (not (and (true-listp form)
                                  (or (consp (cadr (member-eq :check-expansion
                                                              form)))
                                      (consp (cadr (member-eq :expansion?
-                                                             form)))))))
+                                                             form))))))
+
+; We avoid this check when redefinition is active.  Consider the following
+; example.  In the first pass of encapsulate there are no calls of make-event
+; so the resulting expansion-alist is empty.  But in the second pass,
+; process-embedded-events is called with make-event-chk = t, which would result
+; in the error below when (foo) is evaluated (because no make-event expansion
+; was saved for (foo) in the first pass) -- except, we avoid this check when
+; redefinition is active.
+
+;   (redef!)
+;   (encapsulate ()
+;     (defmacro foo () '(make-event '(defun f (x) x)))
+;     (local (defmacro foo () '(defun f (x) (cons x x))))
+;     (foo))
+
+; Moreover, this check is not complete.  Consider the following variant of the
+; example just above, the only difference being the progn wrapper.
+
+;   (redef!)
+;   (encapsulate ()
+;     (defmacro foo () '(progn (make-event '(defun f (x) x))))
+;     (local (defmacro foo () '(defun f (x) (cons x x))))
+;     (foo))
+
+; Because of the progn wrapper, chk-embedded-event-form is called on the
+; make-event call with make-event-chk = nil.  So even if we were to avoid the
+; redefintion check below, we would not get an error here.  If you change
+; anything here, consider changing the comment about redefinition in
+; encapsulate-pass-2 and associated code.
+
+                       (not (ld-redefinition-action state)))
                   (er soft ctx
                       "Either the :check-expansion or :expansion? argument of ~
                        make-event should be a consp in the present context.  ~
@@ -6426,7 +6462,34 @@
                     (car new-dependent-cl-procs)
                     (strip-cars insigs)
                     exported-names))
-               ((and expansion-alist (not only-pass-p))
+               ((and expansion-alist
+                     (not only-pass-p)
+
+; To see why we avoid this error when (ld-redefinition-action state), see the
+; comment about redefinition in chk-embedded-event-form.  If you change
+; anything here, consider changing that comment and associated code.
+
+; Note that when (not only-pass-p), we don't pass return an expansion-alist.
+; Consider here the first example from the aforemenioned ocmment in
+; chk-embedded-event-form.
+
+;   (redef!)
+;   (encapsulate ()
+;     (defmacro foo () '(make-event '(defun f (x) x)))
+;     (local (defmacro foo () '(defun f (x) (cons x x))))
+;     (foo))
+
+; Then after evaluating this event, we get the "expansion" by evluating
+; (access-command-tuple-last-make-event-expansion (cddr (car (w state)))) with
+; a result of nil, which is not the usual way to record expansions; for
+; example, (make-event '(defun g (x) x)) similarly gives us an expansion of
+; (DEFUN G (X) X).  There could be surprises, therefore, when using
+; redefinition, perhaps involving redundancy checking.  We have decided not to
+; complicate this function and its caller by trying to store an expansion-alist
+; in the (not only-pass-p) case, our justification being a warning in
+; :doc ld-redefinition-action.
+
+                     (not (ld-redefinition-action state)))
                 (value (er hard ctx
                            "Implementation error: Unexpected expansion-alist ~
                             ~x0 for second pass of encapsulate.  Please ~
@@ -28211,10 +28274,12 @@
                              ((f-get-global 'make-event-debug state)
                               (fms "Saving make-event replacement into state ~
                                     global 'last-make-event-expansion (debug ~
-                                    level ~x0):~|~Y12"
+                                    level ~
+                                    ~x0):~|Form:~|~X13~|Expansion:~|~X23~|"
                                    (list (cons #\0 debug-depth)
-                                         (cons #\1 actual-expansion)
-                                         (cons #\2 (abbrev-evisc-tuple state)))
+                                         (cons #\1 form)
+                                         (cons #\2 actual-expansion)
+                                         (cons #\3 (abbrev-evisc-tuple state)))
                                    (proofs-co state)
                                    state
                                    nil))
