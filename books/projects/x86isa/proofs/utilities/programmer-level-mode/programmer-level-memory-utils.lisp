@@ -194,6 +194,122 @@ programmer-level mode.</p>" )
 
 (local (in-theory (disable rvm08 rvm16 wvm08 wvm16 rvm32 rvm64 wvm32 wvm64)))
 
+;; ----------------------------------------------------------------------
+
+(defthm rb-!flgi-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb addresses r-w-x (!flgi flg val x86)))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal" :in-theory (e/d* (!flgi) (rb force (force))))))
+
+(defthm !flgi-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (!flgi flg val (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (!flgi flg val x86)))))
+  :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
+
+(defthm program-at-!flgi
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (!flgi flg val x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at !flgi) (rb)))))
+
+(defthm rb-!flgi-undefined-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb addresses r-w-x (!flgi-undefined flg x86)))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (rb force (force))))))
+
+(defthm !flgi-undefined-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (!flgi-undefined flg (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (!flgi-undefined flg x86)))))
+  :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (force (force))))))
+
+(defthm program-at-!flgi-undefined
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (!flgi-undefined flg x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at !flgi-undefined) (program-at)))))
+
+(defthm rb-write-user-rflags-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb addresses r-w-x (write-user-rflags flags mask x86)))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-user-rflags) (rb force (force))))))
+
+(defthm write-user-rflags-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (write-user-rflags flags mask (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (write-user-rflags flags mask x86)))))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags)
+                                   (force (force))))))
+
+(defthm flgi-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (flgi flg (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (flgi flg x86)))
+  :hints (("Goal" :in-theory (e/d* (flgi) ()))))
+
+(defthm alignment-checking-enabled-p-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (alignment-checking-enabled-p (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p)
+                                   (force (force))))))
+
+(defthm write-x86-file-contents-wb
+  (implies (programmer-level-mode x86)
+           (equal (write-x86-file-contents i v (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (write-x86-file-contents i v x86)))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-contents write-x86-file-contents-logic)
+                            ()))))
+
+(defthm delete-x86-file-contents-wb
+  (implies (programmer-level-mode x86)
+           (equal (delete-x86-file-contents i (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (delete-x86-file-contents i x86)))))
+  :hints (("Goal"
+           :in-theory (e/d* (delete-x86-file-contents delete-x86-file-contents-logic)
+                            ()))))
+
+(defthm pop-x86-oracle-wb
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (pop-x86-oracle (mv-nth 1 (wb addr-bytes-alst x86))))
+                  (mv-nth 1 (wb addr-bytes-alst (mv-nth 1 (pop-x86-oracle x86))))))
+  :hints (("Goal"
+           :in-theory (e/d* (pop-x86-oracle pop-x86-oracle-logic)
+                            ()))))
+
+(defthm rb-and-write-x86-file-des
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (write-x86-file-des i val x86)))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-des write-x86-file-des-logic) (rb)))))
+
+(defthm rb-and-write-x86-file-contents
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (write-x86-file-contents i val x86)))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-contents write-x86-file-contents-logic) (rb)))))
+
+(defthm rb-and-pop-x86-oracle
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (mv-nth 1 (pop-x86-oracle x86))))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (pop-x86-oracle pop-x86-oracle-logic) (rb)))))
+
+(defthm delete-x86-file-des-wb
+  (implies (programmer-level-mode x86)
+           (equal (delete-x86-file-des i (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (delete-x86-file-des i x86)))))
+  :hints (("Goal" :in-theory (e/d* (delete-x86-file-des delete-x86-file-des-logic) ()))))
+
 ;; ======================================================================
 
 ;; Theorems about rb and wb:

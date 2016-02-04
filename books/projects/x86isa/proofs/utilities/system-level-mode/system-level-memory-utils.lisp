@@ -60,6 +60,12 @@ rb:
 5. Splitting up the output of one rb into two rbs.
    [rb-rb-split-reads-in-system-level-mode]
 
+6. Rules about rb that will help in fetching and decoding an instruction during reasoning
+   [rb-in-terms-of-nth-and-pos-in-system-level-mode]
+   [rb-in-terms-of-rb-subset-p-in-system-level-mode]
+   [combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode]
+
+
 wb:
 
 1. Equality of error of wb from two xlate-equiv-structures
@@ -2950,22 +2956,66 @@ we will get:
                               (theory 'minimal-theory))
            :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-mode)))))
 
-;; (i-am-here)
+;; ======================================================================
 
-;; (defthmd rb-rb-subset
-;;   ;; [Shilpi]: This theorem can be generalized so that the conclusion mentions
-;;   ;; addr1, where addr1 <= addr.  Also, this is an expensive rule. Keep it
-;;   ;; disabled generally.
-;;   (implies (and (equal (mv-nth 1 (rb (create-canonical-address-list i addr) r-w-x x86))
-;;                        bytes)
-;;                 (canonical-address-p (+ -1 i addr))
-;;                 (canonical-address-p addr)
-;;                 (xr :programmer-level-mode 0 x86)
-;;                 (posp i)
-;;                 (< j i))
-;;            (equal (mv-nth 1 (rb (create-canonical-address-list j addr) r-w-x x86))
-;;                   (take j bytes)))
-;;   :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p) ()))))
+;; Some other RoWs required in the system-level mode:
+
+(defthm rb-pop-x86-oracle-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (and
+            (equal (mv-nth 0 (rb addresses r-w-x (mv-nth 1 (pop-x86-oracle x86))))
+                   (mv-nth 0 (rb addresses r-w-x x86)))
+            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (pop-x86-oracle x86))))
+                   (mv-nth 1 (rb addresses r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d (pop-x86-oracle pop-x86-oracle-logic)
+                                  (rb)))))
+
+(defthm rb-!flgi-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (and
+            (equal (mv-nth 0 (rb addresses r-w-x (!flgi flg val x86)))
+                   (mv-nth 0 (rb addresses r-w-x x86)))
+            (equal (mv-nth 1 (rb addresses r-w-x (!flgi flg val x86)))
+                   (mv-nth 1 (rb addresses r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d (!flgi)
+                                  (force (force))))))
+
+(defthm rb-!flgi-undefined-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (and
+            (equal (mv-nth 0 (rb addresses r-w-x (!flgi-undefined flg x86)))
+                   (mv-nth 0 (rb addresses r-w-x x86)))
+            (equal (mv-nth 1 (rb addresses r-w-x (!flgi-undefined flg x86)))
+                   (mv-nth 1 (rb addresses r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d (!flgi-undefined)
+                                  (force (force))))))
+
+(defthm flgi-and-rb-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (equal (flgi i (mv-nth 2 (rb l-addrs r-w-x x86)))
+                  (flgi i x86)))
+  :hints (("Goal" :in-theory (e/d* (flgi)
+                                   (force (force))))))
+
+(defthm alignment-checking-enabled-p-and-rb-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (equal (alignment-checking-enabled-p (mv-nth 2 (rb l-addrs r-w-x x86)))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p)
+                                   (force (force))))))
+
+(defthm flgi-wb-in-system-level-mode
+  (implies (case-split (not (programmer-level-mode x86)))
+           (equal (flgi flg (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (flgi flg x86)))
+  :hints (("Goal" :in-theory (e/d* (flgi) (force (force))))))
+
+(defthm alignment-checking-enabled-p-and-wb-in-system-level-mode
+  (implies (not (programmer-level-mode x86))
+           (equal (alignment-checking-enabled-p (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p)
+                                   (force (force))))))
 
 ;; ======================================================================
 

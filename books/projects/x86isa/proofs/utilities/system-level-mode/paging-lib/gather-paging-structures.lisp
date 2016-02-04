@@ -1147,7 +1147,7 @@
                   (pairwise-disjoint-p-aux (list index) (open-qword-paddr-list-list addrs))
                   (physical-address-p index))
              (equal (gather-all-paging-structure-qword-addresses (xw :mem index val x86))
-                    addrs)))  
+                    addrs)))
 
   (defthm gather-all-paging-structure-qword-addresses-wm-low-64-disjoint
     (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
@@ -1702,6 +1702,14 @@
        (not (xr :programmer-level-mode 0 x86))
        (let* ((paging-addresses (gather-all-paging-structure-qword-addresses x86)))
          (and (mult-8-qword-paddr-list-listp paging-addresses)
+              ;; Note that the clause no-duplicates-list-p below rules
+              ;; out self-referential paging entries. (See example in
+              ;; 4.10.3.3 Multiple Cached Entries for a Single
+              ;; Paging-Structure Entry of Intel Manuals, Vol. 3 for
+              ;; details). However, most OSes don't use
+              ;; self-referential entries, and for now, it's okay to
+              ;; weed out all the complications that they bring to the
+              ;; table.
               (no-duplicates-list-p paging-addresses))))
   ///
 
