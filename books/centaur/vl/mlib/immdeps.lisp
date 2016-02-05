@@ -245,29 +245,6 @@ elements.")
                          (not (stringp x))))
          :hints(("Goal" :in-theory (enable vl-hidname-p)))))
 
-(define vl-scopeexpr-top-immdeps
-  ((x vl-scopeexpr-p)
-   (ans vl-immdeps-p)
-   &key
-   ((ss  vl-scopestack-p  "Our current scope.") 'ss)
-   ((ctx acl2::any-p      "Context for warnings.") 'ctx))
-  :returns (ans vl-immdeps-p)
-  (vl-scopeexpr-case x
-    :end (vl-hidexpr-case x.hid
-           :end (vl-immdeps-add-item x.hid.name ans)
-           :dot (b* ((name (vl-hidindex->name x.hid.first)))
-                  (if (eq name :vl-$root)
-                      (vl-immdeps-fix ans)
-                    (vl-immdeps-add-item name ans))))
-    :colon
-    (if (stringp x.first)
-        (vl-immdeps-add-pkgdep x.first ans)
-      ;; BOZO think about other scopes.
-      ;; local:: is just something to do with randomize, I don't think we care yet.
-      ;; $unit:: is sort of very ambiguous, we might want to treat it as top-level
-      ;; or we might want to just not support it.
-      (vl-immdeps-fix ans))))
-
 
 
 (fty::defvisitor-template immdeps ((x :object)
@@ -283,9 +260,28 @@ elements.")
 (fty::defvisitor vl-expr-immdeps
   :template immdeps
   :type expressions-and-datatypes
-  :type-fns ((vl-scopeexpr vl-scopeexpr-immdeps-fn))
-  :renames ((vl-scopeexpr vl-scopeexpr-immdeps-aux))
+  :type-fns ((vl-scopeexpr vl-scopeexpr-immdeps-fn)
+             (vl-expr vl-expr-immdeps-fn))
+  :omit-types (vl-scopeexpr)
+  :renames ((vl-expr vl-expr-immdeps-aux))
   :measure (two-nats-measure :count 0)
+
+  (define vl-expr-immdeps ((x vl-expr-p)
+                                (ans vl-immdeps-p)
+                                &key
+                                ((ss vl-scopestack-p) 'ss)
+                                ((ctx acl2::any-p) 'ctx))
+    :returns (ans1 vl-immdeps-p)
+    :measure (two-nats-measure (vl-expr-count x) 1)
+    (vl-expr-case x
+      :vl-call (if x.systemp
+                   ;; Skip the function name.
+                   (b* ((ans (vl-maybe-datatype-immdeps x.typearg ans)))
+                     (vl-exprlist-immdeps x.args ans))
+                 (vl-expr-immdeps-aux x ans))
+      :otherwise
+      (vl-expr-immdeps-aux x ans)))
+
   (define vl-scopeexpr-immdeps ((x vl-scopeexpr-p)
                                 (ans vl-immdeps-p)
                                 &key
@@ -293,7 +289,33 @@ elements.")
                                 ((ctx acl2::any-p) 'ctx))
     :returns (ans1 vl-immdeps-p)
     :measure (two-nats-measure (vl-scopeexpr-count x) 1)
-    (vl-scopeexpr-immdeps-aux x (vl-scopeexpr-top-immdeps x ans))))
+    (vl-scopeexpr-case x
+      :end (b* ((ans (vl-hidexpr-immdeps x.hid ans))) ;; Analyzes the indices within the hid
+             (vl-hidexpr-case x.hid
+               ;; Bare name, no dots, no package -- depend on it
+               :end (vl-immdeps-add-item x.hid.name ans)
+               ;; Dotted name, no package -- depend on the outermost scope.
+               :dot (b* ((name (vl-hidindex->name x.hid.first)))
+                      (if (eq name :vl-$root)
+                          (vl-immdeps-fix ans)
+                        (vl-immdeps-add-item name ans)))))
+    :colon
+    ;; Pkg::hid - depend on the package, and scan the indices of the hid.
+    ;; Don't allow nested colon operators.
+    (b* ((ans (if (stringp x.first)
+                  (vl-immdeps-add-pkgdep x.first ans)
+                ;; BOZO think about other scopes.
+                ;; local:: is just something to do with randomize, I don't think we care yet.
+                ;; $unit:: is sort of very ambiguous, we might want to treat it as top-level
+                ;; or we might want to just not support it.
+                (vl-immdeps-fix ans))))
+      (vl-scopeexpr-case x.rest
+        :end (vl-hidexpr-immdeps x.rest.hid ans) ;; analyze the indices inside the hid
+        :colon (vl-immdeps-add-error
+                ans :type :vl-bad-scopeexpr
+                :msg "Nested colon operators in scopeexprs are not supported: ~a0"
+                :args (list (vl-scopeexpr-fix x))
+                :fatalp t))))))
 
 (fty::defvisitors vl-misc-immdeps
   :template immdeps
