@@ -25372,6 +25372,7 @@ Lisp definition."
 
   10000)
 
+#-acl2-loop-only
 (defun print-call-history ()
 
 ; We welcome suggestions from users or Lisp-specific experts for how to improve
@@ -25379,7 +25380,6 @@ Lisp definition."
 ; stack.
 
   (declare (xargs :guard t))
-  #-acl2-loop-only
   (when (f-get-global 'boot-strap-flg *the-live-state*)
 
 ; We don't know why SBCL 1.0.37 hung during guard verification of
@@ -25387,7 +25387,21 @@ Lisp definition."
 ; here.
 
     (return-from print-call-history nil))
-  #+(and ccl (not acl2-loop-only))
+  (when (f-get-global 'certify-book-info *the-live-state*)
+
+; The additional "Book under certification" message is helpful when the
+; backtrace output goes to the terminal instead of a .out file, which could
+; happen in SBCL before Feb. 2016.  That problem now seems to be solved for
+; SBCL, but we retain this printing in case it is helpful some day for some
+; Lisp.
+
+    (eval ; using eval because the certify-book-info record is not yet defined
+     '(format *standard-output*
+              "~%; Book under certification: ~s~%"
+              (access certify-book-info
+                      (f-get-global 'certify-book-info *the-live-state*)
+                      :full-book-name))))
+  #+ccl
   (when (fboundp 'ccl::print-call-history)
 ; See CCL file lib/backtrace.lisp for more options
     (eval '(ccl::print-call-history :detailed-p nil
@@ -25403,24 +25417,38 @@ Lisp definition."
 ; (when (fboundp 'system::ihs-backtrace)
 ;    (eval '(system::ihs-backtrace)))
 
-  #+(and allegro (not acl2-loop-only))
+  #+allegro
   (when (fboundp 'tpl::do-command)
     (eval '(tpl:do-command "zoom"
                            :from-read-eval-print-loop nil
                            :count t :all t)))
-  #+(and sbcl (not acl2-loop-only))
-  (when (fboundp 'sb-debug::backtrace)
-    (eval '(sb-debug::backtrace)))
-  #+(and cmucl (not acl2-loop-only))
+  #+sbcl
+  (cond ((fboundp 'sb-debug::print-backtrace)
+         (eval '(sb-debug::print-backtrace :stream *standard-output*)))
+        ((fboundp 'sb-debug::backtrace)
+         (eval '(sb-debug::backtrace nil *standard-output*))))
+  #+cmucl
   (when (fboundp 'debug::backtrace)
-    (eval '(debug::backtrace)))
-  #+(and clisp (not acl2-loop-only))
+    (eval '(debug::backtrace 1000 ; default for sbcl
+                             *standard-output*)))
+  #+clisp
   (when (fboundp 'system::print-backtrace)
     (eval '(catch 'system::debug
              (system::print-backtrace))))
-  #+(and lispworks (not acl2-loop-only))
+  #+lispworks
   (when (fboundp 'dbg::output-backtrace)
     (eval '(dbg::output-backtrace :verbose)))
+
+; Return nil, for compatibility with the #+acl2-loop-only definition.
+
+  nil)
+
+#+acl2-loop-only
+(defun print-call-history ()
+
+; Keep the return value in sync with the #-acl2-loop-only definition.
+
+  (declare (xargs :guard t))
   nil)
 
 (defmacro debugger-enabledp-val (val)

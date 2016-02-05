@@ -7421,6 +7421,32 @@
 ; args would be arbitrary expressions (from the cadrs of the doublets in the
 ; let-bindings).
 
+; We are tempted to enforce the call-arguments-limit imposed by Common Lisp.
+; According to the HyperSpec, this constant has an implementation-dependent
+; value that is "An integer not smaller than 50", and is "The upper exclusive
+; bound on the number of arguments that may be passed to a function."
+; The limits vary considerably, and are as follows in increasing order.
+
+;   GCL Version 2.6.12
+;                    64
+;   LispWorks Version 7.0.0
+;                  2047
+;   Allegro CL Enterprise Edition 8.0
+;                 16384
+;   Clozure Common Lisp Version 1.12-dev-r16695M-trunk
+;                 65536
+;   CMU Common Lisp snapshot-2016-01 (21A Unicode)
+;             536870911
+;   SBCL 1.3.0
+;   4611686018427387903
+
+; We have decided not to impose this limit ourselves, because for example, it
+; would be sad if a large existing proof development done using, say, CCL, were
+; to start failing because we impose a limit of 50 or 64.  Instead, we view
+; this limit as a resource limitation that is implementation-dependent, in the
+; same spirit as how one could get a stack overflow or memory exhaustion on one
+; platform but not another.
+
   (mv-let
    (flg stobjs-in-call stobjs-out-call)
    (stobjs-in-out fn args stobjs-out2 known-stobjs wrld)
