@@ -30,6 +30,94 @@
 
 (in-package "FTY")
 (include-book "fty-sum")
+
+(define prod-consp (x)
+  :parents (defprod)
+  :short "Special recognizer for conses, except that to save space we require
+          that (nil . nil) be represented just as nil."
+  :returns (ans booleanp :rule-classes :type-prescription)
+  (if (consp x)
+      (and (or (car x) (cdr x))
+           t)
+    (not x))
+  ///
+  (defthm prod-consp-compound-recognizer
+    (implies (prod-consp x)
+             (or (consp x) (not x)))
+    :rule-classes :compound-recognizer))
+
+(define prod-cons (x y)
+  :parents (defprod)
+  :short "Special constructor for products that collapses (nil . nil) into nil."
+  :returns (pcons prod-consp :rule-classes (:rewrite :type-prescription)
+                  :hints(("Goal" :in-theory (enable prod-consp))))
+  :inline t
+  (and (or x y)
+       (cons x y))
+  ///
+  (defthm car-of-prod-cons
+    (equal (car (prod-cons x y)) x))
+  (defthm cdr-of-prod-cons
+    (equal (cdr (prod-cons x y)) y))
+  (defthm prod-cons-of-car/cdr
+    (implies (prod-consp x)
+             (equal (prod-cons (car x) (cdr x))
+                    x))
+    :hints(("Goal" :in-theory (enable prod-consp))))
+  (defthmd equal-of-prod-cons
+    (implies (prod-consp x)
+             (equal (equal x (prod-cons a b))
+                    (and (equal (car x) a)
+                         (equal (cdr x) b))))
+    :hints(("Goal" :in-theory (enable prod-consp))))
+  (defthm acl2-count-of-prod-cons
+    (and (>= (acl2-count (prod-cons x y))
+             (acl2-count x))
+         (>= (acl2-count (prod-cons x y))
+             (acl2-count y)))
+    :rule-classes :linear)
+
+  (defthm prod-cons-equal-cons
+    (implies (or a b)
+             (equal (equal (prod-cons a b) (cons c d))
+                    (and (equal a c)
+                         (equal b d))))
+    :hints(("Goal" :in-theory (enable prod-cons))))
+
+  (defthm prod-cons-when-either
+    (implies (or a b)
+             (and (prod-cons a b)
+                  (consp (prod-cons a b))))
+    :hints(("Goal" :in-theory (enable prod-cons))))
+
+  (defthm prod-cons-not-consp-forward
+    (implies (not (consp (prod-cons a b)))
+             (and (not a) (not b)))
+    :hints(("Goal" :in-theory (enable prod-cons)))
+    :rule-classes ((:forward-chaining :trigger-terms ((prod-cons a b))))))
+
+(define prod-car ((x prod-consp))
+  :enabled t
+  :inline t
+  (car x))
+
+(define prod-cdr ((x prod-consp))
+  :enabled t
+  :inline t
+  (cdr x))
+
+(define prod-hons (x y)
+  :parents (defprod)
+  :short "Same as @(see prod-cons) but uses @(see hons)."
+  :inline t
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable prod-cons)))
+  (mbe :logic (prod-cons x y)
+       :exec (and (or x y)
+                  (hons x y))))
+  
+
+
 (program)
 
 ; We now introduce defoption, defprod, and deftagsum.  These macros are
@@ -130,7 +218,7 @@
 
 ; We now translate the user's field descriptions into the flexsum format.
 
-(define tagsum-acc-for-tree (pos num expr)
+(define tagsum-acc-for-tree (pos num expr car cdr)
   ;; Construct the correct CAR/CDR nest to get to the POS'th field out of NUM
   ;; fields in a tree layout.  EXPR starts as X and gets extended with
   ;; CAR/CDRs.
@@ -140,8 +228,8 @@
         expr)
        (half (floor num 2))
        ((when (< pos half))
-        (tagsum-acc-for-tree pos half `(car ,expr))))
-    (tagsum-acc-for-tree (- pos half) (- num half) `(cdr ,expr))))
+        (tagsum-acc-for-tree pos half `(,car ,expr) car cdr)))
+    (tagsum-acc-for-tree (- pos half) (- num half) `(,cdr ,expr) car cdr)))
 
 (define tagsum-formal-to-flexsum-field
   ((x      "A single field, already parsed into a formal.")
@@ -153,7 +241,8 @@
   (b* (((std::formal x) x)
        (accessor (case layout
                    (:alist `(cdr (std::da-nth ,pos ,xvar)))
-                   (:tree (tagsum-acc-for-tree pos num xvar))
+                   (:tree (tagsum-acc-for-tree pos num xvar 'prod-car 'prod-cdr))
+                   (:fulltree (tagsum-acc-for-tree pos num xvar 'car 'cdr))
                    (:list `(std::da-nth ,pos ,xvar)))))
     `(,x.name :acc-body ,accessor
               :doc ,x.doc
@@ -186,32 +275,36 @@
             ,(tagsum-tree-ctor (nthcdr half fieldnames) (- len half) cons))))
 
 (define tagsum-fields-to-ctor-body (fieldnames layout honsp)
-  (b* ((cons (if honsp 'hons 'cons))
+  (b* ((cons (if honsp
+                 (if (eq layout :tree) 'prod-hons 'hons)
+               (if (eq layout :tree) 'prod-cons 'cons)))
        (list (if honsp 'acl2::hons-list 'list)))
     (case layout
-      (:alist `(,list . ,(tagsum-alist-ctor-elts fieldnames cons)))
-      (:tree (tagsum-tree-ctor fieldnames (len fieldnames) cons))
-      (:list `(,list . ,fieldnames)))))
+      (:alist    `(,list . ,(tagsum-alist-ctor-elts fieldnames cons)))
+      ((:tree :fulltree)
+                 (tagsum-tree-ctor fieldnames (len fieldnames) cons))
+      (:list     `(,list . ,fieldnames)))))
 
-(define tagsum-tree-shape (len expr)
+(define tagsum-tree-shape (len expr consp car cdr)
   (b* (((when (zp len))
         (raise "bad programmer"))
        ((when (eql len 1))
         nil)
        (half (floor len 2)))
-    (cons `(consp ,expr)
-          (append (tagsum-tree-shape half `(car ,expr))
-                  (tagsum-tree-shape (- len half) `(cdr ,expr))))))
+    (cons `(,consp ,expr)
+          (append (tagsum-tree-shape half `(,car ,expr) consp car cdr)
+                  (tagsum-tree-shape (- len half) `(,cdr ,expr) consp car cdr)))))
 
 (define tagsum-fields-to-shape (fields xvar layout)
   ;; This is used for both tagsum and defprod.  In tagsum, xvar is actually `(cdr
   ;; ,xvar) because this doesn't involve the tag.
   (case layout
-    (:alist `(and (alistp ,xvar)
-                  (equal (strip-cars ,xvar) ',(strip-cars fields))))
-    (:list `(and (true-listp ,xvar)
-                 (eql (len ,xvar) ,(len fields))))
-    (:tree `(and . ,(tagsum-tree-shape (len fields) xvar)))))
+    (:alist    `(and (alistp ,xvar)
+                     (equal (strip-cars ,xvar) ',(strip-cars fields))))
+    (:list     `(and (true-listp ,xvar)
+                     (eql (len ,xvar) ,(len fields))))
+    (:tree     `(and . ,(tagsum-tree-shape (len fields) xvar 'prod-consp 'prod-car 'prod-cdr)))
+    (:fulltree `(and . ,(tagsum-tree-shape (len fields) xvar 'consp 'car 'cdr)))))
 
 
 ; Tagsum Parsing --------------------------------------------------------------
@@ -324,7 +417,7 @@
     :no-count
     :parents :short :long  ;; xdoc
     :inline
-    :layout ;; :list, :tree, :alist
+    :layout ;; :list, :tree, :fulltree, :alist
     :case
     :base-case-override
     :prepwork
@@ -406,7 +499,7 @@
                    (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
                    (intern-in-package-of-symbol "X" name)))
        (layout (getarg :layout :alist kwd-alist))
-       ((unless (member layout '(:tree :list :alist)))
+       ((unless (member layout '(:tree :fulltree :list :alist)))
         (raise "In tagsum ~x0: Bad layout type ~x1~%" name layout))
        (base-override (getarg :base-case-override nil kwd-alist))
        (flexprods-in (tagsum-prods-to-flexprods orig-prods xvar kwd-alist base-override these-fixtypes name))
@@ -460,7 +553,7 @@
     :long  ;; xdoc
     :inline
     :require
-    :layout ;; :list, :tree, :alist
+    :layout ;; :list, :tree, :fulltree, :alist
     :tag
     :hons
     :prepwork
@@ -475,7 +568,7 @@
 
 (define defprod-fields-to-flexsum-prod (fields xvar name kwd-alist)
   (b* ((layout (getarg :layout :alist kwd-alist))
-       ((unless (member layout '(:tree :list :alist)))
+       ((unless (member layout '(:tree :fulltree :list :alist)))
         (raise "In ~x0: bad layout type ~x1~%" name layout))
        (tag (getarg :tag nil kwd-alist))
        (hons (getarg :hons nil kwd-alist))
@@ -635,7 +728,8 @@
     :no-count
     :parents :short :long  ;; xdoc
     :inline
-    :layout ;; :list, :tree, :alist
+    ;; bozo we had layout here?? are the rest of these sensible?
+    ;; :layout ;; :list, :tree, :fulltree, :alist
     :case
     :base-case-override
     :prepwork

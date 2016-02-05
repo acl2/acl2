@@ -62,10 +62,16 @@
 (defun make-deflists (n)
   (if (zp n)
       nil
-    (cons `(deflist ,(intern$ (cat "INTLIST" (str::natstr n)) "FTY") :elt-type integerp)
+    (cons `(deflist ,(intern$ (cat "INTLIST" (str::natstr n)) "FTY") :elt-type stringp)
           (make-deflists (1- n)))))
 
-(make-event (cons 'progn (make-deflists 100)))
+(with-output :off :all :on (error) :gag-mode t
+  (make-event (cons 'progn (make-deflists 100))))
+
+
+
+
+           
 
 
 
@@ -82,6 +88,7 @@
 (tm (make-prod 20))
 (tm (make-prod 50))
 (tm (make-prod 100))
+(tm (make-prod 100 :layout :fulltree :prefix "FULL"))
 
 ;; Now trying with alist:                  0.26, 0.32, 0.61, 2.42, 23.15
 (tm (make-prod 1 :layout :alist :prefix "AL"))
@@ -89,5 +96,10 @@
 (tm (make-prod 5  :layout :alist :prefix "AL"))
 (tm (make-prod 10  :layout :alist :prefix "AL"))
 (tm (make-prod 20  :layout :alist :prefix "AL"))
+
+
+
+(tm (make-prod 20  :layout :list :prefix "LL"))
 ;; (tm (make-prod 50  :layout :alist :prefix "AL"))
 ;; (tm (make-prod 100  :layout :alist :prefix "AL"))
+
