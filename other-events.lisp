@@ -26880,9 +26880,8 @@
 ;      (fms str alist chan-do-not-use-elsewhere state evisc-tuple)
 ;      chan-do-not-use-elsewhere nil fmt-control-alist))
 ;   (defmacro fmt-to-string-again
-;     (str alist &key evisc-tuple fmt-control-alist iprint)
-;     (declare (xargs :guard (member-eq iprint '(t nil))))
-;     `(fmt-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+;     (str alist &key evisc-tuple fmt-control-alist)
+;     `(fmt-to-string-fn-again ,str ,alist ,evisc-tuple ,fmt-control-alist))
 
 ; If you now evaluate
 ;   (fmt-to-string-again "Hello, ~s0." (list (cons #\0 "World")))
@@ -26915,12 +26914,18 @@
 ; channel is finally closed.  See the comment about channels in
 ; mv-let-for-with-local-stobj.
 
+; We disable iprinting because the iprint index values won't be available to
+; the user anyhow when exiting the state-(free-)global-let* forms below.  And
+; indeed they should not be available, since the state being modified here is
+; supposed to be a local state.
+
           (cond
            (outside-loop-p
             `(unwind-protect
                  (state-free-global-let*
                   ,(fmt-control-bindings fmt-controls)
-                  ,body0)
+                  (progn (disable-iprint-ar state)
+                         ,body0))
                (when (open-output-channel-p ,channel-var :character state)
                  (close-output-channel ,channel-var state))))
            (t
@@ -26932,7 +26937,11 @@
               "channel-to-string"
               (state-global-let*
                ,(fmt-control-bindings fmt-controls)
-               ,body0)
+               (pprogn (mv-let (result state)
+                         (disable-iprint-ar state)
+                         (declare (ignore result))
+                         state)
+                       ,body0))
               (cond ((open-output-channel-p ,channel-var :character state)
                      (close-output-channel ,channel-var state))
                     (t state))
@@ -27008,7 +27017,12 @@
 #-acl2-loop-only
 (defun hard-error-is-error (ctx str alist)
   (error "~a" (channel-to-string
-               (error-fms-channel t ctx str alist chan state)
+               (error-fms-channel t ctx str alist chan
+
+; Leave the following as state, not *the-live-state*, to avoid compiler
+; warning.
+
+                                  state)
                chan nil nil t)))
 
 ; Essay on Memoization with Attachments (relevant for #+hons version only)
