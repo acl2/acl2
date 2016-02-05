@@ -22,7 +22,7 @@
   (implies (and (bind-free
                  (find-an-xlate-equiv-x86
                   'xlate-equiv-structures-and-xw-mem-disjoint
-                  'x86-1 x86-2)
+                  x86-2 'x86-1 mfc state)
                  (x86-1))
                 (xlate-equiv-structures x86-1 (double-rewrite x86-2))
                 (pairwise-disjoint-p-aux
@@ -41,7 +41,7 @@
   (implies (and (bind-free
                  (find-an-xlate-equiv-x86
                   'xlate-equiv-structures-and-wm-low-64-disjoint
-                  'x86-1 x86-2)
+                  x86-2 'x86-1 mfc state)
                  (x86-1))
                 (xlate-equiv-structures x86-1 (double-rewrite x86-2))
                 (pairwise-disjoint-p-aux
@@ -57,7 +57,7 @@
 (defthm xlate-equiv-structures-and-wm-low-64-entry-addr
   (implies (and (bind-free (find-an-xlate-equiv-x86
                             'xlate-equiv-structures-and-wm-low-64-entry-addr
-                            'x86 x86-equiv)
+                            x86-equiv 'x86 mfc state)
                            (x86))
                 (xlate-equiv-structures x86 (double-rewrite x86-equiv))
                 (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))

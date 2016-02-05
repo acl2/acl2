@@ -169,7 +169,7 @@ program-at:
             (bind-free
              (find-an-xlate-equiv-x86
               'rm08-values-and-xlate-equiv-x86s-disjoint
-              'x86-2 x86-1)
+              x86-1 'x86-2 mfc state)
              (x86-2))
             ;; To prevent loops...
             (syntaxp (not (eq x86-1 x86-2)))
@@ -218,7 +218,7 @@ program-at:
   (implies (and
             (bind-free
              (find-an-xlate-equiv-x86
-              'mv-nth-0-wm08-and-xlate-equiv-structures 'x86-2 x86-1)
+              'mv-nth-0-wm08-and-xlate-equiv-structures x86-1 'x86-2 mfc state)
              (x86-2))
             ;; To prevent loops...
             (syntaxp (not (eq x86-1 x86-2)))
@@ -259,7 +259,8 @@ program-at:
   (implies (and
             (bind-free
              (find-an-xlate-equiv-x86
-              'mv-nth-1-wm08-and-xlate-equiv-x86s-disjoint 'x86-2 x86-1)
+              'mv-nth-1-wm08-and-xlate-equiv-x86s-disjoint
+              x86-1 'x86-2 mfc state)
              (x86-2))
             ;; To prevent loops...
             (syntaxp (not (eq x86-1 x86-2)))
@@ -691,7 +692,7 @@ program-at:
              (bind-free
               (find-an-xlate-equiv-x86
                'mv-nth-0-rb-1-and-xlate-equiv-x86s-disjoint
-               'x86-2 x86-1)
+               x86-1 'x86-2 mfc state)
               (x86-2))
              (all-paging-entries-found-p l-addrs (double-rewrite x86-1))
              (xlate-equiv-x86s (double-rewrite x86-1) x86-2)
@@ -715,7 +716,7 @@ program-at:
             (bind-free
              (find-an-xlate-equiv-x86
               'mv-nth-0-rb-and-xlate-equiv-x86s-disjoint
-              'x86-2 x86-1)
+              x86-1 'x86-2 mfc state)
              (x86-2))
             ;; To prevent loops...
             (syntaxp (not (eq x86-1 x86-2)))
@@ -799,7 +800,7 @@ program-at:
              (bind-free
               (find-an-xlate-equiv-x86
                'mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
-               'x86-2 x86-1)
+               x86-1 'x86-2 mfc state)
               (x86-2))
              ;; To prevent loops...
              (syntaxp (not (eq x86-1 x86-2)))
@@ -829,7 +830,7 @@ program-at:
             (bind-free
              (find-an-xlate-equiv-x86
               'mv-nth-1-rb-and-xlate-equiv-x86s-disjoint
-              'x86-2 x86-1)
+              x86-1 'x86-2 mfc state)
              (x86-2))
             ;; To prevent loops...
             (syntaxp (not (eq x86-1 x86-2)))
@@ -879,7 +880,8 @@ program-at:
 (defthm mv-nth-0-wb-and-xlate-equiv-structures
   (implies (and (bind-free
                  (find-an-xlate-equiv-x86
-                  'mv-nth-0-wb-and-xlate-equiv-structures 'x86-2 x86-1)
+                  'mv-nth-0-wb-and-xlate-equiv-structures
+                  x86-1 'x86-2 mfc state)
                  (x86-2))
                 ;; To prevent loops...
                 (syntaxp (not (eq x86-1 x86-2)))
@@ -945,7 +947,9 @@ program-at:
 (defthm mv-nth-1-wb-and-xlate-equiv-x86s-disjoint
   (implies (and
             (bind-free
-             (find-an-xlate-equiv-x86 'mv-nth-1-wb-and-xlate-equiv-x86s-disjoint 'x86-2 x86-1)
+             (find-an-xlate-equiv-x86
+              'mv-nth-1-wb-and-xlate-equiv-x86s-disjoint
+              x86-1 'x86-2 mfc state)
              (x86-2))
             ;; To prevent loops...
             (syntaxp (not (eq x86-1 x86-2)))

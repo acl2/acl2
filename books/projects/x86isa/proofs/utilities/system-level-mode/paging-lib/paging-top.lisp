@@ -152,7 +152,8 @@
             (syntaxp (not (eq x86-1 'x86)))
             (bind-free
              (find-an-xlate-equiv-x86
-              'xlate-equiv-x86s-and-xw-mem-disjoint 'x86-2 x86-1)
+              'xlate-equiv-x86s-and-xw-mem-disjoint
+              x86-1 'x86-2 mfc state)
              (x86-2))
             (xlate-equiv-x86s (double-rewrite x86-1) x86-2)
             (pairwise-disjoint-p-aux

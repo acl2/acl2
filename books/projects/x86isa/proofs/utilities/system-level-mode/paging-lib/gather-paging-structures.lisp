@@ -1771,10 +1771,38 @@
 
 ;; First, some bind-free and other misc. stuff:
 
-(defun find-an-xlate-equiv-x86-aux (thm-name x86-term)
+(defun find-xlate-equiv-x86s-from-occurrence
+  (bound-x86-term mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((call (acl2::find-call-lst 'xlate-equiv-x86s (acl2::mfc-clause mfc)))
+       ((when (not call))
+        ;; xlate-equiv-x86s term not encountered.
+        nil)
+       (x86-1-var (second call))
+       (x86-2-var (third call))
+
+       (x86-var
+        (if (equal bound-x86-term x86-1-var)
+            x86-2-var
+          x86-1-var)))
+    x86-var))
+
+(defun find-an-xlate-equiv-x86-aux (thm-name x86-term mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+
   ;; Finds a "smaller" x86 that is xlate-equiv to x86-term.
   (if (atom x86-term)
-      x86-term
+
+      (b* ((equiv-x86-term
+            (find-xlate-equiv-x86s-from-occurrence
+             x86-term ;; bound-x86-term
+             mfc state))
+           ((when (not equiv-x86-term))
+            x86-term))
+        equiv-x86-term)
+
     (b* ((outer-fn (car x86-term))
          ((when (and (not (equal outer-fn 'MV-NTH))
                      (not (equal outer-fn 'WM-LOW-64))
@@ -1819,26 +1847,16 @@
              (b* ((sub-x86 (first (last x86-term))))
                sub-x86))))))
 
-;; (defun find-an-xlate-equiv-x86 (thm-name x86-var x86-term)
-;;   ;; bind-free for an x86 in xlate-equiv-x86s or
-;;   ;; xlate-equiv-structures: should check just for the page traversal
-;;   ;; functions and wm-low-64.
-;;   ;; TO-DO: Logic mode...
-;;   (declare (xargs :mode :program))
-;;   (b* ((equiv-x86-1 (find-an-xlate-equiv-x86-aux thm-name x86-term))
-;;        (equiv-x86-2 (find-an-xlate-equiv-x86-aux thm-name equiv-x86-1)))
-;;     (if (equal equiv-x86-1 equiv-x86-2)
-;;         `((,x86-var . ,equiv-x86-1))
-;;       (find-an-xlate-equiv-x86 thm-name x86-var equiv-x86-2))))
-
-(defun find-an-xlate-equiv-x86 (thm-name x86-var x86-term)
+(defun find-an-xlate-equiv-x86 (thm-name bound-x86-term free-x86-var mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
   ;; bind-free for an x86 in xlate-equiv-x86s or
   ;; xlate-equiv-structures: should check just for the page traversal
   ;; functions and wm-low-64.
   ;; TO-DO: Logic mode...
   (declare (xargs :mode :program))
-  (b* ((equiv-x86 (find-an-xlate-equiv-x86-aux thm-name x86-term)))
-    `((,x86-var . ,equiv-x86))))
+  (b* ((equiv-x86 (find-an-xlate-equiv-x86-aux thm-name bound-x86-term mfc state)))
+    `((,free-x86-var . ,equiv-x86))))
 
 (defun get-array-fields-len (x86-model)
   (if (endp x86-model)
@@ -2390,7 +2408,7 @@
               (not (equal fld :programmer-level-mode))
               (bind-free
                (find-an-xlate-equiv-x86
-                'xlate-equiv-x86s-and-xw 'x86-2 x86-1)
+                'xlate-equiv-x86s-and-xw x86-1 'x86-2 mfc state)
                (x86-2))
               (xlate-equiv-x86s (double-rewrite x86-1) x86-2)
               (member fld *x86-field-names-as-keywords*)
@@ -2510,7 +2528,7 @@
   (implies (and (bind-free
                  (find-an-xlate-equiv-x86
                   'gather-all-paging-structure-qword-addresses-wm-low-64-different-x86-disjoint
-                  'x86 x86-equiv)
+                  x86-equiv 'x86 mfc state)
                  (x86))
                 (equal addrs (gather-all-paging-structure-qword-addresses x86))
                 (xlate-equiv-structures (double-rewrite x86) (double-rewrite x86-equiv))
