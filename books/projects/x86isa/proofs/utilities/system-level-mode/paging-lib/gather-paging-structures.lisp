@@ -1827,7 +1827,8 @@
                                               PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE
                                               RM08
                                               RB
-                                              RB-1)))
+                                              RB-1
+                                              GET-PREFIXES)))
                            (if (equal mv-nth-index ''1)
                                (not (member-p inner-fn '(WM08 WB)))
                              t)))
@@ -2002,6 +2003,20 @@
         ///
 
         (defequiv ,equiv-name)
+
+        (defthm ,(mk-name equiv-name "-OPEN")
+          (implies (and (bind-free
+                         (find-an-xlate-equiv-x86
+                          (quote ,(mk-name equiv-name "-OPEN"))
+                          x86-1 'x86-2 mfc state)
+                         (x86-2))
+                        ;; To prevent loops...
+                        (syntaxp (not (eq x86-1 x86-2)))
+                        (good-paging-structures-x86p x86-1)
+                        (,equiv-name x86-1 x86-2)
+                        (natp j)
+                        (< j ,len))
+                   (equal (xr ,keyword j x86-1) (xr ,keyword j x86-2))))
 
         (defthm ,(mk-name equiv-name "-AND-XW-1")
           (implies (and (not (equal fld ,keyword))
@@ -2361,13 +2376,17 @@
            (equal (xr :fp-last-data 0 x86-1) (xr :fp-last-data 0 x86-2))
            (equal (xr :fp-opcode    0 x86-1) (xr :fp-opcode    0 x86-2))
            (equal (xr :mxcsr        0 x86-1) (xr :mxcsr        0 x86-2))
+           (equal (xr :env          0 x86-1) (xr :env          0 x86-2))
            (equal (xr :undef        0 x86-1) (xr :undef        0 x86-2))
+           ;; OS-INFO is meaningful only in programmer-level mode, but
+           ;; I'm still including it here for completeness.
+           (equal (xr :os-info      0 x86-1) (xr :os-info      0 x86-2))
 
            ;; Equality of programmer-level-mode is ensured by
            ;; good-paging-structures-x86p.
 
-           ;; MS and FAULT fields are excluded from this list so that
-           ;; theorems like
+           ;; MS and FAULT fields used to be excluded from this list
+           ;; so that theorems like
            ;; xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT can be
            ;; proved without any hypotheses that say that the page
            ;; traversal didn't return an error. This might be a bad
@@ -2378,10 +2397,6 @@
            ;; (equal (xr :ms           0 x86-1) (xr :ms           0 x86-2))
            ;; (equal (xr :fault        0 x86-1) (xr :fault        0 x86-2))
 
-           ;; Fields like ENV and OS-INFO are meaningful only in the
-           ;; programmer-level mode.
-           ;; (equal (xr :env          0 x86-1) (xr :env          0 x86-2))
-           ;; (equal (xr :os-info      0 x86-1) (xr :os-info      0 x86-2))
            )
 
         nil)
@@ -2399,17 +2414,18 @@
 
   (defthm xlate-equiv-x86s-and-xw
     (implies (and
-              ;; To prevent loops...
               (syntaxp (not (eq x86-1 'x86)))
+              (bind-free
+               (find-an-xlate-equiv-x86
+                'xlate-equiv-x86s-and-xw x86-1 'x86-2 mfc state)
+               (x86-2))
+              ;; To prevent loops...
+              (syntaxp (not (eq x86-1 x86-2)))
               (not (equal fld :mem))
               (not (equal fld :seg-visible))
               (not (equal fld :msr))
               (not (equal fld :ctr))
               (not (equal fld :programmer-level-mode))
-              (bind-free
-               (find-an-xlate-equiv-x86
-                'xlate-equiv-x86s-and-xw x86-1 'x86-2 mfc state)
-               (x86-2))
               (xlate-equiv-x86s (double-rewrite x86-1) x86-2)
               (member fld *x86-field-names-as-keywords*)
               (good-paging-structures-x86p (double-rewrite x86-1))

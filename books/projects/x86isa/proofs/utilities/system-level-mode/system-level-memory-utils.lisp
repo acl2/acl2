@@ -110,17 +110,15 @@ program-at:
 
 ;; ======================================================================
 
-(local
- (defthm cpl-unaffected-by-rm08
-   (equal (xr :seg-visible 1 (mv-nth 2 (rm08 lin-addr r-w-x x86)))
-          (xr :seg-visible 1 x86))
-   :hints (("Goal" :in-theory (e/d* (rm08) (force (force)))))))
+(defthm cpl-unaffected-by-rm08
+  (equal (xr :seg-visible 1 (mv-nth 2 (rm08 lin-addr r-w-x x86)))
+         (xr :seg-visible 1 x86))
+  :hints (("Goal" :in-theory (e/d* (rm08) (force (force))))))
 
-(local
- (defthm cpl-unaffected-by-wm08
+(defthm cpl-unaffected-by-wm08
    (equal (xr :seg-visible 1 (mv-nth 1 (wm08 addr byte x86)))
           (xr :seg-visible 1 x86))
-   :hints (("Goal" :in-theory (e/d* (wm08) (force (force)))))))
+   :hints (("Goal" :in-theory (e/d* (wm08) (force (force))))))
 
 (defthm good-paging-structures-x86p-and-mv-nth-2-ia32e-entries-found-la-to-pa
   (implies (good-paging-structures-x86p (double-rewrite x86))
@@ -296,7 +294,8 @@ program-at:
                                      :w (loghead 2 (xr :seg-visible 1 x86-1))
                                      x86-2)))))
            :in-theory (e/d* (wm08)
-                            (xlate-equiv-x86s-and-xw-mem-disjoint)))))
+                            (xlate-equiv-x86s-and-xw-mem-disjoint
+                             all-seg-visibles-equal-open)))))
 
 ;; ======================================================================
 
@@ -704,10 +703,12 @@ program-at:
              (mv-nth 0 (rb-1 l-addrs r-w-x x86-1 acc))
              (mv-nth 0 (rb-1 l-addrs r-w-x x86-2 acc))))
    :hints (("Goal"
-            :induct (rb-1-two-x86s-ind-hint l-addrs r-w-x x86-1 x86-2 acc))
+            :induct (rb-1-two-x86s-ind-hint l-addrs r-w-x x86-1 x86-2 acc)
+            :in-theory (e/d* () (all-seg-visibles-equal-open)))
            ("Subgoal *1/2"
             :in-theory (e/d* (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
-                             (rm08-values-and-xlate-equiv-x86s-disjoint))
+                             (rm08-values-and-xlate-equiv-x86s-disjoint
+                              all-seg-visibles-equal-open))
             :use ((:instance rm08-values-and-xlate-equiv-x86s-disjoint
                              (lin-addr (car l-addrs))))))))
 
@@ -772,7 +773,8 @@ program-at:
             :in-theory (e/d* (all-paging-entries-found-p
                               mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                               no-page-faults-during-translation-p)
-                             (rm08-values-and-xlate-equiv-x86s-disjoint))))))
+                             (rm08-values-and-xlate-equiv-x86s-disjoint
+                              all-seg-visibles-equal-open))))))
 
 (local
  (defthmd mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint-lemma-2
@@ -792,7 +794,8 @@ program-at:
             :in-theory (e/d* (all-paging-entries-found-p
                               mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                               no-page-faults-during-translation-p)
-                             (rm08-values-and-xlate-equiv-x86s-disjoint))))))
+                             (rm08-values-and-xlate-equiv-x86s-disjoint
+                              all-seg-visibles-equal-open))))))
 
 (local
  (defthm mv-nth-1-rb-1-and-xlate-equiv-x86s-disjoint
@@ -982,7 +985,8 @@ program-at:
            :in-theory (e/d* (all-paging-entries-found-p
                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                              wb)
-                            (mv-nth-0-wm08-and-xlate-equiv-structures)))))
+                            (mv-nth-0-wm08-and-xlate-equiv-structures
+                             all-seg-visibles-equal-open)))))
 
 ;; ======================================================================
 
@@ -2439,7 +2443,7 @@ we will get:
              (paging-entries-found-p lin-addr-2 (double-rewrite x86)))
             (xlate-equiv-x86s (mv-nth 1 (wm08 lin-addr-1 val-1 (mv-nth 1 (wm08 lin-addr-2 val-2 x86))))
                               (mv-nth 1 (wm08 lin-addr-1 val-1 x86))))
-   :hints (("Goal" :in-theory (e/d* (wm08) ())))))
+   :hints (("Goal" :in-theory (e/d* (wm08) (all-seg-visibles-equal-open))))))
 
 (local
  (defthm mv-nth-1-wm08-and-xlate-equiv-x86s-disjoint-commute-writes

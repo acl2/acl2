@@ -14,15 +14,6 @@
 
 ;; ======================================================================
 
-(local
- (defthm cpl-unaffected-by-rm08
-   ;; From system-level-memory-utils.lisp
-   (equal (xr :seg-visible 1 (mv-nth 2 (rm08 lin-addr r-w-x x86)))
-          (xr :seg-visible 1 x86))
-   :hints (("Goal" :in-theory (e/d* (rm08) (force (force)))))))
-
-;; ======================================================================
-
 ;; Get-prefixes lemmas in the system-level mode:
 
 (define get-prefixes-and-xlate-equiv-x86s-ind-hint
@@ -203,7 +194,8 @@
                              all-paging-entries-found-p
                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                              no-page-faults-during-translation-p)
-                            (unsigned-byte-p
+                            (all-seg-visibles-equal-open
+                             unsigned-byte-p
                              signed-byte-p
                              bitops::logior-equal-0
                              acl2::zp-open
@@ -636,13 +628,106 @@
 
 ;; x86-fetch-decode-execute lemmas in the system-level mode:
 
-;; x86-fetch-decode-execute and xlate-equiv-x86s or xlate-equiv-structures?
-
 ;; (i-am-here)
+
+;; (defthm xlate-equiv-x86s-and-xr-simple-fields
+;;   (implies (and (bind-free
+;;                  (find-an-xlate-equiv-x86 'all-seg-visibles-equal-open
+;;                                           x86-1 'x86-2
+;;                                           mfc state)
+;;                  (x86-2))
+;;                 (syntaxp (not (eq x86-1 x86-2)))
+;;                 (member fld *x86-simple-fields-as-keywords*)
+;;                 (good-paging-structures-x86p (double-rewrite x86-1))
+;;                 (xlate-equiv-x86s (double-rewrite x86-1) x86-2))
+;;            (equal (xr fld 0 x86-1)
+;;                   (xr fld 0 x86-2)))
+;;   :hints (("Goal" :in-theory (e/d* (xlate-equiv-x86s) ()))))
+
+;; (defthm x86-fetch-decode-execute-and-xlate-equiv-x86s
+;;   (implies (and
+;;             (bind-free
+;;              (find-an-xlate-equiv-x86
+;;               'x86-fetch-decode-execute-and-xlate-equiv-x86s
+;;               x86-1 'x86-2 mfc state)
+;;              (x86-2))
+;;             ;; To prevent loops...
+;;             (syntaxp (not (eq x86-1 x86-2)))
+;;             (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-1)))
+
+;;             (equal start-rip (rip x86-1))
+;;             (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 5 x86-1)))
+;;             (equal opcode/rex/escape-byte
+;;                    (prefixes-slice :next-byte prefixes))
+;;             (equal prefix-length (prefixes-slice :num-prefixes prefixes))
+;;             (equal temp-rip0 (if (equal prefix-length 0)
+;;                                  (+ 1 start-rip)
+;;                                (+ prefix-length start-rip 1)))
+;;             (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4)
+;;                                        4)
+;;                                 opcode/rex/escape-byte 0))
+;;             (equal opcode/escape-byte (if (equal rex-byte 0)
+;;                                           opcode/rex/escape-byte
+;;                                         (mv-nth 1 (rm08 temp-rip0 :x x86-1))))
+;;             (equal temp-rip1 (if (equal rex-byte 0)
+;;                                  temp-rip0 (1+ temp-rip0)))
+;;             (equal modr/m? (x86-one-byte-opcode-modr/m-p opcode/escape-byte))
+;;             (equal modr/m (if modr/m?
+;;                               (mv-nth 1 (rm08 temp-rip1 :x x86-1))
+;;                             0))
+;;             (equal temp-rip2 (if modr/m? (1+ temp-rip1) temp-rip1))
+;;             (equal sib? (and modr/m? (x86-decode-sib-p modr/m)))
+;;             (equal sib (if sib? (mv-nth 1 (rm08 temp-rip2 :x x86-1)) 0))
+;;             (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
+;;             (not (mv-nth 0 (get-prefixes (xr :rip 0 x86-1) 0 5 x86-1)))
+;;             (not (mv-nth 0 (rm08 temp-rip0 :x x86-1)))
+
+;;             (canonical-address-p start-rip)
+;;             ;; An instruction can be up to 15 bytes long.
+;;             (canonical-address-p (+ 15 start-rip))
+;;             (all-paging-entries-found-p
+;;              (create-canonical-address-list 15 start-rip)
+;;              (double-rewrite x86-1))
+;;             (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;              (create-canonical-address-list 15 start-rip)
+;;              :x cpl x86-1)
+;;             (canonical-address-p temp-rip0)
+;;             (if (equal rex-byte 0)
+;;                 t
+;;               (canonical-address-p temp-rip1))
+;;             (if modr/m?
+;;                 (and (canonical-address-p temp-rip2)
+;;                      (not (mv-nth 0 (rm08 temp-rip1 :x x86-1))))
+;;               t)
+;;             (if sib?
+;;                 (and (canonical-address-p temp-rip3)
+;;                      (not (mv-nth 0 (rm08 temp-rip2 :x x86-1))))
+;;               t)
+;;             (xlate-equiv-x86s x86-1 x86-2)
+;;             (not (xr :programmer-level-mode 0 x86-1)))
+;;            (xlate-equiv-x86s
+;;             (x86-fetch-decode-execute x86-1)
+;;             (x86-fetch-decode-execute x86-2)))
+;;   :hints (("Goal"
+;;            :use ((:instance xlate-equiv-x86s-and-xr-simple-fields
+;;                             (fld :rip)))
+;;            :in-theory (e/d* (x86-fetch-decode-execute
+;;                              all-paging-entries-found-p
+;;                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;                              no-page-faults-during-translation-p
+;;                              x86-step-unimplemented)
+;;                             (unsigned-byte-p
+;;                              signed-byte-p
+;;                              bitops::logior-equal-0
+;;                              acl2::zp-open
+;;                              xlate-equiv-x86s-and-xr-simple-fields
+;;                              all-seg-visibles-equal-open
+;;                              acl2::member-of-cons)))))
 
 ;; (defthm x86-fetch-decode-execute-opener-in-system-level-mode
 ;;   (implies
-;;    (and (equal start-rip (rip x86))
+;;    (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;         (equal start-rip (rip x86))
 ;;         (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 5 x86)))
 ;;         (equal opcode/rex/escape-byte
 ;;                (prefixes-slice :next-byte prefixes))
@@ -670,8 +755,16 @@
 ;;         (x86p x86)
 ;;         (not (ms x86))
 ;;         (not (fault x86))
-;;         (not (mv-nth 0 (get-prefixes start-rip 0 5 x86)))
+;;         (canonical-address-p start-rip)
 ;;         (canonical-address-p temp-rip0)
+;;         (all-paging-entries-found-p
+;;          (create-canonical-address-list 15 start-rip)
+;;          (double-rewrite x86))
+;;         (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;          (create-canonical-address-list 15 start-rip)
+;;          :x cpl x86)
+;;         (not (mv-nth 0 (get-prefixes start-rip 0 5 x86)))
+
 ;;         (not (mv-nth 0 (rm08 temp-rip0 :x x86)))
 ;;         (if (equal rex-byte 0)
 ;;             t
@@ -683,11 +776,14 @@
 ;;         (if sib?
 ;;             (and (canonical-address-p temp-rip3)
 ;;                  (not (mv-nth 0 (rm08 temp-rip2 :x x86))))
-;;           t))
+;;           t)
+;;         (not (xr :programmer-level-mode 0 x86)))
 ;;    (equal (x86-fetch-decode-execute x86)
 ;;           (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
 ;;                                     opcode/escape-byte modr/m sib x86)))
-;;   :hints (("Goal" :in-theory (e/d ()
-;;                                   (signed-byte-p not)))))
+;;   :hints (("Goal" :in-theory (e/d (x86-fetch-decode-execute)
+;;                                   (signed-byte-p
+;;                                    not
+;;                                    acl2::member-of-cons)))))
 
 ;; ======================================================================
