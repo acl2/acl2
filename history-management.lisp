@@ -11796,6 +11796,48 @@
                                 ttree)
         (mv (conjoin-clause-sets+ debug-info cl-set1 cl-set2) ttree))))))
 
+(defun normalize-ts-backchain-limit-for-defs (wrld)
+
+; This function restricts the type-set backchain-limit to 1.  We have found
+; that to be potentially very useful when normalizing a definition body (or
+; rule) or a guard.  Specifically, Jared Davis sent the following example,
+; which we ran in early Feb. 2016.
+
+; (include-book "data-structures/list-defthms" :dir :system)
+; (time$ (include-book "centaur/sv/top" :dir :system))
+
+; When we experimented with restricting the type-set backchain limit during
+; normalization of definitions bodies and guards, performance improved
+; dramatically, as follows.  (All timings were done with profiling, which
+; probably doesn't much matter.)
+
+; ;;; old
+; ; 1189.86 seconds realtime, 1189.45 seconds runtime
+; ; (42,121,431,648 bytes allocated).
+
+; ;;; new
+; ; 91.64 seconds realtime, 91.38 seconds runtime
+; ; (6,786,611,056 bytes allocated).
+
+; Moreover, from profiling we saw that the time spent under normalize decreased
+; from 1040 seconds to 4.69 seconds.
+
+; We chose a type-set backchain-limit of 1 because the performance improvement
+; was less than 1% when using a limit of 0, but the time increased by about 25%
+; when using a limit of 2.
+
+; This restriction of type-set backchain limits could be considered rather
+; arbitrary, and the "everything" regression time didn't change significantly.
+; But normalization is merely heuristic; and even though Jared's is just one
+; example, and even though we might later improve type-set to avoid the
+; blow-up, still it's easy to imagine that there could be other such examples.
+; So we are making this change on 2/7/2016.
+
+  (let ((limit (backchain-limit wrld :ts)))
+    (if (eql limit 0)
+        0
+      1)))
+
 (defun guard-clauses-for-fn (name debug-p ens wrld state ttree)
 
 ; Given a function name we generate the clauses that establish that
@@ -11831,7 +11873,8 @@
               (t (normalize guard
                             t   ; iff-flg
                             nil ; type-alist
-                            ens wrld ttree)))
+                            ens wrld ttree
+                            (normalize-ts-backchain-limit-for-defs wrld))))
         (mv-let
           (changedp body ttree)
           (cond ((eq ens :do-not-simplify)

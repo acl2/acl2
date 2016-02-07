@@ -9603,8 +9603,6 @@
                  (remove-ancestor-literals-from-pairs1
                   (car pairs) (cdr pairs) nil)))))
 
-
-
 (defun convert-term-to-pairs (term ens wrld)
 
 ; Term is assumed to be the result of expanding a tau-like-propositionp.  Thus,
@@ -9612,7 +9610,8 @@
 ; composed of such terms.  We wish to convert term to a list of (hyps . concl) pairs.
 
   (mv-let (nterm ttree)
-          (normalize term t nil ens wrld nil)
+          (normalize term t nil ens wrld nil
+                     (backchain-limit wrld :ts))
           (mv (remove-ancestor-literals-from-pairs
                (convert-normalized-term-to-pairs nil nterm nil))
               (all-runes-in-ttree ttree nil))))

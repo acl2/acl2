@@ -1961,7 +1961,8 @@
                                  nil ; type-alist
                                  ens
                                  wrld
-                                 ttree))
+                                 ttree
+                                 (normalize-ts-backchain-limit-for-defs wrld)))
                      (t (mv body ttree)))
                (mv hyps
                    equiv
@@ -2445,7 +2446,8 @@
   (let* ((new-var (genvar 'genvar "EMPTY" nil (all-vars term)))
          (type-alist (list (list* new-var *ts-empty* nil))))
     (mv-let (normal-term ttree)
-            (normalize term t nil ens wrld ttree)
+            (normalize term t nil ens wrld ttree
+                       (backchain-limit wrld :ts))
             (type-set
              (type-set-implied-by-term1 normal-term
                                         (if not-flg new-var var)

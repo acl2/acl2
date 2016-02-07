@@ -1188,7 +1188,8 @@
 (defun-raw ccg-simplify-hyps-no-split (hyps ctx ens wrld state)
   (declare (ignore ctx))
   (mv-let (nhyps ttree)
-          (normalize-lst hyps t nil ens wrld nil)
+          (normalize-lst hyps t nil ens wrld nil
+                         (backchain-limit wrld :ts))
           (er-progn
            (accumulate-ttree-and-step-limit-into-state ttree :skip state)
            (value (flatten-ands-in-lit-lst nhyps)))))
