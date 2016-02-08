@@ -746,7 +746,7 @@ See :DOC GL::COVERAGE-PROOFS.
                              'latest-greatest-gl-clause-proc
                              (w state)))))
 
-(defun gl-hint-fn (clause-proc bindings param-bindings hyp param-hyp
+(defun gl-hint-fn (clause-proc bindings param-bindings acl2::hyp param-hyp
                                concl hyp-clk concl-clk
                                cov-hints cov-hints-position cov-theory-add
                                do-not-expand hyp-hints result-hints
@@ -755,13 +755,13 @@ See :DOC GL::COVERAGE-PROOFS.
                                run-before-cases run-after-cases
                                case-split-override case-split-hints test-side-goals)
   (declare (xargs :mode :program))
-  `(b* (((mv clause-proc bindings param-bindings hyp param-hyp concl
+  `(b* (((mv clause-proc bindings param-bindings acl2::hyp param-hyp concl
              hyp-clk concl-clk cov-hints cov-hints-position
              cov-theory-add do-not-expand hyp-hints result-hints
              n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
              run-before-cases run-after-cases case-split-override
              case-split-hints test-side-goals)
-         (mv ',clause-proc ,bindings ,param-bindings ,hyp ,param-hyp
+         (mv ',clause-proc ,bindings ,param-bindings ,acl2::hyp ,param-hyp
              ,concl ,hyp-clk ,concl-clk ',cov-hints
              ',cov-hints-position ',cov-theory-add ',do-not-expand
              ',hyp-hints ',result-hints ,n-counterexamples
@@ -791,7 +791,7 @@ See :DOC GL::COVERAGE-PROOFS.
         (cov-hints (glcp-coverage-hints
                     do-not-expand cov-theory-add cov-hints cov-hints-position))
         ((er trhyp)
-         (acl2::translate hyp t t nil 'gl-hint-fn (w state) state))
+         (acl2::translate acl2::hyp t t nil 'gl-hint-fn (w state) state))
         ((er trparam)
          (acl2::translate param-hyp t t nil 'gl-hint-fn (w state)
                           state))
@@ -899,7 +899,7 @@ descriptions of each keyword argument:</p>
                           cov-theory-add do-not-expand
                           hyp-hints
                           result-hints
-                          (hyp ''t) param-hyp concl
+                          (acl2::hyp ''t) param-hyp concl
                           (n-counterexamples '3)
                           (abort-indeterminate 't)
                           (abort-ctrex 't)
@@ -910,7 +910,7 @@ descriptions of each keyword argument:</p>
                           run-before-cases run-after-cases
                           test-side-goals)
 
-    (gl-hint-fn clause-proc bindings param-bindings hyp param-hyp concl
+    (gl-hint-fn clause-proc bindings param-bindings acl2::hyp param-hyp concl
                 hyp-clk concl-clk cov-hints cov-hints-position
                 cov-theory-add do-not-expand hyp-hints result-hints
                 n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
@@ -932,7 +932,7 @@ descriptions of each keyword argument:</p>
 (defun def-gl-thm-fn
   (name args)
   (declare (xargs :mode :program))
-  (b* (((list clause-proc hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
+  (b* (((list clause-proc acl2::hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
               cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
               n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
               rule-classes no-defthm) args)
@@ -942,7 +942,7 @@ descriptions of each keyword argument:</p>
 in DEF-GL-THM.~%"))
        (form `(without-waterfall-parallelism
                 (defthm ,name
-                  ,(if test-side-goals t `(implies ,hyp ,concl))
+                  ,(if test-side-goals t `(implies ,acl2::hyp ,concl))
                   :hints ((gl-hint
                            :clause-proc ,clause-proc
                            :bindings ,g-bindings
@@ -952,7 +952,7 @@ in DEF-GL-THM.~%"))
                            :cov-hints-position ,cov-hints-position
                            :cov-theory-add ,cov-theory-add
                            :do-not-expand ,do-not-expand
-                           :hyp ',hyp
+                           :hyp ',acl2::hyp
                            :concl ',concl
                            :n-counterexamples ,n-counterexamples
                            :abort-indeterminate ,abort-indeterminate
@@ -1128,7 +1128,7 @@ rule-classes for the theorem produced, as in @(see defthm); the default is
   (defmacro def-gl-thm
     (name &key clause-proc
           skip-g-proofs
-          (hyp 'nil hyp-p)
+          (acl2::hyp 'nil hyp-p)
           (concl 'nil concl-p)
           (g-bindings 'nil g-bindings-p)
           cov-hints cov-hints-position
@@ -1144,7 +1144,7 @@ rule-classes for the theorem produced, as in @(see defthm); the default is
 
     (declare (ignore skip-g-proofs local))
     (def-gl-thm-fn name
-      (list clause-proc hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
+      (list clause-proc acl2::hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
             abort-vacuous test-side-goals rule-classes nil))))
@@ -1160,7 +1160,7 @@ resulting theorem: @(see def-gl-thm) is to @(see gl-thm) as @(see defthm) is to
   (defmacro gl-thm
     (name &key clause-proc
           skip-g-proofs
-          (hyp 'nil hyp-p)
+          (acl2::hyp 'nil hyp-p)
           (concl 'nil concl-p)
           (g-bindings 'nil g-bindings-p)
           cov-hints cov-hints-position
@@ -1176,7 +1176,7 @@ resulting theorem: @(see def-gl-thm) is to @(see gl-thm) as @(see defthm) is to
 
     (declare (ignore skip-g-proofs local))
     (def-gl-thm-fn name
-      (list clause-proc hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
+      (list clause-proc acl2::hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
             abort-vacuous test-side-goals rule-classes t))))
@@ -1186,7 +1186,7 @@ resulting theorem: @(see def-gl-thm) is to @(see gl-thm) as @(see defthm) is to
 
 (defun def-gl-param-thm-fn (name args)
   (declare (xargs :mode :program))
-  (b* (((list clause-proc hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
+  (b* (((list clause-proc acl2::hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
               cov-bindings-p param-bindings param-bindings-p
               cov-hints cov-hints-position cov-theory-add do-not-expand
               hyp-clk concl-clk n-counterexamples
@@ -1200,7 +1200,7 @@ resulting theorem: @(see def-gl-thm) is to @(see gl-thm) as @(see defthm) is to
 PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
        (form `(without-waterfall-parallelism
                 (defthm ,name
-                  ,(if test-side-goals t `(implies ,hyp ,concl))
+                  ,(if test-side-goals t `(implies ,acl2::hyp ,concl))
                   :hints ((gl-hint
                            :clause-proc ,clause-proc
                            :bindings ,cov-bindings
@@ -1211,7 +1211,7 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
                            :cov-hints-position ,cov-hints-position
                            :cov-theory-add ,cov-theory-add
                            :do-not-expand ,do-not-expand
-                           :hyp ',hyp
+                           :hyp ',acl2::hyp
                            :param-hyp ',param-hyp
                            :concl ',concl
                            :n-counterexamples ,n-counterexamples
@@ -1373,7 +1373,7 @@ Setting @(':ABORT-VACUOUS') to @('NIL') causes it to go on.</p>"
   (defmacro def-gl-param-thm
     (name &key clause-proc
           skip-g-proofs
-          (hyp 'nil hyp-p)
+          (acl2::hyp 'nil hyp-p)
           (param-hyp 'nil param-hyp-p)
           (concl 'nil concl-p)
           (cov-bindings 'nil cov-bindings-p)
@@ -1391,7 +1391,7 @@ Setting @(':ABORT-VACUOUS') to @('NIL') causes it to go on.</p>"
           (rule-classes ':rewrite))
     (declare (ignore skip-g-proofs local))
     (def-gl-param-thm-fn name
-      (list clause-proc hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
+      (list clause-proc acl2::hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
             cov-bindings-p param-bindings param-bindings-p cov-hints
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
@@ -1411,7 +1411,7 @@ ignored.</p>"
   (defmacro gl-param-thm
     (name &key clause-proc
           skip-g-proofs
-          (hyp 'nil hyp-p)
+          (acl2::hyp 'nil hyp-p)
           (param-hyp 'nil param-hyp-p)
           (concl 'nil concl-p)
           (cov-bindings 'nil cov-bindings-p)
@@ -1429,7 +1429,7 @@ ignored.</p>"
           (rule-classes ':rewrite))
     (declare (ignore skip-g-proofs local))
     (def-gl-param-thm-fn name
-      (list clause-proc hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
+      (list clause-proc acl2::hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
             cov-bindings-p param-bindings param-bindings-p cov-hints
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
