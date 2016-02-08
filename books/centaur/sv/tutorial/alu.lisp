@@ -56,6 +56,7 @@
 (include-book "support")
 ; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
+; cert_param: (non-cmucl)
 
 (gl::def-gl-clause-processor sv-tutorial-glcp)
 
