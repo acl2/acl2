@@ -34,6 +34,7 @@
 (include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/hid-tools")
 (include-book "../../mlib/strip")
+(include-book "../../util/cwtime")
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -720,8 +721,8 @@ these are the only operators we're dealing with.</p>"
 (define vl-design-increment-elim ((x vl-design-p))
   :returns (new-x vl-design-p)
   :short "Top-level @(see increment-elim) transform."
-  (b* ((x (vl-design-increwrite x))
-       (x (vl-design-prohibit-incexprs x)))
+  (b* ((x (xf-cwtime (vl-design-increwrite x)))
+       (x (xf-cwtime (vl-design-prohibit-incexprs x))))
     x))
 
 

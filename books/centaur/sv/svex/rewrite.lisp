@@ -33,6 +33,7 @@
 (include-book "rewrite-rules")
 (include-book "concat-rw")
 (include-book "centaur/vl/util/cwtime" :dir :system)
+(include-book "centaur/nrev/pure" :dir :system)
 (include-book "lattice")
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -1108,7 +1109,22 @@
                       (implies (not (member v (svexlist-vars x)))
                                (not (member v (svexlist-vars res)))))))
       :hints ('(:expand ((svexlist-rewrite x masks multirefs out-multirefs memo))))
-      :flag svexlist-rewrite masks)))
+      :flag svexlist-rewrite masks))
+
+  (defthm-svex-rewrite-flag
+    (defthm true-listp-of-svexlist-rewrite
+      (true-listp (mv-nth 0 (svexlist-rewrite x masks multirefs out-multirefs memo)))
+      :flag svexlist-rewrite)
+    :skip-others t)
+  (defthm-svex-rewrite-flag
+    (defthm svexlist-rewrite-breakdown
+      (equal (list (mv-nth 0 (svexlist-rewrite x masks multirefs out-multirefs memo))
+                   (mv-nth 1 (svexlist-rewrite x masks multirefs out-multirefs memo))
+                   (mv-nth 2 (svexlist-rewrite x masks multirefs out-multirefs memo)))
+             (svexlist-rewrite x masks multirefs out-multirefs memo))
+      :hints ('(:expand ((svexlist-rewrite x masks multirefs out-multirefs memo))))
+      :flag svexlist-rewrite)
+    :skip-others t))
 
 
 
@@ -1330,6 +1346,35 @@
     (implies (not (member v (svexlist-vars x)))
              (not (member v (svexlist-vars (svexlist-rewrite-under-masks x masks :verbosep verbosep)))))))
 
+(define svexlist-rewrite-nrev ((x svexlist-p)
+                               (masks svex-mask-alist-p)
+                               (multirefs svex-key-alist-p)
+                               (out-multirefs svex-key-alist-p)
+                               (memo svex-svex-memo-p)
+                               acl2::nrev)
+  :returns (mv new-nrev
+               (out-multirefs1 svex-key-alist-p)
+               (memo1 svex-svex-memo-p))
+  (if (atom x)
+      (b* ((acl2::nrev (acl2::nrev-fix acl2::nrev)))
+        (mv acl2::nrev
+            (svex-key-alist-fix out-multirefs)
+            (svex-svex-memo-fix memo)))
+    (b* (((mv first out-multirefs memo) (svex-rewrite (car x) masks multirefs out-multirefs memo))
+         (acl2::nrev (acl2::nrev-push first acl2::nrev)))
+      (svexlist-rewrite-nrev (cdr x) masks multirefs out-multirefs memo acl2::nrev)))
+  ///
+  (defret svexlist-rewrite-nrev-removal
+    (b* (((mv out-spec out-multirefs1-spec memo1-spec)
+          (svexlist-rewrite x masks multirefs out-multirefs memo)))
+      (and (equal new-nrev
+                  (append acl2::nrev out-spec))
+           (equal out-multirefs1 out-multirefs1-spec)
+           (equal memo1 memo1-spec)))
+    :hints(("Goal" :induct t
+            :expand ((svexlist-rewrite x masks multirefs out-multirefs memo))))))
+  
+
 
 (define svexlist-rewrite-top ((x svexlist-p) &key (verbosep 'nil))
   :returns (xx svexlist-p)
@@ -1339,7 +1384,16 @@
                             (cwtime (svexlist-opcount x))
                             (len multirefs))))
        ((mv new-x out-multirefs memo)
-        (cwtime (svexlist-rewrite x masks multirefs nil nil) :mintime 1))
+        (mbe :logic (svexlist-rewrite x masks multirefs nil nil)
+             :exec (with-local-stobj acl2::nrev
+                     (mv-let (new-x out-multirefs memo acl2::nrev)
+                       (b* (((mv acl2::nrev out-multirefs memo)
+                             (cwtime (svexlist-rewrite-nrev
+                                      x masks multirefs nil nil acl2::nrev)
+                                     :mintime 1))
+                            ((mv new-x acl2::nrev) (acl2::nrev-finish acl2::nrev)))
+                         (mv new-x out-multirefs memo acl2::nrev))
+                       (mv new-x out-multirefs memo)))))
        (- (clear-memoize-table 'svex-rewrite)
           (fast-alist-free masks)
           (fast-alist-free memo)
@@ -1352,6 +1406,8 @@
     new-x)
   ///
   (fty::deffixequiv svexlist-rewrite-top)
+
+  
 
   (defthm svexlist-rewrite-top-correct
     (equal (svexlist-eval (svexlist-rewrite-top x :verbosep verbosep) env)

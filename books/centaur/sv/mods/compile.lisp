@@ -1000,9 +1000,10 @@ should address this again later.</p>"
          (modidx (moddb-modname-get-index (design->top x) moddb))
          (aliases (if indexedp
                       aliases
-                    (aliases-indexed->named aliases
-                                            (make-modscope-top :modidx modidx)
-                                            moddb)))
+                    (cwtime (aliases-indexed->named aliases
+                                                    (make-modscope-top :modidx modidx)
+                                                    moddb)
+                            :mintime 1)))
          ((mv res-assigns res-delays)
           (svex-normalize-assigns assigns aliases))
          ((mv updates nextstates)

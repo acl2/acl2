@@ -603,7 +603,8 @@ substitution are left in place."
             (svexlist-replace-var (cdr x) var repl))))
   ///
   (verify-guards svexlist-replace-var)
-  (memoize 'svex-replace-var :condition '(svex-case x :call)))
+  ;; (memoize 'svex-replace-var :condition '(svex-case x :call))
+  )
 
 (define svex-alist-compose ((x svex-alist-p) (a svex-alist-p))
   :prepwork ((local (in-theory (enable svex-alist-p))))

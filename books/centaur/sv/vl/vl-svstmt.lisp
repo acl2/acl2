@@ -131,7 +131,8 @@ because... (BOZO)</p>
 #!sv
 (define svex-resolve-single-assignment ((lhs svex-p)
                                         (rhs svex-p)
-                                        (wholevar svex-p))
+                                        (wholevar svar-p)
+                                        (var-replacement svex-p))
   ;; This function tries to take assignments such as
   ;;   my_arr[idx] = foo
   ;; and transform them into
@@ -174,21 +175,26 @@ because... (BOZO)</p>
   :returns (mv (err (iff (vl::vl-msg-p err) err))
                (final-rhs (implies (not err) (svex-p final-rhs))))
   :verify-guards nil
-  (b* (((when (svex-equiv wholevar lhs)) (mv nil (svex-fix rhs)))
+  (b* (((when (svex-case lhs :var (svar-equiv wholevar lhs.name) :otherwise nil))
+        (mv nil (svex-fix rhs)))
        ((mv ok al) (svex-unify (svcall concat 'w 'a 'b)
                                lhs nil))
        ((when ok)
         (b* ((w (svex-lookup 'w al))
              (a (svex-lookup 'a al))
              (b (svex-lookup 'b al))
+             (w-rhs (svex-replace-var w wholevar var-replacement))
+             (a-rhs (svex-replace-var a wholevar var-replacement))
              ((when (svex-case b :quote))
               ;; (concat w a Z) = rhs --> a = (concat w rhs (rsh w a))
               (svex-resolve-single-assignment
-               a (svcall concat w rhs (svcall rsh w a)) wholevar))
+               a
+               (svcall concat w-rhs rhs (svcall rsh w-rhs a-rhs))
+               wholevar var-replacement))
              ((when (svex-case a :quote))
               ;; (concat w Z b) = rhs --> b = (rsh w rhs)
               (svex-resolve-single-assignment
-               b (svcall rsh w rhs) wholevar)))
+               b (svcall rsh w-rhs rhs) wholevar var-replacement)))
           (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0" (svex-fix lhs))
               nil)))
        ((mv ok al) (svex-unify (svcall zerox 'w 'a)
@@ -197,20 +203,26 @@ because... (BOZO)</p>
                        (mv ok al)
                      (svex-unify (svcall signx 'w 'a)
                                  lhs nil)))
-       ((when ok)
+       ((when ok) ;; zerox or signx matched
         (b* ((w (svex-lookup 'w al))
-             (a (svex-lookup 'a al)))
+             (a (svex-lookup 'a al))
+             (a-rhs (svex-replace-var a wholevar var-replacement))
+             (w-rhs (svex-replace-var w wholevar var-replacement)))
           ;; (zerox/signx w a) = rhs --> a = (concat w rhs (rsh w a))
           (svex-resolve-single-assignment
-           a (svcall concat w rhs (svcall rsh w a)) wholevar)))
+           a (svcall concat w-rhs rhs (svcall rsh w-rhs a-rhs))
+           wholevar var-replacement)))
 
        ((mv ok al) (svex-unify (svcall rsh 'w 'v) lhs nil))
        ((when ok)
         (b* ((w (svex-lookup 'w al))
-             (v (svex-lookup 'v al)))
+             (v (svex-lookup 'v al))
+             (w-rhs (svex-replace-var w wholevar var-replacement))
+             (v-rhs (svex-replace-var v wholevar var-replacement)))
           ;; (rsh w v) = rhs --> v = (concat w v rhs)
           (svex-resolve-single-assignment
-           v (svcall concat w v rhs) wholevar)))
+           v (svcall concat w-rhs v-rhs rhs)
+           wholevar var-replacement)))
        ((mv ok al) (svex-unify (svcall ? 'test 'then 'else) lhs nil))
        ((when ok)
         (b* ((test (svex-lookup 'test al))
@@ -222,21 +234,55 @@ because... (BOZO)</p>
              ;; else = rhs -->  var = else-val
              ;; and if both are successful, then result is
              ;; var = (? test then-val else-val).
-             ((mv err then-val) (svex-resolve-single-assignment then rhs wholevar))
+             ((mv err then-val) (svex-resolve-single-assignment then rhs wholevar var-replacement))
              ((when err) (mv err nil))
-             ((mv err else-val) (svex-resolve-single-assignment else rhs wholevar))
+             ((mv err else-val) (svex-resolve-single-assignment else rhs wholevar var-replacement))
              ((when err) (mv err nil)))
-          (mv nil (svcall ? test then-val else-val)))))
+          (mv nil (svcall ? (svex-replace-var test wholevar var-replacement)
+                          then-val else-val)))))
     (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0 (variable: ~x1)"
-                  (svex-fix lhs) (svex-fix wholevar))
+                  (svex-fix lhs) (svar-fix wholevar))
         nil))
   ///
-  (std::defret vars-of-svex-resolve-single-assignment
-    (implies (and (not (member v (svex-vars lhs)))
-                  (not (member v (svex-vars rhs)))
-                  (not err))
-             (not (member v (svex-vars final-rhs)))))
+  (local (defthm member-vars-of-svex-unify
+           (b* (((mv ?ok al1) (svex-unify pat x al)))
+             (implies (and (not (member v (svex-vars x)))
+                           (not (member v (svex-alist-vars al))))
+                      (not (member v (svex-alist-vars al1)))))
+           :hints (("goal" :use svex-unify-subst-no-new-vars
+                    :in-theory (disable svex-unify-subst-no-new-vars)))))
 
+  (std::defret vars-of-svex-resolve-single-assignment-1
+    (implies (and ;; (not (equal v (svar-fix wholevar)))
+                  (not (member v (svex-vars lhs)))
+                  (not (member v (svex-vars rhs)))
+                  (not (member v (svex-vars var-replacement)))
+                  (not err))
+             (not (member v (svex-vars final-rhs))))
+    :hints(("Goal" :in-theory (enable vars-of-svex-compose-strong
+                                      svex-alist-vars))))
+
+  (local (defthm svex-fix-under-iff
+           (iff (svex-fix x) t)
+           :hints (("goal" :use ((:instance return-type-of-svex-fix$inline.new-x))
+                    :in-theory (disable return-type-of-svex-fix$inline.new-x)))))
+
+  (local (defthm svex-vars-of-hons-assoc-equal
+           (implies (and (not (member v (svex-alist-vars x)))
+                         (hons-assoc-equal k x))
+                    (not (member v (svex-vars (cdr (hons-assoc-equal k x))))))
+           :hints(("Goal" :in-theory (enable svex-alist-vars
+                                             hons-assoc-equal)))))
+
+  (std::defret vars-of-svex-resolve-single-assignment-2
+    (implies (and (case-split (equal v (svar-fix wholevar)))
+                  (not (member v (svex-vars rhs)))
+                  (not (member v (svex-vars var-replacement)))
+                  (not err))
+             (not (member v (svex-vars final-rhs))))
+    :hints(("Goal" :in-theory (enable vars-of-svex-compose-strong
+                                      svex-alist-vars
+                                      sv::svex-lookup))))
   (verify-guards svex-resolve-single-assignment))
 
 
@@ -498,14 +544,14 @@ because... (BOZO)</p>
                   nil nil))
 
              ((list dynselect-final)
-              (time$ (sv::svexlist-rewrite-top (list dynselect-trunc))
+              (time$ (sv::svexlist-rewrite-top (list dynselect-trunc) :verbosep nil)
                      :mintime 1/2
                      :msg "vl-procedural-assign->svstmts: rewriting dynamic select ~s0: ~st sec, ~sa bytes~%"
                      :args (list (vl-pps-expr lhs))))
 
-             ((mv err dyn-rhs)
+             ((mv err final-rhs)
               (sv::svex-resolve-single-assignment
-               dynselect-final rhssvex *svex-longest-static-prefix-var*))
+               dynselect-final rhssvex *svex-longest-static-prefix-var* longest-static-prefix-svex))
              ((when err)
               (mv nil
                   (fatal :type :vl-assignstmt-fail
@@ -513,9 +559,9 @@ because... (BOZO)</p>
                          :args (list lhs err))
                   nil nil))
 
-             (final-rhs (sv::svex-replace-var dyn-rhs *svex-longest-static-prefix-var*
-                                              longest-static-prefix-svex))
-             (- (clear-memoize-table 'sv::svex-replace-var))
+             ;; (final-rhs (sv::svex-replace-var dyn-rhs *svex-longest-static-prefix-var*
+             ;;                                  longest-static-prefix-svex))
+             ;; (- (clear-memoize-table 'sv::svex-replace-var))
 
              ((mv err lsp-size) (vl-datatype-size lsp-type))
              ((unless (and (not err) lsp-size))
@@ -2086,8 +2132,6 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        (- (sv::svstack-free st.blkst))
        (st.blkst (make-fast-alist (sv::svstack-to-svex-alist st.blkst)))
        (st.nonblkst (sv::svex-alist-unset-nonblocking st.nonblkst))
-       (- (clear-memoize-table 'sv::svex-unset-nonblocking)
-          (clear-memoize-table 'sv::svex-set-nonblocking))
        (blk-written-vars (sv::svex-alist-keys st.blkst))
        (nb-written-vars  (sv::svex-alist-keys st.nonblkst))
 
@@ -2138,6 +2182,9 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
         (sv::svstmtlist-write-masks svstmts nil nil))
        (nbst-write-masks (make-fast-alist
                           (sv::4vmask-alist-unset-nonblocking (fast-alist-free nbst-write-masks))))
+       (- (clear-memoize-table 'sv::svex-unset-nonblocking)
+          (clear-memoize-table 'sv::svex-set-nonblocking))
+
        (write-masks (fast-alist-clean
                      (combine-mask-alists blkst-write-masks nbst-write-masks)))
 
