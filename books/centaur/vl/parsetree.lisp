@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2016-02-04")
+  "VL Syntax 2016-02-05")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -4051,7 +4051,6 @@ initially kept in a big, mixed list.</p>"
 
       (:vl-genbegin
        :base-name vl-genbegin
-       :layout :tree
        :short "Wrapper for promoting begin/end generate blocks into genelements."
        ((block vl-genblock-p))
        :long "<p>This is a trivial wrapper for converting a @(see vl-genblock),
@@ -4474,7 +4473,8 @@ the type information between the variable and port declarations.</p>"
 (defprod vl-module
   :short "Representation of a single module."
   :tag :vl-module
-  :layout :tree
+  ;; BOZO it would be nice to use :tree, but we'll need to patch up modname-sets.
+  :layout :fulltree
 
   ((name       stringp
                :rule-classes :type-prescription

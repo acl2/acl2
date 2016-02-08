@@ -57,19 +57,23 @@
   ///
   (defthm car-of-prod-cons
     (equal (car (prod-cons x y)) x))
+
   (defthm cdr-of-prod-cons
     (equal (cdr (prod-cons x y)) y))
+
   (defthm prod-cons-of-car/cdr
     (implies (prod-consp x)
              (equal (prod-cons (car x) (cdr x))
                     x))
     :hints(("Goal" :in-theory (enable prod-consp))))
+
   (defthmd equal-of-prod-cons
     (implies (prod-consp x)
              (equal (equal x (prod-cons a b))
                     (and (equal (car x) a)
                          (equal (cdr x) b))))
     :hints(("Goal" :in-theory (enable prod-consp))))
+
   (defthm acl2-count-of-prod-cons
     (and (>= (acl2-count (prod-cons x y))
              (acl2-count x))
@@ -88,6 +92,10 @@
     (implies (or a b)
              (and (prod-cons a b)
                   (consp (prod-cons a b))))
+    :rule-classes ((:rewrite)
+                   (:type-prescription :corollary
+                    (implies (or a b)
+                             (consp (prod-cons a b)))))
     :hints(("Goal" :in-theory (enable prod-cons))))
 
   (defthm prod-cons-not-consp-forward

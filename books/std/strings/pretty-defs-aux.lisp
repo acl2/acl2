@@ -48,6 +48,11 @@
     std::da-patbind-alist-to-bindings
     std::da-patbind-fn
     fty::patbind-flexsum
+    fty::prod-consp
+    fty::prod-car
+    fty::prod-cdr
+    fty::prod-cons
+    fty::prod-hons
     fty::flexsum-p
     fty::flexsum->kind
     fty::flexsum->case

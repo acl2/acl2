@@ -64,7 +64,9 @@
 
 (defprod a4vec
   :short "A symbolic 4vec, with lists of AIGs for the upper and lower bits."
-  :layout :tree
+  ;; [Jared] might be switch to a regular :tree, but we rely on it being a cons
+  ;; for a4veclist-nth, so better to just make it a proper cons.
+  :layout :fulltree
   ((upper true-listp "List of AIGs for the upper bits.")
    (lower true-listp "List of AIGs for the lower bits."))
   :long "<p>See @(see a4vec-eval); the semantics are given by @(see

@@ -170,10 +170,14 @@
        (when (vl-is-some-token? '(:vl-pound :vl-atsign :vl-kwd-repeat))
          (delay := (vl-parse-delay-or-event-control)))
        (expr := (vl-parse-expression))
-       (return (vl-assignstmt (if (eq (vl-token->type type) :vl-equalsign)
-                                  :vl-blocking
-                                :vl-nonblocking)
-                              lvalue expr delay atts loc))))
+       (return (make-vl-assignstmt :type (if (eq (vl-token->type type) :vl-equalsign)
+                                             :vl-blocking
+                                           :vl-nonblocking)
+                                   :lvalue lvalue
+                                   :expr expr
+                                   :ctrl delay
+                                   :atts atts
+                                   :loc loc))))
 
 
 (defparser vl-parse-procedural-continuous-assignments (atts)
@@ -205,17 +209,21 @@
         (when (vl-is-some-token? '(:vl-kwd-assign :vl-kwd-force))
           (type := (vl-match))
           ((lvalue . expr) := (vl-parse-variable-assignment))
-          (return (vl-assignstmt (if (eq (vl-token->type type) :vl-kwd-assign)
-                                     :vl-assign
-                                   :vl-force)
-                                 lvalue expr nil atts
-                                 (vl-token->loc type))))
+          (return (make-vl-assignstmt :type (if (eq (vl-token->type type) :vl-kwd-assign)
+                                                :vl-assign
+                                              :vl-force)
+                                      :lvalue lvalue
+                                      :expr expr
+                                      :ctrl nil
+                                      :atts atts
+                                      :loc (vl-token->loc type))))
         (type := (vl-match-some-token '(:vl-kwd-deassign :vl-kwd-release)))
         (lvalue := (vl-parse-variable-lvalue))
-        (return (vl-deassignstmt (if (eq (vl-token->type type) :vl-kwd-deassign)
-                                     :vl-deassign
-                                   :vl-release)
-                                 lvalue atts))))
+        (return (make-vl-deassignstmt :type (if (eq (vl-token->type type) :vl-kwd-deassign)
+                                                :vl-deassign
+                                              :vl-release)
+                                      :lvalue lvalue
+                                      :atts atts))))
 
 
 (defparser vl-parse-task-enable (atts)

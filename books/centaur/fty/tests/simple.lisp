@@ -59,4 +59,8 @@
   (person
    candy))
 
+(defprod constest
+  :layout :tree
+  ((foo stringp)
+   (bar acl2::maybe-natp)))
 
