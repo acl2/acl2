@@ -149,6 +149,201 @@
           (otherwise
            (mv t prefixes x86-1 x86-2)))))))
 
+(local
+ (defthmd get-prefixes-and-xlate-equiv-x86s-aux
+   (implies (and
+             (bind-free
+              (find-an-xlate-equiv-x86
+               'get-prefixes-and-xlate-equiv-x86s
+               x86-1 'x86-2 mfc state)
+              (x86-2))
+             ;; To prevent loops...
+             (syntaxp (not (eq x86-1 x86-2)))
+             ;;
+             (equal (xr :seg-visible 1 x86-1)
+                    (xr :seg-visible 1 x86-2))
+             ;;
+             (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-1)))
+             (canonical-address-p start-rip)
+             (canonical-address-p (+ cnt start-rip))
+             (all-paging-entries-found-p
+              (create-canonical-address-list cnt start-rip)
+              (double-rewrite x86-1))
+             (no-page-faults-during-translation-p
+              (create-canonical-address-list cnt start-rip)
+              :x cpl x86-1)
+             (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+              (create-canonical-address-list cnt start-rip)
+              :x cpl x86-1)
+             (xlate-equiv-x86s x86-1 x86-2))
+            (and
+             (equal
+              (mv-nth 0 (get-prefixes start-rip prefixes cnt x86-1))
+              (mv-nth 0 (get-prefixes start-rip prefixes cnt x86-2)))
+             (equal
+              (mv-nth 1 (get-prefixes start-rip prefixes cnt x86-1))
+              (mv-nth 1 (get-prefixes start-rip prefixes cnt x86-2)))
+             (xlate-equiv-x86s
+              (mv-nth 2 (get-prefixes start-rip prefixes cnt x86-1))
+              (mv-nth 2 (get-prefixes start-rip prefixes cnt x86-2)))))
+   :hints (("Goal"
+            :induct (cons
+                     ;; For opening up both the calls of get-prefixes
+                     ;; in sync...
+                     (get-prefixes-and-xlate-equiv-x86s-ind-hint
+                      start-rip prefixes cnt x86-1 x86-2)
+                     ;; For opening up calls of
+                     ;; all-paging-entries-found-p and
+                     ;; mapped-lin-addrs-disjoint-from-paging-structure-addrs-p...
+                     (create-canonical-address-list cnt start-rip))
+            :expand ((get-prefixes start-rip prefixes cnt x86-1)
+                     (get-prefixes start-rip prefixes cnt x86-2))
+            :in-theory (e/d* (get-prefixes
+                              all-paging-entries-found-p
+                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+                              no-page-faults-during-translation-p)
+                             (all-seg-visibles-equal-open
+                              unsigned-byte-p
+                              signed-byte-p
+                              bitops::logior-equal-0
+                              acl2::zp-open
+                              not
+                              (tau-system)
+                              (:rewrite negative-logand-to-positive-logand-with-integerp-x)
+                              (:type-prescription bitops::logior-natp-type)
+                              (:rewrite unsigned-byte-p-of-logior)
+                              (:rewrite acl2::ifix-when-not-integerp)
+                              (:rewrite acl2::ash-0)
+                              (:rewrite acl2::loghead-identity)
+                              (:rewrite acl2::zip-open)
+                              (:rewrite bitops::logtail-of-logior)
+                              (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+                              (:rewrite bitops::loghead-of-logior)
+                              (:rewrite unsigned-byte-p-of-logtail)
+                              (:rewrite unsigned-byte-p-of-logand-2)
+                              (:rewrite bitops::logtail-of-logand)
+                              (:rewrite loghead-of-non-integerp)
+                              (:rewrite bitops::logand-with-bitmask)
+                              (:rewrite bitops::logsquash-cancel)
+                              (:rewrite member-list-p-and-pairwise-disjoint-p-aux)
+                              (:rewrite acl2::zp-when-gt-0)
+                              (:rewrite bitops::logtail-of-ash)
+                              (:rewrite unsigned-byte-p-of-logand-1)
+                              (:definition open-qword-paddr-list-list)
+                              (:definition open-qword-paddr-list)
+                              (:rewrite signed-byte-p-limits-thm)
+                              (:rewrite default-+-2)
+                              (:rewrite default-+-1)
+                              (:definition pairwise-disjoint-p-aux)
+                              (:definition binary-append)
+                              (:rewrite default-<-2)
+                              (:rewrite default-<-1)
+                              (:rewrite programmer-level-mode-rm08-no-error)
+                              (:rewrite acl2::append-when-not-consp)
+                              (:rewrite acl2::logtail-identity)
+                              (:rewrite canonical-address-p-limits-thm-3)
+                              (:rewrite get-prefixes-opener-lemma-6)
+                              (:rewrite canonical-address-p-limits-thm-2)
+                              (:rewrite canonical-address-p-limits-thm-1)
+                              (:rewrite canonical-address-p-limits-thm-0)
+                              (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
+                              (:rewrite logand-redundant)
+                              (:rewrite get-prefixes-opener-lemma-5)
+                              (:rewrite get-prefixes-opener-lemma-4)
+                              (:rewrite get-prefixes-opener-lemma-3)
+                              (:rewrite default-cdr)
+                              (:type-prescription true-listp-addr-range)
+                              (:type-prescription consp-addr-range)
+                              (:definition addr-range)
+                              (:rewrite rm08-does-not-affect-state-in-programmer-level-mode)
+                              (:rewrite bitops::associativity-of-logand)
+                              (:rewrite member-p-cdr)
+                              (:rewrite pairwise-disjoint-p-aux-and-append)
+                              (:rewrite default-car)
+                              (:type-prescription open-qword-paddr-list-list)
+                              (:rewrite acl2::distributivity-of-minus-over-+)
+                              (:type-prescription gather-all-paging-structure-qword-addresses)
+                              (:rewrite car-addr-range)
+                              (:type-prescription disjoint-p)
+                              (:rewrite bitops::logand-fold-consts)
+                              (:rewrite all-seg-visibles-equal-aux-open)
+                              (:rewrite member-p-and-mult-8-qword-paddr-listp)
+                              (:rewrite member-list-p-and-mult-8-qword-paddr-list-listp)
+                              (:rewrite bitops::logior-fold-consts)
+                              (:linear n43p-get-prefixes)
+                              (:rewrite cdr-create-canonical-address-list)
+                              (:rewrite car-create-canonical-address-list)
+                              (:rewrite consp-of-create-canonical-address-list)
+                              (:rewrite disjoint-p-subset-p)
+                              (:rewrite disjoint-p-members-of-true-list-list-disjoint-p)
+                              (:rewrite disjoint-p-members-of-pairwise-disjoint-p-aux)
+                              (:rewrite disjoint-p-members-of-pairwise-disjoint-p)
+                              (:rewrite cdr-addr-range)
+                              (:rewrite loghead-unequal)
+                              (:type-prescription bitops::logand-natp-type-2)
+                              (:rewrite default-unary-minus)
+                              (:definition n43p$inline)
+                              (:rewrite get-prefixes-opener-lemma-7)
+                              (:type-prescription rm-low-64-logand-logior-helper-1)
+                              (:rewrite acl2::posp-redefinition)
+                              (:type-prescription bitops::logand-natp-type-1)
+                              (:type-prescription n43p$inline)
+                              (:rewrite bitops::logsquash-of-logsquash-2)
+                              (:rewrite bitops::logsquash-of-logsquash-1)
+                              (:rewrite bitops::logand-of-logand-self-1)
+                              (:rewrite get-prefixes-opener-lemma-2)
+                              (:rewrite xr-rm08-state-in-programmer-level-mode)
+                              (:type-prescription bitops::ash-natp-type)
+                              (:rewrite mapped-lin-addrs-disjoint-from-paging-structure-addrs-p-member-p)
+                              (:type-prescription rationalp-expt-type-prescription)
+                              (:type-prescription posp)
+                              (:type-prescription n64p$inline)
+                              (:rewrite x86p-rm08)
+                              (:type-prescription expt-type-prescription-non-zero-base)
+                              (:type-prescription bitops::part-install-width-low$inline)
+                              (:type-prescription bitops::natp-part-install-width-low)
+                              (:rewrite rationalp-implies-acl2-numberp)))))))
+
+(defun find-binding-from-all-entries-found-p-aux
+  (var calls)
+  (if
+      (endp calls)
+      nil
+    (b*
+        ((call (car calls))
+         (var-val (if (equal var 'l-addrs)
+                      (second call)
+                    (if (equal var 'x86)
+                        (third call)
+                      nil))))
+      (append
+       (cons (cons var var-val) 'nil)
+       (find-binding-from-all-entries-found-p-aux var (cdr calls))))))
+
+(defun find-binding-from-all-entries-found-p
+  (var mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((calls (acl2::find-calls-of-fns-lst
+               '(all-paging-entries-found-p)
+               (acl2::mfc-clause mfc))))
+    (find-binding-from-all-entries-found-p-aux var calls)))
+
+(defthm all-paging-entries-found-p-and-good-paging-structures-x86p
+  (implies (and
+            (bind-free
+             (find-binding-from-all-entries-found-p
+              'l-addrs mfc state)
+             (l-addrs))
+            (all-paging-entries-found-p l-addrs x86)
+            (consp l-addrs))
+           (good-paging-structures-x86p x86))
+  :hints (("Goal"
+           :use ((:instance entry-found-p-and-good-paging-structures-x86p
+                            (lin-addr (car l-addrs))))
+           :in-theory (e/d* (all-paging-entries-found-p)
+                            (entry-found-p-and-good-paging-structures-x86p)))))
+
 (defthm get-prefixes-and-xlate-equiv-x86s
   (implies (and
             (bind-free
@@ -161,13 +356,17 @@
             (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-1)))
             (canonical-address-p start-rip)
             (canonical-address-p (+ cnt start-rip))
+            (posp cnt)
             (all-paging-entries-found-p
              (create-canonical-address-list cnt start-rip)
              (double-rewrite x86-1))
+            (no-page-faults-during-translation-p
+             (create-canonical-address-list cnt start-rip)
+             :x cpl (double-rewrite x86-1))
             (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
              (create-canonical-address-list cnt start-rip)
-             :x cpl x86-1)
-            (xlate-equiv-x86s x86-1 x86-2))
+             :x cpl (double-rewrite x86-1))
+            (xlate-equiv-x86s (double-rewrite x86-1) x86-2))
            (and
             (equal
              (mv-nth 0 (get-prefixes start-rip prefixes cnt x86-1))
@@ -179,122 +378,15 @@
              (mv-nth 2 (get-prefixes start-rip prefixes cnt x86-1))
              (mv-nth 2 (get-prefixes start-rip prefixes cnt x86-2)))))
   :hints (("Goal"
-           :induct (cons
-                    ;; For opening up both the calls of get-prefixes
-                    ;; in sync...
-                    (get-prefixes-and-xlate-equiv-x86s-ind-hint
-                     start-rip prefixes cnt x86-1 x86-2)
-                    ;; For opening up calls of
-                    ;; all-paging-entries-found-p and
-                    ;; mapped-lin-addrs-disjoint-from-paging-structure-addrs-p...
-                    (create-canonical-address-list cnt start-rip))
-           :expand ((get-prefixes start-rip prefixes cnt x86-1)
-                    (get-prefixes start-rip prefixes cnt x86-2))
-           :in-theory (e/d* (get-prefixes
-                             all-paging-entries-found-p
-                             mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-                             no-page-faults-during-translation-p)
+           :do-not-induct t
+           :use ((:instance all-seg-visibles-equal-open
+                            (j 1))
+                 (:instance get-prefixes-and-xlate-equiv-x86s-aux))
+           :in-theory (e/d* (all-paging-entries-found-p)
                             (all-seg-visibles-equal-open
+                             get-prefixes-and-xlate-equiv-x86s-aux
                              unsigned-byte-p
-                             signed-byte-p
-                             bitops::logior-equal-0
-                             acl2::zp-open
-                             not
-                             (tau-system)
-                             (:rewrite negative-logand-to-positive-logand-with-integerp-x)
-                             (:type-prescription bitops::logior-natp-type)
-                             (:rewrite unsigned-byte-p-of-logior)
-                             (:rewrite acl2::ifix-when-not-integerp)
-                             (:rewrite acl2::ash-0)
-                             (:rewrite acl2::loghead-identity)
-                             (:rewrite acl2::zip-open)
-                             (:rewrite bitops::logtail-of-logior)
-                             (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
-                             (:rewrite bitops::loghead-of-logior)
-                             (:rewrite unsigned-byte-p-of-logtail)
-                             (:rewrite unsigned-byte-p-of-logand-2)
-                             (:rewrite bitops::logtail-of-logand)
-                             (:rewrite loghead-of-non-integerp)
-                             (:rewrite bitops::logand-with-bitmask)
-                             (:rewrite bitops::logsquash-cancel)
-                             (:rewrite member-list-p-and-pairwise-disjoint-p-aux)
-                             (:rewrite acl2::zp-when-gt-0)
-                             (:rewrite bitops::logtail-of-ash)
-                             (:rewrite unsigned-byte-p-of-logand-1)
-                             (:definition open-qword-paddr-list-list)
-                             (:definition open-qword-paddr-list)
-                             (:rewrite signed-byte-p-limits-thm)
-                             (:rewrite default-+-2)
-                             (:rewrite default-+-1)
-                             (:definition pairwise-disjoint-p-aux)
-                             (:definition binary-append)
-                             (:rewrite default-<-2)
-                             (:rewrite default-<-1)
-                             (:rewrite programmer-level-mode-rm08-no-error)
-                             (:rewrite acl2::append-when-not-consp)
-                             (:rewrite acl2::logtail-identity)
-                             (:rewrite canonical-address-p-limits-thm-3)
-                             (:rewrite get-prefixes-opener-lemma-6)
-                             (:rewrite canonical-address-p-limits-thm-2)
-                             (:rewrite canonical-address-p-limits-thm-1)
-                             (:rewrite canonical-address-p-limits-thm-0)
-                             (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
-                             (:rewrite logand-redundant)
-                             (:rewrite get-prefixes-opener-lemma-5)
-                             (:rewrite get-prefixes-opener-lemma-4)
-                             (:rewrite get-prefixes-opener-lemma-3)
-                             (:rewrite default-cdr)
-                             (:type-prescription true-listp-addr-range)
-                             (:type-prescription consp-addr-range)
-                             (:definition addr-range)
-                             (:rewrite rm08-does-not-affect-state-in-programmer-level-mode)
-                             (:rewrite bitops::associativity-of-logand)
-                             (:rewrite member-p-cdr)
-                             (:rewrite pairwise-disjoint-p-aux-and-append)
-                             (:rewrite default-car)
-                             (:type-prescription open-qword-paddr-list-list)
-                             (:rewrite acl2::distributivity-of-minus-over-+)
-                             (:type-prescription gather-all-paging-structure-qword-addresses)
-                             (:rewrite car-addr-range)
-                             (:type-prescription disjoint-p)
-                             (:rewrite bitops::logand-fold-consts)
-                             (:rewrite all-seg-visibles-equal-aux-open)
-                             (:rewrite member-p-and-mult-8-qword-paddr-listp)
-                             (:rewrite member-list-p-and-mult-8-qword-paddr-list-listp)
-                             (:rewrite bitops::logior-fold-consts)
-                             (:linear n43p-get-prefixes)
-                             (:rewrite cdr-create-canonical-address-list)
-                             (:rewrite car-create-canonical-address-list)
-                             (:rewrite consp-of-create-canonical-address-list)
-                             (:rewrite disjoint-p-subset-p)
-                             (:rewrite disjoint-p-members-of-true-list-list-disjoint-p)
-                             (:rewrite disjoint-p-members-of-pairwise-disjoint-p-aux)
-                             (:rewrite disjoint-p-members-of-pairwise-disjoint-p)
-                             (:rewrite cdr-addr-range)
-                             (:rewrite loghead-unequal)
-                             (:type-prescription bitops::logand-natp-type-2)
-                             (:rewrite default-unary-minus)
-                             (:definition n43p$inline)
-                             (:rewrite get-prefixes-opener-lemma-7)
-                             (:type-prescription rm-low-64-logand-logior-helper-1)
-                             (:rewrite acl2::posp-redefinition)
-                             (:type-prescription bitops::logand-natp-type-1)
-                             (:type-prescription n43p$inline)
-                             (:rewrite bitops::logsquash-of-logsquash-2)
-                             (:rewrite bitops::logsquash-of-logsquash-1)
-                             (:rewrite bitops::logand-of-logand-self-1)
-                             (:rewrite get-prefixes-opener-lemma-2)
-                             (:rewrite xr-rm08-state-in-programmer-level-mode)
-                             (:type-prescription bitops::ash-natp-type)
-                             (:rewrite mapped-lin-addrs-disjoint-from-paging-structure-addrs-p-member-p)
-                             (:type-prescription rationalp-expt-type-prescription)
-                             (:type-prescription posp)
-                             (:type-prescription n64p$inline)
-                             (:rewrite x86p-rm08)
-                             (:type-prescription expt-type-prescription-non-zero-base)
-                             (:type-prescription bitops::part-install-width-low$inline)
-                             (:type-prescription bitops::natp-part-install-width-low)
-                             (:rewrite rationalp-implies-acl2-numberp))))))
+                             signed-byte-p)))))
 
 (defthm get-prefixes-opener-lemma-in-system-level-mode
   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
@@ -303,6 +395,9 @@
                 (all-paging-entries-found-p
                  (create-canonical-address-list cnt start-rip)
                  (double-rewrite x86))
+                (no-page-faults-during-translation-p
+                 (create-canonical-address-list cnt start-rip)
+                 :x cpl (double-rewrite x86))
                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                  (create-canonical-address-list cnt start-rip)
                  :x cpl (double-rewrite x86))

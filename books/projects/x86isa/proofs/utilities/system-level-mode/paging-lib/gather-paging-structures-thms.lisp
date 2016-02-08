@@ -37,6 +37,18 @@
                                     good-paging-structures-x86p)
                                    (all-mem-except-paging-structures-equal)))))
 
+(defthm xlate-equiv-structures-and-xw-mem-disjoint-simple
+  (implies (and (pairwise-disjoint-p-aux
+                 (list index)
+                 (open-qword-paddr-list-list
+                  (gather-all-paging-structure-qword-addresses x86)))
+                (physical-address-p index)
+                (good-paging-structures-x86p (double-rewrite x86))
+                (unsigned-byte-p 8 val))
+           (xlate-equiv-structures
+            (xw :mem index val x86)
+            (double-rewrite x86))))
+
 (defthm xlate-equiv-structures-and-wm-low-64-disjoint
   (implies (and (bind-free
                  (find-an-xlate-equiv-x86

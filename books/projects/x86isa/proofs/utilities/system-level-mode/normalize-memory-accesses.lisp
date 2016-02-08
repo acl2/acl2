@@ -78,11 +78,15 @@
                  (all-paging-entries-found-p l-addrs-2 (double-rewrite x86))
                  (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
                   l-addrs-1 r-w-x-1 cpl (double-rewrite x86))
+                 (no-page-faults-during-translation-p
+                  l-addrs-2 r-w-x-2 cpl (double-rewrite x86))
                  (not (programmer-level-mode x86)))
             (equal (mv-nth 1 (rb l-addrs-1 r-w-x-1 (mv-nth 2 (rb l-addrs-2 r-w-x-2 x86))))
                    (mv-nth 1 (rb l-addrs-1 r-w-x-1 x86))))
    :hints (("Goal"
             :in-theory (e/d* () (force (force)))))))
+
+(local (in-theory (e/d () (all-seg-visibles-equal-open))))
 
 ;; ======================================================================
 

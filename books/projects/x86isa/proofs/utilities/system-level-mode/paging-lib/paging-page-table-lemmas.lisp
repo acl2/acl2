@@ -150,26 +150,45 @@
                              not))))
   :rule-classes :congruence)
 
+(defthm mv-nth-2-page-table-entry-no-page-fault-p-with-xlate-equiv-structures
+  (implies (x86p x86)
+           (xlate-equiv-structures
+            (mv-nth 2 (page-table-entry-no-page-fault-p lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
+            (double-rewrite x86)))
+  :hints (("Goal" :in-theory (e/d* (page-table-entry-no-page-fault-p
+                                    page-fault-exception
+                                    xlate-equiv-structures)
+                                   (all-msrs-equal-open
+                                    all-seg-visibles-equal-open
+                                    all-ctrs-equal-open)))))
+
 (defthm mv-nth-2-page-table-entry-no-page-fault-p-with-xlate-equiv-x86s
   (implies
-   ;; The hyp would need to be changed to
-
-   ;; (equal
-   ;;  (mv-nth 0 (page-table-entry-no-page-fault-p lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
-   ;;  nil)
-
-   ;; if the definition of xlate-equiv-x86s requires the MS and FAULT
-   ;; fields to be exactly equal too. If that happens, then the
-   ;; theorem xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT would
-   ;; also need such a hypothesis.
-   (x86p x86)
+   ;; If page-table-entry-no-page-fault-p returns an error, then the
+   ;; :MS field of the resulting x86 state is different from that of
+   ;; the initial x86 state.
+   (not
+    (mv-nth 0 (page-table-entry-no-page-fault-p
+               lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86)))
    (xlate-equiv-x86s
     (mv-nth 2 (page-table-entry-no-page-fault-p lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86))
     (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (page-table-entry-no-page-fault-p
                                     page-fault-exception
-                                    xlate-equiv-x86s
-                                    xlate-equiv-structures)
+                                    xlate-equiv-x86s)
+                                   ()))))
+
+(defthm xr-not-mem-and-mv-nth-2-ia32e-la-to-pa-PT
+  (implies (and
+            (not (mv-nth 0 (ia32e-la-to-pa-PT
+                            lin-addr u-s-acc wp smep nxe r-w-x cpl x86)))
+            (not (equal fld :mem)))
+           (equal (xr fld index
+                      (mv-nth 2 (ia32e-la-to-pa-PT
+                                 lin-addr u-s-acc wp smep nxe r-w-x cpl x86)))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PT
+                                    ia32e-la-to-pa-page-table-alt)
                                    ()))))
 
 ;; ======================================================================
@@ -233,10 +252,32 @@
   :hints (("Goal" :use ((:instance ia32e-la-to-pa-pt-with-xlate-equiv-structures))))
   :rule-classes :congruence)
 
-(defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
-  (xlate-equiv-x86s
+(defthm xlate-equiv-structures-with-mv-nth-2-ia32e-la-to-pa-PT
+  (xlate-equiv-structures
    (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))
    (double-rewrite x86))
+  :hints (("Goal" :do-not '(preprocess)
+           :use ((:instance entry-found-p-and-good-paging-structures-x86p))
+           :in-theory (e/d* (ia32e-la-to-pa-page-table-alt
+                             read-page-table-entry
+                             xlate-equiv-x86s)
+                            (bitops::logand-with-negated-bitmask
+                             accessed-bit
+                             dirty-bit
+                             not
+                             entry-found-p-and-good-paging-structures-x86p
+                             no-duplicates-list-p)))))
+
+(defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT
+  (implies
+   (not
+    (mv-nth
+     0
+     (ia32e-la-to-pa-PT
+      lin-addr u-s-acc wp smep nxe r-w-x cpl x86)))
+   (xlate-equiv-x86s
+    (mv-nth 2 (ia32e-la-to-pa-PT lin-addr u-s-acc wp smep nxe r-w-x cpl x86))
+    (double-rewrite x86)))
   :hints (("Goal" :do-not '(preprocess)
            :use ((:instance entry-found-p-and-good-paging-structures-x86p))
            :in-theory (e/d* (ia32e-la-to-pa-page-table-alt

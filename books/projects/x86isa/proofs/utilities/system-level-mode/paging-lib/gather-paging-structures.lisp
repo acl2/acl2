@@ -2376,6 +2376,8 @@
            (equal (xr :fp-last-data 0 x86-1) (xr :fp-last-data 0 x86-2))
            (equal (xr :fp-opcode    0 x86-1) (xr :fp-opcode    0 x86-2))
            (equal (xr :mxcsr        0 x86-1) (xr :mxcsr        0 x86-2))
+           (equal (xr :ms           0 x86-1) (xr :ms           0 x86-2))
+           (equal (xr :fault        0 x86-1) (xr :fault        0 x86-2))
            (equal (xr :env          0 x86-1) (xr :env          0 x86-2))
            (equal (xr :undef        0 x86-1) (xr :undef        0 x86-2))
            ;; OS-INFO is meaningful only in programmer-level mode, but
@@ -2384,18 +2386,6 @@
 
            ;; Equality of programmer-level-mode is ensured by
            ;; good-paging-structures-x86p.
-
-           ;; MS and FAULT fields used to be excluded from this list
-           ;; so that theorems like
-           ;; xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT can be
-           ;; proved without any hypotheses that say that the page
-           ;; traversal didn't return an error. This might be a bad
-           ;; decision --- maybe having those hyps in rules llike
-           ;; xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PT is a
-           ;; good idea. We'll find out, I guess.
-
-           ;; (equal (xr :ms           0 x86-1) (xr :ms           0 x86-2))
-           ;; (equal (xr :fault        0 x86-1) (xr :fault        0 x86-2))
 
            )
 
@@ -2433,7 +2423,22 @@
               (good-paging-structures-x86p (xw fld index val x86-2)))
              (xlate-equiv-x86s (xw fld index val x86-1)
                                (xw fld index val x86-2)))
-    :hints (("Goal" :in-theory (e/d* () (force (force)))))))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthmd xlate-equiv-x86s-and-xr-simple-fields
+    (implies (and (bind-free
+                   (find-an-xlate-equiv-x86
+                    'xlate-equiv-x86s-and-xr-simple-fields
+                    x86-1 'x86-2
+                    mfc state)
+                   (x86-2))
+                  (syntaxp (not (eq x86-1 x86-2)))
+                  (member fld *x86-simple-fields-as-keywords*)
+                  (good-paging-structures-x86p (double-rewrite x86-1))
+                  (xlate-equiv-x86s (double-rewrite x86-1) x86-2))
+             (equal (xr fld 0 x86-1)
+                    (xr fld 0 x86-2)))
+    :hints (("Goal" :in-theory (e/d* (xlate-equiv-x86s) ())))))
 
 ;; ======================================================================
 

@@ -79,8 +79,8 @@
                             ())))
   :rule-classes :congruence)
 
-(defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-entries-found-la-to-pa
-  (xlate-equiv-x86s
+(defthm xlate-equiv-structures-with-mv-nth-2-ia32e-entries-found-la-to-pa-simple
+  (xlate-equiv-structures
    (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86))
    (double-rewrite x86))
   :hints (("Goal"
@@ -88,6 +88,69 @@
            :in-theory (e/d* (ia32e-entries-found-la-to-pa
                              not-good-paging-structures-x86p-and-ia32e-la-to-pa-PML4T)
                             ()))))
+
+(defthm xlate-equiv-structures-with-mv-nth-2-ia32e-entries-found-la-to-pa
+  (implies (and
+            (bind-free
+             (find-an-xlate-equiv-x86
+              'xlate-equiv-structures-with-mv-nth-2-ia32e-entries-found-la-to-pa
+              x86-1 'x86-2
+              mfc state)
+             (x86-2))
+            (xlate-equiv-structures (double-rewrite x86-1) x86-2))
+           (xlate-equiv-structures
+            (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86-1))
+            (double-rewrite x86-2)))
+  :hints (("Goal"
+           :use ((:instance xlate-equiv-structures-open-for-ctr-and-msr))
+           :in-theory (e/d* (ia32e-entries-found-la-to-pa
+                             not-good-paging-structures-x86p-and-ia32e-la-to-pa-PML4T)
+                            ()))))
+
+(defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-entries-found-la-to-pa-simple
+  (implies (not
+            (mv-nth 0 (ia32e-entries-found-la-to-pa
+                       lin-addr r-w-x cpl x86)))
+           (xlate-equiv-x86s
+            (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86))
+            (double-rewrite x86)))
+  :hints (("Goal"
+           :use ((:instance xlate-equiv-structures-open-for-ctr-and-msr))
+           :in-theory (e/d* (ia32e-entries-found-la-to-pa
+                             not-good-paging-structures-x86p-and-ia32e-la-to-pa-PML4T)
+                            ()))))
+
+(defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-entries-found-la-to-pa
+  (implies
+   (and (bind-free
+         (find-an-xlate-equiv-x86
+          'xlate-equiv-x86s-with-mv-nth-2-ia32e-entries-found-la-to-pa-new
+          x86-1 'x86-2
+          mfc state)
+         (x86-2))
+        (not (mv-nth 0
+                     (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86-1)))
+        (xlate-equiv-x86s (double-rewrite x86-1) x86-2))
+   (xlate-equiv-x86s
+    (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86-1))
+    x86-2))
+  :hints (("Goal"
+           :use ((:instance xlate-equiv-structures-open-for-ctr-and-msr))
+           :in-theory (e/d* (ia32e-entries-found-la-to-pa
+                             not-good-paging-structures-x86p-and-ia32e-la-to-pa-PML4T)
+                            ()))))
+
+(defthm xr-not-mem-and-mv-nth-2-ia32e-entries-found-la-to-pa
+  (implies (and
+            (not (mv-nth 0 (ia32e-entries-found-la-to-pa
+                            lin-addr r-w-x cpl x86)))
+            (not (equal fld :mem)))
+           (equal (xr fld index
+                      (mv-nth 2 (ia32e-entries-found-la-to-pa
+                                 lin-addr r-w-x cpl x86)))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-entries-found-la-to-pa)
+                                   ()))))
 
 (defthm two-page-table-walks-ia32e-entries-found-la-to-pa
   (and
@@ -136,25 +199,47 @@
                             (e-2 (mv-nth 2 (read-page-directory-entry lin-addr x86-2)))))))
   :rule-classes :congruence)
 
-(defthm xw-mem-disjoint-and-xlate-equiv-structures
-  (implies (and (pairwise-disjoint-p-aux
-                 (list index)
-                 (open-qword-paddr-list-list
-                  (gather-all-paging-structure-qword-addresses x86)))
-                (physical-address-p index)
-                (good-paging-structures-x86p (double-rewrite x86))
-                (unsigned-byte-p 8 val))
-           (xlate-equiv-structures (xw :mem index val x86) (double-rewrite x86))))
+;; (defthm xlate-equiv-x86s-and-xw-mem-disjoint
+;;   (implies (and
+;;             ;; To prevent loops...
+;;             (syntaxp (not (eq x86-1 'x86)))
+;;             (bind-free
+;;              (find-an-xlate-equiv-x86
+;;               'xlate-equiv-x86s-and-xw-mem-disjoint
+;;               x86-1 'x86-2 mfc state)
+;;              (x86-2))
+;;             (xlate-equiv-x86s (double-rewrite x86-1) x86-2)
+;;             (pairwise-disjoint-p-aux
+;;              (list index)
+;;              (open-qword-paddr-list-list
+;;               (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+;;             (good-paging-structures-x86p (double-rewrite x86-1))
+;;             (physical-address-p index)
+;;             (unsigned-byte-p 8 val))
+;;            (xlate-equiv-x86s (xw :mem index val x86-1)
+;;                              (xw :mem index val x86-2)))
+;;   :hints (("Goal" :in-theory (e/d* (xlate-equiv-x86s)
+;;                                    (all-mem-except-paging-structures-equal-and-xw-mem-except-paging-structure))
+;;            :use ((:instance gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
+;;                             (x86 x86-1)
+;;                             (x86-equiv x86-2))
+;;                  (:instance all-mem-except-paging-structures-equal-and-xw-mem-except-paging-structure
+;;                             (x x86-1)
+;;                             (y x86-2))))))
 
 (defthm xlate-equiv-x86s-and-xw-mem-disjoint
   (implies (and
-            ;; To prevent loops...
-            (syntaxp (not (eq x86-1 'x86)))
             (bind-free
              (find-an-xlate-equiv-x86
               'xlate-equiv-x86s-and-xw-mem-disjoint
               x86-1 'x86-2 mfc state)
              (x86-2))
+            ;; Avoid this rule to fire with substitutions like ((x86-1 . x86-1)
+            ;; (x86-2 . x86-2)) and then ((x86-1 . x86-2) (x86-2 . x86-1)),
+            ;; which cause a loop.
+            (syntaxp (and (not (eq x86-1 x86-2))
+                          ;; x86-2 must be smaller than x86-1.
+                          (term-order x86-2 x86-1)))
             (xlate-equiv-x86s (double-rewrite x86-1) x86-2)
             (pairwise-disjoint-p-aux
              (list index)
@@ -172,7 +257,11 @@
                             (x86-equiv x86-2))
                  (:instance all-mem-except-paging-structures-equal-and-xw-mem-except-paging-structure
                             (x x86-1)
-                            (y x86-2))))))
+                            (y x86-2)))))
+  :rule-classes ((:rewrite
+                  :loop-stopper
+                  ;; x86-2 must be smaller than x86-1.
+                  ((x86-1 x86-2)))))
 
 (defthm wm-low-64-and-xlate-equiv-structures-disjoint
   ;; TODO: I need a similar theorem for xlate-equiv-x86s.

@@ -99,8 +99,8 @@
                          xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-with-different-x86)
                         ())))
 
-(defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
-  (xlate-equiv-x86s
+(defthm xlate-equiv-structures-with-mv-nth-2-ia32e-la-to-pa-PML4T
+  (xlate-equiv-structures
    (mv-nth 2 (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86))
    (double-rewrite x86))
   :hints (("Goal"
@@ -121,6 +121,43 @@
                              (:linear acl2::loghead-upper-bound)
                              (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
                              (:linear n64p-rm-low-64-paging-entry))))))
+
+(defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PML4T
+  (implies
+   (not (mv-nth 0 (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86)))
+   (xlate-equiv-x86s
+    (mv-nth 2 (ia32e-la-to-pa-PML4T lin-addr wp smep nxe r-w-x cpl x86))
+    (double-rewrite x86)))
+  :hints (("Goal"
+           :use ((:instance entry-found-p-and-good-paging-structures-x86p))
+           :in-theory (e/d* (ia32e-la-to-pa-pml4-table
+                             entry-found-p-and-lin-addr
+                             read-pml4-table-entry
+                             xlate-equiv-x86s
+                             good-paging-structures-x86p)
+                            (bitops::logand-with-negated-bitmask
+                             not
+                             entry-found-p-and-good-paging-structures-x86p
+                             no-duplicates-list-p
+                             xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
+                             mult-8-qword-paddr-listp
+                             physical-address-p
+                             good-paging-structures-x86p-and-wm-low-64-disjoint
+                             (:linear acl2::loghead-upper-bound)
+                             (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
+                             (:linear n64p-rm-low-64-paging-entry))))))
+
+(defthm xr-not-mem-and-mv-nth-2-ia32e-la-to-pa-PML4T
+  (implies (and
+            (not (mv-nth 0 (ia32e-la-to-pa-PML4T
+                            lin-addr wp smep nxe r-w-x cpl x86)))
+            (not (equal fld :mem)))
+           (equal (xr fld index
+                      (mv-nth 2 (ia32e-la-to-pa-PML4T
+                                 lin-addr wp smep nxe r-w-x cpl x86)))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PML4T)
+                                   ()))))
 
 (defthm two-page-table-walks-ia32e-la-to-pa-PML4T
   (and

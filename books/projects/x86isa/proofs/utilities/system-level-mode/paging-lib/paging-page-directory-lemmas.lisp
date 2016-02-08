@@ -182,15 +182,41 @@
                              not))))
   :rule-classes :congruence)
 
-(defthm xlate-equiv-x86s-with-mv-nth-2-paging-entry-no-page-fault-p
+(defthm xlate-equiv-structures-with-mv-nth-2-paging-entry-no-page-fault-p
   (implies (x86p x86)
+           (xlate-equiv-structures
+            (mv-nth 2 (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
+            (double-rewrite x86)))
+  :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
+                                    page-fault-exception
+                                    xlate-equiv-structures)
+                                   (all-msrs-equal-open
+                                    all-seg-visibles-equal-open
+                                    all-ctrs-equal-open)))))
+
+(defthm xlate-equiv-x86s-with-mv-nth-2-paging-entry-no-page-fault-p
+  (implies (not (mv-nth 0
+                        (paging-entry-no-page-fault-p
+                         lin-addr entry wp smep nxe r-w-x cpl x86)))
            (xlate-equiv-x86s
             (mv-nth 2 (paging-entry-no-page-fault-p lin-addr entry wp smep nxe r-w-x cpl x86))
             (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
                                     page-fault-exception
-                                    xlate-equiv-x86s
-                                    xlate-equiv-structures)
+                                    xlate-equiv-x86s)
+                                   ()))))
+
+(defthm xr-not-mem-and-mv-nth-2-ia32e-la-to-pa-PD
+  (implies (and
+            (not (mv-nth 0 (ia32e-la-to-pa-PD
+                            lin-addr wp smep nxe r-w-x cpl x86)))
+            (not (equal fld :mem)))
+           (equal (xr fld index
+                      (mv-nth 2 (ia32e-la-to-pa-PD
+                                 lin-addr wp smep nxe r-w-x cpl x86)))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-PD
+                                    ia32e-la-to-pa-page-directory-alt)
                                    ()))))
 
 ;; ======================================================================
@@ -320,8 +346,8 @@
                          xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-with-different-x86)
                         ())))
 
-(defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PD
-  (xlate-equiv-x86s
+(defthm xlate-equiv-structures-with-mv-nth-2-ia32e-la-to-pa-PD
+  (xlate-equiv-structures
    (mv-nth 2 (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86))
    (double-rewrite x86))
   :hints (("Goal"
@@ -341,6 +367,30 @@
                              (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
                              (:linear n64p-rm-low-64-paging-entry)))
            :use ((:instance entry-found-p-and-good-paging-structures-x86p)))))
+
+(defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-la-to-pa-PD
+  (implies (not
+            (mv-nth 0 (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86)))
+           (xlate-equiv-x86s
+            (mv-nth 2 (ia32e-la-to-pa-PD lin-addr wp smep nxe r-w-x cpl x86))
+            (double-rewrite x86)))
+  :hints (("Goal"
+           :use ((:instance entry-found-p-and-good-paging-structures-x86p))
+           :in-theory (e/d* (ia32e-la-to-pa-page-directory-alt
+                             good-paging-structures-x86p
+                             read-page-directory-entry
+                             xlate-equiv-x86s)
+                            (bitops::logand-with-negated-bitmask
+                             not
+                             entry-found-p-and-good-paging-structures-x86p
+                             no-duplicates-list-p
+                             xlate-equiv-entries-at-qword-addresses?-implies-xlate-equiv-entries
+                             mult-8-qword-paddr-listp
+                             physical-address-p
+                             good-paging-structures-x86p-and-wm-low-64-disjoint
+                             (:linear acl2::loghead-upper-bound)
+                             (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
+                             (:linear n64p-rm-low-64-paging-entry))))))
 
 
 (defthm two-page-table-walks-ia32e-la-to-pa-PD
