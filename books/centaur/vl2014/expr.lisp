@@ -1004,8 +1004,8 @@ instead.</p>"
         (atts       nil))
     ;; Black magic horrible thing -- make sure this agrees with the resulting
     ;; definition of vl-expr-p.
-    (cons :atom (cons (cons guts finalwidth)
-                      (cons finaltype atts)))))
+    (cons :atom (fty::prod-cons (fty::prod-cons guts finalwidth)
+                                (fty::prod-cons finaltype atts)))))
 
 (define vl-arity-fix ((op vl-op-p) (args))
   :inline t

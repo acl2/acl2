@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2016-01-26")
+  "VL Syntax 2016-02-05")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -792,6 +792,9 @@ these.</p>")
              this is the name of the interface, e.g., @('simplebus').  For
              non-interface ports it is just @('nil').")
 
+   (loc     vl-location-p
+            "Where this port came from in the Verilog source code.")
+
    (modport maybe-stringp
             :rule-classes :type-prescription
             "For interface ports with modport components, e.g., @('simplebus.master foo'),
@@ -800,10 +803,7 @@ these.</p>")
              ports, this is just @('nil').")
 
    (udims   vl-packeddimensionlist-p
-            "For interface ports only: the unpacked dimensions for this port.")
-
-   (loc     vl-location-p
-            "Where this port came from in the Verilog source code.")))
+            "For interface ports only: the unpacked dimensions for this port.")))
 
 
 (defprod vl-regularport
@@ -1121,8 +1121,6 @@ arguments of gate instances and most arguments of module instances.  See our
              "Says whether this port is an input, output, or bidirectional
               (inout) port.")
 
-   (nettype  vl-maybe-nettypename-p)
-
    (type     vl-datatype-p
              "The type and size information for this port.  <b>Warning</b>: per
               Verilog-2005 page 175, port declarations and net/reg declarations
@@ -1132,11 +1130,13 @@ arguments of gate instances and most arguments of module instances.  See our
               automatically; instead the @(see portdecl-sign) transformation
               needs to be run.")
 
-   (atts     vl-atts-p
-             "Any attributes associated with this declaration.")
-
    (loc      vl-location-p
-             "Where the port was declared in the source code."))
+             "Where the port was declared in the source code.")
+
+   (nettype  vl-maybe-nettypename-p)
+
+   (atts     vl-atts-p
+             "Any attributes associated with this declaration."))
 
   :long "<p>See @(see vl-port) for related background.  Port declarations,
 described in Section 12.3.3 of the Verilog-2005 standard, ascribe certain
@@ -1296,12 +1296,12 @@ are.</p>")
 
   ((lvalue   vl-expr-p "The location being assigned to.")
    (expr     vl-expr-p "The right-hand side.")
-   (strength vl-maybe-gatestrength-p)
-   (delay    vl-maybe-gatedelay-p)
+   (loc      vl-location-p
+             "Where the assignment was found in the source code.")
    (atts     vl-atts-p
              "Any attributes associated with this assignment.")
-   (loc      vl-location-p
-             "Where the assignment was found in the source code."))
+   (strength vl-maybe-gatestrength-p)
+   (delay    vl-maybe-gatedelay-p))
 
   :long "<p>In the Verilog sources, continuous assignment statements can take
 two forms, as illustrated below.</p>
@@ -1453,19 +1453,32 @@ properly preserve them.</p>")
    (type     vl-datatype-p
              "Data type, array dimensions.  See below.")
 
+   (loc        vl-location-p
+               "Where the declaration was found in the source code.")
+
    (nettype  vl-maybe-nettypename-p
              "Net type (i.e., resolution function, distinct from datatype) or
               @('nil') if this a @('reg') or variable instead of a net.  See
               below.")
 
-   (constp   booleanp
-             :rule-classes :type-prescription
-             "(Variables only).  Indicates whether the @('const') keyword was
-              provided.")
+   (atts       vl-atts-p
+               "Any attributes associated with this declaration.")
+
+   (initval  vl-maybe-expr-p
+             "(Variables only).  When present, indicates the initial value for
+              the variable, e.g., for @('integer i = 3;') the @('initval') will
+              be the @(see vl-expr-p) for @('3').  Note that when net
+              declarations have initial values, the parser turns them into
+              separate continuous assignment statements, instead.")
 
    (varp     booleanp
              :rule-classes :type-prescription
              "(Variables only).  Indicates whether the @('var') keyword was
+              provided.")
+
+   (constp   booleanp
+             :rule-classes :type-prescription
+             "(Variables only).  Indicates whether the @('const') keyword was
               provided.")
 
    (lifetime vl-lifetime-p
@@ -1474,13 +1487,6 @@ properly preserve them.</p>")
               really support this yet in any meaningful way, and the
               @('lifetime') field is currently just used to record whether a
               @('static') or @('automatic') keyword was found during parsing.")
-
-   (initval  vl-maybe-expr-p
-             "(Variables only).  When present, indicates the initial value for
-              the variable, e.g., for @('integer i = 3;') the @('initval') will
-              be the @(see vl-expr-p) for @('3').  Note that when net
-              declarations have initial values, the parser turns them into
-              separate continuous assignment statements, instead.")
 
    (vectoredp  booleanp
                :rule-classes :type-prescription
@@ -1522,13 +1528,7 @@ properly preserve them.</p>")
                 @('cstrength') of @('medium'); the @('cstrength') will be
                 @('nil') for all non-trireg nets, regs, and variables; it will
                 also be @('nil') for @('trireg') nets that do not explicitly
-                give a charge strength.")
-
-   (atts       vl-atts-p
-               "Any attributes associated with this declaration.")
-
-   (loc        vl-location-p
-               "Where the declaration was found in the source code."))
+                give a charge strength."))
 
   :long "<p>Verilog-2005 and SystemVerilog-2012 distinguish between nets and
          variables.  For example:</p>
@@ -2030,17 +2030,23 @@ instance, or a direct interface instance (not an interface port)."
               "Name of the module, user-defined primitive, or interface that is
                being instantiated.")
 
-   (range     vl-maybe-range-p
-              "When present, indicates that this is an array of instances,
-               instead of a single instance.")
+   (portargs  vl-arguments-p
+              "Connections to use for the submodule's input, output, and inout
+               ports.")
 
    (paramargs vl-paramargs-p
               "Values to use for module parameters.  For instance, this might
                specify the width to use for an adder module, etc.")
 
-   (portargs  vl-arguments-p
-              "Connections to use for the submodule's input, output, and inout
-               ports.")
+   (loc       vl-location-p
+              "Where the instance was found in the source code.")
+
+   (range     vl-maybe-range-p
+              "When present, indicates that this is an array of instances,
+               instead of a single instance.")
+
+   (atts      vl-atts-p
+              "Any attributes associated with this instance.")
 
    (str       vl-maybe-gatestrength-p
               "Strength for user-defined primitive instances.  Does not make
@@ -2048,13 +2054,7 @@ instance, or a direct interface instance (not an interface port)."
 
    (delay     vl-maybe-gatedelay-p
               "Delay for user-defined primitive instances.  Does not make sense
-               for module instances.  VL mostly ignores this.")
-
-   (atts      vl-atts-p
-              "Any attributes associated with this instance.")
-
-   (loc       vl-location-p
-              "Where the instance was found in the source code."))
+               for module instances.  VL mostly ignores this."))
 
   :long "<p>We represent module and user-defined primitive instances in a
 uniform manner with @('vl-modinst-p') structures.  Because of this, certain
@@ -2121,6 +2121,16 @@ recognized by @(call vl-gatetype-p).</p>")
                     (not (equal (vl-gateinst->type x) t))
                     (not (equal (vl-gateinst->type x) nil))))))
 
+   (args     vl-plainarglist-p
+             "Arguments to the gate instance.  Note that this differs from
+              module instances where @(see vl-arguments-p) structures are used,
+              because gate arguments are never named.  The grammar restricts
+              how many arguments certain gates can have, but we do not enforce
+              these restrictions in the definition of @('vl-gateinst-p').")
+
+   (loc      vl-location-p
+             "Where the gate instance was found in the source code.")
+
    (name     maybe-stringp
              :rule-classes
              ((:type-prescription)
@@ -2131,6 +2141,9 @@ recognized by @(call vl-gatetype-p).</p>")
                         nil))))
              "The name of this gate instance, or @('nil') if it has no name;
               see also the @(see addnames) transform.")
+
+   (atts     vl-atts-p
+             "Any attributes associated with this gate instance.")
 
    (range    vl-maybe-range-p
              "When present, indicates that this is an array of instances
@@ -2152,20 +2165,7 @@ recognized by @(call vl-gatetype-p).</p>")
               enforced by the parser, and is not part of our @('vl-gateinst-p')
               definition.  <b>Warning:</b> as with strengths, we have not paid
               much attention to delays, and our transforms may not handle them
-              correctly.")
-
-   (args     vl-plainarglist-p
-             "Arguments to the gate instance.  Note that this differs from
-              module instances where @(see vl-arguments-p) structures are used,
-              because gate arguments are never named.  The grammar restricts
-              how many arguments certain gates can have, but we do not enforce
-              these restrictions in the definition of @('vl-gateinst-p').")
-
-   (atts     vl-atts-p
-             "Any attributes associated with this gate instance.")
-
-   (loc      vl-location-p
-             "Where the gate instance was found in the source code."))
+              correctly."))
 
   :long "<p>@('vl-gateinst-p') is our representation for any single gate
 instance (or instance array).</p>
@@ -2258,6 +2258,14 @@ declaration."
            :rule-classes :type-prescription
            "Name of the parameter being declared.")
 
+   (type   vl-paramtype-p
+           "Indicates the type and default value of the parameter, and also
+            distinguishes between implicit/explicit value parameters and type
+            parameters.")
+
+   (loc    vl-location-p
+           "Where the declaration was found in the source code.")
+
    (localp booleanp
            :rule-classes :type-prescription
            "True for @('localparam') declarations, @('nil') for @('parameter')
@@ -2278,16 +2286,8 @@ declaration."
                  (that of the instance or of the instantiated module) names are
                  relative to.")
 
-   (type   vl-paramtype-p
-           "Indicates the type and default value of the parameter, and also
-            distinguishes between implicit/explicit value parameters and type
-            parameters.")
-
    (atts   vl-atts-p
-           "Any attributes associated with this declaration.")
-
-   (loc    vl-location-p
-           "Where the declaration was found in the source code."))
+           "Any attributes associated with this declaration."))
 
   :long "<p>Some examples of parameter declarations include:</p>
 
@@ -2375,9 +2375,9 @@ endmodule
              "Name of the type being defined, e.g., @('foo_t').")
    (type     vl-datatype-p
              "Type this name is being defined as, e.g., @('struct { ... }').")
-   (atts     vl-atts-p)
    (minloc   vl-location-p)
    (maxloc   vl-location-p)
+   (atts     vl-atts-p)
    (warnings vl-warninglist-p)
    (comments vl-commentmap-p)))
 
@@ -2621,6 +2621,8 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
       (expr   vl-expr-p
               "The right-hand side expression that should be assigned to the
                lvalue.")
+      (loc    vl-location-p
+              "Where the statement was found in the source code.")
       (ctrl   vl-maybe-delayoreventcontrol-p
               "Control that affects when the assignment is done, if any.  These
                controls can be a delay like @('#(6)') or an event control like
@@ -2629,9 +2631,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                of assignment.  Further coverage seems to be available in
                Section 9.7.7.")
       (atts   vl-atts-p
-              "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with this statement.")
-      (loc    vl-location-p
-              "Where the statement was found in the source code."))
+              "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with this statement."))
 
      :long "<p>Assignment statements are covered in Section 9.2.  There are two
             major types of assignment statements.</p>
@@ -2703,24 +2703,24 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :base-name vl-callstmt
      :layout :tree
      ((id      vl-scopeexpr-p "The function being called.")
+      (args    vl-exprlist-p
+               "The (non-datatype) arguments to the function, in order.")
+      (loc     vl-location-p
+               "Location of this statement in the source code.")
+      (atts    vl-atts-p
+               "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
+                this statement.")
       (typearg vl-maybe-datatype-p
                "Most function calls just take expressions as arguments, in
                 which case @('typearg') will be @('nil').  However, certain
                 system functions can take a datatype argument.  For instance,
                 you can write @('$bits(struct { ...})').  In such cases, we put
                 that datatype here.")
-      (args    vl-exprlist-p
-               "The (non-datatype) arguments to the function, in order.")
       (systemp booleanp
                "Indicates that this is a system task like @('$display')
                 instead of a user-defined function like @('myclear').")
       (voidp   booleanp
-               "Indicates that this call was wrapped in @('void '(...)').")
-      (atts    vl-atts-p
-               "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
-                this statement.")
-      (loc     vl-location-p
-               "Location of this statement in the source code."))
+               "Indicates that this call was wrapped in @('void '(...)')."))
      :long "<p>This is similar to a @(see vl-call) expression.</p>")
 
     (:vl-disablestmt
@@ -2761,13 +2761,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :base-name vl-casestmt
      :layout :tree
      :short "Representation of case, casez, and casex statements."
-     ((casetype  vl-casetype-p
-        "Basic case statement type: @('case'), @('casez'), or
-                  @('casex').")
-      (check     vl-casecheck-p
-                 "SystemVerilog violation checking specification: @('unique'),
-                  @('unique0'), @('priority'), or none.")
-      (test      vl-expr-p
+     ((test      vl-expr-p
                  "The expression being tested.")
       (caselist  vl-caselist-p
         "The match expressions and associated statements.")
@@ -2775,6 +2769,12 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
         "The default statement, if provided.  This is optional in the
                   Verilog and SystemVerilog syntax.  If it is omitted, our
                   parser will put a null statement here.")
+      (casetype  vl-casetype-p
+        "Basic case statement type: @('case'), @('casez'), or
+                  @('casex').")
+      (check     vl-casecheck-p
+                 "SystemVerilog violation checking specification: @('unique'),
+                  @('unique0'), @('priority'), or none.")
       (atts      vl-atts-p
                  "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
                   with this statement."))
@@ -2897,11 +2897,11 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :base-name vl-forstmt
      :layout :tree
      :short "Representation of @('for') statements."
-     ((initdecls   vl-vardecllist-p)
-      (initassigns vl-stmtlist-p)
-      (test        vl-expr-p)
+     ((test        vl-expr-p)
       (stepforms   vl-stmtlist-p)
       (body        vl-stmt-p)
+      (initdecls   vl-vardecllist-p)
+      (initassigns vl-stmtlist-p)
       (atts        vl-atts-p
                    "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
                     with this statement."))
@@ -2957,21 +2957,21 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      ((blocktype   vl-blocktype-p
                    "Kind of block statement&mdash;@('begin/end'),
                     @('fork/join'), etc.")
+      (stmts       vl-stmtlist-p)
       (name        maybe-stringp :rule-classes :type-prescription
                    "E.g., @('foo') in @('foo : begin ... end') or in
                     @('begin : foo ... end'), if applicable.")
-      (imports     vl-importlist-p)
-      (paramdecls  vl-paramdecllist-p)
+      (atts        vl-atts-p
+                   "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                    with this statement.")
       (vardecls    vl-vardecllist-p)
+      (paramdecls  vl-paramdecllist-p)
       (typedefs    vl-typedeflist-p)
+      (imports     vl-importlist-p)
       (loaditems   vl-blockitemlist-p
                    "Block items for this block in parse order, before splitting
                     out into typed lists.  Should not be used except in
-                    shadowcheck.")
-      (stmts       vl-stmtlist-p)
-      (atts        vl-atts-p
-                   "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
-                    with this statement."))
+                    shadowcheck."))
      :long "<h4>General Form (from Verilog-2005)</h4>
 
             @({
@@ -3481,17 +3481,20 @@ flops, and to set up other simulation events.  A simple example would be:</p>
                :rule-classes :type-prescription
                "Name of this function, e.g., @('lower_bits') below.")
 
-   (lifetime   vl-lifetime-p
-               "Indicates whether an explicit @('automatic') or @('static')
-                lifetime was provided.  An automatic function is supposed to be
-                reentrant and have its local parameters dynamically allocated
-                for each function call, with various consequences.")
-
    (rettype    vl-datatype-p
                "Return type of the function, e.g., a function might return an
                 ordinary unsigned or signed result of some width, or might
                 return a @('real') value, etc.  For instance, the return type
                 of @('lower_bits') below is @(':vl-unsigned').")
+   
+   (body       vl-stmt-p
+               "The body of the function.  We represent this as an ordinary statement,
+                but it must follow certain rules as outlined in 10.4.4, e.g.,
+                it cannot have any time controls, cannot enable tasks, cannot
+                have non-blocking assignments, etc.")
+
+   (loc        vl-location-p
+               "Where this declaration was found in the source code.")
 
    (portdecls  vl-portdecllist-p
                "The arguments to the function, e.g., @('input [7:0] a') below.
@@ -3506,8 +3509,14 @@ flops, and to set up other simulation events.  A simple example would be:</p>
                 have restrictions and can't be used in expressions like normal
                 functions.")
 
-   (imports     vl-importlist-p
-                "Local package imports")
+   (function   sv::maybe-svex-p
+               "The svex expression for the value of the function, if it has been computed.")
+
+   (lifetime   vl-lifetime-p
+               "Indicates whether an explicit @('automatic') or @('static')
+                lifetime was provided.  An automatic function is supposed to be
+                reentrant and have its local parameters dynamically allocated
+                for each function call, with various consequences.")
 
    (vardecls    vl-vardecllist-p
                 "Local variable declarations, including ones for the ports and
@@ -3519,26 +3528,17 @@ flops, and to set up other simulation events.  A simple example would be:</p>
    (typedefs    vl-typedeflist-p
                 "Local type declarations.")
 
-   (loaditems   vl-portdecl-or-blockitem-list-p
-                "Owned by @(see shadowcheck); do not use elsewhere.
-                 Declarations within the function, in parse order, before
-                 sorting out into imports, vardecls, paramdecls, and
-                 typedefs.")
-
-   (body       vl-stmt-p
-               "The body of the function.  We represent this as an ordinary statement,
-                but it must follow certain rules as outlined in 10.4.4, e.g.,
-                it cannot have any time controls, cannot enable tasks, cannot
-                have non-blocking assignments, etc.")
-
-   (function   sv::maybe-svex-p
-               "The svex expression for the value of the function, if it has been computed.")
+   (imports     vl-importlist-p
+                "Local package imports")
 
    (atts       vl-atts-p
                "Any attributes associated with this function declaration.")
 
-   (loc        vl-location-p
-               "Where this declaration was found in the source code."))
+   (loaditems   vl-portdecl-or-blockitem-list-p
+                "Owned by @(see shadowcheck); do not use elsewhere.
+                 Declarations within the function, in parse order, before
+                 sorting out into imports, vardecls, paramdecls, and
+                 typedefs."))
 
   :long "<p>Functions are described in Section 10.4 of the Verilog-2005
 standard.  An example of a function is:</p>
@@ -3583,6 +3583,33 @@ extra declarations are created automatically by the loader.</p>")
                :rule-classes :type-prescription
                "The name of this task.")
 
+   (body       vl-stmt-p
+               "The statement that gives the actions for this task, i.e., the
+                entire @('begin/end') statement in the below task.")
+
+   (loc        vl-location-p
+               "Where this task was found in the source code.")
+
+   (portdecls  vl-portdecllist-p
+               "The input, output, and inout ports for the task.")
+
+   (vardecls    vl-vardecllist-p
+                "Local variable declarations, including ones for the ports and
+                 return value (see below); these are marked with
+                 @('VL_HIDDEN_DECL_FOR_TASKPORT').")
+
+   (paramdecls  vl-paramdecllist-p
+                "Local parameter declarations")
+
+   (typedefs    vl-typedeflist-p
+                "Local type declarations.")
+
+   (imports     vl-importlist-p
+                "Local package imports")
+
+   (atts       vl-atts-p
+               "Any attributes associated with this task declaration.")
+
    (lifetime   vl-lifetime-p
                "Indicates whether an explicit @('automatic') or @('static')
                 lifetime was provided.  Each invocation of an automatic task
@@ -3591,37 +3618,10 @@ extra declarations are created automatically by the loader.</p>")
                 be concurrent instances of it running, since otherwise
                 @('temp') could be corrupted by the other task.")
 
-   (portdecls  vl-portdecllist-p
-               "The input, output, and inout ports for the task.")
-
-   (imports     vl-importlist-p
-                "Local package imports")
-
-   (vardecls    vl-vardecllist-p
-                "Local variable declarations, including ones for the ports and
-                 return value (see below); these are marked with
-                 @('VL_HIDDEN_DECL_FOR_TASKPORT').")
-
-   (typedefs    vl-typedeflist-p
-                "Local type declarations.")
-
-   (paramdecls  vl-paramdecllist-p
-                "Local parameter declarations")
-
    (loaditems   vl-portdecl-or-blockitem-list-p
                 "Owned by @(see shadowcheck); do not use elsewhere.
                  Declarations within the task, in parse order, before sorting
-                 out into imports, vardecls, paramdecls, and typedefs.")
-
-   (body       vl-stmt-p
-               "The statement that gives the actions for this task, i.e., the
-                entire @('begin/end') statement in the below task.")
-
-   (atts       vl-atts-p
-               "Any attributes associated with this task declaration.")
-
-   (loc        vl-location-p
-               "Where this task was found in the source code."))
+                 out into imports, vardecls, paramdecls, and typedefs."))
 
   :long "<p>Tasks are described in Section 10.2 of the Verilog-2005 standard.
 An example of a task is:</p>
@@ -3679,9 +3679,9 @@ be non-sliceable, at least if it's an input.</p>"
 
   ((name stringp         "Name of the port; often the same as the expr")
    (dir  vl-direction-p  "Port direction")
+   (loc  vl-location-p :default *vl-fakeloc*)
    (expr vl-maybe-expr-p "Expression in terms of the declared variables of the interface.")
-   (atts vl-atts-p       "attributes")
-   (loc  vl-location-p :default *vl-fakeloc*))
+   (atts vl-atts-p       "attributes"))
   :prepwork ())
 
 (fty::deflist vl-modport-portlist
@@ -3694,9 +3694,9 @@ be non-sliceable, at least if it's an input.</p>"
   :short "A modport declaration within an interface"
   :long "<p>Missing task/function import/exports and clocking blocks.</p>"
   ((name      stringp                "the name of the modport declaration; often master or slave")
+   (loc       vl-location-p :default *vl-fakeloc*)
    (ports     vl-modport-portlist-p  "the ports; names must be declared in the interface")
-   (atts      vl-atts-p              "attributes")
-   (loc       vl-location-p :default *vl-fakeloc*))
+   (atts      vl-atts-p              "attributes"))
   :tag :vl-modport)
 
 (fty::deflist vl-modportlist
@@ -4051,7 +4051,6 @@ initially kept in a big, mixed list.</p>"
 
       (:vl-genbegin
        :base-name vl-genbegin
-       :layout :tree
        :short "Wrapper for promoting begin/end generate blocks into genelements."
        ((block vl-genblock-p))
        :long "<p>This is a trivial wrapper for converting a @(see vl-genblock),
@@ -4418,29 +4417,29 @@ corresponding net/variable declaration that contains different information
 about its type and nettype.  We resolve this later as well, cross-propagating
 the type information between the variable and port declarations.</p>"
   :tag :vl-ansi-portdecl
-  ((atts vl-atts-p)
+  ((name       stringp
+               "Name of the port")
+   (loc        vl-location-p)
    (dir vl-maybe-direction-p
         "Direction, if an explicit keyword was present.")
+   (typename maybe-stringp
+             "The name of the type, if it was just a simple ID, or the name of
+              the interface, to be determined.")
+   (type    vl-maybe-datatype-p
+            "The datatype, if it was explicit")
+   (pdims      vl-packeddimensionlist-p
+               "Dimensions, if given and no explicit datatype")
+   (udims      vl-packeddimensionlist-p
+               "Dimensions from after the name")
    (nettype vl-maybe-nettypename-p
             "Nettype, if present")
    (varp    booleanp
             "Indicates whether the var keyword was present.")
-   (typename maybe-stringp
-             "The name of the type, if it was just a simple ID, or the name of
-              the interface, to be determined.")
    (modport maybe-stringp
             "Modport of the interface, if specified")
-   (type    vl-maybe-datatype-p
-            "The datatype, if it was explicit")
    (signedness vl-maybe-exprsign-p
                "The signedness, if given, and if there is no explicit datatype)")
-   (pdims      vl-packeddimensionlist-p
-               "Dimensions, if given and no explicit datatype")
-   (name       stringp
-               "Name of the port")
-   (udims      vl-packeddimensionlist-p
-               "Dimensions from after the name")
-   (loc        vl-location-p)))
+   (atts vl-atts-p)))
 
 (fty::deflist vl-ansi-portdecllist :elt-type vl-ansi-portdecl)
 
@@ -4474,7 +4473,8 @@ the type information between the variable and port declarations.</p>"
 (defprod vl-module
   :short "Representation of a single module."
   :tag :vl-module
-  :layout :tree
+  ;; BOZO it would be nice to use :tree, but we'll need to patch up modname-sets.
+  :layout :fulltree
 
   ((name       stringp
                :rule-classes :type-prescription
@@ -4484,95 +4484,6 @@ the type information between the variable and port declarations.</p>"
                 set when it is parsed, but it may not remain fixed throughout
                 simplification.  For instance, during @(see unparameterization)
                 a module named @('adder') might become @('adder$size=12').")
-
-   (params     "Any @('defparam') statements for this module.  BOZO these are
-                bad form anyway, but eventually we should provide better
-                support for them and proper structures.")
-
-   ;; BOZO possibly add lifetime declarations, but the spec seems pretty vague
-   ;; about what they mean.  The only thing I see about them is that they are
-   ;; the "default lifetime (static or automatic) of subroutines defined within
-   ;; the module."  Which doesn't seem like a very good idea anyway...
-
-   ;; BOZO possibly add timeunits declarations.
-
-   (imports    vl-importlist-p
-               "Package import statements for this module, like @('import
-                foo::*').")
-
-   (ports      vl-portlist-p
-               "The module's ports list, i.e., @('a'), @('b'), and @('c') in
-                @('module mod(a,b,c);').")
-
-   (portdecls  vl-portdecllist-p
-               "The input, output, and inout declarations for this module,
-                e.g., @('input [3:0] a;').")
-
-   (vardecls   vl-vardecllist-p
-               "Wire and variable declarations like @('wire [3:0] w'), @('tri v'),
-                @('reg [3:0] r;'), @('integer i;'), @('real foo;'), and so forth.")
-
-   (paramdecls vl-paramdecllist-p
-               "The parameter declarations for this module, e.g., @('parameter
-                width = 1;').")
-
-   (fundecls   vl-fundecllist-p
-               "Function declarations like @('function f ...').")
-
-   (taskdecls  vl-taskdecllist-p
-               "Task declarations, e.g., @('task foo ...').")
-
-   (typedefs   vl-typedeflist-p
-               "Type declarations such as @('typedef logic [3:0] nibble;').")
-
-   (assigns    vl-assignlist-p
-               "Top-level continuous assignments like @('assign lhs = rhs;').")
-
-   (aliases    vl-aliaslist-p
-               "Wire aliases, @('alias lhs = rhs;')")
-
-   (modinsts   vl-modinstlist-p
-               "Instances of modules and user-defined primitives, e.g.,
-                @('adder my_adder1 (...);').")
-
-   (gateinsts  vl-gateinstlist-p
-               "Instances of primitive gates, e.g., @('and (o, a, b);').")
-
-   (alwayses   vl-alwayslist-p
-               "Always blocks like @('always @(posedge clk) ...').")
-
-   (initials   vl-initiallist-p
-               "Initial blocks like @('initial begin ...').")
-
-   (finals     vl-finallist-p
-               "Final statements like @('final begin ...').")
-
-   (genvars    vl-genvarlist-p
-               "Genvar declarations.")
-
-   (generates  vl-genelementlist-p
-               "Generate blocks including generate regions and for/if/case blocks.")
-
-   (assertions  vl-assertionlist-p
-                "Immediate (including deferred immediate) assertions.")
-
-   (cassertions vl-cassertionlist-p
-                "Concurrent assertions for the module.")
-
-   (properties  vl-propertylist-p
-                "Property declarations for the module.")
-
-   (sequences   vl-sequencelist-p
-                "Sequence declarations for the module.")
-
-   (dpiimports  vl-dpiimportlist-p
-                "DPI imports for this module.")
-
-   (dpiexports  vl-dpiexportlist-p
-                "DPI exports for this module.")
-
-   (atts       vl-atts-p
-               "Any attributes associated with this top-level module.")
 
    (minloc     vl-location-p
                "Where we found the @('module') keyword for this module, i.e.,
@@ -4592,6 +4503,40 @@ the type information between the variable and port declarations.</p>"
                 The @('origname') is only intended to be used for display
                 purposes such as hyperlinking.")
 
+   (ports      vl-portlist-p
+               "The module's ports list, i.e., @('a'), @('b'), and @('c') in
+                @('module mod(a,b,c);').")
+
+   (portdecls  vl-portdecllist-p
+               "The input, output, and inout declarations for this module,
+                e.g., @('input [3:0] a;').")
+
+   (vardecls   vl-vardecllist-p
+               "Wire and variable declarations like @('wire [3:0] w'), @('tri v'),
+                @('reg [3:0] r;'), @('integer i;'), @('real foo;'), and so forth.")
+
+   (modinsts   vl-modinstlist-p
+               "Instances of modules and user-defined primitives, e.g.,
+                @('adder my_adder1 (...);').")
+
+   (assigns    vl-assignlist-p
+               "Top-level continuous assignments like @('assign lhs = rhs;').")
+
+   (gateinsts  vl-gateinstlist-p
+               "Instances of primitive gates, e.g., @('and (o, a, b);').")
+
+   (paramdecls vl-paramdecllist-p
+               "The parameter declarations for this module, e.g., @('parameter
+                width = 1;').")
+
+   (imports    vl-importlist-p
+               "Package import statements for this module, like @('import
+                foo::*').")
+
+
+   (atts       vl-atts-p
+               "Any attributes associated with this top-level module.")
+
    (warnings   vl-warninglist-p
                "A @(see warnings) accumulator that stores any problems we have
                 with this module.  Warnings are semantically meaningful only in
@@ -4606,9 +4551,65 @@ the type information between the variable and port declarations.</p>"
                 displaying the transformed module with comments preserved,
                 e.g., see @(see vl-ppc-module).")
 
+   ;; BOZO possibly add lifetime declarations, but the spec seems pretty vague
+   ;; about what they mean.  The only thing I see about them is that they are
+   ;; the "default lifetime (static or automatic) of subroutines defined within
+   ;; the module."  Which doesn't seem like a very good idea anyway...
+
+   ;; BOZO possibly add timeunits declarations.
+
+   (alwayses   vl-alwayslist-p
+               "Always blocks like @('always @(posedge clk) ...').")
+
+   (genvars    vl-genvarlist-p
+               "Genvar declarations.")
+
+   (generates  vl-genelementlist-p
+               "Generate blocks including generate regions and for/if/case blocks.")
+
+   (fundecls   vl-fundecllist-p
+               "Function declarations like @('function f ...').")
+
+   (taskdecls  vl-taskdecllist-p
+               "Task declarations, e.g., @('task foo ...').")
+
+   (typedefs   vl-typedeflist-p
+               "Type declarations such as @('typedef logic [3:0] nibble;').")
+
+   (initials   vl-initiallist-p
+               "Initial blocks like @('initial begin ...').")
+
+   (finals     vl-finallist-p
+               "Final statements like @('final begin ...').")
+
+   (aliases    vl-aliaslist-p
+               "Wire aliases, @('alias lhs = rhs;')")
+
+   (assertions  vl-assertionlist-p
+                "Immediate (including deferred immediate) assertions.")
+
+   (cassertions vl-cassertionlist-p
+                "Concurrent assertions for the module.")
+
+   (properties  vl-propertylist-p
+                "Property declarations for the module.")
+
+   (sequences   vl-sequencelist-p
+                "Sequence declarations for the module.")
+
+   (dpiimports  vl-dpiimportlist-p
+                "DPI imports for this module.")
+
+   (dpiexports  vl-dpiexportlist-p
+                "DPI exports for this module.")
+
    (parse-temps  vl-maybe-parse-temps-p
                  "Temporary stuff recorded by the parser, used to generate real
-                  module contents."))
+                  module contents.")
+
+   (params     "Any @('defparam') statements for this module.  BOZO these are
+                bad form anyway, but eventually we should provide better
+                support for them and proper structures."))
   :extra-binder-names (hands-offp
                        ifports
                        modnamespace))
@@ -4885,20 +4886,20 @@ e.g., @('(01)') or @('(1?)')."
   ((name stringp
          :rule-classes :type-prescription
          "The name of this package as a string.")
-   (lifetime   vl-lifetime-p)
+   (minloc     vl-location-p)
+   (maxloc     vl-location-p)
+   (paramdecls vl-paramdecllist-p)
+   (typedefs   vl-typedeflist-p)
+   (comments   vl-commentmap-p)
+   (warnings   vl-warninglist-p)
    (imports    vl-importlist-p)
    (fundecls   vl-fundecllist-p)
    (taskdecls  vl-taskdecllist-p)
-   (typedefs   vl-typedeflist-p)
-   (paramdecls vl-paramdecllist-p)
    (vardecls   vl-vardecllist-p)
+   (lifetime   vl-lifetime-p)
    (dpiimports vl-dpiimportlist-p)
    (dpiexports vl-dpiexportlist-p)
-   (warnings   vl-warninglist-p)
-   (minloc     vl-location-p)
-   (maxloc     vl-location-p)
-   (atts       vl-atts-p)
-   (comments   vl-commentmap-p))
+   (atts       vl-atts-p))
   :long "<p>BOZO we haven't finished out all the things that can go inside of
 packages.  Eventually there will be new fields here.</p>")
 

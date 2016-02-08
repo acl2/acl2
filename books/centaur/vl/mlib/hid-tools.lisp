@@ -1305,32 +1305,56 @@ instance, in this case the @('tail') would be
     (vl-datatype-resolved-p (vl-coretype name signedp pdims udims)))
 
   (defthm vl-datatype-resolved-p-of-make-struct
-    (equal (vl-datatype-resolved-p
-            (vl-struct packedp signedp members pdims udims))
+    (equal (vl-datatype-resolved-p (make-vl-struct :packedp packedp
+                                                   :signedp signedp
+                                                   :members members
+                                                   :pdims pdims
+                                                   :udims udims))
            (vl-structmemberlist-resolved-p members))
     :hints (("goal" :expand ((vl-datatype-resolved-p
-                              (vl-struct packedp signedp members pdims udims))))))
+                              (make-vl-struct :packedp packedp
+                                              :signedp signedp
+                                              :members members
+                                              :pdims pdims
+                                              :udims udims))))))
 
   (defthm vl-datatype-resolved-p-of-make-union
-    (equal (vl-datatype-resolved-p
-            (vl-union packedp signedp taggedp members pdims udims))
+    (equal (vl-datatype-resolved-p (make-vl-union :packedp packedp
+                                                  :signedp signedp
+                                                  :taggedp taggedp
+                                                  :members members
+                                                  :pdims pdims
+                                                  :udims udims))
            (vl-structmemberlist-resolved-p members))
     :hints (("Goal" :expand ((vl-datatype-resolved-p
-                              (vl-union packedp signedp taggedp members pdims udims))))))
+                              (make-vl-union :packedp packedp
+                                             :signedp signedp
+                                             :taggedp taggedp
+                                             :members members
+                                             :pdims pdims
+                                             :udims udims))))))
 
   (defthm vl-datatype-resolved-p-of-make-enum
-    (equal (vl-datatype-resolved-p
-            (vl-enum basetype items pdims udims))
+    (equal (vl-datatype-resolved-p (make-vl-enum :basetype basetype
+                                                 :items items
+                                                 :pdims pdims
+                                                 :udims udims))
            (vl-datatype-resolved-p basetype))
-    :hints (("goal" :expand (vl-datatype-resolved-p
-            (vl-enum basetype items pdims udims)))))
+    :hints (("goal" :expand (vl-datatype-resolved-p (make-vl-enum :basetype basetype
+                                                                  :items items
+                                                                  :pdims pdims
+                                                                  :udims udims)))))
 
   (defthm vl-datatype-resolved-p-of-make-usertype
-    (equal (vl-datatype-resolved-p
-            (vl-usertype name res pdims udims))
+    (equal (vl-datatype-resolved-p (make-vl-usertype :name name
+                                                     :res res
+                                                     :pdims pdims
+                                                     :udims udims))
            (and res (vl-datatype-resolved-p res)))
-    :hints (("Goal" :expand (vl-datatype-resolved-p
-            (vl-usertype name res pdims udims)))))
+    :hints (("Goal" :expand (vl-datatype-resolved-p (make-vl-usertype :name name
+                                                                      :res res
+                                                                      :pdims pdims
+                                                                      :udims udims)))))
 
   (defthm vl-structmemberlist-resolved-p-of-struct-members
     (implies (and (vl-datatype-case x :vl-struct)

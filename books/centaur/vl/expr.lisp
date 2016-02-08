@@ -646,6 +646,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
 
 (local (xdoc::set-default-parents))
 
+
 (deftypes expressions-and-datatypes
   :parents (syntax)
   :short "Representation of expressions, datatypes, and other related,
@@ -755,15 +756,15 @@ and generally makes it easier to write safe expression-processing code.</p>")
                "Captures the scoping that leads to some object in the
                 design. This captures the @('ape::bat::cat.dog[3][2][1].elf')
                 part of the example above.")
-      (indices vl-exprlist-p
-               "Captures any subsequent indexing once we get to the thing
-                pointed to by @('scope').  This captures the @('[6][5]') part
-                of the example above.")
       (part    vl-partselect-p
                :default '(:none)
                "Captures any subsequent part-selection once we get past all of
                 the indexing.  This captures the @('[10:0]') part of the
                 example above.")
+      (indices vl-exprlist-p
+               "Captures any subsequent indexing once we get to the thing
+                pointed to by @('scope').  This captures the @('[6][5]') part
+                of the example above.")
       (atts    vl-atts-p
                "Any associated attributes.  BOZO where would you put such
                 attributes?"))
@@ -835,14 +836,14 @@ and generally makes it easier to write safe expression-processing code.</p>")
                 other scopes and other places in the hierarchy, say
                 @('foo::top.bar.myencode(baz, 3)'), so to be sufficiently
                 general we represent this as a @(see vl-scopeexpr).")
+      (args    vl-exprlist-p
+               "The (non-datatype) arguments to the function, in order.")
       (typearg vl-maybe-datatype-p
                "Most function calls just take expressions as arguments, in
                 which case @('typearg') will be @('nil').  However, certain
                 system functions can take a datatype argument.  For instance,
                 you can write @('$bits(struct { ...})').  In such cases, we put
                 that datatype here.")
-      (args    vl-exprlist-p
-               "The (non-datatype) arguments to the function, in order.")
       (systemp booleanp :rule-classes :type-prescription
                "Indicates that this is a system function like @('$bits') or
                 @('$display') instead of a user-defined function like
@@ -899,11 +900,11 @@ and generally makes it easier to write safe expression-processing code.</p>")
      :base-name vl-pattern
      :short "A (possibly typed) assignment pattern expression, for instance,
              @(''{a:1, b:2}') or @('foo_t'{head+1, tail-1}')."
-     ((pattype vl-maybe-datatype-p
+     ((pat     vl-assignpat-p
+               "The inner part of the pattern, i.e., everything but the type.")
+      (pattype vl-maybe-datatype-p
                "The type for this assignment pattern, if applicable.  For
                 instance, @('foo_t') in the example above.")
-      (pat     vl-assignpat-p
-               "The inner part of the pattern, i.e., everything but the type.")
       (atts    vl-atts-p
                "Any <tt>(* foo = bar, baz *)</tt> style attributes."))
 
@@ -1503,10 +1504,6 @@ and generally makes it easier to write safe expression-processing code.</p>")
      ((name    vl-coretypename-p
                "Kind of primitive datatype, e.g., @('byte'), @('string'),
                 etc.")
-      (signedp booleanp :rule-classes :type-prescription
-               "Only valid for integer types.  Roughly indicates whether the
-                integer type is signed or not.  Usually you shouldn't use this;
-                see @(see vl-datatype-signedness) instead.")
       (pdims   vl-packeddimensionlist-p
                "Only valid for integer vector types (bit, logic, reg).  If
                 present, these are the 'packed' array dimensions, i.e., the
@@ -1515,27 +1512,32 @@ and generally makes it easier to write safe expression-processing code.</p>")
       (udims   vl-packeddimensionlist-p
                "Unpacked array dimensions, for instance, the @('[255:0]') part
                 of a declaration like @('bit [7:0] memory [255:0]').  There can
-                be arbitrarily many of these.")))
+                be arbitrarily many of these.")
+      (signedp booleanp :rule-classes :type-prescription
+               "Only valid for integer types.  Roughly indicates whether the
+                integer type is signed or not.  Usually you shouldn't use this;
+                see @(see vl-datatype-signedness) instead.")))
 
     (:vl-struct
      :layout :tree
      :base-name vl-struct
      :short "A SystemVerilog @('struct') datatype, or an array of structs."
-     ((packedp booleanp :rule-classes :type-prescription
+     ((members vl-structmemberlist-p
+               "The list of structure members, i.e., the fields of the structure,
+                in order.")
+      (packedp booleanp :rule-classes :type-prescription
                "Roughly: says whether this struct is @('packed') or not,
                 but <b>warning!</b> this is complicated and generally
                 should not be used; see below for details.")
+      (pdims    vl-packeddimensionlist-p
+                "Packed dimensions for the structure.")
+      
+      (udims    vl-packeddimensionlist-p
+                "Unpacked dimensions for the structure.")
       (signedp booleanp :rule-classes :type-prescription
                "Roughly: says whether this struct is @('signed') or not,
                 but <b>warning!</b> this is really complicated and generally
-                should not be used; see below for details.")
-      (members vl-structmemberlist-p
-               "The list of structure members, i.e., the fields of the structure,
-                in order.")
-      (pdims    vl-packeddimensionlist-p
-                "Packed dimensions for the structure.")
-      (udims    vl-packeddimensionlist-p
-                "Unpacked dimensions for the structure."))
+                should not be used; see below for details."))
      :long "<p>If you look at the SystemVerilog grammar you might notice that
             there aren't unpacked dimensions:</p>
 
@@ -1590,25 +1592,25 @@ and generally makes it easier to write safe expression-processing code.</p>")
      :layout :tree
      :base-name vl-union
      :short "A SystemVerilog @('union') datatype, or an array of @('union')s."
-     ((packedp  booleanp :rule-classes :type-prescription
+     ((members  vl-structmemberlist-p
+                "The list of union members.")
+      (packedp  booleanp :rule-classes :type-prescription
                 "Roughly: says whether this union is @('packed') or not, but
                  <b>warning!</b> this should normally not be used as it has the
                  same problems as @('packedp') for structs; see @(see
                  vl-struct).")
+      (pdims    vl-packeddimensionlist-p
+                "Packed dimensions for this union type.")
+      (udims    vl-packeddimensionlist-p
+                "Unpacked dimensions for the union type.  See also @(see
+                 vl-struct) and the notes about unpacked dimensions there.")
       (signedp  booleanp :rule-classes :type-prescription
                 "Roughly: says whether this union is @('signed') or not, but
                  <b>warning!</b> this should normally not be used as it has the
                  same problems as @('signedp') for structs; see @(see
                  vl-struct).")
       (taggedp  booleanp :rule-classes :type-prescription
-                "Says whether this union is 'tagged' or not.")
-      (members  vl-structmemberlist-p
-                "The list of union members.")
-      (pdims    vl-packeddimensionlist-p
-                "Packed dimensions for this union type.")
-      (udims    vl-packeddimensionlist-p
-                "Unpacked dimensions for the union type.  See also @(see
-                 vl-struct) and the notes about unpacked dimensions there.")))
+                "Says whether this union is 'tagged' or not.")))
 
     (:vl-enum
      :layout :tree
@@ -1751,18 +1753,18 @@ and generally makes it easier to write safe expression-processing code.</p>")
     ;;   struct_union_member ::=  { attribute_instance } [random_qualifier]
     ;;                            data_type_or_void
     ;;                            list_of_variable_decl_assignments ';'
-    ((atts vl-atts-p
-           "Any <tt>(* foo = bar, baz *)</tt> style attributes.")
-     (rand vl-randomqualifier-p
-           "Indicates whether a @('rand') or @('randc') keyword was used.")
-     (type vl-datatype-p
+    ((type vl-datatype-p
            "Type of the struct member, including any unpacked dimensions (even
             though they normally come after the name.)")
      ;; now we want a single variable_decl_assignment
      (name stringp :rule-classes :type-prescription)
      (rhs  vl-maybe-expr-p
            "Right-hand side expression that gives the default value to this
-            member, if applicable."))
+            member, if applicable.")
+     (rand vl-randomqualifier-p
+           "Indicates whether a @('rand') or @('randc') keyword was used.")
+     (atts vl-atts-p
+           "Any <tt>(* foo = bar, baz *)</tt> style attributes."))
     :long "<p>Currently our structure members are very limited.  In the long
            run we may want to support more of the SystemVerilog grammar.  It
            allows a list of variable declaration assignments, which can have
