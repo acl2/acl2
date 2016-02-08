@@ -90,22 +90,16 @@
                             ()))))
 
 (defthm xlate-equiv-structures-with-mv-nth-2-ia32e-entries-found-la-to-pa
-  (implies (and
-            (bind-free
-             (find-an-xlate-equiv-x86
-              'xlate-equiv-structures-with-mv-nth-2-ia32e-entries-found-la-to-pa
-              x86-1 'x86-2
-              mfc state)
-             (x86-2))
-            (xlate-equiv-structures (double-rewrite x86-1) x86-2))
+  (implies (xlate-equiv-structures x86-1 x86-2)
            (xlate-equiv-structures
             (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86-1))
-            (double-rewrite x86-2)))
+            (mv-nth 2 (ia32e-entries-found-la-to-pa lin-addr r-w-x cpl x86-2))))
   :hints (("Goal"
            :use ((:instance xlate-equiv-structures-open-for-ctr-and-msr))
            :in-theory (e/d* (ia32e-entries-found-la-to-pa
                              not-good-paging-structures-x86p-and-ia32e-la-to-pa-PML4T)
-                            ()))))
+                            ())))
+  :rule-classes :congruence)
 
 (defthm xlate-equiv-x86s-with-mv-nth-2-ia32e-entries-found-la-to-pa-simple
   (implies (not

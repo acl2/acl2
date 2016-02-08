@@ -18,26 +18,26 @@
 ;; Driver rules (as Dave Greve says) involving xlate-equiv-x86s,
 ;; xlate-equiv-structures, and xlate-equiv-entries:
 
-(defthm xlate-equiv-structures-and-xw-mem-disjoint
-  (implies (and (bind-free
-                 (find-an-xlate-equiv-x86
-                  'xlate-equiv-structures-and-xw-mem-disjoint
-                  x86-2 'x86-1 mfc state)
-                 (x86-1))
-                (xlate-equiv-structures x86-1 (double-rewrite x86-2))
-                (pairwise-disjoint-p-aux
-                 (list index)
-                 (open-qword-paddr-list-list
-                  (gather-all-paging-structure-qword-addresses x86-1)))
-                (good-paging-structures-x86p x86-1)
-                (physical-address-p index)
-                (unsigned-byte-p 8 val))
-           (xlate-equiv-structures (xw :mem index val x86-2) x86-1))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-structures
-                                    good-paging-structures-x86p)
-                                   (all-mem-except-paging-structures-equal)))))
+;; (defthm xlate-equiv-structures-and-xw-mem-disjoint
+;;   (implies (and (bind-free
+;;                  (find-an-xlate-equiv-x86
+;;                   'xlate-equiv-structures-and-xw-mem-disjoint
+;;                   x86-2 'x86-1 mfc state)
+;;                  (x86-1))
+;;                 (xlate-equiv-structures x86-1 (double-rewrite x86-2))
+;;                 (pairwise-disjoint-p-aux
+;;                  (list index)
+;;                  (open-qword-paddr-list-list
+;;                   (gather-all-paging-structure-qword-addresses x86-1)))
+;;                 (good-paging-structures-x86p x86-1)
+;;                 (physical-address-p index)
+;;                 (unsigned-byte-p 8 val))
+;;            (xlate-equiv-structures (xw :mem index val x86-2) x86-1))
+;;   :hints (("Goal" :in-theory (e/d* (xlate-equiv-structures
+;;                                     good-paging-structures-x86p)
+;;                                    (all-mem-except-paging-structures-equal)))))
 
-(defthm xlate-equiv-structures-and-xw-mem-disjoint-simple
+(defthm xlate-equiv-structures-and-xw-mem-disjoint
   (implies (and (pairwise-disjoint-p-aux
                  (list index)
                  (open-qword-paddr-list-list
@@ -47,7 +47,10 @@
                 (unsigned-byte-p 8 val))
            (xlate-equiv-structures
             (xw :mem index val x86)
-            (double-rewrite x86))))
+            (double-rewrite x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-structures
+                                    good-paging-structures-x86p)
+                                   (all-mem-except-paging-structures-equal)))))
 
 (defthm xlate-equiv-structures-and-wm-low-64-disjoint
   (implies (and (bind-free
