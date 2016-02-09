@@ -2425,19 +2425,35 @@
                                (xw fld index val x86-2)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthmd xlate-equiv-x86s-and-xr-simple-fields
-    (implies (and (bind-free
-                   (find-an-xlate-equiv-x86
-                    'xlate-equiv-x86s-and-xr-simple-fields
-                    x86-1 'x86-2
-                    mfc state)
-                   (x86-2))
-                  (syntaxp (not (eq x86-1 x86-2)))
-                  (member fld *x86-simple-fields-as-keywords*)
-                  (good-paging-structures-x86p (double-rewrite x86-1))
-                  (xlate-equiv-x86s (double-rewrite x86-1) x86-2))
-             (equal (xr fld 0 x86-1)
-                    (xr fld 0 x86-2)))
+  ;; (defthmd xlate-equiv-x86s-and-xr-simple-fields
+  ;;   (implies (and (bind-free
+  ;;                  (find-an-xlate-equiv-x86
+  ;;                   'xlate-equiv-x86s-and-xr-simple-fields
+  ;;                   x86-1 'x86-2
+  ;;                   mfc state)
+  ;;                  (x86-2))
+  ;;                 (syntaxp (not (eq x86-1 x86-2)))
+  ;;                 (member fld *x86-simple-fields-as-keywords*)
+  ;;                 (good-paging-structures-x86p (double-rewrite x86-1))
+  ;;                 (xlate-equiv-x86s (double-rewrite x86-1) x86-2))
+  ;;            (equal (xr fld 0 x86-1)
+  ;;                   (xr fld 0 x86-2)))
+  ;;   :hints (("Goal" :in-theory (e/d* (xlate-equiv-x86s) ()))))
+
+  (defthm xlate-equiv-x86s-and-xr-simple-fields
+    (implies
+     (and (bind-free (find-an-xlate-equiv-x86
+                      'xlate-equiv-x86s-and-xr-simple-fields
+                      x86-1 'x86-2
+                      mfc state)
+                     (x86-2))
+          (syntaxp (and (not (eq x86-1 x86-2))
+                        ;; x86-2 must be smaller than x86-1.
+                        (term-order x86-2 x86-1)))
+          (member fld *x86-simple-fields-as-keywords*)
+          (good-paging-structures-x86p (double-rewrite x86-1))
+          (xlate-equiv-x86s (double-rewrite x86-1) x86-2))
+     (equal (xr fld 0 x86-1) (xr fld 0 x86-2)))
     :hints (("Goal" :in-theory (e/d* (xlate-equiv-x86s) ())))))
 
 ;; ======================================================================

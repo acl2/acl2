@@ -10,6 +10,10 @@
 (include-book "paging-lib/paging-top" :ttags :all)
 (include-book "normalize-memory-accesses" :ttags :all)
 
+;; TO-DO: Uncomment the following once the alternative versions of
+;; get-prefixes, x86-fetch-decode-execute, and x86-run are defined.
+;; (include-book "x86-alt" :ttags :all)
+
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================
@@ -831,6 +835,16 @@
 ;; lemmas together, the theorem
 ;; xlate-equiv-x86s-and-top-level-opcode-execute is going to have a
 ;; ton of hypotheses... Sigh. This is very bad.
+
+;; Even if I do end up proving
+;; xlate-equiv-x86s-and-top-level-opcode-execute and consequently
+;; x86-fetch-decode-execute-opener-in-system-level-mode, how will the
+;; latter driver rule work? I'd need xlate-equiv-x86s to be an
+;; acceptable congruence relation in the context where
+;; x86-fetch-decode-execute-opener-in-system-level-mode would help.
+
+;; I guess the solution to this problem is similar to what I did with
+;; paging-lib/x86-ia32e-paging-alt.lisp. See x86-alt.lisp.
 
 (defthm xlate-equiv-x86s-and-top-level-opcode-execute
   (implies (and

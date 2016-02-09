@@ -162,6 +162,8 @@
                                     all-seg-visibles-equal-open
                                     all-ctrs-equal-open)))))
 
+;; (i-am-here)
+
 (defthm mv-nth-2-page-table-entry-no-page-fault-p-with-xlate-equiv-x86s
   (implies
    ;; If page-table-entry-no-page-fault-p returns an error, then the
@@ -176,7 +178,25 @@
   :hints (("Goal" :in-theory (e/d* (page-table-entry-no-page-fault-p
                                     page-fault-exception
                                     xlate-equiv-x86s)
-                                   ()))))
+                                   (xlate-equiv-x86s-and-xr-simple-fields)))))
+
+;; (defthm mv-nth-2-page-table-entry-no-page-fault-p-with-xlate-equiv-x86s
+;;   (implies
+;;    (and (xlate-equiv-x86s x86-1 x86-2)
+;;         (x86p x86-1)
+;;         (x86p x86-2))
+;;    (xlate-equiv-x86s
+;;     (mv-nth 2 (page-table-entry-no-page-fault-p lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86-1))
+;;     (mv-nth 2 (page-table-entry-no-page-fault-p lin-addr entry u-s-acc wp smep nxe r-w-x cpl x86-2))))
+;;   :hints (("Goal" :in-theory (e/d* (page-table-entry-no-page-fault-p
+;;                                     page-fault-exception
+;;                                     xlate-equiv-x86s)
+;;                                    (xlate-equiv-x86s-and-xr-simple-fields)))
+;;           ("Subgoal 5" :in-theory (e/d* (page-table-entry-no-page-fault-p
+;;                                          page-fault-exception
+;;                                          xlate-equiv-x86s
+;;                                          good-paging-structures-x86p)
+;;                                         (xlate-equiv-x86s-and-xr-simple-fields)))))
 
 (defthm xr-not-mem-and-mv-nth-2-ia32e-la-to-pa-PT
   (implies (and
