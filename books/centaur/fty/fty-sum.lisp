@@ -1308,7 +1308,9 @@
         ,@(and (not prod.no-ctor-macros)
                `(,(std::da-make-maker prod.ctor-name fieldnames
                                       (flexprod-fields->defaults prod.fields))
-                 ,(std::da-make-changer prod.ctor-name fieldnames))))
+                 ,(std::da-make-changer prod.ctor-name fieldnames
+                                        ;; BOZO implement remake functions for flexprods
+                                        nil))))
 
       (local (in-theory (enable ,prod.ctor-name))))))
 

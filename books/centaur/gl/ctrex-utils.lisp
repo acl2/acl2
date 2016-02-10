@@ -67,14 +67,14 @@
    (env)
    (gvar-alist)
    (dont-care-spec))
-  :legiblep nil)
+  :layout :fulltree)
 
 (std::defaggregate glcp-obj-ctrex
   ((descrip) ;; message
    (genv) ;; both boolean and gvar assignments
    (obj-alist)
    (dont-care-spec))
-  :legiblep nil)
+  :layout :fulltree)
 
 (defun n-satisfying-assigns-and-specs (n hyp-bdd bdd bound state)
   (declare (ignorable hyp-bdd))

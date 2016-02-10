@@ -314,7 +314,7 @@ them.</p>"
    (left  vl-expr-p)
    (right vl-expr-p))
   :tag :vl-erange
-  :legiblep nil
+  :layout :fulltree
   :short "An <i>expression range</i> is a temporary internal representation of
 the ranges for select-like expressions (bit selects, array indexes, part
 selects, @('+:') and @('-:') expressions."

@@ -36,6 +36,7 @@
 (in-package "STD")
 (include-book "support")
 (include-book "tools/rulesets" :dir :system)
+(include-book "cons")
 
 (defsection tag
   :parents (defaggregate)
@@ -97,7 +98,18 @@ fty::deftranssum).</p>"
      hons
      booleanp
      booleanp-compound-recognizer
-     tag)
+     prod-car
+     prod-cdr
+     prod-hons
+     prod-cons-with-hint
+     cons-with-hint
+     booleanp-of-prod-consp
+     prod-consp-compound-recognizer
+     prod-consp-of-prod-cons
+     car-of-prod-cons
+     cdr-of-prod-cons
+     prod-cons-of-car/cdr
+     prod-cons-when-either)
    (theory 'minimal-theory)))
 
 
@@ -139,6 +151,16 @@ fty::deftranssum).</p>"
    (concatenate 'string "CHANGE-" (symbol-name basename))
    basename))
 
+(defun da-changer-fn-name (basename)
+  (intern-in-package-of-symbol
+   (concatenate 'string "CHANGE-" (symbol-name basename) "-FN")
+   basename))
+
+(defun da-remake-name (basename)
+  (intern-in-package-of-symbol
+   (concatenate 'string "REMAKE-" (symbol-name basename))
+   basename))
+
 (defun da-maker-name (basename)
   (intern-in-package-of-symbol
    (concatenate 'string "MAKE-" (symbol-name basename))
@@ -152,26 +174,30 @@ fty::deftranssum).</p>"
 
 ; FIELDS MAPS.
 ;
-; We can lay out the components of the structure in one of three ways:
+; Supported layouts:
 ;
-;   :legible    -- alist-based recognizer (any order permitted)
+;   :alist      -- alist-based recognizer (any order permitted)
 ;   :ordered    -- ordered alist-based recognizer (but still with names)
-;   :illegible  -- tree-based recognizer without names
-;
-; Illegible structures are most efficient, but are not very convenient when you
-; are trying to debug your code.  By default, we lay out the structure legibly.
+;   :tree       -- tree-based recognizer (using prod-cons)
+;   :fulltree   -- tree based recognizer (using ordinary cons)
 ;
 ; A "fields map" is an alist that binds each field name to an s-expression that
 ; describes how to access it.  For instance, suppose the fields are (A B C).
-; For a legible structure, the fields map will be:
+; For an alist layout structure, the fields map will be:
 ;
 ;   ((A . (cdr (assoc 'a <body>)))
 ;    (B . (cdr (assoc 'b <body>)))
 ;    (C . (cdr (assoc 'c <body>))))
 ;
 ; Where <body> is either X or (cdr X), depending on whether the structure is
-; tagless or not.  For an illegible structure, the (cdr (assoc ...)) terms just
-; get replaced with something horrible like (CAR (CDR (CAR <body>))).
+; tagless or not.
+;
+; For structures of other layouts, the (cdr (assoc ...)) terms just get
+; replaced with something else, e.g., for a :fulltree structure we might have
+; something like (CAR (CDR (CAR <body>))).  For a :tree structure instead of
+; CAR/CDR we'll have PROD-CAR/PROD-CDR.  For a :list structure, we'll have
+; something essentially like (first <body>), (second <body>), etc., except
+; that they'll be the CAR/CDR expansions of that.
 
 (defun da-body (basename tag)
   (if tag
@@ -192,54 +218,89 @@ fty::deftranssum).</p>"
              (cons (da-illegible-split-fields firsthalf)
                    (da-illegible-split-fields lasthalf)))))))
 
-(defun da-illegible-fields-map-aux (split-fields path)
+(defun da-illegible-fields-map-aux (split-fields path car cdr)
   ;; Convert the balanced tree into a map from field names to paths, e.g.,
   ;; field1 might be bound to (car (car x)), field2 to (cdr (car x)), etc.
+  ;; The variables car and cdr might be 'car and 'cdr or 'prod-car and 'prod-cdr
   (if (consp split-fields)
-      (append (da-illegible-fields-map-aux (car split-fields) `(car ,path))
-              (da-illegible-fields-map-aux (cdr split-fields) `(cdr ,path)))
+      (append (da-illegible-fields-map-aux (car split-fields) `(,car ,path) car cdr)
+              (da-illegible-fields-map-aux (cdr split-fields) `(,cdr ,path) car cdr))
     (list (cons split-fields path))))
 
-(defun da-illegible-fields-map (basename tag fields)
+(defun da-illegible-fields-map (basename tag fields car cdr)
   ;; Convert a linear list of fields into a map from field names to paths.
   (da-illegible-fields-map-aux (da-illegible-split-fields fields)
-                               (da-body basename tag)))
+                               (da-body basename tag)
+                               car cdr))
 
-(defun da-illegible-structure-checks-aux (split-fields path)
+(defun da-illegible-structure-checks-aux (split-fields path consp car cdr)
   ;; Convert the balanced tree into a list of the consp checks we'll need.
   (if (consp split-fields)
-      (cons `(consp ,path)
-            (append (da-illegible-structure-checks-aux (car split-fields) `(car ,path))
-                    (da-illegible-structure-checks-aux (cdr split-fields) `(cdr ,path))))
+      (cons `(,consp ,path)
+            (append (da-illegible-structure-checks-aux (car split-fields) `(,car ,path) consp car cdr)
+                    (da-illegible-structure-checks-aux (cdr split-fields) `(,cdr ,path) consp car cdr)))
     nil))
 
-(defun da-illegible-structure-checks (basename tag fields)
+(defun da-illegible-structure-checks (basename tag fields consp car cdr)
   ;; Convert a linear list of fields into the consp checks we'll need.
   (da-illegible-structure-checks-aux (da-illegible-split-fields fields)
-                                     (da-body basename tag)))
+                                     (da-body basename tag)
+                                     consp car cdr))
 
-(defun da-illegible-pack-aux (honsp split-fields)
+(defun da-illegible-pack-aux (cons split-fields)
   ;; Convert the tree of split fields into a cons tree for building the struct.
+  ;; Cons might be cons, hons, prod-cons, or prod-hons
   (if (consp split-fields)
-      `(,(if honsp 'hons 'cons)
-        ,(da-illegible-pack-aux honsp (car split-fields))
-        ,(da-illegible-pack-aux honsp (cdr split-fields)))
+      `(,cons
+        ,(da-illegible-pack-aux cons (car split-fields))
+        ,(da-illegible-pack-aux cons (cdr split-fields)))
     split-fields))
 
-(defun da-illegible-pack-fields (honsp tag fields)
-  ;; Convert a linear list of fields into consing code
-  (let ((body (da-illegible-pack-aux honsp (da-illegible-split-fields fields))))
+(defun da-illegible-pack-fields (layout honsp tag fields)
+  ;; Convert a linear list of fields into consing code.  This is used for
+  ;; the constructor.
+  (b* ((cons (cond ((eq layout :fulltree) (if honsp 'hons 'cons))
+                   ((eq layout :tree)     (if honsp 'prod-hons 'prod-cons))
+                   (t (er hard? 'da-illegible-pack-fields "Bad layout ~x0" layout))))
+       (body (da-illegible-pack-aux cons (da-illegible-split-fields fields))))
     (if tag
         `(,(if honsp 'hons 'cons) ,tag ,body)
       body)))
 
+(defun da-illegible-remake-aux (split-fields path cons-with-hint car cdr)
+  ;; Convert the tree of split fields into a cons-with-hint tree for changing
+  ;; structures.  Only for non-honsed structures.  Cons-with-hint is either
+  ;; 'cons-with-hint or 'prod-cons-with-hint.
+  (if (consp split-fields)
+      `(,cons-with-hint
+        ,(da-illegible-remake-aux (car split-fields) `(,car ,path) cons-with-hint car cdr)
+        ,(da-illegible-remake-aux (cdr split-fields) `(,cdr ,path) cons-with-hint car cdr)
+        ,path)
+    split-fields))
+
+(defun da-illegible-remake-fields (basename layout tag fields)
+  (b* (((mv cons-with-hint car cdr)
+        (cond ((eq layout :fulltree) (mv 'cons-with-hint 'car 'cdr))
+              ((eq layout :tree)     (mv 'prod-cons-with-hint 'prod-car 'prod-cdr))
+              (t (mv (er hard? 'da-illegible-remake-fields "Bad layout ~x0" layout)
+                     nil nil))))
+       (x            (da-x basename))
+       (body         (da-body basename tag))
+       (split-fields (da-illegible-split-fields fields))
+       (new-body     (da-illegible-remake-aux split-fields body cons-with-hint car cdr)))
+    (if tag
+        `(cons-with-hint ,tag ,new-body ,x)
+      new-body)))
+
 #||
-(da-illegible-fields-map 'taco :taco '(shell meat cheese lettuce sauce))
-(da-illegible-pack-fields nil :taco '(shell meat cheese lettuce sauce))
+(da-illegible-fields-map 'taco :taco '(shell meat cheese lettuce sauce) 'car 'cdr)
+(da-illegible-pack-fields :tree nil :taco '(shell meat cheese lettuce sauce))
+(da-illegible-pack-fields :fulltree nil :taco '(shell meat cheese lettuce sauce))
+(da-illegible-pack-fields :tree t :taco '(shell meat cheese lettuce sauce))
+(da-illegible-pack-fields :fulltree t :taco '(shell meat cheese lettuce sauce))
 
-;; (CONS :TACO (CONS (CONS SHELL MEAT)
-;;                   (CONS CHEESE (CONS LETTUCE SAUCE))))
-
+(da-illegible-remake-fields 'taco :tree :taco '(shell meat cheese lettuce sauce))
+(da-illegible-remake-fields 'taco :fulltree :taco '(shell meat cheese lettuce sauce))
 ||#
 
 (defun da-legible-fields-map (basename tag fields)
@@ -268,6 +329,8 @@ fty::deftranssum).</p>"
 
 (da-legible-fields-map 'taco :taco '(shell meat cheese lettuce sauce))
 (da-legible-pack-fields nil :taco '(shell meat cheese lettuce sauce))
+(da-legible-pack-fields t :taco '(shell meat cheese lettuce sauce))
+
 
 ;; (CONS :TACO (CONS (CONS 'SHELL SHELL)
 ;;                   (CONS (CONS 'MEAT MEAT)
@@ -308,8 +371,6 @@ fty::deftranssum).</p>"
         `(,(if honsp 'hons 'cons) ,tag ,body)
       body)))
 
-
-
 (defun da-ordered-structure-checks-aux (fields path)
   ;; Path is something like (cdddr x).  It's how far down the structure
   ;; we are, so far.
@@ -337,24 +398,29 @@ fty::deftranssum).</p>"
 (defun da-fields-map (basename tag layout fields)
   ;; Create a fields map of the appropriate type
   (case layout
-    (:legible (da-legible-fields-map basename tag fields))
-    (:ordered (da-ordered-fields-map 0 basename tag fields))
-    (:illegible (da-illegible-fields-map basename tag fields))))
+    (:alist    (da-legible-fields-map basename tag fields))
+    (:list     (da-ordered-fields-map 0 basename tag fields))
+    (:tree     (da-illegible-fields-map basename tag fields 'prod-car 'prod-cdr))
+    (:fulltree (da-illegible-fields-map basename tag fields 'car 'cdr))
+    (otherwise (er hard? 'da-fields-map "Bad layout ~x0" layout))))
 
 (defun da-pack-fields (honsp layout tag fields)
   ;; Create a fields map of the appropriate type
   (case layout
-    (:legible   (da-legible-pack-fields honsp tag fields))
-    (:ordered   (da-ordered-pack-fields honsp tag fields))
-    (:illegible (da-illegible-pack-fields honsp tag fields))))
+    (:alist            (da-legible-pack-fields honsp tag fields))
+    (:list             (da-ordered-pack-fields honsp tag fields))
+    ((:tree :fulltree) (da-illegible-pack-fields layout honsp tag fields))
+    (otherwise         (er hard? 'da-pack-fields "Bad layout ~x0" layout))))
 
 (defun da-structure-checks (basename tag layout fields)
   ;; Check that the object's cdr has the appropriate cons structure
   (case layout
-    (:legible `((alistp ,(da-body basename tag))
+    (:alist   `((alistp ,(da-body basename tag))
                 (consp ,(da-body basename tag))))
-    (:ordered   (da-ordered-structure-checks basename tag fields))
-    (:illegible (da-illegible-structure-checks basename tag fields))))
+    (:list     (da-ordered-structure-checks basename tag fields))
+    (:tree     (da-illegible-structure-checks basename tag fields 'prod-consp 'prod-car 'prod-cdr))
+    (:fulltree (da-illegible-structure-checks basename tag fields 'consp 'car 'cdr))
+    (otherwise (er hard? 'da-structure-checks "Bad layout ~x0" layout))))
 
 (defun da-fields-map-let-bindings (map)
   ;; Convert a fields map into a list of let bindings
@@ -410,7 +476,6 @@ fty::deftranssum).</p>"
                              '(:in-theory (enable ))))))
        (mbe :logic (,foo . ,fields)
             :exec ,(da-pack-fields t layout tag fields)))))
-
 
 
 ; (FOOP X) RECOGNIZER.
@@ -572,15 +637,23 @@ fty::deftranssum).</p>"
     (cons `(,accessor1 ,obj) rest)))
 
 (defun change-aggregate
+  ;; Change an arbitrary aggregate.
   (basename    ; basename for this structure, for name generation
    obj         ; object being changed, e.g., a term in the user's program.
    args        ; user-level arguments to the change macro, e.g., (:name newname :age 5)
    acc-map     ; binds fields to their accessors, e.g., ((name . student->name) ...), ordered per constructor
    macroname   ; e.g., change-student, for error reporting
+   remakep     ; Invoke a remake function instead of the basic constructor?
+   raw-fields  ; Raw field names
    )
-  (b* ((ctor-name  (da-constructor-name basename))
-       (kwd-fields (strip-cars acc-map))
+  (b* ((kwd-fields (strip-cars acc-map))
        (alist      (da-changer-args-to-alist macroname args kwd-fields))
+       (all-setp   (subsetp kwd-fields (strip-cars alist)))
+       (remakep
+        ;; If the user is providing a new value for every possible field, then
+        ;; there's no reason to try to reuse parts of the original object.
+        ;; Just construct a new one.
+        (and remakep (not all-setp)))
        (nobind-p   (or
                     ;; If the object being changed is already evaluated, there's no
                     ;; need to evaluate it. (variables, constants)
@@ -589,25 +662,70 @@ fty::deftranssum).</p>"
                          (equal (car obj) 'quote))
                     ;; If the object being changed is never accessed, there's no
                     ;; need to evaluate it.
-                    (subsetp kwd-fields (strip-cars alist))))
+                    all-setp))
        (newvar     (if nobind-p
                        obj
                      (acl2::pack (cons macroname obj))))
-       (ctor-call  (cons ctor-name
-                         (da-changer-fill-in-fields newvar acc-map alist))))
+       (field-args (da-changer-fill-in-fields newvar acc-map alist))
+       (ctor-name  (da-constructor-name basename))
+       (ctor-call
+        (if (not remakep)
+            ;; Easy case, just call the constructor on its arguments.
+            `(,ctor-name . ,field-args)
+          ;; Else we want to use the fancy remake function to avoid reconsing.
+          ;; We use the MBE here because, when you prove a theorem about the
+          ;; change macro, we want it to be a theorem about the constructor
+          ;; instead of a theorem about the remake-function.  BOZO should we
+          ;; be using let-mbe instead?  It doesn't like that the two calls don't
+          ;; take the same arguments.  Does it do anything fancy for us?
+          (b* ((field-self-binds
+                ;; Let bindings, ((field1 ,value-for-field1) ...)
+                (pairlis$ raw-fields (pairlis$ field-args nil))))
+            `(let ,field-self-binds
+               (mbe :logic (,ctor-name . ,raw-fields)
+                    :exec  (,(da-remake-name basename) ,newvar . ,raw-fields)))))))
     (if nobind-p
         ctor-call
       `(let ((,newvar ,obj))
          ,ctor-call))))
 
-(defun da-make-changer (basename fields)
-  (let* ((x          (da-x basename))
-         (change-foo (da-changer-name basename))
-         (acc-names  (da-accessor-names basename fields))
-         (kwd-fields (da-make-valid-fields-for-changer fields))
-         (acc-map    (pairlis$ kwd-fields acc-names)))
+(defun da-layout-supports-remake-p (honsp layout)
+  ;; If the structure is honsed there's no sense in trying to reusing the
+  ;; original structure, because we're going to re-hons it anyway and that'll
+  ;; share everything.
+  ;;
+  ;; We don't yet support remaking of lists or alists.  It might be sensible to
+  ;; add a remaker function for list layout, but for now we won't bother since
+  ;; if you care about memory usage you're probably using a tree layout.
+  (and (member layout '(:tree :fulltree))
+       (not honsp)))
+
+(defun da-make-remaker-raw (basename tag fields guard honsp layout)
+  (b* (((unless (da-layout-supports-remake-p honsp layout))
+        nil)
+       (x          (da-x basename))
+       (foo        (da-constructor-name basename))
+       (foo-p      (da-recognizer-name basename))
+       (remake-foo (da-remake-name basename)))
+    `((defun ,remake-foo (,x . ,fields)
+        (declare (xargs :guard (and (,foo-p ,x) ,guard)
+                        :guard-hints
+                        (("Goal"
+                          :expand ((,foo-p ,x)
+                                   (,foo . ,fields))
+                          :in-theory (union-theories '(,foo ,foo-p)
+                                                     (theory 'defaggregate-basic-theory))))))
+        (mbe :logic (,foo . ,fields)
+             :exec ,(da-illegible-remake-fields basename layout tag fields))))))
+
+(defun da-make-changer (basename fields remakep)
+  (b* ((x          (da-x basename))
+       (change-foo (da-changer-name basename))
+       (acc-names  (da-accessor-names basename fields))
+       (kwd-fields (da-make-valid-fields-for-changer fields))
+       (acc-map    (pairlis$ kwd-fields acc-names)))
     `(defmacro ,change-foo (,x &rest args)
-       (change-aggregate ',basename ,x args ',acc-map ',change-foo))))
+       (change-aggregate ',basename ,x args ',acc-map ',change-foo ',remakep ',fields))))
 
 
 ; (MAKE-FOO ...) MACRO.
@@ -758,15 +876,16 @@ fty::deftranssum).</p>"
 
 (defun def-primitive-aggregate-fn (basename fields tag)
   (let ((honsp nil)
-        (layout :legible)
+        (layout :alist)
         (guard t))
     `(progn
        ,(da-make-recognizer-raw basename tag fields guard layout)
        ,(da-make-constructor-raw basename tag fields guard honsp layout)
        ,@(da-make-accessors basename tag fields layout)
        ,@(da-make-accessors-of-constructor basename fields)
+       ,@(da-make-remaker-raw basename tag fields guard honsp layout)
        ,(da-make-binder basename fields)
-       ,(da-make-changer basename fields)
+       ,(da-make-changer basename fields nil)
        ,(da-make-maker basename fields nil))))
 
 (defmacro def-primitive-aggregate (name fields &key tag)

@@ -38,6 +38,7 @@
     std::extract-keywords
     std::da-honsed-constructor-name
     std::da-constructor-name
+    std::da-remake-name
     std::da-changer-args-to-alist
     std::da-changer-fill-in-fields
     std::change-aggregate

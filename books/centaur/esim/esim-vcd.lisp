@@ -286,7 +286,7 @@
    idcode     ;; base-93 encoded identifier code for this net, as a string
    )
   :tag :vcd-vector
-  :legiblep nil
+  :layout :fulltree
   :require ((stringp-of-vcd-vector->idcode
              (stringp idcode)
              :rule-classes :type-prescription)))
@@ -610,7 +610,7 @@
 (defaggregate vcd-multivector
   (bits idcodes)
   :tag :vcd-multivector
-  :legiblep nil
+  :layout :fulltree
   :require ((string-listp-of-vcd-multivector->idcodes
              (string-listp idcodes))))
 

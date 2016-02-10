@@ -96,11 +96,6 @@
 (deftheory deftypes-theory
   '(equal-of-strip-cars
     car-cons cdr-cons
-    car-of-prod-cons cdr-of-prod-cons
-    prod-cons-of-car/cdr
-    acl2-count-of-prod-cons
-    prod-cons-equal-cons
-    prod-cons-when-either
     strip-cars
     strip-cars-under-iff
     eqlablep (len) len-of-cons
@@ -112,13 +107,23 @@
     acl2::acl2-count-of-cons-greater
     o< o-finp
     (natp) acl2::natp-compound-recognizer
-    hons prod-hons
+    hons
     open-member-equal-on-list-of-tags
     ;;  len
     ;; equal-of-plus-one fix
-    prod-car prod-cdr
-    prod-consp-compound-recognizer
-    prod-cons-not-consp-forward))
+    prod-car
+    prod-cdr
+    prod-hons
+    std::cons-with-hint
+    std::prod-cons-with-hint
+    std::car-of-prod-cons
+    std::cdr-of-prod-cons
+    std::prod-cons-of-car/cdr
+    std::acl2-count-of-prod-cons
+    std::prod-cons-equal-cons
+    std::prod-cons-when-either
+    std::prod-consp-compound-recognizer
+    std::prod-cons-not-consp-forward))
 
 
 (program)
