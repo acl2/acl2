@@ -15,6 +15,31 @@
 
 ;; ======================================================================
 
+;; Some misc. rules:
+
+(defthmd gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
+  (implies (and (good-paging-structures-x86p x86)
+                (xlate-equiv-structures (double-rewrite x86) (double-rewrite x86-equiv)))
+           (equal (gather-all-paging-structure-qword-addresses x86-equiv)
+                  (gather-all-paging-structure-qword-addresses x86)))
+  :hints
+  (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses
+                             xlate-equiv-structures)
+                            ()))))
+
+(defthm-usb n64p-rm-low-64-paging-entry
+  :hyp (and (good-paging-structures-x86p (double-rewrite x86))
+            (member-list-p addr (gather-all-paging-structure-qword-addresses x86)))
+  :bound 64
+  :concl (rm-low-64 addr x86)
+  :hints (("Goal"
+           :in-theory
+           (e/d* (good-paging-structures-x86p)
+                 ())))
+  :gen-linear t)
+
+;; ======================================================================
+
 ;; Driver rules (as Dave Greve says) involving xlate-equiv-x86s,
 ;; xlate-equiv-structures, and xlate-equiv-entries:
 
@@ -69,6 +94,24 @@
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-structures good-paging-structures-x86p)
                                    (all-mem-except-paging-structures-equal)))))
 
+(defthm xlate-equiv-x86s-and-wm-low-64-disjoint
+  (implies
+   (and
+    (pairwise-disjoint-p-aux
+     (addr-range 8 index)
+     (open-qword-paddr-list-list
+      (gather-all-paging-structure-qword-addresses x86-1)))
+    (physical-address-p index)
+    (good-paging-structures-x86p (double-rewrite x86-1))
+    (xlate-equiv-x86s x86-1 x86-2))
+   (xlate-equiv-x86s (wm-low-64 index val x86-1)
+                     (wm-low-64 index val x86-2)))
+  :hints (("Goal"
+           :use ((:instance gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
+                            (x86 x86-1)
+                            (x86-equiv x86-2)))
+           :in-theory (e/d* (xlate-equiv-x86s) ()))))
+
 (defthm xlate-equiv-structures-and-wm-low-64-entry-addr
   (implies (and (bind-free (find-an-xlate-equiv-x86
                             'xlate-equiv-structures-and-wm-low-64-entry-addr
@@ -92,6 +135,16 @@
             (xlate-equiv-structures
              good-paging-structures-x86p)
             (xlate-equiv-entries-at-qword-addresses?-with-wm-low-64-with-different-x86)))))
+
+(defthm xlate-equiv-x86s-and-wm-low-64-entry-addr
+  (implies
+   (and (member-list-p index (gather-all-paging-structure-qword-addresses x86))
+        (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
+        (good-paging-structures-x86p (double-rewrite x86))
+        (physical-address-p index)
+        (unsigned-byte-p 64 val))
+   (xlate-equiv-x86s (wm-low-64 index val x86) (double-rewrite x86)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-x86s) ()))))
 
 (defthmd xlate-equiv-entries-open
   (implies (and (xlate-equiv-entries e-1 e-2)
@@ -1020,44 +1073,6 @@
   :rule-classes :congruence)
 
 ;; ======================================================================
-
-;; Some more misc. rules:
-
-(defthmd gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
-  (implies (and (good-paging-structures-x86p x86)
-                (xlate-equiv-structures (double-rewrite x86) (double-rewrite x86-equiv)))
-           (equal (gather-all-paging-structure-qword-addresses x86-equiv)
-                  (gather-all-paging-structure-qword-addresses x86)))
-  :hints
-  (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses
-                             xlate-equiv-structures)
-                            ()))))
-
-(defthm-usb n64p-rm-low-64-paging-entry
-  :hyp (and (good-paging-structures-x86p (double-rewrite x86))
-            (member-list-p addr (gather-all-paging-structure-qword-addresses x86)))
-  :bound 64
-  :concl (rm-low-64 addr x86)
-  :hints (("Goal"
-           :in-theory
-           (e/d* (good-paging-structures-x86p)
-                 ())))
-  :gen-linear t)
-
-(defthm all-mem-except-paging-structures-equal-and-wm-low-64-entry-addr
-  (implies (and (xlate-equiv-entries (double-rewrite entry) (rm-low-64 entry-addr x86))
-                (member-list-p entry-addr (gather-all-paging-structure-qword-addresses x86))
-                (good-paging-structures-x86p (double-rewrite x86))
-                (x86p (wm-low-64 entry-addr entry x86))
-                (unsigned-byte-p 64 entry))
-           (all-mem-except-paging-structures-equal
-            (wm-low-64 entry-addr entry x86)
-            (double-rewrite x86)))
-  :hints (("Goal" :in-theory (e/d* (all-mem-except-paging-structures-equal
-                                    good-paging-structures-x86p
-                                    all-mem-except-paging-structures-equal-aux
-                                    xlate-equiv-structures)
-                                   ()))))
 
 (in-theory (e/d* ()
                  (pml4-table-entry-addr-found-p

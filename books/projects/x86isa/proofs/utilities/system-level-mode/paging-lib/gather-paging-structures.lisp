@@ -1990,8 +1990,16 @@
                                        (xw ,keyword index val x)
                                        (xw ,keyword index val y))))
 
-           (defthm ,(mk-name equiv-aux-name "-AND-WM-LOW-64")
+           (defthm ,(mk-name equiv-aux-name "-AND-WM-LOW-64-1")
              (equal (,equiv-aux-name i (wm-low-64 index val x) y)
+                    (,equiv-aux-name i x y)))
+
+           (defthm ,(mk-name equiv-aux-name "-AND-WM-LOW-64-2")
+             (equal (,equiv-aux-name i x (wm-low-64 index val y))
+                    (,equiv-aux-name i x y)))
+
+           (defthm ,(mk-name equiv-aux-name "-AND-WM-LOW-64")
+             (equal (,equiv-aux-name i (wm-low-64 index val x) (wm-low-64 index val y))
                     (,equiv-aux-name i x y)))))
 
         (if (good-paging-structures-x86p x86-1)
@@ -2050,11 +2058,25 @@
                    (,equiv-name (xw ,keyword index val x) (xw ,keyword index val y)))
           :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-        (defthm ,(mk-name equiv-name "-AND-WM-LOW-64")
+        (defthm ,(mk-name equiv-name "-AND-WM-LOW-64-1")
           (implies (and (good-paging-structures-x86p x)
                         (good-paging-structures-x86p (wm-low-64 index val x)))
                    (equal (,equiv-name (wm-low-64 index val x) y)
-                          (,equiv-name (double-rewrite x) y))))))))
+                          (,equiv-name (double-rewrite x) y))))
+
+        (defthm ,(mk-name equiv-name "-AND-WM-LOW-64-2")
+          (implies (and (good-paging-structures-x86p y)
+                        (good-paging-structures-x86p (wm-low-64 index val y)))
+                   (equal (,equiv-name x (wm-low-64 index val y))
+                          (,equiv-name x (double-rewrite y)))))
+
+        (defthm ,(mk-name equiv-name "-AND-WM-LOW-64")
+          (implies (and (good-paging-structures-x86p x)
+                        (good-paging-structures-x86p (wm-low-64 index val x))
+                        (good-paging-structures-x86p y)
+                        (good-paging-structures-x86p (wm-low-64 index val y)))
+                   (equal (,equiv-name (wm-low-64 index val x) (wm-low-64 index val y))
+                          (,equiv-name x (double-rewrite y)))))))))
 
 (defun generate-x86-components-equiv-relations-list (keywords)
   (declare (xargs :guard (subsetp keywords *x86-array-fields-as-keywords*)
@@ -2175,6 +2197,17 @@
                        (all-mem-except-paging-structures-equal-aux i addrss x y)))
        :hints (("Goal" :in-theory (e/d* (member-list-p) ()))))
 
+     (defthm all-mem-except-paging-structures-equal-aux-and-wm-low-64
+       (implies (and (all-mem-except-paging-structures-equal-aux i addrss x y)
+                     (not (xr :programmer-level-mode 0 x))
+                     (not (xr :programmer-level-mode 0 y)))
+                (all-mem-except-paging-structures-equal-aux
+                 i addrss
+                 (wm-low-64 index val x)
+                 (wm-low-64 index val y)))
+       :hints (("Goal" :do-not-induct t
+                :in-theory (e/d* (wm-low-64 wm-low-32) ()))))
+
      (defthm all-mem-except-paging-structures-equal-aux-and-xw-mem-commute-writes
        (implies (not (equal index-1 index-2))
                 (all-mem-except-paging-structures-equal-aux
@@ -2255,6 +2288,35 @@
              (equal (all-mem-except-paging-structures-equal (wm-low-64 index val x) y)
                     (all-mem-except-paging-structures-equal (double-rewrite x) y)))
     :hints (("Goal" :in-theory (e/d* () (all-mem-except-paging-structures-equal-aux)))))
+
+  (defthm all-mem-except-paging-structures-equal-and-wm-low-64-entry-addr
+    (implies (and (xlate-equiv-entries (double-rewrite entry) (rm-low-64 entry-addr x86))
+                  (member-list-p entry-addr (gather-all-paging-structure-qword-addresses x86))
+                  (good-paging-structures-x86p (double-rewrite x86))
+                  (x86p (wm-low-64 entry-addr entry x86))
+                  (unsigned-byte-p 64 entry))
+             (all-mem-except-paging-structures-equal
+              (wm-low-64 entry-addr entry x86)
+              (double-rewrite x86)))
+    :hints (("Goal" :in-theory (e/d* (all-mem-except-paging-structures-equal
+                                      good-paging-structures-x86p
+                                      all-mem-except-paging-structures-equal-aux)
+                                     ()))))
+
+  (defthm all-mem-except-paging-structures-equal-and-wm-low-64-except-paging-structure
+    (implies (and (bind-free (find-equiv-x86-for-components y mfc state))
+                  (all-mem-except-paging-structures-equal x y)
+                  (physical-address-p index)
+                  (pairwise-disjoint-p-aux
+                   (addr-range 8 index)
+                   (open-qword-paddr-list-list
+                    (gather-all-paging-structure-qword-addresses y)))
+                  (good-paging-structures-x86p (wm-low-64 index val x))
+                  (good-paging-structures-x86p y)
+                  (good-paging-structures-x86p (wm-low-64 index val y)))
+             (all-mem-except-paging-structures-equal (wm-low-64 index val x)
+                                                     (wm-low-64 index val y)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm all-mem-except-paging-structures-equal-and-xw-mem-commute-writes
     (implies (not (equal index-1 index-2))
