@@ -101,7 +101,6 @@
     REWRITE
     TYPE-SET
     WATERFALL
-    set-ld-prompt ; temporary addition
     ))
 
 (defun missing-from-acl2-exports (wrld)
