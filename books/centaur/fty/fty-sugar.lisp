@@ -153,10 +153,10 @@
   :returns (flexsum-syntax "User-level(!) flexsum syntax for this field.")
   (b* (((std::formal x) x)
        (accessor (case layout
-                   (:alist `(cdr (std::da-nth ,pos ,xvar)))
-                   (:tree (tagsum-acc-for-tree pos num xvar 'prod-car 'prod-cdr))
+                   (:alist    `(cdr (std::da-nth ,pos ,xvar)))
+                   (:tree     (tagsum-acc-for-tree pos num xvar 'prod-car 'prod-cdr))
                    (:fulltree (tagsum-acc-for-tree pos num xvar 'car 'cdr))
-                   (:list `(std::da-nth ,pos ,xvar)))))
+                   (:list     `(std::da-nth ,pos ,xvar)))))
     `(,x.name :acc-body ,accessor
               :doc ,x.doc
               :type ,x.guard
@@ -188,15 +188,41 @@
             ,(tagsum-tree-ctor (nthcdr half fieldnames) (- len half) cons))))
 
 (define tagsum-fields-to-ctor-body (fieldnames layout honsp)
-  (b* ((cons (if honsp
-                 (if (eq layout :tree) 'prod-hons 'hons)
-               (if (eq layout :tree) 'prod-cons 'cons)))
-       (list (if honsp 'acl2::hons-list 'list)))
+  (b* ((list (if honsp 'acl2::hons-list 'list)))
     (case layout
-      (:alist    `(,list . ,(tagsum-alist-ctor-elts fieldnames cons)))
-      ((:tree :fulltree)
-                 (tagsum-tree-ctor fieldnames (len fieldnames) cons))
+      (:alist   `(,list . ,(tagsum-alist-ctor-elts fieldnames (if honsp 'hons 'cons))))
+      (:tree     (tagsum-tree-ctor fieldnames (len fieldnames) (if honsp 'prod-hons 'prod-cons)))
+      (:fulltree (tagsum-tree-ctor fieldnames (len fieldnames) (if honsp 'hons      'cons)))
       (:list     `(,list . ,fieldnames)))))
+
+(define tagsum-fields-to-remake-aux ((fieldnames     "as in tagsum-tree-ctor")
+                                     (len            "as in tagsum-tree-ctor")
+                                     (path           "current path into the original structure")
+                                     (cons-with-hint "cons-with-hint or prod-cons-with-hint")
+                                     (car            "car or prod-car")
+                                     (cdr            "cdr or prod-car"))
+  (b* (((when (zp len))
+        (raise "bad programmer"))
+       ((when (eql len 1))
+        (car fieldnames))
+       (half (floor len 2))
+       (rest (- len half)))
+    `(,cons-with-hint
+      ,(tagsum-fields-to-remake-aux (take half fieldnames)   half `(,car ,path) cons-with-hint car cdr)
+      ,(tagsum-fields-to-remake-aux (nthcdr half fieldnames) rest `(,cdr ,path) cons-with-hint car cdr)
+      ,path)))
+
+(define tagsum-fields-to-remake-body (fieldnames path layout)
+  (b* (((mv cons-with-hint car cdr)
+        (cond ((eq layout :fulltree) (mv 'cons-with-hint      'car      'cdr))
+              ((eq layout :tree)     (mv 'prod-cons-with-hint 'prod-car 'prod-cdr))
+              (t (mv (er hard? 'tagsum-fields-to-remake-body "Bad layout ~x0" layout) nil nil)))))
+    (tagsum-fields-to-remake-aux fieldnames (len fieldnames) path cons-with-hint car cdr)))
+
+#||
+(tagsum-fields-to-remake-body '(aa bb cc) 'x :fulltree)
+(tagsum-fields-to-remake-body '(aa bb cc) '(cdr x) :tree)
+||#
 
 (define tagsum-tree-shape (len expr consp car cdr)
   (b* (((when (zp len))

@@ -643,17 +643,18 @@ fty::deftranssum).</p>"
    args        ; user-level arguments to the change macro, e.g., (:name newname :age 5)
    acc-map     ; binds fields to their accessors, e.g., ((name . student->name) ...), ordered per constructor
    macroname   ; e.g., change-student, for error reporting
-   remakep     ; Invoke a remake function instead of the basic constructor?
+   remake-name ; NIL if there is no remake-function (in which case just use the constructor) or
+               ; the name of the REMAKE function to invoke, otherwise.
    raw-fields  ; Raw field names
    )
   (b* ((kwd-fields (strip-cars acc-map))
        (alist      (da-changer-args-to-alist macroname args kwd-fields))
        (all-setp   (subsetp kwd-fields (strip-cars alist)))
-       (remakep
+       (remake-name
         ;; If the user is providing a new value for every possible field, then
         ;; there's no reason to try to reuse parts of the original object.
         ;; Just construct a new one.
-        (and remakep (not all-setp)))
+        (and (not all-setp) remake-name))
        (nobind-p   (or
                     ;; If the object being changed is already evaluated, there's no
                     ;; need to evaluate it. (variables, constants)
@@ -669,7 +670,7 @@ fty::deftranssum).</p>"
        (field-args (da-changer-fill-in-fields newvar acc-map alist))
        (ctor-name  (da-constructor-name basename))
        (ctor-call
-        (if (not remakep)
+        (if (not remake-name)
             ;; Easy case, just call the constructor on its arguments.
             `(,ctor-name . ,field-args)
           ;; Else we want to use the fancy remake function to avoid reconsing.
@@ -683,7 +684,7 @@ fty::deftranssum).</p>"
                 (pairlis$ raw-fields (pairlis$ field-args nil))))
             `(let ,field-self-binds
                (mbe :logic (,ctor-name . ,raw-fields)
-                    :exec  (,(da-remake-name basename) ,newvar . ,raw-fields)))))))
+                    :exec  (,remake-name ,newvar . ,raw-fields)))))))
     (if nobind-p
         ctor-call
       `(let ((,newvar ,obj))
@@ -699,6 +700,10 @@ fty::deftranssum).</p>"
   ;; if you care about memory usage you're probably using a tree layout.
   (and (member layout '(:tree :fulltree))
        (not honsp)))
+
+(defun da-maybe-remake-name (basename honsp layout)
+  (and (da-layout-supports-remake-p honsp layout)
+       (da-remake-name basename)))
 
 (defun da-make-remaker-raw (basename tag fields guard honsp layout)
   (b* (((unless (da-layout-supports-remake-p honsp layout))
@@ -718,14 +723,14 @@ fty::deftranssum).</p>"
         (mbe :logic (,foo . ,fields)
              :exec ,(da-illegible-remake-fields basename layout tag fields))))))
 
-(defun da-make-changer (basename fields remakep)
+(defun da-make-changer (basename fields remake-name)
   (b* ((x          (da-x basename))
        (change-foo (da-changer-name basename))
        (acc-names  (da-accessor-names basename fields))
        (kwd-fields (da-make-valid-fields-for-changer fields))
        (acc-map    (pairlis$ kwd-fields acc-names)))
     `(defmacro ,change-foo (,x &rest args)
-       (change-aggregate ',basename ,x args ',acc-map ',change-foo ',remakep ',fields))))
+       (change-aggregate ',basename ,x args ',acc-map ',change-foo ',remake-name ',fields))))
 
 
 ; (MAKE-FOO ...) MACRO.
@@ -885,7 +890,7 @@ fty::deftranssum).</p>"
        ,@(da-make-accessors-of-constructor basename fields)
        ,@(da-make-remaker-raw basename tag fields guard honsp layout)
        ,(da-make-binder basename fields)
-       ,(da-make-changer basename fields nil)
+       ,(da-make-changer basename fields (da-maybe-remake-name basename honsp layout))
        ,(da-make-maker basename fields nil))))
 
 (defmacro def-primitive-aggregate (name fields &key tag)

@@ -1363,7 +1363,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 ,@(da-make-requirements-of-recognizer name require field-names)))
 
            ,(da-make-binder name all-binder-names)
-           ,(da-make-changer name field-names (da-layout-supports-remake-p honsp layout))
+           ,(da-make-changer name field-names (da-maybe-remake-name name honsp layout))
            ,(da-make-maker name field-names field-defaults)
            ,(da-make-honsed-maker name field-names field-defaults)
 
