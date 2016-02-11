@@ -1,6 +1,6 @@
 ; World Queries
 ;
-; Copyright (C) 2015 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -58,10 +58,10 @@
   (not (eq t (getprop fun 'unnormalized-body t 'current-acl2-world w))))
 
 (defsection guard-verifiedp
-  :short "True iff @('f') is @(tsee guard)-verified."
+  :short "True iff @('fun') is @(tsee guard)-verified."
   :long "@(def guard-verifiedp)"
-  (defmacro guard-verifiedp (f w)
-    `(eq (symbol-class ,f ,w) :common-lisp-compliant)))
+  (defmacro guard-verifiedp (fun w)
+    `(eq (symbol-class ,fun ,w) :common-lisp-compliant)))
 
 (define fundef-enabledp ((fun (function-namep fun (w state))) state)
   :returns (yes/no booleanp)
