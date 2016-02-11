@@ -93,13 +93,23 @@ we call GL to prove the two evaluations equivalent.  To do this, we need a type
 hypothesis and symbolic bindings for the variables.  These are provided by the
 @(':hyp') and @(':g-bindings') argument to @('svdecomp-hints').</p>
 
-<p>One additional argument, @(':enable'), is available.  This simply adds a
+<p>Additional optional arguments:</p>
+
+<ul>
+<li>@(':enable') simply adds a
 list of rules to the theory used in the first step, before the meta rules are
 used.  This is useful because the conclusion of the theorem must be in a
 particular form, described below, for the meta rules to work.  If the statement
 of the theorem uses special-purpose functions to (say) construct alists or
 compare outputs, the theory may need to be augmented with rules to rewrite
-these functions away so that the meta rule can work.</p>
+these functions away so that the meta rule can work.</li>
+
+<li>@(':rewrite-limit') sets the limit on the number of passes of rewriting to
+do on the resulting svex expressions.  In some cases it might be useful to set
+this to 0, to disable rewriting.  Using this keyword argument actually sets the
+state global variable @('sv::svdecomp-rewrite-limit'), which sets the limit for
+future calls as well.</li>
+</ul>
 
 <h5>What can the meta rules handle?</h5>
 
@@ -2284,15 +2294,22 @@ trigger on any of the following:</p>
   :returns (mv (xx svexlist-p)
                (yy svexlist-p))
   :measure (nfix limit)
-  (b* (((when (or (zp limit)
-                  (hons-equal (svexlist-fix x) (svexlist-fix y))))
+  (b* (((when (zp limit))
+        (cw "svexlists-rewrite-until-same: limit ran out.  Total size: ~x0, x: ~x1, y: ~x2~%"
+            (svexlist-opcount (append x y))
+            (svexlist-opcount x) (svexlist-opcount y))
         (mv (svexlist-fix x) (svexlist-fix y)))
-       (rw (svexlist-rewrite-top (append x y)))
+       ((when (hons-equal (svexlist-fix x) (svexlist-fix y)))
+        (cw "svexlists-rewrite-until-same: success~%")
+        (mv (svexlist-fix x) (svexlist-fix y)))
+       (rw (svexlist-rewrite-top (append x y) :verbosep t))
        (len (len x))
        (newx (take len rw))
        (newy (nthcdr len rw))
        ((when (and (hons-equal newx (svexlist-fix x))
                    (hons-equal newy (svexlist-fix y))))
+        (cw "svexlists-rewrite-until-same: fail, sizes: ~x0, ~x1~%"
+            (svexlist-opcount newx) (svexlist-opcount newy))
         (mv newx newy)))
     (svexlists-rewrite-until-same newx newy (1- limit)))
   ///
@@ -2342,7 +2359,7 @@ trigger on any of the following:</p>
              :in-theory (e/d ()
                              (len-of-svexlists-rewrite-until-same
                               svexlists-rewrite-until-same
-                              ;ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
+;ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
                               )))
             '(:cases ((consp x)))
             '(:cases ((consp y))))))
@@ -2359,9 +2376,11 @@ trigger on any of the following:</p>
   :hooks nil
   (if (And (hons-equal x y)
            (hons-equal env1 env2))
-      ''t
-    `(svdecomp-equal (,eval-fn ',x ,(svdecomp-symenv->term env1))
-                     (,eval-fn ',y ,(svdecomp-symenv->term env2))))
+      (prog2$ (cw "Resulting svexes are equal~%")
+              ''t)
+    (prog2$ (cw "Resulting svexes aren't equal~%")
+            `(svdecomp-equal (,eval-fn ',x ,(svdecomp-symenv->term env1))
+                             (,eval-fn ',y ,(svdecomp-symenv->term env2)))))
   ///
   (defthm svdecomp-svex?-eval-compare-term-correct
     (equal (svdecomp-ev (svdecomp-svex?-eval-compare-term
@@ -2370,9 +2389,17 @@ trigger on any of the following:</p>
            (equal (svdecomp-ev `(,eval-fn ',x ,(svdecomp-symenv->term env1)) a)
                   (svdecomp-ev `(,eval-fn ',y ,(svdecomp-symenv->term env2)) a)))))
 
-(define svdecomp-equal-svex-evals-metafun ((x pseudo-termp))
+(define svdecomp-get-rewrite-limit (state)
+  :returns (limit natp :rule-classes :type-prescription)
+  (if (boundp-global 'svdecomp-rewrite-limit state)
+      (nfix (f-get-global 'svdecomp-rewrite-limit state))
+    5))
+
+
+(define svdecomp-equal-svex-evals-metafun ((x pseudo-termp) mfc state)
   :hooks nil
   :returns (newx pseudo-termp :hyp :guard)
+  (declare (ignorable mfc))
   (b* (((acl2::when-match x (equal (svex-eval (quote (:? svex1)) (:? env1))
                                    (svex-eval (quote (:? svex2)) (:? env2))))
         (cwtime
@@ -2398,8 +2425,9 @@ trigger on any of the following:</p>
                                                  :mintime 1))
               ((mv newsvexlist2 newenv2) (cwtime (svdecomp-normalize-svexlist-eval (list svex2) symenv2 10)
                                                  :mintime 1))
+              (limit (svdecomp-get-rewrite-limit state))
               ((mv newsvexlist1 newsvexlist2)
-               (cwtime (svexlists-rewrite-until-same newsvexlist1 newsvexlist2 20)
+               (cwtime (svexlists-rewrite-until-same newsvexlist1 newsvexlist2 limit)
                        :mintime 1))
               (newsvex1 (nth 0 newsvexlist1))
               (newsvex2 (nth 0 newsvexlist2)))
@@ -2438,14 +2466,15 @@ trigger on any of the following:</p>
 
   (defthmd svdecomp-equal-svex-evals-meta
     (equal (svdecomp-ev x a)
-           (svdecomp-ev (svdecomp-equal-svex-evals-metafun x) a))
+           (svdecomp-ev (svdecomp-equal-svex-evals-metafun x mfc state) a))
     :hints(("Goal" :in-theory (disable nth acl2::nth-when-zp)))
     :rule-classes ((:meta :trigger-fns (equal)))))
 
 
-(define svdecomp-equal-svexlist-evals-metafun ((x pseudo-termp))
+(define svdecomp-equal-svexlist-evals-metafun ((x pseudo-termp) mfc state)
   :hooks nil
   :returns (newx pseudo-termp :hyp :guard)
+  (declare (ignorable mfc))
   (b* (((acl2::when-match x (equal (svexlist-eval (quote (:? svexes1)) (:? env1))
                                      (svexlist-eval (quote (:? svexes2)) (:? env2))))
         (cwtime
@@ -2462,7 +2491,8 @@ trigger on any of the following:</p>
                x)
               ((mv newsvexes1 newenv1) (svdecomp-normalize-svexlist-eval svexes1 symenv1 10))
               ((mv newsvexes2 newenv2) (svdecomp-normalize-svexlist-eval svexes2 symenv2 10))
-              ((mv newsvexes1 newsvexes2) (svexlists-rewrite-until-same newsvexes1 newsvexes2 20)))
+              (limit (svdecomp-get-rewrite-limit state))
+              ((mv newsvexes1 newsvexes2) (svexlists-rewrite-until-same newsvexes1 newsvexes2 limit)))
            (svdecomp-svex?-eval-compare-term newsvexes1 newsvexes2 newenv1 newenv2 'svexlist-eval))
          :name svdecomp-equal-svexlist-evals-metafun)))
     ;; fail silently; probably just some random equal term
@@ -2471,13 +2501,15 @@ trigger on any of the following:</p>
   ///
   (defthmd svdecomp-equal-svexlist-evals-meta
     (equal (svdecomp-ev x a)
-           (svdecomp-ev (svdecomp-equal-svexlist-evals-metafun x) a))
+           (svdecomp-ev (svdecomp-equal-svexlist-evals-metafun x mfc state) a))
     :rule-classes ((:meta :trigger-fns (equal)))))
 
 
-(define svdecomp-equal-svex-alist-evals-metafun ((x pseudo-termp))
+
+(define svdecomp-equal-svex-alist-evals-metafun ((x pseudo-termp) mfc state)
   :hooks nil
   :returns (newx pseudo-termp :hyp :guard)
+  (declare (ignorable mfc))
   (b* (((acl2::when-match x (equal (svex-alist-eval (quote (:? svexes1)) (:? env1))
                                    (svex-alist-eval (quote (:? svexes2)) (:? env2))))
         (cwtime
@@ -2496,7 +2528,9 @@ trigger on any of the following:</p>
                (svdecomp-normalize-svexlist-eval (svex-alist-vals svexes1) symenv1 10))
               ((mv newsvexes2 newenv2)
                (svdecomp-normalize-svexlist-eval (svex-alist-vals svexes2) symenv2 10))
-              ((mv newsvexes1 newsvexes2) (svexlists-rewrite-until-same newsvexes1 newsvexes2 20))
+              (limit (svdecomp-get-rewrite-limit state))
+              ((mv newsvexes1 newsvexes2)
+               (svexlists-rewrite-until-same newsvexes1 newsvexes2 limit))
               (svexal1 (pairlis$ (svex-alist-keys svexes1) newsvexes1))
               (svexal2 (pairlis$ (svex-alist-keys svexes2) newsvexes2)))
            (svdecomp-svex?-eval-compare-term svexal1 svexal2 newenv1 newenv2 'svex-alist-eval))
@@ -2507,7 +2541,7 @@ trigger on any of the following:</p>
   ///
   (defthmd svdecomp-equal-svex-alist-evals-meta
     (equal (svdecomp-ev x a)
-           (svdecomp-ev (svdecomp-equal-svex-alist-evals-metafun x) a))
+           (svdecomp-ev (svdecomp-equal-svex-alist-evals-metafun x mfc state) a))
     :rule-classes ((:meta :trigger-fns (equal)))))
 
 
@@ -2622,13 +2656,18 @@ trigger on any of the following:</p>
 ;; NOTE: requires GL to be loaded
 (defmacro svdecomp-hints (&key hyp
                                g-bindings
-                               enable)
+                               enable
+                               rewrite-limit)
   `'(:computed-hint-replacement
-     ((and stable-under-simplificationp
-           '(:in-theory (acl2::e/d**
-                         (svdecomp-equal-svex-alist-evals-meta
-                          svdecomp-equal-svexlist-evals-meta
-                          svdecomp-equal-svex-evals-meta))))
+     ((if stable-under-simplificationp
+          (let ((state ,(if rewrite-limit
+                           `(f-put-global 'svdecomp-rewrite-limit ,rewrite-limit state)
+                          'state)))
+            (value '(:in-theory (acl2::e/d**
+                                 (svdecomp-equal-svex-alist-evals-meta
+                                  svdecomp-equal-svexlist-evals-meta
+                                  svdecomp-equal-svex-evals-meta)))))
+        (value nil))
       (and stable-under-simplificationp
            '(:in-theory (acl2::e/d**
                          ((:ruleset svtv-execs)
