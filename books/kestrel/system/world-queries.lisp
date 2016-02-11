@@ -38,7 +38,7 @@
   :short
   "True iff the symbol @('sym') names a theorem,
   i.e. it has a @('theorem') property."
-  (not (eq t (getprop sym 'theorem t 'current-acl2-world w))))
+  (not (eq t (getpropc sym 'theorem t w))))
 
 (define function-namep (x (w plist-worldp))
   :returns (yes/no booleanp)
@@ -55,7 +55,7 @@
   :short
   "True iff the function @('fun') is defined,
   i.e. it has an @('unnormalized-body') property."
-  (not (eq t (getprop fun 'unnormalized-body t 'current-acl2-world w))))
+  (not (eq t (getpropc fun 'unnormalized-body t w))))
 
 (defsection guard-verifiedp
   :short "True iff @('fun') is @(tsee guard)-verified."
