@@ -190,7 +190,7 @@ consistent manner) before being used.</p>")
   :parents (fty)
   :short "Define a new type for use with the @(see fty-discipline)."
 
-  :long "<p>In it most basic form, @('deffixtype') just associates an new type
+  :long "<p>In it most basic form, @('deffixtype') just associates a new type
 name with the corresponding predicate, fixing function, and equivalence
 relation.  It stores this association in a @(see table).  The type then becomes
 ``known'' to other @(see fty) macros such as @(see deffixequiv), @(see
