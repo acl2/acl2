@@ -473,6 +473,39 @@
     (change-ytree-pair ytree :left (make-ytree-leaf :val x))))
 
 (my-test 5) ;; should show trace output
+
+(untrace$)
+
+(define memtest-ytree ((n natp) (left ytree-p) (ytree ytree-p))
+  :guard (ytree-case ytree :pair)
+  (if (zp n)
+      ytree
+    (memtest-ytree (- n 1)
+                   left
+                   (change-ytree-pair ytree :left left))))
+
+(define memtest-xtree ((n natp) (left xtree-p) (xtree xtree-p))
+  :guard (xtree-case xtree :pair)
+  (if (zp n)
+      xtree
+    (memtest-xtree (- n 1)
+                   left
+                   (change-xtree-pair xtree :left left))))
+
+(time$
+ ;; On CCL this allocates 80 KB.
+ (b* ((left (make-xtree-leaf :val 5))
+      (right (make-xtree-leaf :val 6))
+      (base (make-xtree-pair :left left :right right)))
+   (memtest-xtree 1000 left base)))
+
+(time$
+ ;; This should allocate (almost) nothing.  496 bytes as of this writing in CCL.
+ (b* ((left (make-ytree-leaf :val 5))
+      (right (make-ytree-leaf :val 6))
+      (base (make-ytree-pair :left left :right right)))
+   (memtest-ytree 1000 left base)))
+
 ||#
 
 (deftagsum ztree
@@ -509,6 +542,8 @@
    (third symbol))
   :extra-binder-names (first-two (list . 3ple-to-list))
   :layout :tree)
+
+(std::assert-guard-verified remake-3ple)
 
 
 (define 3ple->first-two ((x 3ple-p))

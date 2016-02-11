@@ -522,8 +522,14 @@
        (xbody (if tag `(cdr ,xvar) xvar))
        (flexsum-fields (tagsum-formals-to-flexsum-fields
                         field-formals 0 (len field-formals) xbody layout))
-       (ctor-body1 (tagsum-fields-to-ctor-body (strip-cars flexsum-fields) layout hons))
+       (fieldnames (strip-cars flexsum-fields))
+       (ctor-body1 (tagsum-fields-to-ctor-body fieldnames layout hons))
        (ctor-body (if tag `(,(if hons 'hons 'cons) ,tag ,ctor-body1) ctor-body1))
+       (remake-body1 (and (member layout '(:tree :fulltree))
+                          (not hons)
+                          (tagsum-fields-to-remake-body fieldnames xbody layout)))
+       (remake-body (and remake-body1
+                         (if tag `(cons-with-hint ,tag ,remake-body1 ,xvar) remake-body1)))
        (shape (tagsum-fields-to-shape flexsum-fields xbody layout))
        (requirep (assoc :require kwd-alist))
        (kind (or tag (intern$ (symbol-name name) "KEYWORD")))
@@ -536,7 +542,7 @@
       :fields ,flexsum-fields
       :type-name ,name
       :ctor-body ,ctor-body
-
+      ,@(and remake-body `(:remake-body ,remake-body))
       ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names))
       ,@(and no-ctor-macros `(:no-ctor-macros ,no-ctor-macros))
       ,@(and requirep `(:require ,(cdr requirep))))))
