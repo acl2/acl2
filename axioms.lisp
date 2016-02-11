@@ -1409,6 +1409,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            aref2 ; already inlined in Version_6.2 and before
            booleanp
            complex-rationalp
+           cons-with-hint
            eqlablep
            fix
            fn-symb
@@ -12651,10 +12652,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     print-clause-id-okp
     too-many-ifs-post-rewrite
     too-many-ifs-pre-rewrite
-
     set-gc-strategy-fn gc-strategy
-
     read-file-into-string2
+    cons-with-hint
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -26666,3 +26666,14 @@ Lisp definition."
             #-ccl
             (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|"))))
   (read-acl2-oracle state))
+
+(defun cons-with-hint (x y hint)
+  (declare (xargs :guard t)
+           (ignorable hint))
+  #-acl2-loop-only
+  (when (and (consp hint)
+             (eql (car hint) x)
+             (eql (cdr hint) y))
+    (return-from cons-with-hint
+                 hint))
+  (cons x y))

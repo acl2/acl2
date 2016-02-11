@@ -14029,7 +14029,11 @@
 ; returned list.  (Note: The transitive closure operation performed by
 ; new-defpkg-list will take care of this closure for us.)
 
-  #+(and hons (not acl2-loop-only))
+  (cond
+   ((null x) ; optimization
+    nil)
+   (t
+    #+(and hons (not acl2-loop-only))
 
 ; Here we use a more efficient but equivalent version of this function that
 ; memoizes, contributed initially by Sol Swords.  This version is only more
@@ -14037,13 +14041,13 @@
 ; linear list ultimately containing every cons visited, resulting in quadratic
 ; behavior because of the membership tests against it.
 
-  (return-from
-   expansion-alist-pkg-names
-   (loop for name in (expansion-alist-pkg-names-memoize x)
-         when (not (find-package-entry name base-kpa))
-         collect name))
-  (merge-sort-lexorder ; sort this small list, to agree with hons result above
-   (expansion-alist-pkg-names0 x base-kpa nil)))
+    (return-from
+     expansion-alist-pkg-names
+     (loop for name in (expansion-alist-pkg-names-memoize x)
+           when (not (find-package-entry name base-kpa))
+           collect name))
+    (merge-sort-lexorder ; sort the small list, to agree with hons result above
+     (expansion-alist-pkg-names0 x base-kpa nil)))))
 
 (defun delete-names-from-kpa-rec (names kpa)
   (cond ((endp kpa)
@@ -15821,7 +15825,12 @@
                                                        index
                                                        expansion-alist))
                                                      (t
-                                                      expansion-alist)))))))))))))
+
+; Index is essentially "infinity" -- eval-event-lst (on behalf of
+; process-embedded-events) never found an extension of the known-package-alist.
+; There is thus no part of expansion-alist that needs checking!
+
+                                                      nil)))))))))))))
                           (cond
                            (write-acl2x ; early exit
                             (value acl2x-file))
