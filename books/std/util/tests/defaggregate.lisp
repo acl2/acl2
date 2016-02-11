@@ -644,3 +644,29 @@
   (time$ (test (make-employee :name name  :salary 13) 10000 name)))
 
 ||#
+
+
+(assert!
+ ;; Test for name capture of the thing being changed
+ (b* ((grade (make-student :firstname "foo" :lastname "bar" :grade 6))
+      (new   (change-student grade :firstname "blah")))
+   (and (equal (student->grade new) (student->grade grade))
+        (equal (student->lastname new) (student->lastname grade))
+        (equal (student->firstname new) "blah")
+        (equal (student->firstname grade) "foo"))))
+
+(define change-test ((grade student-p))
+  ;; Test of a tricky name-capture situation.
+  ;; Note that "grade" is the name of one of the student's fields.
+  ;; We once had a name capture problem where we translated this into
+  ;;
+  ;; (LET ((FIRSTNAME "blah")
+  ;;       (LASTNAME (STUDENT->LASTNAME GRADE))
+  ;;       (GRADE (STUDENT->GRADE GRADE)))
+  ;;    (MBE :LOGIC (STUDENT FIRSTNAME LASTNAME GRADE)
+  ;;         :EXEC (REMAKE-STUDENT GRADE FIRSTNAME LASTNAME GRADE)))
+  ;;
+  ;; Note that the (REMAKE-STUDENT GRADE FIRSTNAME LASTNAME GRADE) call above
+  ;; makes no sense at all.  To avoid this we reworked the way the change macro
+  ;; expands to avoid capture.
+  (change-student grade :firstname "blah"))

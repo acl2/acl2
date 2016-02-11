@@ -40,7 +40,7 @@
     std::da-constructor-name
     std::da-remake-name
     std::da-changer-args-to-alist
-    std::da-changer-fill-in-fields
+    std::da-changer-let-bindings-and-args
     std::change-aggregate
     std::da-maker-fill-in-fields
     std::make-aggregate

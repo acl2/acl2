@@ -588,108 +588,6 @@ fty::deftranssum).</p>"
 
 ; (CHANGE-FOO ...) MACRO.
 
-(defun da-make-valid-fields-for-changer (fields)
-  ;; Convert field names into keywords for use in da-changer-args-to-alist.
-  (if (consp fields)
-      (cons (intern-in-package-of-symbol (symbol-name (car fields)) :keyword)
-            (da-make-valid-fields-for-changer (cdr fields)))
-    nil))
-
-(defun da-changer-args-to-alist
-  ;; Makes sure user-supplied args are valid for this kind of a structure,
-  ;; and turn them into a (field . value) alist
-  (macroname      ; change-foo or make-foo, for error reporting.
-   args           ; user-supplied args to an actual (change-foo ...) macro, i.e.,
-                  ; should be like (:field1 val1 :field2 val2)
-   kwd-fields     ; list of valid fields (already keywordified) for this aggregate
-   )
-  (b* (((when (null args))
-        nil)
-       ((when (atom args))
-        (er hard? macroname "Expected a true-list, but instead it ends with ~x0." args))
-       ((when (atom (cdr args)))
-        (er hard? macroname "Expected :field val pairs, but found ~x0." args))
-       (field (first args))
-       (value (second args))
-       ((unless (member-equal field kwd-fields))
-        (er hard? macroname "~x0 is not among the allowed fields, ~&1." field kwd-fields))
-       (rest (da-changer-args-to-alist macroname (cddr args) kwd-fields))
-       ((when (assoc field rest))
-        (er hard? macroname "Multiple occurrences of ~x0 in change/make macro." field)))
-    (cons (cons field value)
-          rest)))
-
-(defun da-changer-fill-in-fields
-  ;; Build the actual arguments to give to the structure's raw constructor
-  (obj        ; object being changed, in case we need to extract fields from it
-   acc-map    ; binds keywordified fields to their accessors, ordered per constructor
-   alist      ; binds keywordified fields to their values, if provided by the user
-   )
-  (b* (((when (atom acc-map))
-        nil)
-       (rest (da-changer-fill-in-fields obj (cdr acc-map) alist))
-       ((cons field1 accessor1) (car acc-map))
-       (look1 (assoc field1 alist))
-       ((when look1)
-        ;; User gave us a value for this field, so insert it.
-        (cons (cdr look1) rest)))
-    ;; No value for this field, so get it from the object.
-    (cons `(,accessor1 ,obj) rest)))
-
-(defun change-aggregate
-  ;; Change an arbitrary aggregate.
-  (basename    ; basename for this structure, for name generation
-   obj         ; object being changed, e.g., a term in the user's program.
-   args        ; user-level arguments to the change macro, e.g., (:name newname :age 5)
-   acc-map     ; binds fields to their accessors, e.g., ((name . student->name) ...), ordered per constructor
-   macroname   ; e.g., change-student, for error reporting
-   remake-name ; NIL if there is no remake-function (in which case just use the constructor) or
-               ; the name of the REMAKE function to invoke, otherwise.
-   raw-fields  ; Raw field names
-   )
-  (b* ((kwd-fields (strip-cars acc-map))
-       (alist      (da-changer-args-to-alist macroname args kwd-fields))
-       (all-setp   (subsetp kwd-fields (strip-cars alist)))
-       (remake-name
-        ;; If the user is providing a new value for every possible field, then
-        ;; there's no reason to try to reuse parts of the original object.
-        ;; Just construct a new one.
-        (and (not all-setp) remake-name))
-       (nobind-p   (or
-                    ;; If the object being changed is already evaluated, there's no
-                    ;; need to evaluate it. (variables, constants)
-                    (atom obj)
-                    (and (consp obj)
-                         (equal (car obj) 'quote))
-                    ;; If the object being changed is never accessed, there's no
-                    ;; need to evaluate it.
-                    all-setp))
-       (newvar     (if nobind-p
-                       obj
-                     (acl2::pack (cons macroname obj))))
-       (field-args (da-changer-fill-in-fields newvar acc-map alist))
-       (ctor-name  (da-constructor-name basename))
-       (ctor-call
-        (if (not remake-name)
-            ;; Easy case, just call the constructor on its arguments.
-            `(,ctor-name . ,field-args)
-          ;; Else we want to use the fancy remake function to avoid reconsing.
-          ;; We use the MBE here because, when you prove a theorem about the
-          ;; change macro, we want it to be a theorem about the constructor
-          ;; instead of a theorem about the remake-function.  BOZO should we
-          ;; be using let-mbe instead?  It doesn't like that the two calls don't
-          ;; take the same arguments.  Does it do anything fancy for us?
-          (b* ((field-self-binds
-                ;; Let bindings, ((field1 ,value-for-field1) ...)
-                (pairlis$ raw-fields (pairlis$ field-args nil))))
-            `(let ,field-self-binds
-               (mbe :logic (,ctor-name . ,raw-fields)
-                    :exec  (,remake-name ,newvar . ,raw-fields)))))))
-    (if nobind-p
-        ctor-call
-      `(let ((,newvar ,obj))
-         ,ctor-call))))
-
 (defun da-layout-supports-remake-p (honsp layout)
   ;; If the structure is honsed there's no sense in trying to reusing the
   ;; original structure, because we're going to re-hons it anyway and that'll
@@ -723,6 +621,148 @@ fty::deftranssum).</p>"
         (mbe :logic (,foo . ,fields)
              :exec ,(da-illegible-remake-fields basename layout tag fields))))))
 
+(defun da-make-valid-fields-for-changer (fields)
+  ;; Convert field names into keywords for use in da-changer-args-to-alist.
+  (if (consp fields)
+      (cons (intern-in-package-of-symbol (symbol-name (car fields)) :keyword)
+            (da-make-valid-fields-for-changer (cdr fields)))
+    nil))
+
+(defun da-changer-args-to-alist
+  ;; Makes sure user-supplied args are valid for this kind of a structure,
+  ;; and turn them into a (field . value) alist
+  (macroname      ; change-foo or make-foo, for error reporting.
+   args           ; user-supplied args to an actual (change-foo ...) macro, i.e.,
+                  ; should be like (:field1 val1 :field2 val2)
+   kwd-fields     ; list of valid fields (already keywordified) for this aggregate
+   )
+  (b* (((when (null args))
+        nil)
+       ((when (atom args))
+        (er hard? macroname "Expected a true-list, but instead it ends with ~x0." args))
+       ((when (atom (cdr args)))
+        (er hard? macroname "Expected :field val pairs, but found ~x0." args))
+       (field (first args))
+       (value (second args))
+       ((unless (member-equal field kwd-fields))
+        (er hard? macroname "~x0 is not among the allowed fields, ~&1." field kwd-fields))
+       (rest (da-changer-args-to-alist macroname (cddr args) kwd-fields))
+       ((when (assoc field rest))
+        (er hard? macroname "Multiple occurrences of ~x0 in change/make macro." field)))
+    (cons (cons field value)
+          rest)))
+
+;; Gross but workable strategy for constructing let bindings that work:
+;;
+;;   1. For all fields that the user has supplied a value for, bind the
+;;   ACCESSOR'S NAME, which is weird but works out well, to the provided value.
+;;   This happens before we bind anything else, with LET (not LET*) semantics,
+;;   so there is no possibility of inadvertent capture.
+;;
+;;      (foo->a 5)
+;;      (foo->b 6)
+;;      ...
+;;
+;;   2. In the same LET, bind the CHANGE MACRO NAME, which again is weird but
+;;   works out well, to the actual object being changed.  I.e., if someone
+;;   writes (change-foo (blah x y) :a 5 ...), then we will bind
+;;
+;;      (change-foo (blah x y))
+;;
+;;   This can't clash with the accessor names we're binding above, because the
+;;   change macro can't have the same name as an accessor.  Also LET semantics
+;;   ensures that X and Y are not inadvertently bound to foo->a or anything
+;;   like that.
+;;
+;;   3. After the above bindings, invoke the constructor on the "obvious"
+;;   arguments.  For any argument that has a binding, use the variable.  For
+;;   any argument without a binding, use (accessor-name change-foo).
+
+(defun da-changer-let-bindings-and-args
+  (change-name ; variable to extract unchanged fields from
+   acc-map     ; binds keywordified fields to their accessors, ordered per constructor
+   alist       ; binds keywordified fields to their values, if provided by the user
+   )
+  ;; We return the bindings separately because it allows us to build a suitable
+  ;; LET structure that avoids capture issues, below.
+  "Returns (mv let-bindings constructor-args)"
+  (b* (((when (atom acc-map))
+        (mv nil nil))
+       ((mv rest-bindings rest-args) (da-changer-let-bindings-and-args change-name (cdr acc-map) alist))
+       ((cons field1 accessor1) (car acc-map))
+       (look1 (assoc field1 alist))
+       ((when look1)
+        ;; User gave us a value for this field, so bind it as part of the fresh
+        ;; bindings and use the binding as its argument.
+        (mv (cons (list accessor1 (cdr look1)) rest-bindings)
+            (cons accessor1 rest-args))))
+    ;; User gave no value for this field, so keep its previous value
+    (mv rest-bindings
+        (cons `(,accessor1 ,change-name) rest-args))))
+
+#||
+
+;; For example:
+
+(da-changer-let-bindings-and-args 'change-foo
+                                  '((:a . foo->a)
+                                    (:b . foo->b)
+                                    (:c . foo->c)
+                                    (:d . foo->d))
+                                  '((:a . 5)
+                                    (:c . 4)))
+
+;;  Gives us let bindings for the user-supplied args:
+;;
+;;     ((foo->a 5)
+;;      (foo->c 4))
+;;
+;;  And gives us args for the constructor:
+;;
+;;     (foo->a (foo->b change-foo) foo->c (foo->d change-foo))
+
+||#
+
+(defun change-aggregate
+  ;; Change an arbitrary aggregate.
+  (basename    ; basename for this structure, for name generation
+   obj         ; object being changed, e.g., a term in the user's program.
+   args        ; user-level arguments to the change macro, e.g., (:name newname :age 5)
+   acc-map     ; binds fields to their accessors, e.g., ((name . student->name) ...), ordered per constructor
+   macroname   ; e.g., change-student, for error reporting and let binding
+   remake-name ; NIL if there is no remake-function (in which case just use the constructor) or
+               ; the name of the REMAKE function to invoke, otherwise.
+   )
+  (b* ((kwd-fields (strip-cars acc-map))
+       (alist      (da-changer-args-to-alist macroname args kwd-fields))
+       (all-setp   (subsetp kwd-fields (strip-cars alist)))
+       (remake-name
+        ;; If the user is providing a new value for every possible field, then
+        ;; there's no reason to try to reuse parts of the original object.
+        ;; Just construct a new one.
+        (and (not all-setp) remake-name))
+       ((mv arg-bindings ctor-args)
+        (da-changer-let-bindings-and-args macroname acc-map alist))
+       (ctor-name (da-constructor-name basename)))
+    (if (not remake-name)
+        ;; Easy case, just call the constructor on its arguments.
+        (if all-setp
+            ;; Special case: no need to bind the macro name.
+            `(let ,arg-bindings (,ctor-name . ,ctor-args))
+          ;; Usual case: need to bind the macro name.
+          `(let ((,macroname ,obj) . ,arg-bindings)
+             (,ctor-name . ,ctor-args)))
+      ;; Else we want to use the fancy remake function to avoid reconsing.  We
+      ;; use the MBE here because, when you prove a theorem about the change
+      ;; macro, we want it to be a theorem about the constructor instead of a
+      ;; theorem about the remake-function.  BOZO should we be using let-mbe
+      ;; instead?  It doesn't like that the two calls don't take the same
+      ;; arguments.  Does it do anything fancy for us?
+      `(let ((,macroname ,obj) . ,arg-bindings)
+         (mbe :logic (,ctor-name . ,ctor-args)
+              :exec  (,remake-name ,macroname . ,ctor-args))))))
+
+
 (defun da-make-changer (basename fields remake-name)
   (b* ((x          (da-x basename))
        (change-foo (da-changer-name basename))
@@ -730,7 +770,7 @@ fty::deftranssum).</p>"
        (kwd-fields (da-make-valid-fields-for-changer fields))
        (acc-map    (pairlis$ kwd-fields acc-names)))
     `(defmacro ,change-foo (,x &rest args)
-       (change-aggregate ',basename ,x args ',acc-map ',change-foo ',remake-name ',fields))))
+       (change-aggregate ',basename ,x args ',acc-map ',change-foo ',remake-name))))
 
 
 ; (MAKE-FOO ...) MACRO.
