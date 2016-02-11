@@ -457,12 +457,29 @@
   (:unary ((fn symbol) (arg ytree)))
   :layout :tree)
 
+(std::assert-guard-verified remake-ytree-leaf)
+(std::assert-guard-verified remake-ytree-pair)
+
+#||
+;; Making sure the change macro is invoking the remake function.
+;; BOZO how can we write a test that will fail if this doesn't happen?
+
+(trace$ remake-ytree-pair)
+
+(defun my-test (x)
+  (declare (xargs :guard (natp x)))
+  (b* ((ytree (make-ytree-pair :left (make-ytree-leaf :val 5)
+                               :right (make-ytree-leaf :val 6))))
+    (change-ytree-pair ytree :left (make-ytree-leaf :val x))))
+
+(my-test 5) ;; should show trace output
+||#
+
 (deftagsum ztree
   (:leaf ((val natp)))
   (:pair ((left ztree-p) (right ztree-p)))
   (:unary ((fn symbol) (arg ztree)))
   :layout :list)
-
 
 (deftypes atree
   (deftagsum atree
@@ -492,6 +509,7 @@
    (third symbol))
   :extra-binder-names (first-two (list . 3ple-to-list))
   :layout :tree)
+
 
 (define 3ple->first-two ((x 3ple-p))
   (b* (((3ple x)))
