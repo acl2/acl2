@@ -639,9 +639,6 @@
   ;; 320,110 bytes allocated
   (time$ (test (make-employee :name name  :salary 13) 10000 name)))
 
-(include-book
- "../cons-with-hint")
-
 (let ((name "billy bob"))
   ;; 112 bytes allocated
   (time$ (test (make-employee :name name  :salary 13) 10000 name)))

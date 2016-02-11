@@ -47,7 +47,6 @@
              std::prod-car
              std::prod-cdr
              std::prod-hons
-             std::cons-with-hint
              std::prod-cons-with-hint
              )
           #!ACL2

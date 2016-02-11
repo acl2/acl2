@@ -30,17 +30,7 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "STD")
-(include-book "tools/include-raw" :dir :system)
-
-
-(defun cons-with-hint (x y hint)
-  ;; Real under-the-hood definition in cons-with-hint.lisp
-  ;; But, to avoid ttags for now, do it this way.
-  ;; Hopefully we can get this integrated with ACL2.
-  (declare (xargs :guard t)
-           (ignorable hint))
-  (cons x y))
-
+(include-book "xdoc/top" :dir :system)
 
 (defsection prod-consp
   :parents (prod-cons)
