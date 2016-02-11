@@ -177,6 +177,7 @@
 
 (defaggregate vl-tokstream-backup
   :tag nil
+  :layout :fulltree
   ((tokens vl-tokenlist-p)
    (pstate vl-parsestate-p)))
 
@@ -1337,7 +1338,7 @@ allowed in Verilog-2005.</p>
 <p>An @('vl-endinfo-p') structure is just a temporary structure used by our
 parser when we encounter such an ending.</p>"
 
-  :legiblep nil
+  :layout :fulltree
 
   ((name maybe-stringp :rule-classes :type-prescription
          "The name we matched after the colon, e.g., @('foo') above.")

@@ -80,7 +80,8 @@
 ;; Disable tmp/type-pres/fwd-chaining:     0.17, 0.21, 0.33, 0.40, 0.79, 2.72, 14.13
 ;; After transsum fixes (tag-reasoning):   0.20, 0.18, 0.30, 0.51, 0.98, 3.24, 15.42
 ;; After kind-possibilities hacking:       0.16, 0.20, 0.31, 0.52, 1.00, 3.29, 15.45
-;; After adding 100 deflists:              0.19, 0.19, 0.30, 0.49, 0.97, 3.48, 17.31 
+;; After adding 100 deflists:              0.19, 0.19, 0.30, 0.49, 0.97, 3.48, 17.31
+;; After adding remakers:                  0.22, 0.25, 0.38, 0.64, 1.30, 4.95, 24.45
 (tm (make-prod 1))
 (tm (make-prod 2))
 (tm (make-prod 5))
@@ -88,6 +89,8 @@
 (tm (make-prod 20))
 (tm (make-prod 50))
 (tm (make-prod 100))
+
+;; After adding remakers: 21.07 seconds
 (tm (make-prod 100 :layout :fulltree :prefix "FULL"))
 
 ;; Now trying with alist:                  0.26, 0.32, 0.61, 2.42, 23.15

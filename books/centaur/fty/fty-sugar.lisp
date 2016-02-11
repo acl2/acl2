@@ -30,102 +30,7 @@
 
 (in-package "FTY")
 (include-book "fty-sum")
-
-(define prod-consp (x)
-  :parents (defprod)
-  :short "Special recognizer for conses, except that to save space we require
-          that (nil . nil) be represented just as nil."
-  :returns (ans booleanp :rule-classes :type-prescription)
-  (if (consp x)
-      (and (or (car x) (cdr x))
-           t)
-    (not x))
-  ///
-  (defthm prod-consp-compound-recognizer
-    (implies (prod-consp x)
-             (or (consp x) (not x)))
-    :rule-classes :compound-recognizer))
-
-(define prod-cons (x y)
-  :parents (defprod)
-  :short "Special constructor for products that collapses (nil . nil) into nil."
-  :returns (pcons prod-consp :rule-classes (:rewrite :type-prescription)
-                  :hints(("Goal" :in-theory (enable prod-consp))))
-  :inline t
-  (and (or x y)
-       (cons x y))
-  ///
-  (defthm car-of-prod-cons
-    (equal (car (prod-cons x y)) x))
-
-  (defthm cdr-of-prod-cons
-    (equal (cdr (prod-cons x y)) y))
-
-  (defthm prod-cons-of-car/cdr
-    (implies (prod-consp x)
-             (equal (prod-cons (car x) (cdr x))
-                    x))
-    :hints(("Goal" :in-theory (enable prod-consp))))
-
-  (defthmd equal-of-prod-cons
-    (implies (prod-consp x)
-             (equal (equal x (prod-cons a b))
-                    (and (equal (car x) a)
-                         (equal (cdr x) b))))
-    :hints(("Goal" :in-theory (enable prod-consp))))
-
-  (defthm acl2-count-of-prod-cons
-    (and (>= (acl2-count (prod-cons x y))
-             (acl2-count x))
-         (>= (acl2-count (prod-cons x y))
-             (acl2-count y)))
-    :rule-classes :linear)
-
-  (defthm prod-cons-equal-cons
-    (implies (or a b)
-             (equal (equal (prod-cons a b) (cons c d))
-                    (and (equal a c)
-                         (equal b d))))
-    :hints(("Goal" :in-theory (enable prod-cons))))
-
-  (defthm prod-cons-when-either
-    (implies (or a b)
-             (and (prod-cons a b)
-                  (consp (prod-cons a b))))
-    :rule-classes ((:rewrite)
-                   (:type-prescription :corollary
-                    (implies (or a b)
-                             (consp (prod-cons a b)))))
-    :hints(("Goal" :in-theory (enable prod-cons))))
-
-  (defthm prod-cons-not-consp-forward
-    (implies (not (consp (prod-cons a b)))
-             (and (not a) (not b)))
-    :hints(("Goal" :in-theory (enable prod-cons)))
-    :rule-classes ((:forward-chaining :trigger-terms ((prod-cons a b))))))
-
-(define prod-car ((x prod-consp))
-  :enabled t
-  :inline t
-  (car x))
-
-(define prod-cdr ((x prod-consp))
-  :enabled t
-  :inline t
-  (cdr x))
-
-(define prod-hons (x y)
-  :parents (defprod)
-  :short "Same as @(see prod-cons) but uses @(see hons)."
-  :inline t
-  :enabled t
-  :guard-hints (("goal" :in-theory (enable prod-cons)))
-  (mbe :logic (prod-cons x y)
-       :exec (and (or x y)
-                  (hons x y))))
-  
-
-
+(include-book "std/util/cons" :dir :system)
 (program)
 
 ; We now introduce defoption, defprod, and deftagsum.  These macros are
@@ -248,10 +153,10 @@
   :returns (flexsum-syntax "User-level(!) flexsum syntax for this field.")
   (b* (((std::formal x) x)
        (accessor (case layout
-                   (:alist `(cdr (std::da-nth ,pos ,xvar)))
-                   (:tree (tagsum-acc-for-tree pos num xvar 'prod-car 'prod-cdr))
+                   (:alist    `(cdr (std::da-nth ,pos ,xvar)))
+                   (:tree     (tagsum-acc-for-tree pos num xvar 'prod-car 'prod-cdr))
                    (:fulltree (tagsum-acc-for-tree pos num xvar 'car 'cdr))
-                   (:list `(std::da-nth ,pos ,xvar)))))
+                   (:list     `(std::da-nth ,pos ,xvar)))))
     `(,x.name :acc-body ,accessor
               :doc ,x.doc
               :type ,x.guard
@@ -284,15 +189,41 @@
             ,(tagsum-tree-ctor (nthcdr half fieldnames) (- len half) cons))))
 
 (define tagsum-fields-to-ctor-body (fieldnames layout honsp)
-  (b* ((cons (if honsp
-                 (if (eq layout :tree) 'prod-hons 'hons)
-               (if (eq layout :tree) 'prod-cons 'cons)))
-       (list (if honsp 'acl2::hons-list 'list)))
+  (b* ((list (if honsp 'acl2::hons-list 'list)))
     (case layout
-      (:alist    `(,list . ,(tagsum-alist-ctor-elts fieldnames cons)))
-      ((:tree :fulltree)
-                 (tagsum-tree-ctor fieldnames (len fieldnames) cons))
+      (:alist   `(,list . ,(tagsum-alist-ctor-elts fieldnames (if honsp 'hons 'cons))))
+      (:tree     (tagsum-tree-ctor fieldnames (len fieldnames) (if honsp 'prod-hons 'prod-cons)))
+      (:fulltree (tagsum-tree-ctor fieldnames (len fieldnames) (if honsp 'hons      'cons)))
       (:list     `(,list . ,fieldnames)))))
+
+(define tagsum-fields-to-remake-aux ((fieldnames     "as in tagsum-tree-ctor")
+                                     (len            "as in tagsum-tree-ctor")
+                                     (path           "current path into the original structure")
+                                     (cons-with-hint "cons-with-hint or prod-cons-with-hint")
+                                     (car            "car or prod-car")
+                                     (cdr            "cdr or prod-car"))
+  (b* (((when (zp len))
+        (raise "bad programmer"))
+       ((when (eql len 1))
+        (car fieldnames))
+       (half (floor len 2))
+       (rest (- len half)))
+    `(,cons-with-hint
+      ,(tagsum-fields-to-remake-aux (take half fieldnames)   half `(,car ,path) cons-with-hint car cdr)
+      ,(tagsum-fields-to-remake-aux (nthcdr half fieldnames) rest `(,cdr ,path) cons-with-hint car cdr)
+      ,path)))
+
+(define tagsum-fields-to-remake-body (fieldnames path layout)
+  (b* (((mv cons-with-hint car cdr)
+        (cond ((eq layout :fulltree) (mv 'cons-with-hint      'car      'cdr))
+              ((eq layout :tree)     (mv 'prod-cons-with-hint 'prod-car 'prod-cdr))
+              (t (mv (er hard? 'tagsum-fields-to-remake-body "Bad layout ~x0" layout) nil nil)))))
+    (tagsum-fields-to-remake-aux fieldnames (len fieldnames) path cons-with-hint car cdr)))
+
+#||
+(tagsum-fields-to-remake-body '(aa bb cc) 'x :fulltree)
+(tagsum-fields-to-remake-body '(aa bb cc) '(cdr x) :tree)
+||#
 
 (define tagsum-tree-shape (len expr consp car cdr)
   (b* (((when (zp len))
@@ -365,8 +296,14 @@
                    kind))
        (flexsum-fields (tagsum-formals-to-flexsum-fields
                         field-formals 0 (len field-formals) `(cdr ,xvar) layout))
-       (base-name (getarg :base-name nil kwd-alist))
-       (ctor-body1 (tagsum-fields-to-ctor-body (strip-cars flexsum-fields) layout hons))
+       (base-name  (getarg :base-name nil kwd-alist))
+       (fieldnames (strip-cars flexsum-fields))
+       (ctor-body1 (tagsum-fields-to-ctor-body fieldnames layout hons))
+       (remake-body (and (member layout '(:tree :fulltree))
+                         (not hons)
+                         `(cons-with-hint ,kind
+                                          ,(tagsum-fields-to-remake-body fieldnames `(cdr ,xvar) layout)
+                                          ,xvar)))
        (shape1 (tagsum-fields-to-shape flexsum-fields `(cdr ,xvar) layout))
        (extra-binder-names (getarg :extra-binder-names nil kwd-alist))
        (no-ctor-macros (getarg :no-ctor-macros nil kwd-alist)))
@@ -388,6 +325,7 @@
           ,@(and longp       `(:long ,(cdr longp)))
           ,@(and count-incrp `(:count-incr ,(cdr count-incrp)))
           :ctor-body (,(if hons 'hons 'cons) ,kind ,ctor-body1)
+          ,@(and remake-body `(:remake-body ,remake-body))
           ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names))
           ,@(and no-ctor-macros `(:no-ctor-macros ,no-ctor-macros)))
         basep)))
@@ -586,8 +524,14 @@
        (xbody (if tag `(cdr ,xvar) xvar))
        (flexsum-fields (tagsum-formals-to-flexsum-fields
                         field-formals 0 (len field-formals) xbody layout))
-       (ctor-body1 (tagsum-fields-to-ctor-body (strip-cars flexsum-fields) layout hons))
+       (fieldnames (strip-cars flexsum-fields))
+       (ctor-body1 (tagsum-fields-to-ctor-body fieldnames layout hons))
        (ctor-body (if tag `(,(if hons 'hons 'cons) ,tag ,ctor-body1) ctor-body1))
+       (remake-body1 (and (member layout '(:tree :fulltree))
+                          (not hons)
+                          (tagsum-fields-to-remake-body fieldnames xbody layout)))
+       (remake-body (and remake-body1
+                         (if tag `(cons-with-hint ,tag ,remake-body1 ,xvar) remake-body1)))
        (shape (tagsum-fields-to-shape flexsum-fields xbody layout))
        (requirep (assoc :require kwd-alist))
        (kind (or tag (intern$ (symbol-name name) "KEYWORD")))
@@ -600,7 +544,7 @@
       :fields ,flexsum-fields
       :type-name ,name
       :ctor-body ,ctor-body
-
+      ,@(and remake-body `(:remake-body ,remake-body))
       ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names))
       ,@(and no-ctor-macros `(:no-ctor-macros ,no-ctor-macros))
       ,@(and requirep `(:require ,(cdr requirep))))))

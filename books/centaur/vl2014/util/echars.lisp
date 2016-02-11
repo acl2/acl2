@@ -385,7 +385,7 @@ bounds."
          (fields '(char loc)))
      `(progn
         ,(std::da-make-maker name fields nil)
-        ,(std::da-make-changer name fields)
+        ,(std::da-make-changer name fields nil)
         ,(std::da-make-binder name fields))))
 
   ;; Rudimentary testing of defaggregate stuff

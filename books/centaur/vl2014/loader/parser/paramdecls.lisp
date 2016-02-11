@@ -184,7 +184,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                  :atts atts
                  :localp localp
                  :type
-                 (if (eq (vl-paramtype-kind type) :vl-implicitvalueparam)
+                 (if (vl-paramtype-case type :vl-implicitvalueparam)
                      (change-vl-implicitvalueparam type :default default)
                    (change-vl-explicitvalueparam type :default default))))))
 

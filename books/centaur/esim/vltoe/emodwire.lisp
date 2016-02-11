@@ -1112,7 +1112,7 @@ index of @('|reset|') is @('nil').</p>"
 ;; Introduce defaggregate like make-vl-emodwire and change-vl-emodwire macros.
 
 (make-event (std::da-make-maker 'vl-emodwire '(basename index) nil))
-(make-event (std::da-make-changer 'vl-emodwire '(basename index)))
+(make-event (std::da-make-changer 'vl-emodwire '(basename index) nil))
 
 
 

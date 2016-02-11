@@ -33,6 +33,7 @@
 (include-book "../basetypes")
 (include-book "std/lists/acl2-count" :dir :system)
 (include-book "misc/assert" :dir :system)
+(include-book "std/util/tests/utils" :dir :system)
 
 (in-theory (disable acl2-count))
 
@@ -63,6 +64,27 @@
                                 (equal (len (cdr x)) (1- val))))))))
 (local (in-theory (disable len)))
 
+(defsection list-with-hint
+  ;; bozo consider incorporating into std/util/cons and using for remaking
+  ;; :list style structures
+
+  (defun list-with-hint-macro (orig lst)
+    (if (consp lst)
+        `(cons-with-hint ,(car lst)
+                         ,(list-with-hint-macro `(cdr ,orig) (cdr lst))
+                         ,orig)
+      nil))
+
+  (defmacro list-with-hint (orig &rest args)
+    (list-with-hint-macro orig args))
+
+  (local (defthm list-with-hint-tests
+           (and (equal (list-with-hint orig) nil)
+                (equal (list-with-hint orig a) (list a))
+                (equal (list-with-hint orig a b) (list a b))
+                (equal (list-with-hint orig a b c) (list a b c)))
+           :rule-classes nil)))
+
 (defflexsum var-tree
   :short "A tree of variables."
   (:leaf
@@ -75,8 +97,24 @@
    :fields ((left :acc-body (car w) :type var-tree)
             (mid :acc-body (cadr w) :type var-tree)
             (right :acc-body (caddr w) :type var-tree))
-   :ctor-body (list left mid right))
+   :ctor-body (list left mid right)
+   :remake-body (list-with-hint w left mid right))
   :xvar w)
+
+(std::assert-logic-mode remake-var-tree-triple)
+(std::assert-guard-verified remake-var-tree-triple)
+
+(assert!
+ (b* (((var-tree-triple orig)
+       (make-var-tree-triple :left (make-var-tree-leaf :val 'myleft)
+                             :right (make-var-tree-leaf :val 'myright)
+                             :mid (make-var-tree-leaf :val 'mymid)))
+      ((var-tree-triple new)
+       (change-var-tree-triple orig :left (make-var-tree-leaf :val 'yourleft))))
+   (and (equal orig.right new.right)
+        (equal orig.mid new.mid)
+        (equal orig.left (make-var-tree-leaf :val 'myleft))
+        (equal new.left (make-var-tree-leaf :val 'yourleft)))))
 
 (deflist varlist :elt-type varp :xvar q)
 
@@ -419,12 +457,62 @@
   (:unary ((fn symbol) (arg ytree)))
   :layout :tree)
 
+(std::assert-guard-verified remake-ytree-leaf)
+(std::assert-guard-verified remake-ytree-pair)
+
+#||
+;; Making sure the change macro is invoking the remake function.
+;; BOZO how can we write a test that will fail if this doesn't happen?
+
+(trace$ remake-ytree-pair)
+
+(defun my-test (x)
+  (declare (xargs :guard (natp x)))
+  (b* ((ytree (make-ytree-pair :left (make-ytree-leaf :val 5)
+                               :right (make-ytree-leaf :val 6))))
+    (change-ytree-pair ytree :left (make-ytree-leaf :val x))))
+
+(my-test 5) ;; should show trace output
+
+(untrace$)
+
+(define memtest-ytree ((n natp) (left ytree-p) (ytree ytree-p))
+  :guard (ytree-case ytree :pair)
+  (if (zp n)
+      ytree
+    (memtest-ytree (- n 1)
+                   left
+                   (change-ytree-pair ytree :left left))))
+
+(define memtest-xtree ((n natp) (left xtree-p) (xtree xtree-p))
+  :guard (xtree-case xtree :pair)
+  (if (zp n)
+      xtree
+    (memtest-xtree (- n 1)
+                   left
+                   (change-xtree-pair xtree :left left))))
+
+(time$
+ ;; On CCL this allocates 80 KB.
+ (b* ((left (make-xtree-leaf :val 5))
+      (right (make-xtree-leaf :val 6))
+      (base (make-xtree-pair :left left :right right)))
+   (memtest-xtree 1000 left base)))
+
+(time$
+ ;; This should allocate (almost) nothing.  496 bytes as of this writing in CCL.
+ (b* ((left (make-ytree-leaf :val 5))
+      (right (make-ytree-leaf :val 6))
+      (base (make-ytree-pair :left left :right right)))
+   (memtest-ytree 1000 left base)))
+
+||#
+
 (deftagsum ztree
   (:leaf ((val natp)))
   (:pair ((left ztree-p) (right ztree-p)))
   (:unary ((fn symbol) (arg ztree)))
   :layout :list)
-
 
 (deftypes atree
   (deftagsum atree
@@ -454,6 +542,9 @@
    (third symbol))
   :extra-binder-names (first-two (list . 3ple-to-list))
   :layout :tree)
+
+(std::assert-guard-verified remake-3ple)
+
 
 (define 3ple->first-two ((x 3ple-p))
   (b* (((3ple x)))

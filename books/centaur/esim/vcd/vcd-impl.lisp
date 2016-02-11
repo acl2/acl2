@@ -671,7 +671,7 @@
    idcode     ;; Identifier codes
    )
   :tag :vcd-net
-  :legiblep nil ;; Necessary for acl2-count hack
+  :layout :fulltree ;; Necessary for acl2-count hack
   :require
   ((string-listp-of-vcd-net->path
     (string-listp path)

@@ -42,6 +42,12 @@
              enable*
              disable*
              e/d*
+             std::prod-consp
+             std::prod-cons
+             std::prod-car
+             std::prod-cdr
+             std::prod-hons
+             std::prod-cons-with-hint
              )
           #!ACL2
           '(a b c d e f g h i j k l m n o p q r s t u v w x y z

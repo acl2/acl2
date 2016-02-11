@@ -453,7 +453,7 @@ statement is well-formed.</p>")
 
 (defaggregate vl-udp-head
   :tag nil
-  :legiblep nil
+  :layout :fulltree
   :short "Temporary structure for parsing UDPs."
   ((output vl-portdecl-p     "Output port for this UDP.")
    (inputs vl-portdecllist-p "Input ports for this UDP, in order.")
@@ -461,6 +461,8 @@ statement is well-formed.</p>")
 
 (defaggregate vl-udp-body
   :short "Temporary structure for parsing UDPs."
+  :tag nil
+  :layout :fulltree
   ((init  vl-maybe-expr-p "Initial value for the sequential UDP register, if applicable.")
    (table vl-udptable-p   "The parsed state table.")))
 

@@ -151,6 +151,8 @@
     :ctor-body
     :ctor-name
     :ctor-macro
+    :remake-name
+    :remake-body
     :cond
     :type-name
     :short
@@ -207,12 +209,25 @@
                                     (cat (symbol-name sumname) "-" (symbol-name kind))
                                     sumname)
                                    kwd-alist))
-       (ctor-name  (getarg-nonnil! :ctor-name type-name kwd-alist) )
+       (ctor-name  (getarg-nonnil! :ctor-name type-name kwd-alist))
        (ctor-macro (getarg-nonnil! :ctor-macro
                                    (intern-in-package-of-symbol
                                     (cat "MAKE-" (symbol-name ctor-name))
                                     ctor-name)
                                    kwd-alist))
+       (remake-body (getarg :remake-body nil kwd-alist))
+       (remake-name (getarg :remake-name
+                            ;; If the user gives a remake-body but no explicit
+                            ;; remake-name, provide a default name of
+                            ;; REMAKE-XXX.
+                            (and remake-body
+                                 (intern-in-package-of-symbol
+                                  (cat "REMAKE-" (symbol-name ctor-name))
+                                  ctor-name))
+                            kwd-alist))
+       ((when (and remake-name (not remake-body)))
+        (raise "In ~x0: malformed product ~x1: :remake-name is ~x2 but ~
+                no :remake-body has been provided."))
        (fields (parse-flexprod-fields (getarg :fields nil kwd-alist) type-name our-fixtypes fixtypes))
        (guard (if sumkind
                   `(equal (,sumkind ,xvar) ,kind)
@@ -235,6 +250,8 @@
                    :ctor-name ctor-name
                    :ctor-macro ctor-macro
                    :ctor-body ctor-body
+                   :remake-name remake-name
+                   :remake-body remake-body
                    :extra-binder-names extra-binder-names
                    :short (getarg :short nil kwd-alist)
                    :long (getarg :long nil kwd-alist)
@@ -1142,6 +1159,44 @@
                    type-name)))
           (flexprod-extra-binder-names->acc-alist (cdr names) type-name))))
 
+(defun flexprod-remaker (prod sum)
+  ;; Returns EVENTS
+  (b* (((flexsum sum) sum)
+       ((flexprod prod) prod)
+       ((unless prod.remake-name)
+        ;; This product isn't going to have a remake function.
+        nil)
+       (fieldnames   (flexprod-fields->names prod.fields))
+       (fields/types (flexprod-field-names-types prod.fields)))
+    `((define ,prod.remake-name
+        ;; The formals: the original "X" followed by the new values for its fields
+        ((,sum.xvar ,sum.pred) . ,fields/types)
+        :guard ,(nice-and prod.guard   ;; The guard for "X"
+                          prod.require ;; Dependent requirements if applicable
+                          )
+        ;; We won't generate any documentation for the remake function, because
+        ;; it's just an implementation detail of the change macro.  The user
+        ;; should always use the change macro instead and ideally nobody ever
+        ;; needs to know that remake functions even exist.
+        :parents nil
+        ;; Do we want to inline this?  Probably not.  But since the remake
+        ;; function is essentially another constructor, let's inline it exactly
+        ;; if we are inlining the constructor.
+        ,@(and (member :xtor prod.inline) `(:inline t))
+        ;; We don't need to provide a :returns specifier because we're just
+        ;; going to leave this enabled.
+        :hooks nil
+        :progn t
+        :enabled t
+        ;; I don't think we need to do any special fixing here because our
+        ;; logical story is that we're just calling the constructor.
+        (mbe :logic (,prod.ctor-name . ,fieldnames)
+             :exec ,prod.remake-body)
+        :guard-hints(("Goal"
+                      :in-theory (enable ,sum.pred . ,(and sum.kind `(,sum.kind)))
+                      :expand ((,prod.ctor-name . ,fieldnames)
+                               (,sum.pred ,sum.xvar))))))))
+
 (defun flexprod-constructor (prod sum)
   (b* (((flexsum sum) sum)
        ((flexprod prod) prod)
@@ -1267,14 +1322,13 @@
         ;; be better for large products.
         (deffixequiv ,prod.ctor-name)
 
-
-          ;; :hints (("goal" :expand ((,sum.pred ,sum.xvar))
-          ;;          :in-theory (disable ,(intern-in-package-of-symbol
-          ;;                                (cat
-          ;;                                             (symbol-name sum.fix)
-          ;;                                             "-WHEN-"
-          ;;                                             (symbol-name prod.kind))
-          ;;                                sum.fix))))
+        ;; :hints (("goal" :expand ((,sum.pred ,sum.xvar))
+        ;;          :in-theory (disable ,(intern-in-package-of-symbol
+        ;;                                (cat
+        ;;                                             (symbol-name sum.fix)
+        ;;                                             "-WHEN-"
+        ;;                                             (symbol-name prod.kind))
+        ;;                                sum.fix))))
 
         ;; ,@(and (consp prod.fields)
         ;;        `((defthm ,(intern-in-package-of-symbol
@@ -1308,10 +1362,9 @@
         ,@(and (not prod.no-ctor-macros)
                `(,(std::da-make-maker prod.ctor-name fieldnames
                                       (flexprod-fields->defaults prod.fields))
-                 ,(std::da-make-changer prod.ctor-name fieldnames))))
+                 ,(std::da-make-changer prod.ctor-name fieldnames prod.remake-name))))
 
       (local (in-theory (enable ,prod.ctor-name))))))
-
 
 
 ;; ------------ Collect accessor/constructor names ---------------
@@ -1346,7 +1399,8 @@
 ;; ------------ Collect accessor/constructor definitions ---------------
 (defun flexprod-accessor/constructors (prod sum)
   (append (flexprod-field-accessors prod sum)
-          (flexprod-constructor prod sum)))
+          (flexprod-constructor prod sum)
+          (flexprod-remaker prod sum)))
 
 (defun flexsum-prods-accessor/constructors (prods sum)
   (if (atom prods)

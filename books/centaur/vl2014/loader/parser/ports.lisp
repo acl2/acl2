@@ -94,7 +94,7 @@ portdecl-sign).</p>")
 (defaggregate vl-parsed-port-identifier
   :short "Temporary structure created during port parsing."
   :tag nil
-  :legiblep nil
+  :layout :fulltree
   ((name  vl-idtoken-p
           "Identifier for the port being declared.")
    (udims vl-packeddimensionlist-p
@@ -1464,7 +1464,7 @@ parse-port-types) for notes about how we distinguish between
 
 (defaggregate vl-parsed-ansi-port
   :tag :vl-parsed-ansi-port
-  :legiblep nil
+  :layout :fulltree
   ((dir  vl-maybe-direction-p)
    (head vl-parsed-ansi-head-p)
    (id   vl-parsed-port-identifier-p)
