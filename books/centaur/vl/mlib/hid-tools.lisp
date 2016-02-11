@@ -2064,7 +2064,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        (dim (vl-range->packeddimension (make-vl-range :msb (vl-make-index (1- size))
                                                       :lsb (vl-make-index 0)))))
     (mv nil nil
-        (make-vl-coretype :name :vl-logic) dim))
+        *vl-plain-old-logic-type* dim))
   ///
   (defret vl-datatype-resolved-p-of-remove-dim
     (implies (and (not err)

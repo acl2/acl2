@@ -7220,9 +7220,10 @@ checked to see if it is a valid bitselect and returned as a separate value."
        ((wire xf) (elab-mod-wiretablei idx elab-mod))
        (widx (+ (lnfix idx) (lnfix offset)))
        (lhs (list (lhrange xf.width (lhatom-var
-                                     (address->svar
-                                      (make-address :path (make-path-wire :name xf.name)
-                                                    :index widx))
+                                     (make-svar :name widx)
+                                     ;; (address->svar
+                                     ;;  (make-address :path (make-path-wire :name xf.name)
+                                     ;;                :index widx))
                                      0))))
        (lhsarr (set-lhs widx lhs lhsarr)))
     ;; (cw "set ~x0 to ~x1~%" widx lhs)
@@ -7242,9 +7243,11 @@ checked to see if it is a valid bitselect and returned as a separate value."
                     (< (nfix n) (len lhsarr)))
                (b* (((wire xf) (elab-mod-wiretablei (- (nfix n) (nfix offset)) elab-mod)))
                  (list (lhrange xf.width (lhatom-var
-                                          (address->svar
-                                           (make-address :path (make-path-wire :name xf.name)
-                                                         :index (nfix n))) 0))))
+                                          (make-svar :name (nfix n))
+                                          ;; (address->svar
+                                          ;;  (make-address :path (make-path-wire :name xf.name)
+                                          ;;                :index (nfix n)))
+                                          0))))
              (lhs-fix (nth n lhsarr))))
     :hints (("goal" :induct t)
             (and stable-under-simplificationp

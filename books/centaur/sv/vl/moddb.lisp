@@ -982,7 +982,7 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
        ;;  (mv nil nil))
        (portexpr (vl-idexpr portname))
        (port-lhs (svex-lhs-from-name portname))
-       (port-type (make-vl-coretype :name :vl-logic))
+       (port-type *vl-plain-old-logic-type*)
        ((wmv warnings x-svex x-type ?x-size)
         (vl-expr-to-svex-maybe-typed
          x.expr

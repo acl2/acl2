@@ -107,15 +107,22 @@
                   (lhssvex-p xx)))))))
 
 
-(fty::deftagsum lhatom
+(fty::defflexsum lhatom
   :parents (lhs)
-  (:z nil)
-  (:var ((name svar-p)
-         (rsh natp :rule-classes :type-prescription))))
+  (:z
+   :cond (eq x :z)
+   :fields nil
+   :ctor-body ':z)
+  (:var
+   :cond t
+   :shape (consp x)
+   :fields ((name :acc-body (car x) :type svar-p)
+            (rsh :acc-body (cdr x) :type natp :rule-classes :type-prescription))
+   :ctor-body (cons name rsh)))
 
 (local (defthm lhatom-z-by-kind
            (implies (lhatom-p x)
-                    (equal (equal '(:z) x)
+                    (equal (equal ':z x)
                            (equal (lhatom-kind x) :z)))
            :hints (("goal" :use lhatom-fix-when-z
                     :in-theory (disable lhatom-fix-when-z)))))
@@ -151,6 +158,7 @@
 
 (defprod lhrange
   :parents (lhs)
+  :layout :fulltree
   ((w   posp :rule-classes :type-prescription)
    (atom lhatom)))
 
@@ -436,6 +444,15 @@ the order given (LSBs-first).</p>")
   ;;                   (lhrange (+ (lhrange->w x) (lhrange->w y))
   ;;                            (lhrange->atom x))))))
 
+
+
+(local (defthmd lhrange->atom-when-z
+         (implies (equal (lhatom-kind (lhrange->atom x)) :z)
+                  (equal (lhrange->atom x) :z))
+         :hints (("goal" :use ((:instance lhatom-fix-when-z
+                                (x (lhrange->atom x))))
+                  :in-theory (disable lhatom-fix-when-z)))))
+
 (define lhs-cons ((x lhrange-p) (y lhs-p))
   :returns (cons lhs-p)
   (if (atom y)
@@ -483,13 +500,6 @@ the order given (LSBs-first).</p>")
   ;;   (implies (eql (len (lhs-cons x y)) (+ 1 (len y)))
   ;;            (equal (lhs-cons (car (lhs-cons x y)) (cdr (lhs-cons x y)))
   ;;                   (lhs-cons x y))))
-
-  (local (defthmd lhrange->atom-when-z
-           (implies (equal (lhatom-kind (lhrange->atom x)) :z)
-                    (equal (lhrange->atom x) '(:z)))
-           :hints (("goal" :use ((:instance lhatom-fix-when-z
-                                  (x (lhrange->atom x))))
-                    :in-theory (disable lhatom-fix-when-z)))))
 
   (defthm lhs-cons-of-lhs-cons
     (implies (lhrange-combine x y)
@@ -610,13 +620,6 @@ the order given (LSBs-first).</p>")
     (lhs-cons (lhrange w xf.atom) y))
   ///
   (deffixequiv lhs-concat)
-
-  (local (defthmd lhrange->atom-when-z
-           (implies (equal (lhatom-kind (lhrange->atom x)) :z)
-                    (equal (lhrange->atom x) '(:z)))
-           :hints (("goal" :use ((:instance lhatom-fix-when-z
-                                  (x (lhrange->atom x))))
-                    :in-theory (disable lhatom-fix-when-z)))))
 
   (local (defthm lhrange-identity
            (implies (equal a (lhrange->atom x))
@@ -1026,7 +1029,7 @@ the order given (LSBs-first).</p>")
             :induct (ind idx w x y)
             :do-not-induct t)
            (and stable-under-simplificationp
-                '(:expand ((lhatom-bitproj idx '(:z))))))
+                '(:expand ((lhatom-bitproj idx :z)))))
     :otf-flg t)
 
   (defthm lhs-bitproj-of-lhs-rsh
@@ -1957,32 +1960,35 @@ bits of @('foo'):</p>
     :hints(("Goal" :in-theory (enable netassigns-vars svex-alist-vars svex-alist-keys)))))
 
 
+;; (define svar-indexedp ((x svar-p))
+;;   (and (svar-addr-p x)
+;;        (address->index (svar->address x))
+;;        t)
+;;   ///
+;;   (defthmd svar-addr-p-when-svar-indexedp
+;;     (implies (svar-indexedp x)
+;;              (svar-addr-p x))))
+
 (define svar-indexedp ((x svar-p))
-  (and (svar-addr-p x)
-       (address->index (svar->address x))
-       t)
-  ///
-  (defthmd svar-addr-p-when-svar-indexedp
-    (implies (svar-indexedp x)
-             (svar-addr-p x))))
+  (natp (svar->name x)))
 
 (define svar-index ((x svar-p))
   :guard (svar-indexedp x)
   :guard-hints (("goal" :in-theory (enable svar-indexedp)))
   :returns (idx natp :rule-classes :type-prescription)
-  (lnfix (address->index (svar->address x)))
+  (lnfix (svar->name x))
   ///
   (deffixequiv svar-index
     :hints(("Goal" :in-theory (enable svar-fix svar-p)))))
 
 (define svar-set-index ((x svar-p) (idx natp))
-  :guard (svar-addr-p x)
+  ;; :guard (svar-addr-p x)
   :Returns (xx (and (svar-p xx)
                     (svar-indexedp xx))
                :hints(("Goal" :in-theory (enable svar-indexedp
                                                  svar->address
                                                  svar-addr-p))))
-  (change-svar x :name (change-address (svar->address x) :index (lnfix idx)))
+  (change-svar x :name (lnfix idx))
   ///
   (defthm svar-index-of-svar-set-index
     (equal (svar-index (svar-set-index x idx))
@@ -2635,7 +2641,7 @@ bits of @('foo'):</p>
              (lhatom-normorderedp bound offset x)))
 
   (defthm lhatom-normorderedp-of-z
-    (lhatom-normorderedp bound offset '(:z)))
+    (lhatom-normorderedp bound offset :z))
 
   (defthm lhatom-normorderedp-implies-svarlist-bounded
     (implies (lhatom-normorderedp bound offset x)

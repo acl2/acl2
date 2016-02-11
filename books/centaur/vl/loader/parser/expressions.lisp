@@ -90,8 +90,13 @@
     ;; Most things will start on column 0, or column 1, or column 2, or ...,
     ;; but probably very few things ever start past column 50 or 80, so honsing
     ;; here should achieve very good sharing.
-    (cons (hons "VL_LINESTART" indent)
-          atts)))
+    (mbe :logic (cons (hons "VL_LINESTART" indent)
+                      atts)
+         :exec (if atts
+                   (cons (hons "VL_LINESTART" indent)
+                         atts)
+                 (hons (hons "VL_LINESTART" indent)
+                       atts)))))
 
 (define vl-extend-expr-with-linestart ((linestart maybe-natp)
                                        (expr      vl-expr-p))

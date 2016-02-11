@@ -268,7 +268,7 @@ of adding the namespace.</p>"
 
 
 (defenum wiretype
-  (:wire
+  (nil ;; :wire
    :supply0
    :supply1
    :wand
@@ -287,11 +287,10 @@ of adding the namespace.</p>"
             "The declared lower index of the wire's range.  This may be the MSB
              or the LSB (depending on revp), or both if the wire is only 1
              bit.")
+   (delay acl2::maybe-posp :rule-classes :type-prescription)
    (revp    "If true, the range was declared as [low:high] rather than [high:low],
              so the low-idx is the MSB rather than the LSB.")
-   (type wiretype :default :wire)
-   (delay natp :rule-classes :type-prescription
-          :default 0))
+   (type wiretype))
   :layout :tree)
 
 (fty::deflist wirelist
@@ -377,6 +376,7 @@ of adding the namespace.</p>"
 
 
 (fty::defprod modinst
+  :layout :tree
   ((instname name-p)
    (modname modname-p))
   :parents (svmods))

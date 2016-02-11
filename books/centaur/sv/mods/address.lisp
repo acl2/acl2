@@ -338,13 +338,20 @@ address with empty index and scope qualifier 0.</p>"
                     (implies (svar-addr-p x)
                              (svar-addr-p xx)))
                :hints(("Goal" :in-theory (enable svar-addr-p))))
-  (change-svar x :delay (+ (lnfix delay) (svar->delay x))))
+  (change-svar x :delay (+ (lnfix delay) (svar->delay x)))
+  ///
+  (defthm svar-add-delay-when-zero
+    (equal (svar-add-delay x 0) (svar-fix x))))
 
 (std::defprojection svarlist-add-delay ((x svarlist-p) (delay natp))
   :returns (xx (and (svarlist-p xx)
                     (implies (svarlist-addr-p x)
                              (svarlist-addr-p xx))))
-  (svar-add-delay x delay))
+  (svar-add-delay x delay)
+  ///
+  (defthm svarlist-add-delay-when-0
+    (equal (svarlist-add-delay x 0)
+           (svarlist-fix x))))
 
 (defines svex-add-delay
   (define svex-add-delay ((x svex-p) (delay natp))
@@ -394,7 +401,26 @@ address with empty index and scope qualifier 0.</p>"
       :hints('(:in-theory (enable svexlist-vars))
              (and stable-under-simplificationp
                   '(:in-theory (enable))))
+      :flag svexlist-add-delay))
+
+  (defthm-svex-add-delay-flag
+    (defthm svex-add-delay-when-0
+      (equal (svex-add-delay x 0)
+             (svex-fix x))
+      :flag svex-add-delay)
+    (defthm svexlist-add-delay-when-0
+      (equal (svexlist-add-delay x 0)
+             (svexlist-fix x))
       :flag svexlist-add-delay)))
+
+(define svex-add-delay-top ((x svex-p)
+                            (delay natp))
+  :enabled t
+  :hooks nil
+  (mbe :logic (svex-add-delay x delay)
+       :exec (if (zp delay)
+                 x
+               (svex-add-delay x delay))))
 
 
 (define svex-alist-add-delay ((x svex-alist-p) (delay natp))

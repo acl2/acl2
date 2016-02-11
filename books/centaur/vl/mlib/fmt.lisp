@@ -141,10 +141,17 @@ formerly the \"location directive\" and printed a location.</p>")
 (define vl-fmt-tilde-a-aux (x &key (ps 'ps))
   :returns (mv (type "Used only for the so-called coverage proof.")
                (ps))
+  :prepwork ((local (defthm hidexpr-p-when-stringp
+                      (implies (stringp x)
+                               (Vl-hidexpr-p x))
+                      :hints(("Goal" :in-theory (enable vl-hidexpr-p))))))
   (let ((unsafe-okp *vl-enable-unsafe-but-fast-printing*))
     (if (atom x)
-        (let ((ps (vl-fmt-tilde-x x)))
-          (mv nil ps))
+        (if (stringp x)
+            (let ((ps (vl-pp-hidexpr x)))
+                  (mv 'vl-hidexpr-p ps))
+          (let ((ps (vl-fmt-tilde-x x)))
+            (mv nil ps)))
       (case (tag x)
         (:vl-location
          (vl-fmt-tilde-a-case vl-location-p vl-print-loc))
@@ -158,16 +165,8 @@ formerly the \"location directive\" and printed a location.</p>")
          (vl-fmt-tilde-a-case vl-exprdist-p vl-pp-exprdist))
         ((:vl-repetition)
          (vl-fmt-tilde-a-case vl-repetition-p vl-pp-repetition))
-        ((:end :dot :colon)
-         (cond ((vl-hidexpr-p x)
-                (let ((ps (vl-pp-hidexpr x)))
-                  (mv 'vl-hidexpr-p ps)))
-               ((vl-scopeexpr-p x)
-                (let ((ps (vl-pp-scopeexpr x)))
-                  (mv 'vl-scopeexpr-p ps)))
-               (t
-                (let ((ps (vl-fmt-tilde-x x)))
-                  (mv nil ps)))))
+        ((:colon)
+         (vl-fmt-tilde-a-case vl-scopeexpr-p vl-pp-scopeexpr))
         ((:vl-range)
          (vl-fmt-tilde-a-case vl-range-p vl-pp-range))
         ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-callstmt
@@ -223,8 +222,11 @@ formerly the \"location directive\" and printed a location.</p>")
            (vl-pp-modulename-link-aux (vl-module->name x)
                                       (vl-module->origname x))))
         (otherwise
-         (let ((ps (vl-fmt-tilde-x x)))
-           (mv nil ps))))))
+         (if (vl-hidexpr-p x)
+             (let ((ps (vl-pp-hidexpr x)))
+                  (mv 'vl-hidexpr-p ps))
+           (let ((ps (vl-fmt-tilde-x x)))
+             (mv nil ps)))))))
   ///
   (local (defthm tag-when-vl-expr-p
            (implies (vl-expr-p x)
@@ -244,17 +246,17 @@ formerly the \"location directive\" and printed a location.</p>")
            :rule-classes :forward-chaining
            :hints(("Goal" :in-theory (enable vl-stmt-kind tag vl-stmt-p)))))
 
-  (local (defthm tag-when-vl-hidexpr-p
-           (implies (vl-hidexpr-p x)
-                    (equal (tag x) (vl-hidexpr-kind x)))
-           :rule-classes :forward-chaining
-           :hints(("Goal" :in-theory (enable vl-hidexpr-kind tag vl-hidexpr-p)))))
+  ;; (local (defthm tag-when-vl-hidexpr-p
+  ;;          (implies (vl-hidexpr-p x)
+  ;;                   (equal (tag x) (vl-hidexpr-kind x)))
+  ;;          :rule-classes :forward-chaining
+  ;;          :hints(("Goal" :in-theory (enable vl-hidexpr-kind tag vl-hidexpr-p)))))
 
-  (local (defthm tag-when-vl-scopeexpr-p
-           (implies (vl-scopeexpr-p x)
-                    (equal (tag x) (vl-scopeexpr-kind x)))
-           :rule-classes :forward-chaining
-           :hints(("Goal" :in-theory (enable vl-scopeexpr-kind tag vl-scopeexpr-p)))))
+  ;; (local (defthm tag-when-vl-scopeexpr-p
+  ;;          (implies (vl-scopeexpr-p x)
+  ;;                   (equal (tag x) (vl-scopeexpr-kind x)))
+  ;;          :rule-classes :forward-chaining
+  ;;          :hints(("Goal" :in-theory (enable vl-scopeexpr-kind tag vl-scopeexpr-p)))))
 
   (local (defthm tag-when-vl-propexpr-p
            (implies (vl-propexpr-p x)
@@ -262,12 +264,41 @@ formerly the \"location directive\" and printed a location.</p>")
            :rule-classes :forward-chaining
            :hints(("Goal" :in-theory (enable vl-propexpr-kind tag vl-propexpr-p)))))
 
-  (local (defthm vl-hidexpr-p-means-not-vl-scopeexpr-p
-           (implies (vl-hidexpr-p x)
+  ;; (local (defthm vl-hidexpr-p-means-not-vl-scopeexpr-p
+  ;;          (implies (vl-hidexpr-p x)
+  ;;                   (not (vl-scopeexpr-p x)))
+  ;;          :rule-classes :forward-chaining
+  ;;          :hints(("Goal" :expand ((vl-scopeexpr-p x)
+  ;;                                  (vl-hidexpr-p x))))))
+
+  (local (defthm not-hidexpr-when-non-string-atom
+           (implies (and (atom x) (not (stringp x)))
+                    (and (not (vl-hidexpr-p x))
+                         (not (vl-scopeexpr-p x))))
+           :hints(("Goal" :in-theory (enable vl-hidexpr-p
+                                             vl-scopeexpr-p)))))
+
+  (local (defthm not-hid/scopeexpr-when-location
+           (and (implies (and (symbolp (tag x))
+                              (consp x))
+                         (not (vl-hidexpr-p x)))
+                (implies (and (symbolp (tag x))
+                              (consp x)
+                              (not (equal (tag x) :colon)))
+                         (not (vl-scopeexpr-p x))))
+           :hints(("Goal" :in-theory (enable tag
+                                             vl-scopeexpr-p
+                                             vl-hidexpr-p
+                                             vl-hidindex-p)
+                   :expand ((vl-hidexpr-p x)
+                            (vl-scopeexpr-p x))))))
+
+  (local (defthm not-scopeexpr-when-not-colon-or-hidexpr
+           (implies (and (not (vl-hidexpr-p x))
+                         (not (Equal (tag x) :colon)))
                     (not (vl-scopeexpr-p x)))
-           :rule-classes :forward-chaining
-           :hints(("Goal" :expand ((vl-scopeexpr-p x)
-                                   (vl-hidexpr-p x))))))
+           :hints(("Goal" :in-theory (enable tag)
+                   :expand ((vl-scopeexpr-p x))))))
 
   (local (in-theory (enable tag-reasoning)))
 
@@ -276,7 +307,8 @@ formerly the \"location directive\" and printed a location.</p>")
       (and (implies (vl-location-p x) (equal type 'vl-location-p))
            (implies (vl-expr-p x) (equal type 'vl-expr-p))
            (implies (vl-hidexpr-p x) (equal type 'vl-hidexpr-p))
-           (implies (vl-scopeexpr-p x) (equal type 'vl-scopeexpr-p))
+           (implies (vl-scopeexpr-p x) (or (equal type 'vl-scopeexpr-p)
+                                           (equal type 'vl-hidexpr-p)))
            (implies (vl-exprdist-p x) (equal type 'vl-exprdist-p))
            (implies (vl-range-p x) (equal type 'vl-range-p))
            (implies (vl-propexpr-p x) (equal type 'vl-propexpr-p))

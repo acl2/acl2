@@ -827,14 +827,14 @@ we've seen before with a mask that overlaps with that one.</p>"
        ;;; because the expressions should be relatively small and independent,
        ;;; to first approximation.
        ;; (- (sneaky-save 'orig-assigns x))
-       (xvals (if rewrite (cwtime (svexlist-rewrite-top xvals) :mintime 0) xvals))
+       (xvals (if rewrite (cwtime (svexlist-rewrite-top xvals :verbosep t) :mintime 0) xvals))
        (x (pairlis$ (svex-alist-keys x) xvals))
        (- (cw "Count after initial rewrite: ~x0~%" (svexlist-opcount xvals)))
        (updates (cwtime (svex-compose-assigns x) :mintime 1))
        (updates-vals (svex-alist-vals updates))
        (- (cw "Updates count: ~x0~%" (svexlist-opcount updates-vals)))
        (updates-vals
-        (if rewrite (cwtime (svexlist-rewrite-top updates-vals) :mintime 0) updates-vals))
+        (if rewrite (cwtime (svexlist-rewrite-top updates-vals :verbosep t) :mintime 0) updates-vals))
        (- (cw "Updates count after rewrite: ~x0~%" (svexlist-opcount updates-vals)))
        (masks (svexlist-mask-alist updates-vals))
        ;; (updates-vals (cwtime (svexlist-rewrite updates-vals masks) :mintime 1))

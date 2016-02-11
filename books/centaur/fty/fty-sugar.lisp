@@ -275,7 +275,8 @@
 
 (define tagsum-tree-ctor (fieldnames len cons)
   (b* (((when (zp len))
-        (raise "bad programmer"))
+        ;; (raise "bad programmer")
+        nil)
        ((when (eql len 1))
         (car fieldnames))
        (half (floor len 2)))
@@ -295,7 +296,8 @@
 
 (define tagsum-tree-shape (len expr consp car cdr)
   (b* (((when (zp len))
-        (raise "bad programmer"))
+        ;; (raise "bad programmer")
+        `((eq ,expr nil)))
        ((when (eql len 1))
         nil)
        (half (floor len 2)))

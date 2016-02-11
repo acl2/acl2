@@ -460,7 +460,7 @@ Our version of VCS says this isn't yet implemented.</li>
   :returns (nets vl-vardecllist-p "One-bit wire declarations for these names.")
   (if (consp names)
       (cons (make-vl-vardecl :name (car names)
-                             :type *vl-plain-old-wire-type*
+                             :type *vl-plain-old-logic-type*
                              :nettype :vl-wire
                              :loc loc
                              :atts (list (cons "VL_IMPLICIT" nil)))

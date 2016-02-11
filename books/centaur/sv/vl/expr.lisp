@@ -2677,11 +2677,11 @@ the way.</li>
 
 (define vl-size-to-unsigned-logic ((x posp))
   :returns (type vl-datatype-p)
-  (make-vl-coretype :name :vl-logic
-                    :pdims (list (vl-range->packeddimension
-                                  (make-vl-range
-                                   :msb (vl-make-index (1- (pos-fix x)))
-                                   :lsb (vl-make-index 0)))))
+  (hons-copy (make-vl-coretype :name :vl-logic
+                               :pdims (list (vl-range->packeddimension
+                                             (make-vl-range
+                                              :msb (vl-make-index (1- (pos-fix x)))
+                                              :lsb (vl-make-index 0))))))
   ///
   (defret vl-size-to-unsigned-logic-type-ok
     (vl-datatype-resolved-p type)))

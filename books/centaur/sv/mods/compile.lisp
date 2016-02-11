@@ -147,7 +147,6 @@ svex-assigns-compose)).</li>
 
 
 (define delay-svarlist->delays ((x svarlist-p))
-  :guard (svarlist-addr-p x)
   :returns (delays svar-map-p)
   (b* (((when (atom x)) nil)
        (rest (delay-svarlist->delays (cdr x)))
@@ -161,7 +160,6 @@ svex-assigns-compose)).</li>
                     (svarlist-addr-p (svar-map-vars delays))))))
 
 (define svarlist-collect-delays ((x svarlist-p))
-  :guard (svarlist-addr-p x)
   :returns (delayvars svarlist-p)
   (if (atom x)
       nil
@@ -825,7 +823,8 @@ svex-assigns-compose)).</li>
                                 (aliases))
   :guard (and ;; (svarlist-boundedp (svar-map-vars delays) (aliass-length aliases))
               (svarlist-boundedp (assigns-vars assigns) (aliass-length aliases))
-              (svarlist-addr-p (aliases-vars aliases)))
+              ;; (svarlist-addr-p (aliases-vars aliases))
+              )
   :verify-guards nil
   :returns (mv (res-assigns svex-alist-p)
                (res-delays svar-map-p))
@@ -872,6 +871,7 @@ svex-assigns-compose)).</li>
     :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-vars svexlist-vars))))
 
   (verify-guards svex-normalize-assigns
+    :guard-debug t
     :hints (("goal" :do-not-induct t
              :in-theory (disable member-equal))))
 
@@ -949,31 +949,31 @@ should address this again later.</p>"
     (mv updates next-states)))
 
 
-(defsection addr-p-when-normordered
-  (local (defthm lhatom-addr-p-when-normordered
-           (implies (lhatom-normorderedp bound offset atom)
-                    (svarlist-addr-p (lhatom-vars atom)))
-           :hints(("Goal" :in-theory (enable lhatom-vars lhatom-normorderedp)))))
+;; (defsection addr-p-when-normordered
+;;   (local (defthm lhatom-addr-p-when-normordered
+;;            (implies (lhatom-normorderedp bound offset atom)
+;;                     (svarlist-addr-p (lhatom-vars atom)))
+;;            :hints(("Goal" :in-theory (enable lhatom-vars lhatom-normorderedp)))))
 
-  (local (Defthm lhs-addr-p-when-normordered
-           (implies (lhs-vars-normorderedp bound offset lhs)
-                    (svarlist-addr-p (lhs-vars lhs)))
-           :hints(("Goal" :in-theory (enable lhs-vars-normorderedp lhs-vars)))))
+;;   (local (Defthm lhs-addr-p-when-normordered
+;;            (implies (lhs-vars-normorderedp bound offset lhs)
+;;                     (svarlist-addr-p (lhs-vars lhs)))
+;;            :hints(("Goal" :in-theory (enable lhs-vars-normorderedp lhs-vars)))))
 
-  (local (defthm aliases-addr-p-when-normordered-aux
-           (implies (aliases-normorderedp aliases)
-                    (svarlist-addr-p (aliases-vars-aux n aliases)))
-           :hints(("Goal" :in-theory (enable aliases-vars-aux)
-                   :induct (aliases-vars-aux n aliases))
-                  (and stable-under-simplificationp
-                       '(:use ((:instance lhs-addr-p-when-normordered
-                                (bound (1- n)) (offset 0) (lhs (nth (1- n) aliases))))
-                         :in-theory (disable lhs-addr-p-when-normordered))))))
+;;   (local (defthm aliases-addr-p-when-normordered-aux
+;;            (implies (aliases-normorderedp aliases)
+;;                     (svarlist-addr-p (aliases-vars-aux n aliases)))
+;;            :hints(("Goal" :in-theory (enable aliases-vars-aux)
+;;                    :induct (aliases-vars-aux n aliases))
+;;                   (and stable-under-simplificationp
+;;                        '(:use ((:instance lhs-addr-p-when-normordered
+;;                                 (bound (1- n)) (offset 0) (lhs (nth (1- n) aliases))))
+;;                          :in-theory (disable lhs-addr-p-when-normordered))))))
 
-  (defthm aliases-addr-p-when-normordered
-    (implies (aliases-normorderedp aliases)
-             (svarlist-addr-p (aliases-vars aliases)))
-    :hints(("Goal" :in-theory (enable aliases-vars)))))
+;;   (defthm aliases-addr-p-when-normordered
+;;     (implies (aliases-normorderedp aliases)
+;;              (svarlist-addr-p (aliases-vars aliases)))
+;;     :hints(("Goal" :in-theory (enable aliases-vars)))))
 
 (define svex-design-compile ((x design-p)
                              &key
