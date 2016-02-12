@@ -19,13 +19,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc kestrel-alist-utilities
-  :parents (kestrel-general-utilities programming)
+  :parents (kestrel-general-utilities)
   :short "Some alist utilities.")
 
 (std::defalist symbol-symbol-alistp (x)
   :key (symbolp x)
   :val (symbolp x)
-  :parents (kestrel-alist-utilities)
+  :parents (kestrel-alist-utilities programming)
   :short "Alists from symbols to symbols, @('nil')-terminated."
   :keyp-of-nil t
   :valp-of-nil t

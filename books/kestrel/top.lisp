@@ -1,6 +1,6 @@
 ; Kestrel Books
 ;
-; Copyright (C) 2015 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
 
@@ -33,6 +33,14 @@
   The Kestrel Books are freely available under a liberal license.
   Specific copyright, author, and license information
   is provided in the individual files and subdirectories.
+  </p>
+  <p>
+  As they become more stable,
+  parts of the Kestrel Books may be moved
+  to other locations in the
+  <see topic='@(url community-books)'>Community Books</see>.
+  For example, <see topic='@(url std)'>STD</see>
+  includes some Kestrel contributions.
   </p>")
 
 (xdoc::add-resource-directory "kestrel" "images")
