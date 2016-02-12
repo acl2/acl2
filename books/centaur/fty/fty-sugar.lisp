@@ -274,6 +274,11 @@
     :no-ctor-macros
     :verbosep))
 
+(defun fty-layout-supports-remake-p (fields honsp layout)
+  (and (member layout '(:tree :fulltree))
+       (not honsp)
+       (consp fields)))
+
 (define tagsum-prod-to-flexprod (x xvar sum-kwds lastp have-basep our-fixtypes)
   (b* (((cons kind args) x)
        ((mv kwd-alist fields)
@@ -299,8 +304,7 @@
        (base-name  (getarg :base-name nil kwd-alist))
        (fieldnames (strip-cars flexsum-fields))
        (ctor-body1 (tagsum-fields-to-ctor-body fieldnames layout hons))
-       (remake-body (and (member layout '(:tree :fulltree))
-                         (not hons)
+       (remake-body (and (fty-layout-supports-remake-p fieldnames hons layout)
                          `(cons-with-hint ,kind
                                           ,(tagsum-fields-to-remake-body fieldnames `(cdr ,xvar) layout)
                                           ,xvar)))
@@ -527,8 +531,7 @@
        (fieldnames (strip-cars flexsum-fields))
        (ctor-body1 (tagsum-fields-to-ctor-body fieldnames layout hons))
        (ctor-body (if tag `(,(if hons 'hons 'cons) ,tag ,ctor-body1) ctor-body1))
-       (remake-body1 (and (member layout '(:tree :fulltree))
-                          (not hons)
+       (remake-body1 (and (fty-layout-supports-remake-p fieldnames hons layout)
                           (tagsum-fields-to-remake-body fieldnames xbody layout)))
        (remake-body (and remake-body1
                          (if tag `(cons-with-hint ,tag ,remake-body1 ,xvar) remake-body1)))

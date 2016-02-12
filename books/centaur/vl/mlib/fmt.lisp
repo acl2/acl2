@@ -138,95 +138,114 @@ formerly the \"location directive\" and printed a location.</p>")
      (mv ',foo-p ps)))
 
 
+
 (define vl-fmt-tilde-a-aux (x &key (ps 'ps))
   :returns (mv (type "Used only for the so-called coverage proof.")
                (ps))
   :prepwork ((local (defthm hidexpr-p-when-stringp
                       (implies (stringp x)
                                (Vl-hidexpr-p x))
-                      :hints(("Goal" :in-theory (enable vl-hidexpr-p))))))
-  (let ((unsafe-okp *vl-enable-unsafe-but-fast-printing*))
-    (if (atom x)
+                      :hints(("Goal" :in-theory (enable vl-hidexpr-p)))))
+             (local (defthm tag-when-vl-location-p
+                      ;; Locations are special and don't have a sensible tag.
+                      (implies (vl-location-p x)
+                               (or (integerp (tag x))
+                                   (consp (tag x))))
+                      :rule-classes ((:type-prescription)
+                                     (:forward-chaining))
+                      :hints(("Goal" :in-theory (enable vl-location-p
+                                                        vl-linecol-p
+                                                        tag)))))
+             (local (defthm hidexpr-p-when-vl-location-p
+                      (implies (vl-location-p x)
+                               (not (vl-hidexpr-p x)))
+                      :hints(("Goal" :in-theory (enable vl-hidexpr-p vl-location-p))))))
+  (b* ((unsafe-okp *vl-enable-unsafe-but-fast-printing*)
+       ((when (atom x))
         (if (stringp x)
             (let ((ps (vl-pp-hidexpr x)))
-                  (mv 'vl-hidexpr-p ps))
+              (mv 'vl-hidexpr-p ps))
           (let ((ps (vl-fmt-tilde-x x)))
-            (mv nil ps)))
-      (case (tag x)
-        (:vl-location
-         (vl-fmt-tilde-a-case vl-location-p vl-print-loc))
-        ((:vl-special :vl-literal :vl-index :vl-unary :vl-binary
-          :vl-qmark :vl-mintypmax :vl-concat :vl-multiconcat :vl-stream
-          :vl-call :vl-cast :vl-inside :vl-tagged :vl-pattern)
-         (vl-fmt-tilde-a-case vl-expr-p vl-pp-origexpr))
-        ((:vl-hidindex)
-         (vl-fmt-tilde-a-case vl-hidindex-p vl-pp-hidindex))
-        ((:vl-exprdist)
-         (vl-fmt-tilde-a-case vl-exprdist-p vl-pp-exprdist))
-        ((:vl-repetition)
-         (vl-fmt-tilde-a-case vl-repetition-p vl-pp-repetition))
-        ((:colon)
-         (vl-fmt-tilde-a-case vl-scopeexpr-p vl-pp-scopeexpr))
-        ((:vl-range)
-         (vl-fmt-tilde-a-case vl-range-p vl-pp-range))
-        ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-callstmt
-          :vl-disablestmt :vl-eventtriggerstmt :vl-casestmt :vl-ifstmt
-          :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt
-          :vl-forstmt :vl-blockstmt :vl-timingstmt :vl-breakstmt
-          :vl-continuestmt :vl-returnstmt :vl-assertstmt :vl-cassertstmt)
-         (vl-fmt-tilde-a-case vl-stmt-p vl-pp-stmt))
-        ((:vl-propcore :vl-propinst :vl-propthen :vl-proprepeat
-          :vl-propassign :vl-propthroughout :vl-propclock :vl-propunary
-          :vl-propbinary :vl-propalways :vl-propeventually :vl-propaccept
-          :vl-propnexttime :vl-propif :vl-propcase)
-         (vl-fmt-tilde-a-case vl-propexpr-p vl-pp-propexpr))
-        ((:vl-propspec)
-         (vl-fmt-tilde-a-case vl-propspec-p vl-pp-propspec))
-        ((:vl-context)
-         (vl-fmt-tilde-a-case vl-context1-p vl-pp-context-summary))
-        ((:vl-regularport :vl-interfaceport :vl-portdecl :vl-assign
-          :vl-alias :vl-vardecl :vl-paramdecl :vl-fundecl :vl-taskdecl
-          :vl-modinst :vl-gateinst :vl-always :vl-initial :vl-final
-          :vl-typedef :vl-fwdtypedef :vl-assertion :vl-cassertion
-          :vl-property :vl-sequence :vl-import :vl-dpiimport :vl-dpiexport
-          :vl-genarray :vl-genbegin :vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-modport)
-         (vl-fmt-tilde-a-case vl-ctxelement-p vl-pp-ctxelement-summary))
-        ((:vl-genvar)
-         (vl-fmt-tilde-a-case vl-genvar-p vl-pp-genvar))
-        (:vl-ansi-portdecl
-         (vl-fmt-tilde-a-case vl-ansi-portdecl-p vl-pp-ansi-portdecl))
-        ((:vl-plainarg)
-         (vl-fmt-tilde-a-case vl-plainarg-p vl-pp-plainarg))
-        ((:vl-namedarg)
-         (vl-fmt-tilde-a-case vl-namedarg-p vl-pp-namedarg))
-        ((:vl-unsized-dimension)
-         (vl-fmt-tilde-a-case vl-packeddimension-p vl-pp-packeddimension))
-        ((:vl-enumitem)
-         (vl-fmt-tilde-a-case vl-enumitem-p vl-pp-enumitem))
-        ((:vl-coretype :vl-struct :vl-union :vl-enum :vl-usertype)
-         (vl-fmt-tilde-a-case vl-datatype-p vl-pp-datatype))
-        ((:vl-structmember)
-         (vl-fmt-tilde-a-case vl-structmember-p vl-pp-structmember))
-        ((:vl-fwdtypedef)
-         (vl-fmt-tilde-a-case vl-fwdtypedef-p vl-pp-fwdtypedef))
-        ((:vl-evatom)
-         (vl-fmt-tilde-a-case vl-evatom-p vl-pp-evatom))
-        ((:vl-eventcontrol)
-         (vl-fmt-tilde-a-case vl-eventcontrol-p vl-pp-eventcontrol))
-        ((:vl-delaycontrol)
-         (vl-fmt-tilde-a-case vl-delaycontrol-p vl-pp-delaycontrol))
-        ((:vl-repeat-eventcontrol)
-         (vl-fmt-tilde-a-case vl-repeateventcontrol-p vl-pp-repeateventcontrol))
-        ((:vl-module)
-         (vl-fmt-tilde-a-case vl-module-p
-           (vl-pp-modulename-link-aux (vl-module->name x)
-                                      (vl-module->origname x))))
-        (otherwise
-         (if (vl-hidexpr-p x)
-             (let ((ps (vl-pp-hidexpr x)))
-                  (mv 'vl-hidexpr-p ps))
-           (let ((ps (vl-fmt-tilde-x x)))
-             (mv nil ps)))))))
+            (mv nil ps))))
+       ((when (vl-location-p x))
+        ;; Locations use a special encoding to increase structure sharing, so
+        ;; we don't get to just check them via tag.  Note that vl-location-p
+        ;; is pretty darn cheap, so it's not terrible to check it first here.
+        (let ((ps (vl-print-loc x)))
+          (mv 'vl-location-p ps))))
+    (case (tag x)
+      ((:vl-special :vl-literal :vl-index :vl-unary :vl-binary
+        :vl-qmark :vl-mintypmax :vl-concat :vl-multiconcat :vl-stream
+        :vl-call :vl-cast :vl-inside :vl-tagged :vl-pattern)
+       (vl-fmt-tilde-a-case vl-expr-p vl-pp-origexpr))
+      ((:vl-hidindex)
+       (vl-fmt-tilde-a-case vl-hidindex-p vl-pp-hidindex))
+      ((:vl-exprdist)
+       (vl-fmt-tilde-a-case vl-exprdist-p vl-pp-exprdist))
+      ((:vl-repetition)
+       (vl-fmt-tilde-a-case vl-repetition-p vl-pp-repetition))
+      ((:colon)
+       (vl-fmt-tilde-a-case vl-scopeexpr-p vl-pp-scopeexpr))
+      ((:vl-range)
+       (vl-fmt-tilde-a-case vl-range-p vl-pp-range))
+      ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-callstmt
+        :vl-disablestmt :vl-eventtriggerstmt :vl-casestmt :vl-ifstmt
+        :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt
+        :vl-forstmt :vl-blockstmt :vl-timingstmt :vl-breakstmt
+        :vl-continuestmt :vl-returnstmt :vl-assertstmt :vl-cassertstmt)
+       (vl-fmt-tilde-a-case vl-stmt-p vl-pp-stmt))
+      ((:vl-propcore :vl-propinst :vl-propthen :vl-proprepeat
+        :vl-propassign :vl-propthroughout :vl-propclock :vl-propunary
+        :vl-propbinary :vl-propalways :vl-propeventually :vl-propaccept
+        :vl-propnexttime :vl-propif :vl-propcase)
+       (vl-fmt-tilde-a-case vl-propexpr-p vl-pp-propexpr))
+      ((:vl-propspec)
+       (vl-fmt-tilde-a-case vl-propspec-p vl-pp-propspec))
+      ((:vl-context)
+       (vl-fmt-tilde-a-case vl-context1-p vl-pp-context-summary))
+      ((:vl-regularport :vl-interfaceport :vl-portdecl :vl-assign
+        :vl-alias :vl-vardecl :vl-paramdecl :vl-fundecl :vl-taskdecl
+        :vl-modinst :vl-gateinst :vl-always :vl-initial :vl-final
+        :vl-typedef :vl-fwdtypedef :vl-assertion :vl-cassertion
+        :vl-property :vl-sequence :vl-import :vl-dpiimport :vl-dpiexport
+        :vl-genarray :vl-genbegin :vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-modport)
+       (vl-fmt-tilde-a-case vl-ctxelement-p vl-pp-ctxelement-summary))
+      ((:vl-genvar)
+       (vl-fmt-tilde-a-case vl-genvar-p vl-pp-genvar))
+      (:vl-ansi-portdecl
+       (vl-fmt-tilde-a-case vl-ansi-portdecl-p vl-pp-ansi-portdecl))
+      ((:vl-plainarg)
+       (vl-fmt-tilde-a-case vl-plainarg-p vl-pp-plainarg))
+      ((:vl-namedarg)
+       (vl-fmt-tilde-a-case vl-namedarg-p vl-pp-namedarg))
+      ((:vl-unsized-dimension)
+       (vl-fmt-tilde-a-case vl-packeddimension-p vl-pp-packeddimension))
+      ((:vl-enumitem)
+       (vl-fmt-tilde-a-case vl-enumitem-p vl-pp-enumitem))
+      ((:vl-coretype :vl-struct :vl-union :vl-enum :vl-usertype)
+       (vl-fmt-tilde-a-case vl-datatype-p vl-pp-datatype))
+      ((:vl-structmember)
+       (vl-fmt-tilde-a-case vl-structmember-p vl-pp-structmember))
+      ((:vl-fwdtypedef)
+       (vl-fmt-tilde-a-case vl-fwdtypedef-p vl-pp-fwdtypedef))
+      ((:vl-evatom)
+       (vl-fmt-tilde-a-case vl-evatom-p vl-pp-evatom))
+      ((:vl-eventcontrol)
+       (vl-fmt-tilde-a-case vl-eventcontrol-p vl-pp-eventcontrol))
+      ((:vl-delaycontrol)
+       (vl-fmt-tilde-a-case vl-delaycontrol-p vl-pp-delaycontrol))
+      ((:vl-repeat-eventcontrol)
+       (vl-fmt-tilde-a-case vl-repeateventcontrol-p vl-pp-repeateventcontrol))
+      ((:vl-module)
+       (vl-fmt-tilde-a-case vl-module-p
+         (vl-pp-modulename-link-aux (vl-module->name x)
+                                    (vl-module->origname x))))
+      (otherwise
+       (if (vl-hidexpr-p x)
+           (let ((ps (vl-pp-hidexpr x)))
+             (mv 'vl-hidexpr-p ps))
+         (let ((ps (vl-fmt-tilde-x x)))
+           (mv nil ps))))))
   ///
   (local (defthm tag-when-vl-expr-p
            (implies (vl-expr-p x)
