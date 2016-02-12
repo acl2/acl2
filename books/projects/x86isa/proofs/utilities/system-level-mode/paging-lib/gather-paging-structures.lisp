@@ -66,6 +66,32 @@
                                     no-duplicates-p)
                                    ()))))
 
+;; (local (include-book "ihs/logops-lemmas" :dir :system))
+
+;; (defthmd loghead-logtail-bigger-and-logbitp
+;;   (implies (and (equal (loghead n (logtail m e-1))
+;;                        (loghead n (logtail m e-2)))
+;;                 (natp e-1)
+;;                 (natp e-2)
+;;                 (natp p)
+;;                 (natp m)
+;;                 (natp n)
+;;                 (<= m p)
+;;                 (< p (+ m n)))
+;;            (equal (logbitp p e-1) (logbitp p e-2)))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (bitops::ihsext-inductions
+;;                              bitops::ihsext-recursive-redefs)
+;;                             ()))
+;;           ("Subgoal *1/6"
+;;            :use ((:instance loghead-smaller-and-logbitp
+;;                             (n n)
+;;                             (m p))))
+;;           ("Subgoal *1/2"
+;;            :use ((:instance loghead-smaller-and-logbitp
+;;                             (n n)
+;;                             (m p))))))
+
 ;; ======================================================================
 
 (define qword-paddr-listp (xs)
@@ -129,32 +155,41 @@
    (addr :type (unsigned-byte #.*physical-address-size*)))
 
   :parents (reasoning-about-page-tables)
-  :guard (physical-address-p (+ (ash count 3) addr))
+  :guard (physical-address-p (+ -1 (ash count 3) addr))
 
   :prepwork
   ((local (include-book "arithmetic-5/top" :dir :system))
 
-   (local (in-theory (e/d* (ash unsigned-byte-p) ()))))
+   (local (in-theory (e/d* (ash unsigned-byte-p) ())))
+
+   (defthm-usb n52p-left-shifting-a-40-bit-natp-by-12
+     :hyp (unsigned-byte-p 40 x)
+     :bound 52
+     :concl (+ 4095 (ash x 12)))
+
+   (defthm-usb n52p-left-shifting-a-40-bit-natp-by-12-+-7
+     :hyp (unsigned-byte-p 40 x)
+     :bound 52
+     :concl (+ 7 (ash x 12))))
 
   :enabled t
-
 
   (if (or (zp count)
           (not (physical-address-p addr))
           (not (physical-address-p (+ 7 addr))))
       nil
-    (cons addr (create-qword-address-list (1- count) (+ 8 addr))))
+    (if (equal count 1)
+        (list addr)
+      (cons addr (create-qword-address-list (1- count) (+ 8 addr)))))
 
   ///
 
   (defthm nat-listp-create-qword-address-list
-    (implies (natp addr)
-             (nat-listp (create-qword-address-list count addr)))
+    (nat-listp (create-qword-address-list count addr))
     :rule-classes :type-prescription)
 
   (defthm qword-paddr-listp-create-qword-address-list
-    (implies (physical-address-p addr)
-             (qword-paddr-listp (create-qword-address-list count addr))))
+    (qword-paddr-listp (create-qword-address-list count addr)))
 
   (defthm create-qword-address-list-1
     (implies (and (physical-address-p (+ 7 addr))
@@ -588,18 +623,19 @@
 (define gather-pml4-table-qword-addresses (x86)
   :parents (gather-paging-structures)
   :returns (list-of-addresses qword-paddr-listp)
+
   (b* ((cr3 (ctri *cr3* x86))
-       (pml4-table-base-addr (ash (cr3-slice :cr3-pdb cr3) 12))
-       ((when (not (physical-address-p
-                    (+ (ash 512 3) pml4-table-base-addr))))
-        ;; If the PML4 Table does not fit into the physical memory,
-        ;; something's wrong --- likely, the paging structures haven't
-        ;; been set up correctly.
-        nil))
+       ;; PML4 Table, all 4096 bytes of it, will always fit into the
+       ;; physical memory; pml4-table-base-addr is 52-bit wide, with
+       ;; low 12 bits = 0.
+       (pml4-table-base-addr (ash (cr3-slice :cr3-pdb cr3) 12)))
     (create-qword-address-list 512 pml4-table-base-addr))
   ///
-  (std::more-returns
-   (list-of-addresses true-listp))
+  (std::more-returns (list-of-addresses true-listp))
+
+  (defthm consp-gather-pml4-table-qword-addresses
+    (consp (gather-pml4-table-qword-addresses x86))
+    :rule-classes (:type-prescription :rewrite))
 
   (defthm gather-pml4-table-qword-addresses-xw-fld!=ctr
     (implies (not (equal fld :ctr))
@@ -655,12 +691,9 @@
         (b* ((this-structure-base-addr
               (ash (ia32e-page-tables-slice
                     :reference-addr superior-structure-entry) 12))
-             ((when (not (physical-address-p
-                          (+ (ash 512 3) this-structure-base-addr))))
-              ;; If the inferior table doesn't fit into the
-              ;; physical memory, something's wrong. Likely, the
-              ;; paging structures haven't been set up correctly.
-              nil))
+             ;; The inferior table will always fit into the physical
+             ;; memory.
+             )
           (create-qword-address-list 512 this-structure-base-addr))
       nil))
   ///
@@ -678,9 +711,8 @@
                               ()))))
 
   (defthm gather-qword-addresses-corresponding-to-1-entry-xw-fld=mem-disjoint
-    (implies (and (disjoint-p (addr-range 1 index)
-                              (addr-range 8 addr))
-                  (natp addr))
+    (implies (disjoint-p (addr-range 1 index)
+                         (addr-range 8 addr))
              (equal (gather-qword-addresses-corresponding-to-1-entry
                      addr (xw :mem index val x86))
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
@@ -856,9 +888,6 @@
       nil
     (b* ((superior-structure-paddr-1 (car superior-structure-paddrs))
          (superior-structure-paddrs-rest (cdr superior-structure-paddrs))
-         ((when (not (physical-address-p (+ 7 superior-structure-paddr-1))))
-          ;; Each of the superior-structure-paddrs should point to a qword.
-          nil)
          (inferior-addresses
           (gather-qword-addresses-corresponding-to-1-entry
            superior-structure-paddr-1 x86))
@@ -1103,8 +1132,6 @@
   (b* ( ;; One Page Map Level-4 (PML4) Table:
        (pml4-table-qword-addresses
         (gather-pml4-table-qword-addresses x86))
-       ((when (not pml4-table-qword-addresses))
-        nil)
        ;; Up to 512 Page Directory Pointer Tables (PDPT):
        (list-of-pdpt-table-qword-addresses
         (gather-qword-addresses-corresponding-to-entries
@@ -1328,6 +1355,8 @@
                     (gather-all-paging-structure-qword-addresses x86)))))
 
 ;; ======================================================================
+
+(i-am-here)
 
 ;; Compare the paging structures in two x86 states:
 

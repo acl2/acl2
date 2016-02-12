@@ -155,7 +155,7 @@ memory.</li>
          ((when flag)
           (mv flag 0 x86))
          (byte (the (unsigned-byte 8) (memi p-addr x86))))
-        (mv nil byte x86)))
+      (mv nil byte x86)))
 
   ///
 
@@ -235,13 +235,25 @@ memory.</li>
                   (not (equal fld :mem))
                   (not (equal fld :ctr))
                   (not (equal fld :msr))
+                  (not (equal fld :rflags))
                   (not (equal fld :programmer-level-mode)))
              (and (equal (mv-nth 0 (rm08 addr r-w-x (xw fld index value x86)))
                          (mv-nth 0 (rm08 addr r-w-x x86)))
                   (equal (mv-nth 1 (rm08 addr r-w-x (xw fld index value x86)))
                          (mv-nth 1 (rm08 addr r-w-x x86)))
                   (equal (mv-nth 2 (rm08 addr r-w-x (xw fld index value x86)))
-                         (xw fld index value (mv-nth 2 (rm08 addr r-w-x x86))))))))
+                         (xw fld index value (mv-nth 2 (rm08 addr r-w-x x86)))))))
+
+  (defthm rm08-xw-system-mode-rflags-not-ac
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and (equal (mv-nth 0 (rm08 addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 0 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 1 (rm08 addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 1 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 2 (rm08 addr r-w-x (xw :rflags 0 value x86)))
+                         (xw :rflags 0 value (mv-nth 2 (rm08 addr r-w-x x86))))))))
 
 (define rim08
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -252,8 +264,8 @@ memory.</li>
   :guard (canonical-address-p lin-addr)
 
   (mv-let (flag val x86)
-          (rm08 lin-addr r-w-x x86)
-          (mv flag (n08-to-i08 val) x86))
+    (rm08 lin-addr r-w-x x86)
+    (mv flag (n08-to-i08 val) x86))
   ///
 
   (defthm-sb i08p-mv-nth-1-rim08
@@ -294,7 +306,7 @@ memory.</li>
          (byte (mbe :logic (n08 val)
                     :exec val))
          (x86 (!memi p-addr byte x86)))
-        (mv nil x86)))
+      (mv nil x86)))
 
   ///
 
@@ -342,12 +354,23 @@ memory.</li>
                   (not (equal fld :seg-visible))
                   (not (equal fld :mem))
                   (not (equal fld :ctr))
+                  (not (equal fld :rflags))
                   (not (equal fld :msr))
                   (not (equal fld :programmer-level-mode)))
              (and (equal (mv-nth 0 (wm08 addr val (xw fld index value x86)))
                          (mv-nth 0 (wm08 addr val x86)))
                   (equal (mv-nth 1 (wm08 addr val (xw fld index value x86)))
                          (xw fld index value (mv-nth 1 (wm08 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm wm08-xw-system-mode-rflags-not-ac
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and (equal (mv-nth 0 (wm08 addr val (xw :rflags 0 value x86)))
+                         (mv-nth 0 (wm08 addr val x86)))
+                  (equal (mv-nth 1 (wm08 addr val (xw :rflags 0 value x86)))
+                         (xw :rflags 0 value (mv-nth 1 (wm08 addr val x86))))))
     :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
 (define wim08
@@ -1090,6 +1113,7 @@ memory.</li>
    (defthm rb-1-xw-values-in-system-level-mode
      (implies (and (not (programmer-level-mode x86))
                    (not (equal fld :mem))
+                   (not (equal fld :rflags))
                    (not (equal fld :ctr))
                    (not (equal fld :seg-visible))
                    (not (equal fld :msr))
@@ -1105,6 +1129,7 @@ memory.</li>
   (defthm rb-xw-values-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
                   (not (equal fld :mem))
+                  (not (equal fld :rflags))
                   (not (equal fld :ctr))
                   (not (equal fld :seg-visible))
                   (not (equal fld :msr))
@@ -1117,9 +1142,32 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
   (local
+   (defthm rb-1-xw-rflags-not-ac-values-in-system-level-mode
+     (implies (and (not (programmer-level-mode x86))
+                   (equal (rflags-slice :ac value)
+                          (rflags-slice :ac (rflags x86))))
+              (and (equal (mv-nth 0 (rb-1 addr r-w-x (xw :rflags 0 value x86) acc))
+                          (mv-nth 0 (rb-1 addr r-w-x x86 acc)))
+                   (equal (mv-nth 1 (rb-1 addr r-w-x (xw :rflags 0 value x86) acc))
+                          (mv-nth 1 (rb-1 addr r-w-x x86 acc)))))
+     :hints (("Goal" :induct (rb-1 addr r-w-x x86 acc)
+              :in-theory (e/d* (rb rb-1) ())))))
+
+  (defthm rb-xw-rflags-not-ac-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and (equal (mv-nth 0 (rb addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 0 (rb addr r-w-x x86)))
+                  (equal (mv-nth 1 (rb addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 1 (rb addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+  (local
    (defthm rb-1-xw-state-in-system-level-mode
      (implies (and (not (programmer-level-mode x86))
                    (not (equal fld :mem))
+                   (not (equal fld :rflags))
                    (not (equal fld :ctr))
                    (not (equal fld :seg-visible))
                    (not (equal fld :msr))
@@ -1133,6 +1181,7 @@ memory.</li>
   (defthm rb-xw-state-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
                   (not (equal fld :mem))
+                  (not (equal fld :rflags))
                   (not (equal fld :ctr))
                   (not (equal fld :seg-visible))
                   (not (equal fld :msr))
@@ -1140,6 +1189,24 @@ memory.</li>
                   (not (equal fld :programmer-level-mode)))
              (equal (mv-nth 2 (rb addr r-w-x (xw fld index value x86)))
                     (xw fld index value (mv-nth 2 (rb addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+  (local
+   (defthm rb-1-xw-rflags-not-ac-state-in-system-level-mode
+     (implies (and (not (programmer-level-mode x86))
+                   (equal (rflags-slice :ac value)
+                          (rflags-slice :ac (rflags x86))))
+              (equal (mv-nth 2 (rb-1 addr r-w-x (xw :rflags 0 value x86) acc))
+                     (xw :rflags 0 value (mv-nth 2 (rb-1 addr r-w-x x86 acc)))))
+     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+              :induct (rb-1 addr r-w-x x86 acc)))))
+
+  (defthm rb-xw-rflags-not-ac-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (equal (mv-nth 2 (rb addr r-w-x (xw :rflags 0 value x86)))
+                    (xw :rflags 0 value (mv-nth 2 (rb addr r-w-x x86)))))
     :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
   ;; Relating wb and wm08:
@@ -1185,6 +1252,7 @@ memory.</li>
     ;; Keep the state updated by wb inside all other nests of writes.
     (implies (and (not (programmer-level-mode x86))
                   (not (equal fld :mem))
+                  (not (equal fld :rflags))
                   (not (equal fld :ctr))
                   (not (equal fld :seg-visible))
                   (not (equal fld :msr))
@@ -1194,6 +1262,17 @@ memory.</li>
                          (mv-nth 0 (wb addr-lst x86)))
                   (equal (mv-nth 1 (wb addr-lst (xw fld index value x86)))
                          (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
+
+  (defthm wb-xw-rflags-not-ac-in-system-level-mode
+    ;; Keep the state updated by wb inside all other nests of writes.
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and (equal (mv-nth 0 (wb addr-lst (xw :rflags 0 value x86)))
+                         (mv-nth 0 (wb addr-lst x86)))
+                  (equal (mv-nth 1 (wb addr-lst (xw :rflags 0 value x86)))
+                         (xw :rflags 0 value (mv-nth 1 (wb addr-lst x86))))))
     :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
   (define create-addr-bytes-alist
@@ -1300,7 +1379,6 @@ memory.</li>
                     (equal (len addr-list) (len byte-list)))
                (equal (len (create-addr-bytes-alist addr-list byte-list))
                       (len addr-list)))))
-
 
   (define create-canonical-address-list (count addr)
     :guard (and (natp count)
@@ -3196,7 +3274,7 @@ memory.</li>
         (rb addresses :x x86))
        ((when flg)
         nil))
-      (equal bytes bytes-read))
+    (equal bytes bytes-read))
 
   ///
 
