@@ -1,6 +1,6 @@
 ; World Queries
 ;
-; Copyright (C) 2015 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -38,7 +38,7 @@
   :short
   "True iff the symbol @('sym') names a theorem,
   i.e. it has a @('theorem') property."
-  (not (eq t (getprop sym 'theorem t 'current-acl2-world w))))
+  (not (eq t (getpropc sym 'theorem t w))))
 
 (define function-namep (x (w plist-worldp))
   :returns (yes/no booleanp)
@@ -55,13 +55,29 @@
   :short
   "True iff the function @('fun') is defined,
   i.e. it has an @('unnormalized-body') property."
-  (not (eq t (getprop fun 'unnormalized-body t 'current-acl2-world w))))
+  (not (eq t (getpropc fun 'unnormalized-body t w))))
 
 (defsection guard-verifiedp
-  :short "True iff @('f') is @(tsee guard)-verified."
+  :short "True iff @('fun') is @(tsee guard)-verified."
   :long "@(def guard-verifiedp)"
-  (defmacro guard-verifiedp (f w)
-    `(eq (symbol-class ,f ,w) :common-lisp-compliant)))
+  (defmacro guard-verifiedp (fun w)
+    `(eq (symbol-class ,fun ,w) :common-lisp-compliant)))
+
+(define measure ((fun (and (function-namep fun w)
+                           (logicalp fun w)
+                           (recursivep fun w)))
+                 (w plist-worldp))
+  :returns (measure pseudo-termp)
+  :short "Measure expression of a logic-mode recursive function."
+  (access justification (getpropc fun 'justification nil w) :measure))
+
+(define well-founded-relation ((fun (and (function-namep fun w)
+                                         (logicalp fun w)
+                                         (recursivep fun w)))
+                               (w plist-worldp))
+  :returns (well-founded-relation symbolp)
+  :short "Well-founded relation of a logic-mode recursive function."
+  (access justification (getpropc fun 'justification nil w) :rel))
 
 (define fundef-enabledp ((fun (function-namep fun (w state))) state)
   :returns (yes/no booleanp)
