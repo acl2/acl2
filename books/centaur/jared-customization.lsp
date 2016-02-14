@@ -259,6 +259,8 @@
   `(getenv$ "HOSTNAME" state))
 
 
+(include-book "tools/prettygoals/top" :dir :system)
+
 ;; #!ACL2
 ;; (defmacro s (&rest args)
 ;;   ;; Shorter name for sidekick lookup function
