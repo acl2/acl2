@@ -7,8 +7,6 @@
     (make-class-decl
      "IDemo"
      '("java/lang/Object")
-     '()
-     '()
      '(nil
        (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
        (methodref "IDemo" "ifact:(I)I" 1)                      ; 2
@@ -30,14 +28,17 @@
        (utf8)                                                  ; 18
        (utf8)                                                  ; 19
       )
+     #x00000020                                                ;  ACC_SUPER
+     '(
+      )
      (list
-      '("<init>:()V" nil
+      '("<init>:()V" #x00000000                                 ; 
         ; line_number #1
         (aload_0)                                               ; 0
         (invokespecial 1)                                       ; 1 java.lang.Object.<init>:()V
         (return)                                                ; 4
        )
-      '("ifact:(I)I" nil
+      '("ifact:(I)I" #x00000009                                 ;  ACC_PUBLIC ACC_STATIC
         ; line_number #4
         (iconst_1)                                              ; 0
         (istore_1)                                              ; 1
@@ -60,7 +61,7 @@
         (iload_1)                                               ; 18
         (ireturn)                                               ; 19
        )
-      '("main:([Ljava/lang/String;)V" nil
+      '("main:([Ljava/lang/String;)V" #x00000009                ;  ACC_PUBLIC ACC_STATIC
         ; line_number #13
         (bipush 8)                                              ; 0
         (invokestatic 2)                                        ; 2 IDemo.ifact:(I)I

@@ -76,10 +76,10 @@
                   (make-class-decl
                    "Test"
                    '("java/lang/Object")
-                   ()
-                   ()
                    '(nil
                      (methodref "Demo" "fact:(I)I" 1)) ; 1
+                   0
+                   ()
                    ()
                    '(ref -1))
                   *demo-class-table*)

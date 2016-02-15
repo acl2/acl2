@@ -7,9 +7,6 @@
     (make-class-decl
      "Demo"
      '("java/lang/Object")
-     '()
-     '(
-      "ans:I")
      '(nil
        (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
        (methodref "Demo" "fact:(I)I" 1)                        ; 2
@@ -53,14 +50,18 @@
        (utf8)                                                  ; 40
        (utf8)                                                  ; 41
       )
+     #x00000020                                                ;  ACC_SUPER
+     '(
+       ("ans:I" #x00000008)                                    ;  ACC_STATIC
+      )
      (list
-      '("<init>:()V" nil
+      '("<init>:()V" #x00000000                                 ; 
         ; line_number #1
         (aload_0)                                               ; 0
         (invokespecial 1)                                       ; 1 java.lang.Object.<init>:()V
         (return)                                                ; 4
        )
-      '("fact:(I)I" nil
+      '("fact:(I)I" #x00000009                                  ;  ACC_PUBLIC ACC_STATIC
         ; line_number #6
         (iload_0)                                               ; 0
         (ifle 12)                                               ; 1
@@ -76,7 +77,7 @@
         (iconst_1)                                              ; 13
         (ireturn)                                               ; 14
        )
-      '("main:()V" nil
+      '("main:()V" #x00000009                                   ;  ACC_PUBLIC ACC_STATIC
         ; line_number #15
         (iconst_4)                                              ; 0
         (istore_0)                                              ; 1
@@ -89,7 +90,7 @@
         ; line_number #17
         (return)                                                ; 11
        )
-      '("main:([Ljava/lang/String;)V" nil
+      '("main:([Ljava/lang/String;)V" #x00000009                ;  ACC_PUBLIC ACC_STATIC
         ; line_number #24
         (aload_0)                                               ; 0
         (iconst_0)                                              ; 1

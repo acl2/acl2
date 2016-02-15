@@ -170,58 +170,58 @@ class ListProc extends Cons {
     (6 . (("java/lang/Class" ("<sfields>") ("<name>" . "ListProc"))
           ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))))
    '(("java/lang/Object"
-     nil
-     nil
-     nil
+     ()
      (nil)
-     (("<init>:()V" nil
+     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     ()
+     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (return)))
-     (ref  0))
+     (ref 0))
     ("[C"
      ("java/lang/Object")
-     nil
-     nil
-     nil
-     nil
+     ()
+     0
+     ()
+     ()
      (ref 1))
     ("java/lang/Thread"
      ("java/lang/Object")
-     nil
-     nil
      (nil (methodref "java/lang/Object" "<init>:()V" 0))
-     (("run:()V" nil
+     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     ()
+     (("run:()V" #x00000001                                    ;  ACC_PUBLIC
        (return))
-      ("start:()V" nil)
-      ("stop:()V" nil)
-      ("<init>:()V" nil
+      ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
+      ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
+      ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (aload\_0)
        (invokespecial 1)
        (return)))
      (REF 2))
     ("java/lang/String"
      ("java/lang/Object")
-     ("value:[C")
-     nil
      (nil (methodref "java/lang/Object" "<init>:()V" 0))
-     (("<init>:()V" nil
+     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     (
+      ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+     )
+     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (aload\_0)
        (invokespecial 1)
        (return)))
      (ref 3))
     ("java/lang/Class"
      ("java/lang/Object")
-     nil
-     nil
      (nil (methodref "java/lang/Object" "<init>:()V" 0))
-     (("<init>:()V" nil
+     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     ()
+     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (aload\_0)
        (invokespecial 1)
        (return)))
      (ref 4))
     ("Cons"
      ("java/lang/Object")
-     ("car:I" "cdr:Ljava/lang/Object;")
-     nil
      (nil
        (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
        (class (ref 5) "Cons")                                  ; 2
@@ -247,11 +247,16 @@ class ListProc extends Cons {
        (name-and-type "cdr:Ljava/lang/Object;")                ; 22
        (utf8)                                                  ; 23
       )
-     (("<init>:()V" nil
+     #x00000020                                                ;  ACC_SUPER
+     (
+      ("car:I" #x00000000)                                    ;
+      ("cdr:Ljava/lang/Object;" #x00000000)                   ;
+     )
+     (("<init>:()V" #x00000000                                 ;
        (aload\_0)
        (invokespecial 1)
        (return))
-      ("cons:(ILjava/lang/Object;)LCons;" nil
+      ("cons:(ILjava/lang/Object;)LCons;" #x00000009           ;  ACC_PUBLIC ACC_STATIC
        (new 2) ; class Cons
        (dup)
        (invokespecial 3)
@@ -267,8 +272,6 @@ class ListProc extends Cons {
      (ref 5))
     ("ListProc"
      ("Cons" "java/lang/Object")
-     nil
-     nil
      (nil
        (methodref "Cons" "<init>:()V" 0)                       ; 1
        (methodref "Cons" "cons:(ILjava/lang/Object;)LCons;" 2) ; 2
@@ -303,11 +306,13 @@ class ListProc extends Cons {
        (utf8)                                                  ; 31
        (utf8)                                                  ; 32
       )
-     (("<init>:()V" nil
+     #x00000020                                                ;  ACC_SUPER
+     ()
+     (("<init>:()V" #x00000000                                 ;
        (aload\_0)
        (invokespecial 1)
        (return))
-      ("insert:(ILjava/lang/Object;)LCons;" nil
+      ("insert:(ILjava/lang/Object;)LCons;" #x00000009         ;  ACC_PUBLIC ACC_STATIC
         (aload\_1)
         (ifnonnull 9)
         (iload\_0)
@@ -333,7 +338,7 @@ class ListProc extends Cons {
         (invokestatic 6)
         (invokestatic 2)
         (areturn))
-      ("isort:(Ljava/lang/Object;)Ljava/lang/Object;" nil
+      ("isort:(Ljava/lang/Object;)Ljava/lang/Object;" #x00000009       ;  ACC_PUBLIC ACC_STATIC
        (aload\_0)
        (ifnonnull 5)
        (aload\_0)

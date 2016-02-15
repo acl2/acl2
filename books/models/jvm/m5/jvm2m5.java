@@ -31,6 +31,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class jvm2m5 implements
         Instruction.KindVisitor<ConstantPool.CPInfo, Void>,
@@ -122,6 +123,7 @@ public class jvm2m5 implements
     int indent;
     int mark;
     private static final int CP_TAB = 56;
+    private static final int ACCESS_TAB = 56;
     private static final int CODE_TAB = 56;
 
     void indent(int delta) {
@@ -138,7 +140,15 @@ public class jvm2m5 implements
         return null;
     }
 
-    void comment(int pos, int num) {
+    void comment(int pos, Set<String> strings) {
+        StringBuilder sb = new StringBuilder();
+        for (String s : strings) {
+            sb.append(' ').append(s);
+        }
+        comment(pos, sb.toString());
+    }
+
+    void comment(int pos, String str) {
         while (pos <= sb.length() - mark) {
             pos += 8;
         }
@@ -146,7 +156,7 @@ public class jvm2m5 implements
         for (int j = 0; j < bc; j++) {
             sb.append(' ');
         }
-        sb.append("; ").append(num);
+        sb.append("; ").append(str);
     }
 
     //at the first stage, I won't dealing with the correct output format
@@ -176,40 +186,31 @@ public class jvm2m5 implements
             nl(" ()");
         }
 
-        nl(" '(");
-        indent(2);
-        for (Field f : cf.fields) {
-            if (!f.access_flags.is(AccessFlags.ACC_STATIC)) {
-                String fname = f.getName(cp);
-                String fdesc = f.descriptor.getValue(cp);
-                nl("\"" + fname + ":" + fdesc + "\"");
-            }
-        }
-        sb.append(")");
-        indent(-2);
-
-        nl(" '(");
-        indent(2);
-        for (Field f : cf.fields) {
-            if (f.access_flags.is(AccessFlags.ACC_STATIC)) {
-                String fname = f.getName(cp);
-                String fdesc = f.descriptor.getValue(cp);
-                nl("\"" + fname + ":" + fdesc + "\"");
-            }
-        }
-        sb.append(")");
-        indent(-2);
-
         nl(" '(nil");
         indent(3);
         int ind = 1;
         for (ConstantPool.CPInfo info : cp.entries()) {
             info.accept(this, true);
-            comment(CP_TAB, ind);
+            comment(CP_TAB, Integer.toString(ind));
             ind += info.size();
             for (int i = 1; i < info.size(); i++) {
                 nl("nil");
             }
+        }
+        indent(-3);
+        nl("  )");
+
+        nl(" #x" + padLeft(Integer.toHexString(cf.access_flags.flags), 8));
+        comment(ACCESS_TAB + 3, cf.access_flags.getClassFlags());
+
+        nl(" '(");
+        indent(3);
+        for (Field f : cf.fields) {
+            String fname = f.getName(cp);
+            String fdesc = f.descriptor.getValue(cp);
+            nl("(\"" + fname + ":" + fdesc + "\" #x"
+                    + padLeft(Integer.toHexString(f.access_flags.flags), 8) + ")");
+            comment(ACCESS_TAB, f.access_flags.getFieldFlags());
         }
         indent(-3);
         nl("  )");
@@ -237,8 +238,9 @@ public class jvm2m5 implements
                 .append(":")
                 .append(desc)
                 .append("\"")
-                .append(' ')
-                .append((method.access_flags.is(AccessFlags.ACC_SYNCHRONIZED) ? "t" : "nil"));
+                .append(" #x")
+                .append(padLeft(Integer.toHexString(method.access_flags.flags), 8));
+        comment(ACCESS_TAB + 2, method.access_flags.getMethodFlags());
         indent(2);
 
         if (cai != null) {
@@ -254,15 +256,11 @@ public class jvm2m5 implements
                 nl('(' + instr.getMnemonic());
                 ConstantPool.CPInfo info = instr.accept(this, null);
                 sb.append(")");
-                comment(CODE_TAB, instr.getPC());
+                comment(CODE_TAB, Integer.toString(instr.getPC()));
                 if (info != null) {
                     sb.append(' ');
                     info.accept(this, false);
                 }
-            }
-        } else {
-            if (method.access_flags.is(AccessFlags.ACC_NATIVE)) {
-                nl("; native method");
             }
         }
         indent(-2);

@@ -247,24 +247,24 @@
 ; The class table of a state is an alist.  Each entry in a class table is
 ; a "class declaration" and is of the form
 
-;   (class-name super-class-names fields defs)
+;   (class-name super-class-names cp flags fields methods href)
 
 ; Note that the definition below of the Thread class includes a 'run' method,
 ;  which most applications will override.  The definition is consistent
 ;  with the default run method provided by the Thread class [O'Reily]
 
-(defun make-class-decl (name superclasses fields sfields cp methods href)
-  (list name superclasses fields sfields cp methods href))
+(defun make-class-decl (name superclasses cp flags fields methods href)
+  (list name superclasses cp flags fields methods href))
 
 (defun class-decl-name (dcl)
   (nth 0 dcl))
 (defun class-decl-superclasses (dcl)
   (nth 1 dcl))
-(defun class-decl-fields (dcl)
-  (nth 2 dcl))
-(defun class-decl-sfields (dcl)
-  (nth 3 dcl))
 (defun class-decl-cp (dcl)
+  (nth 2 dcl))
+(defun class-decl-flags (dcl)
+  (nth 3 dcl))
+(defun class-decl-fields (dcl)
   (nth 4 dcl))
 (defun class-decl-methods (dcl)
   (nth 5 dcl))
@@ -275,10 +275,10 @@
   (make-class-decl
     "java/lang/Object"
     '()
-    '()
-    '()
     '(nil)
-    '(("<init>:()V" nil
+     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+    '()
+    '(("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (return)))
     '(ref -1)))
 
@@ -286,15 +286,15 @@
   (make-class-decl
     "java/lang/Thread"
     '("java/lang/Object")
-    '()
-    '()
     '(nil
       (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
-    '(("run:()V" nil
+     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+    '()
+    '(("run:()V" #x00000001                                    ;  ACC_PUBLIC
        (return))
-      ("start:()V" nil) ; native method
-      ("stop:()V" nil) ; native method
-      ("<init>:()V" nil
+      ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
+      ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
+      ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (aload_0)
        (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
@@ -305,11 +305,13 @@
   (make-class-decl
     "java/lang/String"
     '("java/lang/Object")
-    '("value:[C")
-    '()
     '(nil
       (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
-    '(("<init>:()V" nil
+     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+    '(
+      ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+     )
+    '(("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (aload_0)
        (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
@@ -320,11 +322,14 @@
   (make-class-decl
     "java/lang/String"
     '("java/lang/Object")
-    '("value:[B" "coder:B")
-    '()
     '(nil
       (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
-    '(("<init>:()V" nil
+     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+    '(
+      ("value:[B" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+      ("coder:B" #x00000012)                                  ;  ACC_PRIVATE ACC_FINAL
+     )
+    '(("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (aload_0)
        (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
@@ -334,11 +339,11 @@
   (make-class-decl
     "java/lang/Class"
     '("java/lang/Object")
-    '()
-    '()
     '(nil
       (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
-    '(("<init>:()V" nil
+     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+    '()
+    '(("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (aload_0)
        (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
@@ -448,9 +453,9 @@
          (new-class-entry
           (make-class-decl (class-decl-name class-entry)
                            (class-decl-superclasses class-entry)
-                           (class-decl-fields class-entry)
-                           (class-decl-sfields class-entry)
                            new-cp
+                           (class-decl-flags class-entry)
+                           (class-decl-fields class-entry)
                            (class-decl-methods class-entry)
                            (class-decl-heapref class-entry))))
         (bind class (cdr new-class-entry) ct)))
@@ -597,19 +602,40 @@
  (disable make-frame pc locals stack program sync-flg cur-class))
 
 ; -----------------------------------------------------------------------------
+; Field Declarations
+
+; The fields component of a class declaration is a list of field definitions.
+; A field definition is a list of the form
+
+; (name-and-type flags . program)
+
+; We never build these declarations but just enter list constants for them,
+
+; flags is bitmask representing access_flags of the method
+
+; The accessors for fields are:
+
+(defun field-name-and-type (f)
+  (nth 0 f))
+(defun field-flags (f)
+  (nth 1 f))
+(defun field-isStatic? (f)
+  (logbitp 3 (field-flags f)))
+
+; -----------------------------------------------------------------------------
 ; Method Declarations
 
 ; The methods component of a class declaration is a list of method definitions.
 ; A method definition is a list of the form
 
-; (name-and-type formals sync-status . program)
+; (name-and-type flags . program)
 
 ; We never build these declarations but just enter list constants for them,
 
 ; Note the similarity to our old notion of a program definition.  We
 ; will use strings to name methods now.
 
-; sync-status is 't' if the method is synchronized, 'nil' if not
+; flags is bitmask representing access_flags of the method
 
 ; Suppose that the first four entires of constant pool of an example class are:
 ;  nil                                ; 0
@@ -658,12 +684,14 @@
 
 (defun method-name-and-type (m)
   (nth 0 m))
-(defun method-sync (m)
+(defun method-flags (m)
   (nth 1 m))
 (defun method-program (m)
   (cddr m))
+(defun method-sync (m)
+  (logbitp 5 (method-flags m)))
 (defun method-isNative? (m)
-  (not (method-program m)))
+  (logbitp 8 (method-flags m)))
 
 ; The Standard Modify
 
@@ -767,11 +795,15 @@
 ;  (or (search ":J" field-name-and-type)
 ;      (search ":D" field-name-and-type)))
 
-(defun build-class-field-bindings (fields)
+(defun build-class-field-bindings (fields is-static)
   (if (endp fields)
       nil
-    (cons (cons (car fields) (field-initial-value (car fields)))
-          (build-class-field-bindings (cdr fields)))))
+    (let* ((field (car fields))
+           (name-and-type (field-name-and-type field)))
+      (if (equal (field-isStatic? field) is-static)
+          (cons (cons name-and-type (field-initial-value name-and-type))
+                (build-class-field-bindings (cdr fields) is-static))
+        (build-class-field-bindings (cdr fields) is-static)))))
 
 (defun build-class-object-field-bindings ()
   '(("<monitor>" . 0) ("<mcount>" . 0)))
@@ -782,7 +814,8 @@
           (build-class-object-field-bindings)
           (build-class-field-bindings
            (class-decl-fields
-            (bound? class-name class-table))))))
+            (bound? class-name class-table))
+           nil))))
 
 (defun build-an-instance (class-names class-table)
   (if (endp class-names)
@@ -824,7 +857,8 @@
            (obj-class new-object)
            (cons "<sfields>"
                  (build-class-field-bindings
-                   (class-decl-sfields (bound? class class-table))))
+                  (class-decl-fields (bound? class class-table))
+                  t))
            (cons "<name>"
                  class)
            (cdar new-object))
@@ -3805,7 +3839,7 @@
 ;
 (defun assemble_method (method)
   (append (list (method-name-and-type method)
-                (method-sync method))
+                (method-flags method))
           (resolve_basic_block (method-program method))))
 
 (defun assemble_methods (methods)
@@ -3817,9 +3851,9 @@
 (defun assemble_class (class)
   (make-class-decl (class-decl-name class)
                    (class-decl-superclasses class)
-                   (class-decl-fields class)
-                   (class-decl-sfields class)
                    (class-decl-cp class)
+                   (class-decl-flags class)
+                   (class-decl-fields class)
                    (assemble_methods (class-decl-methods class))
                    (class-decl-heapref class)))
 
@@ -3943,7 +3977,7 @@
       types
       (collect-types-in-fields
         (cdr fields)
-        (collect-type (name-and-type->type (car fields)) types))))
+        (collect-type (name-and-type->type (caar fields)) types))))
 
 (defun collect-array-types-in-instr (instr cp types)
   (case (car instr)
@@ -3993,12 +4027,10 @@
           (class-decl-cp class)
           (collect-types-in-fields
            (class-decl-fields class)
-           (collect-types-in-fields
-            (class-decl-sfields class)
-            (collect-types-in-methods
-             (class-decl-methods class)
-             (class-decl-cp class)
-             types))))))))))
+           (collect-types-in-methods
+            (class-decl-methods class)
+            (class-decl-cp class)
+            types)))))))))
 
 ; arrays is a map form elem-type to its maximal array dimension
 
@@ -4037,9 +4069,9 @@
                           thisclass
                           (cons superclass
                             (class-decl-superclasses super-cl))
-                          (class-decl-fields this-cl)
-                          (class-decl-sfields this-cl)
                           (class-decl-cp this-cl)
+                          (class-decl-flags this-cl)
+                          (class-decl-fields this-cl)
                           (class-decl-methods this-cl)
                           '(ref -1))
                         ans))
@@ -4088,7 +4120,7 @@
                         (cons superclass
                               (class-decl-superclasses (bound? superclass class-table))))
                    ()
-                   ()
+                   0
                    ()
                    ()
                    '(ref -1))
@@ -4149,8 +4181,7 @@
        nil
       (let* ((class-name (car classes))
              (class-decl (bound? class-name class-table)))
-        (if (or (member-equal name-and-type (class-decl-fields class-decl))
-                (member-equal name-and-type (class-decl-sfields class-decl)))
+        (if (bound? name-and-type (class-decl-fields class-decl))
             class-name
           (resolve-field-in-superclasses name-and-type
                                          (cdr classes)
@@ -4217,9 +4248,9 @@
              (make-class-decl
                (class-decl-name class)
                (class-decl-superclasses class)
-               (class-decl-fields class)
-               (class-decl-sfields class)
                (link-constantpool (class-decl-cp class) class-table)
+               (class-decl-flags class)
+               (class-decl-fields class)
                (class-decl-methods class)
                '(ref -1))
              (link-class-list-loop (cdr class-decls) class-table)))))
@@ -4324,9 +4355,9 @@
              (new-class-decl
                (make-class-decl (class-decl-name class-decl)
                                 (class-decl-superclasses class-decl)
-                                (class-decl-fields class-decl)
-                                (class-decl-sfields class-decl)
                                 (class-decl-cp class-decl)
+                                (class-decl-flags class-decl)
+                                (class-decl-fields class-decl)
                                 (class-decl-methods class-decl)
                                 (list 'REF new-address))))
         (gen-class-objs

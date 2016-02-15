@@ -7,8 +7,6 @@
     (make-class-decl
      "ListProc"
      '("Cons")
-     '()
-     '()
      '(nil
        (methodref "Cons" "<init>:()V" 0)                       ; 1
        (methodref "ListProc" "cons:(ILjava/lang/Object;)LCons;" 2)     ; 2
@@ -43,14 +41,17 @@
        (utf8)                                                  ; 31
        (utf8)                                                  ; 32
       )
+     #x00000020                                                ;  ACC_SUPER
+     '(
+      )
      (list
-      '("<init>:()V" nil
+      '("<init>:()V" #x00000000                                 ; 
         ; line_number #12
         (aload_0)                                               ; 0
         (invokespecial 1)                                       ; 1 Cons.<init>:()V
         (return)                                                ; 4
        )
-      '("insert:(ILjava/lang/Object;)LCons;" nil
+      '("insert:(ILjava/lang/Object;)LCons;" #x00000009         ;  ACC_PUBLIC ACC_STATIC
         ; line_number #14
         (aload_1)                                               ; 0
         (ifnonnull 9)                                           ; 1
@@ -82,7 +83,7 @@
         (invokestatic 2)                                        ; 45 ListProc.cons:(ILjava/lang/Object;)LCons;
         (areturn)                                               ; 48
        )
-      '("isort:(Ljava/lang/Object;)Ljava/lang/Object;" nil
+      '("isort:(Ljava/lang/Object;)Ljava/lang/Object;" #x00000009       ;  ACC_PUBLIC ACC_STATIC
         ; line_number #22
         (aload_0)                                               ; 0
         (ifnonnull 5)                                           ; 1

@@ -7,9 +7,6 @@
     (make-class-decl
      "Container"
      '("java/lang/Object")
-     '(
-      "counter:I")
-     '()
      '(nil
        (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
        (class (ref -1) "Container")                            ; 2
@@ -26,8 +23,12 @@
        (utf8)                                                  ; 13
        (utf8)                                                  ; 14
       )
+     #x00000020                                                ;  ACC_SUPER
+     '(
+       ("counter:I" #x00000001)                                ;  ACC_PUBLIC
+      )
      (list
-      '("<init>:()V" nil
+      '("<init>:()V" #x00000000                                 ; 
         ; line_number #1
         (aload_0)                                               ; 0
         (invokespecial 1)                                       ; 1 java.lang.Object.<init>:()V

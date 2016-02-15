@@ -7,10 +7,6 @@
     (make-class-decl
      "Cons"
      '("java/lang/Object")
-     '(
-      "car:I"
-      "cdr:Ljava/lang/Object;")
-     '()
      '(nil
        (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
        (class (ref -1) "Cons")                                 ; 2
@@ -36,14 +32,19 @@
        (name-and-type "cdr:Ljava/lang/Object;")                ; 22
        (utf8)                                                  ; 23
       )
+     #x00000020                                                ;  ACC_SUPER
+     '(
+       ("car:I" #x00000000)                                    ; 
+       ("cdr:Ljava/lang/Object;" #x00000000)                   ; 
+      )
      (list
-      '("<init>:()V" nil
+      '("<init>:()V" #x00000000                                 ; 
         ; line_number #1
         (aload_0)                                               ; 0
         (invokespecial 1)                                       ; 1 java.lang.Object.<init>:()V
         (return)                                                ; 4
        )
-      '("cons:(ILjava/lang/Object;)LCons;" nil
+      '("cons:(ILjava/lang/Object;)LCons;" #x00000009           ;  ACC_PUBLIC ACC_STATIC
         ; line_number #5
         (new 2)                                                 ; 0 class Cons
         (dup)                                                   ; 3

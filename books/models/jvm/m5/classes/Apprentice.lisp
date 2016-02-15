@@ -7,8 +7,6 @@
     (make-class-decl
      "Apprentice"
      '("java/lang/Object")
-     '()
-     '()
      '(nil
        (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
        (class (ref -1) "Container")                            ; 2
@@ -39,14 +37,17 @@
        (utf8)                                                  ; 27
        (utf8)                                                  ; 28
       )
+     #x00000020                                                ;  ACC_SUPER
+     '(
+      )
      (list
-      '("<init>:()V" nil
+      '("<init>:()V" #x00000000                                 ; 
         ; line_number #26
         (aload_0)                                               ; 0
         (invokespecial 1)                                       ; 1 java.lang.Object.<init>:()V
         (return)                                                ; 4
        )
-      '("main:()V" nil
+      '("main:()V" #x00000009                                   ;  ACC_PUBLIC ACC_STATIC
         ; line_number #29
         (new 2)                                                 ; 0 class Container
         (dup)                                                   ; 3

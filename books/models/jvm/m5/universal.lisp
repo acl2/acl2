@@ -78,60 +78,74 @@ Sun Jun 30 23:21:06 2002
         ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
      (5 ("java/lang/Class" ("<sfields>") ("<name>" . "Universal"))
         ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0))))
-    (("java/lang/Object" NIL () () (NIL)
-      (("<init>:()V" NIL (RETURN)))
-      (REF 0))
-     ("[C" ("java/lang/Object")
-      NIL
-      NIL NIL NIL (REF 1))
+    (("java/lang/Object"
+      ()
+      (NIL)
+      #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+      ()
+      (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+        (RETURN)))
+       (REF 0))
+      ("[C"
+       ("java/lang/Object")
+       ()
+       0
+       ()
+       ()
+       (REF 1))
      ("java/lang/Thread"
       ("java/lang/Object")
-      NIL NIL (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-      (("run:()V" NIL
+      (NIL
+       (METHODREF "java/lang/Object" "<init>:()V" 0))
+      #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+      ()
+      (("run:()V" #x00000001                                    ;  ACC_PUBLIC
         (RETURN))
-       ("start:()V" NIL
-        ())
-       ("stop:()V" NIL
-        ())
-       ("<init>:()V" NIL
+       ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
+       ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
+       ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
         (ALOAD_0)
         (INVOKESPECIAL 1)
         (RETURN)))
       (REF 2))
      ("java/lang/String"
       ("java/lang/Object")
-      ("value:[C")
-      NIL (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-      (("<init>:()V" NIL
+      (NIL
+       (METHODREF "java/lang/Object" "<init>:()V" 0))
+      #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+      (
+       ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+      )
+      (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
         (ALOAD_0)
         (INVOKESPECIAL 1)
         (RETURN)))
       (REF 3))
-     ("java/lang/Class" ("java/lang/Object")
-      NIL NIL (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-      (("<init>:()V" NIL
+     ("java/lang/Class"
+      ("java/lang/Object")
+      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+      #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+      ()
+      (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
         (ALOAD_0)
         (INVOKESPECIAL 1)
         (RETURN)))
       (REF 4))
      ("Universal" ("java/lang/Object")
-      NIL NIL
       (NIL
        (METHODREF "java/lang/Object" "<init>:()V" 0) ; 1
        (METHODREF "Universal" "universal:()I" 0)) ; 2
-      (("<init>:()V" NIL
+      #x00000020                                                ;  ACC_SUPER
+      ()
+      (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
         (ALOAD_0)
         (INVOKESPECIAL 1)
         (RETURN))
-       ("universal:()I" NIL
+       ("universal:()I" #x00000001                                 ;  ACC_PUBLIC
         (ICONST_0)
         (ICONST_1)
         (IADD)
-        (GOTO -2))
-       ("main:([Ljava/lang/String;)V" NIL
-        (INVOKESTATIC 2)
-        (POP)
-        (RETURN)))
+        (GOTO -2)))
       (REF 5)))
     DEFAULT-M5-OPTIONS))
 
@@ -219,7 +233,7 @@ Sun Jun 30 23:21:06 2002
   (and (poised-to-invokestatic th s "Universal" "universal:()I" 0)
        (equal (bound? "universal:()I"
                       (class-decl-methods (bound? "Universal" (class-table s))))
-              '("universal:()I" NIL
+              '("universal:()I" #x00000001                                 ;  ACC_PUBLIC
                 (ICONST_0)
                 (ICONST_1)
                 (IADD)

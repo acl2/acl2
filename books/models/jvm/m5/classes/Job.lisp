@@ -7,9 +7,6 @@
     (make-class-decl
      "Job"
      '("java/lang/Thread")
-     '(
-      "objref:LContainer;")
-     '()
      '(nil
        (methodref "java/lang/Thread" "<init>:()V" 0)           ; 1
        (fieldref "Job" "objref:LContainer;" 1)                 ; 2
@@ -47,14 +44,18 @@
        (utf8)                                                  ; 34
        (utf8)                                                  ; 35
       )
+     #x00000020                                                ;  ACC_SUPER
+     '(
+       ("objref:LContainer;" #x00000000)                       ; 
+      )
      (list
-      '("<init>:()V" nil
+      '("<init>:()V" #x00000000                                 ; 
         ; line_number #5
         (aload_0)                                               ; 0
         (invokespecial 1)                                       ; 1 java.lang.Thread.<init>:()V
         (return)                                                ; 4
        )
-      '("incr:()LJob;" nil
+      '("incr:()LJob;" #x00000001                               ;  ACC_PUBLIC
         ; line_number #9
         (aload_0)                                               ; 0
         (getfield 2)                                            ; 1 Job.objref:LContainer;
@@ -83,7 +84,7 @@
         (aload_0)                                               ; 33
         (areturn)                                               ; 34
        )
-      '("setref:(LContainer;)V" nil
+      '("setref:(LContainer;)V" #x00000001                      ;  ACC_PUBLIC
         ; line_number #16
         (aload_0)                                               ; 0
         (aload_1)                                               ; 1
@@ -91,7 +92,7 @@
         ; line_number #17
         (return)                                                ; 5
        )
-      '("run:()V" nil
+      '("run:()V" #x00000001                                    ;  ACC_PUBLIC
         ; line_number #21
         (aload_0)                                               ; 0
         (invokevirtual 4)                                       ; 1 Job.incr:()LJob;

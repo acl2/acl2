@@ -1995,7 +1995,7 @@ Sun Jul 15 14:17:26 2001
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
            (equal (lookup-methodref "incr:()LJob;" class ct)
-                  '("Job" . ("incr:()LJob;" NIL
+                  '("Job" . ("incr:()LJob;" #x00000001 ;  ACC_PUBLIC
                     (ALOAD_0)
                     (GETFIELD 2) ; Job.objref:LContainer;
                     (DUP)
@@ -2024,7 +2024,7 @@ Sun Jul 15 14:17:26 2001
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
            (equal (lookup-methodref "run:()V" class ct)
-                  '("Job" . ("run:()V" NIL
+                  '("Job" . ("run:()V" #x00000001 ;  ACC_PUBLIC
                     (ALOAD_0)
                     (INVOKEVIRTUAL 4) ; Job.incr:()LJob;
                     (POP)

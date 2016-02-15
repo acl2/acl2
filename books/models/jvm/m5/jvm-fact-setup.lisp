@@ -183,42 +183,40 @@ The output of jvm2acl2 for M5 is in classes/Demo.
                         ("<name>" . "Demo"))
      ("java/lang/Object" ("<monitor>" . 0)
                          ("<mcount>" . 0))))
- (("java/lang/Object" NIL NIL NIL (NIL)
-                      (("<init>:()V" NIL (RETURN)))
+ (("java/lang/Object" NIL (NIL)
+                      33 NIL (("<init>:()V" 1 (RETURN)))
                       (REF 0))
   ("[Ljava/lang/Object;" ("java/lang/Object")
-                         NIL NIL NIL NIL (REF 1))
+                         NIL 0 NIL NIL (REF 1))
   ("[C" ("java/lang/Object")
-        NIL NIL NIL NIL (REF 2))
+        NIL 0 NIL NIL (REF 2))
   ("java/lang/Thread" ("java/lang/Object")
-                      NIL NIL
                       (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-                      (("run:()V" NIL (RETURN))
-                       ("start:()V" NIL)
-                       ("stop:()V" NIL)
-                       ("<init>:()V" NIL (ALOAD_0)
+                      33 NIL
+                      (("run:()V" 1 (RETURN))
+                       ("start:()V" 289)
+                       ("stop:()V" 273)
+                       ("<init>:()V" 1 (ALOAD_0)
                                      (INVOKESPECIAL 1)
                                      (RETURN)))
                       (REF 3))
   ("java/lang/String" ("java/lang/Object")
-                      ("value:[C")
-                      NIL
                       (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-                      (("<init>:()V" NIL (ALOAD_0)
+                      49 (("value:[C" 18))
+                      (("<init>:()V" 1 (ALOAD_0)
                                      (INVOKESPECIAL 1)
                                      (RETURN)))
                       (REF 4))
   ("[Ljava/lang/String;" ("[Ljava/lang/Object;" "java/lang/Object")
-                         NIL NIL NIL NIL (REF 5))
+                         NIL 0 NIL NIL (REF 5))
   ("java/lang/Class" ("java/lang/Object")
-                     NIL NIL
                      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-                     (("<init>:()V" NIL (ALOAD_0)
+                     49 NIL
+                     (("<init>:()V" 1 (ALOAD_0)
                                     (INVOKESPECIAL 1)
                                     (RETURN)))
                      (REF 6))
   ("Demo" ("java/lang/Object")
-          NIL ("ans:I")
           (NIL (METHODREF "java/lang/Object" "<init>:()V" 0)
                (METHODREF "Demo" "fact:(I)I" 1)
                (FIELDREF "Demo" "ans:I" 1)
@@ -266,10 +264,11 @@ The output of jvm2acl2 for M5 is in classes/Demo.
                (UTF8)
                (UTF8)
                (UTF8))
-          (("<init>:()V" NIL (ALOAD_0)
+          32 (("ans:I" 8))
+          (("<init>:()V" 0 (ALOAD_0)
                          (INVOKESPECIAL 1)
                          (RETURN))
-           ("fact:(I)I" NIL (ILOAD_0)
+           ("fact:(I)I" 9 (ILOAD_0)
                         (IFLE 12)
                         (ILOAD_0)
                         (ILOAD_0)
@@ -280,7 +279,7 @@ The output of jvm2acl2 for M5 is in classes/Demo.
                         (IRETURN)
                         (ICONST_1)
                         (IRETURN))
-           ("main:()V" NIL (ICONST_4)
+           ("main:()V" 9 (ICONST_4)
                        (ISTORE_0)
                        (ILOAD_0)
                        (ICONST_1)
@@ -288,7 +287,7 @@ The output of jvm2acl2 for M5 is in classes/Demo.
                        (INVOKESTATIC 2)
                        (PUTSTATIC 3)
                        (RETURN))
-           ("main:([Ljava/lang/String;)V" NIL (ALOAD_0)
+           ("main:([Ljava/lang/String;)V" 9 (ALOAD_0)
                                           (ICONST_0)
                                           (AALOAD)
                                           (BIPUSH 10)
@@ -354,72 +353,72 @@ The output of jvm2acl2 for M5 is in classes/Demo.
 
 (defconst *Demo-class-table*
   '(("java/lang/Object"
-     NIL
-     NIL
-     NIL
+     ()
      (NIL)
-     (("<init>:()V" NIL
+     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     ()
+     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (RETURN)))
      (REF 0))
     ("[Ljava/lang/Object;"
      ("java/lang/Object")
-     NIL
-     NIL
-     NIL
-     NIL
+     ()
+     0
+     ()
+     ()
      (REF 1))
     ("[C"
      ("java/lang/Object")
-     NIL
-     NIL
-     NIL
-     NIL
+     ()
+     0
+     ()
+     ()
      (REF 2))
     ("java/lang/Thread"
      ("java/lang/Object")
-     NIL
-     NIL
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     (("run:()V" NIL
+     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     ()
+     (("run:()V" #x00000001                                    ;  ACC_PUBLIC
        (RETURN))
-      ("start:()V" NIL)
-      ("stop:()V" NIL)
-      ("<init>:()V" NIL
+      ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
+      ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
+      ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
      (REF 3))
     ("java/lang/String"
      ("java/lang/Object")
-     ("value:[C")
-     NIL
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     (("<init>:()V" NIL
+     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     (
+      ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+     )
+     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
      (REF 4))
     ("[Ljava/lang/String;"
      ("[Ljava/lang/Object;" "java/lang/Object")
-     NIL
-     NIL
-     NIL
-     NIL
+     ()
+     0
+     ()
+     ()
      (REF 5))
     ("java/lang/Class"
      ("java/lang/Object")
-     NIL
-     NIL
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     (("<init>:()V" NIL
+     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     ()
+     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
      (REF 6))
     ("Demo"
      ("java/lang/Object")
-     NIL
-     ("ans:I")
      (nil
        (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
        (methodref "Demo" "fact:(I)I" 1)                        ; 2
@@ -463,11 +462,15 @@ The output of jvm2acl2 for M5 is in classes/Demo.
        (utf8)                                                  ; 40
        (utf8)                                                  ; 41
       )
-     (("<init>:()V" NIL
+     #x00000020                                                ;  ACC_SUPER
+     (
+       ("ans:I" #x00000008)                                    ;  ACC_STATIC
+     )
+     (("<init>:()V" #x00000000                                 ;
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN))
-      ("fact:(I)I" NIL
+      ("fact:(I)I" #x00000009                                  ;  ACC_PUBLIC ACC_STATIC
        (ILOAD\_0)
        (IFLE 12)
        (ILOAD\_0)
@@ -479,7 +482,7 @@ The output of jvm2acl2 for M5 is in classes/Demo.
        (IRETURN)
        (ICONST\_1)
        (IRETURN))
-      ("main:()V" NIL
+      ("main:()V" #x00000009                                   ;  ACC_PUBLIC ACC_STATIC
        (ICONST_4)
        (ISTORE_0)
        (ILOAD_0)
@@ -488,7 +491,7 @@ The output of jvm2acl2 for M5 is in classes/Demo.
        (INVOKESTATIC 2) ; Demo.fact:(I)I
        (PUTSTATIC 3) ; Demo.ans:I
        (RETURN))
-      ("main:([Ljava/lang/String;)V" NIL
+      ("main:([Ljava/lang/String;)V" #x00000009                ;  ACC_PUBLIC ACC_STATIC
        (ALOAD_0)
        (ICONST_0)
        (AALOAD)
@@ -613,7 +616,7 @@ T
 ; Proving Fact Correct
 
 (defconst *fact-def*
-      '("fact:(I)I" nil
+      '("fact:(I)I" #x00000009                                  ;  ACC_PUBLIC ACC_STATIC
         ; line_number #6
         (iload_0)                                               ; 0
         (ifle 12)                                               ; 1

@@ -148,72 +148,72 @@ class IDemo {
 
 (defconst *IDemo-class-table*
   '(("java/lang/Object"
-     NIL
-     NIL
-     NIL
+     ()
      (NIL)
-     (("<init>:()V" NIL
+     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     ()
+     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (RETURN)))
      (REF 0))
     ("[Ljava/lang/Object;"
      ("java/lang/Object")
-     NIL
-     NIL
-     NIL
-     NIL
+     ()
+     0
+     ()
+     ()
      (REF 1))
     ("[C"
      ("java/lang/Object")
-     NIL
-     NIL
-     NIL
-     NIL
+     ()
+     0
+     ()
+     ()
      (REF 2))
     ("java/lang/Thread"
      ("java/lang/Object")
-     NIL
-     NIL
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     (("run:()V" NIL
+     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     ()
+     (("run:()V" #x00000001                                    ;  ACC_PUBLIC
        (RETURN))
-      ("start:()V" NIL)
-      ("stop:()V" NIL)
-      ("<init>:()V" NIL
+      ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
+      ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
+      ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
      (REF 3))
     ("java/lang/String"
      ("java/lang/Object")
-     ("value:[C")
-     NIL
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     (("<init>:()V" NIL
+     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     (
+      ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+     )
+     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
      (REF 4))
     ("[Ljava/lang/String;"
      ("[Ljava/lang/Object;" "java/lang/Object")
-     NIL
-     NIL
-     NIL
-     NIL
+     ()
+     0
+     ()
+     ()
      (REF 5))
     ("java/lang/Class"
      ("java/lang/Object")
-     NIL
-     NIL
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     (("<init>:()V" NIL
+     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     ()
+     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
      (REF 6))
     ("IDemo"
      ("java/lang/Object")
-     NIL
-     NIL
      (nil
        (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
        (methodref "IDemo" "ifact:(I)I" 1)                      ; 2
@@ -235,11 +235,13 @@ class IDemo {
        (utf8)                                                  ; 18
        (utf8)                                                  ; 19
       )
-     (("<init>:()V" NIL
+     #x00000020                                                ;  ACC_SUPER
+     ()
+     (("<init>:()V" #x00000000                                 ;
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN))
-      ("ifact:(I)I" NIL
+      ("ifact:(I)I" #x00000009                                 ;  ACC_PUBLIC ACC_STATIC
        (ICONST\_1)
        (ISTORE\_1)
        (ICONST\_0)
@@ -256,7 +258,7 @@ class IDemo {
        (GOTO -13)
        (ILOAD\_1)
        (IRETURN))
-      ("main:([Ljava/lang/String;)V" NIL
+      ("main:([Ljava/lang/String;)V" #x00000009                ;  ACC_PUBLIC ACC_STATIC
        (BIPUSH 8)
        (INVOKESTATIC 2)
        (POP)
