@@ -2073,7 +2073,9 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 (define vl-always->svex ((x vl-always-p)
                          (ss vl-scopestack-p)
-                         (scopes vl-elabscopes-p))
+                         (scopes vl-elabscopes-p)
+                         &key
+                         (verbosep 'nil))
   :short "Translate a combinational or latch-type always block into a set of SVEX
           expressions."
   :returns (mv (warnings vl-warninglist-p)
@@ -2163,12 +2165,12 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                (acl2::sneaky-save 'blkst st.blkst))
           (and loc-of-interest
                (acl2::sneaky-save 'nonblkst st.nonblkst)))
-       (blkst-rw (time$ (sv::svex-alist-rewrite-fixpoint st.blkst :verbosep t)
+       (blkst-rw (time$ (sv::svex-alist-rewrite-fixpoint st.blkst :verbosep verbosep)
                         :mintime (if loc-of-interest 0 1/2)
                         :msg "; vl-always->svex at ~s0: rewriting blocking assignments: ~st sec, ~sa bytes~%"
                         :args (list locstring)))
                  
-       (nbst-rw  (time$ (sv::svex-alist-rewrite-fixpoint st.nonblkst :verbosep t)
+       (nbst-rw  (time$ (sv::svex-alist-rewrite-fixpoint st.nonblkst :verbosep verbosep)
                         :mintime (if loc-of-interest 0 1/2)
                         :msg "; vl-always->svex at ~s0: rewriting nonblocking assignments: ~st sec, ~sa bytes~%"
                         :args (list locstring)))
@@ -2225,7 +2227,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        (- (and loc-of-interest
                (acl2::sneaky-save 'updates updates)))
        (- (and loc-of-interest (break$)))
-       (updates-rw (time$ (sv::svex-alist-rewrite-fixpoint updates :verbosep t)
+       (updates-rw (time$ (sv::svex-alist-rewrite-fixpoint updates :verbosep verbosep)
                           :mintime (if loc-of-interest 0 1/2)
                           :msg "; vl-always->svex at ~s0: rewriting final updates: ~st sec, ~sa bytes~%"
                           :args (list (vl-location-string x.loc))))
@@ -2241,7 +2243,9 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 (define vl-alwayslist->svex ((x vl-alwayslist-p)
                              (ss vl-scopestack-p)
-                             (scopes vl-elabscopes-p))
+                             (scopes vl-elabscopes-p)
+                             &key
+                             (verbosep 'nil))
   :short "Translate a combinational or latch-type always block into a set of SVEX
           expressions."
   :returns (mv (warnings vl-warninglist-p)
@@ -2250,12 +2254,12 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((warnings nil)
        ((when (atom x)) (mv (ok) nil))
        ((wmv warnings assigns1)
-        (time$ (vl-always->svex (car x) ss scopes)
+        (time$ (vl-always->svex (car x) ss scopes :verbosep verbosep)
                :mintime 1
                :msg "; vl-always->svex at ~s0 total: ~st sec, ~sa bytes~%"
                :args (list (vl-location-string (vl-always->loc (car x))))))
        ((wmv warnings assigns2)
-        (vl-alwayslist->svex (cdr x) ss scopes)))
+        (vl-alwayslist->svex (cdr x) ss scopes :verbosep verbosep)))
     (mv warnings
         (append-without-guard assigns1 assigns2))))
 
