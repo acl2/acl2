@@ -413,7 +413,7 @@
                                   formal-names)))))
           ,@x.join)
        ,(visitor-return-values
-         x.returns `(cons car cdr) x))))
+         x.returns `(cons-with-hint car cdr ,x.xvar) x))))
 
 (define visitor-alist-measure (type x mrec)
   (declare (ignorable mrec))
@@ -479,9 +479,11 @@
                   ,@x.join)))
        ,(visitor-return-values
          x.returns
-         `(cons (cons ,(if key-fnname 'key `(caar ,x.xvar))
-                      ,(if val-fnname 'val `(cdar ,x.xvar)))
-                cdr)
+         `(cons-with-hint (cons-with-hint ,(if key-fnname 'key `(caar ,x.xvar))
+                                          ,(if val-fnname 'val `(cdar ,x.xvar))
+                                          (car ,x.xvar))
+                          cdr
+                          ,x.xvar)
          x))))
 
 (define visitor-def (type x mrec)
