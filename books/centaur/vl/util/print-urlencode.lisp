@@ -42,8 +42,9 @@
   :short "Functions for % encoding strings for use in URLs, as described in <a
 href='http://tools.ietf.org/html/rfc3986'>RFC 3986</a>."
 
-  :long "<p>Per RFC 3986, the only unreserved characters are ALPHA, DIGIT, -,
-., _, and ~.  We implement some functions to percent-encode other characters in
+  :long "<p>Per <a href='https://www.ietf.org/rfc/rfc3986.txt'>RFC 3986</a>,
+the only unreserved characters are ALPHA, DIGIT, @('-'), @('.'), @('_'), and
+@('~').  We implement some functions to percent-encode other characters in
 character lists and strings.</p>")
 
 (local (xdoc::set-default-parents url-encoding))
@@ -137,7 +138,6 @@ character lists and strings.</p>")
 (define vl-url-encode-chars-aux ((chars character-listp) acc)
   :short "URL encode a list of characters onto an accumulator in reverse order."
   :returns (encoded character-listp :hyp (character-listp acc))
-  :verbosep t
   (if (atom chars)
       acc
     (vl-url-encode-chars-aux

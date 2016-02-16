@@ -42,24 +42,54 @@
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (enable acl2::arith-equiv-forwarding)))
 
-(define character-list-fix ((x character-listp))
-  ;; BOZO find me a home
-  :inline t
-  :enabled t
-  :hooks nil
-  (mbe :logic (make-character-list x)
-       :exec x))
 
 (defxdoc printer
   :parents (vl)
-  :short "Applicative \"printer\" for building strings."
+  :short "The VL printer is a tool for building strings.  It is generally used
+to pretty-print our internal Verilog @(see syntax) back out into text or HTML.
+This is very useful in @(see warnings), the @(see vl-server), and other
+contexts."
 
-  :long "<p>We implement a printer as a stobj name @(see ps), and use it as the
-back-end for formatting our source code and for other output tasks.  Our
-printer is applicative and the act of printing only accumulates characters or
-strings into a list.  These printed elements are kept in reverse order, which
-makes the sequential printing of small chunks of text reasonably
-efficient.</p>")
+  :long "<p>We implement an applicative ``printer'' for building strings.
+Building strings incrementally is difficult in an applicative setting.  Our
+printer is implemented using a @(see stobj) named @(see ps).  The act of
+``printing'' to this stobj essentially just accumulates characters (or strings)
+onto a @(see vl-printedlist).  The printed elements are kept in reverse order,
+which makes it reasonably efficient to successively print small chunks of
+text.</p>
+
+<p>Our printer has a variety of configurable features that are useful for
+pretty-printing source code, including:</p>
+
+<ul>
+<li>Support for both text and HTML output</li>
+<li>Automatic column tracking (for, e.g., tab support and line wrapping)</li>
+<li>Automatic word-wrapping of long lines</li>
+<li>A print base for controlling numeric output (e.g., print numbers in hex)</li>
+<li>Other miscellaneous settings</li>
+</ul>
+
+<p>Supporting HTML is subtle because, depending on the context, you may wish to
+write:</p>
+
+<ul>
+
+<li><b>HTML markup</b> (e.g., @('<b>'), @('<code>'), ...), where special
+characters like @('<') are not to be changed, and where all of the characters
+in these tags will be ``invisible'' to the user and should not affect the
+current column number.</li>
+
+<li><b>Parts of URLs</b> (e.g., filenames), which must be \"percent encoded\"
+per <a href='https://www.ietf.org/rfc/rfc3986.txt'>RFC 3986</a>, e.g., space
+characters become @('%20').  These, too, do not affect the column number
+because they take part only in tags such as @('<a href=\"...\">').</li>
+
+<li><b>Ordinary text</b>, where special characters like @('&') and @('<')
+become @('&amp;') and @('&lt;').  Here we also print tabs as a sequence of
+@('&nbsp;') characters, and we advance the column number as characters are
+printed.</li>
+
+</ul>")
 
 (defsection vl-printedlist-p-util
   :extension vl-printedlist-p
@@ -846,27 +876,7 @@ number; only the configuration settings are saved.</p>"
 
 (defsection basic-printing
   :parents (printer)
-  :short "Primitive routines for printing objects."
-  :long "<p>Our printer is intended to support both text and html output.
-Printing HTML is subtle because one may wish to write:</p>
-
-<ul>
-
-<li><b>HTML markup</b> (e.g., &lt;b&gt;, &lt;code&gt;, ...), wherein the
-special characters like &lt; are not to be changed, are going to be invisible
-to the user, and should not affect the column number,</li>
-
-<li><b>Parts of URLs</b> (e.g., filenames), which must be \"percent encoded\"
-per RFC 3986, e.g., spaces become %20.  These, too, do not affect the column
-number because they take part only in tags such as &lt;a href=\"...\"&gt;,
-and</li>
-
-<li><b>Encoded HTML text</b>, where special characters like &amp; and &lt;
-become &amp;amp; and &amp;lt;, and where tabs become a litany of &amp;nbsp;
-characters, and where the column should be advanced as the text is
-printed.</li>
-
-</ul>")
+  :short "Primitive routines for printing objects.")
 
 (define vl-col-after-printing-chars
   ((col   natp            "Current column we're at.")

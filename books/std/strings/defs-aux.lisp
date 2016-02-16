@@ -50,6 +50,7 @@
     acl2::stringp-of-implode
 
     ;; eqv.lisp
+    character-list-fix
     charlisteqv
     charlisteqv-is-an-equivalence
 
