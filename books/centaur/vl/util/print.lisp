@@ -31,8 +31,8 @@
 (in-package "VL")
 (include-book "defs")
 (include-book "printedlist")
-(include-book "print-urlencode")
 (include-book "cw-unformatted")
+(include-book "std/strings/url-encode" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "misc/assert" :dir :system))
@@ -118,15 +118,15 @@ printed.</li>
              (vl-printedlist-p (mv-nth 1 (str::html-encode-string-aux x n xl col tabsize acc))))
     :hints(("Goal" :in-theory (enable str::html-encode-string-aux))))
 
-  (defthm vl-printedlist-p-of-vl-url-encode-chars-aux
+  (defthm vl-printedlist-p-of-url-encode-chars-aux
     (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (vl-url-encode-chars-aux x acc)))
-    :hints(("Goal" :in-theory (enable vl-url-encode-chars-aux))))
+             (vl-printedlist-p (str::url-encode-chars-aux x acc)))
+    :hints(("Goal" :in-theory (enable str::url-encode-chars-aux))))
 
-  (defthm vl-printedlist-p-of-vl-url-encode-string-aux
+  (defthm vl-printedlist-p-of-url-encode-string-aux
     (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (vl-url-encode-string-aux x n xl acc)))
-    :hints(("Goal" :in-theory (enable vl-url-encode-string-aux)))))
+             (vl-printedlist-p (str::url-encode-string-aux x n xl acc)))
+    :hints(("Goal" :in-theory (enable str::url-encode-string-aux)))))
 
 
 
@@ -1458,11 +1458,11 @@ with the proper encoding.</p>"
   (let* ((rchars (vl-ps->rchars))
          (x      (vl-printable-fix x)))
     (cond ((stringp x)
-           (vl-ps-update-rchars (vl-url-encode-string-aux x 0 (length x) rchars)))
+           (vl-ps-update-rchars (str::url-encode-string-aux x 0 (length x) rchars)))
           ((atom x)
-           (vl-ps-update-rchars (vl-url-encode-chars-aux (explode-atom x 10) rchars)))
+           (vl-ps-update-rchars (str::url-encode-chars-aux (explode-atom x 10) rchars)))
           (t
-           (vl-ps-update-rchars (vl-url-encode-chars-aux x rchars))))))
+           (vl-ps-update-rchars (str::url-encode-chars-aux x rchars))))))
 
 (define vl-print-strings-with-commas-aux ((x string-listp) &key (ps 'ps))
   :parents (vl-print-strings-with-commas)

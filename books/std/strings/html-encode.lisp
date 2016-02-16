@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2013 Centaur Technology
+; Copyright (C) 2009-2016 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -56,6 +56,10 @@ HTML.</p>")
 
 (local (xdoc::set-default-parents html-encoding))
 
+(xdoc::order-subtopics html-encoding
+                       (html-encode-string
+                        html-encode-string-basic))
+
 (defmacro html-space ()    (list 'quote (coerce "&nbsp;" 'list)))
 (defmacro html-newline ()  (list 'quote (append (coerce "<br/>" 'list) (list #\Newline))))
 (defmacro html-less ()     (list 'quote (coerce "&lt;"   'list)))
@@ -64,7 +68,7 @@ HTML.</p>")
 (defmacro html-quote ()    (list 'quote (coerce "&quot;" 'list)))
 
 (define html-encode-char-basic
-  :short "HTML encode a single character (simple version, no column/tabsize support)."
+  :short "HTML encode a single character (simple version, no tab support)."
   ((x   characterp "Character to encode.")
    (acc            "Accumulator for output characters, reverse order."))
   :returns
@@ -102,7 +106,7 @@ HTML.</p>")
     (html-encode-chars-basic-aux (cdr x) acc)))
 
 (define html-encode-string-basic-aux
-  :short "Convert a string into HTML (simple version, no column/tabsize support)."
+  :short "Convert a string into HTML (simple version, no tab support)."
   ((x  stringp             "String we're encoding.")
    (n  natp                "Current position in @('x').  Should typically start as 0.")
    (xl (eql xl (length x)) "Precomputed length of @('x').")
@@ -129,13 +133,14 @@ HTML.</p>")
     :hints(("Goal" :in-theory (enable html-encode-chars-basic-aux)))))
 
 (define html-encode-string-basic
-  :short "Convert a string into HTML."
+  :short "Convert a string into HTML (simple version, no tab support)."
   ((x stringp))
   :returns (html-string stringp :rule-classes :type-prescription)
   (rchars-to-string
    (html-encode-string-basic-aux x 0 (length x) nil)))
 
 (define repeated-revappend ((n natp) x y)
+  :parents (html-encode-push)
   (if (zp n)
       y
     (repeated-revappend (- n 1) x (acl2::revappend-without-guard x y)))
@@ -147,6 +152,7 @@ HTML.</p>")
 
 (define distance-to-tab ((col     natp)
                          (tabsize posp))
+  :parents (html-encode-push)
   :inline t
   :split-types t
   (declare (type unsigned-byte col tabsize))
@@ -161,6 +167,7 @@ HTML.</p>")
   ((local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))))
 
 (define html-encode-next-col
+  :parents (html-encode-push)
   :short "Compute where we'll be after printing a character, accounting for tab
           sizes and newlines."
   ((char1 characterp "Character to be printed.")
@@ -176,7 +183,7 @@ HTML.</p>")
           (t                     (+ 1 col)))))
 
 (define html-encode-push
-  :short "HTML encode a single character (with column/tabsize support)."
+  :short "HTML encode a single character, with column/tabsize support."
   ((char1   characterp "Character to be printed.")
    (col     natp       "Current column number before printing char1 (for tab computations).")
    (tabsize posp)
@@ -202,7 +209,8 @@ HTML.</p>")
       (otherwise (cons char1 acc)))))
 
 (define html-encode-chars-aux
-  :short "Convert a character list into HTML."
+  :short "Convert a character list into HTML.  Outputs to an accumulator.
+Tracks the column number to handle tab characters."
   ((x       character-listp "The characters to convert.")
    (col     natp            "Current column number.")
    (tabsize posp            "Width of tab characters.")
@@ -222,11 +230,11 @@ HTML.</p>")
     (html-encode-chars-aux (cdr x) col tabsize acc)))
 
 (define html-encode-string-aux
-  :short "Convert a string into HTML."
+  :short "Core of converting strings into HTML, output to an accumulator."
   ((x       stringp  "String we're encoding.")
    (n       natp     "Current position in @('x').  Should typically start as 0.")
    (xl      (eql xl (length x)))
-   (col     natp)
+   (col     natp     "Current column we're printing to.")
    (tabsize posp)
    (acc))
   :guard (<= n xl)
@@ -259,7 +267,8 @@ of a the string @('x') instead of a character list.</p>"
 
 (define html-encode-string
   :short "@(call html-encode-string) converts the string @('x') into HTML, and
-returns the result as a new string."
+returns the result as a new string.  Tracks the column number to handle tab
+characters."
   ((x       stringp)
    (tabsize posp))
   :returns

@@ -799,7 +799,6 @@ hex-digit-list-value), and somewhat better performance:</p>
   :prepwork ((local (in-theory (enable natchars16)))))
 
 (define parse-hex-from-charlist
-  :parents (numbers)
   :short "Parse a hexadecimal number from the beginning of a character list."
   ((x   character-listp "Characters to read from.")
    (val natp            "Accumulator for the value of the hex digits we have read

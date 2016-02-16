@@ -330,5 +330,15 @@
     symbol-list-names
     intern-list-fn
     intern-list
+
+    ;; url-encode
+    url-encode-char
+    make-url-encode-array
+    *url-encode-array*
+    fast-url-encode-char
+    url-encode-chars-aux
+    url-encode-chars
+    url-encode-string-aux
+    url-encode-string
     ))
 

@@ -715,7 +715,6 @@ octal-digit-list-value), and somewhat better performance:</p>
   :prepwork ((local (in-theory (enable natchars8)))))
 
 (define parse-octal-from-charlist
-  :parents (numbers)
   :short "Parse a octal number from the beginning of a character list."
   ((x   character-listp "Characters to read from.")
    (val natp            "Accumulator for the value of the octal digits we have read
