@@ -32,8 +32,12 @@
 (include-book "cat")
 (include-book "std/util/bstar" :dir :system)
 (include-book "misc/definline" :dir :system)  ;; bozo
+(include-book "centaur/fty/fixequiv" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defsection html-encoding
   :parents (std/strings)
@@ -50,6 +54,8 @@ most ordinary characters.</p>
 applications, but seems basically reasonable for converting plain text into
 HTML.</p>")
 
+(local (xdoc::set-default-parents html-encoding))
+
 (defmacro html-space ()    (list 'quote (coerce "&nbsp;" 'list)))
 (defmacro html-newline ()  (list 'quote (append (coerce "<br/>" 'list) (list #\Newline))))
 (defmacro html-less ()     (list 'quote (coerce "&lt;"   'list)))
@@ -58,7 +64,6 @@ HTML.</p>")
 (defmacro html-quote ()    (list 'quote (coerce "&quot;" 'list)))
 
 (define html-encode-char-basic
-  :parents (html-encoding)
   :short "HTML encode a single character (simple version, no column/tabsize support)."
   ((x   characterp "Character to encode.")
    (acc            "Accumulator for output characters, reverse order."))
@@ -86,7 +91,6 @@ HTML.</p>")
       (otherwise (cons x acc)))))
 
 (define html-encode-chars-basic-aux
-  :parents (html-encoding)
   :short "Convert a character list into HTML (simple version, no column/tabsize support)."
   ((x       character-listp "The characters to convert.")
    (acc                     "Accumulator for output characters, reverse order."))
@@ -98,7 +102,6 @@ HTML.</p>")
     (html-encode-chars-basic-aux (cdr x) acc)))
 
 (define html-encode-string-basic-aux
-  :parents (html-encoding)
   :short "Convert a string into HTML (simple version, no column/tabsize support)."
   ((x  stringp             "String we're encoding.")
    (n  natp                "Current position in @('x').  Should typically start as 0.")
@@ -126,7 +129,6 @@ HTML.</p>")
     :hints(("Goal" :in-theory (enable html-encode-chars-basic-aux)))))
 
 (define html-encode-string-basic
-  :parents (html-encoding)
   :short "Convert a string into HTML."
   ((x stringp))
   :returns (html-string stringp :rule-classes :type-prescription)
@@ -134,7 +136,6 @@ HTML.</p>")
    (html-encode-string-basic-aux x 0 (length x) nil)))
 
 (define repeated-revappend ((n natp) x y)
-  :parents (html-encoding)
   (if (zp n)
       y
     (repeated-revappend (- n 1) x (acl2::revappend-without-guard x y)))
@@ -146,22 +147,62 @@ HTML.</p>")
 
 (define distance-to-tab ((col     natp)
                          (tabsize posp))
-  :parents (html-encoding)
   :inline t
   :split-types t
   (declare (type unsigned-byte col tabsize))
   (mbe :logic
-       (nfix (- tabsize (rem col tabsize)))
+       (b* ((col (nfix col))
+            (tabsize (acl2::pos-fix tabsize)))
+         (nfix (- tabsize (rem col tabsize))))
        :exec
        (- tabsize
           (the unsigned-byte (rem col tabsize))))
   :prepwork
   ((local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))))
 
-(define html-encode-chars-aux
-  :parents (html-encoding)
-  :short "Convert a character list into HTML."
+(define html-encode-next-col
+  :short "Compute where we'll be after printing a character, accounting for tab
+          sizes and newlines."
+  ((char1 characterp "Character to be printed.")
+   (col   natp       "Current column number before printing char1.")
+   (tabsize posp))
+  :returns (new-col natp :rule-classes :type-prescription
+                    "New column number after printing char1.")
+  :inline t
+  (b* ((char1 (mbe :logic (char-fix char1) :exec char1))
+       (col   (lnfix col)))
+    (cond ((eql char1 #\Newline) 0)
+          ((eql char1 #\Tab)     (+ col (distance-to-tab col tabsize)))
+          (t                     (+ 1 col)))))
 
+(define html-encode-push
+  :short "HTML encode a single character (with column/tabsize support)."
+  ((char1   characterp "Character to be printed.")
+   (col     natp       "Current column number before printing char1 (for tab computations).")
+   (tabsize posp)
+   (acc                "Reverse order characters we're building."))
+  :returns (new-acc character-listp :hyp (character-listp acc))
+  (b* (((the character char1) (mbe :logic (char-fix char1)
+                                   :exec char1)))
+    (case char1
+      ;; Cosmetic: avoid inserting &nbsp; unless the last char is a
+      ;; space or newline.  This makes the HTML a little easier to
+      ;; read.
+      (#\Space   (if (or (atom acc)
+                         (eql (car acc) #\Space)
+                         (eql (car acc) #\Newline))
+                     (revappend (html-space) acc)
+                   (cons #\Space acc)))
+      (#\Newline (revappend (html-newline) acc))
+      (#\<       (revappend (html-less) acc))
+      (#\>       (revappend (html-greater) acc))
+      (#\&       (revappend (html-amp) acc))
+      (#\"       (revappend (html-quote) acc))
+      (#\Tab     (repeated-revappend (distance-to-tab col tabsize) (html-space) acc))
+      (otherwise (cons char1 acc)))))
+
+(define html-encode-chars-aux
+  :short "Convert a character list into HTML."
   ((x       character-listp "The characters to convert.")
    (col     natp            "Current column number.")
    (tabsize posp            "Width of tab characters.")
@@ -175,32 +216,12 @@ HTML.</p>")
   (declare (type unsigned-byte col tabsize))
   (b* (((when (atom x))
         (mv (lnfix col) acc))
-       ((the character char1) (mbe :logic (char-fix (car x))
-                                   :exec (car x)))
-       ((the unsigned-byte new-col)
-        (cond ((eql char1 #\Newline) 0)
-              ((eql char1 #\Tab)     (+ col (distance-to-tab col tabsize)))
-              (t                     (+ 1 col))))
-       (acc (case char1
-              ;; Cosmetic: avoid inserting &nbsp; unless the last char is a
-              ;; space or newline.  This makes the HTML a little easier to
-              ;; read.
-              (#\Space   (if (or (atom acc)
-                                 (eql (car acc) #\Space)
-                                 (eql (car acc) #\Newline))
-                             (revappend (html-space) acc)
-                           (cons #\Space acc)))
-              (#\Newline (revappend (html-newline) acc))
-              (#\<       (revappend (html-less) acc))
-              (#\>       (revappend (html-greater) acc))
-              (#\&       (revappend (html-amp) acc))
-              (#\"       (revappend (html-quote) acc))
-              (#\Tab     (repeated-revappend (distance-to-tab col tabsize) (html-space) acc))
-              (otherwise (cons char1 acc)))))
-    (html-encode-chars-aux (cdr x) new-col tabsize acc)))
+       ;; Warning: order is important here for proper column tracking
+       (acc (html-encode-push (car x) col tabsize acc))
+       (col (html-encode-next-col (car x) col tabsize)))
+    (html-encode-chars-aux (cdr x) col tabsize acc)))
 
 (define html-encode-string-aux
-  :parents (html-encoding)
   :short "Convert a string into HTML."
   ((x       stringp  "String we're encoding.")
    (n       natp     "Current position in @('x').  Should typically start as 0.")
@@ -218,47 +239,33 @@ HTML.</p>")
   :measure (nfix (- (nfix xl) (nfix n)))
   :long "<p>This is similar to @(see html-encode-chars-aux), but encodes part
 of a the string @('x') instead of a character list.</p>"
+  ;; This has such a nice logical definition that we may as well leave it
+  ;; enabled.
+  :enabled t
   :verify-guards nil
-
   (mbe :logic (html-encode-chars-aux (nthcdr n (explode x)) col tabsize acc)
        :exec
        (b* (((when (mbe :logic (zp (- (length (str-fix x)) (nfix n)))
                         :exec (eql n xl)))
              (mv (lnfix col) acc))
             (char1   (char x n))
-            (new-col (cond ((eql char1 #\Newline) 0)
-                           ((eql char1 #\Tab)     (+ col (distance-to-tab col tabsize)))
-                           (t                     (+ 1 col))))
-            (acc (case char1
-                   ;; Cosmetic: avoid inserting &nbsp; unless the last char is a
-                   ;; space or newline.  This makes the HTML a little easier to
-                   ;; read.
-                   (#\Space   (if (or (atom acc)
-                                      (eql (car acc) #\Space)
-                                      (eql (car acc) #\Newline))
-                                  (revappend (html-space) acc)
-                                (cons #\Space acc)))
-                   (#\Newline (revappend (html-newline) acc))
-                   (#\<       (revappend (html-less) acc))
-                   (#\>       (revappend (html-greater) acc))
-                   (#\&       (revappend (html-amp) acc))
-                   (#\"       (revappend (html-quote) acc))
-                   (#\Tab     (repeated-revappend (distance-to-tab col tabsize) (html-space) acc))
-                   (otherwise (cons char1 acc)))))
-         (html-encode-string-aux x (+ 1 (lnfix n)) xl new-col tabsize acc)))
+            ;; Warning: order is important here for proper column tracking
+            (acc (html-encode-push char1 col tabsize acc))
+            (col (html-encode-next-col char1 col tabsize)))
+         (html-encode-string-aux x (+ 1 (lnfix n)) xl col tabsize acc)))
   ///
   (verify-guards html-encode-string-aux
     :hints(("Goal" :in-theory (enable html-encode-chars-aux)))))
 
 (define html-encode-string
-  :parents (html-encoding)
   :short "@(call html-encode-string) converts the string @('x') into HTML, and
 returns the result as a new string."
   ((x       stringp)
    (tabsize posp))
   :returns
   (html-encoded stringp :rule-classes :type-prescription)
-  (b* (((mv ?col acc) (html-encode-string-aux x 0 (length x) 0 tabsize nil)))
+  (b* ((x (mbe :logic (str-fix x) :exec x))
+       ((mv ?col acc) (html-encode-string-aux x 0 (length x) 0 tabsize nil)))
     (rchars-to-string acc)))
 
 

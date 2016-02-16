@@ -48,6 +48,7 @@
     ;; Including this type-prescription rule improves the type-prescriptions of
     ;; some subsequent functions such as upcase-string.
     acl2::stringp-of-implode
+    acl2::pos-fix
 
     ;; eqv.lisp
     character-list-fix
@@ -228,6 +229,8 @@
     html-quote
     repeated-revappend
     distance-to-tab
+    html-encode-next-col
+    html-encode-push
     html-encode-chars-aux
     html-encode-string-aux
     html-encode-string

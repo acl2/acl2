@@ -197,7 +197,7 @@ we ignore file names.</p>"
        (str1 (cdar x)))
     (cons (cons loc1
                 (cat "<span class=\"vl_cmt\">"
-                     (vl-html-encode-string str1 tabsize)
+                     (str::html-encode-string str1 tabsize)
                      "</span>"))
           (vl-html-encode-commentmap (cdr x) tabsize))))
 

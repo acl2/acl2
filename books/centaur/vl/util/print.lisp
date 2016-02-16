@@ -32,7 +32,6 @@
 (include-book "defs")
 (include-book "printedlist")
 (include-book "print-urlencode")
-(include-book "print-htmlencode")
 (include-book "cw-unformatted")
 (include-book "std/strings/pretty" :dir :system)
 (local (include-book "arithmetic"))
@@ -96,27 +95,28 @@ printed.</li>
 
   (local (in-theory (enable vl-printedlist-p)))
 
-  (local (in-theory (e/d (repeated-revappend)
+  (local (in-theory (e/d (str::repeated-revappend)
                          ((:executable-counterpart force)))))
 
   (defthm vl-printedlist-p-of-repeated-revappend
     (implies (and (vl-printedlist-p x)
                   (force (vl-printedlist-p y)))
-             (vl-printedlist-p (repeated-revappend n x y))))
+             (vl-printedlist-p (str::repeated-revappend n x y))))
 
-  (defthm vl-printedlist-p-of-vl-html-encode-push
+  (defthm vl-printedlist-p-of-html-encode-push
     (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (vl-html-encode-push char1 col tabsize acc)))
-    :hints(("Goal" :in-theory (enable vl-html-encode-push))))
+             (vl-printedlist-p (str::html-encode-push char1 col tabsize acc)))
+    :hints(("Goal" :in-theory (enable str::html-encode-push))))
 
-  (defthm vl-printedlist-p-of-vl-html-encode-chars-aux
+  (defthm vl-printedlist-p-of-html-encode-chars-aux
     (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (mv-nth 1 (vl-html-encode-chars-aux x col tabsize acc))))
-    :hints(("Goal" :in-theory (enable vl-html-encode-chars-aux))))
+             (vl-printedlist-p (mv-nth 1 (str::html-encode-chars-aux x col tabsize acc))))
+    :hints(("Goal" :in-theory (enable str::html-encode-chars-aux))))
 
-  (defthm vl-printedlist-p-of-vl-html-encode-string-aux
+  (defthm vl-printedlist-p-of-html-encode-string-aux
     (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (mv-nth 1 (vl-html-encode-string-aux x n xl col tabsize acc)))))
+             (vl-printedlist-p (mv-nth 1 (str::html-encode-string-aux x n xl col tabsize acc))))
+    :hints(("Goal" :in-theory (enable str::html-encode-string-aux))))
 
   (defthm vl-printedlist-p-of-vl-url-encode-chars-aux
     (implies (vl-printedlist-p acc)
@@ -1037,12 +1037,13 @@ lists.</p>"
 (define vl-print-str-main ((x stringp :type string) &key (ps 'ps))
   :parents (vl-print)
   :split-types t
+  :prepwork ((local (in-theory (enable str::html-encode-string-aux))))
   (let ((rchars  (vl-ps->rchars))
         (col     (vl-ps->col)))
     (if (vl-ps->htmlp)
         ;; Need to do HTML encoding.
         (mv-let (col rchars)
-          (vl-html-encode-string-aux x 0 (length x) col (vl-ps->tabsize) rchars)
+          (str::html-encode-string-aux x 0 (length x) col (vl-ps->tabsize) rchars)
           (vl-ps-seq (vl-ps-update-rchars rchars)
                      (vl-ps-update-col col)))
       ;; Else, nothing to encode
@@ -1051,11 +1052,12 @@ lists.</p>"
 
 (define vl-print-charlist-main ((x character-listp) &key (ps 'ps))
   :parents (vl-print)
+  :verbosep t
   (let ((rchars  (vl-ps->rchars))
         (col     (vl-ps->col)))
     (if (vl-ps->htmlp)
         (mv-let (col rchars)
-          (vl-html-encode-chars-aux x col (vl-ps->tabsize) rchars)
+          (str::html-encode-chars-aux x col (vl-ps->tabsize) rchars)
           (vl-ps-seq (vl-ps-update-rchars rchars)
                      (vl-ps-update-col col)))
       (vl-ps-seq (vl-ps-update-rchars (revappend (character-list-fix x) rchars))
@@ -1265,9 +1267,9 @@ vl-print-url) for alternatives that perform different kinds of encoding.</p>
         ;; Need to do HTML encoding.
         (b* ((tabsize       (vl-ps->tabsize))
              ((mv & rchars) (if (stringp x)
-                                (vl-html-encode-string-aux x 0 (length x) col tabsize rchars)
-                              (vl-html-encode-chars-aux x col tabsize rchars))))
-          (vl-ps-seq (vl-ps-update-rchars (revappend *vl-html-newline* rchars))
+                                (str::html-encode-string-aux x 0 (length x) col tabsize rchars)
+                              (str::html-encode-chars-aux x col tabsize rchars))))
+          (vl-ps-seq (vl-ps-update-rchars (revappend (str::html-newline) rchars))
                      (vl-ps-update-col 0)))
       ;; Plain-text, no encoding necessary.
       ;; We used to remove any trailing whitespace before printing the newline,
@@ -1352,16 +1354,16 @@ split up at reasonably good places.</p>"
         ;; Need to do HTML encoding.
         (b* ((tabsize         (vl-ps->tabsize))
              ((mv col rchars) (if (stringp x)
-                                  (vl-html-encode-string-aux x 0 (length x) col tabsize rchars)
-                                (vl-html-encode-chars-aux x col tabsize rchars)))
+                                  (str::html-encode-string-aux x 0 (length x) col tabsize rchars)
+                                (str::html-encode-chars-aux x col tabsize rchars)))
              ((when (< col autowrap-col))
               ;; No autowrapping.
               (vl-ps-seq (vl-ps-update-rchars rchars)
                          (vl-ps-update-col col)))
              ;; Otherwise, autowrap.
              (indent (vl-ps->autowrap-ind))
-             (rchars (revappend *vl-html-newline* rchars))
-             (rchars (repeated-revappend indent *vl-html-&nbsp* rchars)))
+             (rchars (revappend (str::html-newline) rchars))
+             (rchars (str::repeated-revappend indent (str::html-space) rchars)))
           (vl-ps-seq (vl-ps-update-rchars rchars)
                      (vl-ps-update-col indent)))
 
@@ -1922,7 +1924,7 @@ eventually extend the printer to allow them.</p>")
 
        ;; HTML mode.  We're going to html encode the new-rchars.
        ((mv col rchars)
-        (vl-html-encode-chars-aux (reverse x-rchars) col tabsize rchars)))
+        (str::html-encode-chars-aux (reverse x-rchars) col tabsize rchars)))
     (vl-ps-seq
      (vl-ps-update-col col)
      (vl-ps-update-rchars rchars))))
