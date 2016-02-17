@@ -182,6 +182,69 @@
     :rule-classes :linear))
 
 
+(define match-ext ((x svex-p))
+  :returns (mv (matchedp)
+               (width natp :rule-classes :type-prescription)
+               (lsbs svex-p)
+               (sign-extend-p))
+  (b* ((x (svex-fix x)))
+    (svex-case x
+      :call (b* (((unless (and (or (eq x.fn 'zerox)
+                                   (eq x.fn 'signx))
+                               (eql (len x.args) 2)))
+                  (mv nil 0 x nil))
+                 (width (car x.args)))
+              (svex-case width
+                :quote (if (and (2vec-p width.val)
+                                (<= 0 (2vec->val width.val)))
+                           (mv t (2vec->val width.val)
+                               (second x.args)
+                               (eq x.fn 'signx))
+                         (mv nil 0 x nil))
+                :otherwise (mv nil 0 x nil)))
+      :otherwise (mv nil 0 x nil)))
+  ///
+  (local (defthm 2vec-of-4vec->lower
+           (implies (2vec-p x)
+                    (equal (2vec (4vec->lower x))
+                           (4vec-fix x)))
+           :hints(("Goal" :in-theory (enable 2vec 2vec-p)))))
+
+  (defretd match-ext-correct
+    (implies matchedp
+             (and (implies sign-extend-p
+                           (equal (4vec-sign-ext (2vec width) (svex-eval lsbs env))
+                                  (svex-eval x env)))
+                  (implies (not sign-extend-p)
+                           (equal (4vec-zero-ext (2vec width) (svex-eval lsbs env))
+                                  (svex-eval x env)))))
+    :hints(("Goal" :in-theory (enable svex-apply svexlist-eval 4veclist-nth-safe))
+           (and stable-under-simplificationp
+                '(:in-theory (enable 4vec-zero-ext 4vec-sign-ext)))))
+
+  (defret vars-of-match-ext
+    (implies (not (member v (svex-vars x)))
+             (not (member v (svex-vars lsbs))))
+    :hints(("Goal" :in-theory (enable svexlist-vars)
+            :expand ((svexlist-vars (cdr (svex-call->args x)))
+                     (svexlist-vars (svex-call->args x))))))
+
+  ;; This is the rule to enable if you want to reason about this function's
+  ;; semantics.
+  (defretd match-ext-correct-rewrite-svex-eval-of-x
+    (implies matchedp
+             (equal (svex-eval x env)
+                    (if sign-extend-p
+                        (4vec-sign-ext (2vec width) (svex-eval lsbs env))
+                      (4vec-zero-ext (2vec width) (svex-eval lsbs env)))))
+    :hints(("Goal" :in-theory '(match-ext-correct))))
+
+  (defret svex-count-of-match-ext-lsbs
+    (implies matchedp
+             (< (svex-count lsbs) (svex-count x)))
+    :rule-classes :linear))
+
+
 
 (define match-rsh ((x svex-p))
   :returns (mv (matchedp)
@@ -241,22 +304,42 @@
 
 (define svex-rsh ((sh natp) (x svex-p))
   :returns (rsh svex-p)
+  :measure (svex-count x)
   (if (zp sh)
       (svex-fix x)
-    (b* (((mv matchedp shift subexp) (match-rsh x)))
-      (if matchedp
-          (svex-call 'rsh (list (svex-quote (2vec (+ shift sh))) subexp))
-        (svex-call 'rsh (list (svex-quote (2vec sh)) x)))))
+    (b* (((when (svex-case x :quote))
+          (svex-quote (4vec-rsh (2vec sh) (svex-quote->val x))))
+         ((mv matchedp shift subexp) (match-rsh x))
+         ((when matchedp)
+          (svex-call 'rsh (list (svex-quote (2vec (+ shift sh))) subexp)))
+         ((mv matchedp width ?lsbs msbs) (match-concat x))
+         ((when (and matchedp
+                     (>= sh width)))
+          (svex-rsh (- sh width) msbs))
+         ((mv matchedp width ?lsbs signxp) (match-ext x))
+         ((when (and matchedp (>= sh width) (not signxp)))
+          0))
+      (svex-call 'rsh (list (svex-quote (2vec sh)) x))))
   ///
   (deffixequiv svex-rsh)
+
+  (local (defthm 4vec-rsh-of-zero-ext
+           (implies (and (>= sh w) (natp sh) (natp w))
+                    (equal (4vec-rsh (2vec sh) (4vec-zero-ext (2vec w) x))
+                           0))
+           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-zero-ext))
+                  (logbitp-reasoning))))
 
   (defthm svex-rsh-correct
     (equal (svex-eval (svex-rsh sh x) env)
            (svex-eval (svex-call 'rsh (list (svex-quote (2vec (nfix sh))) x)) env))
-    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval
-                                      match-rsh-correct-rewrite-svex-eval-of-x)
-            :expand ((:free (f a) (svex-eval (svex-call f a) env))
-                     (svex-eval 0 env)))))
+    :hints(("Goal" :induct t)
+           '(:in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval
+                                match-rsh-correct-rewrite-svex-eval-of-x
+                                match-ext-correct-rewrite-svex-eval-of-x
+                                match-concat-correct-rewrite-svex-eval-of-x)
+             :expand ((:free (f a) (svex-eval (svex-call f a) env))
+                      (svex-eval 0 env)))))
 
   (defthm svex-rsh-vars
     (implies (not (member v (svex-vars x)))
@@ -264,20 +347,192 @@
 
 (define svex-concat ((w natp) (x svex-p) (y svex-p))
   :returns (concat svex-p)
+  :measure (svex-count x)
   (if (zp w)
       (svex-fix y)
-    (svex-call 'concat (list (svex-quote (2vec w)) x y)))
+    (b* (((when (and (svex-case x :quote)
+                     (svex-case y :quote)))
+          (svex-quote (4vec-concat (2vec w) (svex-quote->val x) (svex-quote->val y))))
+         ((mv matched width xl ?xh) (match-concat x))
+         ((when (and matched (<= w width)))
+          (svex-concat w xl y))
+         ((mv matched width xl ?signxp) (match-ext x))
+         ((when (and matched (<= w width)))
+          (svex-concat w xl y)))
+      (svex-call 'concat (list (svex-quote (2vec w)) x y))))
   ///
   (deffixequiv svex-concat)
+
+  (local (defthm 4vec-concat-of-zero-ext
+           (implies (and (natp w1) (natp w2) (<= w1 w2))
+                    (equal (4vec-concat (2vec w1) (4vec-zero-ext (2vec w2) x) y)
+                           (4vec-concat (2vec w1) x y)))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-zero-ext))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-concat-of-sign-ext
+           (implies (and (natp w1) (natp w2) (<= w1 w2))
+                    (equal (4vec-concat (2vec w1) (4vec-sign-ext (2vec w2) x) y)
+                           (4vec-concat (2vec w1) x y)))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-sign-ext))
+                  (logbitp-reasoning))))
 
   (defthm svex-concat-correct
     (equal (svex-eval (svex-concat w x y) env)
            (svex-eval (svex-call 'concat (list (svex-quote (2vec (nfix w))) x y)) env))
-    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval)
-            :expand ((:free (f a) (svex-eval (svex-call f a) env))
-                     (svex-eval 0 env)))))
+    :hints(("Goal" :induct t)
+           '(:in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval
+                                match-concat-correct-rewrite-svex-eval-of-x
+                                match-ext-correct-rewrite-svex-eval-of-x)
+             :expand ((:free (f a) (svex-eval (svex-call f a) env))
+                      (svex-eval 0 env)))))
 
   (defthm svex-concat-vars
     (implies (and (not (member v (svex-vars x)))
                   (not (member v (svex-vars y))))
              (not (member v (svex-vars (svex-concat w x y)))))))
+
+
+(define svex-zerox ((w natp) (x svex-p))
+  :returns (concat svex-p)
+  :measure (svex-count x)
+  (if (zp w)
+      0
+    (b* (((when (svex-case x :quote))
+          (svex-quote (4vec-zero-ext (2vec w) (svex-quote->val x))))
+         ((mv matched width xl ?xh) (match-concat x))
+         ((when (and matched (<= w width)))
+          (svex-zerox w xl))
+         ((mv matched width xl ?signxp) (match-ext x))
+         ((when (and matched (<= w width)))
+          (svex-zerox w xl)))
+      (svex-call 'zerox (list (svex-quote (2vec w)) x))))
+  ///
+  (deffixequiv svex-zerox)
+
+  (local (defthm 4vec-zero-ext-of-concat
+           (implies (and (natp w1) (natp w2) (<= w1 w2))
+                    (equal (4vec-zero-ext (2vec w1) (4vec-concat (2vec w2) x y))
+                           (4vec-zero-ext (2vec w1) x)))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-zero-ext))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-zero-ext-of-sign-ext
+           (implies (and (natp w1) (natp w2) (<= w1 w2))
+                    (equal (4vec-zero-ext (2vec w1) (4vec-sign-ext (2vec w2) x))
+                           (4vec-zero-ext (2vec w1) x)))
+           :hints(("Goal" :in-theory (enable 4vec-zero-ext 4vec-sign-ext))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-zero-ext-of-zero-ext
+           (implies (and (natp w1) (natp w2) (<= w1 w2))
+                    (equal (4vec-zero-ext (2vec w1) (4vec-zero-ext (2vec w2) x))
+                           (4vec-zero-ext (2vec w1) x)))
+           :hints(("Goal" :in-theory (enable 4vec-zero-ext 4vec-zero-ext))
+                  (logbitp-reasoning))))
+
+  (local (Defthm 4vec-zero-ext-of-0
+           (equal (4vec-zero-ext 0 x) 0)
+           :hints(("Goal" :in-theory (enable 4vec-zero-ext)))))
+
+  (defthm svex-zerox-correct
+    (equal (svex-eval (svex-zerox w x) env)
+           (svex-eval (svex-call 'zerox (list (svex-quote (2vec (nfix w))) x)) env))
+    :hints(("Goal" :induct t)
+           '(:in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval
+                                match-concat-correct-rewrite-svex-eval-of-x
+                                match-ext-correct-rewrite-svex-eval-of-x)
+             :expand ((:free (f a) (svex-eval (svex-call f a) env))
+                      (svex-eval 0 env)))))
+
+  (defthm svex-zerox-vars
+    (implies (and (not (member v (svex-vars x))))
+             (not (member v (svex-vars (svex-zerox w x)))))))
+
+(define svex-signx ((w natp) (x svex-p))
+  :returns (concat svex-p)
+  :measure (svex-count x)
+  (if (zp w)
+      (svex-x)
+    (b* (((when (svex-case x :quote))
+          (svex-quote (4vec-sign-ext (2vec w) (svex-quote->val x))))
+         ((mv matched width xl ?xh) (match-concat x))
+         ((when (and matched (<= w width)))
+          (svex-signx w xl))
+         ((mv matched width xl signxp) (match-ext x))
+         ((when matched)
+          (if (<= w width)
+              (svex-signx w xl)
+            (if signxp
+                (svex-signx width xl)
+              (svex-zerox width xl)))))
+      (svex-call 'signx (list (svex-quote (2vec w)) x))))
+  ///
+  (deffixequiv svex-signx)
+
+  (local (defthm 4vec-sign-ext-of-concat
+           (implies (and (natp w1) (natp w2) (<= w1 w2))
+                    (equal (4vec-sign-ext (2vec w1) (4vec-concat (2vec w2) x y))
+                           (4vec-sign-ext (2vec w1) x)))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-sign-ext))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-sign-ext-of-sign-ext
+           (implies (and (natp w1) (natp w2) (<= w1 w2))
+                    (equal (4vec-sign-ext (2vec w1) (4vec-sign-ext (2vec w2) x))
+                           (4vec-sign-ext (2vec w1) x)))
+           :hints(("Goal" :in-theory (enable 4vec-sign-ext 4vec-sign-ext))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-sign-ext-of-zero-ext
+           (implies (and (natp w1) (natp w2) (<= w1 w2))
+                    (equal (4vec-sign-ext (2vec w1) (4vec-zero-ext (2vec w2) x))
+                           (4vec-sign-ext (2vec w1) x)))
+           :hints(("Goal" :in-theory (enable 4vec-zero-ext 4vec-sign-ext))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-sign-ext-of-sign-ext-less
+           (implies (and (natp w1) (natp w2) (> w1 w2))
+                    (equal (4vec-sign-ext (2vec w1) (4vec-sign-ext (2vec w2) x))
+                           (4vec-sign-ext (2vec w2) x)))
+           :hints(("Goal" :in-theory (enable 4vec-sign-ext 4vec-sign-ext))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-sign-ext-of-sign-ext-less-2
+           (implies (and (natp w1)
+                         (equal y (4vec-sign-ext (2vec w2) x))
+                         (natp w2)
+                         (> w1 w2))
+                    (equal (4vec-sign-ext (2vec w1) y)
+                           (4vec-sign-ext (2vec w2) x)))
+           :hints(("Goal" :in-theory (enable 4vec-sign-ext 4vec-sign-ext))
+                  (logbitp-reasoning))))
+
+  (local (defthm 4vec-sign-ext-of-zero-ext-less
+           (implies (and (natp w1) (natp w2) (> w1 w2))
+                    (equal (4vec-sign-ext (2vec w1) (4vec-zero-ext (2vec w2) x))
+                           (4vec-zero-ext (2vec w2) x)))
+           :hints(("Goal" :in-theory (enable 4vec-zero-ext 4vec-sign-ext))
+                  (logbitp-reasoning))))
+
+  (local (Defthm 4vec-sign-ext-of-0
+           (equal (4vec-sign-ext 0 x) (4vec-x))
+           :hints(("Goal" :in-theory (enable 4vec-sign-ext)))))
+
+  (defthm svex-signx-correct
+    (equal (svex-eval (svex-signx w x) env)
+           (svex-eval (svex-call 'signx (list (svex-quote (2vec (nfix w))) x)) env))
+    :hints(("Goal" :induct t)
+           '(:in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval
+                                match-concat-correct-rewrite-svex-eval-of-x
+                                match-ext-correct-rewrite-svex-eval-of-x)
+             :expand ((:free (f a) (svex-eval (svex-call f a) env))
+                      (svex-eval 0 env)))))
+
+  (defthm svex-signx-vars
+    (implies (and (not (member v (svex-vars x))))
+             (not (member v (svex-vars (svex-signx w x)))))))
+
+
+
+

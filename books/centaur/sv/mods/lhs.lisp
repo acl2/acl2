@@ -1976,6 +1976,7 @@ bits of @('foo'):</p>
   :guard (svar-indexedp x)
   :guard-hints (("goal" :in-theory (enable svar-indexedp)))
   :returns (idx natp :rule-classes :type-prescription)
+  :inline t
   (lnfix (svar->name x))
   ///
   (deffixequiv svar-index

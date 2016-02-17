@@ -534,8 +534,8 @@ constructed separately.)</p>"
   ;;              (size natp)))
   (:regular   ((portname stringp)
                (port-dir vl-maybe-direction-p)
-               (argindex natp)
-               (port-expr vl-expr-p)
+               ;; (argindex natp)
+               ;; (port-expr vl-expr-p)
                (conn-expr vl-expr-p)
                (port-inner-lhs
                 sv::lhs-p
@@ -548,10 +548,10 @@ constructed separately.)</p>"
                  same as port-inner-lhs.  Not scoped by the instance name.")
                (conn-svex sv::svex-p)
                (port-size posp)
-               (conn-size posp)
+               ;; (conn-size posp)
                (replicatedp)
                (interfacep booleanp)))
-   :layout :list) ;; note for debugging might want :alist, but this makes
+   :layout :tree)
 
 (fty::deflist vl-portinfolist :elt-type vl-portinfo)
 

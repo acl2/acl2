@@ -736,6 +736,7 @@ svex-assigns-compose)).</li>
        ((stobj-get totalwires)
         ((elab-mod (moddb->modsi modidx moddb)))
         (elab-mod->totalwires elab-mod))
+       ;; (- (cw "Total wires: ~x0~%" totalwires))
        (aliases (resize-lhss 0 aliases))
        (aliases (resize-lhss totalwires aliases))
 
@@ -753,10 +754,10 @@ svex-assigns-compose)).</li>
        ((with-fast modalist))
 
        (scope (make-modscope-top :modidx modidx))
+
        ;; Gather the full flattened lists of aliases and assignments from the module DB.
        ((mv modfails varfails flat-aliases flat-assigns)
         (cwtime (svex-mod->flatten scope modalist moddb)))
-
        ((when modfails)
         (mv (msg "Module names referenced but not found: ~x0~%" modfails)
             nil moddb aliases))
@@ -914,6 +915,7 @@ should address this again later.</p>"
        ((cons key val) (car x))
        (expr (svex-fastlookup val updates))
        (expr (or expr
+                 ;; Bozo -- convert this to a zero-extend when possible?
                  (make-svex-call
                   :fn 'bit?
                   :args (list (svex-quote (2vec (svex-mask-lookup (make-svex-var :name key) masks)))

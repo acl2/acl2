@@ -704,11 +704,11 @@ these are the only operators we're dealing with.</p>"
   (deffixequiv-mutual vl-expr-incexprs))
 
 (define vl-expr-prohibit-incexprs ((x vl-expr-p)
-                                   (ss vl-scopestack-p))
+                                   (ss vl-scopestack-p)
+                                   (warnings vl-warninglist-p))
   :returns (warnings vl-warninglist-p)
   (declare (ignorable ss))
-  (b* ((warnings nil)
-       (incexprs (vl-expr-incexprs x))
+  (b* ((incexprs (vl-expr-incexprs x))
        ((when (atom incexprs))
         (ok)))
     (fatal :type :vl-illegal-incexpr
@@ -716,7 +716,17 @@ these are the only operators we're dealing with.</p>"
                  where it is not allowed: ~a0."
            :args (list (car incexprs)))))
 
-(def-expr-check prohibit-incexprs)
+(local (in-theory (disable (tau-system)
+                              vl-warninglist-p-when-not-consp
+                              double-containment
+                              vl-warninglist-p-when-subsetp-equal
+                              member-equal-when-member-equal-of-cdr-under-iff
+                              acl2::consp-when-member-equal-of-cons-listp
+                              acl2::consp-when-member-equal-of-atom-listp
+                              acl2::subsetp-when-atom-right
+                              acl2::subsetp-when-atom-left)))
+
+(def-visitor-exprcheck prohibit-incexprs)
 
 (define vl-design-increment-elim ((x vl-design-p))
   :returns (new-x vl-design-p)

@@ -258,6 +258,12 @@
       :hints ('(:expand ((svexlist-rewrite-under-subst clk masks x sigma out-multirefs))))
       :flag svexlist-rewrite-under-subst))
 
+  (defthm svex-rewrite-fncall-nomasks-correct
+    (equal (svex-eval (svex-rewrite-fncall clk -1 fn args in-multirefp out-multirefs) env)
+           (svex-eval (svex-call fn args) env))
+    :hints (("goal" :use ((:instance svex-rewrite-fncall-rw (mask -1)))
+             :in-theory (e/d (4vec-mask) (svex-rewrite-fncall-rw)))))
+
 
   (defthm-svex-rewrite-fncall-flag
     (defthm svex-rewrite-fncall-vars
@@ -276,6 +282,30 @@
                (not (member v (svexlist-vars (svexlist-rewrite-under-subst clk masks x sigma out-multirefs)))))
       :hints ('(:expand ((svexlist-rewrite-under-subst clk masks x sigma out-multirefs))))
       :flag svexlist-rewrite-under-subst)))
+
+(defsection svcall-rw
+  :parents (svex)
+  :short "Safely construct an @(see svex) for a function call, with rewriting."
+
+  :long "<p>@('(call svcall-rw)') constructs an @(see svex) that is equivalent
+to the application of @('fn') to the given @('args').  This macro is ``safe''
+in that, at compile time, it ensures that @('fn') is one of the known @(see
+functions) and that it is being given the right number of arguments.</p>
+
+@(def svcall-rw)"
+
+  (defun svcall-rw-fn (fn args)
+    (declare (xargs :guard t))
+    (b* ((look (assoc fn *svex-op-table*))
+         ((unless look)
+          (er hard? 'svcall "Svex function doesn't exist: ~x0" fn))
+         (formals (third look))
+         ((unless (eql (len formals) (len args)))
+          (er hard? 'svcall "Wrong arity for call of ~x0" fn)))
+      `(svex-rewrite-fncall 1000 -1 ',fn (list . ,args) t t)))
+
+  (defmacro svcall-rw (fn &rest args)
+    (svcall-rw-fn fn args)))
 
 
 
@@ -1211,6 +1241,28 @@
 
   (memoize 'svex-maskfree-rewrite
            :condition '(eq (svex-kind x) :call)))
+
+(define svexlist-maskfree-rewrite-nrev ((x svexlist-p)
+                                        acl2::nrev)
+  :returns new-nrev
+  (b* ((acl2::nrev (acl2::nrev-fix acl2::nrev))
+       ((when (atom x)) acl2::nrev)
+       (first (svex-maskfree-rewrite (car x)))
+       (acl2::nrev (acl2::nrev-push first acl2::nrev)))
+    (svexlist-maskfree-rewrite-nrev (cdr x) acl2::nrev))
+  ///
+  (defret svexlist-maskfree-rewrite-nrev-removal
+    (b* ((out-spec (svexlist-maskfree-rewrite x)))
+      (equal new-nrev
+             (append acl2::nrev out-spec)))
+    :hints(("Goal" :induct t
+            :expand ((svexlist-maskfree-rewrite x))))))
+
+(define svexlist-maskfree-rewrite-top ((x svexlist-p))
+  :enabled t
+  (mbe :logic (svexlist-maskfree-rewrite x)
+       :exec (acl2::with-local-nrev (svexlist-maskfree-rewrite-nrev x acl2::nrev))))
+       
 
 
 (define svexlist-mask-acons ((x svexlist-p) (mask 4vmask-p) (al svex-mask-alist-p))

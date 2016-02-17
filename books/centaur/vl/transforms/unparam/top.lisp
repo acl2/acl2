@@ -811,7 +811,7 @@ for each usertype is stored in the res field.</p>"
        ((mv err2 rest-ports rest-ifportalist)
         (vl-plainarglist-update-ifports (cdr x) (cdr ports) ss scopes)))
     (mv (vmsg-concat err1 err2)
-        (cons port1 rest-ports)
+        (cons-with-hint port1 rest-ports ports)
         (append-without-guard ifportalist1 rest-ifportalist)))
 
   ///
@@ -841,6 +841,9 @@ for each usertype is stored in the res field.</p>"
                                           
 
 ||#
+
+(defconst *vl-empty-paramargs* (make-vl-paramargs-named))
+
 (define vl-unparam-inst
   :parents (unparameterization)
   :short "Compute the final parameter values for a single module instance."
@@ -993,7 +996,7 @@ for each usertype is stored in the res field.</p>"
 
        (new-inst (change-vl-modinst inst
                                     :modname sig.newname
-                                    :paramargs (make-vl-paramargs-named)))
+                                    :paramargs *vl-empty-paramargs*))
 
        ;; Now, our elabindex is kind of messed up in that we now have the
        ;; un-mangled module name associated with some info that depends on the
@@ -1051,7 +1054,7 @@ for each usertype is stored in the res field.</p>"
        (keylist (if ok1 (cons instkey1 keylist) keylist))
        ((mv ok2 warnings insts2 keylist elabindex ledger)
         (vl-unparam-instlist (cdr x) elabindex ledger warnings keylist)))
-    (mv (and ok1 ok2) warnings (cons inst1 insts2) keylist elabindex ledger)))
+    (mv (and ok1 ok2) warnings (cons-with-hint inst1 insts2 x) keylist elabindex ledger)))
 
 
 (define vl-gencase-match ((x vl-expr-p)
