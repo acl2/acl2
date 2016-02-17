@@ -1013,7 +1013,7 @@ if the shift amount is computed elsewhere.</p>"
        ((unless size) (mv (vmsg "Could not size datatype ~s0" type) (svex-x)))
 
        ((when (atom x))
-        (mv nil (svex-concat size base-svex (svex-x))))
+        (mv nil (sv::svex-concat size base-svex (svex-x))))
 
 
        ;; Unres-count nonzero implies (consp x)
@@ -1042,7 +1042,7 @@ if the shift amount is computed elsewhere.</p>"
                        base-svex
                        outer-ss))
        ((when err) (mv err (svex-x))))
-    (mv err (svex-concat size
+    (mv err (sv::svex-concat size
                           (sv::svex-lsb-shift shift-amt rest)
                           (svex-x))))
   ///

@@ -967,7 +967,8 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
                                           sv::svex-concat
                                           sv::4vec-index-p))))
   :guard-debug t
-
+  :ignore-ok t
+  :irrelevant-formals-ok t
   (b* (((fun (fail warnings)) (mv warnings (make-vl-portinfo-bad)))
        ((vl-plainarg x) (vl-plainarg-fix x))
        (portname (string-fix portname))
@@ -1013,15 +1014,15 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
         (make-vl-portinfo-regular
          :portname portname
          :port-dir (vl-direction-fix portdir)
-         :argindex argindex
-         :port-expr portexpr
+         ;; :argindex argindex
+         ;; :port-expr portexpr
          :conn-expr x.expr
          :port-inner-lhs port-lhs
          :port-outer-lhs port-outer-lhs
          :conn-svex xsvex
          :port-size 1
-         :conn-size x-size
-         :replicatedp (not multi))))
+         ;; :conn-size x-size
+         :replicatedp (and arraysize (not multi)))))
   ///
   (defret vars-of-vl-gate-plainarg-portinfo
     (sv::svarlist-addr-p (vl-portinfo-vars res))
@@ -1196,15 +1197,15 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
               (make-vl-portinfo-regular
                :portname y.name
                :port-dir nil
-               :argindex argindex
-               :port-expr y-expr
+               ;; :argindex argindex
+               ;; :port-expr y-expr
                :conn-expr x.expr
                :port-inner-lhs y-lhs
                :port-outer-lhs y-outer-lhs
                :conn-svex xsvex
                :port-size y-size
-               :conn-size x-size
-               :replicatedp (not multi)
+               ;; :conn-size x-size
+               :replicatedp (and arraysize (not multi))
                :interfacep t))))
 
 
@@ -1323,15 +1324,15 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
         (make-vl-portinfo-regular
          :portname y.name
          :port-dir x.dir
-         :argindex argindex
-         :port-expr y.expr
+         ;; :argindex argindex
+         ;; :port-expr y.expr
          :conn-expr x.expr
          :port-inner-lhs y-lhs
          :port-outer-lhs y-outer-lhs
          :conn-svex xsvex
          :port-size y-size
-         :conn-size x-size
-         :replicatedp (not multi))))
+         ;; :conn-size x-size
+         :replicatedp (and arraysize (not multi)))))
   ///
   (defret vars-of-vl-plainarg-portinfo
     (sv::svarlist-addr-p (vl-portinfo-vars res))
