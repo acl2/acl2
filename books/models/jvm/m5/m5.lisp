@@ -288,13 +288,13 @@
     '("java/lang/Object")
     '(nil
       (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
-     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     #x00000021                                                 ; PUBLIC SUPER
     '()
-    '(("run:()V" #x00000001                                    ;  ACC_PUBLIC
+    '(("run:()V" #x00000001                                     ; PUBLIC
        (return))
-      ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
-      ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
-      ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+      ("start:()V" #x00000121)                                  ; PUBLIC SYNCHRONIZED NATIVE
+      ("stop:()V" #x00000111)                                   ; PUBLIC FINAL NATIVE
+      ("<init>:()V" #x00000001                                  ; PUBLIC
        (aload_0)
        (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
@@ -307,11 +307,11 @@
     '("java/lang/Object")
     '(nil
       (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
-     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     #x00000031                                                 ; PUBLIC FINAL SUPER
     '(
-      ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+      ("value:[C" #x00000012)                                   ; PRIVATE FINAL
      )
-    '(("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+    '(("<init>:()V" #x00000001                                  ; PUBLIC
        (aload_0)
        (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
@@ -324,12 +324,12 @@
     '("java/lang/Object")
     '(nil
       (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
-     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     #x00000031                                                 ; PUBLIC FINAL SUPER
     '(
-      ("value:[B" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
-      ("coder:B" #x00000012)                                  ;  ACC_PRIVATE ACC_FINAL
+      ("value:[B" #x00000012)                                   ; PRIVATE FINAL
+      ("coder:B" #x00000012)                                    ; PRIVATE FINAL
      )
-    '(("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+    '(("<init>:()V" #x00000001                                  ; PUBLIC
        (aload_0)
        (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))
@@ -341,9 +341,9 @@
     '("java/lang/Object")
     '(nil
       (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
-     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     #x00000031                                                 ; PUBLIC FINAL SUPER
     '()
-    '(("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+    '(("<init>:()V" #x00000001                                  ; PUBLIC
        (aload_0)
        (invokespecial 1) ; java/lang/Object.<init>:()V
        (return)))

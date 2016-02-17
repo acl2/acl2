@@ -8,51 +8,51 @@
      "Demo"
      '("java/lang/Object")
      '(nil
-       (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
-       (methodref "Demo" "fact:(I)I" 1)                        ; 2
-       (fieldref "Demo" "ans:I" 1)                             ; 3
-       (methodref "java/lang/Integer" "parseInt:(Ljava/lang/String;I)I" 2)     ; 4
-       (fieldref "java/lang/System" "out:Ljava/io/PrintStream;" 1)     ; 5
-       (methodref "java/io/PrintStream" "println:(I)V" 1)      ; 6
-       (class (ref -1) "Demo")                                 ; 7
-       (class (ref -1) "java/lang/Object")                     ; 8
-       (utf8)                                                  ; 9
-       (utf8)                                                  ; 10
-       (utf8)                                                  ; 11
-       (utf8)                                                  ; 12
-       (utf8)                                                  ; 13
-       (utf8)                                                  ; 14
-       (utf8)                                                  ; 15
-       (utf8)                                                  ; 16
-       (utf8)                                                  ; 17
-       (utf8)                                                  ; 18
-       (utf8)                                                  ; 19
-       (utf8)                                                  ; 20
-       (utf8)                                                  ; 21
-       (name-and-type "<init>:()V")                            ; 22
-       (name-and-type "fact:(I)I")                             ; 23
-       (name-and-type "ans:I")                                 ; 24
-       (class (ref -1) "java/lang/Integer")                    ; 25
-       (name-and-type "parseInt:(Ljava/lang/String;I)I")       ; 26
-       (class (ref -1) "java/lang/System")                     ; 27
-       (name-and-type "out:Ljava/io/PrintStream;")             ; 28
-       (class (ref -1) "java/io/PrintStream")                  ; 29
-       (name-and-type "println:(I)V")                          ; 30
-       (utf8)                                                  ; 31
-       (utf8)                                                  ; 32
-       (utf8)                                                  ; 33
-       (utf8)                                                  ; 34
-       (utf8)                                                  ; 35
-       (utf8)                                                  ; 36
-       (utf8)                                                  ; 37
-       (utf8)                                                  ; 38
-       (utf8)                                                  ; 39
-       (utf8)                                                  ; 40
-       (utf8)                                                  ; 41
+       (methodref "java/lang/Object" "<init>:()V" 0)            ; 1
+       (methodref "Demo" "fact:(I)I" 1)                         ; 2
+       (fieldref "Demo" "ans:I" 1)                              ; 3
+       (methodref "java/lang/Integer" "parseInt:(Ljava/lang/String;I)I" 2)      ; 4
+       (fieldref "java/lang/System" "out:Ljava/io/PrintStream;" 1)      ; 5
+       (methodref "java/io/PrintStream" "println:(I)V" 1)       ; 6
+       (class (ref -1) "Demo")                                  ; 7
+       (class (ref -1) "java/lang/Object")                      ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (utf8)                                                   ; 16
+       (utf8)                                                   ; 17
+       (utf8)                                                   ; 18
+       (utf8)                                                   ; 19
+       (utf8)                                                   ; 20
+       (utf8)                                                   ; 21
+       (name-and-type "<init>:()V")                             ; 22
+       (name-and-type "fact:(I)I")                              ; 23
+       (name-and-type "ans:I")                                  ; 24
+       (class (ref -1) "java/lang/Integer")                     ; 25
+       (name-and-type "parseInt:(Ljava/lang/String;I)I")        ; 26
+       (class (ref -1) "java/lang/System")                      ; 27
+       (name-and-type "out:Ljava/io/PrintStream;")              ; 28
+       (class (ref -1) "java/io/PrintStream")                   ; 29
+       (name-and-type "println:(I)V")                           ; 30
+       (utf8)                                                   ; 31
+       (utf8)                                                   ; 32
+       (utf8)                                                   ; 33
+       (utf8)                                                   ; 34
+       (utf8)                                                   ; 35
+       (utf8)                                                   ; 36
+       (utf8)                                                   ; 37
+       (utf8)                                                   ; 38
+       (utf8)                                                   ; 39
+       (utf8)                                                   ; 40
+       (utf8)                                                   ; 41
       )
-     #x00000020                                                ;  ACC_SUPER
+     #x00000020                                                 ; SUPER
      '(
-       ("ans:I" #x00000008)                                    ;  ACC_STATIC
+       ("ans:I" #x00000008)                                     ; STATIC
       )
      (list
       '("<init>:()V" #x00000000                                 ; 
@@ -61,7 +61,7 @@
         (invokespecial 1)                                       ; 1 java.lang.Object.<init>:()V
         (return)                                                ; 4
        )
-      '("fact:(I)I" #x00000009                                  ;  ACC_PUBLIC ACC_STATIC
+      '("fact:(I)I" #x00000009                                  ; PUBLIC STATIC
         ; line_number #6
         (iload_0)                                               ; 0
         (ifle 12)                                               ; 1
@@ -77,7 +77,7 @@
         (iconst_1)                                              ; 13
         (ireturn)                                               ; 14
        )
-      '("main:()V" #x00000009                                   ;  ACC_PUBLIC ACC_STATIC
+      '("main:()V" #x00000009                                   ; PUBLIC STATIC
         ; line_number #15
         (iconst_4)                                              ; 0
         (istore_0)                                              ; 1
@@ -90,7 +90,7 @@
         ; line_number #17
         (return)                                                ; 11
        )
-      '("main:([Ljava/lang/String;)V" #x00000009                ;  ACC_PUBLIC ACC_STATIC
+      '("main:([Ljava/lang/String;)V" #x00000009                ; PUBLIC STATIC
         ; line_number #24
         (aload_0)                                               ; 0
         (iconst_0)                                              ; 1

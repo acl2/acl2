@@ -172,9 +172,9 @@ class ListProc extends Cons {
    '(("java/lang/Object"
      ()
      (nil)
-     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     #x00000021                                                 ; PUBLIC SUPER
      ()
-     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (return)))
      (ref 0))
     ("[C"
@@ -187,13 +187,13 @@ class ListProc extends Cons {
     ("java/lang/Thread"
      ("java/lang/Object")
      (nil (methodref "java/lang/Object" "<init>:()V" 0))
-     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     #x00000021                                                 ; PUBLIC SUPER
      ()
-     (("run:()V" #x00000001                                    ;  ACC_PUBLIC
+     (("run:()V" #x00000001                                     ; PUBLIC
        (return))
-      ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
-      ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
-      ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+      ("start:()V" #x00000121)                                  ; PUBLIC SYNCHRONIZED NATIVE
+      ("stop:()V" #x00000111)                                   ; PUBLIC FINAL NATIVE
+      ("<init>:()V" #x00000001                                  ; PUBLIC
        (aload\_0)
        (invokespecial 1)
        (return)))
@@ -201,11 +201,11 @@ class ListProc extends Cons {
     ("java/lang/String"
      ("java/lang/Object")
      (nil (methodref "java/lang/Object" "<init>:()V" 0))
-     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     #x00000031                                                 ; PUBLIC FINAL SUPER
      (
-      ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+      ("value:[C" #x00000012)                                   ; PRIVATE FINAL
      )
-     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (aload\_0)
        (invokespecial 1)
        (return)))
@@ -213,9 +213,9 @@ class ListProc extends Cons {
     ("java/lang/Class"
      ("java/lang/Object")
      (nil (methodref "java/lang/Object" "<init>:()V" 0))
-     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     #x00000031                                                 ; PUBLIC FINAL SUPER
      ()
-     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (aload\_0)
        (invokespecial 1)
        (return)))
@@ -223,40 +223,40 @@ class ListProc extends Cons {
     ("Cons"
      ("java/lang/Object")
      (nil
-       (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
-       (class (ref 5) "Cons")                                  ; 2
-       (methodref "Cons" "<init>:()V" 0)                       ; 3
-       (fieldref "Cons" "car:I" 1)                             ; 4
-       (fieldref "Cons" "cdr:Ljava/lang/Object;" 1)            ; 5
-       (class (ref 0) "java/lang/Object")                      ; 6
-       (utf8)                                                  ; 7
-       (utf8)                                                  ; 8
-       (utf8)                                                  ; 9
-       (utf8)                                                  ; 10
-       (utf8)                                                  ; 11
-       (utf8)                                                  ; 12
-       (utf8)                                                  ; 13
-       (utf8)                                                  ; 14
-       (utf8)                                                  ; 15
-       (utf8)                                                  ; 16
-       (utf8)                                                  ; 17
-       (utf8)                                                  ; 18
-       (name-and-type "<init>:()V")                            ; 19
-       (utf8)                                                  ; 20
-       (name-and-type "car:I")                                 ; 21
-       (name-and-type "cdr:Ljava/lang/Object;")                ; 22
-       (utf8)                                                  ; 23
+       (methodref "java/lang/Object" "<init>:()V" 0)            ; 1
+       (class (ref 5) "Cons")                                   ; 2
+       (methodref "Cons" "<init>:()V" 0)                        ; 3
+       (fieldref "Cons" "car:I" 1)                              ; 4
+       (fieldref "Cons" "cdr:Ljava/lang/Object;" 1)             ; 5
+       (class (ref 0) "java/lang/Object")                       ; 6
+       (utf8)                                                   ; 7
+       (utf8)                                                   ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (utf8)                                                   ; 16
+       (utf8)                                                   ; 17
+       (utf8)                                                   ; 18
+       (name-and-type "<init>:()V")                             ; 19
+       (utf8)                                                   ; 20
+       (name-and-type "car:I")                                  ; 21
+       (name-and-type "cdr:Ljava/lang/Object;")                 ; 22
+       (utf8)                                                   ; 23
       )
-     #x00000020                                                ;  ACC_SUPER
+     #x00000020                                                 ; SUPER
      (
-      ("car:I" #x00000000)                                    ;
-      ("cdr:Ljava/lang/Object;" #x00000000)                   ;
+      ("car:I" #x00000000)                                      ;
+      ("cdr:Ljava/lang/Object;" #x00000000)                     ;
      )
-     (("<init>:()V" #x00000000                                 ;
+     (("<init>:()V" #x00000000                                  ;
        (aload\_0)
        (invokespecial 1)
        (return))
-      ("cons:(ILjava/lang/Object;)LCons;" #x00000009           ;  ACC_PUBLIC ACC_STATIC
+      ("cons:(ILjava/lang/Object;)LCons;" #x00000009            ; PUBLIC STATIC
        (new 2) ; class Cons
        (dup)
        (invokespecial 3)
@@ -273,46 +273,46 @@ class ListProc extends Cons {
     ("ListProc"
      ("Cons" "java/lang/Object")
      (nil
-       (methodref "Cons" "<init>:()V" 0)                       ; 1
-       (methodref "Cons" "cons:(ILjava/lang/Object;)LCons;" 2) ; 2
-       (class (ref 5) "Cons")                                  ; 3
-       (fieldref "Cons" "car:I" 1)                             ; 4
-       (fieldref "Cons" "cdr:Ljava/lang/Object;" 1)            ; 5
+       (methodref "Cons" "<init>:()V" 0)                        ; 1
+       (methodref "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)  ; 2
+       (class (ref 5) "Cons")                                   ; 3
+       (fieldref "Cons" "car:I" 1)                              ; 4
+       (fieldref "Cons" "cdr:Ljava/lang/Object;" 1)             ; 5
        (methodref "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)   ; 6
        (methodref "ListProc" "isort:(Ljava/lang/Object;)Ljava/lang/Object;" 1) ; 7
-       (class (ref 6) "ListProc")                              ; 8
-       (utf8)                                                  ; 9
-       (utf8)                                                  ; 10
-       (utf8)                                                  ; 11
-       (utf8)                                                  ; 12
-       (utf8)                                                  ; 13
-       (utf8)                                                  ; 14
-       (utf8)                                                  ; 15
-       (utf8)                                                  ; 16
-       (utf8)                                                  ; 17
-       (utf8)                                                  ; 18
-       (utf8)                                                  ; 19
-       (name-and-type "<init>:()V")                            ; 20
-       (name-and-type "cons:(ILjava/lang/Object;)LCons;")      ; 21
-       (utf8)                                                  ; 22
-       (name-and-type "car:I")                                 ; 23
-       (name-and-type "cdr:Ljava/lang/Object;")                ; 24
-       (name-and-type "insert:(ILjava/lang/Object;)LCons;")    ; 25
+       (class (ref 6) "ListProc")                               ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (utf8)                                                   ; 16
+       (utf8)                                                   ; 17
+       (utf8)                                                   ; 18
+       (utf8)                                                   ; 19
+       (name-and-type "<init>:()V")                             ; 20
+       (name-and-type "cons:(ILjava/lang/Object;)LCons;")       ; 21
+       (utf8)                                                   ; 22
+       (name-and-type "car:I")                                  ; 23
+       (name-and-type "cdr:Ljava/lang/Object;")                 ; 24
+       (name-and-type "insert:(ILjava/lang/Object;)LCons;")     ; 25
        (name-and-type "isort:(Ljava/lang/Object;)Ljava/lang/Object;")  ; 26
-       (utf8)                                                  ; 27
-       (utf8)                                                  ; 28
-       (utf8)                                                  ; 29
-       (utf8)                                                  ; 30
-       (utf8)                                                  ; 31
-       (utf8)                                                  ; 32
+       (utf8)                                                   ; 27
+       (utf8)                                                   ; 28
+       (utf8)                                                   ; 29
+       (utf8)                                                   ; 30
+       (utf8)                                                   ; 31
+       (utf8)                                                   ; 32
       )
-     #x00000020                                                ;  ACC_SUPER
+     #x00000020                                                 ; SUPER
      ()
-     (("<init>:()V" #x00000000                                 ;
+     (("<init>:()V" #x00000000                                  ;
        (aload\_0)
        (invokespecial 1)
        (return))
-      ("insert:(ILjava/lang/Object;)LCons;" #x00000009         ;  ACC_PUBLIC ACC_STATIC
+      ("insert:(ILjava/lang/Object;)LCons;" #x00000009          ; PUBLIC STATIC
         (aload\_1)
         (ifnonnull 9)
         (iload\_0)
@@ -338,7 +338,7 @@ class ListProc extends Cons {
         (invokestatic 6)
         (invokestatic 2)
         (areturn))
-      ("isort:(Ljava/lang/Object;)Ljava/lang/Object;" #x00000009       ;  ACC_PUBLIC ACC_STATIC
+      ("isort:(Ljava/lang/Object;)Ljava/lang/Object;" #x00000009        ; PUBLIC STATIC
        (aload\_0)
        (ifnonnull 5)
        (aload\_0)

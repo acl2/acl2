@@ -8,24 +8,24 @@
      "Container"
      '("java/lang/Object")
      '(nil
-       (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
-       (class (ref -1) "Container")                            ; 2
-       (class (ref -1) "java/lang/Object")                     ; 3
-       (utf8)                                                  ; 4
-       (utf8)                                                  ; 5
-       (utf8)                                                  ; 6
-       (utf8)                                                  ; 7
-       (utf8)                                                  ; 8
-       (utf8)                                                  ; 9
-       (utf8)                                                  ; 10
-       (utf8)                                                  ; 11
-       (name-and-type "<init>:()V")                            ; 12
-       (utf8)                                                  ; 13
-       (utf8)                                                  ; 14
+       (methodref "java/lang/Object" "<init>:()V" 0)            ; 1
+       (class (ref -1) "Container")                             ; 2
+       (class (ref -1) "java/lang/Object")                      ; 3
+       (utf8)                                                   ; 4
+       (utf8)                                                   ; 5
+       (utf8)                                                   ; 6
+       (utf8)                                                   ; 7
+       (utf8)                                                   ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (name-and-type "<init>:()V")                             ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
       )
-     #x00000020                                                ;  ACC_SUPER
+     #x00000020                                                 ; SUPER
      '(
-       ("counter:I" #x00000001)                                ;  ACC_PUBLIC
+       ("counter:I" #x00000001)                                 ; PUBLIC
       )
      (list
       '("<init>:()V" #x00000000                                 ; 

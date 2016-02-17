@@ -8,40 +8,40 @@
      "ListProc"
      '("Cons")
      '(nil
-       (methodref "Cons" "<init>:()V" 0)                       ; 1
-       (methodref "ListProc" "cons:(ILjava/lang/Object;)LCons;" 2)     ; 2
-       (class (ref -1) "Cons")                                 ; 3
-       (fieldref "Cons" "car:I" 1)                             ; 4
-       (fieldref "Cons" "cdr:Ljava/lang/Object;" 1)            ; 5
-       (methodref "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)   ; 6
-       (methodref "ListProc" "isort:(Ljava/lang/Object;)Ljava/lang/Object;" 1) ; 7
-       (class (ref -1) "ListProc")                             ; 8
-       (utf8)                                                  ; 9
-       (utf8)                                                  ; 10
-       (utf8)                                                  ; 11
-       (utf8)                                                  ; 12
-       (utf8)                                                  ; 13
-       (utf8)                                                  ; 14
-       (utf8)                                                  ; 15
-       (utf8)                                                  ; 16
-       (utf8)                                                  ; 17
-       (utf8)                                                  ; 18
-       (utf8)                                                  ; 19
-       (name-and-type "<init>:()V")                            ; 20
-       (name-and-type "cons:(ILjava/lang/Object;)LCons;")      ; 21
-       (utf8)                                                  ; 22
-       (name-and-type "car:I")                                 ; 23
-       (name-and-type "cdr:Ljava/lang/Object;")                ; 24
-       (name-and-type "insert:(ILjava/lang/Object;)LCons;")    ; 25
-       (name-and-type "isort:(Ljava/lang/Object;)Ljava/lang/Object;")  ; 26
-       (utf8)                                                  ; 27
-       (utf8)                                                  ; 28
-       (utf8)                                                  ; 29
-       (utf8)                                                  ; 30
-       (utf8)                                                  ; 31
-       (utf8)                                                  ; 32
+       (methodref "Cons" "<init>:()V" 0)                        ; 1
+       (methodref "ListProc" "cons:(ILjava/lang/Object;)LCons;" 2)      ; 2
+       (class (ref -1) "Cons")                                  ; 3
+       (fieldref "Cons" "car:I" 1)                              ; 4
+       (fieldref "Cons" "cdr:Ljava/lang/Object;" 1)             ; 5
+       (methodref "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)    ; 6
+       (methodref "ListProc" "isort:(Ljava/lang/Object;)Ljava/lang/Object;" 1)  ; 7
+       (class (ref -1) "ListProc")                              ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (utf8)                                                   ; 16
+       (utf8)                                                   ; 17
+       (utf8)                                                   ; 18
+       (utf8)                                                   ; 19
+       (name-and-type "<init>:()V")                             ; 20
+       (name-and-type "cons:(ILjava/lang/Object;)LCons;")       ; 21
+       (utf8)                                                   ; 22
+       (name-and-type "car:I")                                  ; 23
+       (name-and-type "cdr:Ljava/lang/Object;")                 ; 24
+       (name-and-type "insert:(ILjava/lang/Object;)LCons;")     ; 25
+       (name-and-type "isort:(Ljava/lang/Object;)Ljava/lang/Object;")   ; 26
+       (utf8)                                                   ; 27
+       (utf8)                                                   ; 28
+       (utf8)                                                   ; 29
+       (utf8)                                                   ; 30
+       (utf8)                                                   ; 31
+       (utf8)                                                   ; 32
       )
-     #x00000020                                                ;  ACC_SUPER
+     #x00000020                                                 ; SUPER
      '(
       )
      (list
@@ -51,7 +51,7 @@
         (invokespecial 1)                                       ; 1 Cons.<init>:()V
         (return)                                                ; 4
        )
-      '("insert:(ILjava/lang/Object;)LCons;" #x00000009         ;  ACC_PUBLIC ACC_STATIC
+      '("insert:(ILjava/lang/Object;)LCons;" #x00000009         ; PUBLIC STATIC
         ; line_number #14
         (aload_1)                                               ; 0
         (ifnonnull 9)                                           ; 1
@@ -83,7 +83,7 @@
         (invokestatic 2)                                        ; 45 ListProc.cons:(ILjava/lang/Object;)LCons;
         (areturn)                                               ; 48
        )
-      '("isort:(Ljava/lang/Object;)Ljava/lang/Object;" #x00000009       ;  ACC_PUBLIC ACC_STATIC
+      '("isort:(Ljava/lang/Object;)Ljava/lang/Object;" #x00000009       ; PUBLIC STATIC
         ; line_number #22
         (aload_0)                                               ; 0
         (ifnonnull 5)                                           ; 1

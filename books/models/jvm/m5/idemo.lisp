@@ -150,9 +150,9 @@ class IDemo {
   '(("java/lang/Object"
      ()
      (NIL)
-     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     #x00000021                                                 ; PUBLIC SUPER
      ()
-     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (RETURN)))
      (REF 0))
     ("[Ljava/lang/Object;"
@@ -172,13 +172,13 @@ class IDemo {
     ("java/lang/Thread"
      ("java/lang/Object")
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     #x00000021                                                 ; PUBLIC SUPER
      ()
-     (("run:()V" #x00000001                                    ;  ACC_PUBLIC
+     (("run:()V" #x00000001                                     ; PUBLIC
        (RETURN))
-      ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
-      ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
-      ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+      ("start:()V" #x00000121)                                  ; PUBLIC SYNCHRONIZED NATIVE
+      ("stop:()V" #x00000111)                                   ; PUBLIC FINAL NATIVE
+      ("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
@@ -186,11 +186,11 @@ class IDemo {
     ("java/lang/String"
      ("java/lang/Object")
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     #x00000031                                                 ; PUBLIC FINAL SUPER
      (
-      ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+      ("value:[C" #x00000012)                                   ; PRIVATE FINAL
      )
-     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
@@ -205,9 +205,9 @@ class IDemo {
     ("java/lang/Class"
      ("java/lang/Object")
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     #x00000031                                                 ; PUBLIC FINAL SUPER
      ()
-     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
@@ -215,33 +215,33 @@ class IDemo {
     ("IDemo"
      ("java/lang/Object")
      (nil
-       (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
-       (methodref "IDemo" "ifact:(I)I" 1)                      ; 2
-       (class (ref 7) "IDemo")                                 ; 3
-       (class (ref 0) "java/lang/Object")                      ; 4
-       (utf8)                                                  ; 5
-       (utf8)                                                  ; 6
-       (utf8)                                                  ; 7
-       (utf8)                                                  ; 8
-       (utf8)                                                  ; 9
-       (utf8)                                                  ; 10
-       (utf8)                                                  ; 11
-       (utf8)                                                  ; 12
-       (utf8)                                                  ; 13
-       (utf8)                                                  ; 14
-       (utf8)                                                  ; 15
-       (name-and-type "<init>:()V")                            ; 16
-       (name-and-type "ifact:(I)I")                            ; 17
-       (utf8)                                                  ; 18
-       (utf8)                                                  ; 19
+       (methodref "java/lang/Object" "<init>:()V" 0)            ; 1
+       (methodref "IDemo" "ifact:(I)I" 1)                       ; 2
+       (class (ref 7) "IDemo")                                  ; 3
+       (class (ref 0) "java/lang/Object")                       ; 4
+       (utf8)                                                   ; 5
+       (utf8)                                                   ; 6
+       (utf8)                                                   ; 7
+       (utf8)                                                   ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (name-and-type "<init>:()V")                             ; 16
+       (name-and-type "ifact:(I)I")                             ; 17
+       (utf8)                                                   ; 18
+       (utf8)                                                   ; 19
       )
-     #x00000020                                                ;  ACC_SUPER
+     #x00000020                                                 ; SUPER
      ()
-     (("<init>:()V" #x00000000                                 ;
+     (("<init>:()V" #x00000000                                  ;
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN))
-      ("ifact:(I)I" #x00000009                                 ;  ACC_PUBLIC ACC_STATIC
+      ("ifact:(I)I" #x00000009                                  ; PUBLIC STATIC
        (ICONST\_1)
        (ISTORE\_1)
        (ICONST\_0)
@@ -258,7 +258,7 @@ class IDemo {
        (GOTO -13)
        (ILOAD\_1)
        (IRETURN))
-      ("main:([Ljava/lang/String;)V" #x00000009                ;  ACC_PUBLIC ACC_STATIC
+      ("main:([Ljava/lang/String;)V" #x00000009                 ; PUBLIC STATIC
        (BIPUSH 8)
        (INVOKESTATIC 2)
        (POP)

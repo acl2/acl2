@@ -355,9 +355,9 @@ The output of jvm2acl2 for M5 is in classes/Demo.
   '(("java/lang/Object"
      ()
      (NIL)
-     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     #x00000021                                                 ; PUBLIC SUPER
      ()
-     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (RETURN)))
      (REF 0))
     ("[Ljava/lang/Object;"
@@ -377,13 +377,13 @@ The output of jvm2acl2 for M5 is in classes/Demo.
     ("java/lang/Thread"
      ("java/lang/Object")
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+     #x00000021                                                 ; PUBLIC SUPER
      ()
-     (("run:()V" #x00000001                                    ;  ACC_PUBLIC
+     (("run:()V" #x00000001                                     ; PUBLIC
        (RETURN))
-      ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
-      ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
-      ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+      ("start:()V" #x00000121)                                  ; PUBLIC SYNCHRONIZED NATIVE
+      ("stop:()V" #x00000111)                                   ; PUBLIC FINAL NATIVE
+      ("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
@@ -391,11 +391,11 @@ The output of jvm2acl2 for M5 is in classes/Demo.
     ("java/lang/String"
      ("java/lang/Object")
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     #x00000031                                                 ; PUBLIC FINAL SUPER
      (
-      ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+      ("value:[C" #x00000012)                                   ; PRIVATE FINAL
      )
-     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
@@ -410,9 +410,9 @@ The output of jvm2acl2 for M5 is in classes/Demo.
     ("java/lang/Class"
      ("java/lang/Object")
      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-     #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+     #x00000031                                                 ; PUBLIC FINAL SUPER
      ()
-     (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN)))
@@ -420,57 +420,57 @@ The output of jvm2acl2 for M5 is in classes/Demo.
     ("Demo"
      ("java/lang/Object")
      (nil
-       (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
-       (methodref "Demo" "fact:(I)I" 1)                        ; 2
-       (fieldref "Demo" "ans:I" 1)                             ; 3
+       (methodref "java/lang/Object" "<init>:()V" 0)            ; 1
+       (methodref "Demo" "fact:(I)I" 1)                         ; 2
+       (fieldref "Demo" "ans:I" 1)                              ; 3
        (methodref "NoClassDefFoundError: java/lang/Integer" "parseInt:(Ljava/lang/String;I)I" 2) ; 4
        (fieldref "NoClassDefFoundError: java/lang/System" "out:Ljava/io/PrintStream;" 1) ; 5
        (methodref "NoClassDefFoundError: java/io/PrintStream" "println:(I)V" 1) ; 6
-       (class (ref 7) "Demo")                                  ; 7
-       (class (ref 0) "java/lang/Object")                      ; 8
-       (utf8)                                                  ; 9
-       (utf8)                                                  ; 10
-       (utf8)                                                  ; 11
-       (utf8)                                                  ; 12
-       (utf8)                                                  ; 13
-       (utf8)                                                  ; 14
-       (utf8)                                                  ; 15
-       (utf8)                                                  ; 16
-       (utf8)                                                  ; 17
-       (utf8)                                                  ; 18
-       (utf8)                                                  ; 19
-       (utf8)                                                  ; 20
-       (utf8)                                                  ; 21
-       (name-and-type "<init>:()V")                            ; 22
-       (name-and-type "fact:(I)I")                             ; 23
-       (name-and-type "ans:I")                                 ; 24
-       (class nil "NoClassDefFoundError: java/lang/Integer")   ; 25
-       (name-and-type "parseInt:(Ljava/lang/String;I)I")       ; 26
-       (class nil "NoClassDefFoundError: java/lang/System")    ; 27
-       (name-and-type "out:Ljava/io/PrintStream;")             ; 28
-       (class nil "NoClassDefFoundError: java/io/PrintStream") ; 29
-       (name-and-type "println:(I)V")                          ; 30
-       (utf8)                                                  ; 31
-       (utf8)                                                  ; 32
-       (utf8)                                                  ; 33
-       (utf8)                                                  ; 34
-       (utf8)                                                  ; 35
-       (utf8)                                                  ; 36
-       (utf8)                                                  ; 37
-       (utf8)                                                  ; 38
-       (utf8)                                                  ; 39
-       (utf8)                                                  ; 40
-       (utf8)                                                  ; 41
+       (class (ref 7) "Demo")                                   ; 7
+       (class (ref 0) "java/lang/Object")                       ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (utf8)                                                   ; 16
+       (utf8)                                                   ; 17
+       (utf8)                                                   ; 18
+       (utf8)                                                   ; 19
+       (utf8)                                                   ; 20
+       (utf8)                                                   ; 21
+       (name-and-type "<init>:()V")                             ; 22
+       (name-and-type "fact:(I)I")                              ; 23
+       (name-and-type "ans:I")                                  ; 24
+       (class nil "NoClassDefFoundError: java/lang/Integer")    ; 25
+       (name-and-type "parseInt:(Ljava/lang/String;I)I")        ; 26
+       (class nil "NoClassDefFoundError: java/lang/System")     ; 27
+       (name-and-type "out:Ljava/io/PrintStream;")              ; 28
+       (class nil "NoClassDefFoundError: java/io/PrintStream")  ; 29
+       (name-and-type "println:(I)V")                           ; 30
+       (utf8)                                                   ; 31
+       (utf8)                                                   ; 32
+       (utf8)                                                   ; 33
+       (utf8)                                                   ; 34
+       (utf8)                                                   ; 35
+       (utf8)                                                   ; 36
+       (utf8)                                                   ; 37
+       (utf8)                                                   ; 38
+       (utf8)                                                   ; 39
+       (utf8)                                                   ; 40
+       (utf8)                                                   ; 41
       )
-     #x00000020                                                ;  ACC_SUPER
+     #x00000020                                                 ; SUPER
      (
-       ("ans:I" #x00000008)                                    ;  ACC_STATIC
+       ("ans:I" #x00000008)                                     ; STATIC
      )
-     (("<init>:()V" #x00000000                                 ;
+     (("<init>:()V" #x00000000                                  ;
        (ALOAD\_0)
        (INVOKESPECIAL 1)
        (RETURN))
-      ("fact:(I)I" #x00000009                                  ;  ACC_PUBLIC ACC_STATIC
+      ("fact:(I)I" #x00000009                                   ; PUBLIC STATIC
        (ILOAD\_0)
        (IFLE 12)
        (ILOAD\_0)
@@ -482,7 +482,7 @@ The output of jvm2acl2 for M5 is in classes/Demo.
        (IRETURN)
        (ICONST\_1)
        (IRETURN))
-      ("main:()V" #x00000009                                   ;  ACC_PUBLIC ACC_STATIC
+      ("main:()V" #x00000009                                    ; PUBLIC STATIC
        (ICONST_4)
        (ISTORE_0)
        (ILOAD_0)
@@ -491,7 +491,7 @@ The output of jvm2acl2 for M5 is in classes/Demo.
        (INVOKESTATIC 2) ; Demo.fact:(I)I
        (PUTSTATIC 3) ; Demo.ans:I
        (RETURN))
-      ("main:([Ljava/lang/String;)V" #x00000009                ;  ACC_PUBLIC ACC_STATIC
+      ("main:([Ljava/lang/String;)V" #x00000009                 ; PUBLIC STATIC
        (ALOAD_0)
        (ICONST_0)
        (AALOAD)
@@ -616,21 +616,21 @@ T
 ; Proving Fact Correct
 
 (defconst *fact-def*
-      '("fact:(I)I" #x00000009                                  ;  ACC_PUBLIC ACC_STATIC
+      '("fact:(I)I" #x00000009                                   ; PUBLIC STATIC
         ; line_number #6
-        (iload_0)                                               ; 0
-        (ifle 12)                                               ; 1
+        (iload_0)                                                ; 0
+        (ifle 12)                                                ; 1
         ; line_number #7
-        (iload_0)                                               ; 4
-        (iload_0)                                               ; 5
-        (iconst_1)                                              ; 6
-        (isub)                                                  ; 7
-        (invokestatic 2)                                        ; 8
-        (imul)                                                  ; 11
-        (ireturn)                                               ; 12
+        (iload_0)                                                ; 4
+        (iload_0)                                                ; 5
+        (iconst_1)                                               ; 6
+        (isub)                                                   ; 7
+        (invokestatic 2)                                         ; 8
+        (imul)                                                   ; 11
+        (ireturn)                                                ; 12
         ; line_number #9
-        (iconst_1)                                              ; 13
-        (ireturn)))                                             ; 14
+        (iconst_1)                                               ; 13
+        (ireturn)))                                              ; 14
 
 (defun poised-to-invoke-fact (th s n)
   (and (poised-to-invokestatic th s "Demo" "fact:(I)I" 1)

@@ -81,9 +81,9 @@ Sun Jun 30 23:21:06 2002
     (("java/lang/Object"
       ()
       (NIL)
-      #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+      #x00000021                                                 ; PUBLIC SUPER
       ()
-      (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+      (("<init>:()V" #x00000001                                  ; PUBLIC
         (RETURN)))
        (REF 0))
       ("[C"
@@ -97,13 +97,13 @@ Sun Jun 30 23:21:06 2002
       ("java/lang/Object")
       (NIL
        (METHODREF "java/lang/Object" "<init>:()V" 0))
-      #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+      #x00000021                                                 ; PUBLIC SUPER
       ()
-      (("run:()V" #x00000001                                    ;  ACC_PUBLIC
+      (("run:()V" #x00000001                                     ; PUBLIC
         (RETURN))
-       ("start:()V" #x00000121)                                 ;  ACC_PUBLIC ACC_SYNCHRONIZED ACC_NATIVE
-       ("stop:()V" #x00000111)                                  ;  ACC_PUBLIC ACC_FINAL ACC_NATIVE
-       ("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+       ("start:()V" #x00000121)                                  ; PUBLIC SYNCHRONIZED NATIVE
+       ("stop:()V" #x00000111)                                   ; PUBLIC FINAL NATIVE
+       ("<init>:()V" #x00000001                                  ; PUBLIC
         (ALOAD_0)
         (INVOKESPECIAL 1)
         (RETURN)))
@@ -112,11 +112,11 @@ Sun Jun 30 23:21:06 2002
       ("java/lang/Object")
       (NIL
        (METHODREF "java/lang/Object" "<init>:()V" 0))
-      #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+      #x00000031                                                 ; PUBLIC FINAL SUPER
       (
-       ("value:[C" #x00000012)                                 ;  ACC_PRIVATE ACC_FINAL
+       ("value:[C" #x00000012)                                   ; PRIVATE FINAL
       )
-      (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+      (("<init>:()V" #x00000001                                  ; PUBLIC
         (ALOAD_0)
         (INVOKESPECIAL 1)
         (RETURN)))
@@ -124,9 +124,9 @@ Sun Jun 30 23:21:06 2002
      ("java/lang/Class"
       ("java/lang/Object")
       (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
-      #x00000031                                                ;  ACC_PUBLIC ACC_FINAL ACC_SUPER
+      #x00000031                                                 ; PUBLIC FINAL SUPER
       ()
-      (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+      (("<init>:()V" #x00000001                                  ; PUBLIC
         (ALOAD_0)
         (INVOKESPECIAL 1)
         (RETURN)))
@@ -135,13 +135,13 @@ Sun Jun 30 23:21:06 2002
       (NIL
        (METHODREF "java/lang/Object" "<init>:()V" 0) ; 1
        (METHODREF "Universal" "universal:()I" 0)) ; 2
-      #x00000020                                                ;  ACC_SUPER
+      #x00000020                                                 ; SUPER
       ()
-      (("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+      (("<init>:()V" #x00000001                                  ; PUBLIC
         (ALOAD_0)
         (INVOKESPECIAL 1)
         (RETURN))
-       ("universal:()I" #x00000001                                 ;  ACC_PUBLIC
+       ("universal:()I" #x00000001                               ; PUBLIC
         (ICONST_0)
         (ICONST_1)
         (IADD)
@@ -233,7 +233,7 @@ Sun Jun 30 23:21:06 2002
   (and (poised-to-invokestatic th s "Universal" "universal:()I" 0)
        (equal (bound? "universal:()I"
                       (class-decl-methods (bound? "Universal" (class-table s))))
-              '("universal:()I" #x00000001                                 ;  ACC_PUBLIC
+              '("universal:()I" #x00000001                                 ; PUBLIC
                 (ICONST_0)
                 (ICONST_1)
                 (IADD)

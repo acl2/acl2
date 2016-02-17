@@ -122,9 +122,7 @@ public class jvm2m5 implements
 
     int indent;
     int mark;
-    private static final int CP_TAB = 56;
-    private static final int ACCESS_TAB = 56;
-    private static final int CODE_TAB = 56;
+    private static final int COMMENT_TAB = 64;
 
     void indent(int delta) {
         indent += delta;
@@ -132,23 +130,27 @@ public class jvm2m5 implements
 
     Void nl(String s) {
         sb.append('\n');
+        mark = sb.length();
         for (int i = 0; i < indent; i++) {
             sb.append(' ');
         }
-        mark = sb.length();
         sb.append(s);
         return null;
     }
 
-    void comment(int pos, Set<String> strings) {
+    void commentFlags(Set<String> strings) {
         StringBuilder sb = new StringBuilder();
         for (String s : strings) {
-            sb.append(' ').append(s);
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(s.replace("ACC_", ""));
         }
-        comment(pos, sb.toString());
+        comment(sb.toString());
     }
 
-    void comment(int pos, String str) {
+    void comment(String str) {
+        int pos = COMMENT_TAB;
         while (pos <= sb.length() - mark) {
             pos += 8;
         }
@@ -191,7 +193,7 @@ public class jvm2m5 implements
         int ind = 1;
         for (ConstantPool.CPInfo info : cp.entries()) {
             info.accept(this, true);
-            comment(CP_TAB, Integer.toString(ind));
+            comment(Integer.toString(ind));
             ind += info.size();
             for (int i = 1; i < info.size(); i++) {
                 nl("nil");
@@ -201,7 +203,7 @@ public class jvm2m5 implements
         nl("  )");
 
         nl(" #x" + padLeft(Integer.toHexString(cf.access_flags.flags), 8));
-        comment(ACCESS_TAB + 3, cf.access_flags.getClassFlags());
+        commentFlags(cf.access_flags.getClassFlags());
 
         nl(" '(");
         indent(3);
@@ -210,7 +212,7 @@ public class jvm2m5 implements
             String fdesc = f.descriptor.getValue(cp);
             nl("(\"" + fname + ":" + fdesc + "\" #x"
                     + padLeft(Integer.toHexString(f.access_flags.flags), 8) + ")");
-            comment(ACCESS_TAB, f.access_flags.getFieldFlags());
+            commentFlags(f.access_flags.getFieldFlags());
         }
         indent(-3);
         nl("  )");
@@ -240,7 +242,7 @@ public class jvm2m5 implements
                 .append("\"")
                 .append(" #x")
                 .append(padLeft(Integer.toHexString(method.access_flags.flags), 8));
-        comment(ACCESS_TAB + 2, method.access_flags.getMethodFlags());
+        commentFlags(method.access_flags.getMethodFlags());
         indent(2);
 
         if (cai != null) {
@@ -256,7 +258,7 @@ public class jvm2m5 implements
                 nl('(' + instr.getMnemonic());
                 ConstantPool.CPInfo info = instr.accept(this, null);
                 sb.append(")");
-                comment(CODE_TAB, Integer.toString(instr.getPC()));
+                comment(Integer.toString(instr.getPC()));
                 if (info != null) {
                     sb.append(' ');
                     info.accept(this, false);

@@ -8,27 +8,27 @@
      "IDemo"
      '("java/lang/Object")
      '(nil
-       (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
-       (methodref "IDemo" "ifact:(I)I" 1)                      ; 2
-       (class (ref -1) "IDemo")                                ; 3
-       (class (ref -1) "java/lang/Object")                     ; 4
-       (utf8)                                                  ; 5
-       (utf8)                                                  ; 6
-       (utf8)                                                  ; 7
-       (utf8)                                                  ; 8
-       (utf8)                                                  ; 9
-       (utf8)                                                  ; 10
-       (utf8)                                                  ; 11
-       (utf8)                                                  ; 12
-       (utf8)                                                  ; 13
-       (utf8)                                                  ; 14
-       (utf8)                                                  ; 15
-       (name-and-type "<init>:()V")                            ; 16
-       (name-and-type "ifact:(I)I")                            ; 17
-       (utf8)                                                  ; 18
-       (utf8)                                                  ; 19
+       (methodref "java/lang/Object" "<init>:()V" 0)            ; 1
+       (methodref "IDemo" "ifact:(I)I" 1)                       ; 2
+       (class (ref -1) "IDemo")                                 ; 3
+       (class (ref -1) "java/lang/Object")                      ; 4
+       (utf8)                                                   ; 5
+       (utf8)                                                   ; 6
+       (utf8)                                                   ; 7
+       (utf8)                                                   ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (name-and-type "<init>:()V")                             ; 16
+       (name-and-type "ifact:(I)I")                             ; 17
+       (utf8)                                                   ; 18
+       (utf8)                                                   ; 19
       )
-     #x00000020                                                ;  ACC_SUPER
+     #x00000020                                                 ; SUPER
      '(
       )
      (list
@@ -38,7 +38,7 @@
         (invokespecial 1)                                       ; 1 java.lang.Object.<init>:()V
         (return)                                                ; 4
        )
-      '("ifact:(I)I" #x00000009                                 ;  ACC_PUBLIC ACC_STATIC
+      '("ifact:(I)I" #x00000009                                 ; PUBLIC STATIC
         ; line_number #4
         (iconst_1)                                              ; 0
         (istore_1)                                              ; 1
@@ -61,7 +61,7 @@
         (iload_1)                                               ; 18
         (ireturn)                                               ; 19
        )
-      '("main:([Ljava/lang/String;)V" #x00000009                ;  ACC_PUBLIC ACC_STATIC
+      '("main:([Ljava/lang/String;)V" #x00000009                ; PUBLIC STATIC
         ; line_number #13
         (bipush 8)                                              ; 0
         (invokestatic 2)                                        ; 2 IDemo.ifact:(I)I

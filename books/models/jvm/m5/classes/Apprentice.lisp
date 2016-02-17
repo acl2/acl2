@@ -8,36 +8,36 @@
      "Apprentice"
      '("java/lang/Object")
      '(nil
-       (methodref "java/lang/Object" "<init>:()V" 0)           ; 1
-       (class (ref -1) "Container")                            ; 2
-       (methodref "Container" "<init>:()V" 0)                  ; 3
-       (class (ref -1) "Job")                                  ; 4
-       (methodref "Job" "<init>:()V" 0)                        ; 5
-       (methodref "Job" "setref:(LContainer;)V" 1)             ; 6
-       (methodref "Job" "start:()V" 0)                         ; 7
-       (class (ref -1) "Apprentice")                           ; 8
-       (class (ref -1) "java/lang/Object")                     ; 9
-       (utf8)                                                  ; 10
-       (utf8)                                                  ; 11
-       (utf8)                                                  ; 12
-       (utf8)                                                  ; 13
-       (utf8)                                                  ; 14
-       (utf8)                                                  ; 15
-       (class (ref -1) "Container")                            ; 16
-       (utf8)                                                  ; 17
-       (utf8)                                                  ; 18
-       (name-and-type "<init>:()V")                            ; 19
-       (utf8)                                                  ; 20
-       (utf8)                                                  ; 21
-       (name-and-type "setref:(LContainer;)V")                 ; 22
-       (name-and-type "start:()V")                             ; 23
-       (utf8)                                                  ; 24
-       (utf8)                                                  ; 25
-       (utf8)                                                  ; 26
-       (utf8)                                                  ; 27
-       (utf8)                                                  ; 28
+       (methodref "java/lang/Object" "<init>:()V" 0)            ; 1
+       (class (ref -1) "Container")                             ; 2
+       (methodref "Container" "<init>:()V" 0)                   ; 3
+       (class (ref -1) "Job")                                   ; 4
+       (methodref "Job" "<init>:()V" 0)                         ; 5
+       (methodref "Job" "setref:(LContainer;)V" 1)              ; 6
+       (methodref "Job" "start:()V" 0)                          ; 7
+       (class (ref -1) "Apprentice")                            ; 8
+       (class (ref -1) "java/lang/Object")                      ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (class (ref -1) "Container")                             ; 16
+       (utf8)                                                   ; 17
+       (utf8)                                                   ; 18
+       (name-and-type "<init>:()V")                             ; 19
+       (utf8)                                                   ; 20
+       (utf8)                                                   ; 21
+       (name-and-type "setref:(LContainer;)V")                  ; 22
+       (name-and-type "start:()V")                              ; 23
+       (utf8)                                                   ; 24
+       (utf8)                                                   ; 25
+       (utf8)                                                   ; 26
+       (utf8)                                                   ; 27
+       (utf8)                                                   ; 28
       )
-     #x00000020                                                ;  ACC_SUPER
+     #x00000020                                                 ; SUPER
      '(
       )
      (list
@@ -47,7 +47,7 @@
         (invokespecial 1)                                       ; 1 java.lang.Object.<init>:()V
         (return)                                                ; 4
        )
-      '("main:()V" #x00000009                                   ;  ACC_PUBLIC ACC_STATIC
+      '("main:()V" #x00000009                                   ; PUBLIC STATIC
         ; line_number #29
         (new 2)                                                 ; 0 class Container
         (dup)                                                   ; 3
