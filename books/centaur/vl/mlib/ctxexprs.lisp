@@ -84,7 +84,9 @@ expression with a @(see vl-context-p) describing its origin.</p>")
                                 :ss ss)
                (vl-exprlist-ctxexprs (cdr exprs) ctx ss)))
        :exec
-       (with-local-nrev (vl-exprlist-ctxexprs-nrev exprs ctx ss nrev)))
+       (if (atom exprs)
+           nil
+         (with-local-nrev (vl-exprlist-ctxexprs-nrev exprs ctx ss nrev))))
   ///
   (local (in-theory (enable vl-exprlist-ctxexprs-nrev)))
   (defthm vl-exprlist-ctxexprs-nrev-removal
@@ -250,7 +252,9 @@ expression with a @(see vl-context-p) describing its origin.</p>")
                 (append (,collect-elem (car x) mod ss)
                         (,collect-list (cdr x) mod ss)))
               :exec
-              (with-local-nrev (,collect-list-nrev x mod ss nrev)))
+              (if (atom x)
+                  nil
+                (with-local-nrev (,collect-list-nrev x mod ss nrev))))
          ///
          (defthm ,(mksym collect-list-nrev '-removal)
            (equal (,collect-list-nrev x mod ss nrev)
@@ -436,8 +440,10 @@ expression with a @(see vl-context-p) describing its origin.</p>")
                               x.ctx)))
                        (vl-ctxexprlist-<check> (cdr x))))
              :exec
-             (with-local-nrev
-               (vl-ctxexprlist-<check>-nrev x nrev)))
+             (if (atom x)
+                 nil
+               (with-local-nrev
+                 (vl-ctxexprlist-<check>-nrev x nrev))))
         ///
         (defthm vl-ctxexprlist-<check>-nrev-removal
           (equal (vl-ctxexprlist-<check>-nrev x nrev)
@@ -533,7 +539,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
 
 
 
-(defmacro def-visitor-exprcheck-ctx (checkname type)
+(defmacro def-visitor-exprcheck-ctx (checkname type &optional ss)
   (acl2::template-subst
    '(progn
       (fty::defvisitors <type>-<checkname>-deps
@@ -547,18 +553,19 @@ expression with a @(see vl-context-p) describing its origin.</p>")
         :type-fns ((<type> <type>-<checkname>)))
 
       (define <type>-<checkname> ((x <type>-p)
-                              (ss vl-scopestack-p)
-                              (warnings vl-warninglist-p))
+                                  (:@ :ss (ss vl-scopestack-p))
+                                  (warnings vl-warninglist-p))
         :returns (warnings-out vl-warninglist-p)
         (b* ((warnings-acc (ok))
              (warnings nil)
-             (warnings (<type>-<checkname>-aux x ss warnings)))
+             (warnings (<type>-<checkname>-aux x (:@ :ss ss) warnings)))
           (append-without-guard (vl-warninglist-add-ctx warnings (<type>-fix x))
                                 warnings-acc))))
    :str-alist `(("<TYPE>" ,(symbol-name type) . vl-pkg)
                 ("<CHECKNAME>" ,(symbol-name checkname) . vl-pkg))
    :atom-alist `((<type> . ,type)
-                 (<checkname> . ,checkname))))
+                 (<checkname> . ,checkname))
+   :features (and ss '(:ss))))
 
 
 
@@ -568,7 +575,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
   '(progn
      (fty::defvisitor-template
        <checkname>-template-base ((x :object)
-                                  (ss vl-scopestack-p)
+                                  (:@ :ss (ss vl-scopestack-p))
                                   (warnings vl-warninglist-p))
        :returns (warnings-out (:acc warnings :fix (vl-warninglist-fix warnings))
                               vl-warninglist-p)
@@ -581,15 +588,15 @@ expression with a @(see vl-context-p) describing its origin.</p>")
 
      (set-bogus-mutual-recursion-ok t)
 
-     (def-visitor-exprcheck-ctx <checkname> vl-vardecl)
-     (def-visitor-exprcheck-ctx <checkname> vl-paramdecl)
-     (def-visitor-exprcheck-ctx <checkname> vl-typedef)
-     (def-visitor-exprcheck-ctx <checkname> vl-assign)
-     (def-visitor-exprcheck-ctx <checkname> vl-alias)
-     (def-visitor-exprcheck-ctx <checkname> vl-port)
-     (def-visitor-exprcheck-ctx <checkname> vl-portdecl)
-     (def-visitor-exprcheck-ctx <checkname> vl-modinst)
-     (def-visitor-exprcheck-ctx <checkname> vl-gateinst)
+     (def-visitor-exprcheck-ctx <checkname> vl-vardecl (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-paramdecl (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-typedef (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-assign (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-alias (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-port (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-portdecl (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-modinst (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-gateinst (:@ :ss t))
 
      (fty::defvisitors check-stmt-deps
        :dep-types (vl-stmt)
@@ -599,19 +606,20 @@ expression with a @(see vl-context-p) describing its origin.</p>")
      (fty::defvisitor statements-<checkname>
        :type statements
        :template <checkname>-template-base
-       :renames ((vl-stmt vl-stmt-<checkname>-aux))
-       :type-fns ((vl-stmt vl-stmt-<checkname>))
        :measure (two-nats-measure :count 0)
-       (define vl-stmt-<checkname> ((x vl-stmt-p)
-                                    (ss vl-scopestack-p)
-                                    (warnings vl-warninglist-p))
-         :measure (two-nats-measure (vl-stmt-count x) 1)
-         :returns (warnings-out vl-warninglist-p)
-         (let ((ss (vl-stmt-case x
-                     :vl-forstmt (vl-scopestack-push (vl-forstmt->blockscope x) ss)
-                     :vl-blockstmt (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
-                     :otherwise ss)))
-           (vl-stmt-<checkname>-aux x ss warnings))))
+       (:@ :ss
+        :renames ((vl-stmt vl-stmt-<checkname>-aux))
+        :type-fns ((vl-stmt vl-stmt-<checkname>))
+        (define vl-stmt-<checkname> ((x vl-stmt-p)
+                                     (ss vl-scopestack-p)
+                                     (warnings vl-warninglist-p))
+          :measure (two-nats-measure (vl-stmt-count x) 1)
+          :returns (warnings-out vl-warninglist-p)
+          (let ((ss (vl-stmt-case x
+                      :vl-forstmt (vl-scopestack-push (vl-forstmt->blockscope x) ss)
+                      :vl-blockstmt (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
+                      :otherwise ss)))
+            (vl-stmt-<checkname>-aux x ss warnings)))))
 
 
 
@@ -619,27 +627,30 @@ expression with a @(see vl-context-p) describing its origin.</p>")
        :template <checkname>-template-base
        :dep-types (vl-fundecl vl-taskdecl))
 
-     (define vl-fundecl-<checkname> ((x vl-fundecl-p)
-                                     (ss vl-scopestack-p)
-                                     (warnings vl-warninglist-p))
-       :returns (warnings-out vl-warninglist-p)
-       (b* (((vl-fundecl x) (vl-fundecl-fix x))
-            (warnings-acc (ok))
-            (warnings nil)
-            (warnings (vl-datatype-<checkname> x.rettype ss warnings))
-            (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss))
-            (warnings (vl-portdecllist-<checkname> x.portdecls ss warnings))
-            (warnings (vl-paramdecllist-<checkname> x.paramdecls ss warnings))
-            (warnings (vl-vardecllist-<checkname> x.vardecls ss warnings))
-            (warnings (vl-typedeflist-<checkname> x.typedefs ss warnings))
-            (warnings (vl-stmt-<checkname> x.body ss warnings)))
-         (append-without-guard (vl-warninglist-add-ctx warnings x) warnings-acc)))
+     (:@ :ss
+      (define vl-fundecl-<checkname> ((x vl-fundecl-p)
+                                      (ss vl-scopestack-p)
+                                      (warnings vl-warninglist-p))
+        :returns (warnings-out vl-warninglist-p)
+        (b* (((vl-fundecl x) (vl-fundecl-fix x))
+             (warnings-acc (ok))
+             (warnings nil)
+             (warnings (vl-datatype-<checkname> x.rettype ss warnings))
+             (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss))
+             (warnings (vl-portdecllist-<checkname> x.portdecls ss warnings))
+             (warnings (vl-paramdecllist-<checkname> x.paramdecls ss warnings))
+             (warnings (vl-vardecllist-<checkname> x.vardecls ss warnings))
+             (warnings (vl-typedeflist-<checkname> x.typedefs ss warnings))
+             (warnings (vl-stmt-<checkname> x.body ss warnings)))
+          (append-without-guard (vl-warninglist-add-ctx warnings x) warnings-acc))))
+     (:@ (not :ss)
+      (def-visitor-exprcheck-ctx <checkname> vl-fundecl))
 
 
 
-     (def-visitor-exprcheck-ctx <checkname> vl-taskdecl)
-     (def-visitor-exprcheck-ctx <checkname> vl-always)
-     (def-visitor-exprcheck-ctx <checkname> vl-initial)
+     (def-visitor-exprcheck-ctx <checkname> vl-taskdecl (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-always (:@ :ss t))
+     (def-visitor-exprcheck-ctx <checkname> vl-initial (:@ :ss t))
 
      (fty::defvisitors genelement-<checkname>-deps
        :template <checkname>-template-base
@@ -648,19 +659,20 @@ expression with a @(see vl-context-p) describing its origin.</p>")
      (fty::defvisitor vl-genelement-<checkname>
        :template <checkname>-template-base
        :type vl-genelement
-       :renames ((vl-genblock vl-genblock-<checkname>-aux))
-       :type-fns ((vl-genblock vl-genblock-<checkname>))
        :measure (two-nats-measure :count 0)
-       (define vl-genblock-<checkname> ((x vl-genblock-p)
-                                        (ss vl-scopestack-p)
-                                        (warnings vl-warninglist-p))
-         :returns (warnings-out vl-warninglist-p)
-         :measure (two-nats-measure (vl-genblock-count x) 1)
-         (b* (((vl-genblock x))
-              (ss (if x.condnestp
-                      ss
-                    (vl-scopestack-push (vl-genblock->genblob x) ss))))
-           (vl-genelementlist-<checkname> x.elems ss warnings))))
+       (:@ :ss
+        :renames ((vl-genblock vl-genblock-<checkname>-aux))
+        :type-fns ((vl-genblock vl-genblock-<checkname>))
+        (define vl-genblock-<checkname> ((x vl-genblock-p)
+                                         (ss vl-scopestack-p)
+                                         (warnings vl-warninglist-p))
+          :returns (warnings-out vl-warninglist-p)
+          :measure (two-nats-measure (vl-genblock-count x) 1)
+          (b* (((vl-genblock x))
+               (ss (if x.condnestp
+                       ss
+                     (vl-scopestack-push (vl-genblock->genblob x) ss))))
+            (vl-genelementlist-<checkname> x.elems ss warnings)))))
 
      (fty::defvisitors vl-toplevel-<checkname>-deps
        :template <checkname>-template-base
@@ -685,7 +697,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
        :type-fns ((vl-package :skip)))
 
      (fty::defvisitor-template <checkname>-template-top ((x :object)
-                                                         (ss vl-scopestack-p))
+                                                         (:@ :ss (ss vl-scopestack-p)))
        :returns (new-x :update)
        :type-fns ((vl-module vl-module-<checkname>)
                   (vl-package vl-package-<checkname>)
@@ -694,27 +706,27 @@ expression with a @(see vl-context-p) describing its origin.</p>")
        :fnname-template <type>-<checkname>)
 
      (define vl-module-<checkname> ((x vl-module-p)
-                                    (ss vl-scopestack-p))
+                                    (:@ :ss (ss vl-scopestack-p)))
        :returns (new-x vl-module-p)
-       (b* ((ss (vl-scopestack-push (vl-module-fix x) ss))
+       (b* ((:@ :ss (ss (vl-scopestack-push (vl-module-fix x) ss)))
             (warnings nil)
-            (warnings (vl-module-<checkname>-aux x ss warnings)))
+            (warnings (vl-module-<checkname>-aux x (:@ :ss ss) warnings)))
          (change-vl-module x :warnings (append-without-guard warnings (vl-module->warnings x)))))
 
      (define vl-interface-<checkname> ((x vl-interface-p)
-                                       (ss vl-scopestack-p))
+                                       (:@ :ss (ss vl-scopestack-p)))
        :returns (new-x vl-interface-p)
-       (b* ((ss (vl-scopestack-push (vl-interface-fix x) ss))
+       (b* ((:@ :ss (ss (vl-scopestack-push (vl-interface-fix x) ss)))
             (warnings nil)
-            (warnings (vl-interface-<checkname>-aux x ss warnings)))
+            (warnings (vl-interface-<checkname>-aux x (:@ :ss ss) warnings)))
          (change-vl-interface x :warnings (append-without-guard warnings (vl-interface->warnings x)))))
 
      (define vl-package-<checkname> ((x vl-package-p)
-                                     (ss vl-scopestack-p))
+                                     (:@ :ss (ss vl-scopestack-p)))
        :returns (new-x vl-package-p)
-       (b* ((ss (vl-scopestack-push (vl-package-fix x) ss))
+       (b* ((:@ :ss (ss (vl-scopestack-push (vl-package-fix x) ss)))
             (warnings nil)
-            (warnings (vl-package-<checkname>-aux x ss warnings)))
+            (warnings (vl-package-<checkname>-aux x (:@ :ss ss) warnings)))
          (change-vl-package x :warnings (append-without-guard warnings (vl-package->warnings x)))))
 
      (fty::defvisitors vl-design-<checkname>-deps
@@ -727,19 +739,19 @@ expression with a @(see vl-context-p) describing its origin.</p>")
 
      (define vl-design-<checkname> ((x vl-design-p))
        :returns (new-x vl-design-p)
-       (b* ((ss (vl-scopestack-init x))
-            (warnings (vl-design-<checkname>-aux x ss nil))
-            (new-x1 (vl-design-<checkname>-top-aux x ss)))
+       (b* ((:@ :ss (ss (vl-scopestack-init x)))
+            (warnings (vl-design-<checkname>-aux x (:@ :ss ss) nil))
+            (new-x1 (vl-design-<checkname>-top-aux x (:@ :ss ss))))
          (change-vl-design
           new-x1
           :warnings (append-without-guard warnings (vl-design->warnings new-x1)))))))
 
-(defmacro def-visitor-exprcheck (checkname)
+(defmacro def-visitor-exprcheck (checkname &key (scopestack 't))
   (acl2::template-subst
    *visitor-exprcheck-template*
    :str-alist `(("<CHECKNAME>" ,(symbol-name checkname) . vl-pkg))
-   :atom-alist `((<checkname> . ,checkname))))
-       
+   :atom-alist `((<checkname> . ,checkname))
+   :features (and scopestack '(:ss))))
        
 
 

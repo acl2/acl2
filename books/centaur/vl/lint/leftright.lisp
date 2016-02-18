@@ -231,6 +231,10 @@ of this function by memoizing @(see vl-expr-strip).</p>"
 
   :fnname-template <type>-leftright-check)
 
+(local (defthm true-listp-of-vl-exprlist-strip
+         (true-listp (vl-exprlist-strip x))
+         :hints (("goal" :induct (len x)
+                  :expand (vl-exprlist-strip x)))))
 
 (local (in-theory (disable acl2::member-of-cons
                            (:t append))))

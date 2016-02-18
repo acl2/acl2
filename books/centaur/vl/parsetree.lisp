@@ -1007,8 +1007,10 @@ performed by examining the width of the port expression.</p>")
              (cons x1 (vl-collect-interface-ports (cdr x)))))
          (vl-collect-interface-ports (cdr x)))
        :exec
-       (with-local-nrev
-         (vl-collect-interface-ports-exec x nrev)))
+       (if (atom x)
+           nil
+         (with-local-nrev
+           (vl-collect-interface-ports-exec x nrev))))
   ///
   (defthm vl-collect-interface-ports-exec-removal
     (equal (vl-collect-interface-ports-exec x nrev)
@@ -1056,8 +1058,10 @@ performed by examining the width of the port expression.</p>")
              (cons x1 (vl-collect-regular-ports (cdr x)))))
          (vl-collect-regular-ports (cdr x)))
        :exec
-       (with-local-nrev
-         (vl-collect-regular-ports-exec x nrev)))
+       (if (atom x)
+           nil
+         (with-local-nrev
+           (vl-collect-regular-ports-exec x nrev))))
   ///
   (defthm vl-collect-regular-ports-exec-removal
     (equal (vl-collect-regular-ports-exec x nrev)

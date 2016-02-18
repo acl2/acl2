@@ -421,8 +421,10 @@ Our version of VCS says this isn't yet implemented.</li>
            (append (vl-expr-names-for-implicit (car x))
                    (vl-exprlist-names-for-implicit (cdr x))))
          :exec
-         (with-local-nrev
-           (vl-exprlist-names-for-implicit-nrev x nrev))))
+         (if (atom x)
+             nil
+           (with-local-nrev
+             (vl-exprlist-names-for-implicit-nrev x nrev)))))
   ///
 
   (defthm true-listp-of-vl-expr-names-for-implicit

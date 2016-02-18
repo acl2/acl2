@@ -570,8 +570,10 @@ handling more sensible.</p>"
             (col  (if (eql x1 #\Newline) 0 (+ 1 col))))
          (cons echar
                (vl-echarlist-from-chars-fn (cdr x) filename line col)))
-       :exec (with-local-nrev
-              (vl-echarlist-from-chars-aux x filename line col nrev)))
+       :exec (if (atom x)
+                 nil
+               (with-local-nrev
+                 (vl-echarlist-from-chars-aux x filename line col nrev))))
   ///
   (defthm true-listp-of-vl-echarlist-from-chars-fn
     (true-listp (vl-echarlist-from-chars-fn x filename line col))

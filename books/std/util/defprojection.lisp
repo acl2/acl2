@@ -560,11 +560,13 @@ now does nothing.</p>")
                                       (,list-fn ,@(subst `(cdr ,x) x list-args)))
                               nil)
                             :exec
-                            (nrev::with-local-nrev
-                              ,(if share-suffix
-                                   `(let ((nrev::nrev (nrev::nrev-set-hint ,x nrev::nrev)))
-                                      (,nrev-fn ,@list-args nrev::nrev))
-                                 `(,nrev-fn ,@list-args nrev::nrev)))))))))
+                            (if (atom ,x)
+                                nil
+                              (nrev::with-local-nrev
+                                ,(if share-suffix
+                                     `(let ((nrev::nrev (nrev::nrev-set-hint ,x nrev::nrev)))
+                                        (,nrev-fn ,@list-args nrev::nrev))
+                                   `(,nrev-fn ,@list-args nrev::nrev))))))))))
 
        ((when (eq mode :program))
         `(defsection ,name

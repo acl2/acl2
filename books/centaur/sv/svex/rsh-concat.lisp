@@ -347,7 +347,11 @@
 
 (define svex-concat ((w natp) (x svex-p) (y svex-p))
   :returns (concat svex-p)
-  :measure (svex-count x)
+  :measure (+ (svex-count x) (svex-count y))
+  :prepwork ((local (defthm svex-count-when-quote
+                      (implies (svex-case x :quote)
+                               (equal (svex-count x) 1))
+                      :hints(("Goal" :in-theory (enable svex-count))))))
   (if (zp w)
       (svex-fix y)
     (b* (((when (and (svex-case x :quote)
@@ -358,7 +362,16 @@
           (svex-concat w xl y))
          ((mv matched width xl ?signxp) (match-ext x))
          ((when (and matched (<= w width)))
-          (svex-concat w xl y)))
+          (svex-concat w xl y))
+         ((unless (svex-case x :quote))
+          (svex-call 'concat (list (svex-quote (2vec w)) x y)))
+         ((mv matched width yl yh) (match-concat y))
+         ((when (and matched (svex-case yl :quote)))
+          (svex-concat (+ w width)
+                       (svex-quote (4vec-concat (2vec w)
+                                                (svex-quote->val x)
+                                                (svex-quote->val yl)))
+                       yh)))
       (svex-call 'concat (list (svex-quote (2vec w)) x y))))
   ///
   (deffixequiv svex-concat)
@@ -532,6 +545,47 @@
   (defthm svex-signx-vars
     (implies (and (not (member v (svex-vars x))))
              (not (member v (svex-vars (svex-signx w x)))))))
+
+
+(define svex-call* ((fn fnsym-p)
+                    (args svexlist-p))
+  :returns (call svex-p)
+  (b* ((fn (fnsym-fix fn))
+       (args (svexlist-fix args))
+       ((unless (and (member fn '(concat rsh signx zerox))
+                     (if (eq fn 'concat)
+                         (eql (len args) 3)
+                       (eql (len args) 2))))
+        (svex-call fn args))
+       (arg1 (car args))
+       (arg1-val (svex-case arg1
+                   :quote (and (2vec-p arg1.val)
+                               (2vec->val arg1.val))
+                   :otherwise nil))
+       ((unless (and arg1-val (<= 0 arg1-val)))
+        (svex-call fn args)))
+    (case fn
+      (concat (svex-concat arg1-val (cadr args) (caddr args)))
+      (rsh    (svex-rsh arg1-val (cadr args)))
+      (zerox  (svex-zerox arg1-val (cadr args)))
+      (t ;; signx
+       (svex-signx arg1-val (cadr args)))))
+  ///
+  (local (defthm 2vec-of-4vec->lower
+           (implies (2vec-p x)
+                    (equal (2vec (4vec->lower x))
+                           (4vec-fix x)))))
+
+  (defret svex-call*-correct
+    (equal (svex-eval call env)
+           (svex-eval (svex-call fn args) env))
+    :hints(("Goal" :in-theory (enable svex-apply
+                                      svexlist-eval
+                                      4veclist-nth-safe))))
+
+  (defret svex-call*-vars
+    (implies (not (member v (svexlist-vars args)))
+             (not (member v (svex-vars call))))))
 
 
 

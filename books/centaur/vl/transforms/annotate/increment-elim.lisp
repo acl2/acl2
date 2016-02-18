@@ -704,10 +704,8 @@ these are the only operators we're dealing with.</p>"
   (deffixequiv-mutual vl-expr-incexprs))
 
 (define vl-expr-prohibit-incexprs ((x vl-expr-p)
-                                   (ss vl-scopestack-p)
                                    (warnings vl-warninglist-p))
   :returns (warnings vl-warninglist-p)
-  (declare (ignorable ss))
   (b* ((incexprs (vl-expr-incexprs x))
        ((when (atom incexprs))
         (ok)))
@@ -726,7 +724,7 @@ these are the only operators we're dealing with.</p>"
                               acl2::subsetp-when-atom-right
                               acl2::subsetp-when-atom-left)))
 
-(def-visitor-exprcheck prohibit-incexprs)
+(def-visitor-exprcheck prohibit-incexprs :scopestack nil)
 
 (define vl-design-increment-elim ((x vl-design-p))
   :returns (new-x vl-design-p)

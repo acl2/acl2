@@ -1927,7 +1927,9 @@ nrev).</p>"
                  (vl-interfaceportlist->ifnames ifports1)
                  (vl-modulelist-everinstanced (cdr x))))
        :exec
-       (with-local-nrev (vl-modulelist-everinstanced-nrev x nrev)))
+       (if (atom x)
+           nil
+         (with-local-nrev (vl-modulelist-everinstanced-nrev x nrev))))
   :verify-guards nil
   ///
   (defthm vl-modulelist-everinstanced-nrev-removal
@@ -1970,7 +1972,9 @@ nrev).</p>"
                  (vl-interfaceportlist->ifnames ifports1)
                  (vl-interfacelist-everinstanced (cdr x))))
        :exec
-       (with-local-nrev (vl-interfacelist-everinstanced-nrev x nrev)))
+       (if (atom x)
+           nil
+         (with-local-nrev (vl-interfacelist-everinstanced-nrev x nrev))))
   :verify-guards nil
   ///
   (defthm vl-interfacelist-everinstanced-nrev-removal

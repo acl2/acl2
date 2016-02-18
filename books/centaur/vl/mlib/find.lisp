@@ -149,7 +149,9 @@ instances.</p>"
                             (vl-modinstlist->instnames (cdr x)))
                     (vl-modinstlist->instnames (cdr x)))
                 nil)
-       :exec (with-local-nrev (vl-modinstlist->instnames-nrev x nrev)))
+       :exec (if (atom x)
+                 nil
+               (with-local-nrev (vl-modinstlist->instnames-nrev x nrev))))
   ///
   (defthm vl-modinstlist->instnames-exec-removal
     (equal (vl-modinstlist->instnames-nrev x nrev)

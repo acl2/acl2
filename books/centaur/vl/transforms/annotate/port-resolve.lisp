@@ -730,9 +730,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
        ((mv warnings new-loaditems ifport-alist)
         (vl-loaditems-remove-interfaceport-decls loaditems ss))
        (ifport-alist (make-fast-alist ifport-alist))
-       (vardecls (with-local-nrev
-                   (vl-fast-delete-vardecls (alist-keys ifport-alist) ifport-alist
-                                            x.vardecls nrev)))
+       (vardecls (vl-delete-vardecls (alist-keys ifport-alist) ifport-alist x.vardecls))
        (ports (vl-ports-resolve-interfaces x.ports ifport-alist)))
     (change-vl-module x
                       :vardecls vardecls
@@ -763,9 +761,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
        ((mv warnings new-loaditems ifport-alist)
         (vl-loaditems-remove-interfaceport-decls loaditems ss))
        (ifport-alist (make-fast-alist ifport-alist))
-       (vardecls (with-local-nrev
-                   (vl-fast-delete-vardecls (alist-keys ifport-alist) ifport-alist
-                                            x.vardecls nrev)))
+       (vardecls (vl-delete-vardecls (alist-keys ifport-alist) ifport-alist x.vardecls))
        (ports (vl-ports-resolve-interfaces x.ports ifport-alist)))
     (change-vl-interface x
                          :vardecls vardecls

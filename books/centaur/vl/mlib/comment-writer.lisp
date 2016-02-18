@@ -230,8 +230,10 @@ we ignore file names.</p>"
          (cons (car x)
                (vl-remove-empty-commentmap-entries (cdr x))))
        :exec
-       (with-local-nrev
-         (vl-remove-empty-commentmap-entries-exec x nrev)))
+       (if (atom x)
+           nil
+         (with-local-nrev
+           (vl-remove-empty-commentmap-entries-exec x nrev))))
   ///
   (defthm vl-remove-empty-commentmap-entries-exec-removal
     (equal (vl-remove-empty-commentmap-entries-exec x nrev)
