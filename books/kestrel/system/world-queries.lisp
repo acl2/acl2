@@ -69,7 +69,7 @@
                  (w plist-worldp))
   :returns (measure pseudo-termp)
   :short "Measure expression of a logic-mode recursive function."
-  :long "<p>See @(see xargs) for a discussion of the @(':measure') keyword).</p>"
+  :long "<p>See @(see xargs) for a discussion of the @(':measure') keyword.</p>"
   (access justification (getpropc fun 'justification nil w) :measure))
 
 (define well-founded-relation ((fun (and (function-namep fun w)
@@ -79,8 +79,9 @@
   :returns (well-founded-relation symbolp)
   :short "Well-founded relation of a logic-mode recursive function."
   :long
-  "<p>See @(see well-founded-relation-rule) for a discussion of well-founded
-  relations in ACL2,including the @(':well-founded-relation') rule class.</p>"
+  "<p>See @(see well-founded-relation-rule)
+  for a discussion of well-founded relations in ACL2,
+  including the @(':well-founded-relation') rule class.</p>"
   (access justification (getpropc fun 'justification nil w) :rel))
 
 (define fundef-enabledp ((fun (function-namep fun (w state))) state)
