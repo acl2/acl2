@@ -33,7 +33,7 @@
 (local (include-book "arithmetic"))
 
 (defsection prefix-lines
-  :parents (std/strings)
+  :parents (lines)
   :short "Add a prefix to every line in a string."
   :long "<p>@(call prefix-lines) builds a new string by adding @('prefix') to
 the start of every line in the string @('x').  The start of @('x') is regarded
