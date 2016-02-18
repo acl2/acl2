@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2016-02-05")
+  "VL Syntax 2016-02-16")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -1630,8 +1630,8 @@ properly preserve them.</p>")
 (defprod vl-plainarg
   :parents (vl-arguments-p)
   :short "Representation of a single argument in a plain argument list."
-  :tag :vl-plainarg
   :layout :tree
+  ;; No tag, because we found tags on plainargs to be expensive.
 
   ((expr     vl-maybe-expr-p
              "Expression being connected to the port.  In programming languages
@@ -1691,8 +1691,7 @@ portnames.</p>")
 (fty::deflist vl-plainarglist
   :parents (vl-arguments-p)
   :elt-type vl-plainarg-p
-  :true-listp nil
-  :elementp-of-nil nil)
+  :true-listp nil)
 
 (fty::deflist vl-plainarglistlist
   :parents (vl-arguments-p)
@@ -1725,8 +1724,7 @@ portnames.</p>")
 
 (defprod vl-namedarg
   :short "Representation of a single argument in a named argument list."
-  :tag :vl-namedarg
-  :layout :tree
+  ;; No tag, because we found tags on namedargs to be expensive.
 
   ((name stringp
          :rule-classes :type-prescription

@@ -931,7 +931,9 @@ should address this again later.</p>"
 
 (define svex-compose-assigns/delays ((assigns svex-alist-p)
                                      (delays svar-map-p)
-                                     &key (rewrite 't))
+                                     &key
+                                     (rewrite 't)
+                                     (verbosep 'nil))
   :returns (mv (updates svex-alist-p)
                (nextstates svex-alist-p))
   (b* ((updates (cwtime (svex-assigns-compose assigns :rewrite rewrite) :mintime 1))
@@ -942,7 +944,7 @@ should address this again later.</p>"
        ((unless rewrite)
         (mv updates next-states))
        (rewritten (svex-alist-rewrite-fixpoint (append updates next-states)
-                                               :verbosep t
+                                               :verbosep verbosep
                                                :count 2))
        (updates-len (len updates))
        (updates (take updates-len rewritten))
@@ -982,7 +984,8 @@ should address this again later.</p>"
                              (indexedp 'nil)
                              ((moddb "overwritten") 'moddb)
                              ((aliases "overwritten") 'aliases)
-                             (rewrite 't))
+                             (rewrite 't)
+                             (verbosep 'nil))
   :parents (svex-compilation)
   :short "Compile a hierarchical SVEX design into a finite state machine."
   :returns (mv err
@@ -1009,7 +1012,9 @@ should address this again later.</p>"
          ((mv res-assigns res-delays)
           (svex-normalize-assigns assigns aliases))
          ((mv updates nextstates)
-          (svex-compose-assigns/delays res-assigns res-delays :rewrite rewrite)))
+          (svex-compose-assigns/delays res-assigns res-delays
+                                       :rewrite rewrite
+                                       :verbosep verbosep)))
       (mv err updates nextstates res-assigns res-delays moddb aliases))
     ///
     (verify-guards svex-design-compile-fn
@@ -1019,7 +1024,10 @@ should address this again later.</p>"
 
     (defthm alias-length-of-svex-design-compile
       (b* (((mv ?err ?updates ?next-states ?res-assigns ?res-delays ?moddb ?aliases)
-            (svex-design-compile design :indexedp indexedp)))
+            (svex-design-compile design
+                                 :indexedp indexedp
+                                 :rewrite rewritep
+                                 :verbosep verbosep)))
         (implies (not err)
                  (equal (len aliases)
                         (moddb-mod-totalwires
@@ -1028,7 +1036,10 @@ should address this again later.</p>"
 
     (defthm modidx-of-svex-design-compile
       (b* (((mv ?err ?updates ?next-states ?res-assigns ?res-delays ?moddb ?aliases)
-            (svex-design-compile design :indexedp indexedp)))
+            (svex-design-compile design
+                                 :indexedp indexedp
+                                 :rewrite rewritep
+                                 :verbosep verbosep)))
         (implies (not err)
                  (moddb-modname-get-index (design->top design) moddb)))
       :rule-classes (:rewrite
