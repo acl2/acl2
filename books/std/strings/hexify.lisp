@@ -54,7 +54,7 @@
              (character-listp (insert-underscores x)))))
 
 (defsection hexify
-  :parents (numbers)
+  :parents (hex)
   :short "Convert numbers into readable hex strings."
 
   :long "<p>@(call hexify) is a dumb but useful printing utility for displaying
@@ -108,7 +108,7 @@ makes it easier to read long values.</p>
                    "")))))
 
 (defsection binify
-  :parents (numbers)
+  :parents (binary)
   :short "Convert numbers into readable binary strings."
   :long "<p>@(call binify) is identical to @(see str::hexify) except that it
 produces binary output instead of hex output.</p>"

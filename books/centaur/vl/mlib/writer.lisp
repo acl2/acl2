@@ -1719,7 +1719,7 @@ expression into a string."
      ;; Historically we also included VL_PORT_IMPLICIT and printed the net
      ;; declarations.  But that's chatty and doesn't work correctly with
      ;; ANSI-style ports lists where it's illegal to re-declare the net.  So,
-     ;; now, we hide any VL_PORT_IMPLICIT ports separately; see vl-pp-netdecl.
+     ;; now, we hide any VL_PORT_IMPLICIT ports separately; see vl-pp-vardecl.
      "VL_UNUSED"
      "VL_MAYBE_UNUSED"
      "VL_UNSET"
@@ -1788,15 +1788,19 @@ expression into a string."
 
 (define vl-vardecl-hiddenp ((x vl-vardecl-p))
   (b* (((vl-vardecl x) x))
-    (or (hons-assoc-equal "VL_PORT_IMPLICIT" x.atts)
-        ;; As a special hack, we now do not print any net declarations that are
-        ;; implicitly derived from the port.  These were just noisy and may not
-        ;; be allowed if we're printing the nets for an ANSI style module.  See
-        ;; also make-implicit-wires.
-        (hons-assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" x.atts)
-        ;; As another special hack, hide declarations that we add for function
-        ;; and task inputs and function return values.
-        )))
+    (or
+     ;; As a special hack, we now do not print any net declarations that are
+     ;; implicitly derived from the port.  These were just noisy and may not be
+     ;; allowed if we're printing the nets for an ANSI style module.  See also
+     ;; make-implicit-wires.
+     (assoc-equal "VL_PORT_IMPLICIT" x.atts)
+     ;; As another special hack, hide declarations that we add for function and
+     ;; task inputs and function return values.
+     (assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" x.atts)
+     ;; And similarly let's hide any vardecls that are introduced via ansi
+     ;; style ports.
+     (assoc-equal "VL_ANSI_PORT_VARDECL" x.atts)
+     )))
 
 (define vl-pp-vardecl-aux ((x vl-vardecl-p) &key (ps 'ps))
   ;; This just prints a vardecl, but with no final semicolon and no final atts,

@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2014 Centaur Technology
+; ACL2 String Library
+; Copyright (C) 2009-2016 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,83 +28,91 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
-(include-book "std/strings/cat" :dir :system)
+(in-package "STR")
+(include-book "cat")
+(include-book "hex")
 (include-book "std/util/defval" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (local (include-book "misc/assert" :dir :system))
-(local (include-book "arithmetic"))
+(local (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (defsection url-encoding
-  :parents (utilities)
+  :parents (std/strings)
   :short "Functions for % encoding strings for use in URLs, as described in <a
 href='http://tools.ietf.org/html/rfc3986'>RFC 3986</a>."
 
-  :long "<p>Per RFC 3986, the only unreserved characters are ALPHA, DIGIT, -,
-., _, and ~.  We implement some functions to percent-encode other characters in
+  :long "<p>Per <a href='https://www.ietf.org/rfc/rfc3986.txt'>RFC 3986</a>,
+the only unreserved characters are ALPHA, DIGIT, @('-'), @('.'), @('_'), and
+@('~').  We implement some functions to percent-encode other characters in
 character lists and strings.</p>")
+
+(xdoc::order-subtopics url-encoding
+                       (url-encode-string
+                        url-encode-chars
+                        url-encode-char))
 
 (local (xdoc::set-default-parents url-encoding))
 
-(define vl-url-encode-char ((x characterp))
+(define url-encode-char ((x characterp))
   :short "URL encode a single character. (slow, logically nice version)."
   :returns (encoding character-listp "Encoded version of X, in proper order.")
-  :long "<p>See @(see vl-fast-url-encode-char) for an faster, array-lookup
+  :long "<p>See @(see fast-url-encode-char) for an faster, array-lookup
   alternative.</p>"
-  (let ((x (char-fix x)))
-    (if (or (and (char<= #\A x) (char<= x #\Z))
-            (and (char<= #\a x) (char<= x #\z))
-            (and (char<= #\0 x) (char<= x #\9))
-            (member x '(#\- #\_ #\. #\~)))
-        (list x)
-      (let* ((hex-code (explode-atom (char-code x) 16))
-             (hex-code (if (eql (len hex-code) 1)
-                           (cons #\0 hex-code)
-                         hex-code)))
-        (cons #\% hex-code))))
+  (b* ((x (char-fix x))
+       ((when (or (and (char<= #\A x) (char<= x #\Z))
+                  (and (char<= #\a x) (char<= x #\z))
+                  (and (char<= #\0 x) (char<= x #\9))
+                  (member x '(#\- #\_ #\. #\~))))
+        (list x))
+       (hex-code (natchars16 (char-code x)))
+       (hex-code (if (eql (len hex-code) 1)
+                     (cons #\0 hex-code)
+                   hex-code)))
+    (cons #\% hex-code))
   ///
   (local
    (progn
-     (assert! (equal (implode (vl-url-encode-char #\a))           "a"))
-     (assert! (equal (implode (vl-url-encode-char #\Space))       "%20"))
-     (assert! (equal (implode (vl-url-encode-char (code-char 0))) "%00")))))
+     (assert! (equal (implode (url-encode-char #\a))           "a"))
+     (assert! (equal (implode (url-encode-char #\Space))       "%20"))
+     (assert! (equal (implode (url-encode-char (code-char 0))) "%00")))))
 
 
-(define vl-make-url-encode-array ((n natp))
-  :parents (*vl-url-encode-array*)
+(define make-url-encode-array ((n natp))
+  :parents (*url-encode-array*)
   :guard (<= n 255)
   :hooks nil
   (if (zp n)
-      (list (cons n (vl-url-encode-char (code-char n))))
-    (cons (cons n (vl-url-encode-char (code-char n)))
-          (vl-make-url-encode-array (- n 1)))))
+      (list (cons n (url-encode-char (code-char n))))
+    (cons (cons n (url-encode-char (code-char n)))
+          (make-url-encode-array (- n 1)))))
 
-(defval *vl-url-encode-array*
+(std::defval *url-encode-array*
   :short "Array binding character codes to the pre-computed URL encodings."
   :showval t
-  (compress1 'vl-url-encode-array
+  (compress1 'url-encode-array
              (cons '(:header :dimensions (256)
                      :maximum-length 257
-                     :name vl-url-encode-array)
-                   (vl-make-url-encode-array 255))))
+                     :name url-encode-array)
+                   (make-url-encode-array 255))))
 
-(define vl-fast-url-encode-char ((x :type character))
+(define fast-url-encode-char ((x :type character))
   :short "URL encode a single character. (fast, array-based version)"
   :inline t
   :enabled t
   :verify-guards nil
   :hooks nil
-  (mbe :logic (vl-url-encode-char x)
-       :exec (aref1 'vl-url-encode-array *vl-url-encode-array*
+  (mbe :logic (url-encode-char x)
+       :exec (aref1 'url-encode-array *url-encode-array*
                     (char-code x)))
   ///
   (local (in-theory (disable aref1)))
 
   (local (defun test (n)
-           (and (equal (aref1 'vl-url-encode-array *vl-url-encode-array* n)
-                       (vl-url-encode-char (code-char n)))
+           (and (equal (aref1 'url-encode-array *url-encode-array* n)
+                       (url-encode-char (code-char n)))
                 (if (zp n)
                     t
                   (test (- n 1))))))
@@ -114,57 +122,51 @@ character lists and strings.</p>")
                          (natp n)
                          (natp i)
                          (<= i n))
-                    (equal (aref1 'vl-url-encode-array *vl-url-encode-array* i)
-                           (vl-url-encode-char (code-char i))))))
+                    (equal (aref1 'url-encode-array *url-encode-array* i)
+                           (url-encode-char (code-char i))))))
 
   (local (defthm l1
            (implies (and (natp i)
                          (<= i 255))
-                    (equal (aref1 'vl-url-encode-array *vl-url-encode-array* i)
-                           (vl-url-encode-char (code-char i))))
+                    (equal (aref1 'url-encode-array *url-encode-array* i)
+                           (url-encode-char (code-char i))))
            :hints(("Goal" :use ((:instance l0 (n 255)))))))
 
   (local (defthm l2
            (implies (characterp x)
-                    (equal (aref1 'vl-url-encode-array *vl-url-encode-array*
+                    (equal (aref1 'url-encode-array *url-encode-array*
                                   (char-code x))
-                           (vl-url-encode-char x)))))
+                           (url-encode-char x)))))
 
-  (verify-guards vl-fast-url-encode-char$inline))
+  (verify-guards fast-url-encode-char$inline))
 
 
-
-(define vl-url-encode-chars-aux ((chars character-listp) acc)
+(define url-encode-chars-aux ((chars character-listp) acc)
   :short "URL encode a list of characters onto an accumulator in reverse order."
   :returns (encoded character-listp :hyp (character-listp acc))
-  :verbosep t
   (if (atom chars)
       acc
-    (vl-url-encode-chars-aux
+    (url-encode-chars-aux
      (cdr chars)
-     (revappend (vl-fast-url-encode-char (car chars)) acc)))
+     (revappend (fast-url-encode-char (car chars)) acc)))
   ///
-  (defthm true-listp-of-vl-url-encode-chars-aux
-    (equal (true-listp (vl-url-encode-chars-aux x acc))
+  (defthm true-listp-of-url-encode-chars-aux
+    (equal (true-listp (url-encode-chars-aux x acc))
            (true-listp acc))))
 
 
-(define vl-url-encode-chars ((x character-listp))
+(define url-encode-chars ((x character-listp))
   :short "Simple way to URL encode a list of characters."
   :returns (encoded character-listp)
   :inline t
-
-; This could be optimized with nreverse, but since the printer only uses the
-; aux function anyway, I haven't bothered.
-
-  (reverse (vl-url-encode-chars-aux x nil))
-
+  ;; BOZO could use nreverse here
+  (reverse (url-encode-chars-aux x nil))
   ///
-  (defthm true-listp-of-vl-url-encode-chars
-    (true-listp (vl-url-encode-chars x))
+  (defthm true-listp-of-url-encode-chars
+    (true-listp (url-encode-chars x))
     :rule-classes :type-prescription))
 
-(define vl-url-encode-string-aux
+(define url-encode-string-aux
   :short "Efficiently way to URL encode a string, in reverse order, without
   exploding it."
   ((x stringp)
@@ -178,22 +180,22 @@ character lists and strings.</p>")
   :verify-guards nil
   :hooks nil
   (mbe :logic
-       (vl-url-encode-chars-aux (nthcdr n (explode x)) acc)
+       (url-encode-chars-aux (nthcdr n (explode x)) acc)
        :exec
        (b* (((when (mbe :logic (zp (- (nfix xl) (nfix n)))
                         :exec (eql n xl)))
              acc)
             (char     (char x n))
-            (encoding (vl-fast-url-encode-char char))
+            (encoding (fast-url-encode-char char))
             (acc      (revappend encoding acc)))
-         (vl-url-encode-string-aux x (+ 1 (lnfix n)) xl acc)))
+         (url-encode-string-aux x (+ 1 (lnfix n)) xl acc)))
   ///
-  (local (in-theory (enable vl-url-encode-string-aux
-                            vl-url-encode-chars-aux)))
-  (verify-guards vl-url-encode-string-aux))
+  (local (in-theory (enable url-encode-string-aux
+                            url-encode-chars-aux)))
+  (verify-guards url-encode-string-aux))
 
 
-(define vl-url-encode-string
+(define url-encode-string
   :short "Simple way to URL encode a string."
   ((x stringp :type string))
   :returns (encoded stringp :rule-classes :type-prescription)
@@ -201,10 +203,10 @@ character lists and strings.</p>")
   :inline t
   (let ((x (mbe :logic (str-fix x) :exec x)))
     (str::rchars-to-string
-     (vl-url-encode-string-aux x 0 (length x) nil)))
+     (url-encode-string-aux x 0 (length x) nil)))
   ///
   (local (assert!
           (let ((x "foo123$%20 blah !==[]{}7&*^!@&*^&*)($"))
-            (equal (vl-url-encode-string x)
-                   (implode (vl-url-encode-chars (explode x))))))))
+            (equal (url-encode-string x)
+                   (implode (url-encode-chars (explode x))))))))
 

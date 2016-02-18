@@ -33,7 +33,7 @@
 (include-book "structure")
 (include-book "expand")
 (include-book "std/strings/pretty" :dir :system)
-(include-book "centaur/vl/util/print-htmlencode" :dir :system)
+(include-book "std/strings/html-encode" :dir :system)
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/strings/explode-nonnegative-integer" :dir :system))
 
@@ -61,31 +61,20 @@ tags get rendered into HTML is controlled by, e.g.,
 
 (local (xdoc::set-default-parents svtv-doc))
 
-(local (defthm natp-of-vl-html-encode-string-aux
-         (natp (mv-nth 0 (vl::VL-HTML-ENCODE-STRING-AUX X N XL COL TABSIZE ACC)))
-         :rule-classes :type-prescription))
-
-(local (defthm character-listp-of-vl-html-encode-string-aux
-         (implies (character-listp acc)
-                  (character-listp (mv-nth 1 (vl::VL-HTML-ENCODE-STRING-AUX X N XL COL TABSIZE ACC))))))
-
-(local (in-theory (disable vl::vl-html-encode-string-aux)))
-
-
 (define stv-name-to-xml (name acc)
   :returns (acc character-listp :hyp (character-listp acc))
   :short "Encode the name of an STV line."
   (b* (((when (stringp name))
         ;; It already looks like a Verilog name, so this is easy enough.
         (b* (((mv ?col acc)
-              (vl::vl-html-encode-string-aux name 0 (length name) 0 8 acc)))
+              (str::html-encode-string-aux name 0 (length name) 0 8 acc)))
           acc))
        ;; Complex name.  This is probably awful.  For now just turn it into
        ;; a string using the pretty printer.  Do something better here if we
        ;; ever care.
        (str (str::pretty name))
        ((mv ?col acc)
-        (vl::vl-html-encode-string-aux str 0 (length str) 0 8 acc)))
+        (str::html-encode-string-aux str 0 (length str) 0 8 acc)))
     acc))
 
 (define 4vec-to-bitwise-chars ((upper integerp) (lower integerp) (width natp))
@@ -269,9 +258,9 @@ tags get rendered into HTML is controlled by, e.g.,
         ((symbolp entry)
          (b* ((acc (str::revappend-chars "<b>" acc))
               ((mv ?col acc)
-               (vl::vl-html-encode-string-aux (symbol-name entry) 0
-                                              (length (symbol-name entry))
-                                              0 8 acc))
+               (str::html-encode-string-aux (symbol-name entry) 0
+                                            (length (symbol-name entry))
+                                            0 8 acc))
               (acc (str::revappend-chars "</b>" acc)))
            acc))
 

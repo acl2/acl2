@@ -82,6 +82,7 @@
             chareqv
             str-fix
             str::string-list-fix
+            str::character-list-fix
             streqv
             pos-fix
             acl2::print-base-p

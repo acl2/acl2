@@ -141,6 +141,12 @@
                     :successp nil)
 
 
+     (make-stmttest :input "$finish;"
+                    :expect '(:call "$finish" :system))
+
+     (make-stmttest :input "$finish();"
+                    :expect '(:call "$finish" :system))
+
      (make-stmttest :input "$display(\"foo\");"
                     :expect '(:call "$display" (str "foo") :system))
 

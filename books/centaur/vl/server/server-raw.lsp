@@ -170,6 +170,21 @@ a bleeding edge zip.</p>")
 
 (defparameter *vls-transdb* (make-vls-transdb))
 
+#||
+
+;; For interactive debugging:
+
+(in-package "VL")
+(ld `((defconst *data* ',(car (vls-transdb-loaded *vls-transdb*)))))
+(lp)
+(defconst *design*
+  (progn$ (cw "~%*** Loading design ~s0 into *design* ***~%" (car *data*))
+          (vls-data->orig (cdr *data*))))
+
+;; Then go off and explore it however.
+
+||#
+
 
 
 (defun vls-scanner-thread (&optional noloop)

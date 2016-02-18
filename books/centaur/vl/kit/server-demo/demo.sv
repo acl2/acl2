@@ -162,6 +162,10 @@ module onehotMux4(output [7:0] o,
                   input sel1, sel2, sel3, sel4,
                   input [7:0] data1, data2, data3, data4);
 
+  // This assignment is hard to pretty-print with indentation because some
+  // lines use spaces and some use tabs.  But we should at least see the
+  // correct line breaking to easily identify that basic mux here.
+
   assign o = {8{sel1}} & data1
            | {8{sel2}} & data2
 	   | {8{sel3}} & data3

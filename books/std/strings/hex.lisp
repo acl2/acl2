@@ -338,8 +338,12 @@ FX-8350.</p>
         ((hex-digitp (car x)) (skip-leading-hex-digits (cdr x)))
         (t                    x))
   ///
+  (local (defun ind (x y)
+           (if (or (atom x) (atom y))
+               (list x y)
+             (ind (cdr x) (cdr y)))))
   (defcong charlisteqv charlisteqv (skip-leading-hex-digits x) 1
-    :hints(("Goal" :in-theory (enable charlisteqv))))
+    :hints(("Goal" :induct (ind x x-equiv))))
   (defcong icharlisteqv icharlisteqv (skip-leading-hex-digits x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
   (defthm len-of-skip-leading-hex-digits
@@ -358,9 +362,13 @@ FX-8350.</p>
   ;; Unlike decimal/binary/octal versions, here we don't get an EQUAL
   ;; congruence when given ichareqvlists, because we might have, e.g., #\a
   ;; versus #\A.  So, we end up with two different congruences.
+  (local (defun ind (x y)
+           (if (or (atom x) (atom y))
+               (list x y)
+             (ind (cdr x) (cdr y)))))
   (defcong charlisteqv equal (take-leading-hex-digits x) 1
-    :hints(("Goal" :in-theory (enable charlisteqv
-                                      chareqv))))
+    :hints(("Goal" :induct (ind x x-equiv)
+            :in-theory (enable charlisteqv))))
   (defcong icharlisteqv icharlisteqv (take-leading-hex-digits x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
   (defthm hex-digit-listp-of-take-leading-hex-digits
@@ -791,7 +799,6 @@ hex-digit-list-value), and somewhat better performance:</p>
   :prepwork ((local (in-theory (enable natchars16)))))
 
 (define parse-hex-from-charlist
-  :parents (numbers)
   :short "Parse a hexadecimal number from the beginning of a character list."
   ((x   character-listp "Characters to read from.")
    (val natp            "Accumulator for the value of the hex digits we have read
