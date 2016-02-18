@@ -87,7 +87,8 @@ rewriting).</p>")
 
   (define svex-reinsert-args ((x     svex-p "Sexpr to reinsert args into")
                               (vars  svarlist-p "Replacement variables.")
-                              (depth natp))
+                              (depth natp)
+                              (constsp booleanp "Elide constants?"))
     ;; Need at least enough vars to make the replacement.
     :guard (<= (len (svex-args-to-depth x depth))
                (len vars))
@@ -98,19 +99,23 @@ rewriting).</p>")
     :flag :sexpr
     (b* ((x    (svex-fix x))
          (vars (svarlist-fix vars))
+         ((when (svex-case x :var))
+          (mv (make-svex-var :name (car vars)) (cdr vars)))
+         ((when (svex-case x :quote))
+          ;; Elide constants only if desired
+          (mv (if constsp (make-svex-var :name (car vars)) x)
+              (cdr vars)))
          ((when (zp depth))
-          (mv (make-svex-var :name (car vars)) (cdr vars))))
-      (svex-case x
-        :var   (mv (make-svex-var :name (car vars)) (cdr vars))
-        :quote (mv (make-svex-var :name (car vars)) (cdr vars))
-        :call  (b* (((mv new-x-args other-vars)
-                     (svex-reinsert-args-list x.args vars (- depth 1)))
-                    (new-x (change-svex-call x :args new-x-args)))
-                 (mv new-x other-vars)))))
+          (mv (make-svex-var :name (car vars)) (cdr vars)))
+         ((mv new-x-args other-vars)
+          (svex-reinsert-args-list (svex-call->args x) vars (- depth 1) constsp))
+         (new-x (change-svex-call x :args new-x-args)))
+      (mv new-x other-vars)))
 
   (define svex-reinsert-args-list ((x     svexlist-p)
                                    (vars  svarlist-p)
-                                   (depth natp))
+                                   (depth natp)
+                                   (constsp booleanp))
     :returns (mv (new-x     svexlist-p)
                  (rest-vars svarlist-p))
     ;; Need at least enough vars to make the replacement.
@@ -120,8 +125,8 @@ rewriting).</p>")
     :flag :list
     (b* (((when (atom x))
           (mv nil (svarlist-fix vars)))
-         ((mv x1 vars) (svex-reinsert-args (car x) vars depth))
-         ((mv x2 vars) (svex-reinsert-args-list (cdr x) vars depth)))
+         ((mv x1 vars) (svex-reinsert-args (car x) vars depth constsp))
+         ((mv x2 vars) (svex-reinsert-args-list (cdr x) vars depth constsp)))
       (mv (hons x1 x2) vars)))
   ///
   (local (defthm len-of-cdr
@@ -132,21 +137,21 @@ rewriting).</p>")
 
   (defthm-svex-reinsert-args-flag
     (defthm len-of-svex-reinsert-args
-      (b* (((mv ?new-x rest-vars) (svex-reinsert-args x vars depth)))
+      (b* (((mv ?new-x rest-vars) (svex-reinsert-args x vars depth constsp)))
         (equal (len rest-vars)
                (nfix (- (len vars)
                         (len (svex-args-to-depth x depth))))))
       :flag :sexpr)
     (defthm len-of-svex-reinsert-args-list
-      (b* (((mv ?new-x rest-vars) (svex-reinsert-args-list x vars depth)))
+      (b* (((mv ?new-x rest-vars) (svex-reinsert-args-list x vars depth constsp)))
         (equal (len rest-vars)
                (nfix (- (len vars)
                         (len (svex-args-to-depth-list x depth))))))
       :flag :list)
     :hints(("Goal"
             :do-not '(generalize fertilize eliminate-destructors)
-            :expand ((svex-reinsert-args x vars depth)
-                     (svex-reinsert-args-list x vars depth)
+            :expand ((svex-reinsert-args x vars depth constsp)
+                     (svex-reinsert-args-list x vars depth constsp)
                      (svex-args-to-depth x depth)
                      (svex-args-to-depth-list x depth)))))
 
@@ -190,7 +195,10 @@ common arguments with like symbols and standardizing the names."
     (cons var1 (svex-elide-args rest names seen))))
 
 
-(define svex-sexpr-shape ((x svex-p) &key (depth natp))
+(define svex-sexpr-shape ((x svex-p)
+                          &key
+                          (depth natp)
+                          ((elide-constsp booleanp) 't))
   :short "Summarize the shape of an S-expression down to some depth."
   :long "<p>The general idea behind @(see svex-frequency-analysis) is to count up
 how many times these shapes occur throughout an S-expression.</p>"
@@ -198,12 +206,14 @@ how many times these shapes occur throughout an S-expression.</p>"
        (elided (svex-elide-args args '(a b c d e f g h i j k l m n o p q r s
                                          ;; no t because that's confusing
                                        u v w x y z) nil))
-       ((mv new-x &) (svex-reinsert-args x elided depth)))
+       ((mv new-x &) (svex-reinsert-args x elided depth elide-constsp)))
     new-x)
   ///
   (defthmd svex-sexpr-shape-examples
     (and (equal (svex-sexpr-shape '(and (and 0 1) (and 2 3)) :depth 1)
                 '(and a b))
+         (equal (svex-sexpr-shape '(and (and x y) (and w 1)) :depth 2 :elide-constsp nil)
+                '(and (and a b) (and c 1)))
          (equal (svex-sexpr-shape '(and (and 0 1) (and 2 3)) :depth 2)
                 '(and (and a b) (and c d)))
          (equal (svex-sexpr-shape '(and (and 0 1) (and 0 1)) :depth 2)
@@ -218,7 +228,8 @@ S-expression, summing how many times each shape occurs."
   (define svex-shape-freq1 ((x       svex-p  "SVEX to analyze.")
                             (depth   natp    "Size of shapes to consider.")
                             (seen            "FAL for sexprs we've already counted.")
-                            (shapetab        "FAL binding shapes to counts."))
+                            (shapetab        "FAL binding shapes to counts.")
+                            (elide-constsp booleanp))
     :returns (mv seen shapetab)
     :measure (svex-count x)
     (b* (((when (or (svex-case x :quote)
@@ -229,21 +240,22 @@ S-expression, summing how many times each shape occurs."
           ;; Already counted this one.
           (mv seen shapetab))
          (seen     (hons-acons x t seen))
-         (shape    (svex-sexpr-shape x :depth depth))
+         (shape    (svex-sexpr-shape x :depth depth :elide-constsp elide-constsp))
          (count    (nfix (cdr (hons-get shape shapetab))))
          (shapetab (hons-acons shape (+ 1 count) shapetab)))
-      (svex-shape-freq1-list (svex-call->args x) depth seen shapetab)))
+      (svex-shape-freq1-list (svex-call->args x) depth seen shapetab elide-constsp)))
 
   (define svex-shape-freq1-list ((x        svexlist-p   "SVEX list to analyze.")
                                  (depth    natp         "Size of shapes to consider.")
                                  (seen                  "FAL for sexprs we've already counted.")
-                                 (shapetab              "FAL binding shapes to counts."))
+                                 (shapetab              "FAL binding shapes to counts.")
+                                 (elide-constsp booleanp))
     :returns (mv seen shapetab)
     :measure (svexlist-count x)
     (b* (((when (atom x))
           (mv seen shapetab))
-         ((mv seen shapetab) (svex-shape-freq1 (car x) depth seen shapetab))
-         ((mv seen shapetab) (svex-shape-freq1-list (cdr x) depth seen shapetab)))
+         ((mv seen shapetab) (svex-shape-freq1 (car x) depth seen shapetab elide-constsp))
+         ((mv seen shapetab) (svex-shape-freq1-list (cdr x) depth seen shapetab elide-constsp)))
       (mv seen shapetab))))
 
 (define svex-shapefreq-clean
@@ -261,28 +273,28 @@ turn them into a nice, readable report."
        (high-to-low (rev low-to-high)))
     high-to-low))
 
-(define svex-shape-freq ((x svex-p) &key (depth natp))
+(define svex-shape-freq ((x svex-p) &key (depth natp) ((elide-constsp booleanp) 't))
   :short "Shape frequency analysis for a single s-expression."
   :returns (report "Sorted, duplicate-free alist binding duplicity to shape.")
-  (b* (((mv seen shapetab) (svex-shape-freq1 x depth nil nil))
+  (b* (((mv seen shapetab) (svex-shape-freq1 x depth nil nil elide-constsp))
        (ans (svex-shapefreq-clean shapetab)))
     (fast-alist-free seen)
     (fast-alist-free shapetab)
     ans))
 
-(define svex-shape-freq-list ((x svexlist-p) &key (depth natp))
+(define svex-shape-freq-list ((x svexlist-p) &key (depth natp) ((elide-constsp booleanp) 't))
   :short "Shape frequency analysis for a sexpr list."
   :returns (report "Sorted, duplicate-free alist binding duplicity to shape.")
-  (b* (((mv seen shapetab) (svex-shape-freq1-list x depth nil nil))
+  (b* (((mv seen shapetab) (svex-shape-freq1-list x depth nil nil elide-constsp))
        (ans (svex-shapefreq-clean shapetab)))
     (fast-alist-free seen)
     (fast-alist-free shapetab)
     ans))
 
-(define svex-shape-freq-alist ((x svex-alist-p) &key (depth natp))
+(define svex-shape-freq-alist ((x svex-alist-p) &key (depth natp) ((elide-constsp booleanp) 't))
   :short "Shape frequency analysis for a sexpr alist."
   :returns (report "Sorted, duplicate-free alist binding duplicity to shape.")
-  (b* (((mv seen shapetab) (svex-shape-freq1-list (alist-vals x) depth nil nil))
+  (b* (((mv seen shapetab) (svex-shape-freq1-list (alist-vals x) depth nil nil elide-constsp))
        (ans (svex-shapefreq-clean shapetab)))
     (fast-alist-free seen)
     (fast-alist-free shapetab)
