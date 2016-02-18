@@ -1117,6 +1117,16 @@ arguments of gate instances and most arguments of module instances.  See our
               the \"internal\" wiring expressions from some port(s) in the
               module.")
 
+   (loc      vl-location-p
+             "Where the port was declared in the source code.")
+
+   ;; Commonly we have a sequence of ANSI style ports like
+   ;;    input logic [3:0] a, b, c, d;
+   ;;
+   ;; In this case it's likely that we can share dir/type/nettype/atts across
+   ;; all of the ports.  So, we put name/loc first and hope that the rest of
+   ;; this is usually shared.
+
    (dir      vl-direction-p
              "Says whether this port is an input, output, or bidirectional
               (inout) port.")
@@ -1129,9 +1139,6 @@ arguments of gate instances and most arguments of module instances.  See our
               signed.  The @(see loader) DOES NOT do this cross-referencing
               automatically; instead the @(see portdecl-sign) transformation
               needs to be run.")
-
-   (loc      vl-location-p
-             "Where the port was declared in the source code.")
 
    (nettype  vl-maybe-nettypename-p)
 
@@ -1450,19 +1457,19 @@ properly preserve them.</p>")
              :rule-classes :type-prescription
              "Name of the variable being declared.")
 
+   (loc      vl-location-p
+             "Where the declaration was found in the source code.")
+
    (type     vl-datatype-p
              "Data type, array dimensions.  See below.")
-
-   (loc        vl-location-p
-               "Where the declaration was found in the source code.")
 
    (nettype  vl-maybe-nettypename-p
              "Net type (i.e., resolution function, distinct from datatype) or
               @('nil') if this a @('reg') or variable instead of a net.  See
               below.")
 
-   (atts       vl-atts-p
-               "Any attributes associated with this declaration.")
+   (atts     vl-atts-p
+             "Any attributes associated with this declaration.")
 
    (initval  vl-maybe-expr-p
              "(Variables only).  When present, indicates the initial value for
