@@ -133,6 +133,7 @@ we ignore file names.</p>"
                   (item-map vl-commentmap-p)
                   &key (ps 'ps))
        :returns (mv (item-map vl-commentmap-p) ps)
+       :verbosep t
        (b* (((when (atom x))
              (mv (vl-commentmap-fix item-map) ps))
             ((mv str ps)
@@ -156,6 +157,15 @@ we ignore file names.</p>"
 (def-vl-ppmap :list sequencelist :elem sequence)
 (def-vl-ppmap :list assertionlist :elem assertion)
 (def-vl-ppmap :list cassertionlist :elem cassertion)
+
+
+(local (defthm vl-genelementlist-fix-when-atom
+         ;; bozo ??? why do we need this?
+         (implies (atom x)
+                  (equal (vl-genelementlist-fix x)
+                         nil))))
+
+(def-vl-ppmap :list genelementlist :elem genelement)
 
 
 ;; This one's a bit different because it takes a scopestack
@@ -254,24 +264,76 @@ we ignore file names.</p>"
 
   (b* (((when (atom x))
         ps)
+
+       ;; Print item 1.
+       (ps (vl-print-markup (cdr (first x))))
        ((when (atom (cdr x)))
-        (vl-ps-seq (vl-print-markup (cdr (first x)))))
-       ((when (atom (cddr x)))
-        (vl-ps-seq (vl-print-markup (cdr (first x)))
-                   (vl-print-markup (cdr (second x)))))
-       ((list first second third) x)
-       ((when (and (equal (car first) (car second))
-                   (not (equal (car first) (car third)))))
-        ;; To make our output nicer, we insert a newline if there are multiple
-        ;; elements at the same location after printing those elements.
-        (vl-ps-seq (vl-print-markup (cdr (first x)))
-                   (vl-print-markup (cdr (second x)))
+        ps)
+
+       ;; Maybe insert a newline between item1 and item2.
+       ;;
+       ;; The idea here: if the original source code had a gap of more
+       ;; than 2 lines, then we will insert an extra gap.  If the
+       ;; user's code is on contiguous lines, say:
+       ;;
+       ;;    wire w1;
+       ;;    wire w2;
+       ;;
+       ;; then we don't want to add an extra newline because they are
+       ;; likely grouping up related logic.  But, if the user wrote
+       ;; something like:
+       ;;
+       ;;    wire w1;
+       ;;
+       ;;    wire w2;
+       ;;
+       ;; Then they probably had some reason for wanting this gap, so
+       ;; we will try to preserve it.
+       ((list* first second rest) x)
+       ((vl-location loc1) (car first))
+       ((vl-location loc2) (car second))
+       (ps (if (or (not (equal loc1.filename loc2.filename))
+                   (< (+ 1 loc1.line) loc2.line))
+               (vl-println "")
+             ps))
+
+       ;; If there is no item3, just print item2 and we're done.
+       ((when (atom rest))
+        (vl-print-markup (cdr second)))
+
+       ;; Maybe insert an extra newline between item2 and item3.
+       ;;
+       ;; The idea here: If there are multiple elements at the same line, then
+       ;; we will insert a newline after printing them.  This causes input
+       ;; source like
+       ;;
+       ;;    wire a, b, c;
+       ;;    wire d;
+       ;;
+       ;; to be printed as a block like:
+       ;;
+       ;;    wire a;
+       ;;    wire b;
+       ;;    wire c;
+       ;;
+       ;;    wire d;
+       ;;
+       ;; Which at least preserves the sort of major groupings of things.
+
+       (third (car rest))
+       (loc3 (car third))
+       ((when (and (equal loc1 loc2)
+                   (not (equal loc1 loc3))))
+        (vl-ps-seq (vl-print-markup (cdr second))
                    (vl-println "")
-                   (vl-pp-encoded-commentmap (cddr x)))))
-    ;; Otherwise, first and second are unrelated or part of the same
-    ;; group as third, so don't insert a newline.
-    (vl-ps-seq (vl-print-markup (cdr (first x)))
-               (vl-pp-encoded-commentmap (cdr x)))))
+                   (vl-pp-encoded-commentmap rest))))
+
+    ;; Otherwise, first and second are unrelated or part of the same group as
+    ;; third, so don't insert a newline, just print items 2...  as normal.
+    (vl-pp-encoded-commentmap (cdr x))))
+
+
+
 
 (define vl-genblob-populate-item-map ((x    vl-genblob-p)
                                       (ss   vl-scopestack-p)
@@ -314,6 +376,7 @@ we ignore file names.</p>"
        ((mv imap ps) (vl-assertionlist-ppmap x.assertions imap))
        ((mv imap ps) (vl-cassertionlist-ppmap x.cassertions imap))
        ((mv imap ps) (vl-modportlist-ppmap x.modports imap))
+       ((mv imap ps) (vl-genelementlist-ppmap x.generates imap))
        (ps (vl-progindent-block-end))
 
        ;; Now that we are done generating the ppmap, restore the previous state
@@ -443,9 +506,6 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
                (vl-pp-portlist x.ports)
                (vl-println ");")
                (vl-pp-encoded-commentmap guts)
-               (if x.generates
-                   (vl-println "// BOZO add pretty-printing of generate statements!")
-                 ps)
                (vl-ps-span "vl_key" (vl-println "endinterface"))
                (vl-println ""))))
 

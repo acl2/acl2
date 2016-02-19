@@ -30,6 +30,9 @@
 
 
 // Demo for the VL Server
+//
+// This demo is mostly intended to let us have a small model that we can use
+// for debugging pretty-printing, linking, etc.
 
 parameter BUS_WIDTH = 4;
 parameter ADDR_WIDTH = 8;
@@ -170,6 +173,87 @@ module onehotMux4(output [7:0] o,
            | {8{sel2}} & data2
 	   | {8{sel3}} & data3
            | {8{sel4}} & data4;
+
+  wire [7:0] other_style;
+
+  assign other_style = {8{sel1}} & data1 |
+		       {8{sel2}} & data2 |
+		       {8{sel3}} & data3 |
+		       {8{sel4}} & data4;
+
+  wire another_style;
+
+  wire [7:0] sel1w = {8{sel1}};
+  wire [7:0] sel2w = {8{sel2}};
+  wire [7:0] sel3w = {8{sel3}};
+  wire [7:0] sel4w = {8{sel4}};
+
+  assign another_style = sel1w & data1 |
+			 sel2w & data2 |
+			 sel3w & data3 |
+			 sel4w & data4;
+
+endmodule
+
+
+
+// This mux is really just a test of some ?: operator indenting.
+module qmarkMux4(
+  output [7:0] o,
+  input [2:0] sel,
+  input [7:0] data0, data1, data2, data3
+);
+
+  assign o = (sel == 0) ? data0
+           : (sel == 1) ? data1
+           : (sel == 2) ? data2
+           :              data3;
+
+  // some other tests of ?: operator indenting preservation
+
+  wire other_style;
+  assign other_style = (sel == 0) ? data0 :
+                       (sel == 1) ? data1 :
+                       (sel == 2) ? data2 :
+                                    data3 ;
+
+  wire other_style2;
+  assign other_style2 = (sel == 0) ? data0
+                      :
+                        (sel == 1) ? data1
+                      :
+                        (sel == 2) ? data2
+                      :
+                         data3 ;
+
+
+
+  wire awful_style;
+  assign awful_style = (sel == 0)
+                          ? data0
+
+                          : (sel == 1)
+                               ? data1
+
+                               : (sel == 2)
+                                   ? data2 :
+
+                                     data3 ;
+
+  wire awful_style2 = (sel == 0)
+
+                          ? data0
+
+                          : (sel == 1)
+
+                               ? data1
+
+                               : (sel == 2)
+
+                                   ? data2 :
+
+                                     data3 ;
+
 
 endmodule
 
