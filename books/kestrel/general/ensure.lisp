@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc ensure
+(defsection ensure
 
   :parents (kestrel-general-utilities programming)
 
@@ -48,10 +48,10 @@
   (- (ensure (condition3 input3) ...))
   ...
   })
-  @(def ensure)")
+  @(def ensure)"
 
-(defmacro ensure (condition error-message &rest error-message-args)
-  (declare (xargs :guard (stringp error-message)))
-  `(if ,condition
-       t
-     (er hard? __function__ ,error-message ,@error-message-args)))
+  (defmacro ensure (condition error-message &rest error-message-args)
+    (declare (xargs :guard (stringp error-message)))
+    `(if ,condition
+         t
+       (er hard? __function__ ,error-message ,@error-message-args))))
