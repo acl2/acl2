@@ -1,6 +1,6 @@
 ; Ensuring that Conditions Hold -- Tests
 ;
-; Copyright (C) 2015 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains tests for the ENSURE macro.
+; This file contains tests for the macros that ensure that conditions hold.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,3 +53,28 @@
  (must-fail (defconst *c* (g 'a "w")))
 
  (must-fail (defconst *c* (g "3" "3"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (define h (state)
+   (ensure$ (mv t t state) ""))
+
+ (must-fail (h state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (define h (x state)
+   :verify-guards nil
+   (b* (((er &) (ensure$ (value (natp x)) "~x0 must be a natural number." x))
+        ((er &) (ensure$ (value (> x 10)) "~x0 must be larger than 10." x)))
+     (value '(defun f (y) y))))
+
+ (must-succeed (make-event (h 20 state)))
+
+ (must-fail (make-event (h 8 state)))
+
+ (must-fail (make-event (h "aa" state))))
