@@ -17,6 +17,10 @@
 (defun top (stack) (car stack))
 (defun pop (stack) (cdr stack))
 
+(defun push2 (obj stack) (push nil (push obj stack)))
+(defun top2 (stack) (top (pop stack)))
+(defun pop2 (stack) (pop (pop stack)))
+
 (defun popn (n stack)
   (if (zp n)
       stack
@@ -1585,10 +1589,10 @@
 (defun execute-D2F (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push (fp2fp (top (pop (stack (top-frame th s))))
+          :stack (push (fp2fp (top2 (stack (top-frame th s)))
                               (rtl::dp)
                               (rtl::sp))
-                       (pop (pop (stack (top-frame th s)))))))
+                       (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (D2I) Instruction - convert double to int
@@ -1596,10 +1600,10 @@
 (defun execute-D2I (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push (fp2int (top (pop (stack (top-frame th s))))
+          :stack (push (fp2int (top2 (stack (top-frame th s)))
                                (rtl::dp)
                                32)
-                       (pop (pop (stack (top-frame th s)))))))
+                       (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (D2L) Instruction - convert double to long
@@ -1607,11 +1611,10 @@
 (defun execute-D2L (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fp2int (top (pop (stack (top-frame th s))))
-                                     (rtl::dp)
-                                     64)
-                             (pop (pop (stack (top-frame th s))))))))
+          :stack (push2 (fp2int (top2 (stack (top-frame th s)))
+                                (rtl::dp)
+                                64)
+                        (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (DADD) Instruction - add double
@@ -1619,12 +1622,10 @@
 (defun execute-DADD (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push
-                         (fpadd (top (popn 3 (stack (top-frame th s))))
-                                (top (pop (stack (top-frame th s))))
-                                (rtl::dp))
-                         (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fpadd (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DALOAD) Instruction - load double from array
@@ -1635,22 +1636,21 @@
          (array (deref arrayref (heap s))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push 0
-                             (push (element-at index array)
-                                   (pop (pop (stack (top-frame th s)))))))))
+                :stack (push2 (element-at index array)
+                              (pop (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (DASTORE) Instruction - store into double array
 
 (defun execute-DASTORE (inst th s)
-  (let* ((value (top (pop (stack (top-frame th s)))))
-         (index (top (pop (pop (stack (top-frame th s))))))
-         (arrayref (top (popn 3 (stack (top-frame th s)))))
+  (let* ((value (top2 (stack (top-frame th s))))
+         (index (top (pop2 (stack (top-frame th s)))))
+         (arrayref (top (pop (pop2 (stack (top-frame th s))))))
          (array (deref arrayref (heap s))))
     (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (popn 4 (stack (top-frame th s)))
+                :stack (pop (pop (pop2 (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
                             (set-element-at value index array)
                             (heap s)))
@@ -1660,25 +1660,25 @@
 ; (DCMPG) Instruction - compare double
 
 (defun execute-DCMPG (inst th s)
-  (let* ((val2 (top (pop (stack (top-frame th s)))))
-         (val1 (top (popn 3 (stack (top-frame th s)))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s)))))
          (result (fpcmp val1 val2 (rtl::dp) +1)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (push result
-                             (popn 4 (stack (top-frame th s)))))))
+                             (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (DCMPL) Instruction - compare double
 
 (defun execute-DCMPL (inst th s)
-  (let* ((val2 (top (pop (stack (top-frame th s)))))
-         (val1 (top (popn 3 (stack (top-frame th s)))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s)))))
          (result (fpcmp val1 val2 (rtl::dp) -1)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (push result
-                             (popn 4 (stack (top-frame th s)))))))
+                             (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (DCONST_0) Instruction - push double 0.0
@@ -1686,8 +1686,7 @@
 (defun execute-DCONST_0 (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push #x0000000000000000 (stack (top-frame th s))))))
+          :stack (push2 #x0000000000000000 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DCONST_1) Instruction - push double 1.0
@@ -1695,8 +1694,7 @@
 (defun execute-DCONST_1 (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push #x3ff0000000000000 (stack (top-frame th s))))))
+          :stack (push2 #x3ff0000000000000 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DDIV) Instruction - divide double
@@ -1704,12 +1702,10 @@
 (defun execute-DDIV (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push
-                         (fpdiv (top (popn 3 (stack (top-frame th s))))
-                                (top (pop (stack (top-frame th s))))
-                                (rtl::dp))
-                         (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fpdiv (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DLOAD idx) Instruction - load double from local variable
@@ -1717,10 +1713,9 @@
 (defun execute-DLOAD (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (nth (arg1 inst)
-                                  (locals (top-frame th s)))
-                             (stack (top-frame th s))))))
+          :stack (push2 (nth (arg1 inst)
+                             (locals (top-frame th s)))
+                        (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DLOAD_X) Instruction - load double from local variable
@@ -1729,9 +1724,8 @@
 (defun execute-DLOAD_X (inst th s n)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (nth n (locals (top-frame th s)))
-                             (stack (top-frame th s))))))
+          :stack (push2 (nth n (locals (top-frame th s)))
+                        (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DMUL) Instruction - multiply double
@@ -1739,11 +1733,10 @@
 (defun execute-DMUL (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fpmul (top (popn 3 (stack (top-frame th s))))
-                                    (top (pop (stack (top-frame th s))))
-                                    (rtl::dp))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fpmul (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DNEG) Instruction - negate double
@@ -1751,9 +1744,8 @@
 (defun execute-DNEG (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fpneg (top (pop (stack (top-frame th s)))) (rtl::dp))
-                             (popn 2 (stack (top-frame th s)))))))
+          :stack (push2 (fpneg (top2 (stack (top-frame th s))) (rtl::dp))
+                        (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (DREM) Instruction - remainder double
@@ -1761,11 +1753,10 @@
 (defun execute-DREM (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fprem (top (popn 3 (stack (top-frame th s))))
-                                    (top (pop (stack (top-frame th s))))
-                                    (rtl::dp))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fprem (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DRETURN) Instruction - return double from method
@@ -1773,8 +1764,8 @@
 (defun execute-DRETURN (inst th s)
   (declare (ignore inst))
   (let* ((cs (call-stack th s))
-         (val (top (pop (stack (top cs))))))
-    (return-stk (push 0 (push val (stack (top (pop cs))))) th s)))
+         (val (top2 (stack (top cs)))))
+    (return-stk (push2 val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (DSTORE idx) Instruction - store double into local variable
@@ -1783,9 +1774,9 @@
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :locals (update-nth (arg1 inst)
-                               (top (pop (stack (top-frame th s))))
-                               (locals (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+                              (top2 (stack (top-frame th s)))
+                              (locals (top-frame th s)))
+          :stack (pop2 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DSTORE_X) Instruction - store double long into local variable
@@ -1795,9 +1786,9 @@
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :locals (update-nth n
-                               (top (pop (stack (top-frame th s))))
-                               (locals (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+                              (top2 (stack (top-frame th s)))
+                              (locals (top-frame th s)))
+          :stack (pop2 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DSUB) Instruction
@@ -1805,11 +1796,10 @@
 (defun execute-DSUB (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fpsub (top (popn 3 (stack (top-frame th s))))
-                                    (top (pop (stack (top-frame th s))))
-                                    (rtl::dp))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fpsub (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DUP) Instruction
@@ -1837,8 +1827,8 @@
 (defun execute-DUP_X2 (inst th s)
   (let* ((val1 (top (stack (top-frame th s))))
          (val2 (top (pop (stack (top-frame th s)))))
-         (val3 (top (popn 2 (stack (top-frame th s)))))
-         (stack_prime (popn 3 (stack (top-frame th s)))))
+         (val3 (top (pop (pop (stack (top-frame th s))))))
+         (stack_prime (pop (pop (pop (stack (top-frame th s)))))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
               :stack (push val1
@@ -1866,8 +1856,8 @@
 (defun execute-DUP2_X1 (inst th s)
   (let* ((val1 (top (stack (top-frame th s))))
          (val2 (top (pop (stack (top-frame th s)))))
-         (val3 (top (popn 2 (stack (top-frame th s)))))
-         (stack_prime (popn 3 (stack (top-frame th s)))))
+         (val3 (top (pop (pop (stack (top-frame th s))))))
+         (stack_prime (pop (pop (pop (stack (top-frame th s)))))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
               :stack (push val1
@@ -1882,9 +1872,9 @@
 (defun execute-DUP2_X2 (inst th s)
   (let* ((val1 (top (stack (top-frame th s))))
          (val2 (top (pop (stack (top-frame th s)))))
-         (val3 (top (popn 2 (stack (top-frame th s)))))
-         (val4 (top (popn 3 (stack (top-frame th s)))))
-         (stack_prime (popn 4 (stack (top-frame th s)))))
+         (val3 (top (pop (pop (stack (top-frame th s))))))
+         (val4 (top (pop (pop (pop (stack (top-frame th s)))))))
+         (stack_prime (pop (pop (pop (pop (stack (top-frame th s))))))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
               :stack (push val1
@@ -1900,11 +1890,10 @@
 (defun execute-F2D (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fp2fp (top (stack (top-frame th s)))
-                                    (rtl::sp)
-                                    (rtl::dp))
-                             (pop (stack (top-frame th s)))))))
+          :stack (push2 (fp2fp (top (stack (top-frame th s)))
+                               (rtl::sp)
+                               (rtl::dp))
+                        (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (F2I) Instruction - convert float to long
@@ -1923,11 +1912,10 @@
 (defun execute-F2L (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fp2int (top (stack (top-frame th s)))
-                                     (rtl::sp)
-                                     64)
-                             (pop (stack (top-frame th s)))))))
+          :stack (push2 (fp2int (top (stack (top-frame th s)))
+                                (rtl::sp)
+                                64)
+                        (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (FADD) Instruction - add float
@@ -2124,7 +2112,7 @@
                        (pop (pop (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
-; (GETFIELD "class" "field" ?long-flag?) Instruction
+; (GETFIELD "class" "field" size) Instruction
 
 (defun execute-GETFIELD (inst th s)
   (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
@@ -2138,13 +2126,11 @@
     (modify th s
             :pc (+ (inst-length inst) (pc (top-frame th s)))
             :stack (if long-flag
-                       (push 0 (push field-value
-                                     (pop (stack (top-frame th s)))))
-                       (push field-value
-                             (pop (stack (top-frame th s))))))))
+                       (push2 field-value (pop (stack (top-frame th s))))
+                       (push field-value (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
-; (GETSTATIC "class" "field" ?long-flag?) Instruction
+; (GETSTATIC "class" "field" size) Instruction
 
 (defun execute-GETSTATIC (inst th s)
   (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
@@ -2157,7 +2143,7 @@
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
-                           (push 0 (push field-value (stack (top-frame th s))))
+                           (push2 field-value (stack (top-frame th s)))
                            (push field-value (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
@@ -2198,10 +2184,9 @@
 (defun execute-I2D (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (int2fp (top (stack (top-frame th s)))
-                                     (rtl::dp))
-                             (pop (stack (top-frame th s)))))))
+          :stack (push2 (int2fp (top (stack (top-frame th s)))
+                                (rtl::dp))
+                        (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (I2F) Instruction - int to float conversion
@@ -2219,9 +2204,8 @@
 (defun execute-I2L (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (long-fix (top (stack (top-frame th s))))
-                             (pop (stack (top-frame th s)))))))
+          :stack (push2 (long-fix (top (stack (top-frame th s))))
+                        (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (I2S) Instruction - int to short narrowing conversion
@@ -2749,9 +2733,8 @@
             ((and (equal class "java/lang/Double")
                   (equal method-name-and-type "doubleToRawLongBits:(D)J"))
              (modify th s1
-                     :stack (push 0
-                                  (push (long-fix (top (pop (stack (top-frame th s)))))
-                                        (stack (top-frame th s1))))))
+                     :stack (push2 (long-fix (top2 (stack (top-frame th s))))
+                                   (stack (top-frame th s1)))))
             ((and (equal class "java/lang/Float")
                   (equal method-name-and-type "floatToRawIntBits:(F)I"))
              (modify th s1
@@ -2765,16 +2748,14 @@
             ((and (equal class "java/lang/Double")
                   (equal method-name-and-type "longBitsToDouble:(J)D"))
              (modify th s1
-                     :stack (push 0
-                                  (push (double-fix (top (pop (stack (top-frame th s)))))
-                                        (stack (top-frame th s1))))))
+                     :stack (push2 (double-fix (top2 (stack (top-frame th s))))
+                                   (stack (top-frame th s1)))))
             ((and (equal class "java/lang/StrictMath")
                   (equal method-name-and-type "sqrt:(D)D"))
              (modify th s1
-                     :stack (push 0
-                                  (push (fpsqrt (top (stack (top-frame th s)))
-                                                (rtl::dp))
-                                        (stack (top-frame th s1))))))
+                     :stack (push2 (fpsqrt (top2 (stack (top-frame th s)))
+                                           (rtl::dp))
+                                   (stack (top-frame th s1)))))
             ((and (equal class "java/lang/StringUTF16")
                   (equal method-name-and-type "isBigEndian()Z"))
              (modify th s1
@@ -2844,10 +2825,9 @@
 (defun execute-L2D (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (int2fp (top (pop (stack (top-frame th s))))
-                                     (rtl::dp))
-                             (pop (pop (stack (top-frame th s))))))))
+          :stack (push2 (int2fp (top2 (stack (top-frame th s)))
+                                (rtl::dp))
+                        (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (L2F) Instruction - long to float narrowing conversion
@@ -2855,9 +2835,9 @@
 (defun execute-L2F (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push (int2fp (top (pop (stack (top-frame th s))))
+          :stack (push (int2fp (top2 (stack (top-frame th s)))
                                (rtl::sp))
-                       (pop (pop (stack (top-frame th s)))))))
+                       (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (L2I) Instruction - long to int narrowing conversion
@@ -2865,20 +2845,19 @@
 (defun execute-L2I (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push (int-fix (top (pop (stack (top-frame th s)))))
-                       (pop (pop (stack (top-frame th s)))))))
+          :stack (push (int-fix (top2 (stack (top-frame th s))))
+                       (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (LADD) Instruction - Add to longs from the top of the stack
 
 (defun execute-LADD (inst th s)
-  (let* ((val1 (top (pop (stack (top-frame th s)))))
-         (val2 (top (popn 3 (stack (top-frame th s))))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s))))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push 0
-                             (push (long-fix (+ val1 val2))
-                                   (popn 4 (stack (top-frame th s))))))))
+                :stack (push2 (long-fix (+ val1 val2))
+                              (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LALOAD) Instruction
@@ -2889,34 +2868,32 @@
          (array (deref arrayref (heap s))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push 0
-                             (push (element-at index array)
-                                   (pop (pop (stack (top-frame th s)))))))))
+                :stack (push2 (element-at index array)
+                              (pop (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LAND) Instruction
 
 (defun execute-LAND (inst th s)
-  (let* ((val1 (top (pop (stack (top-frame th s)))))
-         (val2 (top (popn 3 (stack (top-frame th s))))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s))))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push 0
-                             (push (logand val1 val2)
-                                   (popn 4 (stack (top-frame th s))))))))
+                :stack (push2 (logand val1 val2)
+                              (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LASTORE) Instruction
 
 (defun execute-LASTORE (inst th s)
-  (let* ((value (top (pop (stack (top-frame th s)))))
-         (index (top (pop (pop (stack (top-frame th s))))))
-         (arrayref (top (popn 3 (stack (top-frame th s)))))
+  (let* ((value (top2 (stack (top-frame th s))))
+         (index (top (pop2 (stack (top-frame th s)))))
+         (arrayref (top (pop (pop2 (stack (top-frame th s))))))
          (array (deref arrayref (heap s))))
     (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (popn 4 (stack (top-frame th s)))
+                :stack (pop (pop (pop2 (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
                             (set-element-at value index array)
                             (heap s)))
@@ -2929,15 +2906,15 @@
 ;                      val1 < val2 --> -1
 
 (defun execute-LCMP (inst th s)
-  (let* ((val2 (top (pop (stack (top-frame th s)))))
-         (val1 (top (popn 3 (stack (top-frame th s)))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s)))))
          (result (cond ((> val1 val2) 1)
                        ((< val1 val2) -1)
                        (t 0))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (push result
-                             (popn 4 (stack (top-frame th s)))))))
+                             (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LCONST_X) Instruction - push a certain long constant onto the stack
@@ -2946,8 +2923,7 @@
 (defun execute-LCONST_X (inst th s n)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push n (stack (top-frame th s))))))
+          :stack (push2 n (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LDC) Instruction
@@ -2971,7 +2947,7 @@
          (value (cadr cpe)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push 0 (push value (stack (top-frame th s)))))))
+                :stack (push2 value (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (LDIV) Instruction
@@ -2979,12 +2955,10 @@
 (defun execute-LDIV (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push
-                         (long-fix
-                            (truncate (top (popn 3 (stack (top-frame th s))))
-                                      (top (pop (stack (top-frame th s))))))
-                       (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (long-fix
+                         (truncate (top2 (pop2 (stack (top-frame th s))))
+                                   (top2 (stack (top-frame th s)))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LLOAD idx) Instruction - Push a long local onto the stack
@@ -2992,10 +2966,9 @@
 (defun execute-LLOAD (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (nth (arg1 inst)
-                                  (locals (top-frame th s)))
-                             (stack (top-frame th s))))))
+          :stack (push2 (nth (arg1 inst)
+                             (locals (top-frame th s)))
+                        (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LLOAD_X) Instruction - Push a long local onto the stack
@@ -3004,9 +2977,8 @@
 (defun execute-LLOAD_X (inst th s n)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (nth n (locals (top-frame th s)))
-                             (stack (top-frame th s))))))
+          :stack (push2 (nth n (locals (top-frame th s)))
+                        (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LMUL) Instruction
@@ -3014,11 +2986,10 @@
 (defun execute-LMUL (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (ulong-fix
-                              (* (top (pop (stack (top-frame th s))))
-                                 (top (popn 3 (stack (top-frame th s))))))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (ulong-fix
+                         (* (top2 (pop2 (stack (top-frame th s))))
+                            (top2 (stack (top-frame th s)))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LNEG) Instruction
@@ -3026,14 +2997,13 @@
 ;         the negation of the most negative int is itself
 
 (defun execute-LNEG (inst th s)
-  (let* ((result (if (equal (top (pop (stack (top-frame th s))))
+  (let* ((result (if (equal (top2 (stack (top-frame th s)))
                             *most-negative-long*)
                      *most-negative-long*
-                     (- (top (pop (stack (top-frame th s))))))))
+                     (- (top2 (stack (top-frame th s)))))))
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push result (popn 2 (stack (top-frame th s))))))))
+          :stack (push2 result (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LOOKUPSWITCH) Instruction
@@ -3054,23 +3024,21 @@
 (defun execute-LOR (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (logior (top (pop (stack (top-frame th s))))
-                                     (top (popn 3 (stack (top-frame th s)))))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (logior (top2 (pop2 (stack (top-frame th s))))
+                                (top2 (stack (top-frame th s))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LREM) Instruction
 
 (defun execute-LREM (inst th s)
-  (let* ((val1 (top (popn 3 (stack (top-frame th s)))))
-         (val2 (top (pop (stack (top-frame th s)))))
+  (let* ((val1 (top2 (pop2 (stack (top-frame th s)))))
+         (val2 (top2 (stack (top-frame th s))))
          (result (- val1 (* (truncate val1 val2) val2))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push 0
-                           (push result
-                                 (popn 4 (stack (top-frame th s))))))))
+              :stack (push2 result
+                            (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LRETURN) Instruction - return a long
@@ -3078,36 +3046,34 @@
 (defun execute-LRETURN (inst th s)
   (declare (ignore inst))
   (let* ((cs (call-stack th s))
-         (val (top (pop (stack (top cs))))))
-    (return-stk (push 0 (push val (stack (top (pop cs))))) th s)))
+         (val (top2 (stack (top cs)))))
+    (return-stk (push2 val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (LSHL) Instruction
 
 (defun execute-LSHL (inst th s)
-  (let* ((val1 (top (popn 2 (stack (top-frame th s)))))
+  (let* ((val1 (top2 (pop (stack (top-frame th s)))))
          (val2 (top (stack (top-frame th s))))
          (shiftval (6-bit-fix val2))
          (result (shl val1 shiftval)))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push 0
-                           (push (long-fix result)
-                                 (popn 3 (stack (top-frame th s))))))))
+              :stack (push2 (long-fix result)
+                            (pop2 (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LSHR) Instruction
 
 (defun execute-LSHR (inst th s)
-  (let* ((val1 (top (popn 2 (stack (top-frame th s)))))
+  (let* ((val1 (top2 (pop (stack (top-frame th s)))))
          (val2 (top (stack (top-frame th s))))
          (shiftval (6-bit-fix val2))
          (result (shr val1 shiftval)))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push 0
-                           (push (long-fix result)
-                                 (popn 3 (pop (stack (top-frame th s)))))))))
+              :stack (push2 (long-fix result)
+                            (pop2 (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LSTORE idx) Instruction - store a long into the locals
@@ -3116,9 +3082,9 @@
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :locals (update-nth (arg1 inst)
-                               (top (pop (stack (top-frame th s))))
-                               (locals (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+                              (top2 (stack (top-frame th s)))
+                              (locals (top-frame th s)))
+          :stack (pop2 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LSTORE_X) Instruction - store a long into the locals
@@ -3128,9 +3094,9 @@
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :locals (update-nth n
-                               (top (pop (stack (top-frame th s))))
-                               (locals (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+                              (top2 (stack (top-frame th s)))
+                              (locals (top-frame th s)))
+          :stack (pop2 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LSUB) Instruction
@@ -3138,11 +3104,9 @@
 (defun execute-LSUB (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push
-                        (ulong-fix (- (top (popn 3 (stack (top-frame th s))))
-                                      (top (pop (stack (top-frame th s))))))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (ulong-fix (- (top2 (pop2 (stack (top-frame th s))))
+                                      (top2 (stack (top-frame th s)))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LUSHR) Instruction
@@ -3153,15 +3117,14 @@
     (shr val1 shft)))
 
 (defun execute-LUSHR (inst th s)
-  (let* ((val1 (top (popn 2 (stack (top-frame th s)))))
+  (let* ((val1 (top2 (pop (stack (top-frame th s)))))
          (val2 (top (stack (top-frame th s))))
          (shiftval (6-bit-fix val2))
          (result (lushr val1 shiftval)))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push 0
-                           (push (long-fix result)
-                                 (popn 3 (stack (top-frame th s))))))))
+              :stack (push2 (long-fix result)
+                            (pop2 (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LXOR) Instruction
@@ -3169,10 +3132,9 @@
 (defun execute-LXOR (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (logxor (top (pop (stack (top-frame th s))))
-                                     (top (popn 3 (stack (top-frame th s)))))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (logxor (top2 (pop2 (stack (top-frame th s))))
+                                (top2 (stack (top-frame th s))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (MONITORENTER) Instruction
@@ -3301,10 +3263,10 @@
 (defun execute-POP2 (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+          :stack (pop (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
-; (PUTFIELD "class" "field" ?long-flag?) Instruction
+; (PUTFIELD "class" "field" size) Instruction
 
 (defun execute-PUTFIELD (inst th s)
   (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
@@ -3312,21 +3274,20 @@
                                  (class-table s)))
          (class-name (nth 1 cpe))
          (field-name-and-type (nth 2 cpe))
-         (long-flag  (> (nth 3 cpe) 1))
+         (long-flag (> (nth 3 cpe) 1))
          (value (if long-flag
-                    (top (pop (stack (top-frame th s))))
-                    (top (stack (top-frame th s)))))
-         (instance (if long-flag
-                       (deref (top (popn 2 (stack (top-frame th s)))) (heap s))
-                       (deref (top (pop (stack (top-frame th s)))) (heap s))))
-         (address (cadr (if long-flag
-                            (top (popn 2 (stack (top-frame th s))))
-                            (top (pop (stack (top-frame th s))))))))
+                    (top2 (stack (top-frame th s)))
+                  (top (stack (top-frame th s)))))
+         (ref (if long-flag
+                  (top (pop2 (stack (top-frame th s))))
+                (top (pop (stack (top-frame th s))))))
+         (instance (deref ref (heap s)))
+         (address (cadr ref)))
     (if instance
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
-                           (popn 3 (stack (top-frame th s)))
+                           (pop (pop2 (stack (top-frame th s))))
                            (pop (pop (stack (top-frame th s)))))
                 :heap (bind address
                             (set-instance-field class-name
@@ -3337,7 +3298,7 @@
         s)))
 
 ; -----------------------------------------------------------------------------
-; (PUTSTATIC "class" "field" ?long-flag?) Instruction
+; (PUTSTATIC "class" "field" size) Instruction
 
 (defun execute-PUTSTATIC (inst th s)
   (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
@@ -3345,18 +3306,18 @@
                                  (class-table s)))
          (class-name (nth 1 cpe))
          (field-name-and-type (nth 2 cpe))
-         (long-flag  (> (nth 3 cpe) 1))
+         (long-flag (> (nth 3 cpe) 1))
          (class-ref (class-decl-heapref
                      (bound? class-name (class-table s))))
          (value (if long-flag
-                    (top (pop (stack (top-frame th s))))
+                    (top2 (stack (top-frame th s)))
                     (top (stack (top-frame th s)))))
          (instance (deref class-ref (heap s))))
     (if instance
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
-                           (popn 2 (stack (top-frame th s)))
+                           (pop2 (stack (top-frame th s)))
                            (pop (stack (top-frame th s))))
                 :heap (bind (cadr class-ref)
                             (set-static-field field-name-and-type
