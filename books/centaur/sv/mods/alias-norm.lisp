@@ -1079,10 +1079,6 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
 
 (defines svex-subst-from-svexarr
   :verify-guards nil
-  ;; Note: Not currently memoized because this would slow down creation of
-  ;; svexarr.  This function is not currently used on expressions after they
-  ;; have been composed together, so they tend to be small enough to operate on
-  ;; without memoization.
   (define svex-subst-from-svexarr ((x svex-p) svexarr)
     :guard (svarlist-boundedp (svex-vars x) (svexs-length svexarr))
     :returns (xx svex-p)
@@ -1091,7 +1087,7 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
       :var (svex-add-delay-top (get-svex (svar-index x.name) svexarr)
                                (svar->delay x.name))
       :quote (svex-fix x)
-      :call (svex-call x.fn (svexlist-subst-from-svexarr x.args svexarr))))
+      :call (svex-call* x.fn (svexlist-subst-from-svexarr x.args svexarr))))
 
   (define svexlist-subst-from-svexarr ((x svexlist-p) svexarr)
     :guard (svarlist-boundedp (svexlist-vars x) (svexs-length svexarr))

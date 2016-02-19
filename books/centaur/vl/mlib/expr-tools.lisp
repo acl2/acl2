@@ -1533,8 +1533,10 @@ construct fast alists binding identifiers to things, etc.</p>"
                     (append (vl-expr-varnames (car x))
                             (vl-exprlist-varnames (cdr x)))
                   nil)
-         :exec (with-local-nrev
-                 (vl-exprlist-varnames-nrev x nrev))))
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev
+                   (vl-exprlist-varnames-nrev x nrev)))))
   ///
   (defthm true-listp-of-vl-expr-varnames
     (true-listp (vl-expr-varnames x))
@@ -1681,8 +1683,10 @@ expression, with repetition.</p>"
                      (append (vl-expr-ops (car x))
                              (vl-exprlist-ops (cdr x)))
                    nil)
-         :exec (with-local-nrev
-                 (vl-exprlist-ops-nrev x nrev))))
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev
+                   (vl-exprlist-ops-nrev x nrev)))))
    ///
    (defthm true-listp-of-vl-expr-ops
      (true-listp (vl-expr-ops x))
@@ -1830,7 +1834,9 @@ throughout the expression, with repetition.  The resulting list may contain any
                     (append (vl-expr-values (car x))
                             (vl-exprlist-values (cdr x)))
                   nil)
-         :exec (with-local-nrev (vl-exprlist-values-nrev x nrev))))
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev (vl-exprlist-values-nrev x nrev)))))
   ///
   (defthm true-listp-of-vl-expr-values
     (true-listp (vl-expr-values x))

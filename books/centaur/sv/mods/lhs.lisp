@@ -107,22 +107,58 @@
                   (lhssvex-p xx)))))))
 
 
-(fty::defflexsum lhatom
-  :parents (lhs)
-  (:z
-   :cond (eq x :z)
-   :fields nil
-   :ctor-body ':z)
-  (:var
-   :cond t
-   :shape (consp x)
-   :fields ((name :acc-body (car x) :type svar-p)
-            (rsh :acc-body (cdr x) :type natp :rule-classes :type-prescription))
-   :ctor-body (cons name rsh)))
+(encapsulate nil
+  (local (defthm car-of-svar
+           (implies (and (svar-p x)
+                         (consp x))
+                    (equal (car x) :var))
+           :hints(("Goal" :in-theory (enable svar-p)))))
+  (local (defthm cdr-of-svar
+           (implies (and (svar-p x)
+                         (consp x))
+                    (consp (cdr x)))
+           :hints(("Goal" :in-theory (enable svar-p)))))
+
+;; var         rsh       0             1
+;; :z                  (:z . 0)    (:z . 1)
+;; :var                :var        (:var . 1)
+;; atom                atom        (atom . 1)
+;; (:var . rest)   (:var . rest)  ((:var . rest) . 1)
+
+  (fty::defflexsum lhatom
+    (:z
+     :cond (eq x :z)
+     :fields nil
+     :ctor-body ':z)
+    (:var
+     :cond t
+     :shape (or (atom x)
+                (and (eq (car x) :var)
+                     (svar-p x))
+                (or (eq (car x) :z)
+                    (not (eql 0 (cdr x)))))
+     :fields ((name :acc-body (if (or (atom x)
+                                      (and (eq (car x) :var)
+                                           (consp (cdr x))))
+                                  x
+                                (car x))
+                    :type svar)
+              (rsh :acc-body (if (or (atom x)
+                                     (and (eq (car x) :var)
+                                          (consp (cdr x))))
+                                 0
+                               (cdr x))
+                   :type natp
+                   :rule-classes (:rewrite :type-prescription)))
+     :ctor-body (if (and (eql 0 rsh)
+                         (not (eq name :z)))
+                    name
+                  (cons name rsh)))))
+
 
 (local (defthm lhatom-z-by-kind
            (implies (lhatom-p x)
-                    (equal (equal ':z x)
+                    (equal (equal :z x)
                            (equal (lhatom-kind x) :z)))
            :hints (("goal" :use lhatom-fix-when-z
                     :in-theory (disable lhatom-fix-when-z)))))
@@ -146,7 +182,7 @@
   :returns (xx svex-p)
   (lhatom-case x
     :z (svex-quote (4vec-z))
-    :var (svex-call 'rsh (list (svex-quote (2vec x.rsh)) (svex-var x.name))))
+    :var (svex-rsh x.rsh (svex-var x.name)))
   ///
   (deffixequiv lhatom->svex)
 
@@ -156,11 +192,46 @@
     :hints(("Goal" :in-theory (enable lhatom-eval svex-eval svex-apply
                                       4veclist-nth-safe svexlist-eval)))))
 
-(defprod lhrange
-  :parents (lhs)
-  :layout :fulltree
-  ((w   posp :rule-classes :type-prescription)
-   (atom lhatom)))
+(encapsulate nil
+  (local
+   (defthm integerp-car-of-lhatom
+     (implies (lhatom-p x)
+              (not (integerp (car x))))
+     :hints(("Goal" :in-theory (enable lhatom-p svar-p)))))
+
+  (defflexsum lhrange
+    :parents (lhs)
+    :kind nil
+    (:lhrange
+     :cond t
+     :shape (or (and (consp x)
+                     (integerp (car x))
+                     (not (eql (car x) 1)))
+                (lhatom-p x))
+     :fields ((w :acc-body (if (and (consp x)
+                                    (integerp (car x)))
+                               (car x)
+                             1)
+                 :type posp
+                 :rule-classes (:rewrite :type-prescription))
+              (atom :acc-body (if (and (consp x)
+                                       (integerp (car x)))
+                                  (cdr x)
+                                x)
+                    :type lhatom))
+     :ctor-body (if (eql w 1)
+                    atom
+                  (cons w atom))
+     :type-name lhrange))
+
+  (defthm lhrange-type
+    (let ((x (lhrange w atom)))
+      (or (consp x)
+          (and (symbolp x)
+               (not (booleanp x)))
+          (stringp x)))
+    :hints(("Goal" :in-theory (enable lhatom-fix)))
+    :rule-classes :type-prescription))
 
 (define lhrange-eval ((x lhrange-p) (env svex-env-p))
   :parents (lhrange)
@@ -549,6 +620,7 @@ the order given (LSBs-first).</p>")
     (implies (not (consp x))
              (equal (lhs-norm x) nil))
     :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
 
   (defthm lhs-norm-of-lhs-cons
     (equal (lhs-norm (lhs-cons x y))
@@ -1976,6 +2048,7 @@ bits of @('foo'):</p>
   :guard (svar-indexedp x)
   :guard-hints (("goal" :in-theory (enable svar-indexedp)))
   :returns (idx natp :rule-classes :type-prescription)
+  :inline t
   (lnfix (svar->name x))
   ///
   (deffixequiv svar-index
@@ -2254,9 +2327,9 @@ bits of @('foo'):</p>
   (if (atom x)
       (svex-quote (4vec-z))
     (b* (((lhrange xf) (car x)))
-      (svex-call 'concat (list (svex-quote (2vec xf.w))
-                               (lhatom->svex xf.atom)
-                               (lhs->svex (cdr x))))))
+      (svex-concat xf.w 
+                   (lhatom->svex xf.atom)
+                   (lhs->svex (cdr x)))))
   ///
   (deffixequiv lhs->svex)
 

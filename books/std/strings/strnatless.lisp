@@ -257,12 +257,12 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                                      (* (DIGIT-VAL Y1) (EXPT 10 (LEN X2)))))))
              :hints(("Goal"
                      :use ((:instance arith-lemma-1
-                                      (a1 (digit-list-value x2))
-                                      (a2 (digit-list-value y2))
-                                      (x1 (digit-val x1))
-                                      (x2 (digit-val y1))
-                                      (b 10)
-                                      (n (len x2))))))))
+                            (a1 (digit-list-value x2))
+                            (a2 (digit-list-value y2))
+                            (x1 (digit-val x1))
+                            (x2 (digit-val y1))
+                            (b 10)
+                            (n (len x2))))))))
 
     (local (defun my-induction (x y)
              (if (and (consp x)
@@ -285,6 +285,19 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                                         digit-list-value
                                         commutativity-of-+)))))
 
+    (local (defthm crock
+             (implies (and (equal (take-leading-digits y)
+                                  (take-leading-digits x))
+                           (charlisteqv (skip-leading-digits x)
+                                        (skip-leading-digits y)))
+                      (charlisteqv x y))
+             :hints(("Goal"
+                     :induct (my-induction x y)
+                     :expand ((take-leading-digits x)
+                              (take-leading-digits y)
+                              (skip-leading-digits x)
+                              (skip-leading-digits y))))))
+
     (local (defthm lemma-3
              (implies (and (equal (len (take-leading-digits y))
                                   (len (take-leading-digits x)))
@@ -294,10 +307,11 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                                         (skip-leading-digits y)))
                       (equal (charlisteqv x y)
                              t))
-             :hints(("Goal" :in-theory (enable take-leading-digits
-                                               skip-leading-digits
-                                               charlisteqv
-                                               digit-list-value)))))
+             :hints(("Goal"
+                     :in-theory (enable chareqv
+                                        take-leading-digits
+                                        skip-leading-digits
+                                        digit-list-value)))))
 
     (defthm charlistnat<-trichotomy-weak
       (implies (and (not (charlistnat< x y))

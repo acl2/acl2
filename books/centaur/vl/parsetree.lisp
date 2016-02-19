@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2016-02-05")
+  "VL Syntax 2016-02-16")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -1007,8 +1007,10 @@ performed by examining the width of the port expression.</p>")
              (cons x1 (vl-collect-interface-ports (cdr x)))))
          (vl-collect-interface-ports (cdr x)))
        :exec
-       (with-local-nrev
-         (vl-collect-interface-ports-exec x nrev)))
+       (if (atom x)
+           nil
+         (with-local-nrev
+           (vl-collect-interface-ports-exec x nrev))))
   ///
   (defthm vl-collect-interface-ports-exec-removal
     (equal (vl-collect-interface-ports-exec x nrev)
@@ -1056,8 +1058,10 @@ performed by examining the width of the port expression.</p>")
              (cons x1 (vl-collect-regular-ports (cdr x)))))
          (vl-collect-regular-ports (cdr x)))
        :exec
-       (with-local-nrev
-         (vl-collect-regular-ports-exec x nrev)))
+       (if (atom x)
+           nil
+         (with-local-nrev
+           (vl-collect-regular-ports-exec x nrev))))
   ///
   (defthm vl-collect-regular-ports-exec-removal
     (equal (vl-collect-regular-ports-exec x nrev)
@@ -1117,6 +1121,16 @@ arguments of gate instances and most arguments of module instances.  See our
               the \"internal\" wiring expressions from some port(s) in the
               module.")
 
+   (loc      vl-location-p
+             "Where the port was declared in the source code.")
+
+   ;; Commonly we have a sequence of ANSI style ports like
+   ;;    input logic [3:0] a, b, c, d;
+   ;;
+   ;; In this case it's likely that we can share dir/type/nettype/atts across
+   ;; all of the ports.  So, we put name/loc first and hope that the rest of
+   ;; this is usually shared.
+
    (dir      vl-direction-p
              "Says whether this port is an input, output, or bidirectional
               (inout) port.")
@@ -1129,9 +1143,6 @@ arguments of gate instances and most arguments of module instances.  See our
               signed.  The @(see loader) DOES NOT do this cross-referencing
               automatically; instead the @(see portdecl-sign) transformation
               needs to be run.")
-
-   (loc      vl-location-p
-             "Where the port was declared in the source code.")
 
    (nettype  vl-maybe-nettypename-p)
 
@@ -1450,19 +1461,19 @@ properly preserve them.</p>")
              :rule-classes :type-prescription
              "Name of the variable being declared.")
 
+   (loc      vl-location-p
+             "Where the declaration was found in the source code.")
+
    (type     vl-datatype-p
              "Data type, array dimensions.  See below.")
-
-   (loc        vl-location-p
-               "Where the declaration was found in the source code.")
 
    (nettype  vl-maybe-nettypename-p
              "Net type (i.e., resolution function, distinct from datatype) or
               @('nil') if this a @('reg') or variable instead of a net.  See
               below.")
 
-   (atts       vl-atts-p
-               "Any attributes associated with this declaration.")
+   (atts     vl-atts-p
+             "Any attributes associated with this declaration.")
 
    (initval  vl-maybe-expr-p
              "(Variables only).  When present, indicates the initial value for
@@ -1619,8 +1630,8 @@ properly preserve them.</p>")
 (defprod vl-plainarg
   :parents (vl-arguments-p)
   :short "Representation of a single argument in a plain argument list."
-  :tag :vl-plainarg
   :layout :tree
+  ;; No tag, because we found tags on plainargs to be expensive.
 
   ((expr     vl-maybe-expr-p
              "Expression being connected to the port.  In programming languages
@@ -1680,8 +1691,7 @@ portnames.</p>")
 (fty::deflist vl-plainarglist
   :parents (vl-arguments-p)
   :elt-type vl-plainarg-p
-  :true-listp nil
-  :elementp-of-nil nil)
+  :true-listp nil)
 
 (fty::deflist vl-plainarglistlist
   :parents (vl-arguments-p)
@@ -1714,8 +1724,7 @@ portnames.</p>")
 
 (defprod vl-namedarg
   :short "Representation of a single argument in a named argument list."
-  :tag :vl-namedarg
-  :layout :tree
+  ;; No tag, because we found tags on namedargs to be expensive.
 
   ((name stringp
          :rule-classes :type-prescription

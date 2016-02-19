@@ -222,14 +222,9 @@ expressions like @('a & b'), but we do need to do it to the inputs of
 expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
 
   :returns (sv sv::svex-p)
-  (b* ((extend (if (eq (vl-exprsign-fix type) :vl-signed) 'sv::signx 'sv::zerox))
-       (width (lnfix width))
-       ((when (eq (sv::svex-kind x) :quote))
-        (sv::svex-quote
-         (if (eq (vl-exprsign-fix type) :vl-signed)
-             (sv::4vec-sign-ext (sv::2vec width) (sv::svex-quote->val x))
-           (sv::4vec-zero-ext (sv::2vec width) (sv::svex-quote->val x))))))
-    (sv::make-svex-call :fn extend :args (list (svex-int width) x)))
+  (if (eq (vl-exprsign-fix type) :vl-signed)
+      (sv::svex-signx width x)
+    (sv::svex-zerox width x))
   ///
   (defthm svex-vars-of-svex-extend
     (implies (not (member v (sv::svex-vars x)))
@@ -1018,7 +1013,7 @@ if the shift amount is computed elsewhere.</p>"
        ((unless size) (mv (vmsg "Could not size datatype ~s0" type) (svex-x)))
 
        ((when (atom x))
-        (mv nil (sv::svcall sv::concat (svex-int size) base-svex (svex-x))))
+        (mv nil (sv::svex-concat size base-svex (svex-x))))
 
 
        ;; Unres-count nonzero implies (consp x)
@@ -1047,7 +1042,7 @@ if the shift amount is computed elsewhere.</p>"
                        base-svex
                        outer-ss))
        ((when err) (mv err (svex-x))))
-    (mv err (sv::svcall sv::concat (svex-int size)
+    (mv err (sv::svex-concat size
                           (sv::svex-lsb-shift shift-amt rest)
                           (svex-x))))
   ///
@@ -1536,7 +1531,6 @@ the way.</li>
 
        ((when err) (mv err (svex-x)))
 
-       ;; BOZO need an unmemoized version
        (res-base (sv::svex-replace-var dyn-expr *svex-longest-static-prefix-var* lsp-expr)))
     ;; (clear-memoize-table 'sv::svex-replace-var)
     (mv nil (sv::svex-reduce-consts
@@ -1852,24 +1846,14 @@ the way.</li>
           (:vl-unary-minus  (sv::svcall sv::u- arg))
           (:vl-unary-bitnot (sv::svcall sv::bitnot arg))
           (:vl-unary-lognot (sv::svcall sv::bitnot (sv::svcall sv::uor arg)))
-          (:vl-unary-bitand (sv::svcall sv::uand   (sv::svcall sv::signx
-                                                                     (svex-int (lnfix arg-size))
-                                                                     arg)))
+          (:vl-unary-bitand (sv::svcall sv::uand   (sv::svex-signx arg-size arg)))
           (:vl-unary-nand   (sv::svcall sv::bitnot
-                                          (sv::svcall sv::uand
-                                                        (sv::svcall sv::signx
-                                                                      (svex-int (lnfix arg-size))
-                                                                      arg))))
+                                          (sv::svcall sv::uand (sv::svex-signx arg-size arg))))
           (:vl-unary-bitor  (sv::svcall sv::uor     arg))
           (:vl-unary-nor    (sv::svcall sv::bitnot  (sv::svcall sv::uor    arg)))
-          (:vl-unary-xor    (sv::svcall sv::uxor    (sv::svcall sv::zerox
-                                                                      (svex-int (lnfix arg-size))
-                                                                      arg)))
+          (:vl-unary-xor    (sv::svcall sv::uxor    (sv::svex-zerox arg-size arg)))
           (:vl-unary-xnor   (sv::svcall sv::bitnot
-                                          (sv::svcall sv::uxor
-                                                        (sv::svcall sv::zerox
-                                                                      (svex-int (lnfix arg-size))
-                                                                      arg)))))))
+                                          (sv::svcall sv::uxor (sv::svex-zerox arg-size arg)))))))
     (mv (and (not body)
              (vmsg "Operator not implemented: ~s0" (vl-unaryop-string op)))
         (if body
@@ -1893,10 +1877,10 @@ the way.</li>
   (b* ((op (vl-binaryop-fix op))
        (body
         (case op
-          (:vl-binary-plus    (sv::svcall +            left right))
+          (:vl-binary-plus    (sv::svcall +          left right))
           (:vl-binary-minus   (sv::svcall sv::b-     left right))
-          (:vl-binary-times   (sv::svcall *            left right))
-          (:vl-binary-div     (sv::svcall /            left right))
+          (:vl-binary-times   (sv::svcall *          left right))
+          (:vl-binary-div     (sv::svcall /          left right))
           (:vl-binary-rem     (sv::svcall sv::%      left right))
           (:vl-binary-eq      (sv::svcall sv::==     left right))
           (:vl-binary-neq     (sv::svcall sv::bitnot (sv::svcall sv::==     left right)))
@@ -1905,9 +1889,9 @@ the way.</li>
           (:vl-binary-wildeq  (sv::svcall sv::==?    left right))
           (:vl-binary-wildneq (sv::svcall sv::bitnot (sv::svcall sv::==?    left right)))
           (:vl-binary-logand  (sv::svcall sv::bitand (sv::svcall sv::uor    left)
-                                                         (sv::svcall sv::uor    right)))
+                                                     (sv::svcall sv::uor    right)))
           (:vl-binary-logor   (sv::svcall sv::bitor  (sv::svcall sv::uor    left)
-                                                         (sv::svcall sv::uor    right)))
+                                                     (sv::svcall sv::uor    right)))
           (:vl-binary-lt      (sv::svcall sv::<      left right))
           (:vl-binary-lte     (sv::svcall sv::bitnot (sv::svcall sv::<      right left)))
           (:vl-binary-gt      (sv::svcall sv::<      right left))
@@ -1921,26 +1905,16 @@ the way.</li>
           ;; treated as unsigned per SV spec 11.4.10.
           (:vl-binary-shr     (sv::svcall sv::rsh
                                           ;; Weird case: 
-                                          (sv::svcall sv::zerox
-                                                      (svex-int (lnfix right-size))
-                                                      right)
-                                          (sv::svcall sv::zerox
-                                                      (svex-int (lnfix left-size))
-                                                      left)))
+                                          (sv::svex-zerox right-size right)
+                                          (sv::svex-zerox left-size left)))
           (:vl-binary-shl     (sv::svcall sv::lsh
-                                          (sv::svcall sv::zerox
-                                                      (svex-int (lnfix right-size))
-                                                      right)
+                                          (sv::svex-zerox right-size right)
                                           left))
           (:vl-binary-ashr    (sv::svcall sv::rsh
-                                          (sv::svcall sv::zerox
-                                                      (svex-int (lnfix right-size))
-                                                      right)
+                                          (sv::svex-zerox right-size right)
                                           left))
           (:vl-binary-ashl    (sv::svcall sv::lsh
-                                          (sv::svcall sv::zerox
-                                                      (svex-int (lnfix right-size))
-                                                      right)
+                                          (sv::svex-zerox right-size right)
                                           left))
           (:vl-implies        (sv::svcall sv::bitor
                                             (sv::svcall sv::bitnot
@@ -3921,9 +3895,7 @@ functions can assume all bits of it are good.</p>"
                                 bitstream))
                    ((< target-size concat-size)
                     ;; This is an error, but NCV still runs it.
-                    (sv::svcall sv::rsh
-                                (svex-int (- concat-size target-size))
-                                bitstream))
+                    (sv::svex-rsh (- concat-size target-size) bitstream))
                    (t bitstream))))
           ;; In SystemVerilog, we'd now stick the bitstream into a container of the
           ;; appropriate datatype.  But in svex, everything's just kept as a
@@ -3960,7 +3932,7 @@ functions can assume all bits of it are good.</p>"
           ;; already warned
           (mv warnings (svex-x) nil)))
       (mv warnings
-          (sv::svcall sv::concat (svex-int size2) svex2 svex1)
+          (sv::svex-concat size2 svex2 svex1)
           (+ size1 size2))))
 
   (define vl-streamexpr-to-svex ((x vl-streamexpr-p)

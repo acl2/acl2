@@ -126,7 +126,7 @@ variable depends on itself."
                    ((when look) (mv (cdr look) updates memo))
                    ((mv args updates memo)
                     (svexlist-compose-dfs x.args assigns updates memo stack))
-                   (res (svex-call x.fn args))
+                   (res (svex-call* x.fn args))
                    (memo (hons-acons x res memo)))
                 (mv res updates memo))
         :var (b* ((update-fn (svex-fastlookup x.name updates))
@@ -282,100 +282,6 @@ b = (a << 1) | (b << 1)
 
 
 ||#
-
-
-
-(define svexlist-compose-to-fix-rec ((x svexlist-p)      ;; current settings of assigns
-                                     (update svex-alist-p) ;; original dfs-composed assignments
-                                     (count (or (natp count) (not count)))
-                                     (rewritep))
-  :prepwork ((local (defthm svarlist-p-of-instersection
-                      (implies (svarlist-p a)
-                               (svarlist-p (intersection-equal a b)))
-                      :hints(("Goal" :in-theory (enable svarlist-p)))))
-             (local (include-book "std/lists/take" :dir :system))
-             (local (defthm svarlist-p-of-take
-                      (implies (and (svarlist-p x)
-                                    (<= (nfix n) (len x)))
-                               (svarlist-p (take n x)))
-                      :hints(("Goal" :in-theory (enable svarlist-p))))))
-  :hints(("Goal" :in-theory (enable o<)))
-  :guard-debug t
-  :measure (if count
-               (+ (* 2 (nfix count)) (if rewritep 0 1))
-             (make-ord 1 1 0))
-  :returns (xx svexlist-p)
-  (b* ((- (cw "Count: ~x0~%" (svexlist-opcount x)))
-       (x (cwtime (svexlist-compose x update) :mintime 0))
-       (x (if rewritep
-              (b* ((x (cwtime (svexlist-rewrite-top x) :mintime 0)))
-                (cw "Post-rewrite count: ~x0~%" (svexlist-opcount x))
-                x)
-            x))
-       ;; (vars (cwtime (svexlist-collect-vars x) :mintime 0))
-       (key-vars (svex-alist-keys update))
-       ((when (atom key-vars))
-        (cw "no more internal vars~%")
-        (if rewritep
-            ;; already rewrote
-            x
-          (b* ((x (cwtime (svexlist-rewrite-top x) :mintime 0)))
-            (cw "Final count: ~x0~%" (svexlist-opcount x))
-            x)))
-       (- (cw "Apparent combinational loops: ~x0~%" (len key-vars)))
-       (masks (cwtime (svexlist-mask-alist x) :mintime 0))
-       (new-count (cwtime (svexlist-masks-measure key-vars masks) :mintime 0))
-       ((when (eql 0 new-count))
-        (cw "mask count reached 0~%")
-        (if rewritep
-            ;; already rewrote
-            x
-          (b* ((x (cwtime (svexlist-rewrite-top x) :mintime 0)))
-            (cw "Final count: ~x0~%" (svexlist-opcount x))
-            x)))
-       (- (cw "Vars: ~x0~%" (svarlist-pair-with-masks
-                             ; (take (min (len key-vars) 20) key-vars)
-                             key-vars
-                             masks)))
-       (- (cw "mask bits count: ~x0~%" new-count))
-       (count-same (and count (eql new-count (lnfix count))))
-       ((when (and count (or (> new-count (lnfix count))
-                             (and rewritep count-same))))
-        (cw "count didn't decrease~%")
-        (cw "some remaining vars: ~x0~%"
-            (svarlist-pair-with-masks
-             (take (min (len key-vars) 100) key-vars)
-             masks))
-        x))
-    (svexlist-compose-to-fix-rec x update new-count count-same))
-  ///
-  (fty::deffixequiv svexlist-compose-to-fix-rec
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(second (car (last clause)))
-                            ,(third (car (last clause))))))))
-
-  (defthm len-of-svexlist-compose-to-fix-rec
-    (equal (len (svexlist-compose-to-fix-rec x update count rewritep))
-           (len x))))
-
-
-(define svex-assigns-compose-old ((x svex-alist-p))
-  :returns (xx svex-alist-p)
-  (b* ((xvals (svex-alist-vals x))
-       (- (cw "Initial count: ~x0~%" (svexlist-opcount xvals)))
-       (xvals (cwtime (svexlist-rewrite-top xvals) :mintime 0))
-       (x (pairlis$ (svex-alist-keys x) xvals))
-       (- (cw "Count after initial rewrite: ~x0~%" (svexlist-opcount xvals)))
-       (updates (cwtime (svex-compose-assigns x) :mintime 1))
-       (updates-vals (svex-alist-vals updates))
-       (- (cw "Updates count: ~x0~%" (svexlist-opcount updates-vals)))
-       (updates-vals (cwtime (svexlist-rewrite-top updates-vals) :mintime 1))
-       (- (cw "Updates count after rewrite: ~x0~%" (svexlist-opcount updates-vals)))
-       (updates (pairlis$ (svex-alist-keys updates) updates-vals))
-       ;; (- (acl2::sneaky-save 'updates updates))
-       ((acl2::with-fast updates))
-       (fix-vals (cwtime (svexlist-compose-to-fix-rec updates-vals updates nil nil) :mintime 1)))
-    (pairlis$ (svex-alist-keys updates) fix-vals)))
 
 
 (defines svex-collect-subexprs
@@ -544,6 +450,137 @@ b = (a << 1) | (b << 1)
           
 
 
+(defines svex-compose*
+  :flag-local nil
+  :parents (svex-composition)
+  :short "Compose an svex with a substitution alist.  Variables not in the
+substitution are left in place."
+  (define svex-compose* ((x svex-p) (a svex-alist-p))
+    :verify-guards nil
+    :measure (svex-count x)
+    :returns (xa svex-p "x composed with a, unbound variables preserved")
+    (svex-case x
+      :var (or (svex-fastlookup x.name a)
+               (mbe :logic (svex-fix x) :exec x))
+      :quote (mbe :logic (svex-fix x) :exec x)
+      :call (svex-call* x.fn
+                        (svexlist-compose* x.args a))))
+  (define svexlist-compose* ((x svexlist-p) (a svex-alist-p))
+    :measure (svexlist-count x)
+    :returns (xa svexlist-p)
+    (if (atom x)
+        nil
+      (cons (svex-compose* (car x) a)
+            (svexlist-compose* (cdr x) a))))
+  ///
+  (verify-guards svex-compose*)
+  (fty::deffixequiv-mutual svex-compose*
+    :hints (("goal" :expand ((svexlist-fix x)))))
+
+  (defthm len-of-svexlist-compose*
+    (equal (len (svexlist-compose* x a))
+           (len x)))
+
+  (local (defthm svex-env-lookup-of-append-svex-alist-eval-not-present
+           (equal (svex-env-lookup v (append (svex-alist-eval a e) env))
+                  (if (svex-lookup v a)
+                      (svex-eval (svex-lookup v a) e)
+                    (svex-env-lookup v env)))
+           :hints(("Goal" :in-theory (enable svex-alist-eval svex-env-lookup
+                                             svex-env-fix
+                                             svex-alist-fix
+                                             svex-lookup)))))
+
+  (defthm-svex-compose*-flag
+    (defthm svex-eval-of-svex-compose*
+      (equal (svex-eval (svex-compose* x a) env)
+             (svex-eval x (append (svex-alist-eval a env) env)))
+      :hints ('(:expand ((:free (env) (svex-eval x env)))))
+      :flag svex-compose*)
+    (defthm svexlist-eval-of-svexlist-compose*
+      (equal (svexlist-eval (svexlist-compose* x a) env)
+             (svexlist-eval x (append (svex-alist-eval a env) env)))
+      :flag svexlist-compose*))
+
+  (defthm-svex-compose*-flag
+    (defthm vars-of-svex-compose*
+      (implies (and (not (member v (svex-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svex-vars (svex-compose* x a)))))
+      :flag svex-compose*)
+    (defthm vars-of-svexlist-compose*
+      (implies (and (not (member v (svexlist-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svexlist-vars (svexlist-compose* x a)))))
+      :hints('(:in-theory (enable svexlist-vars)))
+      :flag svexlist-compose*))
+
+  (defthm-svex-compose*-flag
+    ;; Note: The order of the disjuncts is important because sometimes you can
+    ;; prove one given not the other but not vice versa.
+    (defthm vars-of-svex-compose*-strong
+      (implies (and (not (member v (svex-alist-vars a)))
+                    (or (member v (svex-alist-keys a))
+                        (not (member v (svex-vars x)))))
+               (not (member v (svex-vars (svex-compose* x a)))))
+      :flag svex-compose*)
+    (defthm vars-of-svexlist-compose*-strong
+      (implies (and (not (member v (svex-alist-vars a)))
+                    (or (member v (svex-alist-keys a))
+                        (not (member v (svexlist-vars x)))))
+               (not (member v (svexlist-vars (svexlist-compose* x a)))))
+      :hints('(:in-theory (enable svexlist-vars)))
+      :flag svexlist-compose*))
+
+  (in-theory (disable vars-of-svex-compose*-strong
+                      vars-of-svexlist-compose*-strong))
+
+  (memoize 'svex-compose* :condition '(eq (svex-kind x) :call)))
+
+
+(define svex-alist-compose* ((x svex-alist-p) (a svex-alist-p))
+  :prepwork ((local (in-theory (enable svex-alist-p))))
+  :returns (xx svex-alist-p)
+  (if (atom x)
+      nil
+    (if (consp (car x))
+        (svex-acons (caar x) (svex-compose* (cdar x) a)
+                    (svex-alist-compose* (cdr x) a))
+      (svex-alist-compose* (cdr x) a)))
+  ///
+  (fty::deffixequiv svex-alist-compose*
+    :hints(("Goal" :in-theory (enable svex-alist-fix))))
+
+  (defthm svex-alist-eval-of-svex-compose*
+    (equal (svex-alist-eval (svex-alist-compose* x subst) env)
+           (svex-alist-eval x (append (svex-alist-eval subst env) env)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-acons
+                                      svex-alist-compose*
+                                      svex-env-acons))))
+
+  (defthm vars-of-svex-alist-compose*
+      (implies (and (not (member v (svex-alist-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svex-alist-vars (svex-alist-compose* x a)))))
+      :hints(("goal" :in-theory (enable svex-alist-vars))))
+
+  (local (defthm svex-compose*-under-iff
+           (svex-compose* x a)
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-COMPOSE*.XA
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-COMPOSE*.XA)))))
+
+  (local (defthm svex-fix-under-iff
+           (svex-fix x)
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))))
+
+  (defthm svex-lookup-of-svex-alist-compose*
+    (iff (svex-lookup v (svex-alist-compose* x a))
+         (svex-lookup v x))
+    :hints(("Goal" :in-theory (e/d (svex-lookup svex-alist-fix svex-acons)
+                                   (svex-alist-p))))))
+
+
 (define svexlist-compose-to-fix-rec2
   ((masks svex-mask-alist-p "Masks -- initially those of the updates, then those
                              for successive iterations of applying
@@ -707,9 +744,9 @@ comments following this last example.</p>
                                                                    final-masks)))
        (res (if rest-alist
                 (with-fast-alist rest-alist
-                  (svex-alist-compose changed-var-updates rest-alist))
+                  (svex-alist-compose* changed-var-updates rest-alist))
               changed-var-updates)))
-    (clear-memoize-table 'svex-compose)
+    (clear-memoize-table 'svex-compose*)
     (mv final-masks res))
   ///
   (verify-guards svexlist-compose-to-fix-rec2

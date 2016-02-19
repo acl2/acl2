@@ -155,7 +155,9 @@ the number of descriptions in the list.</p>"
                             (vl-descriptionlist->names (cdr x)))
                     (vl-descriptionlist->names (cdr x)))
                 nil)
-       :exec (with-local-nrev (vl-descriptionlist->names-nrev x nrev)))
+       :exec (if (atom x)
+                 nil
+               (with-local-nrev (vl-descriptionlist->names-nrev x nrev))))
   ///
   (defthm vl-descriptionlist->names-nrev-removal
     (equal (vl-descriptionlist->names-nrev x nrev)
