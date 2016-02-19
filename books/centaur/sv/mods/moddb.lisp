@@ -6948,6 +6948,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
           (and (not quiet) (cw "Warning! Module ~x0 not found in moddb.~%" name))
           (modalist-named->indexed (cdr x) moddb :quiet quiet))
          ((mv err1 first) (module-named->indexed mod modidx moddb))
+         (- (clear-memoize-table 'svex-named->indexed))
          ((mv err2 rest) (modalist-named->indexed (cdr x) moddb :quiet quiet)))
       (mv (or err1 err2) (cons (cons name first) rest)))
     ///
