@@ -1214,7 +1214,9 @@ the order given (LSBs-first).</p>")
     :hints(("Goal" :in-theory (enable lhs-rest)))))
 
 (define lhs-decomp-aux ((w posp) (prev lhatom-p) (x lhs-p))
-  :measure (len x)
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len x)
   :verify-guards nil
   :enabled t
   (mbe :logic (mv (lhs-first-aux w prev x)

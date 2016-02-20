@@ -35,7 +35,7 @@
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
 (local (std::add-default-post-define-hook :fix))
-(set-bogus-mutual-recursion-ok t)
+(acl2::set-bogus-mutual-recursion-ok t)
 
 (deftagsum simple-tree
   ;; Some simple kind of structure
@@ -320,6 +320,9 @@
 ;;   (list (literal-collect-deps (literal-variable 'x) al 100)
 ;;         (literal-collect-deps (literal-variable 'y) al 100)
 ;;         (literal-collect-deps (literal-variable 'z) al 100)))
+
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
 
 (local
  (progn

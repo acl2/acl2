@@ -1832,6 +1832,29 @@
              ttree)
             subversive-p))))
 
+(defun maybe-warn-or-error-on-non-rec-measure (name ctx wrld state)
+
+  (let ((bogus-defun-hints-ok
+         (cdr (assoc-eq :bogus-defun-hints-ok
+                        (table-alist 'acl2-defaults-table wrld)))))
+    (cond
+     ((eq bogus-defun-hints-ok :warn)
+      (pprogn
+       (warning$ ctx "Non-rec"
+                 "Since ~x0 is non-recursive your supplied :measure will be ~
+                  ignored (as the :measure is used only during termination ~
+                  proofs)."
+                 name)
+       (value nil)))
+     (bogus-defun-hints-ok ; t
+      (value nil))
+     (t ; bogus-defun-hints-ok = nil, the default
+      (er soft ctx
+          "It is illegal to supply a measure for a non-recursive function, as ~
+           has been done for ~x0.  To avoid this error, see :DOC ~
+           set-bogus-measure-ok."
+          name)))))
+
 (defun put-induction-info (names arglists measures ruler-extenders-lst bodies
                                  mp rel hints otf-flg big-mutrec measure-debug
                                  ctx ens wrld state)
@@ -1880,8 +1903,13 @@
 ; But we have to store the symbol-class and we have to print out the admission
 ; message with prove-termination so the rest of our processing is uniform.
 
-           (prove-termination-non-recursive names bodies mp rel hints otf-flg
-                                            big-mutrec ctx ens wrld1 state))
+           (er-progn
+            (cond ((equal (car measures) *no-measure*)
+                   (value nil))
+                  (t (maybe-warn-or-error-on-non-rec-measure (car names) ctx
+                                                             wrld state)))
+            (prove-termination-non-recursive names bodies mp rel hints otf-flg
+                                             big-mutrec ctx ens wrld1 state)))
           (t
 
 ; Otherwise we first construct the termination machines for all the
@@ -4742,8 +4770,8 @@
                                 (all-fnnames1-exec t bodies nil)
                                 wrld))))
 
-(defun defuns-fn-short-cut (names docs pairs guards split-types-terms bodies
-                                  non-executablep wrld state)
+(defun defuns-fn-short-cut (names docs pairs guards measures split-types-terms
+                                  bodies non-executablep ctx wrld state)
 
 ; This function is called by defuns-fn when the functions to be defined are
 ; :program.  It short cuts the normal put-induction-info and other such
@@ -4760,25 +4788,37 @@
 ; a tag-tree recording the proofs that were done.
 
   (declare (ignore docs pairs))
-  (let* ((boot-strap-flg (global-val 'boot-strap-flg wrld))
-         (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
-                                                       non-executablep
-                                                       wrld))
-                      (t wrld)))
-         (wrld1 (if boot-strap-flg
-                    wrld0
-                  (putprop-x-lst2 names 'unnormalized-body bodies wrld0)))
-         (wrld2 (put-invariant-risk
-                 names
-                 bodies
-                 non-executablep
-                 (putprop-x-lst2-unless
-                  names 'guard guards *t*
+  (er-progn
+   (cond
+    ((and (null (cdr names))                                 ; single function
+          (not (equal (car measures) *no-measure*))          ; explicit measure
+          (not (ffnnamep-mod-mbe (car names) (car bodies)))) ; not recursive
+
+; Warning: Keep the test just above in sync with putprop-recursivep-lst, in the
+; sense that a measure is legal only for a singly-recursive function or a list
+; of at least two functions.
+
+     (maybe-warn-or-error-on-non-rec-measure (car names) ctx wrld state))
+    (t (value nil)))
+   (let* ((boot-strap-flg (global-val 'boot-strap-flg wrld))
+          (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
+                                                        non-executablep
+                                                        wrld))
+                       (t wrld)))
+          (wrld1 (if boot-strap-flg
+                     wrld0
+                   (putprop-x-lst2 names 'unnormalized-body bodies wrld0)))
+          (wrld2 (put-invariant-risk
+                  names
+                  bodies
+                  non-executablep
                   (putprop-x-lst2-unless
-                   names 'split-types-term split-types-terms *t*
-                   (putprop-x-lst1
-                    names 'symbol-class :program wrld1))))))
-    (value (cons wrld2 nil))))
+                   names 'guard guards *t*
+                   (putprop-x-lst2-unless
+                    names 'split-types-term split-types-terms *t*
+                    (putprop-x-lst1
+                     names 'symbol-class :program wrld1))))))
+     (value (cons wrld2 nil)))))
 
 ; Now we develop the output for the defun event.
 
@@ -6723,7 +6763,7 @@
         (t (union-equal (collect-non-x x (car lst))
                         (union-collect-non-x x (cdr lst))))))
 
-(defun translate-measures (terms ctx wrld state)
+(defun translate-measures (terms logic-modep ctx wrld state)
 
 ; WARNING: Keep this in sync with translate-term-lst.  Here we allow (:? var1
 ; ... vark), where the vari are distinct variables.
@@ -6751,8 +6791,8 @@
 ; position isn't "state"; consider for example the function big-clock-entry.
 
                                 t ; stobjs-out
-                                t t ctx wrld state))))
-             (rst (translate-measures (cdr terms) ctx wrld state)))
+                                logic-modep t ctx wrld state))))
+             (rst (translate-measures (cdr terms) logic-modep ctx wrld state)))
             (value (cons term rst))))))
 
 (defun redundant-predefined-error-msg (name)
@@ -7033,13 +7073,13 @@
       (untranslated-measures
 
 ; If the defun-mode is :program, or equivalently, the symbol-class is :program,
-; then we don't need the measures.  But we do need "measures" that pass the
-; tests below, such as the call of chk-free-and-ignored-vars-lsts.  So, we
-; simply pretend that no measures were supplied, which is clearly reasonable if
-; we are defining the functions to have symbol-class :program.
+; then we don't need the measures, other than to check that non-recursive
+; functions aren't given measures.
 
-       (get-measures symbol-class fives ctx state))
-      (measures (translate-measures untranslated-measures ctx wrld2
+       (get-measures fives ctx state))
+      (measures (translate-measures untranslated-measures
+                                    (not (eq symbol-class :program))
+                                    ctx wrld2
                                     state))
       (ruler-extenders-lst (get-ruler-extenders-lst symbol-class fives
                                                     ctx state))
@@ -7746,9 +7786,8 @@
 
   (cond
    ((eq symbol-class :program)
-    (defuns-fn-short-cut names docs pairs guards split-types-terms bodies
-      non-executablep wrld
-      state))
+    (defuns-fn-short-cut names docs pairs guards measures split-types-terms
+      bodies non-executablep ctx wrld state))
    (t
     (let ((ens (ens state))
           (big-mutrec (big-mutrec names)))

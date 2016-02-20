@@ -91,7 +91,6 @@
     ERROR1
     FIND-RULES-OF-RUNE
     INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
-    LET-MBE ; perhaps should be exported
     LOOP-STOPPER
     MBE1
     NON-LINEAR-ARITHMETIC

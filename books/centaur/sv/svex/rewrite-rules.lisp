@@ -663,7 +663,8 @@
 
 
 (define 2vecx-syntaxp ((x (or (svex-p x) (not x))))
-  :measure (svex-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (svex-count x)
   :prepwork ((local (in-theory (e/d* ()
                                      (bitops::LOGAND->=-0-LINEAR-2
                                       bitops::UPPER-BOUND-OF-LOGAND

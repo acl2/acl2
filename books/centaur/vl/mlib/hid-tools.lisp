@@ -1902,7 +1902,8 @@ select if it's the last packed dimension).  The input datatype should have
 usertypes resolved.</p>"
   :guard (vl-datatype-resolved-p x)
   :returns (ok)
-  :measure (vl-datatype-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-datatype-count x)
   (b* ((x (vl-maybe-usertype-resolve x)))
     (or (consp (vl-datatype->pdims x))
         (consp (vl-datatype->udims x))
@@ -2660,7 +2661,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 (define vl-hidindex-resolved-p ((x vl-hidindex-p))
   :returns (bool)
   :short "Determines if every index in a @(see vl-hidindex-p) is resolved."
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   (vl-exprlist-resolved-p (vl-hidindex->indices x))
   ///
   ;; (defthm vl-hidindex-resolved-p-when-atom
@@ -2724,7 +2726,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   :guard (vl-hidindex-resolved-p x)
   :returns (flat-string stringp :rule-classes :type-prescription)
   :short "Converts a @(see vl-hidindex-p) into a string like @('\"bar[3][4][5]\"')."
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   :guard-hints(("Goal" :in-theory (enable vl-hidindex-resolved-p)))
   (b* ((name    (vl-hidindex->name x))
        (name    (if (eq name :vl-$root)

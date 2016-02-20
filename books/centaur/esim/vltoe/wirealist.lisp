@@ -439,7 +439,9 @@ are the same you still get one wire.</p>"
              (xargs :guard (and (natp high)
                                 (natp low)
                                 (>= high low))
-                    :measure (nfix (- (nfix high) (nfix low)))))
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+;                   :measure (nfix (- (nfix high) (nfix low)))
+                    ))
     (mbe :logic
          (vl-emodwires-from-high-to-low-aux (vl-emodwire-encode (string-fix name))
                                             (nfix high)

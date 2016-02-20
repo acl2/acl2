@@ -505,10 +505,13 @@
 (in-theory (disable non-empty-pos-list-fix))
 
 (defun weighted-split-nat (weights x)
-  (declare (xargs :measure (nfix x)
-                  :guard (and (pos-listp weights)
-                              (consp weights)
-                              (natp x))))
+  (declare (xargs
+; Commented out after v7-2 by Matt K. since the definition is
+; non-recursive:
+;           :measure (nfix x)
+            :guard (and (pos-listp weights)
+                        (consp weights)
+                        (natp x))))
   (mbe :exec
        (let ((2+-weights (scale weights 2)))
          (weighted-split-nat1 2+-weights (product-list 2+-weights) x))

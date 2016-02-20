@@ -175,6 +175,9 @@ are never fatal.</p>
   :renames ((vl-module vl-module-lvaluecheck-aux))
   :fnname-template <type>-lvaluecheck)
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (fty::defvisitor vl-stmt-lvaluecheck
   :template lvaluecheck
   :type statements

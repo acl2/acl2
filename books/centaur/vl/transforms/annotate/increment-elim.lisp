@@ -388,7 +388,8 @@ these are the only operators we're dealing with.</p>"
       (post  vl-stmtlist-p
              "New assignments that must happen after @('new-x'), in the
               proper order that they should be performed in."))
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   (b* ((x (vl-expr-fix x))
        ((unless (vl-expr-has-incexprs-p x))
         ;; Optimization.  There aren't any increment/decrement operators
@@ -417,7 +418,8 @@ these are the only operators we're dealing with.</p>"
       (post  vl-stmtlist-p
              "New assignments that must happen after @('new-x'), in the
               proper order that they should be performed in."))
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   (b* ((x (vl-exprlist-fix x))
        ((unless (vl-exprlist-has-incexprs-p x))
         ;; Optimization.  There aren't any increment/decrement operators
@@ -672,6 +674,9 @@ these are the only operators we're dealing with.</p>"
              (vl-cassertion-p :skip))
   :field-fns ((parse-temps :skip))
   :fnname-template <type>-increwrite)
+
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
 
 (fty::defvisitors vl-increwrite
   :template increwrite

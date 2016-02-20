@@ -514,7 +514,9 @@ pieces, e.g., the @('bar[3][4][5]') part of @('foo.bar[3][4][5].baz')."
 
 (define vl-hidindex-count-indices ((x vl-expr-p))
   :guard (vl-hidindex-p x)
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (vl-expr-count x)
   :returns (idxcount natp :rule-classes :type-prescription)
   :verify-guards nil
   :enabled t
@@ -1849,7 +1851,8 @@ type @('logic[3:0]').</li> </ul>"
   :parents (hid-tools)
   :short "Looks up a HID in a scopestack and looks for a declaration, returning the type and dimensionlist if found."
   :guard (vl-hidexpr-p x)
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (type (iff (vl-datatype-p type) (not warning))))
   (b* ((x (vl-expr-fix x))
@@ -2101,7 +2104,8 @@ datatype is multidimensional.</p>"
                                         vl-expr-resolved-p-of-car-when-vl-exprlist-resolved-p
                                         vl-hidexpr-p-when-id-atom
                                         vl-nonatom->op-when-vl-hidindex-p))))
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   (b* ((ctx (vl-context-fix ctx))
        ((vl-nonatom x) (vl-expr-fix x))
        ((unless (member x.op
@@ -2274,7 +2278,8 @@ datatype is multidimensional.</p>"
   :guard (vl-hidindex-p x)
   :returns (bool)
   :short "Determines if every index in a @(see vl-hidindex-p) is resolved."
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   (vl-exprlist-resolved-p (vl-hidindex->indices x))
   ;; (b* (((when (vl-atom-p x))
   ;;       t)
@@ -2399,7 +2404,8 @@ datatype is multidimensional.</p>"
               (vl-hidindex-resolved-p x))
   :returns (flat-string stringp :rule-classes :type-prescription)
   :short "Converts a @(see vl-hidindex-p) into a string like @('\"bar[3][4][5]\"')."
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   :guard-hints(("Goal" :in-theory (enable vl-hidindex-resolved-p)))
   (b* ((name    (vl-hidindex->name x))
        (indices (vl-hidindex->indices x))

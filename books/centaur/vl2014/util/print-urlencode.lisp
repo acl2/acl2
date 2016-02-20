@@ -174,7 +174,9 @@ character lists and strings.</p>")
   :guard (<= n xl)
   :long "<p>This has such a nice logical definition that we just leave it enabled.</p>"
   :enabled t
-  :measure (nfix (- (nfix xl) (nfix n)))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (nfix (- (nfix xl) (nfix n)))
   :verify-guards nil
   :hooks nil
   (mbe :logic

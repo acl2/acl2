@@ -165,7 +165,9 @@ for what we are trying to accomplish in VL.</p>")
   :guard (<= n xl)
   :returns (mv new-col new-acc)
   :long "<p>We just leave this enabled since its logical definition is so simple.</p>"
-  :measure (nfix (- (nfix xl) (nfix n)))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (nfix (- (nfix xl) (nfix n)))
   (declare (type string x)
            (type integer n xl col tabsize))
   :split-types t

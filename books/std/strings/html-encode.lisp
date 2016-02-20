@@ -106,7 +106,9 @@ HTML.</p>")
    (acc                    "Accumulator for output characters, reverse order."))
   :guard (<= n xl)
   :enabled t
-  :measure (nfix (- (nfix xl) (nfix n)))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (nfix (- (nfix xl) (nfix n)))
   :verify-guards nil
   :split-types t
   (declare (type unsigned-byte n xl))
@@ -215,7 +217,9 @@ HTML.</p>")
   :split-types t
   (declare (type string x)
            (type unsigned-byte n xl col tabsize))
-  :measure (nfix (- (nfix xl) (nfix n)))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (nfix (- (nfix xl) (nfix n)))
   :long "<p>This is similar to @(see html-encode-chars-aux), but encodes part
 of a the string @('x') instead of a character list.</p>"
   :verify-guards nil

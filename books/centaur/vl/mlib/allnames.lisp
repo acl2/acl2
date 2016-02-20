@@ -111,6 +111,9 @@
    (vl-dpiimport     (name nameset-add))
    ))
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (fty::defvisitors vl-design-allnames
   :template allnames
   :types (vl-design))
