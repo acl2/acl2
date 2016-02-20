@@ -92,6 +92,7 @@ generates basic, automatic @(see xdoc) documentation.</p>
   :already-definedp        nil
   :parallelize             nil
   :verbosep                nil
+  :share-suffix            nil
   :parents                 nil
   :short                   nil
   :long                    nil
@@ -164,6 +165,13 @@ try to speed up the execution of new function using parallelism.  This is
 experimental and only works with ACL2(p).  Note: we don't do anything smart to
 split the work up into large chunks, and you lose tail-recursion when you use
 this.</p>
+
+<p>The optional @(':share-suffix') keyword can be set to @('t') if you want to
+try to reuse a suffix of the original list in cases where the transformation
+sometimes does nothing (returns the identical element), in order to reduce
+memory footprint.  This only works if the optimized @('nrev') implementation is
+used, which carries a trust tag -- to use this, do @('(include-book
+\"centaur/nrev/fast\" :dir :system)').</p>
 
 <p>The optional @(':verbosep') flag can be set to @('t') if you want
 defprojection to print everything it's doing.  This may be useful if you run
@@ -373,6 +381,7 @@ now does nothing.</p>")
     :already-definedp
     :cheap
     :parallelize
+    :share-suffix
     :verbosep
     :parents
     :short
@@ -441,6 +450,7 @@ now does nothing.</p>")
        (already-definedp (getarg :already-definedp nil kwd-alist))
        (optimize         (getarg :optimize         t   kwd-alist))
        (parallelize      (getarg :parallelize      nil kwd-alist))
+       (share-suffix     (getarg :share-suffix     nil kwd-alist))
        ;(verbosep         (getarg :verbosep         nil kwd-alist))
        (short            (getarg :short            nil kwd-alist))
        (long             (getarg :long             nil kwd-alist))
@@ -550,8 +560,13 @@ now does nothing.</p>")
                                       (,list-fn ,@(subst `(cdr ,x) x list-args)))
                               nil)
                             :exec
-                            (nrev::with-local-nrev
-                              (,nrev-fn ,@list-args nrev::nrev))))))))
+                            (if (atom ,x)
+                                nil
+                              (nrev::with-local-nrev
+                                ,(if share-suffix
+                                     `(let ((nrev::nrev (nrev::nrev-set-hint ,x nrev::nrev)))
+                                        (,nrev-fn ,@list-args nrev::nrev))
+                                   `(,nrev-fn ,@list-args nrev::nrev))))))))))
 
        ((when (eq mode :program))
         `(defsection ,name
@@ -635,6 +650,8 @@ now does nothing.</p>")
                                 :in-theory
                                 (union-theories '(,list-fn
                                                   ,(mksym nrev-fn '-removal)
+                                                  nrev::nrev-set-hint
+                                                  nrev::nrev$a-set-hint
                                                   nrev::nrev-finish
                                                   nrev::nrev$a-finish
                                                   acl2::create-nrev

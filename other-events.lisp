@@ -12204,15 +12204,19 @@
 
 (defun chk-input-object-file (file ctx state)
 
-; This checks that an object file named file can be opened for input.
-; It either causes an error or returns t.  It changes the state --
-; because it opens and closes a channel to the file -- and it may well
-; be that the file does not exist in the state returned!  C'est la
-; guerre.  The purpose of this function is courtesy to the user.  It
-; is nice to rather quickly determine, in include-book for example,
-; whether an alleged file exists.
+; This checks that an object file named file can be opened for input.  It
+; either causes an error or returns t.  It can change the state -- because it
+; may open and closes a channel to the file -- and it may well be that the file
+; does not exist in the state returned!  C'est la guerre.  The purpose of this
+; function is courtesy to the user.  It is nice to rather quickly determine, in
+; include-book for example, whether an alleged file exists.
 
-  (er-let* ((ch (open-input-object-file file ctx state)))
+  (er-let* ((ch (cond
+                 ((null (canonical-pathname file nil state))
+                  (er soft ctx
+                      "The file ~x0 does not exist."
+                      file))
+                 (t (open-input-object-file file ctx state)))))
            (let ((state (close-input-channel ch state)))
              (value t))))
 

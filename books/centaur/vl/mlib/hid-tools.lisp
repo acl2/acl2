@@ -899,6 +899,7 @@ top-level hierarchical identifiers.</p>"
 
 
 (deftagsum vl-select
+  :layout :tree
   (:field ((name stringp "The name of the field we're selecting")))
   (:index ((val  vl-expr-p "The index we're selecting"))))
 
@@ -911,7 +912,8 @@ top-level hierarchical identifiers.</p>"
                           important if this is the outermost selstep.")
    ;; (ss vl-scopestack-p   "The scopestack in which the datatype was declared or
    ;;                        typedef'd")
-   ))
+   )
+  :layout :tree)
 
 (fty::deflist vl-seltrace :elt-type vl-selstep :elementp-of-nil nil)
 
@@ -952,7 +954,8 @@ top-level hierarchical identifiers.</p>"
   (:root      ())
   (:package   ((pkg vl-package-p)))
   (:module    ((mod vl-module-p)))
-  (:interface ((iface vl-interface-p))))
+  (:interface ((iface vl-interface-p)))
+  :layout :tree)
 
 
 (local (defthm top-level-design-elements-are-modules-or-interfaces
@@ -2327,7 +2330,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                                  all the fields/indices we've selected into")
    (part     vl-partselect-p    "The final partselect")
    (type     vl-datatype-p      "The final datatype of the object, after
-                                 partselecting.")))
+                                 partselecting."))
+  :layout :tree)
 
 (define vl-operandinfo-usertypes-ok ((x vl-operandinfo-p))
   (b* (((vl-operandinfo x)))

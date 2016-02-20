@@ -814,7 +814,9 @@ process them.</p>"
            (append (vl-stmt-atomicstmts (car x))
                    (vl-stmtlist-atomicstmts (cdr x))))
          :exec
-         (with-local-nrev (vl-stmtlist-atomicstmts-nrev x nrev))))
+         (if (atom x)
+             nil
+           (with-local-nrev (vl-stmtlist-atomicstmts-nrev x nrev)))))
 
   ///
   (defthm-vl-stmt-atomicstmts-nrev-flag

@@ -155,7 +155,8 @@ order using @(see nrev-finish).</p>
 
   (defstobj nrev$c
     (nrev$c-acc :type (satisfies true-listp)
-                :initially nil)))
+                :initially nil)
+    (nrev$c-hint :type t :initially nil)))
 
 
 (defsection nrev-fix
@@ -247,6 +248,40 @@ current contents of @('nrev'), so this again takes O(n) conses.</p>"
     (reverse (nrev$c-acc nrev$c))))
 
 
+(defsection nrev-set-hint 
+  :parents (nrev)
+  :short "Set a candidate list to try and preserve existing conses when finishing an nrev."
+  :long
+  "<box><p><b>Signature:</b> @('(nrev-set-hint a nrev)') &rarr;
+@('nrev'')</p></box>
+
+<p>In the common use case where an nrev is accumulating a transformed list (as
+in a @(see defprojection)), sometimes it may be the case that few of the list
+elements are actually transformed.  In these cases it may be desirable to
+return a list that has as many conses shared with the original list as
+possible.  This way, fewer total conses are in your working footprint.</p>
+
+<p>To support this, nrev allows setting a hint, which in such a case should
+just be the original, untransformed list.</p>
+
+<p>In the logical story, this doesn't do anything but return the unchanged
+nrev.  In the pure ACL2 implementation, it just sets an extra stobj field to
+the hint.  However, in the optimized implementation, when there is a hint set,
+then before returning the final list, we check to see if it has a suffix in
+common with the hint, and if so, replace that suffix with the one from the
+hint.  Therefore, we return something equal to the list we've accumulated, but
+with as many of the conses from the hint as possible.</p>"
+
+  (defun nrev$a-set-hint (a nrev$a)
+    (declare (xargs :guard t)
+             (ignore a))
+    (list-fix nrev$a))
+
+  (defun nrev$c-set-hint (a nrev$c)
+    (declare (xargs :stobjs nrev$c))
+    (update-nrev$c-hint a nrev$c)))
+
+
 (defsection nrev-finish
   :parents (nrev)
   :short "Final step to extract the elements from an @('nrev')."
@@ -307,6 +342,8 @@ visible elsewhere in the program.</p>"
                        :exec nrev$c-copy)
             (nrev-push :logic nrev$a-push
                        :exec nrev$c-push)
+            (nrev-set-hint :logic nrev$a-set-hint
+                           :exec nrev$c-set-hint)
             (nrev-finish :logic nrev$a-finish
                          :exec nrev$c-finish)))
 

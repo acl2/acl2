@@ -223,6 +223,7 @@ interfaces.</p>")
 
 (defprojection vl-modulelist-basicsanity ((x vl-modulelist-p))
   :returns (new-x vl-modulelist-p)
+  :share-suffix t
   (vl-module-basicsanity x))
 
 
@@ -413,6 +414,7 @@ interfaces.</p>")
 (defprojection vl-interfacelist-basicsanity ((x  vl-interfacelist-p)
                                              (ss vl-scopestack-p))
   :returns (new-x vl-interfacelist-p)
+  :share-suffix t
   (vl-interface-basicsanity x ss))
 
 (define vl-design-basicsanity ((x vl-design-p))

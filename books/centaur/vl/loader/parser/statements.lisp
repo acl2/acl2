@@ -315,7 +315,10 @@
        (id := (vl-match))
        (when (vl-is-token? :vl-lparen)
          (:= (vl-match))
-         (args := (vl-parse-1+-expressions-separated-by-commas))
+         ;; Bugfix 2016-02-18: the first expression is also optional, so if
+         ;; we see (), that's fine; don't parse any arguments.
+         (unless (vl-is-token? :vl-rparen)
+           (args := (vl-parse-1+-expressions-separated-by-commas)))
          (:= (vl-match-token :vl-rparen)))
        (:= (vl-match-token :vl-semi))
        (return
@@ -510,12 +513,14 @@
        ;; prefer expressions and then fix it up in type-disambiguation.
        (when (vl-is-token? :vl-lparen)
          (:= (vl-match))
-         (arg1 := (vl-parse-expression-without-failure))
-         (when (not arg1)
-           (typearg := (vl-parse-simple-type)))
-         (when (vl-is-token? :vl-comma)
-           (:= (vl-match))
-           (args := (vl-parse-1+-expressions-separated-by-commas)))
+         ;; Bugfix 2016-02-18: add proper support for ().
+         (unless (vl-is-token? :vl-rparen)
+           (arg1 := (vl-parse-expression-without-failure))
+           (when (not arg1)
+             (typearg := (vl-parse-simple-type)))
+           (when (vl-is-token? :vl-comma)
+             (:= (vl-match))
+             (args := (vl-parse-1+-expressions-separated-by-commas))))
          (:= (vl-match-token :vl-rparen)))
        (return
         (let* ((fname (vl-sysidtoken->name fn))
