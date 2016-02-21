@@ -323,7 +323,7 @@
 
 ;; ======================================================================
 
-;; no-duplicates-p
+;; no-duplicates-p:
 
 (define no-duplicates-p
   ((l (true-listp l)))
@@ -342,6 +342,14 @@
              (and (no-duplicates-p a)
                   (no-duplicates-p b)))
     :rule-classes (:forward-chaining :rewrite)))
+
+(defthmd no-duplicatesp-equal-to-no-duplicates-p
+  (equal (no-duplicatesp-equal xs)
+         (no-duplicates-p xs)))
+
+(defthmd no-duplicates-p-to-no-duplicatesp-equal
+  (equal (no-duplicates-p xs)
+         (no-duplicatesp-equal xs)))
 
 (define no-duplicates-list-p
   ((l (true-list-listp l)))
