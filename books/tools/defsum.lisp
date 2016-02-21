@@ -1014,6 +1014,9 @@
         )
   `(encapsulate
     nil
+; The use of set-bogus-measure-ok was added by Matt K. 2/20/2016, because ACL2
+; started disallowing measures on non-recursive functions by default.
+    (set-bogus-measure-ok t)
     (deflabel ,before-label)
     (local (in-theory (enable product-type (:executable-counterpart
                                             product-type))))

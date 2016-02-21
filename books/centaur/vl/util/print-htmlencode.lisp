@@ -1,5 +1,5 @@
-; VL 2014 -- VL Verilog Toolkit, 2014 Edition
-; Copyright (C) 2008-2015 Centaur Technology
+; VL Verilog Toolkit
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL2014")
+(in-package "VL")
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)

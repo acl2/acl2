@@ -20,13 +20,17 @@
 ;; beg is an accumulator variable.
 ;; Returns triplet (line file-still-good state).
 (defun read-line$ (channel beg state)
-  (declare (xargs :measure (file-measure channel state)
-                  :guard (and (character-listp beg)
-                              (state-p state)
-                              (symbolp channel)
-                              (open-input-channel-p channel
-                                                    :character
-                                                    state))))
+  (declare (xargs
+
+; Matt K. mod 2/20/2016: file-measure is undefined, and we no longer allow
+; undefined measures even for :program mode functions.
+;           :measure (file-measure channel state)
+            :guard (and (character-listp beg)
+                        (state-p state)
+                        (symbolp channel)
+                        (open-input-channel-p channel
+                                              :character
+                                              state))))
   (if (mbt (state-p state))
       (mv-let (ch state)
               (read-char$ channel state)

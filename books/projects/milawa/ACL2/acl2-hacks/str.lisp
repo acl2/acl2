@@ -84,11 +84,13 @@
 
 
 
-(defun character-list-fix (x)
-  (declare (xargs :guard t))
-  (if (character-listp x)
-      x
-    nil))
+; Removed by Matt K. 2/2016 in consulation with Jared D. to avoid name conflict
+; with function in std/strings/eqv.lisp:
+; (defun character-list-fix (x)
+;   (declare (xargs :guard t))
+;   (if (character-listp x)
+;       x
+;     nil))
 
 (defund dwim-string-fix (x)
   (declare (xargs :guard t))

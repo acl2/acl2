@@ -62,6 +62,9 @@
              (vl-interface (parse-temps (lambda (x) (declare (ignore x)) nil))))
   :fnname-template <type>-deltemps)
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (fty::defvisitors vl-design-deltemps
   :template deltemps
   :types (vl-design))

@@ -285,7 +285,9 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
    (n  natp                :type unsigned-byte)
    (xl (eql xl (length x)) :type unsigned-byte))
   :guard (<= n xl)
-  :measure (nfix (- (nfix xl) (nfix n)))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (nfix (- (nfix xl) (nfix n)))
   :split-types t
   :verify-guards nil
   :enabled t

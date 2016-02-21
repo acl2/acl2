@@ -758,6 +758,9 @@ expression with a @(see vl-context-p) describing its origin.</p>")
 
 (set-bogus-mutual-recursion-ok t)
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (local
  (encapsulate nil
    (define vl-expr-mycheck ((x vl-expr-p)

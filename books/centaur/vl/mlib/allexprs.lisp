@@ -63,6 +63,9 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :field-fns ((atts :skip))
   :fnname-template <type>-allexprs-nrev)
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (fty::defvisitors vl-allexprs-nrev
   :template allexprs-nrev
   :types (vl-design))

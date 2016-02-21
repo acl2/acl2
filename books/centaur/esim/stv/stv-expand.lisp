@@ -280,7 +280,8 @@ make sure that the name refers to valid input or output bits.</p>"
   :returns (pieces true-listp :rule-classes :type-prescription
                    "A flat, mixed list of strings and numbers, e.g.,
                    @('(\"foo\" 3 4 5)').")
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   (b* ((name    (vl-hidindex->name x))
        (indices (vl-hidindex->indices x)))
     (cons name (vl-exprlist-resolved->vals indices))))

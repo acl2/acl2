@@ -65,6 +65,9 @@ details.</p>")
   :prod-fns ((vl-usertype (res (lambda (x) (declare (ignore x)) nil))))
   :fnname-template <type>-strip)
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (fty::defvisitors vl-strip
   :template strip
   :types (vl-modinstlist

@@ -20852,6 +20852,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      (progn (table acl2-defaults-table :bogus-defun-hints-ok ,x)
             (table acl2-defaults-table :bogus-defun-hints-ok))))
 
+(defmacro set-bogus-measure-ok (x)
+
+; After Version_7.2 we are extending the capability offered by
+; set-bogus-defun-hints-ok, since Version_3.4, so that it applies to bogus
+; measures as well.
+
+  `(set-bogus-defun-hints-ok ,x))
+
 #-acl2-loop-only
 (defmacro set-bogus-defun-hints-ok (x)
   (declare (ignore x))
