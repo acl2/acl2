@@ -8132,7 +8132,7 @@
               ctx state
               (and (not (eq r t))
                    "(This event is redundant with a previous encapsulate ~
-                    event even though the two are not equal; see :DOC ~
+                    event even though the two might not be equal; see :DOC ~
                     redundant-encapsulate.)"))))
            ((and (not (eq (ld-skip-proofsp state) 'include-book))
                  (not (eq (ld-skip-proofsp state) 'include-book-with-locals))

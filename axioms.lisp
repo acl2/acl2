@@ -24191,6 +24191,11 @@ Lisp definition."
 ; the comment in the encapsulate that follows.  Note that preceding in-theory
 ; events are skipped during pass 1 of the boot-strap, since we are only just
 ; now entering :logic mode and in-theory events are skipped in :program mode.
+; Added 2/21/2016: The build succeeds for CCL and SBCL even when the next form
+; is commented out, but on a Mac at least, rather little time is saved:
+; 0m51.160s down to 0m48.163s for CCL, and 1m9.987s down to 1m8.409s for SBCL.
+; And even though those builds succeeded, we didn't check that the resulting
+; saved image is correct by running a regression.
 
 #+acl2-loop-only
 (f-put-global 'ld-skip-proofsp nil state) ; (set-ld-skip-proofsp nil state)
