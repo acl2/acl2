@@ -794,3 +794,95 @@
     x86))
 
 ;; ======================================================================
+;; INSTRUCTION: MOV to/from Control Registers
+;; ======================================================================
+
+(def-inst x86-mov-control-regs-Op/En-MR
+
+  ;; Move control register to GPR
+
+  ;; Op/En: MR
+  ;; [OP R/M, REG]
+  ;; 0F 20/r:         MOV r64, CR0-CR7
+  ;; REX.R + 0F 20/0: MOV r64, CR8
+
+  ;; From Intel Manuals, Vol 2A, "MOV Move to/from Control
+  ;; Register":
+
+  ;; At the opcode level, the reg field within the ModR/M byte
+  ;; specifies which of the control registers is loaded or read. The 2
+  ;; bits in the mod field are ignored. The r/m field specifies the
+  ;; general-purpose register loaded or read. Attempts to reference
+  ;; CR1, CR5, CR6, CR7, and CR9 CR15 result in undefined opcode (#UD)
+  ;; exceptions.
+
+  ;; In 64-bit mode, the instruction s default operation size
+  ;; is 64 bits. The REX.R prefix must be used to access
+  ;; CR8. Use of REX.B permits access to additional registers
+  ;; (R8-R15). Use of the REX.W prefix or 66H prefix is
+  ;; ignored. Use of the REX.R prefix to specify a register
+  ;; other than CR8 causes an invalid-opcode exception. See the
+  ;; summary chart at the beginning of this section for encoding
+  ;; data and limits.
+
+
+  :parents (two-byte-opcodes)
+  :guard-hints (("Goal" :in-theory (e/d () ())))
+
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+  :implemented
+  (add-to-implemented-opcodes-table 'MOV #x0F20 '(:nil nil)
+                                    'x86-mov-control-regs-Op/En-MR)
+
+  :body
+
+  (b* ((ctx 'x86-mov-control-regs-Op/En-MR)
+
+       ;; The r/m field specifies the GPR (destination).
+       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
+       ;; MOD field is ignored.
+       ;; The reg field specifies the control register (source).
+       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+       (current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
+       (cpl (seg-sel-layout-slice :rpl current-cs-register))
+       ((when (not (equal 0 cpl)))
+        (!!ms-fresh :cpl!=0 (cons 'cs-register current-cs-register)))
+       ;; *operand-size-override* and REX.W are ignored.
+
+       ;; Get value from the control register
+       ((mv flg ctr-index)
+        (if (logbitp #.*r* rex-byte)
+            (if (equal reg 0)
+                (mv nil *cr8*)
+              (mv t reg))
+          (if (and (not (equal reg #.*cr1*))
+                   (not (equal reg #.*cr5*))
+                   (not (equal reg #.*cr6*))
+                   (not (equal reg #.*cr7*)))
+              (mv nil reg)
+            (mv t reg))))
+       ((when flg)
+        ;; #UD Exception (if an attempt is made to access CR1, CR5,
+        ;; CR6, or CR7 or if the REX.R prefix is used to specify a
+        ;; register other than CR8)
+        (!!ms-fresh :ctr-index-illegal (cons 'ModR/M.reg reg)))
+       (ctr-val (the (unsigned-byte 64) (ctri ctr-index x86)))
+
+       ;; Update the x86 state:
+       (x86
+        (!rgfi-size 8 (reg-index r/m rex-byte #.*b*) ctr-val rex-byte x86))
+       ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
+       (x86 (!flgi-undefined #.*cf* x86))
+       (x86 (!flgi-undefined #.*pf* x86))
+       (x86 (!flgi-undefined #.*af* x86))
+       (x86 (!flgi-undefined #.*zf* x86))
+       (x86 (!flgi-undefined #.*sf* x86))
+       (x86 (!flgi-undefined #.*of* x86))
+       (x86 (!rip temp-rip x86)))
+    x86))
+
+;; ======================================================================

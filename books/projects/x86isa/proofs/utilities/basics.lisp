@@ -122,8 +122,8 @@
   (x86-fn-untranslate
    '(XR ':ctr)
    '(?x)
-   (gl-int 0 1 18)
-   '(*MSW* *CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
+   (gl-int 0 1 17)
+   '(*CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
            *CR8* *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
            *XCR0*))))
 
@@ -133,8 +133,8 @@
   (x86-fn-untranslate
    '(XW ':ctr)
    '(?v ?x)
-   (gl-int 0 1 18)
-   '(*MSW* *CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
+   (gl-int 0 1 17)
+   '(*CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
            *CR8* *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
            *XCR0*))))
 

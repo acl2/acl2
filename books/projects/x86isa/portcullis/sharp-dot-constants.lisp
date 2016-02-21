@@ -511,9 +511,7 @@
 ;; Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5
 (defun define-control-registers ()
 
-  `(defconsts (*MSW* ;; Control status register: msw is only 32 bits
-		     ;; even in 64 bit mode?
-	       *CR0* ;; cr0 controls operating mode and states of
+  `(defconsts (*CR0* ;; cr0 controls operating mode and states of
 		     ;; processor
 	       *CR1* ;; cr1 is reserved
 	       *CR2* ;; cr2 holds the page fault linear address (the
@@ -531,7 +529,7 @@
 	       *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
 	       *XCR0*
 	       *control-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 18))
+     ,(b* ((lst (gl-int 0 1 17))
 	   (len  (len lst)))
 	  (cons 'mv (append lst (list len))))))
 

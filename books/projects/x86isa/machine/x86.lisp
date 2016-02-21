@@ -358,6 +358,11 @@
        (x86-movhps/movhpd-Op/En-MR
         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
+    (#x20
+     "(MOV r64, CTR)"
+     (x86-mov-control-regs-Op/En-MR
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
+
 
     (#x28
      "66h: (MOVAPD xmm1 xmm2/m128);
