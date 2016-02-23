@@ -130,4 +130,32 @@ module top ;
   mybus bus1(busclk);
   mybus bus2(busclk);
 
+
+
+  // We want to make sure not to warn about these since they're in different
+  // branches of generates.
+  parameter size = 4;
+  wire w12_nodupe;
+  if (size == 0)
+  begin
+    buf(w12_nodupe, a);
+  end
+  else
+  begin
+    buf(w12_nodupe, a);
+  end
+
+  // We want to make sure not to warn about these since they're in different
+  // branches of generates.
+  wire w13_nodupe;
+  if (size == 0)
+  begin
+    sub mysub13 (w13_nodupe, a, a);
+  end
+  else
+  begin
+    sub mysub13 (w13_nodupe, a, a);
+  end
+
+
 endmodule
