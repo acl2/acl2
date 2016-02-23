@@ -1,8 +1,9 @@
 #|$ACL2s-Preamble$;
-(ld ;fool cert.pl 
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
  "acl2s/package.lsp" :dir :system)
-(include-book ;fool cert.pl
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
  "std/portcullis" :dir :system)
+; cert-flags: ? t :ttags :all
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 ;; Note: This book just gathers in one place all ACL2 books
@@ -11,6 +12,8 @@
 
 
 (include-book "misc/expander" :dir :system)
+(include-book "misc/bash" :dir :system)
+(include-book "ordinals/lexicographic-ordering" :dir :system)
 (include-book "hacking/all" :dir :system :ttags :all)
 (include-book "hacking/evalable-ld-printing" :dir :system :ttags :all)
 (include-book "make-event/inline-book" :dir :system)
@@ -25,4 +28,5 @@
 (include-book "std/lists/top" :dir :system)
 (include-book "std/alists/top" :dir :system)
 (include-book "acl2s/cgen/top" :dir :system :ttags :all)
+
 
