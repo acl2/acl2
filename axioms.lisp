@@ -5518,6 +5518,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro 1- (x)
   (list '- x 1))
 
+(defun cons-with-hint (x y hint)
+  (declare (xargs :guard t)
+           (ignorable hint))
+  #-acl2-loop-only
+  (when (and (consp hint)
+             (eql (car hint) x)
+             (eql (cdr hint) y))
+    (return-from cons-with-hint
+                 hint))
+  (cons x y))
+
 ; Remove
 
 (defun-with-guard-check remove-eq-exec (x l)
@@ -5585,7 +5596,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((endp l) nil)
         ((eq x (car l))
          (cdr l))
-        (t (cons (car l) (remove1-eq-exec x (cdr l))))))
+        (t (cons-with-hint (car l)
+                           (remove1-eq-exec x (cdr l))
+                           l))))
 
 (defun-with-guard-check remove1-eql-exec (x l)
   (if (eqlablep x)
@@ -5594,14 +5607,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((endp l) nil)
         ((eql x (car l))
          (cdr l))
-        (t (cons (car l) (remove1-eql-exec x (cdr l))))))
+        (t (cons-with-hint (car l)
+                           (remove1-eql-exec x (cdr l))
+                           l))))
 
 (defun remove1-equal (x l)
   (declare (xargs :guard (true-listp l)))
   (cond ((endp l) nil)
         ((equal x (car l))
          (cdr l))
-        (t (cons (car l) (remove1-equal x (cdr l))))))
+        (t (cons-with-hint (car l)
+                           (remove1-equal x (cdr l))
+                           l))))
 
 (defmacro remove1-eq (x lst)
   `(remove1 ,x ,lst :test 'eq))
@@ -5637,21 +5654,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond
    ((endp l) nil)
    ((member-eq (car l) (cdr l)) (remove-duplicates-eq-exec (cdr l)))
-   (t (cons (car l) (remove-duplicates-eq-exec (cdr l))))))
+   (t (cons-with-hint (car l)
+                      (remove-duplicates-eq-exec (cdr l))
+                      l))))
 
 (defun-with-guard-check remove-duplicates-eql-exec (l)
   (eqlable-listp l)
   (cond
    ((endp l) nil)
    ((member (car l) (cdr l)) (remove-duplicates-eql-exec (cdr l)))
-   (t (cons (car l) (remove-duplicates-eql-exec (cdr l))))))
+   (t (cons-with-hint (car l)
+                      (remove-duplicates-eql-exec (cdr l))
+                      l))))
 
 (defun remove-duplicates-equal (l)
   (declare (xargs :guard (true-listp l)))
   (cond
    ((endp l) nil)
    ((member-equal (car l) (cdr l)) (remove-duplicates-equal (cdr l)))
-   (t (cons (car l) (remove-duplicates-equal (cdr l))))))
+   (t (cons-with-hint (car l)
+                      (remove-duplicates-equal (cdr l))
+                      l))))
 
 (defmacro remove-duplicates-eq (x)
   `(remove-duplicates ,x :test 'eq))
@@ -22282,8 +22305,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun fix-true-list (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (cons (car x)
-            (fix-true-list (cdr x)))
+      (cons-with-hint (car x)
+                      (fix-true-list (cdr x))
+                      x)
     nil))
 
 (defthm pairlis$-fix-true-list
@@ -26679,14 +26703,3 @@ Lisp definition."
             #-ccl
             (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|"))))
   (read-acl2-oracle state))
-
-(defun cons-with-hint (x y hint)
-  (declare (xargs :guard t)
-           (ignorable hint))
-  #-acl2-loop-only
-  (when (and (consp hint)
-             (eql (car hint) x)
-             (eql (cdr hint) y))
-    (return-from cons-with-hint
-                 hint))
-  (cons x y))

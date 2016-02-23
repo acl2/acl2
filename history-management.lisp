@@ -9592,6 +9592,7 @@
         BAD-ATOM            ;;; used in several defaxioms
         RETURN-LAST         ;;; affects constraints (see remove-guard-holders1)
         MV-LIST             ;;; affects constraints (see remove-guard-holders1)
+        CONS-WITH-HINT      ;;; affects constraints (see remove-guard-holders1)
 
 ; The next six are used in built-in defpkg axioms.
 

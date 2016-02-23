@@ -1219,9 +1219,10 @@
 ; Otherwise, translate11 guarantees that if (car form) is f, then it is an
 ; abbreviation for f$inline.
 
-                               (assert$ (getpropc (car x) 'macro-body nil w)
-                                        (*1*-symbol (add-suffix (car form)
-                                                                *inline-suffix*))))
+                               (assert$
+                                (getpropc (car x) 'macro-body nil w)
+                                (*1*-symbol (add-suffix (car form)
+                                                        *inline-suffix*))))
                            args))))))
             ((eq fn 'mbe1-raw)
 
@@ -1257,6 +1258,8 @@
 ;     (declare (xargs :mode :program
 ;                     :stobjs st))
 ;     (lgc st))
+;
+;   (pgm st) ; no "@@@" in output
 
 ; Note that we do not give similar treatment to our evaluator (in particular,
 ; in ev-rec-return-last), since at the top level, we are not inside a function
@@ -1265,19 +1268,28 @@
 ; level, thus also not being sensitive to **1*-as-raw* for lexically
 ; apparent calls.  That's OK.
 
-             (let ((oneified-logic (oneify (cadddr x) fns w program-p))
-                   (oneified-exec (oneify (caddr x) fns w program-p)))
-               `(cond
-                 ((f-get-global 'safe-mode *the-live-state*)
-                  (,(*1*-symbol 'return-last)
-                   ,qfn
-                   ,oneified-exec
-                   ,oneified-logic))
-                 (t ,(if program-p
-                         oneified-exec
-                       `(if **1*-as-raw*
-                            ,oneified-exec
-                          ,oneified-logic))))))
+             (let* ((oneified-logic-body (oneify (cadddr x) fns w program-p))
+                    (oneified-exec-body (oneify (caddr x) fns w program-p))
+                    (logic-fn (and (not program-p) ; optimization
+                                   (acl2-gentemp "ONEIFY")))
+                    (exec-fn (acl2-gentemp "ONEIFY"))
+                    (logic-body (if program-p
+                                    oneified-logic-body
+                                  (list logic-fn))))
+               `(flet (,@(and (not program-p)
+                              `((,logic-fn () ,oneified-logic-body)))
+                       (,exec-fn () ,oneified-exec-body))
+                  (cond
+                   ((f-get-global 'safe-mode *the-live-state*)
+                    (,(*1*-symbol 'return-last)
+                     ,qfn
+                     (,exec-fn)
+                     ,logic-body))
+                   (t ,(if program-p
+                           `(,exec-fn)
+                         `(if **1*-as-raw*
+                              (,exec-fn)
+                            ,logic-body)))))))
             (t
 
 ; Since fn is not 'ec-call1-raw, the guard of return-last is automatically met
@@ -1439,6 +1451,11 @@
     (let ((arg-forms (oneify-lst (cdr x) fns w program-p))
           (fn (cond ((and (eq program-p 'invariant-risk)
                           (not (getpropc (car x) 'invariant-risk nil w)))
+
+; Oneify was called at the top level with program-p 'invariant-risk.  There is
+; no need for sub-functions with no invariant-risk to be called using their *1*
+; functions.
+
                      (car x))
                     (t (*1*-symbol (car x))))))
       (cons fn arg-forms)))))
@@ -2246,8 +2263,7 @@
                       (append
                        main-body-before-final-call
                        (cond
-                        ((and invariant-risk
-                              (eq defun-mode :program))
+                        (invariant-risk ; and (eq defun-mode :program)
                          (let ((check-invariant-risk-sym
 
 ; The serialize code seems to cause errors for a symbol with no package.
@@ -2307,7 +2323,7 @@
                                           (labels-form-for-*1*
                                            fn *1*fn formals
                                            (oneify body nil wrld
-                                                     'invariant-risk)
+                                                   'invariant-risk)
                                            declare-stobj-special
                                            ignore-vars ignorable-vars
                                            super-stobjs-in super-stobjs-chk
