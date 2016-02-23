@@ -39,14 +39,14 @@
 (acl2::defrec acl2s-param-info% (value guard setter) NIL)
 
 (defmacro add-acl2s-parameter (name default
-                                    &key
+                                    &key 
                                     (setter 'nil)
                                     (guard 't)
                                     short
                                     long)
   "Add a new user-defined parameter.
    Put it in the acl2s-defaults-table as a key,
-   using the value of :default.
+   using the value of :default. 
 :guard is a term that checks for legal values of the
    parameter (It uses symbol 'value for variable capture).
 getter and setter specify macro names that will be used by
@@ -56,19 +56,19 @@ embedded event form, this this is called from inside an make-event.
 You have to see the code in acl2s-defaults to understand whats going
 on with getter and setter, the situation is assymmetric and I am
 being lazy about documentation.
-short and long are keyword arguments to defxdoc.
+short and long are keyword arguments to defxdoc. 
 "
-
+  
   (b* (((unless (symbolp name))
         (er hard 'add-acl2s-parameter
             "Name must be a symbol, but is ~x0." name))
        ;; ((unless (pseudo-termp guard))
-       ;;  (er hard 'add-acl2s-parameter
+       ;;  (er hard 'add-acl2s-parameter 
        ;;      ":guard must be a term, but is ~x0." guard))
        );*b
 
-    `(progn
-       (table acl2s-defaults-table
+    `(progn 
+       (table acl2s-defaults-table 
               ',(keywordify name)
               ',(acl2::make acl2s-param-info%
                  :guard guard ;store guard too
@@ -81,8 +81,8 @@ short and long are keyword arguments to defxdoc.
 
 (defxdoc acl2s-defaults
   :parents (acl2::acl2-sedan acl2::cgen)
-  :short "Getting and setting defaults for various parameters in Cgen (ACL2 Sedan)"
-  :long
+  :short "Getting and setting defaults for various parameters in Cgen (ACL2 Sedan)"                                 
+  :long  
   "
 <h3>Examples</h3>
 @({
@@ -113,11 +113,11 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 </p>
 ")
 
-(add-acl2s-parameter
+(add-acl2s-parameter 
  num-trials 1000
  :short "Max number of tries to find counterexamples"
  :long
-" Maximum number of tries (attempts) to construct
+" Maximum number of tries (attempts) to construct 
   counterexamples and witnesses.
   By default this parameter is set to 1000. Can be set to
   any natural number <tt>n</tt>. If set to 0, it has the same
@@ -129,10 +129,10 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    (acl2s-defaults :get num-trials)
    :doc num-trials
    </code>"
- :guard (and (natp value)
+ :guard (and (natp value) 
              (< value 1000000000)))
 
-(add-acl2s-parameter
+(add-acl2s-parameter 
  verbosity-level 1
  :short "Control verbosity of Cgen"
  :long "
@@ -140,11 +140,11 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 
 <dl>
 <dt>Levels</dt>
-<dd>   0 - All Cgen output is turned off      </dd>
-<dd>   1 - Normal output (default)            </dd>
-<dd>   2 - Verbose output                     </dd>
-<dd>   3 - More verbose with Cgen statistics  </dd>
-<dd>   4 - For Debug by normal users          </dd>
+<dd>   0 - All Cgen output is turned off      </dd> 
+<dd>   1 - Normal output (default)            </dd> 
+<dd>   2 - Verbose output                     </dd> 
+<dd>   3 - More verbose with Cgen statistics  </dd>  
+<dd>   4 - For Debug by normal users          </dd>  
 <dd>   5 and above - System level debug by developers </dd>
 </dl>
 
@@ -157,7 +157,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
  :guard (natp value))
 
 
-(add-acl2s-parameter
+(add-acl2s-parameter 
   num-counterexamples 3
  :short "Number of Counterexamples to be shown"
  :long "
@@ -166,7 +166,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   any natural number n. Setting this number to 0 implies
   the user is not interested in seeing counterexamples, and
   thus none will be printed in the testing output.
-
+  
   <code>
   Usage:
   (acl2s-defaults :set num-counterexamples 3)
@@ -176,7 +176,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    :guard (natp value))
 
 
-(add-acl2s-parameter
+(add-acl2s-parameter 
   num-witnesses 3
  :short "Number of Witnesses to be shown"
  :long "
@@ -185,7 +185,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   any natural number. Setting this number to 0 implies
   the user is not interested in seeing witnesses, and
   thus none will be printed in the testing output.
-
+  
   <code>
   Usage:
   (acl2s-defaults :set num-witnesses 3)
@@ -196,7 +196,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 
 
 (defconst *search-strategy-values* '(:simple :incremental :hybrid))
-(add-acl2s-parameter
+(add-acl2s-parameter 
  search-strategy :simple
  :short "Specify the search strategy to be used."
  :long "
@@ -214,11 +214,11 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    </code>
    "
  :guard (member-eq value *search-strategy-values*))
-;; Use natural seeds or random tree of natural numbers
+;; Use natural seeds or random tree of natural numbers 
 
 (defconst *sampling-method-values* '(:random :uniform-random :be :mixed))
 
-(add-acl2s-parameter
+(add-acl2s-parameter 
  sampling-method :random
  :short "Specify sampling method to be used to instantiate variables "
  :long "
@@ -236,12 +236,12 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
  :guard (member-eq value *sampling-method-values*))
 
 
-(add-acl2s-parameter
+(add-acl2s-parameter 
  backtrack-limit 3
  :short "Maximum number of backtracks allowed (per variable)"
  :long "
    Maximum number of backtracks allowed by a variable.
-   The default backtrack limit is set to 3. Setting this
+   The default backtrack limit is set to 3. Setting this 
    parameter to 0 disables the backtracking.
    <code>
     Usage:
@@ -252,14 +252,14 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    "
  :guard (natp value))
 
-(add-acl2s-parameter
+(add-acl2s-parameter 
  cgen-timeout 3600 ;bad name -- TODO: change it in a latter version.
  :short "test?/prover timeout (in seconds)"
  :long
   "Maximum allowed time (in seconds) to be spent
   in the ACL2 prover on behalf of Cgen/test? macro.
   This value is used as the second argument of the
-  with-prover-time-limit macro around the call to
+  with-prover-time-limit macro around the call to 
   prove/cgen.
 
   The default timeout limit is set to 3600 sec.
@@ -272,8 +272,8 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    </code>
    "
  :guard (rationalp value))
-
-(add-acl2s-parameter
+        
+(add-acl2s-parameter 
  cgen-local-timeout 10
  :short "Cgen/Testing timeout (in seconds)"
  :long
@@ -294,7 +294,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 
 (defconst *testing-enabled-values* '(T NIL :naive))
 
-(add-acl2s-parameter
+(add-acl2s-parameter 
  testing-enabled :naive
  :short "Testing enable/disable flag"
  :long
@@ -333,11 +333,11 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   (and (mem-tree 'ACL2::TEST-CHECKPOINT ;check if random testing is enabled
                  (override-hints (w state)))
        T))
-
+      
 
 ;top-level exported macro to know wether random testing is enabled or not
 (defmacro get-acl2s-random-testing-hints-enabled ()
-
+ 
  `(get-acl2s-random-testing-hints-flag-fn state))
 
 (defun set-acl2s-random-testing-flag-fn (flg mode state)
@@ -373,9 +373,9 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 (defmacro set-acl2s-random-testing-enabled (v forms)
   (declare (xargs :guard (member-eq v '(T NIL :naive))))
   `(make-event
-     (let ((mode (cdr (assoc-eq :defun-mode
+     (let ((mode (cdr (assoc-eq :defun-mode 
                                 (table-alist
-                                 'acl2::acl2-defaults-table
+                                 'acl2::acl2-defaults-table 
                                  (w state))))))
        (let ((forms ',forms))
           (value `(progn
@@ -388,7 +388,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   (b* ((kparam (keywordify param))
        (param-rec-pair (assoc-eq kparam (table-alist 'ACL2S-DEFAULTS-TABLE wrld)))
        ((unless (consp param-rec-pair))
-        (er hard 'acl2s-defaults
+        (er hard 'acl2s-defaults 
             "~|Parameter ~x0 not found in acl2s defaults!~%" param))
        (r (cdr param-rec-pair))
        (val (acl2::access acl2s-param-info% r :value)))
@@ -400,7 +400,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
             "~|At least 2 arguments, but given ~x0~%" rst))
        (param (second rst))
        (op (car rst))
-       ((unless (or (eq :get op)
+       ((unless (or (eq :get op) 
                     (and (eq :set op)
                          (consp (cddr rst));value
                          )))
@@ -420,7 +420,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
              (assoc-eq ',(keywordify param)
                       (table-alist 'ACL2S-DEFAULTS-TABLE (w state))))
              ((unless (consp param-rec-pair))
-                 (er hard 'acl2s-defaults
+                 (er hard 'acl2s-defaults 
                      "~|Parameter ~x0 not found in acl2s-defaults!~%"
                      ',param))
 ;guard is fixed once it is initialized INVARIANT
@@ -428,23 +428,23 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
              (guard (acl2::access acl2s-param-info% r :guard))
              (setter (acl2::access acl2s-param-info% r :setter))
              (v (third ',rst)))
-        `(make-event ;state changing event
+        `(make-event ;state changing event 
            (if (not ,(subst v 'value guard))
                (er soft 'acl2s-defaults-table
-                 "Guard ~x0 for ~x1 in table failed for VALUE ~x2"
+                 "Guard ~x0 for ~x1 in table failed for VALUE ~x2" 
                  ',guard ',',param ',v)
              (if ',setter
                  (let ((table-update-form
-                        `(table acl2s-defaults-table
+                        `(table acl2s-defaults-table 
                                   ',',',(keywordify param)
                                   ',(acl2::change acl2s-param-info% ',r :value ',v))))
 ;;; setter is a macro, so dont quote the args to it whereas the above
 ;;; table macro needs quoted args because its 3rd parameter is &rest rst
                   (value `(,',setter ,',v (,table-update-form));embedded event
                         ))
-
+                           
              (value `(progn
-                      (table acl2s-defaults-table
+                      (table acl2s-defaults-table 
                              ',',',(keywordify param)
                              ',(acl2::change acl2s-param-info% ',r :value ',v))
                       (value-triple ',',v))))))))))))
@@ -452,7 +452,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 
 
 
-(add-acl2s-parameter
+(add-acl2s-parameter 
  print-cgen-summary T
  :short "Print summary for Cgen"
  :long " <p>Print summary of cgen/testing done in course of test? form (and
@@ -490,8 +490,8 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
          (val (acl2::access acl2s-param-info% rec-val :value))
          (override (assoc-eq/pkg-agnostic param override-alist))
          (val (if override (cdr override) val)))
-      (acl2s-defaults-value-alist. (cdr defaults)
-                                   override-alist
+      (acl2s-defaults-value-alist. (cdr defaults) 
+                                   override-alist 
                                    (cons (cons param val) ans.)))))
 
 (defmacro acl2s-defaults-alist (&optional override-alist)
