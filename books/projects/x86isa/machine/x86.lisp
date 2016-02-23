@@ -3048,6 +3048,339 @@
                 rm08-does-not-affect-state-in-programmer-level-mode)
               (theory 'minimal-theory))))))
 
+;; (i-am-here)
+
+;; (defthm get-prefixes-opener-lemma-in-system-level-mode
+;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+;;                 (canonical-address-p start-rip)
+;;                 (canonical-address-p (+ cnt start-rip))
+;;                 (all-paging-entries-found-p
+;;                  (create-canonical-address-list cnt start-rip)
+;;                  (double-rewrite x86))
+;;                 (no-page-faults-during-translation-p
+;;                  (create-canonical-address-list cnt start-rip)
+;;                  :x cpl (double-rewrite x86))
+;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
+;;                  (create-canonical-address-list cnt start-rip)
+;;                  :x cpl (double-rewrite x86))
+;;                 (not (zp cnt))
+;;                 (not (mv-nth 0 (rm08 start-rip :x x86))))
+;;            (and
+;;             (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))
+;;                    (cond
+;;                     ((and
+;;                       (equal
+;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                        1)
+;;                       (equal (prefixes-slice :group-1-prefix prefixes) 0))
+;;                      (mv-nth 0
+;;                              (get-prefixes (1+ start-rip)
+;;                                            (!prefixes-slice
+;;                                             :group-1-prefix
+;;                                             (mv-nth 1 (rm08 start-rip :x x86))
+;;                                             prefixes)
+;;                                            (1- cnt) x86)))
+;;                     ((and
+;;                       (equal
+;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                        2)
+;;                       (equal (prefixes-slice :group-2-prefix prefixes) 0))
+;;                      (mv-nth 0
+;;                              (get-prefixes (1+ start-rip)
+;;                                            (!prefixes-slice
+;;                                             :group-2-prefix
+;;                                             (mv-nth 1 (rm08 start-rip :x x86))
+;;                                             prefixes)
+;;                                            (1- cnt) x86)))
+;;                     ((and
+;;                       (equal
+;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                        3)
+;;                       (equal (prefixes-slice :group-3-prefix prefixes) 0))
+;;                      (mv-nth 0
+;;                              (get-prefixes (1+ start-rip)
+;;                                            (!prefixes-slice
+;;                                             :group-3-prefix
+;;                                             (mv-nth 1 (rm08 start-rip :x x86))
+;;                                             prefixes)
+;;                                            (1- cnt) x86)))
+;;                     ((and
+;;                       (equal
+;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                        4)
+;;                       (equal (prefixes-slice :group-4-prefix prefixes) 0))
+;;                      (mv-nth 0
+;;                              (get-prefixes (1+ start-rip)
+;;                                            (!prefixes-slice
+;;                                             :group-4-prefix
+;;                                             (mv-nth 1 (rm08 start-rip :x x86))
+;;                                             prefixes)
+;;                                            (1- cnt) x86)))
+;;                     (t
+;;                      (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))))
+;;             (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
+;;                    (cond
+;;                     ((and
+;;                       (equal
+;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                        1)
+;;                       (equal (prefixes-slice :group-1-prefix prefixes) 0))
+;;                      (mv-nth 1
+;;                              (get-prefixes (1+ start-rip)
+;;                                            (!prefixes-slice
+;;                                             :group-1-prefix
+;;                                             (mv-nth 1 (rm08 start-rip :x x86))
+;;                                             prefixes)
+;;                                            (1- cnt) x86)))
+;;                     ((and
+;;                       (equal
+;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                        2)
+;;                       (equal (prefixes-slice :group-2-prefix prefixes) 0))
+;;                      (mv-nth 1
+;;                              (get-prefixes (1+ start-rip)
+;;                                            (!prefixes-slice
+;;                                             :group-2-prefix
+;;                                             (mv-nth 1 (rm08 start-rip :x x86))
+;;                                             prefixes)
+;;                                            (1- cnt) x86)))
+;;                     ((and
+;;                       (equal
+;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                        3)
+;;                       (equal (prefixes-slice :group-3-prefix prefixes) 0))
+;;                      (mv-nth 1
+;;                              (get-prefixes (1+ start-rip)
+;;                                            (!prefixes-slice
+;;                                             :group-3-prefix
+;;                                             (mv-nth 1 (rm08 start-rip :x x86))
+;;                                             prefixes)
+;;                                            (1- cnt) x86)))
+;;                     ((and
+;;                       (equal
+;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                        4)
+;;                       (equal (prefixes-slice :group-4-prefix prefixes) 0))
+;;                      (mv-nth 1
+;;                              (get-prefixes (1+ start-rip)
+;;                                            (!prefixes-slice
+;;                                             :group-4-prefix
+;;                                             (mv-nth 1 (rm08 start-rip :x x86))
+;;                                             prefixes)
+;;                                            (1- cnt) x86)))
+;;                     (t
+;;                      (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))))
+;;   :hints (("Goal"
+;;            :do-not-induct t
+;;            :expand ((get-prefixes start-rip prefixes cnt x86))
+;;            :in-theory (e/d* (get-prefixes
+;;                              all-paging-entries-found-p
+;;                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
+;;                             (get-prefixes-and-xlate-equiv-x86s
+;;                              (:definition unsigned-byte-p)
+;;                              (:rewrite negative-logand-to-positive-logand-with-integerp-x)
+;;                              (:linear <=-logior)
+;;                              (:rewrite bitops::logsquash-cancel)
+;;                              (:rewrite acl2::natp-when-integerp)
+;;                              (:linear bitops::logand-<-0-linear)
+;;                              (:rewrite acl2::ifix-negative-to-negp)
+;;                              (:linear bitops::logand->=-0-linear-2)
+;;                              (:type-prescription bitops::logand-natp-type-2)
+;;                              (:linear bitops::upper-bound-of-logand . 2)
+;;                              (:linear bitops::logior->=-0-linear)
+;;                              (:linear bitops::logior-<-0-linear-2)
+;;                              (:linear bitops::logior-<-0-linear-1)
+;;                              (:rewrite default-<-1)
+;;                              (:type-prescription bitops::logior-natp-type)
+;;                              (:rewrite acl2::negp-when-less-than-0)
+;;                              (:rewrite acl2::natp-when-gte-0)
+;;                              (:rewrite unsigned-byte-p-of-logior)
+;;                              (:type-prescription bitops::logand-natp-type-1)
+;;                              (:type-prescription binary-logand)
+;;                              (:linear ash-monotone-2)
+;;                              (:rewrite acl2::ifix-when-not-integerp)
+;;                              (:linear acl2::loghead-upper-bound)
+;;                              (:rewrite acl2::loghead-identity)
+;;                              (:rewrite default-<-2)
+;;                              (:rewrite acl2::negp-when-integerp)
+;;                              (:rewrite constant-upper-bound-of-logior-for-naturals)
+;;                              (:type-prescription bitops::ash-natp-type)
+;;                              (:rewrite unsigned-byte-p-of-logand-2)
+;;                              (:rewrite bitops::ash-<-0)
+;;                              (:type-prescription natp-of-get-one-byte-prefix-array-code)
+;;                              (:type-prescription n08p-mv-nth-1-rm08)
+;;                              (:type-prescription negp)
+;;                              (:linear bitops::logand->=-0-linear-1)
+;;                              (:rewrite acl2::ash-0)
+;;                              (:rewrite acl2::zip-open)
+;;                              (:rewrite bitops::logsquash-<-0)
+;;                              (:rewrite loghead-of-non-integerp)
+;;                              (:rewrite unsigned-byte-p-of-logtail)
+;;                              (:linear bitops::upper-bound-of-logand . 1)
+;;                              (:rewrite bitops::logior-equal-0)
+;;                              (:rewrite bitops::logtail-of-logior)
+;;                              (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+;;                              (:type-prescription bitops::logsquash$inline)
+;;                              (:rewrite bitops::logtail-of-logand)
+;;                              (:rewrite acl2::logtail-identity)
+;;                              (:rewrite bitops::loghead-of-logior)
+;;                              (:rewrite unsigned-byte-p-of-logsquash)
+;;                              (:type-prescription bitops::logtail-natp)
+;;                              (:rewrite bitops::logtail-of-ash)
+;;                              (:rewrite get-prefixes-opener-lemma-1)
+;;                              (:linear bitops::upper-bound-of-logior-for-naturals)
+;;                              (:type-prescription acl2::logtail-type)
+;;                              (:rewrite rm08-values-and-xlate-equiv-x86s-disjoint)
+;;                              (:rewrite bitops::logand-with-bitmask)
+;;                              (:linear n08p-mv-nth-1-rm08)
+;;                              (:rewrite acl2::zp-when-gt-0)
+;;                              (:rewrite bitops::loghead-of-logand)
+;;                              (:rewrite unsigned-byte-p-of-logand-1)
+;;                              (:type-prescription logtail-*2^x-byte-pseudo-page*-of-physical-address)
+;;                              (:rewrite default-+-2)
+;;                              (:rewrite default-+-1)
+;;                              (:rewrite bitops::loghead-of-logsquash-commute)
+;;                              (:rewrite member-list-p-and-pairwise-disjoint-p-aux)
+;;                              (:definition n64p$inline)
+;;                              (:type-prescription rationalp-expt-type-prescription)
+;;                              (:linear rm-low-64-logand-logior-helper-1)
+;;                              (:rewrite signed-byte-p-limits-thm)
+;;                              (:type-prescription expt-type-prescription-non-zero-base)
+;;                              (:rewrite n08p-mv-nth-1-rm08)
+;;                              (:definition member-list-p)
+;;                              (:definition programmer-level-mode$inline)
+;;                              (:type-prescription rm-low-64-logand-logior-helper-1)
+;;                              (:rewrite programmer-level-mode-rm08-no-error)
+;;                              (:definition open-qword-paddr-list-list)
+;;                              (:rewrite canonical-address-p-limits-thm-3)
+;;                              (:rewrite acl2::simplify-logior)
+;;                              (:rewrite get-prefixes-opener-lemma-6)
+;;                              (:rewrite get-prefixes-opener-lemma-5)
+;;                              (:rewrite get-prefixes-opener-lemma-4)
+;;                              (:rewrite get-prefixes-opener-lemma-3)
+;;                              (:definition open-qword-paddr-list)
+;;                              (:rewrite bitops::logsquash-of-0-i)
+;;                              (:definition pairwise-disjoint-p-aux)
+;;                              (:rewrite canonical-address-p-limits-thm-2)
+;;                              (:rewrite canonical-address-p-limits-thm-1)
+;;                              (:rewrite canonical-address-p-limits-thm-0)
+;;                              (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
+;;                              (:rewrite logand-redundant)
+;;                              (:type-prescription n64p$inline)
+;;                              (:type-prescription zip)
+;;                              (:rewrite unsigned-byte-p-of-ash)
+;;                              (:rewrite open-qword-paddr-list-list-and-member-list-p)
+;;                              (:meta acl2::mv-nth-cons-meta)
+;;                              (:type-prescription integer-range-p)
+;;                              (:type-prescription bitops::lognot-negp)
+;;                              (:type-prescription seg-visiblei-is-n16p)
+;;                              (:definition binary-append)
+;;                              (:rewrite rm08-does-not-affect-state-in-programmer-level-mode)
+;;                              (:type-prescription member-list-p)
+;;                              (:rewrite member-p-cdr)
+;;                              (:rewrite bitops::logtail-of-logtail)
+;;                              (:rewrite good-paging-structures-x86p-implies-x86p)
+;;                              (:type-prescription ash)
+;;                              (:rewrite rm-low-64-logand-logior-helper-1)
+;;                              (:rewrite default-cdr)
+;;                              (:rewrite rm08-value-when-error)
+;;                              (:linear seg-visiblei-is-n16p)
+;;                              (:rewrite acl2::append-when-not-consp)
+;;                              (:rewrite xr-rm08-state-in-system-level-mode)
+;;                              (:rewrite unsigned-byte-p-of-loghead)
+;;                              (:rewrite acl2::difference-unsigned-byte-p)
+;;                              (:rewrite consp-of-create-canonical-address-list)
+;;                              (:rewrite cdr-create-canonical-address-list)
+;;                              (:rewrite car-create-canonical-address-list)
+;;                              (:definition addr-range)
+;;                              (:rewrite default-car)
+;;                              (:rewrite get-prefixes-opener-lemma-2)
+;;                              (:rewrite acl2::distributivity-of-minus-over-+)
+;;                              (:type-prescription true-listp-addr-range)
+;;                              (:type-prescription consp-addr-range)
+;;                              (:rewrite subset-list-p-and-member-list-p)
+;;                              (:rewrite x86p-rm08)
+;;                              (:type-prescription bitops::lognot-natp)
+;;                              (:type-prescription lognot)
+;;                              (:type-prescription open-qword-paddr-list-list)
+;;                              (:type-prescription gather-all-paging-structure-qword-addresses)
+;;                              (:rewrite member-p-and-mult-8-qword-paddr-listp)
+;;                              (:rewrite member-list-p-and-mult-8-qword-paddr-list-listp)
+;;                              (:rewrite bitops::logior-fold-consts)
+;;                              (:rewrite pairwise-disjoint-p-aux-and-append)
+;;                              (:rewrite car-addr-range)
+;;                              (:rewrite all-seg-visibles-equal-aux-open)
+;;                              (:rewrite acl2::unsigned-byte-p-loghead)
+;;                              (:rewrite default-unary-minus)
+;;                              (:rewrite good-paging-structures-x86p-implies-system-level-mode)
+;;                              (:rewrite subset-p-cons-member-p-lemma)
+;;                              (:rewrite member-p-of-not-a-consp)
+;;                              (:rewrite member-list-p-no-duplicates-list-p-and-member-p)
+;;                              (:rewrite loghead-ash-0)
+;;                              (:type-prescription bitops::natp-part-install-width-low)
+;;                              (:rewrite bitops::loghead-of-ash-same)
+;;                              (:rewrite bitops::loghead-of-0-i)
+;;                              (:rewrite bitops::logsquash-of-logsquash-2)
+;;                              (:rewrite bitops::logsquash-of-logsquash-1)
+;;                              (:type-prescription mult-8-qword-paddr-list-listp)
+;;                              (:type-prescription disjoint-p)
+;;                              (:rewrite mapped-lin-addrs-disjoint-from-paging-structure-addrs-p-member-p)
+;;                              (:rewrite
+;;                               good-paging-structures-x86p-implies-mult-8-qword-paddr-list-listp-paging-structure-addrs)
+;;                              (:rewrite disjoint-p-subset-p)
+;;                              (:rewrite disjoint-p-members-of-true-list-list-disjoint-p)
+;;                              (:rewrite disjoint-p-members-of-pairwise-disjoint-p-aux)
+;;                              (:rewrite disjoint-p-members-of-pairwise-disjoint-p)
+;;                              (:rewrite cdr-addr-range)
+;;                              (:type-prescription bitops::part-install-width-low$inline)
+;;                              (:rewrite get-prefixes-opener-lemma-7)
+;;                              (:rewrite xr-rm08-state-in-programmer-level-mode)))
+;;            :use ((:instance get-prefixes-and-xlate-equiv-x86s
+;;                             (cpl (loghead 2 (xr :seg-visible 1 x86)))
+;;                             (start-rip (1+ start-rip))
+;;                             (prefixes (cond
+;;                                        ((and
+;;                                          (equal
+;;                                           (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                                           1)
+;;                                          (equal (prefixes-slice :group-1-prefix prefixes) 0))
+;;                                         (!prefixes-slice
+;;                                          :group-1-prefix
+;;                                          (mv-nth 1 (rm08 start-rip :x x86))
+;;                                          prefixes))
+;;                                        ((and
+;;                                          (equal
+;;                                           (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                                           2)
+;;                                          (equal (prefixes-slice :group-2-prefix prefixes) 0))
+;;                                         (!prefixes-slice
+;;                                          :group-2-prefix
+;;                                          (mv-nth 1 (rm08 start-rip :x x86))
+;;                                          prefixes))
+;;                                        ((and
+;;                                          (equal
+;;                                           (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                                           3)
+;;                                          (equal (prefixes-slice :group-3-prefix prefixes) 0))
+;;                                         (!prefixes-slice
+;;                                          :group-3-prefix
+;;                                          (mv-nth 1 (rm08 start-rip :x x86))
+;;                                          prefixes))
+;;                                        ((and
+;;                                          (equal
+;;                                           (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+;;                                           4)
+;;                                          (equal (prefixes-slice :group-4-prefix prefixes) 0))
+;;                                         (!prefixes-slice
+;;                                          :group-4-prefix
+;;                                          (mv-nth 1 (rm08 start-rip :x x86))
+;;                                          prefixes))
+;;                                        (t
+;;                                         prefixes)))
+;;                             (cnt (+ -1 cnt))
+;;                             (x86-1 (mv-nth 2 (rm08 start-rip :x x86)))
+;;                             (x86-2 x86))))))
+
 ;; ======================================================================
 
 (define x86-fetch-decode-execute (x86)

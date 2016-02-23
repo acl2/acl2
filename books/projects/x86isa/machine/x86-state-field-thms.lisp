@@ -71,6 +71,7 @@ re-arrange these nests of updates.</p>
     :ENV
     :UNDEF
     :PROGRAMMER-LEVEL-MODE
+    :PAGE-STRUCTURE-MARKING-MODE
     :OS-INFO))
 
 (defconst *x86-array-fields-as-keywords*
@@ -270,6 +271,11 @@ re-arrange these nests of updates.</p>
              (booleanp (xr :programmer-level-mode i x86)))
     :rule-classes :type-prescription)
 
+  (defthm booleanp-page-structure-marking-mode-type
+    (implies (force (x86p x86))
+             (booleanp (xr :page-structure-marking-mode i x86)))
+    :rule-classes :type-prescription)
+
   ;; Type of writers in terms of XW:
 
   (defthm x86p-xw
@@ -308,6 +314,7 @@ re-arrange these nests of updates.</p>
                                                (unsigned-byte-p 64 value)))
                            (:env          (env-alistp value))
                            (:programmer-level-mode (booleanp value))
+                           (:page-structure-marking-mode (booleanp value))
                            (:os-info      (keywordp value))
                            (:mem          (and (integerp index)
                                                (unsigned-byte-p 8 value)))

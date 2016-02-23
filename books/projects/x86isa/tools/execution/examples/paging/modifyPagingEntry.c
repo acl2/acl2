@@ -1,5 +1,5 @@
 // Shilpi Goel <shigoel@gmail.com>
-// gcc modifyPagingEntry.c -o modifyPagingEntry.o
+// gcc -O3 modifyPagingEntry.c -o modifyPagingEntry.o
 
 
 /*
@@ -19,12 +19,11 @@ comfortable about blurring the distinction.
 
 #define CR3_PDB_SHIFT 12
 
-typedef unsigned int       u32;
 typedef unsigned long long u64;
 
 #define _direct_map(x) (x);
 
-u64 part_select (u64 x, u32 low, u32 high) {
+u64 part_select (u64 x, u64 low, u64 high) {
 
   u64 width, val, mask;
   width = high - low + 1;
@@ -34,7 +33,7 @@ u64 part_select (u64 x, u32 low, u32 high) {
 
 }
 
-u64 part_install (u64 val, u64 x, u32 low, u32 high) {
+u64 part_install (u64 val, u64 x, u64 low, u64 high) {
 
   u64 width, mask, ret;
   width = high - low + 1;
@@ -58,7 +57,7 @@ u64 pml4e_paddr (u64 cr3, u64 vaddr) {
   // Bits 11:3 are bits 47:39 of vaddr.
   // Bits 2:0 are 0.
   paddr = part_install (part_select (vaddr, 39, 47),
-			pml4_table_base_paddr, 3, 11);
+                        pml4_table_base_paddr, 3, 11);
   return (paddr);
 
 }
@@ -84,7 +83,7 @@ u64 pdpte_paddr (u64 pml4e_paddr, u64 vaddr) {
   // Bits 2:0 are 0.
 
   paddr = part_install (part_select (vaddr, 30, 38),
-			pdpt_table_base_addr, 3, 11);
+                        pdpt_table_base_addr, 3, 11);
   return (paddr);
 
 }
@@ -109,7 +108,7 @@ u64 paddr (u64 pdpte_addr, u64 vaddr) {
   // Bits 29:0 are bits 29:0 of vaddr.
 
   paddr = part_install (part_select (vaddr, 0, 29),
-			page_base_paddr, 0, 29);
+                        page_base_paddr, 0, 29);
 
   return (paddr);
 
@@ -181,7 +180,9 @@ u64 rewire_dst_to_src (u64 src_la, u64 dst_la) {
 
 int main() {
 
-  // src_la and dst_la have to be 1G-aligned.
+  // rewire_dst_to_src can be made into a syscall --- pre-condition:
+  // both the inputs have to be 1G-aligned, or instead, I can check
+  // that inside this function, and return an error if they aren't.
 
   u64 src_la = 0x8C0000000; // 1G aligned
   u64 dst_la = 0x900000000; // 1G aligned
