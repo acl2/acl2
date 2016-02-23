@@ -33,6 +33,8 @@
 (include-book "register-combinator")
 (include-book "listof")
 (include-book "alistof")
+(include-book "record")
+(include-book "map")
 (include-book "tau-characterization")
 
 (include-book "tools/rulesets" :dir :system)
@@ -84,7 +86,7 @@
                            ((allp car) (allp cdr))
                            :rule-classes nil
                            :verbose t)
-
+                
 
 ;;jared's oset implementation
 ;; (defun set::non-empty-setp (x)
@@ -111,7 +113,7 @@
                            :proper nil)
 
 
-
+ 
 
 ;;complex number type
 (register-data-constructor (acl2-numberp complex)
@@ -166,7 +168,7 @@
   '(#\a #\b #\c
     #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m
     #\n #\o #\p #\q #\r #\s #\t #\u #\v #\w
-    #\x #\y #\z
+    #\x #\y #\z 
     ))
 
 (defconst *len-alpha-low-chars* (len *alpha-low-chars*))
@@ -199,10 +201,10 @@
 	     (integerp (mod m n)))
   :rule-classes (:rewrite :type-prescription))
 
-(encapsulate
+(encapsulate 
  nil
  (local (include-book "arithmetic-5/top" :dir :system))
-
+ 
  (defthm mod-nonnegative-integer-args
    (implies (and (integerp x)
                  (integerp y)
@@ -210,7 +212,7 @@
             (<= 0 (mod x y)))
    :rule-classes ((:rewrite :backchain-limit-lst 1)
                   (:type-prescription)))
-
+ 
 
 (defun get-character-list-from-positions (l)
   (declare (xargs :guard (nat-listp l)))
@@ -305,10 +307,10 @@
 (defun pos-multiple-of-threep (v)
   (if (posp v)
     (equal 0 (mod v 3))
-    nil))
+    nil)) 
 
 (defun nth-pos-multiple-of-three (n)
- (if (natp n)
+ (if (natp n) 
    (* 3 (1+ n))
    3))
 
@@ -343,32 +345,32 @@
     (* i 2)))
 #||
 (encapsulate nil
-  (local
+  (local 
    (include-book "arithmetic-5/top" :dir :system))
 
   (defthm nth-pos-multiple-three-type
     (pos-multiple-of-threep (nth-pos-multiple-of-three n)))
-
-
+  
+  
   (defthm nth-pos-multiple-of-three-index
     (implies (natp n)
              (equal (pos-multiple-of-three-index (nth-pos-multiple-of-three n))
                     n)))
-
+  
   (defthm pos-multiple-of-three-index-nth
     (implies (pos-multiple-of-threep i)
              (equal (nth-pos-multiple-of-three (pos-multiple-of-three-index i))
-                    i)))
+                    i)))    
 
-
+  
   (defthm nth-integer-index
-    (implies
+    (implies 
      (and (integerp n)
           (>= n 0))
      (equal (integer-index (nth-integer n))
             n)))
   (defthm integer-index-nth
-    (implies
+    (implies 
      (integerp i)
      (equal (nth-integer (integer-index i))
             i))))
@@ -388,8 +390,8 @@
            (stringp (nth-string-builtin n)))
   :rule-classes (:rewrite :type-prescription))
 
-
-
+           
+  
 
 (defun standard-stringp (x)
   (declare (xargs :guard t))
@@ -404,7 +406,7 @@
          (charlist (get-standard-char-list-from-positions char-pos-list)))
     (coerce charlist 'string)))
 
-;; (encapsulate
+;; (encapsulate 
 ;;  ((nth-symbol (n) t :guard (natp n)))
 ;;  (local (defun nth-symbol (n)
 ;;           (declare (xargs :guard (natp n)))
@@ -413,12 +415,12 @@
 
 (defun nth-symbol-builtin (n)
   (declare (xargs :guard (natp n)))
-                 ;:verify-guards nil))
+                 ;:verify-guards nil)) 
   (intern$ (nth-string-builtin n) "ACL2"))
 
 ;; (defattach nth-symbol nth-symbol-builtin)
 
-;; (encapsulate
+;; (encapsulate 
 ;;  ((nth-character (n) t :guard (natp n)))
 ;;  (local (defun nth-character (n)
 ;;           (declare (xargs :guard (natp n)))
@@ -489,14 +491,14 @@
 
 (defun negp (x)
   (declare (xargs :guard t))
-  (and (integerp x)
+  (and (integerp x) 
        (< x 0)
        ))
 
 (defun nth-neg-builtin (n)
   (declare (xargs :guard (natp n)))
   (- -1 n))
-
+ 
 #|
 (defdata int (oneof 0 pos neg))
 (thm (iff (integerp x) (intp x)))
@@ -518,12 +520,12 @@
 
 (defun positive-rationalp (x)
   (declare (xargs :guard t))
-  (and (rationalp x)
+  (and (rationalp x) 
        (> x 0)
        ))
 (defun negative-rationalp (x)
   (declare (xargs :guard t))
-  (and (rationalp x)
+  (and (rationalp x) 
        (< x 0)
        ))
 
@@ -543,8 +545,8 @@
   :rule-classes (:rewrite :type-prescription))
 
  ;lo included, hi included
-
-
+    
+  
 (defun nth-rational-between (n lo hi);inclusive
   (declare (xargs :guard (and (natp n)
                               (rationalp lo)
@@ -554,7 +556,7 @@
          (den (nth-pos-builtin (car two-n-list)))
          (num (nth-integer-between (cadr two-n-list) 0 (1+ den)))
          (range (- hi lo)))
-    (+ lo (* (/ num den) range))))
+    (+ lo (* (/ num den) range))))       
 
 
 (defun nth-complex-rational-builtin (n)
@@ -574,7 +576,7 @@
     (complex (nth-rational-between n1 rlo rhi) (nth-rational-between n2 ilo ihi))))
 
 
-;; (encapsulate
+;; (encapsulate 
 ;;  ((nth-acl2-number (n) t :guard (natp n)))
 ;;  (local (defun nth-acl2-number (n)
 ;;           (declare (xargs :guard (natp n)))
@@ -607,7 +609,7 @@
     (rational (nth-rational-between n lo hi))
     (complex-rational (nth-complex-rational-between n lo hi))
     (t (nth-acl2-number-between n lo hi))))
-
+  
 
 (defmacro nth-number-between (n lo hi &key type)
   `(nth-number-between-fn ,n ,lo ,hi (or ,type 'acl2s::acl2-number)))
@@ -721,7 +723,7 @@
 ; TODO:Note it does not prove that type is sound neither that is is complete
 ; By Type Soundness i mean (thm (implies (natp n) (Tp (nth-T n)))
 ; By Type Completeness i mean (thm (implies (Tp x)
-;                                          (equal x (nth-T (T-index x))))
+;                                          (equal x (nth-T (T-index x)))) 
 ;                                   where (nth-T (T-index x)) = x
 
 (defmacro register-custom-type  (typename typesize enum pred &key verbose)
@@ -775,7 +777,7 @@
      (mv-let (n seed)
              (defdata::random-natural-seed seed)
              (mv (nth-character-builtin n) (the (unsigned-byte 31) seed))))
-
+   
 (defdata::register-type character :size 62 :enumerator nth-character-builtin :predicate characterp :enum/acc nth-character-uniform-builtin)
 
 
@@ -797,8 +799,8 @@
 
 (defun nth-atom-builtin (n)
   (declare (xargs :guard (natp n)))
-  (b* (((mv choice seed)
-        (defdata::weighted-switch-nat
+  (b* (((mv choice seed) 
+        (defdata::weighted-switch-nat 
           '(1  ;nil
             1  ;t
             3  ;nat
@@ -811,7 +813,7 @@
             20 ;0
             30 ;integer
             ) n)))
-
+        
     (case choice
           (0 'nil)
           (1 't)
@@ -873,14 +875,14 @@
 (defdata-subtype string atom)
 (defdata-subtype symbol atom)
 
-(defdata ratio (oneof positive-ratio negative-ratio))
+(defdata ratio (oneof positive-ratio negative-ratio)) 
 
 
-(defdata-subtype ratio rational)
+(defdata-subtype ratio rational) 
 
 ;added 26th Sep '13
 (defdata-subtype neg negative-rational)
-(defdata-subtype pos positive-rational)
+(defdata-subtype pos positive-rational) 
 (defdata-subtype negative-rational z)
 (defdata-subtype ratio z)
 (defdata-subtype complex-rational z)
@@ -939,7 +941,7 @@
 (defdata-disjoint cons-atom atom)
 
 
-(defdata cons-ca-ca (cons cons-atom cons-atom))
+(defdata cons-ca-ca (cons cons-atom cons-atom))         
 (defdata cons-cca-cca (cons cons-ca-ca cons-ca-ca) )
 
 ;; (defdata list-a-ca (list atom cons-atom) )
@@ -955,20 +957,20 @@
 ;  (declare (xargs :guard (natp n)))
   (declare (xargs :mode :program))
   (b* (((mv choice seed)
-        (defdata::weighted-switch-nat
+        (defdata::weighted-switch-nat 
           '(
             1  ;list-a
             1  ;list-aa
             1  ;list-aaa
             1  ;list-a-ca
-            1  ;list-aa-ca
+            1  ;list-aa-ca 
             1  ;list-aa-cca
             1  ;list-aaaa-cccca
             1  ;list-ca-cca
             1  ;list-ca-cccca
             ) n)))
 
-
+       
 
     (case choice
       (0 (list (nth-atom seed)))
@@ -978,13 +980,13 @@
       (4 (b* (((list i1 i2 i3 i4 i5) (defdata::split-nat 5 seed)))
            (list (nth-atom i1) (nth-atom i2) (nth-atom i3) (cons (nth-atom i4) (nth-atom i5))))) ;(nth-list-aa-ca  seed))
       (5 (b* (((list i1 i2 i3 i4 i5 i6) (defdata::split-nat 6 seed)))
-           (list (nth-atom i1) (nth-atom i2) (cons (cons (nth-atom i3) (nth-atom i4))
+           (list (nth-atom i1) (nth-atom i2) (cons (cons (nth-atom i3) (nth-atom i4)) 
                                                    (cons (nth-atom i5) (nth-atom i6)))))) ;(list-aa-cca seed))
-      (6 (b* (((list i1 i2 i3 i4 i5) (defdata::split-nat 5 seed)));(list-aaaa-cccca seed))
-           (list (nth-cons-atom i1) (cons (cons (nth-cons-atom i2) (nth-cons-atom i3))
-                                          (cons (nth-cons-atom i4) (nth-cons-atom i5))))))
+      (6 (b* (((list i1 i2 i3 i4 i5) (defdata::split-nat 5 seed)));(list-aaaa-cccca seed)) 
+           (list (nth-cons-atom i1) (cons (cons (nth-cons-atom i2) (nth-cons-atom i3)) 
+                                          (cons (nth-cons-atom i4) (nth-cons-atom i5)))))) 
       (7 (b* (((list i1 i2 i3 i4 i5) (defdata::split-nat 5 seed)))  ;(list-ca-cca seed))
-           (list (nth-cons-atom i1) (cons (cons (nth-atom i2) (nth-atom i3))
+           (list (nth-cons-atom i1) (cons (cons (nth-atom i2) (nth-atom i3)) 
                                           (cons (nth-atom i4) (nth-atom i5))))))
       (8 (b* (((list i1 i2 i3 i4 i5) (defdata::split-nat 5 seed)))
            (list (nth-atom i1) (nth-atom i2) (nth-atom i3) (nth-atom i4) (nth-atom i5))))
@@ -998,22 +1000,22 @@
 
   (b* (((mv n seed.) (defdata::random-natural-seed seed.))
        ((mv choice n)
-        (defdata::weighted-switch-nat
+        (defdata::weighted-switch-nat 
           '(
             1  ;list-a
             1  ;list-aa
             1  ;list-aaa
             1  ;list-a-ca
-            1  ;list-aa-ca
+            1  ;list-aa-ca 
             1  ;list-aa-cca
             1  ;list-aaaa-cccca
             1  ;list-ca-cca
             1  ;list-ca-cccca
             ) n))
        ((mv (list i1 i2 i3 i4 i5 i6) seed.) (defdata::random-natural-list-seed 6 seed.)))
+       
 
-
-
+       
 
     (case choice
       (0 (mv (list (nth-atom n)) seed.))
@@ -1021,11 +1023,11 @@
       (2 (mv (list (nth-atom i1) (nth-atom i2) (nth-atom i3)) seed.))
       (3 (mv (list (nth-atom i1) (cons (nth-atom i2) (nth-atom i3))) seed.))
       (4 (mv (list (nth-atom i1) (nth-atom i2) (nth-atom i3) (cons (nth-atom i4) (nth-atom i5))) seed.))
-      (5 (mv (list (nth-atom i1) (nth-atom i2) (cons (cons (nth-atom i3) (nth-atom i4))
+      (5 (mv (list (nth-atom i1) (nth-atom i2) (cons (cons (nth-atom i3) (nth-atom i4)) 
                                                      (cons (nth-atom i5) (nth-atom i6)))) seed.))
-      (6 (mv (list (nth-cons-atom i1) (cons (cons (nth-cons-atom i2) (nth-cons-atom i3))
+      (6 (mv (list (nth-cons-atom i1) (cons (cons (nth-cons-atom i2) (nth-cons-atom i3)) 
                                             (cons (nth-cons-atom i4) (nth-cons-atom i5)))) seed.))
-      (7 (mv (list (nth-cons-atom i1) (cons (cons (nth-atom i2) (nth-atom i3))
+      (7 (mv (list (nth-cons-atom i1) (cons (cons (nth-atom i2) (nth-atom i3)) 
                                           (cons (nth-atom i4) (nth-atom i5)))) seed.))
       (8 (mv (list (nth-atom i1) (nth-atom i2) (nth-atom i3) (nth-atom i4) (nth-atom i5)) seed.))
       (t (mv '(1  2) seed.)))))
@@ -1053,14 +1055,14 @@
 (defdata acl2-number-list (listof acl2-number) )
 (defdata boolean-list (listof boolean) )
 (defdata symbol-list    (listof symbol) )
-(defdata::register-type character-list
-               :size t
+(defdata::register-type character-list 
+               :size t 
                :predicate character-listp
-               :enumerator nth-character-list-builtin
+               :enumerator nth-character-list-builtin  
                :prettyified-def (listof character))
-
-(defdata::register-type standard-char-list
-               :size t
+               
+(defdata::register-type standard-char-list 
+               :size t 
                :predicate  standard-char-listp
                :enumerator nth-standard-char-list-builtin
                :prettyified-def (listof standard-char))
@@ -1106,11 +1108,11 @@
 
 
 
-;TODO.NOTE: Note that all the enumerators defined below are purely heuristic and
+;TODO.NOTE: Note that all the enumerators defined below are purely heuristic and 
 ;are not consistent/complete with their respective predicates.
 
 
-;; (verify-guards NTH-NAT-LIST)
+;; (verify-guards NTH-NAT-LIST) 
 ;; (verify-guards NTH-RATIONAL-LIST)
 ;; (verify-guards NTH-SYMBOL-LIST)
 ;; (verify-guards  NTH-CONS-ATOM)
@@ -1121,11 +1123,11 @@
 (defun nth-all-builtin (n)
   (declare (xargs :mode :program))
   (declare (xargs :guard (natp n)))
-
-
+ 
+           
                   ;;:verify-guards nil))
   (b* (((mv choice seed)
-        (defdata::weighted-switch-nat
+        (defdata::weighted-switch-nat 
           '(1  ;nil
             1  ;0
             1 ;t
@@ -1148,7 +1150,7 @@
             10  ;atom-list
             5   ;list-la-la
             ) n)))
-
+      
     (case choice
           (0 'nil)
           (1 0)
@@ -1167,12 +1169,12 @@
           (14 (nth-symbol-list seed))
           (15 (nth-cons-atom seed))
           (16 (nth-character-list seed))
-          (17 (b* (((list i1 i2) (defdata::split-nat 2 seed)))
+          (17 (b* (((list i1 i2) (defdata::split-nat 2 seed))) 
                 (cons (nth-cons-atom i1) (nth-cons-atom i2)))) ;(cons-ca-ca seed))
           (18 (nth-string-list seed))
           (19 (nth-atom-list seed))
-          (20 (b* (((list i1 i2 i3 i4) (defdata::split-nat 4 seed)))
-                (list (list (nth-atom i1) (nth-atom i2))
+          (20 (b* (((list i1 i2 i3 i4) (defdata::split-nat 4 seed))) 
+                (list (list (nth-atom i1) (nth-atom i2)) 
                       (list (nth-atom i3) (nth-atom i4))))) ;(list-la-la seed))
           (t 'nil)))) ;this case should not come up
 
@@ -1183,7 +1185,7 @@
 
   (b* (((mv n seed) (defdata::random-natural-seed seed))
        ((mv choice ?rest)
-        (defdata::weighted-switch-nat
+        (defdata::weighted-switch-nat 
           '(1  ;nil
             1  ;0
             1 ;t
@@ -1205,7 +1207,7 @@
             1  ;stringlist
             10  ;atom-list
             ) n)))
-
+      
     (case choice
           (0 (mv 'nil seed))
           (1 (mv 0 seed))
@@ -1234,7 +1236,7 @@
   :size t
   :enumerator nth-all-builtin
   :enum/acc nth-all-uniform-builtin)
-
+  
 
 
 ;We will also name a special type, the empty type, which has no elements in its typeset.
@@ -1251,7 +1253,7 @@
   (declare (ignore x) (xargs :guard t))
   nil)
 
-(defthm emptyp-is-tau-predicate
+(defthm emptyp-is-tau-predicate 
     (booleanp (emptyp x))
   :rule-classes :tau-system)
 
@@ -1295,7 +1297,7 @@
   (implies (alistp x)
            (alistp (acons x1 x2 x)))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
-
+  
 ; (in-theory (disable acons aconsp acons-caar acons-cdar acons-cdr)) TODO --
 ; Whats the point of acons as a constructor if these functions are not disabled
 ; -- Ohh well, lets ride on cons for now. [2014-09-24 Wed]
@@ -1332,8 +1334,8 @@
            (mv (cons _v1 _v2) seed.)))
       (otherwise (mv nil seed.)))))
 
-(defdata::register-type true-list
-               :size t
+(defdata::register-type true-list 
+               :size t 
                :predicate true-listp
                :enumerator nth-true-list-builtin
                :enum/acc nth-tl/acc-builtin
@@ -1353,7 +1355,7 @@
 ;TODO standard-string-alist has very poor theory support!!
 ;(defdata standard-string-list (listof standard-string))
 ;(defdata-subtype standard-string-list string-list)
-;(defdata standard-string-alist (alistof standard-string all))
+;(defdata standard-string-alist (alistof standard-string all)) 
 ;(defdata-subtype standard-string-alist alist)
 
 ;(verify-guards nth-true-list)
@@ -1372,13 +1374,13 @@
   (and (not (equal x 0))
        (not (equal x 't))
        (not (equal x 'nil))))
-
+            
 (defun nth-all-but-zero-nil-t-builtin (n)
   (declare (xargs :mode :program))
   (declare (xargs :guard (natp n)))
 
   (b* (((mv choice seed)
-          (defdata::weighted-switch-nat
+          (defdata::weighted-switch-nat 
             '(1 ;integer
               1  ;charlist
               1  ;sym
@@ -1396,7 +1398,7 @@
               1  ;stringlist
               10  ;atom-list
               ) n)))
-
+    
     (case choice
           (0 (nth-integer seed))
           (1 (nth-character-list seed))
@@ -1411,7 +1413,7 @@
           (10 (nth-symbol-list seed))
           (11 (nth-cons-atom seed))
           (12 (nth-nat-list seed))
-          (13 (b* (((list i1 i2) (defdata::split-nat 2 seed)))
+          (13 (b* (((list i1 i2) (defdata::split-nat 2 seed))) 
                 (cons (nth-cons-atom i1) (nth-cons-atom i2)))) ;(cons-ca-ca seed))
           (14 (nth-string-list seed))
           (15 (nth-atom-list seed))
@@ -1427,14 +1429,14 @@
         (b* (((mv n seed.) (defdata::random-natural-seed seed.)))
           (mv (nth-all-but-zero-nil-t-builtin n) seed.))
       (mv ans seed.))))
-
+             
 (register-type all-but-zero-nil-t
                :size t
                :enum/acc nth-all-but-zero-nil-t-uniform-builtin
                :enumerator nth-all-but-zero-nil-t-builtin
                :predicate all-but-zero-nil-tp)
 
-
+            
 (defun nth-wf-key-builtin (n) ;;since nth-all-but-zero-nil-t has strings of length less than 8, it cannot include the ill-formed-key
   (declare (xargs :guard (natp n)))
   (declare (xargs :mode :program))
@@ -1502,7 +1504,7 @@
 ;  (declare (xargs :guard (natp n)))
   (declare (xargs  :mode :program))
   (b* (((mv choice seed)
-        (defdata::weighted-switch-nat
+        (defdata::weighted-switch-nat 
           '(
             1  ;cons-all-all-but-zero-nil-t
             1  ;cons-ca-ca
@@ -1513,7 +1515,7 @@
             1  ;cons-ca-cca
             1  ;cons-ca-cccca
             ) n)))
-
+    
     (case choice
       (0 (nth-cons-all-all-but-zero-nil-t seed))
       (1 (nth-cons-ca-ca seed))
@@ -1532,7 +1534,7 @@
 
   (b* (((mv n seed) (defdata::random-natural-seed seed))
        ((mv choice ?rest)
-        (defdata::weighted-switch-nat
+        (defdata::weighted-switch-nat 
           '(
             1  ;cons-all-all-but-zero-nil-t
             1  ;cons-ca-ca
@@ -1543,7 +1545,7 @@
             1  ;cons-ca-cca
             1  ;cons-ca-cccca
             ) n)))
-
+    
     (case choice
       (0 (nth-cons-all-all-but-zero-nil-t/acc m seed))
       (1 (nth-cons-ca-ca/acc m seed))
@@ -1588,13 +1590,13 @@
 ;;   disjoint (according to the computed information)
 ;;   then we get back an affirmative , i.e ~c[t]. otherwise
 ;;   it returns ~c[nil].
-
+  
 ;;   ~bv[]
 ;;   Examples:
 ;;   (disjoint-p cons list)
 ;;   (disjoint-p pos acl2-number)
 ;;   (disjoint-p integer complex)
-;;   ~ev[]
+;;   ~ev[]                      
 ;;   ~bv[]
 ;;   Usage:
 ;;   (disjoint-p <Type-name1> <Type-name2>)
@@ -1619,13 +1621,13 @@
 ;;   of T2 (according to the computed information)
 ;;   then we get back an affirmative , i.e ~c[t]. otherwise
 ;;   it returns ~c[nil].
-
+  
 ;;   ~bv[]
 ;;   Examples:
 ;;   (subtype-p boolean atom)
 ;;   (subtype-p character string)
 ;;   (subtype-p list cons)
-;;   ~ev[]
+;;   ~ev[]                      
 ;;   ~bv[]
 ;;   Usage:
 ;;   (subtype-p <Type-name1> <Type-name2>)
@@ -1639,23 +1641,23 @@
 
 ; TODO 29 March 2014
 ; - add oddp and evenp (but do this consistently, these definitions are only valid when we additionally know that v is a integer.
-(defun nth-even-builtin (n)
+(defun nth-even-builtin (n) 
   (declare (xargs :verify-guards nil :guard (natp n)))
   (* 2 (nth-integer n)))
 
-(defdata::register-type even
-               :predicate evenp
+(defdata::register-type even 
+               :predicate evenp 
                :enumerator nth-even-builtin)
 
-(defun nth-odd-builtin (n)
+(defun nth-odd-builtin (n) 
   (declare (xargs :guard (natp n)))
   (if (evenp n)
       (1+ n)
     (- n)))
 
 ;(defun nth-odd (n) (1+ (* 2 (nth-integer))))
-(defdata::register-type odd
-               :predicate oddp
+(defdata::register-type odd 
+               :predicate oddp 
                :enumerator nth-odd-builtin)
 
 (defdata-subtype var symbol)

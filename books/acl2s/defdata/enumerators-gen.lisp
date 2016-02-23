@@ -22,7 +22,7 @@ data last modified: [2014-08-06]
 
 
 ; Generate Enumerator/acc defun bodies
-
+  
 ;lets forbid some names to be used in defdata body
 (defun forbidden-names-enum () '(_seed _v _i _choice))
 (verify-guards forbidden-names-enum)
@@ -31,10 +31,12 @@ data last modified: [2014-08-06]
 
 ;; (defmacro split (k i)
 ;;   `(let ((i1-k (split-nat ,k ,i)))
-;;      (mv . ,(pair-prefix 'nth (list-up-lists (make-numlist-from 0 k)
+;;      (mv . ,(pair-prefix 'nth (list-up-lists (make-numlist-from 0 k) 
 ;;                                        (make-list k :initial-element 'i1-k))))))
 
-
+(defmacro split (k i)
+  "another name for defdata::split-nat"
+  `(split-nat ,k ,i))
 
 ; TODO [2014-09-24 Wed] REVISIT LATER
 ; Give less weight to the first base case. This handles the normal
@@ -96,7 +98,7 @@ data last modified: [2014-08-06]
         (t
 ; possible dependent expr?
          `(,(car s) . ,(make-enum-Is... (cdr s) (make-list (len (cdr s)) :initial-element i))))))
-
+         
 (defun make-enum-Is (texps is   kwd-alist M C B wrld)
   (declare (ignorable kwd-alist))
   (if (endp texps)
@@ -110,7 +112,7 @@ data last modified: [2014-08-06]
 (defun mv2-let-seq (bs vals body)
   (if (endp bs)
       body
-    (list 'MV-LET
+    (list 'MV-LET 
           (car bs)
           (car vals)
           (mv2-let-seq (cdr bs) (cdr vals) body))))
@@ -119,7 +121,7 @@ data last modified: [2014-08-06]
 
 (defloop bind-mv2-names-enum/acc-calls (texps vals temp-names acc-exp)
   "b* mv binding for each name decl texp -> corresponding val, albeit when not named, take a temp name"
-  (for ((texp in texps) (val in vals) (nm in temp-names))
+  (for ((texp in texps) (val in vals) (nm in temp-names)) 
        (collect (if (named-defdata-exp-p texp)
                     (list (list 'MV (car texp) acc-exp) val)
                   (list (list 'MV nm acc-exp) val)))))
@@ -143,14 +145,14 @@ data last modified: [2014-08-06]
       '()
     (b* ((i_current (car i1--ik))
          (texp (car texps)))
-      (cons
+      (cons 
        (if (has-recursive-reference-p texp new-names)
            `(if (or (zp ,i_current) (< ,i_current ,i)) ,i_current (1- ,i_current))
          i_current)
        (bound-seeds-to-recursive-calls i (cdr i1--ik) (cdr texps) new-names)))))
-
-
-
+          
+         
+    
 
 (defmacro make-enum/acc-I... (s x)
   `(make-enum/acc-I ,s ,x kwd-alist new-names M C B wrld))
@@ -169,7 +171,7 @@ C is the constructor table + some basic info for new constructors.
 B is the builtin combinator table."
 
    (cond ((possible-constant-value-p s) `(MV ,(if (quotep s) s (list 'QUOTE s)) _SEED))
-         ((proper-symbolp s) (if (assoc-eq s M)
+         ((proper-symbolp s) (if (assoc-eq s M) 
                                 `(,(get2 s :enum/acc M) ,i _SEED)
                               `(MV ,s _SEED)))
 
@@ -201,15 +203,15 @@ B is the builtin combinator table."
                (_v1--_vk (numbered-vars '_V k))
                (binding (bind-mv2-names-enum/acc-calls (cdr s) enum/acc-exprs _v1--_vk '_SEED))
                (names (replace-calls-with-names _v1--_vk (cdr s))))
-
+               
             `(B* (((mv (list . ,i1--ik) _SEED) (RANDOM-INDEX-LIST-SEED ,k ,i _SEED))) ;TODO.check later. random-indexes less that i force termination.
                   ;((list . ,i1--ik) (list ,@(bound-seeds-to-recursive-calls i i1--ik (cdr s) new-names))))
-
+                 
                  (B* ,binding (MV (,(car s) . ,names) _SEED)))))
          (t
 ; possible dependent expr?
           `(,(car s) . ,(make-enum/acc-Is... (cdr s) (make-list (len (cdr s)) :initial-element i))))))
-
+ 
  (defun make-enum/acc-Is (texps is kwd-alist new-names M C B wrld)
    (declare (ignorable kwd-alist))
    (if (endp texps)
@@ -232,7 +234,7 @@ B is the builtin combinator table."
        (guard-decl-forms (and guard-lambda `((DECLARE (XARGS :MODE :PROGRAM ;hack
                                                              :GUARD ,(expand-lambda (cons guard-lambda actuals))))))))
     (append measure-decl-forms guard-decl-forms)))
-
+    
 (defun make-enum/acc-declare-forms (ivar kwd-alist)
   (b* ((guard-lambda (get1 :enum/acc-guard kwd-alist)) ;its a lambda
        (actuals (list ivar '_SEED)))
@@ -254,7 +256,7 @@ B is the builtin combinator table."
        (enum-body (make-enum-I ndef ivar kwd-alist M C B wrld))
        (enum-decls (make-enum-declare-forms ivar kwd-alist))
        )
-
+    
     `(defun ,(enumerator-name name M) (,ivar)
        ,@enum-decls
        ,enum-body)))
@@ -285,7 +287,7 @@ B is the builtin combinator table."
        (enum/acc-body (make-enum/acc-I ndef ivar kwd-alist (strip-cars new-types) M C B wrld))
        (enum/acc-decls (make-enum/acc-declare-forms ivar kwd-alist))
        )
-
+    
     `(defun ,(get2 name :enum/acc M) (,ivar _SEED)
        ,@enum/acc-decls
        ,enum/acc-body)))

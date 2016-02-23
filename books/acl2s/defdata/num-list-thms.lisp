@@ -50,29 +50,29 @@
 
   (local (SET-DEFAULT-HINTS '((acl2::NONLINEARP-DEFAULT-HINT
                                acl2::STABLE-UNDER-SIMPLIFICATIONP
-                               acl2::HIST
+                               acl2::HIST 
                                acl2::PSPV))))
-
+  
   (defthm product-list-poses-type
     (implies (pos-listp l)
              (< 0 (product-list l)))
     :rule-classes (:linear :rewrite))
-
+  
   (defthm product-list-nats-type
     (implies (nat-listp l)
              (<= 0 (product-list l)))
     :rule-classes (:linear :rewrite))
-
+  
   (defthm product-list-integers-type
     (implies (integer-listp l)
              (integerp (product-list l)))
     :rule-classes (:rewrite :type-prescription))
-
+  
   (defthm product-list-rationals-type
     (implies (rational-listp l)
              (rationalp (product-list l)))
     :rule-classes (:rewrite :type-prescription))
-
+  
   (defthm product-list>=element
     (implies (and (pos-listp l)
                   (consp l))
