@@ -1,0 +1,5 @@
+(ld "acl2s/package.lsp" :dir :system)
+(include-book "std/portcullis" :dir :system)
+
+; Added by Jared, justified by ACL2_COMPILE_FLG setting in Makefile
+; cert-flags: ? t :ttags :all
