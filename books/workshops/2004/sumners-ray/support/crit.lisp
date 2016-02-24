@@ -38,6 +38,10 @@
   (defthm a-non-nil (not (equal (a) nil)))
   (defthm b-non-nil (not (equal (b) nil))))
 
+; Added after v7-2 by Matt K. since the define-system just below introduces a
+; non-recursive definition with a measure.
+(set-bogus-measure-ok t)
+
 (define-system critical-spec
  (ok (n) t
    (not (and (= (status (a) n-) :critical)

@@ -1269,6 +1269,8 @@ expression with @(see vl-expr-to-svex).</p>")
 ;;   :type vl-genelement
 ;;   :omit-types (vl-genarrayblock vl-genarrayblocklist))
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
 
 (fty::defvisitors vl-genblob-elaborate
   :template elaborate

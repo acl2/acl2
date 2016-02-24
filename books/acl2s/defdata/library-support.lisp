@@ -60,16 +60,16 @@
 
 ;shifted from base.lisp to here.
 
-;; (defun map-identity (x)
+;; (defun map-identity (x) 
 ;;   "for map elim rules -- dummy destructor"
 ;;   x)
 
-(defun map-identity2 (a x)
+(defun map-identity2 (a x) 
   "for map elim rule -- dummy destructor"
   (declare (ignore a))
   x)
 
-(defthmd map-elim-rule
+(defthmd map-elim-rule 
   ;(implies (good-map x)
            (equal (mset a (mget a x) (map-identity2 a x))
                   x)
@@ -77,7 +77,7 @@
 
 
 
-(defun list-identity2 (a x)
+(defun list-identity2 (a x) 
   "for list elim rule -- dummy destructor"
   (declare (ignore a))
   x)
@@ -104,7 +104,7 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION LEN))
 Time:  0.08 seconds (prove: 0.06, print: 0.00, other: 0.02)
 |#
-(defthmd list-elim-rule
+(defthmd list-elim-rule 
   (implies (and (true-listp x)
                 (natp i)
                 (< i (len x)))
@@ -117,16 +117,16 @@ Time:  0.08 seconds (prove: 0.06, print: 0.00, other: 0.02)
   "put entry e=(key . value) in its rightful place in alist x"
   (put-assoc-equal (car e) (cdr e) x))
 
-(defun alist-identity2 (a x)
+(defun alist-identity2 (a x) 
   "for alist elim rule -- dummy destructor"
   (declare (ignore a))
   x)
 
-(defthm assoc-eq-answer-car
-  (implies (assoc-equal k x)
+(defthm assoc-eq-answer-car 
+  (implies (assoc-equal k x) 
            (equal (car (assoc-equal k x)) k)))
 
-(defthmd alist-elim-rule
+(defthmd alist-elim-rule 
   (implies (and (alistp x)
                 (assoc-equal k x))
            (equal (put-assoc-equal-elim-rule-version (assoc-equal k x) (alist-identity2 k x))
@@ -158,7 +158,7 @@ Time:  0.08 seconds (prove: 0.06, print: 0.00, other: 0.02)
   (implies (and ;(good-map r)
                 (mget a r)
                 (wf-keyp a)
-                (not (equal a b)))
+                (not (equal a b))) 
            (consp (mset b v r)))
   :hints (("goal" ;:in-theory (disable good-map)
                   :use ((:instance field-not-empty-implies-record-not-empty1
@@ -169,7 +169,7 @@ Time:  0.08 seconds (prove: 0.06, print: 0.00, other: 0.02)
   (implies (and ;(good-map r)
                 (mget a r)
                 (wf-keyp a)
-                (not (equal a b)))
+                (not (equal a b))) 
            (mset b v r))
   :hints (("goal" ;:in-theory (disable good-map)
                   :use ((:instance mset-diff-entry-non-empty-good-map-is-consp))))

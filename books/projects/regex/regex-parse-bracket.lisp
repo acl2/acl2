@@ -106,7 +106,9 @@
 (defun parse-bracket (str idx)
   (declare (xargs :guard (and (stringp str)
                               (natp idx))
-                  :measure (string-index-measure idx str)))
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+;                 :measure (string-index-measure idx str)
+                  ))
   (if (string-index-end idx str)
       ;; No closing bracket found
       (mv "Mismatched brackets" idx)

@@ -41,7 +41,7 @@
 
 
 
-; utility fn to print if verbose flag is true
+; utility fn to print if verbose flag is true 
 (defmacro cw? (verbose-flag &rest rst)
   `(if ,verbose-flag
      (cw ,@rst)
@@ -57,15 +57,15 @@
   `(> ,vl 4))
 
 (defmacro   verbose-stats-flag ( vl)
-  `(> ,vl 2))
+  `(> ,vl 2)) 
 
 (defmacro   verbose-flag ( vl)
   `(> ,vl 1))
-
+  
 
 (defmacro   inhibit-output-flag ( vl)
   `(<= ,vl 0))
-
+  
 
 (defmacro   normal-output-flag ( vl)
   `(> ,vl 0))
@@ -116,7 +116,7 @@
 
 (verify-termination LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
 (verify-termination legal-constantp)
-;;-- convert function lambda-keywordp from :program mode to :logic mode
+;;-- convert function lambda-keywordp from :program mode to :logic mode 
 (verify-termination acl2::lambda-keywordp)
 (verify-guards  acl2::lambda-keywordp)
 (verify-guards legal-constantp)
@@ -162,7 +162,7 @@
            expr)))))
 
 (local (defthm union-true-lists
-
+         
          (implies (and (true-listp l1)
                        (true-listp l2))
                   (true-listp (union-equal l1 l2)))))
@@ -174,7 +174,7 @@
     nil
     (union-equal (car lsts)
                  (union-lsts (cdr lsts)))))
-
+ 
 (defun assoc-lst (keys alist)
   (declare (xargs :guard (and (true-listp keys)
                               (alistp alist))))
@@ -191,7 +191,7 @@
 
 ;from the members of an union expression, get the constituents
 ;that are non-recursive.
-(defthm flatten-is-true-list1
+(defthm flatten-is-true-list1 
   (implies (true-listp lst)
            (true-listp (flatten b lst)))
   :hints (("Goal" :in-theory (enable flatten))))
@@ -224,11 +224,11 @@
       (mv t1 t2)
       (mv t2 t1)))
 
-(defthm flatten-is-true-list
+(defthm flatten-is-true-list 
   (implies (true-listp lst)
            (true-listp (flatten b lst)))
   :rule-classes :type-prescription)
-(in-theory (disable flatten))
+(in-theory (disable flatten)) 
 
 (defun listof-alistp (x)
   (declare (xargs :guard t))
@@ -242,7 +242,7 @@
         (t (and (symbol-alistp (car x))
                 (true-list-symbol-alistp (cdr x))))))
 
-
+         
 ;;self-explanatory
 (defun symbol-doublet-list-listp (xs)
   (declare (xargs :guard t))
@@ -296,13 +296,13 @@
 ;;   (and (consp term)
 ;;        (eql (len term) 2)
 ;;        (atom (cadr term))
-;;        (is-a-variablep (cadr term)) ;check wether its arg is sa variable
+;;        (is-a-variablep (cadr term)) ;check wether its arg is sa variable 
 ;;        (plausible-predicate-functionp (car term) wrld)
 ;;        (is-type-predicate (car term) wrld))) ;check if its a type predicate
 
 
 ;NEEDED BY EVERYONE:
-
+  
 ; 12/4/2012, Matt K.: Omitting the definitions of nat-listp and
 ; acl2-number-listp, which are being built into ACL2.
 
@@ -321,11 +321,11 @@
                 (POS-LISTP (CDR acl2::L))))))
 
 
-;; ;is x permutation of y
+;; ;is x permutation of y 
 ;; (defun permutation (xs ys)
 ;;   (declare (xargs :verify-guards nil))
-;;   (cond ((atom xs) (atom ys))
-;;         (t (and (mem1 (car xs) ys) (permutation (cdr xs) (del (car xs) ys))))))
+;;   (cond ((atom xs) (atom ys)) 
+;;         (t (and (mem1 (car xs) ys) (permutation (cdr xs) (del (car xs) ys)))))) 
 
 (defun get-value-from-keyword-value-list (key kv-lst)
   (declare (xargs :guard (keyword-value-listp kv-lst)))
@@ -358,7 +358,7 @@
                    ans))
     ((eq (car term) 'QUOTE) ans)
     (t (get-free-vars1-lst (cdr term) ans))))
-
+ 
  (defun get-free-vars1-lst (terms ans)
     (declare (xargs :guard (and (true-listp terms)
                                 (or (atom (car terms))
@@ -367,24 +367,30 @@
                                 )))
    (cond
     ((endp terms) ans)
-    (t (get-free-vars1-lst (cdr terms)
+    (t (get-free-vars1-lst (cdr terms) 
                            (get-free-vars1 (car terms) ans))))))
 
 ;auxiliary function for get-free-vars
 (defun get-free-vars0 (form state)
-  (declare (xargs :mode :program
+  (declare (xargs :mode :program 
                   :stobjs (state)))
   (if (acl2::termp form (w state))
 ; had a bug due to namespace change
-     (value (get-free-vars1 form '()))
+     (value (get-free-vars1 form '())) 
 ; translate the form into a term
-     (er-let* ((term (acl2::translate form t nil t
-                                'get-free-vars (w state) state)))
+     (er-let* ((term (acl2::translate form t nil t 
+                                'get-free-vars (w state) state))) 
        (value (get-free-vars1 term '())))))
-
+    
 ;get list of free variables in acl2 expression 'form'
 (defmacro get-free-vars (form)
-  `(get-free-vars0 ,form state))
+  `(get-free-vars0 ,form state)) 
+
+
+(defun all-vars-lst (terms)
+  "all free variables in list of terms"
+  (declare (xargs :guard (pseudo-term-listp terms))) ;-> symbol-list)
+  (all-vars1-lst terms '()))
 
 
 
@@ -396,7 +402,7 @@
     nil
     (let* ((key (caar alst))
            (we-want-to-add  (member-equal key wanted-keys)))
-      (if we-want-to-add
+      (if we-want-to-add 
         (cons (car alst);cons the wanted entry
               (filter-alist-keys (cdr alst) wanted-keys))
         (filter-alist-keys (cdr alst) wanted-keys)))))
@@ -416,7 +422,7 @@
                                (alistp alist))))
   (if (endp keys)
     alist
-    (remove-entry-lst (cdr keys)
+    (remove-entry-lst (cdr keys) 
                       (remove-entry (car keys) alist))))
 
 ;get value of key in alist
@@ -460,7 +466,7 @@
   (declare (xargs  :guard (alistp alist)))
   (cons (cons key val)
         (remove-entry key alist)))
-
+  
 ;put the key val entry in alist(overwrite)
 ;assumes unique entries
 (defun put-entry (key val alist)
@@ -474,7 +480,7 @@
             (put-entry key val (cdr alist))))))
 
 
-
+  
 ;get key having value val in alist
 (defun get-key (val alist)
   (declare (xargs  :guard (alistp alist)))
@@ -511,7 +517,7 @@
           (if found-keys
             (cons found-keys (get-var-from-i-or-is-lst (cdr is) var-i-alst))
             (get-var-from-i-or-is-lst (cdr is) var-i-alst)))))))
-
+              
 
 ;returns list of all keys matching val
 (defun get-all-keys1 (val alist ans)
@@ -564,7 +570,7 @@
               "Global variables, such as ~&0, are not allowed. See ~
                :DOC ASSIGN and :DOC @."
               (acl2::non-stobjps vars t (w state)))) ;;; known-stobjs = t
-         (t (acl2::ev-for-trans-eval trans vars nil ctx state t)))))))))
+         (t (acl2::ev-for-trans-eval trans vars nil ctx state t))))))))) 
 
 ;returns (cdr (cons translated-term value)) == value of term under bindings
 (defun trans-eval-single-value-with-bindings (term bindings ctx state)
@@ -575,7 +581,7 @@
                                                         "" ctx (w state) state t)))
      (value (cdr term-val)))))
 
-; this function basically creates in one go cons bindings
+; this function basically creates in one go cons bindings 
 ; for a list of variable names
 (defun make-var-value-cons-bindings (var-lst ans)
   (declare (xargs :guard (and (symbol-listp var-lst)
@@ -586,7 +592,7 @@
       (make-var-value-cons-bindings (cdr var-lst)
                                     (append ans (list `(cons ',var ,var)))))))
 
-; this function basically creates in one go list bindings for
+; this function basically creates in one go list bindings for 
 ; a list of variable names
 (defun make-var-value-list-bindings (var-lst ans)
   (declare (xargs :guard (and (symbol-listp var-lst)
@@ -594,7 +600,7 @@
   (if (endp var-lst)
     (cons 'list ans)
     (let ((var (car var-lst)))
-      (make-var-value-list-bindings
+      (make-var-value-list-bindings 
        (cdr var-lst)
        (append ans (list `(list ',var ,var)))))));changed to mimic let binding
 
@@ -606,7 +612,7 @@
   (if (endp var-lst)
     (cons 'list ans)
     (let ((var (car var-lst)))
-      (make-constant-value-cons-bindings
+      (make-constant-value-cons-bindings 
        (cdr var-lst)
        constant-val
        (append ans (list (cons var constant-val)))))))
@@ -618,7 +624,7 @@
   (if (endp var-lst)
     ans
     (let ((var (car var-lst)))
-      (make-constant-value-let-bindings
+      (make-constant-value-let-bindings 
        (cdr var-lst)
        constant-val
        (append ans (list (list var constant-val)))))))
@@ -649,13 +655,13 @@
             (list fst snd))
           (convert-conspairs-to-listpairs (cdr conspairs)))))
 
-(local
+(local 
  (defthm convert-conspairs-to-listpairs-sig1
   (implies (symbol-alistp P)
            (symbol-doublet-listp (convert-conspairs-to-listpairs P)))
   :rule-classes (:rewrite :type-prescription :forward-chaining)))
 
-(local
+(local 
  (defthm symbol-doublet-listp-implication1
   (implies (and (symbol-doublet-listp A)
                 (consp A))
@@ -693,7 +699,7 @@
       (cons (car alst)
             (cons entry (cdr alst)))
       (cons (car alst)
-           (insert-entry-after-key entry k (cdr alst))))))
+           (insert-entry-after-key entry k (cdr alst)))))) 
 
 (defun get-ordered-alst (keys alst ans)
   (declare (xargs :guard (and (true-listp keys) (alistp ans) (alistp alst))))
@@ -715,7 +721,7 @@
     (if (member-equal (car lst) in-lst)
         (cons (car lst) (filter-in (cdr lst) in-lst))
       (filter-in (cdr lst) in-lst))))
-;filter all elements in lst that are NOT IN in-lst
+;filter all elements in lst that are NOT IN in-lst 
 (defun filter-not-in (lst in-lst)
   (declare (xargs :guard (and (true-listp lst)
                               (true-listp in-lst))))
@@ -758,7 +764,7 @@
 
 
 (defun my-ev-w (term alist ctx w hard-error-returns-nilp)
-"special eval function that does not need state and
+"special eval function that does not need state and 
 cannot handle if, return-last,mv-list, stobjs, wormhole etc
 very restrictive
 Mainly to be used for evaluating enum lists "
@@ -768,13 +774,13 @@ Mainly to be used for evaluating enum lists "
                             (plist-worldp w)
                             (symbol-alistp alist)
                             (booleanp hard-error-returns-nilp))))
-
+ 
 (b* (((when (acl2::variablep term))
 ;variable expression
       (let ((v (assoc-eq term alist))) ;bugfix (removed cdr).
 ;(earlier, if term had a value NIL, we were errorneusly
 ;crashing!!!
-        (if v ;not null
+        (if v ;not null 
           (mv nil (cdr v))
           (prog2$
            (er hard ctx "Unbound variable ~x0.~%" term)
@@ -784,15 +790,20 @@ Mainly to be used for evaluating enum lists "
       (mv nil (cadr term)))
 ;if expression
      ((when (eq (car term) 'if))
-      (prog2$
-       (er hard ctx "IF expressions not supported at the moment.~%")
-       (mv t term)))
+      (b* (((mv cond-er cond) (my-ev-w (second term) alist ctx w hard-error-returns-nilp))
+           ((when cond-er) (prog2$ 
+                            (er hard ctx "Eval if condition failed~%")
+                            (mv t term))))
+        (if cond
+            (my-ev-w (third term) alist ctx w hard-error-returns-nilp)
+          (my-ev-w (fourth term) alist ctx w hard-error-returns-nilp)))
+      )
 ;function expression
      ((mv args-er args)
       (my-ev-w-lst (cdr term) alist ctx
                    w hard-error-returns-nilp))
      ((when args-er)
-      (prog2$
+      (prog2$ 
        (er hard ctx "Eval args failed~%")
        (mv t term)))
      ((when (acl2::flambda-applicationp term))
@@ -802,9 +813,9 @@ Mainly to be used for evaluating enum lists "
     (acl2::ev-fncall-w (car term) args w
                        nil nil t hard-error-returns-nilp nil)))
 
-(defun my-ev-w-lst (term-lst alist
+(defun my-ev-w-lst (term-lst alist 
                              ctx w hard-error-returns-nilp)
-"special eval function that does not need state and
+"special eval function that does not need state and 
 cannot handle return-last,mv-list, stobjs, wormhole etc
 very restrictive
 Mainly to be used for evaluating enum lists "
@@ -816,38 +827,38 @@ Mainly to be used for evaluating enum lists "
                             (booleanp hard-error-returns-nilp))))
 (if (endp term-lst)
     (mv nil nil)
-  (b* (((mv erp1 car-ans)
-        (my-ev-w (car term-lst) alist
+  (b* (((mv erp1 car-ans) 
+        (my-ev-w (car term-lst) alist 
                  ctx w hard-error-returns-nilp))
-       ((when erp1)
-        (prog2$
+       ((when erp1) 
+        (prog2$ 
          (er hard ctx "eval ~x0 failed~%" (car term-lst))
          (mv t term-lst)))
-       ((mv erp2 cdr-ans)
-        (my-ev-w-lst (cdr term-lst) alist
+       ((mv erp2 cdr-ans) 
+        (my-ev-w-lst (cdr term-lst) alist 
                      ctx w hard-error-returns-nilp))
-       ((when erp2)
-        (prog2$
+       ((when erp2) 
+        (prog2$ 
          (er hard ctx "eval failed~%")
          (mv t term-lst))))
     (mv nil (cons car-ans cdr-ans)))))
 )
-
+  
 
 (defun trans-my-ev-w (form ctx w hard-error-returns-nilp)
 (declare (xargs :mode :program
                 :guard (and (plist-worldp w)
                             (booleanp hard-error-returns-nilp))))
 
-  (mv-let
-   (erp term x)
+  (mv-let 
+   (erp term x) 
    (acl2::translate11 form nil nil nil nil nil
                 ctx w (acl2::default-state-vars nil))
    (declare (ignore x))
    (if erp
        (if hard-error-returns-nilp
            (mv erp form)
-         (prog2$
+         (prog2$ 
           (er hard ctx "~x0 could not be translated.~%" form)
           (mv erp form)))
      (my-ev-w term nil ctx w hard-error-returns-nilp))))
@@ -857,7 +868,7 @@ Mainly to be used for evaluating enum lists "
                   :verify-guards nil
                               ))
   ;key might be a term in case of generalization TODO.CHECK
-;value is always a term, so we gets free-vars from them
+;value is always a term, so we gets free-vars from them 
   (union-eq (get-free-vars1-lst (strip-cars alst) nil)
             (get-free-vars1-lst (strip-cdrs alst) nil)))
 
@@ -874,7 +885,7 @@ Mainly to be used for evaluating enum lists "
         (occurring-var-bindings bindings (cdr vars))))))
 
 
-; every cons(that is not quoted) and list in the value list
+; every cons(that is not quoted) and list in the value list 
 ; bindings is quoted to avoid errors in evaluation
 (defun quote-conses-and-symbols-in-bindings (val-bs)
 ;val-bs is kind of let binding
@@ -886,7 +897,7 @@ Mainly to be used for evaluating enum lists "
               (and (consp val) (not (equal (car val) 'quote))))
         (cons (list var (list 'quote val))
               (quote-conses-and-symbols-in-bindings (cdr val-bs)))
-        (cons (list var val)
+        (cons (list var val) 
               (quote-conses-and-symbols-in-bindings (cdr val-bs)))))))
 
 (defun filter-symbol-keys-in-alist (alst)
@@ -925,7 +936,7 @@ Mainly to be used for evaluating enum lists "
   (declare (xargs :verify-guards nil
                   :guard (and (symbol-alistp A)
                               (symbol-list-listp connected-vs-lst))))
-
+                            
   (if (null connected-vs-lst)
       A
     (order-var-te-alist. A connected-vs-lst '() )))
@@ -943,7 +954,7 @@ Mainly to be used for evaluating enum lists "
 ;;            (< (len (car (strip-cdrs x)))
 ;;               (len (car x))))
 ;;   :rule-classes :linear)
-
+  
 
 ;; (defun map-if-filter-aux (map-fn if-fn filter-fn comb ls alist state)
 ;; ; map-fn is of arity (len ls)
@@ -984,21 +995,21 @@ Mainly to be used for evaluating enum lists "
 ;; ; similar syntax to defloop of data-structures/utilities
 ;; ; but this is crippled, since macros are not allowed in when, unless and main-clause
 ;; (defmacro for (for-clauses main-clause &key (when 't) (unless 'nil))
-
+  
 ;;   (b* ((iter-vars (strip-cars for-clauses))
 ;;        (list-vars (acl2::strip-caddrs for-clauses))
 ;;        (A (pairlis$ iter-vars (listlis (make-list (len for-clauses) :initial-element 'CAR) list-vars)))
 ;;        (kind (car main-clause))
 ;;        (main-expr (cadr main-clause))
 ;;        (map-lambda-fn `(LAMBDA ,list-vars
-;;                                ;(DECLARE (IGNORABLE ,@list-vars))
+;;                                ;(DECLARE (IGNORABLE ,@list-vars)) 
 ;;                                ,(acl2::sublis-var A main-expr)))
 ;;        (if-free-vars (ALL-VARS1-LST (list when unless) '()))
 ;;        (- (cw "~%if-fv: ~x0" if-free-vars))
 ;;        (if-lambda-fn (if (null if-free-vars)
 ;;                        nil
 ;;                        `(LAMBDA ,list-vars
-;; ;(DECLARE (IGNORABLE ,@list-vars))
+;; ;(DECLARE (IGNORABLE ,@list-vars)) 
 ;;                                 (IF ,when (NOT ,unless) 'NIL))))
 ;;        (free-vars (set-difference-eq (ALL-VARS1 main-expr '()) iter-vars))
 ;;        (A (pairlis$ (make-list (len free-vars) :initial-element 'CONS) (listlis (acl2::kwote-lst free-vars) free-vars)))
@@ -1015,7 +1026,7 @@ Mainly to be used for evaluating enum lists "
   (for ((x in l1)
         (y in l2))
        (collect (cons (car x) (cons n y)))))
-|#
+|#  
 
 
 ;; chose 29 bits, because ACL2 uses signed 29 bits in its code!
@@ -1036,3 +1047,29 @@ Mainly to be used for evaluating enum lists "
   `(acl2::change ,r ,r ,(intern-in-package-of-symbol (symbol-name a) :key) ,val))
 
 
+
+;TODO from defdata-util. ideally just import these names
+(defun get2-fn (nm key al default)
+  (declare (xargs :guard (eqlable-alistp al)))
+  (let ((lookup1 (assoc nm al)))
+    (if (and (consp lookup1)
+             (eqlable-alistp (cdr lookup1)))
+        (let ((lookup2 (assoc key (cdr lookup1))))
+          (or (and lookup2
+                   (cdr lookup2))
+              default))
+      default)))
+
+
+(defmacro get2 (name key al &optional default)
+  `(get2-fn ,name ,key ,al ,default))
+
+(defun get1-fn (key al default)
+  (declare (xargs :guard (eqlable-alistp al)))
+  (let* ((lookup (assoc key al)))
+    (or (and lookup
+             (cdr lookup))
+        default)))
+
+(defmacro get1 (key  kwd-alist &optional default)
+  `(get1-fn ,key ,kwd-alist ,default))

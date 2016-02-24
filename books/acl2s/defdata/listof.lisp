@@ -40,7 +40,7 @@ data last modified: [2014-08-06]
   (b* ((M (append new-types (table-alist 'type-metadata-table wrld)))
        (pred (predicate-name name M))
        ((when (not (proper-symbolp pred))) (er hard? 'listof-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
-       ((mv atom-list-subtypep ?cpred)
+       ((mv atom-list-subtypep ?cpred) 
         (if (and (proper-symbolp cbody) (assoc-eq cbody M))
             (mv (subtype-p (predicate-name cbody M) 'acl2::atom wrld) (predicate-name cbody M))
           (mv nil :undef)))
@@ -82,8 +82,8 @@ data last modified: [2014-08-06]
     (case-match pdef
       (('LISTOF cbody) (listof-theory-events name cbody new-types kwd-alist wrld))
       (& '()))))
-
-
+     
+             
 
 (defloop user-listof-theory-events1 (ps kwd-alist wrld)
   (for ((p in ps)) (append (listof-theory-ev p kwd-alist wrld))))
@@ -103,11 +103,11 @@ data last modified: [2014-08-06]
               :invisible)))
           events))))
 
-
+                      
 
 (logic)
 (deflabel listof)
-(register-user-combinator listof
+(register-user-combinator listof 
                           :arity 1 :verbose t
                           :aliases (subset acl2::subset acl2::listof)
                           :expansion (lambda (_name _args) `(OR nil (cons ,(car _args) ,_name)))

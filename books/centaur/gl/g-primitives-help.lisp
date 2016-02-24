@@ -75,15 +75,23 @@
          (hyp-fix-hints ,hyp-fix-hints)
          (body ,(if replace-g-ifs `(body-replace-g-ifs ,body) body)))
       `(progn
-         (defun ,gfn (,@formals hyp clk config bvar-db state)
-           (declare (xargs :guard (and (natp clk)
-                                       (glcp-config-p config))
-                           :measure ,measure
-                           :verify-guards nil
-                           :stobjs (hyp bvar-db state))
-                    (ignorable ,@formals . ,params))
-           (let* ((hyp (lbfr-hyp-fix hyp)))
-             ,body))
+         (encapsulate
+           ()
+
+; The following set-bogus-measure-ok was added by Matt K. 2/20/2016 (as well
+; as the surrounding encapsulate call) in consultation with Sol S., since the
+; defun might not be recursive (e.g., (def-g-fn hide ...) in g-hide.lisp).
+
+           (set-bogus-measure-ok t)
+           (defun ,gfn (,@formals hyp clk config bvar-db state)
+             (declare (xargs :guard (and (natp clk)
+                                         (glcp-config-p config))
+                             :measure ,measure
+                             :verify-guards nil
+                             :stobjs (hyp bvar-db state))
+                      (ignorable ,@formals . ,params))
+             (let* ((hyp (lbfr-hyp-fix hyp)))
+               ,body)))
          (def-hyp-congruence ,gfn
            :hints ,hyp-hints
            :pres-hints ,pres-hints

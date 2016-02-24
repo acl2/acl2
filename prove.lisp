@@ -372,8 +372,9 @@
                                                      body)
                                                expanded-args)
                                    ttree)))))))
-             ((member-eq fn '(iff synp mv-list return-last wormhole-eval force
-                                  case-split double-rewrite))
+             ((member-eq fn '(iff synp mv-list cons-with-hint return-last
+                                  wormhole-eval force case-split
+                                  double-rewrite))
 
 ; The list above is an arbitrary subset of *expandable-boot-strap-non-rec-fns*.
 ; Once upon a time we used the entire list here, but Bishop Brock complained

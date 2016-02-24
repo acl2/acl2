@@ -5502,7 +5502,11 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
 ; admitted in :logic mode after the definition of tip-cnt above.
 
 (defun undistribute-ifs (term)
-  (declare (xargs :measure (tip-cnt term)))
+
+; Commented out by Matt K. after v7-2 since tip-cnt is undefined but :program
+; mode measures must now be terms:
+; (declare (xargs :measure (tip-cnt term)))
+
   (cond
    ((variablep term) term)
    ((fquotep term) term)

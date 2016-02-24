@@ -7234,8 +7234,7 @@
                           (stobjs-out key wrld))))
         (cond
          (failure-msg
-          (er hard ctx er-msg
-              (msg failure-msg key)))
+          (er hard ctx er-msg failure-msg))
          (t t)))))))
 
 (table trusted-clause-processor-table nil nil

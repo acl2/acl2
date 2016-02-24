@@ -688,7 +688,9 @@ displays.  The module browser's web pages are responsible for defining the
   ''("VL_ORIG_EXPR"
      "VL_EXPLICIT_PARENS"
      "VL_PARAMNAME"
-     "VL_LINESTART"))
+     "VL_LINESTART"
+     "VL_COLON_LINESTART"
+     "VL_QMARK_LINESTART"))
 
 (defthm vl-atts-p-of-vl-remove-keys
   (implies (force (vl-atts-p x))
@@ -747,7 +749,9 @@ displays.  The module browser's web pages are responsible for defining the
                   (alistp x))
          :hints(("Goal" :in-theory (enable (tau-system))))))
 
-(define vl-mimic-linestart ((atts vl-atts-p) &key (ps 'ps))
+(define vl-mimic-linestart ((atts vl-atts-p) &key
+                            ((attname stringp) '"VL_LINESTART")
+                            (ps 'ps))
   :short "Mechanism to try to indent expressions like the user had done."
   :long "<p>See in particular @(see parse-expressions), which annotates certain
          expressions with a @('VL_LINESTART') attribute that indicates that the
@@ -760,7 +764,7 @@ displays.  The module browser's web pages are responsible for defining the
          newline and indent appropriately.</p>"
   (b* (((unless atts)
         ps)
-       (look (assoc-equal "VL_LINESTART" (vl-atts-fix atts)))
+       (look (assoc-equal (string-fix attname) (vl-atts-fix atts)))
        ((unless look)
         ps)
        ((unless (vl-ps->mimic-linebreaks-p))
@@ -779,6 +783,74 @@ displays.  The module browser's web pages are responsible for defining the
     (vl-ps-seq
      (vl-println "")
      (vl-indent indent))))
+
+
+
+(define vl-maybe-strip-outer-linestart ((x vl-expr-p))
+  :returns (new-x vl-expr-p)
+  :measure (vl-expr-count x)
+  :verify-guards nil
+  (b* ((x (vl-expr-fix x)))
+    (vl-expr-case x
+      :vl-special (if (assoc-equal "VL_LINESTART" x.atts)
+                      (change-vl-special x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+                    x)
+      :vl-literal (if (assoc-equal "VL_LINESTART" x.atts)
+                      (change-vl-literal x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+                    x)
+      :vl-index   (if (assoc-equal "VL_LINESTART" x.atts)
+                      (change-vl-index x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+                    x)
+
+      :vl-unary
+      ;; Any linestart is an initial linestart, so remove it.
+      (if (assoc-equal "VL_LINESTART" x.atts)
+          (change-vl-unary x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+        x)
+
+      :vl-binary
+      ;; Any linestart is the linestart info for the operator, not for the
+      ;; argument.  So go into the left argument and remove starting linestart
+      ;; stuff from it, if applicable.
+      (change-vl-binary x :left (vl-maybe-strip-outer-linestart x.left))
+
+      :vl-qmark
+      ;; Similar to the binary case
+      (change-vl-qmark x :test (vl-maybe-strip-outer-linestart x.test))
+
+      :vl-mintypmax
+      (change-vl-mintypmax x :min (vl-maybe-strip-outer-linestart x.min))
+
+      :vl-concat      (if (assoc-equal "VL_LINESTART" x.atts)
+                          (change-vl-concat x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+                        x)
+      :vl-multiconcat (if (assoc-equal "VL_LINESTART" x.atts)
+                          (change-vl-multiconcat x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+                        x)
+      :vl-stream      (if (assoc-equal "VL_LINESTART" x.atts)
+                          (change-vl-stream x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+                        x)
+      :vl-call        (if (assoc-equal "VL_LINESTART" x.atts)
+                          (change-vl-call x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+                        x)
+      :vl-cast    x ;; BOZO?
+      :vl-inside  x ;; BOZO?
+
+      :vl-tagged    (if (assoc-equal "VL_LINESTART" x.atts)
+                        (change-vl-tagged x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+                      x)
+
+      :vl-pattern   (if (assoc-equal "VL_LINESTART" x.atts)
+                        (change-vl-pattern x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
+                      x)))
+  ///
+  (verify-guards vl-maybe-strip-outer-linestart)
+  (defret vl-expr-count-of-vl-maybe-strip-outer-linestart
+    (<= (vl-expr-count (vl-maybe-strip-outer-linestart x))
+        (vl-expr-count x))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal" :in-theory (enable vl-expr-count)))))
+
 
 (defines vl-pp-expr
   :short "Main pretty-printer for an expression."
@@ -1032,7 +1104,7 @@ displays.  The module browser's web pages are responsible for defining the
                       (if unspecial-atts (vl-pp-atts unspecial-atts) ps)
                       (vl-println? " ")
                       (if right-parens (vl-print "(") ps)
-                      (vl-pp-expr x.right)
+                      (vl-pp-expr (vl-maybe-strip-outer-linestart x.right))
                       (if right-parens (vl-print ")") ps)
                       (vl-println? "")))
 
@@ -1040,21 +1112,23 @@ displays.  The module browser's web pages are responsible for defining the
                        (test-parens (<= (vl-expr-precedence x.test) prec))
                        (then-parens (<= (vl-expr-precedence x.then) prec))
                        (else-parens (<  (vl-expr-precedence x.else) prec)))
-                    ;; BOZO do something with linestarts, but currently the
-                    ;; parser doesn't give us any help.
                     (vl-ps-seq
                      (if test-parens (vl-print "(") ps)
                      (vl-pp-expr x.test)
                      (if test-parens (vl-print ")") ps)
-                     (vl-print " ? ")
+                     (vl-print " ")
+                     (vl-mimic-linestart x.atts :attname "VL_QMARK_LINESTART")
+                     (vl-print "? ")
                      (if unspecial-atts (vl-ps-seq (vl-pp-atts unspecial-atts) (vl-print " ")) ps)
                      (vl-println? "")
                      (if then-parens (vl-print "(") ps)
-                     (vl-pp-expr x.then)
+                     (vl-pp-expr (vl-maybe-strip-outer-linestart x.then))
                      (if then-parens (vl-print ")") ps)
-                     (vl-println? " : ")
+                     (vl-print " ")
+                     (vl-mimic-linestart x.atts :attname "VL_COLON_LINESTART")
+                     (vl-print ": ")
                      (if else-parens (vl-print "(") ps)
-                     (vl-pp-expr x.else)
+                     (vl-pp-expr (vl-maybe-strip-outer-linestart x.else))
                      (if else-parens (vl-print ")") ps)))
 
         :vl-mintypmax (vl-ps-seq
@@ -1096,7 +1170,12 @@ displays.  The module browser's web pages are responsible for defining the
                               (vl-print "}}"))
 
         :vl-call (vl-ps-seq (vl-mimic-linestart atts)
-                            (vl-pp-scopeexpr x.name)
+                            (if (and x.systemp
+                                     (vl-scopeid-p x.name)
+                                     (stringp x.name))
+                                (vl-ps-seq (vl-ps-span "vl_sys")
+                                           (vl-print-str x.name))
+                              (vl-pp-scopeexpr x.name))
                             (vl-print "(")
                             (if x.typearg
                                 (vl-ps-seq (vl-pp-datatype x.typearg)
@@ -1727,7 +1806,8 @@ expression into a string."
      "VL_DESIGN_WIRE"))
 
 (define vl-pp-vardecl-atts-begin ((x vl-atts-p) &key (ps 'ps))
-  :measure (vl-atts-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-atts-count x)
   (b* ((x (vl-atts-fix x))
        ((unless x)
         ps)
@@ -2191,29 +2271,31 @@ expression into a string."
                (vl-println ""))))
 
 (define vl-pp-modulename-link-aux ((name stringp) (origname stringp) &key (ps 'ps))
-  (b* ((name     (string-fix name))
+  (declare (ignorable name))
+  (b* (;(name     (string-fix name))
        (origname (string-fix origname)))
-    (vl-ps-seq
-     (vl-print-modname origname)
-     (vl-print-markup "<a class=\"vl_trans\" href=\"javascript:showTranslatedModule('")
-     (vl-print-url origname)
-     (vl-print-markup "', '")
-     (vl-print-url name)
-     (vl-print-markup "')\">")
-     ;; Now, what part gets linked to the translation?  If the names agree,
-     ;; we just add a lone $.  Otherwise, we add the remaining part of the
-     ;; name.
-     (b* ((nl  (length name))
-          (onl (length origname))
-          ((when (equal origname name))
-           (vl-print "$"))
-          ((when (and (<= onl nl)
-                      (equal origname (subseq name 0 onl))))
-           (vl-print-str (subseq name onl nl))))
-       (prog2$ (raise "Naming convention violated: name = ~s0, origname = ~s1.~%"
-                      name origname)
-               ps))
-     (vl-print-markup "</a>"))))
+    ;;(vl-ps-seq
+    (vl-print-modname origname)
+     ;; (vl-print-markup "<a class=\"vl_trans\" href=\"javascript:showTranslatedModule('")
+     ;; (vl-print-url origname)
+     ;; (vl-print-markup "', '")
+     ;; (vl-print-url name)
+     ;; (vl-print-markup "')\">")
+     ;; ;; Now, what part gets linked to the translation?  If the names agree,
+     ;; ;; we just add a lone $.  Otherwise, we add the remaining part of the
+     ;; ;; name.
+     ;; (b* ((nl  (length name))
+     ;;      (onl (length origname))
+     ;;      ((when (equal origname name))
+     ;;       (vl-print "$"))
+     ;;      ((when (and (<= onl nl)
+     ;;                  (equal origname (subseq name 0 onl))))
+     ;;       (vl-print-str (subseq name onl nl))))
+     ;;   (prog2$ (raise "Naming convention violated: name = ~s0, origname = ~s1.~%"
+     ;;                  name origname)
+     ;;           ps))
+     ;; (vl-print-markup "</a>"))))
+    ))
 
 (define vl-pp-modulename-link ((name stringp)
                                (ss   vl-scopestack-p)
@@ -3044,10 +3126,12 @@ expression into a string."
                      (vl-ps-seq (vl-ps-span "vl_key" (vl-print "void"))
                                 (vl-print "'("))
                    ps)
-                 ;; We don't have to pay attention to systemp here; if it's a
-                 ;; system function the name will have a leading '$' character
-                 ;; anyway.
-                 (vl-pp-scopeexpr x.id)
+                 (if (and x.systemp
+                          (vl-scopeid-p x.id)
+                          (stringp x.id))
+                     (vl-ps-seq (vl-ps-span "vl_sys")
+                                (vl-print-str x.id))
+                   (vl-pp-scopeexpr x.id))
                  ;; In Verilog-2005 a task enable with no arguments must be
                  ;; written as `foo;`, not `foo();`.  However, in SystemVerilog
                  ;; it's OK to include the parens, so we no longer are careful
@@ -3769,7 +3853,8 @@ expression into a string."
       :vl-genbegin (vl-pp-genblock x.block)
       :vl-genloop  (vl-ps-seq (vl-println "")
                               (vl-progindent)
-                              (vl-print "for (")
+                              (vl-ps-span "vl_key" (vl-print "for "))
+                              (vl-print "(")
                               (vl-print-str x.var)
                               (vl-print "=")
                               (vl-pp-expr x.initval)
@@ -3779,41 +3864,44 @@ expression into a string."
                               (vl-print-str x.var)
                               (vl-print "=")
                               (vl-pp-expr x.nextval)
-                              (vl-println ")")
+                              (vl-print ")")
                               (vl-pp-genblock x.body))
       :vl-genif    (vl-ps-seq (vl-println "")
                               (vl-progindent)
-                              (vl-print "if (")
+                              (vl-ps-span "vl_key" (vl-print "if"))
+                              (vl-print " (")
                               (vl-pp-expr x.test)
                               (vl-print ")")
                               (vl-pp-genblock x.then)
-                              (vl-print "else")
+                              (vl-ps-span "vl_key" (vl-print "else"))
                               (vl-pp-genblock x.else))
       :vl-gencase  (vl-ps-seq (vl-println "")
                               (vl-progindent)
-                              (vl-print "case (")
+                              (vl-ps-span "vl_key" (vl-print "case"))
+                              (vl-print " (")
                               (vl-pp-expr x.test)
                               (vl-pp-gencaselist x.cases)
                               (vl-println "")
-                              (vl-print "default: ")
+                              (vl-ps-span "vl_key" (vl-print "default"))
+                              (vl-print ":")
                               (vl-pp-genblock x.default))
       :vl-genarray (vl-ps-seq (vl-println "")
                               (vl-progindent)
-                              (vl-print "begin")
+                              (vl-ps-span "vl_key" (vl-print "begin"))
                               (if x.name
                                   (vl-ps-seq (vl-print " : ")
                                              (vl-print-wirename x.name))
                                 ps)
                               (vl-println "")
                               (vl-pp-genblocklist x.blocks)
-                              (vl-println "end"))))
+                              (vl-ps-span "vl_key" (vl-println "end")))))
 
   (define vl-pp-genblock ((x vl-genblock-p) &key (ps 'ps))
     :measure (vl-genblock-count x)
     (b* (((vl-genblock x)))
       (vl-ps-seq (vl-println "")
                  (vl-progindent)
-                 (vl-print "begin")
+                 (vl-ps-span "vl_key" (vl-print "begin"))
                  (if x.name
                      (vl-ps-seq (vl-print " : ")
                                 (if (stringp x.name)
@@ -3825,7 +3913,7 @@ expression into a string."
                  (vl-println "")
                  (vl-progindent-block (vl-pp-genelementlist x.elems))
                  (vl-progindent)
-                 (vl-println "end")
+                 (vl-ps-span "vl_key" (vl-println "end"))
                  (vl-println ""))))
 
   (define vl-pp-genelementlist ((x vl-genelementlist-p) &key (ps 'ps))
@@ -3848,12 +3936,15 @@ expression into a string."
                    (vl-pp-gencaselist (cdr x))))))
 
   (define vl-pp-genblocklist ((x vl-genblocklist-p)
-                                   &key (ps 'ps))
+                              &key (ps 'ps))
     :measure (vl-genblocklist-count x)
     (if (atom x)
         ps
       (vl-ps-seq (vl-pp-genblock (car x))
-                 (vl-pp-genblocklist (cdr x))))))
+                 (vl-pp-genblocklist (cdr x)))))
+
+  ///
+  (deffixequiv-mutual vl-pp-genelement))
 
 (define vl-pp-assertionlist ((x vl-assertionlist-p) &key (ps 'ps))
   (if (atom x)

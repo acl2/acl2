@@ -111,6 +111,9 @@
                            (:t append)
                            append)))
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (fty::defvisitor vl-expr-type-disambiguate
   :template type-disambiguate
   :type expressions-and-datatypes

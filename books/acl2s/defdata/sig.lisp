@@ -20,7 +20,7 @@ data last modified: [2014-08-07]
 
 
 (defconst *allowed-type-vars* '(:a :b :c :d :a1 :b1 :c1 :d1 :a2 :b2 :c2 :d2))
-
+ 
 (defconst *tvar-typename-alist*
   '((:a . A)
     (:b . B)
@@ -62,28 +62,28 @@ data last modified: [2014-08-07]
        (kwd-alist (append kwd-alist top-kwd-alist))
        (comb (car pdef))
        (U (table-alist 'user-combinator-table wrld))
-       (C (table-alist 'data-constructor-table wrld))
+       (C (table-alist 'data-constructor-table wrld)) 
 ;TODO: at some time i should support polymorphic cons, but perhaps this is done by tau already SIMPLE BUT GOOD RESEARCH Question/Experiment.
 ; Or rather simply use a separate table psig-template-map to support polymorphism more generally
        (meta-kwd-alist (or (cdr (assoc-eq comb U)) (cdr (assoc-eq comb C))))
-
+       
        (template (get1 :polymorphic-events meta-kwd-alist))
        (ptype (get1 :polymorphic-type-form meta-kwd-alist))
-;       (- (cw "ptype : ~x0    tmpl: ~x1" ptype template))
+;       (- (cw "ptype : ~x0    tmpl: ~x1" ptype template)) 
        ((when (null ptype)) '()) ;no poly support
-
+       
        (pdef (remove-names pdef))
 ;(one-way-unify '(alistof :a :b) '(alistof nat symbol-list))
 ;(T ((:B . SYMBOL-LIST) (:A . NAT)))
        ((mv yesp tvar-sigma) (one-way-unify (acl2::sublis-var *tvar-typename-alist* ptype) pdef))
 
        (verbose (get1 :verbose kwd-alist t))
-
+        
         (- (cw? (and (not yesp) verbose) "~|Defdata/Note: Failed to unify ~x0 with ~x1. Skipping polymorphic instantiation events...~%" ptype pdef))
         ((unless yesp) '()))
-
+                
     (psig-templ-instantiation-ev name tvar-sigma template (table-alist 'derived-pred->poly-texp-map wrld) new-types kwd-alist wrld)))
-
+  
 
 
 
@@ -98,7 +98,7 @@ data last modified: [2014-08-07]
           events))))
 
 
-(add-pre-post-hook defdata-defaults-table :post-hook-fns '(polymorphic-inst-defdata-events))
+(add-pre-post-hook defdata-defaults-table :post-pred-hook-fns '(polymorphic-inst-defdata-events))
 
 
 
@@ -112,8 +112,8 @@ data last modified: [2014-08-07]
 
 ; I dont think we are ever going to have more than 3 type parameters, but lets start with 12.
 (logic)
-(encapsulate
- (((Ap *) => *)
+(encapsulate 
+ (((Ap *) => *) 
   ((Bp *) => *)
   ((Cp *) => *)
   ((Dp *) => *)
@@ -125,8 +125,8 @@ data last modified: [2014-08-07]
   ((B2p *) => *)
   ((C2p *) => *)
   ((D2p *) => *))
-
-
+ 
+ 
  (local (defun Ap (v)
           (declare (ignore v))
           t))
@@ -142,7 +142,7 @@ data last modified: [2014-08-07]
  (local (defun Dp (v)
           (declare (ignore v))
           t))
-
+ 
  (local (defun A1p (v)
           (declare (ignore v))
           t))
@@ -158,7 +158,7 @@ data last modified: [2014-08-07]
  (local (defun D1p (v)
           (declare (ignore v))
           t))
-
+ 
  (local (defun A2p (v)
           (declare (ignore v))
           t))
@@ -174,7 +174,7 @@ data last modified: [2014-08-07]
  (local (defun D2p (v)
           (declare (ignore v))
           t))
-
+ 
 
  (defthm Ap-is-predicate
    (booleanp (Ap x)))
@@ -233,7 +233,7 @@ data last modified: [2014-08-07]
           (er hard? ctx "~| ~x0 : Named type expressions not supported.~%" texp))
          (t (collect-type-vars-texps (cdr texp) ctx))))
  (defun collect-type-vars-texps (texps ctx)
-   (if (endp texps)
+   (if (endp texps) 
        '()
      (union-eq (collect-type-vars-texp (car texps) ctx)
                (collect-type-vars-texps (cdr texps) ctx))))
@@ -248,7 +248,7 @@ data last modified: [2014-08-07]
           (er hard? ctx "~| ~x0 : Named type expressions not supported.~%" texp))
          (t (collect-undefined-typenames-texps (cdr texp) ctx wrld))))
  (defun collect-undefined-typenames-texps (texps ctx wrld)
-   (if (endp texps)
+   (if (endp texps) 
        '()
      (union-eq (collect-undefined-typenames-texp (car texps) ctx wrld)
                (collect-undefined-typenames-texps (cdr texps) ctx wrld))))
@@ -264,7 +264,7 @@ data last modified: [2014-08-07]
   (declare (ignorable wrld))
   (b* (((mv sig kwd-val-list) (separate-kwd-args args '()))
        ((mv kwd-alist rest) (extract-keywords ctx *sig-keywords* kwd-val-list '()))
-
+      
       ((unless (null rest)) (er hard? ctx "~| Extra args: ~x0~%" rest))
       (dep-hyp (get1 :satisfies kwd-alist))
       (x123vars (numbered-vars 'ACL2S::X (len *allowed-type-vars*)))
@@ -298,9 +298,9 @@ data last modified: [2014-08-07]
 ; todo: do the mapping from current keyword type variables to :a :b ...
           ((unless (subsetp arg-type-vars *allowed-type-vars*))
            (er hard? ctx "~| Sorry for the inconvenience, but could you please try again choosing type variables from ~x0.~%" *allowed-type-vars*)))
-
+       
        (list name arg-type-list return-type kwd-alist)))
-
+        
     (& (er hard? ctx "~| General form: (sig name arg-type-list => return-type).~%" )))))
 
 
@@ -331,7 +331,7 @@ data last modified: [2014-08-07]
 (defun assoceqlst1 (key A)
   (let ((entry (assoc-eq key A)))
     (and entry (list entry))))
-
+      
 
 (defloop assoc-eq-lst (keys A)
   (for ((key in keys)) (append (assoceqlst1 key A))))
@@ -365,8 +365,8 @@ data last modified: [2014-08-07]
                       :hints (("Goal" :in-theory (enable ,pred alistp)))
                       :rule-classes ((:forward-chaining)))))
     (& '())))
-
-
+     
+  
 (defloop make-derived-tvar-type-defthms (preds texps)
   (for ((p in preds) (texp in texps))
        (append (make-derived-tvar-type-defthm p texp))))
@@ -374,24 +374,24 @@ data last modified: [2014-08-07]
 
 ;TODO.limitation -- Using just name for the clique tnames (LIMITATION)."
 (defloop parse-top-texps (names texps ctx wrld)
-  (for ((name in names) (texp in texps))
+  (for ((name in names) (texp in texps)) 
        (collect (parse-top-texp name texp (list name) ctx wrld))))
 
 
 (defun make-sig-tvar-support-events (texps ctx wrld)
   "for each undefined tvar texp, define its predicate and if possible its type defthm"
-  (b* ((M (append (table-alist 'tvar-metadata-table wrld)
+  (b* ((M (append (table-alist 'tvar-metadata-table wrld) 
                   (table-alist 'type-metadata-table wrld)))
        (texps (remove-names-lst (remove-duplicates-equal texps)))
        (tnames  (to-symbols texps "DEFDATA"))
-
+  
        (undef-tnames (set-difference-eq tnames (strip-cars (assoc-eq-lst tnames M))))
-
+       
        (undef-nm-texp-alst (assoc-eq-lst undef-tnames (pairlis$ tnames texps)))
 ;       (- (cw "nm-texp-alst: ~x0 undef-tnames: ~x1  undef-nm-texp-alst: ~x2" nm-texp-alst undef-tnames undef-nm-texp-alst))
        ((mv undef-tnames undef-texps) (mv (strip-cars undef-nm-texp-alst) (strip-cdrs undef-nm-texp-alst)))
        (undef-n-types (parse-top-texps undef-tnames undef-texps ctx wrld))
-
+    
 
        (C (table-alist 'data-constructor-table wrld))
        (B (table-alist 'builtin-combinator-table wrld))
@@ -399,13 +399,13 @@ data last modified: [2014-08-07]
        (M (append new-types M))
        (undef-pred-bodies (make-pred-Is undef-n-types (make-list (len undef-n-types) :initial-element 'x) nil M C B wrld))
        (undef-pred-names (make-predicate-symbol-lst undef-tnames "DEFDATA")))
-;   in
-    (append (stitch-up-defuns undef-pred-names
+;   in 
+    (append (stitch-up-defuns undef-pred-names 
                               (make-list (len undef-pred-names) :initial-element '(x))
                               nil
                               undef-pred-bodies)
             (make-derived-tvar-type-defthms undef-pred-names undef-texps))))
-
+       
 
 (defconst *poly-combinators* '(listof alistof map))
 
@@ -416,7 +416,7 @@ data last modified: [2014-08-07]
   (for ((key in keys) (val in vals))
        (collect `(TABLE ,tble-name ',key ',val :put))))
 
-(defconst *sig-singular-dominant-poly-comb-limitation-msg*
+(defconst *sig-singular-dominant-poly-comb-limitation-msg* 
 "~| SIG: Limitation -- There should be one polymorphic combinator argument that dominates all other arguments. ~
 But ~x0 does not have this property. Therefore we are unable to functionally instantiate this polymorphic signature. ~
 Please send this example to the implementors for considering removal of this restriction.~%")
@@ -428,7 +428,7 @@ Please send this example to the implementors for considering removal of this res
   (intersection-eq (strip-cdrs *tvar-typename-alist*) (all-vars1-lst texps '())))
 
 (defun poly-type-size (ptype)
-  (if (atom ptype)
+  (if (atom ptype) 
       0
     (case (car ptype)
       (oneof 1); TODO
@@ -451,7 +451,7 @@ Please send this example to the implementors for considering removal of this res
     (if (subsetp all-tvars (all-tvars (car ptypes)))
         (pick-dominant-poly-type-expr1 (cdr ptypes) all-tvars (cons (car ptypes) answers))
       (pick-dominant-poly-type-expr1 (cdr ptypes) all-tvars answers))))
-
+  
 (defun pick-dominant-poly-type-expr (ptypes)
   (pick-dominant-poly-type-expr1 ptypes (all-tvars-lst  ptypes) nil))
 
@@ -469,7 +469,7 @@ Please send this example to the implementors for considering removal of this res
     (if (consp (all-tvars (car texps)))
         (cons (car texps) (filter-texps-with-vars (cdr texps)))
       (filter-texps-with-vars (cdr texps)))))
-
+      
 
 (defun register-poly-sig-events (nm atypes rtype templ wrld)
 ;sig: proper-symbol * texps * texp * template * world -> events
@@ -480,7 +480,7 @@ Please send this example to the implementors for considering removal of this res
     (and (consp dom-type)
          (b* ((pcomb (car dom-type))
               ((unless (member-eq pcomb *poly-combinators*))
-               (prog2$
+               (prog2$ 
                 (cw "~x0 currently does not have polymorphic support. Skipping..." pcomb)
                 nil))
               (vtypes (filter-texps-with-vars (remove-duplicates-equal (cons rtype atypes))))
@@ -491,7 +491,7 @@ Please send this example to the implementors for considering removal of this res
            `(,@(table-put-events 'derived-pred->poly-texp-map vpreds vtypes) ;possibly redundant
              ,@(table-put-events 'tvar-metadata-table vtnames (strip-cdrs (type-metadata-bases vtnames "DEFDATA")))
              ,(make-table-append-event2 'user-combinator-table pcomb :polymorphic-events templ wrld))))))
-
+       
 
 
 (defun find-type-name (texp M)
@@ -507,7 +507,7 @@ Please send this example to the implementors for considering removal of this res
 ;get typenames for certain type expressions e.g (listof nat) has the type name nat-list
 
 (defloop find-type-names1 (texps M)
-  (for ((texp in texps)) (collect (if (and (proper-symbolp texp) (assoc-eq texp M))
+  (for ((texp in texps)) (collect (if (and (proper-symbolp texp) (assoc-eq texp M)) 
                                       texp
                                     (find-type-name texp M)))))
 
@@ -541,7 +541,7 @@ Please send this example to the implementors for considering removal of this res
         (cons (caar pred->tname-map)
               (undefined-preds (cdr pred->tname-map)))
       (undefined-preds (cdr pred->tname-map)))))
-
+      
 (defun remove-undefined (map)
 "remove all values marked :undefined"
   (if (endp map)
@@ -560,7 +560,7 @@ constant). In the latter return a lambda expression"
   (cond ((proper-symbolp type) (predicate-name type M))
         ((possible-constant-value-p type) `(lambda (x) (equal x ,type)))
         (t nil)))
-
+         
 (defloop predicate-names/lambdas (types M)
   (for ((type in types)) (collect (predicate-name/lambda type M))))
 
@@ -581,7 +581,7 @@ constant). In the latter return a lambda expression"
        (A1 (pairlis$
             (predicate-names/lambdas (acl2::sublis-var-lst *tvar-typename-alist* (strip-cars tvar-sigma)) M)
             (predicate-names/lambdas (strip-cdrs tvar-sigma) M)))
-
+       
        (A2 (polypred-instantiated-pred-alist ppred->tname-map new-types wrld))
        (ans (union-alist2 A2 A1)) ;A2 overrides A1
        (ctx 'functional-instantiation-alist)
@@ -594,7 +594,7 @@ constant). In the latter return a lambda expression"
 (defun polypred-typename-map (tvar-sigma derived-pred->poly-texp-map new-types wrld)
   (b* ((ppred->texp-map (subst-vals derived-pred->poly-texp-map tvar-sigma))
        (M (append new-types (table-alist 'type-metadata-table wrld))))
-    (pairlis$ (strip-cars ppred->texp-map)
+    (pairlis$ (strip-cars ppred->texp-map) 
               (find-type-names1 (strip-cdrs ppred->texp-map) M))))
 
 (defloop filter-proper-symbols (xs)
@@ -626,9 +626,9 @@ constant). In the latter return a lambda expression"
                     :atom-alist atom-alist
                     :str-alist str-alist
 ;The original function name should be used to avoid name clashes e.g between acl2s::rev and acl2::rev
-                    :pkg-sym (intern$ "a" (get1 :current-package kwd-alist)))))
-
-(defttag t)
+                    :pkg-sym (intern$ "a" (get1 :current-package kwd-alist))))) 
+ 
+(defttag t)      
 (defattach (psig-templ-instantiation-ev psig-templ-instantiation-ev-user) :skip-checks t)
 (defttag nil)
 
@@ -658,7 +658,7 @@ constant). In the latter return a lambda expression"
      (cons (simplify-prop-comb-texp (car texps))
            (simplify-prop-comb-texps (cdr texps)))))
  )
-
+              
 
 (defun find-match (ptype pdef)
   (b* ((pdef (remove-names pdef))
@@ -673,7 +673,7 @@ constant). In the latter return a lambda expression"
              (sigma (pairlis$ tvars (make-list (len tvars) :initial-element val))))
           (mv t sigma))
       (mv nil nil))))
-
+           
 (defun find-matches1 (ptype M)
   (if (endp M)
       '()
@@ -684,7 +684,7 @@ constant). In the latter return a lambda expression"
       (if yes
           (cons (cons tname sigma) (find-matches1 ptype (cdr M)))
         (find-matches1 ptype (cdr M))))))
-
+      
 (defun find-matches (ptype wrld)
   (find-matches1 ptype (table-alist 'type-metadata-table wrld)))
 
@@ -696,7 +696,7 @@ constant). In the latter return a lambda expression"
 
 (defloop find/make-type-names (ptexps M)
   (for ((ptexp in ptexps)) (collect (find/make-type-name ptexp M))))
-
+  
 (defun find/make-predicate-name (tname M)
   (or (predicate-name tname M) (make-predicate-symbol tname (symbol-package-name tname))))
 
@@ -710,7 +710,7 @@ constant). In the latter return a lambda expression"
        ((when (null atype)) nil) ;msg has been already shown
        ((when (symbolp atype)) nil) ;TODO.generalize restrict free/single-variable matches.
        (tname-IA-alst (find-matches atype wrld)) ;get type -> (alistof tvar pred)  mapping
-       (M (append (table-alist 'tvar-metadata-table wrld)
+       (M (append (table-alist 'tvar-metadata-table wrld) 
                   (table-alist 'type-metadata-table wrld)))
        (arg-tnames (find/make-type-names (remove-names-lst as) M))
        (arg-preds (find/make-predicate-names arg-tnames M))
@@ -719,18 +719,18 @@ constant). In the latter return a lambda expression"
        (derived-pred->poly-texp-map (cons (cons ret-pred rtype) (pairlis$ arg-preds as)))
        )
     (psig-templ-instantiation-events tname-IA-alst templ derived-pred->poly-texp-map '() kwd-alist wrld)))
-
+  
 (defloop untrans-top-texps (nms nexps)
   (for ((nm in nms) (nexp in nexps)) (collect (untrans-top-texp nm nexp '()))))
 
 (defun make-sig-defthm-body (name arg-types ret-type kwd-alist wrld)
-  (b* ((M (append (table-alist 'tvar-metadata-table wrld)
+  (b* ((M (append (table-alist 'tvar-metadata-table wrld) 
                   (table-alist 'type-metadata-table wrld)))
        (arg-tnames (find/make-type-names (remove-names-lst arg-types) M))
        (arg-preds (find/make-predicate-names arg-tnames M))
        (ret-tname (find/make-type-name (remove-names ret-type) M))
        (ret-pred (find/make-predicate-name ret-tname M))
-
+                 
 
        (x1--xk (numbered-vars 'ACL2S::X (len arg-preds)))
        (dependent-hyps (get1 :satisfies kwd-alist)) ;they should only use x1, x2 etc
@@ -738,13 +738,13 @@ constant). In the latter return a lambda expression"
        (psig-defthm-body `(IMPLIES (AND . ,hyps)
                                    ,(list ret-pred (cons name x1--xk)))))
     psig-defthm-body))
-
+       
 
 (defun sig-events1 (name arg-types ret-type kwd-alist ctx wrld)
-  (b* ((arg-type-list1 (acl2::sublis-var-lst *tvar-typename-alist* arg-types))
+  (b* ((arg-type-list1 (acl2::sublis-var-lst *tvar-typename-alist* arg-types)) 
        (return-type1 (acl2::sublis-var *tvar-typename-alist* ret-type)) ;instead of *allowed-type-var->named-type-binding*
        (arity (len arg-types))
-
+       
        (stars (make-list arity :initial-element '*))
        (n-arg-types (parse-top-texps stars arg-type-list1 ctx wrld))
        (n-ret-type (parse-top-texp '* return-type1 (list '*) ctx wrld))
@@ -761,7 +761,7 @@ constant). In the latter return a lambda expression"
 ;       (- (cw "args: ~x0 ret: ~x1 derived-pred->poly-texp-map: ~x2 templ: ~x3" p-arg-types p-ret-type derived-pred->poly-texp-map poly-inst-template))
        )
 
-    `(,@(make-sig-tvar-support-events (cons p-ret-type p-arg-types) ctx wrld)
+    `(,@(make-sig-tvar-support-events (cons p-ret-type p-arg-types) ctx wrld) 
 
       (DEFTHM ,psig-name  ;restriction: only one sig per function possible!
         ,psig-defthm-body
@@ -772,23 +772,23 @@ constant). In the latter return a lambda expression"
       ,@(register-poly-sig-events name p-arg-types p-ret-type poly-inst-template wrld)
 
 ; functionally instantiate all current types of same shape
-      ,@(instantiate-poly-sig-events-for-current-types p-arg-types p-ret-type
-                                                       poly-inst-template
+      ,@(instantiate-poly-sig-events-for-current-types p-arg-types p-ret-type 
+                                                       poly-inst-template 
                                                        kwd-alist wrld)
       )))
-
+     
 (defun sig-events (parsed wrld)
   (b* (((list name arg-types ret-type kwd-alist) parsed)
        (cgenp (acl2::logical-namep 'acl2s::acl2s-defaults wrld))
        ;; dont even call acl2s-defaults if cgen/top is not included. This
        ;; allows defdata/sig to be used independently of cgen
-       (local-testing-downgraded-form (and cgenp
+       (local-testing-downgraded-form (and cgenp 
                                            '((LOCAL (ACL2S::ACL2S-DEFAULTS :SET ACL2S::TESTING-ENABLED nil))))))
-
-    `(WITH-OUTPUT :on (acl2::summary acl2::error)
-                  :SUMMARY (ACL2::FORM)
+    
+    `(WITH-OUTPUT :on (acl2::summary acl2::error) 
+                  :SUMMARY (ACL2::FORM) 
                   (ENCAPSULATE NIL
-                   (logic)
+                   (logic)            
                    ,@local-testing-downgraded-form
                    ,@(sig-events1 name arg-types ret-type kwd-alist 'sig wrld)))))
 
@@ -797,8 +797,8 @@ constant). In the latter return a lambda expression"
 (defmacro sig (&rest args)
   (b* ((verbose (let ((lst (member :verbose args)))
                    (and lst (cadr lst)))))
-    `(with-output ,@(and (not verbose) '(:off :all))
-                  :gag-mode t
+    `(with-output ,@(and (not verbose) '(:off :all)) 
+                  :gag-mode t 
                   :stack :push
        (make-event
         (sig-events (parse-sig ',args (current-package state) 'sig (w state)) (w state))))))

@@ -97,7 +97,9 @@ description of a design is a @(see design) object.</p>")
 
 
 (define assigns-addr-p ((x assigns-p))
-  :measure (len (assigns-fix x))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len (assigns-fix x))
   :verify-guards nil
   :enabled t
   (mbe :logic (svarlist-addr-p (assigns-vars x))
@@ -111,7 +113,9 @@ description of a design is a @(see design) object.</p>")
     :hints(("Goal" :in-theory (enable assigns-vars)))))
 
 (define lhspairs-addr-p ((x lhspairs-p))
-  :measure (len (lhspairs-fix x))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len (lhspairs-fix x))
   :verify-guards nil
   :enabled t
   (mbe :logic (svarlist-addr-p (lhspairs-vars x))
@@ -125,7 +129,9 @@ description of a design is a @(see design) object.</p>")
     :hints(("Goal" :in-theory (enable lhspairs-vars)))))
 
 (define svar-map-addr-p ((x svar-map-p))
-  :measure (len (svar-map-fix x))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len (svar-map-fix x))
   :verify-guards nil
   :enabled t
   (mbe :logic (svarlist-addr-p (svar-map-vars x))
@@ -139,7 +145,9 @@ description of a design is a @(see design) object.</p>")
     :hints(("Goal" :in-theory (enable svar-map-vars)))))
 
 (define svex-alist-addr-p ((x svex-alist-p))
-  :measure (len (svex-alist-fix x))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len (svex-alist-fix x))
   :verify-guards nil
   :enabled t
   (mbe :logic (and (svarlist-addr-p (svex-alist-vars x))

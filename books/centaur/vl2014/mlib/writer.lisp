@@ -1821,7 +1821,8 @@ expression into a string."
      "VL_DESIGN_WIRE"))
 
 (define vl-pp-vardecl-atts-begin ((x vl-atts-p) &key (ps 'ps))
-  :measure (vl-atts-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-atts-count x)
   (b* ((x (vl-atts-fix x))
        ((unless x)
         ps)

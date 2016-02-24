@@ -8152,6 +8152,13 @@
         (t (get-guardsp (cdr lst) wrld))))
 
 (defconst *no-measure*
+
+; We expect this to be a term, in particular because of the call of
+; chk-free-vars on the measure in chk-free-and-ignored-vars.  If this value is
+; changed to a term other than *nil*, consider updating documentation for defun
+; and xargs, which explain that :measure nil is treated as though :measure was
+; omitted.
+
   *nil*)
 
 (defun get-measures1 (m edcls ctx state)
@@ -8193,21 +8200,14 @@
                     (value (cons m rst))))))
 
 
-(defun get-measures (symbol-class lst ctx state)
+(defun get-measures (lst ctx state)
 
 ; This function returns a list in 1:1 correspondence with lst containing the
 ; user's specified :MEASUREs (or *no-measure* if no measure is specified).  We
 ; cause an error if more than one :MEASURE is specified within the edcls of a
 ; given element of lst.
 
-; If symbol-class is program, we ignore the contents of lst and simply return
-; all *no-measure*s.  See the comment in chk-acceptable-defuns where
-; get-measures is called.
-
-  (cond
-   ((eq symbol-class :program)
-    (value (make-list (length lst) :initial-element *no-measure*)))
-   (t (get-measures2 lst ctx state))))
+  (get-measures2 lst ctx state))
 
 (defconst *no-ruler-extenders*
   :none)
@@ -9592,6 +9592,7 @@
         BAD-ATOM            ;;; used in several defaxioms
         RETURN-LAST         ;;; affects constraints (see remove-guard-holders1)
         MV-LIST             ;;; affects constraints (see remove-guard-holders1)
+        CONS-WITH-HINT      ;;; affects constraints (see remove-guard-holders1)
 
 ; The next six are used in built-in defpkg axioms.
 

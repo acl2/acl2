@@ -76,6 +76,9 @@ inside if, case, or loop generate forms.</p>")
    (vl-genarray      (name     (lambda (x namedb) (maybe-add-name x "unnamed_genarray" namedb))))))
 
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (fty::defvisitors vl-modelement-addnames
   :template addnames
   :types (vl-modelement))

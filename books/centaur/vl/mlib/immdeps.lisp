@@ -256,6 +256,9 @@ elements.")
   :field-fns ((atts :skip))
   :fnname-template <type>-immdeps)
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 ;; Not dealing with anything that might add a scope yet.
 (fty::defvisitor vl-expr-immdeps
   :template immdeps
