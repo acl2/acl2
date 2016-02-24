@@ -2599,7 +2599,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defvar *hard-error-returns-nilp*
 
-; For an explanation of the this defvar, see the comment in hard-error, below.
+; For an explanation of this defvar, see the comment in hard-error, below.
 
   nil)
 
