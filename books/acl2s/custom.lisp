@@ -65,7 +65,7 @@
      :check-expansion t)))
 
 
-;***** DEFUNT macro for Pete Manolios & Northeastern CSU290 *****
+;***** DEFUNT macro for Pete Manolios & Northeastern CSU290 ***** 
 
 (defun defunt-make-sym (s suf)
 ; Returns the symbol s-suf.
@@ -181,7 +181,7 @@
                    :nonlinearp))
        (prog2$
         nil ;;harshrc 14Jan2012- The following gives a nasty error when run inside of ld
-        ;; (observation-cw 'my-nonlinearp-default-hint
+        ;; (observation-cw 'my-nonlinearp-default-hint 
         ;;                 "~%~%[Note: We now enable non-linear arithmetic.]~%~%")
         '(:computed-hint-replacement t
                      :nonlinearp t))
@@ -200,7 +200,7 @@
           (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
          (prog2$
           nil ;;The following gives a nasty error when run inside of ld
-          ;; (observation-cw 'my-nonlinearp-default-hint
+          ;; (observation-cw 'my-nonlinearp-default-hint 
           ;;                 "~%~%[Note: We now disable non-linear arithmetic.]~%~%")
            '(:computed-hint-replacement t
                         :nonlinearp nil))
@@ -221,36 +221,39 @@
      (assign checkpoint-processors
              (set-difference-eq (@ checkpoint-processors)
                                 '(ELIMINATE-DESTRUCTORS-CLAUSE)))
-
+     
      ;;CCG settings
-     (set-ccg-print-proofs nil)
+     (set-ccg-print-proofs nil)     
      (set-ccg-inhibit-output-lst
       '(QUERY BASICS PERFORMANCE BUILD/REFINE SIZE-CHANGE))
 
+     ;;Misc
+     (set-guard-checking :nowarn)
+        
      (value '(value-triple :invisible))))
-
-     (set-default-hints '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)))
+   
+   (set-default-hints '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)))
 
      ;; Other events:
-     (set-well-founded-relation l<)
-     (make-event ; use ruler-extenders if available
-      (if (member-eq 'ruler-extenders-lst
-                     (getprop 'put-induction-info 'formals nil
-                              'current-acl2-world (w state)))
-          (value '(set-ruler-extenders :all))
-        (value '(value-triple :invisible))))
+   (set-well-founded-relation l<)
+   (make-event ; use ruler-extenders if available
+    (if (member-eq 'ruler-extenders-lst
+                   (getprop 'put-induction-info 'formals nil
+                            'current-acl2-world (w state)))
+        (value '(set-ruler-extenders :all))
+      (value '(value-triple :invisible))))
 
-     ;;CCG events
-     (set-termination-method :ccg)
-     (set-ccg-time-limit nil)
+   ;;CCG events
+   (set-termination-method :ccg)
+   (set-ccg-time-limit nil)
 
-     (dont-print-thanks-message-override-hint)
-
+   (dont-print-thanks-message-override-hint)
+   
    ;;Cgen settings
    (acl2s::acl2s-defaults :set acl2s::testing-enabled t)
    (acl2s::acl2s-defaults :set acl2s::num-trials 500)
 
-
+   
 
 ))
 
@@ -265,7 +268,7 @@
     (set-rewrite-stack-limit 500)
     (acl2s-defaults :set cgen-timeout 20)
     (table acl2s::defunc-defaults-table :skip-tests nil :put)
-    (table acl2s::defunc-defaults-table :timeout 50 :put)
+    (table acl2s::defunc-defaults-table :timeout 60 :put)
 
     (set-irrelevant-formals-ok :warn)
     (set-bogus-mutual-recursion-ok :warn)
@@ -290,7 +293,7 @@
     (set-backchain-limit '(50 100))
     (set-rewrite-stack-limit 500)
     (table acl2s::defunc-defaults-table :skip-tests nil :put)
-    (table acl2s::defunc-defaults-table :timeout 50 :put)
+    (table acl2s::defunc-defaults-table :timeout 60 :put)
 
     (assign evalable-ld-printingp t)
     (assign evalable-printing-abstractions '(list cons))
@@ -313,7 +316,7 @@
 
     (set-guard-checking :all)
     (table acl2s::defunc-defaults-table :skip-tests nil :put)
-    (table acl2s::defunc-defaults-table :timeout 50 :put)
+    (table acl2s::defunc-defaults-table :timeout 60 :put)
 
 
 ;(set-verify-guards-eagerness 0)

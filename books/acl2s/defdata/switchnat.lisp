@@ -26,7 +26,7 @@
                       (endp (cdr rem-weights))
                       (< rem-wchoice (car rem-weights)))
            :exec (< rem-wchoice (car rem-weights)))
-    (mv weights-idx (+ (* (car rem-weights) quotient-x)
+    (mv weights-idx (+ (* (car rem-weights) quotient-x) 
 ;changed from mv to list
 ;UPDATE: changed back to mv 9 July 2011
                        rem-wchoice))
@@ -79,11 +79,11 @@
 (local
  (encapsulate nil
    (local (include-book "arithmetic-5/top" :dir :system))
-
+   
    (local (SET-DEFAULT-HINTS '((acl2::NONLINEARP-DEFAULT-HINT
                                 acl2::STABLE-UNDER-SIMPLIFICATIONP
                                 acl2::HIST acl2::PSPV))))
-
+   
    (defthm weighted-switch-nat-find--cadr-loose-bound
      (implies (and (pos-listp rem-weights)
                    (<= 0 rem-wchoice)
@@ -95,7 +95,7 @@
                   (+ rem-wchoice
                      (* quotient-x bound))))
      :rule-classes (:rewrite :linear))
-
+   
    (defthm weighted-switch-nat-find--cadr-bound-pre
      (implies (and (pos-listp rem-weights)
                    (consp rem-weights)
@@ -110,7 +110,7 @@
               (< (cadr (weighted-switch-nat-find rem-weights weights-idx rem-wchoice quotient-x))
                  (+ rem-wchoice
                     (* quotient-x bound)))))
-
+   
    (defthm weighted-switch-nat-find--cadr-bound
      (implies (and (pos-listp rem-weights)
                    (consp rem-weights)
@@ -124,7 +124,7 @@
                  (+ rem-wchoice
                     (* quotient-x (sum-list rem-weights)))))
      :rule-classes (:rewrite :linear))))
-
+ 
 (defun weighted-switch-nat (weights x)
   (declare (xargs :guard (and (pos-listp weights)
                               (consp weights) ; len >= 1
@@ -183,7 +183,7 @@
 
   (local (in-theory (disable pos-listp sum-list)))
   (local (in-theory (enable weighted-switch-nat-find)))
-
+  
   (defthm weighted-switch-nat--cadr-less1
     (implies (and (pos-listp weights)
                   (consp weights)
@@ -208,11 +208,11 @@
                          (< 0 (car (weighted-switch-nat weights x))))
                     (<= (car weights) x))
            :rule-classes :forward-chaining))
-
+  
   (local (in-theory (union-theories '(weighted-switch-nat--cadr-less2-lemma
                                       weighted-switch-nat--cadr-less1)
                                     (theory 'minimal-theory))))
-
+  
   (defthm weighted-switch-nat--cadr-less2
     (implies (and (pos-listp weights)
                   (consp weights)
@@ -246,10 +246,10 @@
           (switch-nat (car nchoices-lst) x)
           (if (endp (cdr nchoices-lst))
               (mv (list choice) x)
-            (mv-let (choice-lst x)
+            (mv-let (choice-lst x) 
                     (multiple-switch-nat (cdr nchoices-lst)
                                          (nfix x)) ; help guard verification
-
+                    
                     (mv (cons choice choice-lst) x)))));switched back to mv
 
 (defthm mv-nth--to--my-mv-nth--weighted-switch-nat

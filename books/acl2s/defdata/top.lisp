@@ -10,13 +10,6 @@
 
 (include-book "base")
 
-(include-book "listof")
-
-(include-book "record")
-
-(include-book "map")
-
-(include-book "alistof")
 
 (include-book "sig" :ttags :all)
 
@@ -35,7 +28,7 @@ The defdata framework enables the convenient specification of
 data types in ACL2s, the ACL2 Sedan.  The framework concisely
 supports common data definition patterns, e.g., list types, map
 types, enumerated types, record types, and mutually-recursive
-types. It also provides support for polymorphic functions and
+types. It also provides support for polymorphic functions and 
 tight integration with Tau.
 </p>
 
@@ -80,26 +73,26 @@ then you might have to prefix the basic typenames i.e. acl2s::pos.</p>
 <h4>Union and Product types</h4>
 @({
   (defdata inode nat)
-
+  
   (defdata file (cons inode string))
   (defdata er-file (oneof file nil))
-
-  (defdata UPNest
-    (oneof (oneof (cons (oneof 11 7) pos-list) 'ok symbol-alist)
+  
+  (defdata UPNest 
+    (oneof (oneof (cons (oneof 11 7) pos-list) 'ok symbol-alist) 
            (cons symbol (complex integer -1))
            (oneof (oneof 42 (cons pos file) er-file) t 7/6)
            \"nice\"))
-
+  
   (defdata loi (oneof nil (cons integer loi)))
 })
 
 <h4>Range types</h4>
 @({
   (defdata cache-miss-ratio (range rational (0 < _ < 1)))
-
+  
   (defdata big-unsigned-num (range integer ((expt 2 32) < _)))
 })
-<p>
+<p> 
 Macros are allowed and the meaning of the defdata body
 is the given by its macroexpansion.
 </p>
@@ -110,12 +103,12 @@ is the given by its macroexpansion.
 <h4>Enum types</h4>
 @({
   (defdata op-code (enum '(lw sw addi subi beqz jr)))
-
+  
   (defun generate-instruction-opcodes (x)
     (if (eq x 'mips-risc-model)
         '(lw sw addi subi beqz jr)
       '()))
-
+  
   (defdata op-code1 (enum (generate-instruction-opcodes 'mips-risc-model)))
 })
 
@@ -128,22 +121,22 @@ is the given by its macroexpansion.
 
 <h4>Mutually-recursive types</h4>
 @({
-  (defdata
+  (defdata 
     (dir (listof (cons string dir-entry)))
     (dir-entry (oneof file dir)))
-
+  
   (defdata
     (sexpr (oneof symbol
                   (cons symbol sexpr-list)))
     (sexpr-list (oneof nil
-                       (cons sexpr sexpr-list))))
+                       (cons sexpr sexpr-list))))  
 })
 
 <h4>Record (Struct) types</h4>
 @({
   (defdata reg-num (range integer (0 <= _ < 32)))
   (defdata immediate-range (range integer (0 <= _ < (expt 2 16))))
-
+  
   (defdata inst (record (op  . op-code)
                         (rd  . reg-num)
                         (rs1 . reg-num)
@@ -164,10 +157,10 @@ is the given by its macroexpansion.
          ;; fix a program counter value
          (pc 1)
          ;; get the instruction pointed to by pc
-         (instr (mget pc I))
+         (instr (mget pc I)) 
          ;; get immediate value field of instr
          (im (inst-imm instr))
-         ;; set immediate value field and the pc entry
+         ;; set immediate value field and the pc entry 
          (I1 (mset pc (set-inst-imm (1+ im) instr) I))
          ;; alternative way of getting immediate value field
          (im2 (mget :imm (mget pc I1)))
@@ -182,14 +175,14 @@ is the given by its macroexpansion.
     (if (zp n)
       nil
       (cons (1- n) (make-descending-addresses (- n 1)))))
-
+  
   (defun imem-custom-enum (n)
     (declare (xargs :mode :program))
     (let* ((m (nth-imem-builtin n))
            (vals (strip-cdrs m))
            (keys (make-descending-addresses (len m))))
       (pairlis$ keys vals)))
-
+  
   (defun imem-customp (x)
     (or (null x)
         (and (consp x)
@@ -200,19 +193,19 @@ is the given by its macroexpansion.
              (or (and (null (cdr x))
                       (equal 0 (caar x)))
                  (> (caar x) (caadr x))))))
-
+  
   (register-type imem-custom
                  :predicate imem-customp
                  :enumerator imem-custom-enum)
-
-
+  
+  
   (defdata-attach imem :test-enumerator imem-custom-enum)
 })
 
 
 <h4>Recursive record types (similar to ML datatype facility)</h4>
 @({
-  (defdata tree (oneof 'Leaf
+  (defdata tree (oneof 'Leaf 
                        (node (val   . string)
                              (left  . tree)
                              (right . tree))))
@@ -223,10 +216,10 @@ is the given by its macroexpansion.
 @({
   (sig binary-append ((listof :a) (listof :a)) => (listof :a))
   (sig nthcdr (nat (listof :a)) => (listof :a))
-  (sig nth (nat (listof :a)) => :a
+  (sig nth (nat (listof :a)) => :a 
        :satisfies (< x1 (len x2)))
   ;; xi corresponds to the ith type appearing in the sig form. For example,
-  ;; x1 corresponds to nat and x2 to (listof :a)
+  ;; x1 corresponds to nat and x2 to (listof :a) 
 })
 
 <h4>Registering a data constructor</h4>
@@ -234,11 +227,11 @@ is the given by its macroexpansion.
   (defun acons-caar (x)  (caar x))
   (defun acons-cdar (x)  (cdar x))
   (defun acons-cdr (x)  (cdr x))
-
+  
   (defthm acons-acl2-count-lemma
     (equal (acl2-count (acons x1 x2 x3))
            (+ 2 (acl2-count x1) (acl2-count x2) (acl2-count x3))))
-
+  
   (register-data-constructor (aconsp acons)
                              ((allp acons-caar) (allp acons-cdar) (allp acons-cdr))
                              :rule-classes (:rewrite)
@@ -247,18 +240,18 @@ is the given by its macroexpansion.
 
 <h4>Registering a type</h4>
 @({
-  (defun nth-even-builtin (n)
+  (defun nth-even-builtin (n) 
     (declare (xargs :guard (natp n)))
     (* 2 (nth-integer n)))
-
-  (register-type even
-                 :predicate evenp
+  
+  (register-type even 
+                 :predicate evenp 
                  :enumerator nth-even-builtin)
 })
 
 <h4>Registering user-defined combinators</h4>
 @({
-  (register-user-combinator alistof
+  (register-user-combinator alistof 
    :arity 2 :verbose t
    :aliases (acl2::alistof)
    :expansion (lambda (_name _args) `(OR nil (acons ,(car _args) ,(cadr _args) ,_name)))
@@ -278,7 +271,7 @@ To debug a failed defdata form, you can proceed in multiple ways:
 </ul>
 </p>
 
-<h3>More details</h3>
+<h3>More details</h3> 
 
 <p> Although most constructs of the defdata language are
 package-agnostic, some of the API functions/macros of the Defdata
@@ -298,13 +291,13 @@ package.</p>
 "
 <h3>Example</h3>
 @({
-  (defun nth-odd-builtin (n)
+  (defun nth-odd-builtin (n) 
     (if (evenp n)
         (1+ n)
       (- n)))
-
+  
   (register-type odd
-                 :predicate oddp
+                 :predicate oddp 
                  :enumerator nth-odd-builtin)
 })
 
@@ -313,7 +306,7 @@ package.</p>
 A defdata type expression can either be a typename, a quoted constant or
 a combinator or constructor expression. To serve as a typename, a symbol
 should either have been defined using the @('defdata') macro, or
-it should have been
+it should have been 
 <i>registered</i> as a <i>defdata type</i> using the @('register-type')
 macro.
 </p>
@@ -321,7 +314,7 @@ macro.
 <p>
 As an example, after having <i>registered</i> @('odd') above, we can
 now use @('odd') to define other @'(defdata') types, e.g., a list of
-odd numbers:
+odd numbers: 
 </p>
 @({
   (defdata odds (listof odd))
@@ -377,14 +370,14 @@ instead of @('cons').
 @({
   (defun aconsp (x)
     (and (consp x) (consp (car x))))
-
+  
   (defun acons-caar (x)  (caar x))
   (defun acons-cdar (x)  (cdar x))
   (defun acons-cdr  (x)  (cdr x))
-
+  
   (register-data-constructor (aconsp acons)
                              ((allp acons-caar) (allp acons-cdar) (allp acons-cdr)))
-
+  
   (defdata symbol-alist (oneof nil (acons symbol all symbol-alist)))
 })
 
@@ -410,7 +403,7 @@ build product types: @('cons'), @('intern$'), @('/') and @('complex').
 
 
 
-(defxdoc sig
+(defxdoc sig 
   :parents (defdata acl2::macro-libraries)
   :short "Specify type signatures for polymorphic functions"
   :long
@@ -418,13 +411,13 @@ build product types: @('cons'), @('intern$'), @('/') and @('complex').
 <h3>Examples:</h3>
 @({
   (sig nthcdr (nat (listof :a)) => (listof :a))
-
+  
   (sig binary-append ((listof :a) (listof :a)) => (listof :a))
-
-  (sig nth (nat (listof :a)) => :a
-       :satisfies (< x1 (len x2)))
+  
+  (sig nth (nat (listof :a)) => :a 
+       :satisfies (< x1 (len x2))) 
   ;; xi corresponds to the ith type appearing in the sig form. For example,
-  ;; x1 corresponds to nat and x2 to (listof :a)
+  ;; x1 corresponds to nat and x2 to (listof :a) 
 
 })
 
@@ -432,7 +425,7 @@ build product types: @('cons'), @('intern$'), @('/') and @('complex').
 
 <h3>General Form:</h3>
 @({
-  (sig fun-name arg-types => return-type
+  (sig fun-name arg-types => return-type 
        [:satisfies hyp]
        [:hints hints]
        [:rule-classes rule-classes]
@@ -459,8 +452,8 @@ The following keyword arguments are supported by the @('sig') macro:
 <ul>
 <li> :satisfies -- specify additional dependent type hypotheses.</li>
 <li> :hints -- @(see acl2::hints) option to the generic type signature.</li>
-<li> :rule-classes --  @(see acl2::rule-classes) option to the generic type signature.</li>
-<li> :verbose -- for debugging.</li>
+<li> :rule-classes --  @(see acl2::rule-classes) option to the generic type signature.</li>  
+<li> :verbose -- for debugging.</li>  
 </ul>
 
 </p>
@@ -484,7 +477,7 @@ example usage).</p>
 <h3>Example</h3>
 Here is how we added <i>alistof</i> to the defdata language:
 @({
-  (register-user-combinator alistof
+  (register-user-combinator alistof 
    :arity 2 :verbose t
    :aliases (acl2::alistof)
    :expansion (lambda (_name _args) `(OR nil (acons ,(car _args) ,(cadr _args) ,_name)))
@@ -495,9 +488,9 @@ Here is how we added <i>alistof</i> to the defdata language:
 
 <h3>General Form:</h3>
 @({
-  (register-user-combinator combinator-name
-                            :arity num
-                            :expansion term
+  (register-user-combinator combinator-name 
+                            :arity num 
+                            :expansion term 
                             [optional args])
 })
 "
@@ -512,25 +505,45 @@ Here is how we added <i>alistof</i> to the defdata language:
 <h3>Examples:</h3>
 @({
   (defdata-attach pos :enumerator nth-small-pos-testing)
-
+  
   (defdata-attach imem :enum/acc imem-custom-enum2)
 })
 
 <h3>General Form:</h3>
 @({
-  (defdata-attach typename
+  (defdata-attach typename 
        [:enum/test enum-fn]
        [:equiv eq-rel]
        [:equiv-fixer eq-fix-fn]
+       [:constraint ... ]
        [:sampling constant-list]
        [overridable metadata]
        )
 
-})
+}) 
 
 <p> Defdata-attach can be used to attach custom test enumerators for
 certain types. This provides a method to customize Cgen's test data
 generation capability for certain scenarios.</p>
+
+<p> (Advanced) Type refinement : User can attach rules that
+specify (to Cgen) how to refine/expand a variable of this type when
+certain additional constraints match (or subterm-match). For those who
+are familar with dest-elim rules, the :rule field has a similar form.
+For example: </p>
+
+@({
+(defdata-attach imemory
+         :constraint (mget a x) ;x is the variable of this type
+         :constraint-variable x
+         :rule (implies (and (natp a) ;additional hyps
+                             (instp x.a)
+                             (imemoryp x1))
+                        (equal x (mset a x.a x1))) ;refine/expand
+         :meta-precondition (or (variablep a)
+                                (fquotep a))
+         :match-type :subterm-match)
+})
 
 <p> Warning: Other optional keyword arguments are currently
 unsupported and the use of :override-ok can be unsound.</p>

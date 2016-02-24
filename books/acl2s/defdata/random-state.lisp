@@ -10,7 +10,7 @@
 ;(include-book "num-list-fns") ;defines acl2-number-listp,pos-listp,naturals-listp
 
 ;=====================================================================;
-;
+; 
 ; by Peter Dillinger &  Dimitris Vardoulakis
 ; Last Major Updates: 7 February 2008
 ; Tweaked:  11 November 2008
@@ -40,22 +40,22 @@
            (type (unsigned-byte 31) seed.)
            (xargs :guard (and (unsigned-byte-p 31 seed.)
                               (posp base)
-                              (<= base 16) (> base 0)
+                              (<= base 16) (> base 0) 
                               (natp maxdigits)
                               (< maxdigits 10) (>= maxdigits 0))))
   (if (zp maxdigits)
     (mv 0 seed.)
-    (b* (((mv (the (integer 0 32) v)
+    (b* (((mv (the (integer 0 32) v) 
               (the (unsigned-byte 31) seed.))
           (genrandom-seed (acl2::*f 2 base) seed.)))
      (if (>= v base)
          (b* (((mv v2 seed.); can do better type information here TODO
-                 (random-natural-basemax1 base
+                 (random-natural-basemax1 base 
                                          (1- maxdigits) seed.)))
-             (mv (+ (- v base)
-                    (* base (nfix v2)))
+             (mv (+ (- v base) 
+                    (* base (nfix v2))) 
                  seed.))
-
+      
        (mv v seed.)))))
 
 (defun random-natural-seed (seed.)
@@ -65,9 +65,9 @@
                     (random-natural-basemax1 10 6 seed.)
                   (random-natural-basemax1 10 6 1382728371)) ;random seed in random-state-basis1
        :exec  (random-natural-basemax1 10 6 seed.)))
+      
 
-
-
+      
 
 
 (defun random-small-natural-seed (seed.)
@@ -187,7 +187,7 @@
                        (mv-let (numer seed.)
                                (genrandom-seed (1+ denom) seed.)
                                (mv (/ numer denom) seed.))))))
-
+                
 
 ;optimize later (copied from below)
 (defun random-rational-between-seed (lo hi seed.)
