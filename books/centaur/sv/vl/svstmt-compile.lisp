@@ -1989,6 +1989,7 @@ exists there.</p>"
     (b* ((x              (svstmt-fix x))
          ((svstate st)   (svstate-fix st))
          (warnings       nil))
+      (clear-memoize-table 'svex-compose-svstack)
       (svstmt-case x
         :assign
         ;; {foo, bar[3]} = a + b

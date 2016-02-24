@@ -716,7 +716,9 @@ explicit declarations.</p>")
             warnings))
 
        ((vl-lexscope-entry entry))
-
+       ((when (member-equal pkgname entry.wildpkgs))
+        ;; Already imported from this package, so noop.
+        (mv scopes warnings))
        ;; I don't think we want to warn about anything here.  Just extend the
        ;; list of wild packages.
        (new-entry  (change-vl-lexscope-entry entry :wildpkgs (cons pkgname entry.wildpkgs)))
