@@ -2585,6 +2585,470 @@
 
 ;; ======================================================================
 
+;; (define get-prefixes
+;;   ((start-rip :type (signed-byte   #.*max-linear-address-size*))
+;;    (prefixes  :type (unsigned-byte 43))
+;;    (cnt       :type (integer 0 5))
+;;    x86)
+
+;;   :guard-hints (("Goal" :in-theory
+;;                  (e/d ()
+;;                       (negative-logand-to-positive-logand-with-integerp-x
+;;                        signed-byte-p))))
+;;   :measure (nfix cnt)
+
+;;   :parents (x86-decoder)
+
+;;   :long "<p>@('get-prefixes') fetches the prefixes of an instruction
+;;   and also returns the first byte following the last prefix.
+;;   @('start-rip') points to the first byte of an instruction,
+;;   potentially a legacy prefix.</p>
+
+;;   <p>Note that the initial value of @('cnt') should be 5 so that if 4
+;;   prefixes are encountered, the next byte can also be fetched and
+;;   stored in the accumulated return value, the @('prefixes')
+;;   argument.</p>
+
+;;   <p>Important note:</p>
+
+;;   <p>From <a
+;;   href='http://wiki.osdev.org/X86-64_Instruction_Encoding#Legacy_Prefixes'>OSDev
+;;   Wiki</a>:</p>
+
+;;      <p><em>When there are two or more prefixes from a single group,
+;;      the behavior is undefined. Some processors ignore the subsequent
+;;      prefixes from the same group, or use only the last prefix
+;;      specified for any group.</em></p>
+
+;;   <p>From Intel Manual, page 22-20 Vol. 3B, September 2013:</p>
+
+;;      <p><em>The Intel386 processor sets a limit of 15 bytes on
+;;      instruction length. The only way to violate this limit is by
+;;      putting redundant prefixes before an instruction. A
+;;      general-protection exception is generated if the limit on
+;;      instruction length is violated.</em></p>
+
+;;   <p>If our interpreter encounters two or more prefixes from a single
+;;   prefix group, we halt after raising an error.  However, we can
+;;   tolerate redundant prefixes.</p>"
+
+
+;;   :prepwork
+
+;;   ((defthm loghead-ash-0
+;;      (implies (and (natp i)
+;;                    (natp j)
+;;                    (natp x)
+;;                    (<= i j))
+;;               (equal (loghead i (ash x j))
+;;                      0))
+;;      :hints (("Goal"
+;;               :in-theory (e/d* (acl2::ihsext-inductions
+;;                                 acl2::ihsext-recursive-redefs)
+;;                                ()))))
+
+;;    (local
+;;     (defthm signed-byte-p-48-fwd-chain
+;;       (implies (signed-byte-p 48 start-rip)
+;;                (equal (signed-byte-p 48 (1+ start-rip))
+;;                       (< (1+ start-rip) *2^47*)))))
+
+;;    (local
+;;     (encapsulate
+;;       ()
+;;       (local (include-book "arithmetic-5/top" :dir :system))
+
+;;       (defthm negative-logand-to-positive-logand-with-n43p-x
+;;         (implies (and (< n 0)
+;;                       (syntaxp (quotep n))
+;;                       (equal m 43)
+;;                       (integerp n)
+;;                       (n43p x))
+;;                  (equal (logand n x)
+;;                         (logand (logand (1- (ash 1 m)) n) x)))))))
+
+
+;;   (if (mbe :logic (zp cnt)
+;;            :exec (eql cnt 0))
+;;       ;; Error, too many prefix bytes
+;;       (mv nil prefixes x86)
+
+;;     (b* ((ctx 'get-prefixes)
+;;          ((mv flg (the (unsigned-byte 8) byte) x86)
+;;           (rm08 start-rip :x x86))
+;;          ((when flg)
+;;           (mv (cons ctx flg) byte x86))
+
+;;          (prefix-byte-group-code
+;;           (the (integer 0 4) (get-one-byte-prefix-array-code byte))))
+
+;;       (if (mbe :logic (zp prefix-byte-group-code)
+;;                :exec  (eql 0 prefix-byte-group-code))
+
+;;           ;; Storing the number of prefixes seen and the first byte
+;;           ;; following the prefixes in "prefixes"...
+;;           (let ((prefixes
+;;                  (!prefixes-slice :next-byte byte prefixes)))
+;;             (mv nil (!prefixes-slice :num-prefixes (- 5 cnt) prefixes)
+;;                 x86))
+
+;;         (case prefix-byte-group-code
+;;           (1 (let ((prefix-1?
+;;                     (prefixes-slice :group-1-prefix prefixes)))
+;;                (if (or (eql 0 (the (unsigned-byte 8) prefix-1?))
+;;                        ;; Redundant Prefix Okay
+;;                        (eql byte prefix-1?))
+;;                    (let ((next-rip (the (signed-byte
+;;                                          #.*max-linear-address-size+1*)
+;;                                      (1+ start-rip))))
+;;                      (if (mbe :logic (canonical-address-p next-rip)
+;;                               :exec
+;;                               (< (the (signed-byte
+;;                                        #.*max-linear-address-size+1*)
+;;                                    next-rip)
+;;                                  #.*2^47*))
+;;                          ;; Storing the group 1 prefix and going on...
+;;                          (get-prefixes next-rip
+;;                                        (the (unsigned-byte 43)
+;;                                          (!prefixes-slice :group-1-prefix
+;;                                                           byte
+;;                                                           prefixes))
+;;                                        (the (integer 0 5) (1- cnt)) x86)
+;;                        (mv (cons 'non-canonical-address next-rip) prefixes x86)))
+;;                  ;; We do not tolerate more than one prefix from a prefix group.
+;;                  (mv t prefixes x86))))
+
+;;           (2 (let ((prefix-2?
+;;                     (prefixes-slice :group-2-prefix prefixes)))
+;;                (if (or (eql 0 (the (unsigned-byte 8) prefix-2?))
+;;                        ;; Redundant Prefixes Okay
+;;                        (eql byte (the (unsigned-byte 8) prefix-2?)))
+;;                    (let ((next-rip (the (signed-byte
+;;                                          #.*max-linear-address-size+1*)
+;;                                      (1+ start-rip))))
+;;                      (if (mbe :logic (canonical-address-p next-rip)
+;;                               :exec
+;;                               (< (the (signed-byte
+;;                                        #.*max-linear-address-size+1*)
+;;                                    next-rip)
+;;                                  #.*2^47*))
+;;                          ;; Storing the group 2 prefix and going on...
+;;                          (get-prefixes next-rip
+;;                                        (!prefixes-slice :group-2-prefix
+;;                                                         byte
+;;                                                         prefixes)
+;;                                        (the (integer 0 5) (1- cnt)) x86)
+;;                        (mv (cons 'non-canonical-address next-rip)
+;;                            prefixes x86)))
+;;                  ;; We do not tolerate more than one prefix from a prefix group.
+;;                  (mv t prefixes x86))))
+
+;;           (3 (let ((prefix-3?
+;;                     (prefixes-slice :group-3-prefix prefixes)))
+;;                (if (or (eql 0 (the (unsigned-byte 8) prefix-3?))
+;;                        ;; Redundant Prefix Okay
+;;                        (eql byte (the (unsigned-byte 8) prefix-3?)))
+
+;;                    (let ((next-rip (the (signed-byte
+;;                                          #.*max-linear-address-size+1*)
+;;                                      (1+ start-rip))))
+;;                      (if (mbe :logic (canonical-address-p next-rip)
+;;                               :exec
+;;                               (< (the (signed-byte
+;;                                        #.*max-linear-address-size+1*)
+;;                                    next-rip)
+;;                                  #.*2^47*))
+;;                          ;; Storing the group 3 prefix and going on...
+;;                          (get-prefixes next-rip
+;;                                        (!prefixes-slice :group-3-prefix
+;;                                                         byte
+;;                                                         prefixes)
+;;                                        (the (integer 0 5) (1- cnt)) x86)
+;;                        (mv (cons 'non-canonical-address next-rip)
+;;                            prefixes x86)))
+;;                  ;; We do not tolerate more than one prefix from a prefix group.
+;;                  (mv t prefixes x86))))
+
+;;           (4 (let ((prefix-4?
+;;                     (prefixes-slice :group-4-prefix prefixes)))
+;;                (if (or (eql 0 (the (unsigned-byte 8) prefix-4?))
+;;                        ;; Redundant Prefix Okay
+;;                        (eql byte (the (unsigned-byte 8) prefix-4?)))
+;;                    (let ((next-rip (the (signed-byte
+;;                                          #.*max-linear-address-size+1*)
+;;                                      (1+ start-rip))))
+;;                      (if (mbe :logic (canonical-address-p next-rip)
+;;                               :exec
+;;                               (< (the (signed-byte
+;;                                        #.*max-linear-address-size+1*)
+;;                                    next-rip)
+;;                                  #.*2^47*))
+;;                          ;; Storing the group 4 prefix and going on...
+;;                          (get-prefixes next-rip
+;;                                        (!prefixes-slice :group-4-prefix
+;;                                                         byte
+;;                                                         prefixes)
+;;                                        (the (integer 0 5) (1- cnt)) x86)
+;;                        (mv (cons 'non-canonical-address next-rip)
+;;                            prefixes x86)))
+;;                  ;; We do not tolerate more than one prefix from a prefix group.
+;;                  (mv t prefixes x86))))
+
+;;           (otherwise
+;;            (mv t prefixes x86))))))
+
+;;   ///
+
+;;   (local (in-theory (e/d () (acl2::zp-open not))))
+
+;;   (defthm natp-get-prefixes
+;;     (implies (forced-and (natp prefixes)
+;;                          (canonical-address-p start-rip)
+;;                          (x86p x86))
+;;              (natp (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))))
+;;     :hints (("Goal" :in-theory (e/d ()
+;;                                     (force
+;;                                      (force)
+;;                                      unsigned-byte-p
+;;                                      signed-byte-p
+;;                                      negative-logand-to-positive-logand-with-integerp-x
+;;                                      acl2::ash-0
+;;                                      unsigned-byte-p-of-logior
+;;                                      acl2::zip-open
+;;                                      bitops::unsigned-byte-p-when-unsigned-byte-p-less))))
+;;     :rule-classes :type-prescription)
+
+;;   (defthm-usb n43p-get-prefixes
+;;     :hyp (and (n43p prefixes)
+;;               (canonical-address-p start-rip)
+;;               (x86p x86))
+;;     :bound 43
+;;     :concl (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
+;;     :hints (("Goal" :in-theory (e/d ()
+;;                                     (signed-byte-p
+;;                                      acl2::ash-0
+;;                                      acl2::zip-open
+;;                                      bitops::logtail-of-logior
+;;                                      unsigned-byte-p-of-logtail
+;;                                      acl2::logtail-identity
+;;                                      ash-monotone-2
+;;                                      bitops::logand-with-negated-bitmask
+;;                                      (:linear bitops::logior-<-0-linear-1)
+;;                                      (:linear bitops::logior-<-0-linear-2)
+;;                                      (:linear bitops::logand->=-0-linear-1)
+;;                                      (:linear bitops::logand->=-0-linear-2)
+;;                                      bitops::logtail-natp
+;;                                      natp-of-get-one-byte-prefix-array-code
+;;                                      acl2::ifix-when-not-integerp
+;;                                      bitops::basic-signed-byte-p-of-+
+;;                                      default-<-1
+;;                                      force (force)))))
+;;     :gen-linear t)
+
+;;   (defthm x86p-get-prefixes
+;;     (implies (forced-and (x86p x86)
+;;                          (canonical-address-p start-rip))
+;;              (x86p (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))))
+;;     :hints (("Goal" :in-theory (e/d ()
+;;                                     (unsigned-byte-p
+;;                                      signed-byte-p
+;;                                      acl2::ash-0
+;;                                      acl2::zip-open
+;;                                      bitops::logtail-of-logior
+;;                                      unsigned-byte-p-of-logtail
+;;                                      acl2::logtail-identity
+;;                                      ash-monotone-2
+;;                                      bitops::logand-with-negated-bitmask
+;;                                      (:linear bitops::logior-<-0-linear-1)
+;;                                      (:linear bitops::logior-<-0-linear-2)
+;;                                      (:linear bitops::logand->=-0-linear-1)
+;;                                      (:linear bitops::logand->=-0-linear-2)
+;;                                      bitops::logtail-natp
+;;                                      natp-of-get-one-byte-prefix-array-code
+;;                                      acl2::ifix-when-not-integerp
+;;                                      bitops::basic-signed-byte-p-of-+
+;;                                      default-<-1
+;;                                      negative-logand-to-positive-logand-with-integerp-x
+;;                                      negative-logand-to-positive-logand-with-n43p-x
+;;                                      force (force))))))
+
+;;   (local (in-theory (e/d  (rm08 rvm08)
+;;                           (force
+;;                            (force)
+;;                            signed-byte-p-48-fwd-chain
+;;                            signed-byte-p
+;;                            bitops::logior-equal-0
+;;                            acl2::zp-open
+;;                            not
+;;                            (:congruence acl2::int-equiv-implies-equal-logand-2)
+;;                            (:congruence acl2::int-equiv-implies-equal-loghead-2)))))
+
+
+;;   (defthm num-prefixes-get-prefixes-bound
+;;     (implies (and (<= cnt 5)
+;;                   (x86p x86)
+;;                   (canonical-address-p start-rip)
+;;                   (n43p prefixes)
+;;                   (< (part-select prefixes :low 0 :high 2) 5))
+;;              (<
+;;               (prefixes-slice
+;;                :num-prefixes
+;;                (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))
+;;               5))
+;;     :hints (("Goal"
+;;              :induct (get-prefixes start-rip prefixes cnt x86)
+;;              :in-theory (e/d (rm08-value-when-error)
+;;                              (signed-byte-p
+;;                               unsigned-byte-p rm08
+;;                               (force) force
+;;                               canonical-address-p
+;;                               not acl2::zp-open
+;;                               acl2::ash-0
+;;                               acl2::zip-open
+;;                               bitops::logtail-of-logior
+;;                               unsigned-byte-p-of-logtail
+;;                               acl2::logtail-identity
+;;                               ash-monotone-2
+;;                               bitops::logand-with-negated-bitmask
+;;                               (:linear bitops::logior-<-0-linear-1)
+;;                               (:linear bitops::logior-<-0-linear-2)
+;;                               (:linear bitops::logand->=-0-linear-1)
+;;                               (:linear bitops::logand->=-0-linear-2)
+;;                               bitops::logtail-natp
+;;                               natp-of-get-one-byte-prefix-array-code
+;;                               acl2::ifix-when-not-integerp
+;;                               bitops::basic-signed-byte-p-of-+
+;;                               default-<-1))))
+;;     :rule-classes :linear)
+
+;;   (defthm get-prefixes-opener-lemma-1
+;;     (implies (zp cnt)
+;;              (equal (get-prefixes start-rip prefixes cnt x86)
+;;                     (mv nil prefixes x86)))
+;;     :hints (("Goal" :in-theory (e/d (get-prefixes) ()))))
+
+;;   (defthm get-prefixes-opener-lemma-2
+;;     ;; Note that this lemma is applicable in the system-level mode too.
+;;     ;; This lemma would be used for those instructions which do not have
+;;     ;; any prefix byte.
+;;     (implies (and (not (zp cnt))
+;;                   (let*
+;;                       ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+;;                        (prefix-byte-group-code
+;;                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))))
+;;                     (and (not flg)
+;;                          (zp prefix-byte-group-code))))
+;;              (and
+;;               (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))
+;;                      nil)
+;;               (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
+;;                      (let ((prefixes
+;;                             (!prefixes-slice :next-byte
+;;                                              (mv-nth 1 (rm08 start-rip :x x86))
+;;                                              prefixes)))
+;;                        (!prefixes-slice :num-prefixes (- 5 cnt) prefixes))))))
+
+;;   (defthm get-prefixes-opener-lemma-3
+;;     (implies (and (canonical-address-p (1+ start-rip))
+;;                   (programmer-level-mode x86)
+;;                   (not (zp cnt))
+;;                   (equal (prefixes-slice :group-1-prefix prefixes) 0)
+;;                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+;;                          (prefix-byte-group-code
+;;                           (get-one-byte-prefix-array-code
+;;                            (mv-nth 1 (rm08 start-rip :x x86)))))
+;;                     (and (not flg) ;; No error in reading a byte
+;;                          (equal prefix-byte-group-code 1))))
+;;              (equal (get-prefixes start-rip prefixes cnt x86)
+;;                     (get-prefixes (1+ start-rip)
+;;                                   (!prefixes-slice :group-1-prefix
+;;                                                    (mv-nth 1 (rm08 start-rip :x x86))
+;;                                                    prefixes)
+;;                                   (1- cnt) x86)))
+;;     :hints (("Goal" :in-theory (e/d* ()
+;;                                      (unsigned-byte-p
+;;                                       negative-logand-to-positive-logand-with-n43p-x
+;;                                       negative-logand-to-positive-logand-with-integerp-x)))))
+
+;;   (defthm get-prefixes-opener-lemma-4
+;;     (implies (and (canonical-address-p (1+ start-rip))
+;;                   (programmer-level-mode x86)
+;;                   (not (zp cnt))
+;;                   (equal (prefixes-slice :group-2-prefix prefixes) 0)
+;;                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+;;                          (prefix-byte-group-code
+;;                           (get-one-byte-prefix-array-code
+;;                            (mv-nth 1 (rm08 start-rip :x x86)))))
+;;                     (and (not flg) ;; No error in reading a byte
+;;                          (equal prefix-byte-group-code 2))))
+;;              (equal (get-prefixes start-rip prefixes cnt x86)
+;;                     (get-prefixes (1+ start-rip)
+;;                                   (!prefixes-slice :group-2-prefix
+;;                                                    (mv-nth 1 (rm08 start-rip :x x86))
+;;                                                    prefixes)
+;;                                   (1- cnt) x86)))
+;;     :hints (("Goal" :in-theory (e/d* ()
+;;                                      (unsigned-byte-p
+;;                                       negative-logand-to-positive-logand-with-n43p-x
+;;                                       negative-logand-to-positive-logand-with-integerp-x)))))
+
+;;   (defthm get-prefixes-opener-lemma-5
+;;     (implies (and (canonical-address-p (1+ start-rip))
+;;                   (programmer-level-mode x86)
+;;                   (not (zp cnt))
+;;                   (equal (prefixes-slice :group-3-prefix prefixes) 0)
+;;                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+;;                          (prefix-byte-group-code
+;;                           (get-one-byte-prefix-array-code
+;;                            (mv-nth 1 (rm08 start-rip :x x86)))))
+;;                     (and (not flg) ;; No error in reading a byte
+;;                          (equal prefix-byte-group-code 3))))
+;;              (equal (get-prefixes start-rip prefixes cnt x86)
+;;                     (get-prefixes (1+ start-rip)
+;;                                   (!prefixes-slice :group-3-prefix
+;;                                                    (mv-nth 1 (rm08 start-rip :x x86))
+;;                                                    prefixes)
+;;                                   (1- cnt) x86)))
+;;     :hints (("Goal" :in-theory (e/d* ()
+;;                                      (unsigned-byte-p
+;;                                       negative-logand-to-positive-logand-with-n43p-x
+;;                                       negative-logand-to-positive-logand-with-integerp-x)))))
+
+;;   (defthm get-prefixes-opener-lemma-6
+;;     (implies (and (canonical-address-p (1+ start-rip))
+;;                   (programmer-level-mode x86)
+;;                   (not (zp cnt))
+;;                   (equal (prefixes-slice :group-4-prefix prefixes) 0)
+;;                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+;;                          (prefix-byte-group-code
+;;                           (get-one-byte-prefix-array-code
+;;                            (mv-nth 1 (rm08 start-rip :x x86)))))
+;;                     (and (not flg) ;; No error in reading a byte
+;;                          (equal prefix-byte-group-code 4))))
+;;              (equal (get-prefixes start-rip prefixes cnt x86)
+;;                     (get-prefixes (1+ start-rip)
+;;                                   (!prefixes-slice :group-4-prefix
+;;                                                    (mv-nth 1 (rm08 start-rip :x x86))
+;;                                                    prefixes)
+;;                                   (1- cnt) x86)))
+;;     :hints (("Goal" :in-theory (e/d* ()
+;;                                      (unsigned-byte-p
+;;                                       negative-logand-to-positive-logand-with-n43p-x
+;;                                       negative-logand-to-positive-logand-with-integerp-x)))))
+
+;;   (defthm get-prefixes-opener-lemma-7
+;;     (implies (and (x86p x86)
+;;                   (programmer-level-mode x86)
+;;                   (not (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
+;;              (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
+;;                     x86))
+;;     :hints (("Goal" :in-theory
+;;              (union-theories
+;;               '(get-prefixes
+;;                 rm08-does-not-affect-state-in-programmer-level-mode)
+;;               (theory 'minimal-theory))))))
+
+
 (define get-prefixes
   ((start-rip :type (signed-byte   #.*max-linear-address-size*))
    (prefixes  :type (unsigned-byte 43))
@@ -2921,13 +3385,13 @@
                               default-<-1))))
     :rule-classes :linear)
 
-  (defthm get-prefixes-opener-lemma-1
+  (defthm get-prefixes-opener-lemma-zero-cnt
     (implies (zp cnt)
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (mv nil prefixes x86)))
     :hints (("Goal" :in-theory (e/d (get-prefixes) ()))))
 
-  (defthm get-prefixes-opener-lemma-2
+  (defthm get-prefixes-opener-lemma-no-prefix-byte
     ;; Note that this lemma is applicable in the system-level mode too.
     ;; This lemma would be used for those instructions which do not have
     ;; any prefix byte.
@@ -2948,97 +3412,9 @@
                                              prefixes)))
                        (!prefixes-slice :num-prefixes (- 5 cnt) prefixes))))))
 
-  (defthm get-prefixes-opener-lemma-3
-    (implies (and (canonical-address-p (1+ start-rip))
-                  (programmer-level-mode x86)
-                  (not (zp cnt))
-                  (equal (prefixes-slice :group-1-prefix prefixes) 0)
-                  (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
-                         (prefix-byte-group-code
-                          (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rm08 start-rip :x x86)))))
-                    (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 1))))
-             (equal (get-prefixes start-rip prefixes cnt x86)
-                    (get-prefixes (1+ start-rip)
-                                  (!prefixes-slice :group-1-prefix
-                                                   (mv-nth 1 (rm08 start-rip :x x86))
-                                                   prefixes)
-                                  (1- cnt) x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
-                                      negative-logand-to-positive-logand-with-n43p-x
-                                      negative-logand-to-positive-logand-with-integerp-x)))))
-
-  (defthm get-prefixes-opener-lemma-4
-    (implies (and (canonical-address-p (1+ start-rip))
-                  (programmer-level-mode x86)
-                  (not (zp cnt))
-                  (equal (prefixes-slice :group-2-prefix prefixes) 0)
-                  (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
-                         (prefix-byte-group-code
-                          (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rm08 start-rip :x x86)))))
-                    (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 2))))
-             (equal (get-prefixes start-rip prefixes cnt x86)
-                    (get-prefixes (1+ start-rip)
-                                  (!prefixes-slice :group-2-prefix
-                                                   (mv-nth 1 (rm08 start-rip :x x86))
-                                                   prefixes)
-                                  (1- cnt) x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
-                                      negative-logand-to-positive-logand-with-n43p-x
-                                      negative-logand-to-positive-logand-with-integerp-x)))))
-
-  (defthm get-prefixes-opener-lemma-5
-    (implies (and (canonical-address-p (1+ start-rip))
-                  (programmer-level-mode x86)
-                  (not (zp cnt))
-                  (equal (prefixes-slice :group-3-prefix prefixes) 0)
-                  (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
-                         (prefix-byte-group-code
-                          (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rm08 start-rip :x x86)))))
-                    (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 3))))
-             (equal (get-prefixes start-rip prefixes cnt x86)
-                    (get-prefixes (1+ start-rip)
-                                  (!prefixes-slice :group-3-prefix
-                                                   (mv-nth 1 (rm08 start-rip :x x86))
-                                                   prefixes)
-                                  (1- cnt) x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
-                                      negative-logand-to-positive-logand-with-n43p-x
-                                      negative-logand-to-positive-logand-with-integerp-x)))))
-
-  (defthm get-prefixes-opener-lemma-6
-    (implies (and (canonical-address-p (1+ start-rip))
-                  (programmer-level-mode x86)
-                  (not (zp cnt))
-                  (equal (prefixes-slice :group-4-prefix prefixes) 0)
-                  (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
-                         (prefix-byte-group-code
-                          (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rm08 start-rip :x x86)))))
-                    (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 4))))
-             (equal (get-prefixes start-rip prefixes cnt x86)
-                    (get-prefixes (1+ start-rip)
-                                  (!prefixes-slice :group-4-prefix
-                                                   (mv-nth 1 (rm08 start-rip :x x86))
-                                                   prefixes)
-                                  (1- cnt) x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
-                                      negative-logand-to-positive-logand-with-n43p-x
-                                      negative-logand-to-positive-logand-with-integerp-x)))))
-
-  (defthm get-prefixes-opener-lemma-7
-    (implies (and (x86p x86)
-                  (programmer-level-mode x86)
+  (defthm get-prefixes-opener-lemma-in-programmer-level-mode-does-not-modify-x86-state
+    (implies (and (programmer-level-mode x86)
+                  (x86p x86)
                   (not (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
              (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
                     x86))
@@ -3046,340 +3422,253 @@
              (union-theories
               '(get-prefixes
                 rm08-does-not-affect-state-in-programmer-level-mode)
-              (theory 'minimal-theory))))))
+              (theory 'minimal-theory)))))
 
-;; (i-am-here)
+  (defthm get-prefixes-opener-lemma-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (canonical-address-p start-rip)
+                  (canonical-address-p (+ cnt start-rip))
+                  (not (zp cnt))
+                  (not (mv-nth 0 (rm08 start-rip :x x86))))
+             (and
+              (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))
+                     (cond
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         1)
+                        (equal (prefixes-slice :group-1-prefix prefixes) 0))
+                       (mv-nth 0
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-1-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         2)
+                        (equal (prefixes-slice :group-2-prefix prefixes) 0))
+                       (mv-nth 0
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-2-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         3)
+                        (equal (prefixes-slice :group-3-prefix prefixes) 0))
+                       (mv-nth 0
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-3-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         4)
+                        (equal (prefixes-slice :group-4-prefix prefixes) 0))
+                       (mv-nth 0
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-4-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      (t
+                       (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))))
+              (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
+                     (cond
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         1)
+                        (equal (prefixes-slice :group-1-prefix prefixes) 0))
+                       (mv-nth 1
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-1-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         2)
+                        (equal (prefixes-slice :group-2-prefix prefixes) 0))
+                       (mv-nth 1
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-2-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         3)
+                        (equal (prefixes-slice :group-3-prefix prefixes) 0))
+                       (mv-nth 1
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-3-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         4)
+                        (equal (prefixes-slice :group-4-prefix prefixes) 0))
+                       (mv-nth 1
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-4-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      (t
+                       (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((get-prefixes start-rip prefixes cnt x86))
+             :in-theory (e/d* () (unsigned-byte-p)))))
 
-;; (defthm get-prefixes-opener-lemma-in-system-level-mode
-;;   (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
-;;                 (canonical-address-p start-rip)
-;;                 (canonical-address-p (+ cnt start-rip))
-;;                 (all-paging-entries-found-p
-;;                  (create-canonical-address-list cnt start-rip)
-;;                  (double-rewrite x86))
-;;                 (no-page-faults-during-translation-p
-;;                  (create-canonical-address-list cnt start-rip)
-;;                  :x cpl (double-rewrite x86))
-;;                 (mapped-lin-addrs-disjoint-from-paging-structure-addrs-p
-;;                  (create-canonical-address-list cnt start-rip)
-;;                  :x cpl (double-rewrite x86))
-;;                 (not (zp cnt))
-;;                 (not (mv-nth 0 (rm08 start-rip :x x86))))
-;;            (and
-;;             (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))
-;;                    (cond
-;;                     ((and
-;;                       (equal
-;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                        1)
-;;                       (equal (prefixes-slice :group-1-prefix prefixes) 0))
-;;                      (mv-nth 0
-;;                              (get-prefixes (1+ start-rip)
-;;                                            (!prefixes-slice
-;;                                             :group-1-prefix
-;;                                             (mv-nth 1 (rm08 start-rip :x x86))
-;;                                             prefixes)
-;;                                            (1- cnt) x86)))
-;;                     ((and
-;;                       (equal
-;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                        2)
-;;                       (equal (prefixes-slice :group-2-prefix prefixes) 0))
-;;                      (mv-nth 0
-;;                              (get-prefixes (1+ start-rip)
-;;                                            (!prefixes-slice
-;;                                             :group-2-prefix
-;;                                             (mv-nth 1 (rm08 start-rip :x x86))
-;;                                             prefixes)
-;;                                            (1- cnt) x86)))
-;;                     ((and
-;;                       (equal
-;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                        3)
-;;                       (equal (prefixes-slice :group-3-prefix prefixes) 0))
-;;                      (mv-nth 0
-;;                              (get-prefixes (1+ start-rip)
-;;                                            (!prefixes-slice
-;;                                             :group-3-prefix
-;;                                             (mv-nth 1 (rm08 start-rip :x x86))
-;;                                             prefixes)
-;;                                            (1- cnt) x86)))
-;;                     ((and
-;;                       (equal
-;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                        4)
-;;                       (equal (prefixes-slice :group-4-prefix prefixes) 0))
-;;                      (mv-nth 0
-;;                              (get-prefixes (1+ start-rip)
-;;                                            (!prefixes-slice
-;;                                             :group-4-prefix
-;;                                             (mv-nth 1 (rm08 start-rip :x x86))
-;;                                             prefixes)
-;;                                            (1- cnt) x86)))
-;;                     (t
-;;                      (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))))
-;;             (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
-;;                    (cond
-;;                     ((and
-;;                       (equal
-;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                        1)
-;;                       (equal (prefixes-slice :group-1-prefix prefixes) 0))
-;;                      (mv-nth 1
-;;                              (get-prefixes (1+ start-rip)
-;;                                            (!prefixes-slice
-;;                                             :group-1-prefix
-;;                                             (mv-nth 1 (rm08 start-rip :x x86))
-;;                                             prefixes)
-;;                                            (1- cnt) x86)))
-;;                     ((and
-;;                       (equal
-;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                        2)
-;;                       (equal (prefixes-slice :group-2-prefix prefixes) 0))
-;;                      (mv-nth 1
-;;                              (get-prefixes (1+ start-rip)
-;;                                            (!prefixes-slice
-;;                                             :group-2-prefix
-;;                                             (mv-nth 1 (rm08 start-rip :x x86))
-;;                                             prefixes)
-;;                                            (1- cnt) x86)))
-;;                     ((and
-;;                       (equal
-;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                        3)
-;;                       (equal (prefixes-slice :group-3-prefix prefixes) 0))
-;;                      (mv-nth 1
-;;                              (get-prefixes (1+ start-rip)
-;;                                            (!prefixes-slice
-;;                                             :group-3-prefix
-;;                                             (mv-nth 1 (rm08 start-rip :x x86))
-;;                                             prefixes)
-;;                                            (1- cnt) x86)))
-;;                     ((and
-;;                       (equal
-;;                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                        4)
-;;                       (equal (prefixes-slice :group-4-prefix prefixes) 0))
-;;                      (mv-nth 1
-;;                              (get-prefixes (1+ start-rip)
-;;                                            (!prefixes-slice
-;;                                             :group-4-prefix
-;;                                             (mv-nth 1 (rm08 start-rip :x x86))
-;;                                             prefixes)
-;;                                            (1- cnt) x86)))
-;;                     (t
-;;                      (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))))
-;;   :hints (("Goal"
-;;            :do-not-induct t
-;;            :expand ((get-prefixes start-rip prefixes cnt x86))
-;;            :in-theory (e/d* (get-prefixes
-;;                              all-paging-entries-found-p
-;;                              mapped-lin-addrs-disjoint-from-paging-structure-addrs-p)
-;;                             (get-prefixes-and-xlate-equiv-x86s
-;;                              (:definition unsigned-byte-p)
-;;                              (:rewrite negative-logand-to-positive-logand-with-integerp-x)
-;;                              (:linear <=-logior)
-;;                              (:rewrite bitops::logsquash-cancel)
-;;                              (:rewrite acl2::natp-when-integerp)
-;;                              (:linear bitops::logand-<-0-linear)
-;;                              (:rewrite acl2::ifix-negative-to-negp)
-;;                              (:linear bitops::logand->=-0-linear-2)
-;;                              (:type-prescription bitops::logand-natp-type-2)
-;;                              (:linear bitops::upper-bound-of-logand . 2)
-;;                              (:linear bitops::logior->=-0-linear)
-;;                              (:linear bitops::logior-<-0-linear-2)
-;;                              (:linear bitops::logior-<-0-linear-1)
-;;                              (:rewrite default-<-1)
-;;                              (:type-prescription bitops::logior-natp-type)
-;;                              (:rewrite acl2::negp-when-less-than-0)
-;;                              (:rewrite acl2::natp-when-gte-0)
-;;                              (:rewrite unsigned-byte-p-of-logior)
-;;                              (:type-prescription bitops::logand-natp-type-1)
-;;                              (:type-prescription binary-logand)
-;;                              (:linear ash-monotone-2)
-;;                              (:rewrite acl2::ifix-when-not-integerp)
-;;                              (:linear acl2::loghead-upper-bound)
-;;                              (:rewrite acl2::loghead-identity)
-;;                              (:rewrite default-<-2)
-;;                              (:rewrite acl2::negp-when-integerp)
-;;                              (:rewrite constant-upper-bound-of-logior-for-naturals)
-;;                              (:type-prescription bitops::ash-natp-type)
-;;                              (:rewrite unsigned-byte-p-of-logand-2)
-;;                              (:rewrite bitops::ash-<-0)
-;;                              (:type-prescription natp-of-get-one-byte-prefix-array-code)
-;;                              (:type-prescription n08p-mv-nth-1-rm08)
-;;                              (:type-prescription negp)
-;;                              (:linear bitops::logand->=-0-linear-1)
-;;                              (:rewrite acl2::ash-0)
-;;                              (:rewrite acl2::zip-open)
-;;                              (:rewrite bitops::logsquash-<-0)
-;;                              (:rewrite loghead-of-non-integerp)
-;;                              (:rewrite unsigned-byte-p-of-logtail)
-;;                              (:linear bitops::upper-bound-of-logand . 1)
-;;                              (:rewrite bitops::logior-equal-0)
-;;                              (:rewrite bitops::logtail-of-logior)
-;;                              (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
-;;                              (:type-prescription bitops::logsquash$inline)
-;;                              (:rewrite bitops::logtail-of-logand)
-;;                              (:rewrite acl2::logtail-identity)
-;;                              (:rewrite bitops::loghead-of-logior)
-;;                              (:rewrite unsigned-byte-p-of-logsquash)
-;;                              (:type-prescription bitops::logtail-natp)
-;;                              (:rewrite bitops::logtail-of-ash)
-;;                              (:rewrite get-prefixes-opener-lemma-1)
-;;                              (:linear bitops::upper-bound-of-logior-for-naturals)
-;;                              (:type-prescription acl2::logtail-type)
-;;                              (:rewrite rm08-values-and-xlate-equiv-x86s-disjoint)
-;;                              (:rewrite bitops::logand-with-bitmask)
-;;                              (:linear n08p-mv-nth-1-rm08)
-;;                              (:rewrite acl2::zp-when-gt-0)
-;;                              (:rewrite bitops::loghead-of-logand)
-;;                              (:rewrite unsigned-byte-p-of-logand-1)
-;;                              (:type-prescription logtail-*2^x-byte-pseudo-page*-of-physical-address)
-;;                              (:rewrite default-+-2)
-;;                              (:rewrite default-+-1)
-;;                              (:rewrite bitops::loghead-of-logsquash-commute)
-;;                              (:rewrite member-list-p-and-pairwise-disjoint-p-aux)
-;;                              (:definition n64p$inline)
-;;                              (:type-prescription rationalp-expt-type-prescription)
-;;                              (:linear rm-low-64-logand-logior-helper-1)
-;;                              (:rewrite signed-byte-p-limits-thm)
-;;                              (:type-prescription expt-type-prescription-non-zero-base)
-;;                              (:rewrite n08p-mv-nth-1-rm08)
-;;                              (:definition member-list-p)
-;;                              (:definition programmer-level-mode$inline)
-;;                              (:type-prescription rm-low-64-logand-logior-helper-1)
-;;                              (:rewrite programmer-level-mode-rm08-no-error)
-;;                              (:definition open-qword-paddr-list-list)
-;;                              (:rewrite canonical-address-p-limits-thm-3)
-;;                              (:rewrite acl2::simplify-logior)
-;;                              (:rewrite get-prefixes-opener-lemma-6)
-;;                              (:rewrite get-prefixes-opener-lemma-5)
-;;                              (:rewrite get-prefixes-opener-lemma-4)
-;;                              (:rewrite get-prefixes-opener-lemma-3)
-;;                              (:definition open-qword-paddr-list)
-;;                              (:rewrite bitops::logsquash-of-0-i)
-;;                              (:definition pairwise-disjoint-p-aux)
-;;                              (:rewrite canonical-address-p-limits-thm-2)
-;;                              (:rewrite canonical-address-p-limits-thm-1)
-;;                              (:rewrite canonical-address-p-limits-thm-0)
-;;                              (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
-;;                              (:rewrite logand-redundant)
-;;                              (:type-prescription n64p$inline)
-;;                              (:type-prescription zip)
-;;                              (:rewrite unsigned-byte-p-of-ash)
-;;                              (:rewrite open-qword-paddr-list-list-and-member-list-p)
-;;                              (:meta acl2::mv-nth-cons-meta)
-;;                              (:type-prescription integer-range-p)
-;;                              (:type-prescription bitops::lognot-negp)
-;;                              (:type-prescription seg-visiblei-is-n16p)
-;;                              (:definition binary-append)
-;;                              (:rewrite rm08-does-not-affect-state-in-programmer-level-mode)
-;;                              (:type-prescription member-list-p)
-;;                              (:rewrite member-p-cdr)
-;;                              (:rewrite bitops::logtail-of-logtail)
-;;                              (:rewrite good-paging-structures-x86p-implies-x86p)
-;;                              (:type-prescription ash)
-;;                              (:rewrite rm-low-64-logand-logior-helper-1)
-;;                              (:rewrite default-cdr)
-;;                              (:rewrite rm08-value-when-error)
-;;                              (:linear seg-visiblei-is-n16p)
-;;                              (:rewrite acl2::append-when-not-consp)
-;;                              (:rewrite xr-rm08-state-in-system-level-mode)
-;;                              (:rewrite unsigned-byte-p-of-loghead)
-;;                              (:rewrite acl2::difference-unsigned-byte-p)
-;;                              (:rewrite consp-of-create-canonical-address-list)
-;;                              (:rewrite cdr-create-canonical-address-list)
-;;                              (:rewrite car-create-canonical-address-list)
-;;                              (:definition addr-range)
-;;                              (:rewrite default-car)
-;;                              (:rewrite get-prefixes-opener-lemma-2)
-;;                              (:rewrite acl2::distributivity-of-minus-over-+)
-;;                              (:type-prescription true-listp-addr-range)
-;;                              (:type-prescription consp-addr-range)
-;;                              (:rewrite subset-list-p-and-member-list-p)
-;;                              (:rewrite x86p-rm08)
-;;                              (:type-prescription bitops::lognot-natp)
-;;                              (:type-prescription lognot)
-;;                              (:type-prescription open-qword-paddr-list-list)
-;;                              (:type-prescription gather-all-paging-structure-qword-addresses)
-;;                              (:rewrite member-p-and-mult-8-qword-paddr-listp)
-;;                              (:rewrite member-list-p-and-mult-8-qword-paddr-list-listp)
-;;                              (:rewrite bitops::logior-fold-consts)
-;;                              (:rewrite pairwise-disjoint-p-aux-and-append)
-;;                              (:rewrite car-addr-range)
-;;                              (:rewrite all-seg-visibles-equal-aux-open)
-;;                              (:rewrite acl2::unsigned-byte-p-loghead)
-;;                              (:rewrite default-unary-minus)
-;;                              (:rewrite good-paging-structures-x86p-implies-system-level-mode)
-;;                              (:rewrite subset-p-cons-member-p-lemma)
-;;                              (:rewrite member-p-of-not-a-consp)
-;;                              (:rewrite member-list-p-no-duplicates-list-p-and-member-p)
-;;                              (:rewrite loghead-ash-0)
-;;                              (:type-prescription bitops::natp-part-install-width-low)
-;;                              (:rewrite bitops::loghead-of-ash-same)
-;;                              (:rewrite bitops::loghead-of-0-i)
-;;                              (:rewrite bitops::logsquash-of-logsquash-2)
-;;                              (:rewrite bitops::logsquash-of-logsquash-1)
-;;                              (:type-prescription mult-8-qword-paddr-list-listp)
-;;                              (:type-prescription disjoint-p)
-;;                              (:rewrite mapped-lin-addrs-disjoint-from-paging-structure-addrs-p-member-p)
-;;                              (:rewrite
-;;                               good-paging-structures-x86p-implies-mult-8-qword-paddr-list-listp-paging-structure-addrs)
-;;                              (:rewrite disjoint-p-subset-p)
-;;                              (:rewrite disjoint-p-members-of-true-list-list-disjoint-p)
-;;                              (:rewrite disjoint-p-members-of-pairwise-disjoint-p-aux)
-;;                              (:rewrite disjoint-p-members-of-pairwise-disjoint-p)
-;;                              (:rewrite cdr-addr-range)
-;;                              (:type-prescription bitops::part-install-width-low$inline)
-;;                              (:rewrite get-prefixes-opener-lemma-7)
-;;                              (:rewrite xr-rm08-state-in-programmer-level-mode)))
-;;            :use ((:instance get-prefixes-and-xlate-equiv-x86s
-;;                             (cpl (loghead 2 (xr :seg-visible 1 x86)))
-;;                             (start-rip (1+ start-rip))
-;;                             (prefixes (cond
-;;                                        ((and
-;;                                          (equal
-;;                                           (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                                           1)
-;;                                          (equal (prefixes-slice :group-1-prefix prefixes) 0))
-;;                                         (!prefixes-slice
-;;                                          :group-1-prefix
-;;                                          (mv-nth 1 (rm08 start-rip :x x86))
-;;                                          prefixes))
-;;                                        ((and
-;;                                          (equal
-;;                                           (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                                           2)
-;;                                          (equal (prefixes-slice :group-2-prefix prefixes) 0))
-;;                                         (!prefixes-slice
-;;                                          :group-2-prefix
-;;                                          (mv-nth 1 (rm08 start-rip :x x86))
-;;                                          prefixes))
-;;                                        ((and
-;;                                          (equal
-;;                                           (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                                           3)
-;;                                          (equal (prefixes-slice :group-3-prefix prefixes) 0))
-;;                                         (!prefixes-slice
-;;                                          :group-3-prefix
-;;                                          (mv-nth 1 (rm08 start-rip :x x86))
-;;                                          prefixes))
-;;                                        ((and
-;;                                          (equal
-;;                                           (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
-;;                                           4)
-;;                                          (equal (prefixes-slice :group-4-prefix prefixes) 0))
-;;                                         (!prefixes-slice
-;;                                          :group-4-prefix
-;;                                          (mv-nth 1 (rm08 start-rip :x x86))
-;;                                          prefixes))
-;;                                        (t
-;;                                         prefixes)))
-;;                             (cnt (+ -1 cnt))
-;;                             (x86-1 (mv-nth 2 (rm08 start-rip :x x86)))
-;;                             (x86-2 x86))))))
+
+  (defthm get-prefixes-opener-lemma-in-system-level-non-marking-mode-does-not-modify-x86-state
+    (implies (and (not (programmer-level-mode x86))
+                  (not (page-structure-marking-mode x86))
+                  (x86p x86)
+                  (not (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
+             (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
+                    x86))
+    :hints (("Goal"
+             :in-theory (union-theories '(get-prefixes
+                                          mv-nth-2-rm08-in-system-level-non-marking-mode)
+                                        (theory 'minimal-theory)))))
+
+  (defthm get-prefixes-opener-lemma-in-system-level-non-marking-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (page-structure-marking-mode x86))
+                  (canonical-address-p start-rip)
+                  (canonical-address-p (+ cnt start-rip))
+                  (not (zp cnt))
+                  (not (mv-nth 0 (rm08 start-rip :x x86))))
+             (and
+              (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))
+                     (cond
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         1)
+                        (equal (prefixes-slice :group-1-prefix prefixes) 0))
+                       (mv-nth 0
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-1-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         2)
+                        (equal (prefixes-slice :group-2-prefix prefixes) 0))
+                       (mv-nth 0
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-2-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         3)
+                        (equal (prefixes-slice :group-3-prefix prefixes) 0))
+                       (mv-nth 0
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-3-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         4)
+                        (equal (prefixes-slice :group-4-prefix prefixes) 0))
+                       (mv-nth 0
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-4-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      (t
+                       (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))))
+              (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
+                     (cond
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         1)
+                        (equal (prefixes-slice :group-1-prefix prefixes) 0))
+                       (mv-nth 1
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-1-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         2)
+                        (equal (prefixes-slice :group-2-prefix prefixes) 0))
+                       (mv-nth 1
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-2-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         3)
+                        (equal (prefixes-slice :group-3-prefix prefixes) 0))
+                       (mv-nth 1
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-3-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      ((and
+                        (equal
+                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))
+                         4)
+                        (equal (prefixes-slice :group-4-prefix prefixes) 0))
+                       (mv-nth 1
+                               (get-prefixes (1+ start-rip)
+                                             (!prefixes-slice
+                                              :group-4-prefix
+                                              (mv-nth 1 (rm08 start-rip :x x86))
+                                              prefixes)
+                                             (1- cnt) x86)))
+                      (t
+                       (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((get-prefixes start-rip prefixes cnt x86))
+             :in-theory (e/d* () (unsigned-byte-p))))))
 
 ;; ======================================================================
 
@@ -3573,7 +3862,7 @@ semantic function.</p>"
     (implies (x86p x86)
              (x86p (x86-fetch-decode-execute x86))))
 
-  (defthm x86-fetch-decode-execute-opener
+  (defthm x86-fetch-decode-execute-opener-in-programmer-level-mode
     (implies
      (and (equal start-rip (rip x86))
           (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 5 x86)))
@@ -3600,12 +3889,9 @@ semantic function.</p>"
           (equal sib (if sib? (mv-nth 1 (rm08 temp-rip2 :x x86)) 0))
           (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
 
-          (x86p x86)
+          (programmer-level-mode x86)
           (not (ms x86))
           (not (fault x86))
-          ;; The following hypothesis is necessary because we do not
-          ;; have RoW/WoW theorems for rm* and wm* functions yet.
-          (programmer-level-mode x86)
           (not (mv-nth 0 (get-prefixes start-rip 0 5 x86)))
           (canonical-address-p temp-rip0)
           (not (mv-nth 0 (rm08 temp-rip0 :x x86)))
@@ -3619,18 +3905,70 @@ semantic function.</p>"
           (if sib?
               (and (canonical-address-p temp-rip3)
                    (not (mv-nth 0 (rm08 temp-rip2 :x x86))))
-            t))
+            t)
+          (x86p x86))
      (equal (x86-fetch-decode-execute x86)
             (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
                                       opcode/escape-byte modr/m sib x86)))
     :hints (("Goal" :in-theory (e/d ()
                                     (signed-byte-p not)))))
 
+  (defthm x86-fetch-decode-execute-opener-in-system-level-non-marking-mode
+    (implies
+     (and (equal start-rip (rip x86))
+          (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 5 x86)))
+          (equal opcode/rex/escape-byte
+                 (prefixes-slice :next-byte prefixes))
+          (equal prefix-length (prefixes-slice :num-prefixes prefixes))
+          (equal temp-rip0 (if (equal prefix-length 0)
+                               (+ 1 start-rip)
+                             (+ prefix-length start-rip 1)))
+          (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4)
+                                     4)
+                              opcode/rex/escape-byte 0))
+          (equal opcode/escape-byte (if (equal rex-byte 0)
+                                        opcode/rex/escape-byte
+                                      (mv-nth 1 (rm08 temp-rip0 :x x86))))
+          (equal temp-rip1 (if (equal rex-byte 0)
+                               temp-rip0 (1+ temp-rip0)))
+          (equal modr/m? (x86-one-byte-opcode-modr/m-p opcode/escape-byte))
+          (equal modr/m (if modr/m?
+                            (mv-nth 1 (rm08 temp-rip1 :x x86))
+                          0))
+          (equal temp-rip2 (if modr/m? (1+ temp-rip1) temp-rip1))
+          (equal sib? (and modr/m? (x86-decode-sib-p modr/m)))
+          (equal sib (if sib? (mv-nth 1 (rm08 temp-rip2 :x x86)) 0))
+          (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
+
+          (not (programmer-level-mode x86))
+          (not (page-structure-marking-mode x86))
+          (not (ms x86))
+          (not (fault x86))
+          (not (mv-nth 0 (get-prefixes start-rip 0 5 x86)))
+          (canonical-address-p temp-rip0)
+          (not (mv-nth 0 (rm08 temp-rip0 :x x86)))
+          (if (equal rex-byte 0)
+              t
+            (canonical-address-p temp-rip1))
+          (if modr/m?
+              (and (canonical-address-p temp-rip2)
+                   (not (mv-nth 0 (rm08 temp-rip1 :x x86))))
+            t)
+          (if sib?
+              (and (canonical-address-p temp-rip3)
+                   (not (mv-nth 0 (rm08 temp-rip2 :x x86))))
+            t)
+          (x86p x86))
+     (equal (x86-fetch-decode-execute x86)
+            (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
+                                      opcode/escape-byte modr/m sib x86)))
+    :hints (("Goal" :in-theory (e/d (x86-fetch-decode-execute)
+                                    (signed-byte-p not)))))
+
   (defthmd ms-fault-and-x86-fetch-decode-and-execute
     (implies (and (x86p x86)
                   (or (ms x86) (fault x86)))
              (equal (x86-fetch-decode-execute x86) x86))))
-
 
 (in-theory (e/d (top-level-opcode-execute two-byte-opcode-execute) ()))
 

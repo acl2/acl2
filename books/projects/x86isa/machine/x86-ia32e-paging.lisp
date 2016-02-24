@@ -1009,7 +1009,22 @@ accesses.</p>
                                  structure-type lin-addr entry
                                  u/s-acc r/w-acc x/d-acc
                                  wp smep smap ac nxe r-w-x cpl x86
-                                 ignored)))))))
+                                 ignored))))))
+
+  (defthm mv-nth-2-paging-entry-no-page-fault-p-does-not-modify-x86-if-no-fault
+    (implies (not (mv-nth 0 (paging-entry-no-page-fault-p
+                             structure-type lin-addr
+                             entry u/s-acc r/w-acc x/d-acc wp
+                             smep smap ac nxe r-w-x cpl x86 ignored)))
+             (equal (mv-nth
+                     2
+                     (paging-entry-no-page-fault-p
+                      structure-type lin-addr
+                      entry u/s-acc r/w-acc x/d-acc wp
+                      smep smap ac nxe r-w-x cpl x86 ignored))
+                    x86))
+    :hints (("Goal" :in-theory (e/d (page-fault-exception)
+                                    ())))))
 
 
 ;; ======================================================================
@@ -1223,7 +1238,21 @@ accesses.</p>
                                 (ia32e-la-to-pa-page-table
                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                  wp smep smap ac nxe r-w-x cpl
-                                 x86)))))))
+                                 x86))))))
+
+  (defthm mv-nth-2-ia32e-la-to-pa-page-table-system-level-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa-page-table
+                                  lin-addr
+                                  base-addr u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86))))
+             (equal (mv-nth
+                     2
+                     (ia32e-la-to-pa-page-table
+                      lin-addr
+                      base-addr u/s-acc r/w-acc x/d-acc
+                      wp smep smap ac nxe r-w-x cpl x86))
+                    x86))))
 
 ;; ----------------------------------------------------------------------
 
@@ -1487,7 +1516,21 @@ accesses.</p>
                                 (ia32e-la-to-pa-page-directory
                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                  wp smep smap ac nxe r-w-x cpl
-                                 x86)))))))
+                                 x86))))))
+
+  (defthm mv-nth-2-ia32e-la-to-pa-page-directory-system-level-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa-page-directory
+                                  lin-addr
+                                  base-addr u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86))))
+             (equal (mv-nth
+                     2
+                     (ia32e-la-to-pa-page-directory
+                      lin-addr
+                      base-addr u/s-acc r/w-acc x/d-acc
+                      wp smep smap ac nxe r-w-x cpl x86))
+                    x86))))
 
 ;; ----------------------------------------------------------------------
 
@@ -1751,7 +1794,21 @@ accesses.</p>
                                 (ia32e-la-to-pa-page-dir-ptr-table
                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                  wp smep smap ac nxe r-w-x cpl
-                                 x86)))))))
+                                 x86))))))
+
+  (defthm mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-system-level-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                                  lin-addr
+                                  base-addr u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86))))
+             (equal (mv-nth
+                     2
+                     (ia32e-la-to-pa-page-dir-ptr-table
+                      lin-addr
+                      base-addr u/s-acc r/w-acc x/d-acc
+                      wp smep smap ac nxe r-w-x cpl x86))
+                    x86))))
 
 ;; ----------------------------------------------------------------------
 
@@ -1947,7 +2004,19 @@ accesses.</p>
                                 (ia32e-la-to-pa-pml4-table
                                  lin-addr base-addr
                                  wp smep smap ac nxe r-w-x cpl
-                                 x86)))))))
+                                 x86))))))
+
+  (defthm mv-nth-2-ia32e-la-to-pa-pml4-table-system-level-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
+                                  lin-addr base-addr
+                                  wp smep smap ac nxe r-w-x cpl x86))))
+             (equal (mv-nth
+                     2
+                     (ia32e-la-to-pa-pml4-table
+                      lin-addr base-addr
+                      wp smep smap ac nxe r-w-x cpl x86))
+                    x86))))
 
 ;; ----------------------------------------------------------------------
 
@@ -2093,7 +2162,15 @@ accesses.</p>
                                             (xw :rflags 0 value x86)))
                     (xw :rflags 0 value
                         (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
-    :hints (("Goal" :in-theory (e/d* () (force (force)))))))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm mv-nth-2-ia32e-la-to-pa-system-level-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa
+                                  lin-addr r-w-x cpl x86))))
+             (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                    x86))
+    :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) (force (force)))))))
 
 ;; ======================================================================
 

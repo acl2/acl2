@@ -254,7 +254,15 @@ memory.</li>
                   (equal (mv-nth 1 (rm08 addr r-w-x (xw :rflags 0 value x86)))
                          (mv-nth 1 (rm08 addr r-w-x x86)))
                   (equal (mv-nth 2 (rm08 addr r-w-x (xw :rflags 0 value x86)))
-                         (xw :rflags 0 value (mv-nth 2 (rm08 addr r-w-x x86))))))))
+                         (xw :rflags 0 value (mv-nth 2 (rm08 addr r-w-x x86)))))))
+
+  (defthm mv-nth-2-rm08-in-system-level-non-marking-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (page-structure-marking-mode x86))
+                  (x86p x86)
+                  (not (mv-nth 0 (rm08 lin-addr r-w-x x86))))
+             (equal (mv-nth 2 (rm08 lin-addr r-w-x x86))
+                    x86))))
 
 (define rim08
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
