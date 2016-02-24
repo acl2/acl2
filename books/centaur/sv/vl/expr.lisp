@@ -3749,7 +3749,9 @@ functions can assume all bits of it are good.</p>"
          (packedp (vl-datatype-packedp type))
          ((when (and packedp 
                      (not (eq opacity :special))
-                     (not (vl-expr-case x :vl-pattern))))
+                     (not (vl-expr-case x :vl-pattern))
+                     ;; note: qmark might have a pattern inside it
+                     (not (vl-expr-case x :vl-qmark))))
           ;; A non-special opacity generally means the expression is
           ;; vector-like, and I think that if the datatype is packed we get the
           ;; right results by simply treating the expression as a vector with

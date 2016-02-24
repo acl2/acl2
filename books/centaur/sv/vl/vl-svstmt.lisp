@@ -1381,7 +1381,8 @@ because... (BOZO)</p>
                       :hints (("goal" :use vl-evatomtype-p-of-vl-evatom->type
                                :in-theory (e/d (vl-evatomtype-p)
                                                (vl-evatomtype-p-of-vl-evatom->type))))
-                      :rule-classes ((:forward-chaining :trigger-terms ((vl-evatom->type x)))))))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-evatom->type x))))))
+             (local (in-theory (disable sv::svex-vars-of-svex-add-delay))))
   (b* (((when (atom x)) (mv nil (sv::svex-quote (sv::2vec 0))))
        ((vl-evatom x1) (car x))
        (warnings nil)
@@ -1389,62 +1390,35 @@ because... (BOZO)</p>
         (vl-expr-to-svex-untyped x1.expr ss scopes))
        (delay-expr (sv::svex-add-delay expr 1))
        ;; Note: Ensure these expressions always evaluate to either -1 or 0.
+       ;; BOZO Using bitsel in some of these places is weird because it
+       ;; produces a zero-extended 1-bit value.  Therefore, e.g., the bitnot of
+       ;; this value is either -1 or -2, which might not be what's intended.
+       ;; However, in all these operations, such expressions are BITANDed with
+       ;; another bitsel, which zeroes out the upper bits anyway.
        (trigger1 (case x1.type
                    (:vl-noedge
                     ;; expr and delay-expr are unequal
-                    (sv::make-svex-call
-                     :fn 'sv::bitnot
-                     :args (list (sv::make-svex-call
-                                  :fn 'sv::==
-                                  :args (list expr delay-expr)))))
+                    (sv::svcall sv::bitnot (sv::svcall sv::== expr delay-expr)))
                    (:vl-posedge
                     ;; SystemVerilog says a posedge is only detected for the LSB. (9.4.2 Event Control)
-                    (sv::make-svex-call
-                     :fn 'sv::uor ;; Just reduction or on the 1-bit bitand to obey the Boolean Convention.
-                     :args (list (sv::make-svex-call
-                                  :fn 'sv::bitand
-                                  :args (list (sv::make-svex-call  ;; Not of delayed bit 0
-                                               :fn 'sv::bitnot
-                                               :args (list (sv::make-svex-call
-                                                            :fn 'sv::bitsel
-                                                            :args (list (sv::svex-quote (sv::2vec 0))
-                                                                        delay-expr))))
-                                              (sv::make-svex-call  ;; Current bit 0
-                                               :fn 'sv::bitsel
-                                               :args (list (sv::svex-quote (sv::2vec 0))
-                                                           expr)))))))
+                    (sv::svcall sv::uor ;; Just reduction or on the 1-bit bitand to obey the Boolean Convention.
+                                (sv::svcall sv::bitand
+                                            (sv::svcall sv::bitnot (sv::svex-zerox 1 delay-expr))
+                                            (sv::svex-zerox 1 expr))))
                    (:vl-negedge
                     ;; SystemVerilog says a negedge is only detected for the LSB. (9.4.2 Event Control)
-                    (sv::make-svex-call
-                     :fn 'sv::uor ;; Just reduction or on the 1-bit bitand to obey the Boolean Convention.
-                     :args (list (sv::make-svex-call
-                                  :fn 'sv::bitand
-                                  :args (list (sv::make-svex-call ;; Not of current bit 0
-                                               :fn 'sv::bitnot
-                                               :args (list (sv::make-svex-call
-                                                            :fn 'sv::bitsel
-                                                            :args (list (sv::svex-quote (sv::2vec 0))
-                                                                        expr))))
-                                              (sv::make-svex-call ;; Delayed bit 0
-                                               :fn 'sv::bitsel
-                                               :args (list (sv::svex-quote (sv::2vec 0))
-                                                           delay-expr)))))))
+                    (sv::svcall sv::uor ;; Just reduction or on the 1-bit bitand to obey the Boolean Convention.
+                                (sv::svcall sv::bitand
+                                            (sv::svcall sv::bitnot (sv::svex-zerox 1 expr))
+                                            (sv::svex-zerox 1 delay-expr))))
                    (:vl-edge
                     ;; We want either a posedge or negedge but only on the LSB.
                     ;;  Posedge is AND(NOT(prev0), curr0)
                     ;;  Negedge is AND(prev0, NOT(curr0))
-                    (sv::make-svex-call
-                     :fn 'sv::uor ;; Just reduction or on the 1-bit bitxor to obey the Boolean Convention.
-                     :args (list (sv::make-svex-call
-                                  :fn 'sv::bitxor
-                                  :args (list (sv::make-svex-call ;; Current bit 0
-                                               :fn 'sv::bitsel
-                                               :args (list (sv::svex-quote (sv::2vec 0))
-                                                           expr))
-                                              (sv::make-svex-call ;; Delayed bit 0
-                                               :fn 'sv::bitsel
-                                               :args (list (sv::svex-quote (sv::2vec 0))
-                                                           delay-expr)))))))))
+                    (sv::svcall sv::uor ;; Just reduction or on the 1-bit bitxor to obey the Boolean Convention.
+                                (sv::svcall sv::bitxor
+                                            (sv::svex-zerox 1 expr)
+                                            (sv::svex-zerox 1 delay-expr))))))
        ((wmv warnings rest)
         (vl-evatomlist->svex (cdr x) ss scopes)))
     (mv warnings
@@ -1733,18 +1707,27 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
           of the variables that are supposed to be written."
   :returns (assigns assigns-p)
   :measure (len (svex-alist-fix x))
+  :prepwork ((local (defthm integerp-when-4vmask-p
+                      (implies (4vmask-p x) (integerp x)))))
   (b* ((x (svex-alist-fix x))
        (masks (4vmask-alist-fix masks))
        ((when (atom x)) nil)
        ((cons var rhs) (car x))
        (mask (or (cdr (hons-get var masks)) 0))
-       (lhs (svar->lhs-by-mask var mask)))
+       (lhs (svar->lhs-by-mask var mask))
+       (fullmaskp (acl2::logmaskp mask)))
     (cons (cons lhs
                 (make-driver
-                 :value (make-svex-call :fn 'bit?
-                                        :args (list (sv::svex-quote (sv::2vec mask))
-                                                    rhs
-                                                    (svex-z)))))
+                 :value
+                 (if fullmaskp
+                     ;; Optimization: if it is a full mask, then the LHS only
+                     ;; covers the bits we want to write anyway, so we can
+                     ;; avoid making this bit? call.
+                     rhs
+                   (make-svex-call :fn 'bit?
+                                   :args (list (sv::svex-quote (sv::2vec mask))
+                                               rhs
+                                               (svex-z))))))
           (svex-alist->assigns (cdr x) masks)))
   ///
 
