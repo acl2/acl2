@@ -1816,7 +1816,8 @@
     (when *hl-addr-limit-should-clear-memo-tables*
       (clear-memoize-tables))
 
-    (hl-hspace-hons-wash hs)
+    (time$ (hl-hspace-hons-wash hs)
+           :msg "; Hons-wash: ~st sec, ~sa bytes~%")
 
     (format note-stream "; Hons-Note: After ADDR-LIMIT actions, ~:D used of ~:D slots.~%"
             (hash-table-count (hl-hspace-addr-ht hs))
