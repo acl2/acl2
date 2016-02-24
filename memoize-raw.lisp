@@ -1977,35 +1977,39 @@
 ; :max-mt-size are not used any more; they were used by Jared to track how big
 ; the tables were growing.
 
-  (with-global-memoize-lock
-   (let ((old (mf-gethash fn *memo-max-sizes*)))
-     (if (not old)
-         (mf-sethash fn
-                     (make memo-max-sizes-entry
-                           :num-clears 1
-                           :max-pt-size pt-size
-                           :max-mt-size mt-size
-                           :avg-pt-size (coerce pt-size 'float)
-                           :avg-mt-size (coerce mt-size 'float))
-                     *memo-max-sizes*)
-       (let* ((old.num-clears  (access memo-max-sizes-entry old :num-clears))
-              (old.max-pt-size (access memo-max-sizes-entry old :max-pt-size))
-              (old.max-mt-size (access memo-max-sizes-entry old :max-mt-size))
-              (old.avg-pt-size (access memo-max-sizes-entry old :avg-pt-size))
-              (old.avg-mt-size (access memo-max-sizes-entry old :avg-mt-size))
-              (new.num-clears  (+ 1 old.num-clears)))
-         (mf-sethash fn
-                     (make memo-max-sizes-entry
-                           :num-clears  new.num-clears
-                           :max-pt-size (max pt-size old.max-pt-size)
-                           :max-mt-size (max mt-size old.max-mt-size)
-                           :avg-pt-size (/ (+ pt-size (* old.avg-pt-size
-                                                         old.num-clears)) 
-                                           new.num-clears)
-                           :avg-mt-size (/ (+ mt-size (* old.avg-mt-size
-                                                         old.num-clears))
-                                           new.num-clears))
-                     *memo-max-sizes*)))))
+; We won't count clears that occur when the tables are completely unpopulated,
+; because we want to know how many entries get used when we do use the table,
+; not when we don't.
+  (when (or (< 0 mt-size) (< 0 pt-size))
+    (with-global-memoize-lock
+      (let ((old (mf-gethash fn *memo-max-sizes*)))
+        (if (not old)
+            (mf-sethash fn
+                        (make memo-max-sizes-entry
+                              :num-clears 1
+                              :max-pt-size pt-size
+                              :max-mt-size mt-size
+                              :avg-pt-size (coerce pt-size 'float)
+                              :avg-mt-size (coerce mt-size 'float))
+                        *memo-max-sizes*)
+          (let* ((old.num-clears  (access memo-max-sizes-entry old :num-clears))
+                 (old.max-pt-size (access memo-max-sizes-entry old :max-pt-size))
+                 (old.max-mt-size (access memo-max-sizes-entry old :max-mt-size))
+                 (old.avg-pt-size (access memo-max-sizes-entry old :avg-pt-size))
+                 (old.avg-mt-size (access memo-max-sizes-entry old :avg-mt-size))
+                 (new.num-clears  (+ 1 old.num-clears)))
+            (mf-sethash fn
+                        (make memo-max-sizes-entry
+                              :num-clears  new.num-clears
+                              :max-pt-size (max pt-size old.max-pt-size)
+                              :max-mt-size (max mt-size old.max-mt-size)
+                              :avg-pt-size (/ (+ pt-size (* old.avg-pt-size
+                                                            old.num-clears)) 
+                                              new.num-clears)
+                              :avg-mt-size (/ (+ mt-size (* old.avg-mt-size
+                                                            old.num-clears))
+                                              new.num-clears))
+                        *memo-max-sizes*))))))
   nil)
 
 (defun print-memo-max-sizes ()
