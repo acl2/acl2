@@ -2936,7 +2936,7 @@
 
 ; If we ever make 1+ and 1- functions again, they should go back on this list.
 
-    synp plusp minusp listp return-last mv-list
+    synp plusp minusp listp return-last mv-list cons-with-hint
 
 ; We added the-error for Version_4.0 (replaced by the-check after Version_6.1).
 ; Before that change, but after changing constraint-info to avoid calling

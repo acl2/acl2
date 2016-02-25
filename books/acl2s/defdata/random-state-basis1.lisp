@@ -29,11 +29,11 @@
         0))
     0))
 
-(defthm getseed-unsigned-byte31
+(defthm getseed-unsigned-byte31 
   (unsigned-byte-p 31 (getseed state))
   :rule-classes (:rewrite :type-prescription))
 
-(defthm getseed-nat
+(defthm getseed-nat 
   (natp (getseed state))
   :rule-classes :type-prescription)
 
@@ -42,7 +42,7 @@
   :rule-classes :linear)
 
 (in-theory (disable getseed))
-
+ 
 (defun putseed (s state)
   (declare (xargs :stobjs (state)
                   :guard (unsigned-byte-p 31 s)))
@@ -60,7 +60,7 @@ current random seed is seed. and also returns the new seed."
                               (posp max))))
   (mbe :logic (if (and (posp max)
                        (unsigned-byte-p 31 seed.))
-
+                       
                   (b* (((the (unsigned-byte 31) seed.) (mod (* *P1* seed.) *M31*)))
                     (mv (the (unsigned-byte 31) (mod seed. max)) seed.))
                 (mv 0 seed.))
@@ -87,11 +87,11 @@ current random seed is seed. and also returns the new seed."
  (local (defthm lemma1
    (IMPLIES (and (posp max)
                  (natp x))
-
+              
          (<= 0 (MOD x MAX)))
    :rule-classes :linear))
 
-
+ 
 (local (defthm lemma2
  (IMPLIES (AND (posp MAX)
                (< MAX 2147483648)
@@ -99,7 +99,7 @@ current random seed is seed. and also returns the new seed."
          (< (MOD x MAX)
             2147483648))
  :rule-classes :linear))
-
+ 
 (defthm genrandom-natural1
   (implies (and (posp max)) ;(natp seed))
            (and (integerp (car (genrandom-seed max seed)))
@@ -115,7 +115,7 @@ current random seed is seed. and also returns the new seed."
 
 (defthm genrandom-ub31-1
   (implies (and (<= 1 max)
-                (unsigned-byte-p 31 max)
+                (unsigned-byte-p 31 max) 
                 (natp seed))
            (unsigned-byte-p 31 (car (genrandom-seed max seed))))
    :rule-classes (:type-prescription))
@@ -124,7 +124,7 @@ current random seed is seed. and also returns the new seed."
 ;;   (implies (and (natp seed))
 ;;            (unsigned-byte-p 31 (mv-nth 1 (genrandom-seed max seed))))
 ;;    :rule-classes :tau-system)
-
+ 
 (defthm genrandom-minimum1
    (implies (and (posp max) (natp seed))
             (<= 0 (car (genrandom-seed max seed))))
@@ -137,17 +137,17 @@ current random seed is seed. and also returns the new seed."
 
  (defthm genrandom-maximum1
    (implies (and (posp max))
-
+                 
             (< (car (genrandom-seed max seed)) max))
    :rule-classes (:linear))
-
+ 
  (defthm genrandom-maximum2
    (implies (and (posp max)
                  (unsigned-byte-p 31 seed))
             (< (mv-nth 1 (genrandom-seed max seed)) *M31*))
    :rule-classes :linear)
-
-
+ 
+ 
 
 
 
@@ -155,18 +155,18 @@ current random seed is seed. and also returns the new seed."
    (natp (car (genrandom-state max state)))
    :rule-classes :type-prescription)
 
- (defthm genrandom-state-minimum
+ (defthm genrandom-state-minimum 
    (<= 0 (car (genrandom-state max state)))
    :rule-classes :linear)
-
+ 
  (defthm genrandom-state-maximum
    (implies (posp max)
             (<= (car (genrandom-state max state)) (1- max)))
    :rule-classes :linear)
-
+ 
  )
 
-
+ 
 (in-theory (disable genrandom-seed genrandom-state))#|ACL2s-ToDo-Line|#
 
 

@@ -1115,6 +1115,9 @@ don't care, but it might be good to look into this again.</p>"
 
        (new-decl (make-vl-vardecl :name    portdecl.name
                                   :type    portdecl.type
+                                  ;; [Jared] patch 2016-02-24: I want implicit wires to be
+                                  ;; printed as "wire" instead of "logic" for legacy tools
+                                  :nettype :vl-wire
                                   :atts    (cons (cons "VL_PORT_IMPLICIT" nil) portdecl.atts)
                                   :loc     portdecl.loc)))
     (cons new-decl

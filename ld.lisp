@@ -672,19 +672,6 @@
 
   (value :q))
 
-(defun macro-minimal-arity1 (lst)
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) 0)
-        ((lambda-keywordp (car lst))
-         0)
-        (t (1+ (macro-minimal-arity1 (cdr lst))))))
-
-(defun macro-minimal-arity (sym default wrld)
-  (let ((args (getpropc sym 'macro-args default wrld)))
-    (macro-minimal-arity1 (if (eq (car args) '&whole)
-                              (cddr args)
-                            args))))
-
 (defun ld-read-keyword-command (key state)
 
 ; ld supports the convention that when a keyword :key is typed

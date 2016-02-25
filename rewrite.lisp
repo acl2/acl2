@@ -4906,6 +4906,9 @@
 
 (defun tautologyp (term wrld)
 
+; Warning: Keep this list below of function names in sync with those in
+; possible-trivial-clause-p.
+
 ; If this function returns t, then term is a theorem.  With the intended
 ; application in mind, namely the recognition of "trivial corollaries" while
 ; processing rule classes, we check for the "most common" tautology, (implies p
@@ -4942,8 +4945,8 @@
 
 ; If we ever make 1+ and 1- functions again, they should go back on this list.
 
-               zerop synp return-last plusp minusp listp mv-list wormhole-eval
-               force case-split double-rewrite)
+               zerop synp return-last plusp minusp listp mv-list cons-with-hint
+               wormhole-eval force case-split double-rewrite)
              term wrld)))))
 
 (defun make-true-list-cons-nest (term-lst)

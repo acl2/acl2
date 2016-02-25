@@ -9592,6 +9592,7 @@
         BAD-ATOM            ;;; used in several defaxioms
         RETURN-LAST         ;;; affects constraints (see remove-guard-holders1)
         MV-LIST             ;;; affects constraints (see remove-guard-holders1)
+        CONS-WITH-HINT      ;;; affects constraints (see remove-guard-holders1)
 
 ; The next six are used in built-in defpkg axioms.
 
@@ -12856,12 +12857,73 @@
            fn arity expected-arity))
      (t nil))))
 
+(defun macro-minimal-arity1 (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) 0)
+        ((lambda-keywordp (car lst))
+         0)
+        (t (1+ (macro-minimal-arity1 (cdr lst))))))
+
+(defun macro-minimal-arity (sym default wrld)
+  (let ((args (getpropc sym 'macro-args default wrld)))
+    (macro-minimal-arity1 (if (eq (car args) '&whole)
+                              (cddr args)
+                            args))))
+
+(defun translate-clause-processor-hint/symbol-to-call (sym wrld)
+
+; Sym is a symbol provided as a clause-processor hint, as an abbreviation for a
+; suitable function call.  We return either a function call of the form (sym
+; CLAUSE), (sym CLAUSE nil), or (sym CLAUSE nil st1 st2 ...), depending on the
+; stobjs-out of sym, or else an error message suitable for a fmt ~@ directive.
+
+  (declare (xargs :guard (and (symbolp sym)
+                              (plist-worldp wrld))))
+  (cond
+   ((getpropc sym 'macro-body nil wrld)
+    (case (macro-minimal-arity sym nil wrld)
+      (0
+       "it is the name of a macro that has no required arguments")
+      (1
+       (list sym 'CLAUSE))
+      (2
+       (list sym 'CLAUSE nil))
+      (t "it is the name of a macro that has more than two required arguments")))
+   (t
+    (let ((stobjs-in (stobjs-in sym wrld))
+          (stobjs-out (if (member-eq sym *stobjs-out-invalid*)
+                          :none
+                        (stobjs-out sym wrld))))
+      (cond
+       ((null stobjs-in)
+        (cond
+         ((function-symbolp sym wrld)
+          "it is a function of no arguments")
+         (t "it is not a function symbol or macro name")))
+       ((or (car stobjs-in)
+            (cadr stobjs-in))
+        (msg "it is a function whose ~n0 input is a stobj"
+             (list (if (car stobjs-in) 1 2))))
+       ((member-eq nil (cddr stobjs-in))
+        "it is function symbol with a non-stobj input other than the first two")
+       ((eq stobjs-out :none) ; IF or RETURN-LAST; goofy hint
+        "it is a function symbol whose output signature is unknown")
+       ((or (car stobjs-out)
+            (cadr stobjs-out))
+        (msg "it is a function whose ~n0 output is a stobj"
+             (list (if (car stobjs-out) 1 2))))
+       ((member-eq nil (cddr stobjs-out))
+        "it is a function symbol with a non-stobj output other than the first ~
+         or second output")
+       (t (list* sym 'CLAUSE (cdr stobjs-in))))))))
+
 (defun@par translate-clause-processor-hint (form ctx wrld state)
 
 ; We are given the hint :clause-processor form.  We return an error triple
-; whose value in the non-error case is a cons pair consisting of the
-; corresponding translated term (a legal call of a clause-processor) and its
-; associated stobjs-out, suitable for evaluation for a :clause-processor hint.
+; whose value in the non-error case is a clause-processor-hint record
+; consisting of the corresponding translated term (a legal call of a
+; clause-processor), its associated stobjs-out, and a Boolean indicator of
+; whether the term is a call of a verified clause processor.
 
 ; Each of the following cases shows legal hint syntax for a signature (or in
 ; the third case, a class of signatures).
@@ -12887,44 +12949,46 @@
   #+acl2-par
   (declare (ignorable state))
   (let ((err-msg (msg "The form ~x0 is not a legal value for a ~
-                       :clause-processor hint because ~@1.  See :DOC hints."
+                       :clause-processor hint because ~@1.  See :DOC ~
+                       clause-processor."
                       form)))
     (er-let*@par
-     ((form (cond ((atom form)
-                   (cond ((symbolp form)
-                          (let ((msg (arity-mismatch-msg form 1 wrld)))
-                            (cond (msg (er@par soft ctx "~@0" err-msg msg))
-                                  (t (value@par (list form 'clause))))))
-                         (t (er@par soft ctx "~@0" err-msg
-                              "it is an atom that is not a symbol"))))
-                  ((not (true-listp form))
-                   (er@par soft ctx "~@0" err-msg
-                     "it is a cons that is not a true-listp"))
-                  (t (case-match form
-                       ((':function cl-proc)
-                        (cond
-                         ((symbolp cl-proc)
-                          (let ((msg (arity-mismatch-msg cl-proc 1 wrld)))
-                            (cond (msg (er@par soft ctx "~@0" err-msg msg))
-                                  (t (value@par (list cl-proc 'clause))))))
-                         (t (er@par soft ctx "~@0" err-msg
-                              "the :FUNCTION is not a symbol"))))
-                       ((':function cl-proc ':hint hint)
-                        (cond ((symbolp cl-proc)
-                               (let ((msg
-                                      (arity-mismatch-msg cl-proc '(2) wrld)))
-                                 (cond
-                                  (msg (er@par soft ctx "~@0" err-msg msg))
-                                  (t (value@par
-                                      (list* cl-proc
-                                             'clause
-                                             hint
-                                             (cddr (stobjs-out cl-proc
-                                                               wrld))))))))
-                              (t (er@par soft ctx "~@0" err-msg
-                                   "the :FUNCTION is an atom that is not a ~
-                                    symbol"))))
-                       (& (value@par form)))))))
+     ((form
+       (cond
+        ((symbolp form)
+         (let ((x (translate-clause-processor-hint/symbol-to-call form wrld)))
+           (cond ((msgp x) (er@par soft ctx "~@0" err-msg x))
+                 (t (value@par x)))))
+        ((atom form)
+         (er@par soft ctx "~@0" err-msg
+           "it is an atom that is not a symbol"))
+        ((not (true-listp form))
+         (er@par soft ctx "~@0" err-msg
+           "it is a cons that is not a true-listp"))
+        (t (case-match form
+             ((':function cl-proc)
+              (cond
+               ((symbolp cl-proc)
+                (let ((msg (arity-mismatch-msg cl-proc 1 wrld)))
+                  (cond (msg (er@par soft ctx "~@0" err-msg msg))
+                        (t (value@par (list cl-proc 'clause))))))
+               (t (er@par soft ctx "~@0" err-msg
+                    "the :FUNCTION is not a symbol"))))
+             ((':function cl-proc ':hint hint)
+              (cond ((symbolp cl-proc)
+                     (let ((msg
+                            (arity-mismatch-msg cl-proc '(2) wrld)))
+                       (cond
+                        (msg (er@par soft ctx "~@0" err-msg msg))
+                        (t (value@par
+                            (list* cl-proc
+                                   'clause
+                                   hint
+                                   (cddr (stobjs-out cl-proc
+                                                     wrld))))))))
+                    (t (er@par soft ctx "~@0" err-msg
+                         "the :FUNCTION is an atom that is not a symbol"))))
+             (& (value@par form)))))))
      (mv-let@par
       (erp term bindings state)
       (translate1@par form

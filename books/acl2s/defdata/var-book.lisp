@@ -3,7 +3,7 @@
  "../portcullis")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
-#|
+#|           
 Sat May 10  EDT 2014
 Pete Manolios
 
@@ -43,17 +43,17 @@ is accepted by ACL2s, but this is not
 (include-book "tools/rulesets" :dir :system)
 
 ; The characters we allow to in variable names.
-(defdata var-char
-  (enum '(#\X #\Y #\L #\N #\Z #\I #\J #\K #\A #\B #\C
-          #\M #\D #\E #\F #\G #\H #\0 #\1
-          #\O #\P #\Q #\R #\S #\T #\U #\V #\W
+(defdata var-char 
+  (enum '(#\X #\Y #\L #\N #\Z #\I #\J #\K #\A #\B #\C 
+          #\M #\D #\E #\F #\G #\H #\0 #\1  
+          #\O #\P #\Q #\R #\S #\T #\U #\V #\W  
           #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
 
 ; What to replace nil and t by
-(defconst *non-nil-non-t-fix* '(#\X))
+(defconst *non-nil-non-t-fix* '(#\X)) 
 
 ; The numeric characters
-(defdata var-char-num
+(defdata var-char-num 
   (enum '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
 
 ; Var-chars are chars
@@ -74,14 +74,14 @@ is accepted by ACL2s, but this is not
          (var-char-listp-aux (cdr l)))
     (equal l nil)))
 
-; A var-char-list is a non-empty var-char-listp-aux that does not correspond
+; A var-char-list is a non-empty var-char-listp-aux that does not correspond 
 ; to nil/t and whose first element is not a number
 (defun var-char-listp (l)
   (declare (xargs :guard t))
   (and (consp l)
        (non-nil-non-t-char-listp l)
        (not (var-char-nump (car l)))
-       (var-char-listp-aux l)))
+       (var-char-listp-aux l)))  
 
 ; var-char-listp(-aux) are char lists.
 (defthm var-char-listp-aux-char-listp
@@ -94,7 +94,7 @@ is accepted by ACL2s, but this is not
            (character-listp l))
   :rule-classes ((:forward-chaining)))
 
-(encapsulate
+(encapsulate 
  nil
  (local
   (include-book "arithmetic-5/top" :dir :system))
@@ -149,7 +149,7 @@ is accepted by ACL2s, but this is not
 
 (defthm charp-nth-var-char
   (characterp (nth-var-char n))
-  :rule-classes ((:type-prescription)
+  :rule-classes ((:type-prescription) 
                  (:forward-chaining :trigger-terms ((nth-var-char n)))))
 
 (defthm var-char-listp-get-var-char-list-from-positions
@@ -185,8 +185,8 @@ is accepted by ACL2s, but this is not
        (name (symbol-name x))
        (clist (coerce name 'list)))
       (var-char-listp clist)))
-
-(register-type var :predicate varp :enumerator nth-var-builtin)
+        
+(register-type var :predicate varp :enumerator nth-var-builtin) 
 
 (defthm var-symbolp
   (implies (varp x)

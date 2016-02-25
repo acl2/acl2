@@ -5861,6 +5861,10 @@
         (t (built-in-clausep1 (cdr bic-alist) cl fns ens))))
 
 (defun possible-trivial-clause-p (cl)
+
+; Warning: Keep this list below of function names in sync with those in
+; tautologyp; see comment below.
+
   (if (null cl)
       nil
     (mv-let (not-flg atm)
@@ -5879,8 +5883,9 @@
 
 ; If we ever make 1+ and 1- functions again, they should go back on this list.
 
-                             zerop plusp minusp listp mv-list return-last
-                             wormhole-eval force case-split double-rewrite)
+                             zerop plusp minusp listp mv-list cons-with-hint
+                             return-last wormhole-eval force case-split
+                             double-rewrite)
                            atm)
                 (possible-trivial-clause-p (cdr cl))))))
 

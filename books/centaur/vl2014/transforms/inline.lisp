@@ -207,7 +207,8 @@ clever.</p>")
    (alist vl-renaming-alist-p))
   :returns (new-x vl-portdecl-p :hyp :guard)
   (b* ((new-name (or (cdr (hons-get (vl-portdecl->name x) alist))
-                     (raise "all portdecls should be bound")
+                     (raise "all portdecls should be bound, but no binding for ~x0.  Renaming Alist: ~x1"
+                            (vl-portdecl->name x) alist)
                      (vl-portdecl->name x))))
     (change-vl-portdecl x :name new-name)))
 
@@ -219,6 +220,10 @@ clever.</p>")
   :short "Rename portdecls using the renaming alist (which binds old names to
           their new, mangled names).")
 
+(defprojection vl-vardecllist-reset-atts ((x vl-vardecllist-p)
+                                          (new-atts vl-atts-p))
+  :returns (new-x vl-vardecllist-p)
+  (change-vl-vardecl x :atts new-atts))
 
 (define vl-inline-mod-in-modinst
   :short "Maybe replace a module instance with its inlined body."
@@ -244,6 +249,8 @@ clever.</p>")
         ;; Not an instance of the desired module, do nothing to this instance.
         (mv nf (list x) nil nil nil (ok)))
 
+       (- (cw ";  -- inlining instance ~s0 of ~s1~%" x.instname x.modname))
+
        ((unless (eq (vl-arguments-kind x.portargs) :vl-arguments-plain))
         (mv nf (list x) nil nil nil
             (fatal :type :vl-inline-fail
@@ -268,6 +275,7 @@ clever.</p>")
        ;; expressions have been updated to the new names.
        (prefix           (or x.instname "inst"))
        ((mv vardecls nf) (vl-namemangle-vardecls prefix sub.vardecls nf))
+       (vardecls         (vl-vardecllist-reset-atts vardecls nil))
        (vardecls         (vl-relocate-vardecls
                           ;; Dumb hack: try to make sure that newly introduced net
                           ;; declarations come BEFORE any uses of them.
@@ -276,6 +284,8 @@ clever.</p>")
                            :line (max 1 (- (vl-location->line x.loc) 1))
                            :col 0)
                           vardecls))
+
+
        (old-names        (vl-vardecllist->names sub.vardecls))
        (new-names        (vl-vardecllist->names vardecls))
        (new-exprs        (vl-make-idexpr-list new-names nil nil))
@@ -361,6 +371,7 @@ clever.</p>")
    (x   vl-module-p))
   :returns (new-mod vl-module-p :hyp :guard)
   (b* (((vl-module x) x)
+       (- (cw "; Inlining in ~x0.~%" x.name))
        ((when (vl-module->hands-offp x))
         x)
        (nf (vl-starting-namefactory x))

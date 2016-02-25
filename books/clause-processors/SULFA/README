@@ -1,3 +1,7 @@
+[Note added by Matt K.: To process this directory using ``make'' from
+the main ACL2 directory or its books/ subdirectory, you will need to
+install minisat.  See books/GNUmakefile.  Feel free to contribute a
+modification of books/GNUmakefile that permits other SAT solvers!]
 
 A Tool for the Subclass of Unrollable List Formulas in ACL2 (SULFA)
 by Erik Reeber and Warren A. Hunt, Jr.
