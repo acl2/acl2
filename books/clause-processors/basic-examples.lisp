@@ -23,6 +23,27 @@
   nil
   :ttag my-ttag)
 
+; redundant
+(define-trusted-clause-processor
+  note-fact-clause-processor
+  nil
+  :ttag my-ttag)
+
+; equivalent to the preceding
+(define-trusted-clause-processor
+  note-fact-clause-processor
+  nil
+  :label note-fact-clause-processor$label
+  :ttag my-ttag)
+
+; not redundant
+(must-fail
+ (define-trusted-clause-processor
+   note-fact-clause-processor
+   nil
+   :label other-label
+   :ttag my-ttag))
+
 (must-succeed
  (thm (equal (car (cons x y))
              x)
@@ -369,6 +390,17 @@
                                   (implies (integerp x)
                                            (integerp (f0 x)))))
    :ttag my-ttag))
+
+; redundant
+(define-trusted-clause-processor
+  strengthen-cl-program2
+  (f0)
+  :partial-theory (encapsulate ((f0 (x) t))
+                    (local (defun f0 (x) x))
+                    (defthm f0-prop
+                      (implies (integerp x)
+                               (integerp (f0 x)))))
+  :ttag my-ttag)
 
 (defthm test7
   (equal (car (cons x y))

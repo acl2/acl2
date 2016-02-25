@@ -7244,10 +7244,9 @@
 (defmacro define-trusted-clause-processor
   (clause-processor supporters
                     &key
-                    label          ;;; optional, but required if doc is non-nil
-                    doc            ;;; optional
-                    partial-theory ;;; optional
-                    ttag           ;;; optional; nil is same as missing
+                    (label 'nil label-p) ;;; default is clause-processor$label
+                    partial-theory       ;;; optional
+                    ttag                 ;;; optional; nil is same as missing
                     )
 
 ; We could mention that unlike trusted clause-processors, no supporters need to
@@ -7269,11 +7268,19 @@
                       ',clause-processor)
             :on-skip-proofs t))
          (ttag-extra (and ttag `((defttag ,ttag))))
+         (label (if label-p
+                    label
+
+; A label is needed for supporting redundancy in the case that :partial-theory
+; is nil; else, the event will not be redundant.  For uniformity we generate a
+; deflabel by default even if :partial-theory is not nil.  The user may supply
+; nil explicitly to defeat generation of a deflabel form.
+
+                  (and (symbolp clause-processor) ; else cause error below
+                       (add-suffix clause-processor
+                                   "$LABEL"))))
          (label-extra (and label
-                           (cond (doc
-                                  `((deflabel ,label
-                                      :doc ,doc)))
-                                 (t `((deflabel ,label))))))
+                           `((deflabel ,label))))
          (extra (append ttag-extra label-extra)))
     (cond
      ((not (symbol-listp supporters))
@@ -7283,19 +7290,15 @@
       (er hard ctx er-msg
           "the first argument must be a symbol (in fact, must be a defined ~
            function symbol in the current ACL2 world)"))
-     ((and doc (not label))
-      (er hard ctx er-msg
-          "a non-nil :label argument is required when a non-nil :doc argument ~
-           is supplied"))
      (t
       (case-match partial-theory
         (nil
          `(encapsulate
-           ()
-           ,assert-check
-           ,@extra
-           (table trusted-clause-processor-table ',clause-processor
-                  '(,supporters))))
+            ()
+            ,assert-check
+            ,@extra
+            (table trusted-clause-processor-table ',clause-processor
+                   '(,supporters))))
         (('encapsulate sigs . events)
          (cond
           ((atom sigs)
@@ -7311,13 +7314,13 @@
                "the encapsulate event associated with :partial-theory has a ~
                 list of sub-events that is not a true-listp"))
           (t `(encapsulate
-               ,sigs
-               ,assert-check
-               (logic) ; to avoid skipping local events
-               ,@events
-               ,@extra
-               (table trusted-clause-processor-table ',clause-processor
-                      '(,supporters . t))))))
+                ,sigs
+                ,assert-check
+                (logic) ; to avoid skipping local events
+                ,@events
+                ,@extra
+                (table trusted-clause-processor-table ',clause-processor
+                       '(,supporters . t))))))
         (& (er hard ctx er-msg
                "a supplied :partial-theory argument must be a call of ~
                 encapsulate")))))))

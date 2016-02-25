@@ -2263,7 +2263,6 @@
 ; alists that are bound to them.  This weaker criterion means that the progn
 ; below is adequate.
 
-
 (defun hl-slow-alist-warning (name)
   ;; Name is the name of the function wherein we noticed a problem.
   (let ((action (get-slow-alist-action *the-live-state*)))
@@ -2271,8 +2270,8 @@
       (format *error-output* "
 *****************************************************************
 Fast alist discipline violated in ~a.
-See the documentation for fast alists for how to fix the problem,
-or suppress this warning message with~%  ~a~%
+See :DOC slow-alist-warning.  You can suppress this warning with
+~a.
 ****************************************************************~%"
               name
               '(set-slow-alist-action nil))
