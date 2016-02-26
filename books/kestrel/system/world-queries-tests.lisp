@@ -111,6 +111,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-event (executablep 'cons (w state)))
+
+(assert-event (executablep 'not (w state)))
+
+(assert-event (executablep 'len (w state)))
+
+(must-succeed*
+ (defun-nx f (x) x)
+ (assert-event (not (executablep 'f (w state)))))
+
+(must-succeed*
+ (defun-sk g (x) (forall (y z) (equal x (cons y z))))
+ (assert-event (not (executablep 'g (w state)))))
+
+(must-succeed*
+ (defun-sk h (x y) (exists z (equal z (cons x y)))
+   :witness-dcls ((declare (xargs :non-executable nil))))
+ (assert-event (executablep 'h (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-event (equal (measure 'len (w state)) '(acl2-count x)))
 
 (must-succeed*
