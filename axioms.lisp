@@ -14490,9 +14490,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard t))
   (and (integerp bits)
        (< 0 bits)
-       (integer-range-p (- (expt 2 (1- bits)))
-                        (expt 2 (1- bits))
-                        x)))
+       (let ((y ; proof fails for mbe with :exec = (ash 1 (1- bits))
+              (expt 2 (1- bits))))
+         (integer-range-p (- y) y x))))
 
 (defun unsigned-byte-p (bits x)
   (declare (xargs :guard t))

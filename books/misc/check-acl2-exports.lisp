@@ -99,6 +99,7 @@
     REDEFINED-NAMES
     REMOVE-DIVE-INTO-MACRO
     REWRITE
+    SET-SLOW-ALIST-ACTION ; to be added to *acl2-exports*
     TYPE-SET
     WATERFALL
     ))
