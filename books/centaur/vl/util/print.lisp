@@ -777,8 +777,9 @@ top-level) for a workaround.</p>"
               (test '("foo" #\a #\b) "bafoo")
               (test '("foo" "bar") "barfoo")
               (test '(#\a "foo" #\b "bar" #\c) "cbarbfooa")
-              (test 5 "")
-              (test '(#\a . 5) "a")))))
+              ;; (test 5 "") ;; note: printedlist is a truelist now
+              ;; (test '(#\a . 5) "a")
+              ))))
 
   (local (assert! (test-ps-writing))))
 
