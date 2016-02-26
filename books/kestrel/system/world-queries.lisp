@@ -63,6 +63,12 @@
   (defmacro guard-verifiedp (fun w)
     `(eq (symbol-class ,fun ,w) :common-lisp-compliant)))
 
+(define executablep ((fun (function-namep fun w)) (w plist-worldp))
+  :returns (yes/no booleanp)
+  :short
+  "True iff the function @('fun') is executable."
+  (not (getpropc fun 'non-executablep nil w)))
+
 (define measure ((fun (and (function-namep fun w)
                            (logicalp fun w)
                            (recursivep fun w)))
