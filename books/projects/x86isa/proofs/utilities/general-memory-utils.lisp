@@ -1018,18 +1018,34 @@
 
 ;; Write-bytes-to-memory and wb:
 
-(defthm write-bytes-to-memory-is-wb
+(local
+ (defthm write-bytes-to-memory-is-wb-1-in-programmer-level-mode
+   (implies (and (canonical-address-p (+ (len bytes) lin-addr))
+                 (byte-listp bytes)
+                 (canonical-address-p lin-addr)
+                 (programmer-level-mode x86))
+            (equal (write-bytes-to-memory lin-addr bytes x86)
+                   (wb-1 (create-addr-bytes-alist
+                          (create-canonical-address-list (len bytes) lin-addr)
+                          bytes)
+                         x86)))
+   :hints (("Goal" :in-theory (e/d (write-bytes-to-memory)
+                                   (acl2::mv-nth-cons-meta))))))
+
+(defthm write-bytes-to-memory-is-wb-in-programmer-level-mode
   (implies (and (canonical-address-p (+ (len bytes) lin-addr))
                 (byte-listp bytes)
-                (canonical-address-p lin-addr))
+                (canonical-address-p lin-addr)
+                (programmer-level-mode x86))
            (equal (write-bytes-to-memory lin-addr bytes x86)
                   (wb (create-addr-bytes-alist
                        (create-canonical-address-list (len bytes) lin-addr)
                        bytes)
                       x86)))
   :hints (("Goal" :in-theory (e/d (write-bytes-to-memory
-                                   wb-and-wm08)
-                                  (acl2::mv-nth-cons-meta)))))
+                                   wb-is-wb-1-for-programmer-level-mode)
+                                  (acl2::mv-nth-cons-meta
+                                   wb wb-1)))))
 
 ;; ======================================================================
 

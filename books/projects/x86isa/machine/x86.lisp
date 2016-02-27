@@ -3268,9 +3268,9 @@ semantic function.</p>"
           (equal temp-rip0 (if (equal prefix-length 0)
                                (+ 1 start-rip)
                              (+ prefix-length start-rip 1)))
-          (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4)
-                                     4)
-                              opcode/rex/escape-byte 0))
+          (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4) 4)
+                              opcode/rex/escape-byte
+                            0))
           (equal opcode/escape-byte (if (equal rex-byte 0)
                                         opcode/rex/escape-byte
                                       (mv-nth 1 (rm08 temp-rip0 :x x86))))
@@ -3292,7 +3292,14 @@ semantic function.</p>"
           (not (fault x86))
           (not (mv-nth 0 (get-prefixes start-rip 0 5 x86)))
           (canonical-address-p temp-rip0)
-          (not (mv-nth 0 (rm08 temp-rip0 :x x86)))
+          (if (and (equal prefix-length 0)
+                   (equal rex-byte 0)
+                   (not modr/m?))
+              ;; One byte instruction --- all we need to know is that
+              ;; the new RIP is canonical, not that there's no error
+              ;; in reading a value from that address.
+              t
+            (not (mv-nth 0 (rm08 temp-rip0 :x x86))))
           (if (equal rex-byte 0)
               t
             (canonical-address-p temp-rip1))
@@ -3310,7 +3317,11 @@ semantic function.</p>"
                                       opcode/escape-byte modr/m sib x86)))
     :hints (("Goal"
              :cases ((programmer-level-mode x86))
-             :in-theory (e/d () (signed-byte-p not)))))
+             :in-theory (e/d ()
+                             (top-level-opcode-execute
+                              signed-byte-p
+                              not
+                              member-equal)))))
 
   (defthmd ms-fault-and-x86-fetch-decode-and-execute
     (implies (and (x86p x86)
