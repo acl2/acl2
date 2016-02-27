@@ -63,11 +63,20 @@
   (defmacro guard-verifiedp (fun w)
     `(eq (symbol-class ,fun ,w) :common-lisp-compliant)))
 
-(define executablep ((fun (function-namep fun w)) (w plist-worldp))
-  :returns (yes/no booleanp)
-  :short
-  "True iff the function @('fun') is executable."
-  (not (getpropc fun 'non-executablep nil w)))
+(define non-executablep ((fun (function-namep fun w)) (w plist-worldp))
+  :returns (result (member result '(t nil :program)))
+  :short "Return the @(tsee non-executable) status of the function @('fun')."
+  :long
+  "<p>
+  Note that if @('nil') is returned,
+  it does not necessarily mean that @('fun') is executable.
+  For instance, @('nil') is returned
+  if @('fun') is a <see topic='@(url defstub)'>stub</see>.
+  A non-@('nil') return value
+  just means that @('name') has been explicitly marked as non-executable,
+  e.g. via @(tsee defun-nx).
+  </p>"
+  (getpropc fun 'non-executablep nil w))
 
 (define measure ((fun (and (function-namep fun w)
                            (logicalp fun w)

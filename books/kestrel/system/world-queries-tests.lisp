@@ -111,24 +111,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (executablep 'cons (w state)))
+(assert-event (eq (non-executablep 'cons (w state)) nil))
 
-(assert-event (executablep 'not (w state)))
+(assert-event (eq (non-executablep 'not (w state)) nil))
 
-(assert-event (executablep 'len (w state)))
+(assert-event (eq (non-executablep 'len (w state)) nil))
 
 (must-succeed*
  (defun-nx f (x) x)
- (assert-event (not (executablep 'f (w state)))))
+ (assert-event (eq (non-executablep 'f (w state)) t)))
 
 (must-succeed*
  (defun-sk g (x) (forall (y z) (equal x (cons y z))))
- (assert-event (not (executablep 'g (w state)))))
+ (assert-event (eq (non-executablep 'g (w state)) t)))
 
 (must-succeed*
  (defun-sk h (x y) (exists z (equal z (cons x y)))
    :witness-dcls ((declare (xargs :non-executable nil))))
- (assert-event (executablep 'h (w state))))
+ (assert-event (eq (non-executablep 'h (w state)) nil)))
+
+(must-succeed*
+ (defstub s (*) => *)
+ (assert-event (eq (non-executablep 's (w state)) nil)))
+
+(must-succeed*
+ (defproxy p (* *) => *)
+ (assert-event (eq (non-executablep 'p (w state)) :program)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
