@@ -391,7 +391,32 @@ programmer-level mode.</p>" )
                              (a (car (car xs)))
                              (b (cdr (car xs)))))))))
 
-(i-am-here)
+;; (local
+;;  (defthm rvm08-wb-not-member-p
+;;    (implies (and (not (member-p addr (strip-cars addr-lst)))
+;;                  (programmer-level-mode x86))
+;;             (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb addr-lst x86))))
+;;                    (mv-nth 1 (rvm08 addr x86))))
+;;    :hints (("Goal" :in-theory (e/d (wm08 wb) ())))))
+
+(local
+ (defthm rvm08-wb-1-not-member-p
+   (implies (and (not (member-p addr (strip-cars addr-lst)))
+                 (programmer-level-mode x86))
+            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb-1 addr-lst x86))))
+                   (mv-nth 1 (rvm08 addr x86))))
+   :hints (("Goal" :in-theory (e/d (wm08) ())))))
+
+
+(local
+ (defthm rvm08-wb-1-member-p-helper
+   (implies (and (member-p addr (strip-cars (remove-duplicate-keys addr-lst)))
+                 (programmer-level-mode x86)
+                 (addr-byte-alistp addr-lst))
+            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb-1 addr-lst x86))))
+                   (cdr (assoc-equal addr (reverse addr-lst)))))
+   :hints (("Goal"
+            :in-theory (e/d (wm08 member-p) (unsigned-byte-p signed-byte-p))))))
 
 (local
  (defthm rvm08-wb-member-p-helper
@@ -400,8 +425,11 @@ programmer-level mode.</p>" )
                  (addr-byte-alistp addr-lst))
             (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb addr-lst x86))))
                    (cdr (assoc-equal addr (reverse addr-lst)))))
-   :hints (("Goal" :in-theory (e/d ()
+   :hints (("Goal" :in-theory (e/d (wb)
                                    (wb-by-wb-1-for-programmer-level-mode-induction-rule
+                                    reverse
+                                    assoc-equal
+                                    wb-1
                                     signed-byte-p
                                     unsigned-byte-p))))))
 
@@ -412,8 +440,13 @@ programmer-level mode.</p>" )
                  (addr-byte-alistp addr-lst))
             (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst x86))))
                    (cdr (assoc-equal addr (reverse addr-lst)))))
-   :hints (("Goal" :in-theory (e/d (rm08 wm08)
-                                   (wb-by-wb-1-for-programmer-level-mode-induction-rule))))))
+   :hints (("Goal" :in-theory (e/d (rm08)
+                                   (wb-by-wb-1-for-programmer-level-mode-induction-rule
+                                    reverse
+                                    assoc-equal
+                                    wb-1
+                                    signed-byte-p
+                                    unsigned-byte-p))))))
 
 (local
  (defthm rm08-wb-member-p
@@ -423,18 +456,18 @@ programmer-level mode.</p>" )
             (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst x86))))
                    (cdr (assoc-equal addr (reverse addr-lst)))))))
 
-(defthmd rb-wb-equal
-  ;; !!!
-  (implies (and (equal addresses (strip-cars (remove-duplicate-keys addr-lst)))
-                (programmer-level-mode x86)
-                (addr-byte-alistp addr-lst))
-           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
-                  (assoc-list addresses (reverse addr-lst))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d ()
-                           (strip-cars
-                            signed-byte-p
-                            unsigned-byte-p)))))
+;; (defthm rb-wb-subset
+;;   (implies (and (subset-p addresses (strip-cars addr-lst))
+;;                 (programmer-level-mode x86)
+;;                 ;; [Shilpi]: Ugh, this hyp. below is so annoying. I
+;;                 ;; could remove it if I proved something like
+;;                 ;; subset-p-strip-cars-of-remove-duplicate-keys,
+;;                 ;; commented out below.
+;;                 (canonical-address-listp addresses)
+;;                 (addr-byte-alistp addr-lst))
+;;            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
+;;                   (assoc-list addresses (reverse addr-lst))))
+;;   :hints (("Goal" :induct (assoc-list addresses (reverse addr-lst)))))
 
 (local
  (defthm rb-wb-subset-helper
@@ -463,7 +496,6 @@ programmer-level mode.</p>" )
             :in-theory (e/d (subset-p) ())))))
 
 (defthm rb-wb-subset
-  ;; !!!
   (implies (and (subset-p addresses (strip-cars addr-lst))
                 (programmer-level-mode x86)
                 ;; [Shilpi]: Ugh, this hyp. below is so annoying. I
@@ -475,6 +507,25 @@ programmer-level mode.</p>" )
            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
                   (assoc-list addresses (reverse addr-lst))))
   :hints (("Goal" :induct (assoc-list addresses (reverse addr-lst)))))
+
+(defthmd rb-wb-equal
+  (implies (and (equal addresses (strip-cars (remove-duplicate-keys addr-lst)))
+                (programmer-level-mode x86)
+                (addr-byte-alistp addr-lst))
+           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
+                  (assoc-list addresses (reverse addr-lst))))
+  :hints (("Goal" :do-not '(preprocess)
+           :do-not-induct t
+           :use ((:instance rb-wb-subset))
+           :in-theory (e/d (subset-p
+                            member-p)
+                           (rb-wb-subset
+                            wb-by-wb-1-for-programmer-level-mode-induction-rule
+                            reverse
+                            assoc-equal
+                            wb-1
+                            signed-byte-p
+                            unsigned-byte-p)))))
 
 ;; (skip-proofs
 ;;  (defthm subset-p-strip-cars-of-remove-duplicate-keys

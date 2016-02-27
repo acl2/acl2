@@ -2341,14 +2341,14 @@
   ;; [Shilpi]: This thing won't be true once I incorporate the
   ;; memory-permissions map into the programmer-level mode, unless I make sure
   ;; that the memory regions in question are both read and execute enabled.
-
   (implies (and (xr :programmer-level-mode 0 x86)
-                (x86p x86))
+                (x86p x86)
+                (force (canonical-address-listp addresses)))
            (equal (mv-nth 1 (rb addresses :x x86))
                   (mv-nth 1 (rb addresses :r x86))))
   :hints (("Goal" :in-theory (e/d* (rb rm08)
                                    (rb-1-accumulator-thm)))
-          ("Subgoal *1/5"
+          ("Subgoal *1/6"
            :use ((:instance rb-1-accumulator-thm
                             (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))
                             (addresses (cdr addresses))
