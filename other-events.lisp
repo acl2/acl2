@@ -12901,13 +12901,9 @@
                          (include-book-er
                           full-book-name nil
                           (cons
-                           "The certificate on file for ~x0 lists the check ~
-                            sum of the certified book as ~x3.  But the check ~
-                            sum computed for that book is now ~x4. This ~
-                            generally indicates that the file has been ~
-                            modified since it was last certified (though it ~
-                            could be the portcullis commands or the ~
-                            make-event expansions that have changed)."
+                           "~|The certificate for ~x0 lists the book-hash of ~
+                            that book as ~x3.  But its book-hash is now ~
+                            computed to be ~x4.  See :DOC book-hash-mismatch."
                            (list (cons #\3 post-alist-book-hash)
                                  (cons #\4 ev-lst-book-hash)))
                           :uncertified-okp
@@ -13147,7 +13143,8 @@
                                         state)
                                        (include-book-er1
                                         full-book-name nil
-                                        (cons "After including the book ~x0:~|~*3."
+                                        (cons "After including the book ~
+                                               ~x0:~|~*3."
                                               (list (cons #\3 msgs)))
                                         warning-summary ctx state))))))
                                 (t (value certified-p)))))
@@ -13279,10 +13276,8 @@
                                              ev-lst-book-hash))
                                      (t
 
-; The certification tuple below is marked as uncertified because the
-; ev-lst-book-hash is nil.  What about cert-annotations?  It may or may
-; not correctly characterize the file, it may even be nil.  Is that
-; bad?  No, the check sum will always save us.
+; The certification tuple below is marked as uncertified (by setting its
+; book-hash field to nil).
 
                                       (list* full-book-name
                                              user-book-name
