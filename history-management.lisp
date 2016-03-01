@@ -1599,7 +1599,7 @@
 
 ; Hits is a subset of the include-book-alist.  The form of each
 ; element is (full-book-name user-book-name familiar-name
-; cert-annotations . ev-lst-chk-sum).
+; cert-annotations . book-hash).
 
           (cond
            ((and hits (null (cdr hits)))
@@ -1624,7 +1624,7 @@
 
 ; Hits is a subset of the include-book-alist.  The form of each
 ; element is (full-book-name user-book-name familiar-name
-; cert-annotations . ev-lst-chk-sum).
+; cert-annotations . book-hash).
 
         (cond
          ((and hits (cdr hits))

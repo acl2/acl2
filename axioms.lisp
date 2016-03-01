@@ -12678,6 +12678,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-gc-strategy-fn gc-strategy
     read-file-into-string2
     cons-with-hint
+    file-length$
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -12988,8 +12989,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; ACL2 Version 7.2
 
 ; We put the version number on the line above just to remind ourselves to bump
-; the value of state global 'acl2-version, which gets printed out with the
-; check-sum info.
+; the value of state global 'acl2-version, which gets printed in .cert files.
 
 ; Leave this here.  It is read when loading acl2.lisp.  This constant should be
 ; a string containing at least one `.'.  The function save-acl2-in-akcl in
@@ -13019,6 +13019,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (acl2p-checkpoints-for-summary . nil)
     (axiomsp . nil)
     (bddnotes . nil)
+    (book-hash-keys . nil) ; set in LP
     (boot-strap-flg .
 
 ; Keep this state global in sync with world global of the same name.  We expect
@@ -13155,7 +13156,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (redundant-with-raw-code-okp . nil)
     (retrace-p . nil)
     (safe-mode . nil)
-    (save-expansion-file . nil)
+    (save-expansion-file . nil) ; potentially set in LP
     (saved-output-p . nil)
     (saved-output-reversed . nil)
     (saved-output-token-lst . nil)
@@ -26703,3 +26704,26 @@ Lisp definition."
             #-ccl
             (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|"))))
   (read-acl2-oracle state))
+
+(defun file-length$ (file state)
+  (declare (xargs :guard (stringp file)
+                  :stobjs state))
+  #+acl2-loop-only
+  (declare (ignore file))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from file-length$
+                 (mv (our-ignore-errors
+                      (with-open-file
+                        (str file
+                             :direction :input
+                             :element-type '(unsigned-byte 8)
+                             :if-does-not-exist nil)
+                        (and str (file-length str))))
+                     state)))
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (mv (and (null erp)
+                   (natp val)
+                   val)
+              state)))
