@@ -111,8 +111,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (eq (non-executablep 'cons (w state)) nil))
-
 (assert-event (eq (non-executablep 'not (w state)) nil))
 
 (assert-event (eq (non-executablep 'len (w state)) nil))
@@ -129,10 +127,6 @@
  (defun-sk h (x y) (exists z (equal z (cons x y)))
    :witness-dcls ((declare (xargs :non-executable nil))))
  (assert-event (eq (non-executablep 'h (w state)) nil)))
-
-(must-succeed*
- (defstub s (*) => *)
- (assert-event (eq (non-executablep 's (w state)) nil)))
 
 (must-succeed*
  (defproxy p (* *) => *)
