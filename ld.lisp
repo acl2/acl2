@@ -2527,7 +2527,7 @@
 ; Instead, we rely on the checksum of the cert-obj, which is still
 ; incorporated in the certificate, for ensuring that we have the right
 ; expansion-alist.  Notice however that this extra security disappears when
-; state global 'book-hash-keys is true.
+; state global 'book-hash-alistp is true.
 
 #-acl2-loop-only
 (defun-one-output compiled-function-p! (fn)

@@ -8596,7 +8596,7 @@
 ; So we are NOT free to drop or rearrange keys in these annotations.
 
 ; If the book is uncertified, the book-hash value is nil.  Otherwise it is a
-; checksum by default, but if the value of state global 'book-hash-keys was
+; checksum by default, but if the value of state global 'book-hash-alistp was
 ; non-nil at certification time, then the book-hash value is an alist; see
 ; function book-hash-alist and see :doc book-hash.
 
@@ -10569,12 +10569,12 @@
 ; If old-cert-hash is non-nil, then we compute a hash whose type (integer or
 ; *trivial-book-hash*) matches the type of old-cert-hash.  Otherwise, we
 ; compute a hash (which could be written into a certificate) that is an integer
-; unless state global 'book-hash-keys is true, in which case it is the token
+; unless state global 'book-hash-alistp is true, in which case it is the token
 ; *trivial-book-hash*.
 
   (cond ((if old-cert-hash
              (integerp old-cert-hash)
-           (not (f-get-global 'book-hash-keys state)))
+           (not (f-get-global 'book-hash-alistp state)))
 
 ; The inputs are potential fields of a cert-obj record.  We deliberately omit
 ; the :pcert-info field of a cert-obj from the checksum: we don't want the
@@ -12403,7 +12403,7 @@
 
   (cond ((if old-book-hash
              (integerp old-book-hash)
-           (not (f-get-global 'book-hash-keys state)))
+           (not (f-get-global 'book-hash-alistp state)))
 
 ; The inputs are potential fields of a cert-obj record.  We deliberately omit
 ; the :pcert-info field of a cert-obj from the checksum: we don't want the
