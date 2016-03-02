@@ -256,7 +256,7 @@ $(info Determining whether Glucose is installed)
 # GLUCOSE_EXISTS
 GLUCOSE_EXISTS := $(shell glucose --version 2>/dev/null)
 ifdef GLUCOSE_EXISTS
-  OS_HAS_GLUCOSE := 1
+  OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
 
 $(info Determining whether Smtlink is supported -- BOZO todo, for now pretending it does not!)
