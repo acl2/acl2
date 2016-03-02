@@ -600,26 +600,6 @@ memory.</li>
       (implies (canonical-address-listp x)
                (canonical-address-listp (cdr x)))))
 
-  (define addr-byte-alistp (alst)
-    :short "Recognizer of a list of address and byte pairs"
-    :enabled t
-    (if (atom alst)
-        (equal alst nil)
-      (if (atom (car alst))
-          nil
-        (let ((addr (caar alst))
-              (byte (cdar alst))
-              (rest (cdr  alst)))
-          (and (canonical-address-p addr)
-               (n08p byte)
-               (addr-byte-alistp rest)))))
-    ///
-
-    (defthm addr-byte-alistp-fwd-chain-to-alistp
-      (implies (addr-byte-alistp alst)
-               (alistp alst))
-      :rule-classes :forward-chaining))
-
   (define byte-listp (x)
     :short "Recognizer of a list of bytes"
     :enabled t
@@ -683,6 +663,42 @@ memory.</li>
                            (byte-listp lst2))
                (byte-listp (append lst1 lst2)))
       :rule-classes (:rewrite :type-prescription)))
+
+  (define addr-byte-alistp (alst)
+    :short "Recognizer of a list of address and byte pairs"
+    :enabled t
+    (if (atom alst)
+        (equal alst nil)
+      (if (atom (car alst))
+          nil
+        (let ((addr (caar alst))
+              (byte (cdar alst))
+              (rest (cdr  alst)))
+          (and (canonical-address-p addr)
+               (n08p byte)
+               (addr-byte-alistp rest)))))
+    ///
+
+    (defthm addr-byte-alistp-fwd-chain-to-alistp
+      (implies (addr-byte-alistp alst)
+               (alistp alst))
+      :rule-classes :forward-chaining)
+
+    (defthm strip-cars-addr-byte-alistp-is-canonical-address-listp
+      (implies (addr-byte-alistp alst)
+               (canonical-address-listp (strip-cars alst)))
+      :rule-classes (:type-prescription :rewrite))
+
+    (defthm strip-cdrs-addr-byte-alistp-is-byte-listp
+      (implies (addr-byte-alistp addr-lst)
+               (byte-listp (strip-cdrs addr-lst)))
+      :rule-classes (:type-prescription :rewrite)))
+
+  (defthm len-of-strip-cdrs
+    (equal (len (strip-cdrs as)) (len as)))
+
+  (defthm len-of-strip-cars
+    (equal (len (strip-cars as)) (len as)))
 
   (define combine-bytes (bytes)
     :guard (byte-listp bytes)
@@ -988,22 +1004,131 @@ memory.</li>
                (equal (len (mv-nth 1 (rb-1 addresses r-w-x x86 acc)))
                       (+ (len acc) (len addresses))))))
 
-  (define rb
-    ((addresses)
-     (r-w-x    :type (member  :r :w :x))
-     (x86))
-
+  (define las-to-pas
+    (l-addrs
+     (r-w-x :type (member :r :w :x))
+     (cpl   :type (unsigned-byte 2))
+     x86)
+    :non-executable t
     :enabled t
-    :guard (canonical-address-listp addresses)
+    :guard (and (not (programmer-level-mode x86))
+                (canonical-address-listp l-addrs))
 
-    (b* (((mv flg bytes x86)
-          (rb-1 addresses r-w-x x86 nil))
-         ((when flg)
-          ;; Flg will always be nil in the programmer-level mode.
-          (mv flg nil x86)))
-      (mv flg bytes x86))
+    (if (atom l-addrs)
+        (mv nil nil x86)
+
+      (b* (((mv flg p-addr x86)
+            (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))
+           ((when flg) (mv flg (list p-addr) x86))
+           ((mv flgs p-addrs x86)
+            (las-to-pas (cdr l-addrs) r-w-x cpl x86)))
+        (mv flgs (cons p-addr p-addrs) x86)))
 
     ///
+
+    (defthm physical-address-listp-mv-nth-1-las-to-pas
+      (physical-address-listp (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
+
+    (defthm x86p-mv-nth-2-las-to-pas
+      (implies (x86p x86)
+               (x86p (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
+
+    (defthm xr-las-to-pas
+      (implies (and (not (equal fld :mem))
+                    (not (equal fld :fault)))
+               (equal (xr fld index
+                          (mv-nth 2
+                                  (las-to-pas
+                                   l-addrs r-w-x cpl x86)))
+                      (xr fld index x86)))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm las-to-pas-xw-values
+      (implies (and (not (equal fld :mem))
+                    (not (equal fld :rflags))
+                    (not (equal fld :fault))
+                    (not (equal fld :ctr))
+                    (not (equal fld :msr))
+                    (not (equal fld :programmer-level-mode))
+                    (not (equal fld :page-structure-marking-mode)))
+               (and
+                (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
+                       (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
+                       (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
+
+    (defthm las-to-pas-xw-rflags-not-ac
+      (implies (equal (rflags-slice :ac value)
+                      (rflags-slice :ac (rflags x86)))
+               (and
+                (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (xw :rflags 0 value x86)))
+                       (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw :rflags 0 value x86)))
+                       (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
+
+    (defthm las-to-pas-xw-state
+      (implies (and (not (equal fld :mem))
+                    (not (equal fld :rflags))
+                    (not (equal fld :fault))
+                    (not (equal fld :ctr))
+                    (not (equal fld :msr))
+                    (not (equal fld :programmer-level-mode))
+                    (not (equal fld :page-structure-marking-mode)))
+               (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
+                      (xw fld index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm las-to-pas-xw-rflags-state-not-ac
+      (implies (equal (rflags-slice :ac value)
+                      (rflags-slice :ac (rflags x86)))
+               (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw :rflags 0 value x86)))
+                      (xw :rflags 0 value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm mv-nth-2-las-to-pas-system-level-non-marking-mode
+      (implies (and (not (page-structure-marking-mode x86))
+                    (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
+               (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86))
+                      x86))
+      :hints (("Goal" :in-theory (e/d (las-to-pas) (force (force))))))
+
+    (defthm len-of-mv-nth-1-las-to-pas
+      (implies (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+               (equal (len (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                      (len l-addrs)))))
+
+  (define read-from-physical-memory
+    ((p-addrs physical-address-listp)
+     x86)
+    :parents (reasoning-about-memory-reads-and-writes x86-physical-memory)
+    :enabled t
+    :guard (not (programmer-level-mode x86))
+    :returns (lst byte-listp :hyp :guard)
+    (if (endp p-addrs)
+        nil
+      (b* ((addr (car p-addrs))
+           (byte (memi addr x86)))
+        (cons byte (read-from-physical-memory (cdr p-addrs) x86)))))
+
+  (define rb ((l-addrs canonical-address-listp)
+              (r-w-x :type (member :r :w :x))
+              (x86))
+    :enabled t
+
+    (if (programmer-level-mode x86)
+        (rb-1 l-addrs r-w-x x86 nil)
+      (b* (((mv flgs p-addrs x86)
+            (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+           ((when flgs) (mv flgs nil x86))
+           (bytes (read-from-physical-memory p-addrs x86)))
+        (mv nil bytes x86)))
+
+    ///
+
+    (defthmd rb-is-rb-1-for-programmer-level-mode
+      (implies (programmer-level-mode x86)
+               (equal (rb l-addrs r-w-x x86)
+                      (rb-1 l-addrs r-w-x x86 nil))))
 
     (defthm rb-returns-byte-listp
       (implies (x86p x86)
@@ -1012,25 +1137,24 @@ memory.</li>
 
     (defthm rb-returns-x86p
       (implies (x86p x86)
-               (x86p (mv-nth 2 (rb addresses r-w-x x86)))))
-
-    (defthm rb-returns-x86-programmer-level-mode
-      (implies (and (programmer-level-mode x86)
-                    (x86p x86))
-               (equal (mv-nth 2 (rb addresses r-w-x x86)) x86))
-      :hints (("Goal" :in-theory (e/d (rm08) ()))))
+               (x86p (mv-nth 2 (rb l-addrs r-w-x x86)))))
 
     (defthm rb-returns-no-error-programmer-level-mode
-      (implies (and (canonical-address-listp addresses)
+      (implies (and (canonical-address-listp l-addrs)
                     (programmer-level-mode x86))
-               (equal (mv-nth 0 (rb addresses r-w-x x86)) nil))
-      :hints (("Goal" :in-theory (e/d (rm08 rvm08) ()))))
+               (equal (mv-nth 0 (rb l-addrs r-w-x x86)) nil)))
 
     (defthm len-of-rb-in-programmer-level-mode
       (implies (and (programmer-level-mode x86)
                     (canonical-address-listp addresses))
                (equal (len (mv-nth 1 (rb addresses r-w-x x86)))
-                      (len addresses)))))
+                      (len addresses))))
+
+    (defthm rb-returns-x86-programmer-level-mode
+      (implies (and (programmer-level-mode x86)
+                    (x86p x86))
+               (equal (mv-nth 2 (rb addresses r-w-x x86)) x86))
+      :hints (("Goal" :in-theory (e/d (rm08) ())))))
 
   ;; Definition of WB and other related events:
 
@@ -1158,21 +1282,49 @@ memory.</li>
                       nil))
       :hints (("Goal" :in-theory (e/d (wm08 wvm08) ())))))
 
+  (define write-to-physical-memory
+    ((p-addrs physical-address-listp)
+     (bytes byte-listp)
+     x86)
+    :parents (reasoning-about-memory-reads-and-writes x86-physical-memory)
+    :enabled t
+    :guard (and (equal (len p-addrs) (len bytes))
+                (not (programmer-level-mode x86)))
+    :returns (x86 x86p :hyp :guard)
+    (if (endp p-addrs)
+        x86
+      (b* ((addr (car p-addrs))
+           (byte (car bytes))
+           (x86 (!memi addr byte x86)))
+        (write-to-physical-memory (cdr p-addrs) (cdr bytes) x86)))
+
+    ///
+
+    (defthm xr-not-mem-write-to-physical-memory
+      (implies (not (equal fld :mem))
+               (equal (xr fld index (write-to-physical-memory p-addrs bytes x86))
+                      (xr fld index x86)))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm write-to-physical-memory-xw-in-system-level-mode
+      ;; Keep the state updated by write-to-physical-memory inside all other nests of writes.
+      (implies (not (equal fld :mem))
+               (equal (write-to-physical-memory p-addrs bytes (xw fld index value x86))
+                      (xw fld index value (write-to-physical-memory p-addrs bytes x86))))
+      :hints (("Goal" :in-theory (e/d* (write-to-physical-memory) ())))))
+
   (define wb (addr-lst x86)
 
     :guard (addr-byte-alistp addr-lst)
     :enabled t
 
-    (if (and (not (programmer-level-mode x86))
-             (mv-nth 0
-                     (page-faults-during-translation-p
-                      (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
-
-        (page-faults-during-translation-p
-         ;; Returns the flag and the modified x86 state.
-         (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)
-
-      (wb-1 addr-lst x86))
+    (if (programmer-level-mode x86)
+        (wb-1 addr-lst x86)
+      (b* (((mv flgs p-addrs x86)
+            (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+           ((when flgs) (mv flgs x86))
+           (x86 (write-to-physical-memory p-addrs (strip-cdrs addr-lst) x86)))
+        (mv nil x86)))
 
     ///
 
@@ -1182,7 +1334,8 @@ memory.</li>
                       (wb-1 addr-lst x86))))
 
     (defthm wb-returns-x86p
-      (implies (x86p x86)
+      (implies (and (addr-byte-alistp addr-lst)
+                    (x86p x86))
                (x86p (mv-nth 1 (wb addr-lst x86)))))
 
     (defthm wb-returns-no-error-programmer-level-mode
@@ -1400,47 +1553,18 @@ memory.</li>
                          (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
     :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
-  ;; Relating wb and xr/xw in the system-level mode.
-
-  (defthm xr-wb-1-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 1 (wb-1 addr-lst x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (wb-1) ()))))
+  ;; Relating wb and xr/xw in the system-level mode:
 
   (defthm xr-wb-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86))
-                  (not (equal fld :mem))
+    (implies (and (not (equal fld :mem))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 1 (wb addr-lst x86)))
                     (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (wb) (wb-1)))))
-
-  (defthm wb-1-xw-in-system-level-mode
-    ;; Keep the state updated by wb-1 inside all other nests of writes.
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :rflags))
-                  (not (equal fld :ctr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :msr))
-                  (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
-             (and (equal (mv-nth 0 (wb-1 addr-lst (xw fld index value x86)))
-                         (mv-nth 0 (wb-1 addr-lst x86)))
-                  (equal (mv-nth 1 (wb-1 addr-lst (xw fld index value x86)))
-                         (xw fld index value (mv-nth 1 (wb-1 addr-lst x86))))))
-    :hints (("Goal" :in-theory (e/d* (wb-1) ()))))
+    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
 
   (defthm wb-xw-in-system-level-mode
     ;; Keep the state updated by wb inside all other nests of writes.
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
+    (implies (and (not (equal fld :mem))
                   (not (equal fld :rflags))
                   (not (equal fld :ctr))
                   (not (equal fld :seg-visible))
@@ -1452,29 +1576,17 @@ memory.</li>
                          (mv-nth 0 (wb addr-lst x86)))
                   (equal (mv-nth 1 (wb addr-lst (xw fld index value x86)))
                          (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
-    :hints (("Goal" :in-theory (e/d* (wb) (wb-1)))))
-
-  (defthm wb-1-xw-rflags-not-ac-in-system-level-mode
-    ;; Keep the state updated by wb-1 inside all other nests of writes.
-    (implies (and (not (programmer-level-mode x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
-             (and (equal (mv-nth 0 (wb-1 addr-lst (xw :rflags 0 value x86)))
-                         (mv-nth 0 (wb-1 addr-lst x86)))
-                  (equal (mv-nth 1 (wb-1 addr-lst (xw :rflags 0 value x86)))
-                         (xw :rflags 0 value (mv-nth 1 (wb-1 addr-lst x86))))))
-    :hints (("Goal" :in-theory (e/d* (wb-1) ()))))
+    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
 
   (defthm wb-xw-rflags-not-ac-in-system-level-mode
     ;; Keep the state updated by wb inside all other nests of writes.
-    (implies (and (not (programmer-level-mode x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
+    (implies (equal (rflags-slice :ac value)
+                    (rflags-slice :ac (rflags x86)))
              (and (equal (mv-nth 0 (wb addr-lst (xw :rflags 0 value x86)))
                          (mv-nth 0 (wb addr-lst x86)))
                   (equal (mv-nth 1 (wb addr-lst (xw :rflags 0 value x86)))
                          (xw :rflags 0 value (mv-nth 1 (wb addr-lst x86))))))
-    :hints (("Goal" :in-theory (e/d* (wb) (wb-1)))))
+    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
 
   (define create-addr-bytes-alist
     ((addr-list (canonical-address-listp addr-list))

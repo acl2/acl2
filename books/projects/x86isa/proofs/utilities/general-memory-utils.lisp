@@ -277,16 +277,6 @@
   (implies (addr-byte-alistp alst)
            (addr-byte-alistp (acl2::rev alst))))
 
-(defthm strip-cdrs-addr-byte-alistp-is-byte-listp
-  (implies (addr-byte-alistp addr-lst)
-           (byte-listp (strip-cdrs addr-lst)))
-  :rule-classes (:type-prescription :rewrite))
-
-(defthm strip-cars-addr-byte-alistp-is-canonical-address-listp
-  (implies (addr-byte-alistp alst)
-           (canonical-address-listp (strip-cars alst)))
-  :rule-classes (:type-prescription :rewrite))
-
 (defthm-usb addr-byte-alistp-assoc-bound
   :hyp (and (addr-byte-alistp addr-lst)
             (member-p addr (strip-cars addr-lst)))
@@ -1051,12 +1041,6 @@
 
 ;; Other misc. lemmas about pos, nth, etc. that are useful in both the
 ;; modes:
-
-(defthm len-of-strip-cdrs
-  (equal (len (strip-cdrs as)) (len as)))
-
-(defthm len-of-strip-cars
-  (equal (len (strip-cars as)) (len as)))
 
 (defthmd create-canonical-address-list-end-addr-is-canonical
   (implies (and (equal (len (create-canonical-address-list count addr)) count)
