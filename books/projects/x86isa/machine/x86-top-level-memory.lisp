@@ -1019,10 +1019,10 @@ memory.</li>
 
       (b* (((mv flg p-addr x86)
             (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))
-           ((when flg) (mv flg (list p-addr) x86))
+           ((when flg) (mv flg nil x86))
            ((mv flgs p-addrs x86)
             (las-to-pas (cdr l-addrs) r-w-x cpl x86)))
-        (mv flgs (cons p-addr p-addrs) x86)))
+        (mv flgs (if flgs nil (cons p-addr p-addrs)) x86)))
 
     ///
 

@@ -8,6 +8,7 @@
 ;; Proof utilities
 (include-book "utilities/programmer-level-mode/top" :ttags :all)
 ;; (include-book "utilities/system-level-mode/top" :ttags :all)
+(include-book "utilities/system-level-mode/paging-defs" :ttags :all)
 
 ;; Program proofs:
 
