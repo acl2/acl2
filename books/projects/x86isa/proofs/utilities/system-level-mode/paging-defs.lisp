@@ -698,7 +698,7 @@
                     (all-translation-governing-addresses l-addrs x86)))
     :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses))))))
 
-(defthm ia32e-la-to-pa-values-and-write-to-physical-memory
+(defthm ia32e-la-to-pa-values-and-write-to-physical-memory-disjoint
   (implies (and (disjoint-p p-addrs (translation-governing-addresses lin-addr x86))
                 (physical-address-listp p-addrs)
                 (canonical-address-p lin-addr))
@@ -710,7 +710,7 @@
            :induct (write-to-physical-memory p-addrs bytes x86)
            :in-theory (e/d* (disjoint-p) (translation-governing-addresses)))))
 
-(defthm las-to-pas-values-and-write-to-physical-memory
+(defthm las-to-pas-values-and-write-to-physical-memory-disjoint
   (implies (and (disjoint-p p-addrs (all-translation-governing-addresses l-addrs x86))
                 (physical-address-listp p-addrs)
                 (canonical-address-listp l-addrs)
@@ -721,11 +721,6 @@
                        (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
   :hints (("Goal" :induct (las-to-pas l-addrs r-w-x cpl x86)
            :in-theory (e/d* (disjoint-p) (translation-governing-addresses)))))
-
-;; (acl2::why |(rm-low-64 addr2 (xw :mem addr1 val x86)) --- disjoint addr|)
-;; (acl2::why mv-nth-2-las-to-pas-system-level-non-marking-mode)
-;; (acl2::why mv-nth-2-ia32e-la-to-pa-system-level-non-marking-mode)
-;; (acl2::why las-to-pas-values-and-write-to-physical-memory)
 
 (defthm mv-nth-1-ia32e-la-to-pa-system-level-non-marking-mode-when-error
   (implies (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
@@ -753,8 +748,9 @@
   (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
-                (disjoint-p (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
-                            (all-translation-governing-addresses l-addrs x86))
+                (disjoint-p
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (all-translation-governing-addresses l-addrs x86))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-listp l-addrs)
@@ -764,78 +760,203 @@
                   (mv-nth 1 (rb l-addrs r-w-x x86))))
   :hints (("Goal" :do-not-induct t)))
 
-#||
+;; (i-am-here)
 
-(i-am-here)
-
-(defthm two-ia32e-la-to-pa-if-the-inner-returns-an-error
-  ;; Bah, of course there are too many case splits here that can be
-  ;; avoided easily...
-  (implies (not (page-structure-marking-mode x86))
-           (and
-            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
-                                             (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-                   (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))
-            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
-                                             (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-                   (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
-                                    ia32e-la-to-pa-pml4-table
-                                    ia32e-la-to-pa-page-dir-ptr-table
-                                    ia32e-la-to-pa-page-directory
-                                    ia32e-la-to-pa-page-table
-                                    page-size
-                                    paging-entry-no-page-fault-p
-                                    page-fault-exception)
-                                   (not)))))
-
-(defthm two-las-to-pas-if-the-inner-returns-an-error
-  ;; Bah, of course there are too many case splits here that can be
-  ;; avoided easily...
-  (implies (not (page-structure-marking-mode x86))
-           (and
-            (equal (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
-                                         (mv-nth 2 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 x86))))
-                   (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)))
-            (equal (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
-                                         (mv-nth 2 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 x86))))
-                   (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)))))
-  :hints (("Goal" :in-theory (e/d* (las-to-pas) (not)))))
-
-(defthm xr-mem-mv-nth-2-ia32e-la-to-pa-page-table
-  (implies (not (member-p index (addr-range 8 (page-table-entry-addr lin-addr base-addr))))
-           (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-table
-                                            lin-addr
-                                            base-addr u/s-acc r/w-acc x/d-acc
-                                            wp smep smap ac nxe r-w-x cpl x86)))
-                  (xr :mem index x86)))
+(defthm xr-and-mv-nth-2-ia32e-la-to-pa-page-table
+  (implies (and (not (page-structure-marking-mode x86))
+                (not (equal fld :fault)))
+           (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-table
+                                           lin-addr
+                                           base-addr u/s-acc r/w-acc x/d-acc
+                                           wp smep smap ac nxe r-w-x cpl x86)))
+                  (xr fld index x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-table
-                                    paging-entry-no-page-fault-p)
-                                   ()))))
+                                    disjoint-p member-p)
+                                   (negative-logand-to-positive-logand-with-integerp-x
+                                    bitops::logand-with-negated-bitmask)))))
 
-(defthm xr-mem-mv-nth-2-ia32e-la-to-pa
-  (implies t
-           (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
-                                    ia32e-la-to-pa-pml4-table
-                                    paging-entry-no-page-fault-p)
-                                   ()))))
+(defthm xr-mv-nth-2-ia32e-la-to-pa-page-directory
+  (implies (and (not (page-structure-marking-mode x86))
+                (not (equal fld :fault)))
+           (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-directory
+                                           lin-addr
+                                           base-addr u/s-acc r/w-acc x/d-acc
+                                           wp smep smap ac nxe r-w-x cpl x86)))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory
+                                    disjoint-p member-p)
+                                   (negative-logand-to-positive-logand-with-integerp-x
+                                    bitops::logand-with-negated-bitmask)))))
+
+(defthm xr-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
+  (implies (and (not (page-structure-marking-mode x86))
+                (not (equal fld :fault)))
+           (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                                           lin-addr
+                                           base-addr u/s-acc r/w-acc x/d-acc
+                                           wp smep smap ac nxe r-w-x cpl x86)))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
+                                    disjoint-p member-p)
+                                   (negative-logand-to-positive-logand-with-integerp-x
+                                    bitops::logand-with-negated-bitmask)))))
+
+(defthm xr-mv-nth-2-ia32e-la-to-pa-pml4-table
+  (implies (and (not (page-structure-marking-mode x86))
+                (not (equal fld :fault)))
+           (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                                           lin-addr base-addr
+                                           wp smep smap ac nxe r-w-x cpl x86)))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-pml4-table
+                                    disjoint-p member-p)
+                                   (negative-logand-to-positive-logand-with-integerp-x
+                                    bitops::logand-with-negated-bitmask)))))
+
+(defthm xr-mv-nth-2-ia32e-la-to-pa
+  (implies (and (not (page-structure-marking-mode x86))
+                (not (equal fld :fault)))
+           (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (force (force))))))
 
 (defthm read-from-physical-memory-and-mv-nth-2-ia32e-la-to-pa
-  (implies t
+  (implies (not (page-structure-marking-mode x86))
            (equal (read-from-physical-memory p-addrs (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
                   (read-from-physical-memory p-addrs x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
-                                    ia32e-la-to-pa-pml4-table
-                                    paging-entry-no-page-fault-p)
-                                   ()))))
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-||#
+;; (i-am-here)
+
+(defun-nx wb-duplicate-writes-induct (addr-list x86)
+  (if (endp addr-list)
+      nil
+    (if (member-p (car (car addr-list)) (strip-cars (cdr addr-list)))
+        (wb-duplicate-writes-induct (cdr addr-list) x86)
+      (wb-duplicate-writes-induct
+       (cdr addr-list)
+       (mv-nth 1 (wb (list (car addr-list)) x86))))))
+
+(local
+ (defthm strip-cars-of-remove-duplicate-keys-is-remove-duplicates-equal-of-strip-cars
+   (implies (alistp alst)
+            (equal (strip-cars (remove-duplicate-keys alst))
+                   (remove-duplicates-equal (strip-cars alst))))))
+
+(local (include-book "std/lists/remove-duplicates" :dir :system))
+
+(defthm remove-duplicate-keys-mv-nth-0-las-to-pas
+  (implies (and (canonical-address-listp l-addrs)
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (not (page-structure-marking-mode x86)))
+           (equal (mv-nth 0 (las-to-pas (remove-duplicates-equal l-addrs) r-w-x cpl x86))
+                  (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
+  :hints (("Goal" :induct (las-to-pas (remove-duplicates-equal l-addrs) r-w-x cpl x86))))
+
+(local
+ (defthmd write-to-physical-memory-xw-mem-member-p-helper
+   (implies (equal (write-to-physical-memory (cdr p-addrs)
+                                             (cdr bytes)
+                                             (xw :mem index byte
+                                                 (xw :mem (car p-addrs)
+                                                     (car bytes)
+                                                     x86)))
+                   (write-to-physical-memory (cdr p-addrs)
+                                             (cdr bytes)
+                                             (xw :mem (car p-addrs)
+                                                 (car bytes)
+                                                 x86)))
+            (equal (write-to-physical-memory (cdr p-addrs)
+                                             (cdr bytes)
+                                             (xw :mem (car p-addrs)
+                                                 (car bytes)
+                                                 (xw :mem index byte x86)))
+                   (write-to-physical-memory (cdr p-addrs)
+                                             (cdr bytes)
+                                             (xw :mem (car p-addrs)
+                                                 (car bytes)
+                                                 x86))))
+   :hints (("Goal" :cases ((equal index (car p-addrs)))))))
+
+(defthm write-to-physical-memory-xw-mem-member-p
+  (implies (member-p index p-addrs)
+           (equal (write-to-physical-memory p-addrs bytes (xw :mem index byte x86))
+                  (write-to-physical-memory p-addrs bytes x86)))
+  :hints (("Goal" :in-theory (e/d* (member-p write-to-physical-memory-xw-mem-member-p-helper) ()))))
+
+(defthm mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
+  (implies (and (member-p lin-addr l-addrs)
+                (not (mv-nth 0 (las-to-pas     l-addrs r-w-x cpl x86)))
+                (not (page-structure-marking-mode x86)))
+           (member-p (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                     (mv-nth 1 (las-to-pas     l-addrs r-w-x cpl x86))))
+  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
+(defthm las-to-pas-values-and-xw-mem-not-member
+  (implies (and (not (member-p index (all-translation-governing-addresses l-addrs x86)))
+                (physical-address-p index)
+                (canonical-address-listp l-addrs)
+                (not (page-structure-marking-mode x86)))
+           (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (xw :mem index byte x86)))
+                       (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw :mem index byte x86)))
+                       (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
+  :hints (("Goal" :induct (las-to-pas l-addrs r-w-x cpl x86)
+           :in-theory (e/d* (disjoint-p) (translation-governing-addresses)))))
+
+(defthm subset-p-and-append-both
+  (implies (subset-p a b)
+           (subset-p (append e a) (append e b)))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+(defthm member-p-and-remove-duplicates-equal
+  (equal (member-p e (remove-duplicates-equal x))
+         (member-p e x))
+  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
+(defthm canonical-address-listp-and-remove-duplicates-equal
+  (implies (canonical-address-listp x)
+           (canonical-address-listp (remove-duplicates-equal x))))
+
+(defthm all-translation-governing-addresses-remove-duplicates-equal-and-subset-p
+  (subset-p (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)
+            (all-translation-governing-addresses l-addrs x86))
+  :hints (("Goal" :in-theory (e/d* (subset-p) (translation-governing-addresses)))))
+
+(defthm member-p-of-subset-is-member-p-of-superset
+  (implies (and (subset-p x y)
+                (member-p e x))
+           (member-p e y))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+(defthm member-p-of-all-translation-governing-addresses-and-remove-duplicates-equal
+  (implies (not (member-p addr (all-translation-governing-addresses l-addrs x86)))
+           (not (member-p addr (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)))))
+
+(defthmd wb-remove-duplicate-writes-in-system-level-non-marking-mode
+  (implies (and (syntaxp (not (and (consp addr-lst)
+                                   (eq (car addr-lst) 'remove-duplicate-keys))))
+                (disjoint-p
+                 ;; Physical addresses corresponding to (strip-cars
+                 ;; addr-lst) are disjoint from the
+                 ;; translation-governing addresses.
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (all-translation-governing-addresses (strip-cars addr-lst)  x86))
+                (addr-byte-alistp addr-lst)
+                (not (mv-nth 0 (wb addr-lst x86)))
+                (not (programmer-level-mode x86))
+                (not (page-structure-marking-mode x86)))
+           (equal (wb addr-lst x86)
+                  (wb (remove-duplicate-keys addr-lst) x86)))
+  :hints (("Goal" :do-not '(generalize)
+           :in-theory (e/d (disjoint-p member-p subset-p)
+                           (acl2::mv-nth-cons-meta
+                            translation-governing-addresses))
+           :induct (wb-duplicate-writes-induct addr-lst x86))))
 
 
 
-
+;; (i-am-here)
 
 ;; (define create-phy-addr-bytes-alist
 ;;   ((addr-list (physical-address-listp addr-list))
@@ -850,6 +971,26 @@
 ;;                                             (cdr byte-list))))
 ;;     nil))
 
+;; (DEFTHM XR-MEM-WRITE-TO-PHYSICAL-MEMORY-DISJOINT
+;;   (IMPLIES
+;;    (NOT (MEMBER-P INDEX P-ADDRS))
+;;    (EQUAL (XR :MEM INDEX
+;;               (WRITE-TO-PHYSICAL-MEMORY P-ADDRS BYTES X86))
+;;           (XR :MEM INDEX X86)))
+;;   :HINTS
+;;   (("Goal" :IN-THEORY (E/D* (MEMBER-P) (FORCE (FORCE))))))
+
+;; (defthm read-from-physical-memory-and-write-to-physical-memory-equal
+;;   (implies (and (consp p-addrs)
+;;                 (physical-address-listp p-addrs)
+;;                 (byte-listp bytes)
+;;                 (equal (len p-addrs) (len bytes)))
+;;            (equal (read-from-physical-memory p-addrs (write-to-physical-memory p-addrs bytes x86))
+;;                   (assoc-list p-addrs (reverse (create-phy-addr-bytes-alist p-addrs bytes)))))
+;;   :hints (("Goal"
+;;            :induct (read-from-physical-memory p-addrs (write-to-physical-memory p-addrs bytes x86))
+;;            :in-theory (e/d* () ()))))
+
 ;; (defthm read-from-physical-memory-and-write-to-physical-memory-subset-p
 ;;   (implies (subset-p p-addrs-1 p-addrs-2)
 ;;            (equal (read-from-physical-memory
@@ -857,6 +998,23 @@
 ;;                    (write-to-physical-memory p-addrs-2 bytes x86))
 ;;                   (assoc-list p-addrs-1 (reverse (create-phy-addr-bytes-alist p-addrs-2 bytes)))))
 ;;   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+;; (defthmd rb-wb-equal-in-system-level-non-marking-mode
+;;   (implies (and (equal
+;;                  (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+;;                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+;;                 (disjoint-p
+;;                  (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+;;                  (all-translation-governing-addresses l-addrs x86))
+;;                 (not (programmer-level-mode x86))
+;;                 (not (page-structure-marking-mode x86))
+;;                 (canonical-address-listp l-addrs)
+;;                 (addr-byte-alistp addr-lst)
+;;                 (not (mv-nth 0 (rb l-addrs r-w-x x86)))
+;;                 (not (mv-nth 0 (wb addr-lst x86))))
+;;            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+;;                   xxx))
+;;   :hints (("Goal" :do-not-induct t)))
 
 
 
@@ -1010,3 +1168,37 @@
                        unsigned-byte-p signed-byte-p))
 
 ||#
+
+;; (defthm two-ia32e-la-to-pa-if-the-inner-returns-an-error
+;;   ;; Bah, of course there are too many case splits here that can be
+;;   ;; avoided easily...
+;;   (implies (not (page-structure-marking-mode x86))
+;;            (and
+;;             (equal (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
+;;                                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+;;                    (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))
+;;             (equal (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
+;;                                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+;;                    (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))))
+;;   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
+;;                                     ia32e-la-to-pa-pml4-table
+;;                                     ia32e-la-to-pa-page-dir-ptr-table
+;;                                     ia32e-la-to-pa-page-directory
+;;                                     ia32e-la-to-pa-page-table
+;;                                     page-size
+;;                                     paging-entry-no-page-fault-p
+;;                                     page-fault-exception)
+;;                                    (not)))))
+
+;; (defthm two-las-to-pas-if-the-inner-returns-an-error
+;;   ;; Bah, of course there are too many case splits here that can be
+;;   ;; avoided easily...
+;;   (implies (not (page-structure-marking-mode x86))
+;;            (and
+;;             (equal (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
+;;                                          (mv-nth 2 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 x86))))
+;;                    (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)))
+;;             (equal (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
+;;                                          (mv-nth 2 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 x86))))
+;;                    (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)))))
+;;   :hints (("Goal" :in-theory (e/d* (las-to-pas) (not)))))
