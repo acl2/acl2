@@ -91,6 +91,7 @@
     DIVE-INTO-MACROS-TABLE
     ERROR1
     FILE-LENGTH$ ; to be added to *acl2-exports*
+    FILE-WRITE-DATE$ ; to be added to *acl2-exports*
     FIND-RULES-OF-RUNE
     INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
     LOOP-STOPPER

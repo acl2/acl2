@@ -6713,18 +6713,21 @@
              '(lambda (whs)
                 (set-wormhole-entry-code whs :ENTER))
              ',(cons sortkey display)
-             '(pprogn
-               (io? temporary nil state
-                    nil
-                    (fms "~@0"
-                         (list (cons #\0
-                                     (show-accumulated-persistence-phrase
-                                      (f-get-global 'wormhole-input state)
-                                      (wormhole-data
-                                       (f-get-global 'wormhole-status state)))))
-                         *standard-co*
-                         state nil))
-               (value :q))
+             '(state-global-let*
+               ((print-base 10 set-print-base)
+                (print-radix nil set-print-radix))
+               (pprogn
+                (io? temporary nil state
+                     nil
+                     (fms "~@0"
+                          (list (cons #\0
+                                      (show-accumulated-persistence-phrase
+                                       (f-get-global 'wormhole-input state)
+                                       (wormhole-data
+                                        (f-get-global 'wormhole-status state)))))
+                          *standard-co*
+                          state nil))
+                (value :q)))
              :ld-prompt  nil
              :ld-missing-input-ok nil
              :ld-pre-eval-filter :all

@@ -4279,11 +4279,8 @@
            (er soft ctx local-str
                form
                " because it implicitly sets the acl2-defaults-table in a ~
-                local context.  A local context is not useful when setting ~
-                this table, since the acl2-defaults-table is restored upon ~
-                completion of encapsulate, include-book, and certify-book ~
-                forms; that is, no changes to the acl2-defaults-table are ~
-                exported"
+                local context; see :DOC acl2-defaults-table, in particular ~
+                the explanation about this error message"
                (chk-embedded-event-form-orig-form-msg orig-form state)
                ""))
           ((and in-local-flg (eq (car form) 'defaxiom))
