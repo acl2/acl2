@@ -196,6 +196,7 @@
 (include-book "tools/removable-runes" :dir :system)
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
+(include-book "tools/defthmg" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
 (include-book "system/event-names" :dir :system)
 
