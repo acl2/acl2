@@ -408,10 +408,14 @@
   (equal (strip-cars (acl2::rev x))
          (acl2::rev (strip-cars x))))
 
+;; (defthm member-p-of-rev
+;;   (equal (member-p x (acl2::rev y))
+;;          (member-p x y))
+;;   :hints (("Goal" :in-theory (e/d (member-p) ()))))
+
 (defthm member-p-of-rev
-  (equal (member-p x (acl2::rev y))
-         (member-p x y))
-  :hints (("Goal" :in-theory (e/d (member-p) ()))))
+  (iff (member-p e (acl2::rev x))
+       (member-p e x)))
 
 (defthm subset-p-of-rev
   (equal (subset-p x (acl2::rev y))

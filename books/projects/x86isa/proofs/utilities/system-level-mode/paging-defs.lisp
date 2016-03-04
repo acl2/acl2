@@ -126,6 +126,12 @@
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
+(defthm mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode
+  (implies (not (xr :programmer-level-mode 0 x86))
+           (equal (mv-nth 0 (rb l-addrs r-w-x x86))
+                  (mv-nth 0 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))))
+  :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
 ;; ======================================================================
 
 ;; Normalizing memory writes:
@@ -192,6 +198,12 @@
                             (signed-byte-p
                              unsigned-byte-p
                              force (force))))))
+
+(defthm mv-nth-0-wb-and-mv-nth-0-las-to-pas-in-system-level-mode
+  (implies (not (xr :programmer-level-mode 0 x86))
+           (equal (mv-nth 0 (wb addr-lst x86))
+                  (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))))
+  :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
 ;; ======================================================================
 
@@ -273,6 +285,88 @@
                             (addr lin-addr)
                             (r-w-x :x)
                             (l-addrs (create-canonical-address-list n prog-addr)))))))
+
+(defthmd rb-unwinding-thm-in-system-level-non-marking-mode
+  (implies (and (consp l-addrs)
+                (not (mv-nth 0 (rb l-addrs r-w-x x86)))
+                (not (page-structure-marking-mode x86)))
+           (equal (mv-nth 1 (rb l-addrs r-w-x x86))
+                  (cons (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))
+                        (mv-nth 1 (rb (cdr l-addrs) r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta)))))
+
+(defthmd rb-unwinding-thm-in-system-level-non-marking-mode-for-errors
+  (implies (and (subset-p l-addrs-subset l-addrs)
+                (consp l-addrs)
+                (not (mv-nth 0 (rb l-addrs r-w-x x86)))
+                (not (page-structure-marking-mode x86)))
+           (equal (mv-nth 0 (rb l-addrs-subset r-w-x x86))
+                  nil))
+  :hints (("Goal" :in-theory (e/d (subset-p) (acl2::mv-nth-cons-meta)))))
+
+(defthm rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+  (implies
+   (and (bind-free
+         (find-info-from-program-at-term
+          'rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+          mfc state)
+         (n prog-addr bytes))
+        (program-at (create-canonical-address-list n prog-addr) bytes x86)
+        (subset-p l-addrs (create-canonical-address-list n prog-addr))
+        (syntaxp (quotep n))
+        (consp l-addrs)
+        (not (mv-nth 0 (rb l-addrs :x x86)))
+        (not (programmer-level-mode x86))
+        (not (page-structure-marking-mode x86))
+        (x86p x86))
+   (equal (mv-nth 1 (rb l-addrs :x x86))
+          (append (list (nth (pos
+                              (car l-addrs)
+                              (create-canonical-address-list n prog-addr))
+                             bytes))
+                  (mv-nth 1 (rb (cdr l-addrs) :x x86)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (subset-p
+                            member-p)
+                           (rb
+                            canonical-address-p
+                            acl2::mv-nth-cons-meta
+                            rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode))
+           :use ((:instance rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode
+                            (lin-addr (car l-addrs)))
+                 (:instance rb-unwinding-thm-in-system-level-non-marking-mode
+                            (r-w-x :x))
+                 (:instance rb-unwinding-thm-in-system-level-non-marking-mode-for-errors
+                            (r-w-x :x)
+                            (l-addrs-subset (list (car l-addrs))))))))
+
+(defthm combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+  (implies
+   (and (bind-free
+         (find-info-from-program-at-term
+          'combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+          mfc state)
+         (n prog-addr bytes))
+        (program-at (create-canonical-address-list n prog-addr) bytes x86)
+        (subset-p l-addrs (create-canonical-address-list n prog-addr))
+        (syntaxp (quotep n))
+        (consp l-addrs)
+        (not (mv-nth 0 (rb l-addrs :x x86)))
+        (not (programmer-level-mode x86))
+        (not (page-structure-marking-mode x86))
+        (x86p x86))
+   (equal (combine-bytes (mv-nth 1 (rb l-addrs :x x86)))
+          (combine-bytes
+           (append (list (nth (pos
+                               (car l-addrs)
+                               (create-canonical-address-list n prog-addr))
+                              bytes))
+                   (mv-nth 1 (rb (cdr l-addrs) :x x86))))))
+  :hints (("Goal" :in-theory (union-theories
+                              '()
+                              (theory 'minimal-theory))
+           :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)))))
 
 ;; ======================================================================
 
@@ -756,9 +850,53 @@
                 (canonical-address-listp l-addrs)
                 ;; I should try to eliminate the following hyp too...
                 (not (mv-nth 0 (wb addr-lst x86))))
-           (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
-                  (mv-nth 1 (rb l-addrs r-w-x x86))))
+           (and
+            (equal (mv-nth 0 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 0 (rb l-addrs r-w-x x86)))
+            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 1 (rb l-addrs r-w-x x86)))))
   :hints (("Goal" :do-not-induct t)))
+
+(defthm program-at-wb-disjoint-in-system-level-non-marking-mode
+  (implies (and (disjoint-p
+                 (mv-nth 1 (las-to-pas l-addrs :x (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+                (disjoint-p
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (all-translation-governing-addresses l-addrs x86))
+                (not (programmer-level-mode x86))
+                (not (page-structure-marking-mode x86))
+                (canonical-address-listp l-addrs)
+                ;; I should try to eliminate the following hyp too...
+                (not (mv-nth 0 (wb addr-lst x86))))
+           (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-lst x86)))
+                  (program-at l-addrs bytes x86)))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d (program-at) (rb wb)))))
+
+(defthm program-at-pop-x86-oracle-in-system-level-mode
+  (implies (not (programmer-level-mode x86))
+           (equal (program-at addresses r-w-x (mv-nth 1 (pop-x86-oracle x86)))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
+                                  (rb)))))
+
+;; (defthm rb-!flgi-in-system-level-mode
+;;   (implies (and (not (programmer-level-mode x86))
+;;                 (member index *flg-names*)
+;;                 (not (equal index *ac*)))
+;;            (and (equal (mv-nth 0 (rb addr r-w-x (!flgi index value x86)))
+;;                        (mv-nth 0 (rb addr r-w-x x86)))
+;;                 (equal (mv-nth 1 (rb addr r-w-x (!flgi index value x86)))
+;;                        (mv-nth 1 (rb addr r-w-x x86)))))
+;;   :hints (("Goal" :in-theory (e/d* (!flgi) (rb)))))
+
+;; (defthm program-at-write-user-rflags-in-system-level-mode
+;;   (implies (not (programmer-level-mode x86))
+;;            (equal (program-at addresses r-w-x (write-user-rflags flags mask x86))
+;;                   (program-at addresses r-w-x x86)))
+;;   :hints (("Goal" :in-theory (e/d (program-at)
+;;                                   (force (force) rb)))))
 
 ;; (i-am-here)
 
@@ -933,7 +1071,7 @@
   (implies (not (member-p addr (all-translation-governing-addresses l-addrs x86)))
            (not (member-p addr (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)))))
 
-(defthmd wb-remove-duplicate-writes-in-system-level-non-marking-mode
+(defthm wb-remove-duplicate-writes-in-system-level-non-marking-mode
   (implies (and (syntaxp (not (and (consp addr-lst)
                                    (eq (car addr-lst) 'remove-duplicate-keys))))
                 (disjoint-p
@@ -947,6 +1085,9 @@
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86)))
            (equal (wb addr-lst x86)
+                  ;; TO-DO: I need to replace remove-duplicate-keys
+                  ;; with remove-duplicate-phy-addresses or something
+                  ;; like that.
                   (wb (remove-duplicate-keys addr-lst) x86)))
   :hints (("Goal" :do-not '(generalize)
            :in-theory (e/d (disjoint-p member-p subset-p)
@@ -954,87 +1095,188 @@
                             translation-governing-addresses))
            :induct (wb-duplicate-writes-induct addr-lst x86))))
 
-
-
 ;; (i-am-here)
 
-;; (define create-phy-addr-bytes-alist
-;;   ((addr-list (physical-address-listp addr-list))
-;;    (byte-list (byte-listp byte-list)))
-;;   :guard (equal (len addr-list) (len byte-list))
-;;   :enabled t
-;;   (if (mbt (equal (len addr-list) (len byte-list)))
-;;       (if (endp addr-list)
-;;           nil
-;;         (acons (car addr-list) (car byte-list)
-;;                (create-phy-addr-bytes-alist (cdr addr-list)
-;;                                             (cdr byte-list))))
-;;     nil))
+(define create-phy-addr-bytes-alist
+  ((addr-list (physical-address-listp addr-list))
+   (byte-list (byte-listp byte-list)))
+  :guard (equal (len addr-list) (len byte-list))
 
-;; (DEFTHM XR-MEM-WRITE-TO-PHYSICAL-MEMORY-DISJOINT
-;;   (IMPLIES
-;;    (NOT (MEMBER-P INDEX P-ADDRS))
-;;    (EQUAL (XR :MEM INDEX
-;;               (WRITE-TO-PHYSICAL-MEMORY P-ADDRS BYTES X86))
-;;           (XR :MEM INDEX X86)))
-;;   :HINTS
-;;   (("Goal" :IN-THEORY (E/D* (MEMBER-P) (FORCE (FORCE))))))
+  :long "<p>Given a true list of physical addresses @('addr-list') and
+  a true list of bytes @('byte-list'),
+  @('create-phy-addr-bytes-alist') creates an alist binding the
+  @('n')-th address in @('addr-list') to the @('n')-th byte in
+  @('byte-list').</p>"
 
-;; (defthm read-from-physical-memory-and-write-to-physical-memory-equal
-;;   (implies (and (consp p-addrs)
-;;                 (physical-address-listp p-addrs)
-;;                 (byte-listp bytes)
-;;                 (equal (len p-addrs) (len bytes)))
-;;            (equal (read-from-physical-memory p-addrs (write-to-physical-memory p-addrs bytes x86))
-;;                   (assoc-list p-addrs (reverse (create-phy-addr-bytes-alist p-addrs bytes)))))
-;;   :hints (("Goal"
-;;            :induct (read-from-physical-memory p-addrs (write-to-physical-memory p-addrs bytes x86))
-;;            :in-theory (e/d* () ()))))
+  :enabled t
 
-;; (defthm read-from-physical-memory-and-write-to-physical-memory-subset-p
-;;   (implies (subset-p p-addrs-1 p-addrs-2)
-;;            (equal (read-from-physical-memory
-;;                    p-addrs-1
-;;                    (write-to-physical-memory p-addrs-2 bytes x86))
-;;                   (assoc-list p-addrs-1 (reverse (create-phy-addr-bytes-alist p-addrs-2 bytes)))))
-;;   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+  :prepwork
+  ((local (include-book "std/lists/nthcdr" :dir :system))
+   (local (include-book "std/lists/nth" :dir :system)))
 
-;; (defthmd rb-wb-equal-in-system-level-non-marking-mode
-;;   (implies (and (equal
-;;                  (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
-;;                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
-;;                 (disjoint-p
-;;                  (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
-;;                  (all-translation-governing-addresses l-addrs x86))
-;;                 (not (programmer-level-mode x86))
-;;                 (not (page-structure-marking-mode x86))
-;;                 (canonical-address-listp l-addrs)
-;;                 (addr-byte-alistp addr-lst)
-;;                 (not (mv-nth 0 (rb l-addrs r-w-x x86)))
-;;                 (not (mv-nth 0 (wb addr-lst x86))))
-;;            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
-;;                   xxx))
-;;   :hints (("Goal" :do-not-induct t)))
+  (if (mbt (equal (len addr-list) (len byte-list)))
+      (if (endp addr-list)
+          nil
+        (acons (car addr-list) (car byte-list)
+               (create-phy-addr-bytes-alist (cdr addr-list)
+                                            (cdr byte-list))))
+    nil)
 
+  ///
+
+  (defthm true-listp-create-phy-addr-bytes-alist
+    (true-listp (create-phy-addr-bytes-alist l-addrs bytes))
+    :rule-classes :type-prescription)
+
+  (defthm consp-create-phy-addr-bytes-alist-in-terms-of-len
+    (implies (and (not (zp (len byte-list)))
+                  (equal (len addr-list) (len byte-list)))
+             (consp (create-phy-addr-bytes-alist addr-list byte-list)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm consp-create-phy-addr-bytes-alist
+    (implies (and (or (consp addr-list) (consp byte-list))
+                  (equal (len addr-list) (len byte-list)))
+             (consp (create-phy-addr-bytes-alist addr-list byte-list)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm create-phy-addr-bytes-alist-bytes=nil
+    (equal (create-phy-addr-bytes-alist l-addrs nil) nil))
+
+  (defthm create-phy-addr-bytes-alist-l-addrs=nil
+    (equal (create-phy-addr-bytes-alist nil bytes) nil))
+
+  (defthmd cdr-of-create-phy-addr-bytes-alist
+    (equal (cdr (create-phy-addr-bytes-alist l-addrs bytes))
+           (create-phy-addr-bytes-alist (cdr l-addrs) (cdr bytes))))
+
+  (defthmd caar-of-create-phy-addr-bytes-alist
+    (implies (equal (len l-addrs) (len bytes))
+             (equal (car (car (create-phy-addr-bytes-alist l-addrs bytes)))
+                    (car l-addrs))))
+
+  (defthmd cdar-of-create-phy-addr-bytes-alist
+    (implies (equal (len l-addrs) (len bytes))
+             (equal (cdr (car (create-phy-addr-bytes-alist l-addrs bytes)))
+                    (car bytes))))
+
+  (defthm addr-byte-alistp-create-phy-addr-bytes-alist
+    (implies (and (canonical-address-listp addrs)
+                  (byte-listp bytes))
+             (addr-byte-alistp (create-phy-addr-bytes-alist addrs bytes)))
+    :rule-classes (:type-prescription :rewrite))
+
+  (defthm strip-cars-of-create-phy-addr-bytes-alist
+    (implies (and (true-listp addrs)
+                  (equal (len addrs) (len bytes)))
+             (equal (strip-cars (create-phy-addr-bytes-alist addrs bytes))
+                    addrs)))
+
+  (defthm strip-cdrs-of-create-phy-addr-bytes-alist
+    (implies (and (byte-listp bytes)
+                  (equal (len addrs) (len bytes)))
+             (equal (strip-cdrs (create-phy-addr-bytes-alist addrs bytes))
+                    bytes)))
+
+  (defthm strip-cars-of-append-of-create-phy-addr-bytes-alist
+    (implies (and (equal (len addrs1) (len bytes1))
+                  (canonical-address-listp addrs2)
+                  (equal (len addrs2) (len bytes2)))
+             (equal (strip-cars
+                     (append (create-phy-addr-bytes-alist addrs1 bytes1)
+                             (create-phy-addr-bytes-alist addrs2 bytes2)))
+                    (append addrs1 addrs2))))
+
+  (defthm strip-cdrs-of-append-of-create-phy-addr-bytes-alist
+    (implies (and (equal (len addrs1) (len bytes1))
+                  (byte-listp bytes2)
+                  (equal (len addrs2) (len bytes2)))
+             (equal (strip-cdrs
+                     (append (create-phy-addr-bytes-alist addrs1 bytes1)
+                             (create-phy-addr-bytes-alist addrs2 bytes2)))
+                    (append bytes1 bytes2))))
+
+  (defthm len-of-create-phy-addr-bytes-alist
+    (implies (and (not (zp (len byte-list)))
+                  (equal (len addr-list) (len byte-list)))
+             (equal (len (create-phy-addr-bytes-alist addr-list byte-list))
+                    (len addr-list)))))
+
+(defthm assoc-equal-append-list-cons-and-not-member-p
+  (implies (and (not (member-p e (strip-cars x)))
+                (alistp x))
+           (equal (assoc-equal e (append x (list (cons e y))))
+                  (cons e y)))
+  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
+(defthm read-from-physical-memory-and-write-to-physical-memory-equal
+  (implies (and (no-duplicates-p p-addrs)
+                (physical-address-listp p-addrs)
+                (equal (len p-addrs) (len bytes)))
+           (equal (read-from-physical-memory p-addrs (write-to-physical-memory p-addrs bytes x86))
+                  (assoc-list p-addrs (reverse (create-phy-addr-bytes-alist p-addrs bytes)))))
+  :hints (("Goal"
+           :induct (read-from-physical-memory p-addrs (write-to-physical-memory p-addrs bytes x86))
+           :in-theory (e/d* (member-p) ()))))
+
+(defthm assoc-list-and-create-phy-addr-bytes-alist
+  (implies (and (true-listp y)
+                (equal (len x) (len y))
+                (no-duplicates-p x))
+           (equal (assoc-list x (create-phy-addr-bytes-alist x y))
+                  y)))
+
+(defthm assoc-list-of-rev-of-create-phy-addr-bytes-alist
+  (implies (and (true-listp y)
+                (equal (len x) (len y))
+                (no-duplicates-p x))
+           (equal (assoc-list x (acl2::rev (create-phy-addr-bytes-alist x y)))
+                  y)))
+
+(defthmd rb-wb-equal-in-system-level-non-marking-mode
+  (implies (and (equal
+                 (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+                (disjoint-p
+                 (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (all-translation-governing-addresses l-addrs x86))
+                (no-duplicates-p
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+                (not (programmer-level-mode x86))
+                (not (page-structure-marking-mode x86))
+                (canonical-address-listp l-addrs)
+                (addr-byte-alistp addr-lst)
+                (not (mv-nth 0 (rb l-addrs r-w-x x86)))
+                (not (mv-nth 0 (wb addr-lst x86))))
+           (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+                  (strip-cdrs addr-lst)))
+  :hints (("Goal" :do-not-induct t)))
+
+;; ======================================================================
+
+(globally-disable '(rb wb canonical-address-p program-at
+                       unsigned-byte-p signed-byte-p))
+
+;; ======================================================================
 
 
 #||
 
-(defthmd rb-wb-equal
-  (implies (and (equal addresses (strip-cars (remove-duplicate-keys addr-lst)))
-                (programmer-level-mode x86)
-                (addr-byte-alistp addr-lst))
-           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
-                  (assoc-list addresses (reverse addr-lst))))
-  :hints (("Goal" :in-theory (e/d (wm08 rm08) ()))))
+(defthm read-from-physical-memory-and-write-to-physical-memory-subset-p
+  (implies (subset-p p-addrs-1 p-addrs-2)
+           (equal (read-from-physical-memory
+                   p-addrs-1
+                   (write-to-physical-memory p-addrs-2 bytes x86))
+                  (assoc-list p-addrs-1 (reverse (create-phy-addr-bytes-alist p-addrs-2 bytes)))))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
 (defthm rb-wb-subset
   (implies (and (subset-p addresses (strip-cars addr-lst))
                 (programmer-level-mode x86)
-                ;; [Shilpi]: Ugh, this hyp. below is so annoying. I
-                ;; could remove it if I proved something like
-                ;; subset-p-strip-cars-of-remove-duplicate-keys,
-                ;; commented out below.
+                ;; [Shilpi]: Ugh, this hyp. below is so annoying. I ;
+                ;; could remove it if I proved something like ;
+                ;; subset-p-strip-cars-of-remove-duplicate-keys, ;
+                ;; commented out below. ;
                 (canonical-address-listp addresses)
                 (addr-byte-alistp addr-lst))
            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
@@ -1067,28 +1309,6 @@
   :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p)
                                    ((:meta acl2::mv-nth-cons-meta))))))
 
-(defthm program-at-wb-disjoint
-  (implies (and (programmer-level-mode x86)
-                (canonical-address-listp addresses)
-                (disjoint-p addresses (strip-cars addr-lst)))
-           (equal (program-at addresses r-w-x (mv-nth 1 (wb addr-lst x86)))
-                  (program-at addresses r-w-x x86)))
-  :hints (("Goal" :in-theory (e/d (program-at) (rb)))))
-
-(defthm program-at-pop-x86-oracle
-  (implies (programmer-level-mode x86)
-           (equal (program-at addresses r-w-x (mv-nth 1 (pop-x86-oracle x86)))
-                  (program-at addresses r-w-x x86)))
-  :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
-                                  (rb)))))
-
-(defthm program-at-write-user-rflags
-  (implies (programmer-level-mode x86)
-           (equal (program-at addresses r-w-x (write-user-rflags flags mask x86))
-                  (program-at addresses r-w-x x86)))
-  :hints (("Goal" :in-theory (e/d (write-user-rflags)
-                                  (force (force))))))
-
 
 (defthm wb-and-wb-combine-wbs
   (implies (and (addr-byte-alistp addr-list1)
@@ -1099,106 +1319,4 @@
   :hints (("Goal" :do-not '(generalize)
            :in-theory (e/d (wb-and-wm08) (append acl2::mv-nth-cons-meta)))))
 
-(defthmd wb-remove-duplicate-writes
-  (implies (and (syntaxp
-                 (not
-                  (and (consp addr-list)
-                       (eq (car addr-list) 'remove-duplicate-keys))))
-                (addr-byte-alistp addr-list)
-                (programmer-level-mode x86))
-           (equal (wb addr-list x86)
-                  (wb (remove-duplicate-keys addr-list) x86)))
-  :hints (("Goal" :do-not '(generalize)
-           :in-theory (e/d (wm08)
-                           (acl2::mv-nth-cons-meta))
-           :induct (wb-duplicate-writes-induct addr-list x86))))
-
-(defthm rb-in-terms-of-rb-subset-p
-  (implies
-   (and (bind-free (find-info-from-program-at-term
-                    'rb-in-terms-of-rb-subset-p
-                    mfc state)
-                   (n prog-addr bytes))
-        (program-at (create-canonical-address-list n prog-addr) bytes x86)
-        (subset-p addresses (create-canonical-address-list n prog-addr))
-        (consp addresses)
-        (syntaxp (quotep n))
-        (programmer-level-mode x86))
-   (equal (mv-nth 1 (rb addresses :x x86))
-          (append (list (nth (pos
-                              (car addresses)
-                              (create-canonical-address-list n prog-addr))
-                             bytes))
-                  (mv-nth 1 (rb (cdr addresses) :x x86)))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d (subset-p)
-                           (canonical-address-p
-                            acl2::mv-nth-cons-meta
-                            rb-in-terms-of-nth-and-pos))
-           :use ((:instance rb-unwinding-thm
-                            (r-w-x :x))
-                 (:instance rb-in-terms-of-nth-and-pos
-                            (addr (car addresses)))))))
-
-(defthm combine-bytes-rb-in-terms-of-rb-subset-p
-  (implies
-   (and (bind-free (find-info-from-program-at-term
-                    'combine-bytes-rb-in-terms-of-rb-subset-p
-                    mfc state)
-                   (n prog-addr bytes))
-        (program-at (create-canonical-address-list n prog-addr) bytes x86)
-        (subset-p addresses (create-canonical-address-list n prog-addr))
-        (consp addresses)
-        (syntaxp (quotep n))
-        (programmer-level-mode x86))
-   (equal
-    (combine-bytes (mv-nth 1 (rb addresses :x x86)))
-    (combine-bytes
-     (append (list (nth (pos (car addresses)
-                             (create-canonical-address-list n prog-addr))
-                        bytes))
-             (mv-nth 1 (rb (cdr addresses) :x x86))))))
-  :hints (("Goal" :in-theory (union-theories
-                              '()
-                              (theory 'minimal-theory))
-           :use ((:instance rb-in-terms-of-rb-subset-p)))))
-
-(globally-disable '(rb wb canonical-address-p program-at
-                       unsigned-byte-p signed-byte-p))
-
 ||#
-
-;; (defthm two-ia32e-la-to-pa-if-the-inner-returns-an-error
-;;   ;; Bah, of course there are too many case splits here that can be
-;;   ;; avoided easily...
-;;   (implies (not (page-structure-marking-mode x86))
-;;            (and
-;;             (equal (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
-;;                                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-;;                    (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))
-;;             (equal (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
-;;                                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-;;                    (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))))
-;;   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
-;;                                     ia32e-la-to-pa-pml4-table
-;;                                     ia32e-la-to-pa-page-dir-ptr-table
-;;                                     ia32e-la-to-pa-page-directory
-;;                                     ia32e-la-to-pa-page-table
-;;                                     page-size
-;;                                     paging-entry-no-page-fault-p
-;;                                     page-fault-exception)
-;;                                    (not)))))
-
-;; (defthm two-las-to-pas-if-the-inner-returns-an-error
-;;   ;; Bah, of course there are too many case splits here that can be
-;;   ;; avoided easily...
-;;   (implies (not (page-structure-marking-mode x86))
-;;            (and
-;;             (equal (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
-;;                                          (mv-nth 2 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 x86))))
-;;                    (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)))
-;;             (equal (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
-;;                                          (mv-nth 2 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 x86))))
-;;                    (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)))))
-;;   :hints (("Goal" :in-theory (e/d* (las-to-pas) (not)))))

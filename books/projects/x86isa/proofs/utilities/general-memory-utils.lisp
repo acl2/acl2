@@ -310,31 +310,28 @@
 
   :enabled t
 
-  ;; (assoc-list  '(a b c) '((a . 1) (b . 2) (c . 3) (d . 4))) =>
+  ;; (assoc-list  '(a b c e) '((a . 1) (b . 2) (c . 3) (d . 4))) =>
   ;; '(1 2 3)
 
-  (if (or (endp slst)
-          (endp blst))
+  (if (endp slst)
       nil
-    (cons (cdr (assoc-equal (car slst) blst))
-          (assoc-list (cdr slst) blst)))
+    (if (member-p (car slst) (strip-cars blst))
+        (cons (cdr (assoc-equal (car slst) blst))
+              (assoc-list (cdr slst) blst))
+      (assoc-list (cdr slst) blst)))
 
   ///
 
   (local (include-book "std/lists/nthcdr" :dir :system))
 
   (defthm assoc-list-and-cons
-    (implies (and (not (member-p ax cx))
-                  (consp term))
+    (implies (not (member-p ax cx))
              (equal (assoc-list cx (cons (cons ax ay) term))
                     (assoc-list cx term))))
 
   (defthm assoc-list-and-create-addr-bytes-alist
     (implies (and (true-listp y)
-                  ;; (consp (create-addr-bytes-alist (cdr x) (cdr y)))
                   (equal (len x) (len y))
-                  ;; (not (zp (len (cdr y))))
-                  (<= 2 (len y))
                   (no-duplicates-p x))
              (equal (assoc-list x (create-addr-bytes-alist x y))
                     y)))
@@ -345,20 +342,16 @@
                     (assoc-equal cx term))))
 
   (defthm assoc-list-of-append-with-list-cons
-    (implies (and (not (member-p ax cx))
-                  (consp term))
+    (implies (not (member-p ax cx))
              (equal (assoc-list cx (append term (list (cons ax ay))))
                     (assoc-list cx term))))
 
   (defthm assoc-list-of-rev-of-create-addr-bytes-alist
     (implies (and (true-listp y)
                   (equal (len x) (len y))
-                  (<= 2 (len y))
                   (no-duplicates-p x))
              (equal (assoc-list x (acl2::rev (create-addr-bytes-alist x y)))
-                    y)))
-
-  )
+                    y))))
 
 ;; ----------------------------------------------------------------------
 

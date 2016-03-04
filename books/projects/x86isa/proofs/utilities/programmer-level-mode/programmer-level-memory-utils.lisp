@@ -505,8 +505,10 @@ programmer-level mode.</p>" )
                 (canonical-address-listp addresses)
                 (addr-byte-alistp addr-lst))
            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
-                  (assoc-list addresses (reverse addr-lst))))
-  :hints (("Goal" :induct (assoc-list addresses (reverse addr-lst)))))
+                  (assoc-list addresses (acl2::rev addr-lst))))
+  :hints (("Goal"
+           :in-theory (e/d* (subset-p) ())
+           :induct (assoc-list addresses (reverse addr-lst)))))
 
 (defthmd rb-wb-equal
   (implies (and (equal addresses (strip-cars (remove-duplicate-keys addr-lst)))
@@ -792,30 +794,28 @@ programmer-level mode.</p>" )
                             (addresses (create-canonical-address-list n prog-addr)))))))
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "std/lists/append" :dir :system))
+  (local (include-book "std/lists/append" :dir :system))
 
- (defthmd rb-1-unwinding-thm
-   (implies (and (canonical-address-listp addresses)
-                 (programmer-level-mode x86)
-                 (byte-listp acc))
-            (equal (mv-nth 1 (rb-1 addresses r-w-x x86 acc))
-                   (append acc
-                           (mv-nth 1 (rb-1 (list (car addresses)) r-w-x x86 nil))
-                           (mv-nth 1 (rb-1 (cdr addresses) r-w-x x86 nil)))))
-   :hints (("Goal" :in-theory (e/d () (acl2::mv-nth-cons-meta force (force))))))
+  (defthmd rb-1-unwinding-thm
+    (implies (and (canonical-address-listp addresses)
+                  (programmer-level-mode x86)
+                  (byte-listp acc))
+             (equal (mv-nth 1 (rb-1 addresses r-w-x x86 acc))
+                    (append acc
+                            (mv-nth 1 (rb-1 (list (car addresses)) r-w-x x86 nil))
+                            (mv-nth 1 (rb-1 (cdr addresses) r-w-x x86 nil)))))
+    :hints (("Goal" :in-theory (e/d () (acl2::mv-nth-cons-meta force (force))))))
 
- (defthmd rb-unwinding-thm
-   (implies (and (canonical-address-listp addresses)
-                 (programmer-level-mode x86))
-            (equal (mv-nth 1 (rb addresses r-w-x x86))
-                   (append (mv-nth 1 (rb (list (car addresses)) r-w-x x86))
-                           (mv-nth 1 (rb (cdr addresses) r-w-x x86)))))
-   :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta rb-1))
-            :use ((:instance rb-1-unwinding-thm (acc nil))))))
-
- )
+  (defthmd rb-unwinding-thm
+    (implies (and (canonical-address-listp addresses)
+                  (programmer-level-mode x86))
+             (equal (mv-nth 1 (rb addresses r-w-x x86))
+                    (append (mv-nth 1 (rb (list (car addresses)) r-w-x x86))
+                            (mv-nth 1 (rb (cdr addresses) r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta rb-1))
+             :use ((:instance rb-1-unwinding-thm (acc nil)))))))
 
 (defthm rb-in-terms-of-rb-subset-p
   (implies
