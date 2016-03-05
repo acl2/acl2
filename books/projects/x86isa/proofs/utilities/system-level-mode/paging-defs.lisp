@@ -35,12 +35,30 @@
 
 ;; ======================================================================
 
-;; Some misc. lemmas:
+;; Some misc. lemmas and utils:
 
 (defthm combine-bytes-of-list-combine-bytes
   (equal (combine-bytes (list (combine-bytes xs)))
          (combine-bytes xs))
   :hints (("Goal" :in-theory (e/d* (combine-bytes) (force (force))))))
+
+(defun get-subterm-from-list-of-terms (n x)
+  (declare (xargs :guard (and (natp n) (pseudo-term-listp x))))
+  ;; E.g.:
+  ;; (get-subterm-from-list-of-terms 1 '((las-to-pas l-addrs-1 r-w-x cpl x86)
+  ;;                                     (las-to-pas l-addrs-2 r-w-x cpl x86)
+  ;;                                     (las-to-pas l-addrs-2 r-w-x cpl x86)
+  ;;                                     (foo x)))
+  (if (atom x)
+      nil
+    (cons (nth n (acl2::list-fix (car x)))
+          (get-subterm-from-list-of-terms n (cdr x)))))
+
+(define make-bind-free-alist-lists (var values)
+  (if (atom values)
+      nil
+    (cons (acons var (car values) nil)
+          (make-bind-free-alist-lists var (cdr values)))))
 
 ;; ======================================================================
 
@@ -50,6 +68,13 @@
  (defthm dumb-integerp-of-mem
    (implies (x86p x86)
             (integerp (xr :mem index x86)))))
+
+(defthm mv-nth-2-rb-in-system-level-non-marking-mode
+  (implies (and (not (page-structure-marking-mode x86))
+                (not (mv-nth 0 (rb l-addrs r-w-x x86))))
+           (equal (mv-nth 2 (rb l-addrs r-w-x x86))
+                  x86))
+  :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
 (defthm rm08-to-rb
   (implies (and (x86p x86)
@@ -129,8 +154,8 @@
 (defthm mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode
   (implies (not (xr :programmer-level-mode 0 x86))
            (equal (mv-nth 0 (rb l-addrs r-w-x x86))
-                  (mv-nth 0 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))))
-  :hints (("Goal" :in-theory (e/d* (rb) ()))))
+                  (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86))))
+  :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
 ;; ======================================================================
 
@@ -202,15 +227,15 @@
 (defthm mv-nth-0-wb-and-mv-nth-0-las-to-pas-in-system-level-mode
   (implies (not (xr :programmer-level-mode 0 x86))
            (equal (mv-nth 0 (wb addr-lst x86))
-                  (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))))
-  :hints (("Goal" :in-theory (e/d* (wb) ()))))
+                  (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
+  :hints (("Goal" :in-theory (e/d* (wb) (force (force))))))
 
 ;; ======================================================================
 
 ;; Lemmas to aid in symbolic simulation:
 
 (defthmd rm08-in-terms-of-nth-pos-and-rb-in-system-level-non-marking-mode
-  (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86)))
+  (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
                 (member-p addr l-addrs)
                 (canonical-address-listp l-addrs)
                 (equal bytes (mv-nth 1 (rb l-addrs r-w-x x86)))
@@ -293,7 +318,7 @@
            (equal (mv-nth 1 (rb l-addrs r-w-x x86))
                   (cons (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))
                         (mv-nth 1 (rb (cdr l-addrs) r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta)))))
+  :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta force (force))))))
 
 (defthmd rb-unwinding-thm-in-system-level-non-marking-mode-for-errors
   (implies (and (subset-p l-addrs-subset l-addrs)
@@ -302,7 +327,7 @@
                 (not (page-structure-marking-mode x86)))
            (equal (mv-nth 0 (rb l-addrs-subset r-w-x x86))
                   nil))
-  :hints (("Goal" :in-theory (e/d (subset-p) (acl2::mv-nth-cons-meta)))))
+  :hints (("Goal" :in-theory (e/d (subset-p) (acl2::mv-nth-cons-meta force (force))))))
 
 (defthm rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
   (implies
@@ -840,10 +865,10 @@
 
 (defthm rb-wb-disjoint-in-system-level-non-marking-mode
   (implies (and (disjoint-p
-                 (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+                 (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
                  (all-translation-governing-addresses l-addrs x86))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
@@ -859,10 +884,10 @@
 
 (defthm program-at-wb-disjoint-in-system-level-non-marking-mode
   (implies (and (disjoint-p
-                 (mv-nth 1 (las-to-pas l-addrs :x (loghead 2 (xr :seg-visible 1 x86)) x86))
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+                 (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
                  (all-translation-governing-addresses l-addrs x86))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
@@ -1022,6 +1047,26 @@
                   (write-to-physical-memory p-addrs bytes x86)))
   :hints (("Goal" :in-theory (e/d* (member-p write-to-physical-memory-xw-mem-member-p-helper) ()))))
 
+(defun find-l-addrs-from-las-to-pas
+  (l-addrs-var mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((calls (acl2::find-calls-lst 'las-to-pas (acl2::mfc-clause mfc)))
+       ((when (not calls))
+        ;; las-to-pas term not encountered.
+        nil)
+       (l-addrs (get-subterm-from-list-of-terms 1 calls))
+       (alst-lst (make-bind-free-alist-lists l-addrs-var l-addrs)))
+    alst-lst))
+
+(defthm mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
+  (implies (and (bind-free (find-l-addrs-from-las-to-pas 'l-addrs mfc state) (l-addrs))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (member-p lin-addr l-addrs)
+                (not (page-structure-marking-mode x86)))
+           (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)) nil))
+  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
 (defthm mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
   (implies (and (member-p lin-addr l-addrs)
                 (not (mv-nth 0 (las-to-pas     l-addrs r-w-x cpl x86)))
@@ -1078,7 +1123,7 @@
                  ;; Physical addresses corresponding to (strip-cars
                  ;; addr-lst) are disjoint from the
                  ;; translation-governing addresses.
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
                  (all-translation-governing-addresses (strip-cars addr-lst)  x86))
                 (addr-byte-alistp addr-lst)
                 (not (mv-nth 0 (wb addr-lst x86)))
@@ -1235,13 +1280,13 @@
 
 (defthmd rb-wb-equal-in-system-level-non-marking-mode
   (implies (and (equal
-                 (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+                 (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p
-                 (mv-nth 1 (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+                 (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                  (all-translation-governing-addresses l-addrs x86))
                 (no-duplicates-p
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-listp l-addrs)
@@ -1250,7 +1295,8 @@
                 (not (mv-nth 0 (wb addr-lst x86))))
            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
                   (strip-cdrs addr-lst)))
-  :hints (("Goal" :do-not-induct t)))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d* () (force (force))))))
 
 ;; ======================================================================
 

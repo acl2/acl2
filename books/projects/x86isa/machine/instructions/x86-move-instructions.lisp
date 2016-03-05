@@ -988,10 +988,9 @@
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?) (!!ms-fresh :lock-prefix prefixes))
-       (current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-       (cpl (seg-sel-layout-slice :rpl current-cs-register))
+       (cpl (cpl x86))
        ((when (not (equal 0 cpl)))
-        (!!ms-fresh :cpl!=0 (cons 'cs-register current-cs-register)))
+        (!!ms-fresh :cpl!=0 cpl))
        ;; *operand-size-override* and REX.W are ignored.
 
        ;; Get value from the control register

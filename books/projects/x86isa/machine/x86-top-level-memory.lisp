@@ -136,6 +136,12 @@ memory.</li>
 
 ;; ======================================================================
 
+(defabbrev cpl (x86)
+  (the (unsigned-byte 2)
+    (seg-sel-layout-slice :rpl (the (unsigned-byte 16) (xr :seg-visible *cs* x86)))))
+
+;; ======================================================================
+
 (define rm08
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
    (r-w-x    :type (member  :r :w :x))
@@ -148,8 +154,7 @@ memory.</li>
 
       (rvm08 lin-addr x86)
 
-    (b* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-         (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
+    (b* ((cpl (cpl x86))
          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
           (la-to-pa lin-addr r-w-x cpl x86))
          ((when flag)
@@ -306,8 +311,7 @@ memory.</li>
 
       (wvm08 lin-addr val x86)
 
-    (b* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-         (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
+    (b* ((cpl (cpl x86))
          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
           (la-to-pa lin-addr :w cpl x86))
          ((when flag)
@@ -1118,7 +1122,7 @@ memory.</li>
     (if (programmer-level-mode x86)
         (rb-1 l-addrs r-w-x x86 nil)
       (b* (((mv flgs p-addrs x86)
-            (las-to-pas l-addrs r-w-x (loghead 2 (xr :seg-visible 1 x86)) x86))
+            (las-to-pas l-addrs r-w-x (cpl x86) x86))
            ((when flgs) (mv flgs nil x86))
            (bytes (read-from-physical-memory p-addrs x86)))
         (mv nil bytes x86)))
@@ -1321,7 +1325,7 @@ memory.</li>
     (if (programmer-level-mode x86)
         (wb-1 addr-lst x86)
       (b* (((mv flgs p-addrs x86)
-            (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86))
+            (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
            ((when flgs) (mv flgs x86))
            (x86 (write-to-physical-memory p-addrs (strip-cdrs addr-lst) x86)))
         (mv nil x86)))
@@ -1404,7 +1408,7 @@ memory.</li>
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (rb addr r-w-x x86)))
                     (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (rb) ()))))
+    :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
   (defthm rb-1-xw-values-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1487,7 +1491,7 @@ memory.</li>
                   (not (equal fld :page-structure-marking-mode)))
              (equal (mv-nth 2 (rb addr r-w-x (xw fld index value x86)))
                     (xw fld index value (mv-nth 2 (rb addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d* (rb) ()))))
+    :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
   (defthm rb-1-xw-rflags-not-ac-state-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1504,7 +1508,7 @@ memory.</li>
                          (rflags-slice :ac (rflags x86))))
              (equal (mv-nth 2 (rb addr r-w-x (xw :rflags 0 value x86)))
                     (xw :rflags 0 value (mv-nth 2 (rb addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d* (rb) ()))))
+    :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
   ;; Relating wb and wm08:
 
@@ -1560,7 +1564,7 @@ memory.</li>
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 1 (wb addr-lst x86)))
                     (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
+    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory force (force))))))
 
   (defthm wb-xw-in-system-level-mode
     ;; Keep the state updated by wb inside all other nests of writes.
@@ -1576,7 +1580,7 @@ memory.</li>
                          (mv-nth 0 (wb addr-lst x86)))
                   (equal (mv-nth 1 (wb addr-lst (xw fld index value x86)))
                          (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
-    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
+    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory force (force))))))
 
   (defthm wb-xw-rflags-not-ac-in-system-level-mode
     ;; Keep the state updated by wb inside all other nests of writes.
@@ -1852,8 +1856,7 @@ memory.</li>
                  :exec
                  (rvm16 lin-addr x86))
 
-              (let* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (let* ((cpl (cpl x86)))
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr r-w-x cpl x86))
                      ((when flag) (mv flag 0 x86))
@@ -1980,8 +1983,7 @@ memory.</li>
                  (wvm16 lin-addr val x86))
 
 
-              (let* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (let* ((cpl (cpl x86)))
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr :w cpl x86))
@@ -2001,7 +2003,7 @@ memory.</li>
 
                      (x86 (!memi p-addr0 byte0 x86))
                      (x86 (!memi p-addr1 byte1 x86)))
-                    (mv nil x86))))
+                  (mv nil x86))))
 
           (mv 'wm16 x86)))
 
@@ -2078,8 +2080,7 @@ memory.</li>
                                 (mv flg result x86))
                      :exec (rvm32 lin-addr x86))
 
-              (let* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (let* ((cpl (cpl x86)))
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr r-w-x cpl x86))
@@ -2224,8 +2225,7 @@ memory.</li>
                  :exec
                  (wvm32 lin-addr val x86))
 
-              (let* ((cs-segment (the (unsigned-byte 32) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (let* ((cpl (cpl x86)))
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr :w cpl x86))
@@ -2437,8 +2437,7 @@ memory.</li>
                        (mv flg result x86))
                      :exec (rvm64 lin-addr x86))
 
-              (let* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (let* ((cpl (cpl x86)))
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr r-w-x cpl x86))
@@ -2613,8 +2612,7 @@ memory.</li>
                  :exec
                  (wvm64 lin-addr val x86))
 
-              (let* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (let* ((cpl (cpl x86)))
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr :w cpl x86))
@@ -2869,8 +2867,7 @@ memory.</li>
                               (mv flg result x86))
                      :exec (rvm128 lin-addr x86))
 
-              (let* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (let* ((cpl (cpl x86)))
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr r-w-x cpl x86))
@@ -3051,8 +3048,7 @@ memory.</li>
                  (wvm128 lin-addr val x86))
 
 
-              (let* ((cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                     (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+              (let* ((cpl (cpl x86)))
 
                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                       (la-to-pa lin-addr :w cpl x86))

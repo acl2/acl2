@@ -983,7 +983,8 @@
          (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-2))))
 
 (defthm rb-nil-lemma
-  (equal (mv-nth 1 (rb nil r-w-x x86)) nil))
+  (equal (mv-nth 1 (rb nil r-w-x x86)) nil)
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
 (defthm rb-returns-true-listp
   (implies (x86p x86)
@@ -991,13 +992,15 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm wb-nil-lemma
-  (equal (mv-nth 1 (wb nil x86)) x86))
+  (equal (mv-nth 1 (wb nil x86)) x86)
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
 (defthmd wb-not-consp-addr-byte-alistp
   (implies (and (addr-byte-alistp addr-lst)
                 (not (consp addr-lst)))
            (equal (wb addr-lst x86)
-                  (mv nil x86))))
+                  (mv nil x86)))
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
 ;; Write-bytes-to-memory and wb:
 
