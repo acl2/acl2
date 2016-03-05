@@ -2059,8 +2059,12 @@
      (x86-lahf start-rip temp-rip prefixes rex-byte opcode modr/m sib
                x86))
 
+    ((#xA0 #xA1)
+     "(MOVI b Rx)"
+     (x86-mov-Op/En-FD start-rip temp-rip prefixes rex-byte opcode modr/m sib
+                       x86))
 
-    ((#xA0 #xA1 #xA2 #xA3)
+    ((#xA2 #xA3)
      "(MOVI b Rx)"
      (x86-step-unimplemented
       (list* (ms x86)
