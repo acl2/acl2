@@ -90,6 +90,7 @@ cp -p $books/system/doc/rendered-doc-combined.lsp $destdir/
 # Gzip books/system/doc/rendered-doc-combined.lsp
 echo "gzip $destdir/rendered-doc-combined.lsp"
 gzip $destdir/rendered-doc-combined.lsp
+chmod ugo+r $destdir/rendered-doc-combined.lsp.gz
 
 # Run update script, if available
 cd $destdirmain
