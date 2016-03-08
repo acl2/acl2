@@ -12,6 +12,7 @@ define-keyed-function.lisp
 defined-const.lisp
 defmacfun.lisp
 defsum.lisp
+defthmg.lisp
 deftuple.lisp
 do-not.lisp
 fake-event.lisp

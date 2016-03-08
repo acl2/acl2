@@ -672,19 +672,6 @@
 
   (value :q))
 
-(defun macro-minimal-arity1 (lst)
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) 0)
-        ((lambda-keywordp (car lst))
-         0)
-        (t (1+ (macro-minimal-arity1 (cdr lst))))))
-
-(defun macro-minimal-arity (sym default wrld)
-  (let ((args (getpropc sym 'macro-args default wrld)))
-    (macro-minimal-arity1 (if (eq (car args) '&whole)
-                              (cddr args)
-                            args))))
-
 (defun ld-read-keyword-command (key state)
 
 ; ld supports the convention that when a keyword :key is typed
@@ -2533,13 +2520,14 @@
 ; process-embedded-events, and back from it in the case that the caller is
 ; 'certify-book.
 
-; We also changed the use of check-sum so that we don't include the
-; expansion-alist with the events from the actual book.  For calls of
-; check-sum-obj on event lists that support the handling of certificates, we
-; now use only the events from the book ev-lst and no longer include events in
-; the expansion-alist.  Instead, we rely on the check-sum of the cert-obj,
-; which is still incorporated in the certificate, for ensuring that we have the
-; right expansion-alist.
+; We also changed checksum usage so that we don't include the expansion-alist
+; with the events from the actual book.  For calls of check-sum-obj on event
+; lists that support the handling of certificates, we now use only the events
+; from the book ev-lst and no longer include events in the expansion-alist.
+; Instead, we rely on the checksum of the cert-obj, which is still
+; incorporated in the certificate, for ensuring that we have the right
+; expansion-alist.  Notice however that this extra security disappears when
+; state global 'book-hash-alistp is true.
 
 #-acl2-loop-only
 (defun-one-output compiled-function-p! (fn)
@@ -2880,10 +2868,10 @@
                        (:defaxioms-okp t)
                        (:skip-proofs-okp t))
                      nil)))
-       (let* ((old-chk-sum
+       (let* ((old-book-hash
 
 ; The assoc-equal just below is of the form (full-book-name user-book-name
-; familiar-name cert-annotations . ev-lst-chk-sum).
+; familiar-name cert-annotations . book-hash).
 
                (cddddr (assoc-equal full-book-name
                                     (global-val 'include-book-alist
@@ -2892,71 +2880,58 @@
 
 ; We include the expansion-alist only if the book appears to be certified.
 
-               (and old-chk-sum
+               (and old-book-hash
                     (and cert-obj
                          (access cert-obj cert-obj :expansion-alist))))
               (cmds (and cert-obj
-                         (access cert-obj cert-obj :cmds)))
-              (ev-lst-chk-sum
-               (check-sum-cert cmds expansion-alist ev-lst)))
-         (cond
-          ((not (integerp ev-lst-chk-sum))
-
-; This error should never arise because check-sum-obj is only called on
-; something produced by read-object, which checks that the object is ACL2
-; compatible.  And if it somehow did happen, it is presumably not because of
-; the expansion-alist, which must be well-formed since it is in the book's
-; certificate.
-
-           (er soft ctx
-               "The file ~x0 is not a legal list of embedded event forms ~
-                   because it contains an object, ~x1, which check sum was ~
-                   unable to handle."
-               full-book-name ev-lst-chk-sum))
-          ((and old-chk-sum
-                (not (equal ev-lst-chk-sum old-chk-sum)))
-           (er soft ctx
-               "When the certified book ~x0 was included, its check sum ~
-                   was ~x1.  The check sum for ~x0 is now ~x2.  The file has ~
-                   thus been modified since it was last included and we ~
-                   cannot now recover the events that created the current ~
-                   logical world."
-               full-book-name
-               old-chk-sum
-               ev-lst-chk-sum))
-          (t (mv-let (changedp fixed-cmds)
-               (make-include-books-absolute-lst
-                (append
-                 cmds
-                 (cons (assert$
+                         (access cert-obj cert-obj :cmds))))
+         (er-let* ((ev-lst-book-hash
+                    (book-hash old-book-hash full-book-name cmds
+                               expansion-alist ev-lst state)))
+           (cond
+            ((and old-book-hash
+                  (not (equal ev-lst-book-hash old-book-hash)))
+             (er soft ctx
+                 "When the certified book ~x0 was included, its book-hash was ~
+                  ~x1.  The book-hash for ~x0 is now ~x2.  The file has thus ~
+                  been modified since it was last included and we cannot now ~
+                  recover the events that created the current logical world."
+                 full-book-name
+                 old-book-hash
+                 ev-lst-book-hash))
+            (t (mv-let (changedp fixed-cmds)
+                 (make-include-books-absolute-lst
+                  (append
+                   cmds
+                   (cons (assert$
 
 ; We want to execute the in-package here.  But we don't need to restore the
 ; package, as that is done with a state-global-let* binding in puff-fn1.
 
-                        (and (consp (car ev-lst))
-                             (eq (caar ev-lst) 'in-package))
-                        (car ev-lst))
-                       (subst-by-position expansion-alist
-                                          (cdr ev-lst)
-                                          1)))
-                (directory-of-absolute-pathname full-book-name)
-                (cbd)
-                (list* 'in-package
-                       'defpkg
-                       (primitive-event-macros))
-                t ctx state)
-               (declare (ignore changedp))
-               (value `((set-cbd ,(get-directory-of-file full-book-name))
-                        ,@fixed-cmds
-                        (maybe-install-acl2-defaults-table
-                         ',(table-alist 'acl2-defaults-table wrld)
-                         state)
+                          (and (consp (car ev-lst))
+                               (eq (caar ev-lst) 'in-package))
+                          (car ev-lst))
+                         (subst-by-position expansion-alist
+                                            (cdr ev-lst)
+                                            1)))
+                  (directory-of-absolute-pathname full-book-name)
+                  (cbd)
+                  (list* 'in-package
+                         'defpkg
+                         (primitive-event-macros))
+                  t ctx state)
+                 (declare (ignore changedp))
+                 (value `((set-cbd ,(get-directory-of-file full-book-name))
+                          ,@fixed-cmds
+                          (maybe-install-acl2-defaults-table
+                           ',(table-alist 'acl2-defaults-table wrld)
+                           state)
 
 ; It is tempting to reset the cbd here, but instead -- in case there is an
 ; error above -- we handle this issue with a state-global-let* binding in
 ; puff-fn1.
 
-                        ,@final-cmds))))))))))
+                          ,@final-cmds)))))))))))
 
 (defun puff-command-block1 (wrld immediate ans ctx state)
 
@@ -3322,7 +3297,7 @@
 ; the region that is puffable, we puff it, and we iterate.  We stop when no
 ; command in the region is puffable.  This function uses
 ; revert-world-on-error because it is possible that the attempt to puff some
-; command will cause an error (e.g., because some book's check sum no longer
+; command will cause an error (e.g., because some book's book-hash no longer
 ; agrees with include-book-alist).
 
 ; At one time we called revert-world-on-error here.  But we expect this

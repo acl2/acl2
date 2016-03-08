@@ -5447,10 +5447,7 @@
 ; in defthm: a defthm event is redundant if it introduces an identical theorem
 ; with the same name -- even if the :hints in the new defthm are ill-formed.
 ; The idea behind redundancy checking is to allow books to be loaded even if
-; they share some events.  The assumption is that def1 is in a book that got
-; (or will get) processed by itself sometime and the ill-formedness will be
-; detected there.  That will change the check sum on the book and cause
-; certification to lapse in the book that considered def1 redundant.
+; they share some events.
 
 ; Should we do any checks here related to the :subversive-p field of the
 ; justification for def2?  The concern is that def2 (the old definition) is

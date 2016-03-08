@@ -8299,11 +8299,25 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                      (not (equal s ""))
                                      (not (equal (string-upcase s)
                                                  "NIL")))))
+              (book-hash-alistp-env
+
+; For now, we think of book-hash-keysp as a generalized Boolean.  But it will
+; be easy to view it as a list of keywords such as :BOOK-LENGTH, to indicate
+; that instead of a numeric checksum we will store an alist mapping keys to
+; values.  For now, a non-nil value of this variable will indicate that those
+; two specific keywords are to be mapped to the .lisp file's length in bytes
+; and write date, respectively.
+
+               (let ((s (getenv$-raw "ACL2_BOOK_HASH_ALISTP")))
+                 (and s
+                      (not (equal s ""))
+                      (not (equal (string-upcase s)
+                                  "NIL")))))
               (user-home-dir-path (our-user-homedir-pathname))
               (user-home-dir0 (and user-home-dir-path
                                    (our-truename user-home-dir-path
-                                                 "Note: Calling ~
-                                                    OUR-TRUENAME from LP.")))
+                                                 "Note: Calling OUR-TRUENAME ~
+                                                  from LP.")))
               (user-home-dir (and user-home-dir0
                                   (if (eql (char user-home-dir0
                                                  (1- (length user-home-dir0)))
@@ -8315,10 +8329,10 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
               (system-dir0 (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
                              (and str
                                   (maybe-add-separator str)))))
-         (when (and save-expansion
-                    (not (equal (string-upcase save-expansion)
-                                "NIL")))
+         (when save-expansion
            (f-put-global 'save-expansion-file t *the-live-state*))
+         (when book-hash-alistp-env
+           (f-put-global 'book-hash-alistp t *the-live-state*))
          (when user-home-dir
            (f-put-global 'user-home-dir user-home-dir *the-live-state*))
          (when system-dir0 ; needs to wait for user-homedir-pathname

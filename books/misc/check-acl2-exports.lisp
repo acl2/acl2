@@ -83,12 +83,15 @@
   '(*UNTROUBLESOME-CHARACTERS*
     ADD-DIVE-INTO-MACRO
     BDD
+    BOOK-HASH
     CHECK-SUM
     COMP-GCL
     COUNT ; defined in books/coi/bags/basic.lisp
     DEFUN-MODE
     DIVE-INTO-MACROS-TABLE
     ERROR1
+    FILE-LENGTH$ ; to be added to *acl2-exports*
+    FILE-WRITE-DATE$ ; to be added to *acl2-exports*
     FIND-RULES-OF-RUNE
     INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
     LOOP-STOPPER
@@ -99,6 +102,7 @@
     REDEFINED-NAMES
     REMOVE-DIVE-INTO-MACRO
     REWRITE
+    SET-SLOW-ALIST-ACTION ; to be added to *acl2-exports*
     TYPE-SET
     WATERFALL
     ))

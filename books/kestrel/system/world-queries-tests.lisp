@@ -1,6 +1,6 @@
 ; World Queries -- Tests
 ;
-; Copyright (C) 2015 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -108,6 +108,54 @@
 (must-succeed*
  (defthm th (acl2-numberp (+ x y)))
  (assert-event (not (guard-verifiedp 'th (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (eq (non-executablep 'not (w state)) nil))
+
+(assert-event (eq (non-executablep 'len (w state)) nil))
+
+(must-succeed*
+ (defun-nx f (x) x)
+ (assert-event (eq (non-executablep 'f (w state)) t)))
+
+(must-succeed*
+ (defun-sk g (x) (forall (y z) (equal x (cons y z))))
+ (assert-event (eq (non-executablep 'g (w state)) t)))
+
+(must-succeed*
+ (defun-sk h (x y) (exists z (equal z (cons x y)))
+   :witness-dcls ((declare (xargs :non-executable nil))))
+ (assert-event (eq (non-executablep 'h (w state)) nil)))
+
+(must-succeed*
+ (defproxy p (* *) => *)
+ (assert-event (eq (non-executablep 'p (w state)) :program)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (equal (measure 'len (w state)) '(acl2-count x)))
+
+(must-succeed*
+ (defun f (x)
+   (declare (xargs :measure (nfix (- 10 x))))
+   (if (and (natp x) (< x 10))
+       (f (1+ x))
+     nil))
+ (assert-event (equal (measure 'f (w state))
+                      '(nfix (binary-+ '10 (unary-- x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (equal (well-founded-relation 'len (w state)) 'o<))
+
+(must-succeed*
+ (defun f (x)
+   (declare (xargs :measure (nfix (- 10 x))))
+   (if (and (natp x) (< x 10))
+       (f (1+ x))
+     nil))
+ (assert-event (equal (well-founded-relation 'f (w state)) 'o<)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -212,8 +212,8 @@
                                  MARK-LOCAL-INCLUDED-BOOKS
                                  CHK-RAISE-PORTCULLIS1
                                  CHK-RAISE-PORTCULLIS2
-                                 TILDE-*-BOOK-CHECK-SUMS-PHRASE
-                                 TILDE-*-BOOK-CHECK-SUMS-PHRASE1
+                                 TILDE-*-BOOK-HASH-PHRASE1
+                                 TILDE-*-BOOK-HASH-PHRASE
                                  INCLUDE-BOOK-ER
                                  *ILL-FORMED-CERTIFICATE-MSG*
                                  CHK-IN-PACKAGE CERTIFICATE-FILEP
@@ -1976,10 +1976,9 @@
                         PROGRAM-TERM-LISTP PROGRAM-TERMP
                         LOGICALP PROGRAMP FDEFUN-MODE
                         SYMBOL-CLASS BODY STOBJS-OUT STOBJS-IN
-                        ARITY FORMALS COMPARE-CHECK-SUMS
-                        MAKE-CHECK-SUMS-FILE READ-FILE
+                        ARITY FORMALS READ-FILE
                         READ-FILE-ITERATE GET-CHECK-SUMS-LST
-                        CHECK-SUM-FILE CHECK-SUM-OBJ
+                        CHECK-SUM-OBJ
                         CHECK-SUM-OBJ1 CHECK-SUM-STRING
                         CHECK-SUM-STRING2 CHECK-SUM-STRING1
                         CHECK-SUM-NATURAL CHECK-SUM-INC
