@@ -5922,7 +5922,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
           ((elab-mod (moddb->modsi modidx moddb)))
           (b* ((idx (elab-mod-wirename->idx path.name elab-mod))
                ((unless idx)
-                (mv (msg "Missing: ~s0" path.name)
+                (mv (msg "In module ~x0: Missing: ~s1" (elab-mod->name elab-mod) path.name)
                     nil nil))
                (wire (elab-mod-wiretablei idx elab-mod)))
             (mv nil idx wire)))
@@ -5938,25 +5938,28 @@ checked to see if it is a valid bitselect and returned as a separate value."
                      ;; it might be that both work.
            wireidx wire  ;; bitselect case
            offset submod     ;; submod case
+           modname
            err)              ;; neither
           ((elab-mod (moddb->modsi modidx moddb)))
           (b* (;; first check for bitselect.  The next path component must be
                ;; the end and must have a name that's a natural.
                (wireidx (and bit (elab-mod-wirename->idx path.namespace elab-mod)))
                (instidx (elab-mod-instname->idx path.namespace elab-mod))
+               (modname (elab-mod->name elab-mod))
                ((unless (or instidx wireidx))
-                (mv nil nil nil nil (msg "missing: ~s0" path.namespace))))
+                (mv nil nil nil nil modname (msg "missing: ~s0" path.namespace))))
 
             (mv wireidx
                 (and wireidx (elab-mod-wiretablei wireidx elab-mod))
                 (and instidx (elab-mod->inst-wireoffset instidx elab-mod))
                 (and instidx (elab-mod->inst-modidx instidx elab-mod))
+                modname
                 nil)))
-         ((when err) (mv err nil nil nil))
+         ((when err) (mv (msg "In module ~x0: ~@1" modname err) nil nil nil))
          ((mv err submod-wire rest-index bitsel)
           (if submod
               (moddb-path->wireidx/decl path.subpath submod moddb)
-            (mv (msg "missing submod: ~s0" path.namespace)
+            (mv (msg "In module ~x0: missing submod: ~s1" modname path.namespace)
                 nil nil nil)))
          ((unless err) (mv nil submod-wire (+ offset rest-index) bitsel))
          ((unless wire) (mv err nil nil nil))
@@ -5964,7 +5967,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
          (in-bounds (and (>= bit wire.low-idx)
                          (< bit (+ wire.low-idx wire.width))))
          ((unless in-bounds)
-          (mv (msg "bitselect out of bounds: ~x0" bit) nil nil nil)))
+          (mv (msg "In module ~x0: bitselect out of bounds: ~x1" modname bit) nil nil nil)))
       (mv nil wire wireidx bit)))
   ///
 

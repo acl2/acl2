@@ -177,32 +177,40 @@ because... (BOZO)</p>
   :verify-guards nil
   (b* (((when (svex-case lhs :var (svar-equiv wholevar lhs.name) :otherwise nil))
         (mv nil (svex-fix rhs)))
-       ((mv ok al) (svex-unify (svcall concat 'w 'a 'b)
+       ((mv ok al) (svex-unify '(partsel lsb w a) lhs nil))
+       ((when ok)
+        (b* ((lsb (svex-lookup 'lsb al))
+             (w (svex-lookup 'w al))
+             (a (svex-lookup 'a al))
+             (lsb-rhs (svex-replace-var lsb wholevar var-replacement))
+             (w-rhs (svex-replace-var w wholevar var-replacement))
+             (a-rhs (svex-replace-var a wholevar var-replacement)))
+          (svex-resolve-single-assignment
+           a (svcall partinst lsb-rhs w-rhs a-rhs rhs) wholevar var-replacement)))
+       ((mv ok al) (svex-unify '(concat w a b)
                                lhs nil))
        ((when ok)
         (b* ((w (svex-lookup 'w al))
              (a (svex-lookup 'a al))
              (b (svex-lookup 'b al))
              (w-rhs (svex-replace-var w wholevar var-replacement))
-             (a-rhs (svex-replace-var a wholevar var-replacement))
              ((when (svex-case b :quote))
               ;; (concat w a Z) = rhs --> a = (concat w rhs (rsh w a))
-              (svex-resolve-single-assignment
-               a
-               (svcall concat w-rhs rhs (svcall rsh w-rhs a-rhs))
-               wholevar var-replacement))
+              (b* ((a-rhs (svex-replace-var a wholevar var-replacement)))
+                (svex-resolve-single-assignment
+                 a
+                 (svcall concat w-rhs rhs (svcall rsh w-rhs a-rhs))
+                 wholevar var-replacement)))
              ((when (svex-case a :quote))
               ;; (concat w Z b) = rhs --> b = (rsh w rhs)
               (svex-resolve-single-assignment
                b (svcall rsh w-rhs rhs) wholevar var-replacement)))
           (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0" (svex-fix lhs))
               nil)))
-       ((mv ok al) (svex-unify (svcall zerox 'w 'a)
-                               lhs nil))
+       ((mv ok al) (svex-unify '(zerox w a) lhs nil))
        ((mv ok al) (if ok
                        (mv ok al)
-                     (svex-unify (svcall signx 'w 'a)
-                                 lhs nil)))
+                     (svex-unify '(signx w a) lhs nil)))
        ((when ok) ;; zerox or signx matched
         (b* ((w (svex-lookup 'w al))
              (a (svex-lookup 'a al))
@@ -213,7 +221,7 @@ because... (BOZO)</p>
            a (svcall concat w-rhs rhs (svcall rsh w-rhs a-rhs))
            wholevar var-replacement)))
 
-       ((mv ok al) (svex-unify (svcall rsh 'w 'v) lhs nil))
+       ((mv ok al) (svex-unify '(rsh w v) lhs nil))
        ((when ok)
         (b* ((w (svex-lookup 'w al))
              (v (svex-lookup 'v al))
@@ -223,7 +231,7 @@ because... (BOZO)</p>
           (svex-resolve-single-assignment
            v (svcall concat w-rhs v-rhs rhs)
            wholevar var-replacement)))
-       ((mv ok al) (svex-unify (svcall ? 'test 'then 'else) lhs nil))
+       ((mv ok al) (svex-unify '(? test then else) lhs nil))
        ((when ok)
         (b* ((test (svex-lookup 'test al))
              (then (svex-lookup 'then al))

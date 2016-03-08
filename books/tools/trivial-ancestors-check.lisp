@@ -35,6 +35,8 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
+
 ; Sometimes the ACL2 ancestors-check heuristic prevents rules from applying
 ; when you think they should.  Fortunately it's an attachable function, so we
 ; can make it into a simple loop check without too much trouble.
@@ -116,3 +118,46 @@
 (defmacro use-trivial-ancestors-check ()
   '(local (defattach (ancestors-check trivial-ancestors-check)
             :hints (("goal" :in-theory '(trivial-ancestors-check-ok))))))
+
+
+(defxdoc use-trivial-ancestors-check
+  :short "Override ACL2's built-in ancestors check heuristic with a simpler and less surprising one."
+  :parents (proof-automation) ;; ???
+  :long "<p>Usage: as an embeddable event,</p>
+
+@({
+ (include-book \"tools/trivial-ancestors-check\" :dir :system)
+ (use-trivial-ancestors-check)
+ })
+<p>or</p>
+@({
+ (local (include-book \"tools/trivial-ancestors-check\" :dir :system))
+ (local (use-trivial-ancestors-check)).
+ })
+
+<p>(Note: @('use-trivial-ancestors-check') expands to a local event, but you
+can still wrap it in local, in which case the trivial-ancestors-check book may
+be included locally.)</p>
+
+<p>ACL2 has a heuristic called @('ancestors-check') which it uses to
+prevent loops in backchaining during rewriting.  The @('ancestors'), in this
+context, are the sequence of hyps we have backchained to in order to get to the
+one we are currently trying to relieve.  Among other things, ACL2's built in
+ancestors check decides whether the current hyp is more complicated than any
+ancestral hyp, and gives up on backchaining if so.  Occasionally this can cause
+a rewriting strategy to mysteriously fail to work.  Fortunately, ACL2 allows
+its default ancestors check to be replaced by an attachment.</p>
+
+<p>Running @('(use-trivial-ancestors-check)') replaces the default ancestors
+check with one that does much less: it only checks whether the current hyp
+occurs, exactly or negated, in the ancestors, and doesn't try to prevent
+backchaining to more complicated hyps.</p>
+
+<p>This could cause rewriting to fail due to a chain of increasingly
+complicated hyps.  But when we tried replacing ACL2's default heuristic with
+this new one, we only found a couple of examples in the regression where this
+was the case, and these were due to (in our view) bad rules.  So in practice,
+this seems to be fairly undisruptive.</p>")
+
+(defxdoc trivial-ancestors-check
+  :short "See @(see use-trivial-ancestors-check).")

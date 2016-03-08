@@ -202,7 +202,9 @@ expect or preserve @(see fast-alists)."
     (pow       4vec-pow            (x y)               "exponentiation")
     (?         4vec-?              (test then else)    "if-then-else")
     (?*        4vec-?*             (test then else)    "if-then-else (for statements)")
-    (bit?      4vec-bit?           (test then else)    "bitwise if-then-else")))
+    (bit?      4vec-bit?           (test then else)    "bitwise if-then-else")
+    (partsel   4vec-part-select    (lsb width in)      "part select")
+    (partinst  4vec-part-install   (lsb width in val)  "part install")))
 
 (encapsulate
   ()

@@ -78,6 +78,7 @@ off looking at the source code.</p>")
                    simplify-logior
                    commutativity-of-logxor
                    simplify-logxor
+                   simplify-logif
                    simplify-bit-functions
                    unsigned-byte-p-base-case
                    unsigned-byte-p-0
@@ -126,12 +127,12 @@ off looking at the source code.</p>")
 
 (defconst *ihs-extensions-disables*
   '(floor mod expt ash evenp oddp
-          logbitp logbit logior logand lognot logxor
+          logbitp logbit logior logand lognot logxor logif
           logcons logcar logcdr loghead logtail
           integer-length
           logmaskp logext logapp logrev
           b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
-          b-not b-and b-ior b-xor bfix bitp
+          b-not b-and b-ior b-xor b-if bfix bitp
           logcount))
 
 
@@ -2559,6 +2560,147 @@ off looking at the source code.</p>")
              (natp n))
     :hints(("Goal" :in-theory (enable unsigned-byte-p)))
     :rule-classes :forward-chaining))
+
+(defsection logif**
+
+  (local (in-theory (enable logif)))
+
+  ;; (defthmd logif-when-zip
+  ;;   (implies (or (zip i) (zip j))
+  ;;            (equal (logif i j) 0)))
+
+  ;; (add-to-ruleset ihsext-bad-type-thms '(logif-when-zip))
+
+  ;; (defthm logif-of-ifix-1
+  ;;   (equal (logif (ifix a) b)
+  ;;          (logif a b)))
+
+  ;; (defthm logif-of-ifix-2
+  ;;   (equal (logif b (ifix a))
+  ;;          (logif b a)))
+
+  ;; (add-to-ruleset ihsext-basic-thms '(logif-of-ifix-1 logif-of-ifix-2))
+
+  (local (in-theory (enable* ihsext-bad-type-thms)))
+  (local (in-theory (disable logif)))
+
+  (defthmd logif**
+    ;; Better than logif* since there are no hyps; but must case-split manually.
+    (equal (logif test then else)
+           (logcons (b-if (logcar test) (logcar then) (logcar else))
+                    (logif (logcdr test) (logcdr then) (logcdr else))))
+    :hints(("Goal" :in-theory (enable logif logand** logior**)))
+    :rule-classes
+    ((:definition :clique (logif)
+      :controller-alist ((logif t t t)))))
+
+  (add-to-ruleset ihsext-redefs '(logif**))
+
+  (defthm logif-of-logcons-test
+    (equal (logif (logcons a b) then else)
+           (logcons (b-if a (logcar then) (logcar else))
+                    (logif b (logcdr then) (logcdr else))))
+    :hints(("Goal" :expand (logif (logcons a b) then else))))
+
+  (defthm logif-of-logcons-then
+    (equal (logif test (logcons a b) else)
+           (logcons (b-if (logcar test) a (logcar else))
+                    (logif (logcdr test) b (logcdr else))))
+    :hints(("Goal" :in-theory (enable logif**))))
+
+  (defthm logif-of-logcons-else
+    (equal (logif test then (logcons a b))
+           (logcons (b-if (logcar test) (logcar then) a)
+                    (logif (logcdr test) (logcdr then) b)))
+    :hints(("Goal" :in-theory (enable logif**))))
+
+
+  (defthmd logif$
+    ;; Bozo maybe we should have a version that only terminates based on one
+    ;; input or the other? maybe better case-splitting/induction schemes
+    (equal (logif test then else)
+           (cond ((zip test) (ifix else))
+                 ((eql test -1) (ifix then))
+                 (t (logcons (b-if (logcar test) (logcar then) (logcar else))
+                             (logif (logcdr test) (logcdr then) (logcdr else))))))
+    :hints (("goal" :in-theory (enable logif logand$ logior$)))
+    :rule-classes ((:definition
+                    :clique (logif)
+                    :controller-alist ((logif t nil nil)))))
+
+  (add-to-ruleset ihsext-recursive-redefs '(logif$))
+
+  ;; (theory-invariant (not (active-runep '(:definition logif*)))
+  ;;                   :key |Use LOGIF** or LOGIF$ instead of LOGIF*|)
+
+  (local (in-theory (enable integer-length**)))
+
+  (defun logif-ind (test then else)
+    (declare (xargs :measure (integer-length test)))
+    (cond ((zip test) (ifix else))
+          ((eql test -1) (ifix then))
+          (t (logif-ind (logcdr test) (logcdr then) (logcdr else)))))
+
+  (defthmd logif-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (logif test then else)
+                    :scheme (logif-ind test then else))))
+
+  (add-to-ruleset ihsext-inductions '(logif-induct))
+
+  (local (in-theory (enable* ihsext-recursive-redefs
+                             ihsext-inductions)))
+
+  (defthm logcar-of-logif
+    (equal (logcar (logif test then else))
+           (b-if (logcar test) (logcar then) (logcar else)))
+    :hints (("Goal" :expand (logif test then else))))
+
+
+  (defthm logcdr-of-logif
+    (equal (logcdr (logif test then else))
+           (logif (logcdr test) (logcdr then) (logcdr else)))
+    :hints(("Goal" :use logif**
+            :in-theory (disable logif$))))
+
+  (defthm logbitp-of-logif
+    (equal (logbitp a (logif test then else))
+           (bit->bool (b-if (logbit a test)
+                            (logbit a then)
+                            (logbit a else))))
+    :hints(("Goal" :induct (and (logbitp a test)
+                                (logbitp a then)
+                                (logbitp a else))
+            :in-theory (enable bool->bit))))
+
+  (defthm loghead-of-logif
+    (equal (loghead a (logif test then else))
+           (logif (loghead a test)
+                  (loghead a then)
+                  (loghead a else)))
+    :hints(("Goal" :in-theory (disable loghead-identity))))
+
+  (defthm logtail-of-logif
+    (equal (logtail a (logif test then else))
+           (logif (logtail a test)
+                  (logtail a then)
+                  (logtail a else)))
+    :hints(("Goal" :in-theory (disable logtail-identity
+                                       acl2::logtail-equal-0))))
+
+  (add-to-ruleset ihsext-basic-thms '(logcar-of-logif
+                                      logcdr-of-logif
+                                      logbitp-of-logif
+                                      loghead-of-logif))
+
+  (defthm unsigned-byte-p-of-logif
+    (implies (and (unsigned-byte-p n then)
+                  (unsigned-byte-p n else))
+             (unsigned-byte-p n (logif test then else)))
+    :hints(("Goal" :in-theory (disable (force) unsigned-byte-p)))))
+
+
 
 
 (defsection logsquash**

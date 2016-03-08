@@ -258,7 +258,7 @@
        ((when err) (mv err nil))
        ((mv err wire wireidx bitsel) (moddb-path->wireidx/decl path modidx moddb))
        ((when err)
-        (mv (msg "Wire not found: ~s0" x) nil))
+        (mv (msg "Wire not found: ~s0 -- ~@1" x err) nil))
        ((when (and bitsel range-msb))
         (mv (msg "Shouldn't have a part-select of a bit-select: ~s0" x) nil))
        ((wire wire) wire)

@@ -454,6 +454,11 @@
           ((concat ? ?* bit?)
            (and (3valued-syntaxp (second x.args))
                 (3valued-syntaxp (third x.args))))
+          ((partsel)
+           (3valued-syntaxp (third x.args)))
+          ((partinst)
+           (and (3valued-syntaxp (third x.args))
+                (3valued-syntaxp (fourth x.args))))
           ((blkrev)
            (3valued-syntaxp (third x.args)))
           (otherwise t))))
@@ -642,6 +647,23 @@
     (3vec-p (4vec-pow x y))
     :hints(("Goal" :in-theory (enable 3vec-p 4vec-pow))))
 
+  (defthm 3vec-p-of-4vec-fix
+    (equal (3vec-p (4vec-fix x)) (3vec-p x))
+    :hints(("Goal" :in-theory (enable 3vec-p))))
+
+  (defthm 3vec-p-of-4vec-part-select
+    (implies (3vec-p in)
+             (3vec-p (4vec-part-select lsb width in)))
+    :hints(("Goal" :in-theory (enable 4vec-part-select))))
+
+  (defthm 3vec-p-of-4vec-part-install
+    (implies (and (3vec-p in)
+                  (3vec-p val))
+             (3vec-p (4vec-part-install lsb width in val)))
+    :hints(("Goal" :in-theory (enable 4vec-part-install))))
+
+
+
   (defthm 3vec-p-of-eval-when-3valued-syntaxp
     (implies (3valued-syntaxp x)
              (3vec-p (svex-eval x env)))
@@ -704,11 +726,11 @@
           (otherwise nil))))
   ///
 
-  (memoize '2vecx-syntaxp
-           :condition '(and x
-                            (eq (svex-kind x) :call)
-                            (member (svex-call->fn x)
-                                    '(res resand resor concat ?))))
+  ;; (memoize '2vecx-syntaxp
+  ;;          :condition '(and x
+  ;;                           (eq (svex-kind x) :call)
+  ;;                           (member (svex-call->fn x)
+  ;;                                   '(res resand resor concat ?))))
 
   (local (defthm logand-equal-neg-1
            (equal (equal (logand x y) -1)
@@ -828,6 +850,26 @@
   :checks ((2vecx-syntaxp x))
   :rhs x)
 
+(def-svex-rewrite +-0-is-xdet-1
+  :lhs (+ 0 x)
+  :rhs (xdet x)
+  :hints(("Goal" :in-theory (enable 4vec-plus 4vec-xdet svex-apply))))
+
+(def-svex-rewrite +-0-is-xdet-2
+  :lhs (+ x 0)
+  :rhs (xdet x)
+  :hints(("Goal" :in-theory (enable 4vec-plus 4vec-xdet svex-apply))))
+
+(def-svex-rewrite *-1-is-xdet-1
+  :lhs (* 1 x)
+  :rhs (xdet x)
+  :hints(("Goal" :in-theory (enable 4vec-times 4vec-xdet svex-apply))))
+
+(def-svex-rewrite *-1-is-xdet-2
+  :lhs (* x 1)
+  :rhs (xdet x)
+  :hints(("Goal" :in-theory (enable 4vec-times 4vec-xdet svex-apply))))
+
 (def-svex-rewrite +-of-xdet-left
   :lhs (+ (xdet x) y)
   :rhs (+ x y)
@@ -908,6 +950,26 @@
   :rhs (concat n x y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-xdet))))
 
+(def-svex-rewrite partsel-of-xdet-1
+  :lhs (partsel (xdet lsb) width in)
+  :rhs (partsel lsb width in)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-part-select 4vec-xdet))))
+
+(def-svex-rewrite partsel-of-xdet-2
+  :lhs (partsel lsb (xdet width) in)
+  :rhs (partsel lsb width in)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-part-select 4vec-xdet))))
+
+(def-svex-rewrite partinst-of-xdet-1
+  :lhs (partinst (xdet lsb) width in val)
+  :rhs (partinst lsb width in val)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-part-install 4vec-xdet))))
+
+(def-svex-rewrite partinst-of-xdet-2
+  :lhs (partinst lsb (xdet width) in val)
+  :rhs (partinst lsb width in val)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-part-install 4vec-xdet))))
+
 
 (def-svex-rewrite bitnot-of-unfloat
   :lhs (bitnot (unfloat x))
@@ -964,14 +1026,21 @@
   :lhs (uxor (unfloat x))
   :rhs (uxor x))
 
+(local (defthm 2vec-p-of-3vec-fix
+         (equal (2vec-p (3vec-fix x))
+                (2vec-p x))
+         :hints(("Goal" :in-theory (enable 2vec-p 3vec-fix)))))
+
+(local (defthm 3vec-fix-when-2vec-p
+         (implies (2vec-p x)
+                  (equal (3vec-fix x) (4vec-fix x)))
+         :hints(("Goal" :in-theory (enable 2vec-p 3vec-fix)))))
+
 (def-svex-rewrite bitsel-of-unfloat-1
   :lhs (bitsel (unfloat n) x)
   :rhs (bitsel n x)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-bit-extract 4vec-bit-index 3vec-fix 4vec-mask))
-         (bitops::logbitp-reasoning
-          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
-                                          bitops::logbitp-when-bit
-                                          bitops::bool->bit)))))
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-bit-extract 4vec-bit-index)
+                                 (2vec-p)))))
 
 (def-svex-rewrite bitsel-of-unfloat-2
   :lhs (bitsel n (unfloat x))
@@ -985,11 +1054,8 @@
 (def-svex-rewrite zerox-of-unfloat-1
   :lhs (zerox (unfloat n) x)
   :rhs (zerox n x)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-zero-ext 3vec-fix 4vec-mask))
-         (bitops::logbitp-reasoning
-          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
-                                          bitops::logbitp-when-bit
-                                          bitops::bool->bit)))))
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-zero-ext)
+                                 (2vec-p)))))
 
 (def-svex-rewrite zerox-of-unfloat-2
   :lhs (zerox n (unfloat x))
@@ -1004,12 +1070,8 @@
 (def-svex-rewrite signx-of-unfloat-1
   :lhs (signx (unfloat n) x)
   :rhs (signx n x)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-sign-ext 3vec-fix 4vec-mask))
-         (bitops::logbitp-reasoning
-          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
-                                          bitops::logbitp-when-bit
-                                          bitops::bool->bit))
-          :prune-examples nil)))
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-sign-ext)
+                                 (2vec-p)))))
 
 (def-svex-rewrite signx-of-unfloat-2
   :lhs (signx n (unfloat x))
@@ -1030,6 +1092,44 @@
                                           bitops::logbitp-when-bit
                                           bitops::bool->bit))
           :prune-examples nil)))
+
+
+
+(def-svex-rewrite partsel-of-unfloat-1
+  :lhs (partsel (unfloat lsb) width in)
+  :rhs (partsel lsb width in)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-part-select)
+                                 (2vec-p)))))
+
+(def-svex-rewrite partsel-of-unfloat-2
+  :lhs (partsel lsb (unfloat width) in)
+  :rhs (partsel lsb width in)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-part-select)
+                                 (2vec-p)))))
+
+(def-svex-rewrite partsel-of-unfloat-3
+  :lhs (partsel lsb width (unfloat in))
+  :rhs (unfloat (partsel lsb width in))
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-part-select 4vec-zero-ext
+                                             4vec-concat 4vec-rsh
+                                             3vec-fix 4vec-mask)))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
+          :prune-examples nil)))
+
+(def-svex-rewrite partinst-of-unfloat-1
+  :lhs (partinst (unfloat lsb) width in val)
+  :rhs (partinst lsb width in val)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-part-install)
+                                 (2vec-p)))))
+
+(def-svex-rewrite partinst-of-unfloat-2
+  :lhs (partinst lsb (unfloat width) in val)
+  :rhs (partinst lsb width in val)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-part-install)
+                                 (2vec-p)))))
 
 (def-svex-rewrite concat-1-to-signx
   :lhs (concat 1 x (concat 1 x y))

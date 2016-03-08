@@ -171,7 +171,10 @@ interfaces.</p>")
     ;; Otherwise something pretty fancy is going on.  We'll just recommend
     ;; against this out of general principle.
     (warn :type :vl-warn-port-style
-          :msg "~a0: port has complex expression ~a1."
+          ;; BOZO Some of these expressions are bigger than we want to see in
+          ;; warning output.  Maybe they can be printed with some sort of size
+          ;; limit.  For now, we won't print the expression.
+          :msg "~a0: port has complex expression."
           :args (list x x.expr))))
 
 (define vl-portlist-check-style ((x vl-portlist-p)

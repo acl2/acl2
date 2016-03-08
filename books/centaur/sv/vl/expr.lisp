@@ -803,24 +803,36 @@ ignored.</p>"
 
 |#
 
-(define vl-datatype-index-shift-amount ((x vl-datatype-p)
-                                        (idx sv::svex-p))
+(define vl-datatype-slot-width/range ((x vl-datatype-p))
   :guard (vl-datatype-resolved-p x)
   :returns (mv (err (iff (vl-msg-p err) err))
-               (shift (implies (not err) (sv::svex-p shift))))
+               (slotwidth natp :rule-classes :type-prescription)
+               (range-left natp :rule-classes :type-prescription)
+               (range-right natp :rule-classes :type-prescription))
   (b* ((x (vl-maybe-usertype-resolve x))
        ((mv err ?caveat slottype dim) (vl-datatype-remove-dim x))
-       ((when err) (mv err nil))
+       ((when err) (mv err 0 0 0))
        ((mv err size) (vl-datatype-size slottype))
-       ((when err) (mv err nil))
-       ((unless size) (mv (vmsg "Couldn't size array slot type ~a0" slottype) nil))
+       ((when err) (mv err 0 0 0))
+       ((unless size) (mv (vmsg "Couldn't size array slot type ~a0" slottype) 0 0 0))
        ((when (vl-packeddimension-case dim :unsized))
-        (mv (vmsg "unsized packed dimension on array type ~a0" x) nil))
+        (mv (vmsg "unsized packed dimension on array type ~a0" x) 0 0 0))
        ((vl-range range) (vl-packeddimension->range dim))
        ((unless (vl-range-resolved-p range))
-        (mv (vmsg "unresolved packed dimension on array type ~a0" x) nil))
+        (mv (vmsg "unresolved packed dimension on array type ~a0" x) 0 0 0))
        (msb (vl-resolved->val range.msb))
-       (lsb (vl-resolved->val range.lsb))
+       (lsb (vl-resolved->val range.lsb)))
+    (mv nil size msb lsb)))
+  
+
+(define vl-index-shift-amount ((size natp)
+                               (msb natp)
+                               (lsb natp)
+                               (idx sv::svex-p))
+  :returns (shift (implies (not err) (sv::svex-p shift)))
+  (b* ((size (lnfix size))
+       (msb (lnfix msb))
+       (lsb (lnfix lsb))
        ((when (>= msb lsb))
         ;; BOZO: If we use this function to get the shift amount for the LSB of
         ;; an ascending partselect, e.g. [4:6], on a declared range with equal
@@ -832,109 +844,123 @@ ignored.</p>"
         ;; we're accessing.  Oddly enough, this seems to agree with VCS
         ;; (ncverilog seems to return all Xes when any part of the select is
         ;; out of bounds).
-        (mv nil (sv::svex-reduce-consts
-                 (sv::svcall * (svex-int size)
-                               (sv::svcall sv::b- idx (svex-int lsb)))))))
-    (mv nil (sv::svex-reduce-consts
-             (sv::svcall * (svex-int size)
-                           (sv::svcall sv::b- (svex-int lsb) idx)))))
+        (sv::svex-reduce-consts
+         (sv::svcall * (svex-int size)
+                     (sv::svcall sv::b- idx (svex-int lsb))))))
+    (sv::svex-reduce-consts
+     (sv::svcall * (svex-int size)
+                 (sv::svcall sv::b- (svex-int lsb) idx))))
+  ///
+  (defret vars-of-vl-index-shift-amount
+    (implies (not (member v (sv::svex-vars idx)))
+             (not (member v (sv::svex-vars shift))))))
+
+(define vl-datatype-index-shift-amount ((x vl-datatype-p)
+                                        (idx sv::svex-p))
+  :guard (vl-datatype-resolved-p x)
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (shift (implies (not err) (sv::svex-p shift))))
+  (b* (((mv err size msb lsb) (vl-datatype-slot-width/range x))
+       ((when err) (mv err nil)))
+    (mv nil (vl-index-shift-amount size msb lsb idx)))
   ///
   (defret vars-of-vl-datatype-index-shift-amount
     (implies (and (not err)
                   (not (member v (sv::svex-vars idx))))
              (not (member v (sv::svex-vars shift))))))
+               
 
 
-#!sv
-(define 4vec-lsb-shift ((shift-amt 4vec-p)
-                        (x 4vec-p))
-  :returns (res 4vec-p)
-  (if (2vec-p shift-amt)
-      (b* ((sh (2vec->val shift-amt)))
-        (if (< sh 0)
-            (4vec-concat (2vec (- sh)) (4vec-x) x)
-          (4vec-rsh (2vec sh) x)))
-    (4vec-x)))
+;; #!sv
+;; (define 4vec-lsb-shift ((shift-amt 4vec-p)
+;;                         (x 4vec-p))
+;;   :returns (res 4vec-p)
+;;   (if (2vec-p shift-amt)
+;;       (b* ((sh (2vec->val shift-amt)))
+;;         (if (< sh 0)
+;;             (4vec-concat (2vec (- sh)) (4vec-x) x)
+;;           (4vec-rsh (2vec sh) x)))
+;;     (4vec-x)))
 
-#!sv
-(define svex-lsb-shift ((shift-amt svex-p)
-                        (x svex-p))
-  :short "Adjust an expression for the LSB end of a select."
-  :long "<p>When computing the svex for an array access like @('v[i]'),
-typically you wanto to right-shift @('v') by some number of bits, depending on
-@('i') and the declared range of @('v').  But if @('i') is out of the bounds of
-that declared range, you instead want to return @('X').  More generally, if you
-have a ranged select like @('v[u:i]'), then if @('i') is out of bounds on the
-LSB side of the declared range, you want to concatenate some number of @('X')
-bits onto @('v').  This computes that shifted/concatenated version of @('v'),
-if the shift amount is computed elsewhere.</p>"
+;; #!sv
+;; (define svex-lsb-shift ((shift-amt svex-p)
+;;                         (x svex-p))
+;;   :short "Adjust an expression for the LSB end of a select."
+;;   :long "<p>When computing the svex for an array access like @('v[i]'),
+;; typically you wanto to right-shift @('v') by some number of bits, depending on
+;; @('i') and the declared range of @('v').  But if @('i') is out of the bounds of
+;; that declared range, you instead want to return @('X').  More generally, if you
+;; have a ranged select like @('v[u:i]'), then if @('i') is out of bounds on the
+;; LSB side of the declared range, you want to concatenate some number of @('X')
+;; bits onto @('v').  This computes that shifted/concatenated version of @('v'),
+;; if the shift amount is computed elsewhere.</p>"
 
-  :returns (res svex-p)
-  (b* ((sh (svex-reduce-consts shift-amt)))
-    (svex-case sh
-      :quote (if (2vec-p sh.val)
-                 (if (<= 0 (2vec->val sh.val))
-                     (svex-rsh (2vec->val sh.val) x)
-                   (svex-concat (- (2vec->val sh.val)) (svex-x) x))
-               (svex-x))
-      :otherwise ;; (b* ((concat-amt (svcall ?
-                 ;;                                (svcall < sh (vl::svex-int 0))
-                 ;;                                (svcall u- sh)
-                 ;;                                (vl::svex-int 0)))
-                 ;;      (rsh-amt    (svcall ?
-                 ;;                                (svcall < sh (vl::svex-int 0))
-                 ;;                                (vl::svex-int 0)
-                 ;;                                sh)))
-                 ;;   (svcall concat
-                 ;;           concat-amt
-                 ;;           (svex-x)
-                 ;;           (svcall rsh rsh-amt x)))
-      (svcall ?
-              (svcall < sh (vl::svex-int 0))
-              ;; if the shift is negative, we're concatenating Xes, otherwise
-              ;; we're right-shifting.
-              (svcall concat (svcall u- sh) (svex-x) x)
-              (svcall rsh sh x))))
-  ///
-  (local (defthm 4vec-<-of-non-2vec
-           (implies (not (2vec-p x))
-                    (equal (4vec-< x y) (4vec-x)))
-           :hints(("Goal" :in-theory (enable 4vec-<)))))
+;;   :returns (res svex-p)
+;;   (b* ((sh (svex-reduce-consts shift-amt)))
+;;     (svex-case sh
+;;       :quote (if (2vec-p sh.val)
+;;                  (if (<= 0 (2vec->val sh.val))
+;;                      (svex-rsh (2vec->val sh.val) x)
+;;                    (svex-concat (- (2vec->val sh.val)) (svex-x) x))
+;;                (svex-x))
+;;       :otherwise ;; (b* ((concat-amt (svcall ?
+;;                  ;;                                (svcall < sh (vl::svex-int 0))
+;;                  ;;                                (svcall u- sh)
+;;                  ;;                                (vl::svex-int 0)))
+;;                  ;;      (rsh-amt    (svcall ?
+;;                  ;;                                (svcall < sh (vl::svex-int 0))
+;;                  ;;                                (vl::svex-int 0)
+;;                  ;;                                sh)))
+;;                  ;;   (svcall concat
+;;                  ;;           concat-amt
+;;                  ;;           (svex-x)
+;;                  ;;           (svcall rsh rsh-amt x)))
+;;       (svcall ?
+;;               (svcall < sh (vl::svex-int 0))
+;;               ;; if the shift is negative, we're concatenating Xes, otherwise
+;;               ;; we're right-shifting.
+;;               (svcall concat (svcall u- sh) (svex-x) x)
+;;               (svcall rsh sh x))))
+;;   ///
+;;   (local (defthm 4vec-<-of-non-2vec
+;;            (implies (not (2vec-p x))
+;;                     (equal (4vec-< x y) (4vec-x)))
+;;            :hints(("Goal" :in-theory (enable 4vec-<)))))
 
-  (local (defthm 4vec-uminus-of-non-2vec
-           (implies (not (2vec-p x))
-                    (equal (4vec-uminus x) (4vec-x)))
-           :hints(("Goal" :in-theory (enable 4vec-uminus)))))
+;;   (local (defthm 4vec-uminus-of-non-2vec
+;;            (implies (not (2vec-p x))
+;;                     (equal (4vec-uminus x) (4vec-x)))
+;;            :hints(("Goal" :in-theory (enable 4vec-uminus)))))
 
-  (local (defthm 4vec-concat-of-non-2vec
-           (implies (not (2vec-p x))
-                    (equal (4vec-concat x y z) (4vec-x)))
-           :hints(("Goal" :in-theory (enable 4vec-concat)))))
+;;   (local (defthm 4vec-concat-of-non-2vec
+;;            (implies (not (2vec-p x))
+;;                     (equal (4vec-concat x y z) (4vec-x)))
+;;            :hints(("Goal" :in-theory (enable 4vec-concat)))))
 
-  (local (in-theory (disable 4vec->lower-when-2vec-p)))
+;;   (local (in-theory (disable 4vec->lower-when-2vec-p)))
 
 
-  (local (defthm svex-quote->val-of-reduce-consts
-           (implies (equal (svex-kind (svex-reduce-consts x)) :quote)
-                    (equal (svex-eval x env)
-                           (svex-quote->val (svex-reduce-consts x))))
-           :hints (("goal" :use ((:instance svex-reduce-consts-correct))
-                    :in-theory (e/d (svex-eval-when-quote)
-                                    (svex-reduce-consts-correct))))))
+;;   (local (defthm svex-quote->val-of-reduce-consts
+;;            (implies (equal (svex-kind (svex-reduce-consts x)) :quote)
+;;                     (equal (svex-eval x env)
+;;                            (svex-quote->val (svex-reduce-consts x))))
+;;            :hints (("goal" :use ((:instance svex-reduce-consts-correct))
+;;                     :in-theory (e/d (svex-eval-when-quote)
+;;                                     (svex-reduce-consts-correct))))))
 
-  (defthm svex-lsb-shift-correct
-    (equal (svex-eval (svex-lsb-shift shift-amt x) env)
-           (4vec-lsb-shift (svex-eval shift-amt env)
-                           (svex-eval x env)))
-    :hints(("Goal" :in-theory (enable svex-apply svexlist-eval 4vec-lsb-shift)
-            :rw-cache-state nil)
-           (and stable-under-simplificationp
-                '(:in-theory (enable 4vec-< 4vec-? 3vec-? 4vec-uminus)))))
+;;   (defthm svex-lsb-shift-correct
+;;     (equal (svex-eval (svex-lsb-shift shift-amt x) env)
+;;            (4vec-lsb-shift (svex-eval shift-amt env)
+;;                            (svex-eval x env)))
+;;     :hints(("Goal" :in-theory (enable svex-apply svexlist-eval 4vec-lsb-shift)
+;;             :rw-cache-state nil)
+;;            (and stable-under-simplificationp
+;;                 '(:in-theory (enable 4vec-< 4vec-? 3vec-? 4vec-uminus)))))
 
-  (defthm vars-of-svex-lsb-shift
-    (implies (and (not (member v (svex-vars shift-amt)))
-                  (not (member v (svex-vars x))))
-             (not (member v (svex-vars (svex-lsb-shift shift-amt x)))))))
+;;   (defthm vars-of-svex-lsb-shift
+;;     (implies (and (not (member v (svex-vars shift-amt)))
+;;                   (not (member v (svex-vars x))))
+;;              (not (member v (svex-vars (svex-lsb-shift shift-amt x)))))))
 
 (define vl-seltrace-split ((x vl-seltrace-p)
                            (unres-count (equal (vl-seltrace-unres-count x)
@@ -1042,9 +1068,7 @@ if the shift amount is computed elsewhere.</p>"
                        base-svex
                        outer-ss))
        ((when err) (mv err (svex-x))))
-    (mv err (sv::svex-concat size
-                          (sv::svex-lsb-shift shift-amt rest)
-                          (svex-x))))
+    (mv err (sv::svcall sv::partsel shift-amt (svex-int size) rest)))
   ///
   (local (in-theory (disable (:d vl-seltrace-to-svex-vector))))
 
@@ -1221,15 +1245,8 @@ the way.</li>
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
   (b* (((vl-plusminus psel))
-       ((mv err ?caveat ?basetype dim) (vl-datatype-remove-dim type))
+       ((mv err slotsize dim-msb dim-lsb) (vl-datatype-slot-width/range type))
        ((when err) (mv err (svex-x)))
-       ((when (vl-packeddimension-case dim :unsized))
-        (mv (vmsg "Unsized dimension") (svex-x)))
-       ((vl-range dimrange) (vl-packeddimension->range dim))
-       ((unless (vl-range-resolved-p dimrange))
-        (mv (vmsg "Unresolved dimension") (svex-x)))
-       (dim-msb (vl-resolved->val dimrange.msb))
-       (dim-lsb (vl-resolved->val dimrange.lsb))
        (downp (<= dim-lsb dim-msb))
        (sel-lsb (if downp
                     (if psel.minusp
@@ -1244,10 +1261,10 @@ the way.</li>
                     ;; base is the msb, compute the lsb
                     (sv::svcall + base-svex
                                 (sv::svcall + (svex-int -1) width-svex)))))
-       ((mv err shift-amt)
-        (vl-datatype-index-shift-amount type sel-lsb))
-       ((when err) (mv err (svex-x))))
-    (mv nil (sv::svex-lsb-shift shift-amt x)))
+       (shift-amt
+        (vl-index-shift-amount slotsize dim-msb dim-lsb sel-lsb))
+       (width (sv::svex-reduce-consts (sv::svcall * (svex-int slotsize) width-svex))))
+    (mv nil (sv::svcall sv::partsel shift-amt width x)))
 
   ///
   (defret vars-of-vl-plusminus-partselect->svex

@@ -1151,6 +1151,111 @@ shifts instead of right shifts.</p>"
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))))
           (bitops::logbitp-reasoning)))
 
+(def-svmask partsel (lsb width in)
+
+  :body (b* (((when (4vmask-empty mask))
+              ;; Don't care about any bits of the result, so we don't care
+              ;; about any of the arguments.
+              (list 0 0 0))
+             (widthval (svex-xeval width))
+             (lsbval (svex-xeval lsb))
+             ((unless (2vec-p widthval))
+              ;; We don't know the width, but if we know the lsb, then the mask
+              ;; for in can be a shift of the input mask.
+              (if (2vec-p lsbval)
+                  (list -1 -1 (ash mask (2vec->val lsbval)))
+                (list -1 -1 -1)))
+             (widthval (2vec->val widthval))
+
+             ((unless (<= 0 widthval))
+              ;; width is statically known to be negative, so the whole result is X
+              ;; for sure and we don't care about lsb or in
+              (list 0 -1 0))
+             
+             ((unless (2vec-p lsbval))
+              ;; Don't know what the lsb is. The one thing we can do in this
+              ;; case: if there are no mask bits inside the width, then we
+              ;; don't care about in.
+              (if (eql 0 (loghead widthval mask))
+                  (list -1 -1 0)
+                (list -1 -1 -1)))
+             (lsbval (2vec->val lsbval)))
+          ;; X is statically known and positive, so adjust mask accordingly on
+          ;; the arguments.
+          (list -1 -1 (ash (loghead widthval mask) lsbval)))
+  :hints (("Goal" :in-theory (e/d (svex-apply
+                                   4veclist-nth-safe
+                                   hide-past-third-arg)))
+          (and stable-under-simplificationp
+               '(:in-theory (e/d (4vec-mask
+                                  4vec-concat 4vec-rsh 4vec-zero-ext 4vec-part-select))))
+          (bitops::logbitp-reasoning)))
+
+
+
+
+(local (defthmd move-minus-over-comparison
+         (and (iff (< (+ a (- b)) c)
+                   (< a (+ b c)))
+              (iff (> (+ a (- b)) c)
+                   (> a (+ b c))))))
+
+
+
+(def-svmask partinst (lsb width in val)
+
+  :body (b* (((when (4vmask-empty mask))
+              ;; Don't care about any bits of the result, so we don't care
+              ;; about any of the arguments.
+              (list 0 0 0 0))
+             (lsbval (svex-xeval lsb))
+             (widthval (svex-xeval width))
+             ((unless (2vec-p widthval))
+              ;; Knowing the LSB without knowing the width doesn't give us
+              ;; anything in this case.  But we can always mask in by the outer
+              ;; mask because its bits always line up.
+              (list -1 -1 mask -1))
+             (widthval (2vec->val widthval))
+             ((when (< widthval 0))
+              ;; width is negative, so the whole thing is X
+              (list 0 -1 0 0))
+             ((unless (2vec-p lsbval))
+              ;; We don't know what the LSB is, but we can at least mask the
+              ;; val by width.
+              (list -1 -1 mask (loghead widthval -1)))
+             ;; We know what both LSB and width are.  We can basically divide
+             ;; the outer mask into the portion for val and the portion for in.
+             (lsbval (2vec->val lsbval)) 
+             ((when (<= 0 lsbval))
+              ;; some bits of in, then val, then in
+              (b* ((inmask (logapp lsbval mask (logapp widthval 0 (ash mask (- (+ lsbval widthval))))))
+                   (valmask (loghead widthval (ash mask (- lsbval)))))
+                (list -1 -1 
+                      inmask
+                      valmask)))
+             ((when (< (- lsbval) widthval))
+              ;; some bits of val, then in
+              (b* ((inmask (logapp (+ widthval lsbval) 0 (ash mask (- (+ widthval lsbval)))))
+                   (valmask (ash (loghead (+ widthval lsbval) mask) (- lsbval))))
+                (list -1 -1 inmask valmask))))
+          ;; just in, no val
+          (list -1 -1 mask 0))
+  :hints (("Goal" :in-theory (e/d (svex-apply
+                                   4veclist-nth-safe
+                                   hide-past-third-arg)))
+          (and stable-under-simplificationp
+               '(:in-theory (e/d (4vec-mask
+                                  4vec-concat 4vec-rsh 4vec-zero-ext 4vec-part-install))))
+          (bitops::logbitp-reasoning
+           :add-hints (:in-theory (enable* logbitp-case-splits
+                                           bitops::logbitp-of-const-split
+                                           move-minus-over-comparison)))
+          (and stable-under-simplificationp
+               '(:bdd (:vars nil))))
+  :otf-flg t)
+
+
+
 (def-svmask bitand (x y)
   :long "<p>We are considering a @('(bitand x y)') expression and we know that
 we only care about the bits mentioned in @('mask').  We want to figure out

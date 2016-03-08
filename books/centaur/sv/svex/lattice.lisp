@@ -231,7 +231,9 @@ acl2::4v-monotonicity).</p>"
                             3vec-==
                             4vec-onset
                             4vec-offset
-                            4vec-rev-blocks)))
+                            4vec-rev-blocks
+                            4vec-part-select
+                            4vec-part-install)))
 
   (def-4vec-monotonicity 4vec-fix)
   (def-4vec-monotonicity 3vec-fix)
@@ -278,6 +280,8 @@ acl2::4v-monotonicity).</p>"
   (def-4vec-monotonicity 4vec-symwildeq)
   (def-4vec-monotonicity 4vec-clog2)
   (def-4vec-monotonicity 4vec-pow)
+  (def-4vec-monotonicity 4vec-part-select)
+  (def-4vec-monotonicity 4vec-part-install)
 
   (local (in-theory (enable (:t logbitp)
                              bit->bool)))

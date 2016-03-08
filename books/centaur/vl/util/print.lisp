@@ -1261,7 +1261,7 @@ vl-print-url) for alternatives that perform different kinds of encoding.</p>
          ;; Coerce X into either a string or character list.
          (x      (vl-printable-fix x))
          (x      (cond ((stringp x) x)
-                       ((atom x)    (explode-atom x 10))
+                       ((and (atom x) x)    (explode-atom x 10))
                        (t           x))))
     (declare (type (integer 0 *) col))
     (if htmlp
@@ -1349,7 +1349,7 @@ split up at reasonably good places.</p>"
          ;; Coerce X into either a string or character list
          (x            (vl-printable-fix x))
          (x            (cond ((stringp x) x)
-                             ((atom x)    (explode-atom x 10))
+                             ((and (atom x) x)    (explode-atom x 10))
                              (t           x))))
     (if htmlp
         ;; Need to do HTML encoding.
@@ -1397,7 +1397,7 @@ split up at reasonably good places.</p>"
          (x       (vl-printable-fix x)))
     (cond ((stringp x)
            (vl-ps-update-rchars (cons x rchars)))
-          ((atom x)
+          ((and (atom x) x)
            (vl-ps-update-rchars (revappend (explode-atom x 10) rchars)))
           (t
            (vl-ps-update-rchars (revappend x rchars))))))
@@ -1440,7 +1440,7 @@ lot of markup.</p>"
            (vl-ps-seq
             (vl-ps-update-rchars (cons #\Newline (cons x rchars)))
             (vl-ps-update-col 0)))
-          ((atom x)
+          ((and (atom x) x)
            (vl-ps-seq
             (vl-ps-update-rchars (cons #\Newline (revappend (explode-atom x 10) rchars)))
             (vl-ps-update-col 0)))
@@ -1460,7 +1460,7 @@ with the proper encoding.</p>"
          (x      (vl-printable-fix x)))
     (cond ((stringp x)
            (vl-ps-update-rchars (str::url-encode-string-aux x 0 (length x) rchars)))
-          ((atom x)
+          ((and (atom x) x)
            (vl-ps-update-rchars (str::url-encode-chars-aux (explode-atom x 10) rchars)))
           (t
            (vl-ps-update-rchars (str::url-encode-chars-aux x rchars))))))
