@@ -81,7 +81,7 @@
 ;     with a glyph.
 ;
 ;     - An abstract character does not necessarily correspond to what a user
-;     thinks of as a "character", and shoudl not be confused with a grapheme.
+;     thinks of as a "character", and should not be confused with a grapheme.
 ;
 ;     - The abstract characters encoded by the Unicode Standard are known as
 ;     Unicode abstract characters.
@@ -123,7 +123,7 @@
 ; =============================================================================
 
 
-; Now, Unciode is quite a bit more complicated than ASCII.  After all, in
+; Now, Unicode is quite a bit more complicated than ASCII.  After all, in
 ; ASCII, every character takes only one byte.  This means you don't have to
 ; worry about byte order when writing to files or transmitting across networks,
 ; and so forth.  Similarly, there is little worry about the size of an ASCII
@@ -339,7 +339,7 @@
         (<= ,x ,high)))
 
 (defun uchar? (x)
-  "Recognizer for unicode scalar values."
+  "Recognizer for Unicode scalar values."
   (and (integerp x)
        (or (in-range? x 0 #xD7FF)
            (in-range? x #xE000 #x10FFFF))))
@@ -367,14 +367,14 @@
 ; aggressive with bit operations to compact our memory usage.  But, this is
 ; very simple.
 ;
-; Although unicode strings are actually defined by the spec with respect to a
+; Although Unicode strings are actually defined by the spec with respect to a
 ; particular encoding form, we will call our code unit sequence recognizer
 ; ustring?, in recognition of the fact that the ONLY encoding form we will
 ; internally support is this uchar-based system, so WE have only one concept
-; of a unicode string.
+; of a Unicode string.
 
 (defun ustring? (x)
-  "Recognizer for unicode code unit sequences."
+  "Recognizer for Unicode code unit sequences."
   (if (atom x)
       (null x)
     (and (uchar? (car x))
@@ -451,4 +451,3 @@
   "Convert an ASCII string into a Unicode string."
   (declare (xargs :guard (stringp x)))
   (charlist=>ustring (coerce x 'list)))
-
