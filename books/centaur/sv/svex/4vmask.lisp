@@ -427,8 +427,8 @@ creating a new mask that includes all bits that are relevant for in either
   (b* (((4vec care))
        ((4vec dontcare))
        (mask (4vmask-fix mask)))
-    (4vec (logif mask care.upper dontcare.upper)
-          (logif mask care.lower dontcare.lower)))
+    (4vec (logite mask care.upper dontcare.upper)
+          (logite mask care.lower dontcare.lower)))
   ///
   (defthm 4vec-mask?-same
     (equal (4vec-mask? mask x x)

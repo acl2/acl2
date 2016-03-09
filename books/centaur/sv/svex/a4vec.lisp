@@ -117,3 +117,10 @@ aig-list->s).</p>")
     (equal (len (a4veclist-eval x env))
            (len x))
     :hints(("Goal" :in-theory (enable a4veclist-eval)))))
+
+
+(define a4vec-constantp ((x a4vec-p))
+  (b* (((a4vec x)))
+    (and (boolean-listp x.upper)
+         (boolean-listp x.lower))))
+

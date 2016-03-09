@@ -649,13 +649,13 @@ unsigned integer.</p>
   :enabled t
   (loghead size (ash (loghead size i) cnt)))
 
-(define logif
+(define logite
   :short "Bitwise if-then-else among integers."
   ((test :type integer)
    (then :type integer)
    (else :type integer))
-  :returns (logif integerp :rule-classes :type-prescription
-                  :name logif-type)
+  :returns (logite integerp :rule-classes :type-prescription
+                  :name logite-type)
   (logior (logand test then) (logand (lognot test) else)))
 
 
@@ -796,7 +796,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                        (the (unsigned-byte 1)
                          (logxor 1 (the (unsigned-byte 1) j)))))))
 
-(define b-if ((test bitp) (then bitp) (else bitp))
+(define b-ite ((test bitp) (then bitp) (else bitp))
   :returns bit
   :short "If-then-else for @(see bitp)s."
   :inline t
@@ -818,7 +818,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
          (bitp (b-andc2 i j))
          (bitp (b-orc1 i j))
          (bitp (b-orc2 i j))
-         (bitp (b-if test then else)))
+         (bitp (b-ite test then else)))
     :rule-classes
     ((:rewrite)
      (:type-prescription :corollary (natp (b-not i)))
@@ -832,7 +832,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
      (:type-prescription :corollary (natp (b-andc2 i j)))
      (:type-prescription :corollary (natp (b-orc1 i j)))
      (:type-prescription :corollary (natp (b-orc2 i j)))
-     (:type-prescription :corollary (natp (b-if test then else))))))
+     (:type-prescription :corollary (natp (b-ite test then else))))))
 
 
 (defmacro loglist* (&rest args)

@@ -585,9 +585,9 @@
 (defcong bit-equiv equal (b-orc1 x y) 2)
 (defcong bit-equiv equal (b-orc2 x y) 1)
 (defcong bit-equiv equal (b-orc2 x y) 2)
-(defcong bit-equiv equal (b-if test then else) 1)
-(defcong bit-equiv equal (b-if test then else) 2)
-(defcong bit-equiv equal (b-if test then else) 3)
+(defcong bit-equiv equal (b-ite test then else) 1)
+(defcong bit-equiv equal (b-ite test then else) 2)
+(defcong bit-equiv equal (b-ite test then else) 3)
 
 
 (defcong int-equiv equal (lognot x) 1)
@@ -607,12 +607,12 @@
 (defcong int-equiv equal (logxor x y) 2
   :hints (("goal" :in-theory (enable ifix))))
 
-(defcong int-equiv equal (logif test then else) 1
-  :hints (("goal" :in-theory (e/d (ifix logif) ((force))))))
-(defcong int-equiv equal (logif test then else) 2
-  :hints (("goal" :in-theory (e/d (ifix logif) ((force))))))
-(defcong int-equiv equal (logif test then else) 3
-  :hints (("goal" :in-theory (e/d (ifix logif) ((force))))))
+(defcong int-equiv equal (logite test then else) 1
+  :hints (("goal" :in-theory (e/d (ifix logite) ((force))))))
+(defcong int-equiv equal (logite test then else) 2
+  :hints (("goal" :in-theory (e/d (ifix logite) ((force))))))
+(defcong int-equiv equal (logite test then else) 3
+  :hints (("goal" :in-theory (e/d (ifix logite) ((force))))))
 
 
 (defcong nat-equiv equal (loghead n x) 1)
