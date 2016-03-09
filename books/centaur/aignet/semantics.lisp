@@ -42,21 +42,18 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable set::double-containment)))
-(local (in-theory (disable nth update-nth
-                           acl2::nfix-when-not-natp
+(local (in-theory (disable nth
+                           update-nth
                            resize-list
+                           make-list-ac
+                           true-listp-update-nth
+                           acl2::nfix-when-not-natp
                            acl2::resize-list-when-empty
                            acl2::make-list-ac-redef
                            set::double-containment
                            set::sets-are-true-lists
-                           make-list-ac)))
-
-(local (include-book "std/lists/nth" :dir :system))
-
-
-(local (in-theory (disable true-listp-update-nth
                            acl2::nth-when-zp
                            acl2::nth-with-large-index)))
 
@@ -108,6 +105,22 @@
 ;; (use-aignet-untrans)
 
 ;; (in-theory (disable acl2::aignetp))
+
+
+
+(mutual-recursion
+ (defun subtermp (x y)
+   (declare (xargs :guard t))
+   (or (equal x y)
+       (and (consp y)
+            (not (eq (car y) 'quote))
+            (subtermp-list x (cdr y)))))
+ (defun subtermp-list (x y)
+   (declare (xargs :guard t))
+   (if (atom y)
+       nil
+     (or (subtermp x (car y))
+         (subtermp-list x (cdr y))))))
 
 
 
@@ -323,35 +336,26 @@
            (aignet-lit-listp (cdr x) aignet)))))
 
 
-(defsection aignet-extension-p
-  :parents (aignet-logic)
-  :short "Predicate that says that one aignet is the result of building some new
-nodes onto another aignet"
-  :long "<p>Aignet A is an extension of B if B is a suffix of A.  That is, A
-consists of B along with maybe some additional nodes built on top of it; this
-is a transitive, reflexive relation. This is a useful concept because every
-aignet-modifying function that doesn't reinitialize the AIG produces an
-extension of its input, and this relation implies many useful things.  The most
-basic is that any ID of the original aignet is an ID of the new aignet, and the
-node of that ID (and its entire suffix) is the same in both aignets.  This
-implies, for example, that the evaluations of nodes existing in the first are
-the same as their evaluations in the second.</p>
+(defsection aignet-extension-binding
+  :parents (aignet)
+  :short "A strategy for making use of @(see aignet-extension-p) in rewrite rules."
 
-<p>Rewrite rules using aignet-extension-p are a little odd.  For example, suppose we
-want a rewrite rule just based on the definition, e.g.,
-<code>
- (implies (and (aignet-extension-p new-aignet orig-aignet)
-               (aignet-idp id orig-aignet))
-          (equal (nth-node id new-aignet)
-                 (nth-node id orig-aignet)))
-</code>
-This isn't a very good rewrite rule because it has to match the free variable
-orig-aignet.  However, we can make it much better with a bind-free strategy.
-We'll check the syntax of new-aignet to see if it is a call of a
-aignet-updating function.  Then, we'll use the aignet input of that function as the
-binding for orig-aignet.</p>
-"
+  :long "<p>Rewrite rules using @(see aignet-extension-p) are a little odd.
+For example, suppose we want a rewrite rule just based on the definition,
+e.g.,</p>
 
+@({
+    (implies (and (aignet-extension-p new-aignet orig-aignet)
+                  (aignet-idp id orig-aignet))
+             (equal (nth-node id new-aignet)
+                    (nth-node id orig-aignet)))
+})
+
+<p>This isn't a very good rewrite rule because it has to match the free
+variable orig-aignet.  However, we can make it much better with a bind-free
+strategy.  We'll check the syntax of new-aignet to see if it is a call of a
+aignet-updating function.  Then, we'll use the aignet input of that function as
+the binding for orig-aignet.</p>"
 
   (defun simple-search-type-alist (term typ type-alist unify-subst)
     (declare (xargs :mode :program))
@@ -525,7 +529,7 @@ binding for orig-aignet.</p>
          :rule-classes ((:forward-chaining :trigger-terms ((car x))))))
 
 (defsection semantics
-  :parents (aignet-logic)
+  :parents (aignet)
   :short "Combinational semantics of aignets"
   :long "<p>The combinational semantics of aignets is given by the function
 ID-EVAL.  This takes an aignet, a node ID, and assignments to the primary
@@ -897,7 +901,7 @@ assignments.</p>"
          (equal (lit-eval 1 invals regvals aignet) 1))))
 
 (defsection semantics-seq
-  :parents (aignet-logic)
+  :parents (aignet)
   :short "Sequential semantics of aignets"
   :long "<p>The sequential semantics of aignets is given by the function
 LIT-EVAL-SEQ.  This takes an aignet, a time frame number, a literal, a 2D bit
@@ -1198,7 +1202,7 @@ register values and the current frame's input values.</p>"
 
 
 (defsection comb-equiv
-  :parents (aignet-logic)
+  :parents (aignet)
   :short "Combinational equivalence of aignets"
   :long "<p>We consider two aignets to be combinationally equivalent if:
 <ul>
@@ -1279,7 +1283,7 @@ same input/register assignment.</li></ul>
 
 
 (defsection seq-equiv
-  :parents (aignet-logic)
+  :parents (aignet)
   :short "Sequential equivalence of aignets"
   :long "<p>We consider two aignets to be sequentially equivalent if:
 <ul>
@@ -1408,7 +1412,7 @@ with the all-0 initial state using @(see aignet-copy-init).</p>
 
 
 (defsection seq-equiv-init
-  :parents (aignet-logic)
+  :parents (aignet)
   :short "Sequential equivalence of aignets on a particular initial state"
   :long "<p>See @(see seq-equiv).  This variant additionally takes the initial
 state of each aignet as an argument, and requires that they always produce the

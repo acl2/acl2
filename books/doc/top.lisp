@@ -67,13 +67,7 @@
 (include-book "centaur/4v-sexpr/top" :dir :system)
 (include-book "centaur/aig/top" :dir :system)
 
-(include-book "centaur/aignet/aig-sim" :dir :system)
-(include-book "centaur/aignet/copying" :dir :system)
-(include-book "centaur/aignet/from-hons-aig-fast" :dir :system)
-(include-book "centaur/aignet/prune" :dir :system)
-(include-book "centaur/aignet/to-hons-aig" :dir :system)
-(include-book "centaur/aignet/types" :dir :system)
-(include-book "centaur/aignet/vecsim" :dir :system)
+(include-book "centaur/aignet/top" :dir :system)
 
 ; The rest of ihs is included elsewhere transitively.
 ; We load logops-lemmas first so that the old style :doc-strings don't get

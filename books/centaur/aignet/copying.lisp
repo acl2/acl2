@@ -1614,7 +1614,7 @@ nodes.</p>"
                     (aignet-idp regid (cdr mth-nxst-look2)))))))
 
 (defsection aignet-copy-init
-  :parents (aignet-logic)
+  :parents (aignet)
   :short "Set the initial state of an FSM to the all-0 convention."
 
   :long "<p>Some algorithms assume that an FSM's initial state is the one where
