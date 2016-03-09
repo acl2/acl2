@@ -948,6 +948,24 @@
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
 
+(local (include-book "centaur/gl/gl" :dir :system))
+
+(def-gl-export pml4-table-entry-addr-to-C-program-optimized-form
+  :hyp (and (canonical-address-p v-addr)
+            (unsigned-byte-p 64 cr3))
+  :concl (equal (pml4-table-entry-addr v-addr (logand -4096 (logext 64 cr3)))
+                (logior (logand -4096 (logext 64 cr3))
+                        (logand 4088 (loghead 28 (logtail 36 v-addr)))))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat v-addr 64) (:nat cr3 64))))
+
+(defun pml4-table-base-addr (x86)
+  (declare (xargs :stobjs x86))
+  (logand -4096 (logext 64 (xr :ctr *cr3* x86))))
+
+(defthm loghead-minus-1=0
+  (equal (loghead -1 x) 0))
+
 (defthm rewire_dst_to_src-effects
   (implies (and
             (equal prog-len (len *rewire_dst_to_src*))
@@ -956,6 +974,9 @@
             (not (page-structure-marking-mode x86))
             (not (alignment-checking-enabled-p x86))
 
+            ;; Source addresses are canonical.
+            (canonical-address-p (xr :rgf *rdi* x86))
+            (canonical-address-p (+ 7 (xr :rgf *rdi* x86)))
             (canonical-address-p (+ prog-len (xr :rip 0 x86)))
             (canonical-address-p (xr :rip 0 x86))
             (canonical-address-p (+ -24 (xr :rgf *rsp* x86)))
@@ -1021,33 +1042,83 @@
                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
                         :w (cpl x86) x86)))
 
-            ;; Other stuff from the 9th instruction:
-            ;; (CANONICAL-ADDRESS-P
-            ;;  (LOGIOR (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-            ;;          (LOGAND 4088
-            ;;                  (LOGHEAD 28
-            ;;                           (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+            ;; Assumptions about the PML4TE:
+
+            ;; PML4TE linear addresses are canonical.
+            (canonical-address-p
+             (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+            (canonical-address-p
+             (+ 7 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))))
+
+            ;; No errors encountered while translating the PML4TE linear addresses.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list
+                             8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+                            :r 0 x86)))
+            ;; The translation-governing addresses of PML4TE addresses
+            ;; are disjoint from the physical addresses corresponding
+            ;; to the stack.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list
+               8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+              x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf 4 x86))) :w 0 x86)))
+            ;; The PML4TE physical addresses are disjoint from the
+            ;; stack physical addresses.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+                        :r 0 x86))
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf 4 x86))) :w 0 x86)))
+
+            ;; PML4TE is present.
+            (equal (loghead 1
+                            (logext
+                             64
+                             (combine-bytes
+                              (mv-nth
+                               1
+                               (rb
+                                (create-canonical-address-list
+                                 8
+                                 (logior (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                         (logand 4088
+                                                 (loghead 28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                :r x86)))))
+                   1)
+
+            ;; Assumptions about the PDPTE:
+
 
             )
 
-           (equal (x86-run 8 x86)
+           (equal (x86-run 19 x86)
                   xxx))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (instruction-decoding-and-spec-rules
                              shr-spec
                              shr-spec-64
+                             sal/shl-spec
+                             sal/shl-spec-64
+                             gpr-and-spec-1
                              gpr-and-spec-4
                              gpr-and-spec-8
                              gpr-or-spec-8
+                             jcc/cmovcc/setcc-spec
                              top-level-opcode-execute
                              two-byte-opcode-decode-and-execute
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-effective-addr
                              x86-effective-addr-from-sib
                              x86-operand-to-reg/mem
-                             rr64 rr32 wr32 wr64
-                             rim08 !flgi-undefined
+                             rr08 rr32 rr64 wr32 wr64
+                             rim08 rim32 !flgi-undefined
                              write-user-rflags
 
                              rb-wb-equal-in-system-level-non-marking-mode
@@ -1215,13 +1286,13 @@
 
 ;; One-to-one mapping
 
-(defconst *2^64-2^47*      (- *2^64* *2^47*))
+;; (defconst *2^64-2^47*      (- *2^64* *2^47*))
 
-(equal (mv-nth 1 (las-to-pas (create-canonical-address-list *2^47* 0) :r (cpl x86) x86))
-       (create-physical-address-list *2^47* 0))
+;; (equal (mv-nth 1 (las-to-pas (create-canonical-address-list *2^47* 0) :r (cpl x86) x86))
+;;        (create-physical-address-list *2^47* 0))
 
-(equal (mv-nth 1 (las-to-pas (create-canonical-address-list *2^47* *2^64-2^47*) :r (cpl x86) x86))
-       (create-physical-address-list *2^47* *2^64-2^47*))
+;; (equal (mv-nth 1 (las-to-pas (create-canonical-address-list *2^47* *2^64-2^47*) :r (cpl x86) x86))
+;;        (create-physical-address-list *2^47* *2^64-2^47*))
 
 (local (defattach (ancestors-check nil)))
 
