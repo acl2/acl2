@@ -123,7 +123,13 @@
              (equal (member-p e y) nil))
     :rule-classes :forward-chaining)
 
-  (defthm disjoint-p-append
+  (defthm disjoint-p-append-1
+    (implies (true-listp a)
+             (equal (disjoint-p (append a b) c)
+                    (and (disjoint-p a c)
+                         (disjoint-p b c)))))
+
+  (defthm disjoint-p-append-2
     (implies (true-listp b)
              (equal (disjoint-p a (append b c))
                     (and (disjoint-p a b)

@@ -289,7 +289,8 @@
                 (program-at (create-canonical-address-list n prog-addr) bytes x86)
                 (member-p lin-addr (create-canonical-address-list n prog-addr))
                 (syntaxp (quotep n))
-                (not (mv-nth 0 (rb (list lin-addr) :x x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa lin-addr :x (cpl x86) x86)))
+                ;; (not (mv-nth 0 (rb (list lin-addr) :x x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (x86p x86))
@@ -340,7 +341,8 @@
         (subset-p l-addrs (create-canonical-address-list n prog-addr))
         (syntaxp (quotep n))
         (consp l-addrs)
-        (not (mv-nth 0 (rb l-addrs :x x86)))
+        ;; (not (mv-nth 0 (rb l-addrs :x x86)))
+        (not (mv-nth 0 (las-to-pas l-addrs :x (cpl x86) x86)))
         (not (programmer-level-mode x86))
         (not (page-structure-marking-mode x86))
         (x86p x86))
@@ -377,7 +379,8 @@
         (subset-p l-addrs (create-canonical-address-list n prog-addr))
         (syntaxp (quotep n))
         (consp l-addrs)
-        (not (mv-nth 0 (rb l-addrs :x x86)))
+        ;; (not (mv-nth 0 (rb l-addrs :x x86)))
+        (not (mv-nth 0 (las-to-pas l-addrs :x (cpl x86) x86)))
         (not (programmer-level-mode x86))
         (not (page-structure-marking-mode x86))
         (x86p x86))
@@ -830,7 +833,7 @@
            :in-theory (e/d* (disjoint-p) (translation-governing-addresses)))))
 
 (defthm las-to-pas-values-and-write-to-physical-memory-disjoint
-  (implies (and (disjoint-p p-addrs (all-translation-governing-addresses l-addrs x86))
+  (implies (and (disjoint-p (all-translation-governing-addresses l-addrs x86) p-addrs)
                 (physical-address-listp p-addrs)
                 (canonical-address-listp l-addrs)
                 (not (page-structure-marking-mode x86)))
@@ -839,7 +842,7 @@
                 (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
                        (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
   :hints (("Goal" :induct (las-to-pas l-addrs r-w-x cpl x86)
-           :in-theory (e/d* (disjoint-p) (translation-governing-addresses)))))
+           :in-theory (e/d* (disjoint-p disjoint-p-commutative) (translation-governing-addresses)))))
 
 (defthm mv-nth-1-ia32e-la-to-pa-system-level-non-marking-mode-when-error
   (implies (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
@@ -868,13 +871,14 @@
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
-                 (all-translation-governing-addresses l-addrs x86))
+                 (all-translation-governing-addresses l-addrs x86)
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-listp l-addrs)
                 ;; I should try to eliminate the following hyp too...
-                (not (mv-nth 0 (wb addr-lst x86))))
+                ;; (not (mv-nth 0 (wb addr-lst x86)))
+                (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
            (and
             (equal (mv-nth 0 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
                    (mv-nth 0 (rb l-addrs r-w-x x86)))
@@ -887,13 +891,14 @@
                  (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
-                 (all-translation-governing-addresses l-addrs x86))
+                 (all-translation-governing-addresses l-addrs x86)
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-listp l-addrs)
                 ;; I should try to eliminate the following hyp too...
-                (not (mv-nth 0 (wb addr-lst x86))))
+                ;; (not (mv-nth 0 (wb addr-lst x86)))
+                (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
            (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-lst x86)))
                   (program-at l-addrs bytes x86)))
   :hints (("Goal" :do-not-induct t
@@ -1123,10 +1128,11 @@
                  ;; Physical addresses corresponding to (strip-cars
                  ;; addr-lst) are disjoint from the
                  ;; translation-governing addresses.
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
-                 (all-translation-governing-addresses (strip-cars addr-lst)  x86))
+                 (all-translation-governing-addresses (strip-cars addr-lst)  x86)
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (addr-byte-alistp addr-lst)
-                (not (mv-nth 0 (wb addr-lst x86)))
+                ;; (not (mv-nth 0 (wb addr-lst x86)))
+                (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86)))
            (equal (wb addr-lst x86)
@@ -1283,16 +1289,18 @@
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p
-                 (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
-                 (all-translation-governing-addresses l-addrs x86))
+                 (all-translation-governing-addresses l-addrs x86)
+                 (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
                 (no-duplicates-p
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-listp l-addrs)
                 (addr-byte-alistp addr-lst)
-                (not (mv-nth 0 (rb l-addrs r-w-x x86)))
-                (not (mv-nth 0 (wb addr-lst x86))))
+                ;; (not (mv-nth 0 (rb l-addrs r-w-x x86)))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+                ;; (not (mv-nth 0 (wb addr-lst x86)))
+                (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
                   (strip-cdrs addr-lst)))
   :hints (("Goal" :do-not-induct t

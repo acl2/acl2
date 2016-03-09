@@ -583,7 +583,10 @@ made from privilege level 3.</sf>"
                                      rex-byte x86) x86)
                 (mv nil (xmmi-size operand-size (reg-index r/m rex-byte #.*b*)
                                    x86) x86))
-            (rm-size operand-size v-addr :x x86)))
+            ;; The operand is being fetched from the memory, not the
+            ;; instruction stream. That's why we have :r instead of :x
+            ;; below.
+            (rm-size operand-size v-addr :r x86)))
          ((when flg2)
           (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
 
