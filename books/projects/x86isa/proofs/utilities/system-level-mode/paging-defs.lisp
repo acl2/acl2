@@ -1066,8 +1066,8 @@
 
 (defthm mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
   (implies (and (bind-free (find-l-addrs-from-las-to-pas 'l-addrs mfc state) (l-addrs))
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                 (member-p lin-addr l-addrs)
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                 (not (page-structure-marking-mode x86)))
            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)) nil))
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
