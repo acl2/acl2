@@ -1070,6 +1070,23 @@ the same as their evaluations in the second.</p>"
     :rule-classes :type-prescription)
   (defthm lookup-id-of-nil
     (equal (lookup-id x nil) nil))
+  (defthm lookup-id-of-cons
+    (equal (lookup-id id (cons node rest))
+           (if (equal (nfix id) (+ 1 (node-count rest)))
+               (cons node rest)
+             (lookup-id id rest))))
+  (defthm lookup-id-of-node-count
+    (equal (lookup-id (node-count x) x)
+           x))
+  (defthm node-count-of-lookup-id-when-consp
+    (implies (consp (lookup-id id aignet))
+             (equal (node-count (lookup-id id aignet))
+                    id)))
+  (defthm posp-when-consp-of-lookup-id
+    (implies (consp (lookup-id id aignet))
+             (posp id))
+    :rule-classes :forward-chaining)
+
   ;; (defun check-not-known-natp (term mfc state)
   ;;   (declare (xargs :mode :program :stobjs state))
   ;;   (not (acl2::ts-subsetp (acl2::mfc-ts term mfc state)
@@ -1258,7 +1275,21 @@ the same as their evaluations in the second.</p>"
                   (aignet-idp id aignet))
              (aignet-idp id aignet2)))
   (defcong nat-equiv equal (aignet-idp id aignet) 1)
-  (defcong list-equiv equal (aignet-idp id aignet) 2))
+  (defcong list-equiv equal (aignet-idp id aignet) 2)
+
+  (defthm lookup-id-implies-aignet-idp
+    (implies (consp (lookup-id id aignet))
+             (aignet-idp id aignet))
+    :hints(("Goal" :in-theory (enable lookup-id))))
+
+  (defthm aignet-idp-of-node-count-of-extension
+    (implies (aignet-extension-p aignet prev)
+             (aignet-idp (node-count prev) aignet))
+    :hints(("Goal" :in-theory (enable aignet-extension-p))))
+
+  (defthm aignet-idp-of-0
+    (aignet-idp 0 aignet)
+    :hints(("Goal" :in-theory (enable aignet-idp)))))
 
 
 (define aignet-litp ((lit    litp)
@@ -1291,7 +1322,18 @@ the same as their evaluations in the second.</p>"
   (defthm aignet-idp-when-aignet-litp
     (implies (aignet-litp lit aignet)
              (aignet-idp (lit-id lit) aignet))
-    :hints(("Goal" :in-theory (enable aignet-idp)))))
+    :hints(("Goal" :in-theory (enable aignet-idp))))
+
+  (defthm aignet-litp-of-0-and-1
+    (and (aignet-litp 0 aignet)
+         (aignet-litp 1 aignet)))
+
+  (defthm aignet-litp-of-mk-lit-lit-id
+    (equal (aignet-litp (mk-lit (lit-id lit) neg) aignet)
+           (aignet-litp lit aignet)))
+
+  (defthm aignet-litp-of-mk-lit-0
+    (aignet-litp (mk-lit 0 neg) aignet)))
 
 
 (define aignet-nodes-ok ((aignet node-listp))

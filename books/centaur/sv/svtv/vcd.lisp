@@ -83,7 +83,7 @@
   (reverse (coerce (vcd-index->codechars x) 'string)))
 
 (make-event
- `(acl2::def-1d-arr :arrname vcd-wiremap
+ `(acl2::def-1d-arr vcd-wiremap
     :slotname vcdwire
     :pred vcd-wire-p
     :fix vcd-wire-fix$inline
@@ -349,7 +349,7 @@
 
 
 (make-event
- `(acl2::def-1d-arr :arrname 4vecarr
+ `(acl2::def-1d-arr 4vecarr
     :slotname 4vec
     :pred 4vec-p
     :fix 4vec-fix$inline

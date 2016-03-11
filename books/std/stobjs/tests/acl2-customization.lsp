@@ -1,5 +1,5 @@
-; Std/basic - Basic definitions
-; Copyright (C) 2008-2013 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,16 +28,11 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+#!ACL2
 (in-package "ACL2")
-(include-book "defs")
-(include-book "arith-equivs")
 
-(defxdoc std/basic
-  :parents (std)
-  :short "A collection of very basic functions that are occasionally
-convenient."
+(assign :suppress-preload-xdoc t)
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(ld "../../package.lsp")
+(in-package "ACL2")
 
-  :long "<p>The @('std/basic') library adds a number of very basic definitions
-that are not built into ACL2.  There's very little to this, it's generally just
-a meant to be a home for very simple definitions that don't fit into bigger
-libraries.</p>")

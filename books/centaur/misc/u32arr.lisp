@@ -1,5 +1,5 @@
-; Std/basic - Basic definitions
-; Copyright (C) 2008-2013 Centaur Technology
+; Centaur Miscellaneous Books
+; Copyright (C) 2008-2016 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,18 +26,45 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Jared Davis <jared@centtech.com>
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "defs")
-(include-book "arith-equivs")
+(include-book "std/stobjs/1d-arr" :dir :system)
+(local (include-book "arithmetic/top" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 
-(defxdoc std/basic
-  :parents (std)
-  :short "A collection of very basic functions that are occasionally
-convenient."
+(defsection u32p
+  :parents (u32arr)
+  :short "Recognizer for 32-bit unsigned integers."
 
-  :long "<p>The @('std/basic') library adds a number of very basic definitions
-that are not built into ACL2.  There's very little to this, it's generally just
-a meant to be a home for very simple definitions that don't fit into bigger
-libraries.</p>")
+  (defun u32p (x)
+    (declare (xargs :guard t))
+    (unsigned-byte-p 32 x)))
+
+(local (defthm u32p-natp
+         (implies (u32p x)
+                  (natp x))))
+
+(local (defthm u32p-bound
+         (implies (u32p x)
+                  (< x 4294967296))))
+
+(local (in-theory (disable u32p)))
+
+(def-1d-arr u32arr
+  :slotname u32
+  :pred u32p
+  :fix nfix
+  :type-decl (unsigned-byte 32)
+  :default-val 0)
+
+;; (defun-inline set-u32n (i v u32arr)
+;;   (declare (xargs :stobjs u32arr
+;;                   :guard (and (natp i)
+;;                               (< i (u32s-length u32arr))
+;;                               (natp v))))
+;;   (mbe :logic (set-u32 i v u32arr)
+;;        :exec (if (< (the (integer 0 *) v) (expt 2 32))
+;;                  (set-u32 i v u32arr)
+;;                (ec-call (set-u32 i v u32arr)))))
+

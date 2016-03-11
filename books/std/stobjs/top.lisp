@@ -1,5 +1,5 @@
-; Centaur Miscellaneous Books
-; Copyright (C) 2008-2011 Centaur Technology
+; ACL2 Standard Library
+; Copyright (C) 2008-2016 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,10 +26,20 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original authors: Sol Swords <sswords@centtech.com>
-;                   Jared Davis <jared@centtech.com>
+; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
-(include-book "std/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
+(in-package "STOBJS")
+(include-book "absstobjs")
+(include-book "1d-arr")
+(include-book "2d-arr")
+(include-book "bitarr")
+(include-book "natarr")
+(include-book "clone")
+
+(defxdoc std/stobjs
+  :parents (std stobj)
+  :short "A library for working with @(see stobj)s.")
+
+
+
 

@@ -281,8 +281,7 @@ svex-assigns-compose)).</li>
       (implies (maybe-svar-fix x)
                (svar-p (maybe-svar-fix x))))))
 
-(acl2::def-1d-arr
-  :arrname indnamememo
+(acl2::def-1d-arr indnamememo
   :slotname indname
   :pred maybe-svar-p
   :fix maybe-svar-fix$inline

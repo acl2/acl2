@@ -38,14 +38,14 @@
 
 (local (in-theory (disable acl2::make-list-ac-removal)))
 
-(acl2::def2darr s61v
-                :elt-type (signed-byte 61)
-                :elt-typep (lambda (x) (signed-byte-p 61 x))
-                :default-elt 0
-                :elt-fix ifix
-                :elt-guard (integerp x)
-                :elt-okp (and (<= x (1- (expt 2 60)))
-                              (<= (- (expt 2 60)) x)))
+(acl2::def-2d-arr s61v
+  :pred (lambda (x) (signed-byte-p 61 x))
+  :type-decl (signed-byte 61)
+  :default-val 0
+  :fix ifix
+  :elt-guard (integerp x)
+  :elt-okp (and (<= x (1- (expt 2 60)))
+                (<= (- (expt 2 60)) x)))
 
 ;; (defun s61v-sizedp (s61v aignet)
 ;;   (declare (xargs :stobjs (s61v aignet)
@@ -136,7 +136,8 @@
 
 
 (defsection s61v-copy-lit
-  (defiteration s61v-copy-lit (in-lit out-id s61v)
+
+(defiteration s61v-copy-lit (in-lit out-id s61v)
     (declare (xargs :stobjs s61v
                     :guard (and (litp in-lit)
                                 (natp out-id)

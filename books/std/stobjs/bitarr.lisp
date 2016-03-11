@@ -1,5 +1,5 @@
-; Std/basic - Basic definitions
-; Copyright (C) 2008-2013 Centaur Technology
+; ACL2 Standard Library
+; Copyright (C) 2008-2016 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,18 +26,17 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Jared Davis <jared@centtech.com>
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "defs")
-(include-book "arith-equivs")
+(include-book "1d-arr")
+(include-book "std/basic/arith-equivs" :dir :system)
+(include-book "std/lists/bits-equiv" :dir :system)
 
-(defxdoc std/basic
-  :parents (std)
-  :short "A collection of very basic functions that are occasionally
-convenient."
-
-  :long "<p>The @('std/basic') library adds a number of very basic definitions
-that are not built into ACL2.  There's very little to this, it's generally just
-a meant to be a home for very simple definitions that don't fit into bigger
-libraries.</p>")
+(def-1d-arr bitarr
+  :slotname bit
+  :pred bitp
+  :fix bfix
+  :type-decl bit
+  :default-val 0
+  :parents (stobjs::std/stobjs))
