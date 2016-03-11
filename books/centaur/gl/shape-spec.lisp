@@ -361,6 +361,13 @@
     (cons `(:with ,def ,(car expands))
           (expands-with-hint def (cdr expands)))))
 
+
+(local (defcong acl2::list-equiv equal (bfr-list->s x env) 1
+         :hints(("Goal" :in-theory (e/d (acl2::list-equiv)
+                                        (bfr-list->s-of-list-fix))
+                 :use ((:instance bfr-list->s-of-list-fix)
+                       (:instance bfr-list->s-of-list-fix (x acl2::x-equiv)))))))
+
 (defthm bfr-list->s-of-append
   (implies (consp b)
            (equal (bfr-list->s (append a b) env)

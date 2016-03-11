@@ -666,6 +666,11 @@
            (boolean-listp (n2v n))
            :hints(("Goal" :in-theory (e/d (bfr-ucons) (logcar logcdr))))))
 
+  (defthm pbfr-list-vars-bounded-of-list-fix
+    (Equal (pbfr-list-vars-bounded k p (list-fix in))
+           (pbfr-list-vars-bounded k p in))
+    :hints(("Goal" :in-theory (enable pbfr-list-vars-bounded))))
+
   (defthm gobj-vars-bounded-of-mk-g-number
     (implies (and (pbfr-list-vars-bounded k p rn)
                   (pbfr-list-vars-bounded k p rd)
