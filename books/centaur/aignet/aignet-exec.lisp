@@ -119,7 +119,12 @@
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (lnfix (nodesi (+ (acl2::lbfix slot) (* 2 (lnfix id))) aignet)))
+    (b* ((id (lnfix id))
+         (slot (acl2::lbfix slot)))
+      ;; NOTE: In CCL, binding (lnfix id) to id above instead of doing it inside, as
+      ;; (lnfix (nodesi (+ slot (* 2 (lnfix id))) aignet)),
+      ;; solves a problem where the inner call otherwise isn't inlined.
+      (lnfix (nodesi (+ slot (* 2 id)) aignet))))
 
   (definlined set-snode->regid (regin slot0)
     (declare (type (integer 0 *) slot0)

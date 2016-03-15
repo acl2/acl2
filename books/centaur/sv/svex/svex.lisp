@@ -199,7 +199,15 @@ single @(see 4vec) result.  The semantics are given by @(see svex-eval).</p>
 <p>Our @(see svex) expressions are always created with @(see hons) for
 automatic structure sharing.  Most operations over these expressions should
 typically be @(see memoize)d in some way or another.</p>"
-  :prepwork ((local (defthm 4vec-not-svar-p
+  :prepwork (;; (local (in-theory (enable svar-p svar-fix)))
+             (local (defthm car-of-svar-when-consp
+                      (implies (and (svar-p x)
+                                    (consp x)
+                                    (syntaxp (quotep v)))
+                               (equal (equal (car x) v)
+                                      (equal v :var)))
+                      :hints(("Goal" :in-theory (enable svar-p)))))
+             (local (defthm 4vec-not-svar-p
                       (implies (svar-p x)
                                (not (4vec-p x)))
                       :hints(("Goal" :in-theory (enable 4vec-p svar-p)))))
@@ -210,7 +218,10 @@ typically be @(see memoize)d in some way or another.</p>"
   (defflexsum svex
     (:var
      :short "A variable, which represents a @(see 4vec)."
-     :cond (svar-p x)
+     :cond (if (atom x)
+               (or (stringp x)
+                   (and x (symbolp x)))
+             (eq (car x) :var))
      :fields ((name :acc-body x :type svar-p))
      :ctor-body name)
     (:quote
