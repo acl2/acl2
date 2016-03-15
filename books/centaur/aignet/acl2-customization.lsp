@@ -28,9 +28,10 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+#!ACL2
 (ld "package.lsp")
 (in-package "AIGNET")
-
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (set-inhibit-output-lst '(proof-tree warning))
 (set-gag-mode :goals)
 (set-deferred-ttag-notes t state)

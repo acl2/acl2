@@ -2091,8 +2091,7 @@ bits of @('foo'):</p>
 
 
 
-(acl2::def-1d-arr
-  :arrname lhsarr
+(acl2::def-1d-arr lhsarr
   :slotname lhs
   :pred lhs-p
   :fix lhs-fix$inline
@@ -2236,8 +2235,7 @@ bits of @('foo'):</p>
 
 
 
-(acl2::def-1d-arr
-  :arrname svexarr
+(acl2::def-1d-arr svexarr
   :slotname svex
   :pred svex-p
   :fix svex-fix$inline

@@ -287,7 +287,7 @@
 		      0
 		    (+ 1 (mod a (expt 2 i))))))
   :hints (("Goal"
-	   :in-theory (disable simplify-mod-+-mod))))
+	   :in-theory (disable simplify-mod-+-mod-weak))))
 
 ;;; We now look for a substitution id-alt, which leaves wp-zcoef-ac invariant.
 ;;; Since we will be proving that sigma1 and id-alt commute, we would indeed have

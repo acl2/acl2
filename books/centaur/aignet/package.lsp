@@ -78,6 +78,7 @@
     defmvtypes
     std::defprojection
     std::deflist
+    std::defval
     b*
     aig-eval
     aig-not
@@ -124,7 +125,10 @@
     bitarr get-bit set-bit bits-length resize-bits bits-equiv
     tag
     list-equiv
-    duplicity))
+    duplicity
+    stobj
+    abstract-stobj
+    ))
 
 (defpkg "AIGNET"
   (union-eq *acl2-exports*
@@ -208,9 +212,18 @@
              snode->fanin
              snode->ionum
              snode->regid
-             mk-snode))
+             mk-snode
+             ;; [Jared] added these for nicer aignet-base-api docs
+             f f0 f1 n regid lit
+             max-outs max-regs max-ins max-nodes
+             ))
 
-(defpkg "AIGNET$A" nil)
+(defpkg "AIGNET$A"
+  #!AIGNET '(
+             ;; [Jared] added these for a nicer aignet-base-api docs
+             f f0 f1 n regid lit
+             max-outs max-regs max-ins max-nodes))
+
 ;; (defpkg "AIGNET$A"
 ;;   (union-eq *acl2-exports*
 ;;             *common-lisp-symbols-from-main-lisp-package*

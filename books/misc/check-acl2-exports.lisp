@@ -88,6 +88,7 @@
     COMP-GCL
     COUNT ; defined in books/coi/bags/basic.lisp
     DEFUN-MODE
+    DELETE-FILE$ ; to be added to *acl2-exports*
     DIVE-INTO-MACROS-TABLE
     ERROR1
     FILE-LENGTH$ ; to be added to *acl2-exports*

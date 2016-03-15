@@ -51,7 +51,7 @@
                          (equal n x)))
          :hints(("Goal" :in-theory (enable nfix)))))
 
-(acl2::def-1d-arr :arrname aigtrans
+(acl2::def-1d-arr aigtrans
                   :slotname aig
                   :default-val nil)
 

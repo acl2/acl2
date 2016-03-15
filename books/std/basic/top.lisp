@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "defs")
+(include-book "arith-equivs")
 
 (defxdoc std/basic
   :parents (std)

@@ -12679,6 +12679,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     read-file-into-string2
     cons-with-hint
     file-length$
+    delete-file$
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -16539,20 +16540,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; lists.  That could happen if read-file-into-string is called twice on the
 ; same filename, say "F", in the case that there is an intervening write not
 ; performed by ACL2.  We avoid that problem by associating "F" with its current
-; file-write-date in the global *read-file-alist* just before opening a
+; file-write-date, FWD, in the global *read-file-alist* just before opening a
 ; character input channel to "F".  That global is cleared whenever the
 ; file-clock of the state is updated, except when under read-file-into-string
 ; (or any with-local-state actually).  Now suppose we later attempt to open a
 ; (new) character input channel to "F" when the file-clock of the state is as
 ; before.  Then we cause an error if the file-write-date is later than FWD.
 
-; But consider the following situation: when we close an output channel on
+; But consider the following situation: when we close an input channel on
 ; behalf of read-file-into-string, the file-write-date of "F" is not FWD.  In
 ; that case we could simply update the file-write-date associated with "F" in
 ; *read-file-alist*, provided this is the first time that read-file-into-string
-; has been called on "F" when the file-clock is FC.  We could record that
-; "first time" information, but instead, we avoid that overhead and simply
-; cause an error in this (presumably) rare case.
+; has been called on "F" when the file-clock is FC.  We could record whether
+; this was indeed the first time, but instead, we avoid that overhead and
+; simply cause an error in this (presumably) rare case; see
+; read-file-into-string2.
 
 ; Any time the file-clock of the state is updated outside
 ; read-file-into-string, we assign *read-file-alist* to nil (if it is not
@@ -25353,6 +25355,63 @@ Lisp definition."
           (read-acl2-oracle state)
           (mv (and (null erp)
                    (posp val)
+                   val)
+              state)))
+
+(defun delete-file$ (file state)
+
+; It may seem a bit surprising that this function does not update the
+; file-clock of the state.  To see why that isn't necessary, let us review the
+; role of the file-clock (also see :DOC state).  When open-input-channel opens
+; a channel, it logically associates that channel in the open-input-channels
+; field of the state with (among other things) "header" information that
+; includes an incremented file-clock; similarly for close-input-channel and the
+; read-files field of the state.  Updates using an incremented file-clock also
+; take place for open-output-channel and close-output-channel for fields
+; writeable-files and written-files, respectively.  Moreover: logically, when
+; we open an input channel we magically grab the full contents of the file that
+; we will ultimately read associate them with the channel, and these are popped
+; by functions that read, such as read-char$; rather dually, we push values on
+; the open-output-channels entries when we call functions that write, such as
+; print-object$, and then deposit all those values in written-files when we
+; close the channel.
+
+; We would get into trouble logically if we could get different answers when
+; obtaining two different values from two reads of the same file when the two
+; states agree on their state fields that pertain to contents of channels and
+; files.  But this can't happen, because the file-clock is incremented
+; immediately before we create a channel.  In particular, when we open an input
+; channel we access a readable-files entry based on a file-clock that we
+; haven't yet seen, since the file-clock is incremented first.  So we can never
+; see what we already wrote!  This avoids the problem of seeing contents in a
+; file that we didn't put there because an external agent wrote to that file.
+; It also avoids the problem of opening a channel to a non-existent file that
+; used to exist: all file-related entries in various state fields are
+; associated with earlier file-clocks than the one associated with the new
+; channel.
+
+; So in particular, if we open or close a channel at file-clock fc1 and then
+; run delete-file$, a subsequent open or close will involve entries whose
+; file-clock is greater than fc1.  Thus, there will be no way to detect
+; logically any effect of delete-file$ on the four state fields above, since
+; nothing was known about fields for file-clock exceeding fc1 before running
+; delete-file$.  The special case of read-file-into-string is also handled,
+; because of reliance on the file-write-date when the file-clock hasn't
+; changed; see *read-file-alist*.
+
+  (declare (xargs :guard (stringp file)
+                  :stobjs state))
+  #+acl2-loop-only
+  (declare (ignore file))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from delete-file$
+                 (mv (our-ignore-errors (delete-file file))
+                     state)))
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (mv (and (null erp)
+                   (natp val)
                    val)
               state)))
 
