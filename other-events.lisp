@@ -12281,6 +12281,8 @@
 ; events not inside any book.  Collect-p is true only when we are to collect up
 ; such function symbols.
 
+; Note: The list returned by this function have duplicates.
+
   (cond ((endp trips)
          acc)
         ((and (eq (caar trips) 'include-book-path)
@@ -12300,7 +12302,7 @@
           (cdr trips)
           collect-p
           full-book-name
-          (union-eq (strip-cars (cdddr (cddar trips))) acc)))
+          (append-strip-cars (cdddr (cddar trips)) acc)))
         (t
          (newly-defined-top-level-fns-rec (cdr trips) collect-p full-book-name
                                           acc))))
@@ -12309,23 +12311,25 @@
 
 ; New-wrld is the installed world, an extension of old-wrld.
 
+; Note: The list returned by this function have duplicates.
+
   (let ((old-len (length old-wrld))
         (new-len (length new-wrld)))
     (assert$
      (<= old-len new-len)
-     (let* ((len-old-past-boot-strap
-             (cond
-              ((equal (access-command-tuple-form (cddar old-wrld))
-                      '(exit-boot-strap-mode)) ; optimization for common case
-               0)
-              (t (- old-len
-                    (length (lookup-world-index
-                             'command
-                             (access command-number-baseline-info
-                                     (global-val 'command-number-baseline-info
-                                                 new-wrld) ; installed world
-                                     :original)
-                             new-wrld)))))))
+     (let ((len-old-past-boot-strap
+            (cond
+             ((equal (access-command-tuple-form (cddar old-wrld))
+                     '(exit-boot-strap-mode)) ; optimization for common case
+              0)
+             (t (- old-len
+                   (length (lookup-world-index
+                            'command
+                            (access command-number-baseline-info
+                                    (global-val 'command-number-baseline-info
+                                                new-wrld) ; installed world
+                                    :original)
+                            new-wrld)))))))
        (newly-defined-top-level-fns-rec
         (first-n-ac-rev (- new-len old-len) new-wrld nil)
         t

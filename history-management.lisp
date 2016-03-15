@@ -4339,6 +4339,13 @@
                     (chk-theory-expr-value@par (cdr trans-ans) wrld expr ctx state)
                     (value@par (runic-theory (cdr trans-ans) wrld)))))))))
 
+(defun append-strip-cars (x y)
+
+; This is (append (strip-cars x) y).
+
+  (cond ((null x) y)
+        (t (cons (car (car x)) (append-strip-cars (cdr x) y)))))
+
 (defun append-strip-cdrs (x y)
 
 ; This is (append (strip-cdrs x) y).
@@ -14985,7 +14992,7 @@
 (defun print-ttag-note (val active-book-name include-bookp deferred-p state)
 
 ; Active-book-name is nil or else satisfies chk-book-name.  If non-nil, we
-; print it as "book x" where x omits the .lisp extension, since if the defttag
+; print it as "book x" where x omits the .lisp extension, since the defttag
 ; event might not be in the .lisp file.  For example, it could be in the
 ; expansion-alist in the book's certificate or, if the book is not certified,
 ; it could be in the .port file.
