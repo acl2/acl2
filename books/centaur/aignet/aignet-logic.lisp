@@ -1176,6 +1176,31 @@ the same as their evaluations in the second.</p>"
                     (stype-fix stype)))))
 
 
+(define find-max-fanin ((aignet node-listp))
+  :returns (suffix node-listp :hyp (node-listp aignet))
+  :short "Finds the longest suffix whose first node is a fanin type, i.e. not a
+          combinational output."
+  (cond ((endp aignet) aignet)
+        ((not (equal (ctype (stype (car aignet))) (out-ctype)))
+         aignet)
+        (t (find-max-fanin (cdr aignet))))
+  ///
+  (defcong list-equiv list-equiv (find-max-fanin aignet) 1)
+
+  (defthm find-max-fanin-aignet-extension-p
+    (aignet-extension-p aignet (find-max-fanin aignet)))
+
+  (defthm find-max-fanin-of-cons-fanin
+    (implies (not (equal (ctype (stype node)) (out-ctype)))
+             (equal (find-max-fanin (cons node aignet))
+                    (cons node aignet))))
+
+  (defthm find-max-fanin-of-cons-output
+    (implies (equal (ctype (stype node)) (out-ctype))
+             (equal (find-max-fanin (cons node aignet))
+                    (find-max-fanin aignet)))))
+
+
 (define lookup-reg->nxst ((reg-id natp "Node ID (not the register number) for this register.")
                           (aignet node-listp))
   :returns (suffix node-listp :hyp (node-listp aignet))
