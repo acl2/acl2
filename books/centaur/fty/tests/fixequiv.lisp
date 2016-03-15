@@ -31,7 +31,7 @@
 (in-package "FTY")
 (include-book "../fixequiv")
 (include-book "std/basic/defs" :dir :System)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "std/lists/acl2-count" :dir :system)
 (include-book "centaur/misc/universal-equiv" :dir :System)

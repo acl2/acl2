@@ -31,10 +31,10 @@
 
 (in-package "SV")
 (include-book "../mods/moddb")
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "centaur/vl/util/printedlist" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (in-theory (disable acl2-count nth update-nth
                            acl2::nfix-when-not-natp)))

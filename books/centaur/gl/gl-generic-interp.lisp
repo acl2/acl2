@@ -1696,7 +1696,7 @@
           (bvar-db-depends-on k p (1- (nfix n)) bvar-db))))
 
   (local (in-theory (enable bvar-db-depends-on)))
-  (local (include-book "centaur/misc/arith-equivs" :dir :system))
+  (local (include-book "std/basic/arith-equivs" :dir :system))
 
   (defthm gobj-depends-on-of-get-bvar->term
     (implies (and (<= (base-bvar bvar-db) (nfix m))
@@ -1971,7 +1971,7 @@
     :hints(("Goal" :in-theory (enable* env-ok-special-rules)))
     :rule-classes :forward-chaining))
 
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "clause-processors/constant-prop" :dir :System))
 
 (defsection bvar-in-range

@@ -43,7 +43,7 @@
 (include-book "generic-geval")
 (include-book "glcp-config")
 (include-book "centaur/misc/hons-extra" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (set-state-ok t)
 
 ;; To-satisfying-assign-spec generates the same satisfying assignment as

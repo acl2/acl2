@@ -37,7 +37,7 @@
 (include-book "elabindex")
 (include-book "../util/sum-nats")
 (local (include-book "../util/arithmetic"))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (in-theory (enable tag-reasoning)))
 (local (in-theory (disable (tau-system))))
 (local (std::add-default-post-define-hook :fix))

@@ -34,7 +34,7 @@
 (in-package "BITOPS")
 (include-book "std/bitsets/bignum-extract" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (local (include-book "ihsext-basics"))
 ;; (local (include-book "equal-by-logbitp"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

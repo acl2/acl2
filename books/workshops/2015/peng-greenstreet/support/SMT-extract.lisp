@@ -13,7 +13,7 @@
 
 (in-package "ACL2")
 (include-book "./helper")
-(include-book "tools/bstar" :dir :system) 
+(include-book "std/util/bstar" :dir :system)
 (program)
 
 ;; get-orig-param

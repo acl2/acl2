@@ -32,7 +32,7 @@
 (include-book "../svex/vars")
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/defprojection" :dir :System)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 

@@ -30,7 +30,7 @@
 ;                   {sswords,jared}@centtech.com
 
 (in-package "ACL2")
-(include-book "bstar")
+(include-book "std/util/bstar" :dir :system)
 
 ; This is something you can use to figure out which rewrite rules led to case
 ; splits in a proof.  The interface is terrible:

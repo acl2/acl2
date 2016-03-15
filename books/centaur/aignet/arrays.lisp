@@ -31,7 +31,7 @@
 (in-package "AIGNET")
 (include-book "litp")
 (include-book "centaur/misc/arrays" :dir :system)
-(include-book "centaur/misc/bitarr" :dir :system)
+(include-book "std/stobjs/bitarr" :dir :system)
 (include-book "misc/definline" :dir :system)
 (include-book "std/lists/equiv" :dir :system)
 (local (include-book "data-structures/list-defthms" :dir :system))

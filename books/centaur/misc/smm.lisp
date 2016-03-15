@@ -30,12 +30,11 @@
 ;                   Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-
+(include-book "u32-listp")
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/basic/defs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "misc/definline" :dir :system)
-(include-book "arith-equivs")
-(include-book "u32-listp")
 (local (include-book "smm-impl"))
 (set-enforce-redundancy t)
 

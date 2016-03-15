@@ -35,8 +35,8 @@
 (in-package "SATLINK")
 (include-book "varp")
 (include-book "litp")
-(include-book "tools/clone-stobj" :dir :system)
-(include-book "centaur/misc/bitarr" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
+(include-book "std/stobjs/bitarr" :dir :system)
 (local (include-book "data-structures/list-defthms" :dir :system))
 
 

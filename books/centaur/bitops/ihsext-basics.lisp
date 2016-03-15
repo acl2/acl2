@@ -38,7 +38,7 @@
 ;; here are left still enabled.  Perhaps accumulated-persistence will find the
 ;; important ones.
 
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))

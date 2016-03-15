@@ -33,7 +33,7 @@
 (include-book "../mlib/typedecide")
 (include-book "../mlib/welltyped")
 (include-book "../mlib/lvalues")
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (local (in-theory (enable acl2::arith-equiv-forwarding lnfix)))
 ;; (local (include-book "clause-processors/autohide" :dir :system))
 (local (include-book "../util/arithmetic"))

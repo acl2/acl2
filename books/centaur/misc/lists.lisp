@@ -54,7 +54,7 @@
 
 ;; [Jared] moved most of the pure list-equiv stuff into std/lists/equiv.lisp
 
-(include-book "arith-equivs")
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "std/lists/equiv" :dir :system)
 (local (include-book "std/lists/take" :dir :system))
 (include-book "data-structures/list-defthms" :dir :system)

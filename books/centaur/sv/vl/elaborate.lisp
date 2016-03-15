@@ -32,7 +32,7 @@
 (include-book "vl-svstmt")
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system)
                            nfix natp)))

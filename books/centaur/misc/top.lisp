@@ -54,7 +54,6 @@
 (include-book "memory-mgmt")
 (include-book "nat-list-duplicates")
 (include-book "numlist")
-(include-book "patterns")
 (include-book "seed-random")
 (include-book "sneaky-load")
 (include-book "suffixp")

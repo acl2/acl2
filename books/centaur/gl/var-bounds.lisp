@@ -35,7 +35,7 @@
 (include-book "gtypes")
 (include-book "bvar-db")
 (include-book "param")
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 
 (defsection bfr-vars-bounded
   (defun-sk bfr-vars-bounded (n x)

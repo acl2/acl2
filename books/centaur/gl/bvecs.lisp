@@ -31,7 +31,7 @@
 (in-package "GL")
 (include-book "bfr")
 (include-book "ihs/logops-definitions" :dir :system)
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (defsection bvec

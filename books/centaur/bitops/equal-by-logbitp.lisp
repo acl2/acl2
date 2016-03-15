@@ -37,7 +37,7 @@
 (include-book "logbitp-mismatch")
 (include-book "clause-processors/witness-cp" :dir :system)
 (include-book "std/util/wizard" :dir :system)
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (local (include-book "ihsext-basics"))
 (local (include-book "integer-length"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
