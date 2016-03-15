@@ -173,7 +173,7 @@
 		      0
 		    (+ 1 (mod a (expt 2 i))))))
   :hints (("Goal"
-	   :in-theory (disable simplify-mod-+-mod))))
+	   :in-theory (disable simplify-mod-+-mod-weak))))
 
 (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                              hist pspv)))

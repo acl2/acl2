@@ -214,11 +214,11 @@
   :hints (("Goal"
 	   :in-theory (enable mod))
 	  ("Subgoal 1'"
-	   :use (:instance floor-floor-integer
+	   :use (:instance floor-floor-integer-alt
 			   (x (+ 1 (* 2 b) (* 2 k)))
 			   (i 2)
 			   (j (expt 2 (+ -1 i))))
-	   :in-theory (disable floor-floor-integer))))
+	   :in-theory (disable floor-floor-integer-alt))))
 
 (defthm equal-odd-even
   (implies (and (equal (mod a 2) (mod b 2))
@@ -298,15 +298,15 @@
 		    (+ (floor a (expt 2 j))
 		       (* b (expt 2 (- i j)))))))
   :hints (("Goal"
-	   :use ((:instance floor-floor-integer
+	   :use ((:instance floor-floor-integer-alt
 			    (x (+ a (* b (expt 2 i))))
 			    (i (expt 2 i))
 			    (j (expt 2 (- j i))))
-		 (:instance floor-floor-integer
+		 (:instance floor-floor-integer-alt
 			    (x (+ a (* b (expt 2 i))))
 			    (i (expt 2 j))
 			    (j (expt 2 (- i j)))))
-	   :in-theory (disable floor-floor-integer))))
+	   :in-theory (disable floor-floor-integer-alt))))
 
 (defthm mod-*-arg2-general
   (implies (and (equal b (floor a x))
@@ -423,11 +423,11 @@
 		    (cp (+ c (floor (+ low (* a (expt 2 i))) (* (expt 2 i) (expt 2 i)))))
 		    (lowp low)
 		    (ap (mod a (expt 2 i))))
-	  (:instance floor-floor-integer
+	  (:instance floor-floor-integer-alt
 		     (x (+ low (* a (expt 2 i))))
 		     (i (expt 2 i))
 		     (j (expt 2 i))))
-    :in-theory (disable floor-floor-integer
+    :in-theory (disable floor-floor-integer-alt
 			equal-wp-zcoef-g
 			(:definition wp-zcoef-g)
 			(:definition btm-s)
