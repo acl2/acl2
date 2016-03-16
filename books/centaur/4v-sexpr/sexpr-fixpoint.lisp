@@ -491,11 +491,12 @@
 (defthm suffixp-sexpr-dfs-cons
   (suffixp seen-al (mv-nth 0 (sexpr-dfs queue deptable (cons x seen-al) parent
                                         back-edges)))
-  :hints(("Goal" :use (:instance suffixp-trans1
-                       (a seen-al) (b (cons x seen-al))
+  :hints(("Goal" :use (:instance suffixp-transitive
+                       (a seen-al)
+                       (b (cons x seen-al))
                        (c (mv-nth 0 (sexpr-dfs queue deptable (cons x seen-al) parent
                                                back-edges))))
-          :in-theory (disable suffixp-trans1))))
+          :in-theory (disable suffixp-transitive))))
 
 (verify-guards sexpr-dfs)
 

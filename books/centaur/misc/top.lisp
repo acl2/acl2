@@ -56,7 +56,6 @@
 (include-book "numlist")
 (include-book "seed-random")
 (include-book "sneaky-load")
-(include-book "suffixp")
 (include-book "tuplep")
 (include-book "universal-equiv")
 (include-book "vecs-ints")
