@@ -42,7 +42,7 @@
 (include-book "arithmetic/nat-listp" :dir :system)
 (include-book "std/basic/arith-equivs" :dir :system)
 (include-book "tools/flag" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "clause-processors/unify-subst" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))

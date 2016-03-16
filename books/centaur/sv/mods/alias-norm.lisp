@@ -30,7 +30,7 @@
 
 (in-package "SV")
 (include-book "lhs")
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))

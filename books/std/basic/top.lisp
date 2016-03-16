@@ -31,6 +31,8 @@
 (in-package "ACL2")
 (include-book "defs")
 (include-book "arith-equivs")
+(include-book "two-nats-measure")
+(include-book "intern-in-package-of-symbol")
 
 (defxdoc std/basic
   :parents (std)

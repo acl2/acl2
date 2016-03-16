@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "util/bits")
 (include-book "util/locations")
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/take" :dir :system))

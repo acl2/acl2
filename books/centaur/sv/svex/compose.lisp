@@ -34,7 +34,7 @@
 (include-book "misc/hons-help" :dir :system)
 (include-book "std/strings/hexify" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system) ;; with-fast
 (local (include-book "centaur/misc/dfs-measure" :dir :system))

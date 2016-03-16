@@ -34,7 +34,7 @@
 (in-package "ACL2")
 (include-book "patterns")
 (include-book "esim-sexpr-support")
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/lists/rev" :dir :system)
 (include-book "centaur/4v-sexpr/4v-logic" :dir :system)
 (include-book "centaur/4v-sexpr/sexpr-equivs" :dir :system)

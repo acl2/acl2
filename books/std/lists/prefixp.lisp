@@ -37,15 +37,6 @@
 (include-book "equiv")
 (local (include-book "take"))
 
-(local (defthm commutativity-2-of-+
-         (equal (+ x (+ y z))
-                (+ y (+ x z)))))
-
-(local (defthm fold-consts-in-+
-         (implies (and (syntaxp (quotep x))
-                       (syntaxp (quotep y)))
-                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
-
 (defsection prefixp
   :parents (std/lists)
   :short "@(call prefixp) determines if the list @('x') occurs at the front of

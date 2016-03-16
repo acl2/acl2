@@ -33,7 +33,7 @@
 (include-book "../visitor")
 (include-book "../basetypes")
 (include-book "std/basic/arith-equivs" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 (acl2::set-bogus-mutual-recursion-ok t)
 

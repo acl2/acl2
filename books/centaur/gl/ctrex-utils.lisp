@@ -39,7 +39,7 @@
 (include-book "centaur/aig/misc" :dir :system)
 (include-book "param")
 (include-book "centaur/misc/vecs-ints" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "generic-geval")
 (include-book "glcp-config")
 (include-book "centaur/misc/hons-extra" :dir :system)

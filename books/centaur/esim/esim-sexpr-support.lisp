@@ -34,7 +34,7 @@
 (include-book "patterns")
 (include-book "centaur/esim/plist" :dir :system)
 (include-book "centaur/4v-sexpr/sexpr-vars" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
 (include-book "std/lists/remove-duplicates" :dir :system)
 (local (include-book "std/strings/explode-atom" :dir :system))

@@ -32,6 +32,7 @@
 (include-book "../deftypes")
 (include-book "../basetypes")
 (include-book "std/lists/acl2-count" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "misc/assert" :dir :system)
 (include-book "std/util/tests/utils" :dir :system)
 
@@ -426,8 +427,6 @@
             (var :type var :acc-body (caddr x)))
    :type-name foo
    :ctor-body (list nat int var)))
-
-(include-book "std/misc/two-nats-measure" :dir :system)
 
 (deftypes faba
   ;; this is a product type
