@@ -42,7 +42,7 @@
 (include-book "std/strings/decimal" :dir :system)
 (include-book "centaur/nrev/pure" :dir :system)
 (include-book "xdoc/alter" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "misc/assert" :dir :system))

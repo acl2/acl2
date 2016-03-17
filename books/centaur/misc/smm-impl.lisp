@@ -30,15 +30,14 @@
 ;                   Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-
-(include-book "std/util/bstar" :dir :system)
+(include-book "lists")
 (include-book "u32-listp")
 (include-book "std/basic/defs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
+(include-book "std/util/bstar" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
-(include-book "arith-equivs")
-(include-book "absstobjs")
 (include-book "tools/mv-nth" :dir :system)
-(include-book "lists")
 (include-book "misc/definline" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (in-theory (enable* arith-equiv-forwarding))

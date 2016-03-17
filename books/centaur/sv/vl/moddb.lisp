@@ -37,7 +37,7 @@
 (include-book "centaur/vl/mlib/reportcard" :dir :system)
 (include-book "centaur/vl/mlib/blocks" :dir :System)
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable cons-equal)))
 

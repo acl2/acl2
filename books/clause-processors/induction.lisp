@@ -35,7 +35,7 @@
 (include-book "unify-subst")
 (include-book "tools/def-functional-instance" :dir :system)
 (include-book "arithmetic/top-with-meta" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :System)
+(include-book "std/basic/arith-equivs" :dir :System)
 
 (defevaluator-fast
   indev indev-lst

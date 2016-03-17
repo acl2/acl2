@@ -32,7 +32,7 @@
 (include-book "bfr-param")
 (include-book "gtypes")
 (include-book "bvar-db")
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/aig/misc" :dir :system)
@@ -420,7 +420,7 @@
 (defsection parametrize-bvar-db
   (local (in-theory (enable parametrize-bvar-db parametrize-bvar-db-aux)))
   (local (include-book "arithmetic/top-with-meta" :dir :system))
-  (local (include-book "centaur/misc/arith-equivs" :dir :system))
+  (local (include-book "std/basic/arith-equivs" :dir :system))
 
   (local (defthm alistp-when-term-equivsp
            (implies (and (bind-free '((bvar-db . bvar-db)) (bvar-db))

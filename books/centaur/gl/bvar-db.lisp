@@ -29,11 +29,11 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
-(include-book "centaur/misc/absstobjs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 ;; (include-book "std/lists/index-of" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/final-cdr" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

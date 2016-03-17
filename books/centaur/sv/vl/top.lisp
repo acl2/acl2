@@ -47,7 +47,7 @@
 (include-book "centaur/vl/transforms/clean-warnings" :dir :system)
 (local (include-book "centaur/vl/mlib/design-meta" :dir :system))
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 
 (local (xdoc::set-default-parents sv::vl-to-svex))
 

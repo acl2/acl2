@@ -29,11 +29,8 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "alist-equiv")
+(include-book "centaur/misc/alist-equiv" :dir :system)
 (local (include-book "centaur/misc/fast-alists" :dir :system))
-
-; BOZO Jared is putting this book into centaur/misc temporarily.  After we
-; release esim, move it back into the esim dir.
 
 (defsection patterns
   :parents (esim)

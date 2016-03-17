@@ -84,7 +84,7 @@ assign {foo, bar} = {baz, foo};
           (vl-selfassign-bits-from-indices name (cdr bits)))))
 
 (local (in-theory (disable nfix)))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 
 (define vl-selfassign-bits ((name stringp)
                             (low  natp)

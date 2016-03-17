@@ -38,7 +38,7 @@
 (include-book "binary")
 (include-book "hex")
 (include-book "charset")
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arithmetic"))
 (local (include-book "misc/assert" :dir :system))

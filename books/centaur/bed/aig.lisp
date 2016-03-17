@@ -32,7 +32,7 @@
 (include-book "mk1")
 (include-book "centaur/aig/aig-base" :dir :system)
 (include-book "std/strings/defs-program" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (in-theory (enable* arith-equiv-forwarding)))
 
 
@@ -785,7 +785,6 @@ to pattern match it against @('(IF VAR A B)')?"
     (fast-alist-free memo)
     (mv bed order))
   ///
-  (local (include-book "centaur/misc/arith-equivs" :dir :system))
   (local (in-theory (enable* arith-equiv-forwarding)))
 
   (local (in-theory (enable bed-from-aig-aux)))

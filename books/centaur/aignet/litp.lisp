@@ -32,7 +32,7 @@
 (in-package "AIGNET")
 (include-book "std/util/define" :dir :system)
 (include-book "std/basic/defs" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (set-tau-auto-mode nil)
 

@@ -33,7 +33,7 @@
 
 (in-package "BITOPS")
 (include-book "ihs/basic-definitions" :dir :system)
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)
 (local (include-book "ihsext-basics"))
 

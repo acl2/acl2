@@ -38,18 +38,6 @@
 (include-book "equiv")
 (local (include-book "std/basic/inductions" :dir :system))
 
-(local (defthm commutativity-2-of-+
-         (equal (+ x (+ y z))
-                (+ y (+ x z)))))
-
-(local (defthm fold-consts-in-+
-         (implies (and (syntaxp (quotep x))
-                       (syntaxp (quotep y)))
-                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
-
-(local (defthm distributivity-of-minus-over-+
-         (equal (- (+ x y)) (+ (- x) (- y)))))
-
 (defun simpler-take-induction (n xs)
   ;; Not generally meant to be used; only meant for take-induction
   ;; and take-redefinition.

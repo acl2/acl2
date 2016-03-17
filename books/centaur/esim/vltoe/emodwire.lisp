@@ -34,7 +34,7 @@
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 (local (include-book "centaur/vl2014/util/position" :dir :system))
-(local (include-book "std/misc/intern-in-package-of-symbol" :dir :system))
+(local (include-book "std/basic/intern-in-package-of-symbol" :dir :system))
 
 (defxdoc exploding-vectors
   :parents (e-conversion)

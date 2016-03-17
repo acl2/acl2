@@ -34,7 +34,7 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 (include-book "tools/include-raw" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 
 (define vl-printed-p (x)
   :parents (vl-printedlist)

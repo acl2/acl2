@@ -30,7 +30,7 @@
 
 (in-package "ACL2")
 
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "xdoc/base" :dir :system)

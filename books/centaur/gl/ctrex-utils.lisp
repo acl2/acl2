@@ -39,11 +39,11 @@
 (include-book "centaur/aig/misc" :dir :system)
 (include-book "param")
 (include-book "centaur/misc/vecs-ints" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "generic-geval")
 (include-book "glcp-config")
 (include-book "centaur/misc/hons-extra" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (set-state-ok t)
 
 ;; To-satisfying-assign-spec generates the same satisfying assignment as

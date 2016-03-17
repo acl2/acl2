@@ -39,7 +39,7 @@
 (include-book "centaur/vl/mlib/elabindex" :dir :system)
 (include-book "centaur/vl/mlib/strip" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (defxdoc vl-expr-svex-translation

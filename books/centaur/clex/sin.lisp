@@ -30,7 +30,7 @@
 
 (in-package "CLEX")
 (include-book "strin")
-(include-book "centaur/misc/absstobjs" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
 (include-book "std/strings/strpos" :dir :system)
 (local (include-book "arithmetic"))
 (local (in-theory (disable acl2::update-nth-when-zp)))

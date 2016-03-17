@@ -30,8 +30,8 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "NREV")
-(include-book "centaur/misc/absstobjs" :dir :system)
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "std/lists/rcons" :dir :system))
 (local (include-book "std/lists/rev" :dir :system))
