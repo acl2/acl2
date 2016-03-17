@@ -1198,7 +1198,12 @@ the same as their evaluations in the second.</p>"
   (defthm find-max-fanin-of-cons-output
     (implies (equal (ctype (stype node)) (out-ctype))
              (equal (find-max-fanin (cons node aignet))
-                    (find-max-fanin aignet)))))
+                    (find-max-fanin aignet))))
+  
+  (defthm node-count-of-find-max-fanin
+    (<= (node-count (find-max-fanin aignet))
+        (node-count aignet))
+    :rule-classes :linear))
 
 
 (define lookup-reg->nxst ((reg-id natp "Node ID (not the register number) for this register.")
@@ -1380,19 +1385,19 @@ the same as their evaluations in the second.</p>"
   (if (endp aignet)
       t
     (and (aignet-seq-case
-          (node->type (car aignet))
-          (io-node->regp (car aignet))
-          :ci   t
-          :po   (aignet-litp (co-node->fanin (car aignet))
-                             (cdr aignet))
-          :nxst   (and (aignet-litp (co-node->fanin (car aignet))
-                                  (cdr aignet))
-                     (aignet-idp (nxst-node->reg (car aignet))
-                                 (cdr aignet)))
-          :gate (let ((f0 (gate-node->fanin0 (car aignet)))
-                      (f1 (gate-node->fanin1 (car aignet))))
-                  (and (aignet-litp f0 (cdr aignet))
-                       (aignet-litp f1 (cdr aignet)))))
+           (node->type (car aignet))
+           (io-node->regp (car aignet))
+           :ci   t
+           :po   (aignet-litp (co-node->fanin (car aignet))
+                              (cdr aignet))
+           :nxst   (and (aignet-litp (co-node->fanin (car aignet))
+                                     (cdr aignet))
+                        (aignet-idp (nxst-node->reg (car aignet))
+                                    (cdr aignet)))
+           :gate (let ((f0 (gate-node->fanin0 (car aignet)))
+                       (f1 (gate-node->fanin1 (car aignet))))
+                   (and (aignet-litp f0 (cdr aignet))
+                        (aignet-litp f1 (cdr aignet)))))
          (aignet-nodes-ok (cdr aignet))))
   ///
   (defthm proper-node-list-when-aignet-nodes-ok
@@ -1512,7 +1517,43 @@ the same as their evaluations in the second.</p>"
                   (aignet-nodes-ok y))
              (aignet-nodes-ok x))
     :hints(("Goal" :in-theory (enable aignet-extension-p aignet-nodes-ok)
-            :induct (aignet-nodes-ok y)))))
+            :induct (aignet-nodes-ok y))))
+
+  (defthm id-less-than-max-fanin-when-aignet-litp
+    (implies (aignet-litp lit aignet)
+             (<= (lit-id lit) (node-count (find-max-fanin aignet))))
+    :hints(("Goal" :in-theory (enable aignet-litp find-max-fanin)))
+    :rule-classes nil)
+
+  (defthm gate-fanin0-less-than-max-fanin
+    (let ((suffix (lookup-id n aignet)))
+      (implies (and (aignet-nodes-ok aignet)
+                    (equal (node->type (car suffix)) (gate-type)))
+               (<= (lit-id (gate-node->fanin0 (car suffix)))
+                   (node-count (find-max-fanin aignet)))))
+    :hints (("goal" :use ((:instance id-less-than-max-fanin-when-aignet-litp
+                           (lit (gate-node->fanin0 (car (lookup-id n aignet))))))))
+    :rule-classes :linear)
+
+  (defthm gate-fanin1-less-than-max-fanin
+    (let ((suffix (lookup-id n aignet)))
+      (implies (and (aignet-nodes-ok aignet)
+                    (equal (node->type (car suffix)) (gate-type)))
+               (<= (lit-id (gate-node->fanin1 (car suffix)))
+                   (node-count (find-max-fanin aignet)))))
+    :hints (("goal" :use ((:instance id-less-than-max-fanin-when-aignet-litp
+                           (lit (gate-node->fanin1 (car (lookup-id n aignet))))))))
+    :rule-classes :linear)
+
+  (defthm co-fanin-less-than-max-fanin
+    (let ((suffix (lookup-id n aignet)))
+      (implies (and (aignet-nodes-ok aignet)
+                    (equal (node->type (car suffix)) (out-type)))
+               (<= (lit-id (co-node->fanin (car suffix)))
+                   (node-count (find-max-fanin aignet)))))
+    :hints (("goal" :use ((:instance id-less-than-max-fanin-when-aignet-litp
+                           (lit (co-node->fanin (car (lookup-id n aignet))))))))
+    :rule-classes :linear))
 
 
 
