@@ -82,6 +82,7 @@
 
 (include-book "centaur/clex/example" :dir :system)
 (include-book "centaur/nrev/demo" :dir :system)
+(include-book "centaur/lispfloat/top" :dir :system)
 
 (include-book "centaur/defrstobj/defrstobj" :dir :system)
 
