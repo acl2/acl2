@@ -14,7 +14,7 @@
 ;; behaviours with those constructs that are not known to me.
 ;;
 (in-package "ACL2")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "std/typed-lists/cons-listp" :dir :system)
 (set-state-ok t)
 (set-ignore-ok t)

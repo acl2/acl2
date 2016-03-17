@@ -35,7 +35,7 @@
 (include-book "../svtv/debug")
 (include-book "oslib/file-types" :dir :system)
 (include-book "std/bitsets/bignum-extract-opt" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :System))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (disable len nth)))

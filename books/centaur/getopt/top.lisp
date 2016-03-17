@@ -36,7 +36,7 @@
 (include-book "std/strings/strpos" :dir :system)
 (include-book "parsers")
 (include-book "xdoc/word-wrap" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 
 
 (defxdoc getopt

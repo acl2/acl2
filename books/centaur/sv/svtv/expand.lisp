@@ -38,7 +38,7 @@
 (include-book "std/strings/strpos" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (local (in-theory (disable nth update-nth)))
-(local (include-book "centaur/misc/arith-equivs" :dir :System))
+(local (include-book "std/basic/arith-equivs" :dir :System))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc expand.lisp :parents (svex-stvs))

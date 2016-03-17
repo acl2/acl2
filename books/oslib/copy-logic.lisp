@@ -34,7 +34,7 @@
 (include-book "file-types-logic")
 (include-book "mkdir-logic")
 (include-book "std/util/defines" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (set-state-ok t)
 
 (define copy-file

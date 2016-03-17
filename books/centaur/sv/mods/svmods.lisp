@@ -35,7 +35,7 @@
 (include-book "std/util/defenum" :dir :system)
 (local (include-book "std/strings/eqv" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 

@@ -30,7 +30,7 @@
 
 (in-package "BED")
 (include-book "eval")
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (in-theory (enable arith-equiv-forwarding)))
 
 (define bed-mk1

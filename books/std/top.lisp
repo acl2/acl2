@@ -37,7 +37,6 @@
 (include-book "io/top")
 (include-book "strings/top")
 (include-book "stobjs/top")
-(include-book "misc/top")
 (include-book "osets/top")
 (include-book "util/top")
 

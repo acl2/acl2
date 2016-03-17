@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "var-bounds")
 (include-book "shape-spec")
 (include-book "gl-generic-interp-defs")

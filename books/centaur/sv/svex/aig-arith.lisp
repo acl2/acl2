@@ -32,7 +32,7 @@
 (include-book "a4vec")
 (include-book "tools/templates" :dir :system)
 (include-book "xdoc/alter" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/gl/arith-lemmas" :dir :system))

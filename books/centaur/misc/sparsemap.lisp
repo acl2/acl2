@@ -29,9 +29,9 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "arith-equivs")
 (include-book "count-up")
 (include-book "remove-assoc")
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "misc/definline" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (local (include-book "sparsemap-impl"))

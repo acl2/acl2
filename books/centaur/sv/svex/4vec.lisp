@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "4vec-base")
 (include-book "4vec-subtypes")
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "centaur/4v-sexpr/4v-logic" :dir :system)
 (include-book "centaur/bitops/fast-logext" :dir :system)
 (include-book "centaur/bitops/parity" :dir :system)

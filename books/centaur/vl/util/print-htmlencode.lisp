@@ -35,7 +35,7 @@
 (include-book "centaur/fty/basetypes" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (in-theory (enable acl2::arith-equiv-forwarding)))
 (local (std::add-default-post-define-hook :fix))
 

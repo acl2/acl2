@@ -34,7 +34,7 @@
 (include-book "process")
 (include-book "vcd")
 (include-book "oslib/date" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/io/base" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 (local (in-theory (disable nth update-nth

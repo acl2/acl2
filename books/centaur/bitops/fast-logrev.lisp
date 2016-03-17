@@ -32,7 +32,7 @@
 
 (in-package "BITOPS")
 (include-book "std/util/define" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (local (include-book "signed-byte-p"))
 (local (include-book "ihsext-basics"))
 (local (include-book "equal-by-logbitp"))

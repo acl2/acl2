@@ -1110,7 +1110,7 @@ for each usertype is stored in the res field.</p>"
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil ))
   ;; Elaborates, resolves generates.  Collects signatures required for modinsts.
   (defines vl-generate-resolve
-    :prepwork ((local (include-book "centaur/misc/arith-equivs" :dir :system))
+    :prepwork ((local (include-book "std/basic/arith-equivs" :dir :system))
                (local (in-theory (disable
                                   cons-equal
                                   vl-genelement-p-by-tag-when-vl-scopeitem-p

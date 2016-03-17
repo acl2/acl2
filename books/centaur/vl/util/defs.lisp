@@ -40,7 +40,7 @@
 ; other, conflicting theorems about.
 
 (include-book "std/util/top" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "centaur/misc/alist-equiv" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)

@@ -30,12 +30,12 @@
 
 (in-package "GL")
 (include-book "centaur/misc/universal-equiv" :dir :system)
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
 (include-book "centaur/aig/misc" :dir :system)
 (local (include-book "centaur/aig/aig-vars" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 
 (defsection bfr
   :parents (reference)

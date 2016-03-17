@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "eval")
 (include-book "vars")
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 
 (local (defthm setp-singleton

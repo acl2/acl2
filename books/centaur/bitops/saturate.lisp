@@ -33,7 +33,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (local (include-book "ihsext-basics"))
 (local (include-book "ash-bounds"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

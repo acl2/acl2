@@ -34,7 +34,7 @@
 
 (in-package "BITOPS")
 (include-book "xdoc/top" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "std/lists/mfc-utils" :dir :system)
 (include-book "centaur/misc/introduce-var" :dir :system)
 (include-book "logbitp-mismatch")

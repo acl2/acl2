@@ -569,22 +569,22 @@ about set equivalence.</p>"
 
 (defthm commutativity-of-append-under-set-equiv
   (set-equiv (append x y)
-              (append y x))
+             (append y x))
   :hints(("Goal" :in-theory (enable set-equiv))))
 
 (defthm commutativity-2-of-append-under-set-equiv
   (set-equiv (append x (append y z))
-              (append y (append x z)))
+             (append y (append x z)))
   :hints(("Goal" :in-theory (enable set-equiv))))
 
 (defthm cancel-append-self-under-set-equiv
   (set-equiv (append x x)
-              x)
+             x)
   :hints(("Goal" :in-theory (enable set-equiv))))
 
 (defthm cancel-append-self-2-under-set-equiv
   (set-equiv (append x x y)
-              (append x y))
+             (append x y))
   :hints(("Goal" :in-theory (enable set-equiv))))
 
 (encapsulate

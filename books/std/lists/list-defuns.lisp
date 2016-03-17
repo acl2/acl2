@@ -40,19 +40,6 @@
 ; now prove the bare-minimum theorems inline and avoid including the other
 ; books.
 
-(local (defthm commutativity-2-of-+
-         (equal (+ x (+ y z))
-                (+ y (+ x z)))))
-
-(local (defthm fold-consts-in-+
-         (implies (and (syntaxp (quotep x))
-                       (syntaxp (quotep y)))
-                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
-
-(local (defthm distributivity-of-minus-over-+
-         (equal (- (+ x y)) (+ (- x) (- y)))))
-
-
 (defund list-fix-exec (x)
   (declare (xargs :guard t))
   (if (consp x)

@@ -33,7 +33,7 @@
 (include-book "centaur/vl/mlib/scopestack" :dir :system)
 (include-book "centaur/vl/mlib/hid-tools" :dir :system)
 (include-book "centaur/vl/mlib/selfsize" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (:e tau-system))))
 (local (in-theory (enable tag-reasoning)))
