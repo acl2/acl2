@@ -376,8 +376,6 @@
 (defthm not-member-p-addr-range
   (implies (and (or (< addr prog-addr)
                     (<= (+ n prog-addr) addr))
-                (integerp n)
-                (< 0 n)
                 (integerp prog-addr))
            (equal (member-p addr (addr-range n prog-addr))
                   nil)))
