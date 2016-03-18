@@ -3750,7 +3750,9 @@ functions can assume all bits of it are good.</p>"
                                      (type vl-datatype-p)
                                      (ss vl-scopestack-p)
                                      (scopes vl-elabscopes-p)
-                                     &key ((compattype vl-typecompat-p) ':equiv))
+                                     &key
+                                     ((compattype vl-typecompat-p) ':equiv)
+                                     (explicit-cast-p booleanp))
     :guard (vl-datatype-resolved-p type)
     :measure (two-nats-measure (vl-expr-count x) 16)
     :returns (mv (warnings vl-warninglist-p)
@@ -3786,9 +3788,20 @@ functions can assume all bits of it are good.</p>"
                 (mv warnings svex))
                ((wmv warnings) (vl-maybe-warn-about-implicit-truncation lhs size x rhs-size ss))
                ((mv & & x-selfsize) (vl-expr-to-svex-selfdet x nil ss scopes))
-               ((wmv warnings) (if x-selfsize
-                                   (vl-maybe-warn-about-implicit-extension size x-selfsize x ss)
-                                 nil)))
+               ((wmv warnings)
+                (if (and x-selfsize
+                         ;; [Jared] Previously we didn't exclude casts here,
+                         ;; but that meant that VL-Lint issued warnings about
+                         ;; cases like foo_t'(bar) where the logic designer was
+                         ;; explicitly using a cast to extend bar to additional
+                         ;; bits.  Designers complained about these warnings,
+                         ;; so, we now suppress extension warnings in case of
+                         ;; casts.  We originally tried to just check whether
+                         ;; compattype was :cast, but that gets used in more
+                         ;; places so we add an explicit-cast-p argument.
+                         (not explicit-cast-p))
+                    (vl-maybe-warn-about-implicit-extension size x-selfsize x ss)
+                  nil)))
             (mv warnings svex))))
 
       (vl-expr-case x
@@ -3808,11 +3821,30 @@ functions can assume all bits of it are good.</p>"
               (vl-expr-to-svex-selfdet x.test nil ss scopes))
              ((wmv warnings then-svex)
               ;; BOZO should we really pass the lhs down here?  Maybe?
-              (vl-expr-to-svex-datatyped x.then lhs type ss scopes :compattype compattype))
+              (vl-expr-to-svex-datatyped x.then lhs type ss scopes
+                                         :compattype compattype
+                                         :explicit-cast-p explicit-cast-p))
              ((wmv warnings else-svex)
-              (vl-expr-to-svex-datatyped x.else lhs type ss scopes :compattype compattype)))
-          (mv (ok)
-              (sv::svcall sv::? test-svex then-svex else-svex)))
+              (vl-expr-to-svex-datatyped x.else lhs type ss scopes
+                                         :compattype compattype
+                                         :explicit-cast-p explicit-cast-p))
+             (svex (sv::svcall sv::? test-svex then-svex else-svex))
+
+             ;; [Jared] historically we didn't need to do anything special
+             ;; here, but in commit aad0bcb6b181dcba68385ff764a967a3528db506 we
+             ;; tweaked the check for vector-like expressions above (packed,
+             ;; non-special, not pattern, not qmark) to include ?: expressions
+             ;; in order to support expressions like a ? '{...} : '{...}.
+             ;; Unfortunately, that means we no longer get fussy size warnings
+             ;; for expressions like a ? b[3:0] : c[7:0] and similar.
+             ;;
+             ;; As a dumb way to restore these warnings, we now explicitly call
+             ;; vl-expr-selfsize here, even though we don't care what size it
+             ;; thinks things are.  We are just using it to generate warnings.
+             ;; See vl-expr-selfsize for details and note that it properly
+             ;; doesn't cause a warning if the arguments don't have self-sizes.
+             ((wmv warnings ?ignored-size) (vl-expr-selfsize x ss scopes)))
+          (mv warnings svex))
 
         :vl-call
         (b* (((when x.systemp)
@@ -3841,7 +3873,9 @@ functions can assume all bits of it are good.</p>"
                           (svex-x)))
                      ((wmv warnings svex)
                       ;; We're casting to a new type so don't pass the lhs down.
-                      (vl-expr-to-svex-datatyped x.expr nil to-type ss scopes :compattype :cast))
+                      (vl-expr-to-svex-datatyped x.expr nil to-type ss scopes
+                                                 :compattype :cast
+                                                 :explicit-cast-p t))
                      (warnings (vl-datatype-compatibility-warning type to-type x compattype warnings)))
                   (mv warnings svex))
           :const
