@@ -128,7 +128,12 @@
   (vl-value-case x
     :vl-constint x.origsign
     :vl-weirdint x.origsign
-    :vl-extint   :vl-signed
+    ;; [Jared] bug fix 2016-03-18: we were formerly returning signed for
+    ;; extint, but that was wrong: per SystemVerilog-2012 5.7.1: "In a
+    ;; self-determined context, an unsized single-bit value shall have a width
+    ;; of 1 bit, and the value shall be treated as unsigned."  See also
+    ;; cosims/extint2.
+    :vl-extint   :vl-unsigned
     :vl-string   :vl-unsigned
     :otherwise   nil))
 

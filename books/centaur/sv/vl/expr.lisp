@@ -3059,7 +3059,21 @@ functions can assume all bits of it are good.</p>"
          ((wmv warnings svex)
           (if (eq opacity :opaque)
               (vl-expr-to-svex-opaque x ss scopes)
-            (vl-expr-to-svex-transparent x finalsize signedness ss scopes))))
+            (vl-expr-to-svex-transparent x finalsize signedness ss scopes)))
+         (signedness
+          ;; [Jared] On 2016-03-18 we discovered that we were incorrectly
+          ;; treating extension integers like '1 as signed, when the standard
+          ;; says they are unsigned.  After fixing that, we found we needed to
+          ;; add a special case for extints here.  Why?  If we have something
+          ;; like assign foo[3:0] = '1, then the '1 is context-determined, so
+          ;; normally we would sign/zero-extend it to the desired width based
+          ;; on its type.  But extints are special and basically we still need
+          ;; to sign-extend 'x or '1 even though they are unsigned.
+          (if (vl-expr-case x
+                :vl-literal (vl-value-case x.val :vl-extint)
+                :otherwise nil)
+              :vl-signed
+            signedness)))
       (mv warnings (svex-extend signedness ext-size svex) finalsize)))
 
   (define vl-expr-to-svex-vector ((x vl-expr-p)
