@@ -967,12 +967,13 @@
 
 (defun pml4-table-base-addr (x86)
   (declare (xargs :stobjs x86))
-  (logand -4096 (logext 64 (xr :ctr *cr3* x86))))
+  (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
 
 (def-gl-export pml4-table-entry-addr-to-C-program-optimized-form
   :hyp (and (canonical-address-p v-addr)
+            (equal (logtail 40 cr3) 0) ;; MBZ
             (unsigned-byte-p 64 cr3))
-  :concl (equal (pml4-table-entry-addr v-addr (logand -4096 (logext 64 cr3)))
+  :concl (equal (pml4-table-entry-addr v-addr (ash (loghead 40 (logtail 12 cr3)) 12))
                 (logior (logand -4096 (logext 64 cr3))
                         (logand 4088 (loghead 28 (logtail 36 v-addr)))))
   :g-bindings
@@ -1206,616 +1207,6 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat destination-entry 64) (:nat source-entry 64))))
 
-;; (defthm rewire_dst_to_src-effects
-;;   (implies (and
-;;             (equal prog-len (len *rewire_dst_to_src*))
-;;             (x86p x86)
-;;             (not (programmer-level-mode x86))
-;;             (not (page-structure-marking-mode x86))
-;;             (not (alignment-checking-enabled-p x86))
-
-;;             ;; Source addresses are canonical.
-;;             (canonical-address-p (xr :rgf *rdi* x86))
-;;             (canonical-address-p (+ 7 (xr :rgf *rdi* x86)))
-;;             ;; Source address is 1G-aligned.
-;;             (equal (loghead 30 (xr :rgf *rdi* x86)) 0)
-;;             ;; Destination addresses are canonical.
-;;             (canonical-address-p (xr :rgf *rsi* x86))
-;;             (canonical-address-p (+ 7 (xr :rgf *rsi* x86)))
-;;             ;; Destination address is 1G-aligned.
-;;             (equal (loghead 30 (xr :rgf *rsi* x86)) 0)
-;;             ;; Program addresses are canonical.
-;;             (canonical-address-p (+ prog-len (xr :rip 0 x86)))
-;;             (canonical-address-p (xr :rip 0 x86))
-;;             ;; Stack addresses are canonical.
-;;             (canonical-address-p (+ -24 (xr :rgf *rsp* x86)))
-;;             (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
-;;             (equal (xr :ms 0 x86) nil)
-;;             (equal (xr :fault 0 x86) nil)
-;;             (equal (cpl x86) 0)
-;;             (program-at (create-canonical-address-list prog-len (xr :rip 0 x86))
-;;                         *rewire_dst_to_src* x86)
-
-;;             ;; No errors encountered while translating the linear
-;;             ;; addresses where the program is located.
-;;             (not (mv-nth 0 (las-to-pas
-;;                             (create-canonical-address-list prog-len (xr :rip 0 x86))
-;;                             :x (cpl x86) x86)))
-;;             ;; Writing to stack: No errors encountered while
-;;             ;; translating the linear addresses corresponding to the
-;;             ;; program stack.
-;;             (not (mv-nth 0 (las-to-pas
-;;                             (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;                             :w 0 x86)))
-;;             ;; Reading from stack: No errors encountered while
-;;             ;; translating the linear addresses corresponding to the
-;;             ;; stack.
-;;             (not (mv-nth 0 (las-to-pas
-;;                             (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;                             :r 0 x86)))
-;;             ;; Reading from stack: The stack is located in a
-;;             ;; contiguous region of memory --- no overlaps among
-;;             ;; physical addresses of the stack. I need this hypothesis
-;;             ;; so that rb-wb-equal-in-system-level-non-marking-mode
-;;             ;; can fire.
-;;             (no-duplicates-p
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;                         :r 0 x86)))
-;;             ;; The physical addresses corresponding to the program and
-;;             ;; stack are disjoint.
-;;             (disjoint-p
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list prog-len (xr :rip 0 x86))
-;;                         :x (cpl x86) x86))
-;;              (mv-nth 1
-;;                      (las-to-pas
-;;                       (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;                       :w (cpl x86) x86)))
-;;             ;; Translation-governing addresses of the program are
-;;             ;; disjoint from the physical addresses of the stack.
-;;             (disjoint-p
-;;              (all-translation-governing-addresses
-;;               (create-canonical-address-list prog-len (xr :rip 0 x86))
-;;               x86)
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;                         :w (cpl x86) x86)))
-;;             ;; Translation-governing addresses of the stack are
-;;             ;; disjoint from the physical addresses of the stack.
-;;             (disjoint-p
-;;              (all-translation-governing-addresses
-;;               (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;               x86)
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;                         :w (cpl x86) x86)))
-
-;;             ;; ============================================================
-
-;;             ;; Assumptions about the source PML4TE:
-
-;;             ;; PML4TE linear addresses are canonical.
-;;             (canonical-address-p
-;;              (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-;;             (canonical-address-p
-;;              (+ 7 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))))
-
-;;             ;; No errors encountered while translating the PML4TE linear addresses.
-;;             (not (mv-nth 0 (las-to-pas
-;;                             (create-canonical-address-list
-;;                              8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-;;                             :r 0 x86)))
-;;             ;; The translation-governing addresses of PML4TE addresses
-;;             ;; are disjoint from the physical addresses corresponding
-;;             ;; to the stack.
-;;             (disjoint-p
-;;              (all-translation-governing-addresses
-;;               (create-canonical-address-list
-;;                8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-;;               x86)
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-;;             ;; The PML4TE physical addresses are disjoint from the
-;;             ;; stack physical addresses.
-;;             (disjoint-p
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list
-;;                          8
-;;                          (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-;;                         :r 0 x86))
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-
-;;             ;; PML4TE is has P = 1 (i.e., it is present).
-;;             (equal
-;;              (loghead
-;;               1
-;;               (logext
-;;                64
-;;                (combine-bytes
-;;                 (mv-nth
-;;                  1
-;;                  (rb
-;;                   (create-canonical-address-list
-;;                    8
-;;                    (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-;;                   :r x86)))))
-;;              1)
-
-;;             ;; ------------------------------------------------------------
-
-;;             ;; Assumptions about the source PDPTE:
-
-;;             ;; PDPTE linear addresses are canonical.
-;;             (canonical-address-p
-;;              (page-dir-ptr-table-entry-addr
-;;               (xr :rgf *rdi* x86)
-;;               (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-;;             (canonical-address-p
-;;              (+ 7 (page-dir-ptr-table-entry-addr
-;;                    (xr :rgf *rdi* x86)
-;;                    (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86))))
-
-;;             ;; No errors encountered while translating the PDPTE linear addresses.
-;;             (not (mv-nth 0 (las-to-pas
-;;                             (create-canonical-address-list
-;;                              8
-;;                              (page-dir-ptr-table-entry-addr
-;;                               (xr :rgf *rdi* x86)
-;;                               (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-;;                             :r 0 x86)))
-;;             ;; The translation-governing addresses of PDPTE addresses
-;;             ;; are disjoint from the physical addresses corresponding
-;;             ;; to the stack.
-;;             (disjoint-p
-;;              (all-translation-governing-addresses
-;;               (create-canonical-address-list
-;;                8
-;;                (page-dir-ptr-table-entry-addr
-;;                 (xr :rgf *rdi* x86)
-;;                 (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-;;               x86)
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-;;             ;; The PDPTE physical addresses are disjoint from the
-;;             ;; stack physical addresses.
-;;             (disjoint-p
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list
-;;                          8
-;;                          (page-dir-ptr-table-entry-addr
-;;                           (xr :rgf *rdi* x86)
-;;                           (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-;;                         :r 0 x86))
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-
-;;             ;; PDPTE does not have the P or PS bit cleared (i.e., the
-;;             ;; entry is present and it points to a 1G page).
-
-;;             (equal (part-select
-;;                     (combine-bytes
-;;                      (mv-nth 1
-;;                              (rb
-;;                               (create-canonical-address-list
-;;                                8
-;;                                (page-dir-ptr-table-entry-addr
-;;                                 (xr :rgf *rdi* x86)
-;;                                 (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-;;                               :r x86)))
-;;                     :low 0 :width 1)
-;;                    1)
-;;             (equal (part-select
-;;                     (combine-bytes
-;;                      (mv-nth 1
-;;                              (rb
-;;                               (create-canonical-address-list
-;;                                8
-;;                                (page-dir-ptr-table-entry-addr
-;;                                 (xr :rgf *rdi* x86)
-;;                                 (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-;;                               :r x86)))
-;;                     :low 7 :width 1)
-;;                    1)
-
-;;             ;; ============================================================
-
-;;             ;; Assumptions about the destination PML4TE:
-
-;;             ;; PML4TE linear addresses are canonical.
-;;             (canonical-address-p
-;;              (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-;;             (canonical-address-p
-;;              (+ 7 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))))
-
-;;             ;; No errors encountered while translating the PML4TE linear addresses.
-;;             (not (mv-nth 0 (las-to-pas
-;;                             (create-canonical-address-list
-;;                              8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-;;                             :r 0 x86)))
-;;             ;; The translation-governing addresses of PML4TE addresses
-;;             ;; are disjoint from the physical addresses corresponding
-;;             ;; to the stack.
-;;             (disjoint-p
-;;              (all-translation-governing-addresses
-;;               (create-canonical-address-list
-;;                8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-;;               x86)
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-;;             ;; The PML4TE physical addresses are disjoint from the
-;;             ;; stack physical addresses.
-;;             (disjoint-p
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list
-;;                          8
-;;                          (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-;;                         :r 0 x86))
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-
-;;             ;; PML4TE is has P = 1 (i.e., it is present).
-;;             (equal
-;;              (loghead
-;;               1
-;;               (logext
-;;                64
-;;                (combine-bytes
-;;                 (mv-nth
-;;                  1
-;;                  (rb
-;;                   (create-canonical-address-list
-;;                    8
-;;                    (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-;;                   :r x86)))))
-;;              1)
-
-;;             ;; ------------------------------------------------------------
-
-;;             ;; Assumptions about the destination PDPTE:
-
-;;             ;; PDPTE linear addresses are canonical.
-;;             (canonical-address-p
-;;              (page-dir-ptr-table-entry-addr
-;;               (xr :rgf *rsi* x86)
-;;               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;             (canonical-address-p
-;;              (+ 7 (page-dir-ptr-table-entry-addr
-;;                    (xr :rgf *rsi* x86)
-;;                    (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86))))
-
-;;             ;; No errors encountered while translating the PDPTE
-;;             ;; linear addresses on behalf of a read.
-;;             (not (mv-nth 0 (las-to-pas
-;;                             (create-canonical-address-list
-;;                              8
-;;                              (page-dir-ptr-table-entry-addr
-;;                               (xr :rgf *rsi* x86)
-;;                               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                             :r 0 x86)))
-;;             ;; No errors encountered while translating the PDPTE
-;;             ;; linear addresses on behalf of a write.
-;;             (not (mv-nth 0 (las-to-pas
-;;                             (create-canonical-address-list
-;;                              8
-;;                              (page-dir-ptr-table-entry-addr
-;;                               (xr :rgf *rsi* x86)
-;;                               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                             :w 0 x86)))
-;;             ;; The translation-governing addresses of PDPTE addresses
-;;             ;; are disjoint from the physical addresses corresponding
-;;             ;; to the stack.
-;;             (disjoint-p
-;;              (all-translation-governing-addresses
-;;               (create-canonical-address-list
-;;                8
-;;                (page-dir-ptr-table-entry-addr
-;;                 (xr :rgf *rsi* x86)
-;;                 (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;               x86)
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-
-;;             ;; The physical addresses corresponding to the program are
-;;             ;; disjoint from those of the PDPTE (on behalf of a
-;;             ;; write).
-;;             (disjoint-p
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list prog-len (xr :rip 0 x86))
-;;                         :x (cpl x86) x86))
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list
-;;                          8
-;;                          (page-dir-ptr-table-entry-addr
-;;                           (xr :rgf *rsi* x86)
-;;                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                         :w 0 x86)))
-
-;;             ;; Translation-governing addresses of the program are
-;;             ;; disjoint from the PDPTE physical addresses (on behalf
-;;             ;; of a write).
-;;             (disjoint-p
-;;              (all-translation-governing-addresses
-;;               (create-canonical-address-list prog-len (xr :rip 0 x86))
-;;               x86)
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list
-;;                          8
-;;                          (page-dir-ptr-table-entry-addr
-;;                           (xr :rgf *rsi* x86)
-;;                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                         :w 0 x86)))
-;;             ;; Translation-governing addresses of the stack are
-;;             ;; disjoint from the physical addresses of the PDPTE (on
-;;             ;; behalf of a write).
-;;             (disjoint-p
-;;              (all-translation-governing-addresses
-;;               (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;               x86)
-;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list
-;;                          8
-;;                          (page-dir-ptr-table-entry-addr
-;;                           (xr :rgf *rsi* x86)
-;;                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                         :w 0 x86)))
-
-;;             ;; Destination PDPTE does not have the P or PS bit cleared
-;;             ;; (i.e., the entry is present and it points to a 1G
-;;             ;; page).
-;;             (equal (part-select
-;;                     (combine-bytes
-;;                      (mv-nth 1
-;;                              (rb
-;;                               (create-canonical-address-list
-;;                                8
-;;                                (page-dir-ptr-table-entry-addr
-;;                                 (xr :rgf *rsi* x86)
-;;                                 (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                               :r x86)))
-;;                     :low 0 :width 1)
-;;                    1)
-;;             (equal (part-select
-;;                     (combine-bytes
-;;                      (mv-nth 1
-;;                              (rb
-;;                               (create-canonical-address-list
-;;                                8
-;;                                (page-dir-ptr-table-entry-addr
-;;                                 (xr :rgf *rsi* x86)
-;;                                 (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                               :r x86)))
-;;                     :low 7 :width 1)
-;;                    1))
-
-;;            (equal (x86-run 58 x86)
-;;                   xxx))
-;;   :hints (("Goal"
-;;            :do-not '(preprocess)
-;;            :do-not-induct t
-;;            :in-theory (e/d* (instruction-decoding-and-spec-rules
-;;                              shr-spec
-;;                              shr-spec-64
-;;                              sal/shl-spec
-;;                              sal/shl-spec-64
-;;                              gpr-and-spec-1
-;;                              gpr-and-spec-4
-;;                              gpr-and-spec-8
-;;                              gpr-sub-spec-8
-;;                              gpr-or-spec-8
-;;                              gpr-xor-spec-4
-;;                              jcc/cmovcc/setcc-spec
-;;                              top-level-opcode-execute
-;;                              two-byte-opcode-decode-and-execute
-;;                              x86-operand-from-modr/m-and-sib-bytes
-;;                              x86-effective-addr
-;;                              x86-effective-addr-from-sib
-;;                              x86-operand-to-reg/mem
-;;                              rr08 rr32 rr64 wr08 wr32 wr64
-;;                              rim08 rim32 rim64
-;;                              !flgi-undefined
-;;                              write-user-rflags
-
-;;                              rb-wb-equal-in-system-level-non-marking-mode
-
-;;                              pos member-p subset-p)
-
-;;                             (member-p-strip-cars-of-remove-duplicate-keys
-;;                              wb-remove-duplicate-writes-in-system-level-non-marking-mode
-;;                              las-to-pas
-
-;;                              (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-;;                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
-;;                              (:REWRITE
-;;                               DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES)
-;;                              (:TYPE-PRESCRIPTION NATP-PML4-TABLE-ENTRY-ADDR)
-;;                              (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
-;;                              (:REWRITE IA32E-LA-TO-PA-XW-STATE)
-;;                              (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-IA32E-LA-TO-PA-WHEN-NO-ERRORS)
-;;                              (:LINEAR ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-;;                              (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PML4-TABLE-ENTRY-ADDR)
-;;                              (:REWRITE LAS-TO-PAS-XW-STATE)
-;;                              (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-;;                              (:REWRITE LOGHEAD-UNEQUAL)
-;;                              (:REWRITE NEGATIVE-LOGAND-TO-POSITIVE-LOGAND-WITH-INTEGERP-X)
-;;                              (:DEFINITION COMBINE-BYTES)
-;;                              (:REWRITE |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
-;;                              (:REWRITE XR-IA32E-LA-TO-PA)
-;;                              (:REWRITE ACL2::NFIX-WHEN-NOT-NATP)
-;;                              (:REWRITE ACL2::NFIX-WHEN-NATP)
-;;                              (:REWRITE CONSTANT-UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-;;                              (:LINEAR COMBINE-BYTES-SIZE-FOR-RM64-PROGRAMMER-LEVEL-MODE)
-;;                              (:REWRITE ACL2::NATP-WHEN-INTEGERP)
-;;                              (:REWRITE ACL2::NATP-WHEN-GTE-0)
-;;                              (:REWRITE 4K-ALIGNED-PHYSICAL-ADDRESS-HELPER)
-;;                              (:REWRITE BITOPS::SIGNED-BYTE-P-OF-LOGTAIL)
-;;                              (:LINEAR ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-;;                              (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-;;                              (:TYPE-PRESCRIPTION ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-;;                              (:TYPE-PRESCRIPTION ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-;;                              (:REWRITE ACL2::SIGNED-BYTE-P-LOGEXT)
-;;                              (:TYPE-PRESCRIPTION BOOLEANP)
-;;                              (:REWRITE LOGHEAD-64-N64-TO-I64-CANONICAL-ADDRESS)
-;;                              (:TYPE-PRESCRIPTION PML4-TABLE-BASE-ADDR)
-;;                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-4-PREFIX)
-;;                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX)
-;;                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX)
-;;                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX)
-;;                              (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-;;                              (:REWRITE
-;;                               COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-;;                              (:DEFINITION MEMBER-P)
-;;                              (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-;;                              (:TYPE-PRESCRIPTION ACL2::|x < y  =>  0 < -x+y|)
-;;                              (:REWRITE DEFAULT-+-2)
-;;                              (:REWRITE ACL2::NATP-RW)
-;;                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS)
-;;                              (:REWRITE DEFAULT-+-1)
-;;                              (:REWRITE ACL2::ASH-0)
-;;                              (:REWRITE ACL2::ZIP-OPEN)
-;;                              (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-;;                              (:TYPE-PRESCRIPTION ADDR-BYTE-ALISTP-CREATE-ADDR-BYTES-ALIST)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
-;;                              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-;;                              (:REWRITE ZF-SPEC-THM)
-;;                              (:LINEAR ACL2::LOGHEAD-UPPER-BOUND)
-;;                              (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2)
-;;                              (:LINEAR SIZE-OF-COMBINE-BYTES)
-;;                              (:REWRITE DISJOINT-P-SUBSET-P)
-;;                              (:DEFINITION BINARY-APPEND)
-;;                              (:DEFINITION CREATE-ADDR-BYTES-ALIST)
-;;                              (:REWRITE MEMBER-P-OF-SUBSET-IS-MEMBER-P-OF-SUPERSET)
-;;                              (:LINEAR RGFI-IS-I64P . 1)
-;;                              (:REWRITE MEMBER-P-CDR)
-;;                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-;;                              (:REWRITE ACL2::DIFFERENCE-UNSIGNED-BYTE-P)
-;;                              (:LINEAR RGFI-IS-I64P . 2)
-;;                              (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
-;;                              (:LINEAR RIP-IS-I48P . 2)
-;;                              (:LINEAR RIP-IS-I48P . 1)
-;;                              (:TYPE-PRESCRIPTION BYTE-IFY)
-;;                              (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-;;                              (:REWRITE BITOPS::BASIC-UNSIGNED-BYTE-P-OF-+)
-;;                              (:REWRITE DISJOINT-P-APPEND-1)
-;;                              (:REWRITE DEFAULT-<-1)
-;;                              (:REWRITE DEFAULT-CAR)
-;;                              (:REWRITE DEFAULT-CDR)
-;;                              (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
-;;                              (:REWRITE WB-NOT-CONSP-ADDR-LST)
-;;                              (:DEFINITION NTHCDR)
-;;                              (:REWRITE SUBSET-P-CDR-Y)
-;;                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-VALUE-OF-ADDRESS-WHEN-ERROR)
-;;                              (:REWRITE DEFAULT-<-2)
-;;                              (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-LA-TO-PA)
-;;                              (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
-;;                              (:DEFINITION NTH)
-;;                              (:REWRITE CONSP-CREATE-ADDR-BYTES-ALIST)
-;;                              (:REWRITE SUBSET-P-REFLEXIVE)
-;;                              (:META ACL2::CANCEL_TIMES-EQUAL-CORRECT)
-;;                              (:REWRITE SET::SETS-ARE-TRUE-LISTS)
-;;                              (:LINEAR RFLAGS-IS-N32P)
-;;                              (:REWRITE CONSP-BYTE-IFY)
-;;                              (:DEFINITION TRUE-LISTP)
-;;                              (:TYPE-PRESCRIPTION RFLAGS-IS-N32P)
-;;                              (:REWRITE CDR-APPEND-IS-APPEND-CDR)
-;;                              (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
-;;                              (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
-;;                              (:REWRITE SUBSET-P-CDR-X)
-;;                              (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT)
-;;                              (:REWRITE SET::NONEMPTY-MEANS-SET)
-;;                              (:TYPE-PRESCRIPTION XW)
-;;                              (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST-IN-TERMS-OF-LEN)
-;;                              (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST)
-;;                              (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-;;                              (:TYPE-PRESCRIPTION TRUE-LISTP)
-;;                              (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
-;;                              (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP)
-;;                              (:TYPE-PRESCRIPTION ALL-TRANSLATION-GOVERNING-ADDRESSES)
-;;                              (:TYPE-PRESCRIPTION SET::SETP-TYPE)
-;;                              (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)
-;;                              (:REWRITE ACL2::EQUAL-CONSTANT-+)
-;;                              (:DEFINITION BYTE-LISTP)
-;;                              (:REWRITE UNSIGNED-BYTE-P-OF-ASH)
-;;                              (:REWRITE BITOPS::NORMALIZE-LOGBITP-WHEN-MODS-EQUAL)
-;;                              (:REWRITE BITOPS::LOGBITP-OF-NEGATIVE-CONST)
-;;                              (:REWRITE BITOPS::LOGBITP-OF-MASK)
-;;                              (:REWRITE BITOPS::LOGBITP-OF-CONST)
-;;                              (:REWRITE GREATER-LOGBITP-OF-UNSIGNED-BYTE-P . 1)
-;;                              (:META BITOPS::OPEN-LOGBITP-OF-CONST-LITE-META)
-;;                              (:REWRITE RB-RETURNS-BYTE-LISTP)
-;;                              (:REWRITE CAR-OF-APPEND)
-;;                              (:TYPE-PRESCRIPTION RB-RETURNS-TRUE-LISTP)
-;;                              (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER)
-;;                              (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER)
-;;                              (:TYPE-PRESCRIPTION CONSP-APPEND)
-;;                              (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-2)
-;;                              (:DEFINITION ACONS)
-;;                              (:REWRITE UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-;;                              (:REWRITE UNSIGNED-BYTE-P-OF-LOGIOR)
-;;                              (:TYPE-PRESCRIPTION NATP)
-;;                              (:REWRITE SET::IN-SET)
-;;                              (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
-;;                              (:REWRITE ACL2::MEMBER-OF-CONS)
-;;                              (:TYPE-PRESCRIPTION TRUE-LISTP-CREATE-ADDR-BYTES-ALIST)
-;;                              (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-;;                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-;;                              (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE)
-;;                              (:TYPE-PRESCRIPTION COMBINE-BYTES)
-;;                              (:DEFINITION N08P$INLINE)
-;;                              (:DEFINITION LEN)
-;;                              (:REWRITE XR-MV-NTH-2-IA32E-LA-TO-PA)
-;;                              (:REWRITE BITOPS::LOGSQUASH-OF-LOGHEAD-ZERO)
-;;                              (:REWRITE DEFAULT-UNARY-MINUS)
-;;                              (:REWRITE LEN-OF-RB-IN-PROGRAMMER-LEVEL-MODE)
-;;                              (:TYPE-PRESCRIPTION ACL2::BITP$INLINE)
-;;                              (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND)
-;;                              (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2)
-;;                              (:REWRITE WEED-OUT-IRRELEVANT-LOGAND-WHEN-FIRST-OPERAND-CONSTANT)
-;;                              (:REWRITE LOGAND-REDUNDANT)
-;;                              (:LINEAR ASH-MONOTONE-2)
-;;                              (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2)
-;;                              (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
-;;                              (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
-;;                              (:REWRITE
-;;                               MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
-;;                              (:LINEAR MV-NTH-1-IDIV-SPEC)
-;;                              (:LINEAR MV-NTH-1-DIV-SPEC)
-;;                              (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-2)
-;;                              (:LINEAR ACL2::EXPT->-1)
-;;                              (:REWRITE ACL2::UNSIGNED-BYTE-P-LOGHEAD)
-;;                              (:TYPE-PRESCRIPTION ZIP)
-;;                              (:LINEAR BITOPS::LOGAND-<-0-LINEAR)
-;;                              (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS)
-;;                              (:LINEAR <=-LOGIOR)
-;;                              (:LINEAR MEMBER-P-POS-VALUE)
-;;                              (:LINEAR MEMBER-P-POS-1-VALUE)
-;;                              (:LINEAR BITOPS::LOGIOR->=-0-LINEAR)
-;;                              (:REWRITE NO-DUPLICATES-P-AND-APPEND)
-;;                              (:REWRITE ACL2::SUBSETP-MEMBER . 2)
-;;                              (:REWRITE ACL2::SUBSETP-MEMBER . 1)
-;;                              (:TYPE-PRESCRIPTION WR32$INLINE)
-;;                              (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-1)
-;;                              (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
-;;                              (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
-;;                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)
-;;                              (:REWRITE ACL2::EXPT-WITH-VIOLATED-GUARDS)
-;;                              (:REWRITE BITOPS::BASIC-SIGNED-BYTE-P-OF-+)
-;;                              (:TYPE-PRESCRIPTION ASH)
-;;                              (:LINEAR ACL2::EXPT-IS-INCREASING-FOR-BASE>1)
-;;                              (:DEFINITION MEMBER-EQUAL)
-;;                              (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1)
-;;                              (:LINEAR BITOPS::UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-;;                              (:LINEAR BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
-
-;;                              bitops::logand-with-negated-bitmask
-;;                              unsigned-byte-p
-;;                              force (force))))))
-
-;; (i-am-here)
-
 (defun rewire_dst_to_src-clk () 58)
 
 (defthm rewire_dst_to_src-effects
@@ -1826,22 +1217,25 @@
             (not (page-structure-marking-mode x86))
             (not (alignment-checking-enabled-p x86))
 
-            ;; Source addresses are canonical.
+            ;; CR3's reserved bits must be zero (MBZ).
+            (equal (logtail 40 (ctri *cr3* x86)) 0)
+
+            ;; Source address is canonical.
             (canonical-address-p (xr :rgf *rdi* x86))
-            (canonical-address-p (+ 7 (xr :rgf *rdi* x86)))
+            ;; (canonical-address-p (+ 7 (xr :rgf *rdi* x86)))
             ;; Source address is 1G-aligned.
             (equal (loghead 30 (xr :rgf *rdi* x86)) 0)
-            ;; Destination addresses are canonical.
+            ;; Destination address is canonical.
             (canonical-address-p (xr :rgf *rsi* x86))
-            (canonical-address-p (+ 7 (xr :rgf *rsi* x86)))
+            ;; (canonical-address-p (+ 7 (xr :rgf *rsi* x86)))
             ;; Destination address is 1G-aligned.
             (equal (loghead 30 (xr :rgf *rsi* x86)) 0)
             ;; Program addresses are canonical.
             (canonical-address-p (+ prog-len (xr :rip 0 x86)))
-            (canonical-address-p (xr :rip 0 x86))
+            ;; (canonical-address-p (xr :rip 0 x86))
             ;; Stack addresses are canonical.
             (canonical-address-p (+ -24 (xr :rgf *rsp* x86)))
-            (canonical-address-p (xr :rgf *rsp* x86))
+            ;; (canonical-address-p (xr :rgf *rsp* x86))
             (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
             (equal (xr :ms 0 x86) nil)
             (equal (xr :fault 0 x86) nil)
@@ -1865,7 +1259,7 @@
             ;; stack.
             (not (mv-nth 0 (las-to-pas
                             (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-                            :r 0 x86)))
+                            :r (cpl x86) x86)))
             ;; Reading from stack: The stack is located in a
             ;; contiguous region of memory --- no overlaps among
             ;; physical addresses of the stack. I need this hypothesis
@@ -1874,7 +1268,7 @@
             (no-duplicates-p
              (mv-nth 1 (las-to-pas
                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-                        :r 0 x86)))
+                        :r (cpl x86) x86)))
             ;; The physical addresses corresponding to the program and
             ;; stack are disjoint.
             (disjoint-p
@@ -1909,8 +1303,8 @@
             ;; Assumptions about the source PML4TE:
 
             ;; PML4TE linear addresses are canonical.
-            (canonical-address-p
-             (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+            ;; (canonical-address-p
+            ;;  (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
             (canonical-address-p
              (+ 7 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))))
 
@@ -1918,7 +1312,7 @@
             (not (mv-nth 0 (las-to-pas
                             (create-canonical-address-list
                              8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-                            :r 0 x86)))
+                            :r (cpl x86) x86)))
             ;; The translation-governing addresses of PML4TE addresses
             ;; are disjoint from the physical addresses corresponding
             ;; to the stack.
@@ -1928,7 +1322,7 @@
                8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
               x86)
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
             ;; The PML4TE physical addresses are disjoint from the
             ;; stack physical addresses.
             (disjoint-p
@@ -1936,11 +1330,11 @@
                         (create-canonical-address-list
                          8
                          (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-                        :r 0 x86))
+                        :r (cpl x86) x86))
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
-            ;; PML4TE is has P = 1 (i.e., it is present).
+            ;; PML4TE has P = 1 (i.e., it is present).
             (equal
              (loghead
               1
@@ -1961,10 +1355,10 @@
             ;; Assumptions about the source PDPTE:
 
             ;; PDPTE linear addresses are canonical.
-            (canonical-address-p
-             (page-dir-ptr-table-entry-addr
-              (xr :rgf *rdi* x86)
-              (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+            ;; (canonical-address-p
+            ;;  (page-dir-ptr-table-entry-addr
+            ;;   (xr :rgf *rdi* x86)
+            ;;   (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
             (canonical-address-p
              (+ 7 (page-dir-ptr-table-entry-addr
                    (xr :rgf *rdi* x86)
@@ -1977,7 +1371,7 @@
                              (page-dir-ptr-table-entry-addr
                               (xr :rgf *rdi* x86)
                               (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                            :r 0 x86)))
+                            :r (cpl x86) x86)))
             ;; The translation-governing addresses of PDPTE addresses
             ;; are disjoint from the physical addresses corresponding
             ;; to the stack.
@@ -1990,7 +1384,7 @@
                 (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
               x86)
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
             ;; The PDPTE physical addresses are disjoint from the
             ;; stack physical addresses.
             (disjoint-p
@@ -2000,9 +1394,9 @@
                          (page-dir-ptr-table-entry-addr
                           (xr :rgf *rdi* x86)
                           (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                        :r 0 x86))
+                        :r (cpl x86) x86))
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
             ;; PDPTE does not have the P or PS bit cleared (i.e., the
             ;; entry is present and it points to a 1G page).
@@ -2037,8 +1431,8 @@
             ;; Assumptions about the destination PML4TE:
 
             ;; PML4TE linear addresses are canonical.
-            (canonical-address-p
-             (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+            ;; (canonical-address-p
+            ;;  (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
             (canonical-address-p
              (+ 7 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))))
 
@@ -2046,7 +1440,7 @@
             (not (mv-nth 0 (las-to-pas
                             (create-canonical-address-list
                              8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-                            :r 0 x86)))
+                            :r (cpl x86) x86)))
             ;; The translation-governing addresses of PML4TE addresses
             ;; are disjoint from the physical addresses corresponding
             ;; to the stack.
@@ -2056,7 +1450,7 @@
                8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
               x86)
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
             ;; The PML4TE physical addresses are disjoint from the
             ;; stack physical addresses.
             (disjoint-p
@@ -2064,9 +1458,9 @@
                         (create-canonical-address-list
                          8
                          (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-                        :r 0 x86))
+                        :r (cpl x86) x86))
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
             ;; PML4TE is has P = 1 (i.e., it is present).
             (equal
@@ -2089,10 +1483,10 @@
             ;; Assumptions about the destination PDPTE:
 
             ;; PDPTE linear addresses are canonical.
-            (canonical-address-p
-             (page-dir-ptr-table-entry-addr
-              (xr :rgf *rsi* x86)
-              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+            ;; (canonical-address-p
+            ;;  (page-dir-ptr-table-entry-addr
+            ;;   (xr :rgf *rsi* x86)
+            ;;   (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
             (canonical-address-p
              (+ 7 (page-dir-ptr-table-entry-addr
                    (xr :rgf *rsi* x86)
@@ -2106,7 +1500,7 @@
                              (page-dir-ptr-table-entry-addr
                               (xr :rgf *rsi* x86)
                               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                            :r 0 x86)))
+                            :r (cpl x86) x86)))
             ;; No errors encountered while translating the PDPTE
             ;; linear addresses on behalf of a write.
             (not (mv-nth 0 (las-to-pas
@@ -2115,7 +1509,7 @@
                              (page-dir-ptr-table-entry-addr
                               (xr :rgf *rsi* x86)
                               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                            :w 0 x86)))
+                            :w (cpl x86) x86)))
             ;; The translation-governing addresses of PDPTE addresses
             ;; are disjoint from the physical addresses corresponding
             ;; to the stack.
@@ -2128,19 +1522,19 @@
                 (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
               x86)
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
             ;; The PDPTE physical addresses are disjoint from the
             ;; stack physical addresses.
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (page-dir-ptr-table-entry-addr
-                          (xr :rgf *rsi* x86)
-                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :r 0 x86))
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+            ;; (disjoint-p
+            ;;  (mv-nth 1 (las-to-pas
+            ;;             (create-canonical-address-list
+            ;;              8
+            ;;              (page-dir-ptr-table-entry-addr
+            ;;               (xr :rgf *rsi* x86)
+            ;;               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+            ;;             :r (cpl x86) x86))
+            ;;  (mv-nth 1 (las-to-pas
+            ;;             (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
             ;; The physical addresses corresponding to the program are
             ;; disjoint from those of the PDPTE (on behalf of a
@@ -2155,7 +1549,7 @@
                          (page-dir-ptr-table-entry-addr
                           (xr :rgf *rsi* x86)
                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :w 0 x86)))
+                        :w (cpl x86) x86)))
 
             ;; Translation-governing addresses of the program are
             ;; disjoint from the PDPTE physical addresses (on behalf
@@ -2170,21 +1564,21 @@
                          (page-dir-ptr-table-entry-addr
                           (xr :rgf *rsi* x86)
                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :w 0 x86)))
+                        :w (cpl x86) x86)))
             ;; Translation-governing addresses of the stack are
             ;; disjoint from the physical addresses of the PDPTE (on
             ;; behalf of a write).
-            (disjoint-p
-             (all-translation-governing-addresses
-              (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-              x86)
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (page-dir-ptr-table-entry-addr
-                          (xr :rgf *rsi* x86)
-                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :w 0 x86)))
+            ;; (disjoint-p
+            ;;  (all-translation-governing-addresses
+            ;;   (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+            ;;   x86)
+            ;;  (mv-nth 1 (las-to-pas
+            ;;             (create-canonical-address-list
+            ;;              8
+            ;;              (page-dir-ptr-table-entry-addr
+            ;;               (xr :rgf *rsi* x86)
+            ;;               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+            ;;             :w (cpl x86) x86)))
 
             ;; Destination PDPTE does not have the P or PS bit cleared
             ;; (i.e., the entry is present and it points to a 1G
@@ -2225,13 +1619,13 @@
 
             ;; The program and the ret address on the stack are
             ;; disjoint.
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list prog-len (xr :rip 0 x86))
-                        :x (cpl x86) x86))
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                        :r (cpl x86) x86)))
+            ;; (disjoint-p
+            ;;  (mv-nth 1 (las-to-pas
+            ;;             (create-canonical-address-list prog-len (xr :rip 0 x86))
+            ;;             :x (cpl x86) x86))
+            ;;  (mv-nth 1 (las-to-pas
+            ;;             (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+            ;;             :r (cpl x86) x86)))
 
             ;; The translation-governing addresses of the ret address
             ;; are disjoint from the destination PDPTE.
@@ -2269,7 +1663,7 @@
                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
                         :r (cpl x86) x86))
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
             ;; The ret address on the stack is disjoint from the rest
             ;; of the stack.
@@ -2278,7 +1672,7 @@
                         (create-canonical-address-list 8 (xr :rgf *rsp* x86))
                         :r (cpl x86) x86))
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
             ;; The translation-governing addresses of the return
             ;; address on the stack are disjoint from the physical
@@ -2896,8 +2290,6 @@
 
 ;; ======================================================================
 
-;; (i-am-here)
-
 (defthm rm-low-64-and-write-to-physical-memory-disjoint
   (implies (disjoint-p (addr-range 8 p-addr-1) p-addrs-2)
            (equal (rm-low-64 p-addr-1 (write-to-physical-memory p-addrs-2 bytes x86))
@@ -3069,7 +2461,7 @@
                                             16))
                                32))))
   :hints (("Goal"
-           :use ((:instance EXPAND-COMBINE-BYTES-OF-LEN-8-HELPER-FINAL)
+           :use ((:instance expand-combine-bytes-of-len-8-helper-final)
                  (:instance expand-combine-bytes-of-len-8-helper-1
                             (a (car bytes))
                             (b (cadr bytes))
@@ -3480,6 +2872,52 @@
 ;;                              (:meta acl2::mv-nth-cons-meta)
 ;;                              force (force))))))
 
+(def-gl-export rb-and-rm-low-64-for-direct-map-helper
+  :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+            (n08p e) (n08p f) (n08p g) (n08p h))
+  :concl (equal (logior a (ash b 8)
+                        (ash (logior c (ash d 8)) 16)
+                        (ash (logior e (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 32))
+                (logior a
+                        (ash (logior b
+                                     (ash (logior c
+                                                  (ash
+                                                   (logior d
+                                                           (ash
+                                                            (logior
+                                                             e
+                                                             (ash
+                                                              (logior
+                                                               f
+                                                               (ash (logior g (ash h 8)) 8))
+                                                              8)) 8)) 8)) 8)) 8)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+         (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+
+(defthm rb-and-rm-low-64-for-direct-map
+  (implies (and
+            (equal
+             (mv-nth
+              1
+              (las-to-pas
+               (create-canonical-address-list 8 direct-mapped-addr)
+               r-w-x (cpl x86) x86))
+             (addr-range 8 direct-mapped-addr))
+            (not (page-structure-marking-mode x86))
+            (not (programmer-level-mode x86))
+            (x86p x86))
+           (equal (combine-bytes
+                   (mv-nth
+                    1
+                    (rb (create-canonical-address-list 8 direct-mapped-addr) r-w-x x86)))
+                  (rm-low-64 direct-mapped-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (rb rm-low-64 rm-low-32
+                                       read-from-physical-memory) ()))))
+
+(local (in-theory (e/d () (rb-and-rm-low-64-for-direct-map-helper rb-and-rm-low-64-for-direct-map-helper-gl))))
+
 (defthm ia32e-la-to-pa-page-table-values-and-write-to-translation-governing-address
   (b* ((p-addrs (translation-governing-addresses-for-page-table lin-addr base-addr x86))
        (page-table-entry (rm-low-64 (page-table-entry-addr lin-addr base-addr) x86))
@@ -3530,31 +2968,52 @@
 
 (defthm ia32e-la-to-pa-page-dir-ptr-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
   (b* ((p-addrs (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)))
-       (page-dir-ptr-table-entry (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86))
+       (page-dir-ptr-table-entry (combine-bytes
+                                  (mv-nth 1
+                                          (rb
+                                           (create-canonical-address-list
+                                            8
+                                            (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                                           :r x86))))
        (value (combine-bytes bytes)))
-    (implies (and (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl x86)))
-                  (equal (page-present page-dir-ptr-table-entry)
-                         (page-present value))
-                  (equal (page-read-write page-dir-ptr-table-entry)
-                         (page-read-write value))
-                  (equal (page-user-supervisor page-dir-ptr-table-entry)
-                         (page-user-supervisor value))
-                  (equal (page-execute-disable page-dir-ptr-table-entry)
-                         (page-execute-disable value))
-                  (equal (page-size page-dir-ptr-table-entry)
-                         (page-size value))
-                  ;; 1 G pages
-                  (equal (page-size page-dir-ptr-table-entry) 1)
-                  (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                         (part-select value :low 13 :high 29))
-                  (equal (len bytes) (len p-addrs))
-                  (byte-listp bytes)
-                  (canonical-address-p lin-addr)
-                  (physical-address-p base-addr)
-                  (equal (loghead 12 base-addr) 0)
-                  (x86p x86))
+    (implies (and
+              ;; page-dir-ptr-table-entry-addr is directly mapped.
+              (equal
+               (mv-nth
+                1
+                (las-to-pas
+                 (create-canonical-address-list 8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                 :r (cpl x86) x86))
+               p-addrs)
+              (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe r-w-x cpl x86)))
+              (equal (page-present page-dir-ptr-table-entry)
+                     (page-present value))
+              (equal (page-read-write page-dir-ptr-table-entry)
+                     (page-read-write value))
+              (equal (page-user-supervisor page-dir-ptr-table-entry)
+                     (page-user-supervisor value))
+              (equal (page-execute-disable page-dir-ptr-table-entry)
+                     (page-execute-disable value))
+              (equal (page-size page-dir-ptr-table-entry)
+                     (page-size value))
+              ;; 1 G pages
+              (equal (page-size page-dir-ptr-table-entry) 1)
+              (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+                     (part-select value :low 13 :high 29))
+              (equal (len bytes) (len p-addrs))
+              (byte-listp bytes)
+              (canonical-address-p lin-addr)
+              (physical-address-p base-addr)
+              (equal (loghead 12 base-addr) 0)
+              (not (page-structure-marking-mode x86))
+              (not (programmer-level-mode x86))
+              (x86p x86))
+             ;; ia32e-la-to-pa-page-dir-ptr-table returns the physical
+             ;; address corresponding to "lin-addr" after the PDPTE
+             ;; corresponding to this "lin-addr" has been modified ---
+             ;; the new PDPTE is "value".
              (and (equal
                    (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -3579,37 +3038,61 @@
 
 (defthm ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
   (b* ((pml4-table-entry-addr (pml4-table-entry-addr lin-addr base-addr))
-       (pml4-table-entry (rm-low-64 pml4-table-entry-addr x86))
+       (pml4-table-entry (combine-bytes
+                          (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
        (page-dir-ptr-table-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
        (page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
-       (page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
+       (page-dir-ptr-table-entry
+        (combine-bytes
+         (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
        (p-addrs (addr-range 8 page-dir-ptr-table-entry-addr))
        (value (combine-bytes bytes)))
+    (implies (and
+              ;; PML4E and PDPTE are direct mapped.
+              (equal
+               (mv-nth
+                1
+                (las-to-pas
+                 (create-canonical-address-list 8 pml4-table-entry-addr)
+                 :r (cpl x86) x86))
+               (addr-range 8 pml4-table-entry-addr))
+              (equal
+               (mv-nth
+                1
+                (las-to-pas
+                 (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+                 :r (cpl x86) x86))
+               p-addrs)
+              (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                          (addr-range 8 page-dir-ptr-table-entry-addr))
+              (not (mv-nth 0 (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
 
-    (implies (and (disjoint-p (addr-range 8 pml4-table-entry-addr)
-                              (addr-range 8 page-dir-ptr-table-entry-addr))
-                  (not (mv-nth 0 (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
-
-                  (equal (page-present page-dir-ptr-table-entry)
-                         (page-present value))
-                  (equal (page-read-write page-dir-ptr-table-entry)
-                         (page-read-write value))
-                  (equal (page-user-supervisor page-dir-ptr-table-entry)
-                         (page-user-supervisor value))
-                  (equal (page-execute-disable page-dir-ptr-table-entry)
-                         (page-execute-disable value))
-                  (equal (page-size page-dir-ptr-table-entry)
-                         (page-size value))
-                  ;; 1 G pages
-                  (equal (page-size page-dir-ptr-table-entry) 1)
-                  (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                         (part-select value :low 13 :high 29))
-                  (equal (len bytes) (len p-addrs))
-                  (byte-listp bytes)
-                  (canonical-address-p lin-addr)
-                  (physical-address-p base-addr)
-                  (equal (loghead 12 base-addr) 0)
-                  (x86p x86))
+              (equal (page-present page-dir-ptr-table-entry)
+                     (page-present value))
+              (equal (page-read-write page-dir-ptr-table-entry)
+                     (page-read-write value))
+              (equal (page-user-supervisor page-dir-ptr-table-entry)
+                     (page-user-supervisor value))
+              (equal (page-execute-disable page-dir-ptr-table-entry)
+                     (page-execute-disable value))
+              (equal (page-size page-dir-ptr-table-entry)
+                     (page-size value))
+              ;; 1 G pages
+              (equal (page-size page-dir-ptr-table-entry) 1)
+              (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+                     (part-select value :low 13 :high 29))
+              (equal (len bytes) (len p-addrs))
+              (byte-listp bytes)
+              (canonical-address-p lin-addr)
+              (physical-address-p base-addr)
+              (equal (loghead 12 base-addr) 0)
+              (not (programmer-level-mode x86))
+              (not (page-structure-marking-mode x86))
+              (x86p x86))
+             ;; ia32e-la-to-pa-pml4-table returns the physical address
+             ;; corresponding to "lin-addr" after the PDPTE
+             ;; corresponding to this "lin-addr" has been modified ---
+             ;; the new PDPTE is "value".
              (and (equal
                    (mv-nth 0 (ia32e-la-to-pa-pml4-table
                               lin-addr base-addr wp smep smap ac nxe r-w-x cpl
@@ -3632,87 +3115,149 @@
                              force (force))))))
 
 (defthm ia32e-la-to-pa-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-  (b* ((pml4-table-base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+  (b* ((pml4-table-base-addr (pml4-table-base-addr x86))
        (pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-       (pml4-table-entry (rm-low-64 pml4-table-entry-addr x86))
+       (pml4-table-entry
+        (combine-bytes
+         (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
        (page-dir-ptr-table-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
        (page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
-       (page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
+       (page-dir-ptr-table-entry
+        (combine-bytes
+         (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
        (p-addrs (addr-range 8 page-dir-ptr-table-entry-addr))
        (value (combine-bytes bytes)))
-    (implies (and (disjoint-p (addr-range 8 pml4-table-entry-addr)
-                              (addr-range 8 page-dir-ptr-table-entry-addr))
-                  (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (equal (page-present page-dir-ptr-table-entry)
-                         (page-present value))
-                  (equal (page-read-write page-dir-ptr-table-entry)
-                         (page-read-write value))
-                  (equal (page-user-supervisor page-dir-ptr-table-entry)
-                         (page-user-supervisor value))
-                  (equal (page-execute-disable page-dir-ptr-table-entry)
-                         (page-execute-disable value))
-                  (equal (page-size page-dir-ptr-table-entry)
-                         (page-size value))
-                  (equal (page-size page-dir-ptr-table-entry) 1)
-                  (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                         (part-select value :low 13 :high 29))
-                  (equal (len bytes) (len p-addrs))
-                  (byte-listp bytes)
-                  (canonical-address-p lin-addr)
-                  (x86p x86))
+    (implies (and
+              ;; PML4E and PDPTE are direct mapped.
+              (equal
+               (mv-nth
+                1
+                (las-to-pas
+                 (create-canonical-address-list 8 pml4-table-entry-addr)
+                 :r (cpl x86) x86))
+               (addr-range 8 pml4-table-entry-addr))
+              (equal
+               (mv-nth
+                1
+                (las-to-pas
+                 (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+                 :r (cpl x86) x86))
+               p-addrs)
+              (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                          (addr-range 8 page-dir-ptr-table-entry-addr))
+              (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+              (equal (page-present page-dir-ptr-table-entry)
+                     (page-present value))
+              (equal (page-read-write page-dir-ptr-table-entry)
+                     (page-read-write value))
+              (equal (page-user-supervisor page-dir-ptr-table-entry)
+                     (page-user-supervisor value))
+              (equal (page-execute-disable page-dir-ptr-table-entry)
+                     (page-execute-disable value))
+              (equal (page-size page-dir-ptr-table-entry)
+                     (page-size value))
+              ;; 1 G pages
+              (equal (page-size page-dir-ptr-table-entry) 1)
+              (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+                     (part-select value :low 13 :high 29))
+              (equal (len bytes) (len p-addrs))
+              (byte-listp bytes)
+              (canonical-address-p lin-addr)
+              (not (programmer-level-mode x86))
+              (not (page-structure-marking-mode x86))
+              (x86p x86))
+             ;; ia32e-la-to-pa returns the physical address
+             ;; corresponding to "lin-addr" after the PDPTE
+             ;; corresponding to this "lin-addr" has been modified ---
+             ;; the new PDPTE is "value".
              (and
               (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
                      nil)
               (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
                      (logior (loghead 30 lin-addr) (ash (loghead 22 (logtail 30 value)) 30))))))
   :hints (("Goal"
+           :use ((:instance
+                  ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
+                  (base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+                  (wp (cr0-slice :cr0-wp (n32 (ctri *cr0* x86))))
+                  (smep (loghead 1 (bool->bit (logbitp 20 (xr :ctr *cr4* x86)))))
+                  (smap 0)
+                  (ac (bool->bit (logbitp 18 (xr :rflags 0 x86))))
+                  (nxe (loghead 1 (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86)))))
+                  (r-w-x r-w-x)
+                  (cpl cpl)
+                  (x86 x86)))
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa)
-                            (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                            (ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
+                             not
                              force (force))))))
 
-
 (defthm ia32e-la-to-pa-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
-  (b* ((pml4-table-base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+  (b* ((pml4-table-base-addr (pml4-table-base-addr x86))
        (pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-       (pml4-table-entry (rm-low-64 pml4-table-entry-addr x86))
+       (pml4-table-entry
+        (combine-bytes
+         (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
        (page-dir-ptr-table-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
-       (page-dir-ptr-table-entry-addr
-        (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
-       (page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
+       (page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
+       (page-dir-ptr-table-entry
+        (combine-bytes
+         (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
        (bytes (strip-cdrs addr-lst))
        (value (combine-bytes bytes)))
     (implies
-     (and (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
-                 (addr-range 8 page-dir-ptr-table-entry-addr))
-          (disjoint-p
-           (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-           (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)))
-          (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-          (equal (page-present page-dir-ptr-table-entry)
-                 (page-present value))
-          (equal (page-read-write page-dir-ptr-table-entry)
-                 (page-read-write value))
-          (equal (page-user-supervisor page-dir-ptr-table-entry)
-                 (page-user-supervisor value))
-          (equal (page-execute-disable page-dir-ptr-table-entry)
-                 (page-execute-disable value))
-          (equal (page-size page-dir-ptr-table-entry)
-                 (page-size value))
-          (equal (page-size page-dir-ptr-table-entry) 1)
-          (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                 (part-select value :low 13 :high 29))
-          (addr-byte-alistp addr-lst)
-          (equal (len addr-lst) 8)
-          (canonical-address-p lin-addr)
-          (not (programmer-level-mode x86))
-          (not (page-structure-marking-mode x86))
-          (x86p x86))
+     (and
+      ;; PML4E and PDPTE are direct mapped.
+      (equal
+       (mv-nth
+        1
+        (las-to-pas
+         (create-canonical-address-list 8 pml4-table-entry-addr)
+         :r (cpl x86) x86))
+       (addr-range 8 pml4-table-entry-addr))
+      (equal
+       (mv-nth
+        1
+        (las-to-pas
+         (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+         :r (cpl x86) x86))
+       (addr-range 8 page-dir-ptr-table-entry-addr))
+      (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
+             (addr-range 8 page-dir-ptr-table-entry-addr))
+      (disjoint-p
+       (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+       (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)))
+      (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+      (equal (page-present page-dir-ptr-table-entry)
+             (page-present value))
+      (equal (page-read-write page-dir-ptr-table-entry)
+             (page-read-write value))
+      (equal (page-user-supervisor page-dir-ptr-table-entry)
+             (page-user-supervisor value))
+      (equal (page-execute-disable page-dir-ptr-table-entry)
+             (page-execute-disable value))
+      (equal (page-size page-dir-ptr-table-entry)
+             (page-size value))
+      (equal (page-size page-dir-ptr-table-entry) 1)
+      (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+             (part-select value :low 13 :high 29))
+      (addr-byte-alistp addr-lst)
+      (equal (len addr-lst) 8)
+      (canonical-address-p lin-addr)
+      (not (programmer-level-mode x86))
+      (not (page-structure-marking-mode x86))
+      (x86p x86))
+     ;; ia32e-la-to-pa returns the physical address
+     ;; corresponding to "lin-addr" after the PDPTE
+     ;; corresponding to this "lin-addr" has been modified ---
+     ;; the new PDPTE is "value".
      (and
       (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
              nil)
@@ -3731,6 +3276,7 @@
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
+                             not
                              force (force))))))
 
 (def-gl-export same-pml4-table-entry-addr-for-8-lin-addrs
@@ -3844,45 +3390,68 @@
   (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat value 64))))
 
 (defthm las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
-  (b* ((pml4-table-base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+  (b* ((pml4-table-base-addr (pml4-table-base-addr x86))
        (pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-       (pml4-table-entry (rm-low-64 pml4-table-entry-addr x86))
+       (pml4-table-entry
+        (combine-bytes
+         (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
        (page-dir-ptr-table-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
        (page-dir-ptr-table-entry-addr
         (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
-       (page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
+       (page-dir-ptr-table-entry
+        (combine-bytes
+         (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
        (l-addrs (create-canonical-address-list 8 lin-addr))
        (bytes (strip-cdrs addr-lst))
        (value (combine-bytes bytes)))
     (implies
-     (and (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
-                 (addr-range 8 page-dir-ptr-table-entry-addr))
-          (disjoint-p
-           (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-           (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)))
-          (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-          (equal (page-present page-dir-ptr-table-entry)
-                 (page-present value))
-          (equal (page-read-write page-dir-ptr-table-entry)
-                 (page-read-write value))
-          (equal (page-user-supervisor page-dir-ptr-table-entry)
-                 (page-user-supervisor value))
-          (equal (page-execute-disable page-dir-ptr-table-entry)
-                 (page-execute-disable value))
-          (equal (page-size page-dir-ptr-table-entry)
-                 (page-size value))
-          (equal (page-size page-dir-ptr-table-entry) 1)
-          (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                 (part-select value :low 13 :high 29))
-          (addr-byte-alistp addr-lst)
-          (equal (len addr-lst) 8)
-          (canonical-address-p lin-addr)
-          (canonical-address-p (+ 7 lin-addr))
-          ;; 1G-aligned linear address
-          (equal (loghead 30 lin-addr) 0)
-          (not (programmer-level-mode x86))
-          (not (page-structure-marking-mode x86))
-          (x86p x86))
+     (and
+      ;; PML4E and PDPTE are direct mapped.
+      (equal
+       (mv-nth
+        1
+        (las-to-pas
+         (create-canonical-address-list 8 pml4-table-entry-addr)
+         :r (cpl x86) x86))
+       (addr-range 8 pml4-table-entry-addr))
+      (equal
+       (mv-nth
+        1
+        (las-to-pas
+         (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+         :r (cpl x86) x86))
+       (addr-range 8 page-dir-ptr-table-entry-addr))
+      (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
+             (addr-range 8 page-dir-ptr-table-entry-addr))
+      (disjoint-p
+       (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+       (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)))
+      (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+      (equal (page-present page-dir-ptr-table-entry)
+             (page-present value))
+      (equal (page-read-write page-dir-ptr-table-entry)
+             (page-read-write value))
+      (equal (page-user-supervisor page-dir-ptr-table-entry)
+             (page-user-supervisor value))
+      (equal (page-execute-disable page-dir-ptr-table-entry)
+             (page-execute-disable value))
+      (equal (page-size page-dir-ptr-table-entry)
+             (page-size value))
+      (equal (page-size page-dir-ptr-table-entry) 1)
+      (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+             (part-select value :low 13 :high 29))
+      (addr-byte-alistp addr-lst)
+      (equal (len addr-lst) 8)
+      (canonical-address-p lin-addr)
+      (canonical-address-p (+ 7 lin-addr))
+      ;; 1G-aligned linear address
+      (equal (loghead 30 lin-addr) 0)
+      (not (programmer-level-mode x86))
+      (not (page-structure-marking-mode x86))
+      (x86p x86))
+     ;; las-to-pas returns the physical addresses corresponding to
+     ;; "l-addrs" after the PDPTE corresponding to these "l-addrs"
+     ;; have been modified --- the new PDPTE is "value".
      (and
       (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
              nil)
@@ -4030,47 +3599,73 @@
 
 (defthm read-from-physical-memory-and-wb-with-modified-1G-page-map-in-system-level-non-marking-mode
   (b* ((cpl (cpl x86))
-       (pml4-table-base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+       (pml4-table-base-addr (pml4-table-base-addr x86))
        (pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-       (pml4-table-entry (rm-low-64 pml4-table-entry-addr x86))
-       (page-dir-ptr-table-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
+       ;; (pml4-table-entry
+       ;;  (combine-bytes
+       ;;   (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
+       (page-dir-ptr-table-base-addr
+        (page-dir-ptr-table-base-addr lin-addr x86)
+        ;; (ash (loghead 40 (logtail 12 pml4-table-entry)) 12)
+        )
        (page-dir-ptr-table-entry-addr
         (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
-       (page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
+       (page-dir-ptr-table-entry
+        (combine-bytes
+         (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
        (bytes (strip-cdrs addr-lst))
        (value (combine-bytes bytes)))
     (implies
-     (and (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl x86))
-                 (addr-range 8 page-dir-ptr-table-entry-addr))
-          (disjoint-p
-           (addr-range 8 (ash (loghead 22 (logtail 30 value)) 30))
-           (addr-range 8 page-dir-ptr-table-entry-addr))
-          (disjoint-p
-           (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-           (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)))
-          (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
-          (equal (page-present page-dir-ptr-table-entry)
-                 (page-present value))
-          (equal (page-read-write page-dir-ptr-table-entry)
-                 (page-read-write value))
-          (equal (page-user-supervisor page-dir-ptr-table-entry)
-                 (page-user-supervisor value))
-          (equal (page-execute-disable page-dir-ptr-table-entry)
-                 (page-execute-disable value))
-          (equal (page-size page-dir-ptr-table-entry)
-                 (page-size value))
-          (equal (page-size page-dir-ptr-table-entry) 1)
-          (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                 (part-select value :low 13 :high 29))
-          (addr-byte-alistp addr-lst)
-          (equal (len addr-lst) 8)
-          (canonical-address-p lin-addr)
-          (canonical-address-p (+ 7 lin-addr))
-          ;; 1G-aligned linear address
-          (equal (loghead 30 lin-addr) 0)
-          (not (programmer-level-mode x86))
-          (not (page-structure-marking-mode x86))
-          (x86p x86))
+     (and
+      ;; PML4E and PDPTE are direct mapped.
+      (equal
+       (mv-nth
+        1
+        (las-to-pas
+         (create-canonical-address-list 8 pml4-table-entry-addr)
+         :r (cpl x86) x86))
+       (addr-range 8 pml4-table-entry-addr))
+      (equal
+       (mv-nth
+        1
+        (las-to-pas
+         (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+         :r (cpl x86) x86))
+       (addr-range 8 page-dir-ptr-table-entry-addr))
+      (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl x86))
+             (addr-range 8 page-dir-ptr-table-entry-addr))
+      ;; The physical addresses pointed to by the new PDPTE (i.e.,
+      ;; containing "value") are disjoint from the physical addresses
+      ;; corresponding to the PDPTE itself.
+      (disjoint-p
+       (addr-range 8 (ash (loghead 22 (logtail 30 value)) 30))
+       (addr-range 8 page-dir-ptr-table-entry-addr))
+      (disjoint-p
+       (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+       (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)))
+      (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
+      (equal (page-present page-dir-ptr-table-entry)
+             (page-present value))
+      (equal (page-read-write page-dir-ptr-table-entry)
+             (page-read-write value))
+      (equal (page-user-supervisor page-dir-ptr-table-entry)
+             (page-user-supervisor value))
+      (equal (page-execute-disable page-dir-ptr-table-entry)
+             (page-execute-disable value))
+      (equal (page-size page-dir-ptr-table-entry)
+             (page-size value))
+      (equal (page-size page-dir-ptr-table-entry) 1)
+      (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+             (part-select value :low 13 :high 29))
+      (addr-byte-alistp addr-lst)
+      (equal (len addr-lst) 8)
+      (canonical-address-p lin-addr)
+      (canonical-address-p (+ 7 lin-addr))
+      ;; 1G-aligned linear address
+      (equal (loghead 30 lin-addr) 0)
+      (not (programmer-level-mode x86))
+      (not (page-structure-marking-mode x86))
+      (x86p x86))
      (equal (read-from-physical-memory
              (addr-range 8 (ash (loghead 22 (logtail 30 value)) 30))
              (mv-nth 1 (wb addr-lst x86)))
@@ -4211,49 +3806,73 @@
                              (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-2))))))
 
 (defthm rb-wb-equal-with-modified-1G-page-map-in-system-level-non-marking-mode
-  (b* ((pml4-table-base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+  (b* ((pml4-table-base-addr (pml4-table-base-addr x86))
        (pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-       (pml4-table-entry (rm-low-64 pml4-table-entry-addr x86))
-       (page-dir-ptr-table-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
+       ;; (pml4-table-entry
+       ;;  (combine-bytes
+       ;;   (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
+       (page-dir-ptr-table-base-addr
+        ;; (ash (loghead 40 (logtail 12 pml4-table-entry)) 12)
+        (page-dir-ptr-table-base-addr lin-addr x86))
        (page-dir-ptr-table-entry-addr
         (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr))
-       (page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
+       (page-dir-ptr-table-entry
+        (combine-bytes (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
        (l-addrs (create-canonical-address-list 8 lin-addr))
        (bytes (strip-cdrs addr-lst))
        (value (combine-bytes bytes)))
     (implies
-     (and (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
-                 (addr-range 8 page-dir-ptr-table-entry-addr))
-          (disjoint-p
-           (addr-range 8 (ash (loghead 22 (logtail 30 value)) 30))
-           (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-          (disjoint-p
-           (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-           (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)))
-          (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-          (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-          (equal (page-present page-dir-ptr-table-entry)
-                 (page-present value))
-          (equal (page-read-write page-dir-ptr-table-entry)
-                 (page-read-write value))
-          (equal (page-user-supervisor page-dir-ptr-table-entry)
-                 (page-user-supervisor value))
-          (equal (page-execute-disable page-dir-ptr-table-entry)
-                 (page-execute-disable value))
-          (equal (page-size page-dir-ptr-table-entry)
-                 (page-size value))
-          (equal (page-size page-dir-ptr-table-entry) 1)
-          (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                 (part-select value :low 13 :high 29))
-          (addr-byte-alistp addr-lst)
-          (equal (len addr-lst) 8)
-          (canonical-address-p lin-addr)
-          (canonical-address-p (+ 7 lin-addr))
-          ;; 1G-aligned linear address
-          (equal (loghead 30 lin-addr) 0)
-          (not (programmer-level-mode x86))
-          (not (page-structure-marking-mode x86))
-          (x86p x86))
+     (and
+      ;; PML4E and PDPTE are direct mapped.
+      (equal
+       (mv-nth
+        1
+        (las-to-pas
+         (create-canonical-address-list 8 pml4-table-entry-addr)
+         :r (cpl x86) x86))
+       (addr-range 8 pml4-table-entry-addr))
+      (equal
+       (mv-nth
+        1
+        (las-to-pas
+         (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+         :r (cpl x86) x86))
+       (addr-range 8 page-dir-ptr-table-entry-addr))
+      (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
+             (addr-range 8 page-dir-ptr-table-entry-addr))
+      ;; The physical addresses pointed to by the new PDPTE (i.e.,
+      ;; containing "value") are disjoint from the physical addresses
+      ;; corresponding to the PDPTE itself.
+      (disjoint-p
+       (addr-range 8 (ash (loghead 22 (logtail 30 value)) 30))
+       (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+      (disjoint-p
+       (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+       (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)))
+      (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+      (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+      (equal (page-present page-dir-ptr-table-entry)
+             (page-present value))
+      (equal (page-read-write page-dir-ptr-table-entry)
+             (page-read-write value))
+      (equal (page-user-supervisor page-dir-ptr-table-entry)
+             (page-user-supervisor value))
+      (equal (page-execute-disable page-dir-ptr-table-entry)
+             (page-execute-disable value))
+      (equal (page-size page-dir-ptr-table-entry)
+             (page-size value))
+      (equal (page-size page-dir-ptr-table-entry) 1)
+      (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+             (part-select value :low 13 :high 29))
+      (addr-byte-alistp addr-lst)
+      (equal (len addr-lst) 8)
+      (canonical-address-p lin-addr)
+      (canonical-address-p (+ 7 lin-addr))
+      ;; 1G-aligned linear address
+      (equal (loghead 30 lin-addr) 0)
+      (not (programmer-level-mode x86))
+      (not (page-structure-marking-mode x86))
+      (x86p x86))
      (and (equal (mv-nth 0 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86)))) nil)
           (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
                  (read-from-physical-memory
@@ -4390,9 +4009,481 @@
                              (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-3)
                              (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-2))))))
 
-(i-am-here)
+(defthm pml4-table-base-addr-and-mv-nth-1-wb
+  (equal (pml4-table-base-addr (mv-nth 1 (wb addr-lst x86)))
+         (pml4-table-base-addr x86)))
 
-(defthm rewire_dst_to_src-after-the-copy-destination==source
+(defthm page-dir-ptr-table-base-addr-and-mv-nth-1-wb
+  (implies (and
+            (disjoint-p
+             (mv-nth
+              1
+              (las-to-pas
+               (create-canonical-address-list
+                8
+                (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
+               :r (cpl x86) x86))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list
+               8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
+              x86)
+             (mv-nth 1
+                     (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+            (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+            (not (programmer-level-mode x86))
+            (not (page-structure-marking-mode x86))
+            (x86p x86))
+           (equal (page-dir-ptr-table-base-addr lin-addr (mv-nth 1 (wb addr-lst x86)))
+                  (page-dir-ptr-table-base-addr lin-addr x86)))
+  :hints (("Goal" :do-not-induct t)))
+
+(def-gl-export entry-attributes-unchanged-when-destination-PDPTE-modified
+  :hyp (and (unsigned-byte-p 64 dest-pdpte)
+            (unsigned-byte-p 64 src-pdpte))
+  :concl (and
+          (equal (page-present (logior (logand 18442240475155922943 dest-pdpte)
+                                       (logand 4503598553628672 src-pdpte)))
+                 (page-present dest-pdpte))
+          (equal (page-read-write (logior (logand 18442240475155922943 dest-pdpte)
+                                          (logand 4503598553628672 src-pdpte)))
+                 (page-read-write dest-pdpte))
+          (equal (page-user-supervisor (logior (logand 18442240475155922943 dest-pdpte)
+                                               (logand 4503598553628672 src-pdpte)))
+                 (page-user-supervisor dest-pdpte))
+          (equal (page-execute-disable (logior (logand 18442240475155922943 dest-pdpte)
+                                               (logand 4503598553628672 src-pdpte)))
+                 (page-execute-disable dest-pdpte))
+          (equal (page-size (logior (logand 18442240475155922943 dest-pdpte)
+                                    (logand 4503598553628672 src-pdpte)))
+                 (page-size dest-pdpte)))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat src-pdpte 64) (:nat dest-pdpte 64))))
+
+(defthm read-from-physical-memory-and-mv-nth-1-wb-disjoint
+  ;; Similar to rb-wb-disjoint-in-system-level-non-marking-mode
+  (implies (and (disjoint-p
+                 p-addrs
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                ;; I should try to eliminate the following hyp too...
+                (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                (not (programmer-level-mode x86))
+                (not (page-structure-marking-mode x86))
+                (x86p x86))
+           (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb addr-lst x86)))
+                  (read-from-physical-memory p-addrs x86)))
+  :hints (("Goal" :in-theory (e/d* (wb) ()))))
+
+(defthm rewire_dst_to_src-after-the-copy-source-in-terms-of-read-from-physical-memory
+  (implies (and
+            (not (programmer-level-mode x86))
+            (not (page-structure-marking-mode x86))
+            (equal (cpl x86) 0)
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+              x86)
+             (mv-nth
+              1
+              (las-to-pas
+               (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+               :w (cpl x86)
+               x86)))
+            (not
+             (mv-nth 0
+                     (las-to-pas
+                      (create-canonical-address-list 8 (xr :rgf *rdi* x86))
+                      :r (cpl x86) x86))))
+           (equal
+            (mv-nth 1 (rb (create-canonical-address-list 8 (xr :rgf *rdi* x86)) :r x86))
+            (read-from-physical-memory
+             (mv-nth 1 (las-to-pas (create-canonical-address-list 8 (xr :rgf *rdi* x86)) :r (cpl x86) x86))
+             x86)))
+  :hints (("Goal"
+           :do-not '(preprocess)
+           :do-not-induct t
+           :in-theory (e/d* (rb-wb-equal-in-system-level-non-marking-mode
+                             pos member-p subset-p
+                             page-size
+                             rb)
+
+                            (rewire_dst_to_src-clk
+                             (rewire_dst_to_src-clk)
+
+                             pml4-table-base-addr
+                             page-dir-ptr-table-base-addr
+                             pml4-table-entry-addr
+                             page-dir-ptr-table-entry-addr
+
+                             pml4-table-entry-addr-to-c-program-optimized-form
+                             pml4-table-entry-addr-to-c-program-optimized-form-gl
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
+
+                             member-p-strip-cars-of-remove-duplicate-keys
+                             wb-remove-duplicate-writes-in-system-level-non-marking-mode
+                             las-to-pas
+
+
+                             not
+                             bitops::logand-with-negated-bitmask
+                             unsigned-byte-p
+                             force (force))))))
+
+;; (defthm ia32e-la-to-pa-open-up-for-a-1G-direct-map-page-setup
+;;   (implies (and
+;;          ;; No errors encountered in the translation of lin-addr.
+;;          (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+
+;;          (equal (loghead 30 lin-addr) 0)
+;;          (canonical-address-p lin-addr)
+
+;;          ;; ----------------------------------------------------------------------
+;;          ;; PML4TE:
+
+;;          ;; PML4TE linear addresses are canonical.
+;;          ;; (canonical-address-p
+;;          ;;  (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
+;;          (canonical-address-p
+;;           (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))))
+
+;;          ;; No errors encountered while translating the PML4TE linear addresses.
+;;          (not (mv-nth 0 (las-to-pas
+;;                          (create-canonical-address-list
+;;                           8 (pml4-table-entry-addr
+;;				lin-addr
+;;				(pml4-table-base-addr x86)))
+;;                          :r cpl x86)))
+
+;;          (equal
+;;           (loghead
+;;            1
+;;            (logext
+;;             64
+;;             (combine-bytes
+;;		(mv-nth
+;;               1
+;;               (rb
+;;                (create-canonical-address-list
+;;                 8
+;;                 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
+;;                :r x86)))))
+;;           1)
+;;          ;; ----------------------------------------------------------------------
+;;          ;; PDPTE:
+
+;;          ;; PDPTE linear addresses are canonical.
+;;          ;; (canonical-address-p
+;;          ;;  (page-dir-ptr-table-entry-addr
+;;          ;;   lin-addr
+;;          ;;   (page-dir-ptr-table-base-addr lin-addr x86)))
+;;          (canonical-address-p
+;;           (+ 7 (page-dir-ptr-table-entry-addr
+;;                 lin-addr
+;;                 (page-dir-ptr-table-base-addr lin-addr x86))))
+
+;;          ;; No errors encountered while translating the PDPTE linear addresses.
+;;          (not (mv-nth 0 (las-to-pas
+;;                          (create-canonical-address-list
+;;                           8
+;;                           (page-dir-ptr-table-entry-addr
+;;                            lin-addr
+;;                            (page-dir-ptr-table-base-addr lin-addr x86)))
+;;                          :r cpl x86)))
+
+;;          (equal (part-select
+;;                  (combine-bytes
+;;                   (mv-nth 1
+;;                           (rb
+;;                            (create-canonical-address-list
+;;                             8
+;;                             (page-dir-ptr-table-entry-addr
+;;				lin-addr
+;;				(page-dir-ptr-table-base-addr lin-addr x86)))
+;;                            :r x86)))
+;;                  :low 0 :width 1)
+;;                 1)
+;;          (equal (part-select
+;;                  (combine-bytes
+;;                   (mv-nth 1
+;;                           (rb
+;;                            (create-canonical-address-list
+;;                             8
+;;                             (page-dir-ptr-table-entry-addr
+;;				lin-addr
+;;				(page-dir-ptr-table-base-addr lin-addr x86)))
+;;                            :r x86)))
+;;                  :low 7 :width 1)
+;;                 1)
+
+;;          ;; ----------------------------------------------------------------------
+
+;;          ;; Direct Map for PML4E and PDPTE:
+;;          (equal (mv-nth 1 (las-to-pas
+;;                            (create-canonical-address-list
+;;                             8
+;;                             (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
+;;                            :r cpl x86))
+;;                 (addr-range
+;;                  8
+;;                  (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))))
+
+;;          (equal (mv-nth 1 (las-to-pas
+;;                            (create-canonical-address-list
+;;                             8
+;;                             (page-dir-ptr-table-entry-addr
+;;				lin-addr
+;;				(page-dir-ptr-table-base-addr lin-addr x86)))
+;;                            :r 0 x86))
+;;                 (addr-range
+;;                  8
+;;                  (page-dir-ptr-table-entry-addr
+;;                   lin-addr
+;;                   (page-dir-ptr-table-base-addr lin-addr x86))))
+
+;;          ;; ----------------------------------------------------------------------
+
+;;          (not (programmer-level-mode x86))
+;;          (not (page-structure-marking-mode x86))
+;;          (x86p x86))
+;;         (equal
+;;          (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+;;          (ash (loghead 22
+;;                        (logtail 30
+;;                                 (rm-low-64
+;;                                  (page-dir-ptr-table-entry-addr
+;;                                   lin-addr
+;;                                   (page-dir-ptr-table-base-addr lin-addr x86))
+;;                                  x86)))
+;;               30)))
+;;   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
+;;                                  ia32e-la-to-pa-pml4-table
+;;                                  ia32e-la-to-pa-page-dir-ptr-table
+;;                                  page-dir-ptr-table-entry-addr
+;;                                  page-size
+;;                                  rb)
+;;                                 (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+;;                                  page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl)))))
+
+(defthmd ia32e-la-to-pa-open-up-for-a-1G-page-setup
+  (implies (and
+            (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+            (equal (loghead 30 lin-addr) 0)
+            (canonical-address-p lin-addr)
+            (equal
+             (page-size
+              (rm-low-64
+               (page-dir-ptr-table-entry-addr
+                lin-addr
+                (ash
+                 (loghead
+                  40
+                  (logtail
+                   12
+                   (rm-low-64 (pml4-table-entry-addr
+                               lin-addr
+                               (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86)))
+                                    12))
+                              x86)))
+                 12))
+               x86))
+             1)
+            (x86p x86))
+           (equal
+            (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+            (ash
+             (loghead
+              22
+              (logtail
+               30
+               (rm-low-64
+                (page-dir-ptr-table-entry-addr
+                 lin-addr
+                 (ash
+                  (loghead
+                   40
+                   (logtail
+                    12
+                    (rm-low-64 (pml4-table-entry-addr
+                                lin-addr
+                                (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86)))
+                                     12))
+                               x86)))
+                  12))
+                x86)))
+             30)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
+                                    ia32e-la-to-pa-pml4-table
+                                    ia32e-la-to-pa-page-dir-ptr-table)
+                                   (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                                    page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl)))))
+
+(def-gl-export pml4-table-entry-for-a-1G-aligned-address
+  :hyp (and (canonical-address-p lin-addr)
+            (equal (loghead 30 lin-addr) 0)
+            (physical-address-p base-addr)
+            (unsigned-byte-p 30 n))
+  :concl (equal (pml4-table-entry-addr (+ n lin-addr) base-addr)
+                (pml4-table-entry-addr lin-addr base-addr))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat base-addr 64) (:nat n 64))))
+
+(def-gl-export page-dir-ptr-table-entry-for-a-1G-aligned-address
+  :hyp (and (canonical-address-p lin-addr)
+            (equal (loghead 30 lin-addr) 0)
+            (physical-address-p base-addr)
+            (unsigned-byte-p 30 n))
+  :concl (equal (page-dir-ptr-table-entry-addr (+ n lin-addr) base-addr)
+                (page-dir-ptr-table-entry-addr lin-addr base-addr))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat base-addr 64) (:nat n 64))))
+
+(def-gl-export loghead-30-of-1G-aligned-lin-addr-+-n
+  :hyp (and (canonical-address-p lin-addr)
+            (equal (loghead 30 lin-addr) 0)
+            (unsigned-byte-p 30 n))
+  :concl (equal (loghead 30 (+ n lin-addr)) n)
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat n 64))))
+
+(def-gl-export loghead-30-of-1G-aligned-lin-addr-+-n-remove-logext
+  :hyp (and (canonical-address-p lin-addr)
+            (equal (loghead 30 lin-addr) 0)
+            (unsigned-byte-p 30 n))
+  :concl (equal (logext 48 (+ n lin-addr)) (+ n lin-addr))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat n 64))))
+
+(def-gl-export logior-to-+-for-ash-x-30
+  :hyp (and (unsigned-byte-p 22 x)
+            (unsigned-byte-p 30 n))
+  :concl (equal (logior n (ash x 30)) (+ n (ash x 30)))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat n 64) (:nat x 64))))
+
+(defthmd ia32e-la-to-pa-+-n-open-up-for-a-1G-page-setup
+  (implies (and
+            (not (mv-nth 0 (ia32e-la-to-pa (+ n lin-addr) r-w-x cpl x86)))
+            (equal (loghead 30 lin-addr) 0)
+            (canonical-address-p lin-addr)
+            (unsigned-byte-p 30 n)
+            (equal
+             (page-size
+              (rm-low-64
+               (page-dir-ptr-table-entry-addr
+                lin-addr
+                (ash
+                 (loghead
+                  40
+                  (logtail
+                   12
+                   (rm-low-64 (pml4-table-entry-addr
+                               lin-addr
+                               (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86)))
+                                    12))
+                              x86)))
+                 12))
+               x86))
+             1)
+            (x86p x86))
+           (equal
+            (mv-nth 1 (ia32e-la-to-pa (+ n lin-addr) r-w-x cpl x86))
+            (+
+             n
+             (ash
+              (loghead
+               22
+               (logtail
+                30
+                (rm-low-64
+                 (page-dir-ptr-table-entry-addr
+                  lin-addr
+                  (ash
+                   (loghead
+                    40
+                    (logtail
+                     12
+                     (rm-low-64 (pml4-table-entry-addr
+                                 lin-addr
+                                 (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86)))
+                                      12))
+                                x86)))
+                   12))
+                 x86)))
+              30))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
+                                    ia32e-la-to-pa-pml4-table
+                                    ia32e-la-to-pa-page-dir-ptr-table)
+                                   (commutativity-of-+
+                                    page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                                    page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl)))))
+
+(defthmd las-to-pas-open-up-for-a-1G-page-setup
+  (implies (and
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list 8 lin-addr)
+                            r-w-x cpl x86)))
+            (equal (loghead 30 lin-addr) 0)
+            (canonical-address-p lin-addr)
+            (canonical-address-p (+ 7 lin-addr))
+            (equal
+             (page-size
+              (rm-low-64
+               (page-dir-ptr-table-entry-addr
+                lin-addr
+                (ash
+                 (loghead
+                  40
+                  (logtail
+                   12
+                   (rm-low-64 (pml4-table-entry-addr
+                               lin-addr
+                               (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86)))
+                                    12))
+                              x86)))
+                 12))
+               x86))
+             1)
+            (not (programmer-level-mode x86))
+            (not (page-structure-marking-mode x86))
+            (x86p x86))
+           (equal
+            (mv-nth 1 (las-to-pas
+                       (create-canonical-address-list 8 lin-addr)
+                       r-w-x cpl x86))
+            (addr-range
+             8
+             (ash
+              (loghead
+               22
+               (logtail
+                30
+                (rm-low-64
+                 (page-dir-ptr-table-entry-addr
+                  lin-addr
+                  (ash
+                   (loghead
+                    40
+                    (logtail
+                     12
+                     (rm-low-64 (pml4-table-entry-addr
+                                 lin-addr
+                                 (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86)))
+                                      12))
+                                x86)))
+                   12))
+                 x86)))
+              30))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-open-up-for-a-1G-page-setup
+                                    ia32e-la-to-pa-+-n-open-up-for-a-1G-page-setup
+                                    las-to-pas
+                                    open-mv-nth-1-las-to-pas
+                                    open-mv-nth-0-las-to-pas)
+                                   (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                                    page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl)))))
+
+(defthm rewire_dst_to_src-after-the-copy-source-p-addrs-open
   (implies (and
             (equal prog-len (len *rewire_dst_to_src*))
             (x86p x86)
@@ -4400,22 +4491,25 @@
             (not (page-structure-marking-mode x86))
             (not (alignment-checking-enabled-p x86))
 
-            ;; Source addresses are canonical.
+            ;; CR3's reserved bits must be zero (MBZ).
+            (equal (logtail 40 (ctri *cr3* x86)) 0)
+
+            ;; Source address is canonical.
             (canonical-address-p (xr :rgf *rdi* x86))
             (canonical-address-p (+ 7 (xr :rgf *rdi* x86)))
             ;; Source address is 1G-aligned.
             (equal (loghead 30 (xr :rgf *rdi* x86)) 0)
-            ;; Destination addresses are canonical.
+            ;; Destination address is canonical.
             (canonical-address-p (xr :rgf *rsi* x86))
             (canonical-address-p (+ 7 (xr :rgf *rsi* x86)))
             ;; Destination address is 1G-aligned.
             (equal (loghead 30 (xr :rgf *rsi* x86)) 0)
             ;; Program addresses are canonical.
             (canonical-address-p (+ prog-len (xr :rip 0 x86)))
-            (canonical-address-p (xr :rip 0 x86))
+            ;; (canonical-address-p (xr :rip 0 x86))
             ;; Stack addresses are canonical.
             (canonical-address-p (+ -24 (xr :rgf *rsp* x86)))
-            (canonical-address-p (xr :rgf *rsp* x86))
+            ;; (canonical-address-p (xr :rgf *rsp* x86))
             (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
             (equal (xr :ms 0 x86) nil)
             (equal (xr :fault 0 x86) nil)
@@ -4439,7 +4533,7 @@
             ;; stack.
             (not (mv-nth 0 (las-to-pas
                             (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-                            :r 0 x86)))
+                            :r (cpl x86) x86)))
             ;; Reading from stack: The stack is located in a
             ;; contiguous region of memory --- no overlaps among
             ;; physical addresses of the stack. I need this hypothesis
@@ -4448,7 +4542,7 @@
             (no-duplicates-p
              (mv-nth 1 (las-to-pas
                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-                        :r 0 x86)))
+                        :r (cpl x86) x86)))
             ;; The physical addresses corresponding to the program and
             ;; stack are disjoint.
             (disjoint-p
@@ -4483,8 +4577,8 @@
             ;; Assumptions about the source PML4TE:
 
             ;; PML4TE linear addresses are canonical.
-            (canonical-address-p
-             (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+            ;; (canonical-address-p
+            ;;  (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
             (canonical-address-p
              (+ 7 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))))
 
@@ -4492,7 +4586,7 @@
             (not (mv-nth 0 (las-to-pas
                             (create-canonical-address-list
                              8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-                            :r 0 x86)))
+                            :r (cpl x86) x86)))
             ;; The translation-governing addresses of PML4TE addresses
             ;; are disjoint from the physical addresses corresponding
             ;; to the stack.
@@ -4502,7 +4596,7 @@
                8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
               x86)
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
             ;; The PML4TE physical addresses are disjoint from the
             ;; stack physical addresses.
             (disjoint-p
@@ -4510,11 +4604,11 @@
                         (create-canonical-address-list
                          8
                          (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-                        :r 0 x86))
+                        :r (cpl x86) x86))
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
-            ;; PML4TE is has P = 1 (i.e., it is present).
+            ;; PML4TE has P = 1 (i.e., it is present).
             (equal
              (loghead
               1
@@ -4535,10 +4629,10 @@
             ;; Assumptions about the source PDPTE:
 
             ;; PDPTE linear addresses are canonical.
-            (canonical-address-p
-             (page-dir-ptr-table-entry-addr
-              (xr :rgf *rdi* x86)
-              (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+            ;; (canonical-address-p
+            ;;  (page-dir-ptr-table-entry-addr
+            ;;   (xr :rgf *rdi* x86)
+            ;;   (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
             (canonical-address-p
              (+ 7 (page-dir-ptr-table-entry-addr
                    (xr :rgf *rdi* x86)
@@ -4551,7 +4645,7 @@
                              (page-dir-ptr-table-entry-addr
                               (xr :rgf *rdi* x86)
                               (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                            :r 0 x86)))
+                            :r (cpl x86) x86)))
             ;; The translation-governing addresses of PDPTE addresses
             ;; are disjoint from the physical addresses corresponding
             ;; to the stack.
@@ -4564,7 +4658,7 @@
                 (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
               x86)
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
             ;; The PDPTE physical addresses are disjoint from the
             ;; stack physical addresses.
             (disjoint-p
@@ -4574,9 +4668,9 @@
                          (page-dir-ptr-table-entry-addr
                           (xr :rgf *rdi* x86)
                           (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                        :r 0 x86))
+                        :r (cpl x86) x86))
              (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
             ;; PDPTE does not have the P or PS bit cleared (i.e., the
             ;; entry is present and it points to a 1G page).
@@ -4606,298 +4700,86 @@
                     :low 7 :width 1)
                    1)
 
-            ;; ============================================================
+            ;; ======================================================================
 
-            ;; Assumptions about the destination PML4TE:
+            ;; Direct map for paging structures, specifically
+            ;; destination and source PML4E and PDPTE.
+            (equal (mv-nth 1 (las-to-pas
+                              (create-canonical-address-list
+                               8
+                               (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+                              :r (cpl x86) x86))
+                   (addr-range
+                    8
+                    (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))))
 
-            ;; PML4TE linear addresses are canonical.
-            (canonical-address-p
-             (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-            (canonical-address-p
-             (+ 7 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))))
-
-            ;; No errors encountered while translating the PML4TE linear addresses.
-            (not (mv-nth 0 (las-to-pas
-                            (create-canonical-address-list
-                             8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-                            :r 0 x86)))
-            ;; The translation-governing addresses of PML4TE addresses
-            ;; are disjoint from the physical addresses corresponding
-            ;; to the stack.
-            (disjoint-p
-             (all-translation-governing-addresses
-              (create-canonical-address-list
-               8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-              x86)
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-            ;; The PML4TE physical addresses are disjoint from the
-            ;; stack physical addresses.
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-                        :r 0 x86))
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-
-            ;; PML4TE is has P = 1 (i.e., it is present).
-            (equal
-             (loghead
-              1
-              (logext
-               64
-               (combine-bytes
-                (mv-nth
-                 1
-                 (rb
-                  (create-canonical-address-list
-                   8
-                   (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-                  :r x86)))))
-             1)
-
-            ;; ------------------------------------------------------------
-
-            ;; Assumptions about the destination PDPTE:
-
-            ;; PDPTE linear addresses are canonical.
-            (canonical-address-p
-             (page-dir-ptr-table-entry-addr
-              (xr :rgf *rsi* x86)
-              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-            (canonical-address-p
-             (+ 7 (page-dir-ptr-table-entry-addr
-                   (xr :rgf *rsi* x86)
-                   (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86))))
-
-            ;; No errors encountered while translating the PDPTE
-            ;; linear addresses on behalf of a read.
-            (not (mv-nth 0 (las-to-pas
-                            (create-canonical-address-list
-                             8
-                             (page-dir-ptr-table-entry-addr
-                              (xr :rgf *rsi* x86)
-                              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                            :r 0 x86)))
-            ;; No errors encountered while translating the PDPTE
-            ;; linear addresses on behalf of a write.
-            (not (mv-nth 0 (las-to-pas
-                            (create-canonical-address-list
-                             8
-                             (page-dir-ptr-table-entry-addr
-                              (xr :rgf *rsi* x86)
-                              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                            :w 0 x86)))
-            ;; The translation-governing addresses of PDPTE addresses
-            ;; are disjoint from the physical addresses corresponding
-            ;; to the stack.
-            (disjoint-p
-             (all-translation-governing-addresses
-              (create-canonical-address-list
-               8
-               (page-dir-ptr-table-entry-addr
-                (xr :rgf *rsi* x86)
-                (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-              x86)
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-            ;; The PDPTE physical addresses are disjoint from the
-            ;; stack physical addresses.
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (page-dir-ptr-table-entry-addr
-                          (xr :rgf *rsi* x86)
-                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :r 0 x86))
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-
-            ;; The physical addresses corresponding to the program are
-            ;; disjoint from those of the PDPTE (on behalf of a
-            ;; write).
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list prog-len (xr :rip 0 x86))
-                        :x (cpl x86) x86))
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (page-dir-ptr-table-entry-addr
-                          (xr :rgf *rsi* x86)
-                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :w 0 x86)))
-
-            ;; Translation-governing addresses of the program are
-            ;; disjoint from the PDPTE physical addresses (on behalf
-            ;; of a write).
-            (disjoint-p
-             (all-translation-governing-addresses
-              (create-canonical-address-list prog-len (xr :rip 0 x86))
-              x86)
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (page-dir-ptr-table-entry-addr
-                          (xr :rgf *rsi* x86)
-                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :w 0 x86)))
-            ;; Translation-governing addresses of the stack are
-            ;; disjoint from the physical addresses of the PDPTE (on
-            ;; behalf of a write).
-            (disjoint-p
-             (all-translation-governing-addresses
-              (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-              x86)
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (page-dir-ptr-table-entry-addr
-                          (xr :rgf *rsi* x86)
-                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :w 0 x86)))
-
-            ;; Destination PDPTE does not have the P or PS bit cleared
-            ;; (i.e., the entry is present and it points to a 1G
-            ;; page).
-            (equal (part-select
-                    (combine-bytes
-                     (mv-nth 1
-                             (rb
+            (equal (mv-nth 1 (las-to-pas
                               (create-canonical-address-list
                                8
                                (page-dir-ptr-table-entry-addr
-                                (xr :rgf *rsi* x86)
-                                (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                              :r x86)))
-                    :low 0 :width 1)
-                   1)
-            (equal (part-select
-                    (combine-bytes
-                     (mv-nth 1
-                             (rb
-                              (create-canonical-address-list
-                               8
-                               (page-dir-ptr-table-entry-addr
-                                (xr :rgf *rsi* x86)
-                                (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                              :r x86)))
-                    :low 7 :width 1)
-                   1)
+                                (xr :rgf *rdi* x86)
+                                (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+                              :r 0 x86))
+                   (addr-range
+                    8
+                    (page-dir-ptr-table-entry-addr
+                     (xr :rgf *rdi* x86)
+                     (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86))))
+
 
             ;; ======================================================================
-            ;; For the final ret instruction:
 
-            ;; Reading from stack for the final ret instruction
-            ;; doesn't cause errors.
-            (not (mv-nth 0 (las-to-pas
-                            (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                            :r (cpl x86) x86)))
+            ;; No errors encountered while translating the source
+            ;; linear addresses.
+            (not
+             (mv-nth 0
+                     (las-to-pas (create-canonical-address-list 8 (xr :rgf *rdi* x86))
+                                 :r (cpl x86) x86)))
 
-            ;; The program and the ret address on the stack are
-            ;; disjoint.
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list prog-len (xr :rip 0 x86))
-                        :x (cpl x86) x86))
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                        :r (cpl x86) x86)))
+            ;; -------
+            (equal cpl (cpl x86))
 
-            ;; The translation-governing addresses of the ret address
-            ;; are disjoint from the destination PDPTE.
-            (disjoint-p
-             (all-translation-governing-addresses
-              (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86)
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (page-dir-ptr-table-entry-addr
-                          (xr :rgf *rsi* x86)
-                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :r (cpl x86) x86)))
-
-            ;; The destination PDPTE is disjoint from the ret address
-            ;; on the stack.
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                        :r (cpl x86) x86))
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (page-dir-ptr-table-entry-addr
-                          (xr :rgf *rsi* x86)
-                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :r (cpl x86) x86)))
-            ;; The destination PDPTE is disjoint from the rest of the stack.
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list
-                         8
-                         (page-dir-ptr-table-entry-addr
-                          (xr :rgf *rsi* x86)
-                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                        :r (cpl x86) x86))
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-
-            ;; The ret address on the stack is disjoint from the rest
-            ;; of the stack.
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                        :r (cpl x86) x86))
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
-
-            ;; The translation-governing addresses of the return
-            ;; address on the stack are disjoint from the physical
-            ;; addresses of the rest of the stack.
-            (disjoint-p
-             (all-translation-governing-addresses
-              (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86)
-             (mv-nth 1
-                     (las-to-pas (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-                                 :w (cpl x86) x86)))
-
-            ;; Return address on the stack is canonical.
-            (canonical-address-p
-             (logext 64
-                     (combine-bytes
-                      (mv-nth 1
-                              (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                                  :r x86))))))
+            )
 
            (equal
-            ;; Destination, after the copy:
-            (mv-nth 1 (rb  (create-canonical-address-list 8 (xr :rgf *rsi* x86))
-                           :r (x86-run (rewire_dst_to_src-clk) x86)))
-            ;; Source, before the copy:
-            (mv-nth 1 (rb (create-canonical-address-list 8 (xr :rgf *rdi* x86))
-                          :r x86))))
+            (mv-nth 1 (las-to-pas (create-canonical-address-list 8 (xr :rgf *rdi* x86)) :r cpl x86))
+            (addr-range 8
+                        (ash (loghead 22
+                                      (logtail 30
+                                               (rm-low-64
+                                                (page-dir-ptr-table-entry-addr
+                                                 (xr :rgf *rdi* x86)
+                                                 (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86))
+                                                x86)))
+                             30))))
   :hints (("Goal"
+           :use ((:instance las-to-pas-open-up-for-a-1G-page-setup
+                            (lin-addr (xr :rgf *rdi* x86))
+                            (r-w-x :r)
+                            (cpl (cpl x86))))
            :do-not '(preprocess)
            :do-not-induct t
-           :in-theory (e/d* (rb-wb-equal-in-system-level-non-marking-mode
-                             pos member-p subset-p)
+           :in-theory (e/d* (page-dir-ptr-table-base-addr
+                             pml4-table-base-addr
+                             pos member-p subset-p
+                             page-size)
 
                             (rewire_dst_to_src-clk
                              (rewire_dst_to_src-clk)
 
-                             pml4-table-base-addr
+                             ;; pml4-table-base-addr
+                             ;; page-dir-ptr-table-base-addr
                              pml4-table-entry-addr
                              page-dir-ptr-table-entry-addr
-                             page-dir-ptr-table-base-addr
+
+                             pml4-table-entry-addr-to-c-program-optimized-form
+                             pml4-table-entry-addr-to-c-program-optimized-form-gl
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
 
                              member-p-strip-cars-of-remove-duplicate-keys
                              wb-remove-duplicate-writes-in-system-level-non-marking-mode
                              las-to-pas
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
 
                              (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
@@ -5084,6 +4966,837 @@
                              (:LINEAR BITOPS::UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
                              (:LINEAR BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
 
+                             not
+                             bitops::logand-with-negated-bitmask
+                             unsigned-byte-p
+                             force (force))))))
+
+ ;; See preconditions.lsp for a discussion about the pre-conditions
+;; (acl2::why rb-wb-equal-with-modified-1G-page-map-in-system-level-non-marking-mode)
+;; (acl2::why la-to-pas-values-and-mv-nth-1-wb)
+;; (acl2::why las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr)
+
+(defthm rewire_dst_to_src-after-the-copy-destination==source
+  (implies (and
+            (equal prog-len (len *rewire_dst_to_src*))
+            (x86p x86)
+            (not (programmer-level-mode x86))
+            (not (page-structure-marking-mode x86))
+            (not (alignment-checking-enabled-p x86))
+
+            ;; CR3's reserved bits must be zero (MBZ).
+            (equal (logtail 40 (ctri *cr3* x86)) 0)
+
+            ;; Source address is canonical.
+            (canonical-address-p (xr :rgf *rdi* x86))
+            (canonical-address-p (+ 7 (xr :rgf *rdi* x86)))
+            ;; Source address is 1G-aligned.
+            (equal (loghead 30 (xr :rgf *rdi* x86)) 0)
+            ;; Destination address is canonical.
+            (canonical-address-p (xr :rgf *rsi* x86))
+            (canonical-address-p (+ 7 (xr :rgf *rsi* x86)))
+            ;; Destination address is 1G-aligned.
+            (equal (loghead 30 (xr :rgf *rsi* x86)) 0)
+            ;; Program addresses are canonical.
+            (canonical-address-p (+ prog-len (xr :rip 0 x86)))
+            ;; (canonical-address-p (xr :rip 0 x86))
+            ;; Stack addresses are canonical.
+            (canonical-address-p (+ -24 (xr :rgf *rsp* x86)))
+            ;; (canonical-address-p (xr :rgf *rsp* x86))
+            (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
+            (equal (xr :ms 0 x86) nil)
+            (equal (xr :fault 0 x86) nil)
+            (equal (cpl x86) 0)
+            (program-at (create-canonical-address-list prog-len (xr :rip 0 x86))
+                        *rewire_dst_to_src* x86)
+
+            ;; No errors encountered while translating the linear
+            ;; addresses where the program is located.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list prog-len (xr :rip 0 x86))
+                            :x (cpl x86) x86)))
+            ;; Writing to stack: No errors encountered while
+            ;; translating the linear addresses corresponding to the
+            ;; program stack.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+                            :w (cpl x86) x86)))
+            ;; Reading from stack: No errors encountered while
+            ;; translating the linear addresses corresponding to the
+            ;; stack.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+                            :r (cpl x86) x86)))
+            ;; Reading from stack: The stack is located in a
+            ;; contiguous region of memory --- no overlaps among
+            ;; physical addresses of the stack. I need this hypothesis
+            ;; so that rb-wb-equal-in-system-level-non-marking-mode
+            ;; can fire.
+            (no-duplicates-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+                        :r (cpl x86) x86)))
+            ;; The physical addresses corresponding to the program and
+            ;; stack are disjoint.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list prog-len (xr :rip 0 x86))
+                        :x (cpl x86) x86))
+             (mv-nth 1
+                     (las-to-pas
+                      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+                      :w (cpl x86) x86)))
+            ;; Translation-governing addresses of the program are
+            ;; disjoint from the physical addresses of the stack.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list prog-len (xr :rip 0 x86))
+              x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+                        :w (cpl x86) x86)))
+            ;; Translation-governing addresses of the stack are
+            ;; disjoint from the physical addresses of the stack.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+              x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+                        :w (cpl x86) x86)))
+
+            ;; ============================================================
+
+            ;; Assumptions about the source PML4TE:
+
+            ;; PML4TE linear addresses are canonical.
+            ;; (canonical-address-p
+            ;;  (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+            (canonical-address-p
+             (+ 7 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))))
+
+            ;; No errors encountered while translating the PML4TE linear addresses.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list
+                             8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+                            :r (cpl x86) x86)))
+            ;; The translation-governing addresses of PML4TE addresses
+            ;; are disjoint from the physical addresses corresponding
+            ;; to the stack.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list
+               8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+              x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+            ;; The PML4TE physical addresses are disjoint from the
+            ;; stack physical addresses.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+                        :r (cpl x86) x86))
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+
+            ;; PML4TE has P = 1 (i.e., it is present).
+            (equal
+             (loghead
+              1
+              (logext
+               64
+               (combine-bytes
+                (mv-nth
+                 1
+                 (rb
+                  (create-canonical-address-list
+                   8
+                   (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+                  :r x86)))))
+             1)
+
+            ;; ------------------------------------------------------------
+
+            ;; Assumptions about the source PDPTE:
+
+            ;; PDPTE linear addresses are canonical.
+            ;; (canonical-address-p
+            ;;  (page-dir-ptr-table-entry-addr
+            ;;   (xr :rgf *rdi* x86)
+            ;;   (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+            (canonical-address-p
+             (+ 7 (page-dir-ptr-table-entry-addr
+                   (xr :rgf *rdi* x86)
+                   (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86))))
+
+            ;; No errors encountered while translating the PDPTE linear addresses.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list
+                             8
+                             (page-dir-ptr-table-entry-addr
+                              (xr :rgf *rdi* x86)
+                              (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+                            :r (cpl x86) x86)))
+            ;; The translation-governing addresses of PDPTE addresses
+            ;; are disjoint from the physical addresses corresponding
+            ;; to the stack.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list
+               8
+               (page-dir-ptr-table-entry-addr
+                (xr :rgf *rdi* x86)
+                (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+              x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+            ;; The PDPTE physical addresses are disjoint from the
+            ;; stack physical addresses.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (page-dir-ptr-table-entry-addr
+                          (xr :rgf *rdi* x86)
+                          (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+                        :r (cpl x86) x86))
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+
+            ;; PDPTE does not have the P or PS bit cleared (i.e., the
+            ;; entry is present and it points to a 1G page).
+
+            (equal (part-select
+                    (combine-bytes
+                     (mv-nth 1
+                             (rb
+                              (create-canonical-address-list
+                               8
+                               (page-dir-ptr-table-entry-addr
+                                (xr :rgf *rdi* x86)
+                                (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+                              :r x86)))
+                    :low 0 :width 1)
+                   1)
+            (equal (part-select
+                    (combine-bytes
+                     (mv-nth 1
+                             (rb
+                              (create-canonical-address-list
+                               8
+                               (page-dir-ptr-table-entry-addr
+                                (xr :rgf *rdi* x86)
+                                (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+                              :r x86)))
+                    :low 7 :width 1)
+                   1)
+
+            ;; ============================================================
+
+            ;; Assumptions about the destination PML4TE:
+
+            ;; PML4TE linear addresses are canonical.
+            ;; (canonical-address-p
+            ;;  (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+            (canonical-address-p
+             (+ 7 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))))
+
+            ;; No errors encountered while translating the PML4TE linear addresses.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list
+                             8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+                            :r (cpl x86) x86)))
+            ;; The translation-governing addresses of PML4TE addresses
+            ;; are disjoint from the physical addresses corresponding
+            ;; to the stack.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list
+               8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+              x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+            ;; The PML4TE physical addresses are disjoint from the
+            ;; stack physical addresses.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+                        :r (cpl x86) x86))
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+
+            ;; PML4TE is has P = 1 (i.e., it is present).
+            (equal
+             (loghead
+              1
+              (logext
+               64
+               (combine-bytes
+                (mv-nth
+                 1
+                 (rb
+                  (create-canonical-address-list
+                   8
+                   (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+                  :r x86)))))
+             1)
+
+            ;; ------------------------------------------------------------
+
+            ;; Assumptions about the destination PDPTE:
+
+            ;; PDPTE linear addresses are canonical.
+            (canonical-address-p
+             (page-dir-ptr-table-entry-addr
+              (xr :rgf *rsi* x86)
+              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+            (canonical-address-p
+             (+ 7 (page-dir-ptr-table-entry-addr
+                   (xr :rgf *rsi* x86)
+                   (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86))))
+
+            ;; No errors encountered while translating the PDPTE
+            ;; linear addresses on behalf of a read.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list
+                             8
+                             (page-dir-ptr-table-entry-addr
+                              (xr :rgf *rsi* x86)
+                              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                            :r (cpl x86) x86)))
+            ;; No errors encountered while translating the PDPTE
+            ;; linear addresses on behalf of a write.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list
+                             8
+                             (page-dir-ptr-table-entry-addr
+                              (xr :rgf *rsi* x86)
+                              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                            :w (cpl x86) x86)))
+            ;; The translation-governing addresses of PDPTE addresses
+            ;; are disjoint from the physical addresses corresponding
+            ;; to the stack.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list
+               8
+               (page-dir-ptr-table-entry-addr
+                (xr :rgf *rsi* x86)
+                (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+              x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+            ;; The PDPTE physical addresses are disjoint from the
+            ;; stack physical addresses.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (page-dir-ptr-table-entry-addr
+                          (xr :rgf *rsi* x86)
+                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                        :r (cpl x86) x86))
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+
+            ;; The physical addresses corresponding to the program are
+            ;; disjoint from those of the PDPTE (on behalf of a
+            ;; write).
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list prog-len (xr :rip 0 x86))
+                        :x (cpl x86) x86))
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (page-dir-ptr-table-entry-addr
+                          (xr :rgf *rsi* x86)
+                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                        :w (cpl x86) x86)))
+
+            ;; Translation-governing addresses of the program are
+            ;; disjoint from the PDPTE physical addresses (on behalf
+            ;; of a write).
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list prog-len (xr :rip 0 x86))
+              x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (page-dir-ptr-table-entry-addr
+                          (xr :rgf *rsi* x86)
+                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                        :w (cpl x86) x86)))
+            ;; Translation-governing addresses of the stack are
+            ;; disjoint from the physical addresses of the PDPTE (on
+            ;; behalf of a write).
+            ;; (disjoint-p
+            ;;  (all-translation-governing-addresses
+            ;;   (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+            ;;   x86)
+            ;;  (mv-nth 1 (las-to-pas
+            ;;             (create-canonical-address-list
+            ;;              8
+            ;;              (page-dir-ptr-table-entry-addr
+            ;;               (xr :rgf *rsi* x86)
+            ;;               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+            ;;             :w (cpl x86) x86)))
+
+            ;; Destination PDPTE does not have the P or PS bit cleared
+            ;; (i.e., the entry is present and it points to a 1G
+            ;; page).
+            (equal (part-select
+                    (combine-bytes
+                     (mv-nth 1
+                             (rb
+                              (create-canonical-address-list
+                               8
+                               (page-dir-ptr-table-entry-addr
+                                (xr :rgf *rsi* x86)
+                                (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                              :r x86)))
+                    :low 0 :width 1)
+                   1)
+            (equal (part-select
+                    (combine-bytes
+                     (mv-nth 1
+                             (rb
+                              (create-canonical-address-list
+                               8
+                               (page-dir-ptr-table-entry-addr
+                                (xr :rgf *rsi* x86)
+                                (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                              :r x86)))
+                    :low 7 :width 1)
+                   1)
+
+            ;; ======================================================================
+            ;; For the final ret instruction:
+
+            ;; Reading from stack for the final ret instruction
+            ;; doesn't cause errors.
+            (not (mv-nth 0 (las-to-pas
+                            (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+                            :r (cpl x86) x86)))
+
+            ;; The program and the ret address on the stack are
+            ;; disjoint.
+            ;; (disjoint-p
+            ;;  (mv-nth 1 (las-to-pas
+            ;;             (create-canonical-address-list prog-len (xr :rip 0 x86))
+            ;;             :x (cpl x86) x86))
+            ;;  (mv-nth 1 (las-to-pas
+            ;;             (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+            ;;             :r (cpl x86) x86)))
+
+            ;; The translation-governing addresses of the ret address
+            ;; are disjoint from the destination PDPTE.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (page-dir-ptr-table-entry-addr
+                          (xr :rgf *rsi* x86)
+                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                        :r (cpl x86) x86)))
+
+            ;; The destination PDPTE is disjoint from the ret address
+            ;; on the stack.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+                        :r (cpl x86) x86))
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (page-dir-ptr-table-entry-addr
+                          (xr :rgf *rsi* x86)
+                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                        :r (cpl x86) x86)))
+            ;; The destination PDPTE is disjoint from the rest of the stack.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (page-dir-ptr-table-entry-addr
+                          (xr :rgf *rsi* x86)
+                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                        :r (cpl x86) x86))
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+
+            ;; The ret address on the stack is disjoint from the rest
+            ;; of the stack.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+                        :r (cpl x86) x86))
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+
+            ;; The translation-governing addresses of the return
+            ;; address on the stack are disjoint from the physical
+            ;; addresses of the rest of the stack.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86)
+             (mv-nth 1
+                     (las-to-pas (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+                                 :w (cpl x86) x86)))
+
+            ;; Return address on the stack is canonical.
+            (canonical-address-p
+             (logext 64
+                     (combine-bytes
+                      (mv-nth 1
+                              (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+                                  :r x86)))))
+
+            ;; ======================================================================
+
+            ;; Direct map for paging structures, specifically
+            ;; destination and source PML4E and PDPTE.
+            (equal (mv-nth 1 (las-to-pas
+                              (create-canonical-address-list
+                               8
+                               (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+                              :r (cpl x86) x86))
+                   (addr-range
+                    8
+                    (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))))
+
+            (equal (mv-nth 1 (las-to-pas
+                              (create-canonical-address-list
+                               8
+                               (page-dir-ptr-table-entry-addr
+                                (xr :rgf *rdi* x86)
+                                (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
+                              :r 0 x86))
+                   (addr-range
+                    8
+                    (page-dir-ptr-table-entry-addr
+                     (xr :rgf *rdi* x86)
+                     (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86))))
+
+            (equal (mv-nth 1 (las-to-pas
+                              (create-canonical-address-list
+                               8
+                               (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+                              :r (cpl x86) x86))
+                   (addr-range
+                    8
+                    (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))))
+
+            (equal (mv-nth 1 (las-to-pas
+                              (create-canonical-address-list
+                               8
+                               (page-dir-ptr-table-entry-addr
+                                (xr :rgf *rsi* x86)
+                                (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
+                              :r 0 x86))
+                   (addr-range
+                    8
+                    (page-dir-ptr-table-entry-addr
+                     (xr :rgf *rsi* x86)
+                     (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86))))
+
+
+            ;; ======================================================================
+
+            ;; TO-DO: Check these preconditions. Also, change
+            ;; rm-low-64 to rb. We have a direct map after all.
+
+            ;; The source physical addresses are disjoint from the the
+            ;; physical addresses of the destination PDPTE.
+            (disjoint-p
+             (addr-range 8
+                         (ash (loghead 22 (logtail 30
+                                                   (rm-low-64
+                                                    (page-dir-ptr-table-entry-addr
+                                                     (xr :rgf *rdi* x86)
+                                                     (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86))
+                                                    x86)))
+                              30))
+             (addr-range 8
+                         (page-dir-ptr-table-entry-addr
+                          (xr :rgf *rsi* x86)
+                          (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86))))
+
+            ;; The destination PML4E and PDPTE are disjoint.
+            (disjoint-p
+             (addr-range 8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+             (addr-range 8 (page-dir-ptr-table-entry-addr
+                            (xr :rgf *rsi* x86)
+                            (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86))))
+
+            ;; The translation-governing addresses of the destination
+            ;; are disjoint from the physical addresses corresponding
+            ;; to the stack.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list 8 (xr :rgf *rsi* x86)) x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
+
+
+            ;; No errors encountered while translating the destination
+            ;; linear addresses.
+            (not
+             (mv-nth 0
+                     (las-to-pas (create-canonical-address-list 8 (xr :rgf *rsi* x86))
+                                 :r (cpl x86) x86)))
+
+            ;; The source addresses are disjoint from the physical
+            ;; addresses corresponding to the stack.
+            (disjoint-p
+             (addr-range
+              8
+              (ash
+               (loghead
+                22
+                (logtail
+                 30
+                 (rm-low-64 (page-dir-ptr-table-entry-addr
+                             (xr :rgf *rdi* x86)
+                             (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86))
+                            x86)))
+               30))
+             (mv-nth
+              1
+              (las-to-pas (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+                          :w (cpl x86) x86)))
+
+            ;; No errors encountered while translating the source
+            ;; linear addresses.
+            (not
+             (mv-nth 0
+                     (las-to-pas (create-canonical-address-list 8 (xr :rgf *rdi* x86))
+                                 :r (cpl x86) x86))))
+
+           (equal
+            ;; Destination, after the copy:
+            (mv-nth 1 (rb  (create-canonical-address-list 8 (xr :rgf *rsi* x86))
+                           :r (x86-run (rewire_dst_to_src-clk) x86)))
+            ;; Source, before the copy:
+            (mv-nth 1 (rb (create-canonical-address-list 8 (xr :rgf *rdi* x86))
+                          :r x86))))
+  :hints (("Goal"
+           :do-not '(preprocess)
+           :do-not-induct t
+           :in-theory (e/d* (rb-wb-equal-in-system-level-non-marking-mode
+                             pos member-p subset-p
+                             page-size)
+
+                            (rewire_dst_to_src-clk
+                             (rewire_dst_to_src-clk)
+
+                             pml4-table-base-addr
+                             page-dir-ptr-table-base-addr
+                             pml4-table-entry-addr
+                             page-dir-ptr-table-entry-addr
+
+                             pml4-table-entry-addr-to-c-program-optimized-form
+                             pml4-table-entry-addr-to-c-program-optimized-form-gl
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
+
+                             member-p-strip-cars-of-remove-duplicate-keys
+                             wb-remove-duplicate-writes-in-system-level-non-marking-mode
+                             las-to-pas
+
+                             (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
+                             (:REWRITE
+                              DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES)
+                             (:TYPE-PRESCRIPTION NATP-PML4-TABLE-ENTRY-ADDR)
+                             (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
+                             (:REWRITE IA32E-LA-TO-PA-XW-STATE)
+                             (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-IA32E-LA-TO-PA-WHEN-NO-ERRORS)
+                             (:LINEAR ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
+                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PML4-TABLE-ENTRY-ADDR)
+                             (:REWRITE LAS-TO-PAS-XW-STATE)
+                             (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
+                             (:REWRITE LOGHEAD-UNEQUAL)
+                             (:REWRITE NEGATIVE-LOGAND-TO-POSITIVE-LOGAND-WITH-INTEGERP-X)
+                             (:DEFINITION COMBINE-BYTES)
+                             (:REWRITE |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
+                             (:REWRITE XR-IA32E-LA-TO-PA)
+                             (:REWRITE ACL2::NFIX-WHEN-NOT-NATP)
+                             (:REWRITE ACL2::NFIX-WHEN-NATP)
+                             (:REWRITE CONSTANT-UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
+                             (:LINEAR COMBINE-BYTES-SIZE-FOR-RM64-PROGRAMMER-LEVEL-MODE)
+                             (:REWRITE ACL2::NATP-WHEN-INTEGERP)
+                             (:REWRITE ACL2::NATP-WHEN-GTE-0)
+                             (:REWRITE 4K-ALIGNED-PHYSICAL-ADDRESS-HELPER)
+                             (:REWRITE BITOPS::SIGNED-BYTE-P-OF-LOGTAIL)
+                             (:LINEAR ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
+                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
+                             (:TYPE-PRESCRIPTION ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
+                             (:TYPE-PRESCRIPTION ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
+                             (:REWRITE ACL2::SIGNED-BYTE-P-LOGEXT)
+                             (:TYPE-PRESCRIPTION BOOLEANP)
+                             (:REWRITE LOGHEAD-64-N64-TO-I64-CANONICAL-ADDRESS)
+                             (:TYPE-PRESCRIPTION PML4-TABLE-BASE-ADDR)
+                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-4-PREFIX)
+                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX)
+                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX)
+                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX)
+                             (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE
+                              COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
+                             (:DEFINITION MEMBER-P)
+                             (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
+                             (:TYPE-PRESCRIPTION ACL2::|x < y  =>  0 < -x+y|)
+                             (:REWRITE DEFAULT-+-2)
+                             (:REWRITE ACL2::NATP-RW)
+                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS)
+                             (:REWRITE DEFAULT-+-1)
+                             (:REWRITE ACL2::ASH-0)
+                             (:REWRITE ACL2::ZIP-OPEN)
+                             (:REWRITE LOGHEAD-OF-NON-INTEGERP)
+                             (:TYPE-PRESCRIPTION ADDR-BYTE-ALISTP-CREATE-ADDR-BYTES-ALIST)
+                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
+                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
+                             (:REWRITE ZF-SPEC-THM)
+                             (:LINEAR ACL2::LOGHEAD-UPPER-BOUND)
+                             (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2)
+                             (:LINEAR SIZE-OF-COMBINE-BYTES)
+                             (:REWRITE DISJOINT-P-SUBSET-P)
+                             (:DEFINITION BINARY-APPEND)
+                             (:DEFINITION CREATE-ADDR-BYTES-ALIST)
+                             (:REWRITE MEMBER-P-OF-SUBSET-IS-MEMBER-P-OF-SUPERSET)
+                             (:LINEAR RGFI-IS-I64P . 1)
+                             (:REWRITE MEMBER-P-CDR)
+                             (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
+                             (:REWRITE ACL2::DIFFERENCE-UNSIGNED-BYTE-P)
+                             (:LINEAR RGFI-IS-I64P . 2)
+                             (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
+                             (:LINEAR RIP-IS-I48P . 2)
+                             (:LINEAR RIP-IS-I48P . 1)
+                             (:TYPE-PRESCRIPTION BYTE-IFY)
+                             (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
+                             (:REWRITE BITOPS::BASIC-UNSIGNED-BYTE-P-OF-+)
+                             (:REWRITE DISJOINT-P-APPEND-1)
+                             (:REWRITE DEFAULT-<-1)
+                             (:REWRITE DEFAULT-CAR)
+                             (:REWRITE DEFAULT-CDR)
+                             (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
+                             (:REWRITE WB-NOT-CONSP-ADDR-LST)
+                             (:DEFINITION NTHCDR)
+                             (:REWRITE SUBSET-P-CDR-Y)
+                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-VALUE-OF-ADDRESS-WHEN-ERROR)
+                             (:REWRITE DEFAULT-<-2)
+                             (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-LA-TO-PA)
+                             (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
+                             (:DEFINITION NTH)
+                             (:REWRITE CONSP-CREATE-ADDR-BYTES-ALIST)
+                             (:REWRITE SUBSET-P-REFLEXIVE)
+                             (:META ACL2::CANCEL_TIMES-EQUAL-CORRECT)
+                             (:REWRITE SET::SETS-ARE-TRUE-LISTS)
+                             (:LINEAR RFLAGS-IS-N32P)
+                             (:REWRITE CONSP-BYTE-IFY)
+                             (:DEFINITION TRUE-LISTP)
+                             (:TYPE-PRESCRIPTION RFLAGS-IS-N32P)
+                             (:REWRITE CDR-APPEND-IS-APPEND-CDR)
+                             (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
+                             (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
+                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
+                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
+                             (:REWRITE SUBSET-P-CDR-X)
+                             (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT)
+                             (:REWRITE SET::NONEMPTY-MEANS-SET)
+                             (:TYPE-PRESCRIPTION XW)
+                             (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST-IN-TERMS-OF-LEN)
+                             (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST)
+                             (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
+                             (:TYPE-PRESCRIPTION TRUE-LISTP)
+                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
+                             (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP)
+                             (:TYPE-PRESCRIPTION ALL-TRANSLATION-GOVERNING-ADDRESSES)
+                             (:TYPE-PRESCRIPTION SET::SETP-TYPE)
+                             (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)
+                             (:REWRITE ACL2::EQUAL-CONSTANT-+)
+                             (:DEFINITION BYTE-LISTP)
+                             (:REWRITE UNSIGNED-BYTE-P-OF-ASH)
+                             (:REWRITE BITOPS::NORMALIZE-LOGBITP-WHEN-MODS-EQUAL)
+                             (:REWRITE BITOPS::LOGBITP-OF-NEGATIVE-CONST)
+                             (:REWRITE BITOPS::LOGBITP-OF-MASK)
+                             (:REWRITE BITOPS::LOGBITP-OF-CONST)
+                             (:REWRITE GREATER-LOGBITP-OF-UNSIGNED-BYTE-P . 1)
+                             (:META BITOPS::OPEN-LOGBITP-OF-CONST-LITE-META)
+                             (:REWRITE RB-RETURNS-BYTE-LISTP)
+                             (:REWRITE CAR-OF-APPEND)
+                             (:TYPE-PRESCRIPTION RB-RETURNS-TRUE-LISTP)
+                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER)
+                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER)
+                             (:TYPE-PRESCRIPTION CONSP-APPEND)
+                             (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-2)
+                             (:DEFINITION ACONS)
+                             (:REWRITE UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
+                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGIOR)
+                             (:TYPE-PRESCRIPTION NATP)
+                             (:REWRITE SET::IN-SET)
+                             (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
+                             (:REWRITE ACL2::MEMBER-OF-CONS)
+                             (:TYPE-PRESCRIPTION TRUE-LISTP-CREATE-ADDR-BYTES-ALIST)
+                             (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
+                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
+                             (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE)
+                             (:TYPE-PRESCRIPTION COMBINE-BYTES)
+                             (:DEFINITION N08P$INLINE)
+                             (:DEFINITION LEN)
+                             (:REWRITE XR-MV-NTH-2-IA32E-LA-TO-PA)
+                             (:REWRITE BITOPS::LOGSQUASH-OF-LOGHEAD-ZERO)
+                             (:REWRITE DEFAULT-UNARY-MINUS)
+                             (:REWRITE LEN-OF-RB-IN-PROGRAMMER-LEVEL-MODE)
+                             (:TYPE-PRESCRIPTION ACL2::BITP$INLINE)
+                             (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND)
+                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2)
+                             (:REWRITE WEED-OUT-IRRELEVANT-LOGAND-WHEN-FIRST-OPERAND-CONSTANT)
+                             (:REWRITE LOGAND-REDUNDANT)
+                             (:LINEAR ASH-MONOTONE-2)
+                             (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2)
+                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
+                             (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
+                             (:REWRITE
+                              MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
+                             (:LINEAR MV-NTH-1-IDIV-SPEC)
+                             (:LINEAR MV-NTH-1-DIV-SPEC)
+                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-2)
+                             (:LINEAR ACL2::EXPT->-1)
+                             (:REWRITE ACL2::UNSIGNED-BYTE-P-LOGHEAD)
+                             (:TYPE-PRESCRIPTION ZIP)
+                             (:LINEAR BITOPS::LOGAND-<-0-LINEAR)
+                             (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS)
+                             (:LINEAR <=-LOGIOR)
+                             (:LINEAR MEMBER-P-POS-VALUE)
+                             (:LINEAR MEMBER-P-POS-1-VALUE)
+                             (:LINEAR BITOPS::LOGIOR->=-0-LINEAR)
+                             (:REWRITE NO-DUPLICATES-P-AND-APPEND)
+                             (:REWRITE ACL2::SUBSETP-MEMBER . 2)
+                             (:REWRITE ACL2::SUBSETP-MEMBER . 1)
+                             (:TYPE-PRESCRIPTION WR32$INLINE)
+                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-1)
+                             (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
+                             (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
+                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)
+                             (:REWRITE ACL2::EXPT-WITH-VIOLATED-GUARDS)
+                             (:REWRITE BITOPS::BASIC-SIGNED-BYTE-P-OF-+)
+                             (:TYPE-PRESCRIPTION ASH)
+                             (:LINEAR ACL2::EXPT-IS-INCREASING-FOR-BASE>1)
+                             (:DEFINITION MEMBER-EQUAL)
+                             (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1)
+                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
+                             (:LINEAR BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
+
+                             not
                              bitops::logand-with-negated-bitmask
                              unsigned-byte-p
                              force (force))))))
@@ -5143,7 +5856,7 @@
 ;;             ;; stack.
 ;;             (not (mv-nth 0 (las-to-pas
 ;;                             (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;                             :r 0 x86)))
+;;                             :r (cpl x86) x86)))
 ;;             ;; Reading from stack: The stack is located in a
 ;;             ;; contiguous region of memory --- no overlaps among
 ;;             ;; physical addresses of the stack. I need this hypothesis
@@ -5152,7 +5865,7 @@
 ;;             (no-duplicates-p
 ;;              (mv-nth 1 (las-to-pas
 ;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-;;                         :r 0 x86)))
+;;                         :r (cpl x86) x86)))
 ;;             ;; The physical addresses corresponding to the program and
 ;;             ;; stack are disjoint.
 ;;             (disjoint-p
@@ -5196,7 +5909,7 @@
 ;;             (not (mv-nth 0 (las-to-pas
 ;;                             (create-canonical-address-list
 ;;                              8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-;;                             :r 0 x86)))
+;;                             :r (cpl x86) x86)))
 ;;             ;; The translation-governing addresses of PML4TE addresses
 ;;             ;; are disjoint from the physical addresses corresponding
 ;;             ;; to the stack.
@@ -5206,7 +5919,7 @@
 ;;                8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
 ;;               x86)
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 ;;             ;; The PML4TE physical addresses are disjoint from the
 ;;             ;; stack physical addresses.
 ;;             (disjoint-p
@@ -5214,9 +5927,9 @@
 ;;                         (create-canonical-address-list
 ;;                          8
 ;;                          (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-;;                         :r 0 x86))
+;;                         :r (cpl x86) x86))
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
 ;;             ;; PML4TE is has P = 1 (i.e., it is present).
 ;;             (equal
@@ -5255,7 +5968,7 @@
 ;;                              (page-dir-ptr-table-entry-addr
 ;;                               (xr :rgf *rdi* x86)
 ;;                               (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-;;                             :r 0 x86)))
+;;                             :r (cpl x86) x86)))
 ;;             ;; The translation-governing addresses of PDPTE addresses
 ;;             ;; are disjoint from the physical addresses corresponding
 ;;             ;; to the stack.
@@ -5268,7 +5981,7 @@
 ;;                 (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
 ;;               x86)
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 ;;             ;; The PDPTE physical addresses are disjoint from the
 ;;             ;; stack physical addresses.
 ;;             (disjoint-p
@@ -5278,9 +5991,9 @@
 ;;                          (page-dir-ptr-table-entry-addr
 ;;                           (xr :rgf *rdi* x86)
 ;;                           (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-;;                         :r 0 x86))
+;;                         :r (cpl x86) x86))
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
 ;;             ;; PDPTE does not have the P or PS bit cleared (i.e., the
 ;;             ;; entry is present and it points to a 1G page).
@@ -5324,7 +6037,7 @@
 ;;             (not (mv-nth 0 (las-to-pas
 ;;                             (create-canonical-address-list
 ;;                              8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-;;                             :r 0 x86)))
+;;                             :r (cpl x86) x86)))
 ;;             ;; The translation-governing addresses of PML4TE addresses
 ;;             ;; are disjoint from the physical addresses corresponding
 ;;             ;; to the stack.
@@ -5334,7 +6047,7 @@
 ;;                8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
 ;;               x86)
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 ;;             ;; The PML4TE physical addresses are disjoint from the
 ;;             ;; stack physical addresses.
 ;;             (disjoint-p
@@ -5342,9 +6055,9 @@
 ;;                         (create-canonical-address-list
 ;;                          8
 ;;                          (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-;;                         :r 0 x86))
+;;                         :r (cpl x86) x86))
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
 ;;             ;; PML4TE is has P = 1 (i.e., it is present).
 ;;             (equal
@@ -5384,7 +6097,7 @@
 ;;                              (page-dir-ptr-table-entry-addr
 ;;                               (xr :rgf *rsi* x86)
 ;;                               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                             :r 0 x86)))
+;;                             :r (cpl x86) x86)))
 ;;             ;; No errors encountered while translating the PDPTE
 ;;             ;; linear addresses on behalf of a write.
 ;;             (not (mv-nth 0 (las-to-pas
@@ -5393,7 +6106,7 @@
 ;;                              (page-dir-ptr-table-entry-addr
 ;;                               (xr :rgf *rsi* x86)
 ;;                               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                             :w 0 x86)))
+;;                             :w (cpl x86) x86)))
 ;;             ;; The translation-governing addresses of PDPTE addresses
 ;;             ;; are disjoint from the physical addresses corresponding
 ;;             ;; to the stack.
@@ -5406,7 +6119,7 @@
 ;;                 (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
 ;;               x86)
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 ;;             ;; The PDPTE physical addresses are disjoint from the
 ;;             ;; stack physical addresses.
 ;;             (disjoint-p
@@ -5416,9 +6129,9 @@
 ;;                          (page-dir-ptr-table-entry-addr
 ;;                           (xr :rgf *rsi* x86)
 ;;                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                         :r 0 x86))
+;;                         :r (cpl x86) x86))
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
 ;;             ;; The physical addresses corresponding to the program are
 ;;             ;; disjoint from those of the PDPTE (on behalf of a
@@ -5433,7 +6146,7 @@
 ;;                          (page-dir-ptr-table-entry-addr
 ;;                           (xr :rgf *rsi* x86)
 ;;                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                         :w 0 x86)))
+;;                         :w (cpl x86) x86)))
 
 ;;             ;; Translation-governing addresses of the program are
 ;;             ;; disjoint from the PDPTE physical addresses (on behalf
@@ -5448,7 +6161,7 @@
 ;;                          (page-dir-ptr-table-entry-addr
 ;;                           (xr :rgf *rsi* x86)
 ;;                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                         :w 0 x86)))
+;;                         :w (cpl x86) x86)))
 ;;             ;; Translation-governing addresses of the stack are
 ;;             ;; disjoint from the physical addresses of the PDPTE (on
 ;;             ;; behalf of a write).
@@ -5462,7 +6175,7 @@
 ;;                          (page-dir-ptr-table-entry-addr
 ;;                           (xr :rgf *rsi* x86)
 ;;                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-;;                         :w 0 x86)))
+;;                         :w (cpl x86) x86)))
 
 ;;             ;; Destination PDPTE does not have the P or PS bit cleared
 ;;             ;; (i.e., the entry is present and it points to a 1G
@@ -5547,7 +6260,7 @@
 ;;                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
 ;;                         :r (cpl x86) x86))
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
 ;;             ;; The ret address on the stack is disjoint from the rest
 ;;             ;; of the stack.
@@ -5556,7 +6269,7 @@
 ;;                         (create-canonical-address-list 8 (xr :rgf *rsp* x86))
 ;;                         :r (cpl x86) x86))
 ;;              (mv-nth 1 (las-to-pas
-;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w 0 x86)))
+;;                         (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
 
 ;;             ;; The translation-governing addresses of the return
 ;;             ;; address on the stack are disjoint from the physical
