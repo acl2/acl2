@@ -68,6 +68,11 @@ be found in @('popcount/popcount.lisp'). This proof was done using the
     ()
     (local (include-book "dataCopy/dataCopy" :ttags :all))))
 
+  (local
+   (encapsulate
+     ()
+     (local (include-book "rewireVirtualAddress/rewireVirtualAddress" :ttags :all))))
+
   )
 
 ;; ======================================================================
