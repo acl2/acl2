@@ -84,6 +84,7 @@
   })
   </p>
   @(def ensure$)"
+
   (defmacro ensure$ (condition-triple error-message &rest error-message-args)
     (declare (xargs :guard (stringp error-message)))
     `(er-let*

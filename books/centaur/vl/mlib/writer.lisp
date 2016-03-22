@@ -136,6 +136,22 @@ they have such annotations."
     (vl-ps-update-misc (acons :vl-use-origexprs (and usep t) misc))))
 
 
+(define vl-ps->copious-parens-p (&key (ps 'ps))
+  :short "Should we print expressions with extra parentheses?  This may be
+  useful when you want to show the precedence in a very explicit way."
+  :long "<p>See also @(see vl-ps-update-copious-parens).</p>"
+  (cdr (assoc-equal :vl-copious-parens (vl-ps->misc))))
+
+(define vl-ps-update-copious-parens ((copiousp booleanp) &key (ps 'ps))
+  :short "Set whether we should print expressions with extra parentheses even
+where they are not needed."
+  :verbosep t
+  (let* ((misc (vl-ps->misc))
+         (misc (remove-from-alist :vl-copious-parens misc)))
+    (vl-ps-update-misc (acons :vl-copious-parens (and copiousp t) misc))))
+
+
+
 ; Statement printing.  I want to do at least something to allow nested
 ; statements to get progressively more indented.  As a very basic way to
 ; implement this, I piggy-back on the autowrap column and autowrap indent
@@ -851,7 +867,6 @@ displays.  The module browser's web pages are responsible for defining the
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (enable vl-expr-count)))))
 
-
 (defines vl-pp-expr
   :short "Main pretty-printer for an expression."
 
@@ -1045,7 +1060,14 @@ displays.  The module browser's web pages are responsible for defining the
 
         :vl-unary (b* ((prec (vl-expr-precedence x))
                        (arg-prec (vl-expr-precedence x.arg))
-                       (want-parens (<= arg-prec prec))
+                       (want-parens (or* (<= arg-prec prec)
+                                         (and (vl-ps->copious-parens-p)
+                                              ;; Special case: even with copious parens, don't print
+                                              ;; parens around plain numbers and wire references
+                                              (vl-expr-case x.arg
+                                                :vl-index nil
+                                                :vl-literal nil
+                                                :otherwise t))))
                        ((when (member x.op '(:vl-unary-postinc
                                              :vl-unary-postdec)))
                         (vl-ps-seq
@@ -1072,21 +1094,34 @@ displays.  The module browser's web pages are responsible for defining the
                         (left-prec    (vl-expr-precedence x.left))
                         (right-prec   (vl-expr-precedence x.right))
                         (right-assocp (member x.op '(:vl-implies :vl-equiv)))
-                        (left-parens  (or (< left-prec prec)
-                                          (and right-assocp (eql left-prec prec))
-                                          (hons-assoc-equal "VL_EXPLICIT_PARENS"
-                                                            (vl-expr->atts x.left))))
-                        (right-parens (or (< right-prec prec)
-                                          (and (not right-assocp) (eql right-prec prec))
-                                          (hons-assoc-equal "VL_EXPLICIT_PARENS"
-                                                            (vl-expr->atts x.right))
-                                          (b* ((rightop (vl-expr-case x.right
-                                                          :vl-binary x.right.op
-                                                          :otherwise nil)))
-                                            (or (and (eq x.op :vl-binary-bitand)
-                                                     (eq rightop :vl-binary-bitand))
-                                                (and (eq x.op :vl-binary-bitor)
-                                                     (eq rightop :vl-binary-bitor)))))))
+                        (left-parens  (or* (< left-prec prec)
+                                           (and right-assocp (eql left-prec prec))
+                                           (hons-assoc-equal "VL_EXPLICIT_PARENS" (vl-expr->atts x.left))
+                                           ;; Special case: even with copious parens, don't print
+                                           ;; parens around plain numbers and wire references
+                                           (and* (vl-ps->copious-parens-p)
+                                                 (vl-expr-case x.left
+                                                   :vl-index nil
+                                                   :vl-literal nil
+                                                   :otherwise t))))
+                        (right-parens (or* (< right-prec prec)
+                                           (and (not right-assocp) (eql right-prec prec))
+                                           (hons-assoc-equal "VL_EXPLICIT_PARENS"
+                                                             (vl-expr->atts x.right))
+                                           ;; Special case: even with copious parens, don't print
+                                           ;; parens around plain numbers and wire references
+                                           (and* (vl-ps->copious-parens-p)
+                                                 (vl-expr-case x.right
+                                                   :vl-index nil
+                                                   :vl-literal nil
+                                                   :otherwise t))
+                                           (b* ((rightop (vl-expr-case x.right
+                                                           :vl-binary x.right.op
+                                                           :otherwise nil)))
+                                             (or (and (eq x.op :vl-binary-bitand)
+                                                      (eq rightop :vl-binary-bitand))
+                                                 (and (eq x.op :vl-binary-bitor)
+                                                      (eq rightop :vl-binary-bitor)))))))
                      ;; BOZO used to be a special case for assignment
                      ;; operators, but I think it boils down to precedence and
                      ;; should work OK -- am I missing something?
@@ -1109,9 +1144,10 @@ displays.  The module browser's web pages are responsible for defining the
                       (vl-println? "")))
 
         :vl-qmark (b* ((prec (vl-expr-precedence x))
-                       (test-parens (<= (vl-expr-precedence x.test) prec))
-                       (then-parens (<= (vl-expr-precedence x.then) prec))
-                       (else-parens (<  (vl-expr-precedence x.else) prec)))
+                       (copious-parens (vl-ps->copious-parens-p))
+                       (test-parens (or* (<= (vl-expr-precedence x.test) prec) copious-parens))
+                       (then-parens (or* (<= (vl-expr-precedence x.then) prec) copious-parens))
+                       (else-parens (or* (<  (vl-expr-precedence x.else) prec) copious-parens)))
                     (vl-ps-seq
                      (if test-parens (vl-print "(") ps)
                      (vl-pp-expr x.test)
@@ -1193,7 +1229,8 @@ displays.  The module browser's web pages are responsible for defining the
                   (vl-pp-expr x.expr)
                   (vl-print ")"))
 
-        :vl-inside (b* ((parens (< (vl-expr-precedence x.elem) (vl-expr-precedence x))))
+        :vl-inside (b* ((parens (or* (< (vl-expr-precedence x.elem) (vl-expr-precedence x))
+                                     (vl-ps->copious-parens-p))))
                      (vl-ps-seq (if parens (vl-print "(") ps)
                                 (vl-pp-expr x.elem)
                                 (if parens (vl-print ")") ps)
@@ -1204,7 +1241,8 @@ displays.  The module browser's web pages are responsible for defining the
                                 (vl-print "}")))
 
         :vl-tagged (b* ((parens (and x.expr
-                                     (< (vl-expr-precedence x.expr) (vl-expr-precedence x)))))
+                                     (or* (< (vl-expr-precedence x.expr) (vl-expr-precedence x))
+                                          (vl-ps->copious-parens-p)))))
                      (vl-ps-seq (vl-mimic-linestart atts)
                                 (vl-ps-span "vl_key" (vl-print "tagged "))
                                 (vl-print-str x.tag)

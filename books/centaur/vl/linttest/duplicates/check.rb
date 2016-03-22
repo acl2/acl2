@@ -76,6 +76,8 @@ nodupe("w8_nodupe")
 nodupe("w9_nodupe")
 nodupe("w10_nodupe")
 nodupe("w11_nodupe")
+nodupe("w12_nodupe")
+nodupe("w13_nodupe")
 
 nodupe("busclk")
 nodupe("bus1")

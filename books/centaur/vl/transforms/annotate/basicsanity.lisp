@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "../../mlib/port-tools")
+(include-book "../../mlib/writer")
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -123,6 +124,13 @@ interfaces.</p>")
    (warnings (iff warnings (not (vl-portlist-wellformed-p x)))
              :name vl-portlist-check-wellformed-under-iff)))
 
+(define vl-pps-expr-elided ((x vl-expr-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (b* ((str (vl-pps-expr x))
+       ((when (<= (length str) 50))
+        str))
+    (cat (subseq str 0 50) "...")))
+
 (define vl-port-check-style ((x        vl-port-p)
                              (warnings vl-warninglist-p))
   :guard (vl-port-wellformed-p x)
@@ -171,11 +179,10 @@ interfaces.</p>")
     ;; Otherwise something pretty fancy is going on.  We'll just recommend
     ;; against this out of general principle.
     (warn :type :vl-warn-port-style
-          ;; BOZO Some of these expressions are bigger than we want to see in
-          ;; warning output.  Maybe they can be printed with some sort of size
-          ;; limit.  For now, we won't print the expression.
-          :msg "~a0: port has complex expression."
-          :args (list x x.expr))))
+          ;; Some of these expressions are bigger than we want to see in
+          ;; warning output, so we elide them.
+          :msg "~a0: port has complex expression ~s1"
+          :args (list x (vl-pps-expr-elided x.expr)))))
 
 (define vl-portlist-check-style ((x vl-portlist-p)
                                  (warnings vl-warninglist-p))

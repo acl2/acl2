@@ -1842,12 +1842,59 @@ such as @('logic') are packed but not selectable.</p>"
       :vl-usertype (impossible))))
 
 
-(define vl-datatype-signedness ((x vl-datatype-p))
-  :short "Decide whether the datatype is signed or not."
-  :long "<p>Returns NIL if there isn't an appropriate signedness, as in an
-unpacked or non-integer type.  This function never fails, as such, but in some
-cases where implementations disagree on the correct signedness, we return a
-flag to signal that there is a caveat about that signedness.</p>
+(defenum vl-arithclass-p
+  (:vl-signed-int-class
+   :vl-unsigned-int-class
+   :vl-shortreal-class
+   :vl-real-class
+   :vl-other-class
+   :vl-error-class)
+  :parents (vl-expr-typedecide)
+  :short "Classification of expressions (or datatypes) as signed or unsigned
+integral, shortreal, real, or of some other kind."
+  :long "<p>These classifications are used in the description of expression
+types (signedness) found in SystemVerilog-2012 Sections 11.7-11.8.</p>
+
+<p>It isn't entirely clear to me whether @('shortreal') should be regarded as a
+different type than @('real'), but it seems possibly useful to keep them
+separated.</p>
+
+<p>We use ``other'' class to describe things that are valid but of some
+non-arithmetic type, for instance: unpacked structures, void, chandles, etc.</p>
+
+<p>We use ``error'' class to describe the case where we really did have some
+kind of error determining the type.</p>")
+
+(define vl-coretype-arithclass ((typinfo vl-coredatatype-info-p)
+                                (signedp booleanp))
+  :returns (class vl-arithclass-p)
+  :parents (vl-datatype-arithclass)
+  :short "We factor this out of @(see vl-datatype-arithclass) so we can reuse
+          it in places like @(see vl-syscall-typedecide)."
+  (b* (((vl-coredatatype-info typinfo)))
+    (cond (typinfo.takes-signingp
+           ;; Any integer atom/vector type takes a signing
+           (if signedp
+               :vl-signed-int-class
+             :vl-unsigned-int-class))
+          ((or (vl-coretypename-equiv typinfo.coretypename :vl-real)
+               ;; See SystemVerilog-2012 Section 6.12: realtime is synonymous
+               ;; with real.
+               (vl-coretypename-equiv typinfo.coretypename :vl-realtime))
+           :vl-real-class)
+          ((vl-coretypename-equiv typinfo.coretypename :vl-shortreal)
+           :vl-shortreal-class)
+          (t
+           ;; Some crazy type like void, string, event, etc.
+           :vl-other-class))))
+
+(define vl-datatype-arithclass ((x vl-datatype-p))
+  :short "Decide whether the datatype is signed/unsigned/real/other."
+
+  :long "<p>Returns an @(see vl-arithclass-p) that describes the kind of this
+datatype.  This function never fails, as such, but in some cases where
+implementations disagree on the correct signedness, we return a flag to signal
+that there is a caveat about that signedness.</p>
 
 <p>This caveat occurs when we have packed dimensions on a usertype that is
 declared as signed.  In this case, NCV treats the array as unsigned, but VCS
@@ -1862,38 +1909,49 @@ packed array shall be unsigned.</blockquote>
 <p>An example:</p>
 
 @({
-  typedef logic signed [3:0] squad;
+    typedef logic signed [3:0] squad;
 
-  squad [3:0] b;
-  assign b = 16'hffff;
+    squad [3:0] b;
+    assign b = 16'hffff;
 
-  logic [20:0] btest;
-  assign btest = b;
- })
+    logic [20:0] btest;
+    assign btest = b;
+})
 
 <p>In NCVerilog, btest has the value @('0ffff'), indicating that @('b') (as a
 whole) is considered unsigned; in VCS, btest has the value @('fffff'),
-indicating that @('b') is considered signed.</p>
-
-"
+indicating that @('b') is considered signed.</p>"
   :guard (vl-datatype-resolved-p x)
   :measure (vl-datatype-count x)
   :returns (mv (caveat-flag)
-               (signedness vl-maybe-exprsign-p))
-  (b* (((when (consp (vl-datatype->udims x))) (mv nil nil)))
+               (class vl-arithclass-p))
+  (b* (((when (consp (vl-datatype->udims x)))
+        ;; Unpacked array has no sensible arith class
+        (mv nil :vl-other-class)))
     (vl-datatype-case x
-      :vl-coretype (b* (((vl-coredatatype-info typinfo) (vl-coretypename->info x.name)))
-                     (mv nil (and typinfo.takes-signingp
-                                  (if x.signedp :vl-signed :vl-unsigned))))
-      :vl-struct (mv nil (and x.packedp (if x.signedp :vl-signed :vl-unsigned)))
-      :vl-union (mv nil (and x.packedp (if x.signedp :vl-signed :vl-unsigned)))
-      :vl-enum (vl-datatype-signedness x.basetype)
-      :vl-usertype (b* (((unless (mbt (and x.res t))) (mv nil nil))
-                        ((mv caveat ans1) (vl-datatype-signedness x.res))
-                        ((when (and (consp (vl-datatype->pdims x))
-                                    (eq ans1 :vl-signed)))
-                         (mv t :vl-unsigned)))
-                     (mv caveat ans1)))))
+      :vl-coretype
+      (mv nil (vl-coretype-arithclass (vl-coretypename->info x.name) x.signedp))
+
+      :vl-struct
+      (mv nil (cond ((not x.packedp) :vl-other-class)
+                    (x.signedp       :vl-signed-int-class)
+                    (t               :vl-unsigned-int-class)))
+      :vl-union
+      (mv nil (cond ((not x.packedp) :vl-other-class)
+                    (x.signedp       :vl-signed-int-class)
+                    (t               :vl-unsigned-int-class)))
+      :vl-enum
+      (vl-datatype-arithclass x.basetype)
+      :vl-usertype
+      (b* (((unless (mbt (and x.res t)))
+            (mv (impossible) :vl-other-class))
+           ((mv caveat ans1) (vl-datatype-arithclass x.res))
+           ((when (and (consp (vl-datatype->pdims x))
+                       (eq ans1 :vl-signed-int-class)))
+            ;; Packed array of some signed usertype -- special caveat case
+            ;; described above.
+            (mv t :vl-unsigned-int-class)))
+        (mv caveat ans1)))))
 
 
 (define vl-datatype-select-ok ((x vl-datatype-p))
@@ -1972,8 +2030,6 @@ dimensions counts as unsigned.)</p>"
 
 
 
-
-
 (define vl-datatype-remove-dim ((x vl-datatype-p))
   :short "Get the type of a variable of type @('x') after an indexing
 operation is applied to it."
@@ -2032,9 +2088,9 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   (b* ((x (vl-maybe-usertype-resolve x))
        (udims (vl-datatype->udims x))
        ((when (consp udims))
+        ;; Still have unpacked dimensions, so just strip off one unpacked dimension.
         (mv nil nil
-            (vl-datatype-update-udims
-             (cdr udims) x)
+            (vl-datatype-update-udims (cdr udims) x)
             (car udims)))
        (pdims (vl-datatype->pdims x))
        ((when (consp pdims))
@@ -2050,8 +2106,10 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                    x)
                   (car pdims)))
              (new-x (vl-datatype-update-dims nil nil x))
-             ((mv & signedness) (vl-datatype-signedness new-x)))
-          (mv nil (eq signedness :vl-signed) new-x (car pdims))))
+             ((mv & arithclass) (vl-datatype-arithclass new-x))
+             (caveat-flag (vl-arithclass-equiv arithclass :vl-signed-int-class)))
+          (mv nil caveat-flag new-x (car pdims))))
+
        ((unless (vl-datatype-packedp x))
         (mv (vmsg "Index applied to non-packed, non-array type ~a0" x)
             nil nil nil))

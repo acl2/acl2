@@ -293,7 +293,25 @@ a warning about the modules.</p>"
        (- (and *dupeinst-check-debug*
                (cw "Dupeinst checking ~s0~%" x.name)))
        (ss       (vl-scopestack-push x ss))
-       (modinsts (vl-module->flatten-modinsts x))
+
+; BOZO.  We should do something to also consider instances within generates,
+; but doing so leads to false positives because we find things like
+;
+;  if (mode == 1)
+;  begin
+;    submod foo (o, a, b);
+;    ...
+;  else
+;  begin
+;    submod foo (o, a, b);
+;    ...
+;  end
+;
+; Anyway, this is annoying, so, at least for now, we just won't check
+; generates.
+
+       ;; (modinsts (vl-module->flatten-modinsts x))
+       (modinsts (vl-module->modinsts x))
        (alist    (vl-make-dupeinst-alist modinsts))
        (warnings (vl-warnings-for-dupeinst-alist alist ss x.warnings)))
     (change-vl-module x :warnings warnings)))
