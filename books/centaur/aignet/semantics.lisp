@@ -272,6 +272,13 @@
     (and (fanin-litp (car x) aignet)
          (aignet-lit-listp (cdr x) aignet))))
 
+(define aignet-id-listp ((x lit-listp) aignet)
+  :enabled t
+  (if (atom x)
+      (eq x nil)
+    (and (id-existsp (car x) aignet)
+         (aignet-id-listp (cdr x) aignet))))
+
 
 (defsection aignet-extension-binding
   :parents (aignet-extension-p)

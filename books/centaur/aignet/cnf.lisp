@@ -320,12 +320,19 @@ correctness criterion we've described.</p>
                   (and stable-under-simplificationp
                        '(:in-theory (enable acl2::b-and))))))
 
+  (local (defthm id-less-than-max-fanin-by-gate-stype
+           (implies (and (equal (stype (car (lookup-id id aignet))) :gate)
+                         (natp id))
+                    (<= id (node-count (find-max-fanin aignet))))
+           :hints(("Goal" :in-theory (enable find-max-fanin lookup-id)))
+           :rule-classes :forward-chaining))
+
 
   (define lit-collect-supergate ((lit litp)
                                  top use-muxes
                                  (supergate lit-listp)
                                  aignet-refcounts aignet)
-    :guard (and (<= (num-nodes aignet) (u32-length aignet-refcounts))
+    :guard (and (<= (+ 1 (max-fanin aignet)) (u32-length aignet-refcounts))
                 (fanin-litp lit aignet)
                 (true-listp supergate))
     :measure (lit-id lit)
@@ -2129,7 +2136,7 @@ correctness criterion we've described.</p>
   (mutual-recursion
    (defun aignet-lit->cnf (x use-muxes aignet-refcounts sat-lits aignet cnf)
      (declare (xargs :stobjs (aignet-refcounts sat-lits aignet)
-                     :guard (and (<= (num-nodes aignet) (u32-length aignet-refcounts))
+                     :guard (and (<= (+ 1 (max-fanin aignet)) (u32-length aignet-refcounts))
                                  (litp x) (fanin-litp x aignet)
                                  (sat-lits-wfp sat-lits aignet))
                      :verify-guards nil
@@ -2184,7 +2191,7 @@ correctness criterion we've described.</p>
 
    (defun aignet-lit-list->cnf (x use-muxes aignet-refcounts sat-lits aignet cnf)
      (declare (xargs :stobjs (aignet-refcounts sat-lits aignet)
-                     :guard (and (<= (num-nodes aignet) (u32-length aignet-refcounts))
+                     :guard (and (<= (+ 1 (max-fanin aignet)) (u32-length aignet-refcounts))
                                  (lit-listp x)
                                  (aignet-lit-listp x aignet)
                                  (sat-lits-wfp sat-lits aignet))

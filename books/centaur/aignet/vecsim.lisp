@@ -30,6 +30,7 @@
 
 (in-package "AIGNET")
 (include-book "eval")
+(include-book "centaur/bitops/fast-logext" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
@@ -341,6 +342,53 @@
              :expand ((:free (s61v)
                        (vecsim-to-eval-iter n slot bit s61v vals
                                             aignet)))))))
+
+
+(defsection s61v-randomize
+  (local (defthm random$-bound
+           (b* (((mv val ?state) (random$ limit state)))
+             (implies (posp limit)
+                      (< val limit)))
+           :hints(("Goal" :in-theory (enable random$)))
+           :rule-classes :linear))
+
+  (local (defthm random$-type
+           (b* (((mv val ?state) (random$ limit state)))
+             (natp val))
+           :hints(("Goal" :in-theory (enable random$)))
+           :rule-classes :type-prescription))
+
+  (defiteration s61v-randomize (out-id s61v state)
+    (declare (xargs :stobjs (s61v state)
+                    :guard (and (natp out-id)
+                                (< out-id (s61v-nrows s61v)))))
+    (b* (((mv uval state) (random$ (expt 2 61) state))
+         (s61v (s61v-set2 out-id n (bitops::fast-logext 61 uval) s61v)))
+      (mv s61v state))
+    :returns (mv s61v state)
+    :index n
+    :last (s61v-ncols s61v))
+
+  (local (in-theory (enable s61v-randomize-iter)))
+
+  (defthm memo-tablep-s61v-randomize-iter
+    (implies (< (node-count aignet) (len (cdr s61v)))
+             (< (node-count aignet) (len (cdr (mv-nth 0 (s61v-randomize-iter n out-id s61v state))))))
+    :rule-classes :linear)
+
+  (defthm car-s61v-randomize-iter
+    (equal (car (mv-nth 0 (s61v-randomize-iter n out-id s61v state)))
+           (car s61v)))
+
+  (defthm len-cdr-s61v-randomize-iter
+    (implies (< (nfix out-id) (len (cdr s61v)))
+             (equal (len (cdr (mv-nth 0 (s61v-randomize-iter n out-id s61v state))))
+                    (len (cdr s61v)))))
+
+  (defthm lookup-prev-in-s61v-randomize-iter
+    (implies (<= (nfix m) (nfix slot))
+             (equal (nth slot (nth n (cdr (mv-nth 0 (s61v-randomize-iter m id s61v state)))))
+                    (nth slot (nth n (cdr s61v)))))))
 
 
 (defsection aignet-vecsim
