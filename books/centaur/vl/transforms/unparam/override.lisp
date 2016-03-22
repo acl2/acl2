@@ -205,12 +205,13 @@ types.</p>"
        ;; evaluate it as something that fits in the width of this datatype.
        ;; That means getting the type and size from a datatype.
        ((mv err desired-width) (vl-datatype-size type))
-       ((mv ?caveat desired-signedness)  (vl-datatype-signedness type))
-       ((unless (and (not err) desired-width desired-signedness))
+       ((mv ?caveat desired-arithclass)  (vl-datatype-arithclass type))
+       ((unless (and (not err)
+                     desired-width
+                     (vl-integer-arithclass-p desired-arithclass)))
         (vl-unparam-debug "can't override ~a1: width or type unknown: ~
                            width ~a2, type ~a3; ~s4."
-                          nil paramname desired-width desired-signedness
-                          err)
+                          nil paramname desired-width desired-arithclass err)
         (mv nil
             (fatal :type :vl-bad-parameter-override
                    :msg "can't override parameter ~s1: don't know the ~

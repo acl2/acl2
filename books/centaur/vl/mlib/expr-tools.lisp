@@ -1935,54 +1935,6 @@ throughout the expression, with repetition.  The resulting list may contain any
            (nfix width))))
 
 
-(defsection vl-exprsign-max
-  :parents (vl-expr-typedecide)
-  :short "@(call vl-exprsign-max) is given @(see vl-exprsign-p)s as arguments;
-it returns @(':vl-unsigned') if any argument is unsigned, or @(':vl-signed')
-when all arguments are signed."
-
-  (local (in-theory (enable vl-exprsign-p)))
-
-  (defund vl-exprsign-max-fn (x y)
-    (declare (xargs :guard (and (vl-exprsign-p x)
-                                (vl-exprsign-p y))))
-    ;; Goofy MBE stuff is just to make sure this function breaks if we ever add
-    ;; support for reals or other types.
-    (let ((x-fix (mbe :logic (case (vl-exprsign-fix x)
-                               (:vl-signed   :vl-signed)
-                               (otherwise    :vl-unsigned))
-                      :exec x))
-          (y-fix (mbe :logic (case (vl-exprsign-fix y)
-                               (:vl-signed   :vl-signed)
-                               (otherwise    :vl-unsigned))
-                      :exec y)))
-      (if (or (eq x-fix :vl-unsigned)
-              (eq y-fix :vl-unsigned))
-          :vl-unsigned
-        :vl-signed)))
-
-  (defmacro vl-exprsign-max (x y &rest rst)
-    (xxxjoin 'vl-exprsign-max-fn (cons x (cons y rst))))
-
-  (add-binop vl-exprsign-max vl-exprsign-max-fn)
-
-  (local (in-theory (enable vl-exprsign-max-fn)))
-
-  (defthm vl-exprsign-p-of-vl-exprsign-max
-    (vl-exprsign-p (vl-exprsign-max x y)))
-
-  (defthm type-of-vl-exprsign-max
-    (and (symbolp (vl-exprsign-max x y))
-         (not (equal t (vl-exprsign-max x y)))
-         (not (equal nil (vl-exprsign-max x y))))
-    :rule-classes :type-prescription)
-
-  (defthm vl-exprsign-max-of-vl-exprsign-max
-    (equal (vl-exprsign-max (vl-exprsign-max x y) z)
-           (vl-exprsign-max x (vl-exprsign-max y z))))
-
-  (deffixequiv vl-exprsign-max-fn :args ((x vl-exprsign-p) (y vl-exprsign-p))))
-
 
 (define vl-expr-add-atts ((new-atts vl-atts-p)
                           (x        vl-expr-p))

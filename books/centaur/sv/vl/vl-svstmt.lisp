@@ -1179,14 +1179,21 @@ because... (BOZO)</p>
        ((when x.sign)
         (mv warnings nil
             (make-vl-coretype :name :vl-logic :pdims dims :signedp (eq x.sign :vl-signed))))
-       ((wmv warnings signedness) (vl-expr-typedecide override ss scopes))
-       ((unless signedness)
+       ((wmv warnings class) (vl-expr-typedecide override ss scopes))
+       ((unless (vl-integer-arithclass-p class))
+        ;; BOZO we might eventually try to extend this to support reals, but
+        ;; we'd have to look at what happens when you do parameter p = 1.0 and
+        ;; similar.  Also, note below that we return a coretype that is a logic.
+        ;; Do we rely on that?  If so we'd have to rework it to handle other
+        ;; kinds of types like reals.
         (mv warnings
             (vmsg "Couldn't decide signedness of parameter override ~a0" override)
             nil)))
 
     (mv warnings nil
-        (make-vl-coretype :name :vl-logic :pdims dims :signedp (eq signedness :vl-signed))))
+        (make-vl-coretype :name :vl-logic
+                          :pdims dims
+                          :signedp (vl-arithclass-equiv class :vl-signed-int-class))))
   ///
   (defret vl-datatype-resolved-p-of-vl-implicitvalueparam-final-type
     (implies (not err)
@@ -1314,11 +1321,7 @@ because... (BOZO)</p>
                    :msg "Datatype ~a0 unresolved when evaluating expression ~a1"
                    :args (list type x)))
             x (svex-x)))
-       ((mv warnings signedness)
-        (if type
-            (b* (((mv ?caveat signedness) (vl-datatype-signedness type)))
-              (mv nil signedness))
-          (vl-expr-typedecide x ss scopes)))
+       (warnings nil)
        ((wmv warnings svex size)
         (if type
             (b* (((mv ?err size) (vl-datatype-size type))
@@ -1336,7 +1339,13 @@ because... (BOZO)</p>
             (b* (((mv warnings svex ?type size)
                   (vl-expr-to-svex-untyped x ss scopes)))
               (mv warnings svex size)))))
-       ((unless (and (posp size) signedness))
+       ((wmv warnings class)
+        (if type
+            (b* (((mv ?caveat class) (vl-datatype-arithclass type)))
+              (mv nil class))
+          (vl-expr-typedecide x ss scopes)))
+       ((unless (and (posp size)
+                     (vl-integer-arithclass-p class)))
         ;; presumably already warned about this?
         (mv nil nil warnings x (svex-x)))
        (svex (sv::svex-reduce-consts svex))
@@ -1344,7 +1353,7 @@ because... (BOZO)</p>
        ((unless val)
         (mv t nil warnings x svex))
        (new-x (make-vl-literal
-               :val (vl-4vec-to-value val size :signedness signedness)
+               :val (vl-4vec-to-value val size :signedness (vl-integer-arithclass->exprsign class))
                :atts (cons (cons "VL_ORIG_EXPR" x) (vl-expr->atts x)))))
     (mv t t warnings new-x svex)))
 
