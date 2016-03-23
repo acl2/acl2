@@ -3078,7 +3078,7 @@
   :parents (x86-decoder)
   :short "Top-level step function"
 
-  :long "<p> @('x86-fetch-decode-execute') is the step function of our
+  :long "<p>@('x86-fetch-decode-execute') is the step function of our
 x86 interpreter.  It fetches one instruction by looking up the memory
 address indicated by the instruction pointer @('rip'), decodes that
 instruction, and dispatches control to the appropriate instruction
