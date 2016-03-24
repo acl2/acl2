@@ -8747,7 +8747,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote user-book-name)
         'state
         (list 'quote load-compiled-file)
-        (list 'quote :none)
+        (list 'quote nil)
         (list 'quote uncertified-okp)
         (list 'quote defaxioms-okp)
         (list 'quote skip-proofs-okp)
@@ -12475,7 +12475,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     untrace$-fn1 ; eval
     bdd-top ; (GCL only) si::sgc-on
     defstobj-field-fns-raw-defs ; call to memoize-flush when #+hons
-    expansion-alist-pkg-names
+    pkg-names
     times-mod-m31 ; gcl has raw code
     iprint-ar-aref1
     prove ; #+write-arithmetic-goals
@@ -13033,6 +13033,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; corresponding state global.
 
                     t)
+    (cert-data . nil)
     (certify-book-info .
 
 ; Certify-book-info is non-nil when certifying a book, in which case it is a
@@ -19980,6 +19981,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     check-invariant-risk ; set- function ensures proper values
     print-gv-defaults
     global-enabled-structure
+    cert-data
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,
