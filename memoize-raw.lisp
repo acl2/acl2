@@ -855,7 +855,7 @@
 ; fn                               number assigned
 ; "outside-caller"                     4
 ; FCHECKSUM-OBJ                        5
-; EXPANSION-ALIST-PKG-NAMES-MEMOIZE    6
+; PKG-NAMES-MEMOIZE                    6
 ; WORSE-THAN-BUILTIN                   7
 ; BAD-LISP-OBJECTP                     8
 

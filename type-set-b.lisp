@@ -214,6 +214,11 @@
 ; This fake rune is used by type-set to record that built-in facts about
 ; primitive functions were used.
 
+; *fake-rune-for-cert-data*
+; This fake rune is a signal that information was used that was retrieved from
+; either the first pass of an encapsulate or certify-book, or from the
+; certificate of a certified book.
+
 ; WARNING: If more fake runes are added, deal with them in *fake-rune-alist*.
 
 (defmacro base-symbol (rune)
@@ -2877,6 +2882,9 @@
 ; the type-set of the associated function symbol.
 
 (defrec type-prescription
+
+; Warning: If you change this, consider changing conjoin-type-prescriptions.
+
   (basic-ts (nume . term)
             (hyps . backchain-limit-lst)
             (vars . rune)

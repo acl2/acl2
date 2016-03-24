@@ -8165,6 +8165,9 @@
   (list "" "~@*" "~@* and " "~@*, "
         (tilde-*-conjunction-of-possibly-forced-names-phrase1 lst)))
 
+(defconst *fake-rune-for-cert-data*
+  '(:FAKE-RUNE-FOR-CERT-DATA nil))
+
 (defconst *fake-rune-alist*
 
 ; We use this constant for dealing with fake runes in tag-trees.  We ignore
@@ -8174,7 +8177,9 @@
   (list (cons (car *fake-rune-for-linear*)
               "linear arithmetic")
         (cons (car *fake-rune-for-type-set*)
-              "primitive type reasoning")))
+              "primitive type reasoning")
+        (cons (car *fake-rune-for-cert-data*)
+              "previously-computed data")))
 
 (defun rune-< (x y)
   (cond
