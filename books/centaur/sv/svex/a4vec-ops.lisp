@@ -537,9 +537,21 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                           (upperp booleanp))
   :returns (already-maskedp booleanp)
   :measure (len vec)
-  (b* (((mv first rest endp) (gl::first/rest/end vec))
+  :prepwork ((local (defthmd logbitp-past-integer-length-iff-logtail-minus1
+                      (iff (equal (logtail idx mask) -1)
+                           (and (<= (integer-length mask) (nfix idx))
+                                (logbitp idx mask)))
+                      :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                                         ihsext-inductions))))))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable logbitp-past-integer-length-iff-logtail-minus1))))
+  (b* ((idx (lnfix idx))
+       (mask (4vmask-fix mask))
+       ((mv first rest endp) (gl::first/rest/end vec))
        ((when endp)
-        (or (equal (4vmask-fix mask) -1)
+        (or (mbe :logic (equal (logtail idx mask) -1)
+                 :exec (and (<= (integer-length mask) idx)
+                            (logbitp idx mask)))  ;; (equal (4vmask-fix mask) -1)
             (equal first (mbe :logic (acl2::bool-fix upperp) :exec upperp)))))
     (and (or (logbitp idx (4vmask-fix mask))
              (equal first (mbe :logic (acl2::bool-fix upperp) :exec upperp)))
@@ -586,7 +598,39 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints (("goal" :use ((:instance a4vec-mask-check-correct-lemma
                            (idx 0) (upperp t))
                           (:instance a4vec-mask-check-correct-lemma
-                           (idx 0) (upperp nil)))))))
+                           (idx 0) (upperp nil))))))
+
+  ;; helpful for deffixequiv:
+  (local (in-theory (disable (:d a4vec-mask-check)
+                             acl2::equal-of-booleans-rewrite))))
+
+
+(define aig-scons-with-hint (b
+                             (v true-listp)
+                             (hint true-listp))
+  :returns (ans (equal ans (aig-scons b v))
+                :hints(("Goal" :in-theory (enable gl::bfr-scons))))
+  :inline t
+  (if (atom v)
+      (if b
+          (cons-with-hint b
+                          (let ((ans '(nil)))
+                            (mbe :logic ans
+                                 :exec (if (equal ans (cdr hint)) (cdr hint) ans)))
+                          hint)
+        (let ((ans '(nil)))
+          (mbe :logic ans
+               :exec (if (equal hint ans) hint ans))))
+    (if (and (atom (cdr v))
+             (hons-equal (car v) b))
+        (llist-fix v)
+      (cons-with-hint b (llist-fix v) hint))))
+
+(define aig-sterm-with-hint (b hint)
+  :returns (ans (equal ans (aig-sterm b))
+                :hints(("Goal" :in-theory (enable gl::bfr-sterm))))
+  :inline t
+  (cons-with-hint b nil hint))
 
 
 (define a4vec-mask ((mask 4vmask-p)
@@ -613,7 +657,6 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     (equal (a4vec-eval (a4vec-mask mask x) env)
            (4vec-mask mask (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-mask a4vec-mask-check-correct)))))
-
 
 (define a4vec-uminus ((x a4vec-p))
   :short "Symbolic version of @(see 4vec-uminus)."
