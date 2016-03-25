@@ -1052,13 +1052,13 @@ non-arguments pieces.</p>"
             nil nil))
 
        (name1 (vl-echarlist->string id))
-       ;; Prohibit using keywords as arguments.  Of course, the valid keywords
-       ;; are governed by the Verilog edition... blaaah...
-       ((when (vl-keyword-lookup name1 (vl-lexstate->kwdtable (vl-lexstate-init config))))
-        (mv (cw "Preprocessor error (~s0): keyword ~s1 not permitted as `define argument~%"
-                (vl-location-string (vl-echar->loc (car text)))
-                name1)
-            nil nil))
+       ;; ;; Prohibit using keywords as arguments.  Of course, the valid keywords
+       ;; ;; are governed by the Verilog edition... blaaah...
+       ;; ((when (vl-keyword-lookup name1 (vl-lexstate->kwdtable (vl-lexstate-init config))))
+       ;;  (mv (cw "Preprocessor error (~s0): keyword ~s1 not permitted as `define argument~%"
+       ;;          (vl-location-string (vl-echar->loc (car text)))
+       ;;          name1)
+       ;;      nil nil))
 
        ((mv ?ws rest) (vl-read-while-whitespace rest))
        ;; BOZO implement support for equal signs, default values... but that is
