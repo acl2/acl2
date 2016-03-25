@@ -102,8 +102,7 @@
 
 ;; (in-theory (disable acl2::aignetp))
 
-
-
+;;  BOZO there must be a pre-existing version of this function?
 (mutual-recursion
  (defun subtermp (x y)
    (declare (xargs :guard t))
@@ -117,7 +116,6 @@
        nil
      (or (subtermp x (car y))
          (subtermp-list x (cdr y))))))
-
 
 
 (defsection misc
@@ -270,183 +268,24 @@
   (if (atom x)
       (eq x nil)
     (and (fanin-litp (car x) aignet)
-         (aignet-lit-listp (cdr x) aignet))))
+         (aignet-lit-listp (cdr x) aignet)))
+  ///
+  (defthm aignet-extension-implies-aignet-lit-listp
+    (implies (and (aignet-extension-binding)
+                  (aignet-lit-listp lits orig))
+             (aignet-lit-listp lits new))))
 
-(define aignet-id-listp ((x lit-listp) aignet)
+(define aignet-id-listp ((x nat-listp) aignet)
   :enabled t
   (if (atom x)
       (eq x nil)
     (and (id-existsp (car x) aignet)
-         (aignet-id-listp (cdr x) aignet))))
-
-
-(defsection aignet-extension-binding
-  :parents (aignet-extension-p)
-  :short "A strategy for making use of @(see aignet-extension-p) in rewrite rules."
-
-  :long "<p>Rewrite rules using @(see aignet-extension-p) are a little odd.
-For example, suppose we want a rewrite rule just based on the definition,
-e.g.,</p>
-
-@({
-    (implies (and (aignet-extension-p new-aignet orig-aignet)
-                  (aignet-idp id orig-aignet))
-             (equal (nth-node id new-aignet)
-                    (nth-node id orig-aignet)))
-})
-
-<p>This isn't a very good rewrite rule because it has to match the free
-variable @('orig-aignet').  However, we can make it much better with a @(see
-bind-free) strategy.  We'll check the syntax of new-aignet to see if it is a
-call of a aignet-updating function.  Then, we'll use the @('aignet') input of
-that function as the binding for @('orig-aignet').</p>"
-
-  (defun simple-search-type-alist (term typ type-alist unify-subst)
-    (declare (xargs :mode :program))
-    (cond ((endp type-alist)
-           (mv nil unify-subst))
-          ((acl2::ts-subsetp (cadr (car type-alist)) typ)
-           (mv-let (ans unify-subst)
-             (acl2::one-way-unify1 term (car (car type-alist)) unify-subst)
-             (if ans
-                 (mv t unify-subst)
-               ;; note: one-way-unify1 is a no-change-loser so unify-subst is
-               ;; unchanged below
-               (simple-search-type-alist term typ (cdr type-alist)
-                                         unify-subst))))
-          (t (simple-search-type-alist term typ (cdr type-alist) unify-subst))))
-
-
-  ;; Additional possible strategic thing: keep aignet-modifying functions that
-  ;; don't produce an extension in a table and don't bind their inputs.
-  (defun find-prev-stobj-binding (new-term state)
-    (declare (xargs :guard (pseudo-termp new-term)
-                    :stobjs state
-                    :mode :program))
-    (b* (((mv valnum function args)
-          (case-match new-term
-            (('mv-nth ('quote valnum) (function . args) . &)
-             (mv (and (symbolp function) valnum) function args))
-            ((function . args)
-             (mv (and (symbolp function) 0) function args))
-            (& (mv nil nil nil))))
-         ((unless valnum) (mv nil nil))
-         ((when (or (eq function 'if)
-                    (eq function 'return-last)))
-          ;; Can't call stobjs-out on either of these
-          (mv nil nil))
-         ((when (and (eq function 'cons)
-                     (int= valnum 0)))
-          ;; special case for update-nth.
-          (mv t (nth 1 args)))
-         (w (w state))
-         (stobjs-out (acl2::stobjs-out function w))
-         (formals (acl2::formals function w))
-         (stobj-out (nth valnum stobjs-out))
-         ((unless stobj-out) (mv nil nil))
-         (pos (position stobj-out formals))
-         ((unless pos) (mv nil nil)))
-      (mv t (nth pos args))))
-
-  (defun iterate-prev-stobj-binding (n new-term state)
-    (declare (xargs :guard (and (pseudo-termp new-term)
-                                (natp n))
-                    :stobjs state
-                    :mode :program))
-    (if (zp n)
-        new-term
-      (mv-let (ok next-term)
-        (find-prev-stobj-binding new-term state)
-        (if ok
-            (iterate-prev-stobj-binding (1- n) next-term state)
-          new-term))))
-
-  (defun prev-stobj-binding (new-term prev-var iters mfc state)
-    (declare (xargs :guard (and (pseudo-termp new-term)
-                                (symbolp prev-var))
-                    :stobjs state
-                    :mode :program)
-             (ignore mfc))
-    (let ((prev-term (iterate-prev-stobj-binding iters new-term state)))
-      (if (equal new-term prev-term)
-          `((do-not-use-this-long-horrible-variable
-             . do-not-use-this-long-horrible-variable))
-        `((,prev-var . ,prev-term)))))
-
-  (defmacro aignet-extension-binding (&key (new 'new)
-                                           (orig 'orig)
-                                           (iters '1))
-    `(and (bind-free (prev-stobj-binding ,new ',orig ',iters mfc state))
-          (aignet-extension-p ,new ,orig)
-          (syntaxp (not (subtermp ,new ,orig)))))
-
-  (defthm aignet-extension-p-transitive-rw
-    (implies (and (aignet-extension-binding :new aignet3 :orig aignet2)
-                  (aignet-extension-p aignet2 aignet1))
-             (aignet-extension-p aignet3 aignet1))
-    :hints(("Goal" :in-theory (enable aignet-extension-p-transitive))))
-
-  ;; already has inverse
-  (defthm aignet-extension-simplify-lookup-id
+         (aignet-id-listp (cdr x) aignet)))
+  ///
+  (defthm aignet-extension-implies-aignet-id-listp
     (implies (and (aignet-extension-binding)
-                  (aignet-idp id orig))
-             (equal (lookup-id id new)
-                    (lookup-id id orig))))
-
-  (defthm aignet-extension-simplify-lookup-stype
-    (implies (and (aignet-extension-binding)
-                  (consp (lookup-stype n stype orig)))
-             (equal (lookup-stype n stype new)
-                    (lookup-stype n stype orig)))
-    :hints(("Goal" :in-theory (enable lookup-stype
-                                      aignet-extension-p))))
-
-  (defthm aignet-extension-simplify-lookup-stype-when-counts-same
-    (implies (and (aignet-extension-binding)
-                  (equal (stype-count stype new)
-                         (stype-count stype orig)))
-             (equal (lookup-stype n stype new)
-                    (lookup-stype n stype orig)))
-    :hints(("Goal" :in-theory (enable aignet-extension-p
-                                      lookup-stype))))
-
-  (defthm aignet-extension-simplify-lookup-stype-inverse
-    (implies (and (aignet-extension-bind-inverse)
-                  (consp (lookup-stype n stype orig)))
-             (equal (lookup-stype n stype orig)
-                    (lookup-stype n stype new))))
-
-  (defthm aignet-extension-simplify-aignet-idp
-    (implies (and (aignet-extension-binding)
-                  (aignet-idp id orig))
-             (aignet-idp id new)))
-
-  (defthm aignet-extension-simplify-aignet-litp
-    (implies (and (aignet-extension-binding)
-                  (aignet-litp lit orig))
-             (aignet-litp lit new)))
-
-  (defthm aignet-extension-implies-aignet-lit-listp
-    (implies (and (aignet-extension-binding)
-                  (aignet-lit-listp lits orig))
-             (aignet-lit-listp lits new)))
-
-  (defthm aignet-extension-implies-node-count-gte
-    (implies (aignet-extension-binding)
-             (<= (node-count orig) (node-count new)))
-    :rule-classes ((:linear :trigger-terms ((node-count new)))))
-
-  (defthm aignet-extension-implies-stype-count-gte
-    (implies (aignet-extension-binding)
-             (<= (stype-count stype orig)
-                 (stype-count stype new)))
-    :rule-classes ((:linear :trigger-terms ((stype-count stype new)))))
-
-  (defthmd aignet-extension-p-implies-consp
-    (implies (and (aignet-extension-binding)
-                  (consp orig))
-             (consp new))
-    :hints(("Goal" :in-theory (enable aignet-extension-p)))))
+                  (aignet-id-listp ids orig))
+             (aignet-id-listp ids new))))
 
 
 (defsection preservation-thms

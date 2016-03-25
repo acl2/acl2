@@ -772,8 +772,6 @@ and the inputs from the appropriate frame.</p>
        :const (set-bit nid 0 vals)
        :pi    vals
        :reg   (b* ((nxst (reg-id->nxst nid aignet))
-                   ((when (int= nxst 0))
-                    vals)
                    (val (get-bit nxst vals)))
                 (set-bit nid val vals))))
     :index n

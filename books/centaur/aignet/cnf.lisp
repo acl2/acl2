@@ -320,12 +320,7 @@ correctness criterion we've described.</p>
                   (and stable-under-simplificationp
                        '(:in-theory (enable acl2::b-and))))))
 
-  (local (defthm id-less-than-max-fanin-by-gate-stype
-           (implies (and (equal (stype (car (lookup-id id aignet))) :gate)
-                         (natp id))
-                    (<= id (node-count (find-max-fanin aignet))))
-           :hints(("Goal" :in-theory (enable find-max-fanin lookup-id)))
-           :rule-classes :forward-chaining))
+  (local (in-theory (enable id-less-than-max-fanin-by-stype)))
 
 
   (define lit-collect-supergate ((lit litp)
@@ -808,9 +803,8 @@ correctness criterion we've described.</p>
 
   (defmacro sat-lit-extension-binding (&key (new 'sat-lits2)
                                          (orig 'sat-lits1)
-                                         (fall-through 't)
-                                         (iters '1))
-    `(bind-free (prev-stobj-binding ,new ',orig ',iters mfc state)
+                                         (fall-through 't))
+    `(bind-free (prev-stobj-binding ,new ',orig mfc state)
                 . ,(if fall-through nil `((,orig)))))
 
   ;; expands sat-lit-extension-p if it appears as a positive literal

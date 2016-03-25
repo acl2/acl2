@@ -476,7 +476,28 @@
                       (num-outs aignet)
                       (num-nxsts aignet))))))
   
-     
+(define reg-id->nxst-lit ((id natp)
+                          (aignet))
+  :guard (and (id-existsp id aignet)
+              (eql (id->type id aignet) (in-type))
+              (eql (io-id->regp id aignet) 1))
+  :returns (lit (and (litp lit)
+                     (aignet-litp lit aignet))
+                :hints((and stable-under-simplificationp
+                            '(:in-theory (enable aignet-litp)))))
+  (b* ((nxst (reg-id->nxst id aignet)))
+    (if (int= (id->type nxst aignet) (out-type))
+        (co-id->fanin nxst aignet)
+      (mk-lit nxst 0)))
+  ///
+  (defthm reg-id->nxst-lit-id-lte-max-fanin
+    (<= (lit-id (reg-id->nxst-lit id aignet))
+        (node-count (find-max-fanin aignet)))
+    :hints(("Goal" :in-theory (disable reg-id->nxst-lit
+                                       aignet-litp-implies-id-lte-max-fanin)
+            :use ((:instance aignet-litp-implies-id-lte-max-fanin
+                   (lit (reg-id->nxst-lit id aignet))))))
+    :rule-classes :linear))
 
 
 
