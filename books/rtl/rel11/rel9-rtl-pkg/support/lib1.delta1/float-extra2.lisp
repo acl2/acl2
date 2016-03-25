@@ -1056,9 +1056,10 @@
   :hints (("Goal" :in-theory (disable spd-mult-1)
            :use ((:instance spd-mult-1))))))
 
-
 ;;; only this is new!!
 
+; Modified 3/17/2016 by Matt K. for runic type-prescription mod (goal numbers
+; changed).
 (defthmd spd-mult
   (implies (and (integerp p)
                 (> p 1)
@@ -1073,14 +1074,9 @@
 		     (< m (expt 2 (1- p))))))
   :hints (("Goal" :in-theory (e/d () (am spd drepp
                                          spd-mult-1-specific-further
-                                         spd-mult-2-specific-further)))
-          ("Subgoal 5" :cases ((< (* R (/ (SPD P Q)))
-                                  (expt 2 (1- p)))))
-          ("Subgoal 5.1" :use ((:instance spd-mult-1-specific-further
-                                          (m (/ r (spd p q))))))
-          ("Subgoal 3" :use ((:instance spd-mult-1-specific-further
-                                        (m (/ r (spd p q))))))
-          ("Subgoal 2" :use ((:instance spd-mult-2-specific-further)))
-          ("Subgoal 1" :use ((:instance smallest-spd)))))
+                                         spd-mult-2-specific-further))
+           :use ((:instance spd-mult-1-specific-further
+                            (m (/ r (spd p q))))
+                 (:instance spd-mult-2-specific-further)))))
 
 ;------------------------------------------------------------------------------

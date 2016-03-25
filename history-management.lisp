@@ -3708,8 +3708,8 @@
          (set-difference-eq
           (union-eq (strip-cars *initial-ld-special-bindings*)
                     (strip-cars *initial-global-table*))
-          '(acl2-raw-mode-p            ;;; keep raw mode status
-            bddnotes                   ;;; for feedback after expansion failure
+          '(acl2-raw-mode-p ;;; keep raw mode status
+            bddnotes        ;;; for feedback after expansion failure
 
 ; We handle world and enabled structure installation ourselves, with set-w! and
 ; revert-world-on-error.  We do not want to rely just on state globals because
@@ -3729,24 +3729,22 @@
             parallel-execution-enabled ;;; allow user to modify this in a book
             waterfall-parallelism      ;;; allow user to modify this in a book
             waterfall-parallelism-timing-threshold ;;; see just above
-            waterfall-printing         ;;; allow user to modify this in a book
+            waterfall-printing ;;; allow user to modify this in a book
             waterfall-printing-when-finished ;;; see just above
-            saved-output-reversed      ;;; for feedback after expansion failure
-            saved-output-p             ;;; for feedback after expansion failure
-            ttags-allowed              ;;; propagate changes outside expansion
-            ld-evisc-tuple             ;;; see just above
-            term-evisc-tuple           ;;; see just above
-            abbrev-evisc-tuple         ;;; see just above
-            gag-mode-evisc-tuple       ;;; see just above
-            slow-array-action          ;;; see just above
-            iprint-ar                  ;;; see just above
-            iprint-soft-bound          ;;; see just above
-            iprint-hard-bound          ;;; see just above
-            writes-okp                 ;;; protected a different way (see
-                                       ;;;   protect-system-state-globals)
+            saved-output-reversed ;;; for feedback after expansion failure
+            saved-output-p        ;;; for feedback after expansion failure
+            ttags-allowed         ;;; propagate changes outside expansion
+            ld-evisc-tuple        ;;; see just above
+            term-evisc-tuple      ;;; see just above
+            abbrev-evisc-tuple    ;;; see just above
+            gag-mode-evisc-tuple  ;;; see just above
+            slow-array-action     ;;; see just above
+            iprint-ar             ;;; see just above
+            iprint-soft-bound     ;;; see just above
+            iprint-hard-bound     ;;; see just above
             show-custom-keyword-hint-expansion
             trace-specs                ;;; keep in sync with functions that are
-                                       ;;;   actually traced, e.g. trace! macro
+;;;   actually traced, e.g. trace! macro
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
             verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
@@ -3767,8 +3765,14 @@
 ; When deferred-ttag-notes and deferred-ttag-notes-saved were not in this list
 ; (through Version_7.1), we never saw a TTAG NOTE for :T2.
 
-            deferred-ttag-notes        ;;; see comment immediately above
-            deferred-ttag-notes-saved  ;;; see comment immediately above
+            deferred-ttag-notes       ;;; see comment immediately above
+            deferred-ttag-notes-saved ;;; see comment immediately above
+
+; The following two are protected a different way; see
+; protect-system-state-globals.
+
+            writes-okp
+            cert-data
             ))))
     val))
 
@@ -3785,8 +3789,9 @@
 ; channels.
 
   `(state-global-let*
-    ,(cons `(writes-okp nil)
-           (state-global-bindings *protected-system-state-globals*))
+    ((writes-okp nil)
+     (cert-data nil) ; avoid using global cert-data; see make-event-fn
+     ,@(state-global-bindings *protected-system-state-globals*))
     ,form))
 
 (defun formal-value-triple (erp val)

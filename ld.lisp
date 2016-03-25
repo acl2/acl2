@@ -2516,7 +2516,7 @@
 ; particular, we (about a month later) eliminated chk-certification-worldxxx.
 ; Also, eval-event-lst now returns an extra element, which can be a natural
 ; number we can supply to nthcdr to eliminate some expense from our call of
-; expansion-alist-pkg-names in certify-book-fn.  This value is passed to
+; pkg-names in certify-book-fn.  This value is passed to
 ; process-embedded-events, and back from it in the case that the caller is
 ; 'certify-book.
 
@@ -2876,26 +2876,43 @@
                (cddddr (assoc-equal full-book-name
                                     (global-val 'include-book-alist
                                                 (w state)))))
+
+; We include the expansion-alist and cert-data only if the book appears to be
+; certified.
+
               (expansion-alist
-
-; We include the expansion-alist only if the book appears to be certified.
-
                (and old-book-hash
-                    (and cert-obj
-                         (access cert-obj cert-obj :expansion-alist))))
+                    cert-obj
+                    (access cert-obj cert-obj :expansion-alist)))
+              (cert-data
+               (and old-book-hash
+                    cert-obj
+                    (access cert-obj cert-obj :cert-data)))
               (cmds (and cert-obj
                          (access cert-obj cert-obj :cmds))))
          (er-let* ((ev-lst-book-hash
-                    (book-hash old-book-hash full-book-name cmds
-                               expansion-alist ev-lst state)))
+                    (if old-book-hash ; otherwise, don't care
+                        (book-hash old-book-hash full-book-name cmds
+                                   expansion-alist cert-data ev-lst state)
+                      (value nil))))
            (cond
             ((and old-book-hash
                   (not (equal ev-lst-book-hash old-book-hash)))
+
+; It is possible that the book is no longer certified.  It seems possible that
+; the reason the book-hash has changed is only that somehow expansion-alist or
+; cert-data was non-nil after certification but is now viewed as nil.  In that
+; case, perhaps the message below is a bit misleading, since perhaps the .cert
+; file has been modified rather than the book.  But that's unlikely, and this
+; function is supporting the lightly-supported puff operation, so we can live
+; with that, especially given the "weasel word" below, "presumably".
+
              (er soft ctx
                  "When the certified book ~x0 was included, its book-hash was ~
-                  ~x1.  The book-hash for ~x0 is now ~x2.  The file has thus ~
-                  been modified since it was last included and we cannot now ~
-                  recover the events that created the current logical world."
+                  ~x1.  The book-hash for ~x0 is now ~x2.  The book has thus ~
+                  presumably been modified since it was last included and we ~
+                  cannot now recover the events that created the current ~
+                  logical world."
                  full-book-name
                  old-book-hash
                  ev-lst-book-hash))
