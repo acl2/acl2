@@ -64,6 +64,10 @@
 
 (defun defthmg-fn (event-form name term rule-classes verify-guards
                               verify-guards-p guard-hints state)
+
+; Note that rule-classes is (:REWRITE) if no rule-classes were supplied with
+; the original defthm.
+
   (let ((ctx (cons 'defthmg name)))
     (er-let* ((term-z (impliez-ify term ctx state)))
       (mv-let (implies-p term-z)
@@ -93,10 +97,7 @@
             (let ((defthm-form
                     `(defthm ,name
                        ,term-z
-                       ,@(if rule-classes
-                             `(:rule-classes ,rule-classes)
-                           (assert$ (not implies-p)
-                                    nil))
+                       :rule-classes ,rule-classes
                        ,@(remove-keyword
                           :verify-guards
                           (remove-keyword
