@@ -57,9 +57,9 @@
   i.e. it has an @('unnormalized-body') property."
   (not (eq t (getpropc fun 'unnormalized-body t w))))
 
-(define guard-verifiedp ((fun/thm (or (function-namep fun/thm w)
-                                      (theorem-namep fun/thm w)))
-                         (w plist-worldp))
+(define guard-verified-p ((fun/thm (or (function-namep fun/thm w)
+                                       (theorem-namep fun/thm w)))
+                          (w plist-worldp))
   :returns (yes/no booleanp)
   :short
   "True iff the function or theorem @('fun/thm') is @(tsee guard)-verified."
