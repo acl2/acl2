@@ -5719,9 +5719,10 @@
 (defun dcl-fields (lst)
 
 ; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
-; between the formals and the body of a DEFUN.  We return a list of all the
-; "field names" used in lst.  Our answer is a subset of the list
-; *xargs-keywords*.
+; between the formals and the body of a DEFUN.  We return a duplicate-free list
+; of all the "field names" used in lst, where 'comment indicates a string.  Our
+; answer is a subset of the union of the values of '(comment type ignore
+; ignorable) and *xargs-keywords*.
 
   (declare (xargs :guard (plausible-dclsp lst)))
   (cond ((endp lst) nil)
@@ -5760,9 +5761,10 @@
 (defun strip-dcls (fields lst)
 
 ; Lst satisfies plausible-dclsp.  Fields is a list as returned by dcl-fields,
-; i.e., a subset of the symbols in *xargs-keywords*.  We copy lst deleting any
-; part of it that specifies a value for one of the fields named.  The result
-; satisfies plausible-dclsp.
+; i.e., a subset of the union of the values of '(comment type ignore ignorable)
+; and *xargs-keywords*.  We copy lst deleting any part of it that specifies a
+; value for one of the fields named, where 'comment denotes a string.  The
+; result satisfies plausible-dclsp.
 
   (declare (xargs :guard (and (symbol-listp fields)
                               (plausible-dclsp lst))))
@@ -5810,10 +5812,11 @@
 (defun fetch-dcl-field (field-name lst)
 
 ; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
-; between the formals and the body of a DEFUN.  Field-name is 'comment or one
-; of the symbols in the list *xargs-keywords*.  We return the list of the
-; contents of all fields with that name.  We assume we will find at most one
-; specification per XARGS entry for a given keyword.
+; between the formals and the body of a DEFUN.  Field-name is either in the
+; list (comment type ignore ignorable) or is one of the symbols in the list
+; *xargs-keywords*.  We return the list of the contents of all fields with that
+; name.  We assume we will find at most one specification per XARGS entry for a
+; given keyword.
 
 ; For example, if field-name is :GUARD and there are two XARGS among the
 ; DECLAREs in lst, one with :GUARD g1 and the other with :GUARD g2 we return
