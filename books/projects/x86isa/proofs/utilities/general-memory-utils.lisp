@@ -277,16 +277,6 @@
   (implies (addr-byte-alistp alst)
            (addr-byte-alistp (acl2::rev alst))))
 
-(defthm strip-cdrs-addr-byte-alistp-is-byte-listp
-  (implies (addr-byte-alistp addr-lst)
-           (byte-listp (strip-cdrs addr-lst)))
-  :rule-classes (:type-prescription :rewrite))
-
-(defthm strip-cars-addr-byte-alistp-is-canonical-address-listp
-  (implies (addr-byte-alistp alst)
-           (canonical-address-listp (strip-cars alst)))
-  :rule-classes (:type-prescription :rewrite))
-
 (defthm-usb addr-byte-alistp-assoc-bound
   :hyp (and (addr-byte-alistp addr-lst)
             (member-p addr (strip-cars addr-lst)))
@@ -299,6 +289,20 @@
            (canonical-address-p addr))
   :rule-classes :forward-chaining)
 
+(defthmd create-addr-bytes-alist-acons
+  (implies
+   (and (< 0 (len bytes))
+        (canonical-address-p (+ lin-addr (len bytes)))
+        (canonical-address-p lin-addr))
+   (equal
+    (create-addr-bytes-alist (create-canonical-address-list (len bytes) lin-addr) bytes)
+    (acons
+     lin-addr (car bytes)
+     (create-addr-bytes-alist (create-canonical-address-list
+                               (1- (len bytes))
+                               (1+ lin-addr))
+                              (cdr bytes))))))
+
 ;; ----------------------------------------------------------------------
 
 (define assoc-list ((slst true-listp)
@@ -306,31 +310,28 @@
 
   :enabled t
 
-  ;; (assoc-list  '(a b c) '((a . 1) (b . 2) (c . 3) (d . 4))) =>
+  ;; (assoc-list  '(a b c e) '((a . 1) (b . 2) (c . 3) (d . 4))) =>
   ;; '(1 2 3)
 
-  (if (or (endp slst)
-          (endp blst))
+  (if (endp slst)
       nil
-    (cons (cdr (assoc-equal (car slst) blst))
-          (assoc-list (cdr slst) blst)))
+    (if (member-p (car slst) (strip-cars blst))
+        (cons (cdr (assoc-equal (car slst) blst))
+              (assoc-list (cdr slst) blst))
+      (assoc-list (cdr slst) blst)))
 
   ///
 
   (local (include-book "std/lists/nthcdr" :dir :system))
 
   (defthm assoc-list-and-cons
-    (implies (and (not (member-p ax cx))
-                  (consp term))
+    (implies (not (member-p ax cx))
              (equal (assoc-list cx (cons (cons ax ay) term))
                     (assoc-list cx term))))
 
   (defthm assoc-list-and-create-addr-bytes-alist
     (implies (and (true-listp y)
-                  ;; (consp (create-addr-bytes-alist (cdr x) (cdr y)))
                   (equal (len x) (len y))
-                  ;; (not (zp (len (cdr y))))
-                  (<= 2 (len y))
                   (no-duplicates-p x))
              (equal (assoc-list x (create-addr-bytes-alist x y))
                     y)))
@@ -341,20 +342,16 @@
                     (assoc-equal cx term))))
 
   (defthm assoc-list-of-append-with-list-cons
-    (implies (and (not (member-p ax cx))
-                  (consp term))
+    (implies (not (member-p ax cx))
              (equal (assoc-list cx (append term (list (cons ax ay))))
                     (assoc-list cx term))))
 
   (defthm assoc-list-of-rev-of-create-addr-bytes-alist
     (implies (and (true-listp y)
                   (equal (len x) (len y))
-                  (<= 2 (len y))
                   (no-duplicates-p x))
              (equal (assoc-list x (acl2::rev (create-addr-bytes-alist x y)))
-                    y)))
-
-  )
+                    y))))
 
 ;; ----------------------------------------------------------------------
 
@@ -379,8 +376,6 @@
 (defthm not-member-p-addr-range
   (implies (and (or (< addr prog-addr)
                     (<= (+ n prog-addr) addr))
-                (integerp n)
-                (< 0 n)
                 (integerp prog-addr))
            (equal (member-p addr (addr-range n prog-addr))
                   nil)))
@@ -478,6 +473,15 @@
            (equal (cdr (addr-range n val))
                   (addr-range (1- n) (1+ val)))))
 
+(defthm no-duplicates-p-and-addr-range
+  (no-duplicates-p (addr-range n x))
+  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
+(defthm nth-pos-of-addr-range-first
+  (implies (and (integerp index)
+                (posp n))
+           (equal (pos index (addr-range n index)) 0))
+  :hints (("Goal" :in-theory (e/d* (pos) ()))))
 
 ;; ======================================================================
 
@@ -971,5 +975,130 @@
 ;;                    (assoc-list x
 ;;                                (append (acl2::rev (create-addr-bytes-alist a b))
 ;;                                        term)))))))
+
+;; ======================================================================
+
+;; Some lemmas about rb and wb that are applicable in both
+;; programmer-level and system-level mode.
+
+(defthmd mv-nth-0-rb-1-and-accumulator
+  (equal (mv-nth 0 (rb-1 l-addrs r-w-x x86 acc-1))
+         (mv-nth 0 (rb-1 l-addrs r-w-x x86 acc-2))))
+
+(defthmd mv-nth-2-rb-1-and-accumulator
+  (equal (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-1))
+         (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-2))))
+
+(defthm rb-nil-lemma
+  (equal (mv-nth 1 (rb nil r-w-x x86)) nil)
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+(defthm rb-returns-true-listp
+  (implies (x86p x86)
+           (true-listp (mv-nth 1 (rb addresses r-w-x x86))))
+  :rule-classes (:rewrite :type-prescription))
+
+(defthm wb-nil-lemma
+  (equal (mv-nth 1 (wb nil x86)) x86)
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+(defthmd wb-not-consp-addr-byte-alistp
+  (implies (and (addr-byte-alistp addr-lst)
+                (not (consp addr-lst)))
+           (equal (wb addr-lst x86)
+                  (mv nil x86)))
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+;; Write-bytes-to-memory and wb:
+
+(local
+ (defthm write-bytes-to-memory-is-wb-1-in-programmer-level-mode
+   (implies (and (canonical-address-p (+ (len bytes) lin-addr))
+                 (byte-listp bytes)
+                 (canonical-address-p lin-addr)
+                 (programmer-level-mode x86))
+            (equal (write-bytes-to-memory lin-addr bytes x86)
+                   (wb-1 (create-addr-bytes-alist
+                          (create-canonical-address-list (len bytes) lin-addr)
+                          bytes)
+                         x86)))
+   :hints (("Goal" :in-theory (e/d (write-bytes-to-memory)
+                                   (acl2::mv-nth-cons-meta))))))
+
+(defthm write-bytes-to-memory-is-wb-in-programmer-level-mode
+  (implies (and (canonical-address-p (+ (len bytes) lin-addr))
+                (byte-listp bytes)
+                (canonical-address-p lin-addr)
+                (programmer-level-mode x86))
+           (equal (write-bytes-to-memory lin-addr bytes x86)
+                  (wb (create-addr-bytes-alist
+                       (create-canonical-address-list (len bytes) lin-addr)
+                       bytes)
+                      x86)))
+  :hints (("Goal" :in-theory (e/d (write-bytes-to-memory
+                                   wb-is-wb-1-for-programmer-level-mode)
+                                  (acl2::mv-nth-cons-meta
+                                   wb wb-1)))))
+
+;; ======================================================================
+
+;; Other misc. lemmas about pos, nth, etc. that are useful in both the
+;; modes:
+
+(defthmd create-canonical-address-list-end-addr-is-canonical
+  (implies (and (equal (len (create-canonical-address-list count addr)) count)
+                (posp count)
+                (equal end-addr (+ -1 addr count)))
+           (canonical-address-p end-addr)))
+
+(local
+ (defthm nth-pos-1-and-cdr
+   (implies (and (not (equal e (car x)))
+                 (member-p e x)
+                 (natp n))
+            (equal (nth (pos-1 e x n) y)
+                   (nth (pos-1 e (cdr x) n) (cdr y))))))
+
+(defthm nth-pos-and-cdr
+  (implies (and (not (equal e (car x)))
+                (member-p e x))
+           (equal (nth (pos e x) y)
+                  (nth (pos e (cdr x)) (cdr y))))
+  :hints (("Goal" :in-theory (e/d* (pos) ()))))
+
+(local
+ (defthm nth-pos-1-and-cdr-and-minus
+   (implies (and (not (equal e (car x)))
+                 (member-p e x)
+                 (natp n))
+            (equal (nth (- (pos-1 e x n) n) y)
+                   (nth (- (pos-1 e (cdr x) n) n) (cdr y))))))
+
+(local
+ (defthm assoc-equal-and-nth-pos-1
+   (implies (and (equal (len l-addrs) (len bytes))
+                 (member-p e l-addrs)
+                 (natp n))
+            (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
+                   (nth (- (pos-1 e l-addrs n) n) bytes)))
+   :hints (("Goal"
+            :induct (create-addr-bytes-alist l-addrs bytes)
+            :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus)))
+           ("Subgoal *1/2"
+            :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus))
+            :use ((:instance nth-pos-1-and-cdr-and-minus
+                             (e e)
+                             (x l-addrs)
+                             (y bytes)
+                             (n n)))))))
+
+(defthm assoc-equal-and-nth-pos
+  (implies (and (equal (len l-addrs) (len bytes))
+                (member-p e l-addrs))
+           (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
+                  (nth (pos e l-addrs) bytes)))
+  :hints (("Goal" :in-theory (e/d* (pos) (assoc-equal-and-nth-pos-1))
+           :use ((:instance assoc-equal-and-nth-pos-1
+                            (n 0))))))
 
 ;; ======================================================================

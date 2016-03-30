@@ -17,10 +17,10 @@
      ;; in x86isa/portcullis/records-0.lisp, which would have name
      ;; clashes with the function acl2::g in misc/records.lisp.
 
-     a b c d e f 
-     ;; g 
-     h i j k l m n o p q r 
-     ;; s 
+     a b c d e f
+     ;; g
+     h i j k l m n o p q r
+     ;; s
      t u v w x y z
      lst
 

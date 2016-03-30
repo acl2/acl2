@@ -8,7 +8,7 @@
 (include-book "../x86-decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
-(local (include-book "guard-helpers"))
+(local (include-book "../guard-helpers"))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
 ;; ======================================================================

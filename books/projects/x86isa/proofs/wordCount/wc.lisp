@@ -2341,22 +2341,22 @@
   ;; [Shilpi]: This thing won't be true once I incorporate the
   ;; memory-permissions map into the programmer-level mode, unless I make sure
   ;; that the memory regions in question are both read and execute enabled.
-
   (implies (and (xr :programmer-level-mode 0 x86)
-                (x86p x86))
+                (x86p x86)
+                (force (canonical-address-listp addresses)))
            (equal (mv-nth 1 (rb addresses :x x86))
                   (mv-nth 1 (rb addresses :r x86))))
   :hints (("Goal" :in-theory (e/d* (rb rm08)
                                    (rb-1-accumulator-thm)))
-          ("Subgoal *1/5"
+          ("Subgoal *1/6"
            :use ((:instance rb-1-accumulator-thm
                             (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))
                             (addresses (cdr addresses))
-                            (r-w-x :r))
+                            (r-w-x :x))
                  (:instance rb-1-accumulator-thm
                             (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))
                             (addresses (cdr addresses))
-                            (r-w-x :x))))))
+                            (r-w-x :r))))))
 
 (defthmd effects-newline-encountered-limited
 
@@ -2402,7 +2402,7 @@
         (program-at (create-canonical-address-list
                      (len *wc*) addr) *wc* x86-new)
 
-        (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new))
+        (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
                (byte-ify 4 *newline*)))
    (equal (x86-run 10 x86-new)
           (XW
@@ -2424,7 +2424,7 @@
                     1
                     (RB
                      (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                     :X X86-NEW)))))))
+                     :r X86-NEW)))))))
               (CREATE-ADDR-BYTES-ALIST
                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
                (BYTE-IFY
@@ -2438,7 +2438,7 @@
                     1
                     (RB
                      (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                     :X X86-NEW)))))))
+                     :r X86-NEW)))))))
               (CREATE-ADDR-BYTES-ALIST
                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
                '(0 0 0 0)))
@@ -2507,7 +2507,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                             :X X86-NEW)))))))
+                             :r X86-NEW)))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
                        (BYTE-IFY
@@ -2521,7 +2521,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                             :X X86-NEW)))))))
+                             :r X86-NEW)))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
                        '(0 0 0 0)))
@@ -2576,7 +2576,7 @@
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST
                               4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86))))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST
                         4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
@@ -2592,7 +2592,7 @@
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST
                               4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86))))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST
                         4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
@@ -2867,7 +2867,7 @@
         (program-at (create-canonical-address-list
                      (len *wc*) addr) *wc* x86-new)
 
-        (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new))
+        (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
                (byte-ify 4 *space*)))
    (equal (x86-run 7 x86-new)
           (XW
@@ -2889,7 +2889,7 @@
                     1
                     (RB
                      (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                     :X X86-NEW)))))))
+                     :r X86-NEW)))))))
               (CREATE-ADDR-BYTES-ALIST
                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
                '(0 0 0 0)))
@@ -2959,7 +2959,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                             :X X86-NEW)))))))
+                             :r X86-NEW)))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
                        '(0 0 0 0)))
@@ -3020,7 +3020,7 @@
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST
                               4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86))))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST
                         4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
@@ -3297,7 +3297,7 @@
         (program-at (create-canonical-address-list
                      (len *wc*) addr) *wc* x86-new)
 
-        (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new))
+        (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
                (byte-ify 4 *tab*)))
    (equal (x86-run 11 x86-new)
           (XW
@@ -3319,7 +3319,7 @@
                     1
                     (RB
                      (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                     :X X86-NEW)))))))
+                     :r X86-NEW)))))))
               (CREATE-ADDR-BYTES-ALIST
                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
                '(0 0 0 0)))
@@ -3389,7 +3389,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                             :X X86-NEW)))))))
+                             :r X86-NEW)))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
                        '(0 0 0 0)))
@@ -3450,7 +3450,7 @@
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST
                               4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86))))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST
                         4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
@@ -3768,37 +3768,37 @@
         (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86-new)
 
         ;; Other theorems say the following in terms of byte-ify, not combine-bytes...
-        ;; (not (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new))
+        ;; (not (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
         ;;             (byte-ify 4 *eof*)))
-        ;; (not (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new))
+        ;; (not (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
         ;;             (byte-ify 4 *newline*)))
-        ;; (not (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new))
+        ;; (not (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
         ;;             (byte-ify 4 *space*)))
-        ;; (not (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new))
+        ;; (not (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
         ;;             (byte-ify 4 *tab*)))
-        ;; (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -8 (xr :rgf *rbp* x86-new))) :x x86-new))
+        ;; (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -8 (xr :rgf *rbp* x86-new))) :r x86-new))
         ;;        (byte-ify 4 *out*))
 
         (not (equal (combine-bytes
-                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))
                     *eof*))
         (not (equal (combine-bytes
-                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))
                     *newline*))
         (not (equal (combine-bytes
-                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))
                     *space*))
         (not (equal (combine-bytes
-                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))
                     *tab*))
         (equal (combine-bytes
-                (mv-nth 1 (rb (create-canonical-address-list 4 (+ -8 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                (mv-nth 1 (rb (create-canonical-address-list 4 (+ -8 (xr :rgf *rbp* x86-new))) :r x86-new)))
                *out*)
         ;; Character read in is a byte.
         (unsigned-byte-p
          8
          (combine-bytes
-          (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))))
+          (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))))
    (equal (x86-run 13 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
@@ -3819,7 +3819,7 @@
                     1
                     (RB
                      (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                     :X X86-NEW)))))))
+                     :r X86-NEW)))))))
               (CREATE-ADDR-BYTES-ALIST
                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
                (BYTE-IFY 4 1))
@@ -3836,7 +3836,7 @@
                     1
                     (RB
                      (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                     :X X86-NEW))))))))
+                     :r X86-NEW))))))))
              (!FLGI
               *CF*
               (CF-SPEC32
@@ -3847,7 +3847,7 @@
                   1
                   (RB
                    (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                   :X X86-NEW)))))
+                   :r X86-NEW)))))
               (!FLGI
                *PF*
                (PF-SPEC32
@@ -3860,7 +3860,7 @@
                     1
                     (RB
                      (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                     :X X86-NEW))))))
+                     :r X86-NEW))))))
                (!FLGI
                 *AF*
                 (ADD-AF-SPEC32
@@ -3869,7 +3869,7 @@
                    1
                    (RB
                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                    :X X86-NEW)))
+                    :r X86-NEW)))
                  1)
                 (!FLGI
                  *ZF*
@@ -3881,7 +3881,7 @@
                     (COMBINE-BYTES (MV-NTH 1
                                            (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW))))))
+                                               :r X86-NEW))))))
                  (!FLGI
                   *SF*
                   (SF-SPEC32
@@ -3892,7 +3892,7 @@
                         (MV-NTH 1
                                 (RB (CREATE-CANONICAL-ADDRESS-LIST
                                      4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                                    :X X86-NEW))))))
+                                    :r X86-NEW))))))
                   (!FLGI
                    *OF*
                    (OF-SPEC32
@@ -3903,7 +3903,7 @@
                               (MV-NTH 1
                                       (RB (CREATE-CANONICAL-ADDRESS-LIST
                                            4 (+ 16 (XR :RGF *RSP* X86-NEW)))
-                                          :X X86-NEW))))))
+                                          :r X86-NEW))))))
                    X86-NEW)))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
@@ -3981,7 +3981,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86))))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
                        (BYTE-IFY 4 1))
@@ -3998,7 +3998,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
                      (!FLGI
                       *CF*
                       (CF-SPEC32
@@ -4009,7 +4009,7 @@
                           1
                           (RB
                            (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                           :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
+                           :r (X86-RUN (GC-CLK-NO-EOF) X86))))))
                       (!FLGI
                        *PF*
                        (PF-SPEC32
@@ -4022,7 +4022,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))
                        (!FLGI
                         *AF*
                         (ADD-AF-SPEC32
@@ -4031,7 +4031,7 @@
                            1
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                            :r (X86-RUN (GC-CLK-NO-EOF) X86))))
                          1)
                         (!FLGI
                          *ZF*
@@ -4043,7 +4043,7 @@
                             (COMBINE-BYTES (MV-NTH 1
                                                    (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                         4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                       :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                                                       :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))
                          (!FLGI
                           *SF*
                           (SF-SPEC32
@@ -4054,7 +4054,7 @@
                                 (MV-NTH 1
                                         (RB (CREATE-CANONICAL-ADDRESS-LIST
                                              4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                            :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                                            :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))
                           (!FLGI
                            *OF*
                            (OF-SPEC32
@@ -4065,7 +4065,7 @@
                                       (MV-NTH 1
                                               (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                    4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                  :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                                                  :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))
                            (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal" :in-theory
            (union-theories '(loop-preconditions
@@ -4129,7 +4129,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86))))))))
                       (CREATE-ADDR-BYTES-ALIST
                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
                        (BYTE-IFY 4 1))
@@ -4146,7 +4146,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
                      (!FLGI
                       *CF*
                       (CF-SPEC32
@@ -4157,7 +4157,7 @@
                           1
                           (RB
                            (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                           :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
+                           :r (X86-RUN (GC-CLK-NO-EOF) X86))))))
                       (!FLGI
                        *PF*
                        (PF-SPEC32
@@ -4170,7 +4170,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))
                        (!FLGI
                         *AF*
                         (ADD-AF-SPEC32
@@ -4179,7 +4179,7 @@
                            1
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                            :r (X86-RUN (GC-CLK-NO-EOF) X86))))
                          1)
                         (!FLGI
                          *ZF*
@@ -4191,7 +4191,7 @@
                             (COMBINE-BYTES (MV-NTH 1
                                                    (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                         4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                       :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                                                       :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))
                          (!FLGI
                           *SF*
                           (SF-SPEC32
@@ -4202,7 +4202,7 @@
                                 (MV-NTH 1
                                         (RB (CREATE-CANONICAL-ADDRESS-LIST
                                              4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                            :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                                            :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))
                           (!FLGI
                            *OF*
                            (OF-SPEC32
@@ -4213,7 +4213,7 @@
                                       (MV-NTH 1
                                               (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                    4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                  :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
+                                                  :r (X86-RUN (GC-CLK-NO-EOF) X86)))))))
                            (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal"
            :in-theory (union-theories
@@ -4619,25 +4619,25 @@
         (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86-new)
 
         (not (equal (combine-bytes
-                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))
                     *eof*))
         (not (equal (combine-bytes
-                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))
                     *newline*))
         (not (equal (combine-bytes
-                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))
                     *space*))
         (not (equal (combine-bytes
-                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))
                     *tab*))
         (not (equal (combine-bytes
-                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -8 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -8 (xr :rgf *rbp* x86-new))) :r x86-new)))
                     *out*))
         ;; Character read in is a byte.
         (unsigned-byte-p
          8
          (combine-bytes
-          (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))))
+          (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))))
    (equal (x86-run 11 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
@@ -4657,7 +4657,7 @@
                    1
                    (RB
                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                    :X X86-NEW)))))))
+                    :r X86-NEW)))))))
              (!FLGI
               *CF*
               (LOGHEAD
@@ -4669,7 +4669,7 @@
                    1
                    (RB
                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                    :X X86-NEW)))
+                    :r X86-NEW)))
                  0)))
               (!FLGI
                *PF*
@@ -4680,7 +4680,7 @@
                    1
                    (RB
                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                    :X X86-NEW))))
+                    :r X86-NEW))))
                 (LOGHEAD
                  -1
                  (LOGTAIL
@@ -4690,7 +4690,7 @@
                     (COMBINE-BYTES (MV-NTH 1
                                            (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW)))
+                                               :r X86-NEW)))
                     0)))))
                (!FLGI
                 *AF*
@@ -4701,7 +4701,7 @@
                     1
                     (RB
                      (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                     :X X86-NEW)))
+                     :r X86-NEW)))
                   0)
                  (LOGHEAD
                   -3
@@ -4712,7 +4712,7 @@
                         (MV-NTH 1
                                 (RB (CREATE-CANONICAL-ADDRESS-LIST
                                      4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                    :X X86-NEW)))
+                                    :r X86-NEW)))
                        0)))))
                 (!FLGI
                  *ZF* 0
@@ -4723,7 +4723,7 @@
                     (COMBINE-BYTES (MV-NTH 1
                                            (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW))))
+                                               :r X86-NEW))))
                    (LOGHEAD
                     -6
                     (LOGTAIL
@@ -4733,7 +4733,7 @@
                           (MV-NTH 1
                                   (RB (CREATE-CANONICAL-ADDRESS-LIST
                                        4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                      :X X86-NEW)))
+                                      :r X86-NEW)))
                          0)))))
                   (!FLGI
                    *OF*
@@ -4744,7 +4744,7 @@
                               (MV-NTH 1
                                       (RB (CREATE-CANONICAL-ADDRESS-LIST
                                            4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                          :X X86-NEW)))))
+                                          :r X86-NEW)))))
                     (LOGHEAD
                      -10
                      (LOGTAIL
@@ -4754,7 +4754,7 @@
                            (MV-NTH 1
                                    (RB (CREATE-CANONICAL-ADDRESS-LIST
                                         4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                       :X X86-NEW)))
+                                       :r X86-NEW)))
                           0)))))
                    X86-NEW)))))))))))
   :hints (("Goal" :do-not '(preprocess)
@@ -4831,7 +4831,7 @@
                            1
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                            :X X86-NEW)))))))
+                            :r X86-NEW)))))))
                      (!FLGI
                       *CF*
                       (LOGHEAD
@@ -4843,7 +4843,7 @@
                            1
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                            :X X86-NEW)))
+                            :r X86-NEW)))
                          0)))
                       (!FLGI
                        *PF*
@@ -4854,7 +4854,7 @@
                            1
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                            :X X86-NEW))))
+                            :r X86-NEW))))
                         (LOGHEAD
                          -1
                          (LOGTAIL
@@ -4864,7 +4864,7 @@
                             (COMBINE-BYTES (MV-NTH 1
                                                    (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                         4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                                       :X X86-NEW)))
+                                                       :r X86-NEW)))
                             0)))))
                        (!FLGI
                         *AF*
@@ -4875,7 +4875,7 @@
                             1
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                             :X X86-NEW)))
+                             :r X86-NEW)))
                           0)
                          (LOGHEAD
                           -3
@@ -4886,7 +4886,7 @@
                                 (MV-NTH 1
                                         (RB (CREATE-CANONICAL-ADDRESS-LIST
                                              4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                            :X X86-NEW)))
+                                            :r X86-NEW)))
                                0)))))
                         (!FLGI
                          *ZF* 0
@@ -4897,7 +4897,7 @@
                             (COMBINE-BYTES (MV-NTH 1
                                                    (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                         4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                                       :X X86-NEW))))
+                                                       :r X86-NEW))))
                            (LOGHEAD
                             -6
                             (LOGTAIL
@@ -4907,7 +4907,7 @@
                                   (MV-NTH 1
                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                              :X X86-NEW)))
+                                              :r X86-NEW)))
                                  0)))))
                           (!FLGI
                            *OF*
@@ -4918,7 +4918,7 @@
                                       (MV-NTH 1
                                               (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                    4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                                  :X X86-NEW)))))
+                                                  :r X86-NEW)))))
                             (LOGHEAD
                              -10
                              (LOGTAIL
@@ -4928,7 +4928,7 @@
                                    (MV-NTH 1
                                            (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                                               :X X86-NEW)))
+                                               :r X86-NEW)))
                                   0)))))
                            X86-NEW)))))))))))
   :hints (("Goal" :in-theory
@@ -4999,7 +4999,7 @@
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST
                              4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
+                            :r (X86-RUN (GC-CLK-NO-EOF) X86))))))))
                      (!FLGI
                       *CF*
                       (LOGHEAD
@@ -5012,7 +5012,7 @@
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST
                              4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                            :r (X86-RUN (GC-CLK-NO-EOF) X86))))
                          0)))
                       (!FLGI
                        *PF*
@@ -5024,7 +5024,7 @@
                            (RB
                             (CREATE-CANONICAL-ADDRESS-LIST
                              4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                            :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                            :r (X86-RUN (GC-CLK-NO-EOF) X86)))))
                         (LOGHEAD
                          -1
                          (LOGTAIL
@@ -5035,7 +5035,7 @@
                              (MV-NTH 1
                                      (RB (CREATE-CANONICAL-ADDRESS-LIST
                                           4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                         :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                         :r (X86-RUN (GC-CLK-NO-EOF) X86))))
                             0)))))
                        (!FLGI
                         *AF*
@@ -5047,7 +5047,7 @@
                             (RB
                              (CREATE-CANONICAL-ADDRESS-LIST
                               4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                             :r (X86-RUN (GC-CLK-NO-EOF) X86))))
                           0)
                          (LOGHEAD
                           -3
@@ -5058,7 +5058,7 @@
                                 (MV-NTH 1
                                         (RB (CREATE-CANONICAL-ADDRESS-LIST
                                              4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                            :r (X86-RUN (GC-CLK-NO-EOF) X86))))
                                0)))))
                         (!FLGI
                          *ZF* 0
@@ -5070,7 +5070,7 @@
                              (MV-NTH 1
                                      (RB (CREATE-CANONICAL-ADDRESS-LIST
                                           4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                         :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                                         :r (X86-RUN (GC-CLK-NO-EOF) X86)))))
                            (LOGHEAD
                             -6
                             (LOGTAIL
@@ -5080,7 +5080,7 @@
                                   (MV-NTH 1
                                           (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                              :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                              :r (X86-RUN (GC-CLK-NO-EOF) X86))))
                                  0)))))
                           (!FLGI
                            *OF*
@@ -5091,7 +5091,7 @@
                                       (MV-NTH 1
                                               (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                    4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                  :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
+                                                  :r (X86-RUN (GC-CLK-NO-EOF) X86))))))
                             (LOGHEAD
                              -10
                              (LOGTAIL
@@ -5101,7 +5101,7 @@
                                    (MV-NTH 1
                                            (RB (CREATE-CANONICAL-ADDRESS-LIST
                                                 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                               :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                                               :r (X86-RUN (GC-CLK-NO-EOF) X86))))
                                   0)))))
                            (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal"

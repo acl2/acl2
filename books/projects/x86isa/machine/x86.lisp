@@ -358,6 +358,11 @@
        (x86-movhps/movhpd-Op/En-MR
         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
+    (#x20
+     "(MOV r64, CTR)"
+     (x86-mov-control-regs-Op/En-MR
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
+
 
     (#x28
      "66h: (MOVAPD xmm1 xmm2/m128);
@@ -2054,8 +2059,12 @@
      (x86-lahf start-rip temp-rip prefixes rex-byte opcode modr/m sib
                x86))
 
+    ((#xA0 #xA1)
+     "(MOVI b Rx)"
+     (x86-mov-Op/En-FD start-rip temp-rip prefixes rex-byte opcode modr/m sib
+                       x86))
 
-    ((#xA0 #xA1 #xA2 #xA3)
+    ((#xA2 #xA3)
      "(MOVI b Rx)"
      (x86-step-unimplemented
       (list* (ms x86)
@@ -2650,17 +2659,17 @@
 
    (local
     (encapsulate
-     ()
-     (local (include-book "arithmetic-5/top" :dir :system))
+      ()
+      (local (include-book "arithmetic-5/top" :dir :system))
 
-     (defthm negative-logand-to-positive-logand-with-n43p-x
-       (implies (and (< n 0)
-                     (syntaxp (quotep n))
-                     (equal m 43)
-                     (integerp n)
-                     (n43p x))
-                (equal (logand n x)
-                       (logand (logand (1- (ash 1 m)) n) x)))))))
+      (defthm negative-logand-to-positive-logand-with-n43p-x
+        (implies (and (< n 0)
+                      (syntaxp (quotep n))
+                      (equal m 43)
+                      (integerp n)
+                      (n43p x))
+                 (equal (logand n x)
+                        (logand (logand (1- (ash 1 m)) n) x)))))))
 
 
   (if (mbe :logic (zp cnt)
@@ -2677,120 +2686,120 @@
          (prefix-byte-group-code
           (the (integer 0 4) (get-one-byte-prefix-array-code byte))))
 
-        (if (mbe :logic (zp prefix-byte-group-code)
-                 :exec  (eql 0 prefix-byte-group-code))
+      (if (mbe :logic (zp prefix-byte-group-code)
+               :exec  (eql 0 prefix-byte-group-code))
 
-            ;; Storing the number of prefixes seen and the first byte
-            ;; following the prefixes in "prefixes"...
-            (let ((prefixes
-                   (!prefixes-slice :next-byte byte prefixes)))
-              (mv nil (!prefixes-slice :num-prefixes (- 5 cnt) prefixes)
-                  x86))
+          ;; Storing the number of prefixes seen and the first byte
+          ;; following the prefixes in "prefixes"...
+          (let ((prefixes
+                 (!prefixes-slice :next-byte byte prefixes)))
+            (mv nil (!prefixes-slice :num-prefixes (- 5 cnt) prefixes)
+                x86))
 
-          (case prefix-byte-group-code
-            (1 (let ((prefix-1?
-                      (prefixes-slice :group-1-prefix prefixes)))
-                 (if (or (eql 0 (the (unsigned-byte 8) prefix-1?))
-                         ;; Redundant Prefix Okay
-                         (eql byte prefix-1?))
-                     (let ((next-rip (the (signed-byte
-                                           #.*max-linear-address-size+1*)
-                                       (1+ start-rip))))
-                       (if (mbe :logic (canonical-address-p next-rip)
-                                :exec
-                                (< (the (signed-byte
+        (case prefix-byte-group-code
+          (1 (let ((prefix-1?
+                    (prefixes-slice :group-1-prefix prefixes)))
+               (if (or (eql 0 (the (unsigned-byte 8) prefix-1?))
+                       ;; Redundant Prefix Okay
+                       (eql byte prefix-1?))
+                   (let ((next-rip (the (signed-byte
                                          #.*max-linear-address-size+1*)
-                                     next-rip)
-                                   #.*2^47*))
-                           ;; Storing the group 1 prefix and going on...
-                           (get-prefixes next-rip
-                                         (the (unsigned-byte 43)
-                                           (!prefixes-slice :group-1-prefix
-                                                            byte
-                                                            prefixes))
-                                         (the (integer 0 5) (1- cnt)) x86)
-                         (mv (cons 'non-canonical-address next-rip) prefixes x86)))
-                   ;; We do not tolerate more than one prefix from a prefix group.
-                   (mv t prefixes x86))))
-
-            (2 (let ((prefix-2?
-                      (prefixes-slice :group-2-prefix prefixes)))
-                 (if (or (eql 0 (the (unsigned-byte 8) prefix-2?))
-                         ;; Redundant Prefixes Okay
-                         (eql byte (the (unsigned-byte 8) prefix-2?)))
-                     (let ((next-rip (the (signed-byte
-                                           #.*max-linear-address-size+1*)
-                                       (1+ start-rip))))
-                       (if (mbe :logic (canonical-address-p next-rip)
-                                :exec
-                                (< (the (signed-byte
-                                         #.*max-linear-address-size+1*)
-                                     next-rip)
-                                   #.*2^47*))
-                           ;; Storing the group 2 prefix and going on...
-                           (get-prefixes next-rip
-                                         (!prefixes-slice :group-2-prefix
+                                     (1+ start-rip))))
+                     (if (mbe :logic (canonical-address-p next-rip)
+                              :exec
+                              (< (the (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                   next-rip)
+                                 #.*2^47*))
+                         ;; Storing the group 1 prefix and going on...
+                         (get-prefixes next-rip
+                                       (the (unsigned-byte 43)
+                                         (!prefixes-slice :group-1-prefix
                                                           byte
-                                                          prefixes)
-                                         (the (integer 0 5) (1- cnt)) x86)
-                         (mv (cons 'non-canonical-address next-rip)
-                             prefixes x86)))
-                   ;; We do not tolerate more than one prefix from a prefix group.
-                   (mv t prefixes x86))))
+                                                          prefixes))
+                                       (the (integer 0 5) (1- cnt)) x86)
+                       (mv (cons 'non-canonical-address next-rip) prefixes x86)))
+                 ;; We do not tolerate more than one prefix from a prefix group.
+                 (mv t prefixes x86))))
 
-            (3 (let ((prefix-3?
-                      (prefixes-slice :group-3-prefix prefixes)))
-                 (if (or (eql 0 (the (unsigned-byte 8) prefix-3?))
-                         ;; Redundant Prefix Okay
-                         (eql byte (the (unsigned-byte 8) prefix-3?)))
-
-                     (let ((next-rip (the (signed-byte
-                                           #.*max-linear-address-size+1*)
-                                       (1+ start-rip))))
-                       (if (mbe :logic (canonical-address-p next-rip)
-                                :exec
-                                (< (the (signed-byte
+          (2 (let ((prefix-2?
+                    (prefixes-slice :group-2-prefix prefixes)))
+               (if (or (eql 0 (the (unsigned-byte 8) prefix-2?))
+                       ;; Redundant Prefixes Okay
+                       (eql byte (the (unsigned-byte 8) prefix-2?)))
+                   (let ((next-rip (the (signed-byte
                                          #.*max-linear-address-size+1*)
-                                     next-rip)
-                                   #.*2^47*))
-                           ;; Storing the group 3 prefix and going on...
-                           (get-prefixes next-rip
-                                         (!prefixes-slice :group-3-prefix
-                                                          byte
-                                                          prefixes)
-                                         (the (integer 0 5) (1- cnt)) x86)
-                         (mv (cons 'non-canonical-address next-rip)
-                             prefixes x86)))
-                   ;; We do not tolerate more than one prefix from a prefix group.
-                   (mv t prefixes x86))))
+                                     (1+ start-rip))))
+                     (if (mbe :logic (canonical-address-p next-rip)
+                              :exec
+                              (< (the (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                   next-rip)
+                                 #.*2^47*))
+                         ;; Storing the group 2 prefix and going on...
+                         (get-prefixes next-rip
+                                       (!prefixes-slice :group-2-prefix
+                                                        byte
+                                                        prefixes)
+                                       (the (integer 0 5) (1- cnt)) x86)
+                       (mv (cons 'non-canonical-address next-rip)
+                           prefixes x86)))
+                 ;; We do not tolerate more than one prefix from a prefix group.
+                 (mv t prefixes x86))))
 
-            (4 (let ((prefix-4?
-                      (prefixes-slice :group-4-prefix prefixes)))
-                 (if (or (eql 0 (the (unsigned-byte 8) prefix-4?))
-                         ;; Redundant Prefix Okay
-                         (eql byte (the (unsigned-byte 8) prefix-4?)))
-                     (let ((next-rip (the (signed-byte
-                                           #.*max-linear-address-size+1*)
-                                       (1+ start-rip))))
-                       (if (mbe :logic (canonical-address-p next-rip)
-                                :exec
-                                (< (the (signed-byte
+          (3 (let ((prefix-3?
+                    (prefixes-slice :group-3-prefix prefixes)))
+               (if (or (eql 0 (the (unsigned-byte 8) prefix-3?))
+                       ;; Redundant Prefix Okay
+                       (eql byte (the (unsigned-byte 8) prefix-3?)))
+
+                   (let ((next-rip (the (signed-byte
                                          #.*max-linear-address-size+1*)
-                                     next-rip)
-                                   #.*2^47*))
-                           ;; Storing the group 4 prefix and going on...
-                           (get-prefixes next-rip
-                                         (!prefixes-slice :group-4-prefix
-                                                          byte
-                                                          prefixes)
-                                         (the (integer 0 5) (1- cnt)) x86)
-                         (mv (cons 'non-canonical-address next-rip)
-                             prefixes x86)))
-                   ;; We do not tolerate more than one prefix from a prefix group.
-                   (mv t prefixes x86))))
+                                     (1+ start-rip))))
+                     (if (mbe :logic (canonical-address-p next-rip)
+                              :exec
+                              (< (the (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                   next-rip)
+                                 #.*2^47*))
+                         ;; Storing the group 3 prefix and going on...
+                         (get-prefixes next-rip
+                                       (!prefixes-slice :group-3-prefix
+                                                        byte
+                                                        prefixes)
+                                       (the (integer 0 5) (1- cnt)) x86)
+                       (mv (cons 'non-canonical-address next-rip)
+                           prefixes x86)))
+                 ;; We do not tolerate more than one prefix from a prefix group.
+                 (mv t prefixes x86))))
 
-            (otherwise
-             (mv t prefixes x86))))))
+          (4 (let ((prefix-4?
+                    (prefixes-slice :group-4-prefix prefixes)))
+               (if (or (eql 0 (the (unsigned-byte 8) prefix-4?))
+                       ;; Redundant Prefix Okay
+                       (eql byte (the (unsigned-byte 8) prefix-4?)))
+                   (let ((next-rip (the (signed-byte
+                                         #.*max-linear-address-size+1*)
+                                     (1+ start-rip))))
+                     (if (mbe :logic (canonical-address-p next-rip)
+                              :exec
+                              (< (the (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                   next-rip)
+                                 #.*2^47*))
+                         ;; Storing the group 4 prefix and going on...
+                         (get-prefixes next-rip
+                                       (!prefixes-slice :group-4-prefix
+                                                        byte
+                                                        prefixes)
+                                       (the (integer 0 5) (1- cnt)) x86)
+                       (mv (cons 'non-canonical-address next-rip)
+                           prefixes x86)))
+                 ;; We do not tolerate more than one prefix from a prefix group.
+                 (mv t prefixes x86))))
+
+          (otherwise
+           (mv t prefixes x86))))))
 
   ///
 
@@ -2802,8 +2811,15 @@
                          (x86p x86))
              (natp (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))))
     :hints (("Goal" :in-theory (e/d ()
-                                    (force (force) unsigned-byte-p
-                                           signed-byte-p))))
+                                    (force
+                                     (force)
+                                     unsigned-byte-p
+                                     signed-byte-p
+                                     negative-logand-to-positive-logand-with-integerp-x
+                                     acl2::ash-0
+                                     unsigned-byte-p-of-logior
+                                     acl2::zip-open
+                                     bitops::unsigned-byte-p-when-unsigned-byte-p-less))))
     :rule-classes :type-prescription)
 
   (defthm-usb n43p-get-prefixes
@@ -2813,7 +2829,24 @@
     :bound 43
     :concl (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
     :hints (("Goal" :in-theory (e/d ()
-                                    (signed-byte-p force (force)))))
+                                    (signed-byte-p
+                                     acl2::ash-0
+                                     acl2::zip-open
+                                     bitops::logtail-of-logior
+                                     unsigned-byte-p-of-logtail
+                                     acl2::logtail-identity
+                                     ash-monotone-2
+                                     bitops::logand-with-negated-bitmask
+                                     (:linear bitops::logior-<-0-linear-1)
+                                     (:linear bitops::logior-<-0-linear-2)
+                                     (:linear bitops::logand->=-0-linear-1)
+                                     (:linear bitops::logand->=-0-linear-2)
+                                     bitops::logtail-natp
+                                     natp-of-get-one-byte-prefix-array-code
+                                     acl2::ifix-when-not-integerp
+                                     bitops::basic-signed-byte-p-of-+
+                                     default-<-1
+                                     force (force)))))
     :gen-linear t)
 
   (defthm x86p-get-prefixes
@@ -2823,9 +2856,48 @@
     :hints (("Goal" :in-theory (e/d ()
                                     (unsigned-byte-p
                                      signed-byte-p
+                                     acl2::ash-0
+                                     acl2::zip-open
+                                     bitops::logtail-of-logior
+                                     unsigned-byte-p-of-logtail
+                                     acl2::logtail-identity
+                                     ash-monotone-2
+                                     bitops::logand-with-negated-bitmask
+                                     (:linear bitops::logior-<-0-linear-1)
+                                     (:linear bitops::logior-<-0-linear-2)
+                                     (:linear bitops::logand->=-0-linear-1)
+                                     (:linear bitops::logand->=-0-linear-2)
+                                     bitops::logtail-natp
+                                     natp-of-get-one-byte-prefix-array-code
+                                     acl2::ifix-when-not-integerp
+                                     bitops::basic-signed-byte-p-of-+
+                                     default-<-1
                                      negative-logand-to-positive-logand-with-integerp-x
                                      negative-logand-to-positive-logand-with-n43p-x
                                      force (force))))))
+
+  (defthm get-prefixes-does-not-modify-x86-state-in-programmer-level-mode
+    (implies (programmer-level-mode x86)
+             (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
+                    x86))
+    :hints (("Goal"
+             :in-theory
+             (union-theories
+              '(get-prefixes
+                rm08-does-not-affect-state-in-programmer-level-mode)
+              (theory 'minimal-theory)))))
+
+  (defthm get-prefixes-does-not-modify-x86-state-in-system-level-non-marking-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (page-structure-marking-mode x86))
+                  (x86p x86)
+                  (not (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
+             (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
+                    x86))
+    :hints (("Goal"
+             :in-theory (union-theories '(get-prefixes
+                                          mv-nth-2-rm08-in-system-level-non-marking-mode)
+                                        (theory 'minimal-theory)))))
 
   (local (in-theory (e/d  (rm08 rvm08)
                           (force
@@ -2857,45 +2929,57 @@
                               unsigned-byte-p rm08
                               (force) force
                               canonical-address-p
-                              not acl2::zp-open))))
+                              not acl2::zp-open
+                              acl2::ash-0
+                              acl2::zip-open
+                              bitops::logtail-of-logior
+                              unsigned-byte-p-of-logtail
+                              acl2::logtail-identity
+                              ash-monotone-2
+                              bitops::logand-with-negated-bitmask
+                              (:linear bitops::logior-<-0-linear-1)
+                              (:linear bitops::logior-<-0-linear-2)
+                              (:linear bitops::logand->=-0-linear-1)
+                              (:linear bitops::logand->=-0-linear-2)
+                              bitops::logtail-natp
+                              natp-of-get-one-byte-prefix-array-code
+                              acl2::ifix-when-not-integerp
+                              bitops::basic-signed-byte-p-of-+
+                              default-<-1))))
     :rule-classes :linear)
 
-  (defthm get-prefixes-opener-lemma-1
+  (defthm get-prefixes-opener-lemma-zero-cnt
     (implies (zp cnt)
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (mv nil prefixes x86)))
     :hints (("Goal" :in-theory (e/d (get-prefixes) ()))))
 
-  (defthm get-prefixes-opener-lemma-2
+  (defthm get-prefixes-opener-lemma-no-prefix-byte
+    ;; Note that this lemma is applicable in the system-level mode too.
     ;; This lemma would be used for those instructions which do not have
     ;; any prefix byte.
-    (implies (and (canonical-address-p start-rip)
-                  (programmer-level-mode x86)
-                  (not (zp cnt))
-                  ;; Important: I can eliminate the hyp (not flg)
-                  ;; since flg will always be nil when we are in
-                  ;; programmer-level mode and if start-rip is
-                  ;; canonical.  However, (not flg) somehow helps in
-                  ;; simplifying the ancestors' path when this rule is
-                  ;; being considered, thereby increasing its
-                  ;; applicability.
-                  (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
-                         (prefix-byte-group-code
-                          (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rm08 start-rip :x x86)))))
-                    (and (not flg) ;; No error in reading a byte
+    (implies (and (not (zp cnt))
+                  (let*
+                      ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+                       (prefix-byte-group-code
+                        (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))))
+                    (and (not flg)
                          (zp prefix-byte-group-code))))
-             (equal (get-prefixes start-rip prefixes cnt x86)
-                    (let ((prefixes
-                           (!prefixes-slice :next-byte
-                                            (mv-nth 1 (rm08 start-rip :x x86))
-                                            prefixes)))
-                      (mv nil (!prefixes-slice :num-prefixes (- 5 cnt) prefixes)
-                          x86)))))
+             (and
+              (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))
+                     nil)
+              (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
+                     (let ((prefixes
+                            (!prefixes-slice :next-byte
+                                             (mv-nth 1 (rm08 start-rip :x x86))
+                                             prefixes)))
+                       (!prefixes-slice :num-prefixes (- 5 cnt) prefixes))))))
 
-  (defthm get-prefixes-opener-lemma-3
+  (defthm get-prefixes-opener-lemma-group-1-prefix
     (implies (and (canonical-address-p (1+ start-rip))
-                  (programmer-level-mode x86)
+                  (or (programmer-level-mode x86)
+                      (and (not (programmer-level-mode x86))
+                           (not (page-structure-marking-mode x86))))
                   (not (zp cnt))
                   (equal (prefixes-slice :group-1-prefix prefixes) 0)
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
@@ -2909,11 +2993,17 @@
                                   (!prefixes-slice :group-1-prefix
                                                    (mv-nth 1 (rm08 start-rip :x x86))
                                                    prefixes)
-                                  (1- cnt) x86))))
+                                  (1- cnt) x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (unsigned-byte-p
+                                      negative-logand-to-positive-logand-with-n43p-x
+                                      negative-logand-to-positive-logand-with-integerp-x)))))
 
-  (defthm get-prefixes-opener-lemma-4
+  (defthm get-prefixes-opener-lemma-group-2-prefix
     (implies (and (canonical-address-p (1+ start-rip))
-                  (programmer-level-mode x86)
+                  (or (programmer-level-mode x86)
+                      (and (not (programmer-level-mode x86))
+                           (not (page-structure-marking-mode x86))))
                   (not (zp cnt))
                   (equal (prefixes-slice :group-2-prefix prefixes) 0)
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
@@ -2927,11 +3017,17 @@
                                   (!prefixes-slice :group-2-prefix
                                                    (mv-nth 1 (rm08 start-rip :x x86))
                                                    prefixes)
-                                  (1- cnt) x86))))
+                                  (1- cnt) x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (unsigned-byte-p
+                                      negative-logand-to-positive-logand-with-n43p-x
+                                      negative-logand-to-positive-logand-with-integerp-x)))))
 
-  (defthm get-prefixes-opener-lemma-5
+  (defthm get-prefixes-opener-lemma-group-3-prefix
     (implies (and (canonical-address-p (1+ start-rip))
-                  (programmer-level-mode x86)
+                  (or (programmer-level-mode x86)
+                      (and (not (programmer-level-mode x86))
+                           (not (page-structure-marking-mode x86))))
                   (not (zp cnt))
                   (equal (prefixes-slice :group-3-prefix prefixes) 0)
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
@@ -2945,11 +3041,17 @@
                                   (!prefixes-slice :group-3-prefix
                                                    (mv-nth 1 (rm08 start-rip :x x86))
                                                    prefixes)
-                                  (1- cnt) x86))))
+                                  (1- cnt) x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (unsigned-byte-p
+                                      negative-logand-to-positive-logand-with-n43p-x
+                                      negative-logand-to-positive-logand-with-integerp-x)))))
 
-  (defthm get-prefixes-opener-lemma-6
+  (defthm get-prefixes-opener-lemma-group-4-prefix
     (implies (and (canonical-address-p (1+ start-rip))
-                  (programmer-level-mode x86)
+                  (or (programmer-level-mode x86)
+                      (and (not (programmer-level-mode x86))
+                           (not (page-structure-marking-mode x86))))
                   (not (zp cnt))
                   (equal (prefixes-slice :group-4-prefix prefixes) 0)
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
@@ -2963,21 +3065,11 @@
                                   (!prefixes-slice :group-4-prefix
                                                    (mv-nth 1 (rm08 start-rip :x x86))
                                                    prefixes)
-                                  (1- cnt) x86))))
-
-  (defthm get-prefixes-opener-lemma-7
-    (implies (and (x86p x86)
-                  (programmer-level-mode x86)
-                  (not (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
-             (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
-                    x86))
-    :hints (("Goal" :in-theory
-             (union-theories
-              '(get-prefixes
-                rm08-does-not-affect-state-in-programmer-level-mode)
-              (theory 'minimal-theory)))))
-
-  )
+                                  (1- cnt) x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (unsigned-byte-p
+                                      negative-logand-to-positive-logand-with-n43p-x
+                                      negative-logand-to-positive-logand-with-integerp-x))))))
 
 ;; ======================================================================
 
@@ -2986,15 +3078,14 @@
   :parents (x86-decoder)
   :short "Top-level step function"
 
-  :long "<p> @('x86-fetch-decode-execute') is the step function of our
+  :long "<p>@('x86-fetch-decode-execute') is the step function of our
 x86 interpreter.  It fetches one instruction by looking up the memory
 address indicated by the instruction pointer @('rip'), decodes that
 instruction, and dispatches control to the appropriate instruction
 semantic function.</p>"
 
   :prepwork
-  ((local (in-theory (e/d* ()
-                           (unsigned-byte-p)))))
+  ((local (in-theory (e/d* () (unsigned-byte-p not)))))
 
   (b* ((ctx 'x86-fetch-decode-execute)
        ;; (64-bit-mode (64-bit-modep x86))
@@ -3162,8 +3253,8 @@ semantic function.</p>"
        ((when flg6)
         (!!ms-fresh :virtual-address-error temp-rip)))
 
-      (top-level-opcode-execute
-       start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
+    (top-level-opcode-execute
+     start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
 
   ///
 
@@ -3181,9 +3272,9 @@ semantic function.</p>"
           (equal temp-rip0 (if (equal prefix-length 0)
                                (+ 1 start-rip)
                              (+ prefix-length start-rip 1)))
-          (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4)
-                                     4)
-                              opcode/rex/escape-byte 0))
+          (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4) 4)
+                              opcode/rex/escape-byte
+                            0))
           (equal opcode/escape-byte (if (equal rex-byte 0)
                                         opcode/rex/escape-byte
                                       (mv-nth 1 (rm08 temp-rip0 :x x86))))
@@ -3198,15 +3289,21 @@ semantic function.</p>"
           (equal sib (if sib? (mv-nth 1 (rm08 temp-rip2 :x x86)) 0))
           (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
 
-          (x86p x86)
+          (or (programmer-level-mode x86)
+              (and (not (programmer-level-mode x86))
+                   (not (page-structure-marking-mode x86))))
           (not (ms x86))
           (not (fault x86))
-          ;; The following hypothesis is necessary because we do not
-          ;; have RoW/WoW theorems for rm* and wm* functions yet.
-          (programmer-level-mode x86)
           (not (mv-nth 0 (get-prefixes start-rip 0 5 x86)))
           (canonical-address-p temp-rip0)
-          (not (mv-nth 0 (rm08 temp-rip0 :x x86)))
+          (if (and (equal prefix-length 0)
+                   (equal rex-byte 0)
+                   (not modr/m?))
+              ;; One byte instruction --- all we need to know is that
+              ;; the new RIP is canonical, not that there's no error
+              ;; in reading a value from that address.
+              t
+            (not (mv-nth 0 (rm08 temp-rip0 :x x86))))
           (if (equal rex-byte 0)
               t
             (canonical-address-p temp-rip1))
@@ -3217,19 +3314,23 @@ semantic function.</p>"
           (if sib?
               (and (canonical-address-p temp-rip3)
                    (not (mv-nth 0 (rm08 temp-rip2 :x x86))))
-            t))
+            t)
+          (x86p x86))
      (equal (x86-fetch-decode-execute x86)
             (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
                                       opcode/escape-byte modr/m sib x86)))
-    :hints (("Goal" :in-theory (e/d ()
-                                    (signed-byte-p not)))))
+    :hints (("Goal"
+             :cases ((programmer-level-mode x86))
+             :in-theory (e/d ()
+                             (top-level-opcode-execute
+                              signed-byte-p
+                              not
+                              member-equal)))))
 
   (defthmd ms-fault-and-x86-fetch-decode-and-execute
     (implies (and (x86p x86)
                   (or (ms x86) (fault x86)))
-             (equal (x86-fetch-decode-execute x86) x86)))
-  )
-
+             (equal (x86-fetch-decode-execute x86) x86))))
 
 (in-theory (e/d (top-level-opcode-execute two-byte-opcode-execute) ()))
 
@@ -3325,18 +3426,16 @@ semantic function.</p>"
                     (x86-run n2 (x86-run n1 x86)))))
 
   (encapsulate
-   ()
+    ()
 
-   (local (include-book "arithmetic/top" :dir :system))
+    (local (include-book "arithmetic/top" :dir :system))
 
-   (defthmd x86-run-plus-1
-     (implies (and (natp n1)
-                   (natp n2)
-                   (syntaxp (quotep n1)))
-              (equal (x86-run (clk+ n1 n2) x86)
-                     (x86-run n1 (x86-run n2 x86)))))
-
-   ))
+    (defthmd x86-run-plus-1
+      (implies (and (natp n1)
+                    (natp n2)
+                    (syntaxp (quotep n1)))
+               (equal (x86-run (clk+ n1 n2) x86)
+                      (x86-run n1 (x86-run n2 x86)))))))
 
 (in-theory (disable binary-clk+))
 

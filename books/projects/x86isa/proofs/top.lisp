@@ -6,11 +6,8 @@
 ;; ======================================================================
 
 ;; Proof utilities
-(include-book "utilities/programmer-level-mode/programmer-level-memory-utils" :ttags :all)
-(include-book "utilities/programmer-level-mode/environment-utils" :ttags :all)
-(include-book "utilities/system-level-mode/physical-memory-utils" :ttags :all)
-(include-book "utilities/system-level-mode/paging-lib/paging-top" :ttags :all)
-(include-book "utilities/system-level-mode/system-level-memory-utils" :ttags :all)
+(include-book "utilities/programmer-level-mode/top" :ttags :all)
+(include-book "utilities/system-level-mode/top" :ttags :all)
 
 ;; Program proofs:
 
@@ -26,8 +23,8 @@
 <li>Wormhole Abstraction: See book @('factorial/fact-wormhole-abstraction.lisp').</li>
 </ol>
 
-<p>The proof of correctness of the <b>word-count program</b> can be found in
-@('word-count/wc.lisp').</p>
+<p>The proof of correctness of the <b>wordCount program</b> can be found in
+@('wordCount/wc.lisp').</p>
 
 <p>The proof of correctness of a simple <b>array copy sub-routine</b> can be
 found in @('dataCopy/dataCopy.lisp').</p>
@@ -36,7 +33,9 @@ found in @('dataCopy/dataCopy.lisp').</p>
 be found in @('popcount/popcount.lisp'). This proof was done using the
 @(see GL::GL) symbolic simulation framework.</p>
 
-"
+<p>The proof of correctness of a simple <b>zero-copy sub-routine</b>
+in the system-level mode can be found in
+@('zeroCopy/zeroCopy.lisp').</p>"
 
   ;; [Shilpi]: There are name clashes in these two factorial books.  The
   ;; empty encapsulates below avoid this name clash problem while
@@ -63,12 +62,17 @@ be found in @('popcount/popcount.lisp'). This proof was done using the
   (local
    (encapsulate
     ()
-    (local (include-book "word-count/wc" :ttags :all))))
+    (local (include-book "wordCount/wc" :ttags :all))))
 
   (local
    (encapsulate
     ()
     (local (include-book "dataCopy/dataCopy" :ttags :all))))
+
+  (local
+   (encapsulate
+     ()
+     (local (include-book "zeroCopy/zeroCopy" :ttags :all))))
 
   )
 

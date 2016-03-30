@@ -372,6 +372,14 @@
 (defconst *max-linear-address-size+5* (+ 5 *max-linear-address-size*))
 (defconst *max-linear-address-size+6* (+ 6 *max-linear-address-size*))
 (defconst *max-linear-address-size+7* (+ 7 *max-linear-address-size*))
+(defconst *max-linear-address-size+8* (+ 8 *max-linear-address-size*))
+(defconst *max-linear-address-size+9* (+ 9 *max-linear-address-size*))
+(defconst *max-linear-address-size+10* (+ 10 *max-linear-address-size*))
+(defconst *max-linear-address-size+11* (+ 11 *max-linear-address-size*))
+(defconst *max-linear-address-size+12* (+ 12 *max-linear-address-size*))
+(defconst *max-linear-address-size+13* (+ 13 *max-linear-address-size*))
+(defconst *max-linear-address-size+14* (+ 14 *max-linear-address-size*))
+(defconst *max-linear-address-size+15* (+ 15 *max-linear-address-size*))
 (defconst *max-linear-address-size-1* (1- *max-linear-address-size*))
 (defconst *2^max-linear-address-size-1* (expt 2 *max-linear-address-size-1*))
 (defconst *-2^max-linear-address-size-1* (- *2^max-linear-address-size-1*))
@@ -503,9 +511,7 @@
 ;; Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5
 (defun define-control-registers ()
 
-  `(defconsts (*MSW* ;; Control status register: msw is only 32 bits
-		     ;; even in 64 bit mode?
-	       *CR0* ;; cr0 controls operating mode and states of
+  `(defconsts (*CR0* ;; cr0 controls operating mode and states of
 		     ;; processor
 	       *CR1* ;; cr1 is reserved
 	       *CR2* ;; cr2 holds the page fault linear address (the
@@ -523,7 +529,7 @@
 	       *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
 	       *XCR0*
 	       *control-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 18))
+     ,(b* ((lst (gl-int 0 1 17))
 	   (len  (len lst)))
 	  (cons 'mv (append lst (list len))))))
 
