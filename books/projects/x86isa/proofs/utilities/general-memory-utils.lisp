@@ -473,6 +473,15 @@
            (equal (cdr (addr-range n val))
                   (addr-range (1- n) (1+ val)))))
 
+(defthm no-duplicates-p-and-addr-range
+  (no-duplicates-p (addr-range n x))
+  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
+(defthm nth-pos-of-addr-range-first
+  (implies (and (integerp index)
+                (posp n))
+           (equal (pos index (addr-range n index)) 0))
+  :hints (("Goal" :in-theory (e/d* (pos) ()))))
 
 ;; ======================================================================
 

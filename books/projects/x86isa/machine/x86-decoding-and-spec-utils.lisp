@@ -344,9 +344,7 @@ field conveying useful information. </li>
                      p4 temp-RIP rex-byte r/m mod sib
                      num-imm-bytes x86))
           4)
-      :rule-classes :linear))
-
-  )
+      :rule-classes :linear)))
 
 ;; ======================================================================
 
@@ -456,7 +454,12 @@ made from privilege level 3.</sf>"
                                     (equal (seg-sel-layout-slice :rpl val)
                                            (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86))))))
                (equal (alignment-checking-enabled-p (xw :seg-visible index val x86))
-                      (alignment-checking-enabled-p x86)))))
+                      (alignment-checking-enabled-p x86))))
+
+    (defthm alignment-checking-enabled-p-and-mv-nth-1-wb
+      (equal (alignment-checking-enabled-p (mv-nth 1 (wb addr-lst x86)))
+             (alignment-checking-enabled-p x86))
+      :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory flgi) ())))))
 
   (define x86-operand-from-modr/m-and-sib-bytes
     ;; TO-DO: operand-sizes 6 and 10 are weird. Fix them.

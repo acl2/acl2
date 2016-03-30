@@ -513,66 +513,66 @@ memory.</li>
            (pseudo-termp (unravel-loghead-hyp term))))
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "arithmetic-5/top" :dir :system))
+  (local (include-book "arithmetic-5/top" :dir :system))
 
- (local (defthm equal-len-n
-          (implies (and (syntaxp (quotep n))
-                        (natp n))
-                   (equal (equal (len x) n)
-                          (if (equal n 0)
-                              (atom x)
-                            (and (consp x)
-                                 (equal (len (cdr x)) (1- n))))))))
+  (local (defthm equal-len-n
+           (implies (and (syntaxp (quotep n))
+                         (natp n))
+                    (equal (equal (len x) n)
+                           (if (equal n 0)
+                               (atom x)
+                             (and (consp x)
+                                  (equal (len (cdr x)) (1- n))))))))
 
- (local
-  (defthm loghead-12-bound
-    (implies (integerp n)
-             (<= (loghead 12 n) 4095))
-    :hints (("Goal" :in-theory (enable loghead)))
-    :rule-classes :linear))
+  (local
+   (defthm loghead-12-bound
+     (implies (integerp n)
+              (<= (loghead 12 n) 4095))
+     :hints (("Goal" :in-theory (enable loghead)))
+     :rule-classes :linear))
 
- (local
-  (defthm loghead-12-plus
-    (implies (and (natp m)
-                  (< m 4096)
-                  (integerp n))
-             (equal (loghead 12 (+ m n))
-                    (if (< (+ m (loghead 12 n)) 4096)
-                        (+ m (loghead 12 n))
-                      (- (+ m (loghead 12 n))
-                         4096))))
-    :hints (("Goal" :in-theory (enable loghead)))))
+  (local
+   (defthm loghead-12-plus
+     (implies (and (natp m)
+                   (< m 4096)
+                   (integerp n))
+              (equal (loghead 12 (+ m n))
+                     (if (< (+ m (loghead 12 n)) 4096)
+                         (+ m (loghead 12 n))
+                       (- (+ m (loghead 12 n))
+                          4096))))
+     :hints (("Goal" :in-theory (enable loghead)))))
 
- (local
-  (defthm unravel-loghead-meta-lemma-main-lemma
-    (implies
-     (and (natp m)
-          (natp m-copy)
-          (<= m-copy m)
-          (< m 4096)
-          (alistp a)
-          (symbolp x)
-          (integerp (cdr (assoc-equal x a)))
-          (not (and (<= (- 4096 m)
-                        (loghead 12 (cdr (assoc-equal x a))))
-                    (< (loghead 12 (cdr (assoc-equal x a)))
-                       (- 4096 m-copy))))
-          x)
-     (equal (unravel-loghead-evl (unravel-loghead-1 x 12 m m-copy)
-                                 a)
-            (loghead 12
-                     (+ m (cdr (assoc-equal x a))))))
-    :hints (("Goal" :induct (unravel-loghead-1 x 12 m m-copy)))))
+  (local
+   (defthm unravel-loghead-meta-lemma-main-lemma
+     (implies
+      (and (natp m)
+           (natp m-copy)
+           (<= m-copy m)
+           (< m 4096)
+           (alistp a)
+           (symbolp x)
+           (integerp (cdr (assoc-equal x a)))
+           (not (and (<= (- 4096 m)
+                         (loghead 12 (cdr (assoc-equal x a))))
+                     (< (loghead 12 (cdr (assoc-equal x a)))
+                        (- 4096 m-copy))))
+           x)
+      (equal (unravel-loghead-evl (unravel-loghead-1 x 12 m m-copy)
+                                  a)
+             (loghead 12
+                      (+ m (cdr (assoc-equal x a))))))
+     :hints (("Goal" :induct (unravel-loghead-1 x 12 m m-copy)))))
 
- (defthm unravel-loghead-meta-lemma
-   (implies (and (pseudo-termp term)
-                 (alistp a)
-                 (unravel-loghead-evl (unravel-loghead-hyp term) a))
-            (equal (unravel-loghead-evl term a)
-                   (unravel-loghead-evl (unravel-loghead term) a)))
-   :rule-classes ((:meta :trigger-fns (acl2::loghead$inline)))))
+  (defthm unravel-loghead-meta-lemma
+    (implies (and (pseudo-termp term)
+                  (alistp a)
+                  (unravel-loghead-evl (unravel-loghead-hyp term) a))
+             (equal (unravel-loghead-evl term a)
+                    (unravel-loghead-evl (unravel-loghead term) a)))
+    :rule-classes ((:meta :trigger-fns (acl2::loghead$inline)))))
 
 ||#
 
@@ -1099,7 +1099,26 @@ memory.</li>
     (defthm len-of-mv-nth-1-las-to-pas
       (implies (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                (equal (len (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-                      (len l-addrs)))))
+                      (len l-addrs))))
+
+    (defthm las-to-pas-values-and-!flgi
+      (implies (and (not (equal index *ac*))
+                    (not (page-structure-marking-mode x86))
+                    (x86p x86))
+               (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
+                           (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                    (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
+                           (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
+
+    (defthm las-to-pas-values-and-!flgi-undefined
+      (implies (and (not (equal index *ac*))
+                    (not (page-structure-marking-mode x86))
+                    (x86p x86))
+               (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (!flgi-undefined index x86)))
+                           (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                    (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (!flgi-undefined index x86)))
+                           (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
+      :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (las-to-pas))))))
 
   (define read-from-physical-memory
     ((p-addrs physical-address-listp)
@@ -1158,7 +1177,35 @@ memory.</li>
       (implies (and (programmer-level-mode x86)
                     (x86p x86))
                (equal (mv-nth 2 (rb addresses r-w-x x86)) x86))
-      :hints (("Goal" :in-theory (e/d (rm08) ())))))
+      :hints (("Goal" :in-theory (e/d (rm08) ()))))
+
+    (defthm len-of-rb-in-system-level-mode
+      (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+                    (not (xr :programmer-level-mode 0 x86)))
+               (equal (len (mv-nth 1 (rb l-addrs r-w-x x86))) (len l-addrs)))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm rb-values-and-!flgi-in-system-level-mode
+      (implies (and (not (equal index *ac*))
+                    (not (page-structure-marking-mode x86))
+                    (not (programmer-level-mode x86))
+                    (x86p x86))
+               (and (equal (mv-nth 0 (rb lin-addr r-w-x (!flgi index value x86)))
+                           (mv-nth 0 (rb lin-addr r-w-x x86)))
+                    (equal (mv-nth 1 (rb lin-addr r-w-x (!flgi index value x86)))
+                           (mv-nth 1 (rb lin-addr r-w-x x86)))))
+      :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+    (defthm rb-values-and-!flgi-undefined-in-system-level-mode
+      (implies (and (not (equal index *ac*))
+                    (not (page-structure-marking-mode x86))
+                    (not (programmer-level-mode x86))
+                    (x86p x86))
+               (and (equal (mv-nth 0 (rb lin-addr r-w-x (!flgi-undefined index x86)))
+                           (mv-nth 0 (rb lin-addr r-w-x x86)))
+                    (equal (mv-nth 1 (rb lin-addr r-w-x (!flgi-undefined index x86)))
+                           (mv-nth 1 (rb lin-addr r-w-x x86)))))
+      :hints (("Goal" :in-theory (e/d* (!flgi-undefined) ())))))
 
   ;; Definition of WB and other related events:
 
@@ -1331,6 +1378,11 @@ memory.</li>
         (mv nil x86)))
 
     ///
+
+    (defthm wb-not-consp-addr-lst
+      (implies (not (consp addr-lst))
+               (equal (mv-nth 1 (wb addr-lst x86)) x86))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
     (defthmd wb-is-wb-1-for-programmer-level-mode
       (implies (programmer-level-mode x86)
@@ -1592,6 +1644,34 @@ memory.</li>
                          (xw :rflags 0 value (mv-nth 1 (wb addr-lst x86))))))
     :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
 
+  (defthm mv-nth-1-wb-and-!flgi-commute
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (not (page-structure-marking-mode x86)))
+             (equal (mv-nth 1 (wb addr-lst (!flgi index val x86)))
+                    (!flgi index val (mv-nth 1 (wb addr-lst x86)))))
+    :hints (("Goal" :in-theory (e/d* (!flgi
+                                      rflags-slice-ac-simplify
+                                      !flgi-open-to-xw-rflags)
+                                     (force (force))))))
+
+  (defthm mv-nth-1-wb-and-!flgi-undefined-commute
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (not (page-structure-marking-mode x86)))
+             (equal (mv-nth 1 (wb addr-lst (!flgi-undefined index x86)))
+                    (!flgi-undefined index (mv-nth 1 (wb addr-lst x86)))))
+    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (wb !flgi)))))
+
+  (defthm xr-fault-wb-in-system-level-mode
+    (implies (and (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                  (not (page-structure-marking-mode x86)))
+             (equal (xr :fault 0 (mv-nth 1 (wb addr-lst x86)))
+                    (xr :fault 0 x86)))
+    :hints
+    (("Goal" :in-theory (e/d* (wb)
+                              (write-to-physical-memory force (force))))))
+
   (define create-addr-bytes-alist
     ((addr-list (canonical-address-listp addr-list))
      (byte-list (byte-listp byte-list)))
@@ -1747,6 +1827,9 @@ memory.</li>
             (addr-range (1- count) (1+ (ifix addr)))))
 
     ///
+
+    (defthm neg-addr-range=nil
+      (implies (negp i) (equal (addr-range i n) nil)))
 
     (defthm true-listp-addr-range
       (true-listp (addr-range count addr))
@@ -3587,7 +3670,7 @@ memory.</li>
 
   ///
 
-  (defthm program-at-xw
+  (defthm program-at-xw-in-programmer-level-mode
     (implies (and (programmer-level-mode x86)
                   (not (equal fld :mem))
                   (not (equal fld :programmer-level-mode)))

@@ -8,9 +8,8 @@
 ;; [Shilpi]: For now, I've removed nested paging and all paging modes
 ;; except IA-32e paging from our model.
 
-;; ======================================================================
-
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
 ;; ======================================================================
 
@@ -1024,7 +1023,74 @@ accesses.</p>
                       smep smap ac nxe r-w-x cpl x86 ignored))
                     x86))
     :hints (("Goal" :in-theory (e/d (page-fault-exception)
-                                    ())))))
+                                    ()))))
+
+  (defthm mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
+    (implies (and (equal (page-present entry-1)
+                         (page-present entry-2))
+                  (syntaxp (not (eq entry-1 entry-2)))
+                  (syntaxp (and (consp entry-1)
+                                (equal (car entry-1) 'combine-bytes)))
+                  (equal (page-read-write entry-1)
+                         (page-read-write entry-2))
+                  (equal (page-user-supervisor entry-1)
+                         (page-user-supervisor entry-2))
+                  (equal (page-execute-disable entry-1)
+                         (page-execute-disable entry-2))
+                  (equal (page-size entry-1)
+                         (page-size entry-2))
+                  (if (equal structure-type 1)
+                      ;; For Page Directory
+                      (equal (part-select entry-1 :low 13 :high 20)
+                             (part-select entry-2 :low 13 :high 20))
+                    ;; For Page Directory Pointer Table
+                    (if (equal structure-type 2)
+                        (equal (part-select entry-1 :low 13 :high 29)
+                               (part-select entry-2 :low 13 :high 29))
+                      t))
+                  (unsigned-byte-p 2 structure-type)
+                  (unsigned-byte-p 64 entry-1)
+                  (unsigned-byte-p 64 entry-2))
+             (equal (mv-nth 0
+                            (paging-entry-no-page-fault-p
+                             structure-type lin-addr entry-1
+                             u/s-acc r/w-acc x/d-acc
+                             wp smep smap ac nxe r-w-x cpl
+                             x86 ignored))
+                    (mv-nth 0
+                            (paging-entry-no-page-fault-p
+                             structure-type lin-addr entry-2
+                             u/s-acc r/w-acc x/d-acc
+                             wp smep smap ac nxe r-w-x cpl
+                             x86 ignored))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (page-fault-exception)
+                              (bitops::logand-with-negated-bitmask
+                               (:meta acl2::mv-nth-cons-meta)
+                               force (force))))))
+
+  (defthm mv-nth-0-paging-entry-no-page-fault-p-is-independent-of-lin-addr
+    (implies
+     (not
+      (mv-nth
+       0
+       (paging-entry-no-page-fault-p structure-type
+                                     lin-addr entry u/s-acc r/w-acc
+                                     x/d-acc wp smep smap ac nxe r-w-x
+                                     cpl x86 supervisor-mode-access-type)))
+     (equal
+      (mv-nth
+       0
+       (paging-entry-no-page-fault-p structure-type (+ n lin-addr)
+                                     entry u/s-acc r/w-acc
+                                     x/d-acc wp smep smap ac nxe r-w-x
+                                     cpl x86 supervisor-mode-access-type))
+      nil))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (commutativity-of-+
+                                      not
+                                      bitops::logand-with-negated-bitmask))))))
 
 
 ;; ======================================================================
@@ -2170,7 +2236,50 @@ accesses.</p>
                                   lin-addr r-w-x cpl x86))))
              (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
                     x86))
-    :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) (force (force)))))))
+    :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) (force (force))))))
+
+  (defthmd rflags-slice-ac-simplify
+    ;; The RHS from !flgi-and-xw-rflags satisfies the hyps of ia32e-la-to-pa-xw-rflags-not-ac
+    (and (equal (rflags-slice :ac (logior (ash (loghead 2 value) 12) (logand 4294955007 rflags)))
+                (rflags-slice :ac rflags))
+         (implies
+          (and (not (equal index *ac*))
+               (not (equal index *iopl*)))
+          (equal (rflags-slice :ac (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                           (logand rflags (loghead 32 (lognot (expt 2 (nfix index)))))))
+                 (rflags-slice :ac rflags))))
+    :hints ((bitops::logbitp-reasoning)))
+
+  (defthm ia32e-la-to-pa-values-and-!flgi
+    (implies (and (not (equal index *ac*))
+                  (x86p x86))
+             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi index value x86)))
+                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi index value x86)))
+                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+    :hints (("Goal"
+             :cases ((equal index *iopl*))
+             :use ((:instance rflags-slice-ac-simplify
+                              (index index)
+                              (rflags (xr :rflags 0 x86)))
+                   (:instance ia32e-la-to-pa-xw-rflags-not-ac
+                              (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                             (logand (xr :rflags 0 x86)
+                                                     (loghead 32 (lognot (expt 2 (nfix index))))))))
+                   (:instance ia32e-la-to-pa-xw-rflags-not-ac
+                              (value (logior (ash (loghead 2 value) 12)
+                                             (logand 4294955007 (xr :rflags 0 x86))))))
+             :in-theory (e/d* (!flgi-open-to-xw-rflags)
+                              (ia32e-la-to-pa-xw-rflags-not-ac)))))
+
+  (defthm ia32e-la-to-pa-values-and-!flgi-undefined
+    (implies (and (not (equal index *ac*))
+                  (x86p x86))
+             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi-undefined index x86)))
+                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi-undefined index x86)))
+                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (!flgi ia32e-la-to-pa))))))
 
 ;; ======================================================================
 

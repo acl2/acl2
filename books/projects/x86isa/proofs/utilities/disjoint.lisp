@@ -272,7 +272,16 @@
 
   (defthm not-member-p-pos-nil
     (implies (equal (member-p e x) nil)
-             (equal (pos e x) nil))))
+             (equal (pos e x) nil)))
+
+  (defthm nth-pos-of-list-first
+    ;; See nth-pos-of-addr-range-first.
+    (implies (and (syntaxp (not (and (consp xs)
+                                     (eq (car xs) 'addr-range))))
+                  (equal index (car xs))
+                  (consp xs))
+             (equal (pos index xs) 0))
+    :hints (("Goal" :in-theory (e/d* (pos) ())))))
 
 ;; ======================================================================
 
