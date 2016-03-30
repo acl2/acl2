@@ -71,7 +71,7 @@ be found in @('popcount/popcount.lisp'). This proof was done using the
   (local
    (encapsulate
      ()
-     (local (include-book "rewireVirtualAddress/rewireVirtualAddress" :ttags :all))))
+     (local (include-book "rewireVirtualAddress/zero-copy" :ttags :all))))
 
   )
 
