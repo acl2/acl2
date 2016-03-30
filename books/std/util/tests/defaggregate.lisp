@@ -230,43 +230,327 @@
 
 ||#
 
-(defaggregate employee
-  :tag :employee
-  ((name stringp "some documentation")
-   (salary natp :rule-classes :type-prescription :default 25))
-  :legiblep nil
-  :short "Hello!")
 
-(assert! (b* ((emp (make-employee :name "foo")))
-           (and (equal (employee->name emp) "foo")
-                (equal (employee->salary emp) 25))))
+(defsection test-of-tree-layout
 
-;; Shouldn't give a bind-warning
-(assert! (b* ((emp (make-employee :name "foo"))
-              ((employee emp) emp))
-           (and (equal emp.name "foo")
-                (equal emp.salary 25))))
+  (defaggregate employee
+    :tag :employee
+    ((name stringp "some documentation")
+     (salary natp :rule-classes :type-prescription :default 25))
+    :layout :tree
+    :short "Hello!")
 
-;; No warning -- same name.
-(assert! (b* ((emp (make-employee :name "foo"))
-              ((employee emp) emp))
-           (and (equal emp.name "foo")
-                (equal emp.salary 25)
-                emp)))
+  (assert! (b* ((emp (make-employee :name "foo")))
+             (and (equal (employee->name emp) "foo")
+                  (equal (employee->salary emp) 25))))
 
-;; This was prohibited through the release of ACL2 6.5, but now it is allowed
-;; and works as expected; see Issue 41.
-(assert! (b* ((emp (make-employee :name "foo"))
-              ((employee emp2) emp))
-           (and (equal emp2.name "foo")
-                (equal emp2.salary 25)
-                emp2)))
+  ;; Shouldn't give a bind-warning
+  (assert! (b* ((emp (make-employee :name "foo"))
+                ((employee emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25))))
 
-;; Similarly is now supported
-(assert! (b* (((employee emp2) (make-employee :name "foo")))
-           (and (equal emp2.name "foo")
-                (equal emp2.salary 25)
-                emp2)))
+  ;; No warning -- same name.
+  (assert! (b* ((emp (make-employee :name "foo"))
+                ((employee emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25)
+                  emp)))
+
+  ;; This was prohibited through the release of ACL2 6.5, but now it is allowed
+  ;; and works as expected; see Issue 41.
+  (assert! (b* ((emp (make-employee :name "foo"))
+                ((employee emp2) emp))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  ;; Similarly is now supported
+  (assert! (b* (((employee emp2) (make-employee :name "foo")))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  (assert! (b* ((emp (make-employee :name "foo"))
+                ((employee emp) (change-employee emp :name "bar")))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 25))))
+
+  (assert! (b* ((?emp (make-employee :name "foo"))
+                ((employee emp) (change-employee emp
+                                                 :name "bar"
+                                                 :salary 156)))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 156)))))
+
+
+(defsection test-of-honsed-tree-layout
+
+  (defaggregate h-employee
+    :tag :h-employee
+    ((name stringp "some documentation")
+     (salary natp :rule-classes :type-prescription :default 25))
+    :layout :tree
+    :hons t
+    :short "Hello!")
+
+  (assert! (b* ((emp (make-h-employee :name "foo")))
+             (and (equal (h-employee->name emp) "foo")
+                  (equal (h-employee->salary emp) 25))))
+
+  ;; Shouldn't give a bind-warning
+  (assert! (b* ((emp (make-h-employee :name "foo"))
+                ((h-employee emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25))))
+
+  ;; No warning -- same name.
+  (assert! (b* ((emp (make-h-employee :name "foo"))
+                ((h-employee emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25)
+                  emp)))
+
+  ;; This was prohibited through the release of ACL2 6.5, but now it is allowed
+  ;; and works as expected; see Issue 41.
+  (assert! (b* ((emp (make-h-employee :name "foo"))
+                ((h-employee emp2) emp))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  ;; Similarly is now supported
+  (assert! (b* (((h-employee emp2) (make-h-employee :name "foo")))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  (assert! (b* ((emp (make-h-employee :name "foo"))
+                ((h-employee emp) (change-h-employee emp :name "bar")))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 25))))
+
+  (assert! (b* ((?emp (make-h-employee :name "foo"))
+                ((h-employee emp) (change-h-employee emp
+                                                 :name "bar"
+                                                 :salary 156)))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 156)))))
+
+
+(defsection test-of-fulltree
+
+  (defaggregate employee2
+    :tag :employee2
+    ((name stringp "some documentation")
+     (salary natp :rule-classes :type-prescription :default 25))
+    :layout :tree
+    :short "Hello!")
+
+  (assert! (b* ((emp (make-employee2 :name "foo")))
+             (and (equal (employee2->name emp) "foo")
+                  (equal (employee2->salary emp) 25))))
+
+  ;; Shouldn't give a bind-warning
+  (assert! (b* ((emp (make-employee2 :name "foo"))
+                ((employee2 emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25))))
+
+  ;; No warning -- same name.
+  (assert! (b* ((emp (make-employee2 :name "foo"))
+                ((employee2 emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25)
+                  emp)))
+
+  ;; This was prohibited through the release of ACL2 6.5, but now it is allowed
+  ;; and works as expected; see Issue 41.
+  (assert! (b* ((emp (make-employee2 :name "foo"))
+                ((employee2 emp2) emp))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  ;; Similarly is now supported
+  (assert! (b* (((employee2 emp2) (make-employee2 :name "foo")))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  (assert! (b* ((emp (make-employee2 :name "foo"))
+                ((employee2 emp) (change-employee2 emp :name "bar")))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 25))))
+
+  (assert! (b* ((?emp (make-employee2 :name "foo"))
+                ((employee2 emp) (change-employee2 emp
+                                                   :name "bar"
+                                                   :salary 156)))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 156)))))
+
+
+(defsection test-of-fulltree
+
+  (defaggregate h-employee2
+    :tag :h-employee2
+    ((name stringp "some documentation")
+     (salary natp :rule-classes :type-prescription :default 25))
+    :layout :tree
+    :hons t
+    :short "Hello!")
+
+  (assert! (b* ((emp (make-h-employee2 :name "foo")))
+             (and (equal (h-employee2->name emp) "foo")
+                  (equal (h-employee2->salary emp) 25))))
+
+  ;; Shouldn't give a bind-warning
+  (assert! (b* ((emp (make-h-employee2 :name "foo"))
+                ((h-employee2 emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25))))
+
+  ;; No warning -- same name.
+  (assert! (b* ((emp (make-h-employee2 :name "foo"))
+                ((h-employee2 emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25)
+                  emp)))
+
+  ;; This was prohibited through the release of ACL2 6.5, but now it is allowed
+  ;; and works as expected; see Issue 41.
+  (assert! (b* ((emp (make-h-employee2 :name "foo"))
+                ((h-employee2 emp2) emp))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  ;; Similarly is now supported
+  (assert! (b* (((h-employee2 emp2) (make-h-employee2 :name "foo")))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  (assert! (b* ((emp (make-h-employee2 :name "foo"))
+                ((h-employee2 emp) (change-h-employee2 emp :name "bar")))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 25))))
+
+  (assert! (b* ((?emp (make-h-employee2 :name "foo"))
+                ((h-employee2 emp) (change-h-employee2 emp
+                                                   :name "bar"
+                                                   :salary 156)))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 156)))))
+
+
+
+(defsection test-of-list
+
+  (defaggregate employee3
+    :tag :employee3
+    ((name stringp "some documentation")
+     (salary natp :rule-classes :type-prescription :default 25))
+    :layout :list
+    :short "Hello!")
+
+  (assert! (b* ((emp (make-employee3 :name "foo")))
+             (and (equal (employee3->name emp) "foo")
+                  (equal (employee3->salary emp) 25))))
+
+  ;; Shouldn't give a bind-warning
+  (assert! (b* ((emp (make-employee3 :name "foo"))
+                ((employee3 emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25))))
+
+  ;; No warning -- same name.
+  (assert! (b* ((emp (make-employee3 :name "foo"))
+                ((employee3 emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25)
+                  emp)))
+
+  ;; This was prohibited through the release of ACL2 6.5, but now it is allowed
+  ;; and works as expected; see Issue 41.
+  (assert! (b* ((emp (make-employee3 :name "foo"))
+                ((employee3 emp2) emp))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  ;; Similarly is now supported
+  (assert! (b* (((employee3 emp2) (make-employee3 :name "foo")))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  (assert! (b* ((emp (make-employee3 :name "foo"))
+                ((employee3 emp) (change-employee3 emp :name "bar")))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 25))))
+
+  (assert! (b* ((?emp (make-employee3 :name "foo"))
+                ((employee3 emp) (change-employee3 emp
+                                                   :name "bar"
+                                                   :salary 156)))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 156)))))
+
+
+(defsection test-of-alist
+
+  (defaggregate employee4
+    :tag :employee4
+    ((name stringp "some documentation")
+     (salary natp :rule-classes :type-prescription :default 25))
+    :layout :alist
+    :short "Hello!")
+
+  (assert! (b* ((emp (make-employee4 :name "foo")))
+             (and (equal (employee4->name emp) "foo")
+                  (equal (employee4->salary emp) 25))))
+
+  ;; Shouldn't give a bind-warning
+  (assert! (b* ((emp (make-employee4 :name "foo"))
+                ((employee4 emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25))))
+
+  ;; No warning -- same name.
+  (assert! (b* ((emp (make-employee4 :name "foo"))
+                ((employee4 emp) emp))
+             (and (equal emp.name "foo")
+                  (equal emp.salary 25)
+                  emp)))
+
+  ;; This was prohibited through the release of ACL2 6.5, but now it is allowed
+  ;; and works as expected; see Issue 41.
+  (assert! (b* ((emp (make-employee4 :name "foo"))
+                ((employee4 emp2) emp))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  ;; Similarly is now supported
+  (assert! (b* (((employee4 emp2) (make-employee4 :name "foo")))
+             (and (equal emp2.name "foo")
+                  (equal emp2.salary 25)
+                  emp2)))
+
+  (assert! (b* ((emp (make-employee4 :name "foo"))
+                ((employee4 emp) (change-employee4 emp :name "bar")))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 25))))
+
+  (assert! (b* ((?emp (make-employee4 :name "foo"))
+                ((employee4 emp) (change-employee4 emp
+                                                   :name "bar"
+                                                   :salary 156)))
+             (and (equal emp.name "bar")
+                  (equal emp.salary 156)))))
+
 
 
 
@@ -296,8 +580,10 @@
 (defaggregate pancake
   :tag :pancake
   ((syrup  booleanp)
-   (butter booleanp))
+   (butter booleanp)
+   (sugar  natp))
   :extra-binder-names (messy)
+  :layout :tree
   :verbosep t)
 
 (define pancake->messy ((x pancake-p))
@@ -310,7 +596,7 @@
                x.syrup x.butter x.messy))
   ///
   (assert!
-   (equal (pancake-info (make-pancake :syrup t :butter nil))
+   (equal (pancake-info (make-pancake :syrup t :butter nil :sugar 5))
           (acl2::msg "syrupy: ~x0 buttery: ~x1 messy: ~x2~%" t nil nil))))
 
 
@@ -318,6 +604,7 @@
   ((firstname stringp)
    (lastname  stringp)
    (grade     natp))
+  :layout :fulltree
   :extra-binder-names (fullname))
 
 (define student->fullname ((x student-p))
@@ -335,3 +622,51 @@
                                "Fred's full name is " fred.fullname "."))
                 "Fred's full name is Fredrick Flintstone."))
 
+
+#||
+
+(defun test (emp n new-name)
+  (declare (xargs :guard (and (employee-p emp)
+                              (natp n)
+                              (stringp new-name))))
+  (if (zp n)
+      nil
+    (test (change-employee emp :name new-name)
+          (- n 1)
+          new-name)))
+
+(let ((name "billy bob"))
+  ;; 320,110 bytes allocated
+  (time$ (test (make-employee :name name  :salary 13) 10000 name)))
+
+(let ((name "billy bob"))
+  ;; 112 bytes allocated
+  (time$ (test (make-employee :name name  :salary 13) 10000 name)))
+
+||#
+
+
+(assert!
+ ;; Test for name capture of the thing being changed
+ (b* ((grade (make-student :firstname "foo" :lastname "bar" :grade 6))
+      (new   (change-student grade :firstname "blah")))
+   (and (equal (student->grade new) (student->grade grade))
+        (equal (student->lastname new) (student->lastname grade))
+        (equal (student->firstname new) "blah")
+        (equal (student->firstname grade) "foo"))))
+
+(define change-test ((grade student-p))
+  ;; Test of a tricky name-capture situation.
+  ;; Note that "grade" is the name of one of the student's fields.
+  ;; We once had a name capture problem where we translated this into
+  ;;
+  ;; (LET ((FIRSTNAME "blah")
+  ;;       (LASTNAME (STUDENT->LASTNAME GRADE))
+  ;;       (GRADE (STUDENT->GRADE GRADE)))
+  ;;    (MBE :LOGIC (STUDENT FIRSTNAME LASTNAME GRADE)
+  ;;         :EXEC (REMAKE-STUDENT GRADE FIRSTNAME LASTNAME GRADE)))
+  ;;
+  ;; Note that the (REMAKE-STUDENT GRADE FIRSTNAME LASTNAME GRADE) call above
+  ;; makes no sense at all.  To avoid this we reworked the way the change macro
+  ;; expands to avoid capture.
+  (change-student grade :firstname "blah"))

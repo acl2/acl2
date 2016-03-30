@@ -34,7 +34,6 @@
 (include-book "std/lists/rev" :dir :system)
 (include-book "centaur/fty/fixtype" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
-
 (local (include-book "arithmetic"))
 
 (in-theory (disable char<))
@@ -72,10 +71,24 @@
     :rule-classes ((:rewrite :loop-stopper ((x y))))))
 
 
+(define character-list-fix ((x character-listp))
+  :parents (character-listp make-character-list)
+  :short "Inline fixing function for character lists."
+  :long "<p>This is identical to @(see make-character-list) except that the
+guard requires that @('x') is already a @(see character-listp) so that, via
+@(see mbe), we can just return @('x') without fixing it.  We leave this
+function enabled and never expect to reason about it.</p>"
+  :inline t
+  :enabled t
+  (mbe :logic (make-character-list x)
+       :exec x))
+
+
 (define charlisteqv ((x character-listp)
                      (y character-listp))
   :returns equivp
   :parents (equivalences)
+  :inline t
   :short "Case-sensitive character-list equivalence test."
 
   :long "<p>@(call charlisteqv) determines if @('x') and @('y') are equivalent
@@ -84,21 +97,31 @@ same length and their elements must be @(see chareqv) to one another.</p>
 
 <p>See also @(see icharlisteqv) for a case-insensitive alternative.</p>"
 
-  (if (consp x)
-      (and (consp y)
-           (chareqv (car x) (car y))
-           (charlisteqv (cdr x) (cdr y)))
-    (atom y))
+  (mbe :logic
+       (equal (make-character-list x)
+              (make-character-list y))
+       :exec
+       (equal x y))
   ///
   (defequiv charlisteqv)
+
+  (local (defun ind (x y)
+           (if (or (atom x) (atom y))
+               (list x y)
+             (ind (cdr x) (cdr y)))))
+
   (defrefinement list-equiv charlisteqv
-    :hints(("Goal" :in-theory (enable list-equiv))))
+    :hints(("Goal"
+            :in-theory (enable list-equiv)
+            :induct (ind x y))))
+
+  (local (in-theory (enable chareqv)))
 
   (defcong charlisteqv chareqv     (car x)      1)
   (defcong charlisteqv charlisteqv (cdr x)      1)
   (defcong chareqv     charlisteqv (cons a x)   1)
   (defcong charlisteqv charlisteqv (cons a x)   2)
-  (defcong charlisteqv equal       (len x)      1)
+  (defcong charlisteqv equal       (len x)      1 :hints(("Goal" :induct (ind x x-equiv))))
   (defcong charlisteqv charlisteqv (list-fix x) 1)
   (defcong charlisteqv chareqv     (nth n x)    2)
   (defcong charlisteqv charlisteqv (take n x)   2)
@@ -108,39 +131,13 @@ same length and their elements must be @(see chareqv) to one another.</p>
   (defcong charlisteqv charlisteqv (rev x)      1)
   (defcong charlisteqv charlisteqv (revappend x y) 2)
   (defcong charlisteqv charlisteqv (revappend x y) 1)
+  (defcong charlisteqv equal (make-character-list x) 1)
 
-  (encapsulate
-    ()
-    (local (defun my-induct (x y)
-             (if (atom x)
-                 (list x y)
-               (my-induct (cdr x) (cdr y)))))
-
-    (defcong charlisteqv equal (make-character-list x) 1
-      :hints(("Goal"
-              :in-theory (enable chareqv)
-              :induct (my-induct x x-equiv)))))
-
-  (encapsulate
-    ()
-    (local (defun my-induct (x y)
-             (if (atom x)
-                 (list x y)
-               (my-induct (cdr x) (cdr y)))))
-
-    (local (defthm crock
-             (equal (charlisteqv x y)
-                    (equal (make-character-list x)
-                           (make-character-list y)))
-             :hints(("Goal"
-                     :in-theory (enable chareqv)
-                     :induct (my-induct x y)))))
-
-    (defcong charlisteqv equal (implode x) 1
-      :hints(("Goal"
-              :in-theory (disable implode-of-make-character-list)
-              :use ((:instance implode-of-make-character-list (x x))
-                    (:instance implode-of-make-character-list (x x-equiv)))))))
+  (defcong charlisteqv equal (implode x) 1
+    :hints(("Goal"
+            :in-theory (disable implode-of-make-character-list)
+            :use ((:instance implode-of-make-character-list (x x))
+                  (:instance implode-of-make-character-list (x x-equiv))))))
 
   (defthm charlisteqv-when-not-consp-left
     (implies (not (consp x))
@@ -166,8 +163,19 @@ same length and their elements must be @(see chareqv) to one another.</p>
 
   (defthm charlisteqv-when-not-same-lens
     (implies (not (equal (len x) (len y)))
-             (not (charlisteqv x y)))))
+             (not (charlisteqv x y)))
+    :hints(("Goal" :induct (ind x y))))
 
+  (defthmd charlisteqv*
+    ;; For compatibility with the old definition
+    (equal (charlisteqv x y)
+           (if (consp x)
+               (and (consp y)
+                    (chareqv (car x) (car y))
+                    (charlisteqv (cdr x) (cdr y)))
+             (atom y)))
+    :rule-classes ((:definition :controller-alist ((charlisteqv$inline t nil))))
+    :hints(("Goal" :induct (ind x y)))))
 
 ;; BOZO kind of misplaced
 

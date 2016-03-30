@@ -34,7 +34,7 @@
 (include-book "eval")
 (include-book "vars")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (std::add-default-post-define-hook :fix))

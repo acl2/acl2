@@ -37,18 +37,6 @@
 
 (local (in-theory (enable list-fix repeat)))
 
-(local (defthm commutativity-2-of-+
-         (equal (+ x (+ y z))
-                (+ y (+ x z)))))
-
-(local (defthm fold-consts-in-+
-         (implies (and (syntaxp (quotep x))
-                       (syntaxp (quotep y)))
-                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
-
-(local (defthm distributivity-of-minus-over-+
-         (equal (- (+ x y)) (+ (- x) (- y)))))
-
 (define all-equalp (a x)
   :parents (std/lists)
   :short "@(call all-equalp) determines if every member of @('x') is equal to

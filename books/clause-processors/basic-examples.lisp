@@ -23,6 +23,27 @@
   nil
   :ttag my-ttag)
 
+; redundant
+(define-trusted-clause-processor
+  note-fact-clause-processor
+  nil
+  :ttag my-ttag)
+
+; equivalent to the preceding
+(define-trusted-clause-processor
+  note-fact-clause-processor
+  nil
+  :label note-fact-clause-processor$label
+  :ttag my-ttag)
+
+; not redundant
+(must-fail
+ (define-trusted-clause-processor
+   note-fact-clause-processor
+   nil
+   :label other-label
+   :ttag my-ttag))
+
 (must-succeed
  (thm (equal (car (cons x y))
              x)
@@ -41,7 +62,9 @@
 (defun strengthen-cl (cl term state)
   (declare (xargs :stobjs state))
 ; sad that we can't translate term first
-  (cond ((pseudo-termp term) ; sad that we can't use termp!
+  (cond ((null term) ; then no change
+         (value (list cl)))
+        ((pseudo-termp term) ; sad that we can't use termp!
          (value (list (cons (list 'not term)
                             cl)
                       (list term))))
@@ -119,6 +142,16 @@
   :hints (("Goal"
            :clause-processor
            (:function strengthen-cl)))))
+
+(must-succeed
+; Same as immediately above, but succeeds under more liberal requirements on
+; the hint: a symbol can have arity more than 1.
+ (thm
+  (equal (car (cons x y))
+         x)
+  :hints (("Goal"
+           :clause-processor
+           strengthen-cl))))
 
 (must-fail
  (thm
@@ -357,6 +390,17 @@
                                   (implies (integerp x)
                                            (integerp (f0 x)))))
    :ttag my-ttag))
+
+; redundant
+(define-trusted-clause-processor
+  strengthen-cl-program2
+  (f0)
+  :partial-theory (encapsulate ((f0 (x) t))
+                    (local (defun f0 (x) x))
+                    (defthm f0-prop
+                      (implies (integerp x)
+                               (integerp (f0 x)))))
+  :ttag my-ttag)
 
 (defthm test7
   (equal (car (cons x y))
@@ -1083,3 +1127,114 @@
       :hints (("Goal"
                :clause-processor
                (:function forbidden-clause-processor)))))
+
+; Let's conclude with various tests for the case that the hint is a symbol.
+
+(defun cl-3-3 (cl term state)
+  (declare (xargs :stobjs state)
+           (ignore term))
+  (value (list cl)))
+
+(defthm correctness-of-cl-3-3
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (evl (conjoin-clauses
+                      (clauses-result (cl-3-3 cl term state)))
+                     a))
+           (evl (disjoin cl) a))
+  :rule-classes :clause-processor)
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor cl-3-3))))
+
+(defstobj st fld)
+
+(defun cl-3-4 (cl term state st)
+  (declare (xargs :stobjs (state st))
+           (ignore term))
+  (mv nil (list cl) st state))
+
+(defthm correctness-of-cl-3-4
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (evl (conjoin-clauses
+                      (clauses-result (cl-3-4 cl term state st)))
+                     a))
+           (evl (disjoin cl) a))
+  :rule-classes :clause-processor)
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor cl-3-4))))
+
+(defmacro cl-3-4-mac (cl term)
+  `(cl-3-4 ,cl ,term state st))
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor cl-3-4-mac))))
+
+(defun cl-3-2 (cl term state)
+  (declare (xargs :stobjs state)
+           (ignore term state))
+  (mv nil (list cl)))
+
+(defthm correctness-of-cl-3-2
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (evl (conjoin-clauses
+                      (clauses-result (cl-3-2 cl term state)))
+                     a))
+           (evl (disjoin cl) a))
+  :rule-classes :clause-processor)
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor cl-3-2))))
+
+(defmacro cl-3-2-mac (cl term)
+  `(cl-3-2 ,cl ,term state))
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor cl-3-2-mac))))
+
+(defun cl-2-1 (cl term)
+  (declare (ignore term))
+  (mv nil (list cl)))
+
+(defthm correctness-of-cl-2-1
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (evl (conjoin-clauses
+                      (clauses-result (cl-2-1 cl term)))
+                     a))
+           (evl (disjoin cl) a))
+  :rule-classes :clause-processor)
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor cl-2-1))))
+
+(defmacro cl-2-1-mac (cl term)
+  `(cl-2-1 ,cl ,term))
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor cl-2-1-mac))))
+
+(defmacro cl-2-1-mac-alt (cl &optional term)
+  `(cl-2-1 ,cl ,term))
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor cl-2-1-mac-alt))))
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor (cl-2-1-mac-alt clause 'xyz)))))
+
+(must-succeed
+ (thm (equal x x)
+  :hints (("Goal" :clause-processor (cl-2-1-mac-alt clause clause)))))

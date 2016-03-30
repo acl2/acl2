@@ -296,8 +296,8 @@
 ; case that for any axiomatic event e, (remove-guard-holders e) can be
 ; substituted for e without changing the logical power of the set of axioms.
 ; Actually, we want to view the logical axiom added by e as though
-; remove-guard-holders had been applied to it, and hence RETURN-LAST and
-; MV-LIST appear in *non-instantiable-primitives*.
+; remove-guard-holders had been applied to it, and hence RETURN-LAST,
+; MV-LIST, and CONS-WITH-HINT appear in *non-instantiable-primitives*.
 
   (cond
    ((variablep term) (mv changedp0 term))
@@ -313,6 +313,16 @@
 ; body), we just open up the prog2$ early, throwing away the dcl-guardian.
 
     (remove-guard-holders1 t (car (last (fargs term)))))
+   ((eq (ffn-symb term) 'CONS-WITH-HINT)
+    (mv-let
+      (changedp1 arg1)
+      (remove-guard-holders1 nil (fargn term 1))
+      (declare (ignore changedp1))
+      (mv-let
+        (changedp2 arg2)
+        (remove-guard-holders1 nil (fargn term 2))
+        (declare (ignore changedp2))
+        (mv t (mcons-term* 'cons arg1 arg2)))))
    ((flambdap (ffn-symb term))
     (case-match
       term
@@ -357,8 +367,7 @@
                               (mv changedp0 term))
                              (t (mv t new-term)))))
                     (t (mv changedp0 term))))
-             (t (mv t (mcons-term (ffn-symb term)
-                                  args))))))))
+             (t (mv t (mcons-term (ffn-symb term) args))))))))
 
 (defun remove-guard-holders1-lst (lst)
   (cond ((null lst) (mv nil nil))
@@ -9603,8 +9612,6 @@
                  (remove-ancestor-literals-from-pairs1
                   (car pairs) (cdr pairs) nil)))))
 
-
-
 (defun convert-term-to-pairs (term ens wrld)
 
 ; Term is assumed to be the result of expanding a tau-like-propositionp.  Thus,
@@ -9612,7 +9619,8 @@
 ; composed of such terms.  We wish to convert term to a list of (hyps . concl) pairs.
 
   (mv-let (nterm ttree)
-          (normalize term t nil ens wrld nil)
+          (normalize term t nil ens wrld nil
+                     (backchain-limit wrld :ts))
           (mv (remove-ancestor-literals-from-pairs
                (convert-normalized-term-to-pairs nil nterm nil))
               (all-runes-in-ttree ttree nil))))

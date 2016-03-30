@@ -74,8 +74,10 @@ routine for gathering comments.</p>"
               (cw "; vl-gather-comments: min/max have different filenames.~%")))
 
         ;; Actual implementation:
-        (with-local-nrev
-          (vl-gather-comments-nrev min max cmap nrev))))
+        (if (atom cmap)
+            nil
+          (with-local-nrev
+            (vl-gather-comments-nrev min max cmap nrev)))))
   ///
   (defthm vl-gather-comments-nrev-removal
     (equal (vl-gather-comments-nrev min max cmap nrev)

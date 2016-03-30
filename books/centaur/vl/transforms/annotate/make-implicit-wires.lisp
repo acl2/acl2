@@ -421,8 +421,10 @@ Our version of VCS says this isn't yet implemented.</li>
            (append (vl-expr-names-for-implicit (car x))
                    (vl-exprlist-names-for-implicit (cdr x))))
          :exec
-         (with-local-nrev
-           (vl-exprlist-names-for-implicit-nrev x nrev))))
+         (if (atom x)
+             nil
+           (with-local-nrev
+             (vl-exprlist-names-for-implicit-nrev x nrev)))))
   ///
 
   (defthm true-listp-of-vl-expr-names-for-implicit
@@ -460,7 +462,7 @@ Our version of VCS says this isn't yet implemented.</li>
   :returns (nets vl-vardecllist-p "One-bit wire declarations for these names.")
   (if (consp names)
       (cons (make-vl-vardecl :name (car names)
-                             :type *vl-plain-old-wire-type*
+                             :type *vl-plain-old-logic-type*
                              :nettype :vl-wire
                              :loc loc
                              :atts (list (cons "VL_IMPLICIT" nil)))

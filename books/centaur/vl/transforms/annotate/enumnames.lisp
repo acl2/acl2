@@ -32,7 +32,7 @@
 (include-book "../../parsetree")
 (include-book "../../mlib/expr-tools")
 (include-book "centaur/fty/visitor" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :System))
+(local (include-book "std/basic/arith-equivs" :dir :System))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc enum-names

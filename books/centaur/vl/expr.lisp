@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "util/bits")
 (include-book "util/locations")
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
@@ -646,6 +646,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
 
 (local (xdoc::set-default-parents))
 
+
 (deftypes expressions-and-datatypes
   :parents (syntax)
   :short "Representation of expressions, datatypes, and other related,
@@ -712,7 +713,12 @@ and generally makes it easier to write safe expression-processing code.</p>")
             (implies (vl-plusminus-p x)
                      (equal (car x) :vl-plusminus))
             :hints (("goal" :expand ((vl-plusminus-p x))))
-            :rule-classes :forward-chaining)))
+            :rule-classes :forward-chaining))
+   (local (defthm hidexpr-car-not-colon
+            (implies (vl-hidexpr-p x)
+                     (not (equal (car x) :colon)))
+            :hints(("Goal" :in-theory (enable vl-hidexpr-p
+                                              vl-hidindex-p))))))
 
 
 ; -----------------------------------------------------------------------------
@@ -729,6 +735,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
            see especially @(see expr-tools).</p>"
     :measure (two-nats-measure (acl2-count x) 50)
     :base-case-override :vl-literal
+    :layout :tree
 
     (:vl-literal
      :base-name vl-literal
@@ -760,7 +767,6 @@ and generally makes it easier to write safe expression-processing code.</p>")
                 pointed to by @('scope').  This captures the @('[6][5]') part
                 of the example above.")
       (part    vl-partselect-p
-               :default '(:none)
                "Captures any subsequent part-selection once we get past all of
                 the indexing.  This captures the @('[10:0]') part of the
                 example above.")
@@ -835,14 +841,14 @@ and generally makes it easier to write safe expression-processing code.</p>")
                 other scopes and other places in the hierarchy, say
                 @('foo::top.bar.myencode(baz, 3)'), so to be sufficiently
                 general we represent this as a @(see vl-scopeexpr).")
+      (args    vl-exprlist-p
+               "The (non-datatype) arguments to the function, in order.")
       (typearg vl-maybe-datatype-p
                "Most function calls just take expressions as arguments, in
                 which case @('typearg') will be @('nil').  However, certain
                 system functions can take a datatype argument.  For instance,
                 you can write @('$bits(struct { ...})').  In such cases, we put
                 that datatype here.")
-      (args    vl-exprlist-p
-               "The (non-datatype) arguments to the function, in order.")
       (systemp booleanp :rule-classes :type-prescription
                "Indicates that this is a system function like @('$bits') or
                 @('$display') instead of a user-defined function like
@@ -899,11 +905,11 @@ and generally makes it easier to write safe expression-processing code.</p>")
      :base-name vl-pattern
      :short "A (possibly typed) assignment pattern expression, for instance,
              @(''{a:1, b:2}') or @('foo_t'{head+1, tail-1}')."
-     ((pattype vl-maybe-datatype-p
+     ((pat     vl-assignpat-p
+               "The inner part of the pattern, i.e., everything but the type.")
+      (pattype vl-maybe-datatype-p
                "The type for this assignment pattern, if applicable.  For
                 instance, @('foo_t') in the example above.")
-      (pat     vl-assignpat-p
-               "The inner part of the pattern, i.e., everything but the type.")
       (atts    vl-atts-p
                "Any <tt>(* foo = bar, baz *)</tt> style attributes."))
 
@@ -1130,9 +1136,9 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :parents (vl-index)
     :short "Representation of a leading piece of a hierarchical reference to
             something, perhaps with associated indices."
-    :tag :vl-hidindex
     :measure (two-nats-measure (acl2-count x) 110)
     :measure-debug t
+    :layout :tree
 
     ((name    vl-hidname    "Leading name before the dot.")
      (indices vl-exprlist-p "Any associated indices."))
@@ -1151,38 +1157,50 @@ and generally makes it easier to write safe expression-processing code.</p>")
            @('vl-hidindex') whose @('name') is @('cat') and whose @('indices')
            are @('nil').</p>")
 
-  (deftagsum vl-hidexpr
+  (defflexsum vl-hidexpr
     :parents (vl-index)
     :short "Representation of a (possibly) hierarchical reference to something
             in the design.  For example: @('cat.dog[3][2][1].elf')."
     :measure (two-nats-measure (acl2-count x) 100)
     (:end
      :short "A lone identifier, or the final part of a hierarchical identifier."
-     ((name stringp :rule-classes :type-prescription)))
+     :cond (atom x)
+     :fields ((name :acc-body x :type stringp
+                    :rule-classes :type-prescription))
+     :ctor-body name)
     (:dot
+     :cond t
      :short "A single dot operation, perhaps with associated indices, that
              connects parts of a hierarchical identifier."
-     ((first vl-hidindex-p "The part before the dot and any associated indices.")
-      (rest  vl-hidexpr-p  "The part after the dot and indices."))))
+     :fields ((first :acc-body (car x) :type vl-hidindex-p
+                     :doc "The part before the dot and any associated indices.")
+              (rest :acc-body (cdr x) :type  vl-hidexpr-p
+                    :doc "The part after the dot and indices."))
+     :ctor-body (cons first rest)))
 
-  (deftagsum vl-scopeexpr
+  (defflexsum vl-scopeexpr
     :parents (vl-index)
     :short "Representation of a (possibly scoped, possibly hierarchical)
             reference to something in the design.  For example:
             @('ape::bat::cat.dog[3][2][1].elf')."
     :measure (two-nats-measure (acl2-count x) 110)
-    :base-case-override :end
-    (:end
-     :short "A scope expression that has no scoping operators.  For instance,
-             plain identifiers or hierarchical identifiers with no scopes."
-     ((hid vl-hidexpr-p)))
     (:colon
+     :cond (and (consp x)
+                (eq (car x) :colon))
      :short "Represents a single scoping operator (@('::') being applied to
              some interior scopeexpr."
-     ((first vl-scopename-p
-             "The outer scope name, e.g., @('ape')")
-      (rest  vl-scopeexpr-p
-             "The inner scope expression, e.g., @('bat::cat.dog[3][2][1].elf').")))
+     :shape (consp (cdr x))
+     :fields ((first :acc-body (cadr x) :type  vl-scopename-p
+                     :doc "The outer scope name, e.g., @('ape')")
+              (rest :acc-body (cddr x) :type  vl-scopeexpr-p
+                    :doc "The inner scope expression, e.g., @('bat::cat.dog[3][2][1].elf')."))
+     :ctor-body (cons :colon (cons first rest)))
+    (:end
+     :cond t
+     :short "A scope expression that has no scoping operators.  For instance,
+             plain identifiers or hierarchical identifiers with no scopes."
+     :fields ((hid :acc-body x :type vl-hidexpr-p))
+     :ctor-body hid)
 
     :long "<p>A <b>scope expression</b> extends a <b>hid expression</b> with
            arbitrarily many levels of scoping.  For instance, in the
@@ -1219,12 +1237,10 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :measure (two-nats-measure (acl2-count x) 105)
     (:none
      :short "No part select."
-     :cond (or (atom x)
-               (eq (car x) :none))
-     :shape (and (consp x)
-                 (not (cdr x)))
+     :cond (atom x)
+     :shape (not x)
      :fields nil
-     :ctor-body '(:none))
+     :ctor-body nil)
     (:range
      :short "A typical @('[msb:lsb]') style part-select, e.g., @('[3:0]') or
              @('[1:5]')."
@@ -1268,6 +1284,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :base-case-override :valuerange-single
     :short "A value or a range used in an @('inside') expression.  For instance,
             the @('8') or @('[16:20]') from @('a inside { 8, [16:20] }')."
+    :layout :tree
     (:valuerange-range
      :base-name vl-valuerange-range
      :short "A range of values from an @('inside') expression's set.  For
@@ -1301,6 +1318,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :parents (vl-stream)
     :short "The slice size (or an indicator that there is no size) for a
             streaming expression."
+    :layout :tree
     (:expr
      :short "A slice size that is an expression, e.g., @('{<< 16 {a,b}}')
              has an expression slice size of @('16')."
@@ -1320,6 +1338,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :short "A part of the stream in a streaming operator.  For instance,
             in @('{<< 16 {a, b with [0 +: size]}}'), the streamexprs are
             @('a') and @('b with [0 +: size]')."
+    :layout :tree
     ((expr  vl-expr-p
             "The expression part without the @('with').  Example: in the
              expression @('{<< 16 {a, b with [0 +: size]}}'), the exprs are
@@ -1402,6 +1421,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :parents (vl-cast)
     :measure (two-nats-measure (acl2-count x) 10)
     :short "The new type/size/signedness/constness to cast an expression to."
+    :layout :tree
     (:type
      :short "A cast to a datatype, like @('int'(foo)')."
      ((type vl-datatype-p "The datatype to cast to.")))
@@ -1426,6 +1446,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :measure (two-nats-measure (acl2-count x) 100)
     :parents (vl-pattern)
     :short "A key in an assignment pattern."
+    :layout :tree
     (:expr
      :short "An unambiguous array index pattern key like @('5') or @('foo +
              bar')."
@@ -1467,6 +1488,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :parents (vl-pattern)
     :short "The (untyped) guts of an assignment pattern, e.g., @(''{1,2,3}'),
             @(''{a:1, b:2}'), or similar."
+    :layout :tree
     (:positional
      :short "A positional assignment pattern like @(''{1, 2, 3}')."
      ((vals  vl-exprlist-p
@@ -1498,15 +1520,12 @@ and generally makes it easier to write safe expression-processing code.</p>")
     (:vl-coretype
      :layout :tree
      :base-name vl-coretype
+     :hons t
      :short "A built-in SystemVerilog datatype like @('integer'), @('string'),
              @('void'), etc., or an array of such a type."
      ((name    vl-coretypename-p
                "Kind of primitive datatype, e.g., @('byte'), @('string'),
                 etc.")
-      (signedp booleanp :rule-classes :type-prescription
-               "Only valid for integer types.  Roughly indicates whether the
-                integer type is signed or not.  Usually you shouldn't use this;
-                see @(see vl-datatype-signedness) instead.")
       (pdims   vl-packeddimensionlist-p
                "Only valid for integer vector types (bit, logic, reg).  If
                 present, these are the 'packed' array dimensions, i.e., the
@@ -1515,27 +1534,32 @@ and generally makes it easier to write safe expression-processing code.</p>")
       (udims   vl-packeddimensionlist-p
                "Unpacked array dimensions, for instance, the @('[255:0]') part
                 of a declaration like @('bit [7:0] memory [255:0]').  There can
-                be arbitrarily many of these.")))
+                be arbitrarily many of these.")
+      (signedp booleanp :rule-classes :type-prescription
+               "Only valid for integer types.  Roughly indicates whether the
+                integer type is signed or not.  Usually you shouldn't use this;
+                see @(see vl-datatype-signedness) instead.")))
 
     (:vl-struct
      :layout :tree
      :base-name vl-struct
      :short "A SystemVerilog @('struct') datatype, or an array of structs."
-     ((packedp booleanp :rule-classes :type-prescription
+     ((members vl-structmemberlist-p
+               "The list of structure members, i.e., the fields of the structure,
+                in order.")
+      (packedp booleanp :rule-classes :type-prescription
                "Roughly: says whether this struct is @('packed') or not,
                 but <b>warning!</b> this is complicated and generally
                 should not be used; see below for details.")
+      (pdims    vl-packeddimensionlist-p
+                "Packed dimensions for the structure.")
+      
+      (udims    vl-packeddimensionlist-p
+                "Unpacked dimensions for the structure.")
       (signedp booleanp :rule-classes :type-prescription
                "Roughly: says whether this struct is @('signed') or not,
                 but <b>warning!</b> this is really complicated and generally
-                should not be used; see below for details.")
-      (members vl-structmemberlist-p
-               "The list of structure members, i.e., the fields of the structure,
-                in order.")
-      (pdims    vl-packeddimensionlist-p
-                "Packed dimensions for the structure.")
-      (udims    vl-packeddimensionlist-p
-                "Unpacked dimensions for the structure."))
+                should not be used; see below for details."))
      :long "<p>If you look at the SystemVerilog grammar you might notice that
             there aren't unpacked dimensions:</p>
 
@@ -1590,25 +1614,25 @@ and generally makes it easier to write safe expression-processing code.</p>")
      :layout :tree
      :base-name vl-union
      :short "A SystemVerilog @('union') datatype, or an array of @('union')s."
-     ((packedp  booleanp :rule-classes :type-prescription
+     ((members  vl-structmemberlist-p
+                "The list of union members.")
+      (packedp  booleanp :rule-classes :type-prescription
                 "Roughly: says whether this union is @('packed') or not, but
                  <b>warning!</b> this should normally not be used as it has the
                  same problems as @('packedp') for structs; see @(see
                  vl-struct).")
+      (pdims    vl-packeddimensionlist-p
+                "Packed dimensions for this union type.")
+      (udims    vl-packeddimensionlist-p
+                "Unpacked dimensions for the union type.  See also @(see
+                 vl-struct) and the notes about unpacked dimensions there.")
       (signedp  booleanp :rule-classes :type-prescription
                 "Roughly: says whether this union is @('signed') or not, but
                  <b>warning!</b> this should normally not be used as it has the
                  same problems as @('signedp') for structs; see @(see
                  vl-struct).")
       (taggedp  booleanp :rule-classes :type-prescription
-                "Says whether this union is 'tagged' or not.")
-      (members  vl-structmemberlist-p
-                "The list of union members.")
-      (pdims    vl-packeddimensionlist-p
-                "Packed dimensions for this union type.")
-      (udims    vl-packeddimensionlist-p
-                "Unpacked dimensions for the union type.  See also @(see
-                 vl-struct) and the notes about unpacked dimensions there.")))
+                "Says whether this union is 'tagged' or not.")))
 
     (:vl-enum
      :layout :tree
@@ -1751,18 +1775,18 @@ and generally makes it easier to write safe expression-processing code.</p>")
     ;;   struct_union_member ::=  { attribute_instance } [random_qualifier]
     ;;                            data_type_or_void
     ;;                            list_of_variable_decl_assignments ';'
-    ((atts vl-atts-p
-           "Any <tt>(* foo = bar, baz *)</tt> style attributes.")
-     (rand vl-randomqualifier-p
-           "Indicates whether a @('rand') or @('randc') keyword was used.")
-     (type vl-datatype-p
+    ((type vl-datatype-p
            "Type of the struct member, including any unpacked dimensions (even
             though they normally come after the name.)")
      ;; now we want a single variable_decl_assignment
      (name stringp :rule-classes :type-prescription)
      (rhs  vl-maybe-expr-p
            "Right-hand side expression that gives the default value to this
-            member, if applicable."))
+            member, if applicable.")
+     (rand vl-randomqualifier-p
+           "Indicates whether a @('rand') or @('randc') keyword was used.")
+     (atts vl-atts-p
+           "Any <tt>(* foo = bar, baz *)</tt> style attributes."))
     :long "<p>Currently our structure members are very limited.  In the long
            run we may want to support more of the SystemVerilog grammar.  It
            allows a list of variable declaration assignments, which can have
@@ -1875,6 +1899,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
     :measure (two-nats-measure (acl2-count x) 10)
     :elementp-of-nil nil
     :parents (vl-enum))
+
 
   ) ;; End of the huge mutual recursion.
 
@@ -2638,7 +2663,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
 
 
 
-(defval *vl-plain-old-wire-type*
+(defval *vl-plain-old-logic-type*
   :parents (vl-datatype)
   :short "The @(see vl-datatype) for a plain @('wire') or @('logic') variable."
   :long "<p>It might seem weird to think of a @('wire') as having a datatype;

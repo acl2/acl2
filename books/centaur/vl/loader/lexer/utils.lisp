@@ -332,7 +332,18 @@ call @(see explode) or build the list of characters.</p>"
     (b* (((mv successp ?prefix remainder)
           (vl-read-until-literal string echars)))
       (implies successp
-               (vl-matches-string-p string remainder)))))
+               (vl-matches-string-p string remainder))))
+
+  (defrule consp-of-remainder-when-successful-vl-read-until-literal
+    (b* (((mv successp ?prefix remainder)
+          (vl-read-until-literal string echars)))
+      (implies successp
+               (consp remainder))))
+
+  (defrule true-listp-of-remainder-of-vl-read-until-literal
+    (equal (true-listp (mv-nth 2 (vl-read-until-literal string echars)))
+           (true-listp echars))))
+      
 
 (def-prefix/remainder-thms vl-read-until-literal
   :formals (string echars)

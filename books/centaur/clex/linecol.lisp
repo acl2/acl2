@@ -31,7 +31,7 @@
 (in-package "CLEX")
 (include-book "std/util/define" :dir :system)
 (include-book "std/basic/defs" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (local (include-book "arithmetic"))
 
 

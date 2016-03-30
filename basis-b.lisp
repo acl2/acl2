@@ -1176,33 +1176,33 @@
    (pprogn (f-put-global 'write-acl2x val state)
            (value val))))
 
-;                             CHECK SUMS
+;                             CHECKSUMS
 
 ; We begin by developing code to compute checksums for files, culminating in
 ; function check-sum.  (Later we will consider checksums for objects.)
 
 ; We can choose any two nonnegative integers for the following two
-; constants and still have a check-sum algorithm, provided, (a) that
+; constants and still have a checksum algorithm, provided, (a) that
 ; (< (* 127 *check-length-exclusive-maximum*) *check-sum-exclusive-maximum*)
 ; and provided (b) that (* 2 *check-sum-exclusive-maximum*) is of type
 ; (signed-byte 32).  The first condition assures that the intermediate
-; sum we obtain by adding to a running check-sum the product of a
+; sum we obtain by adding to a running checksum the product of a
 ; character code with the current location can be reduced modulo
 ; *check-sum-exclusive-maximum* by subtracting *check-sum-exclusive-maximum*.
 ; Choosing primes, as we do, may help avoid some loss of information
 ; due to cancellation.  Choosing primes that are smaller may lead to
-; check sums with less information.
+; checksums with less information.
 
 (defconst *check-sum-exclusive-maximum* 268435399
   "268435399 is the first prime below 2^28.  We use integers
-   modulo this number as check sums.")
+   modulo this number as checksums.")
 
 (defconst *check-length-exclusive-maximum* 2097143
   "2097143 is the first prime below 2^21.  We use integers
    modulo this number as indices into the stream we are
-   check summing.")
+   checksumming.")
 
-; We actually return check-sums which are in (mod
+; We actually return checksums which are in (mod
 ; *check-sum-exclusive-maximum*).
 
 (defconst *-check-sum-exclusive-maximum* (- *check-sum-exclusive-maximum*))
@@ -1247,11 +1247,11 @@
 
 (defun check-sum (channel state)
 
-; This function returns a check-sum on the characters in a stream.
+; This function returns a checksum on the characters in a stream.
 ; This function also checks that every character read is either
 ; #\Newline, #\Tab, or #\Space, or a printing Ascii character.  If the
 ; first value returned is a character, that character was not legal.
-; Otherwise, the first value returned is an integer, the check-sum.
+; Otherwise, the first value returned is an integer, the checksum.
 
   (check-sum1 0 *1-check-length-exclusive-maximum* channel state))
 
@@ -1404,16 +1404,13 @@
 ; there are situations where it becomes useful again.  It is the culmination of
 ; our first development of checksums for objects (as discussed above).
 
-; We return a check-sum on obj, using an algorithm similar to that of
+; We return a checksum on obj, using an algorithm similar to that of
 ; check-sum.  We return a non-integer as the first value if (and only if) the
 ; obj is not composed entirely of conses, symbols, strings, rationals, complex
 ; rationals, and characters. If the first value is not an integer, it is one of
 ; the offending objects encoutered.
 
-; We typically use this function to compute check sums of cert-obj records and
-; of objects of the form (cons expansion-alist ev-lst) where ev-lst is the list
-; of forms in a book, including the initial in-package, and expansion-alist
-; comes from make-event expansion.
+; We typically used this function to compute checksums for .cert files.
 
   (pprogn
    (extend-32-bit-integer-stack 2 0 state)

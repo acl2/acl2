@@ -198,6 +198,14 @@ of this function by memoizing @(see vl-expr-strip).</p>"
          ;; Not unique, so actually compute it.
          (hons-duplicated-members x))))
 
+;; [Jared] bozo why is this suddenly needed???
+(local (defthm true-listp-of-vl-exprlist-strip
+         (true-listp (vl-exprlist-strip x))
+         :hints(("Goal"
+                 :induct (len x)
+                 :expand ((vl-exprlist-strip x))
+                 :in-theory (enable vl-exprlist-strip)))))
+
 ;; BOZO we are repeatedly stripping the expression -- consider not doing that.
 
 (fty::defvisitor-template vl-expr-leftright-template
@@ -231,6 +239,10 @@ of this function by memoizing @(see vl-expr-strip).</p>"
 
   :fnname-template <type>-leftright-check)
 
+(local (defthm true-listp-of-vl-exprlist-strip
+         (true-listp (vl-exprlist-strip x))
+         :hints (("goal" :induct (len x)
+                  :expand (vl-exprlist-strip x)))))
 
 (local (in-theory (disable acl2::member-of-cons
                            (:t append))))

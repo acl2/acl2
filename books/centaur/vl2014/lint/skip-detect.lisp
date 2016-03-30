@@ -96,7 +96,7 @@ assign bcNxtWCBEntSrc_P =
 
 (defaggregate sd-key
   :tag :sd-key
-  :legiblep nil
+  :layout :fulltree
   :short "Keys are derived from wire names and are the basis of our skip
           detection."
 
@@ -282,6 +282,7 @@ patterns, producing a @(see sd-patalist-p)."
 
 (defaggregate sd-problem
   :tag :sd-problem
+  :layout :fulltree
   :short "An alleged problem noticed by skip detection."
   ((type symbolp :rule-classes :type-prescription
          "What kind of problem this is.  At the moment the type is always

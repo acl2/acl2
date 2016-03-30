@@ -256,7 +256,7 @@ $(info Determining whether Glucose is installed)
 # GLUCOSE_EXISTS
 GLUCOSE_EXISTS := $(shell glucose --version 2>/dev/null)
 ifdef GLUCOSE_EXISTS
-  OS_HAS_GLUCOSE := 1
+  OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
 
 $(info Determining whether Smtlink is supported -- BOZO todo, for now pretending it does not!)
@@ -728,7 +728,7 @@ ACL2_CUSTOM_TARGETS := \
 
 # It is currently only recommended to test the toothbrush mechanism
 # for Lisps that compile on-the-fly, namely CCL and SBCL, since that
-# mechanism doeswn't use (or depend on) compiled files in the main
+# mechanism doesn't use (or depend on) compiled files in the main
 # ACL2 directory.  We might revisit that decision if there is reason
 # to do so.
 ifeq ($(TB_LISP), )

@@ -1,5 +1,5 @@
-; Centaur Miscellaneous Books
-; Copyright (C) 2008-2011 Centaur Technology
+; Lispfloat - Interface to the Common Lisp Floating Point Operations
+; Copyright (C) 2016 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,11 +26,12 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original authors: Sol Swords <sswords@centtech.com>
-;                   Jared Davis <jared@centtech.com>
+; Original author: Jared Davis <jared@centtech.com>
 
+#!ACL2
 (in-package "ACL2")
-(include-book "std/portcullis" :dir :system)
-(include-book "centaur/fty/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
+(assign :suppress-preload-xdoc t)
+(ld "package.lsp")
+(in-package "LISPFLOAT")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 

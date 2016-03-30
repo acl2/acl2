@@ -190,7 +190,7 @@ consistent manner) before being used.</p>")
   :parents (fty)
   :short "Define a new type for use with the @(see fty-discipline)."
 
-  :long "<p>In it most basic form, @('deffixtype') just associates an new type
+  :long "<p>In its most basic form, @('deffixtype') just associates a new type
 name with the corresponding predicate, fixing function, and equivalence
 relation.  It stores this association in a @(see table).  The type then becomes
 ``known'' to other @(see fty) macros such as @(see deffixequiv), @(see
@@ -964,9 +964,9 @@ one another at runtime.</dd>
 
 <dt>@(':layout')</dt>
 
-<dd>Defaults to @(':alist'), but might instead be set to @(':tree') or
-@(':list').  This determines how the fields are laid out in the object's
-representation.</dd>
+<dd>Defaults to @(':alist'), but might instead be set to @(':tree'),
+@(':fulltree') or @(':list').  This determines how the fields are laid out in
+the object's representation.</dd>
 
 <dd>The @(':alist') format provides the best readability/debuggability but is
 the worst layout for execution/memory efficiency.  This layout represents
@@ -975,11 +975,14 @@ each field is next to its value.  When printing such an object you can easily
 see the fields and their values, but creating these objects requires additional
 consing to put the field names on, etc.</dd>
 
-<dd>The @(':tree') layout provides the best efficiency and worst readability.
-It packs the fields into a compact tree structure, without their names.
-Creating these structures requires minimal consing, and each accessor simply
-follows some minimal, fixed car/cdr path into the object.  The objects print as
-horrible blobs of conses that can be hard to inspect.</dd>
+<dd>The @(':tree') or @(':fulltree') layouts provides the best efficiency and
+worst readability.  They pack the fields into a compact tree structure, without
+their names.  In @(':tree') mode, any @('(nil . nil)') pairs are compressed
+into just @('nil').  In @(':fulltree') mode this compression doesn't happen,
+which might marginally save time if you know your fields will never be in pairs
+of @('nil')s.  Tree-based structures require minimal consing, and each accessor
+simply follows some minimal, fixed car/cdr path into the object.  The objects
+print as horrible blobs of conses that can be hard to inspect.</dd>
 
 <dd>The @(':list') layout strikes a middle ground, with the fields of the
 object laid out as a plain list.  Accessing the fields of such a structure may

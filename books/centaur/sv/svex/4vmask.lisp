@@ -30,7 +30,7 @@
 
 (in-package "SV")
 (include-book "svex")
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -418,4 +418,81 @@ creating a new mask that includes all bits that are relevant for in either
                (4vmask-fix v)
              (4vmask-assoc j x)))
     :hints(("Goal" :in-theory (enable 4vmask-assoc)))))
+
+
+(define 4vec-mask? ((mask 4vmask-p)
+                    (care 4vec-p)
+                    (dontcare 4vec-p))
+  :returns (res 4vec-p)
+  (b* (((4vec care))
+       ((4vec dontcare))
+       (mask (4vmask-fix mask)))
+    (4vec (logite mask care.upper dontcare.upper)
+          (logite mask care.lower dontcare.lower)))
+  ///
+  (defthm 4vec-mask?-same
+    (equal (4vec-mask? mask x x)
+           (4vec-fix x))
+    :hints((logbitp-reasoning)))
+
+  (defthm 4vec-mask?-of-4vec-mask?
+    (equal (4vec-mask? mask x (4vec-mask? mask y z))
+           (4vec-mask? mask x z))
+    :hints((logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil)))))
+
+  (defthm 4vec-mask?-of-4vec-mask
+    (equal (4vec-mask? mask b (4vec-mask mask b))
+           (4vec-mask mask b))
+    :hints(("Goal" :in-theory (enable 4vec-mask))
+           (logbitp-reasoning)))
+
+  (defthm 4vec-mask-of-4vec-mask?
+    (equal (4vec-mask mask (4vec-mask? mask a b))
+           (4vec-mask mask a))
+    :hints(("Goal" :in-theory (enable 4vec-mask))
+           (logbitp-reasoning)))
+
+  (defthm equal-of-4vec-mask?-when-equal-under-mask
+    (equal (equal x (4vec-mask? mask y x))
+           (and (4vec-p x)
+                (equal (4vec-mask mask x) (4vec-mask mask y))))
+    :hints(("Goal" :in-theory (enable 4vec-mask))
+           (logbitp-reasoning)))
+
+  ;; (defthm equal-of-4vec-mask?-when-equal-under-mask-hide
+  ;;   (implies (and (equal (4vec-mask mask x) (4vec-mask mask y))
+  ;;                 (4vec-p x))
+  ;;            (equal (equal x (4vec-mask? mask y x)) t))
+  ;;   :hints (("goal" :expand ((:free (x) (hide x)))
+  ;;            :in-theory (disable 4vec-mask?))))
+
+  (defthm 4vec-mask?-constants
+    (and (equal (4vec-mask? -1 care dontcare) (4vec-fix care))
+         (equal (4vec-mask? 0 care dontcare) (4vec-fix dontcare)))))
+
+(define 4veclist-mask? ((masks 4vmasklist-p)
+                        (care 4veclist-p)
+                        (dontcare 4veclist-p))
+  :guard (and (equal (len masks) (len care))
+              (equal (len masks) (len dontcare)))
+  (if (atom masks)
+      nil
+    (cons (4vec-mask? (car masks) (car care) (car dontcare))
+          (4veclist-mask? (cdr masks) (cdr care) (cdr dontcare)))))
+
+(defmacro 4vec-mask-equiv (lhs rhs mask)
+  `(let ((lhs ,lhs))
+     (equal lhs
+            (4vec-mask? ,mask
+                        ,rhs
+                        (hide lhs)))))
+
+(defmacro 4veclist-mask-equiv (lhs rhs masks)
+  `(let ((lhs ,lhs))
+     (equal lhs
+            (4veclist-mask? ,masks
+                            ,rhs
+                            (hide lhs)))))
 

@@ -35,7 +35,7 @@
 (include-book "std/util/defenum" :dir :system)
 (local (include-book "std/strings/eqv" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
@@ -97,7 +97,9 @@ description of a design is a @(see design) object.</p>")
 
 
 (define assigns-addr-p ((x assigns-p))
-  :measure (len (assigns-fix x))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len (assigns-fix x))
   :verify-guards nil
   :enabled t
   (mbe :logic (svarlist-addr-p (assigns-vars x))
@@ -111,7 +113,9 @@ description of a design is a @(see design) object.</p>")
     :hints(("Goal" :in-theory (enable assigns-vars)))))
 
 (define lhspairs-addr-p ((x lhspairs-p))
-  :measure (len (lhspairs-fix x))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len (lhspairs-fix x))
   :verify-guards nil
   :enabled t
   (mbe :logic (svarlist-addr-p (lhspairs-vars x))
@@ -125,7 +129,9 @@ description of a design is a @(see design) object.</p>")
     :hints(("Goal" :in-theory (enable lhspairs-vars)))))
 
 (define svar-map-addr-p ((x svar-map-p))
-  :measure (len (svar-map-fix x))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len (svar-map-fix x))
   :verify-guards nil
   :enabled t
   (mbe :logic (svarlist-addr-p (svar-map-vars x))
@@ -139,7 +145,9 @@ description of a design is a @(see design) object.</p>")
     :hints(("Goal" :in-theory (enable svar-map-vars)))))
 
 (define svex-alist-addr-p ((x svex-alist-p))
-  :measure (len (svex-alist-fix x))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len (svex-alist-fix x))
   :verify-guards nil
   :enabled t
   (mbe :logic (and (svarlist-addr-p (svex-alist-vars x))
@@ -268,7 +276,7 @@ of adding the namespace.</p>"
 
 
 (defenum wiretype
-  (:wire
+  (nil ;; :wire
    :supply0
    :supply1
    :wand
@@ -287,11 +295,10 @@ of adding the namespace.</p>"
             "The declared lower index of the wire's range.  This may be the MSB
              or the LSB (depending on revp), or both if the wire is only 1
              bit.")
+   (delay acl2::maybe-posp :rule-classes :type-prescription)
    (revp    "If true, the range was declared as [low:high] rather than [high:low],
              so the low-idx is the MSB rather than the LSB.")
-   (type wiretype :default :wire)
-   (delay natp :rule-classes :type-prescription
-          :default 0))
+   (type wiretype))
   :layout :tree)
 
 (fty::deflist wirelist
@@ -377,6 +384,7 @@ of adding the namespace.</p>"
 
 
 (fty::defprod modinst
+  :layout :tree
   ((instname name-p)
    (modname modname-p))
   :parents (svmods))

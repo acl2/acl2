@@ -156,9 +156,9 @@ theorems:</p>
 
 <p>These theorems seem to perform well and settle most questions regarding the
 disjointness of different kinds of aggregates.  In case the latter rules become
-expensive, we always add them to the @('tag-ruleset'), so you can disable this
-<see topic='@(url acl2::rulesets)'>ruleset</see> to turn off almost all
-tag-related reasoning.</p>
+expensive, we always add them to the @('tag-reasoning') ruleset, so you can
+disable this <see topic='@(url acl2::rulesets)'>ruleset</see> to turn off
+almost all tag-related reasoning.</p>
 
 
 <h3>Syntax of Fields</h3>
@@ -209,39 +209,32 @@ documentation for the aggregate in a sensible way.</p>
 
 <h3>Options</h3>
 
-<h4>Legibility</h4>
+<h4>Layout</h4>
 
-<p>By default, an aggregate is represented in a <i>legible</i> way, which means
-the fields of each instance are laid out in an alist.  When such an object is
-printed, it is easy to see what the value of each field is.</p>
+<p>By default, aggregates are represented with @(':layout :alist'), but you can
+also choose other layouts.</p>
 
-<p>However, the structure can be made <i>illegible</i>, which means it will be
-packed into a cons tree of minimum depth.  For instance, a structure whose
-fields are @('(foo bar baz)') might be laid out as @('((tag . foo) . (bar
-. baz))').  This can be more efficient because the structure has fewer
-conses.</p>
+<p>The @(':alist') format provides the best readability/debuggability but is
+the worst layout for execution/memory efficiency.  This layout represents
+instances of your structure using an alist-like format where the name of each
+field is next to its value.  When printing such an object you can easily see
+the fields and their values, but creating these objects requires additional
+consing to put the field names on, etc.</p>
 
-<p>We prefer to use legible structures because they can be easier to understand
-when they arise in debugging and proofs.  For instance, compare:</p>
+<p>The @(':tree') or @(':fulltree') layouts provides the best efficiency and
+worst readability.  They pack the fields into a compact tree structure, without
+their names.  In @(':tree') mode, any @('(nil . nil)') pairs are compressed
+into just @('nil').  In @(':fulltree') mode this compression doesn't happen,
+which might marginally save time if you know your fields will never be in pairs
+of @('nil')s.  Tree-based structures require minimal consing, and each accessor
+simply follows some minimal, fixed car/cdr path into the object.  The objects
+print as horrible blobs of conses that can be hard to inspect.</p>
 
-<ul>
- <li>Legible: @('(:point3d (x . 5) (y . 6) (z . 7))')</li>
- <li>Illegible: @('(:point3d 5 6 . 7)')</li>
-</ul>
+<p>The @(':list') layout strikes a middle ground, with the fields of the object
+laid out as a plain list.  Accessing the fields of such a structure may require
+more @('cdr') operations than for a @(':tree') layout, but at least when you
+print them it is still pretty easy to tell what the fields are.</p>
 
-<p>On the other hand, illegible structures have a more consistent structure,
-which can occasionally be useful.  It's usually best to avoid reasoning about
-the underlying structure of an aggregate.  But, sometimes there are exceptions
-to this rule.  With illegible structures, you know exactly how each object will
-be laid out, and for instance you can prove that two @('point3d') structures
-will be equal exactly when their components are equal (which is not a theorem
-for legible structures.)</p>
-
-<p>A middle ground between legibility and illegibility is to use @(':legiblep
-:ordered'), which still uses an alist representation for readability, but
-requires a strict ordering and that no other keys be present.  Such structures
-provide the same regularity benefits as illegible structures, and performance
-between that of ordinary legible and illegible structures.</p>
 
 <h4>Honsed Aggregates</h4>
 
@@ -251,10 +244,9 @@ build the object using ordinary conses.  However, when @(':hons') is set to
 
 <p>Honsing is only appropriate for some structures.  It is a bit slower than
 consing, and should typically not be used for aggregates that will be
-constructed and used in an ephemeral manner.</p>
+constructed and used in an ephemeral manner.  If you are going to hons your
+structures, you should probably use a @(':tree') or @(':fulltree') layout.</p>
 
-<p>Because honsing is somewhat at odds with the memory-inefficiency of legible
-structures, @(':hons t') implies @(':legiblep nil').</p>
 
 <h4>Other Options</h4>
 
@@ -649,6 +641,11 @@ would have had to call @('(student->fullname x)').  For instance:</p>
   (da-make-constructor-raw basename tag plain-fields
                            `(and ,@(strip-cadrs require))
                            honsp layout))
+
+(defun da-make-remaker (basename tag plain-fields require honsp layout)
+  (da-make-remaker-raw basename tag plain-fields
+                       `(and ,@(strip-cadrs require))
+                       honsp layout))
 
 (defun da-make-honsed-constructor
   (basename
@@ -1101,7 +1098,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 
 (defconst *da-valid-keywords*
   '(:tag
-    :legiblep
+    :layout
     :hons
     :mode
     :parents
@@ -1191,12 +1188,9 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        ((unless (booleanp already-definedp))
         (mv (raise "~x0: :already-definedp should be a boolean." name) state))
 
-       (legiblep (if (assoc :legiblep kwd-alist)
-                     (cdr (assoc :legiblep kwd-alist))
-                   t))
-       ((unless (or (booleanp legiblep)
-                    (eq legiblep :ordered)))
-        (mv (raise "~x0: :legiblep should be a boolean or :ordered." name) state))
+       (layout (or (cdr (assoc :layout kwd-alist)) :alist))
+       ((unless (member layout '(:alist :list :tree :fulltree)))
+        (mv (raise "~x0: :layout must be :alist, :list, :tree, or :fulltree." name) state))
 
        (honsp (cdr (assoc :hons kwd-alist)))
        ((unless (booleanp honsp))
@@ -1218,14 +1212,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        (x        (da-x name))
        (foop     (da-recognizer-name name))
        (make-foo (da-constructor-name name))
-
-       (layout (cond ((or honsp (not legiblep))
-                       ;; forces illegible
-                       :illegible)
-                     ((eq legiblep :ordered)
-                      :ordered)
-                     (t
-                      :legible)))
 
        (foop-of-make-foo
         (intern-in-package-of-symbol (str::cat (symbol-name foop)
@@ -1275,6 +1261,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
            ,(da-make-constructor name tag field-names require honsp layout)
            ,(da-make-honsed-constructor name tag field-names require layout)
            ,@(da-make-accessors name tag field-names layout)
+           ,@(da-make-remaker name tag field-names require honsp layout)
 
            ,@(and
               (eq mode :logic)
@@ -1376,7 +1363,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 ,@(da-make-requirements-of-recognizer name require field-names)))
 
            ,(da-make-binder name all-binder-names)
-           ,(da-make-changer name field-names)
+           ,(da-make-changer name field-names (da-maybe-remake-name name honsp layout))
            ,(da-make-maker name field-names field-defaults)
            ,(da-make-honsed-maker name field-names field-defaults)
 

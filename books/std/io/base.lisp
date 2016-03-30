@@ -617,7 +617,7 @@ foo
 
 @({
  (in-package \"ACL2\")
- (include-book \"tools/bstar\" :dir :system)
+ (include-book \"std/util/bstar\" :dir :system)
  (include-book \"centaur/vl/portcullis\" :dir :system)
 
  (make-event

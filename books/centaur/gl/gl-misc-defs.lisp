@@ -127,7 +127,7 @@
 ; recursive steps since we know that once the number has been coerced to a
 ; natural, it will stay positive as we recur.
 
-  (local (include-book "std/misc/two-nats-measure" :dir :system))
+  (local (include-book "std/basic/two-nats-measure" :dir :system))
   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
   (local (in-theory (enable ash logbitp acl2-count)))

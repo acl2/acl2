@@ -31,6 +31,47 @@
 (in-package "VL")
 (progn
 
+  (defun vl-printedlist->string-aux (x ret i)
+    (declare (type string ret)
+             (type fixnum i))
+    ;; Returns the updated value of i, equal to (- i (vl-printedlist-length x)).
+    (loop while (consp x)
+             do
+             (let ((elem (car x)))
+               (cond ((characterp elem)
+                      (progn (setf (schar ret i) elem)
+                             (decf i)))
+                     ((stringp elem)
+                      ;; For strings, things are trickier because the characters of
+                      ;; the string *are* in the right order.  It's very helpful to
+                      ;; think of a concrete example.  Suppose we do:
+                      ;;
+                      ;;   print #\A
+                      ;;   print #\B
+                      ;;   print #\C
+                      ;;   print "abc"
+                      ;;   print #\D
+                      ;;   print #\E
+                      ;;
+                      ;; Then the rchars we'll have are (#\E #\D "abc" #\C #\B #\A).
+                      ;; The ret array is 8 entries long and we've already set
+                      ;;   ret[7] = #\E
+                      ;;   ret[6] = #\D
+                      ;; So we now want to set
+                      ;;   ret[5] = #\c
+                      ;;   ret[4] = #\b
+                      ;;   ret[3] = #\a
+                      ;;
+                      ;; I think it's easiest to just go down from the end of the
+                      ;; string so we can (decf i) like before.
+                      (loop for j fixnum from (- (length (the string elem)) 1) downto 0 do
+                            (setf (schar ret i) (schar elem j))
+                            (decf i)))
+                     (t ;; Recursively a list.
+                      (setq i (vl-printedlist->string-aux (car x) ret i)))))
+             (setq x (cdr x)))
+    i)
+
  (defun vl-printedlist->string (x)
 
    ;; Optimized PS->STRING routine.  We're going to build the return string in
@@ -49,37 +90,7 @@
      (let* ((ret (make-array size :element-type 'character))
             (i   (the fixnum (- (the fixnum size) 1))))
        (declare (type fixnum i))
-       (loop while (consp x)
-             do
-             (let ((elem (car x)))
-               (if (characterp elem)
-                   (progn (setf (schar ret i) elem)
-                          (decf i))
-
-                 ;; For strings, things are trickier because the characters of
-                 ;; the string *are* in the right order.  It's very helpful to
-                 ;; think of a concrete example.  Suppose we do:
-                 ;;
-                 ;;   print #\A
-                 ;;   print #\B
-                 ;;   print #\C
-                 ;;   print "abc"
-                 ;;   print #\D
-                 ;;   print #\E
-                 ;;
-                 ;; Then the rchars we'll have are (#\E #\D "abc" #\C #\B #\A).
-                 ;; The ret array is 8 entries long and we've already set
-                 ;;   ret[7] = #\E
-                 ;;   ret[6] = #\D
-                 ;; So we now want to set
-                 ;;   ret[5] = #\c
-                 ;;   ret[4] = #\b
-                 ;;   ret[3] = #\a
-                 ;;
-                 ;; I think it's easiest to just go down from the end of the
-                 ;; string so we can (decf i) like before.
-                 (loop for j fixnum from (- (length (the string elem)) 1) downto 0 do
-                       (setf (schar ret i) (schar elem j))
-                       (decf i))))
-             (setq x (cdr x)))
+       (setq i (vl-printedlist->string-aux x ret i))
+       (unless (eql i -1)
+         (cw "Vl-printedlist->string bug: wrote down to character ~x0 instead of 0~%" (+ i 1)))
        ret))))

@@ -1,5 +1,5 @@
-; ACL2 Standard Library
-; Copyright (C) 2008-2013 Centaur Technology
+; Lispfloat - Interface to the Common Lisp Floating Point Operations
+; Copyright (C) 2016 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -25,7 +25,9 @@
 ;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "intern-in-package-of-symbol")
-(include-book "two-nats-measure")
+(include-book "portcullis")
+; cert-flags: ? t :ttags :all

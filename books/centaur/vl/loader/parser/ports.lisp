@@ -814,7 +814,7 @@ portdecl-sign).</p>")
 (defaggregate vl-parsed-port-identifier
   :short "Temporary structure created during port parsing."
   :tag nil
-  :legiblep nil
+  :layout :fulltree
   ((name  vl-idtoken-p
           "Identifier for the port being declared.")
    (udims vl-packeddimensionlist-p
@@ -837,6 +837,43 @@ any unpacked dimensions.</p>"
                                           :udims nil)
           (vl-parsed-port-identifier-list-from-idtokenlist (cdr x)))))
 
+
+(define vl-build-subsequent-portdecls
+  :parents (vl-build-portdecls)
+  :long "<p>We have sometimes encountered very long port lists like @('input
+  a0, a1, ...;').  In these cases, we can win big for memory usage by reusing
+  structure when we build the subsequent port declarations, by CHANGE-ing the
+  declaration of @('a0') instead of MAKE-ing fresh ports.</p>"
+  ((x         vl-parsed-port-identifier-list-p
+              "The subsequent ports, @('a1, ...')")
+   (base-decl vl-portdecl-p
+              "Possibly the portdecl for @('a0'), but more generally it may be
+               a portdecl that we are ``abusing'' to reuse structure.  In
+               particular, if @('a0') has unpacked dimensions, then
+               @('base-decl') is like @('a0') except that it does NOT have such
+               dimensions."))
+  :returns (portdecls vl-portdecllist-p)
+  (b* (((when (atom x))
+        nil)
+       ((vl-parsed-port-identifier x1) (car x))
+       (basetype (vl-portdecl->type base-decl))
+       (- (or (not (vl-datatype->udims basetype))
+              (raise "Base datatype already has unpacked dimensions?")))
+       (type1 (if (consp x1.udims)
+                  (vl-datatype-update-udims x1.udims basetype)
+                basetype)))
+    (cons (change-vl-portdecl base-decl
+                              :name    (vl-idtoken->name x1.name)
+                              :loc     (vl-token->loc x1.name)
+                              :type    type1)
+          (vl-build-subsequent-portdecls (cdr x) base-decl)))
+  ///
+  (more-returns
+   (portdecls true-listp :rule-classes :type-prescription)
+   (portdecls (equal (len portdecls) (len x)) :name len-of-vl-build-subsequent-portdecls)
+   (portdecls (equal (consp portdecls) (consp x)) :name consp-of-vl-build-subsequent-portdecls)
+   (portdecls (iff portdecls (consp x)) :name vl-build-subsequent-portdecls-under-iff)))
+
 (define vl-build-portdecls
   :short "Main loop for creating real @(see vl-portdecl)s."
   ((x        vl-parsed-port-identifier-list-p)
@@ -851,26 +888,59 @@ any unpacked dimensions.</p>"
        ((vl-parsed-port-identifier x1) (car x))
        (- (or (not (vl-datatype->udims type))
               (raise "Base datatype already has unpacked dimensions?")))
-       (type1 (if (consp x1.udims)
-                  (vl-datatype-update-udims x1.udims type)
-                type)))
-    (cons (make-vl-portdecl :name    (vl-idtoken->name x1.name)
-                            :loc     (vl-token->loc x1.name)
-                            :dir     dir
-                            :nettype nettype
-                            :type    type1
-                            :atts    atts)
-          (vl-build-portdecls (cdr x)
-                              :dir     dir
-                              :nettype nettype
-                              :type    type
-                              :atts    atts)))
+       (basedecl (make-vl-portdecl
+                  :name    (vl-idtoken->name x1.name)
+                  :loc     (vl-token->loc x1.name)
+                  :type    type
+                  :dir     dir
+                  :nettype nettype
+                  :atts    atts))
+       ((when (consp x1.udims))
+        ;; Nasty case.  We have something like "input logic [3:0] a0 [1:0], a1,
+        ;; a2, ...;" The first declaration has its own udims that are NOT part
+        ;; of the basetype that is to be inferred across these decls.  We'll
+        ;; have to rebuild its declaration because basedecl is wrong.  Seems
+        ;; easiest to abuse the aux function for this.
+        (vl-build-subsequent-portdecls x basedecl)))
+    ;; Else, there are no udims, so basetype is correct for x1, and hence
+    ;; the whole basedecl is correct.
+    (cons basedecl
+          (vl-build-subsequent-portdecls (cdr x) basedecl)))
   ///
   (more-returns
    (portdecls true-listp :rule-classes :type-prescription)
    (portdecls (equal (len portdecls) (len x)) :name len-of-vl-build-portdecls)
    (portdecls (equal (consp portdecls) (consp x)) :name consp-of-vl-build-portdecls)
    (portdecls (iff portdecls (consp x)) :name vl-build-portdecls-under-iff)))
+
+
+(define vl-build-subsequent-netdecls-for-ports
+  :parents (vl-build-netdecls-for-ports)
+  :short "See @(see vl-build-subsequent-portdecls).  This is identical but for
+          the vardecls instead of the portdecls."
+  ((x        vl-parsed-port-identifier-list-p)
+   (basedecl vl-vardecl-p))
+  :returns (netdecls vl-vardecllist-p)
+  (b* (((when (atom x))
+        nil)
+       ((vl-parsed-port-identifier x1) (car x))
+       (basetype (vl-vardecl->type basedecl))
+       (- (or (not (vl-datatype->udims basetype))
+              (raise "Base datatype already has unpacked dimensions?")))
+       (type1 (if (consp x1.udims)
+                  (vl-datatype-update-udims x1.udims basetype)
+                basetype)))
+    (cons (change-vl-vardecl basedecl
+                             :name (vl-idtoken->name x1.name)
+                             :loc  (vl-token->loc x1.name)
+                             :type type1)
+          (vl-build-subsequent-netdecls-for-ports (cdr x) basedecl)))
+  ///
+  (more-returns
+   (netdecls true-listp :rule-classes :type-prescription)
+   (netdecls (equal (len netdecls) (len x)) :name len-of-vl-build-subsequent-netdecls)
+   (netdecls (equal (consp netdecls) (consp x)) :name consp-of-vl-build-subsequent-netdecls)
+   (netdecls (iff netdecls (consp x)) :name vl-build-subsequent-netdecls-under-iff)))
 
 (define vl-build-netdecls-for-ports
   :short "Main loop for creating the associated @(see vl-vardecl)s."
@@ -885,25 +955,26 @@ any unpacked dimensions.</p>"
        ((vl-parsed-port-identifier x1) (car x))
        (- (or (not (vl-datatype->udims type))
               (raise "Base datatype already has unpacked dimensions?")))
-       (type1 (if (consp x1.udims)
-                  (vl-datatype-update-udims x1.udims type)
-                type)))
-    (cons (make-vl-vardecl :name (vl-idtoken->name x1.name)
-                           :loc  (vl-token->loc x1.name)
-                           :nettype nettype
-                           :type type1
-                           :atts atts
-                           ;; BOZO are these right?  I think so?  I think there
-                           ;; isn't a way to declare these in a port, at least
-                           ;; in Verilog-2005?
-                           :vectoredp nil
-                           :scalaredp nil
-                           :delay nil
-                           :cstrength nil)
-          (vl-build-netdecls-for-ports (cdr x)
-                                       :type     type
-                                       :nettype  nettype
-                                       :atts     atts)))
+       (basedecl (make-vl-vardecl :name (vl-idtoken->name x1.name)
+                                  :loc  (vl-token->loc x1.name)
+                                  :nettype nettype
+                                  :type type
+                                  :atts atts
+                                  ;; I think these are right because there isn't any way
+                                  ;; to declare these as part of the port declaration?
+                                  :varp nil
+                                  :constp nil
+                                  :lifetime nil
+                                  :vectoredp nil
+                                  :scalaredp nil
+                                  :delay nil
+                                  :cstrength nil))
+       ((when (consp x1.udims))
+        ;; Basedecl isn't right because its type doesn't have the udims.
+        (vl-build-subsequent-netdecls-for-ports x basedecl)))
+    ;; Else, the basedecl is correct, so use it.
+    (cons basedecl
+          (vl-build-subsequent-netdecls-for-ports (cdr x) basedecl)))
   ///
   (more-returns
    (netdecls true-listp :rule-classes :type-prescription)
@@ -926,7 +997,7 @@ any unpacked dimensions.</p>"
             (vl-vardecllist-p  (cdr val))))
   (b* ((atts (if complete-p
                  atts
-               (cons '("VL_INCOMPLETE_DECLARATION") atts)))
+               (hons '("VL_INCOMPLETE_DECLARATION") atts)))
        (portdecls (vl-build-portdecls x
                                       :dir      dir
                                       :nettype  nettype
@@ -941,7 +1012,7 @@ any unpacked dimensions.</p>"
                                                 :nettype  nettype
                                                 ;; Make sure the variables are marked as
                                                 ;; implicit to avoid pretty-printing them.
-                                                :atts     (cons '("VL_PORT_IMPLICIT") atts)))))
+                                                :atts     (hons '("VL_PORT_IMPLICIT") atts)))))
     (cons portdecls netdecls))
   ///
   (defthm true-listp-of-vl-make-ports-and-maybe-nets-1

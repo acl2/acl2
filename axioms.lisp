@@ -1409,6 +1409,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            aref2 ; already inlined in Version_6.2 and before
            booleanp
            complex-rationalp
+           cons-with-hint
            eqlablep
            fix
            fn-symb
@@ -2598,7 +2599,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defvar *hard-error-returns-nilp*
 
-; For an explanation of the this defvar, see the comment in hard-error, below.
+; For an explanation of this defvar, see the comment in hard-error, below.
 
   nil)
 
@@ -5517,6 +5518,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro 1- (x)
   (list '- x 1))
 
+(defun cons-with-hint (x y hint)
+  (declare (xargs :guard t)
+           (ignorable hint))
+  #-acl2-loop-only
+  (when (and (consp hint)
+             (eql (car hint) x)
+             (eql (cdr hint) y))
+    (return-from cons-with-hint
+                 hint))
+  (cons x y))
+
 ; Remove
 
 (defun-with-guard-check remove-eq-exec (x l)
@@ -5584,7 +5596,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((endp l) nil)
         ((eq x (car l))
          (cdr l))
-        (t (cons (car l) (remove1-eq-exec x (cdr l))))))
+        (t (cons-with-hint (car l)
+                           (remove1-eq-exec x (cdr l))
+                           l))))
 
 (defun-with-guard-check remove1-eql-exec (x l)
   (if (eqlablep x)
@@ -5593,14 +5607,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((endp l) nil)
         ((eql x (car l))
          (cdr l))
-        (t (cons (car l) (remove1-eql-exec x (cdr l))))))
+        (t (cons-with-hint (car l)
+                           (remove1-eql-exec x (cdr l))
+                           l))))
 
 (defun remove1-equal (x l)
   (declare (xargs :guard (true-listp l)))
   (cond ((endp l) nil)
         ((equal x (car l))
          (cdr l))
-        (t (cons (car l) (remove1-equal x (cdr l))))))
+        (t (cons-with-hint (car l)
+                           (remove1-equal x (cdr l))
+                           l))))
 
 (defmacro remove1-eq (x lst)
   `(remove1 ,x ,lst :test 'eq))
@@ -5636,21 +5654,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond
    ((endp l) nil)
    ((member-eq (car l) (cdr l)) (remove-duplicates-eq-exec (cdr l)))
-   (t (cons (car l) (remove-duplicates-eq-exec (cdr l))))))
+   (t (cons-with-hint (car l)
+                      (remove-duplicates-eq-exec (cdr l))
+                      l))))
 
 (defun-with-guard-check remove-duplicates-eql-exec (l)
   (eqlable-listp l)
   (cond
    ((endp l) nil)
    ((member (car l) (cdr l)) (remove-duplicates-eql-exec (cdr l)))
-   (t (cons (car l) (remove-duplicates-eql-exec (cdr l))))))
+   (t (cons-with-hint (car l)
+                      (remove-duplicates-eql-exec (cdr l))
+                      l))))
 
 (defun remove-duplicates-equal (l)
   (declare (xargs :guard (true-listp l)))
   (cond
    ((endp l) nil)
    ((member-equal (car l) (cdr l)) (remove-duplicates-equal (cdr l)))
-   (t (cons (car l) (remove-duplicates-equal (cdr l))))))
+   (t (cons-with-hint (car l)
+                      (remove-duplicates-equal (cdr l))
+                      l))))
 
 (defmacro remove-duplicates-eq (x)
   `(remove-duplicates ,x :test 'eq))
@@ -8723,7 +8747,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote user-book-name)
         'state
         (list 'quote load-compiled-file)
-        (list 'quote :none)
+        (list 'quote nil)
         (list 'quote uncertified-okp)
         (list 'quote defaxioms-okp)
         (list 'quote skip-proofs-okp)
@@ -12451,7 +12475,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     untrace$-fn1 ; eval
     bdd-top ; (GCL only) si::sgc-on
     defstobj-field-fns-raw-defs ; call to memoize-flush when #+hons
-    expansion-alist-pkg-names
+    pkg-names
     times-mod-m31 ; gcl has raw code
     iprint-ar-aref1
     prove ; #+write-arithmetic-goals
@@ -12651,10 +12675,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     print-clause-id-okp
     too-many-ifs-post-rewrite
     too-many-ifs-pre-rewrite
-
     set-gc-strategy-fn gc-strategy
-
     read-file-into-string2
+    cons-with-hint
+    file-length$
+    delete-file$
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -12965,8 +12990,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; ACL2 Version 7.2
 
 ; We put the version number on the line above just to remind ourselves to bump
-; the value of state global 'acl2-version, which gets printed out with the
-; check-sum info.
+; the value of state global 'acl2-version, which gets printed in .cert files.
 
 ; Leave this here.  It is read when loading acl2.lisp.  This constant should be
 ; a string containing at least one `.'.  The function save-acl2-in-akcl in
@@ -12996,6 +13020,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (acl2p-checkpoints-for-summary . nil)
     (axiomsp . nil)
     (bddnotes . nil)
+    (book-hash-alistp . nil) ; set in LP
     (boot-strap-flg .
 
 ; Keep this state global in sync with world global of the same name.  We expect
@@ -13008,6 +13033,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; corresponding state global.
 
                     t)
+    (cert-data . nil)
     (certify-book-info .
 
 ; Certify-book-info is non-nil when certifying a book, in which case it is a
@@ -13132,7 +13158,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (redundant-with-raw-code-okp . nil)
     (retrace-p . nil)
     (safe-mode . nil)
-    (save-expansion-file . nil)
+    (save-expansion-file . nil) ; potentially set in LP
     (saved-output-p . nil)
     (saved-output-reversed . nil)
     (saved-output-token-lst . nil)
@@ -14467,9 +14493,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard t))
   (and (integerp bits)
        (< 0 bits)
-       (integer-range-p (- (expt 2 (1- bits)))
-                        (expt 2 (1- bits))
-                        x)))
+       (let ((y ; proof fails for mbe with :exec = (ash 1 (1- bits))
+              (expt 2 (1- bits))))
+         (integer-range-p (- y) y x))))
 
 (defun unsigned-byte-p (bits x)
   (declare (xargs :guard t))
@@ -16515,20 +16541,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; lists.  That could happen if read-file-into-string is called twice on the
 ; same filename, say "F", in the case that there is an intervening write not
 ; performed by ACL2.  We avoid that problem by associating "F" with its current
-; file-write-date in the global *read-file-alist* just before opening a
+; file-write-date, FWD, in the global *read-file-alist* just before opening a
 ; character input channel to "F".  That global is cleared whenever the
 ; file-clock of the state is updated, except when under read-file-into-string
 ; (or any with-local-state actually).  Now suppose we later attempt to open a
 ; (new) character input channel to "F" when the file-clock of the state is as
 ; before.  Then we cause an error if the file-write-date is later than FWD.
 
-; But consider the following situation: when we close an output channel on
+; But consider the following situation: when we close an input channel on
 ; behalf of read-file-into-string, the file-write-date of "F" is not FWD.  In
 ; that case we could simply update the file-write-date associated with "F" in
 ; *read-file-alist*, provided this is the first time that read-file-into-string
-; has been called on "F" when the file-clock is FC.  We could record that
-; "first time" information, but instead, we avoid that overhead and simply
-; cause an error in this (presumably) rare case.
+; has been called on "F" when the file-clock is FC.  We could record whether
+; this was indeed the first time, but instead, we avoid that overhead and
+; simply cause an error in this (presumably) rare case; see
+; read-file-into-string2.
 
 ; Any time the file-clock of the state is updated outside
 ; read-file-into-string, we assign *read-file-alist* to nil (if it is not
@@ -19954,6 +19981,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     check-invariant-risk ; set- function ensures proper values
     print-gv-defaults
     global-enabled-structure
+    cert-data
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,
@@ -20851,6 +20879,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      :off (event summary)
      (progn (table acl2-defaults-table :bogus-defun-hints-ok ,x)
             (table acl2-defaults-table :bogus-defun-hints-ok))))
+
+(defmacro set-bogus-measure-ok (x)
+
+; After Version_7.2 we are extending the capability offered by
+; set-bogus-defun-hints-ok, since Version_3.4, so that it applies to bogus
+; measures as well.
+
+  `(set-bogus-defun-hints-ok ,x))
 
 #-acl2-loop-only
 (defmacro set-bogus-defun-hints-ok (x)
@@ -22274,8 +22310,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun fix-true-list (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (cons (car x)
-            (fix-true-list (cdr x)))
+      (cons-with-hint (car x)
+                      (fix-true-list (cdr x))
+                      x)
     nil))
 
 (defthm pairlis$-fix-true-list
@@ -24183,6 +24220,11 @@ Lisp definition."
 ; the comment in the encapsulate that follows.  Note that preceding in-theory
 ; events are skipped during pass 1 of the boot-strap, since we are only just
 ; now entering :logic mode and in-theory events are skipped in :program mode.
+; Added 2/21/2016: The build succeeds for CCL and SBCL even when the next form
+; is commented out, but on a Mac at least, rather little time is saved:
+; 0m51.160s down to 0m48.163s for CCL, and 1m9.987s down to 1m8.409s for SBCL.
+; And even though those builds succeeded, we didn't check that the resulting
+; saved image is correct by running a regression.
 
 #+acl2-loop-only
 (f-put-global 'ld-skip-proofsp nil state) ; (set-ld-skip-proofsp nil state)
@@ -25318,6 +25360,63 @@ Lisp definition."
                    val)
               state)))
 
+(defun delete-file$ (file state)
+
+; It may seem a bit surprising that this function does not update the
+; file-clock of the state.  To see why that isn't necessary, let us review the
+; role of the file-clock (also see :DOC state).  When open-input-channel opens
+; a channel, it logically associates that channel in the open-input-channels
+; field of the state with (among other things) "header" information that
+; includes an incremented file-clock; similarly for close-input-channel and the
+; read-files field of the state.  Updates using an incremented file-clock also
+; take place for open-output-channel and close-output-channel for fields
+; writeable-files and written-files, respectively.  Moreover: logically, when
+; we open an input channel we magically grab the full contents of the file that
+; we will ultimately read associate them with the channel, and these are popped
+; by functions that read, such as read-char$; rather dually, we push values on
+; the open-output-channels entries when we call functions that write, such as
+; print-object$, and then deposit all those values in written-files when we
+; close the channel.
+
+; We would get into trouble logically if we could get different answers when
+; obtaining two different values from two reads of the same file when the two
+; states agree on their state fields that pertain to contents of channels and
+; files.  But this can't happen, because the file-clock is incremented
+; immediately before we create a channel.  In particular, when we open an input
+; channel we access a readable-files entry based on a file-clock that we
+; haven't yet seen, since the file-clock is incremented first.  So we can never
+; see what we already wrote!  This avoids the problem of seeing contents in a
+; file that we didn't put there because an external agent wrote to that file.
+; It also avoids the problem of opening a channel to a non-existent file that
+; used to exist: all file-related entries in various state fields are
+; associated with earlier file-clocks than the one associated with the new
+; channel.
+
+; So in particular, if we open or close a channel at file-clock fc1 and then
+; run delete-file$, a subsequent open or close will involve entries whose
+; file-clock is greater than fc1.  Thus, there will be no way to detect
+; logically any effect of delete-file$ on the four state fields above, since
+; nothing was known about fields for file-clock exceeding fc1 before running
+; delete-file$.  The special case of read-file-into-string is also handled,
+; because of reliance on the file-write-date when the file-clock hasn't
+; changed; see *read-file-alist*.
+
+  (declare (xargs :guard (stringp file)
+                  :stobjs state))
+  #+acl2-loop-only
+  (declare (ignore file))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from delete-file$
+                 (mv (our-ignore-errors (delete-file file))
+                     state)))
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (mv (and (null erp)
+                   (natp val)
+                   val)
+              state)))
+
 ; Next: debugger control
 
 (defun debugger-enable (state)
@@ -25372,6 +25471,7 @@ Lisp definition."
 
   10000)
 
+#-acl2-loop-only
 (defun print-call-history ()
 
 ; We welcome suggestions from users or Lisp-specific experts for how to improve
@@ -25379,7 +25479,6 @@ Lisp definition."
 ; stack.
 
   (declare (xargs :guard t))
-  #-acl2-loop-only
   (when (f-get-global 'boot-strap-flg *the-live-state*)
 
 ; We don't know why SBCL 1.0.37 hung during guard verification of
@@ -25387,7 +25486,21 @@ Lisp definition."
 ; here.
 
     (return-from print-call-history nil))
-  #+(and ccl (not acl2-loop-only))
+  (when (f-get-global 'certify-book-info *the-live-state*)
+
+; The additional "Book under certification" message is helpful when the
+; backtrace output goes to the terminal instead of a .out file, which could
+; happen in SBCL before Feb. 2016.  That problem now seems to be solved for
+; SBCL, but we retain this printing in case it is helpful some day for some
+; Lisp.
+
+    (eval ; using eval because the certify-book-info record is not yet defined
+     '(format *standard-output*
+              "~%; Book under certification: ~s~%"
+              (access certify-book-info
+                      (f-get-global 'certify-book-info *the-live-state*)
+                      :full-book-name))))
+  #+ccl
   (when (fboundp 'ccl::print-call-history)
 ; See CCL file lib/backtrace.lisp for more options
     (eval '(ccl::print-call-history :detailed-p nil
@@ -25403,24 +25516,38 @@ Lisp definition."
 ; (when (fboundp 'system::ihs-backtrace)
 ;    (eval '(system::ihs-backtrace)))
 
-  #+(and allegro (not acl2-loop-only))
+  #+allegro
   (when (fboundp 'tpl::do-command)
     (eval '(tpl:do-command "zoom"
                            :from-read-eval-print-loop nil
                            :count t :all t)))
-  #+(and sbcl (not acl2-loop-only))
-  (when (fboundp 'sb-debug::backtrace)
-    (eval '(sb-debug::backtrace)))
-  #+(and cmucl (not acl2-loop-only))
+  #+sbcl
+  (cond ((fboundp 'sb-debug::print-backtrace)
+         (eval '(sb-debug::print-backtrace :stream *standard-output*)))
+        ((fboundp 'sb-debug::backtrace)
+         (eval '(sb-debug::backtrace nil *standard-output*))))
+  #+cmucl
   (when (fboundp 'debug::backtrace)
-    (eval '(debug::backtrace)))
-  #+(and clisp (not acl2-loop-only))
+    (eval '(debug::backtrace 1000 ; default for sbcl
+                             *standard-output*)))
+  #+clisp
   (when (fboundp 'system::print-backtrace)
     (eval '(catch 'system::debug
              (system::print-backtrace))))
-  #+(and lispworks (not acl2-loop-only))
+  #+lispworks
   (when (fboundp 'dbg::output-backtrace)
     (eval '(dbg::output-backtrace :verbose)))
+
+; Return nil, for compatibility with the #+acl2-loop-only definition.
+
+  nil)
+
+#+acl2-loop-only
+(defun print-call-history ()
+
+; Keep the return value in sync with the #-acl2-loop-only definition.
+
+  (declare (xargs :guard t))
   nil)
 
 (defmacro debugger-enabledp-val (val)
@@ -26638,3 +26765,26 @@ Lisp definition."
             #-ccl
             (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|"))))
   (read-acl2-oracle state))
+
+(defun file-length$ (file state)
+  (declare (xargs :guard (stringp file)
+                  :stobjs state))
+  #+acl2-loop-only
+  (declare (ignore file))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from file-length$
+                 (mv (our-ignore-errors
+                      (with-open-file
+                        (str file
+                             :direction :input
+                             :element-type '(unsigned-byte 8)
+                             :if-does-not-exist nil)
+                        (and str (file-length str))))
+                     state)))
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (mv (and (null erp)
+                   (natp val)
+                   val)
+              state)))

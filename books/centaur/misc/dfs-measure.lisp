@@ -33,7 +33,7 @@
 (in-package "ACL2")
 (include-book "suffixp")
 (include-book "tools/rulesets" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "misc/hons-help" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 

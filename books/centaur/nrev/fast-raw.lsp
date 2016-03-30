@@ -49,12 +49,50 @@
     ;; PUSH would extend a list that someone else has gotten hold of.
     (loop for e in head collect e)))
 
+(defun nrev-replace-common-suffix (orig new)
+  ;; Semantics: This may destructively modify NEW, but not ORIG, and it returns
+  ;; a list equal to NEW, but perhaps using some suffix of ORIG.
+
+  ;; We'll scan the two lists for the longest common suffix.  First-same will
+  ;; be the longest suffix of orig that is the same as a suffix of new, and
+  ;; last-diff will be the cons previous to that suffix in new.  We check the
+  ;; lists starting from the cars.  At each iteration our variables are set as
+  ;; though the rest of the two lists are the same.  So initially, last-diff is
+  ;; a dummy cons whose cdr is all of new, and first-same is orig.
+  (let* ((head-handle (cons nil new))
+         (last-diff head-handle)
+         (first-same orig)
+         (orig-suffix orig)
+         (new-suffix new))
+    (declare (dynamic-extent head-handle))
+    (loop while (and (consp new-suffix)
+                     (consp orig-suffix))
+          do
+          (unless (eql (car orig-suffix)
+                       (car new-suffix))
+            (setq last-diff new-suffix)
+            (setq first-same (cdr orig-suffix)))
+          (setq orig-suffix (cdr orig-suffix))
+          (setq new-suffix (cdr new-suffix)))
+    (if (eql orig-suffix new-suffix)
+        (progn
+          ;; Replace the common suffix with the tail from orig.
+          (setf (cdr last-diff) first-same)
+          (cdr head-handle))
+      ;; If the final cdrs differ (or if the lists are different lengths),
+      ;; there are no common conses to be used; just return new unchanged.
+      new)))
+
 (defun nrev$c-finish (nrev$c)
   (let* ((acc    (nrev$c-acc nrev$c))
+         (hint   (nrev$c-hint nrev$c))
          (head   (car acc))
          (nrev$c (update-nrev$c-acc nil nrev$c)))
-    ;; No need to deep copy; nobody else has a handle to our conses.
-    (mv head nrev$c)))
+    (if hint
+        (mv (nrev-replace-common-suffix hint head)
+            nrev$c)
+      ;; No need to deep copy; nobody else has a handle to our conses.
+      (mv head nrev$c))))
 
 (defun nrev$c-push (a nrev$c)
   (let* ((acc      (nrev$c-acc nrev$c))

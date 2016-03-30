@@ -30,6 +30,13 @@
 
 (in-package "ACL2")
 (assign :suppress-preload-xdoc t)
-(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+
+; [Jared] I don't want to load a customization file here because the
+; defs-program stuff can easily result in confusing redefinition problems if
+; you implicitly load other libraries that depend on program-mode string stuff
+; and then try to edit the logic defs.  In other words, don't do this:
+
+;; (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+
 (ld "std/package.lsp" :dir :system)
 (in-package "STR")

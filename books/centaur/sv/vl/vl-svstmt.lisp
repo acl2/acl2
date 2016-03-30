@@ -34,11 +34,12 @@
 (include-book "centaur/vl/mlib/filter" :dir :system)
 (include-book "svstmt-compile")
 (include-book "centaur/fty/visitor" :dir :system)
+(include-book "centaur/misc/sneaky-load" :dir :system)
 ;; (include-book "vl-fns-called")
 ;; (include-book "vl-paramrefs")
 ;; (include-book "centaur/vl/transforms/always/util" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system)
                            nfix natp)))
@@ -130,7 +131,8 @@ because... (BOZO)</p>
 #!sv
 (define svex-resolve-single-assignment ((lhs svex-p)
                                         (rhs svex-p)
-                                        (wholevar svex-p))
+                                        (wholevar svar-p)
+                                        (var-replacement svex-p))
   ;; This function tries to take assignments such as
   ;;   my_arr[idx] = foo
   ;; and transform them into
@@ -173,44 +175,63 @@ because... (BOZO)</p>
   :returns (mv (err (iff (vl::vl-msg-p err) err))
                (final-rhs (implies (not err) (svex-p final-rhs))))
   :verify-guards nil
-  (b* (((when (svex-equiv wholevar lhs)) (mv nil (svex-fix rhs)))
-       ((mv ok al) (svex-unify (svcall concat 'w 'a 'b)
+  (b* (((when (svex-case lhs :var (svar-equiv wholevar lhs.name) :otherwise nil))
+        (mv nil (svex-fix rhs)))
+       ((mv ok al) (svex-unify '(partsel lsb w a) lhs nil))
+       ((when ok)
+        (b* ((lsb (svex-lookup 'lsb al))
+             (w (svex-lookup 'w al))
+             (a (svex-lookup 'a al))
+             (lsb-rhs (svex-replace-var lsb wholevar var-replacement))
+             (w-rhs (svex-replace-var w wholevar var-replacement))
+             (a-rhs (svex-replace-var a wholevar var-replacement)))
+          (svex-resolve-single-assignment
+           a (svcall partinst lsb-rhs w-rhs a-rhs rhs) wholevar var-replacement)))
+       ((mv ok al) (svex-unify '(concat w a b)
                                lhs nil))
        ((when ok)
         (b* ((w (svex-lookup 'w al))
              (a (svex-lookup 'a al))
              (b (svex-lookup 'b al))
+             (w-rhs (svex-replace-var w wholevar var-replacement))
              ((when (svex-case b :quote))
               ;; (concat w a Z) = rhs --> a = (concat w rhs (rsh w a))
-              (svex-resolve-single-assignment
-               a (svcall concat w rhs (svcall rsh w a)) wholevar))
+              (b* ((a-rhs (svex-replace-var a wholevar var-replacement)))
+                (svex-resolve-single-assignment
+                 a
+                 (svcall concat w-rhs rhs (svcall rsh w-rhs a-rhs))
+                 wholevar var-replacement)))
              ((when (svex-case a :quote))
               ;; (concat w Z b) = rhs --> b = (rsh w rhs)
               (svex-resolve-single-assignment
-               b (svcall rsh w rhs) wholevar)))
+               b (svcall rsh w-rhs rhs) wholevar var-replacement)))
           (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0" (svex-fix lhs))
               nil)))
-       ((mv ok al) (svex-unify (svcall zerox 'w 'a)
-                               lhs nil))
+       ((mv ok al) (svex-unify '(zerox w a) lhs nil))
        ((mv ok al) (if ok
                        (mv ok al)
-                     (svex-unify (svcall signx 'w 'a)
-                                 lhs nil)))
-       ((when ok)
+                     (svex-unify '(signx w a) lhs nil)))
+       ((when ok) ;; zerox or signx matched
         (b* ((w (svex-lookup 'w al))
-             (a (svex-lookup 'a al)))
+             (a (svex-lookup 'a al))
+             (a-rhs (svex-replace-var a wholevar var-replacement))
+             (w-rhs (svex-replace-var w wholevar var-replacement)))
           ;; (zerox/signx w a) = rhs --> a = (concat w rhs (rsh w a))
           (svex-resolve-single-assignment
-           a (svcall concat w rhs (svcall rsh w a)) wholevar)))
+           a (svcall concat w-rhs rhs (svcall rsh w-rhs a-rhs))
+           wholevar var-replacement)))
 
-       ((mv ok al) (svex-unify (svcall rsh 'w 'v) lhs nil))
+       ((mv ok al) (svex-unify '(rsh w v) lhs nil))
        ((when ok)
         (b* ((w (svex-lookup 'w al))
-             (v (svex-lookup 'v al)))
+             (v (svex-lookup 'v al))
+             (w-rhs (svex-replace-var w wholevar var-replacement))
+             (v-rhs (svex-replace-var v wholevar var-replacement)))
           ;; (rsh w v) = rhs --> v = (concat w v rhs)
           (svex-resolve-single-assignment
-           v (svcall concat w v rhs) wholevar)))
-       ((mv ok al) (svex-unify (svcall ? 'test 'then 'else) lhs nil))
+           v (svcall concat w-rhs v-rhs rhs)
+           wholevar var-replacement)))
+       ((mv ok al) (svex-unify '(? test then else) lhs nil))
        ((when ok)
         (b* ((test (svex-lookup 'test al))
              (then (svex-lookup 'then al))
@@ -221,21 +242,55 @@ because... (BOZO)</p>
              ;; else = rhs -->  var = else-val
              ;; and if both are successful, then result is
              ;; var = (? test then-val else-val).
-             ((mv err then-val) (svex-resolve-single-assignment then rhs wholevar))
+             ((mv err then-val) (svex-resolve-single-assignment then rhs wholevar var-replacement))
              ((when err) (mv err nil))
-             ((mv err else-val) (svex-resolve-single-assignment else rhs wholevar))
+             ((mv err else-val) (svex-resolve-single-assignment else rhs wholevar var-replacement))
              ((when err) (mv err nil)))
-          (mv nil (svcall ? test then-val else-val)))))
+          (mv nil (svcall ? (svex-replace-var test wholevar var-replacement)
+                          then-val else-val)))))
     (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0 (variable: ~x1)"
-                  (svex-fix lhs) (svex-fix wholevar))
+                  (svex-fix lhs) (svar-fix wholevar))
         nil))
   ///
-  (std::defret vars-of-svex-resolve-single-assignment
-    (implies (and (not (member v (svex-vars lhs)))
-                  (not (member v (svex-vars rhs)))
-                  (not err))
-             (not (member v (svex-vars final-rhs)))))
+  (local (defthm member-vars-of-svex-unify
+           (b* (((mv ?ok al1) (svex-unify pat x al)))
+             (implies (and (not (member v (svex-vars x)))
+                           (not (member v (svex-alist-vars al))))
+                      (not (member v (svex-alist-vars al1)))))
+           :hints (("goal" :use svex-unify-subst-no-new-vars
+                    :in-theory (disable svex-unify-subst-no-new-vars)))))
 
+  (std::defret vars-of-svex-resolve-single-assignment-1
+    (implies (and ;; (not (equal v (svar-fix wholevar)))
+                  (not (member v (svex-vars lhs)))
+                  (not (member v (svex-vars rhs)))
+                  (not (member v (svex-vars var-replacement)))
+                  (not err))
+             (not (member v (svex-vars final-rhs))))
+    :hints(("Goal" :in-theory (enable vars-of-svex-compose-strong
+                                      svex-alist-vars))))
+
+  (local (defthm svex-fix-under-iff
+           (iff (svex-fix x) t)
+           :hints (("goal" :use ((:instance return-type-of-svex-fix$inline.new-x))
+                    :in-theory (disable return-type-of-svex-fix$inline.new-x)))))
+
+  (local (defthm svex-vars-of-hons-assoc-equal
+           (implies (and (not (member v (svex-alist-vars x)))
+                         (hons-assoc-equal k x))
+                    (not (member v (svex-vars (cdr (hons-assoc-equal k x))))))
+           :hints(("Goal" :in-theory (enable svex-alist-vars
+                                             hons-assoc-equal)))))
+
+  (std::defret vars-of-svex-resolve-single-assignment-2
+    (implies (and (case-split (equal v (svar-fix wholevar)))
+                  (not (member v (svex-vars rhs)))
+                  (not (member v (svex-vars var-replacement)))
+                  (not err))
+             (not (member v (svex-vars final-rhs))))
+    :hints(("Goal" :in-theory (enable vars-of-svex-compose-strong
+                                      svex-alist-vars
+                                      sv::svex-lookup))))
   (verify-guards svex-resolve-single-assignment))
 
 
@@ -344,6 +399,70 @@ because... (BOZO)</p>
 ;;           (mv ok warnings svstmts (and ok size)))
 
 
+#!sv
+(defines svex-set-nonblocking
+  :verify-guards nil
+  (define svex-set-nonblocking ((x svex-p))
+    :measure (svex-count x)
+    :returns (new-x (and (svex-p new-x)
+                         (implies (svarlist-addr-p (svex-vars x))
+                                  (svarlist-addr-p (svex-vars new-x))))
+                    :hints('(:in-theory (e/d (svar-addr-p)
+                                             (svex-set-nonblocking
+                                              svexlist-set-nonblocking)))))
+    (b* ((x (svex-fix x)))
+      (svex-case x
+        :var (change-svex-var x :name (change-svar x.name :nonblocking t))
+        :quote x
+        :call (change-svex-call x :args (svexlist-set-nonblocking x.args)))))
+
+  (define svexlist-set-nonblocking ((x svexlist-p))
+    :measure (svexlist-count x)
+    :returns (new-x (and (svexlist-p new-x)
+                         (implies (svarlist-addr-p (svexlist-vars x))
+                                  (svarlist-addr-p (svexlist-vars new-x)))))
+    (if (atom x)
+        nil
+      (cons (svex-set-nonblocking (car x))
+            (svexlist-set-nonblocking (cdr x)))))
+  ///
+  (verify-guards svex-set-nonblocking)
+  (deffixequiv-mutual svex-set-nonblocking))
+
+
+#!sv
+(defines svex-unset-nonblocking
+  :verify-guards nil
+  (define svex-unset-nonblocking ((x svex-p))
+    :measure (svex-count x)
+    :returns (new-x (and (svex-p new-x)
+                         (implies (svarlist-addr-p (svex-vars x))
+                                  (svarlist-addr-p (svex-vars new-x))))
+                    :hints('(:in-theory (e/d (svar-addr-p)
+                                             (svex-unset-nonblocking
+                                              svexlist-unset-nonblocking)))))
+    (b* ((x (svex-fix x)))
+      (svex-case x
+        :var (change-svex-var x :name (change-svar x.name :nonblocking nil))
+        :quote x
+        :call (change-svex-call x :args (svexlist-unset-nonblocking x.args)))))
+
+  (define svexlist-unset-nonblocking ((x svexlist-p))
+    :measure (svexlist-count x)
+    :returns (new-x (and (svexlist-p new-x)
+                         (implies (svarlist-addr-p (svexlist-vars x))
+                                  (svarlist-addr-p (svexlist-vars new-x)))))
+    (if (atom x)
+        nil
+      (cons (svex-unset-nonblocking (car x))
+            (svexlist-unset-nonblocking (cdr x)))))
+  ///
+  (verify-guards svex-unset-nonblocking)
+  (deffixequiv-mutual svex-unset-nonblocking)
+  (memoize 'svex-unset-nonblocking :condition '(svex-case (svex-fix x) :call)))
+  
+
+
 
 (defines vl-procedural-assign->svstmts
 
@@ -419,6 +538,11 @@ because... (BOZO)</p>
              ((mv err longest-static-prefix-svex lsp-type dynselect-expr)
               (vl-operandinfo-to-svex-longest-static-prefix
                opinfo indices ss scopes))
+             (longest-static-prefix-svex (if blockingp
+                                             longest-static-prefix-svex
+                                           (sv::svex-set-nonblocking
+                                            longest-static-prefix-svex)))
+
              (dynselect-trunc (sv::svcall sv::concat (svex-int dyn-size) dynselect-expr (svex-x)))
              ((when err)
               (mv nil
@@ -428,14 +552,14 @@ because... (BOZO)</p>
                   nil nil))
 
              ((list dynselect-final)
-              (time$ (sv::svexlist-rewrite-top (list dynselect-trunc))
+              (time$ (sv::svexlist-rewrite-top (list dynselect-trunc) :verbosep nil)
                      :mintime 1/2
                      :msg "vl-procedural-assign->svstmts: rewriting dynamic select ~s0: ~st sec, ~sa bytes~%"
                      :args (list (vl-pps-expr lhs))))
 
-             ((mv err dyn-rhs)
+             ((mv err final-rhs)
               (sv::svex-resolve-single-assignment
-               dynselect-final rhssvex *svex-longest-static-prefix-var*))
+               dynselect-final rhssvex *svex-longest-static-prefix-var* longest-static-prefix-svex))
              ((when err)
               (mv nil
                   (fatal :type :vl-assignstmt-fail
@@ -443,9 +567,9 @@ because... (BOZO)</p>
                          :args (list lhs err))
                   nil nil))
 
-             (final-rhs (sv::svex-replace-var dyn-rhs *svex-longest-static-prefix-var*
-                                              longest-static-prefix-svex))
-             (- (clear-memoize-table 'sv::svex-replace-var))
+             ;; (final-rhs (sv::svex-replace-var dyn-rhs *svex-longest-static-prefix-var*
+             ;;                                  longest-static-prefix-svex))
+             ;; (- (clear-memoize-table 'sv::svex-replace-var))
 
              ((mv err lsp-size) (vl-datatype-size lsp-type))
              ((unless (and (not err) lsp-size))
@@ -1055,14 +1179,21 @@ because... (BOZO)</p>
        ((when x.sign)
         (mv warnings nil
             (make-vl-coretype :name :vl-logic :pdims dims :signedp (eq x.sign :vl-signed))))
-       ((wmv warnings signedness) (vl-expr-typedecide override ss scopes))
-       ((unless signedness)
+       ((wmv warnings class) (vl-expr-typedecide override ss scopes))
+       ((unless (vl-integer-arithclass-p class))
+        ;; BOZO we might eventually try to extend this to support reals, but
+        ;; we'd have to look at what happens when you do parameter p = 1.0 and
+        ;; similar.  Also, note below that we return a coretype that is a logic.
+        ;; Do we rely on that?  If so we'd have to rework it to handle other
+        ;; kinds of types like reals.
         (mv warnings
             (vmsg "Couldn't decide signedness of parameter override ~a0" override)
             nil)))
 
     (mv warnings nil
-        (make-vl-coretype :name :vl-logic :pdims dims :signedp (eq signedness :vl-signed))))
+        (make-vl-coretype :name :vl-logic
+                          :pdims dims
+                          :signedp (vl-arithclass-equiv class :vl-signed-int-class))))
   ///
   (defret vl-datatype-resolved-p-of-vl-implicitvalueparam-final-type
     (implies (not err)
@@ -1190,11 +1321,7 @@ because... (BOZO)</p>
                    :msg "Datatype ~a0 unresolved when evaluating expression ~a1"
                    :args (list type x)))
             x (svex-x)))
-       ((mv warnings signedness)
-        (if type
-            (b* (((mv ?caveat signedness) (vl-datatype-signedness type)))
-              (mv nil signedness))
-          (vl-expr-typedecide x ss scopes)))
+       (warnings nil)
        ((wmv warnings svex size)
         (if type
             (b* (((mv ?err size) (vl-datatype-size type))
@@ -1212,7 +1339,13 @@ because... (BOZO)</p>
             (b* (((mv warnings svex ?type size)
                   (vl-expr-to-svex-untyped x ss scopes)))
               (mv warnings svex size)))))
-       ((unless (and (posp size) signedness))
+       ((wmv warnings class)
+        (if type
+            (b* (((mv ?caveat class) (vl-datatype-arithclass type)))
+              (mv nil class))
+          (vl-expr-typedecide x ss scopes)))
+       ((unless (and (posp size)
+                     (vl-integer-arithclass-p class)))
         ;; presumably already warned about this?
         (mv nil nil warnings x (svex-x)))
        (svex (sv::svex-reduce-consts svex))
@@ -1220,7 +1353,7 @@ because... (BOZO)</p>
        ((unless val)
         (mv t nil warnings x svex))
        (new-x (make-vl-literal
-               :val (vl-4vec-to-value val size :signedness signedness)
+               :val (vl-4vec-to-value val size :signedness (vl-integer-arithclass->exprsign class))
                :atts (cons (cons "VL_ORIG_EXPR" x) (vl-expr->atts x)))))
     (mv t t warnings new-x svex)))
 
@@ -1265,7 +1398,8 @@ because... (BOZO)</p>
                       :hints (("goal" :use vl-evatomtype-p-of-vl-evatom->type
                                :in-theory (e/d (vl-evatomtype-p)
                                                (vl-evatomtype-p-of-vl-evatom->type))))
-                      :rule-classes ((:forward-chaining :trigger-terms ((vl-evatom->type x)))))))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-evatom->type x))))))
+             (local (in-theory (disable sv::svex-vars-of-svex-add-delay))))
   (b* (((when (atom x)) (mv nil (sv::svex-quote (sv::2vec 0))))
        ((vl-evatom x1) (car x))
        (warnings nil)
@@ -1273,62 +1407,35 @@ because... (BOZO)</p>
         (vl-expr-to-svex-untyped x1.expr ss scopes))
        (delay-expr (sv::svex-add-delay expr 1))
        ;; Note: Ensure these expressions always evaluate to either -1 or 0.
+       ;; BOZO Using bitsel in some of these places is weird because it
+       ;; produces a zero-extended 1-bit value.  Therefore, e.g., the bitnot of
+       ;; this value is either -1 or -2, which might not be what's intended.
+       ;; However, in all these operations, such expressions are BITANDed with
+       ;; another bitsel, which zeroes out the upper bits anyway.
        (trigger1 (case x1.type
                    (:vl-noedge
                     ;; expr and delay-expr are unequal
-                    (sv::make-svex-call
-                     :fn 'sv::bitnot
-                     :args (list (sv::make-svex-call
-                                  :fn 'sv::==
-                                  :args (list expr delay-expr)))))
+                    (sv::svcall sv::bitnot (sv::svcall sv::== expr delay-expr)))
                    (:vl-posedge
                     ;; SystemVerilog says a posedge is only detected for the LSB. (9.4.2 Event Control)
-                    (sv::make-svex-call
-                     :fn 'sv::uor ;; Just reduction or on the 1-bit bitand to obey the Boolean Convention.
-                     :args (list (sv::make-svex-call
-                                  :fn 'sv::bitand
-                                  :args (list (sv::make-svex-call  ;; Not of delayed bit 0
-                                               :fn 'sv::bitnot
-                                               :args (list (sv::make-svex-call
-                                                            :fn 'sv::bitsel
-                                                            :args (list (sv::svex-quote (sv::2vec 0))
-                                                                        delay-expr))))
-                                              (sv::make-svex-call  ;; Current bit 0
-                                               :fn 'sv::bitsel
-                                               :args (list (sv::svex-quote (sv::2vec 0))
-                                                           expr)))))))
+                    (sv::svcall sv::uor ;; Just reduction or on the 1-bit bitand to obey the Boolean Convention.
+                                (sv::svcall sv::bitand
+                                            (sv::svcall sv::bitnot (sv::svex-zerox 1 delay-expr))
+                                            (sv::svex-zerox 1 expr))))
                    (:vl-negedge
                     ;; SystemVerilog says a negedge is only detected for the LSB. (9.4.2 Event Control)
-                    (sv::make-svex-call
-                     :fn 'sv::uor ;; Just reduction or on the 1-bit bitand to obey the Boolean Convention.
-                     :args (list (sv::make-svex-call
-                                  :fn 'sv::bitand
-                                  :args (list (sv::make-svex-call ;; Not of current bit 0
-                                               :fn 'sv::bitnot
-                                               :args (list (sv::make-svex-call
-                                                            :fn 'sv::bitsel
-                                                            :args (list (sv::svex-quote (sv::2vec 0))
-                                                                        expr))))
-                                              (sv::make-svex-call ;; Delayed bit 0
-                                               :fn 'sv::bitsel
-                                               :args (list (sv::svex-quote (sv::2vec 0))
-                                                           delay-expr)))))))
+                    (sv::svcall sv::uor ;; Just reduction or on the 1-bit bitand to obey the Boolean Convention.
+                                (sv::svcall sv::bitand
+                                            (sv::svcall sv::bitnot (sv::svex-zerox 1 expr))
+                                            (sv::svex-zerox 1 delay-expr))))
                    (:vl-edge
                     ;; We want either a posedge or negedge but only on the LSB.
                     ;;  Posedge is AND(NOT(prev0), curr0)
                     ;;  Negedge is AND(prev0, NOT(curr0))
-                    (sv::make-svex-call
-                     :fn 'sv::uor ;; Just reduction or on the 1-bit bitxor to obey the Boolean Convention.
-                     :args (list (sv::make-svex-call
-                                  :fn 'sv::bitxor
-                                  :args (list (sv::make-svex-call ;; Current bit 0
-                                               :fn 'sv::bitsel
-                                               :args (list (sv::svex-quote (sv::2vec 0))
-                                                           expr))
-                                              (sv::make-svex-call ;; Delayed bit 0
-                                               :fn 'sv::bitsel
-                                               :args (list (sv::svex-quote (sv::2vec 0))
-                                                           delay-expr)))))))))
+                    (sv::svcall sv::uor ;; Just reduction or on the 1-bit bitxor to obey the Boolean Convention.
+                                (sv::svcall sv::bitxor
+                                            (sv::svex-zerox 1 expr)
+                                            (sv::svex-zerox 1 delay-expr))))))
        ((wmv warnings rest)
         (vl-evatomlist->svex (cdr x) ss scopes)))
     (mv warnings
@@ -1617,18 +1724,27 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
           of the variables that are supposed to be written."
   :returns (assigns assigns-p)
   :measure (len (svex-alist-fix x))
+  :prepwork ((local (defthm integerp-when-4vmask-p
+                      (implies (4vmask-p x) (integerp x)))))
   (b* ((x (svex-alist-fix x))
        (masks (4vmask-alist-fix masks))
        ((when (atom x)) nil)
        ((cons var rhs) (car x))
        (mask (or (cdr (hons-get var masks)) 0))
-       (lhs (svar->lhs-by-mask var mask)))
+       (lhs (svar->lhs-by-mask var mask))
+       (fullmaskp (acl2::logmaskp mask)))
     (cons (cons lhs
                 (make-driver
-                 :value (make-svex-call :fn 'bit?
-                                        :args (list (sv::svex-quote (sv::2vec mask))
-                                                    rhs
-                                                    (svex-z)))))
+                 :value
+                 (if fullmaskp
+                     ;; Optimization: if it is a full mask, then the LHS only
+                     ;; covers the bits we want to write anyway, so we can
+                     ;; avoid making this bit? call.
+                     rhs
+                   (make-svex-call :fn 'bit?
+                                   :args (list (sv::svex-quote (sv::2vec mask))
+                                               rhs
+                                               (svex-z))))))
           (svex-alist->assigns (cdr x) masks)))
   ///
 
@@ -1860,9 +1976,106 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 ||#
 
+#!sv
+(define svex-alist-unset-nonblocking ((x svex-alist-p))
+  :returns (new-x (and (svex-alist-p new-x)
+                       (implies (svarlist-addr-p (svex-alist-keys x))
+                                (svarlist-addr-p (svex-alist-keys new-x)))
+                       (implies (svarlist-addr-p (svex-alist-vars x))
+                                (svarlist-addr-p (svex-alist-vars new-x))))
+                  :hints(("Goal" :in-theory (enable svar-addr-p))))
+  :prepwork ((local (defthmd svex-alist-vars-expand1
+                      (equal (svex-alist-vars x)
+                             (and (consp (svex-alist-fix x))
+                                  (union (svex-vars (cdar (svex-alist-fix x)))
+                                         (svex-alist-vars (cdr (svex-alist-fix x))))))
+                      :hints(("Goal" :in-theory (enable svex-alist-vars
+                                                        svex-alist-fix)))))
+             (local (defthm svex-alist-vars-expand
+                      (implies (consp (svex-alist-fix x))
+                               (equal (svex-alist-vars x)
+                                      (union (svex-vars (cdar (svex-alist-fix x)))
+                                             (svex-alist-vars (cdr (svex-alist-fix x))))))
+                      :hints(("Goal" :use  svex-alist-vars-expand1))))
+             (local (defthmd svex-alist-keys-expand1
+                      (equal (svex-alist-keys x)
+                             (and (consp (svex-alist-fix x))
+                                  (cons (caar (svex-alist-fix x))
+                                        (svex-alist-keys (cdr (svex-alist-fix x))))))
+                      :hints(("Goal" :in-theory (enable svex-alist-keys
+                                                        svex-alist-fix)))))
+             (local (defthm svex-alist-keys-expand
+                      (implies (consp (svex-alist-fix x))
+                               (equal (svex-alist-keys x)
+                                      (cons (caar (svex-alist-fix x))
+                                            (svex-alist-keys (cdr (svex-alist-fix x))))))
+                      :hints(("Goal" :use svex-alist-keys-expand1)))))
+  :measure (len (svex-alist-fix x))
+  (b* ((x (svex-alist-fix x)))
+    (if (atom x)
+        nil
+      (cons (cons (change-svar (caar x) :nonblocking nil)
+                  (svex-unset-nonblocking (cdar x)))
+            (svex-alist-unset-nonblocking (cdr x))))))
+
+#!sv
+(define 4vmask-alist-unset-nonblocking ((x 4vmask-alist-p))
+  ;; :returns (new-x (and (4vmask-alist-p new-x)
+  ;;                      (implies (svarlist-addr-p (4vmask-alist-keys x))
+  ;;                               (svarlist-addr-p (4vmask-alist-keys new-x)))
+  ;;                      (implies (svarlist-addr-p (4vmask-alist-vars x))
+  ;;                               (svarlist-addr-p (4vmask-alist-vars new-x))))
+  ;;                 :hints(("Goal" :in-theory (enable svar-addr-p))))
+  ;; :prepwork ((local (defthmd 4vmask-alist-vars-expand1
+  ;;                     (equal (4vmask-alist-vars x)
+  ;;                            (and (consp (4vmask-alist-fix x))
+  ;;                                 (union (svex-vars (cdar (4vmask-alist-fix x)))
+  ;;                                        (4vmask-alist-vars (cdr (4vmask-alist-fix x))))))
+  ;;                     :hints(("Goal" :in-theory (enable 4vmask-alist-vars
+  ;;                                                       4vmask-alist-fix)))))
+  ;;            (local (defthm 4vmask-alist-vars-expand
+  ;;                     (implies (consp (4vmask-alist-fix x))
+  ;;                              (equal (4vmask-alist-vars x)
+  ;;                                     (union (svex-vars (cdar (4vmask-alist-fix x)))
+  ;;                                            (4vmask-alist-vars (cdr (4vmask-alist-fix x))))))
+  ;;                     :hints(("Goal" :use  4vmask-alist-vars-expand1))))
+  ;;            (local (defthmd 4vmask-alist-keys-expand1
+  ;;                     (equal (4vmask-alist-keys x)
+  ;;                            (and (consp (4vmask-alist-fix x))
+  ;;                                 (cons (caar (4vmask-alist-fix x))
+  ;;                                       (4vmask-alist-keys (cdr (4vmask-alist-fix x))))))
+  ;;                     :hints(("Goal" :in-theory (enable 4vmask-alist-keys
+  ;;                                                       4vmask-alist-fix)))))
+  ;;            (local (defthm 4vmask-alist-keys-expand
+  ;;                     (implies (consp (4vmask-alist-fix x))
+  ;;                              (equal (4vmask-alist-keys x)
+  ;;                                     (cons (caar (4vmask-alist-fix x))
+  ;;                                           (4vmask-alist-keys (cdr (4vmask-alist-fix x))))))
+  ;;                     :hints(("Goal" :use 4vmask-alist-keys-expand1)))))
+  :returns (new-x 4vmask-alist-p)
+  :measure (len (4vmask-alist-fix x))
+  (b* ((x (4vmask-alist-fix x)))
+    (if (atom x)
+        nil
+      (cons (cons (change-svar (caar x) :nonblocking nil)
+                  (cdar x))
+            (4vmask-alist-unset-nonblocking (cdr x))))))
+  
+
+
+
+#!sv
+(local (defthm svex-lookup-of-badguy-in-alist
+         (implies (not (member (svar-fix v) (svex-alist-keys a)))
+                  (not (svex-lookup v a)))))
+
+;; (local (in-theory (disable sv::member-svex-alist-keys)))
+
 (define vl-always->svex ((x vl-always-p)
                          (ss vl-scopestack-p)
-                         (scopes vl-elabscopes-p))
+                         (scopes vl-elabscopes-p)
+                         &key
+                         (verbosep 'nil))
   :short "Translate a combinational or latch-type always block into a set of SVEX
           expressions."
   :returns (mv (warnings vl-warninglist-p)
@@ -1907,18 +2120,20 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                           nil)) ;; fnname
        ((unless ok) (mv warnings nil))
        ;; Only use the nonblocking-delay strategy for flops, not latches
+       (locstring (vl-location-string x.loc))
        ((wmv ok warnings st)
         (time$ (sv::svstmtlist-compile-top svstmts :reclimit *vl-svstmt-compile-reclimit*
                                            :nb-delayp nil)
                :mintime 1/2
                :msg "; vl-always->svex: compiling statement at ~s0: ~st sec, ~sa bytes~%"
-               :args (list (vl-location-string x.loc))))
+               :args (list locstring)))
        ((unless ok) (mv warnings nil))
 
        ((sv::svstate st) (sv::svstate-clean st))
 
        (- (sv::svstack-free st.blkst))
        (st.blkst (make-fast-alist (sv::svstack-to-svex-alist st.blkst)))
+       (st.nonblkst (sv::svex-alist-unset-nonblocking st.nonblkst))
        (blk-written-vars (sv::svex-alist-keys st.blkst))
        (nb-written-vars  (sv::svex-alist-keys st.nonblkst))
 
@@ -1941,25 +2156,37 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
        (nb-read-vars (sv::svex-alist-vars st.nonblkst))
 
+       ;; convenient insertion point for tracking some problematic loop
+       (loc-of-interest nil)
+
        ;; Note: Because we want to warn about latches in a combinational
        ;; context, we do a rewrite pass before substituting.
-       (blkst-rw (time$ (sv::svex-alist-rewrite-fixpoint st.blkst)
-                        :mintime 1/2
+       (- (and loc-of-interest
+               (acl2::sneaky-save 'blkst st.blkst))
+          (and loc-of-interest
+               (acl2::sneaky-save 'nonblkst st.nonblkst)))
+       (blkst-rw (time$ (sv::svex-alist-rewrite-fixpoint st.blkst :verbosep verbosep)
+                        :mintime (if loc-of-interest 0 1/2)
                         :msg "; vl-always->svex at ~s0: rewriting blocking assignments: ~st sec, ~sa bytes~%"
-                        :args (list (vl-location-string x.loc))))
+                        :args (list locstring)))
                  
-       (nbst-rw  (time$ (sv::svex-alist-rewrite-fixpoint st.nonblkst)
-                        :mintime 1/2
+       (nbst-rw  (time$ (sv::svex-alist-rewrite-fixpoint st.nonblkst :verbosep verbosep)
+                        :mintime (if loc-of-interest 0 1/2)
                         :msg "; vl-always->svex at ~s0: rewriting nonblocking assignments: ~st sec, ~sa bytes~%"
-                        :args (list (vl-location-string x.loc))))
+                        :args (list locstring)))
        (read-masks (time$ (sv::svexlist-mask-alist
                            (append (sv::svex-alist-vals blkst-rw)
                                    (sv::svex-alist-vals nbst-rw)))
-                          :mintime 1/2
+                          :mintime (if loc-of-interest 0 1/2)
                           :msg "; vl-always->svex at ~s0: read masks: ~st sec, ~sa bytes~%"
-                          :args (list (vl-location-string x.loc))))
+                          :args (list locstring)))
        ((mv blkst-write-masks nbst-write-masks)
         (sv::svstmtlist-write-masks svstmts nil nil))
+       (nbst-write-masks (make-fast-alist
+                          (sv::4vmask-alist-unset-nonblocking (fast-alist-free nbst-write-masks))))
+       (- (clear-memoize-table 'sv::svex-unset-nonblocking)
+          (clear-memoize-table 'sv::svex-set-nonblocking))
+
        (write-masks (fast-alist-clean
                      (combine-mask-alists blkst-write-masks nbst-write-masks)))
 
@@ -1997,8 +2224,15 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                         blkst-subst))
 
        (updates (append nbst-trigger blkst-trigger))
+       (- (and loc-of-interest
+               (acl2::sneaky-save 'updates updates)))
+       (- (and loc-of-interest (break$)))
+       (updates-rw (time$ (sv::svex-alist-rewrite-fixpoint updates :verbosep verbosep)
+                          :mintime (if loc-of-interest 0 1/2)
+                          :msg "; vl-always->svex at ~s0: rewriting final updates: ~st sec, ~sa bytes~%"
+                          :args (list (vl-location-string x.loc))))
 
-       (updates-rw (sv::svex-alist-rewrite-fixpoint updates))
+
 
        ;; Compilation was ok.  Now we need to turn the state back into a list
        ;; of assigns.  Do this by getting the masks of what portion of each
@@ -2009,7 +2243,9 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 (define vl-alwayslist->svex ((x vl-alwayslist-p)
                              (ss vl-scopestack-p)
-                             (scopes vl-elabscopes-p))
+                             (scopes vl-elabscopes-p)
+                             &key
+                             (verbosep 'nil))
   :short "Translate a combinational or latch-type always block into a set of SVEX
           expressions."
   :returns (mv (warnings vl-warninglist-p)
@@ -2018,12 +2254,12 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((warnings nil)
        ((when (atom x)) (mv (ok) nil))
        ((wmv warnings assigns1)
-        (time$ (vl-always->svex (car x) ss scopes)
+        (time$ (vl-always->svex (car x) ss scopes :verbosep verbosep)
                :mintime 1
                :msg "; vl-always->svex at ~s0 total: ~st sec, ~sa bytes~%"
                :args (list (vl-location-string (vl-always->loc (car x))))))
        ((wmv warnings assigns2)
-        (vl-alwayslist->svex (cdr x) ss scopes)))
+        (vl-alwayslist->svex (cdr x) ss scopes :verbosep verbosep)))
     (mv warnings
         (append-without-guard assigns1 assigns2))))
 

@@ -263,13 +263,15 @@
             (when entry.takes-dimensionsp
               (dims := (vl-parse-0+-packed-dimensions)))
             (return
-             (make-vl-coretype :name entry.coretypename
-                               :signedp (if signing
-                                            (if (eq (vl-token->type signing) :vl-kwd-signed)
-                                                t
-                                              nil)
-                                          entry.default-signedp)
-                               :pdims dims))))))
+             (let ((ans (make-vl-coretype :name entry.coretypename
+                                    :signedp (if signing
+                                                 (if (eq (vl-token->type signing) :vl-kwd-signed)
+                                                     t
+                                                   nil)
+                                               entry.default-signedp)
+                                    :pdims dims)))
+               (mbe :logic ans
+                    :exec (if (atom dims) (hons-copy ans) ans))))))))
 
 
 
@@ -441,7 +443,7 @@
 (defaggregate vl-vardeclassign
   :parents (vl-parse-datatype vl-build-vardecls)
   :short "Temporary structure used when parsing variable declarations."
-  :legiblep nil
+  :layout :fulltree
   ((id   stringp :rule-classes :type-prescription)
    (dims vl-packeddimensionlist-p "BOZO not sufficiently general.")
    (expr vl-maybe-expr-p          "BOZO not sufficiently general."))

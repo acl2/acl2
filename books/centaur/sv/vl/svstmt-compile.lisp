@@ -36,7 +36,7 @@
 (include-book "../svex/rewrite")
 (include-book "centaur/vl/util/warnings" :dir :System)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -73,6 +73,7 @@
 
 (fty::deflist svstack :elt-type svex-alist-p)
 
+
 (define svstack-to-svex-alist ((x svstack-p))
   :returns (x-alist svex-alist-p)
   (if (atom x)
@@ -95,6 +96,12 @@
                     (or (svex-lookup k (car x))
                         (svex-lookup k (svstack-to-svex-alist (cdr x))))))
     :hints(("Goal" :in-theory (enable svstack-to-svex-alist svex-lookup))))
+
+  (defthm svex-vars-of-svstack-to-svex-alist-cons
+    (set-equiv (svex-alist-vars (svstack-to-svex-alist (cons a b)))
+               (append (svex-alist-vars a)
+                       (svex-alist-vars (svstack-to-svex-alist b))))
+    :hints(("Goal" :in-theory (enable svex-alist-vars))))
 
   (defthm svstack-to-svex-alist-when-atom
     (implies (atom x)
@@ -655,7 +662,20 @@ exists there.</p>"
     :hints(("Goal" :in-theory (enable svjumpstates-compatible)))))
 
 
+#||
+(trace$ (svstmt-assign->subst
+         :entry (list 'svstmt-assign->subst
+                      :lhs lhs
+                      :rhs (car (svexlist-rewrite-fixpoint (list rhs)))
+                      :offset offset
+                      :blockingp blockingp)
+         :exit (b* ((st value))
+                 (list 'svstmt-assign->subst
+                       :blkst (clean-svstack (svstate->blkst st))
+                       :nonblkst (svex-alist-rewrite-fixpoint (fast-alist-free (fast-alist-fork (svstate->nonblkst st) nil)))))))
+        
 
+||#
 
 (define svstmt-assign->subst ((lhs lhs-p  "E.g., {a[3:0], b[2:1]}, reverse order lhs.")
                               (rhs svex-p)
@@ -1871,16 +1891,20 @@ exists there.</p>"
 
 (trace$ (svstmt-compile :entry (list 'svstmt-compile
                                      (svstmt-kind x))
-                        :exit (b* (((list ?ok ?warnings st jst) values))
+                        :exit (b* (((list ?ok ?warnings st ?jst) values))
                                 (list 'svstmt-compile
-                                      (clean-svstack (svstate->blkst st))
-                                      :returncond (car (svexlist-rewrite-fixpoint
-                                                        (list (svjumpstate->returncond jst))))
-                                      :returnst
-                                      (clean-svstack
-                                       (svstate->blkst (svjumpstate->returnst jst)))))
+                                      (svstmt-kind x)
+                                      :blkst (clean-svstack (svstate->blkst st))
+                                      :nonblkst (svex-alist-rewrite-fixpoint (fast-alist-free (fast-alist-fork (svstate->nonblkst st) nil)))
+                                      
+                                      ;; :returncond (car (svexlist-rewrite-fixpoint
+                                      ;;                   (list (svjumpstate->returncond jst))))
+                                      ;; :returnst
+                                      ;; (clean-svstack
+                                      ;;  (svstate->blkst (svjumpstate->returnst jst)))
+                                      ))
                         :hide nil
-                        :evisc-tuple '(nil 6 12 nil)))
+                        :evisc-tuple '(nil 10 10 nil)))
 
 
 (define svex-compose-svstack-trace ((x svex-p) (a svstack-p))
@@ -1949,6 +1973,7 @@ exists there.</p>"
 
 ||#
 
+
 (defines svstmt-compile
   :verify-guards nil
   (define svstmt-compile ((x svstmt-p)
@@ -1964,6 +1989,7 @@ exists there.</p>"
     (b* ((x              (svstmt-fix x))
          ((svstate st)   (svstate-fix st))
          (warnings       nil))
+      (clear-memoize-table 'svex-compose-svstack)
       (svstmt-case x
         :assign
         ;; {foo, bar[3]} = a + b
@@ -2007,7 +2033,9 @@ exists there.</p>"
                     (make-empty-svjumpstate st))))
                     
                            
-             (composed-rhs (svex-compose-svstack x.rhs st.blkst))
+             (composed-rhs (svex-compose-svstack x.rhs (if x.blockingp
+                                                           st.blkst
+                                                         (cons st.nonblkst st.blkst))))
              (composed-rhs (if (and (eq nb-delayp t)
                                     (not x.blockingp))
                                (svex-add-delay composed-rhs 1)

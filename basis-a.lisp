@@ -1122,7 +1122,7 @@
                                    old-iprint-ar
 
 ; If we change the :order to < from :none, then we need to reverse iprint-alist
-; just below.  But first read the comment in disable-iprint-ar to see why we
+; just below.  But first read the comment in disable-iprint-ar to see why
 ; changing the :order from :none requires some thought.
 
                                    iprint-alist))))))
@@ -5790,15 +5790,39 @@
                                 :initial-element ',init)
                   (defstobj-raw-init-fields (cdr field-templates)))))))))
 
+(defun defstobj-raw-init-setf-forms (var index raw-init-fields acc)
+  (cond ((endp raw-init-fields) acc) ; no need to reverse
+        (t (defstobj-raw-init-setf-forms
+             var
+             (1+ index)
+             (cdr raw-init-fields)
+             (cons `(setf (svref ,var ,index)
+                          ,(car raw-init-fields))
+                   acc)))))
+
 (defun defstobj-raw-init (template)
 
 ; This function generates the initialization code for the live object
 ; representing the stobj name.
 
-  (let ((field-templates (access defstobj-template template :field-templates)))
-    `(coerce ; GCL complains when VECTOR is called on more than 64 arguments.
-      (list ,@(defstobj-raw-init-fields field-templates))
-      'vector)))
+  (let* ((field-templates (access defstobj-template template :field-templates))
+         (raw-init-fields (defstobj-raw-init-fields field-templates))
+         (len (length field-templates)))
+    `(cond
+      ((< ,len call-arguments-limit)
+
+; This check is necessary because GCL complains when VECTOR is called on more
+; than 64 arguments.  Actually, the other code -- where LIST is called instead
+; of VECTOR -- is in principle just as problematic when field-templates is at
+; least as long as call-arguments-limit.  However, GCL has (through 2015 at
+; least) been forgiving when LIST is called with too many arguments (as per
+; call-arguments-limit).
+
+       (vector ,@raw-init-fields))
+      (t
+       (let ((v (make-array$ ,len)))
+         ,@(defstobj-raw-init-setf-forms 'v 0 raw-init-fields nil)
+         v)))))
 
 (defun defstobj-component-recognizer-calls (field-templates n var ans)
 

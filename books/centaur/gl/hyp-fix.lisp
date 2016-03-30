@@ -32,8 +32,8 @@
 (include-book "bfr")
 (include-book "bfr-param")
 (include-book "bfr-reasoning")
-(include-book "centaur/misc/absstobjs" :dir :system)
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
 (local (include-book "centaur/aig/aig-vars" :dir :system))
 

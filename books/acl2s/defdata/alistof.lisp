@@ -54,7 +54,7 @@ data last modified: [2014-08-06]
   (b* ((M (append new-types (table-alist 'type-metadata-table wrld)))
        (pred (predicate-name name M))
        ((when (not (proper-symbolp pred))) (er hard? 'alistof-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
-       ((mv symbol-alist-subtypep ?keypred)
+       ((mv symbol-alist-subtypep ?keypred) 
         (if (and (proper-symbolp keybody) (assoc-eq keybody M))
             (mv (subtype-p (predicate-name keybody M) 'acl2::symbolp wrld) (predicate-name keybody M))
           (mv nil :undef)))
@@ -93,11 +93,11 @@ data last modified: [2014-08-06]
   (b* (((cons name A) p)
        ((acl2::assocs pdef new-types kwd-alist) A) ;ignore odef
        (kwd-alist (append kwd-alist top-kwd-alist)))
-
+       
     (case-match pdef
       (('ALISTOF key-body val-body) (alistof-theory-events name key-body val-body new-types kwd-alist wrld))
       (& '()))))
-
+             
 
 (defloop user-alistof-theory-events1 (ps kwd-alist wrld)
   (for ((p in ps)) (append (alistof-theory-ev p kwd-alist wrld))))
@@ -115,12 +115,12 @@ data last modified: [2014-08-06]
                             :interval 5
                             :msg "Elapsed runtime in theory events for alistof is ~st secs;~|~%")
               :invisible)))
-
+          
           events))))
 
 (logic)
 (deflabel alistof)
-(register-user-combinator alistof
+(register-user-combinator alistof 
  :arity 2 :verbose t
  :aliases (acl2::alistof)
  :expansion (lambda (_name _args) `(OR nil (acons ,(car _args) ,(cadr _args) ,_name)))

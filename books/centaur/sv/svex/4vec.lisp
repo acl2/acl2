@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "4vec-base")
 (include-book "4vec-subtypes")
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "centaur/4v-sexpr/4v-logic" :dir :system)
 (include-book "centaur/bitops/fast-logext" :dir :system)
 (include-book "centaur/bitops/parity" :dir :system)
@@ -1731,6 +1731,83 @@ an unknown.</p>"
 
 
 
+(define 4vec-part-select ((lsb 4vec-p)
+                          (width 4vec-p)
+                          (in 4vec-p))
+  :short "Part select operation: select @('width') bits of @('in') starting at @('lsb')."
+  :returns (res 4vec-p)
+  (if (and (2vec-p lsb)
+           (2vec-p width)
+           (<= 0 (2vec->val width)))
+      (b* ((lsbval (2vec->val lsb))
+           ((when (<= 0 lsbval))
+            (4vec-zero-ext width (4vec-rsh lsb in))))
+        (4vec-zero-ext width (4vec-concat (2vec (- lsbval)) (4vec-x) in)))
+    (4vec-x)))
+
+(define 4vec-part-install ((lsb 4vec-p)
+                           (width 4vec-p)
+                           (in 4vec-p)
+                           (val 4vec-p))
+  :short "Part install operation: replace @('width') bits of @('in') starting at
+          @('lsb') with the least-significant bits of @('val')."
+  :returns (res 4vec-p)
+  (if (and (2vec-p lsb)
+           (2vec-p width)
+           (<= 0 (2vec->val width)))
+      (b* ((lsbval (2vec->val lsb))
+           (widthval (2vec->val width))
+           ((when (<= 0 lsbval))
+            ;; normal case: result is LSB bits of in, followed by val, followed by more in
+            (4vec-concat lsb in (4vec-concat width val (4vec-rsh (2vec (+ lsbval widthval)) in))))
+           ((when (<= widthval (- lsbval)))
+            ;; if we're writing width bits starting more than width bits below 0, in is unchanged
+            (4vec-fix in)))
+        ;; otherwise, we're writing, for example,
+        ;; 5 bits starting at -3 -- which means 2 bits of val starting at 3, followed by in starting at bit 2.
+        (4vec-concat (2vec (+ widthval lsbval))
+                     (4vec-rsh (2vec (- lsbval)) val)
+                     (4vec-rsh (2vec (+ widthval lsbval)) in)))
+    (4vec-x))
+  ///
+  (local (in-theory (disable unsigned-byte-p)))
+
+  ;; some sanity checks
+  (defthm 4vec-part-install-of-part-select
+    (implies (and (2vec-p lsb) (2vec-p width) (<= 0 (2vec->val width)))
+             (equal (4vec-part-install lsb width in (4vec-part-select lsb width in))
+                    (4vec-fix in)))
+    :hints(("Goal" :in-theory (enable 4vec-part-select
+                                      4vec-zero-ext
+                                      4vec-concat
+                                      4vec-rsh))
+           (logbitp-reasoning :prune-examples nil)))
+
+
+  (defthm 4vec-part-select-of-install
+    (implies (and (2vec-p lsb) (2vec-p width)
+                  (<= 0 (2vec->val width)))
+             (equal (4vec-part-select lsb width (4vec-part-install lsb width in val))
+                    (if (< (2vec->val lsb) 0)
+                        (if (< (- (2vec->val lsb)) (2vec->val width))
+                            (4vec-concat (2vec (- (2vec->val lsb)))
+                                         (4vec-x)
+                                         (4vec-zero-ext
+                                          (2vec (+ (2vec->val width) (2vec->val lsb)))
+                                          (4vec-rsh (2vec (- (2vec->val lsb))) val)))
+                          (4vec-zero-ext width (4vec-x)))
+                      (4vec-zero-ext width val))))
+    :hints(("Goal" :in-theory (enable 4vec-part-select
+                                      4vec-zero-ext
+                                      4vec-concat
+                                      4vec-rsh))
+           (logbitp-reasoning :prune-examples nil))))
+
+
+
+
+
+
 
 ;;ANNA: Converting 4vec-p / 4veclist-p to string(s) of 0s, 1s, Xs, and Zs
 ;;MSB first
@@ -1800,4 +1877,8 @@ an unknown.</p>"
      (4vec-p-to-stringp (car x))
      (4veclist-p-to-stringp (cdr x))))
   )
+
+
+
+
 

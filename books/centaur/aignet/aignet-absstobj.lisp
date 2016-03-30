@@ -31,8 +31,8 @@
 (in-package "AIGNET")
 (include-book "aignet-exec")
 (include-book "aignet-logic-interface")
-(include-book "centaur/misc/absstobjs" :dir :system)
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (local (include-book "aignet-exec-thms"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -40,25 +40,21 @@
 (local (include-book "clause-processors/generalize" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable set::double-containment)))
-(local (in-theory (disable nth update-nth
-                           acl2::nfix-when-not-natp
+(local (in-theory (disable set::double-containment
+                           nth
+                           update-nth
                            resize-list
+                           acl2::nfix-when-not-natp
                            acl2::resize-list-when-empty
                            acl2::make-list-ac-redef
                            set::double-containment
                            set::sets-are-true-lists
-                           make-list-ac)))
-
-(local (in-theory (disable true-listp-update-nth
+                           make-list-ac
+                           true-listp-update-nth
                            acl2::nth-with-large-index)))
-
-
-
 
 (local
  (progn
-
 
    (defun-sk innums-correct (aignetc aigneta)
      (forall n
@@ -456,467 +452,407 @@
 (defstobj-clone aignet2 aignet :suffix "2")
 
 
-(defxdoc aignet
-  :parents (acl2::boolean-reasoning)
-  :short "An efficient, @(see acl2::stobj)-based And-Inverter Graph (AIG)
-representation for Boolean functions and finite-state machines."
-  :long
-  "<p>An and-inverter graph (AIG) at its most basic is a DAG whose nodes are either
-AND gates, outputs, or inputs.  Outputs have 1 descendant, ANDs have 2, and
-inputs have none.  An edge may point to an AND or an input, but not an output.
-Each edge has a Boolean attribute signifying whether it is negated or not.</p>
 
-<p>We call this a combinational AIG.  AIGNET, following packages like ABC,
-implements a sequential AIG, by dividing the inputs and outputs into two
-categories, \"register\" and \"primary\".  A sequential AIG can be seen as a
-combinational AIG by just ignoring these distinctions; when we wish to ignore
-the register/primary distinctions we refer to <i> combinational inputs </i>
-and <i> combinational outputs </i>.  Confusingly, combinational inputs of
-the register type are called <i>register outputs</i> -- it is an output
-from a register, but are read (like inputs) by the combinational logic -- and
-combinational outputs of the register type are called <i>register
-inputs</i> -- they are inputs to registers, but are written (like outputs)
-by the combinational logic.  Register inputs, like primary outputs, have one
-descendant and may not be the descendant of another node; register outputs,
-like primary inputs, have no descendants and may be the descendant of another
-node.</p>
-
-<p>Sequential semantics for an AIG network can be summarized as follows:<br/>
- Initially, assign initial values to the register output nodes.<br/>
- Every cycle,<br/>
-  <ul><li>assign values to the primary inputs</li>
-      <li>copy values from register outputs to corresponding register inputs</li>
-      <li>compute values of AND gates in topological order</li>
-      <li>compute values of primary outputs and register inputs.</li></ul></p>
-
-<p>During the period of computing values for ANDs/primary outputs/register inputs,
-the circuit is basically treated as combinational -- register outputs and
-primary inputs are treated identically, as are primary outputs and register
-inputs.</p>
-
-<p>Usage and implementation are discussed in the subtopics.</p>")
-
-(defsection aignet-impl
+(defsection base-api
   :parents (aignet)
-  :short "Implementation details of AIGNET"
-  :long
-  "<p>The AIGNET network consists mainly of an array of nodes representing a
-topologically sorted DAG described in @(see aignet).  This uses a stobj called
-@('AIGNET').</p>
+  :short "Lowest-level functions for working with the @('aignet') stobj."
 
-<p>Each node in the graph has an ID, a natural number that can be used to look
-up that node in the array.  However, often our functions take arguments that
-may be a node or its negation; we encode this as a <i>literal</i>, as 2*ID+NEG,
-where NEG is 1 signifying negated or 0 signifying not negated.</p>
+  :long "<h3>Quick Guide</h3>
 
-<p>One arbitrary well-formedness condition that we impose on all AIGNET
-networks is that it must have a unique constant-false node with index 0.
-Therefore, the literal 0 is constant-false (the constant-false node, not
-negated), and the literal 1 is constant-true (the constant-false node,
-negated).</p>
-
-<p>Information about each node is stored in the node array as two consecutive
-32-bit numbers, and the node ID corresponds to its position: the two array
-indices of a node are 2*ID and 2*ID+1.  The two 32-bit values contained at
-these locations are broken down into two 30-bit data slots and four extra bits.
-Three of the four extra bits encode the type of the node, and the last extra
-bit encodes the phase of the node, which is its value when all inputs/registers
-are 0.  The meaning of the 30-bit data slots depends on the type of node; in
-some cases it stores a literal.</p>
-
-<p>The encoding is broken down, least-significant bits first, as:</p>
+<h5>Initialization</h5>
 <ul>
-<li>2 bits:   combinational type</li>
-<li>30 bits:  data slot 0</li>
-<li>1 bit:    register flag</li>
-<li>1 bit:    phase</li>
-<li>30 bits:  data slot 1.</li></ul>
-
-<p>The combinational types are:</p>
-<ul>
-<li>0:   constant false</li>
-<li>1:   gate</li>
-<li>2:   input</li>
-<li>3:   output</li></ul>
-
-<p>The register flag only applies to combinational inputs/outputs; it should be
-0 for constants/gates (but should also be ignored in those cases).  An input
-with the register flag set is a register output, and an output with the
-register flag set is a register input.  (Remember that the output of a register
-is an input to the combinational logic, and the input to a register is an
-output from the combinational logic.)</p>
-
-<p>So there are, in total, six types of object, encoded as follows:
-<code>
-Name               Type encoding          Register flag
-Constant                 0                    -
-AND gate                 1                    -
-Primary input            2                    0
-Register output          2                    1
-Primary output           3                    0
-Register input           3                    1.
-</code></p>
-
-<p>Only objects with type 0, 1, 2 -- constants, gates, and combinational inputs
--- may be fanins (descendents) of AND or combinational output objects;
-combinational outputs (type 3) may not.</p>
-
-<p>The meanings of the two 30-bit data slots vary based on the type:</p>
-
-<p>Constant: both data 0 and 1 are meaningless, and should be set to 0 but
-ignored</p>
-
-<p>AND gates: data 0 and 1 are literals encoding the fanins to the gate.  The
-ID part of each literal must be less than the gate ID.</p>
-
-<p>Combinational inputs: data 0 is ignored and should be 0, and fanin 1 gives
-the PI or register number, sequentially assigned and unique among
-PI/registers.</p>
-
-<p>Primary outputs: data 0 is the fanin (literal) of the output, whose ID must
-be less than the output node ID.  Data 1 is the output number.</p>
-
-<p>Register inputs: data 0 is the fanin (literal) of the register, whose ID
-must be less than this node's ID.  Fanin 1 is the ID of the corresponding
-register output, which must also be less than this node's ID.  (The register
-number of the RI is the register number of the corresponding RO.)</p>
-
-<p>Having separate register input and output objects is somewhat awkward in
-terms of saying when a network is well-formed.  In some sense, it's not
-well-formed unless every RO has a corresponding RI.  But the RIs can't be
-added until their input cones are built, and we'd like to be able to say
-the network is well-formed in some sense while it is being built.  So when
-an RO has no corresponding RI, we will say it is simply not updated -- its
-value under sequential evalutation remains the same at each frame.  A
-separate predicate can check that this isn't the case, but we won't
-generally require this for guards etc.  Furthermore, for convenience we
-also allow RIs with fanin 1 set to 0 -- in this case, they are not proper
-RIs because they do not connect to an RO, and they have no register
-number.  They are also basically irrelevant to any sequential computation,
-because no RI gets updated with their previous value.</p>
-
-<p>We require that each RI object occur later (have a larger ID) than its
-corresponding RO object.  This allows a couple of conveniences:</p>
-<ul>
-<li>there is a function for adding an RO and another function for adding an
-  RI which connects it to an existing RO.  If we allowed RIs to occur first,
-  then we'd need an additional pair of functions, for adding an unconnected
-  RI and for adding an RO connected to an RI.  Maybe we could avoid this by
-  separately allowing RO/RIs to be connected, but this seems knotty in terms
-  of well-formednes.</li>
-<li>When doing a sequential simulation or similar operation that involves
-  repeated sweeps across the AIG nodes, an RO node will be reached before
-  the corresponding RI's previous value is overwritten.  So we don't need an
-  addtional step of copying RI-&gt;RO values between frames.</li></ul>
-<p>Also, a strategy that might alleviate any inconvenience due to needing to
-add the RO before the RI: at the point of adding the RI, check whether the
-RO already exists and add it first if not.</p>
-
-<p>An AIGNET network is designed to have objects added one at a time without
-later modification.  That is, new objects may be added, but existing
-objects are not changed.  The object array itself (along with its size)
-contains enough information to fully replicate the network; in this sense,
-all other information recorded is auxiliary.  But we do also keep arrays
-of inputs, outputs, and registers.  The input and output arrays simply
-hold the IDs of inputs/outputs in the order that they were added (as
-described below, each input/output object records its input/output
-numbers, i.e. the index in the input/output array that points back to
-it).  The register array is a bit more complicated, because there are
-typically two nodes (register input and register output) associated with
-each register.  Each entry in the register array contains the ID of either
-a register input or output.  If it is a register input, then the register
-is incomplete, i.e. its output hasn't been added yet.  If it is a register
-output, then we have a complete register: the register array points to the
-register output node, which points to the register input node, which has
-the index in the register array.</p>")
-
-
-(defxdoc aignet-logic
-  :parents (aignet)
-  :short "The logical story of aignets"
-  :long
-"
-<p> An aignet object is defined as an abstract stobj.  That means that its
-implementation and its logical story are different: i.e., the code that
-actually gets executed is not the same as the logical definitions of those
-functions.  (This is true of concrete stobjs as well -- access/update functions
-are defined in terms of NTH and UPDATE-NTH, but implemented as array accesses.)
-</p>
-
-<p> Since the implementation is kept hidden, we don't discuss it in depth here
-except to say that among the basic APIs, accesses are implemented as
-constant-time operations, and updates as amortized constant-time (since there
-may be array resizes).  Implementation code is in aignet-exec.lisp or
-aignet-exec-thms.lisp, and see @(see aignet-impl).  </p>
-
-<p> Logically, an aignet is simply a list of nodes, where a node is of one of
-five types distinguished by a particular symbol in its CAR, called its
-<i>stype</i> (for \"sequential type\").  Depending on its stype, a node
-contains 0 or more fields that encode the and-inverter graph.  We will discuss
-the meanings of these fields later:</p>
-
-<ul>
-<li>Primary input --    @('(:pi)')</li>
-<li>Register --         @('(:reg)')</li>
-<li>AND gate --         @('(:gate fanin0 fanin1)')</li>
-<li>Next state --       @('(:nxst fanin regid)')</li>
-<li>Primary output --   @('(:po fanin)')</li>
+  <li>@(see aignet-clear) clears the network without resizing.</li>
+  <li>@(see aignet-init) clears the network and resize arrays.</li>
 </ul>
 
-<p>There is one other stype, @(':const'), but generally no node in the list
-actually has constant type; instead, the final CDR of the list implicitly
-contains a constant node.  Thus, the number of nodes in the aignet is
-@('(+ 1 (len aignet))').  However, we use a different function,
-@('node-count'), for this purpose so that we can feel free to use rules that
-would be expensive to generally apply to @('len').  </p>
+<h5>Network construction</h5>
+<ul>
+  <li>@(see aignet-add-in) adds a primary input</li>
+  <li>@(see aignet-add-out) adds a primary output</li>
+  <li>@(see aignet-add-gate) adds an and gate</li>
+  <li>@(see aignet-add-reg) adds a new register node; its next-state
+      should later be configured with @(see aignet-set-nxst)</li>
+</ul>
 
-<p>An aignet is constructed by simply consing new nodes onto it.  A
-newly-created or cleared aignet is just NIL, which contains only the implicit
-constant node.</p>
+<h5>Network size</h5>
+<ul>
+  <li>@(see num-nodes) returns the number of nodes in the network</li>
+  <li>@(see num-ins) returns the number of primary inputs</li>
+  <li>@(see num-outs) returns the number of primary outputs</li>
+  <li>@(see num-gates) returns the number of and gates</li>
+  <li>@(see num-regs) returns the number of register nodes</li>
+  <li>@(see num-nxsts) returns the number of next-state nodes</li>
+</ul>
 
-<p>Access to aignet nodes is primarily by ID, which is simply the number of
-nodes that were in the aignet when the node was added.  The implicit constant
-node has ID 0, the first node added to an empty aignet has ID 1, and so on.
-Thus, the ID of a node in an aignet is the length (node-count) of the suffix of
-the aignet beginning at that node.  To look up a node by ID, we use the
-function @('(lookup-id id aignet)'), which returns the unique suffix of length
-ID, or the final cdr of the aignet if the ID is out of bounds:</p> @(def
-lookup-id)
+<h5>General node queries</h5>
+<ul>
+ <li>@(see id-existsp) checks whether an ID is in bounds</li>
+ <li>@(see id->type) looks up the type of some node</li>
+ <li>@(see id->phase) gets the value of this node in the all-0 evaluation.</li>
+ <li>@(see fanin-litp) checks whether an ID can be used as a fanin.</li>
+</ul>
 
-<p>Note: This is a quadratic algorithm!  But it doesn't matter, since real
-executions of ID lookups do not use this function, but instead use array
-accesses. </p>
+<h5>Name mappings</h5>
+<ul>
+ <li>@(see innum->id) looks up the node id for the @('n')th primary input</li>
+ <li>@(see outnum->id) looks up the node id for the @('n')th primary output</li>
+ <li>@(see regnum->id) looks up the node id for the @('n')th register</li>
+ <li>@(see io-id->ionum) gets the IO number from an IO node's ID</li>
+ <li>@(see reg-id->nxst) gets the next state node associated with a register ID, if one exists</li>
+ <li>@(see nxst-id->reg) gets the register ID associated with a next-state node</li>
+</ul>
 
-<p>Input, output, and register nodes also have an IO number distinct from their
-ID.  This is their index among nodes of their type, so, e.g., the first primary
-input node added has input number 0, etc.  The IO number of a node can be
-determined by counting the number of nodes of the same type in the suffix
-beginnning after that node:
-@(def stype-count)
-Therefore, an input/output/register node can be looked up by IO number by
-searching for the unique node of the given type with the given IO number:
-@(def lookup-stype)
-</p>
+<h5>Fanin lookup</h5>
+<ul>
+ <li>@(see gate-id->fanin0) gets the 0th fanin @(see literal) from an AND gate</li>
+ <li>@(see gate-id->fanin1) gets the 1st fanin literal from an AND gate</li>
+ <li>@(see co-id->fanin) gets the fanin literal from a next-state or primary output node</li>
+</ul>
 
-<p>Gate, next state, and primary output nodes all have fields: a gate has two
-fanins (representing the inputs to the AND gate), a primary output or
-next-state has one fanin (the function of the output or next-state), and a
-next-state also contains an ID that should point to a register node.  The
-fanins are <i>literals</i>, which combine a node ID with a negation flag
-as a single natural number: @('(+ (* 2 id) neg)'), where neg is 1 or 0.</p>
+<h5>Misc</h5>
 
-<p>The four functions @('node-count'), @('lookup-id'), @('stype-count'), and
-@('lookup-stype') provide the logical basis for most kinds of access to the
-aignet.  One additional type of lookup is required, namely finding the
-next-state node for a given register ID:</p> @(def lookup-reg->nxst)")
+<ul>
+ <li>@(see io-id->regp) gets the register bit for a node id</li>
+</ul>")
 
+(local (xdoc::set-default-parents base-api))
 
-; [Jared] changed parents here; previously everything below had
-; aignet-programming as another parent, but this topic was never defined.  it
-; may have been intended to be aignet-impl, but I think it's reasonable to just
-; not include it for now.
-
-(defxdoc num-nodes
-  :parents (aignet-logic)
-  :short "Total number of nodes in an aignet"
-  :long "
-<p>Logically, @('(+ 1 (node-count aignet))'), (where @('node-count') is the
-same as @('len')), since the empty aignet implicitly has a constant node.</p>")
-
-(defxdoc num-ins
-  :parents (aignet-logic)
-  :short "Number of primary input nodes in an aignet"
-  :long "
-<p>
-Logically, @('(stype-count :pi aignet)')</p> ")
-
-(defxdoc num-regs
-  :parents (aignet-logic)
-  :short "Number of register nodes in an aignet"
-  :long "
-<p>
-Logically, @('(stype-count :reg aignet)')</p> ")
-
-(defxdoc num-outs
-  :parents (aignet-logic)
-  :short "Number of primary output nodes in an aignet"
-  :long "
-<p>
-Logically, @('(stype-count :po aignet)')</p> ")
-
-(defxdoc num-nxsts
-  :parents (aignet-logic)
-  :short "Number of next-state nodes in an aignet"
-  :long "
-<p>
-Logically, @('(stype-count :nxst aignet)')</p> ")
-
-(defxdoc num-gates
-  :parents (aignet-logic)
-  :short "Number of AND gate nodes in an aignet"
-  :long "
-<p>
-Logically, @('(stype-count :gate aignet)')</p> ")
-
-(defxdoc fanin-litp
-  :parents (aignet-logic)
-  :short "Checks whether a literal is appropriate as a fanin to another node"
-  :long "<p>AKA aignet-litp (but fanin-litp is the executable version).  True iff
-the literal's ID is in bounds and belongs to a non-output, non-next-state node.</p>")
-
-(defxdoc id-existsp
-  :parents (aignet-logic)
-  :short "Checks whether an ID is in bounds for an aignet"
-  :long "<p>AKA aignet-idp.  True iff the ID is less than @('(num-nodes aignet)').</p>")
-
-(defxdoc innum->id
-  :parents (aignet-logic)
-  :short "Gets the ID of the node with the given PI number"
-  :long "<p>Logically, @('(node-count (lookup-stype n :pi aignet))')</p>")
-
-(defxdoc outnum->id
-  :parents (aignet-logic)
-  :short "Gets the ID of the node with the given PO number"
-  :long "<p>Logically, @('(node-count (lookup-stype n :po aignet))')</p>")
-
-(defxdoc regnum->id
-  :parents (aignet-logic)
-  :short "Gets the ID of the node with the given register number"
-  :long "<p>Logically, @('(node-count (lookup-stype n :reg aignet))')</p>")
-
-(defxdoc id->type
-  :parents (aignet-logic)
-  :short "Gets the type code of the node with the given ID"
-  :long "<p>Logically, @('(typecode (ctype (stype (car (lookup-id id aignet)))))').</p>")
-
-(defxdoc io-id->regp
-  :parents (aignet-logic)
-  :short "Gets the register bit of the node with the given ID"
-  :long "<p>Logically, @('(regp (stype (car (lookup-id id aignet))))')</p>")
-
-(defxdoc io-id->ionum
-  :parents (aignet-logic)
-  :short "Gets the IO number of the node with the given ID"
-  :long "<p>Logically,
-@({
- (stype-count (stype (car (lookup-id id aignet)))
-              (cdr (lookup-id id aignet)))})
-but, per its guard, may only be called on the ID of a PI, PO, or register node.
-This is because the aignet data structure only stores this information for PIs,
-POs, and registers.
-</p>")
-
-(defxdoc co-id->fanin
-  :parents (aignet-logic)
-  :short "Gets the fanin of a next-state or primary output node"
-  :long "<p>Logically,
- @({
- (aignet-lit-fix
-   (co-node->fanin (car (lookup-id id aignet)))
-   (cdr (lookup-id id aignet)))})
- The aignet-lit-fix ensures that the literal returned is a valid fanin,
- i.e. its ID is less than the ID of the CO node and is not a CO node
- itself.</p>")
-
-(defxdoc gate-id->fanin0
-  :parents (aignet-logic)
-  :short "Gets the 0th fanin of an AND gate node"
-  :long "<p>Logically,
- @({
- (aignet-lit-fix
-   (gate-node->fanin0 (car (lookup-id id aignet)))
-   (cdr (lookup-id id aignet)))})
- The aignet-lit-fix ensures that the literal returned is a valid fanin,
-i.e. its ID is less than the ID of the gate node, and is not a combinational
-output node.</p>")
-
-(defxdoc gate-id->fanin1
-  :parents (aignet-logic)
-  :short "Gets the 1st fanin of an AND gate node"
-  :long "<p>Logically,
- @({
- (aignet-lit-fix
-   (gate-node->fanin1 (car (lookup-id id aignet)))
-   (cdr (lookup-id id aignet)))})
- The aignet-lit-fix ensures that the literal returned is a valid fanin,
-i.e. its ID is less than the ID of the gate node, and is not a combinational
-output node.</p>")
-
-(defxdoc reg-id->nxst
-  :parents (aignet-logic)
-  :short "Finds the next-state node associated with a register ID, if it exists"
-  :long "<p>Logically, @('(node-count (lookup-reg->nxst id aignet))')</p>")
-
-(defxdoc nxst-id->reg
-  :parents (aignet-logic)
-  :short "Gets the register ID associated with a next-state node"
-  :long "<p>Logically,
-@({
- (aignet-id-fix (nxst-node->reg (car (lookup-id id aignet)))
-                (cdr (lookup-id id aignet)))})
-The aignet-id-fix ensures that the ID exists and is less than that of the
-next-state node.  However, there is no guarantee that it is the ID of a
-register node!  Even if it is, it is possible that subsequent addition of
-another next-state node for the same register superseded this one.  Typically,
-one really wants to find the next-state node for a register (@(see
-reg-id->nxst)) rather than the other way around.</p>")
-
-(defxdoc id->phase
-  :parents (aignet-logic)
-  :short "Finds the value of the node under the all-0 simulation"
-  :long "<p></p>")
-
-(defxdoc aignet-add-in
-  :parents (aignet-logic)
-  :short "Adds a primary input node to the aignet"
-  :long "<p>Logically, @('(cons (pi-node) aignet)').</p>")
-
-(defxdoc aignet-add-reg
-  :parents (aignet-logic)
-  :short "Adds a register node to the aignet"
-  :long "<p>Logically, @('(cons (reg-node) aignet)').</p>")
-
-(defxdoc aignet-add-gate
-  :parents (aignet-logic)
-  :short "Adds an AND gate node to the aignet"
-  :long "<p>Logically,
- @({
-   (cons (gate-node (aignet-lit-fix f0 aignet)
-                    (aignet-lit-fix f1 aignet))
-         aignet)})
-The aignet-lit-fixes ensure that well-formedness of the network is preserved
-unconditionally.</p>")
-
-(defxdoc aignet-add-out
-  :parents (aignet-logic)
-  :short "Adds a primary output node to the aignet"
-  :long "<p>Logically,
- @({
-   (cons (po-node (aignet-lit-fix f aignet))
-         aignet)})
-The aignet-lit-fix ensures that well-formedness of the network is preserved
-unconditionally.</p>")
-
-(defxdoc aignet-set-nxst
-  :parents (aignet-logic)
-  :short "Adds a next-state node to the aignet"
-  :long "<p>Logically,
-@({
-   (cons (nxst-node (aignet-lit-fix f aignet)
-                    (aignet-id-fix regid aignet))
-         aignet)})
-The aignet-lit-fix/aignet-id-fix together ensure that well-formedness of the
-network is preserved unconditionally.</p>")
-
-(defxdoc aignet-init
-  :parents (aignet-logic)
-  :short "Clears the aignet, ensuring minimum sizes for arrays"
-  :long "<p>Logically, just returns NIL.  The resulting aignet contains only
-the implicit constant-0 node.  The sizes given are used to adjust arrays in the
-implementation.</p>")
+;; Initialization
 
 (defxdoc aignet-clear
-  :parents (aignet-logic)
-  :short "Clears the aignet"
-  :long "<p>Logically, just returns NIL.  The resulting aignet contains only the
-implicit constant-0 node.</p>")
+  :short "@(call aignet-clear) clears the aignet, essentially without resizing
+  its arrays."
+
+  :long "<p>Logically, just returns @('nil'), i.e., the resulting aignet
+  contains only the implicit constant-0 node.</p>
+
+  <p>In the execution we reset the counters associated with the Aignet, but the
+  actual arrays are left unchanged (unless there are no nodes at all, in which
+  case a very small node array is allocated.)</p>
+
+  @(def aignet$a::aignet-clear)")
+
+(defxdoc aignet-init
+  :short "@(call aignet-init) clears the aignet, setting the arrays to the
+  given sizes."
+
+  :long "<p>Logically, just returns @('nil'), i.e., the resulting aignet
+  contains only the implicit constant-0 node.</p>
+
+  <p>In the execution, we reset the counters associated with the Aignet and
+  also resize the stobj arrays to the indicated sizes.</p>
+
+  <p>Note: the @('max-nodes') size indicates the number of logical nodes that
+  the node array will be able to hold without resizing.  That is, since each
+  node takes two 32-bit array slots, we resize the physical node array to @('2
+  * max-nodes') elements, so that there are room for @('max-nodes') nodes.</p>
+
+  @(def aignet$a::aignet-init)")
+
+
+;; Network construction
+
+(defxdoc aignet-add-in
+  :short "@(call aignet-add-in) adds a new primary input node to the aignet."
+  :long "<p>Logically this is just @('(cons (pi-node) aignet)').</p>
+  <p>In the execution we update the necessary arrays, counts, etc.</p>
+  @(def aignet$a::aignet-add-in)")
+
+(defxdoc aignet-add-reg
+  :short "@(call aignet-add-reg) adds a new register node to the aignet."
+  :long "<p>Logically this is just @('(cons (reg-node) aignet)').</p>
+  <p>In the execution we update the necessary arrays, counts, etc.</p>
+  @(def aignet$a::aignet-add-reg)")
+
+(defxdoc aignet-add-gate
+  :short "@(call aignet-add-gate) adds an new AND gate node to the aignet with
+  the given fanin @(see literal)s."
+
+  :long "<p><b>Note</b>: this is a very low level function.  It is often better
+  to use routines like @(see aignet-hash-and), @(see aignet-hash-or), etc.,
+  which can do some simplifications to produce smaller aig networks.</p>
+
+  <p>Logically this is just:</p>
+
+  @({
+      (cons (gate-node (aignet-lit-fix f0 aignet)
+                       (aignet-lit-fix f1 aignet))
+            aignet)
+  })
+
+  <p>The @(see aignet-lit-fix)es ensure that well-formedness of the network is
+  preserved unconditionally.</p>
+
+  <p>In the execution we update the necessary arrays, counts, etc.</p>
+
+  @(def aignet$a::aignet-add-gate)")
+
+(defxdoc aignet-add-out
+  :short "@(call aignet-add-out) adds a primary output node to the aignet."
+
+  :long "<p>Logically this is just:</p>
+
+  @({
+      (cons (po-node (aignet-lit-fix f aignet))
+            aignet)
+  })
+
+  <p>The @(see aignet-lit-fix) ensures that well-formedness of the network is
+  preserved unconditionally.</p>
+
+  <p>In the execution we update the necessary arrays, counts, etc.</p>
+
+  @(def aignet$a::aignet-add-out)")
+
+(defxdoc aignet-set-nxst
+  :short "@(call aignet-set-nxst) adds a next-state node to the aignet."
+
+  :long "<p>Logically this is just:</p>
+
+  @({
+      (cons (nxst-node (aignet-lit-fix f aignet)
+                       (aignet-id-fix regid aignet))
+            aignet)
+  })
+
+  <p>The fixing here ensures that well-formedness of the network is preserved
+  unconditionally.</p>
+
+  <p>In the execution we update the necessary arrays, counts, etc.</p>
+
+  @(def aignet$a::aignet-set-nxst)")
+
+
+;; Network size
+
+(defxdoc node-count
+  :short "@(call node-count) is an alias for @(see len)."
+  :long "<p>This is mainly of use in the logical definition of @(see
+  num-nodes).  We use a different function than @(see len) only so that we can
+  feel free to use rules that would be expensive to generally apply to
+  @('len').</p>
+
+  @(def node-count)")
+
+(defxdoc num-nodes
+  :short "@(call num-nodes) returns the total number of nodes in an aignet."
+  :long "<p>Logically this is @('(+ 1 (node-count aignet))'), (where
+  @('node-count') is the same as @('len')), since the empty aignet implicitly
+  has a constant node.</p>
+
+  <p>In the execution this is just a stobj field access.</p>
+
+  @(def aignet$a::num-nodes)")
+
+(defxdoc num-ins
+  :short "@(call num-ins) returns the number of primary input nodes in an aignet."
+  :long "<p>Logically this is just @('(stype-count :pi aignet)').</p>
+  <p>In the execution this is just a stobj field access.</p>
+  @(def aignet$a::num-ins)")
+
+(defxdoc num-regs
+  :short "@(call num-regs) returns the number of register nodes in an aignet."
+  :long "<p>Logically this is just @('(stype-count :reg aignet)').</p>
+  <p>In the execution this is just a stobj field access.</p>
+  @(def aignet$a::num-regs)")
+
+(defxdoc num-outs
+  :short "@(call num-outs) returns the number of primary output nodes in an aignet."
+  :long "<p>Logically this is just @('(stype-count :po aignet)').</p>
+  <p>In the execution this is just a stobj field access.</p>
+  @(def aignet$a::num-outs)")
+
+(defxdoc num-nxsts
+  :short "@(call num-nxsts) returns the number of next-state nodes in an aignet."
+  :long "<p>Logically this is just @('(stype-count :nxst aignet)')</p>
+  <p>In the execution this is just a stobj field access.</p>
+  @(def aignet$a::num-nxsts)")
+
+(defxdoc num-gates
+  :short "@(call num-gates) returns the number of AND gate nodes in an aignet."
+  :long "<p>Logically this is just @('(stype-count :gate aignet)')</p>
+  <p>In the execution this is just a stobj field access.</p>
+  @(def aignet$a::num-gates)")
+
+
+
+;; General node queries
+
+(defxdoc id-existsp
+  :short "@(call id-existsp) checks whether an ID is in bounds for an aignet."
+  :long "<p>Executable version of @('aignet-idp').  True iff the ID is less
+  than @('(num-nodes aignet)').</p>
+
+  @(def aignet$a::id-existsp)
+  @(def aignet-idp)")
+
+(defxdoc id->type
+  :short "@(call id->type) gets the type code of the node with ID @('id')."
+  :long "<p>Logically this is @('(node->type (car (lookup-id id aignet)))').</p>
+  <p>In the execution this is mostly a stobj array lookup in the node array.</p>
+
+  @(def aignet$a::id->type)")
+
+(defxdoc id->phase
+  :short "@(call id->phase) computes the value of the node under the all-0
+  simulation."
+  :long "<p>In the logic, we have to compute the value by recursively walking
+  over the node array.  However, in the execution we keep these values
+  pre-computed so this is mostly just a stobj array lookup in the node
+  array.</p>
+
+  @(def aignet$a::id->phase)
+  @(def aignet$a::lit->phase)")
+
+(defxdoc fanin-litp
+  :short "@(call fanin-litp) checks whether a @(see literal) is appropriate as
+  a fanin to another node."
+  :long "<p>Executable version of @('aignet-litp').  True iff the literal's ID
+  is in bounds and belongs to a non-output, non-next-state node.</p>
+
+  @(def aignet$a::fanin-litp)
+  @(def aignet-litp)")
+
+
+;; Name mappings
+
+(defxdoc innum->id
+  :short "@(call innum->id) gets the ID of the node with primary input number @('n')."
+  :long "<p>Logically this is @('(node-count (lookup-stype n :pi aignet))').</p>
+  <p>In the execution this is a stobj array lookup in the inputs array.</p>
+
+  @(def aignet$a::innum->id)")
+
+(defxdoc outnum->id
+  :short "@(call outnum->id) gets the ID of the node with primary output number @('n')."
+  :long "<p>Logically this is @('(node-count (lookup-stype n :po aignet))').</p>
+  <p>In the execution this is a stobj array lookup in the outputs array.</p>
+
+  @(def aignet$a::outnum->id)")
+
+(defxdoc regnum->id
+  :short "@(call regnum->id) gets the ID of the node with register number @('n')."
+  :long "<p>Logically this is @('(node-count (lookup-stype n :reg aignet))').</p>
+  <p>In the execution this is a stobj array lookup in the registers array.</p>
+
+  @(def aignet$a::regnum->id)")
+
+(defxdoc io-id->ionum
+  :short "@(call io-id->ionum) gets the IO number of the node whose ID is @('id')."
+  :long "<p>Logically this is just</p>
+
+  @({
+      (stype-count (stype (car (lookup-id id aignet)))
+                   (cdr (lookup-id id aignet)))
+  })
+
+  <p>However, its guard requires that it may only be called on the ID of a PI,
+  PO, or register node.  This is because the aignet data structure only stores
+  this information for PIs, POs, and registers.</p>
+
+  <p>In the execution this is mostly a stobj array lookup in the node array.</p>
+
+  @(def aignet$a::io-id->ionum)")
+
+(defxdoc reg-id->nxst
+  :short "@(call reg-id->nxst) finds the next-state node associated with the
+  register whose ID is @('id'), if it exists."
+  :long "<p>Logically this is just @('(node-count (lookup-reg->nxst id aignet))')</p>
+  <p>In the execution this is mostly just a stobj array lookup in the node array.</p>
+  @(def aignet$a::reg-id->nxst)")
+
+(defxdoc nxst-id->reg
+  :short "@(call nxst-id->reg) gets the register ID associated with a
+  next-state node."
+  :long "<p>Logically this is just</p>
+
+  @({
+      (aignet-id-fix (nxst-node->reg (car (lookup-id id aignet)))
+                     (cdr (lookup-id id aignet)))
+  })
+
+  <p>The @(see aignet-id-fix) ensures that the ID exists and is less than that
+  of the next-state node.  However, there is no guarantee that it is the ID of
+  a register node!  Even if it is, it is possible that subsequent addition of
+  another next-state node for the same register superseded this one.</p>
+
+  <p>Typically, one really wants to find the next-state node for a
+  register (@(see reg-id->nxst)) rather than the other way around.</p>
+
+  <p>In the execution this is mostly just a stobj array lookup in the node
+  array.</p>
+
+  @(def aignet$a::nxst-id-reg)")
+
+
+;; Fanin Lookup
+
+(defxdoc gate-id->fanin0
+  :short "@(call gate-id->fanin0) gets the 0th fanin @(see literal) of the AND
+  gate node whose ID is @('id')."
+  :long "<p>Logically this is just</p>
+
+  @({
+      (aignet-lit-fix (gate-node->fanin0 (car (lookup-id id aignet)))
+                      (cdr (lookup-id id aignet)))
+  })
+
+  <p>The @(see aignet-lit-fix) ensures that the literal returned is a valid
+  fanin, i.e. its ID is less than the ID of the gate node, and is not a
+  combinational output node.</p>
+
+  <p>In the execution this is mostly just a stobj array lookup in the node
+  array.</p>
+
+  @(def aignet$a::gate-id->fanin0)")
+
+(defxdoc gate-id->fanin1
+  :short "@(call gate-id->fanin1) gets the 1st fanin @(see literal) of the AND
+  gate node whose ID is @('id')."
+  :long "<p>Logically this is just</p>
+
+  @({
+      (aignet-lit-fix (gate-node->fanin1 (car (lookup-id id aignet)))
+                      (cdr (lookup-id id aignet)))
+  })
+
+  <p>The @(see aignet-lit-fix) ensures that the literal returned is a valid
+  fanin, i.e. its ID is less than the ID of the gate node, and is not a
+  combinational output node.</p>
+
+  <p>In the execution this is mostly just a stobj array lookup in the node
+  array.</p>
+
+  @(def aignet$a::gate-id->fanin1)")
+
+(defxdoc co-id->fanin
+  :short "@(call co-id->fanin) gets the fanin @(see literal) of the next-state or
+  primary output node whose ID is @('id')."
+  :long "<p>Logically this is just</p>
+
+  @({
+      (aignet-lit-fix (co-node->fanin (car (lookup-id id aignet)))
+                      (cdr (lookup-id id aignet)))
+  })
+
+  <p>The @(see aignet-lit-fix) ensures that the literal returned is a valid
+  fanin, i.e. its ID is less than the ID of the CO node and is not a CO node
+  itself.</p>
+
+  <p>In the execution this is mostly a stobj array lookup in the node
+  array.</p>
+
+  @(def aignet$a::co-id->fanin)")
+
+
+;; Misc
+
+(defxdoc io-id->regp
+  :short "@(call io-id->regp) gets the register bit from the node with ID @('id')."
+  :long "<p>Logically this is @('(regp (stype (car (lookup-id id aignet))))').</p>
+  <p>In the execution this is mostly a stobj array lookup in the node array.</p>
+
+  @(def aignet$a::io-id->regp)")
+
+
+

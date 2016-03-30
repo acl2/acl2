@@ -37,7 +37,7 @@
 (include-book "centaur/vl/mlib/reportcard" :dir :system)
 (include-book "centaur/vl/mlib/blocks" :dir :System)
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable cons-equal)))
 
@@ -534,8 +534,8 @@ constructed separately.)</p>"
   ;;              (size natp)))
   (:regular   ((portname stringp)
                (port-dir vl-maybe-direction-p)
-               (argindex natp)
-               (port-expr vl-expr-p)
+               ;; (argindex natp)
+               ;; (port-expr vl-expr-p)
                (conn-expr vl-expr-p)
                (port-inner-lhs
                 sv::lhs-p
@@ -548,10 +548,10 @@ constructed separately.)</p>"
                  same as port-inner-lhs.  Not scoped by the instance name.")
                (conn-svex sv::svex-p)
                (port-size posp)
-               (conn-size posp)
+               ;; (conn-size posp)
                (replicatedp)
                (interfacep booleanp)))
-   :layout :list) ;; note for debugging might want :alist, but this makes
+   :layout :tree)
 
 (fty::deflist vl-portinfolist :elt-type vl-portinfo)
 
@@ -967,7 +967,8 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
                                           sv::svex-concat
                                           sv::4vec-index-p))))
   :guard-debug t
-
+  :ignore-ok t
+  :irrelevant-formals-ok t
   (b* (((fun (fail warnings)) (mv warnings (make-vl-portinfo-bad)))
        ((vl-plainarg x) (vl-plainarg-fix x))
        (portname (string-fix portname))
@@ -982,7 +983,7 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
        ;;  (mv nil nil))
        (portexpr (vl-idexpr portname))
        (port-lhs (svex-lhs-from-name portname))
-       (port-type (make-vl-coretype :name :vl-logic))
+       (port-type *vl-plain-old-logic-type*)
        ((wmv warnings x-svex x-type ?x-size)
         (vl-expr-to-svex-maybe-typed
          x.expr
@@ -1013,15 +1014,15 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
         (make-vl-portinfo-regular
          :portname portname
          :port-dir (vl-direction-fix portdir)
-         :argindex argindex
-         :port-expr portexpr
+         ;; :argindex argindex
+         ;; :port-expr portexpr
          :conn-expr x.expr
          :port-inner-lhs port-lhs
          :port-outer-lhs port-outer-lhs
          :conn-svex xsvex
          :port-size 1
-         :conn-size x-size
-         :replicatedp (not multi))))
+         ;; :conn-size x-size
+         :replicatedp (and arraysize (not multi)))))
   ///
   (defret vars-of-vl-gate-plainarg-portinfo
     (sv::svarlist-addr-p (vl-portinfo-vars res))
@@ -1196,15 +1197,15 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
               (make-vl-portinfo-regular
                :portname y.name
                :port-dir nil
-               :argindex argindex
-               :port-expr y-expr
+               ;; :argindex argindex
+               ;; :port-expr y-expr
                :conn-expr x.expr
                :port-inner-lhs y-lhs
                :port-outer-lhs y-outer-lhs
                :conn-svex xsvex
                :port-size y-size
-               :conn-size x-size
-               :replicatedp (not multi)
+               ;; :conn-size x-size
+               :replicatedp (and arraysize (not multi))
                :interfacep t))))
 
 
@@ -1323,15 +1324,15 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
         (make-vl-portinfo-regular
          :portname y.name
          :port-dir x.dir
-         :argindex argindex
-         :port-expr y.expr
+         ;; :argindex argindex
+         ;; :port-expr y.expr
          :conn-expr x.expr
          :port-inner-lhs y-lhs
          :port-outer-lhs y-outer-lhs
          :conn-svex xsvex
          :port-size y-size
-         :conn-size x-size
-         :replicatedp (not multi))))
+         ;; :conn-size x-size
+         :replicatedp (and arraysize (not multi)))))
   ///
   (defret vars-of-vl-plainarg-portinfo
     (sv::svarlist-addr-p (vl-portinfo-vars res))

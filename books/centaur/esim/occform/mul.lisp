@@ -32,7 +32,7 @@
 (include-book "add")
 (local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 (local (include-book "centaur/vl2014/util/osets" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 (local (in-theory (enable acl2::arith-equiv-forwarding)))

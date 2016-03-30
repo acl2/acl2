@@ -90,8 +90,13 @@
     ;; Most things will start on column 0, or column 1, or column 2, or ...,
     ;; but probably very few things ever start past column 50 or 80, so honsing
     ;; here should achieve very good sharing.
-    (cons (hons "VL_LINESTART" indent)
-          atts)))
+    (mbe :logic (cons (hons "VL_LINESTART" indent)
+                      atts)
+         :exec (if atts
+                   (cons (hons "VL_LINESTART" indent)
+                         atts)
+                 (hons (hons "VL_LINESTART" indent)
+                       atts)))))
 
 (define vl-extend-expr-with-linestart ((linestart maybe-natp)
                                        (expr      vl-expr-p))
@@ -333,7 +338,7 @@ the plan is first to build a mixed list which looks like</p>
    (left  vl-expr-p)
    (right vl-expr-p))
   :tag :vl-erange
-  :legiblep nil
+  :layout :fulltree
   :short "An <i>expression range</i> is a temporary internal representation of
 the ranges for select-like expressions (bit selects, array indexes, part
 selects, @('+:') and @('-:') expressions."
@@ -2575,29 +2580,84 @@ identifier, so we convert it into a hidpiece.</p>"
   (defparser vl-parse-qmark-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 280)
     (seq tokstream
-
-; BOZO develop a good strategy for preserving qmark linebreaks!
-
           (first :s= (vl-parse-logor-expression))
           (unless (vl-is-token? :vl-qmark)
             (return first))
+
+; Linestart strategy for ?: operators
+;
+; This is more complex than for binary operators because there are two operator
+; tokens.  A designer might put a newline:
+;
+;   - on either side of the ? character
+;   - on either side of the : character
+;
+; Let's look at some examples of different styles.  Probably more often we
+; will encounter newlines at the colons, e.g.,:
+;
+;    assign foo = a1 ? b1        // "preferred form"
+;               : a2 ? b2
+;               : b3;
+;
+;    assign foo = a1 ? b1 :
+;                 a2 ? b2 :
+;                 b3;
+;
+; Another possibility is that we will have newlines around the question marks,
+; which might make look nice if the test expression is long, e.g.,
+;
+;    assign foo = (foo == bar && bass == 0)        // "preferred form"
+;                   ? b1 + x + y
+;                   : b2 + x + y;
+;
+;    assign foo = (foo == bar && baz == 0) ?
+;                      b1 + x + y
+;                  : b2 + x + y;
+;
+; Our strategy will basically be like the strategy for binary operators.  We
+; will recognize newlines on either side of ? and :, and if there are newlines
+; on both sides, we'll collapse them as with binary operators so that the
+; pre-token linestart is the one that gets recorded.  Our pretty-printer will
+; translate the above into the preferred forms, where the : and ? operators
+; come at the start of the subsequent line.
+
+          (qmark-linestart1 := (vl-linestart-indent))
           (:= (vl-match))
+          (qmark-linestart2 := (vl-linestart-indent))
+
           (atts :w= (vl-parse-0+-attribute-instances))
           ;; Subtle!.  The middle expression needs to not be just a
           ;; qmark_expression, because that wouldn't match lower-precedence
           ;; things, e.g., for 1 ? 2 -> 3 : 4 to work, we need the middle
           ;; expression to be an arbitrary expression.
           (second :s= (vl-parse-expression))
+
+          (colon-linestart1 := (vl-linestart-indent))
           (:= (vl-match-token :vl-colon))
+          (colon-linestart2 := (vl-linestart-indent))
+
           ;; Subtle!  The third expression needs to ONLY be a qmark expression.
           ;; We don't want to match, e.g., the 3->4 part of 1 ? 2 : 3->4,
           ;; because the -> has lower precedence than the ?:, so we need to
           ;; treat that as (1?2:3) -> 4 instead.
           (third := (vl-parse-qmark-expression))
-          (return (make-vl-qmark :test first
-                                 :then second
-                                 :else third
-                                 :atts atts))))
+          (return
+           (b* ((qmark-linestart (or qmark-linestart1 qmark-linestart2))
+                (colon-linestart (or colon-linestart1 colon-linestart2))
+                ;; See also vl-extend-atts-with-linestart for comments on why
+                ;; we use HONS here.
+                (atts (if qmark-linestart
+                          (cons (hons "VL_QMARK_LINESTART" (vl-make-index qmark-linestart))
+                                atts)
+                        atts))
+                (atts (if colon-linestart
+                          (cons (hons "VL_COLON_LINESTART" (vl-make-index colon-linestart))
+                                atts)
+                        atts)))
+             (make-vl-qmark :test first
+                            :then second
+                            :else third
+                            :atts atts)))))
 
 ; SystemVerilog addition:
 ;

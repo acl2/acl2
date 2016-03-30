@@ -43,7 +43,7 @@ matching."
 <p>To use @('b*') you will need to load the following book:</p>
 
 @({
-    (include-book \"tools/bstar\" :dir :system)
+    (include-book \"std/util/bstar\" :dir :system)
 })
 
 <p>In its most basic form, the @('b*') macro is nearly a drop-in replacement
@@ -107,7 +107,7 @@ binder.</see></p>
 <p>Depending on the binder form, it may be that multiple expressions are
 allowed or only a single one.</p>
 
-<p>The @('tools/bstar') book comes with several useful b* binders already
+<p>The @('std/util/bstar') book comes with several useful b* binders already
 defined, which we describe below.  You can also define your own, custom binder
 forms to extend the syntax of @('b*') to provide additional kinds of pattern
 matching or to implement common coding patterns.  For example, the @(see
@@ -372,7 +372,7 @@ the binder macro using the form @(see def-b*-binder).</p>
 
 <p>The definition of the @('patbind-foo') macro determines how this gets
 further expanded.  Some informative examples of these binder macros may be
-found in @('tools/bstar.lisp'); simply search for uses of @(see
+found in @('std/util/bstar.lisp'); simply search for uses of @(see
 def-b*-binder).</p>
 
 <p>Here are some further notes on defining binder macros.</p>

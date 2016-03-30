@@ -35,7 +35,7 @@
 (include-book "std/util/defmvtypes" :dir :system)
 (include-book "tools/defmacfun" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "tools/stobj-frame" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))

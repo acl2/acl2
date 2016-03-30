@@ -62,6 +62,9 @@
              (vl-interface (parse-temps (lambda (x) (declare (ignore x)) nil))))
   :fnname-template <type>-deltemps)
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (fty::defvisitors vl-design-deltemps
   :template deltemps
   :types (vl-design))
@@ -713,7 +716,9 @@ explicit declarations.</p>")
             warnings))
 
        ((vl-lexscope-entry entry))
-
+       ((when (member-equal pkgname entry.wildpkgs))
+        ;; Already imported from this package, so noop.
+        (mv scopes warnings))
        ;; I don't think we want to warn about anything here.  Just extend the
        ;; list of wild packages.
        (new-entry  (change-vl-lexscope-entry entry :wildpkgs (cons pkgname entry.wildpkgs)))

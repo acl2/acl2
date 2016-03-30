@@ -125,10 +125,18 @@
        ((when exists) (mv nil state)))
     (acl2::read-file-lines (str::cat *testname* "/outputs.vcs.data") state)))
 
-(defstv impl-stv
-  :mod *svex-design*
-  :inputs `(("in" input))
-  :outputs `(("out" output)))
+(defconsts (*err* *updates* *nextstates* *assigns* *delays* moddb aliases)
+  (svex-design-compile *svex-design*))
+
+(make-event
+ (if *err*
+     (raise "Error compiling: ~x0~%" *err*)
+   '(value-triple :ok)))
+
+;; (defstv impl-stv
+;;   :mod *svex-design*
+;;   :inputs `(("in" input))
+;;   :outputs `(("out" output)))
 
 (defconsts (*exactp* state)
   (b* (((mv err exists state) (oslib::regular-file-p (str::cat *testname* "/inexact")))
@@ -138,9 +146,14 @@
     (mv (not exists) state)))
 
 (assert! (or (not *output-lines-ncv*)
-             (cosims-compare-stv *input-lines* *output-lines-ncv* *exactp* (impl-stv))))
+             (cosims-compare *input-lines* *output-lines-ncv* *exactp* *updates* *nextstates*)))
 (assert! (or (not *output-lines-vcs*)
-             (cosims-compare-stv *input-lines* *output-lines-vcs* *exactp* (impl-stv))))
+             (cosims-compare *input-lines* *output-lines-vcs* *exactp* *updates* *nextstates*)))
+
+;; (assert! (or (not *output-lines-ncv*)
+;;              (cosims-compare-stv *input-lines* *output-lines-ncv* *exactp* (impl-stv))))
+;; (assert! (or (not *output-lines-vcs*)
+;;              (cosims-compare-stv *input-lines* *output-lines-vcs* *exactp* (impl-stv))))
 
 
 

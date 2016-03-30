@@ -31,9 +31,9 @@
 (in-package "BED")
 (include-book "std/util/define" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (in-theory (enable arith-equiv-forwarding)))
 
 (local (defthm loghead-1

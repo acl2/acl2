@@ -96,4 +96,15 @@ module top ;
     end
   endgenerate
 
+
+  wire w7;
+  if (size == 0)
+  begin
+    m0 m0_gen1 (w7, a, a);
+  end
+  else
+  begin
+    m0 m0_gen2 (w7, a, a);
+  end
+
 endmodule

@@ -31,8 +31,8 @@
 (in-package "AIGNET")
 (include-book "litp")
 (include-book "centaur/misc/arrays" :dir :system)
-(include-book "centaur/misc/bitarr" :dir :system)
-(include-book "aignet-absstobj")
+(include-book "std/stobjs/bitarr" :dir :system)
+(include-book "misc/definline" :dir :system)
 (include-book "std/lists/equiv" :dir :system)
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -378,7 +378,7 @@
 
 
 (defsection litarr
-  (acl2::def-1d-arr :arrname litarr
+  (acl2::def-1d-arr litarr
                     :slotname lit
                     :pred litp
                     :fix lit-fix$inline
@@ -604,7 +604,7 @@
 
 (defsection u32arr
 
-  (acl2::def-1d-arr :arrname u32arr
+  (acl2::def-1d-arr u32arr
                     :slotname u32
                     :pred natp
                     :fix nfix

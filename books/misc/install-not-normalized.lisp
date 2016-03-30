@@ -354,12 +354,12 @@ This comment motivates the macro install-not-normalized, defined below.
   :parents (proof-automation)
   :short "Install an unnormalized definition"
   :long "<p>By default, ACL2 simplifies the definitions by ``normalizing''
- their bodies.  If you prefer that ACL2 avoid such simplification when
- expanding a function call, then you can assigning the value of @('nil') to
- @(tsee xargs) keyword @(':normalize') (see @(see defun)) instead of the
- default value of @('t').  But that might not be a reasonable option, for
- example because the definition in question occurs in an included book that you
- prefer not to edit.  An alternative is to call a macro,
+ their bodies; see @(see normalize).  If you prefer that ACL2 avoid such
+ simplification when expanding a function call, then you can assigning the
+ value of @('nil') to @(tsee xargs) keyword @(':normalize') (see @(see defun))
+ instead of the default value of @('t').  But that might not be a reasonable
+ option, for example because the definition in question occurs in an included
+ book that you prefer not to edit.  An alternative is to call a macro,
  @('install-not-normalized').</p>
 
  @({

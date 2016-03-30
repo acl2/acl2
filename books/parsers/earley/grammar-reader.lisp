@@ -480,7 +480,7 @@
                    "KEYWORD"))))
 
 (local
- (include-book "std/misc/intern-in-package-of-symbol" :dir :system))
+ (include-book "std/basic/intern-in-package-of-symbol" :dir :system))
 
 (defthm run-pkg-imports-on-keyword
   (equal (pkg-imports "KEYWORD")

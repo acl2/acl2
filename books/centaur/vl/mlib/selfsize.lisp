@@ -435,7 +435,15 @@ SystemVerilog-2012 Table 11-21.</p>"
         ;; similarly to ordinary equality comparisons.
         :vl-binary-wildeq :vl-binary-wildneq)
        (b* (((unless (and left-size right-size))
-             (mv (ok) nil))
+             ;; [Jared]: historically we returned NIL here as the size.
+             ;; However, I found that this sometimes caused problems in lint
+             ;; checks like oddexpr, where even if we have trouble figuring out
+             ;; the size of some subexpression, we should still be able to know
+             ;; that a comparison always produces a single-bit answer.  I think
+             ;; it should be OK to return 1 here.  Otherwise, why would it be OK
+             ;; to return 1 above, for things like :vl-binary-logand, without
+             ;; checking their argument sizes?
+             (mv (ok) 1))
             (type (and (/= left-size right-size)
                        (vl-tweak-fussy-warning-type :vl-fussy-size-warning-1
                                                     x.left

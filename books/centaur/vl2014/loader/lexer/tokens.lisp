@@ -243,7 +243,7 @@ we're ever actually running @(see vl-tokenlist-p).</p>"
 (defaggregate vl-plaintoken
   :short "Tokens for whitespace, comments, operators, punctuation, and keywords."
   :tag nil ;; Subtle, see below
-  :legiblep nil
+  :layout :fulltree
 
   ((type  vl-plaintokentype-p
           "A keyword symbol that identifies what kind of token this is.
@@ -287,7 +287,7 @@ like @(see vl-token->etext).</p>"
 (defaggregate vl-stringtoken
   :short "Tokens for string literals."
   :tag :vl-stringtoken
-  :legiblep nil
+  :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
                (consp etext)
@@ -311,7 +311,7 @@ Verilog-2005 standard.  BOZO is that still valid for SystemVerilog?</p>")
 (defaggregate vl-idtoken
   :short "Tokens for ordinary identifiers."
   :tag :vl-idtoken
-  :legiblep nil
+  :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
                (consp etext)
@@ -343,7 +343,7 @@ updated references to the standard.</p>")
 (defaggregate vl-sysidtoken
   :short "Tokens for system identifiers."
   :tag :vl-sysidtoken
-  :legiblep nil
+  :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
                (consp etext)
@@ -358,7 +358,7 @@ updated references to the standard.</p>")
 (defaggregate vl-realtoken
   :short "Tokens for real numbers."
   :tag :vl-realtoken
-  :legiblep nil
+  :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
                (consp etext)
@@ -390,7 +390,7 @@ bits.</p>"
 (defaggregate vl-inttoken
   :short "Tokens for integer constants."
   :tag :vl-inttoken
-  :legiblep nil
+  :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
                (consp etext)
@@ -458,7 +458,7 @@ bits.</p>"
   :short "Tokens for unsized, unbased SystemVerilog integers, e.g., @(''0'),
 @(''1'), @(''x'), and @(''z')."
   :tag :vl-extinttoken
-  :legiblep nil
+  :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
                (consp etext)
@@ -472,7 +472,7 @@ bits.</p>"
 (defaggregate vl-timetoken
   :short "Tokens for time literals, like @('3ns') or @('45.617us')."
   :tag :vl-timetoken
-  :legiblep nil
+  :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
                (consp etext)

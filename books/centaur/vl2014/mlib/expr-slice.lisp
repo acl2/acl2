@@ -231,7 +231,9 @@ sliceable."
     ((len natp)
      (value natp)
      acc)
-    :measure (nfix len)
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+;   :measure (nfix len)
     :enabled t
     (mbe :logic
          (revappend (vl-lsb-bitslice-constint-aux len value) acc)

@@ -73,7 +73,7 @@
 (local
  (encapsulate nil
    (local (include-book "arithmetic-5/top" :dir :system))
-
+   
    (local (SET-DEFAULT-HINTS '((acl2::NONLINEARP-DEFAULT-HINT
                                 acl2::STABLE-UNDER-SIMPLIFICATIONP
                                 acl2::HIST
@@ -120,7 +120,7 @@
                     (<=-lists (scale l1 v1)
                               (scale l2 v2))))
 
-
+  
   (defthm <=-lists--shift
     (implies (and (rationalp v)
                   (rationalp w)
@@ -178,12 +178,12 @@
 (local
  (encapsulate nil
    (local (include-book "arithmetic-5/top" :dir :system))
-
+   
    (local (SET-DEFAULT-HINTS '((acl2::NONLINEARP-DEFAULT-HINT
                                 acl2::STABLE-UNDER-SIMPLIFICATIONP
                                 acl2::HIST
                                 acl2::PSPV))))
-
+   
    (defthm weighted-split-nat-step--bound2--lemma
      (implies (and (nat-listp r)
                    (2+-listp w)
@@ -221,9 +221,9 @@
                          (force (<= v1 v2)))
                     (<=-lists (shift l1 v1)
                               (shift l2 v2)))))
-
+   
   (local (include-book "arithmetic-5/top" :dir :system))
-
+  
   (local (SET-DEFAULT-HINTS '((acl2::NONLINEARP-DEFAULT-HINT
                                acl2::STABLE-UNDER-SIMPLIFICATIONP
                                acl2::HIST
@@ -380,18 +380,18 @@
 (local
  (encapsulate nil
    (local (include-book "arithmetic-3/top" :dir :system))
-
+   
    (local (SET-DEFAULT-HINTS '((acl2::NONLINEARP-DEFAULT-HINT
                                 acl2::STABLE-UNDER-SIMPLIFICATIONP
                                 acl2::HIST
                                 acl2::PSPV))))
-
+   
    (local (defthm all-<=--shift
             (equal (all-<= (shift l v)
                            x)
                    (all-<= l
                            (- x v)))))
-
+   
    (local (defthm all-<=--scale
             (implies (and (rationalp v)
                           (< 0 v))
@@ -401,7 +401,7 @@
                                     (/ x v))))))
 
    (local (defthm blah
-            (implies (and (equal n (len l))
+            (implies (and (equal n (len l)) 
                           (<=-lists l
                                     (make-list-logic x n))
                           (force (<= x y)))
@@ -445,7 +445,7 @@
  (defthm weighted-split-nat1--<=--endp
    (implies (not (consp weights))
             (all-<= (weighted-split-nat1 weights weights-factor x) x))))
-
+ 
 (local
  (defthm weighted-split-nat1--<=
    (implies (and (2+-listp weights)
@@ -505,8 +505,7 @@
 (in-theory (disable non-empty-pos-list-fix))
 
 (defun weighted-split-nat (weights x)
-  (declare (xargs :measure (nfix x)
-                  :guard (and (pos-listp weights)
+  (declare (xargs :guard (and (pos-listp weights)
                               (consp weights)
                               (natp x))))
   (mbe :exec
@@ -519,7 +518,7 @@
          (weighted-split-nat1 2+-weights (product-list 2+-weights) x))))
 
 (local ; weighted-split-nat will later be automatically rewritten, so these
-       ; become useless
+       ; become useless 
  (defthm weighted-split-nat--len
    (equal (len (weighted-split-nat weights x))
           (max 1 (len weights)))))
@@ -722,7 +721,7 @@
   :hints (("Goal" :in-theory (disable nth nthcdr)))
   :rule-classes ((:definition :controller-alist ((nthcdr-weighted-split-nat t nil nil)))))
 
-(in-theory (disable nth-weighted-split-nat nthcdr-weighted-split-nat))
+(in-theory (disable nth-weighted-split-nat nthcdr-weighted-split-nat)) 
 
 (defthm nthcdr-weighted-split-nat--car
   (implies (and (integerp i)
@@ -745,7 +744,7 @@
    (implies (and (natp i)
                  (<= (len l) i))
             (equal (nth i l) nil))))
-(local
+(local 
  (defthm make-list-logic-len
    (implies (natp i)
             (equal (len (make-list-logic a i))
@@ -763,7 +762,7 @@
                  (natp x)
                  (< i x))
             (equal (nth i (make-list-logic a x)) a))
- :hints (("Goal" :induct
+ :hints (("Goal" :induct 
                  (nth-returns-elem-of-make-list-ind-scheme i x)))))
 #|
 ;Above lemmas should help prove this

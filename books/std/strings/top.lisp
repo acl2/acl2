@@ -40,6 +40,7 @@
 (include-book "hexify")
 (include-book "hex")
 (include-book "html-encode")
+(include-book "url-encode")
 (include-book "ieqv")
 (include-book "iprefixp")
 (include-book "iless")

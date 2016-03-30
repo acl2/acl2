@@ -929,12 +929,36 @@ non-arguments pieces.</p>"
                 ;; That's fine.  The comment is to be excluded from the
                 ;; expansion.
                 (mv t nil remainder))
+
                ((when (and (consp prefix)
                            (eql (vl-echar->char (car (last prefix))) #\\)))
-                (mv (cw "Preprocessor error (~s0): we cowardly do not allow ~
-                         single-line comments inside defines to end with \.~%"
-                        (vl-location-string (vl-echar->loc (car echars))))
-                    nil echars)))
+                ;; Horrible case: something like
+                ;;
+                ;;    `define foo begin // fancy macro \
+                ;;        x = y; \
+                ;;     end
+                ;;
+                ;; It's not clear whether the backslash is a line continuation
+                ;; or just part of the comment.  We originally tried to just
+                ;; complain about these and not support it, but it appears that
+                ;; some commercial tools are actually allowing this and
+                ;; treating it as a line continuation.  So, now we'll just
+                ;; print a warning and do the same.
+                (cw "Preprocessor warning (~s0): single-line comment ends ~
+                     with a backslash.  Treating this as a line continuation.~%"
+                    (vl-location-string (vl-echar->loc (car echars))))
+                ;; See the above case for handling line continuations.  I think
+                ;; we need to go ahead and just eat the comment and then turn
+                ;; it into a space.  Note that the remainder currently starts
+                ;; with the newline character, so we'll turn that newline into
+                ;; a space and then process the rest of the remainder.
+                (b* ((new-space (change-vl-echar (car remainder) :char #\Space))
+                     ((mv successp text remainder)
+                      (vl-read-until-end-of-define (cdr remainder) config))
+                     ((unless successp)
+                      (mv nil nil echars)))
+                  (mv t (cons new-space text) remainder))))
+
             ;; Single-line comments are to be excluded; nothing more is to be
             ;; read.
             (mv t nil remainder)))
@@ -978,6 +1002,11 @@ non-arguments pieces.</p>"
   (defthm true-listp-of-vl-read-until-end-of-define-prefix
     (true-listp (mv-nth 1 (vl-read-until-end-of-define echars config)))
     :rule-classes :type-prescription)
+
+  (local (defthm true-listp-cdr-when-consp
+           (implies (consp x)
+                    (equal (true-listp (cdr x))
+                           (True-listp x)))))
 
   (defthm true-listp-of-vl-read-until-end-of-define-remainder
     (equal (true-listp (mv-nth 2 (vl-read-until-end-of-define echars config)))

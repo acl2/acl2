@@ -34,7 +34,7 @@
 (in-package "BITOPS")
 (include-book "xdoc/top" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))

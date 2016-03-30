@@ -1188,7 +1188,8 @@
 (defun-raw ccg-simplify-hyps-no-split (hyps ctx ens wrld state)
   (declare (ignore ctx))
   (mv-let (nhyps ttree)
-          (normalize-lst hyps t nil ens wrld nil)
+          (normalize-lst hyps t nil ens wrld nil
+                         (backchain-limit wrld :ts))
           (er-progn
            (accumulate-ttree-and-step-limit-into-state ttree :skip state)
            (value (flatten-ands-in-lit-lst nhyps)))))
@@ -5727,7 +5728,7 @@ e2-e1+1.
         (t (er-let* ((tccms (if (eq (car ccms-list) *0*)
                                 (value *0*)
                               (translate-measures (car ccms-list)
-                                                  ctx wrld state)))
+                                                  t ctx wrld state)))
                      (rst (translate-ccms-list (cdr ccms-list)
                                                ctx wrld state)))
                     (value (cons tccms rst))))))
@@ -7272,9 +7273,10 @@ e2-e1+1.
          ctx wrld state)
   (cond
    ((eq symbol-class :program)
-    (defuns-fn-short-cut names docs pairs guards split-types-terms bodies
+    (defuns-fn-short-cut names docs pairs guards measures split-types-terms
+      bodies
       non-executablep ; not sure about this, but seems plausible
-      wrld state))
+      ctx wrld state))
    (t
     (let ((ens (ens state))
           (big-mutrec (big-mutrec names)))

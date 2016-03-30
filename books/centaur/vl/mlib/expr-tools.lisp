@@ -32,7 +32,7 @@
 (include-book "../expr")
 (include-book "../util/defs")
 (local (include-book "../util/arithmetic"))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (non-parallel-book))
 
@@ -1533,8 +1533,10 @@ construct fast alists binding identifiers to things, etc.</p>"
                     (append (vl-expr-varnames (car x))
                             (vl-exprlist-varnames (cdr x)))
                   nil)
-         :exec (with-local-nrev
-                 (vl-exprlist-varnames-nrev x nrev))))
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev
+                   (vl-exprlist-varnames-nrev x nrev)))))
   ///
   (defthm true-listp-of-vl-expr-varnames
     (true-listp (vl-expr-varnames x))
@@ -1681,8 +1683,10 @@ expression, with repetition.</p>"
                      (append (vl-expr-ops (car x))
                              (vl-exprlist-ops (cdr x)))
                    nil)
-         :exec (with-local-nrev
-                 (vl-exprlist-ops-nrev x nrev))))
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev
+                   (vl-exprlist-ops-nrev x nrev)))))
    ///
    (defthm true-listp-of-vl-expr-ops
      (true-listp (vl-expr-ops x))
@@ -1830,7 +1834,9 @@ throughout the expression, with repetition.  The resulting list may contain any
                     (append (vl-expr-values (car x))
                             (vl-exprlist-values (cdr x)))
                   nil)
-         :exec (with-local-nrev (vl-exprlist-values-nrev x nrev))))
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev (vl-exprlist-values-nrev x nrev)))))
   ///
   (defthm true-listp-of-vl-expr-values
     (true-listp (vl-expr-values x))
@@ -1928,54 +1934,6 @@ throughout the expression, with repetition.  The resulting list may contain any
     (equal (len (vl-bitlist-from-nat x width))
            (nfix width))))
 
-
-(defsection vl-exprsign-max
-  :parents (vl-expr-typedecide)
-  :short "@(call vl-exprsign-max) is given @(see vl-exprsign-p)s as arguments;
-it returns @(':vl-unsigned') if any argument is unsigned, or @(':vl-signed')
-when all arguments are signed."
-
-  (local (in-theory (enable vl-exprsign-p)))
-
-  (defund vl-exprsign-max-fn (x y)
-    (declare (xargs :guard (and (vl-exprsign-p x)
-                                (vl-exprsign-p y))))
-    ;; Goofy MBE stuff is just to make sure this function breaks if we ever add
-    ;; support for reals or other types.
-    (let ((x-fix (mbe :logic (case (vl-exprsign-fix x)
-                               (:vl-signed   :vl-signed)
-                               (otherwise    :vl-unsigned))
-                      :exec x))
-          (y-fix (mbe :logic (case (vl-exprsign-fix y)
-                               (:vl-signed   :vl-signed)
-                               (otherwise    :vl-unsigned))
-                      :exec y)))
-      (if (or (eq x-fix :vl-unsigned)
-              (eq y-fix :vl-unsigned))
-          :vl-unsigned
-        :vl-signed)))
-
-  (defmacro vl-exprsign-max (x y &rest rst)
-    (xxxjoin 'vl-exprsign-max-fn (cons x (cons y rst))))
-
-  (add-binop vl-exprsign-max vl-exprsign-max-fn)
-
-  (local (in-theory (enable vl-exprsign-max-fn)))
-
-  (defthm vl-exprsign-p-of-vl-exprsign-max
-    (vl-exprsign-p (vl-exprsign-max x y)))
-
-  (defthm type-of-vl-exprsign-max
-    (and (symbolp (vl-exprsign-max x y))
-         (not (equal t (vl-exprsign-max x y)))
-         (not (equal nil (vl-exprsign-max x y))))
-    :rule-classes :type-prescription)
-
-  (defthm vl-exprsign-max-of-vl-exprsign-max
-    (equal (vl-exprsign-max (vl-exprsign-max x y) z)
-           (vl-exprsign-max x (vl-exprsign-max y z))))
-
-  (deffixequiv vl-exprsign-max-fn :args ((x vl-exprsign-p) (y vl-exprsign-p))))
 
 
 (define vl-expr-add-atts ((new-atts vl-atts-p)

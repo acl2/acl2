@@ -649,6 +649,14 @@ unsigned integer.</p>
   :enabled t
   (loghead size (ash (loghead size i) cnt)))
 
+(define logite
+  :short "Bitwise if-then-else among integers."
+  ((test :type integer)
+   (then :type integer)
+   (else :type integer))
+  :returns (logite integerp :rule-classes :type-prescription
+                  :name logite-type)
+  (logior (logand test then) (logand (lognot test) else)))
 
 
 (defxdoc logops-bit-functions
@@ -788,6 +796,13 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                        (the (unsigned-byte 1)
                          (logxor 1 (the (unsigned-byte 1) j)))))))
 
+(define b-ite ((test bitp) (then bitp) (else bitp))
+  :returns bit
+  :short "If-then-else for @(see bitp)s."
+  :inline t
+  :enabled t
+  (if (zbp test) (bfix else) (bfix then)))
+
 (defsection bit-functions-type
   :short "Basic type rules for the @(see logops-bit-functions)."
 
@@ -802,7 +817,8 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
          (bitp (b-andc1 i j))
          (bitp (b-andc2 i j))
          (bitp (b-orc1 i j))
-         (bitp (b-orc2 i j)))
+         (bitp (b-orc2 i j))
+         (bitp (b-ite test then else)))
     :rule-classes
     ((:rewrite)
      (:type-prescription :corollary (natp (b-not i)))
@@ -815,7 +831,8 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
      (:type-prescription :corollary (natp (b-andc1 i j)))
      (:type-prescription :corollary (natp (b-andc2 i j)))
      (:type-prescription :corollary (natp (b-orc1 i j)))
-     (:type-prescription :corollary (natp (b-orc2 i j))))))
+     (:type-prescription :corollary (natp (b-orc2 i j)))
+     (:type-prescription :corollary (natp (b-ite test then else))))))
 
 
 (defmacro loglist* (&rest args)

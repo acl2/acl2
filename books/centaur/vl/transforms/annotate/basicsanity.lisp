@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "../../mlib/port-tools")
+(include-book "../../mlib/writer")
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -123,6 +124,13 @@ interfaces.</p>")
    (warnings (iff warnings (not (vl-portlist-wellformed-p x)))
              :name vl-portlist-check-wellformed-under-iff)))
 
+(define vl-pps-expr-elided ((x vl-expr-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (b* ((str (vl-pps-expr x))
+       ((when (<= (length str) 50))
+        str))
+    (cat (subseq str 0 50) "...")))
+
 (define vl-port-check-style ((x        vl-port-p)
                              (warnings vl-warninglist-p))
   :guard (vl-port-wellformed-p x)
@@ -171,8 +179,10 @@ interfaces.</p>")
     ;; Otherwise something pretty fancy is going on.  We'll just recommend
     ;; against this out of general principle.
     (warn :type :vl-warn-port-style
-          :msg "~a0: port has complex expression ~a1."
-          :args (list x x.expr))))
+          ;; Some of these expressions are bigger than we want to see in
+          ;; warning output, so we elide them.
+          :msg "~a0: port has complex expression ~s1"
+          :args (list x (vl-pps-expr-elided x.expr)))))
 
 (define vl-portlist-check-style ((x vl-portlist-p)
                                  (warnings vl-warninglist-p))
@@ -223,6 +233,7 @@ interfaces.</p>")
 
 (defprojection vl-modulelist-basicsanity ((x vl-modulelist-p))
   :returns (new-x vl-modulelist-p)
+  :share-suffix t
   (vl-module-basicsanity x))
 
 
@@ -413,6 +424,7 @@ interfaces.</p>")
 (defprojection vl-interfacelist-basicsanity ((x  vl-interfacelist-p)
                                              (ss vl-scopestack-p))
   :returns (new-x vl-interfacelist-p)
+  :share-suffix t
   (vl-interface-basicsanity x ss))
 
 (define vl-design-basicsanity ((x vl-design-p))

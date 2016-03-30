@@ -1609,7 +1609,7 @@
 ; We skip raw Lisp functions here; see *thread-unsafe-builtin-memoizations*.
 
   (memoize 'fchecksum-obj :stats nil :forget t)
-  (memoize 'expansion-alist-pkg-names-memoize :stats nil :forget t)
+  (memoize 'pkg-names-memoize :stats nil :forget t)
 
 ; Comment on memoizing a worse-than function:
 

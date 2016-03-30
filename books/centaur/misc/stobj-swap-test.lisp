@@ -30,7 +30,7 @@
 
 (in-package "ACL2")
 (include-book "stobj-swap")
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
 (include-book "misc/assert" :dir :system)
 

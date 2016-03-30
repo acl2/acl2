@@ -1599,7 +1599,7 @@
 
 ; Hits is a subset of the include-book-alist.  The form of each
 ; element is (full-book-name user-book-name familiar-name
-; cert-annotations . ev-lst-chk-sum).
+; cert-annotations . book-hash).
 
           (cond
            ((and hits (null (cdr hits)))
@@ -1624,7 +1624,7 @@
 
 ; Hits is a subset of the include-book-alist.  The form of each
 ; element is (full-book-name user-book-name familiar-name
-; cert-annotations . ev-lst-chk-sum).
+; cert-annotations . book-hash).
 
         (cond
          ((and hits (cdr hits))
@@ -3708,8 +3708,8 @@
          (set-difference-eq
           (union-eq (strip-cars *initial-ld-special-bindings*)
                     (strip-cars *initial-global-table*))
-          '(acl2-raw-mode-p            ;;; keep raw mode status
-            bddnotes                   ;;; for feedback after expansion failure
+          '(acl2-raw-mode-p ;;; keep raw mode status
+            bddnotes        ;;; for feedback after expansion failure
 
 ; We handle world and enabled structure installation ourselves, with set-w! and
 ; revert-world-on-error.  We do not want to rely just on state globals because
@@ -3729,24 +3729,22 @@
             parallel-execution-enabled ;;; allow user to modify this in a book
             waterfall-parallelism      ;;; allow user to modify this in a book
             waterfall-parallelism-timing-threshold ;;; see just above
-            waterfall-printing         ;;; allow user to modify this in a book
+            waterfall-printing ;;; allow user to modify this in a book
             waterfall-printing-when-finished ;;; see just above
-            saved-output-reversed      ;;; for feedback after expansion failure
-            saved-output-p             ;;; for feedback after expansion failure
-            ttags-allowed              ;;; propagate changes outside expansion
-            ld-evisc-tuple             ;;; see just above
-            term-evisc-tuple           ;;; see just above
-            abbrev-evisc-tuple         ;;; see just above
-            gag-mode-evisc-tuple       ;;; see just above
-            slow-array-action          ;;; see just above
-            iprint-ar                  ;;; see just above
-            iprint-soft-bound          ;;; see just above
-            iprint-hard-bound          ;;; see just above
-            writes-okp                 ;;; protected a different way (see
-                                       ;;;   protect-system-state-globals)
+            saved-output-reversed ;;; for feedback after expansion failure
+            saved-output-p        ;;; for feedback after expansion failure
+            ttags-allowed         ;;; propagate changes outside expansion
+            ld-evisc-tuple        ;;; see just above
+            term-evisc-tuple      ;;; see just above
+            abbrev-evisc-tuple    ;;; see just above
+            gag-mode-evisc-tuple  ;;; see just above
+            slow-array-action     ;;; see just above
+            iprint-ar             ;;; see just above
+            iprint-soft-bound     ;;; see just above
+            iprint-hard-bound     ;;; see just above
             show-custom-keyword-hint-expansion
             trace-specs                ;;; keep in sync with functions that are
-                                       ;;;   actually traced, e.g. trace! macro
+;;;   actually traced, e.g. trace! macro
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
             verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
@@ -3767,8 +3765,14 @@
 ; When deferred-ttag-notes and deferred-ttag-notes-saved were not in this list
 ; (through Version_7.1), we never saw a TTAG NOTE for :T2.
 
-            deferred-ttag-notes        ;;; see comment immediately above
-            deferred-ttag-notes-saved  ;;; see comment immediately above
+            deferred-ttag-notes       ;;; see comment immediately above
+            deferred-ttag-notes-saved ;;; see comment immediately above
+
+; The following two are protected a different way; see
+; protect-system-state-globals.
+
+            writes-okp
+            cert-data
             ))))
     val))
 
@@ -3785,8 +3789,9 @@
 ; channels.
 
   `(state-global-let*
-    ,(cons `(writes-okp nil)
-           (state-global-bindings *protected-system-state-globals*))
+    ((writes-okp nil)
+     (cert-data nil) ; avoid using global cert-data; see make-event-fn
+     ,@(state-global-bindings *protected-system-state-globals*))
     ,form))
 
 (defun formal-value-triple (erp val)
@@ -4338,6 +4343,13 @@
                    (er-progn@par
                     (chk-theory-expr-value@par (cdr trans-ans) wrld expr ctx state)
                     (value@par (runic-theory (cdr trans-ans) wrld)))))))))
+
+(defun append-strip-cars (x y)
+
+; This is (append (strip-cars x) y).
+
+  (cond ((null x) y)
+        (t (cons (car (car x)) (append-strip-cars (cdr x) y)))))
 
 (defun append-strip-cdrs (x y)
 
@@ -8152,6 +8164,13 @@
         (t (get-guardsp (cdr lst) wrld))))
 
 (defconst *no-measure*
+
+; We expect this to be a term, in particular because of the call of
+; chk-free-vars on the measure in chk-free-and-ignored-vars.  If this value is
+; changed to a term other than *nil*, consider updating documentation for defun
+; and xargs, which explain that :measure nil is treated as though :measure was
+; omitted.
+
   *nil*)
 
 (defun get-measures1 (m edcls ctx state)
@@ -8193,21 +8212,14 @@
                     (value (cons m rst))))))
 
 
-(defun get-measures (symbol-class lst ctx state)
+(defun get-measures (lst ctx state)
 
 ; This function returns a list in 1:1 correspondence with lst containing the
 ; user's specified :MEASUREs (or *no-measure* if no measure is specified).  We
 ; cause an error if more than one :MEASURE is specified within the edcls of a
 ; given element of lst.
 
-; If symbol-class is program, we ignore the contents of lst and simply return
-; all *no-measure*s.  See the comment in chk-acceptable-defuns where
-; get-measures is called.
-
-  (cond
-   ((eq symbol-class :program)
-    (value (make-list (length lst) :initial-element *no-measure*)))
-   (t (get-measures2 lst ctx state))))
+  (get-measures2 lst ctx state))
 
 (defconst *no-ruler-extenders*
   :none)
@@ -9592,6 +9604,7 @@
         BAD-ATOM            ;;; used in several defaxioms
         RETURN-LAST         ;;; affects constraints (see remove-guard-holders1)
         MV-LIST             ;;; affects constraints (see remove-guard-holders1)
+        CONS-WITH-HINT      ;;; affects constraints (see remove-guard-holders1)
 
 ; The next six are used in built-in defpkg axioms.
 
@@ -11796,6 +11809,48 @@
                                 ttree)
         (mv (conjoin-clause-sets+ debug-info cl-set1 cl-set2) ttree))))))
 
+(defun normalize-ts-backchain-limit-for-defs (wrld)
+
+; This function restricts the type-set backchain-limit to 1.  We have found
+; that to be potentially very useful when normalizing a definition body (or
+; rule) or a guard.  Specifically, Jared Davis sent the following example,
+; which we ran in early Feb. 2016.
+
+; (include-book "data-structures/list-defthms" :dir :system)
+; (time$ (include-book "centaur/sv/top" :dir :system))
+
+; When we experimented with restricting the type-set backchain limit during
+; normalization of definitions bodies and guards, performance improved
+; dramatically, as follows.  (All timings were done with profiling, which
+; probably doesn't much matter.)
+
+; ;;; old
+; ; 1189.86 seconds realtime, 1189.45 seconds runtime
+; ; (42,121,431,648 bytes allocated).
+
+; ;;; new
+; ; 91.64 seconds realtime, 91.38 seconds runtime
+; ; (6,786,611,056 bytes allocated).
+
+; Moreover, from profiling we saw that the time spent under normalize decreased
+; from 1040 seconds to 4.69 seconds.
+
+; We chose a type-set backchain-limit of 1 because the performance improvement
+; was less than 1% when using a limit of 0, but the time increased by about 25%
+; when using a limit of 2.
+
+; This restriction of type-set backchain limits could be considered rather
+; arbitrary, and the "everything" regression time didn't change significantly.
+; But normalization is merely heuristic; and even though Jared's is just one
+; example, and even though we might later improve type-set to avoid the
+; blow-up, still it's easy to imagine that there could be other such examples.
+; So we are making this change on 2/7/2016.
+
+  (let ((limit (backchain-limit wrld :ts)))
+    (if (eql limit 0)
+        0
+      1)))
+
 (defun guard-clauses-for-fn (name debug-p ens wrld state ttree)
 
 ; Given a function name we generate the clauses that establish that
@@ -11831,7 +11886,8 @@
               (t (normalize guard
                             t   ; iff-flg
                             nil ; type-alist
-                            ens wrld ttree)))
+                            ens wrld ttree
+                            (normalize-ts-backchain-limit-for-defs wrld))))
         (mv-let
           (changedp body ttree)
           (cond ((eq ens :do-not-simplify)
@@ -12813,12 +12869,73 @@
            fn arity expected-arity))
      (t nil))))
 
+(defun macro-minimal-arity1 (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) 0)
+        ((lambda-keywordp (car lst))
+         0)
+        (t (1+ (macro-minimal-arity1 (cdr lst))))))
+
+(defun macro-minimal-arity (sym default wrld)
+  (let ((args (getpropc sym 'macro-args default wrld)))
+    (macro-minimal-arity1 (if (eq (car args) '&whole)
+                              (cddr args)
+                            args))))
+
+(defun translate-clause-processor-hint/symbol-to-call (sym wrld)
+
+; Sym is a symbol provided as a clause-processor hint, as an abbreviation for a
+; suitable function call.  We return either a function call of the form (sym
+; CLAUSE), (sym CLAUSE nil), or (sym CLAUSE nil st1 st2 ...), depending on the
+; stobjs-out of sym, or else an error message suitable for a fmt ~@ directive.
+
+  (declare (xargs :guard (and (symbolp sym)
+                              (plist-worldp wrld))))
+  (cond
+   ((getpropc sym 'macro-body nil wrld)
+    (case (macro-minimal-arity sym nil wrld)
+      (0
+       "it is the name of a macro that has no required arguments")
+      (1
+       (list sym 'CLAUSE))
+      (2
+       (list sym 'CLAUSE nil))
+      (t "it is the name of a macro that has more than two required arguments")))
+   (t
+    (let ((stobjs-in (stobjs-in sym wrld))
+          (stobjs-out (if (member-eq sym *stobjs-out-invalid*)
+                          :none
+                        (stobjs-out sym wrld))))
+      (cond
+       ((null stobjs-in)
+        (cond
+         ((function-symbolp sym wrld)
+          "it is a function of no arguments")
+         (t "it is not a function symbol or macro name")))
+       ((or (car stobjs-in)
+            (cadr stobjs-in))
+        (msg "it is a function whose ~n0 input is a stobj"
+             (list (if (car stobjs-in) 1 2))))
+       ((member-eq nil (cddr stobjs-in))
+        "it is function symbol with a non-stobj input other than the first two")
+       ((eq stobjs-out :none) ; IF or RETURN-LAST; goofy hint
+        "it is a function symbol whose output signature is unknown")
+       ((or (car stobjs-out)
+            (cadr stobjs-out))
+        (msg "it is a function whose ~n0 output is a stobj"
+             (list (if (car stobjs-out) 1 2))))
+       ((member-eq nil (cddr stobjs-out))
+        "it is a function symbol with a non-stobj output other than the first ~
+         or second output")
+       (t (list* sym 'CLAUSE (cdr stobjs-in))))))))
+
 (defun@par translate-clause-processor-hint (form ctx wrld state)
 
 ; We are given the hint :clause-processor form.  We return an error triple
-; whose value in the non-error case is a cons pair consisting of the
-; corresponding translated term (a legal call of a clause-processor) and its
-; associated stobjs-out, suitable for evaluation for a :clause-processor hint.
+; whose value in the non-error case is a clause-processor-hint record
+; consisting of the corresponding translated term (a legal call of a
+; clause-processor), its associated stobjs-out, and a Boolean indicator of
+; whether the term is a call of a verified clause processor.
 
 ; Each of the following cases shows legal hint syntax for a signature (or in
 ; the third case, a class of signatures).
@@ -12844,44 +12961,46 @@
   #+acl2-par
   (declare (ignorable state))
   (let ((err-msg (msg "The form ~x0 is not a legal value for a ~
-                       :clause-processor hint because ~@1.  See :DOC hints."
+                       :clause-processor hint because ~@1.  See :DOC ~
+                       clause-processor."
                       form)))
     (er-let*@par
-     ((form (cond ((atom form)
-                   (cond ((symbolp form)
-                          (let ((msg (arity-mismatch-msg form 1 wrld)))
-                            (cond (msg (er@par soft ctx "~@0" err-msg msg))
-                                  (t (value@par (list form 'clause))))))
-                         (t (er@par soft ctx "~@0" err-msg
-                              "it is an atom that is not a symbol"))))
-                  ((not (true-listp form))
-                   (er@par soft ctx "~@0" err-msg
-                     "it is a cons that is not a true-listp"))
-                  (t (case-match form
-                       ((':function cl-proc)
-                        (cond
-                         ((symbolp cl-proc)
-                          (let ((msg (arity-mismatch-msg cl-proc 1 wrld)))
-                            (cond (msg (er@par soft ctx "~@0" err-msg msg))
-                                  (t (value@par (list cl-proc 'clause))))))
-                         (t (er@par soft ctx "~@0" err-msg
-                              "the :FUNCTION is not a symbol"))))
-                       ((':function cl-proc ':hint hint)
-                        (cond ((symbolp cl-proc)
-                               (let ((msg
-                                      (arity-mismatch-msg cl-proc '(2) wrld)))
-                                 (cond
-                                  (msg (er@par soft ctx "~@0" err-msg msg))
-                                  (t (value@par
-                                      (list* cl-proc
-                                             'clause
-                                             hint
-                                             (cddr (stobjs-out cl-proc
-                                                               wrld))))))))
-                              (t (er@par soft ctx "~@0" err-msg
-                                   "the :FUNCTION is an atom that is not a ~
-                                    symbol"))))
-                       (& (value@par form)))))))
+     ((form
+       (cond
+        ((symbolp form)
+         (let ((x (translate-clause-processor-hint/symbol-to-call form wrld)))
+           (cond ((msgp x) (er@par soft ctx "~@0" err-msg x))
+                 (t (value@par x)))))
+        ((atom form)
+         (er@par soft ctx "~@0" err-msg
+           "it is an atom that is not a symbol"))
+        ((not (true-listp form))
+         (er@par soft ctx "~@0" err-msg
+           "it is a cons that is not a true-listp"))
+        (t (case-match form
+             ((':function cl-proc)
+              (cond
+               ((symbolp cl-proc)
+                (let ((msg (arity-mismatch-msg cl-proc 1 wrld)))
+                  (cond (msg (er@par soft ctx "~@0" err-msg msg))
+                        (t (value@par (list cl-proc 'clause))))))
+               (t (er@par soft ctx "~@0" err-msg
+                    "the :FUNCTION is not a symbol"))))
+             ((':function cl-proc ':hint hint)
+              (cond ((symbolp cl-proc)
+                     (let ((msg
+                            (arity-mismatch-msg cl-proc '(2) wrld)))
+                       (cond
+                        (msg (er@par soft ctx "~@0" err-msg msg))
+                        (t (value@par
+                            (list* cl-proc
+                                   'clause
+                                   hint
+                                   (cddr (stobjs-out cl-proc
+                                                     wrld))))))))
+                    (t (er@par soft ctx "~@0" err-msg
+                         "the :FUNCTION is an atom that is not a symbol"))))
+             (& (value@par form)))))))
      (mv-let@par
       (erp term bindings state)
       (translate1@par form
@@ -14878,7 +14997,7 @@
 (defun print-ttag-note (val active-book-name include-bookp deferred-p state)
 
 ; Active-book-name is nil or else satisfies chk-book-name.  If non-nil, we
-; print it as "book x" where x omits the .lisp extension, since if the defttag
+; print it as "book x" where x omits the .lisp extension, since the defttag
 ; event might not be in the .lisp file.  For example, it could be in the
 ; expansion-alist in the book's certificate or, if the book is not certified,
 ; it could be in the .port file.

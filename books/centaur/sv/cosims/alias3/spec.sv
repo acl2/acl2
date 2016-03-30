@@ -28,9 +28,18 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-module spec (input logic [127:0] in,
-	     output wire [127:0] out);
-
+// Note: Originally this was the spec module.  When we changed the
+// cosim framework to use svex-design-compile directly rather than
+// basing it on SVTVs, this stopped working because the in/out signals
+// got normalized to other names.  This is basically a bug with our
+// cosim framework -- instead of directly setting "in" and looking up
+// "out", we should properly normalize them using the alias table
+// (defsvtv takes care of this for us).  But instead of complicating
+// the cosim framework to fix this, we just wrap the body of the test
+// in a submodule.
+module sub (input logic [127:0] in,
+	    output wire [127:0] out);
+   
   wire [8:0] a9;
   wire [3:0] a4;
   wire a1;
@@ -45,5 +54,17 @@ module spec (input logic [127:0] in,
   alias out[5:2] = a4;
 
   alias a9 = out[ 18:10 ];
+
+endmodule // sub
+
+module spec (input logic [127:0] in,
+	     output wire [127:0] out);
+
+  logic [127:0] in1;
+  logic [127:0] out1;
+
+   sub mysub (in1, out1);
+   assign in1 = in;
+   assign out = out1;
 
 endmodule // spec

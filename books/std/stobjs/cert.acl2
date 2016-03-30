@@ -1,5 +1,5 @@
-; Centaur Miscellaneous Books
-; Copyright (C) 2008-2011 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,9 +26,7 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original authors: Sol Swords <sswords@centtech.com>
-;                   Jared Davis <jared@centtech.com>
+; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
-(include-book "std/portcullis" :dir :system)
-; cert-flags: ? t
+(include-book "../portcullis")
+; cert-flags: ? t :ttags :all

@@ -3343,7 +3343,8 @@
 
   (mv-let (nterm old-ttree)
           (if normalize-flg
-              (normalize term iff-flg type-alist ens wrld old-ttree)
+              (normalize term iff-flg type-alist ens wrld old-ttree
+                         (backchain-limit wrld :ts))
             (mv term old-ttree))
           (sl-let (newterm ttree)
                   (if rewrite-flg

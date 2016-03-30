@@ -1832,6 +1832,29 @@
              ttree)
             subversive-p))))
 
+(defun maybe-warn-or-error-on-non-rec-measure (name ctx wrld state)
+
+  (let ((bogus-defun-hints-ok
+         (cdr (assoc-eq :bogus-defun-hints-ok
+                        (table-alist 'acl2-defaults-table wrld)))))
+    (cond
+     ((eq bogus-defun-hints-ok :warn)
+      (pprogn
+       (warning$ ctx "Non-rec"
+                 "Since ~x0 is non-recursive your supplied :measure will be ~
+                  ignored (as the :measure is used only during termination ~
+                  proofs)."
+                 name)
+       (value nil)))
+     (bogus-defun-hints-ok ; t
+      (value nil))
+     (t ; bogus-defun-hints-ok = nil, the default
+      (er soft ctx
+          "It is illegal to supply a measure for a non-recursive function, as ~
+           has been done for ~x0.  To avoid this error, see :DOC ~
+           set-bogus-measure-ok."
+          name)))))
+
 (defun put-induction-info (names arglists measures ruler-extenders-lst bodies
                                  mp rel hints otf-flg big-mutrec measure-debug
                                  ctx ens wrld state)
@@ -1880,8 +1903,13 @@
 ; But we have to store the symbol-class and we have to print out the admission
 ; message with prove-termination so the rest of our processing is uniform.
 
-           (prove-termination-non-recursive names bodies mp rel hints otf-flg
-                                            big-mutrec ctx ens wrld1 state))
+           (er-progn
+            (cond ((equal (car measures) *no-measure*)
+                   (value nil))
+                  (t (maybe-warn-or-error-on-non-rec-measure (car names) ctx
+                                                             wrld state)))
+            (prove-termination-non-recursive names bodies mp rel hints otf-flg
+                                             big-mutrec ctx ens wrld1 state)))
           (t
 
 ; Otherwise we first construct the termination machines for all the
@@ -1961,7 +1989,8 @@
                                  nil ; type-alist
                                  ens
                                  wrld
-                                 ttree))
+                                 ttree
+                                 (normalize-ts-backchain-limit-for-defs wrld)))
                      (t (mv body ttree)))
                (mv hyps
                    equiv
@@ -2445,7 +2474,8 @@
   (let* ((new-var (genvar 'genvar "EMPTY" nil (all-vars term)))
          (type-alist (list (list* new-var *ts-empty* nil))))
     (mv-let (normal-term ttree)
-            (normalize term t nil ens wrld ttree)
+            (normalize term t nil ens wrld ttree
+                       (backchain-limit wrld :ts))
             (type-set
              (type-set-implied-by-term1 normal-term
                                         (if not-flg new-var var)
@@ -3192,8 +3222,360 @@
                 (1- interval))
               state))))))
 
-(defun cleanse-type-prescriptions
-  (names type-prescriptions-lst def-nume rmp-cnt ens wrld installed-wrld ttree)
+(mutual-recursion
+
+(defun guarded-termp (x w)
+
+; We assume that x is a termp in some world whose theory extends that of the
+; world, w.  Here we check that in addition, x is a termp in w by checking that
+; all function symbols are defined in w.
+
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (plist-worldp w))))
+  (cond ((atom x) t)
+        ((eq (car x) 'quote)
+         t)
+        ((not (mbt (true-listp x))) nil)
+        ((not (mbt (pseudo-term-listp (cdr x)))) nil)
+        (t (if (symbolp (car x))
+               (not (eq (getpropc (car x) 'formals t w) t))
+             (and (guarded-termp (caddr (car x)) w)
+                  (guarded-term-listp (cdr x) w))))))
+
+(defun guarded-term-listp (lst w)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (plist-worldp w))))
+  (cond ((endp lst) (equal lst nil))
+        (t (and (guarded-termp (car lst) w)
+                (guarded-term-listp (cdr lst) w)))))
+
+)
+
+(defun conjoin-type-prescriptions (tp1 tp2 ens wrld)
+
+; Tp1 and tp2 are each a runic type-prescription record or an atom,
+; representing the unknown type-prescription.  However, tp2 need not have a
+; valid :corollary field.
+
+; If tp1 and tp2 are both records, then they both have the same rune.  If tp1
+; is an atom, it is nil; if tp2 is an atom, it is a nume.  We return either nil
+; or a type-prescription record implied by the conjunction of tp1 and tp2.  If
+; tp1 is a record then it was supplied by some cert-data.  If tp2 is a record
+; then it is a valid type prescription in wrld (other than perhaps the
+; :corollary field, as noted above); thus, we prefer to return a modification
+; of tp2 rather than of tp1, so that we don't have to change the :nume field.
+
+  (cond
+   ((null tp1)
+    (cond
+     ((consp tp2)
+      (mv-let (corollary ttree)
+        (convert-type-prescription-to-term tp2 ens wrld)
+        (mv (change type-prescription tp2
+                    :corollary corollary)
+            ttree)))
+     (t (mv nil nil))))
+   (t ; tp1 is a runic type-prescription record
+    (assert$
+     (and (null (access type-prescription tp1 :hyps))
+          (null (access type-prescription tp1 :backchain-limit-lst)))
+     (cond
+      ((atom tp2) ; tp2 is a nume
+       (cond
+        ((guarded-termp (access type-prescription tp1 :corollary)
+                        wrld)
+         (mv (change type-prescription tp1
+                     :nume tp2)
+             (push-lemma *fake-rune-for-cert-data* nil)))
+        (t
+         (mv-let (corollary ttree)
+           (convert-type-prescription-to-term tp1 ens wrld)
+           (mv (change type-prescription tp1
+                       :nume tp2
+                       :corollary corollary)
+               (push-lemma *fake-rune-for-cert-data* ttree))))))
+      (t ; tp1 and tp2 are both runic type-prescription records
+       (assert$
+
+; Sanity check that both tp1 and tp2 are runic type-prescriptions for the same
+; function symbol, differing at most in their :basic-ts, :vars, and :corollary.
+
+        (and (null (access type-prescription tp2 :hyps))
+             (null (access type-prescription tp2 :backchain-limit-lst))
+             (equal (access type-prescription tp1 :term)
+                    (access type-prescription tp2 :term))
+             (equal (access type-prescription tp1 :rune)
+                    (access type-prescription tp2 :rune)))
+        (let ((basic-ts1 (access type-prescription tp1 :basic-ts))
+              (basic-ts2 (access type-prescription tp2 :basic-ts)))
+          (cond
+           ((and (ts-subsetp basic-ts1 basic-ts2)
+                 (guarded-termp (access type-prescription tp1 :corollary)
+                                wrld)) ; common case
+            (mv (change type-prescription tp1
+                        :nume (access type-prescription tp2 :nume))
+
+; Even though we are only using tp1 to give us the corollary, that corollary
+; could have originally been computed using some rules (in a call of
+; convert-type-prescription-to-term), so we credit the cert-data in which that
+; computed type-prescription, tp1, was stored.
+
+                (push-lemma *fake-rune-for-cert-data* nil)))
+           ((ts-subsetp basic-ts2 basic-ts1) ; tp2 is stronger
+            (mv-let (corollary ttree)
+              (convert-type-prescription-to-term tp2 ens wrld)
+              (mv (change type-prescription tp2
+                          :corollary corollary)
+                  ttree)))
+           (t ; need to intersect the two :basic-ts fields
+            (let* ((vars1 (access type-prescription tp1 :vars))
+                   (vars2 (access type-prescription tp2 :vars))
+                   (tp (cond
+                        ((equal vars1 vars2)
+                         (change type-prescription tp2
+                                 :basic-ts
+                                 (ts-intersection basic-ts1 basic-ts2)))
+                        (t
+
+; If the :term is none of the :vars of either tp1 or tp2, then its type must be
+; the :basic-ts of tp1 and also the :basic-ts of tp2.
+
+                         (change type-prescription tp2
+                                 :basic-ts
+                                 (ts-intersection basic-ts1 basic-ts2)
+                                 :vars (union-eq vars1 vars2))))))
+              (mv-let (corollary ttree)
+                (convert-type-prescription-to-term tp ens wrld)
+                (mv (change type-prescription tp
+                            :corollary corollary)
+                    ttree)))))))))))))
+
+; Essay on Cert-data
+
+; In February 2016, Jared Davis requested on behalf of Centaur Technology
+; Inc. that we avoid recomputing runic type-prescriptions when including
+; certified books.  There were two problems: type-prescription rules from an
+; earlier included book were sometimes causing horrendous slowdowns in those
+; computations while including a later book; and, we can lose nice
+; type-prescriptions that were inferred during the proof (first) pass of
+; certify-book using local rules, where a similarl problem can occur with
+; encapsulate.
+
+; In March 2016 we solved these problems by introducing "cert-data" structures,
+; which can be stored in certificates or in the state global variable
+; 'cert-data.  Cert-data stores information on runic type-prescriptions, but
+; some day we might put results from translate or other information that could
+; be expensive to recompute.
+
+; The following processes support the effective re-use of runic type
+; prescriptions.
+
+; (1) When including a certified book, all functions defined at the top level
+;     (i.e., not inside sub-books) get their runic type-prescriptions (if any)
+;     from the .cert file -- more specifically, from the value of state global
+;     'cert-data, which is bound to the value from the .cert file.
+
+; (2) Runic type-prescriptions are saved after pass1 of certify-book and
+;     encapsulate.  For each :logic-mode defun processed in the second pass at
+;     the top level (not in an included sub-book), an "intersection" is taken
+;     of the runic type-prescription from the first pass and the computed runic
+;     type-prescription computed in the usual way.  Note that since a function
+;     can be defined locally in a locally included book during the first pass
+;     but in a later defun at the top level in the second pass (which was
+;     redundant in the first pass), we even save some runic type-prescriptions
+;     from functions introduced during the first pass that were not introduced
+;     at the top level.
+
+;     Clearly each such rune is a logical consequence of the first pass; hence,
+;     by conservativity, it is a logical consequence of the second pass.  Note
+;     that we may need to recompute the :corollary, which otherwise might not
+;     be a term of the theory produced by the second pass.
+
+; (3) The runic type-prescription written to a .cert file is the one that
+;     exists after the second pass.  We save such a rule for every function
+;     that could be introduced when including the book, which includes the
+;     top-level portcullis functions and every function introduced by the book
+;     (even those not processed during pass 2).  Function
+;     newly-defined-top-level-fns provides this information; happily, even
+;     before we added support for cert-data, that function was already called
+;     under certify-book-fn to compute a list of function symbols to pass to
+;     write-expansion-file.
+
+; Now we elaborate on these processes.
+
+; Note that including an already-certified book gives you the specific type
+; prescription from the .cert file.  If however a book B1 includes another book
+; B2 only locally, then the type-prescription computed for B1 might be stronger
+; than that from B2, because of our "intersection" of rules in (2) above.
+
+; Suppose we are to determine the runic type-prescription for a given defun.
+; If state global 'cert-data has value nil, then we just do the usual iterative
+; calculation.  Otherwise we are to use that cert-data; but how do we know that
+; we should do the "intersection" operation because we are in the pass 2 case,
+; described in (2) above?  We bind key :pass1 to t in the value of state global
+; 'cert-data during the second pass (meaning, cert-data is from pass 1).  If
+; necessary we could have non-nil values that provide more information than t,
+; for example, 'acl2::certify-book or 'acl2::encapsulate.  We don't bother to
+; bind :pass1 to nil for other than pass 2; we simply don't bind :pass1.
+
+; In (2) above we describe the saving of runic type-prescriptions to use during
+; the second pass.  In the case of certify-book, however, we do this only for
+; the part of the world not in the retraction after pass 1, since there is no
+; need to save information for defuns already processed before starting pass 2.
+
+; Why do we need the "intersection" operation described in (2) above?  That is,
+; why not just pick either the runic type-prescription from the first pass or
+; compute one for the second pass?  The answer is that either may be weaker
+; than desired, as illustrated by the following two examples.  (These examples
+; are for encapsulate, but certify-book has the same issue.)
+
+; (2a) First, here is an example showing that the second pass can do a better
+; job computing the runic type-prescription than the first pass.  (To see the
+; empty 'type-prescriptions we would get for FOO on the first pass, change
+; (encapsulate () ...) to (progn ...).)
+
+; (encapsulate
+;   ()
+;   (local (include-book "rtl/rel9/support/support/lnot" :dir :system))
+
+; ; Because of the following in-theory event, the cert-data from the first pass
+; ; associates no runic type-prescription with FOO.
+
+;   (local (in-theory nil))
+;   (defun fl (x)
+;     (declare (xargs :guard (real/rationalp x)))
+;     (floor x 1))
+;   (defun bits (x i j)
+;     (declare (xargs :guard (and (natp x) (natp i) (natp j))
+;                     :verify-guards nil))
+;     (mbe :logic (if (or (not (integerp i))
+;                         (not (integerp j)))
+;                     0
+;                     (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
+;          :exec (if (< i j)
+;                    0
+;                    (logand (ash x (- j))
+;                            (1- (ash 1 (1+ (- i j))))))))
+;   (defun lnot (x n)
+;     (declare (xargs :guard (and (natp x) (integerp n) (< 0 n))
+;                     :verify-guards nil))
+;     (if (natp n)
+;         (+ -1 (expt 2 n) (- (bits x (1- n) 0)))
+;         0))
+;   (defun foo (x n)
+;     (lnot x n)))
+
+; ; Using cert-data from the first pass only:
+; ; (assert-event (null (getpropc 'foo 'type-prescriptions)))
+
+; ; Computing the runic type-prescription in the second pass:
+; (assert-event
+;  (equal (decode-type-set
+;          (access type-prescription
+;                  (car (last (getpropc 'foo 'type-prescriptions)))
+;                  :basic-ts))
+;         '*ts-rational*)
+
+; What we actually get, now, is *ts-integer*, because that's the :basic-ts for
+; the runic type-prescription of lnot (and also of binary-logand, bits, and fl)
+; from the locally included book, saved from the first pass.
+
+; (2b) To obtain an example showing that the first pass can do a better job
+; computing the runic type-prescription than the second pass, simply omit
+; (in-theory nil) from the example above.  The second pass still gives us
+; *ts-rational, as above; but if we change (encapsulate () ...) to (progn ...),
+; we see:
+
+; (assert-event
+;  (equal (decode-type-set
+;          (access type-prescription
+;                  (car (last (getpropc 'foo 'type-prescriptions)))
+;                  :basic-ts))
+;         '*ts-non-negative-integer*))
+
+; Let's turn now to our handling of a few thorny issues.
+
+; Suppose we are certifying a book with an encapsulate that locally defines a
+; function, f, such that later in the book is a different, non-local definition
+; of f.  At the end of pass 1 of certify-book we will store a runic type
+; prescription for the second definition.  Then during pass 2 of certify-book,
+; might we make a mistake by associating that type-prescription with the first
+; (local) definition of f?  No, because local definitions are skipped during
+; pass 2.  But for robustness, we pass a value for cert-data to
+; process-embedded-events, which binds state global cert-data to that value.
+; Thus, we override the global cert-data when we process an encapsulate.
+
+; The expansion phase of make-event introduces definitions that are in effect
+; local.  As in the preceding paragraph, we need to avoid applying the global
+; cert-data to such definitions.  This problem is solved primarily by arranging
+; that protected-eval, via protect-system-state-globals, binds state global
+; cert-data to nil.  An additional binding of cert-data to nil is made before
+; calling make-event-fn2-lst, which handles :OR forms and thus can throw away
+; earlier values.  In such a case, the runic type-prescription will be
+; recomputed during include-book, but we think that such an exception is
+; tolerable.
+
+; We are careful to not use cert-data for non-trivial encapsulates.  It might
+; well be possible to do so correctly, but we would need to be very careful to
+; track constraints properly; it seems easy to have a soundness bug due to
+; recording insufficient constraints in pass 2 to justify deductions made from
+; stronger constraints in pass 1.
+
+; A runic type-prescription rule may contain symbols not present in the
+; certification world, as shown below.  A similar issue applies to the
+; :expansion-alist field of the certificate, which is addressed by finding the
+; problematic package names with pkg-names introducing hidden defpkg forms.  We
+; use that same solution for cert-data.  The following example shows how this
+; works.  First, let's look at a couple of books; notice the package definition
+; that is to be made in the certification world of the first book.
+
+;   $ cat sub.lisp
+;   ; (defpkg "FOO" nil)
+;   ; (certify-book "sub" 1)
+;   
+;   (in-package "ACL2")
+;   
+;   (defun f2 (x) x)
+;   $ cat top.lisp
+;   (in-package "ACL2")
+;   
+;   (include-book "sub")
+;   
+;   (defmacro my-def ()
+;     `(defun f (,(intern$ "X" "FOO")) ,(intern$ "X" "FOO")))
+;   
+;   (my-def)
+;   $
+
+; After certification of both books, the :CERT-DATA field of top.cert has the
+; following value.
+
+;   ((:TYPE-PRESCRIPTION (F 0 (3413 F FOO::X)
+;                           (NIL)
+;                           ((FOO::X) :TYPE-PRESCRIPTION F)
+;                           EQUAL (F FOO::X)
+;                           FOO::X)))
+
+; Thus, a hidden defpkg is generated (here we abbreviate the directory as
+; <dir>).
+
+;   :BEGIN-PORTCULLIS-CMDS
+;   (DEFPKG "FOO" NIL NIL
+;           ("<dir>/sub.lisp")
+;           T)
+;   :END-PORTCULLIS-CMDS
+
+(defun cert-data-val (fn cert-data-entry)
+
+; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key.
+
+  (let ((pair (and cert-data-entry ; optimization
+                   (hons-get fn cert-data-entry))))
+    (cdr pair)))
+
+(defun cleanse-type-prescriptions (names type-prescriptions-lst def-nume
+                                         rmp-cnt ens wrld installed-wrld
+                                         cert-data-tp ttree)
 
 ; Names is a clique of function symbols.  Type-prescriptions-lst is in
 ; 1:1 correspondence with names and gives the value in wrld of the
@@ -3219,8 +3601,8 @@
 
 ; i   (:definition name)                                   ^
 ; i+1 (:executable-counterpart name)
-; i+2 (:type-prescription name)                       rmp-cnt=3 or 4
-; i+4 (:induction name)                   ; optional       v
+; i+2 (:type-prescription name)           ; rmp-cnt=3 or 4
+; i+3 (:induction name)                   ; optional       v
 
 ; Furthermore, we know that the nume of the :definition rune for the kth
 ; (0-based) name in names is def-nume+(k*rmp-cnt); that is, we assigned
@@ -3228,40 +3610,43 @@
 
   (cond
    ((null names) (mv wrld ttree))
-   (t (let* ((fn (car names))
-             (lst (car type-prescriptions-lst))
-             (new-tp (car lst)))
-        (mv-let
-         (wrld ttree1)
-         (cond
-          ((ts= *ts-unknown* (access type-prescription new-tp :basic-ts))
-           (mv (putprop fn 'type-prescriptions (cdr lst) wrld) nil))
-          (t (mv-let
-              (corollary ttree1)
-              (convert-type-prescription-to-term new-tp ens
+   (t
+    (let* ((fn (car names))
+           (lst (car type-prescriptions-lst))
+           (tp1 (cert-data-val fn cert-data-tp))
+           (tp2 ; still can have unset :corollary field
+            (cond
+             ((ts= *ts-unknown* (access type-prescription (car lst)
+                                        :basic-ts))
 
-; We use the installed world (the one before cleansing started) for efficient
-; handling of large mutual recursion nests.
+; We bind tp2 to a nume in this case; see conjoin-type-prescriptions.
 
-                                                 installed-wrld)
-              (mv (putprop fn 'type-prescriptions
-                           (cons (change type-prescription
-                                         new-tp
-                                         :rune (list :type-prescription
-                                                     fn)
-                                         :nume (+ 2 def-nume)
-                                         :corollary corollary)
-                                 (cdr lst))
-                           wrld)
-                  ttree1))))
-         (cleanse-type-prescriptions (cdr names)
-                                     (cdr type-prescriptions-lst)
-                                     (+ rmp-cnt def-nume)
-                                     rmp-cnt ens wrld installed-wrld
-                                     (cons-tag-trees ttree1 ttree)))))))
+              (+ 2 def-nume))
+             (t (change type-prescription
+                        (car lst)
+                        :rune (list :type-prescription fn)
+                        :nume (+ 2 def-nume))))))
+      (mv-let (new-tp ttree1)
+        (conjoin-type-prescriptions tp1 tp2 ens installed-wrld)
+        (let ((ttree2 (cons-tag-trees ttree1 ttree)))
+          (mv-let
+            (wrld ttree3)
+            (cond
+             ((null new-tp)
+              (mv (putprop fn 'type-prescriptions (cdr lst) wrld)
+                  ttree))
+             (t (mv (putprop fn 'type-prescriptions
+                             (cons new-tp (cdr lst))
+                             wrld)
+                    ttree2)))
+            (cleanse-type-prescriptions (cdr names)
+                                        (cdr type-prescriptions-lst)
+                                        (+ rmp-cnt def-nume)
+                                        rmp-cnt ens wrld installed-wrld
+                                        cert-data-tp ttree3))))))))
 
 (defun guess-and-putprop-type-prescription-lst-for-clique
-  (names bodies def-nume ens wrld ttree big-mutrec state)
+  (names bodies def-nume ens wrld ttree big-mutrec cert-data-tp state)
 
 ; We assume that in wrld we find 'type-prescriptions for every fn in
 ; names.  We compute new guesses at the type-prescriptions for each fn
@@ -3293,6 +3678,7 @@
                       ens
                       wrld
                       wrld1
+                      cert-data-tp
                       ttree)
                      (er-progn
 
@@ -3309,7 +3695,8 @@
                     (guess-and-putprop-type-prescription-lst-for-clique
                      names
                      bodies
-                     def-nume ens wrld1 ttree big-mutrec state)))))))
+                     def-nume ens wrld1 ttree big-mutrec cert-data-tp
+                     state)))))))
 
 (defun get-normalized-bodies (names wrld)
 
@@ -3326,6 +3713,85 @@
                          (def-body (car names) wrld)
                          :concl)
                  (get-normalized-bodies (cdr names) wrld)))))
+
+(defun cert-data-pair (fn cert-data-entry)
+
+; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key.
+
+  (and cert-data-entry ; optimization
+       (hons-get fn cert-data-entry)))
+
+(defun cert-data-entry-pair (key state)
+
+; Key is :type-prescription or any other keyword that can be associated in a
+; cert-data structure with a fast-alist.
+
+  (let ((cert-data (f-get-global 'cert-data state)))
+    (and cert-data ; optimization
+         (assoc-eq key cert-data))))
+
+(defun cert-data-putprop-type-prescription-lst-for-clique
+    (cert-data-entry names def-nume rmp-cnt ttree ens wrld installed-wrld
+                     changedp)
+
+; Rmp-cnt (which stands for "runic-mapping-pairs count") is the length of the
+; 'runic-mapping-pairs entry for the functions in names (all of which have the
+; same number of mapping pairs).  We increment our def-nume by rmp-cnt on each
+; iteration, as is done in cleanse-type-prescriptions.  Changedp is initially
+; nil, but as we recur it becomes t if we ever extend wrld (with a putprop
+; call).
+
+  (cond
+   ((endp names)
+    (mv wrld
+        (if changedp
+            (push-lemma *fake-rune-for-cert-data* ttree)
+          ttree)))
+   (t (let* ((fn (car names))
+             (cert-data-pair (cert-data-pair fn cert-data-entry)))
+        (cond
+         ((null cert-data-pair)
+          (cert-data-putprop-type-prescription-lst-for-clique
+           cert-data-entry
+           (cdr names)
+           (+ rmp-cnt def-nume)
+           rmp-cnt
+           ttree
+           ens
+           wrld ; no change; also ok, (putprop fn 'type-prescriptions nil wrld)
+           installed-wrld
+           changedp))
+         (t
+          (let ((cert-data-tp (cdr cert-data-pair)))
+            (mv-let (corollary ttree1)
+              (if (or (null cert-data-tp)
+                      (guarded-termp (access type-prescription cert-data-tp
+                                             :corollary)
+                                     installed-wrld))
+                  (mv nil nil) ; nothing to do
+                (convert-type-prescription-to-term cert-data-tp ens
+                                             
+; We use the installed world (the one before cleansing started) for efficient
+; handling of large mutual recursion nests.
+
+                                                   installed-wrld))
+              (cert-data-putprop-type-prescription-lst-for-clique
+               cert-data-entry
+               (cdr names)
+               (+ rmp-cnt def-nume)
+               rmp-cnt
+               (cons-tag-trees ttree1 ttree)
+               ens
+               (putprop fn 'type-prescriptions
+                        (list (if corollary
+                                  (change type-prescription cert-data-tp
+                                          :nume (+ 2 def-nume)
+                                          :corollary corollary)
+                                (change type-prescription cert-data-tp
+                                        :nume (+ 2 def-nume))))
+                        wrld)
+               installed-wrld
+               t)))))))))
 
 (defun putprop-type-prescription-lst (names subversive-p def-nume ens wrld
                                             ttree state)
@@ -3455,20 +3921,44 @@
 
     (mv wrld ttree state))
    (t
-    (let ((bodies (get-normalized-bodies names wrld))
-          (big-mutrec (big-mutrec names)))
-      (er-let*
-       ((wrld1 (update-w big-mutrec
-                         (putprop-initial-type-prescriptions names wrld))))
-       (guess-and-putprop-type-prescription-lst-for-clique
-        names
-        bodies
-        def-nume
-        ens
-        wrld1
-        ttree
-        big-mutrec
-        state))))))
+    (let ((cert-data-entry-pair
+           (cert-data-entry-pair :type-prescription state))
+          (cert-data-pass1
+           (cert-data-entry-pair :pass1 state)))
+
+; A non-nil value for cert-data-entry-pair is a fast-alist.  If cert-data-pass1
+; is true then we are in pass 2 of encapsulate or certify-book; otherwise we
+; are including a certified book.  Since redefinition is possible, we avoid the
+; temptation to check that no name in names has a non-nil 'type-prescriptions
+; property.
+
+      (cond
+       ((and cert-data-entry-pair
+             (not cert-data-pass1)) ; including a certified book
+        (mv-let
+          (wrld ttree)
+          (cert-data-putprop-type-prescription-lst-for-clique
+           (cdr cert-data-entry-pair)
+           names
+           def-nume
+           (length (getpropc (car names) 'runic-mapping-pairs nil wrld))
+           ttree ens wrld wrld nil)
+          (mv wrld ttree state)))
+       (t (let ((bodies (get-normalized-bodies names wrld))
+                (big-mutrec (big-mutrec names)))
+            (er-let* ((wrld1 (update-w big-mutrec
+                                       (putprop-initial-type-prescriptions
+                                        names wrld))))
+              (guess-and-putprop-type-prescription-lst-for-clique
+               names
+               bodies
+               def-nume
+               ens
+               wrld1
+               ttree
+               big-mutrec
+               (cdr cert-data-entry-pair)
+               state)))))))))
 
 ; So that finishes the type-prescription business.  Now to level-no...
 
@@ -4740,8 +5230,8 @@
                                 (all-fnnames1-exec t bodies nil)
                                 wrld))))
 
-(defun defuns-fn-short-cut (names docs pairs guards split-types-terms bodies
-                                  non-executablep wrld state)
+(defun defuns-fn-short-cut (names docs pairs guards measures split-types-terms
+                                  bodies non-executablep ctx wrld state)
 
 ; This function is called by defuns-fn when the functions to be defined are
 ; :program.  It short cuts the normal put-induction-info and other such
@@ -4758,25 +5248,37 @@
 ; a tag-tree recording the proofs that were done.
 
   (declare (ignore docs pairs))
-  (let* ((boot-strap-flg (global-val 'boot-strap-flg wrld))
-         (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
-                                                       non-executablep
-                                                       wrld))
-                      (t wrld)))
-         (wrld1 (if boot-strap-flg
-                    wrld0
-                  (putprop-x-lst2 names 'unnormalized-body bodies wrld0)))
-         (wrld2 (put-invariant-risk
-                 names
-                 bodies
-                 non-executablep
-                 (putprop-x-lst2-unless
-                  names 'guard guards *t*
+  (er-progn
+   (cond
+    ((and (null (cdr names))                                 ; single function
+          (not (equal (car measures) *no-measure*))          ; explicit measure
+          (not (ffnnamep-mod-mbe (car names) (car bodies)))) ; not recursive
+
+; Warning: Keep the test just above in sync with putprop-recursivep-lst, in the
+; sense that a measure is legal only for a singly-recursive function or a list
+; of at least two functions.
+
+     (maybe-warn-or-error-on-non-rec-measure (car names) ctx wrld state))
+    (t (value nil)))
+   (let* ((boot-strap-flg (global-val 'boot-strap-flg wrld))
+          (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
+                                                        non-executablep
+                                                        wrld))
+                       (t wrld)))
+          (wrld1 (if boot-strap-flg
+                     wrld0
+                   (putprop-x-lst2 names 'unnormalized-body bodies wrld0)))
+          (wrld2 (put-invariant-risk
+                  names
+                  bodies
+                  non-executablep
                   (putprop-x-lst2-unless
-                   names 'split-types-term split-types-terms *t*
-                   (putprop-x-lst1
-                    names 'symbol-class :program wrld1))))))
-    (value (cons wrld2 nil))))
+                   names 'guard guards *t*
+                   (putprop-x-lst2-unless
+                    names 'split-types-term split-types-terms *t*
+                    (putprop-x-lst1
+                     names 'symbol-class :program wrld1))))))
+     (value (cons wrld2 nil)))))
 
 ; Now we develop the output for the defun event.
 
@@ -5217,9 +5719,10 @@
 (defun dcl-fields (lst)
 
 ; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
-; between the formals and the body of a DEFUN.  We return a list of all the
-; "field names" used in lst.  Our answer is a subset of the list
-; *xargs-keywords*.
+; between the formals and the body of a DEFUN.  We return a duplicate-free list
+; of all the "field names" used in lst, where 'comment indicates a string.  Our
+; answer is a subset of the union of the values of '(comment type ignore
+; ignorable) and *xargs-keywords*.
 
   (declare (xargs :guard (plausible-dclsp lst)))
   (cond ((endp lst) nil)
@@ -5258,9 +5761,10 @@
 (defun strip-dcls (fields lst)
 
 ; Lst satisfies plausible-dclsp.  Fields is a list as returned by dcl-fields,
-; i.e., a subset of the symbols in *xargs-keywords*.  We copy lst deleting any
-; part of it that specifies a value for one of the fields named.  The result
-; satisfies plausible-dclsp.
+; i.e., a subset of the union of the values of '(comment type ignore ignorable)
+; and *xargs-keywords*.  We copy lst deleting any part of it that specifies a
+; value for one of the fields named, where 'comment denotes a string.  The
+; result satisfies plausible-dclsp.
 
   (declare (xargs :guard (and (symbol-listp fields)
                               (plausible-dclsp lst))))
@@ -5308,10 +5812,11 @@
 (defun fetch-dcl-field (field-name lst)
 
 ; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
-; between the formals and the body of a DEFUN.  Field-name is 'comment or one
-; of the symbols in the list *xargs-keywords*.  We return the list of the
-; contents of all fields with that name.  We assume we will find at most one
-; specification per XARGS entry for a given keyword.
+; between the formals and the body of a DEFUN.  Field-name is either in the
+; list (comment type ignore ignorable) or is one of the symbols in the list
+; *xargs-keywords*.  We return the list of the contents of all fields with that
+; name.  We assume we will find at most one specification per XARGS entry for a
+; given keyword.
 
 ; For example, if field-name is :GUARD and there are two XARGS among the
 ; DECLAREs in lst, one with :GUARD g1 and the other with :GUARD g2 we return
@@ -5405,10 +5910,7 @@
 ; in defthm: a defthm event is redundant if it introduces an identical theorem
 ; with the same name -- even if the :hints in the new defthm are ill-formed.
 ; The idea behind redundancy checking is to allow books to be loaded even if
-; they share some events.  The assumption is that def1 is in a book that got
-; (or will get) processed by itself sometime and the ill-formedness will be
-; detected there.  That will change the check sum on the book and cause
-; certification to lapse in the book that considered def1 redundant.
+; they share some events.
 
 ; Should we do any checks here related to the :subversive-p field of the
 ; justification for def2?  The concern is that def2 (the old definition) is
@@ -5765,6 +6267,41 @@
 ; Here, we prevent such promotion of :ideal to :common-lisp-compliant.
 
                            'verify-guards)
+
+; The next potential COND branch would avoid redundancy when downgrading from
+; :common-lisp-compliant to :ideal.  But it is commented out, because there
+; were many regression failures; see GitHub Issue 582.
+
+;                           ((and (eq symbol-class :ideal)
+;                                 (eq (symbol-class name wrld)
+;                                     :common-lisp-compliant))
+; 
+; ; We have returned 'redundant in this case, but we now realize that doing so
+; ; could be problematic.  Consider a book with the following events.  If the
+; ; second definition of foo is redundant on the first pass of certify-book,
+; ; then bar will produce an error on the second pass because foo is not
+; ; :common-lisp-compliant at that time.
+; 
+; ;   (local
+; ;    (defun foo (x)
+; ;      (declare (xargs :guard t :verify-guards t))
+; ;      x))
+; ;
+; ;   (defun foo (x)
+; ;     (declare (xargs :guard t :verify-guards nil))
+; ;     x)
+; ;
+; ;   (defun bar (x)
+; ;     (declare (xargs :guard t))
+; ;     (foo x))
+; 
+; ; Out of courtesy, given this change to long-standing behavior, we print an
+; ; explanatory message.
+; 
+;                            (msg "it is not redundant to provide a new ~
+;                                  definition that specifies the removal of ~
+;                                  guard-verified status."))
+
                           (t 'redundant)))
                    ((and (eq (cadr val) :program)
                          (eq defun-mode :logic))
@@ -6721,7 +7258,7 @@
         (t (union-equal (collect-non-x x (car lst))
                         (union-collect-non-x x (cdr lst))))))
 
-(defun translate-measures (terms ctx wrld state)
+(defun translate-measures (terms logic-modep ctx wrld state)
 
 ; WARNING: Keep this in sync with translate-term-lst.  Here we allow (:? var1
 ; ... vark), where the vari are distinct variables.
@@ -6749,8 +7286,8 @@
 ; position isn't "state"; consider for example the function big-clock-entry.
 
                                 t ; stobjs-out
-                                t t ctx wrld state))))
-             (rst (translate-measures (cdr terms) ctx wrld state)))
+                                logic-modep t ctx wrld state))))
+             (rst (translate-measures (cdr terms) logic-modep ctx wrld state)))
             (value (cons term rst))))))
 
 (defun redundant-predefined-error-msg (name)
@@ -7031,13 +7568,13 @@
       (untranslated-measures
 
 ; If the defun-mode is :program, or equivalently, the symbol-class is :program,
-; then we don't need the measures.  But we do need "measures" that pass the
-; tests below, such as the call of chk-free-and-ignored-vars-lsts.  So, we
-; simply pretend that no measures were supplied, which is clearly reasonable if
-; we are defining the functions to have symbol-class :program.
+; then we don't need the measures, other than to check that non-recursive
+; functions aren't given measures.
 
-       (get-measures symbol-class fives ctx state))
-      (measures (translate-measures untranslated-measures ctx wrld2
+       (get-measures fives ctx state))
+      (measures (translate-measures untranslated-measures
+                                    (not (eq symbol-class :program))
+                                    ctx wrld2
                                     state))
       (ruler-extenders-lst (get-ruler-extenders-lst symbol-class fives
                                                     ctx state))
@@ -7744,9 +8281,8 @@
 
   (cond
    ((eq symbol-class :program)
-    (defuns-fn-short-cut names docs pairs guards split-types-terms bodies
-      non-executablep wrld
-      state))
+    (defuns-fn-short-cut names docs pairs guards measures split-types-terms
+      bodies non-executablep ctx wrld state))
    (t
     (let ((ens (ens state))
           (big-mutrec (big-mutrec names)))

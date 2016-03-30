@@ -111,7 +111,19 @@
     open-member-equal-on-list-of-tags
     ;;  len
     ;; equal-of-plus-one fix
-    ))
+    prod-car
+    prod-cdr
+    prod-hons
+    std::cons-with-hint
+    std::prod-cons-with-hint
+    std::car-of-prod-cons
+    std::cdr-of-prod-cons
+    std::prod-cons-of-car/cdr
+    std::acl2-count-of-prod-cons
+    std::prod-cons-equal-cons
+    std::prod-cons-when-either
+    std::prod-consp-compound-recognizer
+    std::prod-cons-not-consp-forward))
 
 
 (program)

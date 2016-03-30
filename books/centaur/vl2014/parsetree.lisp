@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2015-02-05")
+  "VL2014 Syntax 2016-02-05")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -3791,7 +3791,7 @@ do this is to wrap it using @('(vl-context x)').</p>
 (defprod vl-module
   :short "Representation of a single module."
   :tag :vl-module
-  :layout :tree
+  :layout :fulltree
 
   ((name       stringp
                :rule-classes :type-prescription

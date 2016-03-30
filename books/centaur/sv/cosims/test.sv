@@ -53,10 +53,11 @@ module test ();
        in = inputs[i];
        #2;
        clk = 1;
-       #5;
-       clk = 0;
        #3;
        outputs[i] = out;
+       #2;
+       clk = 0;
+       #3;
      end
      $writememb(`outfile, outputs);
    end

@@ -37,7 +37,7 @@
 (include-book "elabindex")
 (include-book "../util/sum-nats")
 (local (include-book "../util/arithmetic"))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (in-theory (enable tag-reasoning)))
 (local (in-theory (disable (tau-system))))
 (local (std::add-default-post-define-hook :fix))
@@ -899,6 +899,7 @@ top-level hierarchical identifiers.</p>"
 
 
 (deftagsum vl-select
+  :layout :tree
   (:field ((name stringp "The name of the field we're selecting")))
   (:index ((val  vl-expr-p "The index we're selecting"))))
 
@@ -911,7 +912,8 @@ top-level hierarchical identifiers.</p>"
                           important if this is the outermost selstep.")
    ;; (ss vl-scopestack-p   "The scopestack in which the datatype was declared or
    ;;                        typedef'd")
-   ))
+   )
+  :layout :tree)
 
 (fty::deflist vl-seltrace :elt-type vl-selstep :elementp-of-nil nil)
 
@@ -952,7 +954,8 @@ top-level hierarchical identifiers.</p>"
   (:root      ())
   (:package   ((pkg vl-package-p)))
   (:module    ((mod vl-module-p)))
-  (:interface ((iface vl-interface-p))))
+  (:interface ((iface vl-interface-p)))
+  :layout :tree)
 
 
 (local (defthm top-level-design-elements-are-modules-or-interfaces
@@ -1305,32 +1308,56 @@ instance, in this case the @('tail') would be
     (vl-datatype-resolved-p (vl-coretype name signedp pdims udims)))
 
   (defthm vl-datatype-resolved-p-of-make-struct
-    (equal (vl-datatype-resolved-p
-            (vl-struct packedp signedp members pdims udims))
+    (equal (vl-datatype-resolved-p (make-vl-struct :packedp packedp
+                                                   :signedp signedp
+                                                   :members members
+                                                   :pdims pdims
+                                                   :udims udims))
            (vl-structmemberlist-resolved-p members))
     :hints (("goal" :expand ((vl-datatype-resolved-p
-                              (vl-struct packedp signedp members pdims udims))))))
+                              (make-vl-struct :packedp packedp
+                                              :signedp signedp
+                                              :members members
+                                              :pdims pdims
+                                              :udims udims))))))
 
   (defthm vl-datatype-resolved-p-of-make-union
-    (equal (vl-datatype-resolved-p
-            (vl-union packedp signedp taggedp members pdims udims))
+    (equal (vl-datatype-resolved-p (make-vl-union :packedp packedp
+                                                  :signedp signedp
+                                                  :taggedp taggedp
+                                                  :members members
+                                                  :pdims pdims
+                                                  :udims udims))
            (vl-structmemberlist-resolved-p members))
     :hints (("Goal" :expand ((vl-datatype-resolved-p
-                              (vl-union packedp signedp taggedp members pdims udims))))))
+                              (make-vl-union :packedp packedp
+                                             :signedp signedp
+                                             :taggedp taggedp
+                                             :members members
+                                             :pdims pdims
+                                             :udims udims))))))
 
   (defthm vl-datatype-resolved-p-of-make-enum
-    (equal (vl-datatype-resolved-p
-            (vl-enum basetype items pdims udims))
+    (equal (vl-datatype-resolved-p (make-vl-enum :basetype basetype
+                                                 :items items
+                                                 :pdims pdims
+                                                 :udims udims))
            (vl-datatype-resolved-p basetype))
-    :hints (("goal" :expand (vl-datatype-resolved-p
-            (vl-enum basetype items pdims udims)))))
+    :hints (("goal" :expand (vl-datatype-resolved-p (make-vl-enum :basetype basetype
+                                                                  :items items
+                                                                  :pdims pdims
+                                                                  :udims udims)))))
 
   (defthm vl-datatype-resolved-p-of-make-usertype
-    (equal (vl-datatype-resolved-p
-            (vl-usertype name res pdims udims))
+    (equal (vl-datatype-resolved-p (make-vl-usertype :name name
+                                                     :res res
+                                                     :pdims pdims
+                                                     :udims udims))
            (and res (vl-datatype-resolved-p res)))
-    :hints (("Goal" :expand (vl-datatype-resolved-p
-            (vl-usertype name res pdims udims)))))
+    :hints (("Goal" :expand (vl-datatype-resolved-p (make-vl-usertype :name name
+                                                                      :res res
+                                                                      :pdims pdims
+                                                                      :udims udims)))))
 
   (defthm vl-structmemberlist-resolved-p-of-struct-members
     (implies (and (vl-datatype-case x :vl-struct)
@@ -1815,12 +1842,59 @@ such as @('logic') are packed but not selectable.</p>"
       :vl-usertype (impossible))))
 
 
-(define vl-datatype-signedness ((x vl-datatype-p))
-  :short "Decide whether the datatype is signed or not."
-  :long "<p>Returns NIL if there isn't an appropriate signedness, as in an
-unpacked or non-integer type.  This function never fails, as such, but in some
-cases where implementations disagree on the correct signedness, we return a
-flag to signal that there is a caveat about that signedness.</p>
+(defenum vl-arithclass-p
+  (:vl-signed-int-class
+   :vl-unsigned-int-class
+   :vl-shortreal-class
+   :vl-real-class
+   :vl-other-class
+   :vl-error-class)
+  :parents (vl-expr-typedecide)
+  :short "Classification of expressions (or datatypes) as signed or unsigned
+integral, shortreal, real, or of some other kind."
+  :long "<p>These classifications are used in the description of expression
+types (signedness) found in SystemVerilog-2012 Sections 11.7-11.8.</p>
+
+<p>It isn't entirely clear to me whether @('shortreal') should be regarded as a
+different type than @('real'), but it seems possibly useful to keep them
+separated.</p>
+
+<p>We use ``other'' class to describe things that are valid but of some
+non-arithmetic type, for instance: unpacked structures, void, chandles, etc.</p>
+
+<p>We use ``error'' class to describe the case where we really did have some
+kind of error determining the type.</p>")
+
+(define vl-coretype-arithclass ((typinfo vl-coredatatype-info-p)
+                                (signedp booleanp))
+  :returns (class vl-arithclass-p)
+  :parents (vl-datatype-arithclass)
+  :short "We factor this out of @(see vl-datatype-arithclass) so we can reuse
+          it in places like @(see vl-syscall-typedecide)."
+  (b* (((vl-coredatatype-info typinfo)))
+    (cond (typinfo.takes-signingp
+           ;; Any integer atom/vector type takes a signing
+           (if signedp
+               :vl-signed-int-class
+             :vl-unsigned-int-class))
+          ((or (vl-coretypename-equiv typinfo.coretypename :vl-real)
+               ;; See SystemVerilog-2012 Section 6.12: realtime is synonymous
+               ;; with real.
+               (vl-coretypename-equiv typinfo.coretypename :vl-realtime))
+           :vl-real-class)
+          ((vl-coretypename-equiv typinfo.coretypename :vl-shortreal)
+           :vl-shortreal-class)
+          (t
+           ;; Some crazy type like void, string, event, etc.
+           :vl-other-class))))
+
+(define vl-datatype-arithclass ((x vl-datatype-p))
+  :short "Decide whether the datatype is signed/unsigned/real/other."
+
+  :long "<p>Returns an @(see vl-arithclass-p) that describes the kind of this
+datatype.  This function never fails, as such, but in some cases where
+implementations disagree on the correct signedness, we return a flag to signal
+that there is a caveat about that signedness.</p>
 
 <p>This caveat occurs when we have packed dimensions on a usertype that is
 declared as signed.  In this case, NCV treats the array as unsigned, but VCS
@@ -1835,38 +1909,49 @@ packed array shall be unsigned.</blockquote>
 <p>An example:</p>
 
 @({
-  typedef logic signed [3:0] squad;
+    typedef logic signed [3:0] squad;
 
-  squad [3:0] b;
-  assign b = 16'hffff;
+    squad [3:0] b;
+    assign b = 16'hffff;
 
-  logic [20:0] btest;
-  assign btest = b;
- })
+    logic [20:0] btest;
+    assign btest = b;
+})
 
 <p>In NCVerilog, btest has the value @('0ffff'), indicating that @('b') (as a
 whole) is considered unsigned; in VCS, btest has the value @('fffff'),
-indicating that @('b') is considered signed.</p>
-
-"
+indicating that @('b') is considered signed.</p>"
   :guard (vl-datatype-resolved-p x)
   :measure (vl-datatype-count x)
   :returns (mv (caveat-flag)
-               (signedness vl-maybe-exprsign-p))
-  (b* (((when (consp (vl-datatype->udims x))) (mv nil nil)))
+               (class vl-arithclass-p))
+  (b* (((when (consp (vl-datatype->udims x)))
+        ;; Unpacked array has no sensible arith class
+        (mv nil :vl-other-class)))
     (vl-datatype-case x
-      :vl-coretype (b* (((vl-coredatatype-info typinfo) (vl-coretypename->info x.name)))
-                     (mv nil (and typinfo.takes-signingp
-                                  (if x.signedp :vl-signed :vl-unsigned))))
-      :vl-struct (mv nil (and x.packedp (if x.signedp :vl-signed :vl-unsigned)))
-      :vl-union (mv nil (and x.packedp (if x.signedp :vl-signed :vl-unsigned)))
-      :vl-enum (vl-datatype-signedness x.basetype)
-      :vl-usertype (b* (((unless (mbt (and x.res t))) (mv nil nil))
-                        ((mv caveat ans1) (vl-datatype-signedness x.res))
-                        ((when (and (consp (vl-datatype->pdims x))
-                                    (eq ans1 :vl-signed)))
-                         (mv t :vl-unsigned)))
-                     (mv caveat ans1)))))
+      :vl-coretype
+      (mv nil (vl-coretype-arithclass (vl-coretypename->info x.name) x.signedp))
+
+      :vl-struct
+      (mv nil (cond ((not x.packedp) :vl-other-class)
+                    (x.signedp       :vl-signed-int-class)
+                    (t               :vl-unsigned-int-class)))
+      :vl-union
+      (mv nil (cond ((not x.packedp) :vl-other-class)
+                    (x.signedp       :vl-signed-int-class)
+                    (t               :vl-unsigned-int-class)))
+      :vl-enum
+      (vl-datatype-arithclass x.basetype)
+      :vl-usertype
+      (b* (((unless (mbt (and x.res t)))
+            (mv (impossible) :vl-other-class))
+           ((mv caveat ans1) (vl-datatype-arithclass x.res))
+           ((when (and (consp (vl-datatype->pdims x))
+                       (eq ans1 :vl-signed-int-class)))
+            ;; Packed array of some signed usertype -- special caveat case
+            ;; described above.
+            (mv t :vl-unsigned-int-class)))
+        (mv caveat ans1)))))
 
 
 (define vl-datatype-select-ok ((x vl-datatype-p))
@@ -1878,7 +1963,8 @@ select if it's the last packed dimension).  The input datatype should have
 usertypes resolved.</p>"
   :guard (vl-datatype-resolved-p x)
   :returns (ok)
-  :measure (vl-datatype-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-datatype-count x)
   (b* ((x (vl-maybe-usertype-resolve x)))
     (or (consp (vl-datatype->pdims x))
         (consp (vl-datatype->udims x))
@@ -1944,8 +2030,6 @@ dimensions counts as unsigned.)</p>"
 
 
 
-
-
 (define vl-datatype-remove-dim ((x vl-datatype-p))
   :short "Get the type of a variable of type @('x') after an indexing
 operation is applied to it."
@@ -2004,9 +2088,9 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   (b* ((x (vl-maybe-usertype-resolve x))
        (udims (vl-datatype->udims x))
        ((when (consp udims))
+        ;; Still have unpacked dimensions, so just strip off one unpacked dimension.
         (mv nil nil
-            (vl-datatype-update-udims
-             (cdr udims) x)
+            (vl-datatype-update-udims (cdr udims) x)
             (car udims)))
        (pdims (vl-datatype->pdims x))
        ((when (consp pdims))
@@ -2022,8 +2106,10 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                    x)
                   (car pdims)))
              (new-x (vl-datatype-update-dims nil nil x))
-             ((mv & signedness) (vl-datatype-signedness new-x)))
-          (mv nil (eq signedness :vl-signed) new-x (car pdims))))
+             ((mv & arithclass) (vl-datatype-arithclass new-x))
+             (caveat-flag (vl-arithclass-equiv arithclass :vl-signed-int-class)))
+          (mv nil caveat-flag new-x (car pdims))))
+
        ((unless (vl-datatype-packedp x))
         (mv (vmsg "Index applied to non-packed, non-array type ~a0" x)
             nil nil nil))
@@ -2040,7 +2126,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        (dim (vl-range->packeddimension (make-vl-range :msb (vl-make-index (1- size))
                                                       :lsb (vl-make-index 0)))))
     (mv nil nil
-        (make-vl-coretype :name :vl-logic) dim))
+        *vl-plain-old-logic-type* dim))
   ///
   (defret vl-datatype-resolved-p-of-remove-dim
     (implies (and (not err)
@@ -2302,7 +2388,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                                  all the fields/indices we've selected into")
    (part     vl-partselect-p    "The final partselect")
    (type     vl-datatype-p      "The final datatype of the object, after
-                                 partselecting.")))
+                                 partselecting."))
+  :layout :tree)
 
 (define vl-operandinfo-usertypes-ok ((x vl-operandinfo-p))
   (b* (((vl-operandinfo x)))
@@ -2636,7 +2723,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 (define vl-hidindex-resolved-p ((x vl-hidindex-p))
   :returns (bool)
   :short "Determines if every index in a @(see vl-hidindex-p) is resolved."
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   (vl-exprlist-resolved-p (vl-hidindex->indices x))
   ///
   ;; (defthm vl-hidindex-resolved-p-when-atom
@@ -2700,7 +2788,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   :guard (vl-hidindex-resolved-p x)
   :returns (flat-string stringp :rule-classes :type-prescription)
   :short "Converts a @(see vl-hidindex-p) into a string like @('\"bar[3][4][5]\"')."
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   :guard-hints(("Goal" :in-theory (enable vl-hidindex-resolved-p)))
   (b* ((name    (vl-hidindex->name x))
        (name    (if (eq name :vl-$root)

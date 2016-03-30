@@ -1384,7 +1384,8 @@ simulate\".)  Try these, as well as the examples shown above.</p>
 
 (defun normalize-no-ttree (term iff-flg type-alist ens wrld)
   (mv-let (x ttree)
-          (normalize term iff-flg type-alist ens wrld nil)
+          (normalize term iff-flg type-alist ens wrld nil
+                     (backchain-limit wrld :ts))
           (declare (ignore ttree))
           x))
 

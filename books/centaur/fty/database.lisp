@@ -75,6 +75,8 @@
    ctor-name          ;; constructor function name, e.g., foo
    ctor-macro         ;; constructor macro (keyword args) name, e.g., make-foo
    ctor-body          ;; constructor body, without fixing, e.g., (list ...)
+   remake-name        ;; remake function name, e.g., remake-foo, or NIL if there is no remaker
+   remake-body        ;; remake body, without fixing, or NIL if inapplicable
    short              ;; xdoc short string for the whole product
    long               ;; xdoc long string for the whole product
    inline             ;; inline keywords

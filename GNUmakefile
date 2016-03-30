@@ -492,6 +492,7 @@ init: acl2-proclaims.lisp
 	$(MAKE) do_saved
 	rm -f workxxx
 	$(MAKE) chmod_image
+	@echo "Successfully built $(ACL2_WD)/${PREFIXsaved_acl2}."
 
 # The following "proofs" target assumes that files for the specified LISP have
 # been compiled.  We use :load-acl2-proclaims nil so that we don't

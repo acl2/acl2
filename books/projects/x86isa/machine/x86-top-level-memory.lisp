@@ -1013,7 +1013,6 @@ memory.</li>
      (r-w-x :type (member :r :w :x))
      (cpl   :type (unsigned-byte 2))
      x86)
-    :non-executable t
     :enabled t
     :guard (and (not (programmer-level-mode x86))
                 (canonical-address-listp l-addrs))
@@ -1214,8 +1213,8 @@ memory.</li>
      (r-w-x :type (member :r :w :x))
      (cpl   :type (unsigned-byte 2))
      x86)
-    :non-executable t
     :enabled t
+    :non-executable t
     :short "Returns the first error flag, if any, encountered during
     the translation of linear addresses @('l-addrs')"
     :guard (and (not (programmer-level-mode x86))

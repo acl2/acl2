@@ -6535,6 +6535,32 @@
         (find-stobj-out-and-call (cdr lst) known-stobjs ctx wrld
                                  state-vars)))))
 
+(defconst *initial-return-last-table*
+  '((time$1-raw . time$1)
+    (with-prover-time-limit1-raw . with-prover-time-limit1)
+    (with-fast-alist-raw . with-fast-alist)
+    (with-stolen-alist-raw . with-stolen-alist)
+    (fast-alist-free-on-exit-raw . fast-alist-free-on-exit)
+
+; Keep the following comment in sync with *initial-return-last-table* and with
+; chk-return-last-entry.
+
+; The following could be omitted since return-last gives them each special
+; handling: prog2$ and mbe1 are used during the boot-strap before tables are
+; supported, and ec-call1 and (in ev-rec-return-last) with-guard-checking gets
+; special handling.  It is harmless though to include them explicitly, in
+; particular at the end so that they do not add time in the expected case of
+; finding one of the other entries in the table.  If we decide to avoid special
+; handling (which we have a right to do, by the way, since users who modify
+; return-last-table are supposed to know what they are doing, as a trust tag is
+; needed), then we should probably move these entries to the top where they'll
+; be seen more quickly.
+
+    (progn . prog2$)
+    (mbe1-raw . mbe1)
+    (ec-call1-raw . ec-call1)
+    (with-guard-checking1-raw . with-guard-checking1)))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -7420,6 +7446,32 @@
 ; translate11-call on arbitrary let expressions, viewed as lambdas, where the
 ; args would be arbitrary expressions (from the cadrs of the doublets in the
 ; let-bindings).
+
+; We are tempted to enforce the call-arguments-limit imposed by Common Lisp.
+; According to the HyperSpec, this constant has an implementation-dependent
+; value that is "An integer not smaller than 50", and is "The upper exclusive
+; bound on the number of arguments that may be passed to a function."
+; The limits vary considerably, and are as follows in increasing order.
+
+;   GCL Version 2.6.12
+;                    64
+;   LispWorks Version 7.0.0
+;                  2047
+;   Allegro CL Enterprise Edition 8.0
+;                 16384
+;   Clozure Common Lisp Version 1.12-dev-r16695M-trunk
+;                 65536
+;   CMU Common Lisp snapshot-2016-01 (21A Unicode)
+;             536870911
+;   SBCL 1.3.0
+;   4611686018427387903
+
+; We have decided not to impose this limit ourselves, because for example, it
+; would be sad if a large existing proof development done using, say, CCL, were
+; to start failing because we impose a limit of 50 or 64.  Instead, we view
+; this limit as a resource limitation that is implementation-dependent, in the
+; same spirit as how one could get a stack overflow or memory exhaustion on one
+; platform but not another.
 
   (mv-let
    (flg stobjs-in-call stobjs-out-call)
@@ -8758,7 +8810,12 @@
                              of a trust tag, call ~x1 directly."
                             x 'with-guard-checking))
                ((and keyp
-                     (let ((val (return-last-lookup key wrld)))
+                     (let ((val
+                            (or (return-last-lookup key wrld)
+                                (and (global-val 'boot-strap-flg wrld)
+                                     (cdr (assoc-eq
+                                           key
+                                           *initial-return-last-table*))))))
                        (or (null val)
                            (and (consp val) ; see chk-return-last-entry
                                 (eq stobjs-out :stobjs-out)))))
@@ -8772,7 +8829,10 @@
 ; quoted first argument; and since it is easy to support that, we do so.
 
                 (cond
-                 ((null (return-last-lookup key wrld))
+                 ((not (or (return-last-lookup key wrld)
+                           (and (global-val 'boot-strap-flg wrld)
+                                (cdr (assoc-eq key
+                                               *initial-return-last-table*)))))
                   (trans-er ctx
                             "The symbol ~x0 is specified in the first ~
                              argument of the form ~x1.  But ~x0 is not ~

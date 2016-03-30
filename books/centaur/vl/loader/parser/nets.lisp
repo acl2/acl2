@@ -284,6 +284,42 @@
          (rest := (vl-parse-list-of-net-identifiers)))
        (return (cons (cons id ranges) rest))))
 
+
+(define vl-build-netdecls-aux ((x          vl-vardeclassignlist-p)
+                               (basedecl   vl-vardecl-p)
+                               (baseassign vl-assign-p))
+  :returns (mv (nets vl-vardecllist-p)
+               (assigns vl-assignlist-p))
+  (b* (((when (atom x))
+        (mv nil nil))
+       ((vl-vardeclassign x1) (car x))
+       (type (vl-vardecl->type basedecl))
+       (type
+        ;; You can't have udims on the type you just parsed, so we can avoid
+        ;; updating the udims unless there are any, which there very rarely
+        ;; are.
+        (if (consp x1.dims)
+            (vl-datatype-update-udims x1.dims type)
+          type))
+       (vardecl (change-vl-vardecl basedecl
+                                   :name x1.id
+                                   :type type
+                                   :delay (and (not x1.expr)
+                                               (vl-assign->delay baseassign))))
+       (assign  (and x1.expr
+                     (change-vl-assign baseassign
+                                       :lvalue (vl-idexpr x1.id)
+                                       :expr x1.expr)))
+       ((mv rest-decls rest-assigns)
+        (vl-build-netdecls-aux (cdr x) basedecl baseassign)))
+      (mv (cons vardecl rest-decls)
+          (if assign
+              (cons assign rest-assigns)
+            rest-assigns)))
+  ///
+  (defmvtypes vl-build-netdecls-aux (true-listp true-listp)))
+                
+
 (define vl-build-netdecls
   ((loc         vl-location-p)
    (x           vl-vardeclassignlist-p)
@@ -298,40 +334,52 @@
   :returns (mv (nets vl-vardecllist-p)
                (assigns vl-assignlist-p))
   :guard-hints (("goal" :in-theory (disable (force))))
-  (if (atom x)
-      (mv nil nil)
-    (b* (((vl-vardeclassign x1) (car x))
-         (type (vl-datatype-update-udims x1.dims type))
-         (vardecl (make-vl-vardecl :loc loc
-                                   :name x1.id
-                                   :type type
-                                   :nettype nettype
-                                   :atts atts
-                                   :vectoredp vectoredp
-                                   :scalaredp scalaredp
-                                   :delay (and (not x1.expr) delay)
-                                   :cstrength cstrength))
-         (assign (and x1.expr
-                      (make-vl-assign :loc loc
-                                      :lvalue (vl-idexpr x1.id)
-                                      :expr x1.expr
-                                      :strength gstrength
-                                      :delay delay
-                                      :atts atts)))
-         ((mv rest-decls rest-assigns)
-          (vl-build-netdecls loc (cdr x) nettype type atts
-                             vectoredp scalaredp delay cstrength gstrength)))
-      (mv (cons vardecl rest-decls)
-          (if assign
-              (cons assign rest-assigns)
-            rest-assigns))))
+  (b* (((when (atom x))
+        (mv nil nil))
+       ((vl-vardeclassign x1) (car x))
+       ;; We encountered a design where a single "wire a, b, c" style
+       ;; declaration had ... lots ... of names.  So we now try to build
+       ;; a "base" vardecl and assignment that we can then update.  This
+       ;; results in better structure sharing among the results for things
+       ;; like their locations, etc.  Probably.
+       (base-vardecl (make-vl-vardecl
+                      ;; This name will get overwritten in subsequent
+                      ;; variable declarations.  But in the common case
+                      ;; of a single vardecl, it'll be correct.
+                      :name x1.id
+                      ;; The delay is tricky: the delay may need to be
+                      ;; overwritten with NIL for any decls that have
+                      ;; initial values.  That is,
+                      ;;    wire #3 foo;  <-- delay is on the decl
+                      ;;    wire #3 foo = bar; <-- delay is on the assign
+                      :delay delay
+                      :type (if (atom (cdr x))
+                                (vl-datatype-update-udims x1.dims type)
+                              type)
+                      ;; Then all this stuff will just stay the same.
+                      :loc loc
+                      :nettype nettype
+                      :atts atts
+                      :vectoredp vectoredp
+                      :scalaredp scalaredp
+                      :cstrength cstrength))
 
-  ;; :prepwork
-  ;; ((local (defthm l0
-  ;;           (implies (vl-rangelist-p x)
-  ;;                    (vl-packeddimensionlist-p x))
-  ;;           :hints(("Goal" :induct (len x))))))
+       ((when (and (atom (cdr x))
+                   (not x1.expr)))
+        ;; Avoid creating an assignment if there's only a single variable
+        ;; declaration and it doesn't need one.
+        (mv (list base-vardecl) nil))
 
+       (base-assign (make-vl-assign
+                     ;; We just need some expression.  It will get overwritten
+                     ;; by any assignment.
+                     :lvalue |*sized-1'b0*|
+                     :expr |*sized-1'b0*|
+                     :loc loc
+                     :strength gstrength
+                     :delay delay
+                     :atts atts)))
+    (vl-build-netdecls-aux x base-vardecl base-assign))
   ///
   (more-returns
    (nets :name true-listp-of-vl-build-netdecls-nets

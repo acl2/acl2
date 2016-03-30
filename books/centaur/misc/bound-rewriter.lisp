@@ -39,7 +39,7 @@
 (include-book "clause-processors/sublis-var-meaning" :dir :system)
 (include-book "std/util/defaggrify-defrec" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

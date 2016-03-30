@@ -32,9 +32,11 @@
 (include-book "a4vec")
 (include-book "aig-arith")
 (include-book "4vmask")
+(include-book "std/util/defrule" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 
@@ -1802,6 +1804,750 @@ results in at most n+1 bits.</p>"
     :hints(("Goal" :in-theory (enable logcollapse)))))
 
 
+
+(local (defthm ash-1-lte-implies-lte-integer-length
+         (implies (and (natp x)
+                       (integerp y)
+                       (<= (ash 1 x) y))
+                  (<= x (integer-length y)))
+         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                            bitops::ihsext-recursive-redefs)
+                 :induct (logbitp x y)))))
+
+
+(local (defthm butlast-redef
+           (equal (butlast x n)
+                  (if (<= (len x) (nfix n))
+                      nil
+                    (cons (car x)
+                          (butlast (cdr x) n))))
+           :hints (("goal" :in-theory (enable butlast)))
+           :rule-classes ((:definition :controller-alist ((butlast t t))))))
+
+(local (defthm butlast-of-rev
+         (equal (butlast (rev x) 1)
+                (rev (cdr x)))
+         :hints(("Goal" :in-theory (enable rev)))))
+
+
+(local (defthm aig-logapp-nss-of-list-fix-1
+         (equal (aig-logapp-nss n (list-fix x) y)
+                (aig-logapp-nss n x y))
+         :hints(("Goal" :in-theory (enable aig-logapp-nss)))))
+
+(local (defthm aig-logapp-nss-of-list-fix-2
+         (equal (aig-logapp-nss n x (list-fix y))
+                (aig-logapp-nss n x y))
+         :hints(("Goal" :in-theory (enable aig-logapp-nss)))))
+
+(local (defthm aig-logtail-ns-of-list-fix
+         (equal (aig-logtail-ns n (list-fix y))
+                (aig-logtail-ns n y))
+         :hints(("Goal" :in-theory (enable aig-logtail-ns)))))
+
+(local (defthm aig-loghead-ns-of-list-fix
+         (equal (aig-loghead-ns n (list-fix y))
+                (aig-loghead-ns n y))
+         :hints(("Goal" :in-theory (enable aig-loghead-ns)))))
+
+(local (defthm aig-logext-ns-of-list-fix
+         (equal (aig-logext-ns n (list-fix y))
+                (aig-logext-ns n y))
+         :hints(("Goal" :in-theory (enable aig-logext-ns)))))
+
+(local (defthm aig-ite-bss-fn-of-list-fix
+         (equal (aig-ite-bss-fn test (list-fix then) else)
+                (aig-ite-bss-fn test then else))
+         :hints(("Goal" :in-theory (e/d (aig-ite-bss-fn
+                                         AIG-ITE-BSS-FN-AUX)
+                                        (GL::AIG-ITE-BSS-FN-AUX-ELIM))))))
+
+(local (defthm logext-of-pos-fix
+         (Equal (logext (pos-fix n) x)
+                (logext n x))
+         :hints(("Goal" :expand ((logext 1 x)
+                                 (logext n x)
+                                 (pos-fix n))))))
+
+
+(local (defthm aig-sign-s-of-list-fix
+         (equal (aig-sign-s (list-fix x)) (aig-sign-s x))
+         :hints(("Goal" :in-theory (enable aig-sign-s)))))
+
+
+(local (defthm aig-list->s-of-list-fix
+         (equal (aig-list->s (list-fix x) env)
+                (aig-List->s x env))
+         :hints(("Goal" :in-theory (enable aig-List->s)))))
+
+
+(local (DEFTHM LOGEXT***
+         (EQUAL (LOGEXT SIZE I)
+                (COND ((eql (pos-fix size) 1)
+                       (IF (BIT->BOOL (LOGCAR I)) -1 0))
+                      (T (LOGCONS (LOGCAR I)
+                                  (LOGEXT (1- SIZE)
+                                          (LOGCDR I))))))
+         :HINTS
+         (("Goal"
+           :IN-THEORY (e/d (pos-fix) (LOGEXT))
+           :expand ((logext size i))
+           :USE ((:INSTANCE
+                  bitops::LOGEXT** (size size) (i i)))))
+         :RULE-CLASSES
+         ((:DEFINITION :CLIQUE (LOGEXT)
+           :CONTROLLER-ALIST ((LOGEXT T NIL))))))
+
+(local (in-theory (disable bitops::logext** logext***)))
+(local
+ (encapsulate nil
+   (local (in-theory (enable logext***)))
+   (local (defthm pos-fix-not-1-implies-pos-fix-of-m-minus-1
+            (implies (not (equal 1 (pos-fix m)))
+                     (and (equal (pos-fix (+ -1 m)) (+ -1 m))
+                          (equal (pos-fix m) m)))
+            :hints(("Goal" :in-theory (enable pos-fix)))))
+
+   (defrule logext-of-logapp-more
+     (implies (<= (pos-fix n) (nfix m))
+              (equal (logext n (logapp m a b))
+                     (logext n a)))
+     :enable (ihsext-inductions ihsext-recursive-redefs)
+     :disable (signed-byte-p**))
+
+   (defrule logext-of-logapp-less
+     (implies (> (pos-fix n) (nfix m))
+              (equal (logext n (logapp m a b))
+                     (logapp m a (logext (- (pos-fix n) (nfix m)) b))))
+     :induct (my-ind m n a b)
+     :enable (ihsext-inductions ihsext-recursive-redefs)
+     :disable (signed-byte-p**)
+     :prep-lemmas
+     ((defun my-ind (m n a b)
+        (if (or (zp m)
+                (eql (pos-fix n) 1))
+            (list m n a b)
+          (my-ind (- m 1) (- n 1) (logcdr a) b)))))
+
+   ;; (defrule logext-of-logapp-same
+   ;;   (implies (equal (pos-fix n) (nfix m))
+   ;;            (equal (logext n (logapp m a b))
+   ;;                   (logext n a)))
+   ;;   :enable (ihsext-inductions ihsext-recursive-redefs)
+   ;;   :disable (signed-byte-p**))
+
+   (defruled logext-of-logapp-split
+     (equal (logext n (logapp m a b))
+            (if (<= (pos-fix n) (nfix m))
+                (logext n a)
+              (logapp m a (logext (- (pos-fix n) (nfix m)) b)))))
+
+   
+
+   (local (defun induct-n-m-x (n m x)
+            (if (or (eql 1 (pos-fix m)) (zp n))
+                x
+              (induct-n-m-x (1- n) (1- m) (logcdr x)))))
+   
+
+   (defthmd logtail-of-logext
+     (implies (< (nfix n) (pos-fix m))
+              (equal (logtail n (logext m x))
+                     (logext (- (pos-fix m) (nfix n)) (logtail n x))))
+     :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                        bitops::logtail**)
+             :induct (induct-n-m-x n m x)
+             :do-not-induct t
+             :expand ((:free (x) (logtail n x))))
+            ;; (and stable-under-simplificationp
+            ;;      '(:in-theory (enable pos-fix)))
+            ))
+
+   (local (defthm pos-fix-when-not-posp
+            (implies (not (posp x))
+                     (equal (pos-fix x) 1))
+            :hints(("Goal" :in-theory (enable pos-fix)))))
+
+   (defthmd logtail-greater-of-logext
+     (implies (<= (pos-fix m) (nfix n))
+              (equal (logtail n (logext m x))
+                     (if (logbitp (- (pos-fix m) 1) x) -1 0)))
+     :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                        bitops::logtail**
+                                        bitops::logbitp**)
+             :induct (induct-n-m-x n m x)
+             :do-not-induct t
+             :expand ((:free (x) (logtail n x))))
+            ;; (and stable-under-simplificationp
+            ;;      '(:in-theory (enable pos-fix)))
+            ))
+
+   (defthmd logtail-of-equal-logext
+     (implies (and (equal y (logext m x))
+                   (< (nfix n) (pos-fix m)))
+              (equal (logtail n y)
+                     (logext (- (pos-fix m) (nfix n)) (logtail n x))))
+     :hints(("Goal" :in-theory (enable logtail-of-logext))))))
+
+(local
+ (progn
+   (defthm aig-eval-of-nil
+     (equal (aig-eval nil env) nil))
+
+   (defthm aig-eval-of-t
+     (equal (aig-eval t env) t))
+
+   (in-theory (disable aig-eval))))
+
+(local (defthm aig-list->u-bound
+         (< (aig-list->u x env)
+            (ash 1 (len x)))
+         :hints(("Goal" :in-theory (enable aig-list->u)
+                 :expand ((ash 1 (+ 1 (len (cdr x)))))))
+         :rule-classes :linear))
+
+(local (defthmd aig-list->u-bound2-lemma
+         (implies (aig-eval (car (last x)) env)
+                  (<= (ash 1 (len (cdr x)))
+                      (aig-list->u x env)))
+         :hints(("Goal" :in-theory (enable aig-list->u last)
+                 :expand ((ash 1 (+ 1 (len (cddr x)))))))))
+
+(local (defthmd aig-list->u-bound3-lemma
+         (implies (not (aig-eval (car (last x)) env))
+                  (< (aig-list->u x env)
+                     (ash 1 (len (cdr x)))))
+         :hints(("Goal" :in-theory (enable aig-list->u last)
+                 :expand ((ash 1 (+ 1 (len (cddr x)))))))))
+
+(local (defthm car-last-rev
+         (equal (car (last (rev x)))
+                (car x))
+         :hints(("Goal" :in-theory (enable last rev)))))
+
+(local (defthm len-cdr-rev
+         (equal (len (cdr (rev x)))
+                (len (cdr x)))
+         :hints(("Goal" :in-theory (enable rev)))))
+
+(local (defthm aig-list->u-bound2
+         (implies (aig-eval (car x) env)
+                  (<= (ash 1 (len (cdr x)))
+                      (aig-list->u (rev x) env)))
+         :hints(("Goal" :use ((:instance aig-list->u-bound2-lemma
+                               (x (rev x))))
+                 :in-theory (disable last rev aig-list->u)))
+         :rule-classes :linear))
+
+(local (defthm aig-list->u-bound3
+         (implies (not (aig-eval (car x) env))
+                  (< (aig-list->u (rev x) env)
+                     (ash 1 (len (cdr x)))))
+         :hints(("Goal" :use ((:instance aig-list->u-bound3-lemma
+                               (x (rev x))))
+                 :in-theory (disable last rev aig-list->u)))
+         :rule-classes :linear))
+
+(local (defthm our-logtail-of-logapp-1
+         (IMPLIES (<= (NFIX ACL2::N) (NFIX ACL2::SIZE))
+                  (EQUAL (LOGTAIL ACL2::N
+                                  (LOGAPP ACL2::SIZE ACL2::I ACL2::J))
+                         (LOGAPP (- (NFIX ACL2::SIZE) (NFIX ACL2::N))
+                                 (LOGTAIL ACL2::N ACL2::I)
+                                 ACL2::J)))
+         :hints (("goal" :use bitops::logtail-of-logapp-1))))
+
+
+
+(local (defthmd aig-list->u-plus-shift-lemma
+         (implies (aig-eval (car (last x)) env)
+                  (equal (+ (- (ash 1 (len (cdr x)))) (aig-list->u x env))
+                         (aig-list->u (butlast x 1) env)))
+         :hints (("Goal" :induct (len x)
+                  :expand ((Aig-list->u x env)
+                           (:free (a b) (aig-list->u (cons a b) env))
+                           (butlast x 1)
+                           (len (cdr x))
+                           (len x)
+                           (last x)
+                           (:free (a) (ash 1 (+ 1 a))))
+                  :in-theory (disable aig-list->u butlast (:d len) last))
+                 (and stable-under-simplificationp
+                      '(:in-theory (e/d (logcons)
+                                        (aig-list->u butlast (:d len) last)))))))
+
+(local (defthm aig-list->u-plus-shift
+         (implies (and (aig-eval (car (last x)) env)
+                       (equal len (len (cdr x))))
+                  (equal (+ (- (ash 1 len)) (aig-list->u x env))
+                         (aig-list->u (butlast x 1) env)))
+         :hints (("goal" :use ((:instance aig-list->u-plus-shift-lemma))))))
+
+(local (defthm aig-list->u-plus-shift-rev
+         (implies (aig-eval (car x) env)
+                  (= (+ (ash 1 (len (cdr x)))
+                        (aig-list->u (rev (cdr x)) env))
+                     (aig-list->u (rev x) env)))
+         :hints (("goal" :use ((:instance aig-list->u-plus-shift-lemma
+                                (x (rev x))))
+                  :in-theory (disable aig-list->u-plus-shift-lemma
+                                      aig-list->u-plus-shift)))
+         :rule-classes ((:rewrite :corollary
+                         (implies (and (aig-eval (car x) env)
+                                       (equal len (len (cdr x))))
+                                  (equal (+ (ash 1 len) (aig-list->u (rev (cdr x)) env))
+                                         (aig-list->u (rev x) env))))
+                        (:rewrite :corollary
+                         (implies (and (aig-eval (car x) env)
+                                       (equal len (len (cdr x))))
+                                  (equal (+ (- (ash 1 len)) (- (aig-list->u (rev (cdr x)) env)))
+                                         (- (aig-list->u (rev x) env)))))
+                        :linear)))
+
+(local (defthmd aig-list->u-when-not-car-lemma
+         (implies (not (aig-eval (car (last x)) env))
+                  (equal (aig-list->u (butlast x 1) env)
+                         (aig-list->u x env)))
+         :hints (("Goal" :induct (len x)
+                  :expand ((Aig-list->u x env)
+                           (:free (a b) (aig-list->u (cons a b) env))
+                           (butlast x 1)
+                           (len (cdr x))
+                           (len x)
+                           (last x)
+                           (:free (a) (ash 1 (+ 1 a))))
+                  :in-theory (disable aig-list->u butlast (:d len) last))
+                 (and stable-under-simplificationp
+                      '(:in-theory (e/d (logcons)
+                                        (aig-list->u butlast (:d len) last)))))))
+
+(local (defthm aig-list->u-when-not-car
+         (implies (not (aig-eval (car x) env))
+                  (equal (aig-list->u (rev (cdr x)) env)
+                         (aig-list->u (rev x) env)))
+         :hints (("goal" :use ((:instance aig-list->u-when-not-car-lemma
+                                (x (rev x))))))))
+
+(local (defthmd equal-of-logapp
+         (equal (equal (logapp w x y) z)
+                (and (integerp z)
+                     (equal (loghead w x) (loghead w z))
+                     (equal (ifix y) (logtail w z))))
+         :hints((logbitp-reasoning))))
+
+(define aig-head-tail-concat-aux ((rev-shift)
+                                  (shift-len (eql shift-len (len rev-shift)))
+                                  (lsbs true-listp) ;; already truncated at width
+                                  (msbs true-listp)
+                                  (msbs-len (eql msbs-len (len msbs)))
+                                  (width posp)
+                                  (const-rsh natp))
+  :returns (concat true-listp)
+  :ruler-extenders :all
+  ;; 
+  ;; we will compute:
+  ;;    (logext width (logtail const-rsh (logapp (+ nshifted rest-shift) lsbs msbs)))
+  ;; where nshifted is the contribution from (car rev-shift), which is
+  ;; (ash (if (eval (car rev-shift)) 1 0) shift-len).
+
+  (b* ((width (lposfix width))
+       (const-rsh (lnfix const-rsh))
+       ((when (atom rev-shift))
+        (aig-logext-ns width (aig-logtail-ns const-rsh msbs)))
+       (msbs-len (mbe :logic (len msbs) :exec msbs-len))
+       (shift-len (1- (mbe :logic (len rev-shift) :exec shift-len)))
+       ((when (eq (car rev-shift) nil))
+        ;; if (car rev-shift) is false, we simply recur on the rest
+        (aig-head-tail-concat-aux
+         (cdr rev-shift) shift-len lsbs msbs msbs-len width const-rsh))
+       (width-plus-rsh (+ width const-rsh))
+       (shift-too-widep (mbe :logic (<= width-plus-rsh (ash 1 shift-len))
+                             :exec (or (< (integer-length width-plus-rsh) shift-len)
+                                       (<= width-plus-rsh (ash 1 shift-len)))))
+
+       (shift-too-narrowp (and (not shift-too-widep)
+                               (>= const-rsh (+ msbs-len (1- (ash 1 (+ 1 shift-len)))))))
+                          
+       ((when shift-too-narrowp)
+        ;; Special case: the constant right shift is so big that we can't
+        ;; possibly get anything except just the sign bit of the msbs.
+        (aig-sterm (aig-sign-s msbs)))
+
+       (rest1
+        (if shift-too-widep
+            ;; nshifted > width+const-rsh, so we don't get any contribution from the msbs --
+            ;; logext width (logtail const-rsh lsbs) but we assume lsbs are already
+            ;; truncated at width+const-rsh so just logtail.
+            (aig-logtail-ns const-rsh lsbs)
+          (b* ((nshifted (ash 1 shift-len))
+               ((when (<= nshifted const-rsh))
+                ;; with nshifted <= const-rsh -->
+                ;; (logext width (logtail (- const-rsh nshifted)
+                ;;                         (logapp rest-shift (logtail nshifted lsbs) msbs)))
+                (aig-head-tail-concat-aux
+                 (cdr rev-shift) shift-len
+                 (aig-logtail-ns nshifted lsbs)
+                 msbs msbs-len
+                 width
+                 (- const-rsh nshifted))))
+            ;; (logext width (logtail const-rsh (logapp (+ nshifted rest-shift) lsbs msbs)))
+            ;; when nshifted > const-rsh -->
+            ;; (logext width (logapp (+ (- nshfted const-rsh) rest-shift)
+            ;;                        (logtail const-rsh lsbs) msbs)
+            ;; = (logext width (logapp (- nshifted const-rsh)
+            ;;                          (logtail const-rsh lsbs)
+            ;;                          (logapp rest-shift
+            ;;                                  (logtail nshifted lsbs)
+            ;;                                  msbs)))
+            ;; already know width+const-rsh >= nshifted (not shift-too-widep)
+            ;; so this =
+            ;; (logapp (- nshifted const-rsh)
+            ;;         (logtail const-rsh lsbs)
+            ;;         (logext (- width (- nshifted const-rsh)) ;; = (+ width const-rsh (- nshifted))
+            ;;                  (logapp rest-shift (logtail nshifted lsbs) msbs)))
+            (aig-logapp-nss (- nshifted const-rsh)
+                            (aig-logtail-ns const-rsh lsbs)
+                            (aig-head-tail-concat-aux
+                             (cdr rev-shift) shift-len
+                             (aig-logtail-ns nshifted lsbs)
+                             msbs msbs-len
+                             (- width-plus-rsh nshifted)
+                             0)))))
+       ((when (eq (car rev-shift) t)) rest1)
+       ;; if (car rev-shift) is false, we simply recur on the rest of rev-shift
+       (rest0 (aig-head-tail-concat-aux
+               (cdr rev-shift) shift-len lsbs msbs msbs-len width const-rsh)))
+    (aig-ite-bss (car rev-shift) rest1 rest0))
+  ///
+  (local (in-theory (disable signed-byte-p
+                             signed-byte-p**)))
+
+  
+
+
+
+
+  
+
+  (local (defthm hack-width-<-aig-list->u-when-car
+           (implies (and (equal (car rev-shift) t)
+                         (< WIDTH (ASH 1 (+ -1 (LEN REV-SHIFT)))))
+                    (<= width (AIG-LIST->U (REV REV-SHIFT) ENV)))
+           :hints (("goal" :use ((:instance aig-list->u-bound2 (x rev-shift)))
+                    :in-theory (disable aig-list->u-bound2)))))
+
+  (local (defthm logtail-of-logapp-add-thing-lemma
+           (implies (and (<= b c)
+                         (natp b) (natp c) (natp a))
+                    (equal (logtail (+ c (- b))
+                                    (logapp a (logtail b x) y))
+                           (logtail c (logapp (+ b a) x y))))
+           :hints ((logbitp-reasoning))))
+
+  
+
+  
+           
+
+  
+
+  
+  ;; (local (defthm logext-when-zp
+  ;;          (implies (zp n)
+  ;;                   (equal (loghead n x) 0))))
+
+  
+
+
+  (local (defthmd my-loghead-identity
+           (implies (unsigned-byte-p (nfix width) x)
+                    (equal (loghead width x) (ifix x)))
+           :hints(("Goal" :in-theory (enable bitops::loghead-identity)
+                   :cases ((natp width))))))
+
+  (local (defthm signed-byte-p-of-logtail
+           (implies (and (posp w)
+                         (integerp x))
+                    (iff (signed-byte-p w (logtail sh x))
+                         (signed-byte-p (+ w (nfix sh)) x)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
+
+
+  (DEFTHM our-LOGEXT-IDENTITY
+    (IMPLIES (SIGNED-BYTE-P (pos-fix SIZE) I)
+             (EQUAL (LOGEXT SIZE I)
+                    I))
+    :hints(("Goal" :in-theory (enable pos-fix logext***))))
+
+  
+
+  (defruled signed-byte-p-monotonic
+    (implies (and (signed-byte-p n x)
+                  (<= n m)
+                  (integerp m))
+             (signed-byte-p m x))
+    :enable (signed-byte-p)
+    :prep-lemmas
+    ((defrule l0
+       (implies (and (< x (expt 2 n))
+                     (<= n m)
+                     (integerp n)
+                     (integerp m)
+                     (integerp x))
+                (< x (expt 2 m)))
+       :disable (acl2::expt-is-increasing-for-base>1)
+       :use ((:instance acl2::expt-is-increasing-for-base>1
+              (r 2) (i n) (j m))))
+     (defrule l1
+       (implies (and (<= (- (expt 2 n)) x)
+                     (<= n m)
+                     (integerp n)
+                     (integerp m)
+                     (integerp x))
+                (<= (- (expt 2 m)) x))
+       :disable (acl2::expt-is-increasing-for-base>1)
+       :use ((:instance acl2::expt-is-increasing-for-base>1
+              (r 2) (i n) (j m))))))
+
+  ;; (defthm aig-head-tail-concat-aux-of-width-0
+  ;;   (implies (zp width)
+  ;;            (equal (aig-list->s (aig-head-tail-concat-aux rev-shift shift-len lsbs msbs width const-rsh) env)
+  ;;                   0)))
+  
+  ;; (local (in-theory (disable POS-FIX-NOT-1-IMPLIES-POS-FIX-OF-M-MINUS-1)))
+
+  ;; (local (defthm logapp-of-equal-logapp-id
+  ;;          (implies (and (equal x (logapp n y z))
+  ;;                        (equal res (logapp m w (logapp n y z)))
+  ;;                        (syntaxp (not (equal res `(logapp ,m ,w ,x)))))
+  ;;                   (equal (logapp m w x)
+  ;;                          res))))
+  (local (defthm len-minus-1
+           (implies (consp x)
+                    (equal (+ -1 (len x))
+                           (len (cdr x))))))
+
+  (local (in-theory (disable len)))
+
+  (local (Defthm pos-fix-of-nfix
+           (equal (pos-fix (nfix x)) (pos-fix x))
+           :hints(("Goal" :in-theory (enable pos-fix)))))
+
+
+  (local (defthm logtail-when-signed-byte-p
+           (implies (<= (integer-length x) (nfix width))
+                    (equal (logtail width x)
+                           (bool->vec (< (ifix x) 0))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
+
+  (local (defthm logext-of-bool->vec
+           (equal (logext n (bool->vec x))
+                  (bool->vec x))
+           :hints(("Goal" :in-theory (enable bool->vec)))))
+
+  (local (defthm integer-length-of-logapp-bound
+           (<= (integer-length (logapp n a b))
+               (+ (integer-length b) (nfix n)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))
+           :rule-classes :linear))
+
+  (local (defthm integer-length-of-aig-list->s
+           (<= (integer-length (aig-list->s x env)) (len (cdr x)))
+           :hints(("Goal" :in-theory (enable aig-list->s gl::s-endp gl::scdr
+                                             integer-length** len)))))
+
+  (local (defthm integer-length-of-logapp-aig-list->s-bound
+           (implies (and (<= (+ -1 (len msbs) (ash 1 len)) const-rsh)
+                         (equal len (len shift)))
+                    (<= (integer-length (logapp (aig-list->u shift env)
+                                                lsbs (aig-list->s msbs env)))
+                        const-rsh))
+           :hints (("goal" :use ((:instance aig-list->u-bound (x shift))
+                                 (:instance integer-length-of-aig-list->s
+                                  (x msbs))
+                                 (:instance integer-length-of-logapp-bound
+                                  (n (aig-list->u shift env))
+                                  (a lsbs)
+                                  (b (aig-list->s msbs env))))
+                    :expand ((len msbs))
+                    :in-theory (disable integer-length-of-logapp-bound
+                                        integer-length-of-aig-list->s
+                                        aig-list->u-bound)))))
+
+
+  (local (in-theory (enable len)))
+
+
+  (defthm aig-head-tail-concat-aux-correct
+    (implies (signed-byte-p (+ (pos-fix width) (nfix const-rsh)) (aig-list->s lsbs env))
+             (equal (aig-list->s (aig-head-tail-concat-aux rev-shift shift-len lsbs msbs msbs-len width const-rsh) env)
+                    (logext width
+                            (logtail const-rsh
+                                     (logapp (aig-list->u (rev rev-shift) env)
+                                             (aig-list->s lsbs env)
+                                             (aig-list->s msbs env))))))
+    :hints (("goal" :induct t :do-not-induct t
+             :in-theory (disable bitops::logtail-of-loghead
+                                 (:d aig-head-tail-concat-aux))
+             :expand ((aig-head-tail-concat-aux rev-shift shift-len lsbs msbs msbs-len width const-rsh)))
+            ;; (and stable-under-simplificationp
+            ;;      '(:cases ((< (ASH 1 (LEN (CDR REV-SHIFT)))
+            ;;                   (+ (pos-fix WIDTH) (NFIX CONST-RSH))))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable logtail-of-logext
+                                      logtail-greater-of-logext
+                                      logtail-of-equal-logext
+                                      signed-byte-p-monotonic)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable logext-of-logapp-split)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable equal-of-logapp))))))
+
+(local (defthm signed-byte-p-of-logext
+         (implies (equal width1 (pos-fix width))
+                  (signed-byte-p width1 (logext width x)))
+         :hints(("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                          bitops::ihsext-inductions)
+                                         (signed-byte-p))))))
+
+(define aig-head-of-concat ((concat-width true-listp)
+                            (lsbs true-listp)
+                            (msbs true-listp)
+                            (width posp))
+  (b* ((width (lposfix width))
+       ((when (atom concat-width))
+        (aig-logext-ns width msbs))
+       (rev-shift (rev concat-width))
+       (sign-bit (car rev-shift))
+       (rev-shift (cdr rev-shift))
+       (msbs-len (len msbs)))
+    (aig-ite-bss sign-bit
+                 (b* ((const-rsh (ash 1 (len rev-shift)))
+                      (lsbs (aig-logext-ns (+ width const-rsh) lsbs)))
+                   (aig-head-tail-concat-aux rev-shift
+                                             (len rev-shift)
+                                             lsbs
+                                             msbs msbs-len
+                                             width
+                                             const-rsh))
+                 (b* ((lsbs (aig-logext-ns width lsbs)))
+                   (aig-head-tail-concat-aux rev-shift
+                                             (len rev-shift)
+                                             lsbs
+                                             msbs msbs-len
+                                             width
+                                             0))))
+  ///
+  (local (defthm butlast-of-rev
+           (equal (butlast (rev x) 1)
+                  (rev (cdr x)))
+           :hints(("Goal" :in-theory (enable rev)))))
+
+  (local (defthm rev-cdr-rev
+           (implies (consp x)
+                    (equal (rev (cdr (rev x)))
+                           (butlast x 1)))
+           :hints (("Goal" :use ((:instance butlast-of-rev (x (rev x))))
+                    :in-theory (disable butlast-of-rev)))))
+
+  (local (defthm len-equal-0
+           (equal (equal (len x) 0) (atom x))))
+
+  (local (defthm aig-list->u-of-butlast
+           (implies (< (aig-list->s x env) 0)
+                    (= (aig-list->u (butlast x 1) env)
+                       (+ (aig-list->s x env)
+                          (ash 1 (1- (len x))))))
+           :hints(("Goal" :in-theory (e/d (aig-list->s aig-list->u
+                                                       gl::scdr
+                                                       gl::s-endp)
+                                          (butlast))
+                   :induct t)
+                  (and stable-under-simplificationp
+                       '(:in-theory (e/d (logcons) (butlast))
+                         :expand ((:free (x) (ash 1 (len (cdr x))))))))))
+
+  (local (defthm aig-list->u-of-butlast-when-nonneg
+           (implies (<= 0 (aig-list->s x env))
+                    (= (aig-list->u (butlast x 1) env)
+                       (aig-list->s x env)))
+           :hints(("Goal" :in-theory (e/d (aig-list->s aig-list->u
+                                                       gl::scdr
+                                                       gl::s-endp
+                                                       butlast-redef)
+                                          (butlast))
+                   :induct t)
+                  (and stable-under-simplificationp
+                       '(:in-theory (e/d (logcons) (butlast))
+                         :expand ((:free (x) (ash 1 (len (cdr x))))))))))
+
+
+  (local (defthm len-cdr-rev
+           (equal (len (cdr (rev x)))
+                  (len (cdr x)))
+           :hints(("Goal" :in-theory (enable rev)))))
+
+  (local (in-theory (disable butlast butlast-redef)))
+
+  (local (defthm aig-eval-of-car-rev-x
+           (iff (aig-eval (car (rev x)) env)
+                (< (aig-list->s x env) 0))
+           :hints(("Goal" :in-theory (enable aig-list->s rev
+                                             gl::scdr gl::s-endp)))))
+
+
+  (local (defthm ash-1-len-greater-than-minus-aig-list->s
+           (<= (- (aig-list->s x env)) (ash 1 (len (cdr x))))
+           :hints(("Goal"
+                   :induct t
+                   :in-theory (enable aig-list->s
+                                      gl::s-endp gl::scdr len
+                                      logcons)
+                   :expand ((ash 1 (+ 1 (len (cddr x)))))))
+           :rule-classes :linear))
+
+  (local (defthm dumb-lemma-for-logtail-of-logapp
+           (implies (and (< n 0) (natp m))
+                    (<= (nfix (+ m n)) m))))
+
+  (local (defthm our-logtail-of-logapp-1
+           (IMPLIES (<= (NFIX ACL2::N) (NFIX ACL2::SIZE))
+                    (EQUAL (LOGTAIL ACL2::N
+                                    (LOGAPP ACL2::SIZE ACL2::I ACL2::J))
+                           (LOGAPP (- (NFIX ACL2::SIZE) (NFIX ACL2::N))
+                                   (LOGTAIL ACL2::N ACL2::I)
+                                   ACL2::J)))
+           :hints (("goal" :use bitops::logtail-of-logapp-1))))
+
+  (local (defthm aig-list->s-when-not-consp
+           (implies (not (consp x))
+                    (equal (aig-list->s x env) 0))
+           :hints(("Goal" :in-theory (enable aig-list->s gl::s-endp)))))
+
+
+  (local (defthm logext-logapp-logext
+           (equal (logext n (logapp m (logext n x) y))
+                  (logext n (logapp m x y)))
+           :hints ((logbitp-reasoning))))
+
+
+  (local (in-theory (disable signed-byte-p)))
+
+
+  (defthm aig-head-of-concat-correct
+    (equal (aig-list->s (aig-head-of-concat concat-width lsbs msbs width) env)
+           (b* ((concat-width (aig-list->s concat-width env))
+                (lsbs (aig-list->s lsbs env))
+                (msbs (aig-list->s msbs env)))
+             (logext width (if (< concat-width 0)
+                               (ash msbs concat-width)
+                             (logapp concat-width lsbs msbs)))))))
+  
+
+
 (define a4vec-concat ((w    a4vec-p  "Width argument to the concat.")
                       (x    a4vec-p  "Low bits to concatenate.")
                       (y    a4vec-p  "High bits to concatenate.")
@@ -1819,17 +2565,25 @@ creating enormous vectors when given a huge @('width') argument.</p>"
         ;; better to use 4vec-x, in general, since for instance many
         ;; arithmetic operations check a2vec-p and then do something really
         ;; simple in the "nope, not a 2vec, may as well just return all xes."
-        (a4vec-x)))
+        (a4vec-x))
+       ((when (< 0 mask))
+        (b* ((width (+ 1 (integer-length mask))))
+          (a4vec-ite (aig-and (a2vec-p w) ;; Is the width properly two-valued?
+                              (aig-not (aig-sign-s w.upper))) ;; Is it natural?
+                     ;; Note: May want to do something more to coerce w to
+                     ;; something with sign bit equal to NIL.
+                     (b* ((upper (aig-head-of-concat w.upper x.upper y.upper width))
+                          (lower (aig-head-of-concat w.upper x.lower y.lower width)))
+                       (a4vec upper lower))
+                     (a4vec-x)))))
+    (and (not (a4vec-constantp w))
+         (cw "Warning: bitblasting variable-width concat under unbounded mask~%"))
     (a4vec-ite (aig-and (a2vec-p w) ;; Is the width properly two-valued?
                         (aig-not (aig-sign-s w.upper)) ;; Is it natural?
                         )
                ;; Proper concatenation width.  But, take special care here to
                ;; avoid catastrophic shifts.
-               (b* ((shift (if (< 0 mask)
-                               ;; Collapse the upper bits of the shift
-                               (aig-logcollapse-ns (integer-length (integer-length mask))
-                                                   w.upper)
-                             w.upper))
+               (b* ((shift w.upper)
                     (xmask (aig-lognot-s (aig-ash-ss 1 (aig-sterm t) shift)))
                     (yshu  (aig-ash-ss 1 y.upper shift))
                     (yshl  (aig-ash-ss 1 y.lower shift)))
@@ -1838,6 +2592,16 @@ creating enormous vectors when given a huge @('width') argument.</p>"
                ;; Nonsensical concatenation width.  Just return all Xes.
                (a4vec-x)))
   ///
+
+  (local (defthm logand-of-logext-integer-length
+           (implies (<= 0 (ifix mask))
+                    (equal (logand mask (logext (+ 1 (integer-length mask)) x))
+                           (logand mask x)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)
+                   :induct (logand mask x)
+                   :do-not-induct t))))
+
   (local (defthm logapp-formulation
            (implies (natp n)
                     (equal (logior (ash y n)
@@ -1846,12 +2610,17 @@ creating enormous vectors when given a huge @('width') argument.</p>"
            :hints((bitops::logbitp-reasoning))))
 
   (defthm a4vec-concat-correct
-    (equal (4vec-mask mask (a4vec-eval (a4vec-concat n x y mask) env))
-           (4vec-mask mask (4vec-concat (a4vec-eval n env)
-                                        (a4vec-eval x env)
-                                        (a4vec-eval y env))))
-    :hints(("Goal" :in-theory (enable 4vec-concat 4vec-mask)
-            :do-not-induct t))
+    (4vec-mask-equiv (a4vec-eval (a4vec-concat n x y mask) env)
+                     (4vec-concat (a4vec-eval n env)
+                                  (a4vec-eval x env)
+                                  (a4vec-eval y env))
+                     mask)
+    :hints(("Goal" :expand ((:free (x) (hide x)))
+            :in-theory '(equal-of-4vec-mask?-when-equal-under-mask)
+            :do-not-induct t)
+           (and stable-under-simplificationp
+                '(:expand nil
+                  :in-theory (enable 4vec-concat 4vec-mask))))
     :otf-flg t))
 
 
@@ -1865,58 +2634,523 @@ optimization to avoid problems due to large masks.</p>"
   (a4vec-concat n x (a4vec-0) mask)
   ///
   (defthm a4vec-zero-ext-correct
-    (equal (4vec-mask mask (a4vec-eval (a4vec-zero-ext n x mask) env))
-           (4vec-mask mask (4vec-zero-ext (a4vec-eval n env)
-                                          (a4vec-eval x env))))
-    :hints(("Goal" :in-theory (enable 4vec-zero-ext
-                                      4vec-concat)))))
+    (4vec-mask-equiv (a4vec-eval (a4vec-zero-ext n x mask) env)
+                     (4vec-zero-ext (a4vec-eval n env)
+                                    (a4vec-eval x env))
+                     mask)
+    :hints(("Goal" :expand ((:free (x) (hide x)))
+            :in-theory '(equal-of-4vec-mask?-when-equal-under-mask)
+            :do-not-induct t)
+           (and stable-under-simplificationp
+                '(:expand nil
+                  :in-theory (enable 4vec-zero-ext
+                                     4vec-concat))))))
 
-
-(define a4vec-sign-ext ((n a4vec-p)
-                        (x a4vec-p)
-                        (mask 4vmask-p))
-  :short "Symbolic version of @(see 4vec-sign-ext)."
-  :long "<p>We essentially just extract the sign bit, sign extend it, and then
-use @(see a4vec-concat) to carry out the concatenation, since it already
-provides special optimization to avoid problems due to large masks.</p>"
-  :returns (res a4vec-p)
-  (b* (((a4vec n) n)
-       ((a4vec x) x))
-    (a4vec-ite (aig-and (a2vec-p n) ;; X/Z free?
-                        (aig-nor (aig-sign-s n.upper) ;; Negative index?
-                                 (aig-=-ss n.upper (aig-sterm nil)) ;; Zero index?
-                                 ))
-
-               ;; Index is properly X/Z free and positive.
-               (b* (;; Subtract one from the index to get the sign position.
-                    (signpos (aig-+-ss nil (aig-sterm t) n.upper))
-                    ;; Extract the sign bit from upper and lower, and sign
-                    ;; extend them to infinity, creating a new high vector to
-                    ;; concatenate onto the low bits of X.
-                    (high-bits (a4vec (aig-sterm (aig-logbitp-n2v 1 signpos x.upper))
-                                      (aig-sterm (aig-logbitp-n2v 1 signpos x.lower)))))
-                 ;; Concatenate these new high bits onto the low bits.
-                 (a4vec-concat n x high-bits mask))
-
-               ;; Invalid index, just return all Xes
-               (a4vec-x)))
+(define aig-list->s-upper-bound ((x true-listp))
+  :short "Computes a constant upper bound for the symbolic value of x."
+  :returns (upper-bound integerp :rule-classes :type-prescription)
+  (b* (((mv first rest end) (gl::first/rest/end x))
+       ((when end)
+        (if (eq first t)
+            -1
+          0))
+       (rest-bound (aig-list->s-upper-bound rest)))
+    (logcons (if (eq first nil) 0 1) rest-bound))
   ///
-  (local (in-theory (enable a4vec-sign-ext)))
+  (defthmd aig-list->s-upper-bound-correct
+    (<= (aig-list->s x env) (aig-list->s-upper-bound x))
+    :hints(("Goal" :in-theory (enable aig-list->s)))
+    :rule-classes :linear)
 
-  (local (defthm logext-formulation
-           (implies (and (posp n)
+  (defthm aig-list->s-upper-bound-lower-bound-when-sign-bit-non-t
+    (implies (not (equal (aig-sign-s x) t))
+             (<= 0 (aig-list->s-upper-bound x)))
+    :hints(("Goal" :in-theory (enable aig-sign-s)))
+    :rule-classes :linear))
+
+(define aig-list->s-lower-bound ((x true-listp))
+  :short "Computes a constant lower bound for the symbolic value of x."
+  :returns (lower-bound integerp :rule-classes :type-prescription)
+  (b* (((mv first rest end) (gl::first/rest/end x))
+       ((when end)
+        (if (eq first nil)
+            0
+          -1))
+       (rest-bound (aig-list->s-lower-bound rest)))
+    (logcons (if (eq first t) 1 0) rest-bound))
+  ///
+  (defthmd aig-list->s-lower-bound-correct
+    (>= (aig-list->s x env) (aig-list->s-lower-bound x))
+    :hints(("Goal" :in-theory (enable aig-list->s)))
+    :rule-classes :linear))
+
+(define a4vec-part-select ((lsb   a4vec-p "LSB of the select -- may be negative")
+                           (width a4vec-p "Width of the range to select")
+                           (in    a4vec-p "input to select from")
+                           (mask  4vmask-p))
+
+  :prepwork ((local (defthm aig-and-implies-nonnil
+                      (implies (aig-and a b)
+                               (and a b))
+                      :hints(("Goal" :in-theory (enable aig-and)))
+                      :rule-classes :forward-chaining))
+             (local (Defthm aig-not-implies-non-t
+                      (implies (aig-not x)
+                               (not (equal x t)))
+                      :hints(("Goal" :in-theory (enable aig-not)))
+                      :rule-classes :forward-chaining)))
+
+  :returns (partsel a4vec-p)
+
+  (b* (((a4vec width))
+       ((a4vec lsb))
+       ((a4vec in))
+       (mask (4vmask-fix mask))
+       ((when (eql mask 0))
+        ;; [Jared] this was previously using 4vec-0.  I think it's probably
+        ;; better to use 4vec-x, in general, since for instance many
+        ;; arithmetic operations check a2vec-p and then do something really
+        ;; simple in the "nope, not a 2vec, may as well just return all xes."
+        (a4vec-x)))
+    (a4vec-ite
+     (aig-and (a2vec-p lsb)
+              (aig-and (a2vec-p width)
+                       (aig-not (aig-sign-s width.upper)))) 
+     (b* ((maskwidth (and (or (< 0 mask)
+                              (and (not (and (a4vec-constantp width)
+                                             (a4vec-constantp lsb)))
+                                   (cw "Warning: bitblasting variable part select under unbounded mask~%")))
+                          (+ 1 (integer-length mask))))
+          (width-limit (if maskwidth
+                           (min maskwidth (aig-list->s-upper-bound width.upper))
+                         (aig-list->s-upper-bound width.upper)))
+          ((when (eql 0 width-limit))
+           ;; width is 0
+           (aig-sterm nil))
+          (neg-lsb (aig-unary-minus-s lsb.upper))
+          ;; First compute the shifted, un-truncated result:
+          ;;   if LSB >= 0 then (rsh lsb in) else (concat (- lsb) (x) in).
+          (shift.upper (aig-head-of-concat neg-lsb (aig-sterm t) in.upper width-limit))
+          (shift.lower (aig-head-of-concat neg-lsb (aig-sterm nil) in.lower width-limit)))
+          ;; next, truncate the shifted result at width -- (concat width shifted 0)
+       (a4vec-zero-ext width (a4vec shift.upper shift.lower) mask))
+
+     ;; bad lsb/width case
+     (a4vec-x)))
+  ///
+  (local (defthm loghead-of-logext-when-head-less
+           (implies (<= (nfix w1) (nfix w2))
+                    (equal (loghead w1 (logext w2 x))
+                           (loghead w1 x)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
+
+
+  ;; (local (defthm loghead-of-logext-hack
+  ;;          (implies (and (equal (aig-list->s upper env)
+  ;;                               (aig-list->s lower env))
+  ;;                        (< ext-width (aig-list->s-upper-bound upper)))
+  ;;                   (<= ext-width (aig-list->s lower env))
+
+
+  (local (defthm logbitp-past-integer-length-when-nonneg
+           (implies (and (natp mask)
+                         (<= (+ 1 (integer-length mask)) (nfix bit)))
+                    (not (logbitp bit mask)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
+
+  (local (defthm logior-loghead-logext-mask
+           (implies (posp mask)
+                    (equal (logior (lognot mask)
+                                   (loghead headwidth (logext (+ 1 (integer-length mask)) x)))
+                           (logior (lognot mask)
+                                   (loghead headwidth x))))
+           :hints ((logbitp-reasoning))))
+
+  (local (defthm logand-loghead-logext-mask
+           (implies (posp mask)
+                    (equal (logand mask
+                                   (loghead headwidth (logext (+ 1 (integer-length mask)) x)))
+                           (logand mask
+                                   (loghead headwidth x))))
+           :hints ((logbitp-reasoning))))
+
+
+  (defthm a4vec-part-select-correct
+    (4vec-mask-equiv (a4vec-eval (a4vec-part-select lsb width in mask) env)
+                     (4vec-part-select (a4vec-eval lsb env)
+                                             (a4vec-eval width env)
+                                             (a4vec-eval in env))
+                     mask)
+    :hints(("Goal" :expand ((:free (x) (hide x)))
+            :in-theory '(equal-of-4vec-mask?-when-equal-under-mask)
+            :do-not-induct t)
+           (and stable-under-simplificationp
+                '(:expand nil
+                  :in-theory (enable 4vec-part-select 4vec-zero-ext 4vec-rsh 4vec-concat
+                                      aig-list->s-upper-bound-correct)))
+           (and stable-under-simplificationp
+                '(:in-theory (enable 4vec-mask))))))
+
+
+(define aig-overlap-width-ss-aux ((rev-pos true-listp)
+                                  (pos-len (equal pos-len (len rev-pos)))
+                                  (x true-listp)
+                                  (y true-listp)
+                                  ;; (max-len (equal max-len (max (len x) (len y))))
+                                  (width posp))
+  ;; (logext width (logapp pos x (ash y (- pos))))
+  :ruler-extenders :all
+  :measure (len rev-pos)
+  (b* ((rev-pos (llist-fix rev-pos))
+       (y (llist-fix y))
+       (x (llist-fix x))
+       (width (lposfix width))
+       ((when (atom rev-pos)) y)
+       (pos-len (1- (mbe :logic (len rev-pos) :exec pos-len)))
+       ((when (eq (car rev-pos) nil))
+        (aig-overlap-width-ss-aux (cdr rev-pos) pos-len x y width))
+       (pos-too-large (mbe :logic (<= width (ash 1 pos-len))
+                           :exec (or (< (integer-length width) pos-len)
+                                     (<= width (ash 1 pos-len)))))
+       (rest1
+        (if pos-too-large
+            x
+          (b* ((nshifted (ash 1 pos-len)))
+            (aig-logapp-nss nshifted x
+                            (aig-overlap-width-ss-aux
+                             (cdr rev-pos) pos-len
+                             (aig-logtail-ns nshifted x)
+                             (aig-logtail-ns nshifted y)
+                             (- width nshifted))))))
+       ((when (eq (car rev-pos) t)) rest1)
+       (rest0 (aig-overlap-width-ss-aux (cdr rev-pos) pos-len x y width)))
+    (aig-ite-bss (car rev-pos) rest1 rest0))
+  ///
+  (local (in-theory (disable signed-byte-p)))
+
+
+  (local (defthm signed-byte-p-of-logtail
+           (implies (and (posp w)
                          (integerp x))
-                    (equal (logapp n
-                                   x
-                                   (bool->vec (logbitp (+ -1 n) x)))
-                           (logext n x)))
-           :hints((bitops::logbitp-reasoning))))
+                    (iff (signed-byte-p w (logtail sh x))
+                         (signed-byte-p (+ w (nfix sh)) x)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
 
-  (defthm a4vec-sign-ext-correct
-    (equal (4vec-mask mask (a4vec-eval (a4vec-sign-ext n x mask) env))
-           (4vec-mask mask (4vec-sign-ext (a4vec-eval n env)
-                                          (a4vec-eval x env))))
-    :hints(("Goal" :in-theory (enable 4vec-sign-ext 4vec-concat)))))
+
+  (local (defthm logapp-of-logapp-ident
+           (equal (logapp a x (logapp b (logtail a x) y))
+                  (logapp (+ (nfix a) (nfix b)) x y))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
+
+  (local (defthm logapp-of-logtail-ident
+           (equal (logapp a x (logtail a x))
+                  (ifix x))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
+
+
+
+  (local (defthmd logext-of-equal-logapp-signed-byte
+           (implies (and (equal y (logapp a b c))
+                         (signed-byte-p (pos-fix x) y))
+                    (equal (logext x y)
+                           y))))
+
+  (local (defthm dumb-lemma
+           (implies (and (not (aig-eval (car rev-pos) env))
+                         (< (ash 1 (len (cdr rev-pos))) width))
+                    (and (<= (aig-list->u (rev rev-pos) env) width)
+                         (< (aig-list->u (rev rev-pos) env) width)))))
+  
+  (local (defthm bitops::signed-byte-p-of-equal-logapp
+           (implies (and (equal x (logapp size i j))
+                         (integerp size1)
+                         (<= (nfix size) size1)
+                         (signed-byte-p (- size1 (nfix size))
+                                        j))
+                    (signed-byte-p size1 x))))
+
+  (local (acl2::use-trivial-ancestors-check))
+
+  (local (defthm len-minus-1
+           (implies (consp x)
+                    (equal (+ -1 (len x))
+                           (len (cdr x))))
+           :hints(("Goal" :in-theory (enable len)))))
+
+
+  (defthm aig-overlap-width-ss-aux-correct
+    (implies (and (signed-byte-p (pos-fix width) (aig-list->s x env))
+                  (signed-byte-p (pos-fix width) (aig-list->s y env)))
+             (equal (aig-list->s (aig-overlap-width-ss-aux rev-pos pos-len x y width) env)
+                    (b* ((pos (aig-list->u (rev rev-pos) env)))
+                      (logext width
+                              (logapp pos
+                                      (aig-list->s x env)
+                                      (logtail pos (aig-list->s y env)))))))
+    :hints (("Goal" :induct (aig-overlap-width-ss-aux rev-pos pos-len x y width)
+             :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable logext-of-logapp-split
+                                      logext-of-equal-logapp-signed-byte))))))
+
+
+(define aig-overlap-width-ss ((pos true-listp)
+                              (x true-listp)
+                              (y true-listp)
+                              (width posp))
+  (b* ((width (lposfix width))
+       (same-signp (hons-equal (aig-sign-s x)
+                               (aig-sign-s y)))
+       (width (if same-signp
+                  (min (+ 1 (max (len x) (len y))) width)
+                width))
+       (y-ext (aig-logext-ns width y)))
+    (aig-ite-bss (aig-sign-s pos)
+                 y-ext
+                 (b* ((rev-pos (cdr (rev pos))))
+                   (aig-overlap-width-ss-aux rev-pos (len rev-pos)
+                                             (aig-logext-ns width x)
+                                             y-ext
+                                             width))))
+  ///
+  (local (defthm logapp-when-zp
+           (implies (zp width)
+                    (equal (logapp width x y) (ifix y)))
+           :hints(("Goal" :in-theory (enable bitops::logapp**)))))
+
+  (local (defthm logtail-when-zp
+           (implies (zp width)
+                    (equal (logtail width x) (ifix x)))
+           :hints(("Goal" :in-theory (enable bitops::logtail**)))))
+
+  (local (defthm butlast-of-rev
+           (equal (butlast (rev x) 1)
+                  (rev (cdr x)))
+           :hints(("Goal" :in-theory (enable rev)))))
+
+  (local (defthm rev-cdr-rev
+           (equal (rev (cdr (rev x)))
+                  (if (consp x)
+                      (butlast x 1)
+                    nil))
+           :hints (("Goal" :use ((:instance butlast-of-rev (x (rev x))))
+                    :in-theory (disable butlast-of-rev)))))
+
+  (local (defthm aig-list->s-when-not-consp
+           (implies (atom x)
+                    (equal (aig-list->s x env) 0))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defthm aig-list->s-when-len-lte-1
+           (implies (and (<= (len x) 1)
+                         (<= 0 (aig-list->s x env)))
+                    (equal (aig-list->s x env) 0))
+           :hints(("Goal" :in-theory (enable aig-list->s len gl::s-endp)))))
+
+  (local (in-theory (disable butlast)))
+
+  (local (defthm logext-logapp-logext
+           (equal (logext width (logapp n (logext width x) y))
+                  (logext width (logapp n x y)))
+           :hints ((logbitp-reasoning))))
+
+  (local (defthm logext-logapp-logtail-logext
+           (equal (logext width (logapp n x (logtail n (logext width y))))
+                  (logext width (logapp n x (logtail n y))))
+           :hints ((logbitp-reasoning))))
+
+
+  ;; (local (defthm len-equal-0
+  ;;          (equal (equal (len x) 0) (atom x))))
+
+  ;; (local (defthm aig-list->u-of-butlast
+  ;;          (implies (< (aig-list->s x env) 0)
+  ;;                   (= (aig-list->u (butlast x 1) env)
+  ;;                      (+ (aig-list->s x env)
+  ;;                         (ash 1 (1- (len x))))))
+  ;;          :hints(("Goal" :in-theory (e/d (aig-list->s aig-list->u
+  ;;                                                      gl::scdr
+  ;;                                                      gl::s-endp)
+  ;;                                         (butlast))
+  ;;                  :induct t)
+  ;;                 (and stable-under-simplificationp
+  ;;                      '(:in-theory (e/d (logcons) (butlast))
+  ;;                        :expand ((:free (x) (ash 1 (len (cdr x))))))))))
+
+  (local (defthm aig-list->u-of-butlast-when-nonneg
+           (implies (<= 0 (aig-list->s x env))
+                    (= (aig-list->u (butlast x 1) env)
+                       (aig-list->s x env)))
+           :hints(("Goal" :in-theory (e/d (aig-list->s aig-list->u
+                                                       gl::scdr
+                                                       gl::s-endp
+                                                       butlast-redef)
+                                          (butlast))
+                   :induct t)
+                  (and stable-under-simplificationp
+                       '(:in-theory (e/d (logcons) (butlast))
+                         :expand ((:free (x) (ash 1 (len (cdr x))))))))))
+
+
+  (local (defthm logext-past-integer-length
+           (implies (< (integer-length x) (pos-fix w))
+                    (equal (logext w x) (ifix x)))
+           :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                              ihsext-inductions
+                                              pos-fix)))))
+
+
+  (local (defthm integer-length-of-aig-list->s-bound
+           (<= (integer-length (aig-list->s x env)) (len x))
+           :hints(("Goal" :in-theory (enable* aig-list->s
+                                              ihsext-recursive-redefs
+                                              gl::scdr gl::s-endp)))
+           :rule-classes :linear))
+  
+  ;; (local (defthm logext-of-aig-list->s
+  ;;          (implies (< (len y) (pos-fix w))
+  ;;                   (equal (logext w (aig-list->s y env))
+  ;;                          (aig-list->s y env)))))
+
+  (local (defthmd signed-byte-p-by-integer-length
+           (implies (and (< (integer-length x) w)
+                         (posp w)
+                         (integerp x))
+                    (signed-byte-p w x))
+           :hints(("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                            ihsext-inductions)
+                                           (signed-byte-p))
+                   :induct t))))
+                    
+
+  (local (defthm signed-byte-p-of-aig-list->s
+           (implies (and (< (len y) w)
+                         (posp w))
+                    (signed-byte-p w (aig-list->s y env)))
+           :hints (("goal" :in-theory (disable signed-byte-p
+                                               signed-byte-p-by-integer-length)
+                    :use ((:instance signed-byte-p-by-integer-length
+                           (x (aig-list->s y env))))))))
+
+  (local (defthmd integer-length-of-loghead-nonneg
+           (implies (<= 0 (ifix x))
+                    (<= (integer-length (loghead n x))
+                        (integer-length x)))
+           :hints(("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                            ihsext-inductions))))
+           :rule-classes :linear))
+
+  (local (defthmd integer-length-of-logapp-neg-1
+           (implies (< (ifix x) 0)
+                    (<= (integer-length (logapp n x -1))
+                        (integer-length x)))
+           :hints(("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                            ihsext-inductions))))
+           :rule-classes :linear))
+
+  (local (defthm integer-length-of-logapp-same-sign
+           (implies (iff (< (ifix x) 0)
+                         (< (ifix y) 0))
+                    (<= (integer-length (logapp w x (logtail w y)))
+                        (max (integer-length x)
+                             (integer-length y))))
+           :hints (("goal" :in-theory (enable* ihsext-recursive-redefs
+                                               ihsext-inductions
+                                               integer-length-of-loghead-nonneg
+                                               integer-length-of-logapp-neg-1)))
+           :rule-classes
+           ((:rewrite :corollary
+             (implies (and (iff (< (ifix x) 0)
+                                (< (ifix y) 0))
+                           (<= (max (integer-length x)
+                                    (integer-length y))
+                               len))
+                    (<= (integer-length (logapp w x (logtail w y))) len)))
+            (:rewrite :corollary
+             (implies (and (iff (< (ifix x) 0)
+                                (< (ifix y) 0))
+                           (< (max (integer-length x)
+                                    (integer-length y))
+                              len))
+                      (< (integer-length (logapp w x (logtail w y))) len)))
+            :linear)))
+
+  (local (defthm max-when-<
+           (implies (< x y) (equal (max x y) y))))
+
+  (local (defthm max-when->
+           (implies (< x y) (equal (max y x) y))))
+
+  (local (Defthm <-x-x
+           (not (< x x))))
+
+  (local (defthm max-integer-length-of-aig-list->s
+           (implies (<= (+ 1 (max (len x) (len y))) w)
+                    (< (max (integer-length (aig-list->s x env))
+                            (integer-length (aig-list->s y env)))
+                       w))))
+
+  (local (Defthm integer-length-of-logtail
+           (equal (integer-length (logtail n x))
+                  (nfix (- (integer-length x) (nfix n))))
+           :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                              ihsext-inductions)))))
+
+  ;; (local (defthm equal-of-logexts-above-integer-length
+  ;;          (implies (and (< (integer-length x) (pos-fix w1))
+  ;;                        (< (integer-length x) (pos-fix w2)))
+  ;;                   (equal (equal (logext w1 x) (logext w2 x))
+  ;;                          t))
+  ;;          :hints ((logbitp-reasoning))))
+
+  (local (defthmd signs-same-implies-signs-same
+           (implies (Equal (aig-sign-s x) (aig-sign-s y))
+                    (iff (< (aig-list->s x env) 0)
+                         (< (aig-list->s y env) 0)))
+           :hints (("goal" :use ((:instance aig-sign-s-correct (env env))
+                                 (:instance aig-sign-s-correct (x y) (env env)))
+                    :in-theory (disable aig-sign-s-correct)))))
+
+
+  ;; (local (defthm sign-of-logtail
+  ;;          (iff (< (logtail n x) 0)
+  ;;               (< (ifix x) 0))
+  ;;          :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+  ;;                                             ihsext-inductions)))))
+
+  ;; (local (defthm equal-of-logexts-of-logapps
+  ;;          (implies (and (< (integer-length x) (pos-fix w1))
+  ;;                        (< (integer-length y) (pos-fix w1))
+  ;;                        (< (integer-length x) (pos-fix w2))
+  ;;                        (< (integer-length y) (pos-fix w2))
+  ;;                        (iff (< (ifix x) 0)
+  ;;                             (< (ifix y) 0)))
+  ;;                   (equal (equal (logext w1 (logapp n x (logtail n y)))
+  ;;                                 (logext w2 (logapp n x (logtail n y))))
+  ;;                          t))
+  ;;          :hints (("goal" :use ((:instance integer-length-of-logapp-same-sign
+  ;;                                 (w n)))
+  ;;                   :in-theory (disable integer-length-of-logapp-same-sign)))))
+
+  (local (in-theory (disable max)))
+
+  (defthm aig-overlap-width-ss-correct
+    (equal (aig-list->s (aig-overlap-width-ss pos x y width) env)
+           (b* ((pos (aig-list->s pos env)))
+             (logext width
+                     (logapp pos
+                             (aig-list->s x env)
+                             (logtail pos (aig-list->s y env))))))
+    :hints ((and stable-under-simplificationp
+                 '(:use signs-same-implies-signs-same))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable max))))))
+
 
 
 (define aig-right-shift-ss ((place posp) n shamt)
@@ -1968,6 +3202,14 @@ creating enormous vectors when given a huge shift amount.</p>"
     (a4vec-ite (a2vec-p amt)
                ;; Valid shift amount.
                (b* ((shamt (aig-unary-minus-s amt.upper))
+                    ((when (eql 0 mask)) (a4vec-x))
+                    ((when (< 0 mask))
+                     (b* ((maskwidth (+ 1 (integer-length mask)))
+                          (upper (aig-head-of-concat shamt (aig-sterm nil) x.upper maskwidth))
+                          (lower (aig-head-of-concat shamt (aig-sterm nil) x.lower maskwidth)))
+                       (a4vec upper lower)))
+                    (- (and (not (a4vec-constantp amt))
+                            (cw "Warning: bitblasting variable rightshift under unbounded mask~%")))
                     (sign  (aig-sign-s shamt))
                     ((mv upper-left lower-left)
                      (if (eq sign t)
@@ -1989,17 +3231,237 @@ creating enormous vectors when given a huge shift amount.</p>"
                ;; X/Z bits in shift amount, just return all Xes.
                (a4vec-x)))
   ///
+
   (defthm a4vec-rsh-correct
-    (equal (4vec-mask mask (a4vec-eval (a4vec-rsh amt x mask) env))
-           (4vec-mask mask
-                      (4vec-rsh (a4vec-eval amt env)
-                                (a4vec-eval x env))))
-    :hints(("Goal" :in-theory (e/d (4vec-rsh 4vec-mask)
+    (4vec-mask-equiv (a4vec-eval (a4vec-rsh amt x mask) env)
+                     (4vec-rsh (a4vec-eval amt env)
+                               (a4vec-eval x env))
+                     mask)
+    :hints (("Goal" :expand ((:free (x) (hide x)))
+             :in-theory '(equal-of-4vec-mask?-when-equal-under-mask)
+             :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:expand nil
+                   :in-theory (e/d (4vec-rsh 4vec-mask)
                                    (aig-sign-s-correct))
-            :use ((:instance aig-sign-s-correct
-                   (x (aig-unary-minus-s (a4vec->upper amt)))
-                   (gl::env env)))))
+                   :use ((:instance aig-sign-s-correct
+                          (x (aig-unary-minus-s (a4vec->upper amt)))
+                          (gl::env env))))))
     :otf-flg t))
+
+
+(define a4vec-part-install ((lsb   a4vec-p "LSB of the range to write -- may be negative")
+                            (width a4vec-p "Width of the range to write")
+                            (in    a4vec-p "input in which the range gets written")
+                            (val   a4vec-p "value to write to the range")
+                            (mask  4vmask-p))
+
+  :prepwork ((local (defthm aig-and-implies-nonnil
+                      (implies (aig-and a b)
+                               (and a b))
+                      :hints(("Goal" :in-theory (enable aig-and)))
+                      :rule-classes :forward-chaining))
+             (local (Defthm aig-not-implies-non-t
+                      (implies (aig-not x)
+                               (not (equal x t)))
+                      :hints(("Goal" :in-theory (enable aig-not)))
+                      :rule-classes :forward-chaining)))
+
+  :returns (partsel a4vec-p)
+
+  (b* (((a4vec width))
+       ((a4vec lsb))
+       ((a4vec in))
+       ((a4vec val))
+       (mask (4vmask-fix mask))
+       ((when (eql mask 0))
+        ;; [Jared] this was previously using 4vec-0.  I think it's probably
+        ;; better to use 4vec-x, in general, since for instance many
+        ;; arithmetic operations check a2vec-p and then do something really
+        ;; simple in the "nope, not a 2vec, may as well just return all xes."
+        (a4vec-x)))
+    (a4vec-ite
+     (aig-and (a2vec-p lsb)
+              (aig-and (a2vec-p width)
+                       (aig-not (aig-sign-s width.upper)))) 
+     (b* (((unless (< 0 mask))
+           (and (not (and (a4vec-constantp width)
+                          (a4vec-constantp lsb)))
+                (cw "Warning: bitblasting variable part install under unbounded mask~%"))
+           (a4vec-ite (aig-sign-s lsb.upper)
+                      (a4vec-rsh (let ((minus-lsb (aig-unary-minus-s lsb.upper)))
+                                   (a4vec minus-lsb minus-lsb))
+                                 (a4vec-concat
+                                  width val (a4vec-rsh
+                                             (let ((sum (aig-+-ss nil lsb.upper width.upper)))
+                                               (a4vec sum sum))
+                                             in -1) -1)
+                                 mask)
+                      (a4vec-concat
+                       lsb in
+                       (a4vec-concat
+                        width val (a4vec-rsh (let ((sum (aig-+-ss nil lsb.upper width.upper)))
+                                               (a4vec sum sum))
+                                             in -1) -1)
+                       mask)))
+          (maskwidth (+ 1 (integer-length mask)))
+          ;; first concatenate the lower bits of x with the val, not truncated at width
+          (lsbs.upper (aig-head-of-concat lsb.upper in.upper val.upper maskwidth))
+          (lsbs.lower (aig-head-of-concat lsb.upper in.lower val.lower maskwidth))
+          ;; now overlap these LSBs width in at (lsb + width)
+          (overlap-idx (aig-+-ss nil lsb.upper width.upper))
+          (overlap.upper (aig-overlap-width-ss overlap-idx lsbs.upper in.upper maskwidth))
+          (overlap.lower (aig-overlap-width-ss overlap-idx lsbs.lower in.lower maskwidth)))
+       (a4vec overlap.upper overlap.lower))
+     (a4vec-x)))
+  ///
+  (local (defthm logext-past-integer-length
+           (implies (< (integer-length x) (pos-fix w))
+                    (equal (logext w x) (ifix x)))
+           :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                              ihsext-inductions
+                                              pos-fix)))))
+
+  (local (Defthm integer-length-of-logtail
+           (equal (integer-length (logtail n x))
+                  (nfix (- (integer-length x) (nfix n))))
+           :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                              ihsext-inductions)))))
+  
+
+  (local (defthm logapp-of-logapp-less
+           (implies (<= (nfix w2) (nfix w1))
+                    (equal (logapp w1 (logapp w2 x y) z)
+                           (logapp w2 x (logapp (- (nfix w1) (nfix w2)) y z))))
+           :hints ((logbitp-reasoning))))
+
+  ;; (local (defthm logior-lognot-of-logapp-logapp
+  ;;          (implies (<= 0 (ifix mask))
+  ;;                   (equal (logior (lognot mask)
+  ;;                                  (logapp w1 x (logapp w2 y (logext (+ 1 (integer-length mask)
+  ;;                                                                       minus-w1)
+  ;;                                                                    z)
+
+  (local (defthm logbitp-past-integer-length-when-nonneg
+           (implies (and (<= 0 (ifix mask))
+                         (<= (+ 1 (integer-length mask)) (nfix bit)))
+                    (not (logbitp bit mask)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
+
+  (local (defthm logior-of-logext-mask
+           (implies (<= 0 (ifix mask))
+                    (equal (logior (lognot mask)
+                                   (logext (+ 1 (integer-length mask)) x))
+                           (logior (lognot mask) x)))
+           :hints ((logbitp-reasoning))))
+
+  (local (defthm logior-of-logapp-logext-mask
+           (implies (<= 0 (ifix mask))
+                    (equal (logior (lognot mask)
+                                   (logapp w (logext (+ 1 (integer-length mask)) x) y))
+                           (logior (lognot mask) (logapp w x y))))
+           :hints ((logbitp-reasoning))))
+
+  (local (defthm logand-of-logext-mask
+           (implies (<= 0 (ifix mask))
+                    (equal (logand mask
+                                   (logext (+ 1 (integer-length mask)) x))
+                           (logand mask x)))
+           :hints ((logbitp-reasoning))))
+
+  (local (defthm logand-of-logapp-logext-mask
+           (implies (<= 0 (ifix mask))
+                    (equal (logand mask
+                                   (logapp w (logext (+ 1 (integer-length mask)) x) y))
+                           (logand mask (logapp w x y))))
+           :hints ((logbitp-reasoning))))
+
+  (local (defthm logapp-when-zp
+           (implies (zp w)
+                    (equal (logapp w x y) (ifix y)))
+           :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs)))))
+
+  (local (defthm logtail-when-zp
+           (implies (zp w)
+                    (equal (logtail w x) (ifix x)))
+           :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs)))))
+
+  (defthm a4vec-part-install-correct
+    (4vec-mask-equiv (a4vec-eval (a4vec-part-install lsb width in val mask) env)
+                     (4vec-part-install (a4vec-eval lsb env)
+                                              (a4vec-eval width env)
+                                              (a4vec-eval in env)
+                                              (a4vec-eval val env))
+                     mask)
+    :hints(("Goal" :expand ((:free (x) (hide x)))
+             :in-theory '(equal-of-4vec-mask?-when-equal-under-mask)
+             :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:expand nil
+                   :in-theory (enable 4vec-part-install)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable  4vec-zero-ext 4vec-rsh 4vec-concat 4vec-mask))))))
+
+
+                                                                 
+
+
+
+(define a4vec-sign-ext ((n a4vec-p)
+                        (x a4vec-p)
+                        (mask 4vmask-p))
+  :short "Symbolic version of @(see 4vec-sign-ext)."
+  :long "<p>We essentially just extract the sign bit, sign extend it, and then
+use @(see a4vec-concat) to carry out the concatenation, since it already
+provides special optimization to avoid problems due to large masks.</p>"
+  :returns (res a4vec-p)
+  (b* (((a4vec n) n)
+       ((a4vec x) x))
+    (a4vec-ite (aig-and (a2vec-p n) ;; X/Z free?
+                        (aig-nor (aig-sign-s n.upper) ;; Negative index?
+                                 (aig-=-ss n.upper (aig-sterm nil)) ;; Zero index?
+                                 ))
+
+               ;; Index is properly X/Z free and positive.
+               (b* (;; Subtract one from the index to get the sign position.
+                    (signpos (aig-+-ss nil (aig-sterm t) n.upper))
+                    ;; Extract the sign bit from upper and lower, and sign
+                    ;; extend them to infinity, creating a new high vector to
+                    ;; concatenate onto the low bits of X.
+                    (high-bits (a4vec (aig-sterm (aig-logbitp-n2v 1 signpos x.upper))
+                                      (aig-sterm (aig-logbitp-n2v 1 signpos x.lower)))))
+                 ;; Concatenate these new high bits onto the low bits.
+                 (a4vec-concat n x high-bits mask))
+
+               ;; Invalid index, just return all Xes
+               (a4vec-x)))
+  ///
+  (local (in-theory (enable a4vec-sign-ext)))
+
+  (local (defthm logext-formulation
+           (implies (and (posp n)
+                         (integerp x))
+                    (equal (logapp n
+                                   x
+                                   (bool->vec (logbitp (+ -1 n) x)))
+                           (logext n x)))
+           :hints((bitops::logbitp-reasoning))))
+
+  (defthm a4vec-sign-ext-correct
+    (4vec-mask-equiv (a4vec-eval (a4vec-sign-ext n x mask) env)
+                     (4vec-sign-ext (a4vec-eval n env)
+                                    (a4vec-eval x env))
+                     mask)
+    :hints(("Goal" :expand ((:free (x) (hide x)))
+             :in-theory '(equal-of-4vec-mask?-when-equal-under-mask)
+             :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:expand nil
+                   :in-theory (enable 4vec-sign-ext 4vec-concat))))))
+
+
+
 
 (define a4vec-lsh ((amt a4vec-p)
                    (x a4vec-p)
@@ -2050,15 +3512,20 @@ creating enormous vectors when given a huge shift amount.</p>"
                (a4vec-x)))
   ///
   (defthm a4vec-lsh-correct
-    (equal (4vec-mask mask (a4vec-eval (a4vec-lsh amt x mask) env))
-           (4vec-mask mask
-                      (4vec-lsh (a4vec-eval amt env)
-                                (a4vec-eval x env))))
-    :hints(("Goal" :in-theory (e/d (4vec-lsh 4vec-mask)
-                                   (aig-sign-s-correct))
-            :use ((:instance aig-sign-s-correct
-                   (x (a4vec->upper amt))
-                   (gl::env env)))))
+    (4vec-mask-equiv (a4vec-eval (a4vec-lsh amt x mask) env)
+                     (4vec-lsh (a4vec-eval amt env)
+                               (a4vec-eval x env))
+                     mask)
+    :hints(("Goal" :expand ((:free (x) (hide x)))
+            :in-theory '(equal-of-4vec-mask?-when-equal-under-mask)
+            :do-not-induct t)
+           (and stable-under-simplificationp
+                '(:expand nil
+                  :in-theory (e/d (4vec-lsh 4vec-mask)
+                                  (aig-sign-s-correct))
+                  :use ((:instance aig-sign-s-correct
+                         (x (a4vec->upper amt))
+                         (gl::env env))))))
     :otf-flg t))
 
 

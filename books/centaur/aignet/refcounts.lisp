@@ -29,11 +29,10 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-
 (include-book "arrays")
+(include-book "aignet-absstobj")
 (include-book "centaur/misc/iter" :dir :system)
 (local (include-book "clause-processors/just-expand" :dir :system))
-
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))

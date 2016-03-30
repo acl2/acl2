@@ -34,6 +34,7 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 (include-book "tools/include-raw" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 
 (define vl-printed-p (x)
   :parents (vl-printedlist)
@@ -76,31 +77,55 @@
   :define t
   :forward t)
 
-(fty::deflist vl-printedlist
-  :elt-type vl-printed-p
-  :parents (printer)
-  :short "A list of strings/characters to print in reverse order."
-  :long "<p>Useful for formatting a long string to print.  Also the basis of
-the @(see ps) printer-state stobj.</p>")
+(fty::deftypes vl-printedlist
+  (fty::defflexsum vl-printedtree
+    (:leaf
+     :cond (and (atom x) x)
+     :fields ((elt :type vl-printed :acc-body x))
+     :ctor-body elt)
+    (:list
+     :cond t
+     :fields ((list :type vl-printedlist :acc-body x))
+     :ctor-body list)
+    :measure (two-nats-measure (acl2-count x) 1))
+  (fty::deflist vl-printedlist :elt-type vl-printedtree :true-listp t
+    :measure (two-nats-measure (acl2-count x) 0)
+    :short "A list of strings/characters (and, recursively, printedlists) to print in reverse order."
+    :long "<p>Useful for formatting a long string to print.  Also the basis of
+the @(see ps) printer-state stobj.</p>"))
 
 (defsection vl-printedlist-p
   (defthm vl-printedlist-p-when-character-listp
     (implies (character-listp x)
-             (vl-printedlist-p x)))
+             (vl-printedlist-p x))
+    :hints(("Goal" :induct (len x)
+            :expand ((vl-printedlist-p x)
+                     (vl-printedtree-p (car x))))))
 
   (defthm vl-printedlist-p-when-string-listp
     (implies (string-listp x)
-             (vl-printedlist-p x)))
+             (vl-printedlist-p x))
+    :hints(("Goal" :induct (len x)
+            :expand ((vl-printedlist-p x)
+                     (vl-printedtree-p (car x))))))
 
   (defthm vl-printedlist-p-of-make-list-ac
     (implies (and (vl-printed-p x)
                   (force (vl-printedlist-p y)))
-             (vl-printedlist-p (make-list-ac n x y))))
+             (vl-printedlist-p (make-list-ac n x y)))
+    :hints(("Goal" :induct (len x)
+            :expand ((vl-printedlist-p x)
+                     (vl-printedtree-p (car x))
+                     (vl-printedtree-p x)))))
 
   (defthm vl-printedlist-p-of-revappend-chars
     (implies (vl-printedlist-p acc)
              (vl-printedlist-p (str::revappend-chars x acc)))
-    :hints(("Goal" :in-theory (enable str::revappend-chars)))))
+    :hints(("Goal" :in-theory (enable str::revappend-chars)
+            :induct (len x)
+            :expand ((vl-printedlist-p x)
+                     (vl-printedtree-p (car x)))))))
+
 
 
 (define vl-printedlist-length ((x vl-printedlist-p)
@@ -110,13 +135,16 @@ the @(see ps) printer-state stobj.</p>")
   :short "Compute the total length of the list, in characters."
   :long "<p>This is different than ordinary @(see len) because any strings
 within the list may have their own lengths.</p>"
-  (b* (((when (atom x))
+  :measure (vl-printedlist-count x)
+  :ruler-extenders (:lambdas)
+  (b* ((x (vl-printedlist-fix x))
+       ((when (atom x))
         (lnfix acc))
-       (x1   (vl-printed-fix (car x)))
-       (len1 (if (characterp x1)
-                 1
-               (length x1))))
-    (vl-printedlist-length (cdr x) (+ len1 (lnfix acc)))))
+       (x1 (car x))
+       (acc (vl-printedtree-case x1
+              :leaf (+ (if (characterp x1.elt) 1 (length x1.elt)) (lnfix acc))
+              :list (vl-printedlist-length x1.list acc))))
+    (vl-printedlist-length (cdr x) acc)))
 
 
 
@@ -129,16 +157,21 @@ within the list may have their own lengths.</p>"
   :short "Extract the last character that was printed."
   :long "<p>This is generally useful for things like <i>insert a space unless
 we just printed a newline</i>, etc.</p>"
+  :measure (vl-printedlist-count x)
+  :ruler-extenders :all
   (and (consp x)
-       (let ((x1 (vl-printed-fix (car x))))
-         (if (characterp x1)
-             x1
-           (let ((len (length x1)))
-             (if (zp len)
-                 ;; Degenerate case where we printed an empty string, look
-                 ;; further.
-                 (vl-printedlist-peek (cdr x))
-               (char x1 (1- len))))))))
+       (or (let ((x1 (vl-printedtree-fix (car x))))
+             (vl-printedtree-case x1
+               :leaf (if (characterp x1.elt)
+                         x1.elt
+                       (let ((len (length x1.elt)))
+                         (if (zp len)
+                             ;; Degenerate case where we printed an empty string, look
+                             ;; further.
+                             nil
+                           (char x1.elt (1- len)))))
+               :list (vl-printedlist-peek x1.list)))
+           (vl-printedlist-peek (cdr x)))))
 
 (define vl-printedlist->chars ((x vl-printedlist-p)
                                acc)
@@ -146,18 +179,21 @@ we just printed a newline</i>, etc.</p>"
   :parents (vl-ps->chars)
   :short "Convert a printed list (in reverse order) into characters (in proper
   order)."
-
+  :measure (vl-printedlist-count x)
   (b* (((when (atom x))
         acc)
-       (x1 (vl-printed-fix (car x)))
-       ((when (characterp x1))
-        ;; Prefer to test characterp instead of stringp, since characters are
-        ;; immediates in CCL.
-        (vl-printedlist->chars (cdr x) (cons x1 acc))))
-    ;; Subtle: the printedlist are in reverse order, but the strings within it are
-    ;; in proper order, so we need to use append-chars instead of
-    ;; revappend-chars here.
-    (vl-printedlist->chars (cdr x) (str::append-chars x1 acc))))
+       (x1 (vl-printedtree-fix (car x))))
+    (vl-printedtree-case x1
+      :leaf (if (characterp x1.elt)
+                ;; Prefer to test characterp instead of stringp, since characters are
+                ;; immediates in CCL.
+                (vl-printedlist->chars (cdr x) (cons x1.elt acc))
+              ;; Subtle: the printedlist are in reverse order, but the strings within it are
+              ;; in proper order, so we need to use append-chars instead of
+              ;; revappend-chars here.
+              (vl-printedlist->chars (cdr x) (str::append-chars x1.elt acc)))
+      :list (vl-printedlist->chars (cdr x)
+                                   (vl-printedlist->chars x1.list acc)))))
 
 (define vl-printedlist->string ((x vl-printedlist-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -174,3 +210,32 @@ install a more efficient definition under the hood in raw Lisp.</p>"
 
   (defttag nil))
 
+
+(defthm vl-printedlist-p-of-cons-printed
+  (implies (and (vl-printed-p x)
+                (vl-printedlist-p y))
+           (vl-printedlist-p (cons x y)))
+  :hints(("Goal" :in-theory (enable vl-printedtree-p))))
+
+(defthm vl-printedlist-p-of-cons-printedlist
+  (implies (and (vl-printedlist-p x)
+                (vl-printedlist-p y))
+           (vl-printedlist-p (cons x y)))
+  :hints(("Goal" :in-theory (enable vl-printedtree-p))))
+
+
+
+(defthm vl-printedlist-fix-of-cons-printed
+  (implies (vl-printed-p x)
+           (equal (vl-printedlist-fix (cons x y))
+                  (cons x (vl-printedlist-fix y))))
+  :hints(("Goal" :in-theory (enable vl-printedtree-p))))
+
+(defthm vl-printedlist-fix-of-cons-printedlist
+  (implies (vl-printedlist-p x)
+           (equal (vl-printedlist-fix (cons x y))
+                  (cons x (vl-printedlist-fix y))))
+  :hints(("Goal" :in-theory (enable vl-printedtree-p))))
+
+(in-theory (disable vl::vl-printedlist-p-of-cons
+                    vl::vl-printedlist-fix-of-cons))

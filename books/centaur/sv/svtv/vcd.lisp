@@ -31,10 +31,10 @@
 
 (in-package "SV")
 (include-book "../mods/moddb")
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "centaur/vl/util/printedlist" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (in-theory (disable acl2-count nth update-nth
                            acl2::nfix-when-not-natp)))
@@ -83,7 +83,7 @@
   (reverse (coerce (vcd-index->codechars x) 'string)))
 
 (make-event
- `(acl2::def-1d-arr :arrname vcd-wiremap
+ `(acl2::def-1d-arr vcd-wiremap
     :slotname vcdwire
     :pred vcd-wire-p
     :fix vcd-wire-fix$inline
@@ -349,7 +349,7 @@
 
 
 (make-event
- `(acl2::def-1d-arr :arrname 4vecarr
+ `(acl2::def-1d-arr 4vecarr
     :slotname 4vec
     :pred 4vec-p
     :fix 4vec-fix$inline

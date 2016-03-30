@@ -383,8 +383,34 @@
 
 (assign acl2::verbose-theory-warning nil)
 
+(defconst *stobjs-exports*
+  ;; Things we want to "export" to the ACL2 package or other packages
+  '(defabsstobj-events
+    def-1d-arr
+    def-2d-arr
+    defstobj-clone))
+
+(defpkg "STOBJS"
+  (append '(
+            ;; More things we want to import from the ACL2 package, because we're
+            ;; going to use them internally
+            *stobjs-exports*
+            b* template-subst
+            defmacfun deffunmac def-universal-equiv
+            bit-equiv bfix bfix$inline
+            enable* disable* e/d* e/d**
+            def-ruleset def-ruleset! add-to-ruleset add-to-ruleset!
+            arith-equiv-forwarding
+            lnfix lifix lbfix nat-equiv int-equiv bit-equiv
+            ;; for better documentation
+            stobj stobjs abstract-stobj congruence equivalence bitarr
+            )
+          *stobjs-exports*
+          std::*std-exports*
+          *standard-acl2-imports*))
+
 (defpkg "FLAG"
-  (append '(getprop access def-body justification current-acl2-world 
+  (append '(getprop access def-body justification current-acl2-world
                     formals recursivep def-bodies
                     make-flag flag-present flag-fn-name flag-alist
                     flag-defthm-macro

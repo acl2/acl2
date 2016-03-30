@@ -31,70 +31,67 @@
 
 (in-package "ACL2")
 (include-book "list-defuns")
+(include-book "xdoc/top" :dir :system)
 (local (include-book "repeat"))
 (local (include-book "nth"))
 
-(local (defthm commutativity-2-of-+
-         (equal (+ x (+ y z))
-                (+ y (+ x z)))))
+(defsection std/lists/resize-list
+  :parents (std/lists resize-list)
+  :short "Lemmas about @(see resize-list) available in the @(see std/lists)
+library."
 
-(local (defthm fold-consts-in-+
-         (implies (and (syntaxp (quotep x))
-                       (syntaxp (quotep y)))
-                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+  "<h4>Trivial reductions</h4>"
 
-(local (defthm distributivity-of-minus-over-+
-         (equal (- (+ x y)) (+ (- x) (- y)))))
+  (defthm resize-list-when-zp
+    (implies (zp n)
+             (equal (resize-list lst n default-value)
+                    nil)))
 
+  (defthm resize-list-of-nfix
+    (equal (resize-list lst (nfix n) default-value)
+           (resize-list lst n default-value)))
 
-(defthm resize-list-when-zp
-  (implies (zp n)
-           (equal (resize-list lst n default-value)
-                  nil)))
+  (defthm resize-list-when-atom
+    (implies (atom lst)
+             (equal (resize-list lst n default-value)
+                    (repeat n default-value)))
+    :hints(("Goal" :in-theory (enable repeat))))
 
-(defthm resize-list-of-nfix
-  (equal (resize-list lst (nfix n) default-value)
-         (resize-list lst n default-value)))
+  "<h4>Relation with other basic list functions</h4>"
 
-(defthm resize-list-when-atom
-  (implies (atom lst)
-           (equal (resize-list lst n default-value)
-                  (repeat n default-value)))
-  :hints(("Goal" :in-theory (enable repeat))))
+  (local (defun my-induct (n m lst)
+           (if (zp n)
+               (list lst)
+             (if (zp m)
+                 nil
+               (my-induct (- n 1) (- m 1)
+                          (if (atom lst)
+                              lst
+                            (cdr lst)))))))
 
-(local (defun my-induct (n m lst)
-         (if (zp n)
-             (list lst)
-           (if (zp m)
-               nil
-             (my-induct (- n 1) (- m 1)
-                        (if (atom lst)
-                            lst
-                          (cdr lst)))))))
+  (defthm nth-of-resize-list
+    (equal (nth n (resize-list lst m default-value))
+           (let ((n (nfix n))
+                 (m (nfix m)))
+             (and (< n m)
+                  (if (< n (len lst))
+                      (nth n lst)
+                    default-value))))
+    :hints(("Goal"
+            :expand (resize-list lst m default-value)
+            :induct (my-induct n m lst))))
 
-(defthm nth-of-resize-list
-  (equal (nth n (resize-list lst m default-value))
-         (let ((n (nfix n))
-               (m (nfix m)))
-           (and (< n m)
-                (if (< n (len lst))
-                    (nth n lst)
-                  default-value))))
-  :hints(("Goal"
-          :expand (resize-list lst m default-value)
-          :induct (my-induct n m lst))))
+  (defthm len-of-resize-list
+    (equal (len (resize-list lst n default))
+           (nfix n)))
 
-(defthm len-of-resize-list
-  (equal (len (resize-list lst n default))
-         (nfix n)))
+  (defthm resize-list-of-len-free
+    (implies (equal (nfix n) (len lst))
+             (equal (resize-list lst n default-value)
+                    (list-fix lst))))
 
-(defthm resize-list-of-len-free
-  (implies (equal (nfix n) (len lst))
-           (equal (resize-list lst n default-value)
-                  (list-fix lst))))
-
-(defthm equal-of-resize-list-and-self
-  (equal (equal (resize-list lst n default-value) lst)
-         (and (true-listp lst)
-              (equal (len lst) (nfix n)))))
+  (defthm equal-of-resize-list-and-self
+    (equal (equal (resize-list lst n default-value) lst)
+           (and (true-listp lst)
+                (equal (len lst) (nfix n))))))
 

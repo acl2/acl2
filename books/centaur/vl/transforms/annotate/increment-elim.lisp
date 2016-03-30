@@ -34,6 +34,7 @@
 (include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/hid-tools")
 (include-book "../../mlib/strip")
+(include-book "../../util/cwtime")
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -387,7 +388,8 @@ these are the only operators we're dealing with.</p>"
       (post  vl-stmtlist-p
              "New assignments that must happen after @('new-x'), in the
               proper order that they should be performed in."))
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   (b* ((x (vl-expr-fix x))
        ((unless (vl-expr-has-incexprs-p x))
         ;; Optimization.  There aren't any increment/decrement operators
@@ -416,7 +418,8 @@ these are the only operators we're dealing with.</p>"
       (post  vl-stmtlist-p
              "New assignments that must happen after @('new-x'), in the
               proper order that they should be performed in."))
-  :measure (vl-expr-count x)
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+; :measure (vl-expr-count x)
   (b* ((x (vl-exprlist-fix x))
        ((unless (vl-exprlist-has-incexprs-p x))
         ;; Optimization.  There aren't any increment/decrement operators
@@ -672,6 +675,9 @@ these are the only operators we're dealing with.</p>"
   :field-fns ((parse-temps :skip))
   :fnname-template <type>-increwrite)
 
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
+
 (fty::defvisitors vl-increwrite
   :template increwrite
   :types (vl-design))
@@ -703,11 +709,9 @@ these are the only operators we're dealing with.</p>"
   (deffixequiv-mutual vl-expr-incexprs))
 
 (define vl-expr-prohibit-incexprs ((x vl-expr-p)
-                                   (ss vl-scopestack-p))
+                                   (warnings vl-warninglist-p))
   :returns (warnings vl-warninglist-p)
-  (declare (ignorable ss))
-  (b* ((warnings nil)
-       (incexprs (vl-expr-incexprs x))
+  (b* ((incexprs (vl-expr-incexprs x))
        ((when (atom incexprs))
         (ok)))
     (fatal :type :vl-illegal-incexpr
@@ -715,13 +719,23 @@ these are the only operators we're dealing with.</p>"
                  where it is not allowed: ~a0."
            :args (list (car incexprs)))))
 
-(def-expr-check prohibit-incexprs)
+(local (in-theory (disable (tau-system)
+                              vl-warninglist-p-when-not-consp
+                              double-containment
+                              vl-warninglist-p-when-subsetp-equal
+                              member-equal-when-member-equal-of-cdr-under-iff
+                              acl2::consp-when-member-equal-of-cons-listp
+                              acl2::consp-when-member-equal-of-atom-listp
+                              acl2::subsetp-when-atom-right
+                              acl2::subsetp-when-atom-left)))
+
+(def-visitor-exprcheck prohibit-incexprs :scopestack nil)
 
 (define vl-design-increment-elim ((x vl-design-p))
   :returns (new-x vl-design-p)
   :short "Top-level @(see increment-elim) transform."
-  (b* ((x (vl-design-increwrite x))
-       (x (vl-design-prohibit-incexprs x)))
+  (b* ((x (xf-cwtime (vl-design-increwrite x)))
+       (x (xf-cwtime (vl-design-prohibit-incexprs x))))
     x))
 
 

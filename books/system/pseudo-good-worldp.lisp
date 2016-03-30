@@ -713,8 +713,13 @@
 
           (or (null cert-annotations)
               (cert-annotationsp cert-annotations t))
-          (or (integerp chk-sum)
-              (eq chk-sum nil))))
+          (case-match chk-sum
+            (((':BOOK-LENGTH . book-length)
+              (':BOOK-WRITE-DATE . book-write-date))
+             (and (natp book-length)
+                  (natp book-write-date)))
+            (& (or (integerp chk-sum)
+                   (eq chk-sum nil))))))
     (& nil)))
 
 (defun pseudo-include-book-alist-entry-listp (x local-markers-allowedp)

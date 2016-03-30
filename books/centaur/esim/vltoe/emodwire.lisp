@@ -34,7 +34,7 @@
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 (local (include-book "centaur/vl2014/util/position" :dir :system))
-(local (include-book "std/misc/intern-in-package-of-symbol" :dir :system))
+(local (include-book "std/basic/intern-in-package-of-symbol" :dir :system))
 
 (defxdoc exploding-vectors
   :parents (e-conversion)
@@ -1112,7 +1112,7 @@ index of @('|reset|') is @('nil').</p>"
 ;; Introduce defaggregate like make-vl-emodwire and change-vl-emodwire macros.
 
 (make-event (std::da-make-maker 'vl-emodwire '(basename index) nil))
-(make-event (std::da-make-changer 'vl-emodwire '(basename index)))
+(make-event (std::da-make-changer 'vl-emodwire '(basename index) nil))
 
 
 
