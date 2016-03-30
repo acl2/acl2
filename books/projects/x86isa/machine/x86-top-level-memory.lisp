@@ -1672,6 +1672,111 @@ memory.</li>
     (("Goal" :in-theory (e/d* (wb)
                               (write-to-physical-memory force (force))))))
 
+  (define create-phy-addr-bytes-alist
+    ((addr-list (physical-address-listp addr-list))
+     (byte-list (byte-listp byte-list)))
+    :guard (equal (len addr-list) (len byte-list))
+
+    :long "<p>Given a true list of physical addresses @('addr-list') and
+  a true list of bytes @('byte-list'),
+  @('create-phy-addr-bytes-alist') creates an alist binding the
+  @('n')-th address in @('addr-list') to the @('n')-th byte in
+  @('byte-list').</p>"
+
+    :enabled t
+
+    :prepwork
+    ((local (include-book "std/lists/nthcdr" :dir :system))
+     (local (include-book "std/lists/nth" :dir :system)))
+
+    (if (mbt (equal (len addr-list) (len byte-list)))
+        (if (endp addr-list)
+            nil
+          (acons (car addr-list) (car byte-list)
+                 (create-phy-addr-bytes-alist (cdr addr-list)
+                                              (cdr byte-list))))
+      nil)
+
+    ///
+
+    (defthm true-listp-create-phy-addr-bytes-alist
+      (true-listp (create-phy-addr-bytes-alist l-addrs bytes))
+      :rule-classes :type-prescription)
+
+    (defthm consp-create-phy-addr-bytes-alist-in-terms-of-len
+      (implies (and (not (zp (len byte-list)))
+                    (equal (len addr-list) (len byte-list)))
+               (consp (create-phy-addr-bytes-alist addr-list byte-list)))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm consp-create-phy-addr-bytes-alist
+      (implies (and (or (consp addr-list) (consp byte-list))
+                    (equal (len addr-list) (len byte-list)))
+               (consp (create-phy-addr-bytes-alist addr-list byte-list)))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm create-phy-addr-bytes-alist-bytes=nil
+      (equal (create-phy-addr-bytes-alist l-addrs nil) nil))
+
+    (defthm create-phy-addr-bytes-alist-l-addrs=nil
+      (equal (create-phy-addr-bytes-alist nil bytes) nil))
+
+    (defthmd cdr-of-create-phy-addr-bytes-alist
+      (equal (cdr (create-phy-addr-bytes-alist l-addrs bytes))
+             (create-phy-addr-bytes-alist (cdr l-addrs) (cdr bytes))))
+
+    (defthmd caar-of-create-phy-addr-bytes-alist
+      (implies (equal (len l-addrs) (len bytes))
+               (equal (car (car (create-phy-addr-bytes-alist l-addrs bytes)))
+                      (car l-addrs))))
+
+    (defthmd cdar-of-create-phy-addr-bytes-alist
+      (implies (equal (len l-addrs) (len bytes))
+               (equal (cdr (car (create-phy-addr-bytes-alist l-addrs bytes)))
+                      (car bytes))))
+
+    (defthm addr-byte-alistp-create-phy-addr-bytes-alist
+      (implies (and (canonical-address-listp addrs)
+                    (byte-listp bytes))
+               (addr-byte-alistp (create-phy-addr-bytes-alist addrs bytes)))
+      :rule-classes (:type-prescription :rewrite))
+
+    (defthm strip-cars-of-create-phy-addr-bytes-alist
+      (implies (and (true-listp addrs)
+                    (equal (len addrs) (len bytes)))
+               (equal (strip-cars (create-phy-addr-bytes-alist addrs bytes))
+                      addrs)))
+
+    (defthm strip-cdrs-of-create-phy-addr-bytes-alist
+      (implies (and (byte-listp bytes)
+                    (equal (len addrs) (len bytes)))
+               (equal (strip-cdrs (create-phy-addr-bytes-alist addrs bytes))
+                      bytes)))
+
+    (defthm strip-cars-of-append-of-create-phy-addr-bytes-alist
+      (implies (and (equal (len addrs1) (len bytes1))
+                    (canonical-address-listp addrs2)
+                    (equal (len addrs2) (len bytes2)))
+               (equal (strip-cars
+                       (append (create-phy-addr-bytes-alist addrs1 bytes1)
+                               (create-phy-addr-bytes-alist addrs2 bytes2)))
+                      (append addrs1 addrs2))))
+
+    (defthm strip-cdrs-of-append-of-create-phy-addr-bytes-alist
+      (implies (and (equal (len addrs1) (len bytes1))
+                    (byte-listp bytes2)
+                    (equal (len addrs2) (len bytes2)))
+               (equal (strip-cdrs
+                       (append (create-phy-addr-bytes-alist addrs1 bytes1)
+                               (create-phy-addr-bytes-alist addrs2 bytes2)))
+                      (append bytes1 bytes2))))
+
+    (defthm len-of-create-phy-addr-bytes-alist
+      (implies (and (not (zp (len byte-list)))
+                    (equal (len addr-list) (len byte-list)))
+               (equal (len (create-phy-addr-bytes-alist addr-list byte-list))
+                      (len addr-list)))))
+
   (define create-addr-bytes-alist
     ((addr-list (canonical-address-listp addr-list))
      (byte-list (byte-listp byte-list)))

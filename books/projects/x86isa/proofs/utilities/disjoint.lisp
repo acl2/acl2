@@ -328,13 +328,23 @@
                  (subset-p a y))
              (subset-p a (append x y))))
 
+  (defthm subset-p-and-append-both
+    (implies (subset-p a b)
+             (subset-p (append e a) (append e b)))
+    :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
   (defthm subset-p-of-nil
     (equal (subset-p x nil)
            (equal x nil)))
 
   (defthm subset-p-cons-2
     (implies (subset-p x y)
-             (subset-p x (cons e y)))))
+             (subset-p x (cons e y))))
+
+  (defthm member-p-of-subset-is-member-p-of-superset
+    (implies (and (subset-p x y)
+                  (member-p e x))
+             (member-p e y))))
 
 ;; ======================================================================
 
@@ -456,6 +466,13 @@
            (equal (cdr (assoc a (acl2::rev (acons a b xs))))
                   b))
   :hints (("Goal" :in-theory (e/d (member-p) ()))))
+
+(defthm assoc-equal-append-list-cons-and-not-member-p
+  (implies (and (not (member-p e (strip-cars x)))
+                (alistp x))
+           (equal (assoc-equal e (append x (list (cons e y))))
+                  (cons e y)))
+  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
 (defthm pairwise-disjoint-p-aux-and-append
   (implies (pairwise-disjoint-p-aux a (append x y))

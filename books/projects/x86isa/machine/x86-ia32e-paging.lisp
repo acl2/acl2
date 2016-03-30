@@ -1264,6 +1264,18 @@ accesses.</p>
                                  wp smep smap ac nxe r-w-x cpl x86)))
                     (xr fld index x86))))
 
+  (defthm xr-ia32e-la-to-pa-page-table-in-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-table
+                                             lin-addr
+                                             base-addr u/s-acc r/w-acc x/d-acc
+                                             wp smep smap ac nxe r-w-x cpl x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (negative-logand-to-positive-logand-with-integerp-x
+                                      bitops::logand-with-negated-bitmask)))))
+
   (defthm ia32e-la-to-pa-page-table-xw-values
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
@@ -1541,6 +1553,18 @@ accesses.</p>
                                  wp smep smap ac nxe r-w-x cpl
                                  x86)))
                     (xr fld index x86))))
+
+  (defthm xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-directory
+                                             lin-addr
+                                             base-addr u/s-acc r/w-acc x/d-acc
+                                             wp smep smap ac nxe r-w-x cpl x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (negative-logand-to-positive-logand-with-integerp-x
+                                      bitops::logand-with-negated-bitmask)))))
 
   (defthm ia32e-la-to-pa-page-directory-xw-values
     (implies (and (not (equal fld :mem))
@@ -1820,6 +1844,18 @@ accesses.</p>
                                  x86)))
                     (xr fld index x86))))
 
+  (defthm xr-and-ia32e-la-to-pa-page-dir-ptr-table-in-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                                             lin-addr
+                                             base-addr u/s-acc r/w-acc x/d-acc
+                                             wp smep smap ac nxe r-w-x cpl x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (negative-logand-to-positive-logand-with-integerp-x
+                                      bitops::logand-with-negated-bitmask)))))
+
   (defthm ia32e-la-to-pa-page-dir-ptr-table-xw-values
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
@@ -2030,6 +2066,17 @@ accesses.</p>
                                  x86)))
                     (xr fld index x86))))
 
+  (defthm xr-and-ia32e-la-to-pa-pml4-table-in-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                                             lin-addr base-addr
+                                             wp smep smap ac nxe r-w-x cpl x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (negative-logand-to-positive-logand-with-integerp-x
+                                      bitops::logand-with-negated-bitmask)))))
+
   (defthm ia32e-la-to-pa-pml4-table-xw-values
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
@@ -2168,6 +2215,13 @@ accesses.</p>
                         (mv-nth 2
                                 (ia32e-la-to-pa
                                  lin-addr r-w-x cpl x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm xr-and-ia32e-la-to-pa-in-non-marking-mode
+    (implies (and (not (page-structure-marking-mode x86))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
