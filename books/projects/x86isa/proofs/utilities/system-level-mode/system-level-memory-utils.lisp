@@ -647,7 +647,6 @@
   ((l-addrs canonical-address-listp)
    x86)
   :guard (not (xr :programmer-level-mode 0 x86))
-  :non-executable t
   :enabled t
   (if (endp l-addrs)
       nil
