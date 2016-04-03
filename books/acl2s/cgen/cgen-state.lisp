@@ -263,7 +263,7 @@ cgen-state"
          ;;end-time ;leave to end
          user-supplied-term
          displayed-goal
-         top-ctx ; either ctx is user-defined or comes from event form
+         top-ctx ; either ctx is user-defined or comes from event form, but updated to callback ctx
          params ;it is an alist form of acl2s-defaults table
 ;derived          
          top-vt-alist ;dumb var-type alist inferred

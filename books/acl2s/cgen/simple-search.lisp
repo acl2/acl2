@@ -855,14 +855,14 @@ Use :simple search strategy to find counterexamples and witnesses.
     (trans-eval 
      `(er-progn
            
-          (with-output :stack :pop ,@(and (not (system-debug-flag vl)) '(:off :all))
-          (progn
+          (with-output :stack :pop ,@(and (not (debug-flag vl)) '(:off :all))
+          (encapsulate () ; Matt's tip
 ; added 2nd May '12. Support program context
           ,@(and programp '((program)))
 
-; Jan 8th 2013 - support program mode 
-; Sep 3 2014 - program-mode enumerators need skip-checks
-          ,@(and (or t programp) '((defttag :cgen)))
+; [2016-02-28 Sun] In local contexts, an explicit (defttag :cgen) is not allowed!
+; ACHTUNG -- Ask Matt if this is okay!!
+          (table acl2::acl2-defaults-table :ttag :cgen-testing-driver-loop)
 
 ; [2014-09-22 Mon] Instead of make-event, using redef. (Is this thread-safe?)
           #!acl2(PROGN! (SET-LD-REDEFINITION-ACTION '(:WARN! . :OVERWRITE) STATE))
@@ -871,9 +871,7 @@ Use :simple search strategy to find counterexamples and witnesses.
           ,@hyp-val-list-defuns
           ,@next-sigma-defuns
           #!acl2(PROGN! (SET-LD-REDEFINITION-ACTION NIL STATE))
-                     
-
-          
+           
 ; Update Sep 27th 2012
 ; Folllowing a helpful email by Matt, found a way to fool the function
 ; to be guard verified, by wrapping its call in an ec-call
@@ -889,9 +887,8 @@ Use :simple search strategy to find counterexamples and witnesses.
                 (defattach (conclusion-val conclusion-val-current-gv))
                 (defattach (hyp-val-list hyp-val-list-current-gv))
                 (defattach (next-sigma next-sigma-current-gv))))
-          
-          ,@(and (or t programp) '((defttag nil)))
-
+          ; remove trust tag
+          (table acl2::acl2-defaults-table :ttag 'nil)
           ))
           ,call-form
           (mv t nil state) ;always give error, to abort the er-progn and revert to the old world
