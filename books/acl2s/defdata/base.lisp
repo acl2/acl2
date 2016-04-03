@@ -238,7 +238,7 @@
   :hints (("goal" :in-theory (enable standard-char-listp))))
 
 )
-(in-theory (disable mod))
+(local (in-theory (disable mod)))
 ;;booleans
 
 (defconst *boolean-values* '(t nil))
@@ -755,7 +755,7 @@
                 (booleanp x);t or nil
                 (acl2::legal-constantp x)))))
 
-(in-theory (disable acl2::legal-constantp))
+(local (in-theory (disable acl2::legal-constantp)))
 
 (defconst *nice-symbol-names*
   '(x y z a b c i j k p q r s u v w l d e f g h m n))
