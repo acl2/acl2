@@ -104,10 +104,7 @@
         (cw "Bad variable: not mapped to a nonnegated reg node: ~x0~%" (caar initvals))
         (aig-fast-biteval-set-regs (cdr initvals) varmap vals aignet))
        (nxst (reg-id->nxst id aignet))
-       (- (and (int= nxst 0)
-               (cw "Warning: unconnected register: ~x0~%" (caar initvals))))
-       (target (if (int= nxst 0) id nxst))
-       (vals (set-bit target (if (cdar initvals) 1 0)
+       (vals (set-bit nxst (if (cdar initvals) 1 0)
                       vals)))
     (aig-fast-biteval-set-regs (cdr initvals) varmap vals aignet))
   ///

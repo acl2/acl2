@@ -1094,9 +1094,28 @@ values.</p>"
                       (part-install val
                                     (xr :rflags 0 x86)
                                     :low flg
-                                    :width (if (equal flg *iopl*) 2 1))))))
+                                    :width (if (equal flg *iopl*) 2 1)))))
 
-  )
+
+    (defthmd !flgi-open-to-xw-rflags
+      ;; Rewriting (!flgi ...) to (xw :rflags ...) so that rules like
+      ;; ia32e-la-to-pa-xw-rflags-not-ac can be applied when trying to
+      ;; prove ia32e-la-to-pa-values-and-!flgi.
+      (implies (x86p x86)
+               (equal (!flgi index value x86)
+                      (if (equal index *iopl*)
+                          (xw :rflags 0
+                              (logior (ash (loghead 2 value) 12)
+                                      (logand 4294955007 (xr :rflags 0 x86)))
+                              x86)
+                        (if (not (equal index *ac*))
+                            (xw :rflags 0
+                                (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                        (logand (xr :rflags 0 x86)
+                                                (loghead 32 (lognot (expt 2 (nfix index))))))
+                                x86)
+                          (!flgi index value x86)))))
+      :hints (("Goal" :in-theory (e/d* (!flgi) ()))))))
 
 (define undef-flg-logic (x86)
   :enabled t

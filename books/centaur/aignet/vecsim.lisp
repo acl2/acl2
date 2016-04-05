@@ -30,6 +30,7 @@
 
 (in-package "AIGNET")
 (include-book "eval")
+(include-book "centaur/bitops/fast-logext" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
@@ -137,16 +138,16 @@
 
 (defsection s61v-copy-lit
 
-(defiteration s61v-copy-lit (in-lit out-id s61v)
+  (defiteration s61v-copy-lit (in-lit out-id s61v)
     (declare (xargs :stobjs s61v
                     :guard (and (litp in-lit)
                                 (natp out-id)
                                 (< out-id (s61v-nrows s61v))
                                 (< (lit-id in-lit) (s61v-nrows s61v)))))
     (s61v-set2 out-id n
-                 (logxor (bit-extend (lit-neg in-lit))
-                         (s61v-get2 (lit-id in-lit) n s61v))
-                 s61v)
+               (logxor (bit-extend (lit-neg in-lit))
+                       (s61v-get2 (lit-id in-lit) n s61v))
+               s61v)
     :returns s61v
     :index n
     :last (s61v-ncols s61v))
@@ -156,6 +157,11 @@
   (defthm memo-tablep-s61v-copy-lit-iter
     (implies (< (node-count aignet) (len (cdr s61v)))
              (< (node-count aignet) (len (cdr (s61v-copy-lit-iter n in-lit out-id s61v)))))
+    :rule-classes :linear)
+
+  (defthm max-fanin-memo-tablep-s61v-copy-lit-iter
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr s61v)))
+             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr (s61v-copy-lit-iter n in-lit out-id s61v)))))
     :rule-classes :linear)
 
   (defthm car-s61v-copy-lit-iter
@@ -200,7 +206,7 @@
                              vals)
                vals)))
     :hints (("goal" :induct (vecsim-to-eval-iter n slot bit s61v
-                                            vals aignet)
+                                                 vals aignet)
              :in-theory (enable (:induction vecsim-to-eval-iter))
              :expand ((:free (s61v)
                        (vecsim-to-eval-iter n slot bit s61v vals
@@ -231,6 +237,11 @@
   (defthm memo-tablep-s61v-and-lits-iter
     (implies (< (node-count aignet) (len (cdr s61v)))
              (< (node-count aignet) (len (cdr (s61v-and-lits-iter n lit1 lit2 out-id s61v)))))
+    :rule-classes :linear)
+
+  (defthm max-fanin-memo-tablep-s61v-and-lits-iter
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr s61v)))
+             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr (s61v-and-lits-iter n lit1 lit2 out-id s61v)))))
     :rule-classes :linear)
 
   (defthm car-s61v-and-lits-iter
@@ -304,6 +315,11 @@
              (< (node-count aignet) (len (cdr (s61v-zero-iter n out-id s61v)))))
     :rule-classes :linear)
 
+  (defthm max-fanin-memo-tablep-s61v-zero-iter
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr s61v)))
+             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr (s61v-zero-iter n out-id s61v)))))
+    :rule-classes :linear)
+
   (defthm car-s61v-zero-iter
     (equal (car (s61v-zero-iter n out-id s61v))
            (car s61v)))
@@ -341,6 +357,53 @@
              :expand ((:free (s61v)
                        (vecsim-to-eval-iter n slot bit s61v vals
                                             aignet)))))))
+
+
+(defsection s61v-randomize
+  (local (defthm random$-bound
+           (b* (((mv val ?state) (random$ limit state)))
+             (implies (posp limit)
+                      (< val limit)))
+           :hints(("Goal" :in-theory (enable random$)))
+           :rule-classes :linear))
+
+  (local (defthm random$-type
+           (b* (((mv val ?state) (random$ limit state)))
+             (natp val))
+           :hints(("Goal" :in-theory (enable random$)))
+           :rule-classes :type-prescription))
+
+  (defiteration s61v-randomize (out-id s61v state)
+    (declare (xargs :stobjs (s61v state)
+                    :guard (and (natp out-id)
+                                (< out-id (s61v-nrows s61v)))))
+    (b* (((mv uval state) (random$ (expt 2 61) state))
+         (s61v (s61v-set2 out-id n (bitops::fast-logext 61 uval) s61v)))
+      (mv s61v state))
+    :returns (mv s61v state)
+    :index n
+    :last (s61v-ncols s61v))
+
+  (local (in-theory (enable s61v-randomize-iter)))
+
+  (defthm memo-tablep-s61v-randomize-iter
+    (implies (< (node-count aignet) (len (cdr s61v)))
+             (< (node-count aignet) (len (cdr (mv-nth 0 (s61v-randomize-iter n out-id s61v state))))))
+    :rule-classes :linear)
+
+  (defthm car-s61v-randomize-iter
+    (equal (car (mv-nth 0 (s61v-randomize-iter n out-id s61v state)))
+           (car s61v)))
+
+  (defthm len-cdr-s61v-randomize-iter
+    (implies (< (nfix out-id) (len (cdr s61v)))
+             (equal (len (cdr (mv-nth 0 (s61v-randomize-iter n out-id s61v state))))
+                    (len (cdr s61v)))))
+
+  (defthm lookup-prev-in-s61v-randomize-iter
+    (implies (<= (nfix m) (nfix slot))
+             (equal (nth slot (nth n (cdr (mv-nth 0 (s61v-randomize-iter m id s61v state)))))
+                    (nth slot (nth n (cdr s61v)))))))
 
 
 (defsection aignet-vecsim
@@ -542,3 +605,183 @@
     :hints (("goal" :in-theory (disable aignet-vecsim))
             (and stable-under-simplificationp
                  `(:expand (,(car (last clause))))))))
+
+
+
+(defsection aignet-vecsim*
+  ;; Same as aignet-vecsim, but does not process output nodes and therefore
+  ;; only needs max-fanin+1 entries.  Note: we can't have a version of
+  ;; aignet-vecsim-frame that works this way, because of problems where we
+  ;; overwrite some previous-frame value with a next-frame value while that
+  ;; previous-frame value is still needed for some register to be updated.
+  (defiteration aignet-vecsim* (s61v aignet)
+    (declare (xargs :stobjs (s61v aignet)
+                    :guard (<= (+ 1 (max-fanin aignet)) (s61v-nrows s61v))
+                    :guard-hints (("goal" :in-theory (enable aignet-idp)))))
+    (b* ((n (lnfix n))
+         (nid n)
+         (slot0 (id->slot nid 0 aignet))
+         (type (snode->type slot0)))
+      (aignet-case
+       type
+       :gate  (b* ((f0 (snode->fanin slot0))
+                   (f1 (gate-id->fanin1 nid aignet)))
+                (s61v-and-lits f0 f1 nid s61v))
+       :out   s61v
+       :const (s61v-zero nid s61v)
+       :in    s61v))
+    :returns s61v
+    :index n
+    :last (+ 1 (max-fanin aignet))
+    :package aignet::foo)
+
+
+  (local (in-theory (enable aignet-vecsim*-iter)))
+
+  (defthm max-fanin-memo-tablep-aignet-vecsim*-iter
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr s61v)))
+             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr (aignet-vecsim*-iter n s61v aignet)))))
+    :rule-classes :linear)
+
+
+
+  (local (defthm nfix-less-than-0
+           (equal (< (nfix n) 0)
+                  nil)))
+
+
+  ;; (local (defthm aignet-eval-frame1-preserves-prev
+  ;;          (implies (<= (nfix m) (nfix n))
+  ;;                   (equal (nth n (aignet-eval-frame1-iter m vals aignet))
+  ;;                          (nth n vals)))
+  ;;          :hints(("Goal" :in-theory (enable aignet-eval-frame1-iter)))))
+
+  (defthm aignet-vecsim*-iter-lookup-prev
+    (implies (<= (nfix n) (nfix m))
+             (equal (nth slot (nth m (cdr (aignet-vecsim*-iter n s61v aignet))))
+                    (nth slot (nth m (cdr s61v)))))
+    :hints ((acl2::just-induct-and-expand (aignet-vecsim*-iter n s61v aignet))))
+
+  (defthm car-of-aignet-vecsim*-iter
+    (equal (car (aignet-vecsim*-iter n s61v aignet))
+           (car s61v))
+    :hints ((acl2::just-induct-and-expand (aignet-vecsim*-iter n s61v aignet))))
+
+  (defthmd nth-in-aignet-vecsim*-iter-preserved
+    (implies (and (< (nfix m) (nfix n))
+                  (equal nm (1+ (nfix m)))
+                  (syntaxp (not (equal n nm))))
+             (equal (nth slot (nth m (cdr (aignet-vecsim*-iter n vals
+                                                              aignet))))
+                    (nth slot (nth m (cdr (aignet-vecsim*-iter nm vals
+                                                              aignet))))))
+    :hints (("goal" :induct (aignet-vecsim*-iter n vals aignet)
+             :in-theory (disable acl2::b-xor acl2::b-and
+                                 (:definition aignet-vecsim*-iter))
+             :expand ((aignet-vecsim*-iter n vals aignet)))
+            (and stable-under-simplificationp
+                 '(:expand ((aignet-vecsim*-iter (+ 1 (nfix m))
+                                                vals
+                                                aignet))))))
+
+  (local (in-theory (enable nth-in-aignet-vecsim*-iter-preserved)))
+
+
+  (local (defthm aignet-vecsim*-stores-id-evals-lemma
+           (implies (and (aignet-idp id aignet)
+                         (not (equal (ctype (stype (car (lookup-id id aignet))))
+                                     :output))
+                         (< (nfix id) (nfix n))
+                         (< (nfix slot) (s61v-ncols s61v)))
+                    (acl2::bit-equiv
+                     (acl2::logbit bit (nth slot
+                                            (nth id (cdr (aignet-vecsim*-iter
+                                                          n s61v
+                                                          aignet)))))
+                     (let* ((vals
+                             (vecsim-to-eval slot bit s61v vals
+                                             aignet))
+                            (in-vals (aignet-vals->invals nil vals
+                                                          aignet))
+                            (reg-vals (aignet-vals->regvals nil vals aignet)))
+                       (id-eval id in-vals reg-vals aignet))))
+           :hints(("Goal" :in-theory (e/d (lit-eval eval-and-of-lits)
+                                          (id-eval
+                                           aignet-vecsim*-iter))
+                   :induct (id-eval-ind id aignet)
+                   :expand ((:free (in-vals reg-vals) (id-eval id in-vals reg-vals aignet))
+                            (aignet-vecsim*-iter (+ 1 (nfix id))
+                                                s61v aignet)
+                            (aignet-vecsim*-iter 1 s61v aignet))))))
+
+  (defthm aignet-vecsim*-iter-correct
+    (implies (and (aignet-idp m aignet)
+                  (not (equal (ctype (stype (car (lookup-id m aignet))))
+                                     :output))
+                  (< (nfix m) (nfix n))
+                  (< (nfix slot) (s61v-ncols s61v)))
+             (equal (acl2::logbit bit (nth slot (nth m (cdr (aignet-vecsim*-iter n s61v aignet)))))
+                    (let* ((vals
+                             (vecsim-to-eval slot bit s61v vals
+                                             aignet))
+                            (in-vals (aignet-vals->invals nil vals
+                                                          aignet))
+                            (reg-vals (aignet-vals->regvals nil vals aignet)))
+                      (id-eval m in-vals reg-vals aignet))))
+    :hints (("goal" :use ((:instance aignet-vecsim*-stores-id-evals-lemma
+                           (id m)))
+             :in-theory (disable aignet-vecsim*-stores-id-evals-lemma
+                                 aignet-vecsim*-iter
+                                 vecsim-to-eval
+                                 id-eval)
+             :do-not-induct t)))
+
+  
+  (local (defthm aignet-idp-and-not-output-implies-less-than-max-fanin
+           (implies (and (aignet-idp n aignet)
+                         (not (equal (ctype (stype (car (lookup-id n aignet))))
+                                     :output)))
+                    (< (nfix n) (+ 1 (node-count (find-max-fanin aignet)))))
+           :hints(("Goal" :in-theory (enable find-max-fanin lookup-id aignet-idp)))))
+
+  (defthm aignet-vecsim*-correct
+    (implies (and (aignet-idp m aignet)
+                  (not (equal (ctype (stype (car (lookup-id m aignet))))
+                                     :output))
+                  ;; (<= (nfix m) (max-fanin aignet))
+                  (< (nfix slot) (s61v-ncols s61v)))
+             (equal (acl2::logbit bit (nth slot (nth m (cdr (aignet-vecsim* s61v aignet)))))
+                    (let* ((vals
+                             (vecsim-to-eval slot bit s61v vals
+                                             aignet))
+                            (in-vals (aignet-vals->invals nil vals
+                                                          aignet))
+                            (reg-vals (aignet-vals->regvals nil vals aignet)))
+                      (id-eval m in-vals reg-vals aignet))))
+    :hints(("Goal" :in-theory (disable bitops::logbit-to-logbitp
+                                       aignet-vecsim*-iter))))
+
+
+  (defthm aignet-eval-iter-out-of-bounds
+    (implies (<= (nfix n) (nfix m))
+             (equal (nth m (aignet-eval-iter n vals aignet))
+                    (nth m vals)))
+    :hints((acl2::just-induct-and-expand
+            (aignet-eval-iter n vals aignet))))
+
+
+  (defthm aignet-vecsim*-to-eval-lemma
+    (implies (and (< (nfix slot) (s61v-ncols s61v))
+                  (not (equal (ctype (stype (car (lookup-id id aignet))))
+                                     :output))
+                  ;; (aignet-idp id aignet)
+                  ;; (<= (nfix id) (max-fanin aignet))
+                  )
+             (bit-equiv
+              (nth id (vecsim-to-eval slot bit (aignet-vecsim* s61v aignet) vals aignet))
+              (nth id (aignet-eval (vecsim-to-eval slot bit s61v vals
+                                                   aignet) aignet))))
+    :hints (("goal" :in-theory (e/d (aignet-idp)
+                                    (bitops::logbit-to-logbitp
+                                     aignet-vecsim*))
+             :cases ((aignet-idp id aignet))))))

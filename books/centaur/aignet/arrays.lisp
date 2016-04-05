@@ -614,6 +614,11 @@
                              (u32s-length . u32-length)
                              (resize-u32s . resize-u32)))
 
+  (defun set-u32-ec-call (n v u32arr)
+    (declare (xargs :stobjs u32arr
+                    :guard t))
+    (ec-call (set-u32_ n v u32arr)))
+
   (definline set-u32 (n v u32arr)
     (declare (xargs :stobjs u32arr
                     :guard (and (natp n)
@@ -622,7 +627,7 @@
     (mbe :logic (set-u32_ n (nfix v) u32arr)
          :exec (if (< (the (integer 0 *) v) (expt 2 32))
                    (set-u32_ n v u32arr)
-                 (ec-call (set-u32_ n v u32arr)))))
+                 (set-u32-ec-call n v u32arr))))
 
   ;; (defun u32arr-sizedp (u32arr aignet)
   ;;   (declare (xargs :stobjs (u32arr aignet)
