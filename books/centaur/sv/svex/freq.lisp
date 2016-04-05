@@ -310,7 +310,18 @@ turn them into a nice, readable report."
 
 
 
-(defalist svex-refcount-alist :key-type svex :val-type natp)
+(defalist svex-refcount-alist :key-type svex :val-type natp
+  ///
+  (defthm natp-lookup-in-svex-refcount-alist
+    (implies (svex-refcount-alist-p x)
+             (iff (natp (cdr (hons-assoc-equal k x)))
+                  (cdr (hons-assoc-equal k x))))
+    :hints(("Goal" :in-theory (enable svex-refcount-alist-p))))
+
+  (defthm natp-lookup-in-svex-refcount-alist-fix
+    (or (natp (cdr (hons-assoc-equal k (svex-refcount-alist-fix x))))
+        (not (cdr (hons-assoc-equal k (svex-refcount-alist-fix x)))))
+    :rule-classes :type-prescription))
 
 #||
 (defines svex-refcounts
@@ -377,6 +388,9 @@ turn them into a nice, readable report."
           :otherwise (cons (car x) (svex-refcounts-delete-fncalls fn (cdr x))))))))
 
 (defalist counter-alist :val-type natp)
+
+(defalist svex-key-alist :key-type svex)
+
 
 (defines svex-fncounts
   :verify-guards nil
