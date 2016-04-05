@@ -483,6 +483,7 @@ any environment."
 
 
 
+;; definition is redundant
 (define 4vec-xfree-p ((x 4vec-p))
   :parents (4vec-[= svex-xeval)
   :short "Recognizer for @(see 4vec)s with no X bits.  These have a special
