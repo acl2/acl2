@@ -52,12 +52,14 @@
 })")
 
 
-(defthm bitp-compound-recognizer
-  ;; Questionable given the bitp-forward rule.  But I think we may still want
-  ;; this.
-  (implies (bitp x)
-           (natp x))
-  :rule-classes :compound-recognizer)
+; Commented out April, 2016 by Matt K., now that a better compound recognizer
+; of the same name is part of ACL2.
+;;; (defthm bitp-compound-recognizer
+;;;   ;; Questionable given the bitp-forward rule.  But I think we may still want
+;;;   ;; this.
+;;;   (implies (bitp x)
+;;;            (natp x))
+;;;   :rule-classes :compound-recognizer)
 
 ;; (defthm bitp-when-under-2
 ;;   ;; questionable to bring arithmetic into it

@@ -312,6 +312,7 @@ turn them into a nice, readable report."
 
 (defalist svex-refcount-alist :key-type svex :val-type natp)
 
+#||
 (defines svex-refcounts
   :verify-guards nil
   (define svex-refcounts ((x svex-p)
@@ -409,3 +410,4 @@ turn them into a nice, readable report."
   ///
   (verify-guards svex-fncounts)
   (deffixequiv-mutual svex-fncounts))
+||#

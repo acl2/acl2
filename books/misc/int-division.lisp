@@ -88,8 +88,17 @@
 		(equal -1 a)))
    :rule-classes :forward-chaining
    :hints (("Goal"
-	    :use (inequality-lemma-1
-		  inequality-lemma-2
+
+; Matt K. mod, April 2016: The addition of a type-set bit for the set {1}
+; caused this proof to fail.  Investigation revealed that a literal was being
+; rewritten to nil instead of t because the type-alist (from type-alist-clause)
+; was now sufficiently strong to deduce that (/ A) = 1.  That didn't seem to me
+; to indicate a need to modify heuristics, so when I found that commenting out
+; the first two lemma instances below restored the proof, I decided simply to
+; do that and move on.
+
+	    :use (;inequality-lemma-1
+		  ;inequality-lemma-2
 		  (:instance inequality-lemma-1 (a (/ a)))
 		  (:instance inequality-lemma-2 (a (/ a))))))))
 

@@ -20,12 +20,12 @@
 
 (in-package "ACL2")
 
-;; RAG - I changed this value from 6 to 9 to make room for the
+;; RAG - I changed this value from 7 to 10 to make room for the
 ;; positive-, negative-, and complex-irrationals.
 
 (defconst *number-of-numeric-type-set-bits*
-  #+:non-standard-analysis 9
-  #-:non-standard-analysis 6)
+  #+:non-standard-analysis 10
+  #-:non-standard-analysis 7)
 
 (defconst *type-set-binary-+-table-list*
   (let ((len (expt 2 *number-of-numeric-type-set-bits*)))
@@ -54,22 +54,22 @@
              *type-set-binary-*-table-list*))
 
 ;; RAG - As a consequence of the extra numeric arguments, I had to
-;; change this table from 5 to 7, to make room for the positive
+;; change this table from 6 to 8, to make room for the positive
 ;; and negative irrationals.
 
 (defconst *type-set-<-table-list*
   #+:non-standard-analysis
   (cons (list :header
-              :dimensions '(128 128)
-              :maximum-length (1+ (* 128 128))
+              :dimensions '(256 256)
+              :maximum-length (1+ (* 256 256))
               :name '*type-set-<-table*)
-        (type-set-<-alist 127 127 nil))
+        (type-set-<-alist 255 255 nil))
   #-:non-standard-analysis
   (cons (list :header
-              :dimensions '(32 32)
-              :maximum-length 1025
+              :dimensions '(64 64)
+              :maximum-length (1+ (* 64 64))
               :name '*type-set-<-table*)
-        (type-set-<-alist 31 31 nil))
+        (type-set-<-alist 63 63 nil))
   )
 
 (defconst *type-set-<-table*
@@ -1936,12 +1936,6 @@
           ((and (equal arg1 ''-1)
                 (ts-subsetp ts2 *ts-positive-integer*))
            (mv *ts-non-negative-integer* (puffert ttree)))
-          ((and (equal arg2 ''+1)
-                (ts-subsetp ts1 *ts-negative-integer*))
-           (mv *ts-non-positive-integer* (puffert ttree)))
-          ((and (equal arg1 ''+1)
-                (ts-subsetp ts2 *ts-negative-integer*))
-           (mv *ts-non-positive-integer* (puffert ttree)))
           (t (let ((ans (aref2 'type-set-binary-+-table
                                *type-set-binary-+-table*
                                (numeric-type-set ts1)
@@ -2137,8 +2131,7 @@
                                ttree
                                pot-lst pt)
                    (type-set-not ts ttree ttree0)))
-          ((and (quotep arg1)
-                (eql (cadr arg1) -1)
+          ((and (equal arg1 *-1*)
                 (ts-subsetp nts2 *ts-integer*))
            (mv-let (ts ttree)
                    (type-set-< arg2 *0* ts2 *ts-zero*
@@ -2262,7 +2255,8 @@
      (t
       (mv (ts-builder ts1
                       (*ts-zero* *ts-zero*)
-                      (*ts-positive-integer* *ts-negative-integer*)
+                      (*ts-one* *ts-negative-integer*)
+                      (*ts-integer>1* *ts-negative-integer*)
                       (*ts-positive-ratio* *ts-negative-ratio*)
                       #+:non-standard-analysis
                       (*ts-positive-non-ratio* *ts-negative-non-ratio*)
@@ -2281,7 +2275,12 @@
   (let* ((ts1 (numeric-type-set ts))
          (ans (ts-builder ts1
                           (*ts-zero* *ts-zero*)
-                          (*ts-positive-rational* *ts-positive-rational*)
+                          (*ts-one* *ts-one*)
+                          (*ts-integer>1*
+                           (ts-intersection0 *ts-positive-ratio*
+                                             (ts-complement0 *ts-zero*)
+                                             (ts-complement0 *ts-one*)))
+                          (*ts-positive-ratio* *ts-positive-rational*)
                           (*ts-negative-rational* *ts-negative-rational*)
                           #+:non-standard-analysis
                           (*ts-positive-non-ratio* *ts-positive-non-ratio*)
@@ -2289,7 +2288,8 @@
                           (*ts-negative-non-ratio* *ts-negative-non-ratio*)
                           (*ts-complex-rational* *ts-complex-rational*)
                           #+:non-standard-analysis
-                          (*ts-complex-non-rational* *ts-complex-non-rational*))))
+                          (*ts-complex-non-rational*
+                           *ts-complex-non-rational*))))
     (cond
      ((ts= ans *ts-acl2-number*)
       (mv *ts-acl2-number* (puffert ttree0)))
@@ -2300,10 +2300,21 @@
   (let* ((ts1 (rational-type-set ts))
          (ans (ts-builder ts1
                           (*ts-zero* *ts-zero*)
-                          (*ts-positive-rational* *ts-positive-integer*)
+                          (*ts-one* *ts-one*)
+                          (*ts-integer>1* *ts-integer>1*)
+                          (*ts-positive-ratio* *ts-positive-integer*)
                           (*ts-negative-rational* *ts-negative-integer*))))
     (cond ((ts= ans *ts-integer*)
            (mv *ts-integer* (puffert ttree0)))
+          (t (mv ans (puffert ttree))))))
+
+(defun type-set-denominator (ts ttree ttree0)
+  (let* ((ts1 (rational-type-set ts))
+         (ans (ts-builder ts1
+                          (*ts-integer* *ts-one*)
+                          (*ts-ratio* *ts-integer>1*))))
+    (cond ((ts= ans *ts-positive-integer*)
+           (mv *ts-positive-integer* (puffert ttree0)))
           (t (mv ans (puffert ttree))))))
 
 ;; RAG - I added an entry for *ts-complex-non-rational*.  Note that
@@ -2390,7 +2401,8 @@
   (let* ((ts1 (real-type-set ts))
          (ans (ts-builder ts1
                           (*ts-zero* *ts-zero*)
-                          (*ts-positive-integer* *ts-positive-integer*)
+                          (*ts-one* *ts-one*)
+                          (*ts-integer>1* *ts-integer>1*)
                           (*ts-positive-ratio* *ts-non-negative-integer*)
                           (*ts-positive-non-ratio* *ts-non-negative-integer*)
                           (*ts-negative-real* *ts-negative-integer*))))
@@ -2405,8 +2417,13 @@
   (let* ((ts1 (numeric-type-set ts))
          (ans (ts-builder ts1
                           (*ts-zero* *ts-zero*)
-                          (*ts-positive-real* *ts-non-negative-real*)
-                          (*ts-negative-real* *ts-non-positive-real*)
+                          (*ts-one* *ts-one*)
+                          (*ts-integer>1* *ts-integer>1*)
+                          (*ts-positive-ratio* *ts-non-negative-real*)
+                          (*ts-positive-non-ratio* *ts-non-negative-real*)
+                          (*ts-negative-integer* *ts-negative-integer*)
+                          (*ts-negative-ratio* *ts-non-positive-real*)
+                          (*ts-negative-non-ratio* *ts-non-positive-real*)
                           (*ts-complex* *ts-acl2-number*))))
     (mv (ts-union (ts-intersection ts (ts-complement *ts-acl2-number*))
                   ans)
@@ -2419,6 +2436,8 @@
 #+:non-standard-analysis
 (defun type-set-standardp (ts ttree ttree0)
   (cond ((ts= ts *ts-zero*)
+         (mv *ts-t* (puffert ttree)))
+        ((ts= ts *ts-one*)
          (mv *ts-t* (puffert ttree)))
         (t (mv *ts-boolean* (puffert ttree0)))))
 
@@ -2488,26 +2507,25 @@
 
 ; And we would know as much about BOOLEANP as we know about integerp.
 
-; Consider the function PRIMEP.  It implies its argument is a positive
-; integer.  Its negation tells us nothing about the type of its argument.
+; Consider the function PRIMEP.  It implies its argument is a positive integer
+; greater than 1.  Its negation tells us nothing about the type of its
+; argument.
 
 ; (make recognizer-tuple
 ;       :fn PRIMEP
-;       :true-ts *ts-positive-integer*
+;       :true-ts *ts-integer>1*
 ;       :false-ts *ts-unknown*
 ;       :strongp nil)
 
-; Suppose now x is a term whose type set we know.  What is the type
-; set of (PRIMEP x)?  If the type set for x includes the positive
-; integer bit, the type set for (PRIMEP x) may include *ts-t* so we
-; will throw that in.  If the type set for x includes any of
-; *ts-unknown*'s bits (of course it does) we will throw in *ts-nil*.
-; The interesting thing about this is that if the type set of x does
-; not include the positive integers, we'll know (PRIME x) is nil.
+; Suppose now x is a term whose type set we know.  What is the type set of
+; (PRIMEP x)?  If the type set for x includes the integer>1 bit, the type set
+; for (PRIMEP x) may include *ts-t* so we will throw that in.  If the type set
+; for x includes any of *ts-unknown*'s bits (of course it does) we will throw
+; in *ts-nil*.  The interesting thing about this is that if the type set of x
+; does not include the integers>1 bit, we'll know (PRIME x) is nil.
 
-; If we assume (PRIME x) true, we will restrict the type of x to the
-; positive integers.  If we assume (PRIME x) false, we won't restrict
-; x at all.
+; If we assume (PRIME x) true, we will restrict the type of x to the integers >
+; 1.  If we assume (PRIME x) false, we won't restrict x at all.
 
 ; Consider the function RATTREEP that recognizes cons-trees of
 ; rational numbers.  We can prove that (RATTREEP x) implies the type
@@ -2761,6 +2779,31 @@
           (t (mv ts (puffert ttree))))))
 
 (defconst *singleton-type-sets*
+
+; See also *ts-t-nil-0*.
+
+  (list *ts-t* *ts-nil* *ts-zero* *ts-one*))
+
+(defconst *ts-t-nil-0*
+
+; In some places we use this constant, which omits *ts-one*, instead of
+; *singleton-type-sets*.  Our motivation was to increase backward compatibility
+; after adding a type-set bit for {1}; for example, without this change we
+; needed to disable a type-prescription rule for the proof of lemma
+; soundness-sat-lipton-clause in community book
+; books/workshops/2002/martin-alonso-perez-sancho/support/Adleman.lisp; for
+; another example, books/std/io/base.lisp failed to certify when
+; *singleton-type-sets* was used in place of *ts-t-nil-0* in
+; assume-true-false-rec.  The avoidance of special treatment for *ts-one*,
+; specifically in parts of assume-true-false-rec, may seem like a cowardly
+; hack.  But we can rationalize it by viewing t, nil, and 0 as somehow more
+; "special" values than 1, which we see as special only when reasoning about
+; bits, multiplication, or division.  By contrast, 0 is the value to which all
+; non-numbers are coerced for arithmetic operations, and is frequently tested
+; to terminate recursion.
+
+; For a related discussion (and decision), see obj-table.
+
   (list *ts-t* *ts-nil* *ts-zero*))
 
 (defun type-set-equal (ts1 ts2 ttree ttree0)
@@ -2786,7 +2829,9 @@
          (cond ((rationalp evg)
                 (cond ((integerp evg)
                        (cond ((int= evg 0) *ts-zero*)
-                             ((> evg 0) *ts-positive-integer*)
+                             ((int= evg 1) *ts-one*)
+                             ((> evg 0) ; equivalently, (> evg 1)
+                              *ts-integer>1*)
                              (t *ts-negative-integer*)))
                       ((> evg 0) *ts-positive-ratio*)
                       (t *ts-negative-ratio*)))
@@ -3078,7 +3123,7 @@
 ; Term is a quotep.  This function returns (mv pat1 term1 pat2 term2) as
 ; follows.  If pat1 is t then pat/s = term for every substitution s, where here
 ; and below, = denotes provable equality (in other words, it is a theorem in
-; the given context that pat = term).  If pat is nil then there are no
+; the given context that pat = term).  If pat1 is nil then there are no
 ; requirements.  Otherwise pat1 and term1 are terms and the spec is as follows.
 ; If pat2 is nil then for every substitution s, pat/s = term if pat1/s = term1.
 ; But if pat2 is non-nil; then pat2 and term2 are terms, and pat/s = term/s if
@@ -8564,7 +8609,17 @@
                                pot-lst pt backchain-limit)
                  (type-set-floor1 ts1 ttree ttree0)))
         (denominator
-         (mv *ts-positive-integer* (puffert ttree0)))
+         (mv-let (ts1 ttree)
+           (type-set-rec (fargn term 1)
+                         force-flg
+                         dwp
+                         type-alist
+                         ancestors
+                         ens
+                         w
+                         ttree0
+                         pot-lst pt backchain-limit)
+           (type-set-denominator ts1 ttree ttree0)))
         (numerator
          (mv-let (ts1 ttree)
                  (type-set-rec (fargn term 1)
@@ -8605,7 +8660,7 @@
                  (type-set-standard-part ts1 ttree ttree0)))
         #+:non-standard-analysis
         (i-large-integer
-         (mv *ts-positive-integer* (puffert ttree0)))
+         (mv *ts-integer>1* (puffert ttree0)))
         (car
          (mv-let (ts1 ttree)
                  (type-set-rec (fargn term 1)
@@ -9768,13 +9823,21 @@
                                     (shared-ttree
 
 ; We could just use (cons-tag-trees ttree xttree) here, but let's save a cons
-; if we don't need that tag-tree.
+; if we don't need that tag-tree.  The first case below corresponds to the
+; conditions that must hold for shared-ttree to be used for a true-type-alist
+; or a false-type-alist.
 
                                      (cond
-                                      ((or (not (ts= ts1 int))
-                                           (not (ts= ts2 int))
-                                           (member ts2 *singleton-type-sets*)
-                                           (member ts1 *singleton-type-sets*))
+                                      ((or (and (not (eq ignore :tta))
+                                                (or (not (ts= ts1 int))
+                                                    (not (ts= ts2 int))))
+                                           (and (not (eq ignore :fta))
+
+; For a discussion of the use of *ts-t-nil-0* in this function, see comments in
+; the definition of that constant.
+
+                                                (or (member ts2 *ts-t-nil-0*)
+                                                    (member ts1 *ts-t-nil-0*))))
                                        (cons-tag-trees ttree xttree))
                                       (t nil)))
                                     (xttree+
@@ -9827,7 +9890,7 @@
                                     (false-type-alist2
                                      (and (not (eq ignore :fta))
                                           (cond
-                                           ((member ts2 *singleton-type-sets*)
+                                           ((member ts2 *ts-t-nil-0*)
                                             (extend-with-proper/improper-cons-ts-tuple
                                              arg1
                                              (ts-intersection
@@ -9841,7 +9904,7 @@
                                     (false-type-alist3
                                      (and (not (eq ignore :fta))
                                           (cond
-                                           ((member ts1 *singleton-type-sets*)
+                                           ((member ts1 *ts-t-nil-0*)
                                             (extend-with-proper/improper-cons-ts-tuple
                                              arg2
                                              (ts-intersection
@@ -10305,14 +10368,14 @@
 
                                   (mv-atf (er hard 'assume-true-false
                                               "Please send the authors of ~
-                                                  ACL2 a replayable transcript ~
-                                                  of this problem if possible, ~
-                                                  so that they can see what ~
-                                                  went wrong in the function ~
-                                                  assume-true-false.  The ~
-                                                  offending call was ~x0.  The ~
-                                                  surprising type-set arose ~
-                                                  from a call of ~x1."
+                                               ACL2 a replayable transcript ~
+                                               of this problem if possible, ~
+                                               so that they can see what went ~
+                                               wrong in the function ~
+                                               assume-true-false.  The ~
+                                               offending call was ~x0.  The ~
+                                               surprising type-set arose from ~
+                                               a call of ~x1."
                                               (list 'assume-true-false
                                                     (kwote x) '<xttree>
                                                     force-flg
@@ -11420,6 +11483,7 @@
                 (iff-flg *t*)
                 ((ts= ts *ts-t*) *t*)
                 ((ts= ts *ts-zero*) *0*)
+                ((ts= ts *ts-one*) *1*)
                 (t term))))
      (mv new-term
          (if (equal term new-term) ttree new-ttree)))))
