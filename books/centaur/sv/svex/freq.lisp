@@ -304,3 +304,122 @@ turn them into a nice, readable report."
          (implies (svex-alist-p x)
                   (svexlist-p (alist-vals x)))
          :hints(("Goal" :induct (len x)))))))
+
+
+
+
+
+
+(defalist svex-refcount-alist :key-type svex :val-type natp
+  ///
+  (defthm natp-lookup-in-svex-refcount-alist
+    (implies (svex-refcount-alist-p x)
+             (iff (natp (cdr (hons-assoc-equal k x)))
+                  (cdr (hons-assoc-equal k x))))
+    :hints(("Goal" :in-theory (enable svex-refcount-alist-p))))
+
+  (defthm natp-lookup-in-svex-refcount-alist-fix
+    (or (natp (cdr (hons-assoc-equal k (svex-refcount-alist-fix x))))
+        (not (cdr (hons-assoc-equal k (svex-refcount-alist-fix x)))))
+    :rule-classes :type-prescription))
+
+(defines svex-refcounts
+  :verify-guards nil
+  (define svex-refcounts ((x svex-p)
+                          (refcounts svex-refcount-alist-p))
+    :returns (refcounts-out svex-refcount-alist-p)
+    :measure (svex-count x)
+    (b* ((refcounts (svex-refcount-alist-fix refcounts))
+         (x (svex-fix x))
+         (count-lookup (cdr (hons-get x refcounts)))
+         (count (or count-lookup 0))
+         (refcounts (hons-acons x (+ 1 count) refcounts))
+         ((when count-lookup) refcounts))
+      (svex-case x
+        :call (svexlist-refcounts x.args refcounts)
+        :otherwise refcounts)))
+  (define svexlist-refcounts ((x svexlist-p)
+                              (refcounts svex-refcount-alist-p))
+    :returns (refcounts-out svex-refcount-alist-p)
+    :measure (svexlist-count x)
+    (b* ((refcounts (svex-refcount-alist-fix refcounts)))
+      (if (atom x)
+          refcounts
+        (svexlist-refcounts (cdr x) (svex-refcounts (car x) refcounts)))))
+  ///
+  (verify-guards svex-refcounts)
+  (deffixequiv-mutual svex-refcounts))
+
+
+(define svex-refcounts-keep-calls ((x svex-refcount-alist-p))
+  :returns (new-x svex-refcount-alist-p)
+  :measure (len (svex-refcount-alist-fix x))
+  (b* ((x (svex-refcount-alist-fix x)))
+    (if (atom x)
+        nil
+      (b* ((key (caar x)))
+        (svex-case key
+          :call (cons (car x) (svex-refcounts-keep-calls (cdr x)))
+          :otherwise (svex-refcounts-keep-calls (cdr x)))))))
+
+(define svex-refcounts-delete-calls ((x svex-refcount-alist-p))
+  :returns (new-x svex-refcount-alist-p)
+  :measure (len (svex-refcount-alist-fix x))
+  (b* ((x (svex-refcount-alist-fix x)))
+    (if (atom x)
+        nil
+      (b* ((key (caar x)))
+        (svex-case key
+          :call (svex-refcounts-delete-calls (cdr x))
+          :otherwise (cons (car x) (svex-refcounts-delete-calls (cdr x))))))))
+
+(define svex-refcounts-delete-fncalls ((fn fnsym-p)(x svex-refcount-alist-p))
+  :returns (new-x svex-refcount-alist-p)
+  :measure (len (svex-refcount-alist-fix x))
+  (b* ((x (svex-refcount-alist-fix x)))
+    (if (atom x)
+        nil
+      (b* ((key (caar x)))
+        (svex-case key
+          :call (if (eq (fnsym-fix fn) key.fn)
+                    (svex-refcounts-delete-fncalls fn (cdr x))
+                  (cons (car x) (svex-refcounts-delete-fncalls fn (cdr x))))
+          :otherwise (cons (car x) (svex-refcounts-delete-fncalls fn (cdr x))))))))
+
+(defalist counter-alist :val-type natp)
+
+(defalist svex-key-alist :key-type svex)
+
+
+(defines svex-fncounts
+  :verify-guards nil
+  (define svex-fncounts ((x svex-p)
+                         (seen svex-key-alist-p)
+                         (fncounts counter-alist-p))
+    :returns (mv (seen svex-key-alist-p)
+                 (fncounts-out counter-alist-p))
+    :measure (svex-count x)
+    (b* ((fncounts (counter-alist-fix fncounts))
+         (seen (svex-key-alist-fix seen))
+         (x (svex-fix x))) 
+      (svex-case x
+        :call (if (hons-get x seen)
+                  (mv seen fncounts)
+                (b* ((count (nfix (cdr (hons-get x.fn fncounts)))))
+                  (svexlist-fncounts x.args (hons-acons x t seen)
+                                     (hons-acons x.fn (+ 1 count) fncounts))))
+        :otherwise (mv seen fncounts))))
+  (define svexlist-fncounts ((x svexlist-p)
+                             (seen svex-key-alist-p)
+                             (fncounts counter-alist-p))
+    :returns (mv (seen svex-key-alist-p)
+                 (fncounts-out counter-alist-p))
+    :measure (svexlist-count x)
+    (b* ((fncounts (counter-alist-fix fncounts))
+         (seen (svex-key-alist-fix seen))
+         ((When (atom x)) (mv seen fncounts))
+         ((mv seen fncounts) (svex-fncounts (car x) seen fncounts)))
+      (svexlist-fncounts (cdr x) seen fncounts)))
+  ///
+  (verify-guards svex-fncounts)
+  (deffixequiv-mutual svex-fncounts))

@@ -34,6 +34,7 @@
 (include-book "4vmask")
 (include-book "centaur/bitops/trailing-0-count" :dir :system)
 (include-book "rsh-concat")
+(local (include-book "std/alists/alist-defuns" :dir :system))
 (local (include-book "lattice"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -221,7 +222,8 @@
 (defun svex-rewrite-find-next-bind-form (checks)
   (b* (((when (or (atom checks)
                   (and (consp (car checks))
-                       (eq (caar checks) 'bind))))
+                       (or (eq (caar checks) 'bind)
+                           (eq (caar checks) 'let)))))
         (mv nil checks))
        ((mv pre post) (svex-rewrite-find-next-bind-form (cdr checks))))
     (mv (cons (car checks) pre) post)))
@@ -233,10 +235,11 @@
                  `(((unless ,(if (cdr checks) `(and . ,checks) (car checks)))
                     (mv nil nil nil)))))
        ((when (atom rest)) pre)
-       ((list var term) (cdar rest)))
+       ((list bindsym var term) (car rest)))
     (append pre
             `((,var ,term)
-              (subst (svex-acons ',var ,var subst)))
+              . ,(and (eq bindsym 'bind)
+                      `((subst (svex-acons ',var ,var subst)))))
             (svex-rewrite-checks-and-bindings (cdr rest)))))
 
 
@@ -268,6 +271,7 @@
                     (pat (iff (svex-p pat) successp))
                     (subst svex-alist-p))
        (b* ((mask (mbe :logic (4vmask-fix mask) :exec mask))
+            (args (svexlist-fix args))
             (multiref-table (svex-key-alist-fix multiref-table))
             ((mv ok subst) (svexlist-unify ',(cdr lhs) args nil))
             ((unless ok) (mv nil nil nil))
@@ -468,7 +472,7 @@
            :condition '(and x
                             (eq (svex-kind x) :call)
                             (member (svex-call->fn x)
-                                    '(res resand resor concat ?))))
+                                    '(res resand resor concat ? partinst))))
 
   (defthm 3vec-p-of-4vec-res
     (implies (or (3vec-p x)
@@ -3663,10 +3667,131 @@
     :rhs res))
 
 
+(def-svex-rewrite ==-1-of-concat-1
+  :lhs (== 1 (concat 1 a 0))
+  :rhs (uor (concat 1 a 0))
+  :hints(("Goal" :in-theory (enable 4vec-concat 4vec-== 3vec-== 3vec-reduction-or
+                                    4vec-reduction-or
+                                    3vec-reduction-and
+                                    4vec-reduction-and
+                                    svex-apply
+                                    3vec-bitxor 3vec-bitnot 4vec-mask
+                                    3vec-fix))
+         (svex-generalize-lookups)
+         (logbitp-reasoning)))
+
+
   
+;; (def-svex-rewrite push-concat-into-bitor
+;;   :lhs (concat 1 (bitor a b) 0)
+;;   :checks ((not (hons-get (second args) multiref-table)))
+;;   :rhs (bitor (concat 1 a 0) (concat 1 b 0))
+;;   :hints(("Goal" :in-theory (enable 4vec-bitor 3vec-bitor 3vec-fix
+;;                                     4vec-concat
+;;                                     svex-apply))
+;;          (svex-generalize-lookups)))
+
+;; (local (defthm equal-of-upper-lower-by-xeval
+;;          (implies (equal (4vec->upper (svex-xeval x))
+;;                          (4vec->lower (svex-xeval x)))
+;;                   (equal (equal (4vec->upper (svex-eval x env))
+;;                                 (4vec->lower (svex-eval x env)))
+;;                          t))
+;;          :hints (("goal" :use ((:instance svex-eval-gte-xeval))
+;;                   :in-theory (disable svex-eval-gte-xeval)))))
 
 
+(def-svex-rewrite partsel-of-partinst-same
+  :lhs (partsel lsb width (partinst lsb width x val))
+  :checks ((4vec-index-p (svex-xeval lsb)))
+  :rhs (zerox width val)
+  :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-part-install 4vec-zero-ext
+                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
+         (svex-generalize-lookups)
+         (logbitp-reasoning)))
 
+(def-svex-rewrite partinst-of-partinst-same
+  :lhs (partinst lsb width (partinst lsb width x val1) val2)
+  :rhs (partinst lsb width x val2)
+  :hints(("Goal" :in-theory (enable 4vec-part-install 4vec-zero-ext
+                                    4vec-concat 4vec-rsh svex-apply 4vec-mask))
+         (svex-generalize-lookups)
+         (logbitp-reasoning)))
+
+(def-svex-rewrite partsel-of-partinst-nonoverlapping
+  :lhs (partsel lsb1 width1 (partinst lsb2 width2 x val))
+  :checks ((let lsb1-val (svex-xeval lsb1))
+           (2vec-p lsb1-val)
+           (let width1-val (svex-xeval width1))
+           (4vec-index-p width1-val)
+           (let lsb2-val (svex-xeval lsb2))
+           (2vec-p lsb2-val)
+           (let width2-val (svex-xeval width2))
+           (4vec-index-p width2-val)
+           (or (<= (+ (2vec->val lsb1-val) (2vec->val width1-val))
+                   (2vec->val lsb2-val))
+               (<= (+ (2vec->val lsb2-val) (2vec->val width2-val))
+                   (2vec->val lsb1-val))))
+  :rhs (partsel lsb1 width1 x)
+  :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-part-install 4vec-zero-ext
+                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
+         (svex-generalize-lookups)
+         (logbitp-reasoning)))
+
+
+;; (def-svex-rewrite concat-of-partsel-same-width
+;;   :lhs (concat w (partsel lsb w x) y)
+;;   :checks ((not (hons-get (second args) multiref-table))
+;;            (4vec-index-p (svex-xeval lsb)))
+;;   :rhs (concat w (rsh lsb x) y)
+;;   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
+;;                                     4vec-concat 4vec-rsh svex-apply 4vec-mask
+;;                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
+;;          (svex-generalize-lookups)
+;;          (logbitp-reasoning)))
+
+
+(def-svex-rewrite partsel-of-rsh
+  :lhs (partsel lsb width (rsh shift x))
+  :checks ((let lsb-val (svex-xeval lsb))
+           (4vec-index-p lsb-val)
+           (let shift-val (svex-xeval shift))
+           (4vec-index-p shift-val)
+           (bind newlsb (svex-quote (2vec (+ (2vec->val lsb-val)
+                                             (2vec->val shift-val))))))
+  :rhs (partsel newlsb width x)
+  :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
+                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
+         (svex-generalize-lookups)
+         (logbitp-reasoning)))
+
+
+(local (in-theory (disable bitops::logior-natp-type
+                           bitops::logand->=-0-linear-2
+                           bitops::logand->=-0-linear-1
+                           bitops::upper-bound-of-logand
+                           bitops::lognot-natp
+                           bitops::logxor-natp-type-1)))
+ 
+(local (defthm 4vec-?*-identity
+         (equal (4vec-?* test1 then (4vec-?* test2 then else))
+                (4vec-?* (4vec-bitor test1 test2) then else))
+         :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?* 3vec-fix
+                                           4vec-bitor 3vec-bitor))
+                (logbitp-reasoning)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable bool->bit))))))
+
+
+(def-svex-rewrite ?*-of-?*-same-then-branches
+  :lhs (?* test1 then (?* test2 then else))
+  :checks ((not (hons-get (third args) multiref-table)))
+  :rhs (?* (bitor test1 test2) then else)
+  :hints(("Goal" :in-theory (enable svex-apply))
+         (svex-generalize-lookups)))
 
 
 
@@ -3690,8 +3815,56 @@
               (mv nil nil nil)))
           (svex-rewrite-fn-cases (cdr alist) mask args multirefp multiref-table))))
 
-(make-event `(defconst *svex-rewrite-table*
-               ',(table-alist 'svex-rewrite (w state))))
+
+
+(defconst *typical-function-frequencies*
+  ;; Actual sample of frequencies of functions on a real piece of hardware.
+  '((CONCAT . 8542748)
+    (BITAND . 5717903)
+    (BITOR . 5592371)
+    (BITNOT . 3032684)
+    (UOR . 3006321)
+    (RSH . 2899541)
+    (PARTSEL . 703941)
+    (== . 341676)
+    (==? . 310880)
+    (?* . 307682)
+    (BITXOR . 154311)
+    (PARTINST . 124343)
+    (? . 71636)
+    (SIGNX . 58707)
+    (+ . 15210)
+    (B- . 7361)
+    (< . 2663)
+    (UAND . 2074)
+    (UNFLOAT . 1967)
+    (=== . 1772)
+    (==?? . 894)
+    (U- . 345)
+    (* . 301)
+    (XDET . 207)
+    (UXOR . 121)
+    (RES . 47)
+    (% . 36)
+    (/ . 18)
+    (BLKREV . 4)
+    (BIT? . 3)))
+
+(local
+ (define reorder-svex-table ((table symbol-alistp)
+                             (freqs symbol-alistp))
+   :verify-guards nil
+   (b* ((table-keys (alist-keys table))
+        (order (alist-keys freqs))
+        (full-order (append order (set-difference-eq table-keys order))))
+     (acl2::fal-extract full-order table))))
+
+(make-event
+ (b* ((orig-table (table-alist 'svex-rewrite (w state)))
+      (highly-optimized-table (reorder-svex-table orig-table *typical-function-frequencies*))
+      ((unless (alist-equiv orig-table highly-optimized-table))
+       (er hard? '*svex-rewrite-table* "Optimization has gone awry.")))
+   `(defconst *svex-rewrite-table* ',highly-optimized-table)))
 
 #||
 (loop for pair in sv::*svex-rewrite-table* do

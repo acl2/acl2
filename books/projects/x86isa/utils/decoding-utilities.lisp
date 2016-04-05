@@ -1554,11 +1554,11 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can t be inferred
 
 (define get-one-byte-prefix-array-code
   ((byte :type (unsigned-byte 8)))
-  :returns (code natp
-                 :hyp (force (unsigned-byte-p 8 byte))
-                 :rule-classes :type-prescription)
+  :returns (code natp :rule-classes (:rewrite :type-prescription))
   (aref1 'one-byte-prefixes-group-code-info
-         *one-byte-prefixes-group-code-info-ar* byte)
+         *one-byte-prefixes-group-code-info-ar*
+         (mbe :logic (loghead 8 byte)
+              :exec byte))
 
   ///
 

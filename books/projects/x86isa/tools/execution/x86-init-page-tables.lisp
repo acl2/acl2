@@ -558,4 +558,19 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
 (defthm is-la-mapped-to-pa?-thm-2
   (is-la-mapped-to-pa? (+ 2047 (expt 2 35) (expt 2 40))))
 
+(defthm is-la-mapped-to-pa?-thm-3
+  (and (canonical-address-p 0)
+       (is-la-mapped-to-pa? 0)))
+
+(defthm is-la-mapped-to-pa?-thm-4
+  (and (canonical-address-p (1- (expt 2 47)))
+       (is-la-mapped-to-pa? (1- (expt 2 47)))))
+
+;; (defthm is-la-mapped-to-pa?-thm-5
+;; ;; Note that is-la-mapped-to-pa?-thm-5 is not a theorem because
+;; ;; *1-gig-page-tables* map 0 to 2^47-1 only. The higher address
+;; ;; space is unmapped.
+;;   (and (canonical-address-p (n64-to-i64 (- (expt 2 64) (expt 2 47))))
+;;        (is-la-mapped-to-pa? (n64-to-i64 (- (expt 2 64) (expt 2 47))))))
+
 ;; ======================================================================

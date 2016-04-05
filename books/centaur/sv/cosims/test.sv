@@ -39,6 +39,7 @@ module test ();
   reg [127:0] out;
 
   reg clk;
+  reg reset;
 
    spec specinst (.*);
 
@@ -48,11 +49,13 @@ module test ();
      $dumpfile("test.vcd");
      $dumpvars();
      clk = 0;
+     reset = 1;
      $readmemb(`infile, inputs);
      for (i=0; i<nCycles; i++) begin
        in = inputs[i];
        #2;
        clk = 1;
+       reset = 0;
        #3;
        outputs[i] = out;
        #2;

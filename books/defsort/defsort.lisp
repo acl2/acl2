@@ -176,7 +176,7 @@ it has a special hack for that particular case.</p>
 ; functions and theorems we generate.
 
 (defconst *defsort-keywords*
-  '(:comparablep :compare< :prefix :comparable-listp :true-listp :weak :extra-args :extra-args-guard))
+  '(:comparablep :compare< :prefix :comparable-listp :true-listp :weak :extra-args :extra-args-guard :extra-args-stobjs :extra-args-stobj-recognizers))
 
 (defun defsort-functional-inst-subst (func-subst wrld)
   ;; this is a bit weak; it removes substitutions in which the substituted
@@ -354,6 +354,8 @@ it has a special hack for that particular case.</p>
                              (cdr formals)
                            (std::getarg :extra-args nil kwd-alist)))
        (extra-args-guard (std::getarg :extra-args-guard t kwd-alist))
+       (extra-args-stobjs (std::getarg :extra-args-stobjs nil kwd-alist))
+       (extra-args-stobj-recognizers (std::getarg :extra-args-stobj-recognizers t kwd-alist))
 
        ((unless (and (symbol-listp extra-args)
                      (not (intersectp-eq '(x y z) extra-args))))
@@ -436,7 +438,8 @@ it has a special hack for that particular case.</p>
                      (make-event
                       '(:or (defthm defsort-comparablep-sufficient
                               (implies (and (,comparablep x . ,extra-args)
-                                            ,extra-args-guard)
+                                            ,extra-args-guard
+                                            ,extra-args-stobj-recognizers)
                                        ,compare-guard)
                               :rule-classes (:rewrite :forward-chaining))
                         (value-triple
@@ -452,7 +455,8 @@ it has a special hack for that particular case.</p>
                   `((local
                      (make-event
                       '(:or (defthm defsort-extra-args-guard-sufficient
-                              (implies ,extra-args-guard
+                              (implies (and ,extra-args-guard
+                                            ,extra-args-stobj-recognizers)
                                        ,comparablep-guard)
                               :rule-classes (:rewrite :forward-chaining))
                         (value-triple
@@ -521,7 +525,8 @@ it has a special hack for that particular case.</p>
 
            ,@(and comparablep (not definedp)
                   `((defund ,comparable-listp (x . ,extra-args)
-                      (declare (xargs :guard ,extra-args-guard))
+                      (declare (xargs :guard ,extra-args-guard
+                                      :stobjs ,extra-args-stobjs))
                       (if (consp x)
                           (and (,comparablep (car x) . ,extra-args)
                                (,comparable-listp (cdr x) . ,extra-args))
@@ -561,6 +566,7 @@ it has a special hack for that particular case.</p>
                                          `(and ,extra-args-guard
                                                (,comparable-listp x . ,extra-args))
                                        extra-args-guard)
+                             :stobjs ,extra-args-stobjs
                              :measure (len x)))
              (cond ((atom x)
                     t)
@@ -576,6 +582,7 @@ it has a special hack for that particular case.</p>
            (defund ,merge (x y . ,extra-args)
              (declare (xargs :measure (+ (len x)
                                          (len y))
+                             :stobjs ,extra-args-stobjs
                              :guard ,(if comparablep
                                          `(and ,extra-args-guard
                                                (,comparable-listp x . ,extra-args)
@@ -593,6 +600,7 @@ it has a special hack for that particular case.</p>
            (defund ,merge-tr (x y ,@extra-args acc)
              (declare (xargs :measure (+ (len x)
                                          (len y))
+                             :stobjs ,extra-args-stobjs
                              :guard ,(if comparablep
                                          `(and ,extra-args-guard
                                                (,comparable-listp x . ,extra-args)
@@ -609,6 +617,7 @@ it has a special hack for that particular case.</p>
 
            (defund ,fixnum (x ,@extra-args len)
              (declare (xargs :measure (nfix len)
+                             :stobjs ,extra-args-stobjs
                              :guard (and ,extra-args-guard
                                          ,(if comparablep
                                               `(,comparable-listp x . ,extra-args)
@@ -636,6 +645,7 @@ it has a special hack for that particular case.</p>
 
            (defund ,integer (x ,@extra-args len)
              (declare (xargs :measure (nfix len)
+                             :stobjs ,extra-args-stobjs
                              :guard (and ,extra-args-guard
                                          ,(if comparablep
                                               `(,comparable-listp x . ,extra-args)
@@ -668,6 +678,7 @@ it has a special hack for that particular case.</p>
                                                (,comparable-listp x . ,extra-args))
                                        extra-args-guard)
                              :measure (len x)
+                             :stobjs ,extra-args-stobjs
                              :verify-guards nil))
              (mbe :logic
                   (cond ((atom x)
@@ -804,6 +815,7 @@ it has a special hack for that particular case.</p>
                                               (,comparablep elt . ,extra-args)
                                               (,comparable-listp x . ,extra-args))
                                       extra-args-guard)
+                            :stobjs ,extra-args-stobjs
                             :measure (len x)))
             (if (atom x)
                 (list elt)
@@ -816,6 +828,7 @@ it has a special hack for that particular case.</p>
                                         `(and ,extra-args-guard
                                               (,comparable-listp x . ,extra-args))
                                       extra-args-guard)
+                            :stobjs ,extra-args-stobjs
                             :verify-guards nil
                             :measure (len x)))
             (if (atom x)

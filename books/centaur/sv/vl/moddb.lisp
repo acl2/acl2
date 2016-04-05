@@ -537,15 +537,10 @@ constructed separately.)</p>"
                ;; (argindex natp)
                ;; (port-expr vl-expr-p)
                (conn-expr vl-expr-p)
-               (port-inner-lhs
+               (port-lhs
                 sv::lhs-p
                 "Translation of the actual port expression.  Not scoped by the
                  instance name.")
-               (port-outer-lhs
-                sv::lhs-p
-                "If an instance array, then the expression for the port in the
-                 intermediate module holding the whole instance array, otherwise
-                 same as port-inner-lhs.  Not scoped by the instance name.")
                (conn-svex sv::svex-p)
                (port-size posp)
                ;; (conn-size posp)
@@ -560,8 +555,7 @@ constructed separately.)</p>"
   (vl-portinfo-case x
     ;; :interface (append (sv::lhs-vars x.port-lhs)
     ;;                    (sv::lhs-vars x.conn-lhs))
-    :regular (append (sv::lhs-vars x.port-inner-lhs)
-                     (sv::lhs-vars x.port-outer-lhs)
+    :regular (append (sv::lhs-vars x.port-lhs)
                      (sv::svex-vars x.conn-svex))
     :otherwise nil)
   ///
@@ -573,8 +567,7 @@ constructed separately.)</p>"
                   ;;                 (sv::svarlist-addr-p (sv::lhs-vars x.conn-lhs)))))
                   (implies (vl-portinfo-case x :regular)
                            (b* (((vl-portinfo-regular x)))
-                             (and (sv::svarlist-addr-p (sv::lhs-vars x.port-outer-lhs))
-                                  (sv::svarlist-addr-p (sv::lhs-vars x.port-inner-lhs))
+                             (and (sv::svarlist-addr-p (sv::lhs-vars x.port-lhs))
                                   (sv::svarlist-addr-p (sv::svex-vars x.conn-svex))))))))
   (defret true-listp-of-vl-portinfo-vars
     (true-listp vars)
@@ -588,129 +581,129 @@ constructed separately.)</p>"
             (vl-portinfolist-vars (cdr x)))))
 
 
-(define vl-portinfo-instarray-nested-alias ((x vl-portinfo-p)
-                                            (instindex integerp
-                                                       "declared index of this instance")
-                                            (instoffset natp
-                                                        "number of instances that come after this one"))
-  :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
-  :returns (aliases sv::lhspairs-p)
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable sv::name-p))))
-  :short "Produces the alias for the connection between an instance array
-module's wire for a given port and some particular instance's port."
-  :long "<p>As noted in @(see vl-hierarchy-svex-translation), we replace each
-instance array with a single instance of new module representing the array:</p>
+;; (define vl-portinfo-instarray-nested-alias ((x vl-portinfo-p)
+;;                                             (instindex integerp
+;;                                                        "declared index of this instance")
+;;                                             (instoffset natp
+;;                                                         "number of instances that come after this one"))
+;;   :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
+;;   :returns (aliases sv::lhspairs-p)
+;;   :guard-hints ((and stable-under-simplificationp
+;;                      '(:in-theory (enable sv::name-p))))
+;;   :short "Produces the alias for the connection between an instance array
+;; module's wire for a given port and some particular instance's port."
+;;   :long "<p>As noted in @(see vl-hierarchy-svex-translation), we replace each
+;; instance array with a single instance of new module representing the array:</p>
 
-@({
-  module b (input [3:0] bi, output [2:0] bo);
-  endmodule
+;; @({
+;;   module b (input [3:0] bi, output [2:0] bo);
+;;   endmodule
 
-  module a ();
-   wire [3:0] abi;
-   wire [11:0] abo;
-   b barray [3:0] (.bi(abi+4'b10), .bo(abo));
-  endmodule
- })
-<p>becomes:</p>
-@({
-  module b ();
-    wire [3:0] bi;
-    wire [2:0] bo;
-  endmodule
+;;   module a ();
+;;    wire [3:0] abi;
+;;    wire [11:0] abo;
+;;    b barray [3:0] (.bi(abi+4'b10), .bo(abo));
+;;   endmodule
+;;  })
+;; <p>becomes:</p>
+;; @({
+;;   module b ();
+;;     wire [3:0] bi;
+;;     wire [2:0] bo;
+;;   endmodule
 
-  module arrayinst##a.binst ();
-   wire [3:0] bi;
-   wire [11:0] bo;
+;;   module arrayinst##a.binst ();
+;;    wire [3:0] bi;
+;;    wire [11:0] bo;
 
-   b <3> ();
-   alias <3>.bi = bi;
-   alias <3>.bo = bo[11:9];
+;;    b <3> ();
+;;    alias <3>.bi = bi;
+;;    alias <3>.bo = bo[11:9];
 
-   b <2> ();
-   alias <2>.bi = bi;
-   alias <2>.bo = bo[8:6];
+;;    b <2> ();
+;;    alias <2>.bi = bi;
+;;    alias <2>.bo = bo[8:6];
 
-   b <1> ();
-   alias <1>.bi = bi;
-   alias <1>.bo = bo[5:3];
+;;    b <1> ();
+;;    alias <1>.bi = bi;
+;;    alias <1>.bo = bo[5:3];
 
-   b <0> ();
-   alias <0>.bi = bi;
-   alias <0>.bo = bo[2:0];
-  endmodule
+;;    b <0> ();
+;;    alias <0>.bi = bi;
+;;    alias <0>.bo = bo[2:0];
+;;   endmodule
 
-  module a ();
+;;   module a ();
 
-   wire [3:0] abi;
-   wire [11:0] abo;
+;;    wire [3:0] abi;
+;;    wire [11:0] abo;
 
-   arrayinst##a.binst binst ();
-   assign binst.bi = abi+4'b10;
-   alias  binst.bo = abo;
- endmodule
- })
+;;    arrayinst##a.binst binst ();
+;;    assign binst.bi = abi+4'b10;
+;;    alias  binst.bo = abo;
+;;  endmodule
+;;  })
 
-<p>This function produces one of the aliases inside the @('arrayinst##a.binst')
-module.  It always aliases the port expression of the given port with either
-the whole local wire for that port (i.e., @('<3>.bi = bi')) or part of that
-wire (i.e., @('<3>.bo = bo[11:9]')).  It decides this per the Verilog spec
-based on the relative widths of the port expression and port connection
-expression: they must either be the same (in which case the whole wire goes to
-all copies of the port) or the connection expression must be N times the size
-of the port expression, where N is the number of elements in the array; in this
-case, the local wire for the port is the size of the whole port connection
-expression and a different segment of it is passed to each port copy.</p>
+;; <p>This function produces one of the aliases inside the @('arrayinst##a.binst')
+;; module.  It always aliases the port expression of the given port with either
+;; the whole local wire for that port (i.e., @('<3>.bi = bi')) or part of that
+;; wire (i.e., @('<3>.bo = bo[11:9]')).  It decides this per the Verilog spec
+;; based on the relative widths of the port expression and port connection
+;; expression: they must either be the same (in which case the whole wire goes to
+;; all copies of the port) or the connection expression must be N times the size
+;; of the port expression, where N is the number of elements in the array; in this
+;; case, the local wire for the port is the size of the whole port connection
+;; expression and a different segment of it is passed to each port copy.</p>
 
-<p>The other major function used to produce this intermediate module is @(see
-vl-instarray-port-wiredecls), which produces (in the example) the declarations</p>
-@({
-   wire [3:0] bi;
-   wire [11:0] bo;
- })
-<p>from the new arrayinst module.</p>"
-  (vl-portinfo-case x
-    :regular
-    (b* ((instindex (lifix instindex))
-         (instoffset (lnfix instoffset))
-         (shift (if x.replicatedp
-                    0
-                  (* x.port-size instoffset)))
-         (port-inner-lhs (sv::lhs-add-namespace instindex x.port-inner-lhs))
-         (port-outer-lhs (sv::lhs-concat
-                          x.port-size
-                          (sv::lhs-rsh shift x.port-outer-lhs)
-                          nil)))
-      (list (cons port-inner-lhs port-outer-lhs)))
-    :otherwise nil)
-  ///
-  (defret vars-of-vl-portinfo-instarray-nested-alias
-    (implies (sv::svarlist-addr-p (vl-portinfo-vars x))
-             (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
-    :hints(("Goal" :in-theory (enable sv::lhspairs-vars))))
+;; <p>The other major function used to produce this intermediate module is @(see
+;; vl-instarray-port-wiredecls), which produces (in the example) the declarations</p>
+;; @({
+;;    wire [3:0] bi;
+;;    wire [11:0] bo;
+;;  })
+;; <p>from the new arrayinst module.</p>"
+;;   (vl-portinfo-case x
+;;     :regular
+;;     (b* ((instindex (lifix instindex))
+;;          (instoffset (lnfix instoffset))
+;;          (shift (if x.replicatedp
+;;                     0
+;;                   (* x.port-size instoffset)))
+;;          (port-inner-lhs (sv::lhs-add-namespace instindex x.port-inner-lhs))
+;;          (port-outer-lhs (sv::lhs-concat
+;;                           x.port-size
+;;                           (sv::lhs-rsh shift x.port-outer-lhs)
+;;                           nil)))
+;;       (list (cons port-inner-lhs port-outer-lhs)))
+;;     :otherwise nil)
+;;   ///
+;;   (defret vars-of-vl-portinfo-instarray-nested-alias
+;;     (implies (sv::svarlist-addr-p (vl-portinfo-vars x))
+;;              (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+;;     :hints(("Goal" :in-theory (enable sv::lhspairs-vars))))
 
-  (defret true-listp-of-vl-portinfo-instarray-nested-alias
-    (true-listp aliases)
-    :rule-classes :type-prescription))
+;;   (defret true-listp-of-vl-portinfo-instarray-nested-alias
+;;     (true-listp aliases)
+;;     :rule-classes :type-prescription))
 
-(define vl-portinfolist-instarray-nested-aliases
-  ((x vl-portinfolist-p)
-   (instindex integerp
-              "declared index of this instance")
-   (instoffset natp
-               "number of instances that come after this one"))
-  :guard (sv::svarlist-addr-p (vl-portinfolist-vars x))
-  :prepwork ((local (in-theory (enable vl-portinfolist-vars))))
-  :returns (aliases sv::lhspairs-p)
-  (if (atom x)
-      nil
-    (append (vl-portinfo-instarray-nested-alias (car x) instindex instoffset)
-            (vl-portinfolist-instarray-nested-aliases (cdr x) instindex instoffset)))
-  ///
-  (defret vars-of-vl-portinfolist-instarray-nested-aliases
-    (implies (sv::svarlist-addr-p (vl-portinfolist-vars x))
-             (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
-    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
+;; (define vl-portinfolist-instarray-nested-aliases
+;;   ((x vl-portinfolist-p)
+;;    (instindex integerp
+;;               "declared index of this instance")
+;;    (instoffset natp
+;;                "number of instances that come after this one"))
+;;   :guard (sv::svarlist-addr-p (vl-portinfolist-vars x))
+;;   :prepwork ((local (in-theory (enable vl-portinfolist-vars))))
+;;   :returns (aliases sv::lhspairs-p)
+;;   (if (atom x)
+;;       nil
+;;     (append (vl-portinfo-instarray-nested-alias (car x) instindex instoffset)
+;;             (vl-portinfolist-instarray-nested-aliases (cdr x) instindex instoffset)))
+;;   ///
+;;   (defret vars-of-vl-portinfolist-instarray-nested-aliases
+;;     (implies (sv::svarlist-addr-p (vl-portinfolist-vars x))
+;;              (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+;;     :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
 
 
 
@@ -734,8 +727,8 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
        (inst-modname (sv::modname-fix inst-modname))
        (inst-ifacesize (maybe-natp-fix inst-ifacesize))
        ((when (zp instoffset)) (mv nil nil nil))
-       (aliases1
-        (vl-portinfolist-instarray-nested-aliases x instindex (1- instoffset)))
+       ;; (aliases1
+       ;;  (vl-portinfolist-instarray-nested-aliases x instindex (1- instoffset)))
        (aliases2 (and (posp inst-ifacesize)
                       (vlsv-aggregate-aliases instindex inst-ifacesize (* (1- instoffset) inst-ifacesize))))
        (wires1 (and (posp inst-ifacesize)
@@ -747,7 +740,8 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
          (1- instoffset)
          inst-incr
          inst-modname inst-ifacesize)))
-    (mv (append-without-guard aliases1 aliases2 aliases3)
+    (mv (append-without-guard ;; aliases1
+                              aliases2 aliases3)
         (cons (sv::make-modinst :instname instindex
                                   :modname inst-modname)
               modinsts2)
@@ -1003,9 +997,9 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
                      :msg "~@0"
                      :args (list err))))
 
-       (port-outer-lhs (if (and arraysize multi)
-                           (svex-lhs-from-name portname :width (lposfix arraysize))
-                         port-lhs))
+       ;; (port-outer-lhs (if (and arraysize multi)
+       ;;                     (svex-lhs-from-name portname :width (lposfix arraysize))
+       ;;                   port-lhs))
 
        (xsvex (sv::svex-concat x-size
                                  (sv::svex-lhsrewrite x-svex x-size)
@@ -1017,8 +1011,8 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
          ;; :argindex argindex
          ;; :port-expr portexpr
          :conn-expr x.expr
-         :port-inner-lhs port-lhs
-         :port-outer-lhs port-outer-lhs
+         :port-lhs port-lhs
+         ;; :port-outer-lhs port-outer-lhs
          :conn-svex xsvex
          :port-size 1
          ;; :conn-size x-size
@@ -1186,9 +1180,9 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
 
              (y-lhs (svex-lhs-from-name y.name :width y-size))
 
-             (y-outer-lhs (if (and arraysize multi)
-                              (svex-lhs-from-name y.name :width (* y-size (lposfix arraysize)))
-                            y-lhs))
+             ;; (y-outer-lhs (if (and arraysize multi)
+             ;;                  (svex-lhs-from-name y.name :width (* y-size (lposfix arraysize)))
+             ;;                y-lhs))
 
              (xsvex (sv::svex-concat x-size
                                      (sv::svex-lhsrewrite x-svex x-size)
@@ -1200,8 +1194,8 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
                ;; :argindex argindex
                ;; :port-expr y-expr
                :conn-expr x.expr
-               :port-inner-lhs y-lhs
-               :port-outer-lhs y-outer-lhs
+               :port-lhs y-lhs
+               ;; :port-outer-lhs y-outer-lhs
                :conn-svex xsvex
                :port-size y-size
                ;; :conn-size x-size
@@ -1306,9 +1300,9 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
                      :msg "~@0"
                      :args (list err))))
 
-       (y-outer-lhs (if arraysize
-                        (svex-lhs-from-name y.name :width (if multi (* y-size (lposfix arraysize)) y-size))
-                      y-lhs))
+       ;; (y-outer-lhs (if arraysize
+       ;;                  (svex-lhs-from-name y.name :width (if multi (* y-size (lposfix arraysize)) y-size))
+       ;;                y-lhs))
 
        ;; This seems wrong, what is supposed to happen if the port connection
        ;; is narrower than the port expression?
@@ -1327,8 +1321,8 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
          ;; :argindex argindex
          ;; :port-expr y.expr
          :conn-expr x.expr
-         :port-inner-lhs y-lhs
-         :port-outer-lhs y-outer-lhs
+         :port-lhs y-lhs
+         ;; :port-outer-lhs y-outer-lhs
          :conn-svex xsvex
          :port-size y-size
          ;; :conn-size x-size
@@ -1367,17 +1361,124 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
     :hints(("Goal" :in-theory (enable vl-portinfolist-vars)))))
 
 
+(define vl-instarray-nonreplicated-port-lhs-aux
+  ((port-lhs sv::lhs-p)
+   (instindex integerp
+              "index of the current instance")
+   (instoffset natp "number of instances left")
+   (inst-incr integerp "1 or -1 depending on the direction of the range"))
+  :guard (sv::svarlist-addr-p (sv::lhs-vars port-lhs))
+  :returns (array-lhs sv::lhs-p
+                      "Port-lhs appended instoffset times scoped by the various instindices")
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  (b* (((when (zp instoffset)) nil)
+       (instindex (lifix instindex))
+       (lhs1 (sv::lhs-add-namespace instindex port-lhs)))
+    (append-without-guard lhs1
+                          (vl-instarray-nonreplicated-port-lhs-aux
+                           port-lhs
+                           (+ instindex (lifix inst-incr))
+                           (1- instoffset)
+                           inst-incr)))
+  ///
+  (local (defthm lhs-vars-of-append
+           (equal (sv::lhs-vars (append a b))
+                  (append (sv::lhs-vars a) (sv::lhs-vars b)))
+           :hints(("Goal" :in-theory (enable sv::lhs-vars)))))
+  (defret svarlist-addr-p-of-vl-instarray-nonreplicated-port-lhs-aux
+    (sv::svarlist-addr-p (sv::lhs-vars array-lhs))))
+
+(define vl-instarray-nonreplicated-port-lhs
+  ((port-lhs sv::lhs-p)
+   (instname stringp)
+   (instindex integerp
+              "index of the current instance")
+   (instoffset natp "number of instances left")
+   (inst-incr integerp "1 or -1 depending on the direction of the range"))
+  :guard (sv::svarlist-addr-p (sv::lhs-vars port-lhs))
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  :returns (scoped-lhs sv::lhs-p)
+  (sv::lhs-add-namespace (string-fix instname)
+                         (vl-instarray-nonreplicated-port-lhs-aux
+                          port-lhs instindex instoffset inst-incr))
+  ///
+  (defret svarlist-addr-p-of-vl-instarray-nonreplicated-port-lhs
+    (sv::svarlist-addr-p (sv::lhs-vars scoped-lhs))))
+
+(define vl-instarray-replicated-port-assigns
+  ((port-lhs sv::lhs-p)
+   (instname stringp)
+   (conn-driver sv::driver-p)
+   (instindex integerp
+              "index of the current instance")
+   (instoffset natp "number of instances left")
+   (inst-incr integerp "1 or -1 depending on the direction of the range"))
+  :returns (assigns sv::assigns-p)
+  :guard (and (sv::svarlist-addr-p (sv::lhs-vars port-lhs))
+              (sv::svarlist-addr-p (sv::svex-vars (sv::driver->value conn-driver))))
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  (b* (((when (zp instoffset)) nil)
+       (instindex (lifix instindex))
+       (lhs1 (sv::lhs-add-namespace (string-fix instname)
+                                    (sv::lhs-add-namespace instindex port-lhs))))
+    (cons (cons lhs1 (sv::driver-fix conn-driver))
+          (vl-instarray-replicated-port-assigns
+           port-lhs instname conn-driver
+           (+ instindex (lifix inst-incr))
+           (1- instoffset)
+           inst-incr)))
+  ///
+  (defret svarlist-addr-p-of-vl-instarray-replicated-port-assigns
+    (implies (sv::svarlist-addr-p (sv::svex-vars (sv::driver->value conn-driver)))
+             (sv::svarlist-addr-p (sv::assigns-vars assigns)))
+    :hints(("Goal" :in-theory (enable sv::assigns-vars)))))
+
+(define vl-instarray-replicated-port-aliases
+  ((port-lhs sv::lhs-p)
+   (instname stringp)
+   (conn-lhs sv::lhs-p)
+   (instindex integerp
+              "index of the current instance")
+   (instoffset natp "number of instances left")
+   (inst-incr integerp "1 or -1 depending on the direction of the range"))
+  :guard (and (sv::svarlist-addr-p (sv::lhs-vars port-lhs))
+              (sv::svarlist-addr-p (sv::lhs-vars conn-lhs)))
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  :returns (aliases sv::lhspairs-p)
+  (b* (((when (zp instoffset)) nil)
+       (instindex (lifix instindex))
+       (lhs1 (sv::lhs-add-namespace (string-fix instname)
+                                    (sv::lhs-add-namespace instindex port-lhs))))
+    (cons (cons (sv::lhs-fix conn-lhs) lhs1)
+          (vl-instarray-replicated-port-aliases
+           port-lhs instname conn-lhs
+           (+ instindex (lifix inst-incr))
+           (1- instoffset)
+           inst-incr)))
+  ///
+  (defret svarlist-addr-p-of-vl-instarray-replicated-port-aliases
+    (implies (sv::svarlist-addr-p (sv::lhs-vars conn-lhs))
+             (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
+
+
+  
+
+
 
 (define vl-portinfo-to-svex-assign-or-alias ((x vl-portinfo-p)
-                                             (instname stringp))
+                                             (instname stringp)
+                                             (range vl-maybe-range-p)) 
 
   :returns (mv (warnings vl-warninglist-p)
                (assigns sv::assigns-p)
                (aliases sv::lhspairs-p))
-  :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
+  :guard (and (sv::svarlist-addr-p (vl-portinfo-vars x))
+              (vl-maybe-range-resolved-p range))
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable sv::name-p))))
   (b* ((instname (string-fix instname))
+       (range (vl-maybe-range-fix range))
        (warnings nil))
     (vl-portinfo-case x
       :bad (mv (ok) nil nil)
@@ -1386,24 +1487,64 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
       ;; (b* ((port-lhs-scoped (sv::lhs-add-namespace instname x.port-lhs)))
       ;;   (mv (ok) nil (list (cons port-lhs-scoped x.conn-lhs))))
       :regular
-      (b* ((port-lhs-scoped (sv::lhs-add-namespace instname x.port-outer-lhs))
-           ((when (sv::lhssvex-p x.conn-svex))
-            (mv (ok)
-                nil
-                (list (cons port-lhs-scoped (sv::svex->lhs x.conn-svex)))))
-           ((when x.interfacep)
+      (b* ((lhsp (sv::lhssvex-p x.conn-svex))
+           ((when (and (not lhsp) x.interfacep))
             (mv (fatal :type :vl-interfaceport-bad-connection
                        :msg "Non-LHS connection on interfaceport: .~s0(~a1)"
                        :args (list x.portname x.conn-expr))
-                nil nil)))
+                nil nil))
+           (warnings (if (and (not lhsp) (eq x.port-dir :vl-output))
+                         (warn :type :vl-port-direction-mismatch
+                               :msg  "Non-LHS expression ~a1 on output port ~s0"
+                               :args (list x.portname x.conn-expr))
+                       (ok)))
+           (conn (if lhsp (sv::svex->lhs x.conn-svex) (sv::make-driver :value x.conn-svex))))
+        (if range
+            (b* ((size (vl-range-size range))
+                 (msb (vl-resolved->val (vl-range->msb range)))
+                 (incr (if (vl-range-revp range) 1 -1)))
+              (if x.replicatedp
+                  ;; connection aliased/assigned to each of the port array LHSes
+                  (if lhsp
+                      (mv (ok) nil (vl-instarray-replicated-port-aliases
+                                    x.port-lhs instname conn msb size incr))
+                    (mv (ok)
+                        (vl-instarray-replicated-port-assigns
+                         x.port-lhs instname conn msb size incr)
+                        nil))
+                ;; connection aliased or assigned to concatenation of port array LHSes
+                (b* ((port-lhs (vl-instarray-nonreplicated-port-lhs
+                                x.port-lhs instname msb size incr)))
+                  (if lhsp
+                      (mv (ok) nil (list (cons conn port-lhs)))
+                    (mv (ok) (list (cons port-lhs conn)) nil)))))
+          (b* ((port-lhs (sv::lhs-add-namespace instname x.port-lhs)))
+            (if lhsp
+                (mv (ok) nil (list (cons port-lhs conn)))
+              (mv (ok) (list (cons port-lhs conn)) nil)))))))
+                                    
+      ;; (b* ((lhsp (sv::lhssvex-p x.conn-svex))
+      ;;      ((when lhsp
+      ;;       (mv (ok) nil
+      ;;           (list (cons (sv::lhs-add-namespace instname x.port-lhs)
+      ;;                       (sv::svex->lhs x.conn-svex)))))
+      ;;      ((when (sv::lhssvex-p x.conn-svex))
+      ;;       (mv (ok)
+      ;;           nil
+      ;;           (list (cons port-lhs-scoped (sv::svex->lhs x.conn-svex)))))
+      ;;      ((when x.interfacep)
+      ;;       (mv (fatal :type :vl-interfaceport-bad-connection
+      ;;                  :msg "Non-LHS connection on interfaceport: .~s0(~a1)"
+      ;;                  :args (list x.portname x.conn-expr))
+      ;;           nil nil)))
 
-        (mv (if (eq x.port-dir :vl-output)
-                (warn :type :vl-port-direction-mismatch
-                      :msg  "Non-LHS expression ~a1 on output port ~s0"
-                      :args (list x.portname x.conn-expr))
-              (ok))
-            (list (cons port-lhs-scoped (sv::make-driver :value x.conn-svex)))
-            nil))))
+      ;;   (mv (if (eq x.port-dir :vl-output)
+      ;;           (warn :type :vl-port-direction-mismatch
+      ;;                 :msg  "Non-LHS expression ~a1 on output port ~s0"
+      ;;                 :args (list x.portname x.conn-expr))
+      ;;         (ok))
+      ;;       (list (cons port-lhs-scoped (sv::make-driver :value x.conn-svex)))
+      ;;       nil))))
   ///
   (defret var-of-vl-portinfo-to-svex-assign-or-alias
     (implies (sv::svarlist-addr-p (vl-portinfo-vars x))
@@ -1413,8 +1554,10 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
   (defmvtypes vl-portinfo-to-svex-assign-or-alias (nil true-listp true-listp)))
 
 (define vl-portinfolist-to-svex-assigns/aliases ((x vl-portinfolist-p)
-                                                  (instname stringp))
-  :guard (sv::svarlist-addr-p (vl-portinfolist-vars x))
+                                                 (instname stringp)
+                                                 (range vl-maybe-range-p))
+  :guard (and (sv::svarlist-addr-p (vl-portinfolist-vars x))
+              (vl-maybe-range-resolved-p range))
   :guard-hints (("goal" :in-theory (enable vl-portinfolist-vars)))
   :returns (mv (warnings vl-warninglist-p)
                (assigns sv::assigns-p)
@@ -1422,9 +1565,9 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
   (b* ((warnings nil)
        ((when (atom x)) (mv (ok) nil nil))
        ((wmv warnings assigns1 aliases1)
-        (vl-portinfo-to-svex-assign-or-alias (car x) instname))
+        (vl-portinfo-to-svex-assign-or-alias (car x) instname range))
        ((wmv warnings assigns2 aliases2)
-        (vl-portinfolist-to-svex-assigns/aliases (cdr x) instname)))
+        (vl-portinfolist-to-svex-assigns/aliases (cdr x) instname range)))
     (mv warnings
         (append assigns1 assigns2)
         (append aliases1 aliases2)))
@@ -1457,37 +1600,37 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
        ;; (connection-lhs (sv::svex->lhs connection-svex))
 
 
-(define vl-instarray-port-wiredecls ((x vl-portinfo-p)
-                                     (arraysize posp))
-  :prepwork ((local (in-theory (enable sv::name-p))))
-  :returns (wires sv::wirelist-p)
-  ;; :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable sv::name-p))))
-  :short "Produces the wire declaration for the wire of an instance array module
-          that consolidates all occurrences of a particular port."
-  :long "<p>See @(see vl-portinfo-instarray-nested-alias) for more
-details on dealing with modinst arrays.</p>"
-  (vl-portinfo-case x
-    :regular
-    (b* ((xwidth (if x.replicatedp x.port-size (* x.port-size (acl2::lposfix arraysize))))
-         (portwire (sv::make-wire :name x.portname
-                                    :width xwidth
-                                    :low-idx 0)))
-      (list portwire))
-    :otherwise nil)
-  ///
-  (defret true-listp-of-vl-instarray-port-wiredecls
-    (true-listp wires)
-    :rule-classes :type-prescription))
+;; (define vl-instarray-port-wiredecls ((x vl-portinfo-p)
+;;                                      (arraysize posp))
+;;   :prepwork ((local (in-theory (enable sv::name-p))))
+;;   :returns (wires sv::wirelist-p)
+;;   ;; :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
+;;   :guard-hints ((and stable-under-simplificationp
+;;                      '(:in-theory (enable sv::name-p))))
+;;   :short "Produces the wire declaration for the wire of an instance array module
+;;           that consolidates all occurrences of a particular port."
+;;   :long "<p>See @(see vl-portinfo-instarray-nested-alias) for more
+;; details on dealing with modinst arrays.</p>"
+;;   (vl-portinfo-case x
+;;     :regular
+;;     (b* ((xwidth (if x.replicatedp x.port-size (* x.port-size (acl2::lposfix arraysize))))
+;;          (portwire (sv::make-wire :name x.portname
+;;                                     :width xwidth
+;;                                     :low-idx 0)))
+;;       (list portwire))
+;;     :otherwise nil)
+;;   ///
+;;   (defret true-listp-of-vl-instarray-port-wiredecls
+;;     (true-listp wires)
+;;     :rule-classes :type-prescription))
 
-(define vl-instarray-portlist-wiredecls ((x vl-portinfolist-p)
-                                         (arraysize posp))
-  :returns (wires sv::wirelist-p)
-  (if (atom x)
-      nil
-    (append (vl-instarray-port-wiredecls (car x) arraysize)
-            (vl-instarray-portlist-wiredecls (cdr x) arraysize))))
+;; (define vl-instarray-portlist-wiredecls ((x vl-portinfolist-p)
+;;                                          (arraysize posp))
+;;   :returns (wires sv::wirelist-p)
+;;   (if (atom x)
+;;       nil
+;;     (append (vl-instarray-port-wiredecls (car x) arraysize)
+;;             (vl-instarray-portlist-wiredecls (cdr x) arraysize))))
 
 
 
@@ -1573,7 +1716,7 @@ how VL module instances are translated.</p>"
          x.plainargs i.ports 0 ss scopes inst-modname inst-ss inst-scopes arraywidth))
 
        ((wmv warnings portassigns portaliases :ctx x)
-        (vl-portinfolist-to-svex-assigns/aliases portinfo x.instname))
+        (vl-portinfolist-to-svex-assigns/aliases portinfo x.instname x.range))
        (assigns (append-without-guard portassigns assigns))
        (aliases (append-without-guard portaliases aliases))
 
@@ -1595,7 +1738,7 @@ how VL module instances are translated.</p>"
        (modinst (sv::make-modinst :instname x.instname
                                     :modname array-modname))
 
-       (arraymod-wiredecls (vl-instarray-portlist-wiredecls portinfo arraywidth))
+       ;; (arraymod-wiredecls (vl-instarray-portlist-wiredecls portinfo arraywidth))
        ((mv arraymod-aliases arraymod-modinsts arraymod-ifacewires)
         (vl-instarray-nested-aliases
          portinfo
@@ -1609,7 +1752,7 @@ how VL module instances are translated.</p>"
                                (list (sv::make-wire :name :self :width arrwidth :low-idx 0))))
 
        (arraymod (sv::make-module :wires (append arraymod-selfwire
-                                                 arraymod-wiredecls
+                                                 ;; arraymod-wiredecls
                                                  arraymod-ifacewires)
                                     :insts arraymod-modinsts
                                     :aliaspairs arraymod-aliases)))
@@ -1992,7 +2135,7 @@ how VL module instances are translated.</p>"
          x.args portnames portdirs 0 ss scopes arraywidth))
 
        ((wmv warnings portassigns portaliases :ctx x)
-        (vl-portinfolist-to-svex-assigns/aliases portinfo x.name))
+        (vl-portinfolist-to-svex-assigns/aliases portinfo x.name x.range))
        (assigns (append-without-guard portassigns assigns))
        (aliases (append-without-guard portaliases aliases))
 
@@ -2011,7 +2154,7 @@ how VL module instances are translated.</p>"
        (modinst (sv::make-modinst :instname x.name
                                     :modname array-modname))
 
-       (arraymod-wiredecls (vl-instarray-portlist-wiredecls portinfo arraywidth))
+       ;; (arraymod-wiredecls (vl-instarray-portlist-wiredecls portinfo arraywidth))
        ((mv arraymod-aliases arraymod-modinsts arraymod-ifacewires)
         (vl-instarray-nested-aliases
          portinfo
@@ -2021,7 +2164,7 @@ how VL module instances are translated.</p>"
          gate-modname
          nil)) ;; not an interface
 
-       (arraymod (sv::make-module :wires (append-without-guard arraymod-ifacewires arraymod-wiredecls)
+       (arraymod (sv::make-module :wires arraymod-ifacewires
                                     :insts arraymod-modinsts
                                     :aliaspairs arraymod-aliases)))
 

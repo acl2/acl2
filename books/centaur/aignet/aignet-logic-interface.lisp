@@ -78,6 +78,10 @@
   (stype-count (gate-stype) aignet)
   :enabled t)
 
+(define aignet$a::max-fanin ((aignet aignet$a::aignet-well-formedp))
+  (node-count (find-max-fanin aignet))
+  :enabled t)
+
 (define aignet$a::innum->id ((n natp)
                              (aignet aignet$a::aignet-well-formedp))
   :guard (< n (aignet$a::num-ins aignet))
