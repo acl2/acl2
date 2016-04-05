@@ -323,8 +323,14 @@
       ;; support for paging is absent, and it is present otherwise.
       ;; This field is an artifact of our model, and does not exist on
       ;; the real x86 processors.
-
       (programmer-level-mode$c :type (satisfies booleanp) :initially t)
+
+      ;; The following field also acts as a switch. When its value is
+      ;; t, then accessed and dirty bits in the paging structures are
+      ;; set during those data structure traversals, as
+      ;; expected. Otherwise, these bits are not set. This switch is
+      ;; meaningful only in the system-level mode of operation.
+      (page-structure-marking-mode$c :type (satisfies booleanp) :initially t)
 
       ;; The os-info$c is meaningful only when we are in the
       ;; programmer-level mode.

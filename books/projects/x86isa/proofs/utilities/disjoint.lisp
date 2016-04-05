@@ -123,7 +123,13 @@
              (equal (member-p e y) nil))
     :rule-classes :forward-chaining)
 
-  (defthm disjoint-p-append
+  (defthm disjoint-p-append-1
+    (implies (true-listp a)
+             (equal (disjoint-p (append a b) c)
+                    (and (disjoint-p a c)
+                         (disjoint-p b c)))))
+
+  (defthm disjoint-p-append-2
     (implies (true-listp b)
              (equal (disjoint-p a (append b c))
                     (and (disjoint-p a b)
@@ -266,7 +272,16 @@
 
   (defthm not-member-p-pos-nil
     (implies (equal (member-p e x) nil)
-             (equal (pos e x) nil))))
+             (equal (pos e x) nil)))
+
+  (defthm nth-pos-of-list-first
+    ;; See nth-pos-of-addr-range-first.
+    (implies (and (syntaxp (not (and (consp xs)
+                                     (eq (car xs) 'addr-range))))
+                  (equal index (car xs))
+                  (consp xs))
+             (equal (pos index xs) 0))
+    :hints (("Goal" :in-theory (e/d* (pos) ())))))
 
 ;; ======================================================================
 
@@ -313,17 +328,27 @@
                  (subset-p a y))
              (subset-p a (append x y))))
 
+  (defthm subset-p-and-append-both
+    (implies (subset-p a b)
+             (subset-p (append e a) (append e b)))
+    :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
   (defthm subset-p-of-nil
     (equal (subset-p x nil)
            (equal x nil)))
 
   (defthm subset-p-cons-2
     (implies (subset-p x y)
-             (subset-p x (cons e y)))))
+             (subset-p x (cons e y))))
+
+  (defthm member-p-of-subset-is-member-p-of-superset
+    (implies (and (subset-p x y)
+                  (member-p e x))
+             (member-p e y))))
 
 ;; ======================================================================
 
-;; no-duplicates-p
+;; no-duplicates-p:
 
 (define no-duplicates-p
   ((l (true-listp l)))
@@ -342,6 +367,14 @@
              (and (no-duplicates-p a)
                   (no-duplicates-p b)))
     :rule-classes (:forward-chaining :rewrite)))
+
+(defthmd no-duplicatesp-equal-to-no-duplicates-p
+  (equal (no-duplicatesp-equal xs)
+         (no-duplicates-p xs)))
+
+(defthmd no-duplicates-p-to-no-duplicatesp-equal
+  (equal (no-duplicates-p xs)
+         (no-duplicatesp-equal xs)))
 
 (define no-duplicates-list-p
   ((l (true-list-listp l)))
@@ -400,10 +433,14 @@
   (equal (strip-cars (acl2::rev x))
          (acl2::rev (strip-cars x))))
 
+;; (defthm member-p-of-rev
+;;   (equal (member-p x (acl2::rev y))
+;;          (member-p x y))
+;;   :hints (("Goal" :in-theory (e/d (member-p) ()))))
+
 (defthm member-p-of-rev
-  (equal (member-p x (acl2::rev y))
-         (member-p x y))
-  :hints (("Goal" :in-theory (e/d (member-p) ()))))
+  (iff (member-p e (acl2::rev x))
+       (member-p e x)))
 
 (defthm subset-p-of-rev
   (equal (subset-p x (acl2::rev y))
@@ -429,6 +466,13 @@
            (equal (cdr (assoc a (acl2::rev (acons a b xs))))
                   b))
   :hints (("Goal" :in-theory (e/d (member-p) ()))))
+
+(defthm assoc-equal-append-list-cons-and-not-member-p
+  (implies (and (not (member-p e (strip-cars x)))
+                (alistp x))
+           (equal (assoc-equal e (append x (list (cons e y))))
+                  (cons e y)))
+  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
 (defthm pairwise-disjoint-p-aux-and-append
   (implies (pairwise-disjoint-p-aux a (append x y))

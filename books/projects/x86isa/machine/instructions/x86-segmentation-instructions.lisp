@@ -7,7 +7,7 @@
 
 (include-book "../x86-decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-(local (include-book "guard-helpers"))
+(local (include-book "../guard-helpers"))
 
 ;; No alignment check is done for these instructions because they are
 ;; supervisor-level instructions.
@@ -49,8 +49,7 @@
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
-       (cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-       (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
+       (cpl (cpl x86))
        ((when (not (equal cpl 0)))
         (!!ms-fresh :cpl-not-zero cpl))
        ;; If the source operand is not a memory location, then #GP is
@@ -135,8 +134,7 @@
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
-       (cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-       (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
+       (cpl (cpl x86))
        ((when (not (equal cpl 0)))
         (!!ms-fresh :cpl-not-zero cpl))
        ;; If the source operand is not a memory location, then #GP is
@@ -230,8 +228,7 @@ a non-canonical form, raise the SS exception.</p>"
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
-       (cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-       (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
+       (cpl (cpl x86))
        ((when (not (equal cpl 0)))
         (!!ms-fresh :cpl-not-zero cpl))
        ;; If the lock prefix is used, then the #UD exception is

@@ -1,17 +1,48 @@
 ;; AUTHOR:
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
-;; We will always include this book locally in other *-instructions.lisp books.
+;; We will always include this book locally.
 
 (in-package "X86ISA")
 
-(include-book "../../utils/utilities")
+(include-book "../utils/utilities")
 (include-book "tools/rulesets" :dir :system)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 
 (local (include-book "centaur/gl/gl" :dir :system))
 
 ;; ======================================================================
+
+(def-gl-export rm64-in-system-level-mode-guard-proof-helper
+  :hyp (and (n08p a)
+            (n08p b)
+            (n08p c)
+            (n08p d)
+            (n08p e)
+            (n08p f)
+            (n08p g)
+            (n08p h))
+  :concl (< (logior a
+                    (ash b 8)
+                    (ash (logior c (ash d 8)) 16)
+                    (ash (logior
+                          e (ash f 8)
+                          (ash (logior g (ash h 8)) 16)) 32))
+            *2^64*)
+  :g-bindings (gl::auto-bindings
+               (:mix (:nat a 8)
+                     (:nat b 8)
+                     (:nat c 8)
+                     (:nat d 8)
+                     (:nat e 8)
+                     (:nat f 8)
+                     (:nat g 8)
+                     (:nat h 8))))
+
+;; ======================================================================
+
+;; The following theorems are used in instructions/*-instructions.lisp
+;; books.
 
 ;; Far Jump:
 

@@ -181,11 +181,11 @@
 
 (defun-nx source-bytes (k src-addr x86)
   (mv-nth 1 (rb (create-canonical-address-list k (+ (- k) src-addr))
-                :x x86)))
+                :r x86)))
 
 (defun-nx destination-bytes (k dst-addr x86)
   (mv-nth 1 (rb (create-canonical-address-list k (+ (- k) dst-addr))
-                :x x86)))
+                :r x86)))
 
 (defun-nx loop-invariant (k m addr x86)
   ;; The initial value of m is (ash n 2), where n is the same n as defined in
@@ -411,7 +411,7 @@
             (COMBINE-BYTES
              (MV-NTH 1
                      (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RDI* X86))
-                         :X X86)))
+                         :R X86)))
             (XW
              :RGF *RSI* (+ 4 (XR :RGF *RSI* X86))
              (XW
@@ -428,7 +428,7 @@
                    (COMBINE-BYTES
                     (MV-NTH 1
                             (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RDI* X86))
-                                :X X86)))))
+                                :r X86)))))
                  (WRITE-USER-RFLAGS
                   (LOGIOR
                    (LOGHEAD 32
@@ -682,13 +682,13 @@
                         (:instance rb-rb-split-reads
                                    (k k)
                                    (j 4)
-                                   (r-w-x :x)
+                                   (r-w-x :r)
                                    (addr (+ (- k) (xr :rgf *rsi* x86)))
                                    (x86 (x86-run (loop-clk-base) x86)))
                         (:instance rb-rb-split-reads
                                    (k k)
                                    (j 4)
-                                   (r-w-x :x)
+                                   (r-w-x :r)
                                    (addr (+ (- k) (xr :rgf *rdi* x86)))
                                    (x86 (x86-run (loop-clk-base) x86))))
            :in-theory (e/d* ()
@@ -743,13 +743,13 @@
                         (:instance rb-rb-split-reads
                                    (k k)
                                    (j 4)
-                                   (r-w-x :x)
+                                   (r-w-x :r)
                                    (addr (+ (- k) (xr :rgf *rdi* x86)))
                                    (x86 (x86-run (loop-clk-base) x86)))
                         (:instance rb-rb-split-reads
                                    (k k)
                                    (j 4)
-                                   (r-w-x :x)
+                                   (r-w-x :r)
                                    (addr (+ (- k) (xr :rgf *rdi* x86)))
                                    (x86 (x86-run (loop-clk-base) x86))))
            :in-theory (e/d* ()
@@ -898,7 +898,7 @@
                     (COMBINE-BYTES
                      (MV-NTH 1
                              (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RDI* X86))
-                                 :X X86)))
+                                 :r X86)))
                     (XW
                      :RGF *RSI* (+ 4 (XR :RGF *RSI* X86))
                      (XW
@@ -915,7 +915,7 @@
                            (COMBINE-BYTES
                             (MV-NTH 1
                                     (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RDI* X86))
-                                        :X X86)))))
+                                        :r X86)))))
                          (WRITE-USER-RFLAGS
                           (LOGIOR
                            (LOGHEAD 32
@@ -1170,7 +1170,7 @@
                         (:instance rb-rb-split-reads
                                    (k k)
                                    (j 4)
-                                   (r-w-x :x)
+                                   (r-w-x :r)
                                    (addr (+ (- k) (xr :rgf *rsi* x86)))
                                    (x86 (x86-run (loop-clk-recur) x86))))
            :in-theory (e/d* ()
@@ -1185,7 +1185,7 @@
           ("Subgoal 7" :use ((:instance rb-rb-split-reads
                                         (k k)
                                         (j 4)
-                                        (r-w-x :x)
+                                        (r-w-x :r)
                                         (addr (+ (- k) (xr :rgf *rdi* x86)))
                                         (x86 x86)))
            :in-theory (e/d* ()
@@ -1200,7 +1200,7 @@
           ("Subgoal 5" :use ((:instance rb-rb-split-reads
                                         (k k)
                                         (j 4)
-                                        (r-w-x :x)
+                                        (r-w-x :r)
                                         (addr (+ (- k) (xr :rgf *rdi* x86)))
                                         (x86 x86)))
            :in-theory (e/d* ()
@@ -1215,7 +1215,7 @@
           ("Subgoal 2" :use ((:instance rb-rb-split-reads
                                         (k k)
                                         (j 4)
-                                        (r-w-x :x)
+                                        (r-w-x :r)
                                         (addr (+ (- k) (xr :rgf *rdi* x86)))
                                         (x86 x86)))
            :in-theory (e/d* ()
@@ -1230,7 +1230,7 @@
           ("Subgoal 1" :use ((:instance rb-rb-split-reads
                                         (k k)
                                         (j 4)
-                                        (r-w-x :x)
+                                        (r-w-x :r)
                                         (addr (+ (- k) (xr :rgf *rdi* x86)))
                                         (x86 x86)))
            :in-theory (e/d* ()
@@ -1286,7 +1286,7 @@
                         (:instance rb-rb-split-reads
                                    (k k)
                                    (j 4)
-                                   (r-w-x :x)
+                                   (r-w-x :r)
                                    (addr (+ (- k) (xr :rgf *rdi* x86)))
                                    (x86 (x86-run (loop-clk-recur) x86))))
            :in-theory (e/d* ()
@@ -1301,7 +1301,7 @@
           ("Subgoal 1" :use ((:instance rb-rb-split-reads
                                         (k k)
                                         (j 4)
-                                        (r-w-x :x)
+                                        (r-w-x :r)
                                         (addr (+ (- k) (xr :rgf *rdi* x86)))
                                         (x86 x86)))
            :in-theory (e/d* ()
@@ -1603,13 +1603,13 @@
                         (:instance rb-rb-split-reads
                                    (k k)
                                    (j m)
-                                   (r-w-x :x)
+                                   (r-w-x :r)
                                    (addr (+ (- k) (xr :rgf *rdi* x86)))
                                    (x86 (x86-run (loop-clk-recur) x86)))
                         (:instance rb-rb-split-reads
                                    (k k)
                                    (j (xr :rgf *rax* x86))
-                                   (r-w-x :x)
+                                   (r-w-x :r)
                                    (addr (+ (- k) (xr :rgf *rdi* x86)))
                                    (x86 x86)))
            :in-theory (e/d* ()
