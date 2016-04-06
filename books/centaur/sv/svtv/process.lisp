@@ -779,7 +779,7 @@
                  long
                (str::cat "<h3>Simulation Diagram</h3>
 
-<p>This is a <see topic='@(url svex-stvs)'>svex symbolic test vector</see>
+<p>This is a <see topic='@(url sv::svex-stvs)'>svex symbolic test vector</see>
 defined with @(see sv::defsvtv).</p>"
                          (or (svtv-to-xml svtv labels)
                              "Error generating diagram")

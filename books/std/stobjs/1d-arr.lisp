@@ -63,7 +63,7 @@ viewed as a singleton list whose @('car') holds the contents.  With
 can make @(see congruence)-based reasoning via @(see equivalence) relations
 like @(see acl2::list-equiv) and @(see acl2::set-equiv) easier to apply to your
 array, and can also make it easier to use proof strategies like @(see
-equal-by-nths).</p>
+acl2::equal-by-nths).</p>
 
 <h3>Example</h3>
 
@@ -321,9 +321,13 @@ documentation can be generated automatically.</dd>
      (defxdoc _arrname_
        :parents _parents_
        :short (or _short_
-                  (str::cat "Abstract stobj: logically this just represents a list of
-                             @(see " (xdoc::full-escape-symbol '_pred_) ")s, but it is
-                             implemented as an array."))
+                  (if '_pred_
+                      (str::cat "Abstract stobj: logically this just represents a list of
+                                 @(see " (xdoc::full-escape-symbol '_pred_) ")s, but it is
+                                 implemented as an array.")
+                    (str::cat "Abstract stobj: logically this just represents
+                               an untyped list, but it is implemented as an
+                               array.")))
        :long (or _long_
                  "<p>This is a simple abstract stobj array, introduced by @(see
                   stobjs::def-1d-arr).</p>"))
@@ -373,7 +377,7 @@ documentation can be generated automatically.</dd>
      (defxdoc resize-_slotname_s
        :parents (_arrname_)
        :short (str::cat "Change the length of the @(see "
-                        (xdoc::full-escape-symbol '_arrname_) " array.")
+                        (xdoc::full-escape-symbol '_arrname_) ") array.")
        :long (str::cat "<p>In the execution this resizes (to grow or shrink) the
                         underlying Common Lisp array.  The logical definition is
                         based on @(see resize-list):</p>

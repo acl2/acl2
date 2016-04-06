@@ -2568,7 +2568,7 @@ streaming expressions inside a concatenation on the LHS.)</p>
  out1 000000000, out2 0000001
 })
 
-<p>This turns out to be equivalent to the following:
+<p>This turns out to be equivalent to the following:</p>
 
 @({
  logic [31:0] temp1;
@@ -2585,11 +2585,13 @@ streaming expressions inside a concatenation on the LHS.)</p>
 <p>It's not clear why we should think this is the correct behavior, but we at
 least can derive an algorithm from it:</p>
 
-<ol> <li>Move the outermost streaming concatenation operator to the
+<ol>
+
+<li>Move the outermost streaming concatenation operator to the
 RHS (obtaining temp1, in the example).</li>
 
 <li>Compute the bit widths of LHS and RHS and right-shift the RHS by
-@('rhswidth - lhswidth') (obtaining temp2, in thie example).</p>
+@('rhswidth - lhswidth') (obtaining temp2, in this example).</li>
 
 <li>Chop up the RHS into chunks matching the sizes of the concatenated
 subexpressions of the LHS (obtaining temp3, temp4).</li>
@@ -2597,7 +2599,7 @@ subexpressions of the LHS (obtaining temp3, temp4).</li>
 <li>Make a new assignment of each chunk to its corresponding LHS subexpression,
 and for each assignment created that has a LHS streaming concatenation, repeat
 this process.  (Thus we assign out2 to temp4 and end up assigning out1 to
-@('{<< 3 {temp3}}').</li>
+@('{<< 3 {temp3}}')).</li>
 
 </ol>
 
