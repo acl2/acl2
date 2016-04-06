@@ -51,9 +51,13 @@
 
 (in-theory (disable bitn))
 
-(defthm natp-bitn
-    (natp (bitn x n))
-    :rule-classes (:type-prescription :rewrite))
+; Matt K. comment: deleted -- see the comment about April 2016 in
+; books/rtl/rel1/support/logdefs.lisp, where natp-bitn is introduced as a
+; :type-prescription rule.  It doesn't seem important for this to be a rewrite
+; rule.
+;(defthm natp-bitn
+;    (natp (bitn x n))
+;    :rule-classes (:type-prescription :rewrite))
 
 (defthm bvecp-bitn
     (bvecp (bitn x n) 1))

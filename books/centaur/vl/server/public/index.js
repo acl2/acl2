@@ -28,8 +28,37 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+function safeIntValue(str)
+{
+    "use strict";
+    assert(/[0-9]+/.test(str), "Invalid number " + str);
+    return Number(str);
+}
+
+function sortModelList(data)
+{
+    "use strict";
+
+    var arr = [];
+    for(var model in data)
+    {
+	if (!data.hasOwnProperty(model)) continue;
+	var elem = data[model];
+	assert("name" in elem);
+	assert("date" in elem);
+	assert("ltime" in elem);
+	assert("compat" in elem);
+	elem.model = model;
+	elem.ltime = safeIntValue(elem.ltime);
+	arr.push(elem);
+    }
+
+    return arr.sort(function(a,b) { return b.ltime - a.ltime; });
+}
+
 function make_model_list_table(data)
 {
+    "use strict";
     var div = jQuery("<table></table>");
     if (data == "NIL") {
 	div.append("<p>No models</p>");
@@ -39,13 +68,12 @@ function make_model_list_table(data)
     log("make_model_list_table");
     log(data);
 
-    for(var model in data)
+    var arr = sortModelList(data);
+
+    for(var i in arr)
     {
-	if (!data.hasOwnProperty(model)) continue;
-	var elem = data[model];
-	assert("name" in elem);
-	assert("date" in elem);
-	assert("compat" in elem);
+	var elem = arr[i];
+	var model = elem.model;
 
 	var entry = "";
 	entry += "<tr>";
@@ -72,6 +100,7 @@ function make_model_list_table(data)
 
 function get_loaded()
 {
+    "use strict";
     // Don't use vlsGetJson because this is a special pre-model-loading command
     // that has no MODEL
     $.ajax({
@@ -95,6 +124,7 @@ function get_loaded()
 
 function get_unloaded()
 {
+    "use strict";
     // Don't use vlsGetJson because this is a special pre-model-loading command
     // that has no MODEL
     $.ajax({
@@ -127,6 +157,7 @@ var showedLoadingMessage = false;
 
 function loadModel(model)
 {
+    "use strict";
     log("loadModel(" + model + ")");
     $.ajax({
 	url: "/load-model",

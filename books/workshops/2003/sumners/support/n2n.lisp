@@ -25,8 +25,8 @@ an arbitrary symbol in ACL2.
 
 (in-theory (disable natp))
 
-(defun bitp (x)
-  (or (= x 1) (= x 0)))
+; The definition of bitp here was deleted April 2016 by Matt K. now that bitp
+; is defined in ACL2.
 
 (defun ncdr (n)
   (if (or (zp n) (= n 1)) 0 (1+ (ncdr (- n 2)))))
