@@ -715,6 +715,10 @@
   (declare (xargs :guard (smsetp$a smset)))
   (len (car smset)))
 
+(defun smset-clear$a (smset)
+  (declare (xargs :guard (smsetp$a smset)))
+  (cons nil (cdr smset)))
+
 (definline smset-inp$c (n sm)
   (declare (xargs :stobjs sm
                   :guard (and (natp n)
@@ -738,7 +742,9 @@
                           :protect t)
             (smset-set-range :logic smset-set-range$a :exec sm-set-range
                              :protect t)
-            (smset-eltcount :logic smset-eltcount$a :exec sm-eltcount$inline)))
+            (smset-eltcount :logic smset-eltcount$a :exec sm-eltcount$inline)
+            (smset-clear :logic smset-clear$a :exec sm-clear$inline
+                         :protect t)))
 
 (defun smmapp$a (smmap)
   (declare (xargs :guard t))
@@ -797,6 +803,10 @@
                               (< n (sm-get-range sm)))))
   (and (sm-inp n sm) t))
 
+(defun smmap-clear$a (smmap)
+  (declare (xargs :guard (smmapp$a smmap)))
+  (cons nil (cdr smmap)))
+
 (defabsstobj smmap
   :concrete sm
   :recognizer (smmapp :logic smmapp$a :exec smp)
@@ -811,7 +821,9 @@
                           :protect t)
             (smmap-set-range :logic smmap-set-range$a :exec sm-set-range
                              :protect t)
-            (smmap-eltcount :logic smmap-eltcount$a :exec sm-eltcount$inline)))
+            (smmap-eltcount :logic smmap-eltcount$a :exec sm-eltcount$inline)
+            (smmap-clear :logic smmap-clear$a :exec sm-clear$inline
+                         :protect t)))
 
 
 (defun-nx create-sm$a ()
@@ -865,6 +877,9 @@
                               (< n (sm$a-get-range sm)))))
   (ec-call (sm-delete n sm)))
 
+(defun-nx sm$a-clear (sm)
+  (declare (xargs :guard (sm$ap sm)))
+  (ec-call (sm-clear sm)))
 
 ;; This "abstracts" a sparsemap as just a sparsemap, but folds sm-wfp into the
 ;; stobj recognizer.
@@ -884,5 +899,7 @@
             (sma-set-range :logic sm$a-set-range :exec sm-set-range
                            :protect t)
             (sma-delete :logic sm$a-delete :exec sm-delete
-                        :protect t)))
+                        :protect t)
+            (sma-clear :logic sm$a-clear :exec sm-clear$inline
+                       :protect t)))
 

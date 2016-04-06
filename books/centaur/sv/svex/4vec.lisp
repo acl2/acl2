@@ -1879,6 +1879,11 @@ an unknown.</p>"
   )
 
 
-
+(define 4vec-xfree-p ((x 4vec-p))
+  :parents (4vec-[= svex-xeval)
+  :short "Recognizer for @(see 4vec)s with no X bits.  These have a special
+relationship with @(see svex-xeval)."
+  (b* (((4vec x) x))
+    (eql -1 (logior (lognot x.upper) x.lower))))
 
 

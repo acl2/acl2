@@ -269,20 +269,18 @@ nextstate and update functions given a timing diagram.</p>
 
 <p>Technical: Erases and recreates the moddb, aliases, and debugdata stobjs.</p>"
   (b* ((design (design-fix design))
-       ((mv err assigns moddb aliases)
-        (svex-design-flatten design))
+
+       ;; Make a moddb, canonical alias table, and flattened, alias-normalized
+       ;; assignments from the design.  :Indexedp nil leaves wires expressed in
+       ;; terms of absolute moddb indices rather than paths.
+       ((mv err assigns delays moddb aliases)
+        (svex-design-flatten-and-normalize design :indexedp nil))
+
        ((when err)
         (raise "~@0~%" err)
         (mv err moddb aliases debugdata))
        ;; get the index of the top-level module within the moddb
        (modidx (moddb-modname-get-index (design->top design) moddb))
-       ;; note: skip this step to leave things in terms of wire indices
-       ;; Translate the alias table into named variables.
-       ;; (aliases (aliases-indexed->named aliases modidx moddb))
-
-       ;; Alias-normalize the assignments and make a delay table
-       ((mv assigns delays)
-        (svex-normalize-assigns assigns aliases))
 
        (debugdata (set-debugdata->design design debugdata))
        (debugdata (set-debugdata->modidx modidx debugdata))
@@ -399,8 +397,8 @@ nextstate and update functions given a timing diagram.</p>
            (nth *debugdata->modidx* debugdata))))
 
 (define svtv-debug-set-ios (&key 
-                             ((ins true-list-listp) 'nil)
-                             ((outs true-list-listp) 'nil)
+                             ((inputs true-list-listp) 'nil)
+                             ((outputs true-list-listp) 'nil)
                              ((internals true-list-listp) 'nil)
                              ((overrides true-list-listp) 'nil)
                              (moddb 'moddb)
@@ -410,7 +408,7 @@ nextstate and update functions given a timing diagram.</p>
   :mode :program
   :hooks nil
   (svtv-debug-set-ios-logic
-   :ins ins :outs outs :internals internals :overrides overrides
+   :ins inputs :outs outputs :internals internals :overrides overrides
    :rewrite rewrite))
 
 

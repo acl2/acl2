@@ -194,22 +194,131 @@ programmer-level mode.</p>" )
 
 (local (in-theory (disable rvm08 rvm16 wvm08 wvm16 rvm32 rvm64 wvm32 wvm64)))
 
+;; ----------------------------------------------------------------------
+
+(local (in-theory (e/d () (wb-is-wb-1-for-programmer-level-mode wb))))
+;; (in-theory (e/d () (wb-by-wb-1-for-programmer-level-mode-induction-rule)))
+
+(defthm rb-!flgi-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb addresses r-w-x (!flgi flg val x86)))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal" :in-theory (e/d* (!flgi) (rb force (force))))))
+
+(defthm !flgi-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (!flgi flg val (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (!flgi flg val x86)))))
+  :hints (("Goal"
+           :do-not '(preprocess)
+           :in-theory (e/d* (!flgi) (force (force))))))
+
+(defthm program-at-!flgi
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (!flgi flg val x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at !flgi) (rb)))))
+
+(defthm rb-!flgi-undefined-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb addresses r-w-x (!flgi-undefined flg x86)))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (rb force (force))))))
+
+(defthm !flgi-undefined-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (!flgi-undefined flg (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (!flgi-undefined flg x86)))))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (e/d* (!flgi-undefined !flgi) (force (force))))))
+
+(defthm program-at-!flgi-undefined
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (!flgi-undefined flg x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at !flgi-undefined) (program-at)))))
+
+(defthm rb-write-user-rflags-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb addresses r-w-x (write-user-rflags flags mask x86)))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags) (rb force (force))))))
+
+(defthm write-user-rflags-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (write-user-rflags flags mask (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (write-user-rflags flags mask x86)))))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (e/d* (write-user-rflags)
+                            (wb force (force))))))
+
+(defthm flgi-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (flgi flg (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (flgi flg x86)))
+  :hints (("Goal" :in-theory (e/d* (flgi) (wb)))))
+
+(defthm alignment-checking-enabled-p-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (alignment-checking-enabled-p (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p)
+                                   (wb force (force))))))
+
+(defthm write-x86-file-contents-wb
+  (implies (programmer-level-mode x86)
+           (equal (write-x86-file-contents i v (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (write-x86-file-contents i v x86)))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-contents write-x86-file-contents-logic)
+                            ()))))
+
+(defthm delete-x86-file-contents-wb
+  (implies (programmer-level-mode x86)
+           (equal (delete-x86-file-contents i (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (delete-x86-file-contents i x86)))))
+  :hints (("Goal"
+           :in-theory (e/d* (delete-x86-file-contents delete-x86-file-contents-logic)
+                            ()))))
+
+(defthm pop-x86-oracle-wb
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (pop-x86-oracle (mv-nth 1 (wb addr-bytes-alst x86))))
+                  (mv-nth 1 (wb addr-bytes-alst (mv-nth 1 (pop-x86-oracle x86))))))
+  :hints (("Goal"
+           :in-theory (e/d* (pop-x86-oracle pop-x86-oracle-logic)
+                            (wb)))))
+
+(defthm rb-and-write-x86-file-des
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (write-x86-file-des i val x86)))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-des write-x86-file-des-logic) (rb)))))
+
+(defthm rb-and-write-x86-file-contents
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (write-x86-file-contents i val x86)))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-contents write-x86-file-contents-logic) (rb)))))
+
+(defthm rb-and-pop-x86-oracle
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (mv-nth 1 (pop-x86-oracle x86))))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (pop-x86-oracle pop-x86-oracle-logic) (rb)))))
+
+(defthm delete-x86-file-des-wb
+  (implies (programmer-level-mode x86)
+           (equal (delete-x86-file-des i (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (delete-x86-file-des i x86)))))
+  :hints (("Goal" :in-theory (e/d* (delete-x86-file-des delete-x86-file-des-logic) ()))))
+
 ;; ======================================================================
 
 ;; Theorems about rb and wb:
-
-(defthm rb-returns-true-listp
-  (implies (x86p x86)
-           (true-listp (mv-nth 1 (rb addresses r-w-x x86))))
-  :rule-classes (:rewrite :type-prescription))
-
-(local
- (defthm rm08-wb-not-member-p
-   (implies (and (not (member-p addr (strip-cars addr-lst)))
-                 (programmer-level-mode x86))
-            (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst x86))))
-                   (mv-nth 1 (rm08 addr r-w-x x86))))
-   :hints (("Goal" :in-theory (e/d (rm08 wm08) ())))))
 
 (local
  (defthm rvm08-wb-not-member-p
@@ -217,22 +326,33 @@ programmer-level mode.</p>" )
                  (programmer-level-mode x86))
             (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb addr-lst x86))))
                    (mv-nth 1 (rvm08 addr x86))))
-   :hints (("Goal" :in-theory (e/d (wm08) ())))))
+   :hints (("Goal" :in-theory (e/d (wm08 wb) ())))))
+
+(local
+ (defthm rm08-wb-not-member-p
+   (implies (and (programmer-level-mode x86)
+                 (not (member-p addr (strip-cars addr-lst))))
+            (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 1 (rm08 addr r-w-x x86))))
+   :hints (("Goal" :in-theory (e/d (rm08 wm08) ())))))
 
 (defthm rb-wb-disjoint
   (implies (and (disjoint-p addresses (strip-cars addr-lst))
                 (programmer-level-mode x86))
            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
                   (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal" :in-theory (e/d (disjoint-p) ()))))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (e/d* (disjoint-p)
+                            (strip-cars
+                             wb-by-wb-1-for-programmer-level-mode-induction-rule)))))
 
 
 (local
-  (defthm rb-wb-equal-assoc-helper-1
-    (implies (and (alistp xs)
-                  (member-p a (cdr (strip-cars xs))))
-             (equal (assoc a (acl2::rev (cdr xs)))
-                    (assoc a (acl2::rev xs))))))
+ (defthm rb-wb-equal-assoc-helper-1
+   (implies (and (alistp xs)
+                 (member-p a (cdr (strip-cars xs))))
+            (equal (assoc a (acl2::rev (cdr xs)))
+                   (assoc a (acl2::rev xs))))))
 
 (local
  (defthm rb-wb-equal-assoc-list-helper-1
@@ -271,30 +391,83 @@ programmer-level mode.</p>" )
                              (a (car (car xs)))
                              (b (cdr (car xs)))))))))
 
-(defthmd rb-wb-equal
-  (implies (and (equal addresses (strip-cars (remove-duplicate-keys addr-lst)))
-                (programmer-level-mode x86)
-                (addr-byte-alistp addr-lst))
-           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
-                  (assoc-list addresses (reverse addr-lst))))
-  :hints (("Goal" :in-theory (e/d (wm08 rm08) ()))))
+;; (local
+;;  (defthm rvm08-wb-not-member-p
+;;    (implies (and (not (member-p addr (strip-cars addr-lst)))
+;;                  (programmer-level-mode x86))
+;;             (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb addr-lst x86))))
+;;                    (mv-nth 1 (rvm08 addr x86))))
+;;    :hints (("Goal" :in-theory (e/d (wm08 wb) ())))))
+
+(local
+ (defthm rvm08-wb-1-not-member-p
+   (implies (and (not (member-p addr (strip-cars addr-lst)))
+                 (programmer-level-mode x86))
+            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb-1 addr-lst x86))))
+                   (mv-nth 1 (rvm08 addr x86))))
+   :hints (("Goal" :in-theory (e/d (wm08) ())))))
+
+
+(local
+ (defthm rvm08-wb-1-member-p-helper
+   (implies (and (member-p addr (strip-cars (remove-duplicate-keys addr-lst)))
+                 (programmer-level-mode x86)
+                 (addr-byte-alistp addr-lst))
+            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb-1 addr-lst x86))))
+                   (cdr (assoc-equal addr (reverse addr-lst)))))
+   :hints (("Goal"
+            :in-theory (e/d (wm08 member-p) (unsigned-byte-p signed-byte-p))))))
 
 (local
  (defthm rvm08-wb-member-p-helper
    (implies (and (member-p addr (strip-cars (remove-duplicate-keys addr-lst)))
                  (programmer-level-mode x86)
                  (addr-byte-alistp addr-lst))
-            (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb addr-lst x86))))
                    (cdr (assoc-equal addr (reverse addr-lst)))))
-   :hints (("Goal" :in-theory (e/d (rm08 wm08) ())))))
+   :hints (("Goal" :in-theory (e/d (wb)
+                                   (wb-by-wb-1-for-programmer-level-mode-induction-rule
+                                    reverse
+                                    assoc-equal
+                                    wb-1
+                                    signed-byte-p
+                                    unsigned-byte-p))))))
 
 (local
- (defthm rvm08-wb-member-p
+ (defthm rm08-wb-member-p-helper
+   (implies (and (member-p addr (strip-cars (remove-duplicate-keys addr-lst)))
+                 (programmer-level-mode x86)
+                 (addr-byte-alistp addr-lst))
+            (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst x86))))
+                   (cdr (assoc-equal addr (reverse addr-lst)))))
+   :hints (("Goal" :in-theory (e/d (rm08)
+                                   (wb-by-wb-1-for-programmer-level-mode-induction-rule
+                                    reverse
+                                    assoc-equal
+                                    wb-1
+                                    signed-byte-p
+                                    unsigned-byte-p))))))
+
+(local
+ (defthm rm08-wb-member-p
    (implies (and (member-p addr (strip-cars addr-lst))
                  (programmer-level-mode x86)
                  (addr-byte-alistp addr-lst))
             (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst x86))))
                    (cdr (assoc-equal addr (reverse addr-lst)))))))
+
+;; (defthm rb-wb-subset
+;;   (implies (and (subset-p addresses (strip-cars addr-lst))
+;;                 (programmer-level-mode x86)
+;;                 ;; [Shilpi]: Ugh, this hyp. below is so annoying. I
+;;                 ;; could remove it if I proved something like
+;;                 ;; subset-p-strip-cars-of-remove-duplicate-keys,
+;;                 ;; commented out below.
+;;                 (canonical-address-listp addresses)
+;;                 (addr-byte-alistp addr-lst))
+;;            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
+;;                   (assoc-list addresses (reverse addr-lst))))
+;;   :hints (("Goal" :induct (assoc-list addresses (reverse addr-lst)))))
 
 (local
  (defthm rb-wb-subset-helper
@@ -332,8 +505,29 @@ programmer-level mode.</p>" )
                 (canonical-address-listp addresses)
                 (addr-byte-alistp addr-lst))
            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
+                  (assoc-list addresses (acl2::rev addr-lst))))
+  :hints (("Goal"
+           :in-theory (e/d* (subset-p) ())
+           :induct (assoc-list addresses (reverse addr-lst)))))
+
+(defthmd rb-wb-equal
+  (implies (and (equal addresses (strip-cars (remove-duplicate-keys addr-lst)))
+                (programmer-level-mode x86)
+                (addr-byte-alistp addr-lst))
+           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
                   (assoc-list addresses (reverse addr-lst))))
-  :hints (("Goal" :induct (assoc-list addresses (reverse addr-lst)))))
+  :hints (("Goal" :do-not '(preprocess)
+           :do-not-induct t
+           :use ((:instance rb-wb-subset))
+           :in-theory (e/d (subset-p
+                            member-p)
+                           (rb-wb-subset
+                            wb-by-wb-1-for-programmer-level-mode-induction-rule
+                            reverse
+                            assoc-equal
+                            wb-1
+                            signed-byte-p
+                            unsigned-byte-p)))))
 
 ;; (skip-proofs
 ;;  (defthm subset-p-strip-cars-of-remove-duplicate-keys
@@ -454,15 +648,14 @@ programmer-level mode.</p>" )
 
 ;; Events related to WB:
 
-(defthm wb-nil
-  (implies (x86p x86)
-           (equal (mv-nth 1 (wb nil x86)) x86)))
-
-(defthmd wb-not-consp-addr-byte-alistp
-  (implies (and (addr-byte-alistp addr-lst)
-                (not (consp addr-lst)))
-           (equal (wb addr-lst x86)
-                  (mv nil x86))))
+(defthm wb-1-and-wb-1-combine-wb-1s
+  (implies (and (addr-byte-alistp addr-list1)
+                (addr-byte-alistp addr-list2)
+                (programmer-level-mode x86))
+           (equal (mv-nth 1 (wb-1 addr-list2 (mv-nth 1 (wb-1 addr-list1 x86))))
+                  (mv-nth 1 (wb-1 (append addr-list1 addr-list2) x86))))
+  :hints (("Goal" :do-not '(generalize)
+           :in-theory (e/d (wb-and-wm08) (append acl2::mv-nth-cons-meta)))))
 
 (defthm wb-and-wb-combine-wbs
   (implies (and (addr-byte-alistp addr-list1)
@@ -470,8 +663,10 @@ programmer-level mode.</p>" )
                 (programmer-level-mode x86))
            (equal (mv-nth 1 (wb addr-list2 (mv-nth 1 (wb addr-list1 x86))))
                   (mv-nth 1 (wb (append addr-list1 addr-list2) x86))))
-  :hints (("Goal" :do-not '(generalize)
-           :in-theory (e/d (wb-and-wm08) (append acl2::mv-nth-cons-meta)))))
+  :hints (("Goal" :do-not '(generalize preprocess)
+           :do-not-induct t
+           :in-theory (e/d (wb)
+                           (wb-1 append acl2::mv-nth-cons-meta)))))
 
 (defthmd member-and-member-p
   (iff (member-p e x)
@@ -525,46 +720,13 @@ programmer-level mode.</p>" )
            (equal (wb addr-list x86)
                   (wb (remove-duplicate-keys addr-list) x86)))
   :hints (("Goal" :do-not '(generalize)
-           :in-theory (e/d (wm08)
+           :in-theory (e/d (wm08 wb)
                            (acl2::mv-nth-cons-meta))
            :induct (wb-duplicate-writes-induct addr-list x86))))
-
-;; Write-bytes-to-memory and wb:
-
-(defthmd create-addr-bytes-alist-acons
-  (implies
-   (and (< 0 (len bytes))
-        (canonical-address-p (+ lin-addr (len bytes)))
-        (canonical-address-p lin-addr))
-   (equal
-    (create-addr-bytes-alist (create-canonical-address-list (len bytes) lin-addr) bytes)
-    (acons
-     lin-addr (car bytes)
-     (create-addr-bytes-alist (create-canonical-address-list
-                               (1- (len bytes))
-                               (1+ lin-addr))
-                              (cdr bytes))))))
-
-(defthm write-bytes-to-memory-is-wb
-  (implies (and (canonical-address-p (+ (len bytes) lin-addr))
-                (byte-listp bytes)
-                (canonical-address-p lin-addr))
-           (equal (write-bytes-to-memory lin-addr bytes x86)
-                  (wb (create-addr-bytes-alist
-                       (create-canonical-address-list (len bytes) lin-addr)
-                       bytes)
-                      x86)))
-  :hints (("Goal" :in-theory (e/d (write-bytes-to-memory
-                                   wb-and-wm08)
-                                  (acl2::mv-nth-cons-meta)))))
 
 ;; ======================================================================
 
 ;; Events related to RB:
-
-(defthm rb-nil
-  (implies (x86p x86)
-           (equal (mv-nth 1 (rb nil r-w-x x86)) nil)))
 
 ;; The following theorems help in relieving the hypotheses of
 ;; get-prefixes opener lemmas.
@@ -632,30 +794,28 @@ programmer-level mode.</p>" )
                             (addresses (create-canonical-address-list n prog-addr)))))))
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "std/lists/append" :dir :system))
+  (local (include-book "std/lists/append" :dir :system))
 
- (defthmd rb-1-unwinding-thm
-   (implies (and (canonical-address-listp addresses)
-                 (programmer-level-mode x86)
-                 (byte-listp acc))
-            (equal (mv-nth 1 (rb-1 addresses r-w-x x86 acc))
-                   (append acc
-                           (mv-nth 1 (rb-1 (list (car addresses)) r-w-x x86 nil))
-                           (mv-nth 1 (rb-1 (cdr addresses) r-w-x x86 nil)))))
-   :hints (("Goal" :in-theory (e/d () (acl2::mv-nth-cons-meta force (force))))))
+  (defthmd rb-1-unwinding-thm
+    (implies (and (canonical-address-listp addresses)
+                  (programmer-level-mode x86)
+                  (byte-listp acc))
+             (equal (mv-nth 1 (rb-1 addresses r-w-x x86 acc))
+                    (append acc
+                            (mv-nth 1 (rb-1 (list (car addresses)) r-w-x x86 nil))
+                            (mv-nth 1 (rb-1 (cdr addresses) r-w-x x86 nil)))))
+    :hints (("Goal" :in-theory (e/d () (acl2::mv-nth-cons-meta force (force))))))
 
- (defthmd rb-unwinding-thm
-   (implies (and (canonical-address-listp addresses)
-                 (programmer-level-mode x86))
-            (equal (mv-nth 1 (rb addresses r-w-x x86))
-                   (append (mv-nth 1 (rb (list (car addresses)) r-w-x x86))
-                           (mv-nth 1 (rb (cdr addresses) r-w-x x86)))))
-   :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta rb-1))
-            :use ((:instance rb-1-unwinding-thm (acc nil))))))
-
- )
+  (defthmd rb-unwinding-thm
+    (implies (and (canonical-address-listp addresses)
+                  (programmer-level-mode x86))
+             (equal (mv-nth 1 (rb addresses r-w-x x86))
+                    (append (mv-nth 1 (rb (list (car addresses)) r-w-x x86))
+                            (mv-nth 1 (rb (cdr addresses) r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta rb-1))
+             :use ((:instance rb-1-unwinding-thm (acc nil)))))))
 
 (defthm rb-in-terms-of-rb-subset-p
   (implies

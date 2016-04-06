@@ -184,6 +184,8 @@ for computing:</p>
             (n `(,(caar x) natp))
             (i `(,(caar x) integerp))
             (p `(,(caar x) posp))
+            (u `(,(caar x) true-listp))
+            (s `(,(caar x) true-listp))
             (t (caar x)))
           (defsymbolic-define-formals (cdr x)))))
 
@@ -193,7 +195,9 @@ for computing:</p>
     (append (case (cadar x)
               (n `((natp ,(caar x))))
               (i `((integerp ,(caar x))))
-              (p `((posp ,(caar x)))))
+              (p `((posp ,(caar x))))
+              (u `((true-listp ,(caar x))))
+              (s `((true-listp ,(caar x)))))
             (defsymbolic-guards (cdr x)))))
 
 (defun defsymbolic-define-returns1 (x)
@@ -203,7 +207,7 @@ for computing:</p>
             (n `(,(caar x) natp :rule-classes :type-prescription))
             (i `(,(caar x) integerp :rule-classes :type-prescription))
             (p `(,(caar x) posp :rule-classes :type-prescription))
-            (b (caar x))
+            (b `(,(caar x) t))
             (t `(,(caar x) true-listp :rule-classes :type-prescription)))
           (defsymbolic-define-returns1 (cdr x)))))
 
@@ -252,7 +256,8 @@ for computing:</p>
   (declare (xargs :mode :program))
   (b* (((mv kwd-alist other-kws other-args)
         (extract-some-keywords
-         '(:spec :returns :correct-hints :depends-hints :correct-hyp :abstract) args nil))
+         '(:spec :returns :correct-hints :depends-hints :correct-hyp :abstract :guard-hints)
+         args nil))
        ((unless (eql (len other-args) 2))
         (er hard? 'defsymbolic-fn "Need formals and body in addition to keyword args"))
        (formals (car other-args))
@@ -281,9 +286,12 @@ for computing:</p>
     `(progn
        (define ,exec-name ,(defsymbolic-define-formals formals)
          ,@other-kws
+         :verify-guards nil
          :returns ,(defsymbolic-define-returns returns)
          ,(subst exec-name name body)
          ///
+         (verify-guards ,exec-name
+           :hints ,(cdr (assoc :guard-hints kwd-alist)))
          (defthm ,(intern-in-package-of-symbol
                    (concatenate 'string (symbol-name exec-name) "-CORRECT")
                    exec-name)
@@ -379,9 +387,9 @@ for computing:</p>
   :abstract nil
   (if c
       (if (eq c t)
-          (list-fix v1)
+          (llist-fix v1)
         (bfr-ite-bvv-fn-aux c v1 v0))
-    (list-fix v0)))
+    (llist-fix v0)))
 
 (defthm bfr-ite-bvv-fn-of-const-tests
   (and (equal (bfr-ite-bvv-fn t v1 v0) (list-fix v1))
@@ -400,9 +408,9 @@ for computing:</p>
         :exec (let ((bfr-ite-bvv-test ,c))
                 (if bfr-ite-bvv-test
                     (if (eq bfr-ite-bvv-test t)
-                        (list-fix ,v1)
+                        (llist-fix ,v1)
                       (bfr-ite-bvv-fn-aux bfr-ite-bvv-test ,v1 ,v0))
-                  (list-fix ,v0)))))
+                  (llist-fix ,v0)))))
 
 (add-macro-alias bfr-ite-bvv bfr-ite-bvv-fn)
 
@@ -427,9 +435,9 @@ for computing:</p>
   :abstract nil
   (if c
       (if (eq c t)
-          (list-fix v1)
+          (llist-fix v1)
         (bfr-ite-bss-fn-aux c v1 v0))
-    (list-fix v0)))
+    (llist-fix v0)))
 
 (defthm bfr-ite-bss-fn-of-const-tests
   (and (equal (bfr-ite-bss-fn t v1 v0) (list-fix v1))
@@ -448,9 +456,9 @@ for computing:</p>
         :exec (let ((bfr-ite-bss-test ,c))
                 (if bfr-ite-bss-test
                     (if (eq bfr-ite-bss-test t)
-                        (list-fix ,v1)
+                        (llist-fix ,v1)
                       (bfr-ite-bss-fn-aux bfr-ite-bss-test ,v1 ,v0))
-                  (list-fix ,v0)))))
+                  (llist-fix ,v0)))))
 
 (add-macro-alias bfr-ite-bss bfr-ite-bss-fn)
 
@@ -468,7 +476,7 @@ for computing:</p>
   :measure (acl2::pos-fix n)
   (b* ((n (lposfix n))
        ((mv head tail ?end) (first/rest/end x))
-       ((when end) (list-fix x))
+       ((when end) (llist-fix x))
        ((when (eql n 1)) (bfr-sterm head)))
     (bfr-scons head (bfr-logext-ns (1- n) tail)))
   :correct-hints (("goal" :induct (bfr-logext-ns n x))
@@ -479,7 +487,7 @@ for computing:</p>
                              (x s))
   :returns (xx s (logtail place x))
   (if (or (zp place) (s-endp x))
-      (list-fix x)
+      (llist-fix x)
     (bfr-logtail-ns (1- place) (scdr x))))
 
 (defsymbolic bfr-+-ss ((c b)
@@ -582,6 +590,11 @@ for computing:</p>
   :returns (bound posp :rule-classes :type-prescription)
   (max (len x) 1)
   ///
+  (local 
+   (defthm s-endp-true-by-len
+     (implies (<= (len x) 1)
+              (s-endp x))
+     :hints(("Goal" :in-theory (enable s-endp)))))
   (defthm integer-length-bound-s-correct
     (< (integer-length (bfr-list->s x env))
        (integer-length-bound-s x))
@@ -683,7 +696,7 @@ for computing:</p>
                              (b s))
   :returns (a-app-b s (logapp n a b))
   (b* (((when (zp n))
-        (list-fix b))
+        (llist-fix b))
        ((mv first rest &) (first/rest/end a)))
     (bfr-scons first (bfr-logapp-nss (1- n) rest b))))
 
@@ -692,7 +705,7 @@ for computing:</p>
                              (b s))
   :returns (a-app-b s (logapp n a b))
   (b* (((when (zp n))
-        (list-fix b))
+        (llist-fix b))
        ((mv first rest) (car/cdr a)))
     (bfr-scons first (bfr-logapp-nus (1- n) rest b))))
 
@@ -1057,7 +1070,7 @@ for computing:</p>
   :returns (m s (mod a b))
   :prepwork ((local (in-theory (enable bfr-sign-abs-not-s))))
   (bfr-ite-bss (bfr-=-ss b nil)
-               (list-fix a)
+               (llist-fix a)
                (bfr-logext-ns (integer-length-bound-s b)
                               (b* (((mv bsign babs bneg) (bfr-sign-abs-not-s b))
                                    (anorm (bfr-ite-bss bsign (bfr-unary-minus-s a) a))
@@ -1087,7 +1100,7 @@ for computing:</p>
                                         acl2::integer-length**)))
              (local (in-theory (enable bfr-sign-abs-not-s))))
   (bfr-ite-bss (bfr-=-ss b nil)
-               (list-fix a)
+               (llist-fix a)
                (b* (((mv & babs bneg) (bfr-sign-abs-not-s b))
                     ((mv asign aabs &) (bfr-sign-abs-not-s a))
                     (m (bfr-mod-ss-aux aabs babs bneg)))
@@ -1103,22 +1116,21 @@ for computing:</p>
                                           integer-length-of-mod))))))
 
 
-(defun s-take (n x)
-  (declare (xargs :guard (natp n)))
+(define s-take ((n natp) (x true-listp))
   (b* (((when (zp n)) (bfr-sterm nil))
        ((mv first rest &) (first/rest/end x)))
-    (bfr-ucons first (s-take (1- n) rest))))
+    (bfr-ucons first (s-take (1- n) rest)))
+  ///
+  (defthm deps-of-s-take
+    (implies (not (pbfr-list-depends-on k p x))
+             (not (pbfr-list-depends-on k p (s-take n x)))))
 
-(defthm deps-of-s-take
-  (implies (not (pbfr-list-depends-on k p x))
-           (not (pbfr-list-depends-on k p (s-take n x)))))
 
-
-(defthm s-take-correct
-  (equal (bfr-list->u (s-take n x) env)
-         (loghead n (bfr-list->s x env)))
-  :hints (("goal" :induct (s-take n x)
-           :in-theory (enable* acl2::ihsext-recursive-redefs))))
+  (defthm s-take-correct
+    (equal (bfr-list->u (s-take n x) env)
+           (loghead n (bfr-list->s x env)))
+    :hints (("goal" :induct (s-take n x)
+             :in-theory (enable* acl2::ihsext-recursive-redefs)))))
 
 
 
@@ -1135,13 +1147,13 @@ for computing:</p>
                       :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
                                                          bitops::ihsext-inductions))))))
   (if (atom n)
-      (list-fix y)
+      (llist-fix y)
     (if (b* (((mv x1 & xend) (first/rest/end x))
              ((mv y1 & yend) (first/rest/end y)))
           (and xend
                yend
                (equal x1 y1)))
-        (list-fix x)
+        (llist-fix x)
       (bfr-ite-bss
        (car n)
        (bfr-logapp-nus (lnfix w) (s-take w x)

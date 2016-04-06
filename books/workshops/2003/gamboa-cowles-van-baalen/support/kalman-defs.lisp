@@ -115,6 +115,10 @@
   (defun m ()
     1))
 
+; Addition by Matt K. April 2016 to accommodate addition of type-set bit for
+; the set {1}.
+ (local (in-theory (disable (:t n) (:t m))))
+
  (local
   (defun phi (k)
     (m-id (n))))

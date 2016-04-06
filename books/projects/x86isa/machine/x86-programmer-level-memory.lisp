@@ -90,7 +90,13 @@ memory.</p>" )
   (mbe :logic (signed-byte-p #.*max-linear-address-size* lin-addr)
        :exec  (and (integerp lin-addr)
                    (<= #.*-2^47* lin-addr)
-                   (< lin-addr #.*2^47*))))
+                   (< lin-addr #.*2^47*)))
+
+  ///
+
+  (defthm canonical-address-p-and-logext-48
+    (implies (canonical-address-p a)
+             (equal (logext 48 a) a))))
 
 ;; ======================================================================
 
