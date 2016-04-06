@@ -1072,7 +1072,7 @@ functions) and that it is being given the right number of arguments.</p>
          ((svex-call x) x)
          ((mv args out-multirefs memo)
           (svexlist-rewrite x.args masks multirefs out-multirefs memo))
-         (res (svex-rewrite-fncall 1000 mask (svex-call->fn x) args multirefp out-multirefs))
+         (res (svex-rewrite-fncall 10000 mask (svex-call->fn x) args multirefp out-multirefs))
          ((unless multirefp)
           (mv res out-multirefs memo)))
       (mv res

@@ -19,9 +19,8 @@
 
 ;----def bit
 
-(defun bitp (b)
-    (or (equal 0 b)
-        (equal 1 b)))
+; The definition of bitp here was deleted April 2016 by Matt K. now that
+; bitp is defined in ACL2.
 
 
 ;--- bit operations

@@ -514,31 +514,17 @@
               ("Subgoal *1/3.13" :use (two-x two-y))
               )))
 
-   #-:non-standard-analysis
    (defthm logand-thm
        (implies (and (integerp x)
-                     (<= -8192 x)
-                     (<= x 8191)
+                     (<= *min-type-set* x)
+                     (<= x *max-type-set*)
                      (integerp y)
-                     (<= -8192 y)
-                     (<= y 8191))
-                (and (<= -8192 (logand x y))
-                     (<= (logand x y) 8191)))
+                     (<= *min-type-set* y)
+                     (<= y *max-type-set*))
+                (and (<= *min-type-set* (logand x y))
+                     (<= (logand x y) *max-type-set*)))
      :hints (("Goal" :use ((:instance logand-bounds
-                                      (n 13))))))
-
-   #+:non-standard-analysis
-   (defthm logand-thm
-     (implies (and (integerp x)
-                   (<= -65536 x)
-                   (<= x 65535)
-                   (integerp y)
-                   (<= -65536 y)
-                   (<= y 65535))
-              (and (<= -65536 (logand x y))
-                   (<= (logand x y) 65535)))
-     :hints (("Goal" :use ((:instance logand-bounds
-                                      (n 16))))))
+                                      (n (length *actual-primitive-types*)))))))
 
    ))
 #|
@@ -552,15 +538,15 @@
 
    (defthm logand-thm
        (implies (and (integerp x)
-                     (<= -8192 x)
-                     (<= x 8191)
+                     (<= *min-type-set* x)
+                     (<= x *max-type-set*)
                      (integerp y)
-                     (<= -8192 y)
-                     (<= y 8191))
-                (and (<= -8192 (logand x y))
-                     (<= (logand x y) 8191)))
+                     (<= *min-type-set* y)
+                     (<= y *max-type-set*))
+                (and (<= *min-type-set* (logand x y))
+                     (<= (logand x y) *max-type-set*)))
      :hints (("Goal" :use ((:instance signed-byte-p-logops
-                                      (size 14)
+                                      (size (1+ (length *actual-primitive-types*))
                                       (i x)
                                       (j y)))
                      :in-theory (disable logand signed-byte-p-logops))))

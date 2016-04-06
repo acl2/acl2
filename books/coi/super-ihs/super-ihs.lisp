@@ -549,7 +549,10 @@
 ;bzo drop or move?
 (defthmd bitp-signed-byte-p-32
   (implies (bitp x)
-           (signed-byte-p 32 x)))
+           (signed-byte-p 32 x))
+; Added by Matt K. April 2016 upon addition of type-set bit for {1}.
+; (Bitp$inline was formerly already disabled here.)
+  :hints (("Goal" :in-theory (enable bitp))))
 
 
 (encapsulate

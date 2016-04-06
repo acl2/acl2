@@ -45,6 +45,24 @@
       (carry_of*)
     (carry_nof*)))
 
+(progn
+
+; Matt K. mod: In April 2016, ACL2 started providing a type-set bit for the set
+; {1}.  The new computed type-set of {0,1} for carry* and overflow*, as opposed
+; to natp, caused some proofs below to fail.  We take care of that here, by
+; restoring the former type-sets for these two functions.
+
+(defthm natp-carry*
+  (natp (carry*))
+  :rule-classes :type-prescription)
+
+(defthm natp-overflow*
+  (natp (overflow*))
+  :rule-classes :type-prescription)
+
+(in-theory (disable (:t carry*) (:t overflow*)))
+)
+
 (defun mask* ()
   (if (= (overflow*) 1)
       (mask_of*)

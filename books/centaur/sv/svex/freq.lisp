@@ -323,6 +323,7 @@ turn them into a nice, readable report."
         (not (cdr (hons-assoc-equal k (svex-refcount-alist-fix x)))))
     :rule-classes :type-prescription))
 
+#||
 (defines svex-refcounts
   :verify-guards nil
   (define svex-refcounts ((x svex-p)
@@ -423,3 +424,4 @@ turn them into a nice, readable report."
   ///
   (verify-guards svex-fncounts)
   (deffixequiv-mutual svex-fncounts))
+||#

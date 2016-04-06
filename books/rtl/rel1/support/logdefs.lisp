@@ -94,7 +94,32 @@
    :hints (("Goal" :use ((:instance bitn-def-6 (n k))
 			 (:instance rem012 (x (fl (/ x (expt 2 k)))))))))
 
-(in-theory (disable bitn))
+(progn
+
+; Matt K. mod: The addition of natp-bitn, and the corresponding disable of (:t
+; bitn), produces the state that existed before April 2016, when ACL2 started
+; providing a type-set bit for the set {1}.  Without the changes, the following
+; community books failed to certify after that ACL2 change (and a few still
+; fail without additional changes).
+
+;   rtl/rel1/support/fadd/add3.lisp
+;   rtl/rel1/support/fadd/stick.lisp
+;   rtl/rel1/support/fadd/top.lisp
+;   rtl/rel1/support/merge.lisp
+;   rtl/rel1/support/fadd/lop2.lisp
+;   rtl/rel1/support/fadd/lop3.lisp
+;   workshops/1999/multiplier/proof.lisp
+
+; Technical Note: For the four books just above, only, the book certifies if
+; for the all-type-reasoning-tags-p case in rewrite-atm, we add a COND clause
+; that avoids returning any change in the case that the atom is a call of IF.
+
+  (defthm natp-bitn
+    (natp (bitn x n))
+    :rule-classes :type-prescription)
+
+  (in-theory (disable bitn (:t bitn)))
+  )
 
 (defthm BITN-ALT-0
     (implies (and (integerp x)

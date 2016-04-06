@@ -93,7 +93,11 @@
          (implies (<= 0 (bfr-list->s x env))
                   (equal (bfr-list->s x env)
                          (bfr-list->u x env)))
-         :hints(("Goal" :in-theory (enable scdr s-endp)))))
+         :hints(("Goal" :in-theory (e/d (scdr s-endp)
+; Matt K. mod April 2016: The rule acl2::bfix-bitp is now applied, after the
+; ACL2 change that adds a type-set bit for {1}, where previously it wasn't
+; applied.  That application makes the proof fail, so we disable the rule.
+                                        (acl2::bfix-bitp))))))
 
 (local
  (defthm g-logbitp-of-numbers-correct

@@ -219,13 +219,13 @@
 
 (defthm type-alistp-fw-to-bound-1
   (implies (acl2::type-alistp type-alist)
-           (<= (cadar type-alist) 8191))
+           (<= (cadar type-alist) acl2::*max-type-set*))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable acl2::type-alist-entryp ACL2::TYPE-ALISTP))))
 
 (defthm type-alistp-fw-to-bound-2
   (implies (acl2::type-alistp type-alist)
-           (<= -8192 (CADAR TYPE-ALIST)))
+           (<= acl2::*min-type-set* (CADAR TYPE-ALIST)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable acl2::type-alist-entryp ACL2::TYPE-ALISTP))))
 
@@ -253,16 +253,16 @@
 ;was a macro...
 (defund ts-non-nil (ts)
   (declare (xargs :guard (and (INTEGERP ts)
-                              (<= -8192 ts)
-                              (<= ts 8191))))
+                              (<= acl2::*min-type-set* ts)
+                              (<= ts acl2::*max-type-set*))))
   (not (acl2::ts-intersectp ts acl2::*ts-nil*)))
 
 ;Checks that TS represents the type nil.
 ;was a macro...
 (defund ts-nil (ts)
   (declare (xargs :guard (and (INTEGERP ts)
-                              (<= -8192 ts)
-                              (<= ts 8191))))
+                              (<= acl2::*min-type-set* ts)
+                              (<= ts acl2::*max-type-set*))))
   (acl2::ts= ts acl2::*ts-nil*))
 
 

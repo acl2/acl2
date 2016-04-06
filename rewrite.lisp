@@ -4119,20 +4119,23 @@
 
 (defun obj-table (term ts ts-ttree obj geneqv wrld ttree)
 
-; This function is (mv term' ttree'), where term' is equivalent modulo
-; geneqv (see the essay on Equivalence, Refinements and Congruence-
-; based Rewriting) to term and ttree' includes ttree and may include
-; additional stuff.  Depending on ts, the type-set of term (which is
-; supported by the ts-ttree), we may coerce term to 0, t, or nil.
+; This function is (mv term' ttree'), where term' is equivalent modulo geneqv
+; (see the essay on Equivalence, Refinements and Congruence- based Rewriting)
+; to term and ttree' includes ttree and may include additional stuff.
+; Depending on ts, the type-set of term (which is supported by the ts-ttree),
+; we may coerce term to 0, t, or nil.
 
-; Note: This function used to depend on the objective, obj, of the
-; rewrite.  When obj was nil, that dependency prevented obj-table from
-; reducing term to t when term was known to have non-nil type-set.
-; That, in turn, caused relieve-hyp to force (not term), even though
-; (not term) was known nil.  We now reduce term to t, nil or 0 as
-; appropriate by the geneqv and ts, regardless of obj.  However, we have
-; left the obj parameter in place, in case we someday want to restore
-; dependency on it.
+; We considered possibly coercing term to 1 after adding a type-set bit for the
+; singleton set, {1}, but decided against it.  See the comment below regarding
+; *ts-one*.
+
+; Note: This function used to depend on the objective, obj, of the rewrite.
+; When obj was nil, that dependency prevented obj-table from reducing term to t
+; when term was known to have non-nil type-set.  That, in turn, caused
+; relieve-hyp to force (not term), even though (not term) was known nil.  We
+; now reduce term to t, nil or 0 as appropriate by the geneqv and ts,
+; regardless of obj.  However, we have left the obj parameter in place, in case
+; we someday want to restore dependency on it.
 
   (declare (ignore obj))
   (cond
@@ -4150,6 +4153,19 @@
    ((ts= ts *ts-zero*)
     (mv *0*
         (cons-tag-trees ts-ttree ttree)))
+
+; The following code for the case *ts-one* coerces the term to '1.  We
+; considered adding this code when we added a type-set bit for the singleton
+; set, {1}, but decided against it when we found some proofs failing, in
+; particular, lemma symbolic-computation in community book
+; books/workshops/2003/moore_vcg/support/demo.lisp.  We may reconsider in the
+; future if it's important to replace terms by '1, but for now, it seems
+; reasonable to consider the values 0, t, and nil more "special" than 1.
+; Also see *ts-t-nil-0*.
+
+;  ((ts= ts *ts-one*)
+;   (mv *1*
+;       (cons-tag-trees ts-ttree ttree)))
    (t (let ((rune (geneqv-refinementp 'iff geneqv wrld)))
         (cond
          (rune
