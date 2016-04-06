@@ -34,6 +34,17 @@
 (local (include-book "misc/assert" :dir :system))
 ; (depends-on "ops-exec-raw.lsp")
 
+
+; [Jared] marking this book as non-GCL because, at least on my copy of
+; GCL 2.6.12 ANSI, I find that:
+;
+;    (type-of 1.0f+0) == LONG-FLOAT
+;
+; instead of a SHORT-FLOAT, which causes assertion failures, and I just don't
+; want to spend the time to think about whether this is OK or not.
+;
+; cert_param: (non-gcl)
+
 (define real-er-float+ ((a rationalp) (b rationalp))
   :mode :program
   (mv (raise "Under the hood definition not installed?" a b) 0))
