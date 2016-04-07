@@ -66,6 +66,7 @@
 (include-book "set-difference")
 (include-book "sublistp")
 (include-book "subseq")
+(include-book "suffixp")
 (include-book "take")
 (include-book "true-listp")
 (include-book "update-nth")
