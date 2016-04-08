@@ -17,7 +17,9 @@
 ;; --------------------------------------------------------
 
 ; Matt K. mod April 2016 for the addition of a type-set bit for the set {1}.
-(local (in-theory (disable (:t b-not))))
+(local (in-theory (disable (:t b-not)
+                           ;; Jared
+                           bitp-of-b-not)))
 
 (make-thm :name |inv-fibs-thm|
           :thm-type invariant
