@@ -162,7 +162,7 @@ To certify this book, first, create a world with the following package:
 (defthm
   not-prime1p-lemma
   (implies (and (integerp y)
-		(< 1 z)
+		(<= 2 z) ; (< 1 z) [see April 2016 comment in x>1-forward]
 		(<= z y)
 		(dividesp z x))
 	   (not (prime1p x y))))
@@ -184,7 +184,12 @@ To certify this book, first, create a world with the following package:
   x>1-forward
   (implies (and (not (equal x 1))
 		(not (zp x)))
-	   (> x 1))
+; Modified April 2016 by Matt K., because with the extra type-set bit for {1},
+; the old conclusion (> x 1) wasn't sufficient for proving divisors-of-primep
+; below (with the original not-prime1p-lemma below) -- that's because the
+; hypothesis of the form (< 1 x) was no longer explicitly on the type-alist, as
+; it was replaced by associating x with the type *ts-integer>1*.
+	   (>= x 2))
   :rule-classes :forward-chaining)
 
 (defthm
