@@ -977,6 +977,14 @@
                     (logext-intN+1 n x)))
     :hints (("goal" :in-theory (e/d (lrdt signed-byte-p)
                                     (EXPT-2-EQUAL-1-REWRITE
+
+; Modification by Matt K. April 2016 to acccommodate the addition of a type-set
+; bit for the set {1}.  The following linear rule started firing, sending the
+; proof in another direction -- but this happened after an elim, which makes me
+; particularly unconcerned about how ACL2's new heuristics are functioning
+; here.
+
+                                     EXPT->-1
                                      ))))))
 
  (defthm equal-logext---logext

@@ -2262,7 +2262,9 @@ definitions of logical operations."
              (equal (equal (logext size (+ i j)) (logext size (+ i k)))
                     (equal (logext size j) (logext size k))))
     :hints (("Goal"
-             :in-theory (enable bitp logext*)
+             :in-theory (e/d (bitp logext*)
+; Modified April 2016 by Matt K. with addition of type-set bit for {1}.
+                             ((:t b-not$inline)))
              :restrict ((logext-+ ((size size) (i i) (j j))
                                   ((size size) (i i) (j k))
                                   ((size size) (i 1) (j (* 2 l)))

@@ -1454,7 +1454,13 @@
                       (logcdr a) (logcdr b)))))
   :hints (("goal" :induct (logcdr-logcdr-induction a b)
            ;:do-not '(generalize eliminate-destructors)
-           :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY b-and b-xor open-logcons))))
+           :in-theory (e/d (LOGOPS-RECURSIVE-DEFINITIONS-THEORY b-and b-xor open-logcons)
+                           
+; Modified April 2016 by Matt K. upon the addition of a type-set bit for the
+; set {1}.  (Same change made in books/misc/mult.lisp.)
+
+                           (BITP-COMPOUND-RECOGNIZER))
+)))
 
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; signed-byte-p, unsigned-byte-p

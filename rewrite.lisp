@@ -4123,11 +4123,7 @@
 ; (see the essay on Equivalence, Refinements and Congruence- based Rewriting)
 ; to term and ttree' includes ttree and may include additional stuff.
 ; Depending on ts, the type-set of term (which is supported by the ts-ttree),
-; we may coerce term to 0, t, or nil.
-
-; We considered possibly coercing term to 1 after adding a type-set bit for the
-; singleton set, {1}, but decided against it.  See the comment below regarding
-; *ts-one*.
+; we may coerce term to 0, 1, t, or nil.
 
 ; Note: This function used to depend on the objective, obj, of the rewrite.
 ; When obj was nil, that dependency prevented obj-table from reducing term to t
@@ -4153,19 +4149,44 @@
    ((ts= ts *ts-zero*)
     (mv *0*
         (cons-tag-trees ts-ttree ttree)))
+   ((ts= ts *ts-one*)
 
-; The following code for the case *ts-one* coerces the term to '1.  We
-; considered adding this code when we added a type-set bit for the singleton
-; set, {1}, but decided against it when we found some proofs failing, in
-; particular, lemma symbolic-computation in community book
-; books/workshops/2003/moore_vcg/support/demo.lisp.  We may reconsider in the
-; future if it's important to replace terms by '1, but for now, it seems
-; reasonable to consider the values 0, t, and nil more "special" than 1.
-; Also see *ts-t-nil-0*.
+; This case coerces the term to '1.  We introduced this case when adding a new
+; type-set bit for the set {1}.  However, we considered skipping this case when
+; we found a failure for the book demo.lisp (which exists in three
+; subdirectories of the community books: models/jvm/m5/demo.lisp,
+; projects/symbolic/m5/demo.lisp, and books/workshops/2003/moore_vcg/support/),
+; for the lemma symbolic-computation.  However, that was the only problematic
+; book.  Moreover, consider the following generated subgoal for that proof
+; attempt.
 
-;  ((ts= ts *ts-one*)
-;   (mv *1*
-;       (cons-tag-trees ts-ttree ttree)))
+;   (IMPLIES (AND (ZP K)
+;                 (INTP (+ 1 K))
+;                 (< 0 (+ 1 K))
+;                 (ACL2-NUMBERP K))
+;            (EQUAL (INT-FIX (* 2
+;                               (INT-FIX (+ (FACTORIAL K)
+;                                           (* K (FACTORIAL K))))))
+;                   (INT-FIX (+ (* 2 (FACTORIAL K))
+;                               (* 2 K (FACTORIAL K))))))
+
+; With this case included, that subgoal simplified to the following, which ACL2
+; fails to prove whether we include this case or not.  So the only problem with
+; this case is that it adds extra reasoning that sends the proof in a bad
+; direction; and we believe (but aren't sure) that it only does that for this
+; one (thrice-occurring) book among the community books.
+
+;   (IMPLIES (AND (ZP K)
+;                 (INTP (+ 1 K))
+;                 (< 0 (+ 1 K))
+;                 (ACL2-NUMBERP K))
+;            (EQUAL 2 (INT-FIX (+ 2 (* 2 K)))))
+
+; For more discussion regarding *ts-one*, see the Essay on Strong Handling of
+; *ts-one*.
+
+    (mv *1*
+        (cons-tag-trees ts-ttree ttree)))
    (t (let ((rune (geneqv-refinementp 'iff geneqv wrld)))
         (cond
          (rune
