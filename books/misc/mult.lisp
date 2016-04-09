@@ -317,7 +317,12 @@ Christmas 2001
      (+ (b-and (logcar a) (logcar b))
         (logcdr a) (logcdr b)))))
    :hints (("goal" :induct (logcdr-logcdr-induction a b)
-            :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY b-and b-xor))))
+            :in-theory (e/d (LOGOPS-RECURSIVE-DEFINITIONS-THEORY b-and b-xor)
+
+; Modified April 2016 by Matt K. upon the addition of a type-set bit for the
+; set {1}.  (Same change made in books/coi/super-ihs/super-ihs.lisp.)
+
+                            (BITP-COMPOUND-RECOGNIZER)))))
 
 (in-theory (disable *ark*-+*))
 

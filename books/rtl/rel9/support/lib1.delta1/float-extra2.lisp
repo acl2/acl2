@@ -476,6 +476,34 @@
                                   (EXPO (* M (SPD P Q)))))))))))
 
 
+; Proof of induct-step-drepp-am modified April 2016 by Matt K. to accommodate
+; addition of a type-set bit for the set {1}.  The :cases hint in
+; induct-step-drepp-am no longer succeeded, but it was easy to separate out the
+; interesting case as a lemma, as follows.  Now there are no subgoal hints.
+
+(local
+ (defthm induct-step-drepp-am-not-equal-m-1
+   (IMPLIES (AND (DREPP (SPD P Q) P Q)
+                 (<= 1 M)
+                 (< M (EXPT 2 (+ -1 p)))
+                 (DREPP (+ (* -1 (SPD P Q)) (* M (SPD P Q)))
+                        P Q)
+                 (INTEGERP P)
+                 (< 1 P)
+                 (INTEGERP Q)
+                 (< 0 Q)
+                 (INTEGERP M)
+                 (not (equal m 1)))
+            (DREPP (* M (SPD P Q)) P Q))
+   :hints (("Goal" :in-theory (e/d (drepp positive-spd bias) (fp+ spd))
+            :use ((:instance FP+1
+                             (x (am (1- m) p q))
+                             (n (+ -2 P (EXPT 2 (- Q 1))
+                                   (EXPO (am (1- m) p q)))))
+                  (:instance am-is-fp+1
+                             (m (1- m)))
+                  (:instance induct-step-drepp-am-1-5))))
+   :rule-classes nil))
 
 (local
  (defthm induct-step-drepp-am
@@ -490,16 +518,7 @@
                  (< 0 Q)
                  (INTEGERP M))
             (DREPP (* M (SPD P Q)) P Q))
-   :hints (("Goal" :cases ((not (equal m 1))))
-           ("Subgoal 1" :in-theory (e/d (drepp positive-spd) (fp+ spd))
-            :use ((:instance FP+1
-                             (x (am (1- m) p q))
-                             (n (+ -2 P (EXPT 2 (- Q 1))
-                                   (EXPO (am (1- m) p q)))))
-                  (:instance am-is-fp+1
-                             (m (1- m)))
-                  (:instance induct-step-drepp-am-1-5)))
-           ("Subgoal 1.1" :in-theory (enable bias)))))
+   :hints (("Goal" :use induct-step-drepp-am-not-equal-m-1))))
 
 (local
 (defthmd spd-mult-1

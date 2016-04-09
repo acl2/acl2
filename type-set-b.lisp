@@ -2780,31 +2780,10 @@
 
 (defconst *singleton-type-sets*
 
-; See also *ts-t-nil-0*.
+; Keep this constant in sync with the Essay on Strong Handling of *ts-one* and
+; code discussed in that Essay.
 
   (list *ts-t* *ts-nil* *ts-zero* *ts-one*))
-
-(defconst *ts-t-nil-0*
-
-; In some places we use this constant, which omits *ts-one*, instead of
-; *singleton-type-sets*.  Our motivation was to increase backward compatibility
-; after adding a type-set bit for {1}; for example, without this change we
-; needed to disable a type-prescription rule for the proof of lemma
-; soundness-sat-lipton-clause in community book
-; books/workshops/2002/martin-alonso-perez-sancho/support/Adleman.lisp; for
-; another example, books/std/io/base.lisp failed to certify when
-; *singleton-type-sets* was used in place of *ts-t-nil-0* in
-; assume-true-false-rec.  The avoidance of special treatment for *ts-one*,
-; specifically in parts of assume-true-false-rec, may seem like a cowardly
-; hack.  But we can rationalize it by viewing t, nil, and 0 as somehow more
-; "special" values than 1, which we see as special only when reasoning about
-; bits, multiplication, or division.  By contrast, 0 is the value to which all
-; non-numbers are coerced for arithmetic operations, and is frequently tested
-; to terminate recursion.
-
-; For a related discussion (and decision), see obj-table.
-
-  (list *ts-t* *ts-nil* *ts-zero*))
 
 (defun type-set-equal (ts1 ts2 ttree ttree0)
   (cond ((member ts1 *singleton-type-sets*)
@@ -9820,24 +9799,21 @@
                             (t
                              (let* ((swap-flg
                                      (term-order arg1-canon arg2-canon))
+                                    (shared-ttree-tta-p
+
+; This is the condition that must hold for shared-ttree to be used for a
+; true-type-alist.
+
+                                     (and (not (eq ignore :tta))
+                                          (or (not (ts= ts1 int))
+                                              (not (ts= ts2 int)))))
                                     (shared-ttree
 
 ; We could just use (cons-tag-trees ttree xttree) here, but let's save a cons
-; if we don't need that tag-tree.  The first case below corresponds to the
-; conditions that must hold for shared-ttree to be used for a true-type-alist
-; or a false-type-alist.
+; if we don't need that tag-tree.
 
                                      (cond
-                                      ((or (and (not (eq ignore :tta))
-                                                (or (not (ts= ts1 int))
-                                                    (not (ts= ts2 int))))
-                                           (and (not (eq ignore :fta))
-
-; For a discussion of the use of *ts-t-nil-0* in this function, see comments in
-; the definition of that constant.
-
-                                                (or (member ts2 *ts-t-nil-0*)
-                                                    (member ts1 *ts-t-nil-0*))))
+                                      (shared-ttree-tta-p
                                        (cons-tag-trees ttree xttree))
                                       (t nil)))
                                     (xttree+
@@ -9890,13 +9866,77 @@
                                     (false-type-alist2
                                      (and (not (eq ignore :fta))
                                           (cond
-                                           ((member ts2 *ts-t-nil-0*)
+
+; Essay on Strong Handling of *ts-one*
+
+; We are considering a type-alist extension based on (not (equal TM C)) where
+; the type-set of C is in *singleton-type-sets*.  The basic idea is to assign a
+; type-set to TM by removing the type-set bit for C from what would otherwise
+; be the type-set of TM.  In April 2016 we extended the singleton type-sets
+; to include *ts-one*.  The question arose: Do we really want to give this
+; special treatment to *ts-one*?  Let us call that the "strong handling of
+; *ts-one*".
+
+; We considered avoiding such strong handling of *ts-one*, thus saving us from
+; numerous regression failures.  For example, consider the lemma
+; explode-nonnegative-integer-of-positive-is-not-zero-list in community book
+; books/std/io/base.lisp.  If the tests below are simply (member ts2
+; *singleton-type-sets*) and (member ts1 *singleton-type-sets*), then that
+; proof fails.  However, the proof then once again succeeds if first we modify
+; linearize1 so that its type-set calls are made with dwp = t.  That change
+; seems potentially expensive, and perhaps could cause many existing books
+; (some outside the community books) to fail.  We believe that the reason dwp =
+; t is necessary in this example, assuming strong handling of *ts-one*, is that
+; assume-true-false-rec produces a false-type-alist by assigning TM to a
+; type-set TS with *ts-one* removed, where TM otherwise is not assigned in the
+; false-type-alist.  Thus, linearize1 finds the type-set TS for TM, and with
+; dwp = nil it fails to find a stronger type that it would have found if TM had
+; not been assigned on that type-alist.
+
+; We therefore tried to avoid all strong handling of *ts-one*.  Unfortunately,
+; as Jared Davis pointed out, the rule bitp-compound-recognizer then had a weak
+; type-set: specifically, the :false-ts for the corresponding recognizer-tuple
+; was (ts-complement *ts-zero*) instead of (ts-complement *ts-bit*).
+
+; Our solution attempts to address both of these cases.  We allow strong
+; handling of *ts-one* when TM is a variable, which allows the rule
+; bitp-compound-recognizer to be given the desired :false-ts.  Note that if TM
+; is a variable then the above discussion about dwp = t is probably much less
+; relevant, since no type-prescription rule will apply to TM.  However, even if
+; TM is not a variable, we provide strong handling of *ts-one* when TM is
+; already on the false-type-alist that is to be extended, since in that case,
+; the scenario about involving dwp would already find TM on the type-alist, so
+; we might as well strengthen the corresponding type by removing the bit for
+; *ts-one*.
+
+; Keep this code in sync with *singleton-type-sets*.
+
+                                           ((or (ts= ts2 *ts-t*)
+                                                (ts= ts2 *ts-nil*)
+                                                (ts= ts2 *ts-zero*)
+                                                (and (ts= ts2 *ts-one*)
+                                                     (or (variablep arg1)
+                                                         (assoc-equal arg1
+                                                                      type-alist))))
                                             (extend-with-proper/improper-cons-ts-tuple
                                              arg1
                                              (ts-intersection
                                               ts1
                                               (ts-complement ts2))
-                                             shared-ttree
+                                             (if shared-ttree-tta-p
+
+; We use the same shared-ttree that we used in the true-type-alist cases above.
+
+                                                 shared-ttree
+
+; Note that since here we know that ts1 and ts2 overlap but are not equal, they
+; cannot both be singleton type-sets.  We take advantage of this observation
+; below when apparently building the same shared-ttree twice for the two
+; false-type-alist cases (this one for false-type-alist2 and the next, for
+; false-type-alist3), which however are actually non-overlapping cases because
+; this case implies that ts2 is a singleton and the next implies that ts1 is a
+; singleton.
+                                               (cons-tag-trees ttree xttree))
                                              force-flg dwp type-alist ancestors
                                              ens false-type-alist1 w
                                              pot-lst pt backchain-limit))
@@ -9904,13 +9944,24 @@
                                     (false-type-alist3
                                      (and (not (eq ignore :fta))
                                           (cond
-                                           ((member ts1 *ts-t-nil-0*)
+                                           ((or (ts= ts1 *ts-t*)
+                                                (ts= ts1 *ts-nil*)
+                                                (ts= ts1 *ts-zero*)
+
+; See the Essay on Strong Handling of *ts-one*, above.
+
+                                                (and (ts= ts1 *ts-one*)
+                                                     (or (variablep arg2)
+                                                         (assoc-equal arg2
+                                                                      type-alist))))
                                             (extend-with-proper/improper-cons-ts-tuple
                                              arg2
                                              (ts-intersection
                                               ts2
                                               (ts-complement ts1))
-                                             shared-ttree
+                                             (if shared-ttree-tta-p
+                                                 shared-ttree
+                                               (cons-tag-trees ttree xttree))
                                              force-flg dwp type-alist ancestors
                                              ens false-type-alist2 w
                                              pot-lst pt backchain-limit))

@@ -630,6 +630,9 @@ T
 
 ; Symbolic Computation and Use of fact as a Subroutine
 
+; Matt K. mod for addition April 2016 of type-set bit for the set {1}.
+(local (in-theory (enable zp)))
+
 (defthm symbolic-computation
   (implies
    (intp (+ 1 k))

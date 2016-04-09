@@ -57,7 +57,7 @@ but please be aware that things may change out from under you.</p>
    <see topic='@(url std/osets)'>sets</see>,
    <see topic='@(url std/alists)'>alists</see>,
    <see topic='@(url std/typed-lists)'>typed-lists</see>,
-   <see topic='@(url std/stobjs)'>stobjs</see>,
+   <see topic='@(url acl2::std/stobjs)'>stobjs</see>,
    <see topic='@(url std/io)'>input/output</see>.
 Each of these libraries provides many lemmas for reasoning about built-in
 ACL2 functions, and also many additional functions.  There is also a very

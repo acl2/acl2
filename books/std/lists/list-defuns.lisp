@@ -220,6 +220,12 @@
            (prefixp (cdr x) (cdr y)))
     t))
 
+(defund suffixp (x y)
+  (declare (xargs :guard t))
+  (or (equal x y)
+      (and (consp y)
+           (suffixp x (cdr y)))))
+
 (defund flatten (x)
   (declare (xargs :guard t))
   (if (consp x)

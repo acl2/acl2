@@ -94,7 +94,7 @@ remind you that they may encounter into errors.</p>
 <p>We do not provide logical definitions for our floating-point operations, but
 instead introduce them with @(see encapsulate) and constrain them so that they
 are known to produce sensible results (error messages are strings or @('nil'),
-answers are rationals) and to satisfy basic @(see congruence) rules for
+answers are rationals) and to satisfy basic @(see acl2::congruence) rules for
 rationals for compatibility with the @(see acl2::fty-discipline).</p>
 
 <p>By themselves, these logical definitions are just an ordinary @(see
