@@ -813,7 +813,7 @@ sequential) view of AIG node types.</p>"
   :short "@(call stype-count) counts the number of @(see node)s whose
   @(see sequential-type) is @('type') in the node list @('x')."
   :long "<p>This is a key function in the logical story of Aignet input,
-  output, and register numbering.  See @(see aignet-logic) for more
+  output, and register numbering.  See @(see representation) for more
   details.</p>"
   (cond ((atom x) 0)
         ((equal (stype-fix type) (stype (car x)))
@@ -1289,7 +1289,7 @@ suffix.</p>"
   :returns (suffix node-listp :hyp (node-listp aignet))
   :short "Core function for looking up an input, output, or register in the
   logical AIG network by its IO number."
-  :long "<p>See @(see aignet-logic) to understand IO numbers and IO
+  :long "<p>See @(see representation) to understand IO numbers and IO
   lookups.</p>"
   (cond ((endp aignet)
          aignet)

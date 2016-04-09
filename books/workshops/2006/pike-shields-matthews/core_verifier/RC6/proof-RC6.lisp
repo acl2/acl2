@@ -16,6 +16,9 @@
 (include-book "RC6-source-shallow-flatten")
 ;; --------------------------------------------------------
 
+; Matt K. mod April 2016 for the addition of a type-set bit for the set {1}.
+(local (in-theory (disable (:t b-not))))
+
 (make-thm :name |inv-consts|
           :thm-type invariant
           :itr-name |iter_consts_3|

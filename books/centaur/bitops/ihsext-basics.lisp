@@ -3100,6 +3100,11 @@ off looking at the source code.</p>")
                           (:instance logapp-fixes
                                      (size (1- size)) (i (logcdr i))))
              :in-theory (disable logapp (force)
+
+; Modified by Matt K. April 2016 because the addition of a type-set bit for the
+; set {1} sent the proof in a different direction with this rewrite rule.
+
+                                 acl2::<-+-negative-0-1
                                  acl2::int-equiv-implies-equal-logapp-2
                                  acl2::int-equiv-implies-equal-logapp-3
                                  acl2::nat-equiv-implies-equal-logapp-1)))

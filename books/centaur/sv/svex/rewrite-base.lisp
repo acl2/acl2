@@ -56,12 +56,12 @@ simplifications. For example, suppose we are in a context where only the bottom
 
 <h5>Interface</h5>
 <ul>
-<li>@(see svex-rewrite), @(see svexlist-rewrite') recursively rewrites an
+<li>@(see svex-rewrite), @(see svexlist-rewrite) recursively rewrites an
 expression or list of expressions under a given mask alist</li>
 <li>@(see svexlist-rewrite-top), @(see svex-alist-rewrite-top) computes a mask
 alist for a list or alist of expressions and rewrites it under that mask
 alist</li>
-<li>@(@see svexlist-rewrite-fixpoint), @(see svex-alist-rewrite-fixpoint)
+<li>@(see svexlist-rewrite-fixpoint), @(see svex-alist-rewrite-fixpoint)
 repeatedly applies @('-rewrite-top') until it reaches a fixpoint (or an
 iteration limit runs out).</li>
 </ul>")
