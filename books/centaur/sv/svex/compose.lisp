@@ -684,7 +684,7 @@ a false combinational loop.  If we do the same exercise with the masks, we find
 the mask for @('a') with one copy of the update function is @('111'), with two
 copies is @('11'), and with three or more is @('1').  So we still want to
 compose the update function three times; more than that doesn't gain us
-anything.</p
+anything.</p>
 
 <p>It is a bit confusing what happens when in this function; we annotate with
 comments following this last example.</p>

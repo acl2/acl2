@@ -51,7 +51,7 @@ contexts."
 
   :long "<p>We implement an applicative ``printer'' for building strings.
 Building strings incrementally is difficult in an applicative setting.  Our
-printer is implemented using a @(see stobj) named @(see ps).  The act of
+printer is implemented using a @(see acl2::stobj) named @(see ps).  The act of
 ``printing'' to this stobj essentially just accumulates characters (or strings)
 onto a @(see vl-printedlist).  The printed elements are kept in reverse order,
 which makes it reasonably efficient to successively print small chunks of
