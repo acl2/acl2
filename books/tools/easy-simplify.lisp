@@ -89,7 +89,13 @@ e.g. ((\"Goal\" :foo)).</p>")
                 :force-info t))
        ((er rcnst)
         (load-hint-settings-into-rcnst
-         hint-settings base-rcnst nil world 'easy-simplify-term state))
+         hint-settings base-rcnst
+
+; Matt K. mod April 2016 to accommodate the issue in :doc note-7-3 regarding a
+; slow-array-warning from computed hints.
+
+         :easy-simplify
+         world 'easy-simplify-term state))
        (ens (access rewrite-constant rcnst :current-enabled-structure))
        ((mv flg hyps-type-alist ?ttree)
         (hyps-type-alist hyps ens world state))

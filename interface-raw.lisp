@@ -9334,8 +9334,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 (defun our-uname ()
 
-; Returns nil or else a keyword, currently :darwin or :linux, to indicate the
-; result of shell command "uname".
+; Returns nil or else a keyword -- currently :darwin, :linux, or :freebsd -- to
+; indicate the result of shell command "uname".
 
   (multiple-value-bind
    (exit-code val)
@@ -9344,7 +9344,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
         (stringp val)
         (<= 6 (length val))
         (cond ((string-equal (subseq val 0 6) "Darwin") :darwin)
-              ((string-equal (subseq val 0 5) "Linux") :linux)))))
+              ((string-equal (subseq val 0 5) "Linux") :linux)
+              ((string-equal (subseq val 0 7) "FreeBSD") :freebsd)))))
 
 (defun meminfo (&optional arg)
 
@@ -9372,6 +9373,24 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                          :start (length arg)))))))))))
       (:darwin
        (let* ((arg (or arg "hw.memsize"))
+              (len (length arg)))
+         (multiple-value-bind
+          (exit-code val)
+          (system-call+ "sysctl" (list arg))
+          (and (eql exit-code 0)
+               (mf-looking-at arg val)
+               (mf-looking-at arg ": " :start1 len)
+               (let ((ans (read-from-string val nil nil :start (+ 2 len))))
+                 (and (integerp ans)
+                      (equal (mod ans 1024) 0)
+                      (/ ans 1024)))))))
+      (:freebsd
+       (let* ((arg (or arg
+
+; Gary Byers suggests hw.usermem instead of hw.physmem, to avoid including
+; memory that seems to be reserved for kernel drivers.
+
+                       "hw.usermem"))
               (len (length arg)))
          (multiple-value-bind
           (exit-code val)
