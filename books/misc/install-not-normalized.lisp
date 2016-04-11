@@ -84,29 +84,26 @@ This comment motivates the macro install-not-normalized, defined below.
       (in-theory (disable ,name)))))
 
 (defun install-not-normalized-fn-lst (fns wrld all-fns)
-  (declare (xargs :guard (and fns
-                              (symbol-listp fns)
+  (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld))))
-  (cond ((endp (cdr fns))
-         (install-not-normalized-fn-1 (car fns) wrld all-fns))
+  (cond ((endp fns)
+         nil)
         (t (append (install-not-normalized-fn-1 (car fns) wrld all-fns)
                    (install-not-normalized-fn-lst (cdr fns) wrld all-fns)))))
 
-(defun install-not-normalized-fn (name wrld nestp)
+(defun install-not-normalized-fn (name wrld allp)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
-  (let ((fns (and nestp
-                  (getprop name 'recursivep nil 'current-acl2-world wrld))))
-    (cond ((and (true-listp fns)
-                (cdr fns))
-           (cond ((symbol-listp fns)
-                  (install-not-normalized-fn-lst fns wrld fns))
-                 (t (er hard? 'install-not-normalized-fn
-                        "Surprise!  Not a non-empty symbol-listp: ~x0"
-                        fns))))
-          (t (install-not-normalized-fn-1 name wrld nil)))))
+  (let ((fns (getprop name 'recursivep nil 'current-acl2-world wrld)))
+    (if (symbol-listp fns) ; for guard verification
+        (install-not-normalized-fn-lst (or (and allp fns)
+                                           (list name))
+                                       wrld fns)
+      (er hard? 'install-not-normalized-fn
+          "Surprise!  Not a non-empty symbol-listp: ~x0"
+          fns))))
 
-(defmacro install-not-normalized (name &optional (nestp 't))
+(defmacro install-not-normalized (name &optional (allp 't))
 
 ; Alessandro Coglio sent the following example, which failed until taking his
 ; suggestion to use encapsulate (originally we used progn) and call
@@ -126,7 +123,7 @@ This comment motivates the macro install-not-normalized, defined below.
            ()
            '(set-ignore-ok t) ; see comment above
            '(set-irrelevant-formals-ok t) ; perhaps not necessary, but harmless
-           (install-not-normalized-fn ',name (w state) ,nestp))))
+           (install-not-normalized-fn ',name (w state) ,allp))))
 
 (defun fn-is-body-name (name)
   (declare (xargs :guard (symbolp name)))
@@ -379,11 +376,11 @@ This comment motivates the macro install-not-normalized, defined below.
  forms install a non-normalized definition for every function symbol defined in
  that event, while the third form only handles @('NAME').  By ``handle'', we
  mean that a rule of class @('(:definition :install-body t)') is installed,
- with suitable additional fields for keywords @(':clique') and
- @(':controller-alist') when more than one name is handled.  The name of the
- rule generated for function @('F') is the symbol @('F$NOT-NORMALIZED'), that
- is, the result of modifying the @(tsee symbol-name) of @('F') by adding the
- suffix @('\"$NOT-NORMALIZED\"').  To obtain that name programmatically:</p>
+ with suitable additional fields when appropriate for keywords @(':clique') and
+ @(':controller-alist').  The name of the rule generated for function @('F') is
+ the symbol @('F$NOT-NORMALIZED'), that is, the result of modifying the @(tsee
+ symbol-name) of @('F') by adding the suffix @('\"$NOT-NORMALIZED\"').  To
+ obtain that name programmatically:</p>
 
  @({
  ACL2 !>(install-not-normalized-name 'foo)
