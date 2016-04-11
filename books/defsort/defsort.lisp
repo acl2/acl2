@@ -243,7 +243,7 @@ it has a special hack for that particular case.</p>
 (defun defsort-guard-for-term (term state)
   (declare (Xargs :mode :program :stobjs state))
   (b* ((wrld (w state))
-       ((mv clauses & state)
+       ((mv clauses &)
         (guard-obligation-clauses
          (cons :term term) nil *defsort-empty-ens* wrld state)))
     (mv (untranslate* (conjoin-clauses clauses) nil wrld)
