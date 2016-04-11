@@ -1,6 +1,7 @@
 ;; Author: Shilpi Goel <shigoel@cs.utexas.edu>
 
-;; Checking the preconditions of the zero-copy program.
+;; Checking the preconditions stated in the proof of correctness of
+;; the zero-copy program (proof in proofs/zeroCopy/zeroCopy.lisp).
 
 (in-package "X86ISA")
 
