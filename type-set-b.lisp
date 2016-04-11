@@ -1597,6 +1597,8 @@
                                                                     nil))
                                'string)
                               "ACL2"))
+                     ((keywordp incrmt-array-name-info)
+                      incrmt-array-name-info)
                      (incrmt-array-name-info ; must be a clause-id
                       (intern (coerce
                                (append root
@@ -1631,15 +1633,16 @@
 ; We do exactly what the name of this function says, we load the given theory
 ; into the enabled structure ens.  If incrmt-array-name-info is t we increment
 ; the array name suffix.  If incrmt-array-name-info is non-boolean, then it is
-; a clause-id that we use to create a new name uniquely determined by that
-; clause-id.  Otherwise, we use the same name.  Loading consists of augmenting
-; the theory (if augmented-p is nil) to convert it into a list of pairs, (nume
-; . rune), mapping numes to their runes, and then compressing it into the named
-; array.  We set the index of last enabling to be the highest existing nume in
-; wrld right now unless index-of-last-enabling is non-nil, in which case we use
-; that (which should be a natp).  Thus, any name introduced after this is
-; enabled relative to this ens.  If the array of the ens is too short, we
-; extend it by 500.
+; either a keyword (see comment in load-hint-settings-into-rcnst), or else a
+; clause-id that we use to create a new name uniquely determined by that
+; clause-id.  Otherwise, incrmt-array-name-info is nil and we use the same
+; name.  Loading consists of augmenting the theory (if augmented-p is nil) to
+; convert it into a list of pairs, (nume . rune), mapping numes to their runes,
+; and then compressing it into the named array.  We set the index of last
+; enabling to be the highest existing nume in wrld right now unless
+; index-of-last-enabling is non-nil, in which case we use that (which should be
+; a natp).  Thus, any name introduced after this is enabled relative to this
+; ens.  If the array of the ens is too short, we extend it by 500.
 
 ; A Refresher Course on ACL2 One Dimensional Arrays:
 

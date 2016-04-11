@@ -517,7 +517,7 @@
        ((er names) (acl2::chk-acceptable-verify-guards
                     name ctx wrld state))
        (ens (acl2::ens state))
-       ((mv clauses & state)
+       ((mv clauses &)
         (acl2::guard-obligation-clauses
          names nil ens wrld state))
        (term (acl2::termify-clause-set clauses)))
