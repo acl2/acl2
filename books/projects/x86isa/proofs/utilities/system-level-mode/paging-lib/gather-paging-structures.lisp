@@ -1638,12 +1638,6 @@
 
 ;; Defining xlate-equiv-structures:
 
-;; (define system-level-state-p (x86)
-;;   :enabled t
-;;   :parents (ia32e-paging)
-;;   (and (x86p x86)
-;;        (not (xr :programmer-level-mode 0 x86))))
-
 ;; First, some bind-free and other misc. stuff:
 
 (defun find-xlate-equiv-structures-from-occurrence
@@ -1732,6 +1726,297 @@
   (declare (xargs :mode :program))
   (b* ((equiv-x86 (find-an-xlate-equiv-x86-aux thm-name bound-x86-term mfc state)))
     `((,free-x86-var . ,equiv-x86))))
+
+(defun find-equiv-x86-for-components-aux (var calls)
+  (if (endp calls)
+      nil
+    (b* ((call (car calls))
+         (var-val (third call)))
+      (append `((,var . ,var-val))
+              (find-equiv-x86-for-components-aux var (cdr calls))))))
+
+(defun find-equiv-x86-for-components (var mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((calls (acl2::find-calls-of-fns-lst
+               '(ALL-MEM-EXCEPT-PAGING-STRUCTURES-EQUAL)
+               (acl2::mfc-clause mfc))))
+    (find-equiv-x86-for-components-aux var calls)))
+
+(define all-mem-except-paging-structures-equal
+  (x86-1 x86-2)
+  :guard (and (x86p x86-1)
+              (x86p x86-2))
+  :non-executable t
+
+  :prepwork
+  ((define all-mem-except-paging-structures-equal-aux
+     (i paging-qword-addresses x86-1 x86-2)
+     :parents (all-mem-except-paging-structures-equal)
+     :guard (and (natp i)
+                 (<= i *mem-size-in-bytes*)
+                 (mult-8-qword-paddr-listp paging-qword-addresses)
+                 (x86p x86-1)
+                 (x86p x86-2))
+     :non-executable t
+     :enabled t
+
+     (if (zp i)
+
+         (if (disjoint-p
+              (list i)
+              (open-qword-paddr-list paging-qword-addresses))
+             ;; i does not point to paging data, hence the contents of i
+             ;; must be exactly equal.
+
+             (equal (xr :mem i x86-1) (xr :mem i x86-2))
+
+           t)
+
+       (if (disjoint-p
+            (list (1- i))
+            (open-qword-paddr-list paging-qword-addresses))
+
+           ;; i does not point to paging data, hence the contents of i
+           ;; must be exactly equal.
+           (and (equal (xr :mem (1- i) x86-1) (xr :mem (1- i) x86-2))
+                (all-mem-except-paging-structures-equal-aux
+                 (1- i) paging-qword-addresses x86-1 x86-2))
+
+         ;; i points to paging data, and hence we can't expect its
+         ;; contents to be exactly equal. This case is dealt with by the
+         ;; function xlate-equiv-entries-at-qword-addresses?.
+         (all-mem-except-paging-structures-equal-aux
+          (1- i) paging-qword-addresses x86-1 x86-2)))
+
+     ///
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-xr-mem-from-rest-of-memory
+       (implies (and (all-mem-except-paging-structures-equal-aux i addrs x86-1 x86-2)
+                     (disjoint-p (list j) (open-qword-paddr-list addrs))
+                     (natp i)
+                     (natp j)
+                     (< j i))
+                (equal (xr :mem j x86-1) (xr :mem j x86-2))))
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-rm-low-32-from-rest-of-memory
+       (implies (and (all-mem-except-paging-structures-equal-aux i addrs x86-1 x86-2)
+                     (disjoint-p (addr-range 4 j) (open-qword-paddr-list addrs))
+                     (natp i)
+                     (natp j)
+                     (< (+ 3 j) i)
+                     (not (programmer-level-mode x86-1))
+                     (not (programmer-level-mode x86-2)))
+                (equal (rm-low-32 j x86-1) (rm-low-32 j x86-2)))
+       :hints (("Goal"
+                :do-not-induct t
+                :in-theory (e/d* (rm-low-32 disjoint-p) (force (force))))))
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-rm-low-64-from-rest-of-memory
+       (implies (and (all-mem-except-paging-structures-equal-aux i addrs x86-1 x86-2)
+                     (disjoint-p (addr-range 8 j) (open-qword-paddr-list addrs))
+                     (natp i)
+                     (natp j)
+                     (< (+ 7 j) i)
+                     (not (programmer-level-mode x86-1))
+                     (not (programmer-level-mode x86-2)))
+                (equal (rm-low-64 j x86-1) (rm-low-64 j x86-2)))
+       :hints (("Goal"
+                :do-not-induct t
+                :in-theory (e/d* (rm-low-64 disjoint-p) (force (force))))))
+
+     (defthm all-mem-except-paging-structures-equal-aux-is-reflexive
+       (all-mem-except-paging-structures-equal-aux i addrs x x))
+
+     (defthm all-mem-except-paging-structures-equal-aux-is-commutative
+       (implies (all-mem-except-paging-structures-equal-aux i addrs x y)
+                (all-mem-except-paging-structures-equal-aux i addrs y x)))
+
+     (defthm all-mem-except-paging-structures-equal-aux-is-transitive
+       (implies (and (all-mem-except-paging-structures-equal-aux i addrs x y)
+                     (all-mem-except-paging-structures-equal-aux i addrs y z))
+                (all-mem-except-paging-structures-equal-aux i addrs x z)))
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-xw-1
+       (implies (not (equal fld :mem))
+                (equal (all-mem-except-paging-structures-equal-aux i addrs (xw fld index val x) y)
+                       (all-mem-except-paging-structures-equal-aux i addrs x y))))
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-xw-2
+       (implies (not (equal fld :mem))
+                (equal (all-mem-except-paging-structures-equal-aux i addrs x (xw fld index val y))
+                       (all-mem-except-paging-structures-equal-aux i addrs x y))))
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-xw-mem
+       (implies (all-mem-except-paging-structures-equal-aux i addrs x y)
+                (all-mem-except-paging-structures-equal-aux
+                 i addrs
+                 (xw :mem index val x)
+                 (xw :mem index val y))))
+
+     (defthm xr-mem-wm-low-64
+       (implies (and ;; (disjoint-p (list index) (addr-range 8 addr))
+                 (not (member-p index (addr-range 8 addr)))
+                 (physical-address-p addr))
+                (equal (xr :mem index (wm-low-64 addr val x86))
+                       (xr :mem index x86)))
+       :hints (("Goal" :in-theory (e/d* (wm-low-64
+                                         wm-low-32
+                                         ifix)
+                                        (force (force))))))
+
+     (local
+      (defthm all-mem-except-paging-structures-equal-aux-and-wm-low-64-paging-entry-helper
+        (implies (and (member-p index a)
+                      (mult-8-qword-paddr-listp a)
+                      (disjoint-p (list i) (open-qword-paddr-list a)))
+                 (equal (member-p i (addr-range 8 index))
+                        nil))
+        :hints (("Goal" :in-theory (e/d* (member-p disjoint-p)
+                                         ())))))
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-wm-low-64-paging-entry
+       (implies (and (member-p index addrs)
+                     (mult-8-qword-paddr-listp addrs))
+                (equal (all-mem-except-paging-structures-equal-aux i addrs (wm-low-64 index val x) y)
+                       (all-mem-except-paging-structures-equal-aux i addrs x y)))
+       :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-wm-low-64
+       (implies (and (all-mem-except-paging-structures-equal-aux i addrs x y)
+                     (not (xr :programmer-level-mode 0 x))
+                     (not (xr :programmer-level-mode 0 y)))
+                (all-mem-except-paging-structures-equal-aux
+                 i addrs
+                 (wm-low-64 index val x)
+                 (wm-low-64 index val y)))
+       :hints (("Goal" :do-not-induct t
+                :in-theory (e/d* (wm-low-64 wm-low-32) ()))))
+
+     (defthm all-mem-except-paging-structures-equal-aux-and-xw-mem-commute-writes
+       (implies (not (equal index-1 index-2))
+                (all-mem-except-paging-structures-equal-aux
+                 i addrs
+                 (xw :mem index-1 val-1 (xw :mem index-2 val-2 x))
+                 (xw :mem index-2 val-2 (xw :mem index-1 val-1 x)))))))
+
+  (if (equal (programmer-level-mode x86-1) nil)
+
+      (if (equal (programmer-level-mode x86-2) nil)
+
+          (and (equal (gather-all-paging-structure-qword-addresses x86-1)
+                      (gather-all-paging-structure-qword-addresses x86-2))
+               (all-mem-except-paging-structures-equal-aux
+                *mem-size-in-bytes*
+                (gather-all-paging-structure-qword-addresses x86-1)
+                x86-1 x86-2))
+
+        nil)
+
+    (equal (programmer-level-mode x86-2) (programmer-level-mode x86-1)))
+
+  ///
+
+  (defequiv all-mem-except-paging-structures-equal)
+
+  (defthm all-mem-except-paging-structures-equal-and-xr-mem-from-rest-of-memory
+    (implies (and (all-mem-except-paging-structures-equal x86-1 x86-2)
+                  (disjoint-p
+                   (list j)
+                   (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86-1)))
+                  (natp j)
+                  (< j *mem-size-in-bytes*)
+                  (not (programmer-level-mode x86-1)))
+             (equal (xr :mem j x86-1) (xr :mem j x86-2)))
+    :hints (("Goal" :in-theory (e/d* (all-mem-except-paging-structures-equal) ()))))
+
+  (defthm all-mem-except-paging-structures-equal-and-rm-low-64-from-rest-of-memory
+    (implies (and (all-mem-except-paging-structures-equal x86-1 x86-2)
+                  (disjoint-p (addr-range 8 j)
+                              (open-qword-paddr-list
+                               (gather-all-paging-structure-qword-addresses x86-1)))
+                  (natp j)
+                  (< (+ 7 j) *mem-size-in-bytes*))
+             (equal (rm-low-64 j x86-1) (rm-low-64 j x86-2)))
+    :hints (("Goal"
+             :use ((:instance all-mem-except-paging-structures-equal-aux-and-rm-low-64-from-rest-of-memory
+                              (i *mem-size-in-bytes*)
+                              (j j)
+                              (addrs (gather-all-paging-structure-qword-addresses x86-1))))
+             :in-theory (e/d* (all-mem-except-paging-structures-equal)
+                              (all-mem-except-paging-structures-equal-aux-and-rm-low-64-from-rest-of-memory)))))
+
+  (defthm all-mem-except-paging-structures-equal-and-xw-1
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :programmer-level-mode)))
+             (equal (all-mem-except-paging-structures-equal (xw fld index val x) y)
+                    (all-mem-except-paging-structures-equal (double-rewrite x) y)))
+    :hints (("Goal" :in-theory (e/d* () (all-mem-except-paging-structures-equal-aux)))))
+
+  (defthm all-mem-except-paging-structures-equal-and-xw-2
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :programmer-level-mode)))
+             (equal (all-mem-except-paging-structures-equal x (xw fld index val y))
+                    (all-mem-except-paging-structures-equal x (double-rewrite y)))))
+
+  (defthm all-mem-except-paging-structures-equal-and-xw
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :programmer-level-mode)))
+             (equal (all-mem-except-paging-structures-equal (xw fld index val x) (xw fld index val y))
+                    (all-mem-except-paging-structures-equal x y))))
+
+  (defthm all-mem-except-paging-structures-equal-and-xw-mem-except-paging-structure
+    (implies (and (bind-free (find-equiv-x86-for-components y mfc state))
+                  (all-mem-except-paging-structures-equal x y)
+                  (physical-address-p index)
+                  (disjoint-p
+                   (list index)
+                   (open-qword-paddr-list (gather-all-paging-structure-qword-addresses y))))
+             (all-mem-except-paging-structures-equal (xw :mem index val x)
+                                                     (xw :mem index val y)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm all-mem-except-paging-structures-equal-and-wm-low-64-paging-entry
+    (implies (and (member-p index (gather-all-paging-structure-qword-addresses x))
+                  (equal (gather-all-paging-structure-qword-addresses (wm-low-64 index val x))
+                         (gather-all-paging-structure-qword-addresses x)))
+             (equal (all-mem-except-paging-structures-equal (wm-low-64 index val x) y)
+                    (all-mem-except-paging-structures-equal (double-rewrite x) y)))
+    :hints (("Goal" :in-theory (e/d* () (all-mem-except-paging-structures-equal-aux)))))
+
+  (defthm all-mem-except-paging-structures-equal-and-wm-low-64-entry-addr
+    (implies (and (xlate-equiv-entries (double-rewrite entry)
+                                       (rm-low-64 entry-addr x86))
+                  (member-p entry-addr (gather-all-paging-structure-qword-addresses x86))
+                  (x86p (double-rewrite x86))
+                  (unsigned-byte-p 64 entry))
+             (all-mem-except-paging-structures-equal
+              (wm-low-64 entry-addr entry x86)
+              (double-rewrite x86)))
+    :hints (("Goal" :in-theory (e/d* (all-mem-except-paging-structures-equal-aux)
+                                     ()))))
+
+  (defthm all-mem-except-paging-structures-equal-and-wm-low-64-except-paging-structure
+    (implies (and
+              (bind-free (find-equiv-x86-for-components y mfc state))
+              (all-mem-except-paging-structures-equal x y)
+              (physical-address-p index)
+              (disjoint-p
+               (addr-range 8 index)
+               (open-qword-paddr-list (gather-all-paging-structure-qword-addresses y))))
+             (all-mem-except-paging-structures-equal (wm-low-64 index val x)
+                                                     (wm-low-64 index val y)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm all-mem-except-paging-structures-equal-and-xw-mem-commute-writes
+    (implies (not (equal index-1 index-2))
+             (all-mem-except-paging-structures-equal
+              (xw :mem index-1 val-1 (xw :mem index-2 val-2 x))
+              (xw :mem index-2 val-2 (xw :mem index-1 val-1 x))))
+    :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
 (define xlate-equiv-structures (x86-1 x86-2)
   :guard (and (x86p x86-1)

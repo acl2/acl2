@@ -368,27 +368,27 @@
                                            not))))
     :inline t
 
-    (mbe :logic (part-install (part-select lin-addr :low 12 :high 20)
-                              base-addr :low 3 :high 11)
-         :exec (the (unsigned-byte #.*physical-address-size*)
-                 (logior (logand base-addr (lognot (ash 511 3)))
-                         (ash (the (unsigned-byte 9)
-                                (logand 511
-                                        (the (signed-byte 36)
-                                          (ash lin-addr -12))))
-                              3))))
+    (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
+                  (equal (loghead 12 base-addr) 0)))
+
+        (mbe :logic (part-install (part-select lin-addr :low 12 :high 20)
+                                  base-addr :low 3 :high 11)
+             :exec (the (unsigned-byte #.*physical-address-size*)
+                     (logior (logand base-addr (lognot (ash 511 3)))
+                             (ash (the (unsigned-byte 9)
+                                    (logand 511
+                                            (the (signed-byte 36)
+                                              (ash lin-addr -12))))
+                                  3))))
+      0)
 
     ///
 
     (defthm natp-page-table-entry-addr
-      (implies (natp base-addr)
-               (natp (page-table-entry-addr lin-addr base-addr)))
-      :hints (("Goal" :in-theory (e/d* (page-table-entry-addr) nil)))
+      (natp (page-table-entry-addr lin-addr base-addr))
       :rule-classes (:rewrite :type-prescription))
 
     (defthm-usb *physical-address-size*p-page-table-entry-addr
-      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
-                (signed-byte-p   *max-linear-address-size* lin-addr))
       :bound *physical-address-size*
       :concl (page-table-entry-addr lin-addr base-addr)
       :hints (("Goal" :in-theory (e/d ()
@@ -401,14 +401,9 @@
       :gen-linear t)
 
     (defthm page-table-entry-addr-is-a-multiple-of-8
-      (implies (equal (loghead 12 base-addr) 0)
-               (equal (loghead 3 (page-table-entry-addr lin-addr base-addr))
-                      0)))
+      (equal (loghead 3 (page-table-entry-addr lin-addr base-addr)) 0))
 
     (defthm-usb adding-7-to-page-table-entry-addr
-      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
-                (signed-byte-p   *max-linear-address-size* lin-addr)
-                (equal (loghead 12 base-addr) 0))
       :bound *physical-address-size*
       :concl (+ 7 (page-table-entry-addr lin-addr base-addr))
       :hints-l (("Goal" :in-theory (e/d ()
@@ -429,34 +424,34 @@
                                            not))))
     :inline t
 
-    (mbe
-     :logic
-     (part-install (part-select lin-addr :low 21 :high 29)
-                   base-addr
-                   :low 3 :high 11)
-     :exec
-     (the (unsigned-byte #.*physical-address-size*)
-       (logior (the (unsigned-byte #.*physical-address-size*)
-                 (logand base-addr
-                         (lognot 4088)))
-               (the (unsigned-byte 12)
-                 (ash
-                  (the (unsigned-byte 9)
-                    (logand 511
-                            (ash lin-addr -21)))
-                  3)))))
+    (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
+                  (equal (loghead 12 base-addr) 0)))
+
+        (mbe
+         :logic
+         (part-install (part-select lin-addr :low 21 :high 29)
+                       base-addr
+                       :low 3 :high 11)
+         :exec
+         (the (unsigned-byte #.*physical-address-size*)
+           (logior (the (unsigned-byte #.*physical-address-size*)
+                     (logand base-addr
+                             (lognot 4088)))
+                   (the (unsigned-byte 12)
+                     (ash
+                      (the (unsigned-byte 9)
+                        (logand 511
+                                (ash lin-addr -21)))
+                      3)))))
+      0)
 
     ///
 
     (defthm natp-page-directory-entry-addr
-      (implies (natp base-addr)
-               (natp (page-directory-entry-addr lin-addr base-addr)))
-      :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr) nil)))
+      (natp (page-directory-entry-addr lin-addr base-addr))
       :rule-classes (:rewrite :type-prescription))
 
     (defthm-usb *physical-address-size*p-page-directory-entry-addr
-      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
-                (signed-byte-p   *max-linear-address-size* lin-addr))
       :bound *physical-address-size*
       :concl (page-directory-entry-addr lin-addr base-addr)
       :hints (("Goal" :in-theory (e/d ()
@@ -469,14 +464,9 @@
       :gen-linear t)
 
     (defthm page-directory-entry-addr-is-a-multiple-of-8
-      (implies (equal (loghead 12 base-addr) 0)
-               (equal (loghead 3 (page-directory-entry-addr lin-addr base-addr))
-                      0)))
+      (equal (loghead 3 (page-directory-entry-addr lin-addr base-addr)) 0))
 
     (defthm-usb adding-7-to-page-directory-entry-addr
-      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
-                (signed-byte-p   *max-linear-address-size* lin-addr)
-                (equal (loghead 12 base-addr) 0))
       :bound *physical-address-size*
       :concl (+ 7 (page-directory-entry-addr lin-addr base-addr))
       :gen-linear t
@@ -496,30 +486,31 @@
                                            not))))
     :inline t
 
-    (mbe
-     :logic
-     (part-install (part-select lin-addr :low 30 :high 38)
-                   base-addr :low 3 :high 11)
-     :exec
-     (the (unsigned-byte #.*physical-address-size*)
-       (logior (the (unsigned-byte #.*physical-address-size*)
-                 (logand base-addr (lognot (ash 511 3))))
-               (the (unsigned-byte 12)
-                 (ash (the (unsigned-byte 9)
-                        (logand 511 (ash lin-addr -30)))
-                      3)))))
+    (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
+                  (equal (loghead 12 base-addr) 0)))
+
+        (mbe
+         :logic
+         (part-install (part-select lin-addr :low 30 :high 38)
+                       base-addr :low 3 :high 11)
+         :exec
+         (the (unsigned-byte #.*physical-address-size*)
+           (logior (the (unsigned-byte #.*physical-address-size*)
+                     (logand base-addr (lognot (ash 511 3))))
+                   (the (unsigned-byte 12)
+                     (ash (the (unsigned-byte 9)
+                            (logand 511 (ash lin-addr -30)))
+                          3)))))
+
+      0)
 
     ///
 
     (defthm natp-page-dir-ptr-table-entry-addr
-      (implies (natp base-addr)
-               (natp (page-dir-ptr-table-entry-addr lin-addr base-addr)))
-      :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr) nil)))
+      (natp (page-dir-ptr-table-entry-addr lin-addr base-addr))
       :rule-classes (:rewrite :type-prescription))
 
     (defthm-usb *physical-address-size*p-page-dir-ptr-table-entry-addr
-      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
-                (signed-byte-p   *max-linear-address-size* lin-addr))
       :bound *physical-address-size*
       :concl (page-dir-ptr-table-entry-addr lin-addr base-addr)
       :hints (("Goal" :in-theory (e/d ()
@@ -532,14 +523,9 @@
       :gen-linear t)
 
     (defthm page-dir-ptr-table-entry-addr-is-a-multiple-of-8
-      (implies (equal (loghead 12 base-addr) 0)
-               (equal (loghead 3 (page-dir-ptr-table-entry-addr lin-addr base-addr))
-                      0)))
+      (equal (loghead 3 (page-dir-ptr-table-entry-addr lin-addr base-addr)) 0))
 
     (defthm-usb adding-7-to-page-dir-ptr-table-entry-addr
-      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
-                (signed-byte-p   *max-linear-address-size* lin-addr)
-                (equal (loghead 12 base-addr) 0))
       :bound *physical-address-size*
       :concl (+ 7 (page-dir-ptr-table-entry-addr lin-addr base-addr))
       :hints-l (("Goal" :in-theory (e/d ()
@@ -560,32 +546,32 @@
                                            not))))
     :inline t
 
-    (mbe
-     :logic
-     (part-install
-      (part-select lin-addr :low 39 :high 47)
-      base-addr :low 3 :high 11)
-     :exec
-     (the
-         (unsigned-byte #.*physical-address-size*)
-       (logior
-        (the (unsigned-byte #.*physical-address-size*)
-          (logand base-addr (lognot (ash 511 3))))
-        (the (unsigned-byte 12)
-          (ash (the (unsigned-byte 9)
-                 (logand 511 (ash lin-addr -39))) 3)))))
+    (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
+                  (equal (loghead 12 base-addr) 0)))
+        (mbe
+         :logic
+         (part-install
+          (part-select lin-addr :low 39 :high 47)
+          base-addr :low 3 :high 11)
+         :exec
+         (the
+             (unsigned-byte #.*physical-address-size*)
+           (logior
+            (the (unsigned-byte #.*physical-address-size*)
+              (logand base-addr (lognot (ash 511 3))))
+            (the (unsigned-byte 12)
+              (ash (the (unsigned-byte 9)
+                     (logand 511 (ash lin-addr -39))) 3)))))
+
+      0)
 
     ///
 
     (defthm natp-pml4-table-entry-addr
-      (implies (natp base-addr)
-               (natp (pml4-table-entry-addr lin-addr base-addr)))
-      :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr) nil)))
+      (natp (pml4-table-entry-addr lin-addr base-addr))
       :rule-classes (:rewrite :type-prescription))
 
     (defthm-usb *physical-address-size*p-pml4-table-entry-addr
-      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
-                (signed-byte-p   *max-linear-address-size* lin-addr))
       :bound *physical-address-size*
       :concl (pml4-table-entry-addr lin-addr base-addr)
       :hints (("Goal" :in-theory (e/d ()
@@ -598,20 +584,14 @@
       :gen-linear t)
 
     (defthm pml4-table-entry-addr-is-a-multiple-of-8
-      (implies (equal (loghead 12 base-addr) 0)
-               (equal (loghead 3 (pml4-table-entry-addr lin-addr base-addr))
-                      0)))
+      (equal (loghead 3 (pml4-table-entry-addr lin-addr base-addr)) 0))
 
     (defthm-usb adding-7-to-pml4-table-entry-addr
-      :hyp (and (unsigned-byte-p *physical-address-size*   base-addr)
-                (signed-byte-p   *max-linear-address-size* lin-addr)
-                (equal (loghead 12 base-addr) 0))
       :bound *physical-address-size*
       :concl (+ 7 (pml4-table-entry-addr lin-addr base-addr))
       :gen-linear t
       :gen-type t
-      :hints-l (("Goal" :in-theory (e/d ()
-                                        (pml4-table-entry-addr)))))))
+      :hints-l (("Goal" :in-theory (e/d () (pml4-table-entry-addr)))))))
 
 (in-theory (e/d () (adding-7-to-shifted-bits)))
 
