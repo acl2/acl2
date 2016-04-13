@@ -451,7 +451,7 @@
 ;; structure traversals...
 
 (defthmd gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
-  (implies (and (not (programmer-level-mode x86))
+  (implies (and (equal (programmer-level-mode x86) nil)
                 (xlate-equiv-structures (double-rewrite x86) (double-rewrite x86-equiv)))
            (equal (gather-all-paging-structure-qword-addresses x86-equiv)
                   (gather-all-paging-structure-qword-addresses x86)))

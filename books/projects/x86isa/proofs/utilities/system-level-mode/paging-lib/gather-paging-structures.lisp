@@ -2026,37 +2026,40 @@
   paging structures are equal, modulo the accessed and dirty bits (See
   @(see xlate-equiv-entries)).</p>"
 
-  (if (equal (xr :programmer-level-mode 0 x86-1) nil)
+  (if (and (equal (xr :programmer-level-mode 0 x86-1) nil)
+           (equal (xr :programmer-level-mode 0 x86-2) nil)
+           ;; (equal (xr :page-structure-marking-mode 0 x86-1) t)
+           ;; (equal (xr :page-structure-marking-mode 0 x86-2) t)
+           )
 
-      (if (equal (xr :programmer-level-mode 0 x86-2) nil)
+      (let* ((paging-qword-addresses-1
+              (gather-all-paging-structure-qword-addresses x86-1))
+             (paging-qword-addresses-2
+              (gather-all-paging-structure-qword-addresses x86-2)))
 
-          (let* ((paging-qword-addresses-1
-                  (gather-all-paging-structure-qword-addresses x86-1))
-                 (paging-qword-addresses-2
-                  (gather-all-paging-structure-qword-addresses x86-2)))
+        (and (equal (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-1))
+                    (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-2)))
+             (equal (cr0-slice :cr0-wp (n32 (ctri *cr0* x86-1)))
+                    (cr0-slice :cr0-wp (n32 (ctri *cr0* x86-2))))
+             (equal (cr3-slice :cr3-pdb (ctri *cr3* x86-1))
+                    (cr3-slice :cr3-pdb (ctri *cr3* x86-2)))
+             (equal (cr4-slice :cr4-smep (loghead 22 (ctri *cr4* x86-1)))
+                    (cr4-slice :cr4-smep (loghead 22 (ctri *cr4* x86-2))))
+             (equal (cr4-slice :cr4-smap (loghead 22 (ctri *cr4* x86-1)))
+                    (cr4-slice :cr4-smap (loghead 22 (ctri *cr4* x86-2))))
+             (equal (ia32_efer-slice :ia32_efer-nxe (n12 (msri *ia32_efer-idx* x86-1)))
+                    (ia32_efer-slice :ia32_efer-nxe (n12 (msri *ia32_efer-idx* x86-2))))
+             (equal (rflags-slice :ac (rflags x86-1))
+                    (rflags-slice :ac (rflags x86-2)))
+             (equal paging-qword-addresses-1 paging-qword-addresses-2)
+             (xlate-equiv-entries-at-qword-addresses
+              paging-qword-addresses-1 paging-qword-addresses-2 x86-1 x86-2)))
 
-            (and (equal (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-1))
-                        (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-2)))
-                 (equal (cr0-slice :cr0-wp (n32 (ctri *cr0* x86-1)))
-                        (cr0-slice :cr0-wp (n32 (ctri *cr0* x86-2))))
-                 (equal (cr3-slice :cr3-pdb (ctri *cr3* x86-1))
-                        (cr3-slice :cr3-pdb (ctri *cr3* x86-2)))
-                 (equal (cr4-slice :cr4-smep (loghead 22 (ctri *cr4* x86-1)))
-                        (cr4-slice :cr4-smep (loghead 22 (ctri *cr4* x86-2))))
-                 (equal (cr4-slice :cr4-smap (loghead 22 (ctri *cr4* x86-1)))
-                        (cr4-slice :cr4-smap (loghead 22 (ctri *cr4* x86-2))))
-                 (equal (ia32_efer-slice :ia32_efer-nxe (n12 (msri *ia32_efer-idx* x86-1)))
-                        (ia32_efer-slice :ia32_efer-nxe (n12 (msri *ia32_efer-idx* x86-2))))
-                 (equal (rflags-slice :ac (rflags x86-1))
-                        (rflags-slice :ac (rflags x86-2)))
-                 (equal paging-qword-addresses-1 paging-qword-addresses-2)
-                 (xlate-equiv-entries-at-qword-addresses
-                  paging-qword-addresses-1 paging-qword-addresses-2 x86-1 x86-2)))
-
-        nil)
-
-    (equal (xr :programmer-level-mode 0 x86-2)
-           (xr :programmer-level-mode 0 x86-1)))
+    (and (equal (xr :programmer-level-mode 0 x86-2)
+                (xr :programmer-level-mode 0 x86-1))
+         ;; (equal (xr :page-structure-marking-mode 0 x86-2)
+         ;;        (xr :page-structure-marking-mode 0 x86-1))
+         ))
 
   ///
 
@@ -2108,7 +2111,9 @@
                   (not (equal fld :msr))
                   (not (equal fld :ctr))
                   (not (equal fld :rflags))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :programmer-level-mode))
+                  ;; (not (equal fld :page-structure-marking-mode))
+                  )
              (xlate-equiv-structures (xw fld index val x86)
                                      (double-rewrite x86))))
 
@@ -2116,7 +2121,15 @@
     (implies (xlate-equiv-structures x86-1 x86-2)
              (equal (xr :programmer-level-mode 0 x86-1)
                     (xr :programmer-level-mode 0 x86-2)))
-    :rule-classes :congruence))
+    :rule-classes :congruence)
+
+
+  ;; (defthm xlate-equiv-structures-and-page-structure-marking-mode
+  ;;   (implies (xlate-equiv-structures x86-1 x86-2)
+  ;;            (equal (xr :page-structure-marking-mode 0 x86-1)
+  ;;                   (xr :page-structure-marking-mode 0 x86-2)))
+  ;;   :rule-classes :congruence)
+  )
 
 ;; =====================================================================
 
@@ -2130,7 +2143,8 @@
                   x86-1 'x86-2 mfc state)
                  (x86-2))
                 (xlate-equiv-structures (double-rewrite x86-1) (double-rewrite x86-2))
-                (not (programmer-level-mode (double-rewrite x86-1)))
+                (equal (programmer-level-mode (double-rewrite x86-1)) nil)
+                ;; (equal (page-structure-marking-mode x86-1) t)
                 (disjoint-p
                  (addr-range 8 index)
                  (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86-1)))
@@ -2145,11 +2159,13 @@
                             (pairwise-disjoint-p-aux
                              open-qword-paddr-list
                              gather-all-paging-structure-qword-addresses-wm-low-64-disjoint
-                             gather-all-paging-structure-qword-addresses)))))
+                             gather-all-paging-structure-qword-addresses
+                             force (force))))))
 
 (defthm gather-all-paging-structure-qword-addresses-wm-low-64-different-x86
   (implies (and (xlate-equiv-structures x86 (double-rewrite x86-equiv))
-                (not (programmer-level-mode x86))
+                (equal (programmer-level-mode x86) nil)
+                ;; (equal (page-structure-marking-mode x86) t)
                 (x86p x86-equiv)
                 (member-p index (gather-all-paging-structure-qword-addresses x86))
                 (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
@@ -2224,7 +2240,8 @@
 
 (defthm xlate-equiv-structures-and-xlate-equiv-entries-at-qword-addresses
   (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
-                (not (programmer-level-mode x86))
+                (equal (programmer-level-mode x86) nil)
+                ;; (equal (page-structure-marking-mode x86) t)
                 (xlate-equiv-structures (double-rewrite x86) (double-rewrite x86-equiv)))
            (xlate-equiv-entries-at-qword-addresses addrs addrs x86 x86-equiv))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-structures xlate-equiv-structures)
@@ -2233,7 +2250,8 @@
 (defthmd xlate-equiv-structures-and-xlate-equiv-entries
   (implies (and (xlate-equiv-structures x86-1 x86-2)
                 (member-p index (gather-all-paging-structure-qword-addresses x86-1))
-                (not (programmer-level-mode x86-1)))
+                ;; (equal (page-structure-marking-mode x86-1) t)
+                (equal (programmer-level-mode x86-1) nil))
            (xlate-equiv-entries (rm-low-64 index x86-1) (rm-low-64 index x86-2)))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-structures xlate-equiv-structures)
                                    ()))))
