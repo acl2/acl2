@@ -6891,6 +6891,17 @@
   #-acl2-loop-only
   (progn
 
+    (when (not (our-probe-file (directory-namestring exec-filename)))
+
+; Without this check, CCL will create a directory for us; yet SBCL will not.
+; We prefer consistent behavior across all Lisps.  Here we choose to require
+; the directory to exist already, to prevent users from creating directories
+; they don't want by mistake.
+
+      (error "~s is unable to save to file ~s, because its directory does not ~
+              exist."
+             'save-exec exec-filename))
+
 ; Parallelism blemish: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.
 
