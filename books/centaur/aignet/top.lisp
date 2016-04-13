@@ -149,9 +149,10 @@ constant-time (since there may be array resizes).</p>
 <h3>Comparison with Hons-AIGs</h3>
 
 <p>Our focus on efficiency makes Aignet more difficult to work with and reason
-about than the simpler <see topic='@(url aig)'>Hons-AIG library</see>.  On the
-other hand, Aignet can sometimes be much faster than Hons-AIGs.  For a good
-introduction with a more detailed comparison of Hons-AIGs and Aignet, see:</p>
+about than the simpler <see topic='@(url acl2::aig)'>Hons-AIG library</see>.
+On the other hand, Aignet can sometimes be much faster than Hons-AIGs.  For a
+good introduction with a more detailed comparison of Hons-AIGs and Aignet,
+see:</p>
 
 <ul>
 
@@ -241,7 +242,7 @@ array accesses.</p>
 as a single natural number: @('(+ (* 2 id) neg)'), where neg is 1 or 0.</p>
 
 <p>There are many functions for constructing and accessing the various kinds of
-nodes.  See @(see logical-node) for a reference.  Note that these node-related
+nodes.  See @(see node) for a reference.  Note that these node-related
 functions are not meant to be executed; they exist only for reasoning.</p>
 
 
@@ -274,12 +275,10 @@ for a given register ID:</p>
 <h3>Lowest-Level API</h3>
 
 <p>The functions described above&mdash;@('node-count'), @('lookup-id'),
-@('stype-count'), @('lookup-stype') and @('lookup-reg->nxst')&mdash;and
-the other functions for operating on logical nodes, e.g., the functions
-described under @(see logical-node) and 
-
-provide the
-logical basis for reasoning about most kinds of access to the aignet.</p>
+@('stype-count'), @('lookup-stype') and @('lookup-reg->nxst')&mdash;and the
+other functions for operating on logical nodes, e.g., the functions described
+under @(see node), provide the logical basis for reasoning about most kinds of
+access to the aignet.</p>
 
 <p>However, note that these functions are typically not used directly.
 Instead, see the wrappers that implement Aignet's @(see base-api).</p>")

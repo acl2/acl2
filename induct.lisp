@@ -2673,17 +2673,22 @@
 ; the hint settings into the pspv it returns.  Most of the content of
 ; the hint-settings is loaded into the rewrite-constant of the pspv.
 
-(defun@par load-hint-settings-into-rcnst (hint-settings rcnst cl-id wrld ctx
-                                                        state)
+(defun@par load-hint-settings-into-rcnst (hint-settings rcnst
+                                                        incrmt-array-name-info
+                                                        wrld ctx state)
 
 ; Certain user supplied hint settings find their way into the rewrite-constant.
 ; They are :expand, :restrict, :hands-off, and :in-theory.  Our convention is
 ; that if a given hint key/val is provided it replaces what was in the rcnst.
 ; Otherwise, we leave the corresponding field of rcnst unchanged.
 
-; Cl-id is either a clause-id or nil.  If it is a clause-id and we install a
-; new enabled structure, then we we will use that clause-id to build the array
-; name, rather than simply incrementing a suffix.
+; Incrmt-array-name-info is either a clause-id, a keyword, or nil.  If it is a
+; clause-id and we install a new enabled structure, then we will use that
+; clause-id to build the array name, rather than simply incrementing a suffix.
+; Otherwise incrmt-array-name-info is a keyword.  A keyword value should be
+; used for calls made by user applications, for example in community book
+; books/tools/easy-simplify.lisp, so that enabled structures maintained by the
+; ACL2 system do not lose their associated von Neumann arrays.
 
   (er-let*@par
    ((new-ens
@@ -2694,7 +2699,7 @@
         (cdr (assoc-eq :in-theory hint-settings))
         nil
         (access rewrite-constant rcnst :current-enabled-structure)
-        (or cl-id t)
+        (or incrmt-array-name-info t)
         nil
         wrld ctx state))
       (t (value@par (access rewrite-constant rcnst

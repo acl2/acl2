@@ -52,7 +52,7 @@
                 lispfloat) wrapper function.</p>
 
                 <p>In the logic this function does not have a definition, but
-                its @(see constraint)s say it returns @('(mv errmsg ans)'),
+                its @(see acl2::constraint)s say it returns @('(mv errmsg ans)'),
                 where:</p>
 
                 <ul>

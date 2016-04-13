@@ -44,6 +44,8 @@
                            not nfix acl2::zp-open)))
 (local (in-theory (disable (tau-system))))
 
+(local (xdoc::set-default-parents vl-expr-typedecide))
+
 
 (define vl-arithclass-rank ((x vl-arithclass-p))
   :parents (vl-arithclass-max)
@@ -61,7 +63,6 @@
     (otherwise (nfix (impossible)))))
 
 (defsection vl-arithclass-max
-  :parents (vl-expr-typedecide)
   :short "@(call vl-arithclass-max) computes the arithmetic class for a non
 self-determined operand, given the classes of the arguments."
 
@@ -327,7 +328,6 @@ etc.)</p>"
 
 (define vl-unaryop-typedecide ((x          vl-expr-p)
                                (arg-class  vl-arithclass-p))
-  :parents (vl-expr-typedecide)
   :prepwork ((local (defthm vl-unary->op-forward
                       (vl-unaryop-p (vl-unary->op x))
                       :rule-classes ((:forward-chaining :trigger-terms ((vl-unary->op x)))))))

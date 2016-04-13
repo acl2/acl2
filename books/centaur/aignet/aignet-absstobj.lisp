@@ -185,8 +185,8 @@
                    (aignet$a::num-nxsts aigneta))
             (equal (nth aignet$c::*num-outs* aignetc)
                    (aignet$a::num-outs aigneta))
-            (equal (nth aignet$c::*num-gates* aignetc)
-                   (aignet$a::num-gates aigneta))))
+            (equal (nth aignet$c::*max-fanin* aignetc)
+                   (aignet$a::max-fanin aigneta))))
 
      (local (in-theory (enable aignet-count-equivs)))
      (defthm aignet-count-equivs-implies
@@ -201,8 +201,8 @@
                             (aignet$a::num-nxsts aigneta))
                      (equal (nth aignet$c::*num-outs* aignetc)
                             (aignet$a::num-outs aigneta))
-                     (equal (nth aignet$c::*num-gates* aignetc)
-                            (aignet$a::num-gates aigneta)))))
+                     (equal (nth aignet$c::*max-fanin* aignetc)
+                            (aignet$a::max-fanin aigneta)))))
 
      (defthm aignet-count-equivs-unhide
        (equal (hide (aignet-count-equivs aignetc aigneta))
@@ -216,8 +216,8 @@
                           (aignet$a::num-nxsts aigneta))
                    (equal (nth aignet$c::*num-outs* aignetc)
                           (aignet$a::num-outs aigneta))
-                   (equal (nth aignet$c::*num-gates* aignetc)
-                          (aignet$a::num-gates aigneta))))
+                   (equal (nth aignet$c::*max-fanin* aignetc)
+                          (aignet$a::max-fanin aigneta))))
        :hints (("goal" :Expand ((:free (x) (hide x)))))))
 
 
@@ -391,8 +391,8 @@
                       :exec aignet$c::num-outs)
             (num-nxsts :logic aignet$a::num-nxsts
                         :exec aignet$c::num-nxsts)
-            (num-gates :logic aignet$a::num-gates
-                       :exec aignet$c::num-gates)
+            (max-fanin :logic aignet$a::max-fanin
+                       :exec  aignet$c::max-fanin)
 
             (fanin-litp :logic aignet$a::fanin-litp
                          :exec aignet$c::fanin-litp$inline)
@@ -452,6 +452,54 @@
 (defstobj-clone aignet2 aignet :suffix "2")
 
 
+(define num-gates (aignet)
+  :prepwork ((local (set-default-hints nil))
+             (local (defthm gate-stype-count
+                      (implies (aignet-nodes-ok aignet)
+                               (equal (stype-count :gate aignet)
+                                      (+ (node-count aignet)
+                                         (- (stype-count :pi aignet))
+                                         (- (stype-count :po aignet))
+                                         (- (stype-count :reg aignet))
+                                         (- (stype-count :nxst aignet)))))
+                      :hints (("goal" :induct (node-count aignet)
+                               :in-theory (enable (:i node-count))
+                               :expand ((node-count aignet)
+                                        (aignet-nodes-ok aignet)
+                                        (:free (stype) (stype-count stype aignet))))))))
+  :enabled t
+  (mbe :logic (non-exec (stype-count (gate-stype) aignet))
+       :exec (+ (num-nodes aignet)
+                (- (+ 1  ;; constant
+                      (num-ins aignet)
+                      (num-regs aignet)
+                      (num-outs aignet)
+                      (num-nxsts aignet))))))
+  
+(define reg-id->nxst-lit ((id natp)
+                          (aignet))
+  :guard (and (id-existsp id aignet)
+              (eql (id->type id aignet) (in-type))
+              (eql (io-id->regp id aignet) 1))
+  :returns (lit (and (litp lit)
+                     (aignet-litp lit aignet))
+                :hints((and stable-under-simplificationp
+                            '(:in-theory (enable aignet-litp)))))
+  (b* ((nxst (reg-id->nxst id aignet)))
+    (if (int= (id->type nxst aignet) (out-type))
+        (co-id->fanin nxst aignet)
+      (mk-lit nxst 0)))
+  ///
+  (defthm reg-id->nxst-lit-id-lte-max-fanin
+    (<= (lit-id (reg-id->nxst-lit id aignet))
+        (node-count (find-max-fanin aignet)))
+    :hints(("Goal" :in-theory (disable reg-id->nxst-lit
+                                       aignet-litp-implies-id-lte-max-fanin)
+            :use ((:instance aignet-litp-implies-id-lte-max-fanin
+                   (lit (reg-id->nxst-lit id aignet))))))
+    :rule-classes :linear))
+
+
 
 (defsection base-api
   :parents (aignet)
@@ -482,6 +530,7 @@
   <li>@(see num-gates) returns the number of and gates</li>
   <li>@(see num-regs) returns the number of register nodes</li>
   <li>@(see num-nxsts) returns the number of next-state nodes</li>
+  <li>@(see max-fanin) returns the index of the last fanin (non-output) node</li>
 </ul>
 
 <h5>General node queries</h5>
@@ -673,6 +722,15 @@
   :long "<p>Logically this is just @('(stype-count :gate aignet)')</p>
   <p>In the execution this is just a stobj field access.</p>
   @(def aignet$a::num-gates)")
+
+(defxdoc max-fanin
+  :short "@(call max-fanin) returns the maximum index of a non-output/non-nextstate
+          node in an aignet."
+  :long "<p>Logically this is @('(node-count (find-max-fanin aignet))'), where
+  @(see find-max-fanin) just finds the longest suffix whose first node is a fanin
+  type.</p>
+  <p>In the execution this is just a stobj field access.</p>
+  @(def aignet$a::max-fanin)")
 
 
 

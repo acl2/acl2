@@ -35,7 +35,7 @@
 (local (xdoc::set-default-parents bit-blasting))
 
 
-(define aig-list->s ((x   "AIG list to evaluate.")
+(define aig-list->s ((x   true-listp "AIG list to evaluate.")
                      (env "AIG environment to evaluate it under."))
   :parents (a4vec)
   :returns (ans integerp :rule-classes :type-prescription)
@@ -49,7 +49,7 @@
       (logcons (bool->bit (aig-eval first env))
                (aig-list->s rest env)))))
 
-(define aig-list->u ((x   "AIG list to evaluate.")
+(define aig-list->u ((x   true-listp "AIG list to evaluate.")
                      (env "AIG environment to evaluate it under."))
   :parents (a4vec)
   :returns (ans natp :rule-classes :type-prescription)

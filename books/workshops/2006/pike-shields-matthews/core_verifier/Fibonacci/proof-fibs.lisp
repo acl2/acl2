@@ -16,6 +16,9 @@
 (include-book "fibs-source-shallow-flatten")
 ;; --------------------------------------------------------
 
+; Matt K. mod April 2016 for the addition of a type-set bit for the set {1}.
+(local (in-theory (disable (:t b-not))))
+
 (make-thm :name |inv-fibs-thm|
           :thm-type invariant
           :ind-name |fibs_2|

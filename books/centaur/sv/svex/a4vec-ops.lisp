@@ -533,13 +533,25 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
 
 (define a4vec-mask-check ((mask 4vmask-p)
                           (idx natp)
-                          (vec "aig list")
+                          (vec true-listp "aig list")
                           (upperp booleanp))
   :returns (already-maskedp booleanp)
   :measure (len vec)
-  (b* (((mv first rest endp) (gl::first/rest/end vec))
+  :prepwork ((local (defthmd logbitp-past-integer-length-iff-logtail-minus1
+                      (iff (equal (logtail idx mask) -1)
+                           (and (<= (integer-length mask) (nfix idx))
+                                (logbitp idx mask)))
+                      :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                                         ihsext-inductions))))))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable logbitp-past-integer-length-iff-logtail-minus1))))
+  (b* ((idx (lnfix idx))
+       (mask (4vmask-fix mask))
+       ((mv first rest endp) (gl::first/rest/end vec))
        ((when endp)
-        (or (equal (4vmask-fix mask) -1)
+        (or (mbe :logic (equal (logtail idx mask) -1)
+                 :exec (and (<= (integer-length mask) idx)
+                            (logbitp idx mask)))  ;; (equal (4vmask-fix mask) -1)
             (equal first (mbe :logic (acl2::bool-fix upperp) :exec upperp)))))
     (and (or (logbitp idx (4vmask-fix mask))
              (equal first (mbe :logic (acl2::bool-fix upperp) :exec upperp)))
@@ -586,7 +598,39 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints (("goal" :use ((:instance a4vec-mask-check-correct-lemma
                            (idx 0) (upperp t))
                           (:instance a4vec-mask-check-correct-lemma
-                           (idx 0) (upperp nil)))))))
+                           (idx 0) (upperp nil))))))
+
+  ;; helpful for deffixequiv:
+  (local (in-theory (disable (:d a4vec-mask-check)
+                             acl2::equal-of-booleans-rewrite))))
+
+
+(define aig-scons-with-hint (b
+                             (v true-listp)
+                             (hint true-listp))
+  :returns (ans (equal ans (aig-scons b v))
+                :hints(("Goal" :in-theory (enable gl::bfr-scons))))
+  :inline t
+  (if (atom v)
+      (if b
+          (cons-with-hint b
+                          (let ((ans '(nil)))
+                            (mbe :logic ans
+                                 :exec (if (equal ans (cdr hint)) (cdr hint) ans)))
+                          hint)
+        (let ((ans '(nil)))
+          (mbe :logic ans
+               :exec (if (equal hint ans) hint ans))))
+    (if (and (atom (cdr v))
+             (hons-equal (car v) b))
+        (llist-fix v)
+      (cons-with-hint b (llist-fix v) hint))))
+
+(define aig-sterm-with-hint (b hint)
+  :returns (ans (equal ans (aig-sterm b))
+                :hints(("Goal" :in-theory (enable gl::bfr-sterm))))
+  :inline t
+  (cons-with-hint b nil hint))
 
 
 (define a4vec-mask ((mask 4vmask-p)
@@ -613,7 +657,6 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     (equal (a4vec-eval (a4vec-mask mask x) env)
            (4vec-mask mask (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-mask a4vec-mask-check-correct)))))
-
 
 (define a4vec-uminus ((x a4vec-p))
   :short "Symbolic version of @(see 4vec-uminus)."
@@ -784,7 +827,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                                           (aig-=-ss base '(t))))   ;; base == -1
                           (b* ((pow (aig-expt-su base exp)))
                             (a4vec pow pow))
-                          (a4vec-ite (aig-=-ss base 0)
+                          (a4vec-ite (aig-=-ss base nil)
                                      (a4vec-x)
                                      (a4vec nil nil))))
              (a4vec-x))
@@ -932,10 +975,10 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                                        acl2::aig-eval-xor))))))
 
 
-(define a4vec-wildeq-safe-aux ((a.upper "aig list")
-                          (a.lower "aig list")
-                          (b.upper "aig list")
-                          (b.lower "aig list"))
+(define a4vec-wildeq-safe-aux ((a.upper true-listp "aig list")
+                               (a.lower true-listp "aig list")
+                               (b.upper true-listp "aig list")
+                               (b.lower true-listp "aig list"))
   :measure (+ (len b.upper) (len b.lower) (len a.upper) (len a.lower))
   :returns (mv (wildeq-safe-p-upper "aig")
                (wildeq-safe-p-lower "aig"))
@@ -990,15 +1033,15 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
              (and (iff (aig-eval upper env)
                        (equal -1 (4vec->upper
                                   (4vec-wildeq-safe (4vec (bool->vec (aig-eval a env))
-                                                     (bool->vec (aig-eval b env)))
-                                               (4vec (bool->vec (aig-eval c env))
-                                                     (bool->vec (aig-eval d env)))))))
+                                                          (bool->vec (aig-eval b env)))
+                                                    (4vec (bool->vec (aig-eval c env))
+                                                          (bool->vec (aig-eval d env)))))))
                   (iff (aig-eval lower env)
                        (equal -1 (4vec->lower
                                   (4vec-wildeq-safe (4vec (bool->vec (aig-eval a env))
-                                                     (bool->vec (aig-eval b env)))
-                                               (4vec (bool->vec (aig-eval c env))
-                                                     (bool->vec (aig-eval d env)))))))))
+                                                          (bool->vec (aig-eval b env)))
+                                                    (4vec (bool->vec (aig-eval c env))
+                                                          (bool->vec (aig-eval d env)))))))))
            :hints(("Goal" :in-theory (e/d (4vec-wildeq-safe
                                            4vec-bitxor 3vec-bitnot
                                            3vec-bitor 3vec-reduction-and
@@ -1012,22 +1055,22 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (equal (4vec-wildeq-safe (4vec a b) (4vec c d))
                   (4vec (bool->vec
                          (and (equal -1 (4vec->upper (4vec-wildeq-safe (4vec (bool->vec (logbitp 0 a))
-                                                                        (bool->vec (logbitp 0 b)))
-                                                                  (4vec (bool->vec (logbitp 0 c))
-                                                                        (bool->vec (logbitp 0 d))))))
+                                                                             (bool->vec (logbitp 0 b)))
+                                                                       (4vec (bool->vec (logbitp 0 c))
+                                                                             (bool->vec (logbitp 0 d))))))
                               (equal -1 (4vec->upper (4vec-wildeq-safe (4vec (logcdr a)
-                                                                        (logcdr b))
-                                                                  (4vec (logcdr c)
-                                                                        (logcdr d)))))))
+                                                                             (logcdr b))
+                                                                       (4vec (logcdr c)
+                                                                             (logcdr d)))))))
                         (bool->vec
                          (and (equal -1 (4vec->lower (4vec-wildeq-safe (4vec (bool->vec (logbitp 0 a))
-                                                                        (bool->vec (logbitp 0 b)))
-                                                                  (4vec (bool->vec (logbitp 0 c))
-                                                                        (bool->vec (logbitp 0 d))))))
+                                                                             (bool->vec (logbitp 0 b)))
+                                                                       (4vec (bool->vec (logbitp 0 c))
+                                                                             (bool->vec (logbitp 0 d))))))
                               (equal -1 (4vec->lower (4vec-wildeq-safe (4vec (logcdr a)
-                                                                        (logcdr b))
-                                                                  (4vec (logcdr c)
-                                                                        (logcdr d)))))))))
+                                                                             (logcdr b))
+                                                                       (4vec (logcdr c)
+                                                                             (logcdr d)))))))))
            :hints(("Goal" :in-theory (enable 4vec-wildeq-safe 3vec-bitnot 4vec-bitxor
                                              3vec-bitor 3vec-reduction-and bool->vec
                                              bitops::logand**
@@ -1056,9 +1099,9 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     (b* (((mv ans.upper ans.lower) (a4vec-wildeq-safe-aux a.upper a.lower b.upper b.lower)))
       (equal (a4vec-eval (a4vec (list ans.upper) (list ans.lower)) env)
              (4vec-wildeq-safe (4vec (aig-list->s a.upper env)
-                                (aig-list->s a.lower env))
-                          (4vec (aig-list->s b.upper env)
-                                (aig-list->s b.lower env)))))
+                                     (aig-list->s a.lower env))
+                               (4vec (aig-list->s b.upper env)
+                                     (aig-list->s b.lower env)))))
     :hints (("Goal" :induct (a4vec-wildeq-safe-aux a.upper a.lower b.upper b.lower)
              :do-not '(generalize fertilize eliminate-destructors))
             (and stable-under-simplificationp
@@ -1146,10 +1189,10 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                                        acl2::aig-eval-xor))))))
 
 
-(define a4vec-wildeq-aux ((a.upper "aig list")
-                          (a.lower "aig list")
-                          (b.upper "aig list")
-                          (b.lower "aig list"))
+(define a4vec-wildeq-aux ((a.upper true-listp "aig list")
+                          (a.lower true-listp "aig list")
+                          (b.upper true-listp "aig list")
+                          (b.lower true-listp "aig list"))
   :measure (+ (len b.upper) (len b.lower) (len a.upper) (len a.lower))
   :returns (mv (wildeq-p-upper "aig")
                (wildeq-p-lower "aig"))
@@ -1365,7 +1408,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (4vec-parity (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-parity bool->vec)))))
 
-(define aig-iszero-s (a)
+(define aig-iszero-s ((a true-listp))
   :short "Determines whether a signed vector of AIGs is equal to 0."
   :returns (res "aig")
   (b* (((mv first rest end) (gl::first/rest/end a))
@@ -1790,7 +1833,16 @@ results in at most n+1 bits.</p>"
 
    ))
 
-(define aig-logcollapse-ns ((n natp) x)
+
+(local (encapsulate nil
+         (local (in-theory (enable aig-logtail-ns)))
+         (deffixequiv aig-logtail-ns)))
+
+(local (encapsulate nil
+         (local (in-theory (enable aig-loghead-ns)))
+         (deffixequiv aig-loghead-ns)))
+
+(define aig-logcollapse-ns ((n natp) (x true-listp))
   :parents (logcollapse)
   (b* ((n (lnfix n)))
     (aig-logior-ss (aig-loghead-ns n x)
@@ -2135,7 +2187,7 @@ results in at most n+1 bits.</p>"
                      (equal (ifix y) (logtail w z))))
          :hints((logbitp-reasoning))))
 
-(define aig-head-tail-concat-aux ((rev-shift)
+(define aig-head-tail-concat-aux ((rev-shift true-listp)
                                   (shift-len (eql shift-len (len rev-shift)))
                                   (lsbs true-listp) ;; already truncated at width
                                   (msbs true-listp)
@@ -3153,7 +3205,7 @@ optimization to avoid problems due to large masks.</p>"
 
 
 
-(define aig-right-shift-ss ((place posp) n shamt)
+(define aig-right-shift-ss ((place posp) (n true-listp) (shamt true-listp))
   :parents (a4vec-rsh)
   (b* (((mv shdig shrst shend) (gl::first/rest/end shamt))
        (place (lposfix place))
@@ -3532,7 +3584,7 @@ provides special optimization to avoid problems due to large masks.</p>"
 
 (define aig-rev-blocks-nns ((nbits natp)
                             (blocksz posp)
-                            x)
+                            (x true-listp))
   :parents (a4vec-rev-blocks)
   (b* ((nbits   (lnfix nbits))
        (blocksz (lposfix blocksz))
@@ -3551,8 +3603,8 @@ provides special optimization to avoid problems due to large masks.</p>"
 (define aig-rev-blocks-nss ((nbits natp)
                             (blocksz-lowbits natp)
                             (blocksz-bitidx natp)
-                            blocksz
-                            x)
+                            (blocksz true-listp)
+                            (x true-listp))
   :parents (a4vec-rev-blocks)
   :prepwork ((local (in-theory (disable unsigned-byte-p))))
   :guard (unsigned-byte-p blocksz-bitidx blocksz-lowbits)
@@ -3636,9 +3688,9 @@ provides special optimization to avoid problems due to large masks.</p>"
 
 (define aig-rev-blocks-sss ((nbits-lowbits natp)
                             (nbits-bitidx natp)
-                            nbits
-                            blocksz
-                            x)
+                            (nbits true-listp)
+                            (blocksz true-listp)
+                            (x true-listp))
   :prepwork ((local (in-theory (disable unsigned-byte-p))))
   :guard (unsigned-byte-p nbits-bitidx nbits-lowbits)
   (b* (((mv head tail end) (gl::first/rest/end nbits))

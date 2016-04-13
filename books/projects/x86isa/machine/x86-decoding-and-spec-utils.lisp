@@ -344,9 +344,7 @@ field conveying useful information. </li>
                      p4 temp-RIP rex-byte r/m mod sib
                      num-imm-bytes x86))
           4)
-      :rule-classes :linear))
-
-  )
+      :rule-classes :linear)))
 
 ;; ======================================================================
 
@@ -422,8 +420,7 @@ made from privilege level 3.</sf>"
          (AM  (cr0-slice :cr0-am cr0))
          (AC (mbe :logic (flgi *ac* x86)
                   :exec (rflags-slice :ac (the (unsigned-byte 32) (rflags x86)))))
-         (cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-         (CPL (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment))))
+         (CPL (cpl x86)))
       (and (equal AM 1)
            (equal AC 1)
            (equal CPL 3)))
@@ -457,7 +454,12 @@ made from privilege level 3.</sf>"
                                     (equal (seg-sel-layout-slice :rpl val)
                                            (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86))))))
                (equal (alignment-checking-enabled-p (xw :seg-visible index val x86))
-                      (alignment-checking-enabled-p x86)))))
+                      (alignment-checking-enabled-p x86))))
+
+    (defthm alignment-checking-enabled-p-and-mv-nth-1-wb
+      (equal (alignment-checking-enabled-p (mv-nth 1 (wb addr-lst x86)))
+             (alignment-checking-enabled-p x86))
+      :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory flgi) ())))))
 
   (define x86-operand-from-modr/m-and-sib-bytes
     ;; TO-DO: operand-sizes 6 and 10 are weird. Fix them.
@@ -584,7 +586,10 @@ made from privilege level 3.</sf>"
                                      rex-byte x86) x86)
                 (mv nil (xmmi-size operand-size (reg-index r/m rex-byte #.*b*)
                                    x86) x86))
-            (rm-size operand-size v-addr :x x86)))
+            ;; The operand is being fetched from the memory, not the
+            ;; instruction stream. That's why we have :r instead of :x
+            ;; below.
+            (rm-size operand-size v-addr :r x86)))
          ((when flg2)
           (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
 

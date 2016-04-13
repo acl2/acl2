@@ -228,7 +228,7 @@
 
 (mutual-recursion
 
-(defun eval-ground-subexpressions (term ens wrld state ttree)
+(defun eval-ground-subexpressions1 (term ens wrld safe-mode gc-off ttree)
   (cond
    ((or (variablep term)
         (fquotep term)
@@ -236,19 +236,20 @@
     (mv nil term ttree))
    ((flambda-applicationp term)
     (mv-let
-     (flg args ttree)
-     (eval-ground-subexpressions-lst (fargs term) ens wrld state ttree)
-     (cond
-      ((all-quoteps args)
-       (mv-let
-        (flg val ttree)
-        (eval-ground-subexpressions
-         (sublis-var (pairlis$ (lambda-formals (ffn-symb term)) args)
-                     (lambda-body (ffn-symb term)))
-         ens wrld state ttree)
-        (declare (ignore flg))
-        (mv t val ttree)))
-      (flg
+      (flg args ttree)
+      (eval-ground-subexpressions1-lst (fargs term) ens wrld safe-mode gc-off
+                                       ttree)
+      (cond
+       ((all-quoteps args)
+        (mv-let
+          (flg val ttree)
+          (eval-ground-subexpressions1
+           (sublis-var (pairlis$ (lambda-formals (ffn-symb term)) args)
+                       (lambda-body (ffn-symb term)))
+           ens wrld safe-mode gc-off ttree)
+          (declare (ignore flg))
+          (mv t val ttree)))
+       (flg
 
 ; We could look for just those args that are quoteps, and substitute those,
 ; presumably then calling make-lambda-application to create a lambda out of the
@@ -256,86 +257,110 @@
 ; noting that through Version_2.9.4 we did not evaluate any ground lambda
 ; applications.
 
-       (mv t (cons-term (ffn-symb term) args) ttree))
-      (t (mv nil term ttree)))))
+        (mv t (cons-term (ffn-symb term) args) ttree))
+       (t (mv nil term ttree)))))
    ((eq (ffn-symb term) 'if)
     (mv-let
-     (flg1 arg1 ttree)
-     (eval-ground-subexpressions (fargn term 1) ens wrld state ttree)
-     (cond
-      ((quotep arg1)
-       (if (cadr arg1)
-           (mv-let
-            (flg2 arg2 ttree)
-            (eval-ground-subexpressions (fargn term 2) ens wrld state ttree)
-            (declare (ignore flg2))
-            (mv t arg2 ttree))
-           (mv-let
+      (flg1 arg1 ttree)
+      (eval-ground-subexpressions1 (fargn term 1) ens wrld safe-mode gc-off
+                                   ttree)
+      (cond
+       ((quotep arg1)
+        (if (cadr arg1)
+            (mv-let
+              (flg2 arg2 ttree)
+              (eval-ground-subexpressions1 (fargn term 2) ens wrld safe-mode
+                                           gc-off ttree)
+              (declare (ignore flg2))
+              (mv t arg2 ttree))
+          (mv-let
             (flg3 arg3 ttree)
-            (eval-ground-subexpressions (fargn term 3) ens wrld state ttree)
+            (eval-ground-subexpressions1 (fargn term 3) ens wrld safe-mode
+                                         gc-off ttree)
             (declare (ignore flg3))
             (mv t arg3 ttree))))
-      (t (mv-let
-          (flg2 arg2 ttree)
-          (eval-ground-subexpressions (fargn term 2) ens wrld state ttree)
-          (mv-let
-           (flg3 arg3 ttree)
-           (eval-ground-subexpressions (fargn term 3) ens wrld state ttree)
-           (mv (or flg1 flg2 flg3)
-               (if (or flg1 flg2 flg3)
-                   (fcons-term* 'if arg1 arg2 arg3)
-                 term)
-               ttree)))))))
+       (t (mv-let
+            (flg2 arg2 ttree)
+            (eval-ground-subexpressions1 (fargn term 2) ens wrld safe-mode
+                                         gc-off ttree)
+            (mv-let
+              (flg3 arg3 ttree)
+              (eval-ground-subexpressions1 (fargn term 3) ens wrld safe-mode
+                                           gc-off ttree)
+              (mv (or flg1 flg2 flg3)
+                  (if (or flg1 flg2 flg3)
+                      (fcons-term* 'if arg1 arg2 arg3)
+                    term)
+                  ttree)))))))
    (t (mv-let
-       (flg args ttree)
-       (eval-ground-subexpressions-lst (fargs term) ens wrld state ttree)
-       (cond
+        (flg args ttree)
+        (eval-ground-subexpressions1-lst (fargs term) ens wrld safe-mode gc-off
+                                         ttree)
+        (cond
 
 ; The following test was taken from rewrite with a few modifications
 ; for the formals used.
 
-        ((and (logicalp (ffn-symb term) wrld) ; maybe fn is being admitted
-              (all-quoteps args)
-              (enabled-xfnp (ffn-symb term) ens wrld)
+         ((and (logicalp (ffn-symb term) wrld) ; maybe fn is being admitted
+               (all-quoteps args)
+               (enabled-xfnp (ffn-symb term) ens wrld)
 
 ; We don't mind disallowing constrained functions that have attachments,
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).
 
-              (not (getpropc (ffn-symb term) 'constrainedp nil wrld)))
-         (mv-let
-          (erp val latches)
-          (pstk
-           (ev-fncall (ffn-symb term)
-                      (strip-cadrs args)
-                      state nil t nil))
-          (declare (ignore latches))
-          (cond
-           (erp
-            (cond (flg
-                   (mv t (cons-term (ffn-symb term) args) ttree))
-                  (t (mv nil term ttree))))
-           (t (mv t
-                  (kwote val)
-                  (push-lemma (fn-rune-nume (ffn-symb term) nil t wrld)
-                              ttree))))))
-        (flg (mv t (cons-term (ffn-symb term) args) ttree))
-        (t (mv nil term ttree)))))))
+               (not (getpropc (ffn-symb term) 'constrainedp nil wrld)))
+          (mv-let
+            (erp val)
+            (pstk
+             (ev-fncall-w (ffn-symb term)
+                          (strip-cadrs args)
+                          wrld
+                          nil ; user-stobj-alist
+                          safe-mode gc-off
+                          t   ; hard-error-returns-nilp
+                          nil ; aok
+                          ))
+            (cond
+             (erp
+              (cond (flg
+                     (mv t (cons-term (ffn-symb term) args) ttree))
+                    (t (mv nil term ttree))))
+             (t (mv t
+                    (kwote val)
+                    (push-lemma (fn-rune-nume (ffn-symb term) nil t wrld)
+                                ttree))))))
+         (flg (mv t (cons-term (ffn-symb term) args) ttree))
+         (t (mv nil term ttree)))))))
 
-(defun eval-ground-subexpressions-lst (lst ens wrld state ttree)
+(defun eval-ground-subexpressions1-lst (lst ens wrld safe-mode gc-off ttree)
   (cond ((null lst) (mv nil nil ttree))
         (t (mv-let
             (flg1 x ttree)
-            (eval-ground-subexpressions (car lst) ens wrld state ttree)
+            (eval-ground-subexpressions1 (car lst) ens wrld safe-mode gc-off
+                                         ttree)
             (mv-let
              (flg2 y ttree)
-             (eval-ground-subexpressions-lst (cdr lst) ens wrld state ttree)
+             (eval-ground-subexpressions1-lst (cdr lst) ens wrld safe-mode
+                                              gc-off ttree)
              (mv (or flg1 flg2)
                  (if (or flg1 flg2)
                      (cons x y)
                    lst)
                  ttree))))))
 )
+
+(defun eval-ground-subexpressions (term ens wrld state ttree)
+  (eval-ground-subexpressions1 term ens wrld
+                               (f-get-global 'safe-mode state)
+                               (gc-off state)
+                               ttree))
+
+(defun eval-ground-subexpressions-lst (lst ens wrld state ttree)
+  (eval-ground-subexpressions1-lst lst ens wrld
+                                   (f-get-global 'safe-mode state)
+                                   (gc-off state)
+                                   ttree))
 
 (defun poly-set (op poly1 poly2)
 

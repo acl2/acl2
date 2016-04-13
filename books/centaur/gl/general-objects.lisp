@@ -125,7 +125,7 @@
         (number-to-components (g-concrete->obj x))
       (break-g-number (g-number->num x)))))
 
-
+(acl2::defmvtypes general-number-components (true-listp true-listp true-listp true-listp))
 
 
 ;; Note that, as in the case of general-number and general-boolean, it could

@@ -11432,20 +11432,28 @@
 ; every guard encountered in the mutually recursive clique containing name is
 ; satisfied.
 
-(defun eval-ground-subexpressions-lst-lst (lst-lst ens wrld state ttree)
+(defun eval-ground-subexpressions1-lst-lst (lst-lst ens wrld safe-mode gc-off
+                                                    ttree)
   (cond ((null lst-lst) (mv nil nil ttree))
         (t (mv-let
             (flg1 x ttree)
-            (eval-ground-subexpressions-lst (car lst-lst) ens wrld state ttree)
+            (eval-ground-subexpressions1-lst (car lst-lst) ens wrld safe-mode
+                                             gc-off ttree)
             (mv-let
              (flg2 y ttree)
-             (eval-ground-subexpressions-lst-lst (cdr lst-lst) ens wrld state
-                                                 ttree)
+             (eval-ground-subexpressions1-lst-lst (cdr lst-lst) ens wrld
+                                                  safe-mode gc-off ttree)
              (mv (or flg1 flg2)
                  (if (or flg1 flg2)
                      (cons x y)
                    lst-lst)
                  ttree))))))
+
+(defun eval-ground-subexpressions-lst-lst (lst-lst ens wrld state ttree)
+  (eval-ground-subexpressions1-lst-lst lst-lst ens wrld
+                                       (f-get-global 'safe-mode state)
+                                       (gc-off state)
+                                       ttree))
 
 (defun sublis-var-lst-lst (alist clauses)
   (cond ((null clauses) nil)
@@ -11767,7 +11775,8 @@
 
 )
 
-(defun guard-clauses+ (term debug-info stobj-optp clause ens wrld state ttree)
+(defun guard-clauses+ (term debug-info stobj-optp clause ens wrld safe-mode
+                            gc-off ttree)
 
 ; Ens may have the special value :do-not-simplify, in which case no
 ; simplification will take place in producing the guard clauses.
@@ -11777,13 +11786,13 @@
           (cond ((eq ens :DO-NOT-SIMPLIFY)
                  (mv clause-lst0 ttree))
                 (t (mv-let (flg clause-lst ttree)
-                     (eval-ground-subexpressions-lst-lst clause-lst0 ens wrld
-                                                         state ttree)
+                     (eval-ground-subexpressions1-lst-lst
+                      clause-lst0 ens wrld safe-mode gc-off ttree)
                      (declare (ignore flg))
                      (mv clause-lst ttree))))))
 
 (defun guard-clauses-for-body (hyp-segments body debug-info stobj-optp ens
-                                            wrld state ttree)
+                                            wrld safe-mode gc-off ttree)
 
 ; Hyp-segments is a list of clauses derived from the guard for body.  We
 ; generate the guard clauses for the unguarded body, body, under each of the
@@ -11801,12 +11810,12 @@
    (t (mv-let
        (cl-set1 ttree)
        (guard-clauses+ body debug-info stobj-optp (car hyp-segments) ens wrld
-                       state ttree)
+                       safe-mode gc-off ttree)
        (mv-let
         (cl-set2 ttree)
         (guard-clauses-for-body (cdr hyp-segments)
-                                body debug-info stobj-optp ens wrld state
-                                ttree)
+                                body debug-info stobj-optp ens wrld safe-mode
+                                gc-off ttree)
         (mv (conjoin-clause-sets+ debug-info cl-set1 cl-set2) ttree))))))
 
 (defun normalize-ts-backchain-limit-for-defs (wrld)
@@ -11851,7 +11860,7 @@
         0
       1)))
 
-(defun guard-clauses-for-fn (name debug-p ens wrld state ttree)
+(defun guard-clauses-for-fn (name debug-p ens wrld safe-mode gc-off ttree)
 
 ; Given a function name we generate the clauses that establish that
 ; all the guards in both the unnormalized guard and unnormalized body are
@@ -11873,7 +11882,7 @@
     (cl-set1 ttree)
     (guard-clauses+ (guard name nil wrld)
                     (and debug-p `(:guard (:guard ,name)))
-                    nil nil ens wrld state ttree)
+                    nil nil ens wrld safe-mode gc-off ttree)
     (let ((guard (guard name nil wrld))
           (unnormalized-body
            (getpropc name 'unnormalized-body
@@ -11892,9 +11901,9 @@
           (changedp body ttree)
           (cond ((eq ens :do-not-simplify)
                  (mv nil unnormalized-body nil))
-                (t (eval-ground-subexpressions
+                (t (eval-ground-subexpressions1
                     unnormalized-body
-                    ens wrld state ttree)))
+                    ens wrld safe-mode gc-off ttree)))
           (declare (ignore changedp))
           (let ((hyp-segments
 
@@ -11915,7 +11924,7 @@
                                       (not (eq (getpropc name 'non-executablep
                                                          nil wrld)
                                                t))
-                                      ens wrld state ttree)
+                                      ens wrld safe-mode gc-off ttree)
               (mv-let (type-clauses ttree)
                 (guard-clauses-for-body
                  hyp-segments
@@ -11923,7 +11932,7 @@
                               (getpropc name 'split-types-term *t* wrld))
                  (and debug-p `(:guard (:type ,name)))
                  nil ; stobj-optp: no clear reason for setting this to t
-                 ens wrld state ttree)
+                 ens wrld safe-mode gc-off ttree)
                 (let ((cl-set2
                        (if type-clauses ; optimization
                            (conjoin-clause-sets+ debug-p type-clauses cl-set2)
@@ -11931,7 +11940,7 @@
                   (mv (conjoin-clause-sets+ debug-p cl-set1 cl-set2)
                       ttree))))))))))
 
-(defun guard-clauses-for-clique (names debug-p ens wrld state ttree)
+(defun guard-clauses-for-clique (names debug-p ens wrld safe-mode gc-off ttree)
 
 ; Given a mutually recursive clique of fns we generate all of the
 ; guard conditions for every function in the clique and return that
@@ -11945,11 +11954,12 @@
   (cond ((null names) (mv nil ttree))
         (t (mv-let
             (cl-set1 ttree)
-            (guard-clauses-for-fn (car names) debug-p ens wrld state ttree)
+            (guard-clauses-for-fn (car names) debug-p ens wrld safe-mode gc-off
+                                  ttree)
             (mv-let
              (cl-set2 ttree)
-             (guard-clauses-for-clique (cdr names) debug-p ens wrld state
-                                       ttree)
+             (guard-clauses-for-clique (cdr names) debug-p ens wrld safe-mode
+                                       gc-off ttree)
              (mv (conjoin-clause-sets+ debug-p cl-set1 cl-set2) ttree))))))
 
 ; That completes the generation of the guard clauses.  We will prove
@@ -11973,7 +11983,10 @@
       (guard-clauses-for-clique names
                                 nil              ; debug-p
                                 :DO-NOT-SIMPLIFY ; ens
-                                wrld state nil)
+                                wrld
+                                (f-get-global 'safe-mode state)
+                                (gc-off state)
+                                nil)
       (declare (ignore ttree)) ; assumption-free (see guard-clauses-for-clique)
       (termify-clause-set cl-set))))
 

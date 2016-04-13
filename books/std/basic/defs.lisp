@@ -33,17 +33,17 @@
 
 (local (xdoc::set-default-parents std/basic))
 
+; Changed by Matt K. April 2016: Bitp was formerly defined here with
+; defun-inline.  Because ACL2 now has a singleton type for the number 1, bitp
+; is now defined in ACL2.  I don't know how to avoid overriding the xdoc for
+; bitp from books/system/doc/acl2-doc.lisp; maybe someone can figure that out.
 (defsection bitp
   :parents (std/basic logops-definitions)
   :short "Bit recognizer.  @('(bitp b)') recognizes 0 and 1."
   :long "<p>This is a predicate form of the @(see type-spec) declaration
-@('(TYPE BIT b)').</p>"
+@('(TYPE BIT b)').</p>
 
-  (defun-inline bitp (b)
-    (declare (xargs :guard t))
-    (or (eql b 0)
-        (eql b 1)))
-  )
+ @(def bitp)")
 
 (defsection bfix
   :parents (std/basic logops-definitions bitp)

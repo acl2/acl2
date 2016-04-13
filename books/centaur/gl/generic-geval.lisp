@@ -44,9 +44,8 @@
 ;; Pulls apart a number into its components.  They are stored in order of how
 ;; often we expect them to be non-default values:
 ;; real numerator   (can stop here for naturals. Default: nil (meaning zero))
-;; real sign        (can stop here for integers. Default: nil (meaning positive))
 ;; real denominator (can stop here for rationals. Default: (t) (meaning integer))
-;; then complex numerator, sign, denominator.
+;; then complex numerator, denominator.
 (defun break-g-number (x)
   (declare (xargs :guard t))
   (b* (((mv real-numer x) (if (consp x)
@@ -59,16 +58,12 @@
                               (mv (car x) (cdr x))
                             (mv nil nil)))
        (imag-denom (if (consp x) (car x) '(t))))
-    ;; (mv (list-fix real-numer)
-    ;;     (list-fix real-denom)
-    ;;     (list-fix imag-numer)
-    ;;     (list-fix imag-denom))
-    (mv real-numer
-        real-denom
-        imag-numer
-        imag-denom)))
+    (mv (list-fix real-numer)
+        (list-fix real-denom)
+        (list-fix imag-numer)
+        (list-fix imag-denom))))
 
-;; (acl2::defmvtypes break-g-number (true-listp true-listp true-listp true-listp))
+(acl2::defmvtypes break-g-number (true-listp true-listp true-listp true-listp))
 
 
 
@@ -522,7 +517,7 @@
        ((er names) (acl2::chk-acceptable-verify-guards
                     name ctx wrld state))
        (ens (acl2::ens state))
-       ((mv clauses & state)
+       ((mv clauses &)
         (acl2::guard-obligation-clauses
          names nil ens wrld state))
        (term (acl2::termify-clause-set clauses)))

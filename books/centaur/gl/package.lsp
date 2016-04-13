@@ -39,7 +39,7 @@
    *common-lisp-symbols-from-main-lisp-package*
    '(pkg-witness bad-atom<= b* quit exit
      hons-acons hons-get hut het hqual hons-equal
-     hons-assoc-equal make-fal list-fix
+     hons-assoc-equal make-fal list-fix llist-fix
      definline definlined
      defxdoc defsection define defines
      __function__

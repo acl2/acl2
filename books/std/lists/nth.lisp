@@ -345,7 +345,7 @@
 
 
 (defsection equal-by-nths-hint
-  :parents (equal-by-nth)
+  :parents (equal-by-nths)
   :short "A @(see computed-hint) that automates basic applications of @(see equal-by-nths)."
   :long "<p>This is a computed hint that looks for goals of the form</p>
 

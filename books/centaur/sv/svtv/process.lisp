@@ -431,19 +431,14 @@
   :verbosep t
   (b* (((acl2::local-stobjs moddb aliases)
         (mv svtv moddb aliases))
-       ;; Make a moddb, canonical alias table, and flattened
-       ;; (non-alias-normalized) assignments from the design.  These are
-       ;; expressed terms of indexed variable names.
-       ((mv err assigns moddb aliases)
-        (svex-design-flatten design))
+       ;; Make a moddb, canonical alias table, and flattened, alias-normalized
+       ;; assignments from the design.
+       ((mv err assigns delays moddb aliases)
+        (svex-design-flatten-and-normalize design))
        ((when err) (raise "Error flattening design: ~@0" err)
         (mv nil moddb aliases))
        ;; get the index of the top-level module within the moddb
        (modidx (moddb-modname-get-index (design->top design) moddb))
-       ;; Translate the alias table into named variables.
-       (aliases (aliases-indexed->named aliases (make-modscope-top :modidx modidx) moddb))
-       ;; Alias-normalize the assignments and make a delay table
-       ((mv assigns delays) (svex-normalize-assigns assigns aliases))
 
        ;; Process the timing diagram into internal form
        (orig-ins ins)
@@ -784,7 +779,7 @@
                  long
                (str::cat "<h3>Simulation Diagram</h3>
 
-<p>This is a <see topic='@(url svex-stvs)'>svex symbolic test vector</see>
+<p>This is a <see topic='@(url sv::svex-stvs)'>svex symbolic test vector</see>
 defined with @(see sv::defsvtv).</p>"
                          (or (svtv-to-xml svtv labels)
                              "Error generating diagram")

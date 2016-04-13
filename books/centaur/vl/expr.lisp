@@ -109,23 +109,16 @@ and generally makes it easier to write safe expression-processing code.</p>")
 
 (defxdoc vl-exprsign
   :parents (vl-expr)
-  :short "An indication of an expression's signedness (signed or unsigned)."
+  :short "An indication of an integer expression's signedness (signed or
+          unsigned)."
 
   :long "<p>On the surface there is not much to this: a literal, wire, or some
          other kind of expression might be regarded as either signed or
          unsigned.  These notes about the signedness of things occur in the
          representation of certain expressions like @(see vl-constint) and
-         @(see vl-weirdint) literals; they are also used in routines like @(see
-         vl-expr-typedecide).</p>
-
-         <p>If you're trying to represent something that might not have a
-         signedness, for instance a real number or an unpacked structure or
-         something like that, you probably want a @(see vl-maybe-exprsign)
-         instead.</p>
-
-         <p>The signedness of wires and variables in VL is now generally part
-         of their @(see vl-datatype); see especially @(see
-         vl-datatype-signedness).  See also @(see portdecl-sign).</p>
+         @(see vl-weirdint) literals.  There is some special handling for the
+         signedness of ports; see @(see portdecl-sign), but signedness is most
+         critically used in @(see vl-expr-typedecide).</p>
 
          <p>Note about the word ``<b>type</b>.''  The Verilog-2005 and
          SystemVerilog-2012 standards sometimes use the word ``type'' to refer
@@ -141,7 +134,15 @@ and generally makes it easier to write safe expression-processing code.</p>")
          is adapted from Verilog-2005's Section 5.5.1.  This section explains
          how to compute the ``type'' of an expression, but in this context
          ``type'' still means signedness and has little to do with any kind of
-         fancy SystemVerilog @(see vl-datatype)-like types.</p>")
+         fancy SystemVerilog @(see vl-datatype)-like types.</p>
+
+         <p>The signedness of wires and variables in VL is now generally part
+         of their @(see vl-datatype).  Historically the way to query a type for
+         its signedness was to use @('vl-datatype-signedness').  More recently,
+         in order to add at least some support for non-integer expressions like
+         @('real') and @('shortreal')s, the signedness of a datatype has been
+         folded into the more general notion of its @('arithclass').  See in
+         particular @(see vl-datatype-arithclass).</p>")
 
 
 (defenum vl-exprsign-p
@@ -1538,7 +1539,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
       (signedp booleanp :rule-classes :type-prescription
                "Only valid for integer types.  Roughly indicates whether the
                 integer type is signed or not.  Usually you shouldn't use this;
-                see @(see vl-datatype-signedness) instead.")))
+                see @(see vl-datatype-arithclass) instead.")))
 
     (:vl-struct
      :layout :tree
@@ -1585,7 +1586,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
 
             <p>The packedness/signedness of structures/arrays is complicated;
             you should usually use utilities like @(see vl-datatype-packedp)
-            and @(see vl-datatype-signedness) instead of directly using the
+            and @(see vl-datatype-arithclass) instead of directly using the
             @('packedp') and @('signedp') fields.</p>
 
             <p>What are the issues?  At parse time, we use the @('packedp') and
@@ -1607,7 +1608,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
             @('myvar') itself!</p>
 
             <p>Signedness has similar issues except that it is more
-            complicated; see the documentation in @(see vl-datatype-signedness)
+            complicated; see the documentation in @(see vl-datatype-arithclass)
             and also @(see vl-usertype) for more details.</p>")
 
     (:vl-union
@@ -1741,7 +1742,7 @@ and generally makes it easier to write safe expression-processing code.</p>")
            <li>For historical reasons, the standards sometimes refer to the
            ``type'' of an expression when they really mean something more like
            its <b>signedness</b>.  Signedness is captured by @('vl-datatype'),
-           but there are some nuances; see @(see vl-datatype-signedness), @(see
+           but there are some nuances; see @(see vl-datatype-arithclass), @(see
            vl-exprsign), and @(see portdecl-sign).</li>
 
            <li>Net and port declarations can have a notion of a ``net type''

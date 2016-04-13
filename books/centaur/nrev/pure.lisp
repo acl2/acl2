@@ -248,7 +248,7 @@ current contents of @('nrev'), so this again takes O(n) conses.</p>"
     (reverse (nrev$c-acc nrev$c))))
 
 
-(defsection nrev-set-hint 
+(defsection nrev-set-hint
   :parents (nrev)
   :short "Set a candidate list to try and preserve existing conses when finishing an nrev."
   :long
@@ -256,8 +256,8 @@ current contents of @('nrev'), so this again takes O(n) conses.</p>"
 @('nrev'')</p></box>
 
 <p>In the common use case where an nrev is accumulating a transformed list (as
-in a @(see defprojection)), sometimes it may be the case that few of the list
-elements are actually transformed.  In these cases it may be desirable to
+in a @(see std::defprojection)), sometimes it may be the case that few of the
+list elements are actually transformed.  In these cases it may be desirable to
 return a list that has as many conses shared with the original list as
 possible.  This way, fewer total conses are in your working footprint.</p>
 

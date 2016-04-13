@@ -716,7 +716,7 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                                         (str::rchars-to-string
                                          (xdoc::simple-html-encode-str '_elt-type-str_
                                                                        0 (length '_elt-type-str_) nil))
-                                        "')."))))
+                                        "</tt>."))))
        :long (or _long_
                  (str::cat "<p>This is a two dimensional abstract stobj array,
                             introduced by @(see stobjs::def-2d-arr).</p>

@@ -404,6 +404,7 @@
             lnfix lifix lbfix nat-equiv int-equiv bit-equiv
             ;; for better documentation
             stobj stobjs abstract-stobj congruence equivalence bitarr
+            std/stobjs
             )
           *stobjs-exports*
           std::*std-exports*

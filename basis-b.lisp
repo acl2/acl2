@@ -2074,7 +2074,19 @@
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp w))))
   (cond ((flambdap fn)
-         (lambda-formals fn))
+
+; We formerly made the call (lambda-formals fn) here.  However, Alessandro
+; Coglio noticed that the guard implies (symbolp fn), and we noticed that in
+; fact this (flambdap fn) case was never evaluated during regression.  For now
+; we'll cause an explicit error in that case, so that if user code gets here
+; then a clear error message will be printed.  Eventually we'll likely
+; eliminate this case altogether.
+
+         (er hard! 'formals
+             "Found application of formals to lambda term:~|~X01"
+             fn
+             '(nil 4 5 nil) ; (evisc-tuple 4 5 nil nil)
+             ))
         (t (let ((temp (getpropc fn 'formals t w)))
              (cond ((eq temp t)
                     (er hard? 'formals

@@ -10380,7 +10380,7 @@
 
 ; The two alists each contain pairs of the form (full-book-name user-book-name
 ; familiar-name cert-annotations . book-hash).  Reqd-alist shows what is
-; required and actual-alist shows that is actual (presumably, present in the
+; required and actual-alist shows what is actual (presumably, present in the
 ; world's include-book-alist).  We know reqd-alist ought to be an `include-book
 ; alist subset' of actual-alist but it is not.
 

@@ -4359,8 +4359,28 @@
 (defmacro all-fnnames-exec (term)
   `(all-fnnames1-exec nil ,term nil))
 
-(defun chk-common-lisp-compliant-subfunctions
-  (names0 names terms wrld str ctx state)
+(defun chk-common-lisp-compliant-subfunctions-cmp (names0 names terms wrld str
+                                                          ctx)
+
+; See chk-common-lisp-compliant-subfunctions.
+
+  (cond ((null names) (value-cmp nil))
+        (t (let ((bad (collect-non-common-lisp-compliants
+                       (set-difference-eq (all-fnnames-exec (car terms))
+                                          names0)
+                       wrld)))
+             (cond
+              (bad
+               (er-cmp ctx "The ~@0 for ~x1 calls the function~#2~[ ~&2~/s ~
+                            ~&2~], the guards of which have not yet been ~
+                            verified.  See :DOC verify-guards."
+                       str (car names) bad))
+              (t (chk-common-lisp-compliant-subfunctions-cmp
+                  names0 (cdr names) (cdr terms)
+                  wrld str ctx)))))))
+
+(defun chk-common-lisp-compliant-subfunctions (names0 names terms wrld str ctx
+                                                      state)
 
 ; Assume we are defining (or have defined) names with bodies or guards of terms
 ; (1:1 correspondence).  We wish to make the definitions
@@ -4372,70 +4392,55 @@
 ; usage, names have not been defined yet; in the other two they have.  So be
 ; careful about using wrld to get properties of names.
 
-  (cond ((null names) (value nil))
-        (t (let ((bad (collect-non-common-lisp-compliants
-                       (set-difference-eq (all-fnnames-exec (car terms))
-                                          names0)
-                       wrld)))
-             (cond
-              (bad
-               (er soft ctx
-                   "The ~@0 for ~x1 calls the function~#2~[ ~&2~/s ~&2~], the ~
-                    guards of which have not yet been verified.  See :DOC ~
-                    verify-guards."
-                   str (car names) bad))
-              (t (chk-common-lisp-compliant-subfunctions
-                  names0 (cdr names) (cdr terms)
-                  wrld str ctx state)))))))
+  (cmp-to-error-triple (chk-common-lisp-compliant-subfunctions-cmp
+                        names0 names terms wrld str ctx)))
+
+(defun chk-acceptable-verify-guards-formula-cmp (name x ctx wrld state-vars)
+  (mv-let (erp term bindings)
+    (translate1-cmp x
+                    :stobjs-out
+                    '((:stobjs-out . :stobjs-out))
+                    t ; known-stobjs
+                    ctx wrld state-vars)
+    (declare (ignore bindings))
+    (cond
+     ((and erp (null name)) ; erp is a ctx and val is a msg
+      (mv-let (erp2 term2 bindings)
+        (translate1-cmp x t nil t ctx wrld state-vars)
+        (declare (ignore bindings term2))
+        (cond
+         (erp2 ; translation for formulas fails, so rely on previous error
+          (mv erp term))
+         (t (er-cmp ctx
+                    "The guards for the given formula cannot be verified it ~
+                     has the wrong syntactic form for evaluation, perhaps due ~
+                     to multiple-value or stobj restrictions.  See :DOC ~
+                     verify-guards.")))))
+     (erp
+      (er-cmp ctx
+              "The guards for ~x0 cannot be verified because its formula has ~
+               the wrong syntactic form for evaluation, perhaps due to ~
+               multiple-value or stobj restrictions.  See :DOC verify-guards."
+              (or name x)))
+     ((collect-non-common-lisp-compliants (all-fnnames-exec term)
+                                          wrld)
+      (er-cmp ctx
+              "The formula ~#0~[named ~x1~/~x1~] contains a call of the ~
+               function~#2~[ ~&2~/s ~&2~], the guards of which have not yet ~
+               been verified.  See :DOC verify-guards."
+              (if name 0 1)
+              (or name x)
+              (collect-non-common-lisp-compliants (all-fnnames-exec term)
+                                                  wrld)))
+     (t
+      (value-cmp (cons :term term))))))
 
 (defun chk-acceptable-verify-guards-formula (name x ctx wrld state)
-  (mv-let (erp term bindings state)
-          (translate1 x
-                      :stobjs-out
-                      '((:stobjs-out . :stobjs-out))
-                      t ; known-stobjs
-                      ctx wrld state)
-          (declare (ignore bindings))
-          (cond
-           ((and erp (null name))
-            (mv-let
-             (erp val state)
-             (state-global-let*
-              ((inhibit-output-lst *valid-output-names*))
-              (mv-let (erp term bindings state)
-                      (translate1 x t nil t ctx wrld state)
-                      (declare (ignore bindings))
-                      (mv erp term state)))
-             (declare (ignore val))
-             (cond
-              (erp ; translation for formulas fails, so rely on previous error
-               (silent-error state))
-              (t (er soft ctx
-                     "The guards for the given formula cannot be verified it ~
-                      has the wrong syntactic form for evaluation, perhaps ~
-                      due to multiple-value or stobj restrictions.  See :DOC ~
-                      verify-guards.")))))
-           (erp
-            (er soft ctx
-                "The guards for ~x0 cannot be verified because its formula ~
-                 has the wrong syntactic form for evaluation, perhaps due to ~
-                 multiple-value or stobj restrictions.  See :DOC ~
-                 verify-guards."
-                (or name x)))
-           ((collect-non-common-lisp-compliants (all-fnnames-exec term)
-                                                wrld)
-            (er soft ctx
-                "The formula ~#0~[named ~x1~/~x1~] contains a call of the ~
-                 function~#2~[ ~&2~/s ~&2~], the guards of which have not yet ~
-                 been verified.  See :DOC verify-guards."
-                (if name 0 1)
-                (or name x)
-                (collect-non-common-lisp-compliants (all-fnnames-exec term)
-                                                    wrld)))
-           (t
-            (value (cons :term term))))))
+  (cmp-to-error-triple
+   (chk-acceptable-verify-guards-formula-cmp name x ctx wrld
+                                             (default-state-vars t))))
 
-(defun chk-acceptable-verify-guards (name ctx wrld state)
+(defun chk-acceptable-verify-guards-cmp (name ctx wrld state-vars)
 
 ; We check that name is acceptable input for verify-guards.  We return either
 ; the list of names in the clique of name (if name and every peer in the clique
@@ -4452,116 +4457,134 @@
 ; an error and say you can't verify the guards of any of the functions in the
 ; nest.
 
-  (er-let* ((symbol-class
-             (cond ((symbolp name)
-                    (value (symbol-class name wrld)))
-                   (t
-                    (er soft ctx
-                        "~x0 is not a symbol.  See :DOC verify-guards."
-                        name)))))
-    (cond
-     ((eq symbol-class :common-lisp-compliant)
-      (value 'redundant))
-     ((getpropc name 'theorem nil wrld)
+  (er-let*-cmp
+   ((symbol-class
+     (cond ((symbolp name)
+            (value-cmp (symbol-class name wrld)))
+           (t
+            (er-cmp ctx
+                    "~x0 is not a symbol.  See :DOC verify-guards."
+                    name)))))
+   (cond
+    ((eq symbol-class :common-lisp-compliant)
+     (value-cmp 'redundant))
+    ((getpropc name 'theorem nil wrld)
 
 ; Theorems are of either symbol-class :ideal or :common-lisp-compliant.
 
-      (er-progn
-       (chk-acceptable-verify-guards-formula
-        name
-        (getpropc name 'untranslated-theorem nil wrld)
-        ctx wrld state)
-       (value (list name))))
-     ((function-symbolp name wrld)
-      (case symbol-class
-        (:program
-         (er soft ctx
-             "~x0 is :program.  Only :logic functions can have their guards ~
-             verified.  See :DOC verify-guards."
-             name))
-        (:ideal
-         (let* ((recp (getpropc name 'recursivep nil wrld))
-                (names (cond
-                        ((null recp)
-                         (list name))
-                        (t recp)))
-                (non-ideal-names (collect-non-ideals names wrld)))
-           (cond (non-ideal-names
-                  (er soft ctx
-                      "One or more of the mutually-recursive peers of ~x0 ~
-                      either was not defined in :logic mode or has already ~
-                      had its guards verified.  The offending function~#1~[ ~
-                      is~/s are~] ~&1.  We thus cannot verify the guards of ~
-                      ~x0.  This situation can arise only through ~
-                      redefinition."
-                      name
-                      non-ideal-names))
-                 (t
-                  (er-progn
-                   (chk-common-lisp-compliant-subfunctions
-                    names names
-                    (guard-lst names nil wrld)
-                    wrld "guard" ctx state)
-                   (chk-common-lisp-compliant-subfunctions
-                    names names
-                    (getprop-x-lst names 'unnormalized-body wrld)
-                    wrld "body" ctx state)
-                   (value names))))))
-        (otherwise ; the symbol-class :common-lisp-compliant is handled above
-         (er soft ctx
-             "Implementation error: Unexpected symbol-class, ~x0, for the ~
-              function symbol ~x1."
-             symbol-class name))))
-     (t (let ((fn (deref-macro-name name (macro-aliases wrld))))
-          (er soft ctx
-              "~x0 is not a theorem name or a function symbol in the current ~
-               ACL2 world.  ~@1"
-              name
-              (cond ((eq fn name) "See :DOC verify-guards.")
-                    (t (msg "Note that ~x0 is a macro-alias for ~x1.  ~
-                             Consider calling verify-guards with argument ~x1 ~
-                             instead, or use verify-guards+.  See :DOC ~
-                             verify-guards, see :DOC verify-guards+, and see ~
-                             :DOC macro-aliases-table."
-                            name fn)))))))))
+     (er-progn-cmp
+      (chk-acceptable-verify-guards-formula-cmp
+       name
+       (getpropc name 'untranslated-theorem nil wrld)
+       ctx wrld state-vars)
+      (value-cmp (list name))))
+    ((function-symbolp name wrld)
+     (case symbol-class
+       (:program
+        (er-cmp ctx
+                "~x0 is :program.  Only :logic functions can have their ~
+                 guards verified.  See :DOC verify-guards."
+                name))
+       (:ideal
+        (let* ((recp (getpropc name 'recursivep nil wrld))
+               (names (cond
+                       ((null recp)
+                        (list name))
+                       (t recp)))
+               (non-ideal-names (collect-non-ideals names wrld)))
+          (cond (non-ideal-names
+                 (er-cmp ctx
+                         "One or more of the mutually-recursive peers of ~x0 ~
+                          either was not defined in :logic mode or has ~
+                          already had its guards verified.  The offending ~
+                          function~#1~[ is~/s are~] ~&1.  We thus cannot ~
+                          verify the guards of ~x0.  This situation can arise ~
+                          only through redefinition."
+                         name
+                         non-ideal-names))
+                (t
+                 (er-progn-cmp
+                  (chk-common-lisp-compliant-subfunctions-cmp
+                   names names
+                   (guard-lst names nil wrld)
+                   wrld "guard" ctx)
+                  (chk-common-lisp-compliant-subfunctions-cmp
+                   names names
+                   (getprop-x-lst names 'unnormalized-body wrld)
+                   wrld "body" ctx)
+                  (value-cmp names))))))
+       (otherwise ; the symbol-class :common-lisp-compliant is handled above
+        (er-cmp ctx
+                "Implementation error: Unexpected symbol-class, ~x0, for the ~
+                 function symbol ~x1."
+                symbol-class name))))
+    (t (let ((fn (deref-macro-name name (macro-aliases wrld))))
+         (er-cmp ctx
+                 "~x0 is not a theorem name or a function symbol in the ~
+                  current ACL2 world.  ~@1"
+                 name
+                 (cond ((eq fn name) "See :DOC verify-guards.")
+                       (t (msg "Note that ~x0 is a macro-alias for ~x1.  ~
+                                Consider calling verify-guards with argument ~
+                                ~x1 instead, or use verify-guards+.  See :DOC ~
+                                verify-guards, see :DOC verify-guards+, and ~
+                                see :DOC macro-aliases-table."
+                               name fn)))))))))
+
+(defun chk-acceptable-verify-guards (name ctx wrld state)
+  (cmp-to-error-triple
+   (chk-acceptable-verify-guards-cmp name ctx wrld
+                                     (default-state-vars t))))
 
 (defun guard-obligation-clauses (x guard-debug ens wrld state)
 
 ; X is either a list of names corresponding to a defun, mutual-recursion nest,
 ; or defthm, or else of the form (:term . y) where y is a translated term.
 ; Returns a set of clauses justifying the guards for y in the latter case, else
-; x, together with an assumption-free tag-tree justifying that set of clauses
-; and the new state.  (Do not view this as an error triple!)
+; x, together with an assumption-free tag-tree justifying that set of clauses.
+; (Do not view this as an error triple!)
 
-  (mv-let (cl-set cl-set-ttree state)
-          (cond ((and (consp x)
-                      (eq (car x) :term))
-                 (mv-let (cl-set cl-set-ttree)
-                         (guard-clauses+
-                          (cdr x)
-                          (and guard-debug :top-level)
-                          nil ;stobj-optp = nil
-                          nil ens wrld state nil)
-                         (mv cl-set cl-set-ttree state)))
-                ((and (consp x)
-                      (null (cdr x))
-                      (getpropc (car x) 'theorem nil wrld))
-                 (mv-let (cl-set cl-set-ttree)
-                         (guard-clauses+
-                          (getpropc (car x) 'theorem nil wrld)
-                          (and guard-debug (car x))
-                          nil ;stobj-optp = nil
-                          nil ens wrld state nil)
-                         (mv cl-set cl-set-ttree state)))
-                (t (mv-let
-                    (erp pair state)
-                    (state-global-let*
-                     ((guard-checking-on
+  (mv-let (cl-set cl-set-ttree)
+    (cond ((and (consp x)
+                (eq (car x) :term))
+           (mv-let (cl-set cl-set-ttree)
+             (guard-clauses+
+              (cdr x)
+              (and guard-debug :top-level)
+              nil ;stobj-optp = nil
+              nil ens wrld
+              (f-get-global 'safe-mode state)
+              (gc-off state)
+              nil)
+             (mv cl-set cl-set-ttree)))
+          ((and (consp x)
+                (null (cdr x))
+                (getpropc (car x) 'theorem nil wrld))
+           (mv-let (cl-set cl-set-ttree)
+             (guard-clauses+
+              (getpropc (car x) 'theorem nil wrld)
+              (and guard-debug (car x))
+              nil ;stobj-optp = nil
+              nil ens wrld
+              (f-get-global 'safe-mode state)
+              (gc-off state)
+              nil)
+             (mv cl-set cl-set-ttree)))
+          (t (guard-clauses-for-clique
+              x
+              (cond ((null guard-debug) nil)
+                    ((cdr x) 'mut-rec)
+                    (t t))
+              ens
+              wrld
+              (f-get-global 'safe-mode state)
 
 ; It is important to turn on guard-checking here.  If we avoid this binding,
 ; then we can get a hard Lisp error as follows, because a call of
 ; eval-ground-subexpressions from guard-clauses-for-fn should have failed (due
-; to a guard violation) but didn't.
+; to a guard violation) but didn't.  (Since guard-clauses-for-fn isn't called
+; in the two cases above for :term and 'theorem, we aren't aware of needing to
+; take this extra care in those cases.)
 
 ; (set-guard-checking nil)
 ; (defun foo (x)
@@ -4570,50 +4593,40 @@
 ; (set-guard-checking t)
 ; (foo '(a b))
 
-; Exercise (not yet done): Modify the example by using a recursive definition
-; so that we can verify guards if we bind guard-checking-on to anything other
-; than :all here, and then get a hard Lisp error as above.
+; Note that we do not need to bind to :all, since for calls of a guard-verified
+; function such as foo, above, t and :all behave the same: if the guard holds
+; at the top, then it holds through all evaluation, including recursive calls.
 
-                       :all))
-                     (mv-let (cl-set cl-set-ttree)
-                             (guard-clauses-for-clique
-                              x
-                              (cond ((null guard-debug) nil)
-                                    ((cdr x) 'mut-rec)
-                                    (t t))
-                              ens
-                              wrld state nil)
-                             (value (cons cl-set cl-set-ttree))))
-                    (declare (ignore erp))
-                    (mv (car pair) (cdr pair) state))))
+              nil ; gc-off
+              nil)))
 
 ; Cl-set-ttree is 'assumption-free.
 
-          (mv-let (cl-set cl-set-ttree)
-                  (clean-up-clause-set cl-set ens wrld cl-set-ttree state)
+    (mv-let (cl-set cl-set-ttree)
+      (clean-up-clause-set cl-set ens wrld cl-set-ttree state)
 
 ; Cl-set-ttree is still 'assumption-free.
 
-                  (mv cl-set cl-set-ttree state))))
+      (mv cl-set cl-set-ttree))))
 
 (defun guard-obligation (x guard-debug ctx state)
   (let* ((wrld (w state))
          (namep (and (symbolp x)
                      (not (keywordp x))
                      (not (defined-constant x wrld)))))
-    (er-let*
+    (er-let*-cmp
      ((y
-       (cond (namep
-              (chk-acceptable-verify-guards x ctx wrld state))
-             (t
-              (chk-acceptable-verify-guards-formula nil x ctx wrld state)))))
+       (cond (namep (chk-acceptable-verify-guards-cmp
+                     x ctx wrld (default-state-vars t)))
+             (t (chk-acceptable-verify-guards-formula-cmp
+                 nil x ctx wrld (default-state-vars t))))))
      (cond
       ((and namep (eq y 'redundant))
-       (value :redundant))
-      (t (mv-let (cl-set cl-set-ttree state)
+       (value-cmp :redundant))
+      (t (mv-let (cl-set cl-set-ttree)
                  (guard-obligation-clauses y guard-debug (ens state) wrld
                                            state)
-                 (value (list* y cl-set cl-set-ttree))))))))
+                 (value-cmp (list* y cl-set cl-set-ttree))))))))
 
 (defun prove-guard-clauses-msg (names cl-set cl-set-ttree displayed-goal
                                       verify-guards-formula-p state)
@@ -4654,7 +4667,8 @@
 
 (defmacro verify-guards-formula (x &key guard-debug &allow-other-keys)
   `(er-let*
-    ((tuple (guard-obligation ',x ',guard-debug 'verify-guards-formula state)))
+    ((tuple (cmp-to-error-triple
+             (guard-obligation ',x ',guard-debug 'verify-guards-formula state))))
     (cond ((eq tuple :redundant)
            (value :redundant))
           (t
@@ -4693,86 +4707,88 @@
    ((ld-skip-proofsp state) (value '(0 . nil)))
    (t
     (mv-let
-     (cl-set cl-set-ttree state)
-     (pprogn (io? event nil state
-                  (names)
-                  (fms "Computing the guard conjecture for ~&0....~|"
-                       (list (cons #\0 names))
-                       (proofs-co state)
-                       state
-                       nil))
-             (guard-obligation-clauses names guard-debug ens wrld state))
+      (cl-set cl-set-ttree state)
+      (pprogn (io? event nil state
+                   (names)
+                   (fms "Computing the guard conjecture for ~&0....~|"
+                        (list (cons #\0 names))
+                        (proofs-co state)
+                        state
+                        nil))
+              (mv-let (cl-set cl-set-ttree)
+                (guard-obligation-clauses names guard-debug ens wrld state)
+                (mv cl-set cl-set-ttree state)))
 
 ; Cl-set-ttree is 'assumption-free.
 
-     (pprogn
-      (increment-timer 'other-time state)
-      (let ((displayed-goal (prettyify-clause-set cl-set
-                                                  (let*-abstractionp state)
-                                                  wrld)))
-        (mv-let
-         (col state)
-         (io? event nil (mv col state)
-              (names cl-set cl-set-ttree displayed-goal)
-              (prove-guard-clauses-msg names cl-set cl-set-ttree displayed-goal
-                                       nil state)
-              :default-bindings ((col 0)))
-         (pprogn
-          (increment-timer 'print-time state)
-          (cond
-           ((null cl-set)
-            (value (cons col cl-set-ttree)))
-           (t
-            (mv-let (erp ttree state)
-                    (prove (termify-clause-set cl-set)
-                           (make-pspv ens wrld state
-                                      :displayed-goal displayed-goal
-                                      :otf-flg otf-flg)
-                           hints
-                           ens wrld ctx state)
-                    (cond
-                     (erp
-                      (mv-let
-                       (erp1 val state)
-                       (er soft ctx
-                           "The proof of the guard conjecture for ~&0 has ~
-                            failed.  You may wish to avoid specifying a ~
-                            guard, or to supply option :VERIFY-GUARDS ~x1 ~
-                            with the :GUARD.~@2~|"
-                           names
-                           nil
-                           (if guard-debug
-                               ""
-                             "  Otherwise, you may wish to specify ~
-                             :GUARD-DEBUG T; see :DOC verify-guards."))
-                       (declare (ignore erp1))
-                       (mv (msg
-                            "The proof of the guard conjecture for ~&0 has ~
-                             failed; see the discussion above about ~&1.  "
-                            names
-                            (if guard-debug
-                                '(:VERIFY-GUARDS)
-                              '(:VERIFY-GUARDS :GUARD-DEBUG)))
-                           val
-                           state)))
-                     (t
-                      (mv-let (col state)
-                              (io? event nil (mv col state)
-                                   (names)
-                                   (fmt "That completes the proof of the ~
-                                         guard theorem for ~&0.  "
-                                        (list (cons #\0 names))
-                                        (proofs-co state)
-                                        state
-                                        nil)
-                                   :default-bindings ((col 0)))
-                              (pprogn
-                               (increment-timer 'print-time state)
-                               (value
-                                (cons (or col 0)
-                                      (cons-tag-trees
-                                       cl-set-ttree
-                                       ttree))))))))))))))))))
+      (pprogn
+       (increment-timer 'other-time state)
+       (let ((displayed-goal (prettyify-clause-set cl-set
+                                                   (let*-abstractionp state)
+                                                   wrld)))
+         (mv-let
+           (col state)
+           (io? event nil (mv col state)
+                (names cl-set cl-set-ttree displayed-goal)
+                (prove-guard-clauses-msg names cl-set cl-set-ttree
+                                         displayed-goal nil state)
+                :default-bindings ((col 0)))
+           (pprogn
+            (increment-timer 'print-time state)
+            (cond
+             ((null cl-set)
+              (value (cons col cl-set-ttree)))
+             (t
+              (mv-let (erp ttree state)
+                (prove (termify-clause-set cl-set)
+                       (make-pspv ens wrld state
+                                  :displayed-goal displayed-goal
+                                  :otf-flg otf-flg)
+                       hints
+                       ens wrld ctx state)
+                (cond
+                 (erp
+                  (mv-let
+                    (erp1 val state)
+                    (er soft ctx
+                        "The proof of the guard conjecture for ~&0 has ~
+                         failed.  You may wish to avoid specifying a guard, ~
+                         or to supply option :VERIFY-GUARDS ~x1 with the ~
+                         :GUARD.~@2~|"
+                        names
+                        nil
+                        (if guard-debug
+                            ""
+                          "  Otherwise, you may wish to specify :GUARD-DEBUG ~
+                           T; see :DOC verify-guards."))
+                    (declare (ignore erp1))
+                    (mv (msg
+                         "The proof of the guard conjecture for ~&0 has ~
+                          failed; see the discussion above about ~&1.  "
+                         names
+                         (if guard-debug
+                             '(:VERIFY-GUARDS)
+                           '(:VERIFY-GUARDS :GUARD-DEBUG)))
+                        val
+                        state)))
+                 (t
+                  (mv-let (col state)
+                    (io? event nil (mv col state)
+                         (names)
+                         (fmt "That completes the proof of the guard theorem ~
+                               for ~&0.  "
+                              (list (cons #\0 names))
+                              (proofs-co state)
+                              state
+                              nil)
+                         :default-bindings ((col 0)))
+                    (pprogn
+                     (increment-timer 'print-time state)
+                     (value
+                      (cons (or col 0)
+                            (cons-tag-trees
+                             cl-set-ttree
+                             ttree))))))))))))))))))
 
 (defun verify-guards-fn1 (names hints otf-flg guard-debug ctx state)
 
@@ -5719,9 +5735,10 @@
 (defun dcl-fields (lst)
 
 ; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
-; between the formals and the body of a DEFUN.  We return a list of all the
-; "field names" used in lst.  Our answer is a subset of the list
-; *xargs-keywords*.
+; between the formals and the body of a DEFUN.  We return a duplicate-free list
+; of all the "field names" used in lst, where 'comment indicates a string.  Our
+; answer is a subset of the union of the values of '(comment type ignore
+; ignorable) and *xargs-keywords*.
 
   (declare (xargs :guard (plausible-dclsp lst)))
   (cond ((endp lst) nil)
@@ -5760,9 +5777,10 @@
 (defun strip-dcls (fields lst)
 
 ; Lst satisfies plausible-dclsp.  Fields is a list as returned by dcl-fields,
-; i.e., a subset of the symbols in *xargs-keywords*.  We copy lst deleting any
-; part of it that specifies a value for one of the fields named.  The result
-; satisfies plausible-dclsp.
+; i.e., a subset of the union of the values of '(comment type ignore ignorable)
+; and *xargs-keywords*.  We copy lst deleting any part of it that specifies a
+; value for one of the fields named, where 'comment denotes a string.  The
+; result satisfies plausible-dclsp.
 
   (declare (xargs :guard (and (symbol-listp fields)
                               (plausible-dclsp lst))))
@@ -5810,10 +5828,11 @@
 (defun fetch-dcl-field (field-name lst)
 
 ; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
-; between the formals and the body of a DEFUN.  Field-name is 'comment or one
-; of the symbols in the list *xargs-keywords*.  We return the list of the
-; contents of all fields with that name.  We assume we will find at most one
-; specification per XARGS entry for a given keyword.
+; between the formals and the body of a DEFUN.  Field-name is either in the
+; list (comment type ignore ignorable) or is one of the symbols in the list
+; *xargs-keywords*.  We return the list of the contents of all fields with that
+; name.  We assume we will find at most one specification per XARGS entry for a
+; given keyword.
 
 ; For example, if field-name is :GUARD and there are two XARGS among the
 ; DECLAREs in lst, one with :GUARD g1 and the other with :GUARD g2 we return

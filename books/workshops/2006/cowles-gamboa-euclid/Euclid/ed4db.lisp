@@ -1143,14 +1143,14 @@ To certify this book, first, create a world with the following package:
 		 Subgoal-5.1
 		 (y z)
 		 (z y)))
-	  ("Subgoal 1.4"
-	   :by Subgoal-1.4)
+; Modified by Matt K. in April 2016 due to type-set mod that added a bit for
+; {1}.
 	  ("Subgoal 1.3"
-	   :by Subgoal-1.3)
+	   :by Subgoal-1.4)
 	  ("Subgoal 1.2"
-	   :in-theory (enable (:definition divides-p$-witness)))
+	   :by Subgoal-1.1)
 	  ("Subgoal 1.1"
-	   :by Subgoal-1.1)))
+	   :in-theory (enable (:definition divides-p$-witness)))))
 
 (in-theory (disable (:definition abs)
 		    (:definition reducible-p$-witness)))

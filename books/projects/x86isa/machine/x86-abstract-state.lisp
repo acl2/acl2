@@ -333,6 +333,7 @@
           'nil    ;; env
           '0      ;; undef
           't      ;; programmer-level-mode
+          't      ;; page-structure-marking-mode
           ':linux ;; os-info
           '0      ;; memi
           ))
@@ -3688,6 +3689,86 @@
              (X86$AP (!PROGRAMMER-LEVEL-MODE$A V X86)))
     :RULE-CLASSES NIL)
 
+  (DEFTHML PAGE-STRUCTURE-MARKING-MODE*{CORRESPONDENCE}
+    (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
+             (EQUAL (PAGE-STRUCTURE-MARKING-MODE$C X86$C)
+                    (PAGE-STRUCTURE-MARKING-MODE$A X86)))
+    :hints (("Goal" :in-theory (e/d (page-structure-marking-mode$c) ())))
+    :RULE-CLASSES NIL)
+
+  (DEFTHML !PAGE-STRUCTURE-MARKING-MODE*{CORRESPONDENCE}
+    (IMPLIES (AND (CORR X86$C X86)
+                  (X86$AP X86)
+                  (BOOLEANP V))
+             (CORR (!PAGE-STRUCTURE-MARKING-MODE$C V X86$C)
+                   (!PAGE-STRUCTURE-MARKING-MODE$A V X86)))
+    :hints
+    (("Goal" :in-theory (e/d (page-structure-marking-mode$cp !page-structure-marking-mode$c
+                                                       x86$cp good-memp x86$cp-pre)
+                             ())
+      :use ((:instance corr-rgf-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *rgfi* x86)))
+            (:instance corr-seg-visible-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *seg-visiblei* x86)))
+            (:instance corr-seg-hidden-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *seg-hiddeni* x86)))
+            (:instance corr-str-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *stri* x86)))
+            (:instance corr-ssr-visible-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *ssr-visiblei* x86)))
+            (:instance corr-ssr-hidden-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *ssr-hiddeni* x86)))
+            (:instance corr-ctr-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *ctri* x86)))
+            (:instance corr-dbg-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *dbgi* x86)))
+            (:instance corr-msr-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *msri* x86)))
+            (:instance corr-fp-data-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *fp-datai* x86)))
+            (:instance corr-xmm-update-nth
+                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *xmmi* x86)))
+            )))
+    :RULE-CLASSES NIL)
+
+  (DEFTHML !PAGE-STRUCTURE-MARKING-MODE*{PRESERVED}
+    (IMPLIES (AND (X86$AP X86) (BOOLEANP V))
+             (X86$AP (!PAGE-STRUCTURE-MARKING-MODE$A V X86)))
+    :RULE-CLASSES NIL)
+
   (DEFTHML OS-INFO*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (OS-INFO$C X86$C)
@@ -4086,34 +4167,35 @@
                   (otherwise    (equal index 0))))
 
     (case fld
-      (:rgf                      (rgfi* index x86))
-      (:rip                      (rip* x86))
-      (:rflags                   (rflags* x86))
-      (:seg-visible              (seg-visiblei* index x86))
-      (:seg-hidden               (seg-hiddeni* index x86))
-      (:str                      (stri* index x86))
-      (:ssr-visible              (ssr-visiblei* index x86))
-      (:ssr-hidden               (ssr-hiddeni* index x86))
-      (:ctr                      (ctri* index x86))
-      (:dbg                      (dbgi* index x86))
-      (:fp-data                  (fp-datai* index x86))
-      (:fp-ctrl                  (fp-ctrl* x86))
-      (:fp-status                (fp-status* x86))
-      (:fp-tag                   (fp-tag* x86))
-      (:fp-last-inst             (fp-last-inst* x86))
-      (:fp-last-data             (fp-last-data* x86))
-      (:fp-opcode                (fp-opcode* x86))
-      (:xmm                      (xmmi* index x86))
-      (:mxcsr                    (mxcsr* x86))
-      (:msr                      (msri* index x86))
-      (:ms                       (ms* x86))
-      (:fault                    (fault* x86))
-      (:env                      (env* x86))
-      (:undef                    (undef* x86))
-      (:programmer-level-mode    (programmer-level-mode* x86))
-      (:os-info                  (os-info* x86))
-      (:mem                      (memi* index x86))
-      (otherwise                 nil)))
+      (:rgf                         (rgfi* index x86))
+      (:rip                         (rip* x86))
+      (:rflags                      (rflags* x86))
+      (:seg-visible                 (seg-visiblei* index x86))
+      (:seg-hidden                  (seg-hiddeni* index x86))
+      (:str                         (stri* index x86))
+      (:ssr-visible                 (ssr-visiblei* index x86))
+      (:ssr-hidden                  (ssr-hiddeni* index x86))
+      (:ctr                         (ctri* index x86))
+      (:dbg                         (dbgi* index x86))
+      (:fp-data                     (fp-datai* index x86))
+      (:fp-ctrl                     (fp-ctrl* x86))
+      (:fp-status                   (fp-status* x86))
+      (:fp-tag                      (fp-tag* x86))
+      (:fp-last-inst                (fp-last-inst* x86))
+      (:fp-last-data                (fp-last-data* x86))
+      (:fp-opcode                   (fp-opcode* x86))
+      (:xmm                         (xmmi* index x86))
+      (:mxcsr                       (mxcsr* x86))
+      (:msr                         (msri* index x86))
+      (:ms                          (ms* x86))
+      (:fault                       (fault* x86))
+      (:env                         (env* x86))
+      (:undef                       (undef* x86))
+      (:programmer-level-mode       (programmer-level-mode* x86))
+      (:page-structure-marking-mode (page-structure-marking-mode* x86))
+      (:os-info                     (os-info* x86))
+      (:mem                         (memi* index x86))
+      (otherwise                    nil)))
 
   (define xw ((fld symbolp)
               (index natp)
@@ -4169,6 +4251,9 @@
                   (:programmer-level-mode
                    (and (equal index 0)
                         (booleanp value)))
+                  (:page-structure-marking-mode
+                   (and (equal index 0)
+                        (booleanp value)))
                   (:os-info      (and (equal index 0)
                                       (keywordp value)))
                   (:mem          (and (< index *mem-size-in-bytes*)
@@ -4176,34 +4261,35 @@
                   (otherwise     (equal index 0))))
 
     (case fld
-      (:rgf                      (!rgfi* index value x86))
-      (:rip                      (!rip* value x86))
-      (:rflags                   (!rflags* value x86))
-      (:seg-visible              (!seg-visiblei* index value x86))
-      (:seg-hidden               (!seg-hiddeni* index value x86))
-      (:str                      (!stri* index value x86))
-      (:ssr-visible              (!ssr-visiblei* index value x86))
-      (:ssr-hidden               (!ssr-hiddeni* index value x86))
-      (:ctr                      (!ctri* index value x86))
-      (:dbg                      (!dbgi* index value x86))
-      (:fp-data                  (!fp-datai* index value x86))
-      (:fp-ctrl                  (!fp-ctrl* value x86))
-      (:fp-status                (!fp-status* value x86))
-      (:fp-tag                   (!fp-tag* value x86))
-      (:fp-last-inst             (!fp-last-inst* value x86))
-      (:fp-last-data             (!fp-last-data* value x86))
-      (:fp-opcode                (!fp-opcode* value x86))
-      (:xmm                      (!xmmi* index value x86))
-      (:mxcsr                    (!mxcsr* value x86))
-      (:msr                      (!msri* index value x86))
-      (:ms                       (!ms* value x86))
-      (:fault                    (!fault* value x86))
-      (:env                      (!env* value x86))
-      (:undef                    (!undef* value x86))
-      (:programmer-level-mode    (!programmer-level-mode* value x86))
-      (:os-info                  (!os-info* value x86))
-      (:mem                      (!memi* index value x86))
-      (otherwise                 x86)))
+      (:rgf                         (!rgfi* index value x86))
+      (:rip                         (!rip* value x86))
+      (:rflags                      (!rflags* value x86))
+      (:seg-visible                 (!seg-visiblei* index value x86))
+      (:seg-hidden                  (!seg-hiddeni* index value x86))
+      (:str                         (!stri* index value x86))
+      (:ssr-visible                 (!ssr-visiblei* index value x86))
+      (:ssr-hidden                  (!ssr-hiddeni* index value x86))
+      (:ctr                         (!ctri* index value x86))
+      (:dbg                         (!dbgi* index value x86))
+      (:fp-data                     (!fp-datai* index value x86))
+      (:fp-ctrl                     (!fp-ctrl* value x86))
+      (:fp-status                   (!fp-status* value x86))
+      (:fp-tag                      (!fp-tag* value x86))
+      (:fp-last-inst                (!fp-last-inst* value x86))
+      (:fp-last-data                (!fp-last-data* value x86))
+      (:fp-opcode                   (!fp-opcode* value x86))
+      (:xmm                         (!xmmi* index value x86))
+      (:mxcsr                       (!mxcsr* value x86))
+      (:msr                         (!msri* index value x86))
+      (:ms                          (!ms* value x86))
+      (:fault                       (!fault* value x86))
+      (:env                         (!env* value x86))
+      (:undef                       (!undef* value x86))
+      (:programmer-level-mode       (!programmer-level-mode* value x86))
+      (:page-structure-marking-mode (!page-structure-marking-mode* value x86))
+      (:os-info                     (!os-info* value x86))
+      (:mem                         (!memi* index value x86))
+      (otherwise                    x86)))
 
   ;; Keep all the individual accessor and updater functions below
   ;; enabled and the universal accessor and updater functions (xr and
@@ -4235,22 +4321,22 @@
              (keyword   (intern name "KEYWORD"))
              (size      (cadr (cadr type)))
              (length    (caaddr (caddr x86-model-field))))
-            `((DEFINE ,getter ((I :TYPE (INTEGER 0 ,(1- length)))
-                               X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XR ,keyword I X86)
-                     :EXEC (,getter* I X86)))
+          `((DEFINE ,getter ((I :TYPE (INTEGER 0 ,(1- length)))
+                             X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XR ,keyword I X86)
+                   :EXEC (,getter* I X86)))
 
-              (DEFINE ,setter ((I :TYPE (INTEGER 0 ,(1- length)))
-                               (V :TYPE (,(car (cadr type)) ,size))
-                               X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XW ,keyword I V X86)
-                     :EXEC (,setter* I V X86))))))
+            (DEFINE ,setter ((I :TYPE (INTEGER 0 ,(1- length)))
+                             (V :TYPE (,(car (cadr type)) ,size))
+                             X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XW ,keyword I V X86)
+                   :EXEC (,setter* I V X86))))))
 
        ((and (consp type)
              (or (equal (car type) 'unsigned-byte)
@@ -4265,19 +4351,19 @@
              (setter*   (mk-name "!" sname "*"))
              (keyword   (intern name "KEYWORD"))
              (size      (cadr type)))
-            `((DEFINE ,getter (X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XR ,keyword 0 X86)
-                     :EXEC (,getter* X86)))
-              (DEFINE ,setter ((V :TYPE (,(car type) ,size))
-                               X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XW ,keyword 0 V X86)
-                     :EXEC (,setter* V X86))))))
+          `((DEFINE ,getter (X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XR ,keyword 0 X86)
+                   :EXEC (,getter* X86)))
+            (DEFINE ,setter ((V :TYPE (,(car type) ,size))
+                             X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XW ,keyword 0 V X86)
+                   :EXEC (,setter* V X86))))))
 
        ((and (consp type)
              (equal (car type) 'integer))
@@ -4292,19 +4378,19 @@
              (keyword   (intern name "KEYWORD"))
              (min      (cadr type))
              (max      (caddr type)))
-            `((DEFINE ,getter (X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XR ,keyword 0 X86)
-                     :EXEC (,getter* X86)))
-              (DEFINE ,setter ((V :TYPE (INTEGER ,min ,max))
-                               X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XW ,keyword 0 V X86)
-                     :EXEC (,setter* V X86))))))
+          `((DEFINE ,getter (X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XR ,keyword 0 X86)
+                   :EXEC (,getter* X86)))
+            (DEFINE ,setter ((V :TYPE (INTEGER ,min ,max))
+                             X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XW ,keyword 0 V X86)
+                   :EXEC (,setter* V X86))))))
 
        ((and (consp type)
              (equal (car type) 'satisfies))
@@ -4319,19 +4405,19 @@
              (getter*    (mk-name getter "*"))
              (setter*    (mk-name setter "*"))
              (keyword    (intern name "KEYWORD")))
-            `((DEFINE ,getter (X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XR ,keyword 0 X86)
-                     :EXEC (,getter* X86)))
-              (DEFINE ,setter ((V :TYPE (SATISFIES ,predicate))
-                               X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XW ,keyword 0 V X86)
-                     :EXEC (,setter* V X86))))))
+          `((DEFINE ,getter (X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XR ,keyword 0 X86)
+                   :EXEC (,getter* X86)))
+            (DEFINE ,setter ((V :TYPE (SATISFIES ,predicate))
+                             X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XW ,keyword 0 V X86)
+                   :EXEC (,setter* V X86))))))
 
        (t
         ;; type is T
@@ -4344,18 +4430,18 @@
              (getter*   (mk-name getter "*"))
              (setter*   (mk-name setter "*"))
              (keyword   (intern name "KEYWORD")))
-            `((DEFINE ,getter (X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XR ,keyword 0 X86)
-                     :EXEC (,getter* X86)))
-              (DEFINE ,setter (V X86)
-                :PARENTS NIL
-                :INLINE T
-                :ENABLED T
-                (MBE :LOGIC (XW ,keyword 0 V X86)
-                     :EXEC (,setter* V X86)))))))))
+          `((DEFINE ,getter (X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XR ,keyword 0 X86)
+                   :EXEC (,getter* X86)))
+            (DEFINE ,setter (V X86)
+              :PARENTS NIL
+              :INLINE T
+              :ENABLED T
+              (MBE :LOGIC (XW ,keyword 0 V X86)
+                   :EXEC (,setter* V X86)))))))))
 
   (defun x86-top-accessors-and-updaters-2 (x86-model)
     (cond ((endp x86-model)

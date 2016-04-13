@@ -10,6 +10,7 @@
 (include-book "misc/definline" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
+(include-book "centaur/gl/def-gl-rule" :dir :system)
 ;; (include-book "centaur/bitops/fast-logext" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -385,11 +386,11 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
 
         `(progn
 
-           (local
-            (def-gl-thm ,gl-name
-              :hyp ,hyp
-              :concl ,concl
-              :g-bindings ,g-bindings))
+           (gl::def-gl-ruledl
+            ,gl-name
+            :hyp ,hyp
+            :concl ,concl
+            :g-bindings ,g-bindings)
 
            (defthm ,name
              (implies ,hyp ,concl)
