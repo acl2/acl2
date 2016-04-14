@@ -393,8 +393,9 @@ Example:
   ;; replacing (foo->bar var) calls into b* binders.
   (b* ((calls (collect-simple-accessor-calls x))
        ((unless calls)
-        ;; No accessors, so nothing to do.
-        x)
+        ;; No accessors.  Previously I just returned X because there was
+        ;; nothing to do.  But we can at least order the hyps nicely.
+        (reorder-toplevel-hyps x))
        (calls (remove-duplicates-equal calls))
        ((mv binders-alist replace-alist) (deconstruct-simple-accessor-calls calls))
        (binders-alist (remove-duplicates-equal binders-alist))

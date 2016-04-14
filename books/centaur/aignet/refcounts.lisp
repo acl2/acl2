@@ -85,4 +85,16 @@
   (defthm aignet-refcounts-sizedp-after-aignet-refcounts
     (implies (< (node-count (find-max-fanin aignet)) (len aignet-refcounts))
              (< (node-count (find-max-fanin aignet)) (len (aignet-count-refs aignet-refcounts aignet))))
+    :rule-classes :linear)
+
+  (defthm aignet-count-refs-iter-does-not-shrink-refcounts
+    (<= (len aignet-refcounts)
+        (len (aignet-count-refs-iter n aignet-refcounts aignet)))
+    :rule-classes :linear
+    :hints(("Goal" :in-theory (enable aignet-count-refs-iter))))
+
+  (defthm aignet-count-refs-does-not-shrink-refcounts
+    (<= (len aignet-refcounts)
+        (len (aignet-count-refs aignet-refcounts aignet)))
     :rule-classes :linear))
+
