@@ -10312,6 +10312,12 @@
                             familiar-name))))
               state)))
 
+(defun assoc-familiar-name (familiar-name alist)
+  (cond ((endp alist) nil)
+        ((equal familiar-name (caddr (car alist)))
+         (car alist))
+        (t (assoc-familiar-name familiar-name (cdr alist)))))
+
 (defun tilde-*-book-hash-phrase1 (reqd-alist actual-alist state)
 
 ; The two alists are include-book-alists.  Thus, each element of each is of the
@@ -10328,53 +10334,82 @@
              (full-book-name (car (car reqd-alist)))
              (actual-element (assoc-equal full-book-name actual-alist))
              (actual-entry (cdddr actual-element)))
-        (assert$
+        (cond
+         ((null actual-entry)
 
-; We know there is an entry for full-book-name because otherwise we would have
-; caused an error when trying to include the book (or process its portcullis
-; commands).  The question is only whether we found a cert file for it, etc.
+; At one time we believed that there must be an entry for full-book-name,
+; erroneously thinking that otherwise we would have caused an error when trying
+; to include the book (or process its portcullis commands).  We have seen that
+; this need not be the case when the certificate was built in a different
+; directory, so that the full-book-name, which is from the certificate, can
+; differ from the full-book-name in the world that corresponds to the same
+; familiar-name.
 
-         actual-element          
-         (cond
-          ((equal reqd-entry actual-entry)
-           (tilde-*-book-hash-phrase1 (cdr reqd-alist)
-                                      actual-alist
-                                      state))
-          (t
-           (mv-let
-             (msgs state)
-             (tilde-*-book-hash-phrase1 (cdr reqd-alist)
-                                        actual-alist
-                                        state)
-             (mv-let
-               (phrase state)
-               (tilde-@-cert-post-alist-phrase full-book-name
-                                               familiar-name
-                                               reqd-entry
-                                               actual-entry
-                                               state)
-               (mv (cons
-                    (msg "-- its certificate requires the book \"~s0\" with ~
-                          certificate annotations~|  ~x1~|and book hash ~x2, ~
-                          but we have included ~@3~@4"
-                         full-book-name
-                         (car reqd-entry) ;;; cert-annotations
-                         (cdr reqd-entry) ;;; book-hash
-                         (cond
-                          ((null (cdr actual-entry))
-                           (msg "an uncertified version of ~x0 with ~
-                                 certificate annotations~|  ~x1,"
-                                familiar-name
-                                (car actual-entry) ; cert-annotations
-                                ))
-                          (t (msg "a version of ~x0 with certificate ~
-                                   annotations~|  ~x1~|and book-hash ~x2,"
-                                  familiar-name
-                                  (car actual-entry) ; cert-annotations
-                                  (cdr actual-entry))))
-                         phrase)
-                    msgs)
-                   state))))))))))
+          (let* ((pair (assoc-familiar-name familiar-name actual-alist))
+                 (msg
+                  (cond (pair (msg "-- its certificate requires the book ~
+                                    \"~s0\", but that book has not been ~
+                                    included although the book \"~s1\" -- ~
+                                    which has the same familiar name as that ~
+                                    required book (but with a different ~
+                                    full-book-name; see :DOC full-book-name) ~
+                                    -- has been included"
+                                   full-book-name
+                                   (car pair)))
+                        (t    (msg "-- its certificate requires the book ~
+                                    \"~s0\", but that book has not been ~
+                                    included, nor has any book with the same ~
+                                    familiar name as that required book (see ~
+                                    :DOC full-book-name) -- perhaps the ~
+                                    certificate file changed during inclusion ~
+                                    of some superior book"
+                                   full-book-name)))))
+            (mv-let
+              (msgs state)
+              (tilde-*-book-hash-phrase1 (cdr reqd-alist)
+                                         actual-alist
+                                         state)
+              (mv (cons msg msgs)
+                  state))))
+         ((equal reqd-entry actual-entry)
+          (tilde-*-book-hash-phrase1 (cdr reqd-alist)
+                                     actual-alist
+                                     state))
+         (t
+          (mv-let
+            (msgs state)
+            (tilde-*-book-hash-phrase1 (cdr reqd-alist)
+                                       actual-alist
+                                       state)
+            (mv-let
+              (phrase state)
+              (tilde-@-cert-post-alist-phrase full-book-name
+                                              familiar-name
+                                              reqd-entry
+                                              actual-entry
+                                              state)
+              (mv (cons
+                   (msg "-- its certificate requires the book \"~s0\" with ~
+                         certificate annotations~|  ~x1~|and book hash ~x2, ~
+                         but we have included ~@3~@4"
+                        full-book-name
+                        (car reqd-entry)  ;;; cert-annotations
+                        (cdr reqd-entry)  ;;; book-hash
+                        (cond
+                         ((null (cdr actual-entry))
+                          (msg "an uncertified version of ~x0 with ~
+                                certificate annotations~|  ~x1,"
+                               familiar-name
+                               (car actual-entry) ; cert-annotations
+                               ))
+                         (t (msg "a version of ~x0 with certificate ~
+                                  annotations~|  ~x1~|and book-hash ~x2,"
+                                 familiar-name
+                                 (car actual-entry) ; cert-annotations
+                                 (cdr actual-entry))))
+                        phrase)
+                   msgs)
+                  state)))))))))
 
 (defun tilde-*-book-hash-phrase (reqd-alist actual-alist state)
 
