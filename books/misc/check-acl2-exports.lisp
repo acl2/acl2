@@ -86,6 +86,7 @@
     BOOK-HASH
     CHECK-SUM
     COMP-GCL
+    CONSTRAINT-INFO ; to be added to *acl2-exports*
     COUNT ; defined in books/coi/bags/basic.lisp
     DEFUN-MODE
     DIVE-INTO-MACROS-TABLE
