@@ -3,6 +3,7 @@
 
 (in-package "X86ISA")
 (include-book "pml4-table-lemmas" :ttags :all)
+(include-book "gather-paging-structures-thms" :ttags :all)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -95,6 +96,8 @@
    (xlate-equiv-structures (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
                            (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) ()))))
+
+;; (i-am-here)
 
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa
   (implies
