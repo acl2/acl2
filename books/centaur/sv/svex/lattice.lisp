@@ -483,14 +483,13 @@ any environment."
 
 
 
-;; definition is redundant
-(define 4vec-xfree-p ((x 4vec-p))
-  :parents (4vec-[= svex-xeval)
-  :short "Recognizer for @(see 4vec)s with no X bits.  These have a special
-relationship with @(see svex-xeval)."
-  (b* (((4vec x) x))
-    (eql -1 (logior (lognot x.upper) x.lower)))
-  ///
+(defsection 4vec-xfree-p-basics
+  :parents (4vec-xfree-p)
+  :short "Some lemmas about @(see 4vec-xfree-p) in the
+  @('sv/svex/lattice.lisp') book."
+
+  (local (in-theory (enable 4vec-xfree-p)))
+
   (local (defthm equal-of-4vecs
            (implies (and (4vec-p a)
                          (4vec-p b))
