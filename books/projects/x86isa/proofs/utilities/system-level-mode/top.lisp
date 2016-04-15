@@ -7,3 +7,4 @@
 ;; the system-level mode.
 
 (include-book "system-level-memory-utils" :ttags :all)
+(include-book "paging-lib/paging-top" :ttags :all)

@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../utilities/system-level-mode/top")
+(include-book "../utilities/system-level-mode/system-level-memory-utils")
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -3268,6 +3268,8 @@
 
                             (rewire_dst_to_src-clk
                              (rewire_dst_to_src-clk)
+                             addr-range
+                             (addr-range)
 
                              ;; pml4-table-base-addr
                              ;; page-dir-ptr-table-base-addr
@@ -4118,6 +4120,8 @@
 
                             (rewire_dst_to_src-clk
                              (rewire_dst_to_src-clk)
+                             (addr-range)
+                             addr-range
 
                              pml4-table-base-addr
                              ;; page-dir-ptr-table-base-addr

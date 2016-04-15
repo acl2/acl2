@@ -21,9 +21,7 @@
                             (member-p)))))
 
 (defthm member-p-and-gather-qword-addresses-corresponding-to-1-entry
-  (implies (and (equal (page-present (rm-low-64 superior-structure-paddr x86)) 1)
-                (equal (page-size (rm-low-64 superior-structure-paddr x86)) 0)
-                (<=
+  (implies (and (<=
                  (ash (loghead
                        40
                        (logtail 12 (rm-low-64 superior-structure-paddr x86)))
@@ -122,9 +120,7 @@
 (defthm page-dir-ptr-table-entry-addr-is-at-the-second-level
   (implies
    (and (canonical-address-p lin-addr)
-        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
-        (equal (page-present (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 1)
-        (equal (page-size (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 0))
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
    (member-p (page-dir-ptr-table-entry-addr
               lin-addr
               (ash (loghead 40
@@ -162,9 +158,7 @@
 (defthm page-dir-ptr-table-entry-addr-is-a-member-of-gather-all-paging-structure-qword-addresses
   (implies
    (and (canonical-address-p lin-addr)
-        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
-        (equal (page-present (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 1)
-        (equal (page-size (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 0))
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
    (member-p (page-dir-ptr-table-entry-addr
               lin-addr
               (ash (loghead 40
@@ -181,35 +175,7 @@
 (defthm page-directory-entry-addr-is-at-the-third-level
   (implies
    (and (canonical-address-p lin-addr)
-        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
-        (equal (page-present (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 1)
-        (equal (page-size (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 0)
-        (equal
-         (page-present
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr
-            lin-addr
-            (ash (loghead 40
-                          (logtail 12
-                                   (rm-low-64
-                                    (pml4-table-entry-addr lin-addr base-addr)
-                                    x86)))
-                 12))
-           x86))
-         1)
-        (equal
-         (page-size
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr
-            lin-addr
-            (ash (loghead 40
-                          (logtail 12
-                                   (rm-low-64
-                                    (pml4-table-entry-addr lin-addr base-addr)
-                                    x86)))
-                 12))
-           x86))
-         0))
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
    (member-p
     (page-directory-entry-addr
      lin-addr
@@ -280,35 +246,7 @@
 (defthm page-directory-entry-addr-is-a-member-of-gather-all-paging-structure-qword-addresses
   (implies
    (and (canonical-address-p lin-addr)
-        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
-        (equal (page-present (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 1)
-        (equal (page-size (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 0)
-        (equal
-         (page-present
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr
-            lin-addr
-            (ash (loghead 40
-                          (logtail 12
-                                   (rm-low-64
-                                    (pml4-table-entry-addr lin-addr base-addr)
-                                    x86)))
-                 12))
-           x86))
-         1)
-        (equal
-         (page-size
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr
-            lin-addr
-            (ash (loghead 40
-                          (logtail 12
-                                   (rm-low-64
-                                    (pml4-table-entry-addr lin-addr base-addr)
-                                    x86)))
-                 12))
-           x86))
-         0))
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
    (member-p
     (page-directory-entry-addr
      lin-addr
@@ -341,91 +279,7 @@
 (defthm page-table-entry-addr-is-at-the-fourth-level
   (implies
    (and (canonical-address-p lin-addr)
-        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
-        (equal (page-present (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 1)
-        (equal (page-size (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 0)
-        (equal
-         (page-present
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr
-            lin-addr
-            (ash (loghead 40
-                          (logtail 12
-                                   (rm-low-64
-                                    (pml4-table-entry-addr lin-addr base-addr)
-                                    x86)))
-                 12))
-           x86))
-         1)
-        (equal
-         (page-size
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr
-            lin-addr
-            (ash (loghead 40
-                          (logtail 12
-                                   (rm-low-64
-                                    (pml4-table-entry-addr lin-addr base-addr)
-                                    x86)))
-                 12))
-           x86))
-         0)
-        (equal
-         (page-present
-          (rm-low-64
-           (page-directory-entry-addr
-            lin-addr
-            (ash
-             (loghead
-              40
-              (logtail
-               12
-               (rm-low-64
-                (page-dir-ptr-table-entry-addr
-                 lin-addr
-                 (ash
-                  (loghead
-                   40
-                   (logtail
-                    12
-                    (rm-low-64
-                     (pml4-table-entry-addr
-                      lin-addr
-                      base-addr)
-                     x86)))
-                  12))
-                x86)))
-             12))
-           x86))
-         1)
-        (equal
-         (page-size
-          (rm-low-64
-           (page-directory-entry-addr
-            lin-addr
-            (ash
-             (loghead
-              40
-              (logtail
-               12
-               (rm-low-64
-                (page-dir-ptr-table-entry-addr
-                 lin-addr
-                 (ash
-                  (loghead
-                   40
-                   (logtail
-                    12
-                    (rm-low-64
-                     (pml4-table-entry-addr
-                      lin-addr
-                      base-addr)
-                     x86)))
-                  12))
-                x86)))
-             12))
-           x86))
-         0))
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
    (member-p
     (page-table-entry-addr
      lin-addr
@@ -589,91 +443,7 @@
 (defthm page-table-entry-addr-is-a-member-of-gather-all-paging-structure-qword-addresses
   (implies
    (and (canonical-address-p lin-addr)
-        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
-        (equal (page-present (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 1)
-        (equal (page-size (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86)) 0)
-        (equal
-         (page-present
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr
-            lin-addr
-            (ash (loghead 40
-                          (logtail 12
-                                   (rm-low-64
-                                    (pml4-table-entry-addr lin-addr base-addr)
-                                    x86)))
-                 12))
-           x86))
-         1)
-        (equal
-         (page-size
-          (rm-low-64
-           (page-dir-ptr-table-entry-addr
-            lin-addr
-            (ash (loghead 40
-                          (logtail 12
-                                   (rm-low-64
-                                    (pml4-table-entry-addr lin-addr base-addr)
-                                    x86)))
-                 12))
-           x86))
-         0)
-        (equal
-         (page-present
-          (rm-low-64
-           (page-directory-entry-addr
-            lin-addr
-            (ash
-             (loghead
-              40
-              (logtail
-               12
-               (rm-low-64
-                (page-dir-ptr-table-entry-addr
-                 lin-addr
-                 (ash
-                  (loghead
-                   40
-                   (logtail
-                    12
-                    (rm-low-64
-                     (pml4-table-entry-addr
-                      lin-addr
-                      base-addr)
-                     x86)))
-                  12))
-                x86)))
-             12))
-           x86))
-         1)
-        (equal
-         (page-size
-          (rm-low-64
-           (page-directory-entry-addr
-            lin-addr
-            (ash
-             (loghead
-              40
-              (logtail
-               12
-               (rm-low-64
-                (page-dir-ptr-table-entry-addr
-                 lin-addr
-                 (ash
-                  (loghead
-                   40
-                   (logtail
-                    12
-                    (rm-low-64
-                     (pml4-table-entry-addr
-                      lin-addr
-                      base-addr)
-                     x86)))
-                  12))
-                x86)))
-             12))
-           x86))
-         0))
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
    (member-p
     (page-table-entry-addr
      lin-addr

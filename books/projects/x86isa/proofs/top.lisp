@@ -35,7 +35,7 @@ be found in @('popcount/popcount.lisp'). This proof was done using the
 
 <p>The proof of correctness of a simple <b>zero-copy sub-routine</b>
 in the system-level mode can be found in
-@('zeroCopy/zeroCopy.lisp').</p>"
+@('zeroCopy/zeroCopy-in-non-marking-mode.lisp').</p>"
 
   ;; [Shilpi]: There are name clashes in these two factorial books.  The
   ;; empty encapsulates below avoid this name clash problem while
@@ -46,34 +46,32 @@ in the system-level mode can be found in
 
   (local
    (encapsulate
-    ()
-    (local (include-book "factorial/fact-inductive-assertions" :ttags :all))))
-
-  (local
-   (encapsulate
-    ()
-    (local (include-book "factorial/fact-wormhole-abstraction" :ttags :all))))
-
-  (local
-   (encapsulate
-    ()
-    (local (include-book "popcount/popcount" :ttags :all))))
-
-  (local
-   (encapsulate
-    ()
-    (local (include-book "wordCount/wc" :ttags :all))))
-
-  (local
-   (encapsulate
-    ()
-    (local (include-book "dataCopy/dataCopy" :ttags :all))))
+     ()
+     (local (include-book "factorial/fact-inductive-assertions" :ttags :all))))
 
   (local
    (encapsulate
      ()
-     (local (include-book "zeroCopy/zeroCopy" :ttags :all))))
+     (local (include-book "factorial/fact-wormhole-abstraction" :ttags :all))))
 
-  )
+  (local
+   (encapsulate
+     ()
+     (local (include-book "popcount/popcount" :ttags :all))))
+
+  (local
+   (encapsulate
+     ()
+     (local (include-book "wordCount/wc" :ttags :all))))
+
+  (local
+   (encapsulate
+     ()
+     (local (include-book "dataCopy/dataCopy" :ttags :all))))
+
+  (local
+   (encapsulate
+     ()
+     (local (include-book "zeroCopy/zeroCopy-in-non-marking-mode" :ttags :all)))))
 
 ;; ======================================================================

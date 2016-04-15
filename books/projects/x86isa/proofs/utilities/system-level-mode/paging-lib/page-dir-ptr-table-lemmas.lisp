@@ -244,7 +244,9 @@
                   (gather-all-paging-structure-qword-addresses x86))
         (if (equal (page-size (rm-low-64 (page-dir-ptr-table-entry-addr
                                           (logext 48 lin-addr)
-                                          (logand 18446744073709547520 (loghead 52 base-addr)))
+                                          (logand
+                                           18446744073709547520
+                                           (loghead 52 base-addr)))
                                          x86))
                    0)
             (and
@@ -263,8 +265,7 @@
                              x86)))
                 12))
               (gather-all-paging-structure-qword-addresses x86))
-             (if
-                 (equal
+             (if (equal
                   (page-size
                    (rm-low-64
                     (page-directory-entry-addr
