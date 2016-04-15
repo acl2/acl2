@@ -86,8 +86,8 @@ languages, alists may go by names like <i>dictionaries</i>, <i>maps</i>,
 and @(see strip-cars), which have long been built into ACL2.</li>
 
 <li><b>\"modern\" alist operations</b> like @(see hons-assoc-equal), @(see
-alist-keys), @(see make-fal), etc., which have better compatibility with the
-@(see fast-alists) of ACL2(h).</li>
+alist-keys), @(see make-fal), etc., which have better compatibility with
+@(see fast-alists).</li>
 
 </ul>
 
