@@ -268,9 +268,10 @@
                      acl2::generalize-clause
                      acl2::eliminate-irrelevance-clause)))
 
-(defabbrev update-cgen-state-givens/callback (term ctx)
+(defun update-cgen-state-givens/callback (term ctx vl state)
   "update cgen-state fields user-supplied-term,top-vt-alist etc from test-checkpoint"
-  (b* ((cgen-state (cput top-ctx ctx))
+  (b* ((cgen-state (@ cgen-state))
+       (cgen-state (cput top-ctx ctx))
        (cgen-state (cput user-supplied-term term))
        (cgen-state (cput displayed-goal term)) ;ASK: shud I prettify it?
 ; ACHTUNG - get-hyps only looks at outermost implies.
@@ -279,7 +280,7 @@
        (vars (vars-in-dependency-order hyps concl vl (w state)))
        (d-typ-al (dumb-type-alist-infer
                    (cons (dumb-negate-lit concl) hyps) vars 
-                   vl wrld))
+                   vl (w state)))
        (cgen-state (cput top-vt-alist d-typ-al))
        (- (cw? (system-debug-flag vl)
                "~|CEgen/Sysdebug: update-gcs%-top-level : ~x0 dumb top vt-alist: ~x1 ~|"
@@ -370,19 +371,35 @@ then it returns (value '(:do-not '(acl2::generalize)
        (wrld (w state))
        (cgen-state (@ cgen-state))
        (pspv-user-supplied-term (acl2::access acl2::prove-spec-var 
-                                     pspv :user-supplied-term))
-       (cgen-state (if (eq (cget user-supplied-term) :undefined)
-                       (update-cgen-state-givens/callback pspv-user-supplied-term ctx)
-                     cgen-state))
+                                              pspv :user-supplied-term))
+       (- (cw? (debug-flag vl) "~| pspv-ust: ~x0 curr ust: ~x1 ctx:~x2 cgen-state.ctx:~x3~%" pspv-user-supplied-term (cget user-supplied-term) ctx (cget top-ctx)))
+
+       ((unless (implies (and (not (eq (cget user-supplied-term) :undefined))
+                              (not (eq (cget top-ctx) :user-defined))) ;allow test?/prove
+                         (equal ctx (cget top-ctx))))
+        (prog2$ ;Invariant 
+         (cw? (verbose-flag vl)
+              "~|Cgen/Note: We encountered a new goal ctx ~x0, in the course of testing ctx ~x1. ~ 
+Nested testing not allowed! Skipping testing of new goal...~%" 
+              ctx
+              (cget top-ctx))
+         (value nil)))
        (user-supplied-term (cget user-supplied-term))
-       ((unless (equal user-supplied-term pspv-user-supplied-term))
-        (prog2$ ;Invariant
+       ((unless (implies (not (eq user-supplied-term :undefined)) ;already set
+                         (equal user-supplied-term pspv-user-supplied-term)))
+        (prog2$ ;Invariant [2016-04-04 Mon] TODO: this only works for test?, not for thm/defthm
          (cw? (verbose-flag vl)
               "~|Cgen/Note: We encountered a new goal ~x0, in the course of testing ~x1. ~ 
 Nested testing not allowed! Skipping testing of new goal...~%" 
               (acl2::prettyify-clause (list pspv-user-supplied-term) nil wrld)
               (acl2::prettyify-clause (list user-supplied-term) nil wrld))
          (value nil)))
+
+       (cgen-state (if (eq (cget user-supplied-term) :undefined)
+                       (update-cgen-state-givens/callback pspv-user-supplied-term ctx vl state)
+                     cgen-state))
+       
+       
         
        (- (cw? (verbose-stats-flag vl)
                "~%~%~|Cgen/Note: @Checkpoint Subgoal-name:~x0 Processor:~x1~|" name processor))
@@ -443,13 +460,17 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 ; hopefully it will not affect any computation based on it, certainly will
 ; not affect all-vars. CHECK! 20th March 2013
               (tau-interval-alist (tau-interval-alist-clause gen-cl vars))
+              (temp-cgen-state (list (cons 'PARAMS (cget params))
+                                     (cons 'GCS *initial-gcs%*)
+                                     (cons 'TOP-CTX ctx)
+                                     (cons 'TOP-VT-ALIST vt-alist)))
               ((mv erp res state) (cgen-search-local name H C 
                                                      type-alist tau-interval-alist 
-                                                     NIL vt-alist
-                                                     (cget params) 
+                                                     NIL 
                                                      *initial-test-outcomes%* 
 ; we dont care about witnesses and the start time and do no accumulation.
                                                      *initial-gcs%*
+                                                     temp-cgen-state
                                                      ctx state))
               ((when erp) (value nil))
               ((list & test-outcomes% &) res)
@@ -733,8 +754,8 @@ Nested testing not allowed! Skipping testing of new goal...~%"
          state))
               
        ((mv start state) (acl2::read-run-time state))
-       (cgen-state (init-cgen-state/event (acl2s::acl2s-defaults-alist) start ctx))
-       (- (cw? (debug-flag vl) "~|CEgen/Note: CGEN-STATE initialized for ctx ~x0~%" ctx))
+       (cgen-state (init-cgen-state/event (acl2s::acl2s-defaults-alist) start :undefined))
+       (- (cw? (debug-flag vl) "~|CEgen/Note: CGEN-STATE initialized for ~x0~%" ctx-form))
        (state (f-put-global 'cgen-state cgen-state state))
        (state (f-put-global 'event-ctx ctx-form state)))
     state))

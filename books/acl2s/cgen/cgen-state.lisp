@@ -2,7 +2,7 @@
 ;; Author - Harsh Raju Chamarthi (harshrc)
 (include-book ;; Newline to fool ACL2/cert.pl dependency scanner
  "../portcullis")
-(begin-book t :ttags :all);$ACL2s-Preamble$|#
+(begin-book t);$ACL2s-Preamble$|#
 
 
 (in-package "CGEN")
@@ -281,7 +281,7 @@ cgen-state"
          (pseudo-termp user-supplied-term)
          (not (eq :undefined displayed-goal))
          (or (member-eq top-ctx '(:user-defined test?))
-             (allowed-cgen-event-ctx-p top-ctx))
+             (not (null top-ctx))); (allowed-cgen-event-ctx-p top-ctx))
          (cgen-params-p params)
 
          (var-alistp top-vt-alist)
@@ -319,3 +319,12 @@ cgen-state"
 (defun membership-relationp (R) ;TODO make this more general
   (member-equal R '(acl2::member-eq acl2::member acl2::member-eql acl2::member-equal acl2s::in |ACL2S B|::in)))
 
+
+; [2016-04-03 Sun] Added placeholder for fixer-arrangement which gives back a
+; fixer/elim-binding as a let*-binding that can be used in simple-search
+(defstub fixer-arrangement (* * * * * * * state) => (mv * * state))
+(defun fixer-arrangement/dummy (hyps concl vars type-alist vl ctx wrld state)
+  (declare (ignore hyps concl vars type-alist vl ctx wrld))
+  (declare (xargs :stobjs (state)))
+  (mv nil '() state))
+(defattach (fixer-arrangement fixer-arrangement/dummy))

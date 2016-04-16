@@ -262,8 +262,7 @@ additional hyps")
   (incremental-search (a% A. 
                           name  mv-sig-alist ;subgoal params
                           test-outcomes% gcs%
-                          N vl sm blimit num-cts num-wts timeout-secs
-                          top-vt-alist
+                          vl cgen-state
                           programp
                           ctx state)
 
@@ -285,8 +284,7 @@ additional hyps")
     (decl :sig ((a% a%-listp 
                  string  symbol-alist
                  test-outcomes%-p gcs%-p
-                 fixnum fixnum (enum *sampling-method-values*) fixnum fixnum fixnum rational
-                 variable-alist
+                 fixnum cgen-state
                  booleanp
                  symbolp state) -> 
                 (mv erp (list boolean test-outcomes% gcs%) state))
@@ -306,28 +304,25 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                                              H C vars partial-A elim-bindings type-alist tau-interval-alist
                                              mv-sig-alist
                                              test-outcomes% gcs%
-                                             N vl sm num-cts num-wts timeout-secs
-                                             top-vt-alist
+                                             vl cgen-state
                                              programp t
                                              ctx state))
          (backtrack... () (backtrack a% A.
                                      name mv-sig-alist
                                      test-outcomes% gcs%
-                                     N vl sm blimit num-cts num-wts timeout-secs
-                                     top-vt-alist
+                                     vl cgen-state
                                      programp
                                      ctx state))
          
          (recurse... () (incremental-search a% A.
                                             name mv-sig-alist
                                             test-outcomes% gcs%
-                                            N vl sm blimit num-cts num-wts timeout-secs
-                                            top-vt-alist
+                                            vl cgen-state
                                             programp
                                             ctx state)))
 
       (b* (((mv erp ap-res state) ;snapshot a% moves to second stage/form
-            (trans-eval `(assign-propagate ',a% ',name ',sm ',vl ',ctx state)
+            (trans-eval `(assign-propagate ',a% ',name ',(cget sampling-method) ',vl ',ctx state)
                         ctx state t))
            ((when erp) ;error in assign value
             (prog2$
@@ -377,16 +372,14 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
   (backtrack (a% A. 
                  name mv-sig-alist
                  test-outcomes% gcs%
-                 N vl sm blimit num-cts num-wts timeout-secs
-                 top-vt-alist
+                 vl cgen-state
                  programp
                  ctx state)
 ; when called from incremental, either contradiction in hyps[x=a] or simple-search failed on P of zero/one variable
     (decl :sig (( a%-p a%-listp 
                  string variable-alist
                  test-outcomes%-p gcs%-p
-                 fixnum fixnum (enum *sampling-method-values*) fixnum fixnum fixnum rational
-                 variable-alist
+                 fixnump cgen-state-p
                  boolean
                  symbol state) 
                 -> (mv erp (list boolean test-outcomes% gcs%) state))
@@ -394,7 +387,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
          :doc "backtrack in dpll like search")
    
     (if (or (not (eq (access a% kind) :decision)) ;implied or expand
-            (> (access a% i) blimit))
+            (> (access a% i) (cget backtrack-limit)))
         (if (null A.)
 ;       THEN - error out if x0 exceeds blimit
             (prog2$
@@ -409,8 +402,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
            (backtrack a% (cdr A.) ;pop stack
                       name mv-sig-alist
                       test-outcomes% gcs%
-                      N vl sm blimit num-cts num-wts timeout-secs
-                      top-vt-alist
+                      vl cgen-state
                       programp
                       ctx state)))
 
@@ -418,8 +410,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
       (incremental-search a% A. 
                           name mv-sig-alist
                           test-outcomes% gcs%
-                          N vl sm blimit num-cts num-wts timeout-secs
-                          top-vt-alist
+                          vl cgen-state
                           programp
                           ctx state))))
 

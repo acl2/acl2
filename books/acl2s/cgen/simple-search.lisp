@@ -476,12 +476,8 @@ eg:n/a")
                                  (mv test-outcomes% gcs%))))))
 
 
-(def run-n-tests. (n num-trials sm vl num-cts num-wts 
-                     r. BE. 
-                     test-outcomes% gcs%)
-  (decl :sig ((fixnum fixnum keyword fixnum fixnum fixnum 
-                      fixnum symbol-fixnum-alist 
-                      test-outcomes% gcs%)
+(def run-n-tests. (n r. BE. test-outcomes% gcs% vl cgen-state)
+  (decl :sig ((fixnum fixnum symbol-fixnum-alist test-outcomes% gcs% fixnum cgen-state)
               -> (mv boolean fixnum symbol-fixnum-alist 
                      test-outcomes% gcs%))
         :doc
@@ -493,13 +489,11 @@ eg:n/a")
    n is num-trials minus current local-trial number.
    r.  is the current pseudo-random seed.
    BE. is alist mapping variables to bounded-exhaustive seeds used in last instantiation
-   num-trials (the current cgen default)
-   sm is sampling-method (the current cgen default)
-   vl is verbosity-level (the current cgen default)
-   num-cts is num-counterexamples (the current cgen default)
-   num-wts is num-witnesses (the current cgen default)
    test-outcomes% stores testrun results.
    gcs% is the global/top-level (testing) coverage statistics.
+   vl is verbosity-level (the current cgen default)
+   cgen-state is the current cgen context
+   
 
 * Returns: (mv stop? r. BE. test-outcomes% gcs%)
 where
@@ -511,32 +505,35 @@ where
 ")
   (b* (((when (zpf n)) ;Oops, ran out of random trials
         (mv NIL r. test-outcomes% gcs%))
+
+       (num-trials (cget num-trials))
+       (num-cts (cget num-counterexamples))
+       (num-wts (cget num-witnesses))
+
        ((when (stopping-condition? gcs% num-cts num-wts))
 ;return, cos we have reached our goal  
          (mv T r. test-outcomes% gcs%))
 
        (local-trial-num  (acl2::|1+F| (acl2::-f num-trials n)))
+
        ((mv res hyp-vals A r. BE.) ; res = test value  A= value-bindings
-        (run-single-test. vl sm num-trials local-trial-num  r. BE.))
-       ((mv test-outcomes% gcs%) (record-testrun. res hyp-vals A num-cts num-wts vl test-outcomes% gcs%))
+        (run-single-test. vl (cget sampling-method) num-trials local-trial-num  r. BE.))
+
+       ((mv test-outcomes% gcs%)
+        (record-testrun. res hyp-vals A num-cts num-wts vl test-outcomes% gcs%))
+       
        (- (cw? (system-debug-flag vl) 
                "~|CEgen/Sysdebug/run-n-tests: Finished run n: ~x0 -- got ~x1~|" n res)))
 ;  in   
-   (run-n-tests. (acl2::|1-F| n) num-trials sm vl num-cts num-wts 
-                 r. BE. 
-                 test-outcomes% gcs%)))
+    (run-n-tests. (acl2::|1-F| n) r. BE. test-outcomes% gcs% vl cgen-state)))
 
           
 
 
 ;; Pre Condition: hypothesis-val, conclusion-val and next-sigma have been
 ;; attached when this function is called!
-(def run-tests. (N sm vl num-cts num-wts 
-                   rseed. BE. 
-                   test-outcomes% gcs%)
-  (decl :sig ((fixnump keywordp fixnump fixnum fixnum 
-                       fixnump symbol-fixnum-alistp 
-                       test-outcomes%-p gcs%-p) 
+(def run-tests. (rseed. BE. test-outcomes% gcs% vl cgen-state)
+  (decl :sig ((fixnump symbol-fixnum-alistp test-outcomes%-p gcs%-p fixnump cgen-state)
               -> (mv boolean fixnum test-outcomes% gcs%))
         ;:trace T
         :doc 
@@ -544,10 +541,7 @@ where
   find cts/wts for formula under test")
 ;do timeout wrapper here!        
   (b* (((mv stop? rseed. test-outcomes% gcs%)
-        (run-n-tests. N N
-                      sm vl num-cts num-wts
-                      rseed. BE.
-                      test-outcomes% gcs%))
+        (run-n-tests. (cget num-trials) rseed. BE. test-outcomes% gcs% vl cgen-state))
        
        (- (cw? (system-debug-flag vl) 
                "~|CEgen/Sysdebug/run-tests.: test-outcomes%: ~x0 ~|gcs%: ~x1~%" test-outcomes% gcs%)))
@@ -594,7 +588,7 @@ where
                              :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))))
              ,(make-next-sigma_mv-let var-enumcalls-alist
 ; sigma will be output as a let-bindings i.e symbol-doublet-listp
-                                      `(LET* ,(append partial-A elim-bindings)
+                                      `(B* ,(append partial-A elim-bindings)
                                           (mv ,(make-var-value-list-bindings
                                                 (union-eq (strip-cars var-enumcalls-alist)
                                                           (strip-cars partial-A)
@@ -682,16 +676,16 @@ where
 
 ; pushed the with-timeout wrapper into the trans-eval make-event of simple-search to get saner cgen::event-stack behavior
 ; [2015-02-04 Wed] The reason in the above note is irrelevant now that we disallow nested testable events. 
-(defun run-tests-with-timeout (timeout-secs N sm vl num-cts num-wts vars test-outcomes% gcs% state)
+(defun run-tests-with-timeout (vars test-outcomes% gcs% vl cgen-state state)
   (acl2::with-timeout1 
-   timeout-secs
+   (cget cgen-local-timeout)
    (b* (;((mv rseed. state) ) (acl2::random$ defdata::*M31* state) ;Lets try CL's builtin random number generator
         (rseed. (defdata::getseed state))
-        (- (cw? (system-debug-flag vl) 
+        (- (cw? (system-debug-flag vl)
                 "~|CEgen/Sysdebug/run-tests: starting SEED: ~x0 ~%" rseed.))
         (BE.    (pairlis$ vars (make-list (len vars) :initial-element 0)))
         ((mv stop? rseed. test-outcomes% gcs%)
-         (run-tests. N sm vl num-cts num-wts rseed. BE. test-outcomes% gcs%))
+         (run-tests. rseed. BE. test-outcomes% gcs% vl cgen-state))
         (state (defdata::putseed rseed. state))
         )
      (assign ss-temp-result (list stop? test-outcomes% gcs%)))
@@ -710,7 +704,6 @@ where
 
 
 
-
 ;; 1st April 2013 Fix
 ;; You cannot trust make-event to give the right result
 ;; through trans-eval. Just use a state temp global.
@@ -719,20 +712,19 @@ where
 (def simple-search (name 
                     hyps concl vars partial-A
 ;[2015-09-19 Sat] added support for refine/expand in assign-value of incremental-search
+;[2016-04-03 Sun] elim-bindings will also suffice for incorporating fixers!!
                     elim-bindings 
                     type-alist tau-interval-alist mv-sig-alist
                     test-outcomes% gcs%
-                    N vl sm num-cts num-wts timeout-secs
-                    top-vt-alist
+                    vl cgen-state
                     programp incremental-flag?
                     ctx state)
   (decl :sig ((string pseudo-term-list pseudo-term symbol-list symbol-doublet-listp symbol-doublet-listp
-                variable-alist variable-alist variable-alist
-               test-outcomes% gcs% 
-               fixnum fixnum keyword fixnum fixnum rational
-               variable-alist
-               boolean boolean
-               symbol state) 
+                      variable-alist variable-alist variable-alist
+                      test-outcomes% gcs%
+                      fixnum cgen-state
+                      boolean boolean
+                      symbol state) 
               -> (mv erp (list boolean test-outcomes% gcs%) state))
         :mode :program
         :doc 
@@ -759,7 +751,7 @@ Use :simple search strategy to find counterexamples and witnesses.
              (record-testrun. (if c :witness :counterexample)
                               '()
                               partial-A
-                              num-cts num-wts
+                              (cget num-counterexamples) (cget num-witnesses)
                               vl test-outcomes% gcs%)))
 
 ;       in
@@ -788,13 +780,20 @@ Use :simple search strategy to find counterexamples and witnesses.
        ;;  (trans-eval `(mv-list 2 (meet-type-alist ',type-alist ',top-vt-alist ',vl ',wrld))
        ;;              ctx state t))
        
-       ((mv erp type-alist) (meet-type-alist type-alist top-vt-alist vl wrld))
+       ((mv erp type-alist) (meet-type-alist type-alist (cget top-vt-alist) vl wrld))
        ((when erp)
         (prog2$
          (cw? (normal-output-flag vl)
               "~|CEgen/Error: Type intersection failed. Skip searching ~x0.~%" name)
          (mv t (list NIL test-outcomes% gcs%) state)))
 
+       ;;[2016-04-03 Sun] Added support for fixers
+       ((er fixer-bindings)
+        (if (cget use-fixers)
+            (fixer-arrangement hyps concl vars type-alist vl ctx wrld state)
+          (value nil)))
+       (elim-bindings (append elim-bindings fixer-bindings))
+       
        ((mv erp next-sigma-defuns disp-enum-alist)
         (make-next-sigma-defuns hyps concl ;developed in build-enumcalls.lisp
                                 vars partial-A elim-bindings
@@ -815,6 +814,9 @@ Use :simple search strategy to find counterexamples and witnesses.
        
        (- (cw? (verbose-flag vl) 
                "~|CEgen/Note: Enumerating ~x0 with ~x1~|" name disp-enum-alist))
+       (- (cw? (and (verbose-flag vl) elim-bindings)
+               "~|CEgen/Note: Fixer/Elim bindings: ~x0~|" elim-bindings))
+       
 ; print form if origin was :incremental
        (cl (clausify-hyps-concl hyps concl))
        (pform (acl2::prettyify-clause cl nil (w state)))
@@ -835,7 +837,7 @@ Use :simple search strategy to find counterexamples and witnesses.
                        ;;shut everything except error
                        (quote #!acl2(remove1-eq 'error *valid-output-names*)))))
                   
-          (run-tests-with-timeout ,timeout-secs ,N ,sm ,vl ,num-cts ,num-wts ',vars ',test-outcomes% ',gcs% state)))
+          (run-tests-with-timeout ',vars ',test-outcomes% ',gcs% ',vl ',cgen-state state)))
 
       
        

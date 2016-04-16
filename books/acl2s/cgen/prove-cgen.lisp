@@ -83,6 +83,10 @@
 ;;               (equal (rev (rev x)) x))) 
 
        ((mv top-hyps top-concl state) (partition-hyps-concl top-term "print-assignment" state))
+
+       (mv-sig-alist (mv-sig-alist (cons top-concl top-hyps) (w state)))
+       (hyp/m   (mv-list-ify (single-hypothesis top-hyps) mv-sig-alist))
+       (concl/m (mv-list-ify top-concl mv-sig-alist))
        
        ((mv ?er res state) 
         (acl2::state-global-let*
@@ -90,7 +94,7 @@
          (trans-eval
           `(let* ,A
              (declare (ignorable ,@(strip-cars A)))
-             (list (and . ,top-hyps) ,top-concl
+             (list ,hyp/m ,concl/m
 ; make list/let A (list `(var ,var) ...) 
                    ,(make-var-value-list-bindings top-vars nil)))
           'get-top-level-assignment state T))) ;defattach ok
