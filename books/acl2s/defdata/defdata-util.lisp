@@ -922,3 +922,25 @@
       (DEFATTACH ,name ,b-name))))
 
     
+(defun convert-listpairs-to-conspairs (listpairs)
+  (declare (xargs :guard (acl2::symbol-doublet-listp listpairs)))
+  (if (endp listpairs)
+    nil
+    (cons (let* ((lstpair (car listpairs))
+                 (fst (car lstpair))
+                 (snd (cadr lstpair)))
+            (cons fst snd))
+          (convert-listpairs-to-conspairs (cdr listpairs)))))
+
+
+; self-explanatory
+; convert ((a . b) ...) to ((a b) ...)
+(defun convert-conspairs-to-listpairs (conspairs)
+  (declare (xargs :guard (symbol-alistp conspairs)))
+  (if (endp conspairs)
+    nil
+    (cons (let* ((conspair (car conspairs))
+                 (fst (car conspair))
+                 (snd (cdr conspair)))
+            (list fst snd))
+          (convert-conspairs-to-listpairs (cdr conspairs)))))
