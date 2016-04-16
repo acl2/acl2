@@ -25,6 +25,19 @@
 (program)
 (set-state-ok t)
 
+(defun assoc-equal-lst (keys alist)
+  "give back the subset of the alist that correspond to these keys. the order
+of the entries is same as the keys"
+  (declare (xargs :guard (and (true-listp keys)
+                              (alistp alist))))
+  (if (endp keys)
+      nil
+    (b* ((entry (assoc-equal (car keys) alist)))
+      (if entry
+          (cons entry
+                (assoc-equal-lst (cdr keys) alist))
+        (assoc-equal-lst (cdr keys) alist)))))
+
 (defun to-string (x)
   (declare (xargs :mode :program))
   (coerce (cdr (coerce (fms-to-string "~x0" (list (cons #\0 x))) 'list)) 'string))
@@ -186,7 +199,8 @@ a renaming r-alist (modulo xi=constant).
        (r-alist (pairlis$ (strip-cars s-alist)
                           (acl2::sublis-expr-lst (invert-alist W1{})
                                                  (strip-cdrs s-alist))))
-       (E (equalitize-lst W1{}))
+       ;;get equations for all internal variables
+       (E (equalitize-lst (append W1{} (assoc-equal-lst (acl2::all-vars cterm1) W{}))))
        (fruleI (fixer-rule-instance frule r-alist))
        (unlikely-p (dumb-unsolvable-equations-p E (get1 :Out fruleI)))
        ((when unlikely-p)
@@ -563,18 +577,7 @@ remaining clique call the SAT backend?
 should we completely be general?
 |#
 
-(defun assoc-equal-lst (keys alist)
-  "give back the subset of the alist that correspond to these keys. the order
-of the entries is same as the keys"
-  (declare (xargs :guard (and (true-listp keys)
-                              (alistp alist))))
-  (if (endp keys)
-      nil
-    (b* ((entry (assoc-equal (car keys) alist)))
-      (if entry
-          (cons entry
-                (assoc-equal-lst (cdr keys) alist))
-        (assoc-equal-lst (cdr keys) alist)))))
+
 
 (include-book "infer-enum-shape")
 (defloop access-cs%-alst (x-cs%-alst)
