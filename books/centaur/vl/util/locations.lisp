@@ -287,6 +287,7 @@ way.</p>"
   (local (in-theory (enable vl-location)))
 
   (define vl-location-fix ((x vl-location-p))
+    :parents (vl-location)
     :short "Fixing function for @(see vl-location) structures."
     :returns (loc vl-location-p)
     :inline t

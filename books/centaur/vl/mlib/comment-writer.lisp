@@ -174,7 +174,6 @@ we ignore file names.</p>"
                               (item-map vl-commentmap-p)
                               &key (ps 'ps))
   :returns (mv (item-map vl-commentmap-p) ps)
-  :parents (vl-make-item-map-for-ppc-module)
   (b* (((when (atom x))
         (mv (vl-commentmap-fix item-map) ps))
        ((mv str ps)
