@@ -15,7 +15,6 @@
 
 (in-package "ACL2")
 
-(include-book "std/basic/top" :dir :system)
 (include-book "std/util/top" :dir :system)
 
 (local (set-default-parents world-queries))
@@ -105,6 +104,7 @@
 
 (define included-books ((w plist-worldp))
   :returns (result string-listp)
-  :short "List of full pathnames of all books currently included (directly or
- indirectly)"
+  :short
+  "List of full pathnames of all books currently included
+  (directly or indirectly)."
   (strip-cars (global-val 'include-book-alist w)))
