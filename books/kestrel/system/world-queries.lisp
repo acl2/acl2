@@ -15,7 +15,6 @@
 
 (in-package "ACL2")
 
-(include-book "std/basic/top" :dir :system)
 (include-book "std/util/top" :dir :system)
 
 (local (set-default-parents world-queries))
