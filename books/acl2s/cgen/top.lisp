@@ -467,7 +467,7 @@ information in a human-readable form. </p>
 
 
 ; Set some defaults:
-(acl2s-defaults :set testing-enabled :naive) ;avoid testing acl2s books
+(acl2s-defaults :set testing-enabled t) ;test other books
 (acl2s-defaults :set verbosity-level 3)
 (acl2s-defaults :set num-witnesses 0)
 (acl2s-defaults :set sampling-method :uniform-random)

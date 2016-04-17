@@ -15,12 +15,25 @@ date created: [2016-04-14 Thu]
 (include-book "../defdata/cgen-rules")
 (include-book "top" :ttags :all)
 
-;;; LISTS -- most common data-structure in Lisp
 
-;; TODO -- polymorphism
+;; EQUAL and MEMBER-EQUAL are built into CGEN, but EQUAL is especially
+;; taken care of in the fixers middle end. MEMBER-EQUAL is treated
+;; uniformly below like other fixer rules.
 
 
-;; MEMBER-EQUAL
+;; (defdata::cgen-rule equal-meta1
+;;   :meta-precondition (variablep x)
+;;   :hyp t
+;;   :rule (let ((x (identity term)))
+;;           (equal x term))
+;;   :rule-classes :fixer)
+
+;; (defdata::cgen-rule equal-meta2
+;;   :meta-precondition (variablep x)
+;;   :hyp t
+;;   :rule (let ((x (identity term)))
+;;           (equal term x))
+;;   :rule-classes :fixer)
 
 (defun member-fixer1 (x L)
   (declare (xargs :verify-guards nil
@@ -40,7 +53,16 @@ date created: [2016-04-14 Thu]
            :rule (let ((x (member-fixer1 x L)))
                    (member-equal x L))
            :rule-classes :fixer
-           :verbose t)
+           )
+
+
+;;; LISTS -- most common data-structure in Lisp
+
+;; TODO -- polymorphism
+
+
+;; MEMBER-EQUAL
+
 
 (defun member-fixer2 (a L)
   (declare (xargs :guard (and (true-listp L))))

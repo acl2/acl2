@@ -67,7 +67,29 @@ of the entries is same as the keys"
 (u::defloop equalitize-lst (alst)
   (for ((cons-pair in alst)) (collect (equalitize cons-pair))))
 
+(defun make-dummy-equality-frule-instance (x equal-to-term)
+  (b* ((out-vars (list x))
+       (in-vars (acl2::all-vars equal-to-term))
+       (fixer-term equal-to-term)
+       (constraint-term (list 'EQUAL x equal-to-term))
+       (nm (s+ (term-name fixer-term) "/" (to-string x)))
+       (rule (list (cons :hyps '())
+                   (cons :In in-vars)
+                   (cons :Out out-vars)
+                   (cons :fixer-vars in-vars)
+                   (cons :fixer-term fixer-term)
+                   (cons :name nm)
+                   (cons :constraint-vars (union-eq out-vars in-vars))
+                   (cons :constraint-term constraint-term)
+                   (cons :fixer-let-binding `((,x ,equal-to-term)))
+                   (cons :fixes (list constraint-term `(EQUAL ,equal-to-term ,x)))
+                   )))
+    (cons nm rule)))
 
+(defloop make-dummy-equality-frule-instances (x-equal-to-term-lst)
+  (for ((x-equal-to-term in x-equal-to-term-lst))
+       (collect (make-dummy-equality-frule-instance (second x-equal-to-term)
+                                                    (third x-equal-to-term)))))
 
 
 #|
@@ -179,7 +201,13 @@ a renaming r-alist (modulo xi=constant).
        ((er ?ign) (acl2::table-fn 'ACL2::DEFAULT-HINTS-TABLE
                                   (list :OVERRIDE (kwote ohints)) state nil)))
     (mv erp res state)))
-       
+
+(defun equation-p (term)
+  (and (consp term)
+       (= (len term) 3)
+       (equal (car term) 'EQUAL)
+       (or (variablep (second term))
+           (variablep (third term)))))
 
 (defun instantiate-fixer-rule/term (frule cterm all-terms vl state W{} fxri{})
   (declare (xargs :guard (and ;(fixer-rule-p frule)
@@ -193,9 +221,25 @@ a renaming r-alist (modulo xi=constant).
        (cterm1 (acl2::sublis-expr (invert-alist W{}) cterm))
        ((mv yesp s-alist) (acl2::one-way-unify (get1 :constraint-term frule) cterm1))
        ((unless yesp) (value (list nil '() W{} fxri{})))
+
+       ;; check that meta-precondition is satisfied
+       (meta-precondition (get1 :meta-precondition frule))
+       (letb (acl2::listlis (strip-cars s-alist) (acl2::kwote-lst (strip-cdrs s-alist))))
+       ((mv erp okp) (if (equal meta-precondition 't)
+                         (mv nil t)
+                       (trans-my-ev-w `(LET ,letb
+                                            (declare (ignorable ,@(strip-cars s-alist)))
+                                            ,meta-precondition)
+                                    ctx (w state) nil)))
+       ((unless (and (not erp) okp)) (value (list nil '() W{} fxri{})))
+
+
+       
        (W1{} (varabstract-fterms (strip-cdrs s-alist)))
        ;; ((when (intersectp-eq (strip-cars W1{}) (acl2::all-vars1-lst all-terms '())))
        ;;  (er soft ctx "~| New internal variables name collision!"))
+
+;r-alist is a renaming subst, except perhaps for equality terms
        (r-alist (pairlis$ (strip-cars s-alist)
                           (acl2::sublis-expr-lst (invert-alist W1{})
                                                  (strip-cdrs s-alist))))
@@ -208,6 +252,7 @@ a renaming r-alist (modulo xi=constant).
          (cw? (verbose-flag vl) "~| ~x0 with fixed ~x1 is unlikely to be simultaneously satisfied!~%" E (get1 :Out fruleI))
          (value (list nil '() W{} fxri{}))))
 
+       
        (relieve-hyps-query `(IMPLIES (AND ,@all-terms) (AND . ,(get1 :hyps fruleI))))
        ;; (cgen-state (cgen::make-cgen-state-fn test-form
        ;;                                       '(:testing-enabled :naive)
@@ -225,6 +270,7 @@ a renaming r-alist (modulo xi=constant).
        (f-lits (cons (get1 :constraint-term fruleI) E))
        (W{} (append W{} W1{}))
        (fxri{} (update-dynamic-fixer-instance-alist/frule fruleI fxri{}))
+       (fxri{} (union-equal (make-dummy-equality-frule-instances E) fxri{}))
        )
     (value (list t f-lits W{} fxri{}))))
         
@@ -245,7 +291,7 @@ a renaming r-alist (modulo xi=constant).
         (instantiate-fixer-rule/term frule cterm all-terms vl state W{} fxri{}))
        ((when (or erp (not hitp)))
         (instantiate-fixer-rules/term (cdr frules) cterm all-terms vl state f-lits-lst W{} fxri{}))
-       (f-lits-lst (append f-lits-lst (list f-lits))))
+       (f-lits-lst (union-equal f-lits-lst (list f-lits)))) ;TODO -- append or union??
     (instantiate-fixer-rules/term (cdr frules) cterm all-terms vl state f-lits-lst W{} fxri{})))
 
 #|
@@ -595,28 +641,40 @@ should we completely be general?
                                (acl2::access cs% (cdr v--cs%) :defdata-type)
                                defdata::wrld))))
 
-(defun make-dummy-type-frule (defdata-type vl defdata::wrld)
-  (declare (ignorable vl))
+(defun make-dummy-defdata-type-frule-instance (x defdata-type defdata::wrld)
   (b* ((E (defdata::enumerator-name defdata-type))
        (P (defdata::predicate-name defdata-type))
-       (vars (list 'x1))
+       (vars (list x))
        (fixer-term (list E))
-       (rule (list (cons :meta-precondition 't)
-                   (cons :hyps '())
+       (constraint-term (cons P vars))
+       (nm (s+ (term-name fixer-term) "/" (to-string x)))
+       (rule (list (cons :hyps '())
                    (cons :In '())
                    (cons :Out vars)
                    (cons :fixer-vars vars)
                    (cons :fixer-term fixer-term)
-                   (cons :name (s+ (term-name fixer-term) "/" (to-string vars)))
+                   (cons :name nm)
                    (cons :constraint-vars vars)
-                   (cons :constraint-term (cons P vars))
-                   (cons :fixer-let-binding `((x1 (,E)))))))
-    rule))
-                   
+                   (cons :constraint-term constraint-term)
+                   (cons :fixer-let-binding `((,x (,E))))
+                   (cons :fixes (list constraint-term))
+                   )))
+    (cons nm rule)))
 
-(defloop make-dummy-type-frules (v-cs%-alst vl defdata::wrld)
+
+
+(defun make-dummy-cgen-builtin-fxri-entry (v--cs% defdata::wrld)
+  (b* (((cons x cs%) v--cs%)
+       (equal-to-term (acl2::access cs% cs% :eq-constraint))
+       ((when (not (equal 'defdata::empty-eq-constraint equal-to-term)))
+        (make-dummy-equality-frule-instance x equal-to-term))
+       (defdata-type (acl2::access cs% cs% :defdata-type)))
+    (make-dummy-defdata-type-frule-instance x defdata-type defdata::wrld)))
+  
+
+(defloop make-dummy-cgen-builtin-frule-instances (v-cs%-alst defdata::wrld)
   (for ((v--cs% in v-cs%-alst))
-       (collect (make-dummy-type-frule (acl2::access cs% (cdr v--cs%) :defdata-type) vl defdata::wrld))))
+       (collect (make-dummy-cgen-builtin-fxri-entry v--cs% defdata::wrld))))
 
 (defloop two-level-flatten1 (lits-lst-list)
   (for ((lits-lst in lits-lst-list))
@@ -633,7 +691,7 @@ should we completely be general?
 
        (v-cs%-alst (collect-constraints% hyps vars type-alist '() vl wrld ))
        (type-hyps  (remove-duplicates-equal (make-type-hyps v-cs%-alst wrld)))
-       (frules/type (remove-duplicates-equal (make-dummy-type-frules v-cs%-alst vl wrld)))
+       (fxri{} (make-dummy-cgen-builtin-frule-instances v-cs%-alst wrld))
        (other-hyps (set-difference-equal hyps type-hyps))
        ((when (null other-hyps))
         (prog2$
@@ -641,11 +699,10 @@ should we completely be general?
          (value nil)))
 
        (- (cw? (debug-flag vl) "~| type-hyps: ~x0 and hyps: ~x1~%" type-hyps hyps))
-       (frules (append frules frules/type))
-       (hyps   (union-equal type-hyps hyps))
+       (term->f-lits-lst (pairlis$ type-hyps (singletonize (singletonize type-hyps))))
        
        ((mv ?erp1 (list term->f-lits-lst ?W{} fxri{}) state)
-        (instantiate-fixer-rules/terms-iter hyps frules vl state '() '() '()))
+        (instantiate-fixer-rules/terms-iter hyps frules vl state term->f-lits-lst '() fxri{}))
 
        (f-lits (two-level-flatten (strip-cdrs term->f-lits-lst)))
 
