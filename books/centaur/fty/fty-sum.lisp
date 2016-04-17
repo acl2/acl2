@@ -1148,16 +1148,7 @@
                 `(,f.acc-name ,xvar))
           (flexprod-fields-bind-accessors (cdr x) xvar))))
 
-(defun flexprod-extra-binder-names->acc-alist (names type-name)
-  (if (atom names)
-      nil
-    (cons (if (consp (car names))
-              (car names)
-            (cons (car names)
-                  (intern-in-package-of-symbol
-                   (cat (symbol-name type-name) "->" (symbol-name (car names)))
-                   type-name)))
-          (flexprod-extra-binder-names->acc-alist (cdr names) type-name))))
+
 
 (defun flexprod-remaker (prod sum)
   ;; Returns EVENTS
@@ -1206,7 +1197,7 @@
                              (flexprod-fields->acc-names prod.fields)))
        (binder-accs (append field-accs
                             (append
-                             (flexprod-extra-binder-names->acc-alist
+                             (extra-binder-names->acc-alist
                               prod.extra-binder-names prod.type-name))))
        (foo-of-fields
         (intern-in-package-of-symbol (cat (symbol-name prod.ctor-name) "-OF-FIELDS")

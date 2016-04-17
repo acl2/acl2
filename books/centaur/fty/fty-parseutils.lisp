@@ -203,3 +203,14 @@
                                (cdr option))))
                        (not res)))))
     (mv already-defined true-listp)))
+
+(defun extra-binder-names->acc-alist (names type-name)
+  (if (atom names)
+      nil
+    (cons (if (consp (car names))
+              (car names)
+            (cons (car names)
+                  (intern-in-package-of-symbol
+                   (cat (symbol-name type-name) "->" (symbol-name (car names)))
+                   type-name)))
+          (extra-binder-names->acc-alist (cdr names) type-name))))
