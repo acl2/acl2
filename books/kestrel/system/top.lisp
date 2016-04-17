@@ -17,6 +17,7 @@
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
 (include-book "prove-interface")
+(include-book "terms")
 (include-book "world-queries")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
