@@ -32,7 +32,7 @@
   "True iff @('x') is a @('nil')-terminated list of legal variable names."
   :long
   "<p>
-  See @('legal-variablep') in the ACL2 source code).
+  See @('legal-variablep') in the ACL2 source code.
   </p>"
   :true-listp t
   :elementp-of-nil nil)
@@ -100,6 +100,6 @@
   If the pseudo-function is a lambda expression,
   a beta reduction is performed.
   </p>
-  @(defs apply-term*)"
+  @(def apply-term*)"
   (defmacro apply-term* (pfun &rest terms)
     `(apply-term ,pfun (list ,@terms))))
