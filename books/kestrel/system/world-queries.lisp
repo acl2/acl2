@@ -105,6 +105,7 @@
 
 (define included-books ((w plist-worldp))
   :returns (result string-listp)
-  :short "List of full pathnames of all books currently included (directly or
- indirectly)"
+  :short
+  "List of full pathnames of all books currently included
+  (directly or indirectly)."
   (strip-cars (global-val 'include-book-alist w)))
