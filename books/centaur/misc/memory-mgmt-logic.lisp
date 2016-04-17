@@ -64,7 +64,7 @@
 (defsection maybe-wash-memory
   :parents (hons)
   :short "Conditionally trigger a @(see hons-wash) and also @(see
-  clear-memoize-tables) to reclaim memory in ACL2(h).  (CCL only; requires a
+  clear-memoize-tables) to reclaim memory.  (CCL only; requires a
   trust tag)"
 
   :long "<p>@(call maybe-wash-memory) will clear out unused honses and throw
@@ -111,7 +111,7 @@ gl::def-gl-param-thm) cases, and in other situations.</p>")
 
 (defxdoc set-max-mem
   :parents (hons-and-memoization)
-  :short "An enhanced memory management scheme for ACL2(h). (CCL only; requires
+  :short "An enhanced memory management scheme. (CCL only; requires
   a trust tag)"
 
   :long "<p>Typical usage:</p>
