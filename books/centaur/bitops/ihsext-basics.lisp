@@ -3079,7 +3079,7 @@ off looking at the source code.</p>")
                  (signed-byte-of-ash-ind (1- shift) (1- n))
                (signed-byte-of-ash-ind (1+ shift) (1+ n))))))
 
-  (defthmd signed-byte-p-of-ash-split
+  (defthm signed-byte-p-of-ash-split
     (equal (signed-byte-p n (ash x shift))
            (and (posp n)
                 (or (zip x)
