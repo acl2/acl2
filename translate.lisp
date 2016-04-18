@@ -2015,6 +2015,14 @@
            (car
             (lookup-world-index 'event index wrld)))))))
 
+(defun negate-untranslated-form (x iff-flg)
+  (cond ((and iff-flg
+              (consp x)
+              (eq (car x) 'not))
+         (assert$ (consp (cdr x))
+                  (cadr x)))
+        (t (list 'not x))))
+
 (mutual-recursion
 
 ; Here we combine what may naturally be thought of as two separate
@@ -3322,15 +3330,19 @@
           ((eq (ffn-symb term) 'if)
            (case-match term
              (('if x1 *nil* *t*)
-              (list 'not (untranslate1 x1 t untrans-tbl preprocess-fn wrld)))
+              (negate-untranslated-form
+               (untranslate1 x1 t untrans-tbl preprocess-fn wrld)
+               iff-flg))
              (('if x1 x2  *nil*)
               (untranslate-and (untranslate1 x1 t untrans-tbl preprocess-fn wrld)
                                (untranslate1 x2 iff-flg untrans-tbl preprocess-fn
                                              wrld)
                                iff-flg))
-             (('if x1 *nil* x2)
-              (untranslate-and (list 'not (untranslate1 x1 t untrans-tbl
-                                                        preprocess-fn wrld))
+             (('if x1 *nil* x2) ; (thm (equal (and (not (not x)) y) (and x y)))
+              (untranslate-and (negate-untranslated-form
+                                (untranslate1 x1 t untrans-tbl preprocess-fn
+                                              wrld)
+                                t)
                                (untranslate1 x2 iff-flg untrans-tbl preprocess-fn
                                              wrld)
                                iff-flg))
@@ -3344,8 +3356,10 @@
 ; Observe that (if x1 x2 t) = (if x1 x2 (not nil)) = (if x1 x2 (not x1)) =
 ; (if (not x1) (not x1) x2) = (or (not x1) x2).
 
-              (untranslate-or (list 'not (untranslate1 x1 t untrans-tbl
-                                                       preprocess-fn wrld))
+              (untranslate-or (negate-untranslated-form
+                               (untranslate1 x1 t untrans-tbl preprocess-fn
+                                             wrld)
+                               iff-flg)
                               (untranslate1 x2 iff-flg untrans-tbl preprocess-fn
                                             wrld)))
              (('if x1 *t* x2)
