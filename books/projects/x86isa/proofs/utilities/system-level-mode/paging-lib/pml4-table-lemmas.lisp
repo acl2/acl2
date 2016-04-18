@@ -12,7 +12,16 @@
 ;; ======================================================================
 
 (defthm xlate-equiv-structures-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr
-  (implies (and (xlate-equiv-structures x86-1 x86-2)
+  (implies (and (bind-free
+                 (find-an-xlate-equiv-x86
+                  'xlate-equiv-structures-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr
+                  x86-1 'x86-2
+                  mfc state)
+                 (x86-2))
+                (syntaxp (and (not (eq x86-1 x86-2))
+                              ;; x86-1 must be smaller than x86-2.
+                              (term-order x86-1 x86-2)))
+                (xlate-equiv-structures x86-1 x86-2)
                 (member-p (pml4-table-entry-addr lin-addr base-addr)
                           (gather-all-paging-structure-qword-addresses x86-1)))
            (xlate-equiv-entries (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86-1)

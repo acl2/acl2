@@ -1694,15 +1694,14 @@
                   (inner-fn (first inner-fn-call))
                   ((when (if (equal mv-nth-index ''2)
                              (not (member-p inner-fn
-                                            '(IA32E-LA-TO-PA-PT
-                                              IA32E-LA-TO-PA-PD
-                                              IA32E-LA-TO-PA-PDPT
-                                              IA32E-LA-TO-PA-PML4T
-                                              IA32E-TRANSLATE-LA-TO-PA
+                                            '(IA32E-LA-TO-PA-PAGE-TABLE
+                                              IA32E-LA-TO-PA-PAGE-DIRECTORY
+                                              IA32E-LA-TO-PA-PAGE-DIR-PTR-TABLE
+                                              IA32E-LA-TO-PA-PML4-TABLE
+                                              IA32E-LA-TO-PA
                                               PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE
                                               RM08
                                               RB
-                                              RB-1
                                               GET-PREFIXES)))
                            (if (equal mv-nth-index ''1)
                                (not (member-p inner-fn '(WM08 WB)))
@@ -1710,8 +1709,7 @@
                    (cw "~%~p0: Unexpected mv-nth x86-term encountered:~p1~%" thm-name x86-term)
                    x86-term)
                   (sub-x86
-                   (if (or (equal inner-fn 'RB-1)
-                           (equal inner-fn 'PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE))
+                   (if (equal inner-fn 'PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE)
                        ;; x86 is the next to last argument for these functions.
                        (first (last (butlast inner-fn-call 1)))
                      (first (last inner-fn-call)))))
