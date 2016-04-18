@@ -1220,28 +1220,14 @@
 			     (car (taylor-exp-list nterms counter x))
 			     counter x)
 	  (taylor-exp-list nterms counter x))
-   :INSTRUCTIONS
-   (:INDUCT (:CASESPLIT (= NTERMS 1))
-	    :PROVE (:CLAIM (INTEGERP NTERMS))
-	    (:CLAIM (< 0 NTERMS))
-	    (:CLAIM (INTEGERP COUNTER))
-	    (:CLAIM (<= 0 COUNTER))
-	    (:DROP 1)
-	    (:DV 2)
-	    :X :BK (:DV 2)
-	    (:DV 1)
-	    :X :UP :S :UP :X :TOP (:DEMOTE 1)
-	    (:DV 1 1 2 1)
-	    :X (:DV 1)
-	    (:= T)
-	    :UP :S
-	    (:= (CONS (* X (/ (FACTORIAL COUNTER))
-			 (/ (+ 1 COUNTER))
-			 (EXPT X COUNTER))
-		      (TAYLOR-EXP-LIST (+ -2 NTERMS)
-				       (+ 2 COUNTER)
-				       X)))
-	    :UP :S :TOP :S :PROVE)))
+
+; Modified April 2016 by Matt K. after the addition of a type-set bit for {1},
+; however without confirming that this was the cause of the failure.
+; Originally 32 :INSTRUCTIONS were provided, instead of :HINTS, so it isn't
+; surprising that heuristic changes to ACL2 caused a problem.
+
+   :hints (("Goal" :induct t :do-not '(generalize))
+           ("Subgoal *1/2" :cases ((= NTERMS 1))))))
 
 (in-theory (disable taylor-exp-list-2-=-taylor-exp-list))
 
