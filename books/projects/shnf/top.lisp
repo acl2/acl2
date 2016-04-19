@@ -128,7 +128,10 @@
   (implies (and (shfp x)
                 (all-integers vals))
            (integerp (evalh x vals)))
-  :rule-classes (:type-prescription :rewrite))
+  ;; [Jared] removed the :type-prescription rule because accumulated persistence
+  ;; says it's expensive and the hyps don't look type-prescription like.
+  ;;:rule-classes (:type-prescription :rewrite)
+  )
 
 ;; A SHF x is normal if the following conditions hold:
 ;;    (1) x = (POP i p) => p is a POW
@@ -157,7 +160,9 @@
 
 (defthm shnfp-shfp
   (implies (shnfp x)
-           (shfp x)))
+           (shfp x))
+  ;; [Jared] trying to cheapen this very expensive rule.
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
 (defthm shnfp-pow-q
   (implies (and (shnfp x) (eql (car x) 'pow))
