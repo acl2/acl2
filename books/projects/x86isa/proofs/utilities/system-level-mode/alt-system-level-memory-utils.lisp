@@ -40,10 +40,10 @@
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
 ;; (acl2::why ia32e-la-to-pa-values-and-mv-nth-1-wb)
-;; (acl2::why rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode)
-;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)
-;; (acl2::why program-at-wb-disjoint-in-system-level-non-marking-mode)
-;; (acl2::why rb-wb-disjoint-in-system-level-non-marking-mode)
+;; (acl2::why rb-in-terms-of-nth-and-pos)
+;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p)
+;; (acl2::why program-at-wb-disjoint)
+;; (acl2::why rb-wb-disjoint)
 ;; (acl2::why disjointness-of-translation-governing-addresses-from-all-translation-governing-addresses)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
 
@@ -1526,7 +1526,7 @@
            :in-theory (e/d* (ia32e-la-to-pa-page-table)
                             (accessed-bit dirty-bit)))))
 
-(i-am-here)
+;; (i-am-here)
 
 (defthm mv-nth-2-paging-entry-no-page-fault-p-returns-page-table-walk-if-no-fault
   ;; See mv-nth-2-paging-entry-no-page-fault-p-does-not-modify-x86-if-no-fault
@@ -2102,6 +2102,16 @@
 
 ;; Lemmas about memory reads:
 
+(defthm cdr-read-from-physical-memory
+  (equal (cdr (read-from-physical-memory p-addrs x86))
+         (read-from-physical-memory (cdr p-addrs) x86)))
+
+(defthm cdr-mv-nth-1-las-to-pas
+  (implies (and (x86p x86)
+                (not (mv-nth 0 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))))
+           (equal (cdr (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                  (mv-nth 1 (las-to-pas (cdr l-addrs) r-w-x cpl x86)))))
+
 (defthm read-from-physical-memory-and-mv-nth-2-ia32e-la-to-pa
   (implies (and (canonical-address-p lin-addr)
                 (disjoint-p (translation-governing-addresses lin-addr x86) p-addrs))
@@ -2109,31 +2119,115 @@
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* (disjoint-p) (force (force))))))
 
-(i-am-here)
-
-(defthmd rm08-in-terms-of-nth-pos-and-rb-in-system-level-non-marking-mode
-  (implies (and (disjoint-p (translation-governing-addresses addr x86)
-                            (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-                (member-p addr l-addrs)
+(defthm xr-mem-disjoint-las-to-pas
+  ;; See xr-mem-disjoint-ia32e-la-to-pa-in-marking-mode
+  (implies (and (disjoint-p (list index)
+                            (all-translation-governing-addresses l-addrs x86))
                 (canonical-address-listp l-addrs)
-                (equal bytes (mv-nth 1 (rb l-addrs r-w-x x86)))
-                (not (mv-nth 0 (rm08 addr r-w-x x86)))
-                (not (programmer-level-mode x86))
                 (x86p x86))
-           (equal (mv-nth 1 (rm08 addr r-w-x x86))
-                  (nth (pos addr l-addrs) bytes)))
-  :hints (("Goal" :in-theory (e/d (pos rm08 member-p disjoint-p)
-                                  (signed-byte-p
-                                   (:meta acl2::mv-nth-cons-meta))))))
+           (equal (xr :mem index (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+                  (xr :mem index x86)))
+  :hints (("Goal"
+           :induct (las-to-pas l-addrs r-w-x cpl x86)
+           :in-theory (e/d* (las-to-pas
+                             all-translation-governing-addresses
+                             disjoint-p
+                             member-p)
+                            (negative-logand-to-positive-logand-with-integerp-x
+                             bitops::logand-with-negated-bitmask
+                             force (force))))))
+
+(defthm read-from-physical-memory-and-mv-nth-2-las-to-pas
+  (implies (and (disjoint-p (all-translation-governing-addresses l-addrs x86) p-addrs)
+                (canonical-address-listp l-addrs)
+                (x86p x86))
+           (equal (read-from-physical-memory p-addrs (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+                  (read-from-physical-memory p-addrs x86)))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p) (force (force))))))
+
+(defthm nth-of-read-from-physical-memory
+  (implies (and (natp i)
+                (< i (len p-addrs)))
+           (equal (nth i (read-from-physical-memory p-addrs x86))
+                  (xr :mem (nth i p-addrs) x86))))
+
+(defthm nth-of-mv-nth-1-las-to-pas
+  (implies (and (natp i)
+                (< i (len l-addrs))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (x86p x86))
+           (equal (nth i (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                  (mv-nth 1 (ia32e-la-to-pa (nth i l-addrs) r-w-x cpl x86)))))
+
+(defthm nth-pos-member-p
+  (implies (member-p addr l-addrs)
+           (equal (nth (pos addr l-addrs) l-addrs) addr))
+  :hints (("Goal" :in-theory (e/d* (pos nth) ()))))
+
+(defthm translation-governing-addresses-subset-p-all-translation-governing-addresses
+  (implies (member-p addr l-addrs)
+           (equal (subset-p (translation-governing-addresses addr x86)
+                            (all-translation-governing-addresses l-addrs x86))
+                  t))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+(defthm not-member-p-when-disjoint-p-rewrite
+  ;; Note that not-member-p-when-disjoint-p is a forward-chaining rule
+  ;; --- that can be made a rewrite rule as well.
+  (implies (and (member-p e x)
+                (disjoint-p x y))
+           (equal (member-p e y) nil))
+  :hints (("Goal" :in-theory (e/d* (member-p subset-p disjoint-p) ()))))
 
 (local
- (defthmd rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode-helper
+ (defthmd rm08-in-terms-of-nth-pos-and-rb-helper
+   (implies (and (disjoint-p (all-translation-governing-addresses l-addrs x86)
+                             (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                 (member-p addr l-addrs)
+                 (canonical-address-listp l-addrs)
+                 (not (programmer-level-mode x86))
+                 (x86p x86))
+            (equal (member-p
+                    (mv-nth 1 (ia32e-la-to-pa addr r-w-x cpl x86))
+                    (all-translation-governing-addresses l-addrs x86))
+                   nil))
+   :hints (("Goal"
+            :do-not-induct t
+            :use ((:instance not-member-p-when-disjoint-p-rewrite
+                             (e (mv-nth 1 (ia32e-la-to-pa addr r-w-x cpl x86)))
+                             (x (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                             (y (all-translation-governing-addresses l-addrs x86))))
+            :in-theory (e/d* (member-p
+                              disjoint-p subset-p
+                              disjoint-p-commutative)
+                             (not-member-p-when-disjoint-p-rewrite))))))
+
+(defthmd rm08-in-terms-of-nth-pos-and-rb
+  (implies (and
+            (disjoint-p (all-translation-governing-addresses l-addrs x86)
+                        (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+            (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+            (member-p addr l-addrs)
+            (canonical-address-listp l-addrs)
+            (not (programmer-level-mode x86))
+            (x86p x86))
+           (equal (mv-nth 1 (rm08 addr r-w-x x86))
+                  (nth (pos addr l-addrs) (mv-nth 1 (rb l-addrs r-w-x x86)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (rm08
+                            member-p disjoint-p
+                            rm08-in-terms-of-nth-pos-and-rb-helper)
+                           (signed-byte-p
+                            (:meta acl2::mv-nth-cons-meta))))))
+
+(local
+ (defthmd rb-in-terms-of-nth-and-pos-helper
    (implies
     (and (signed-byte-p 48 lin-addr)
          (not (mv-nth 0 (rb (list lin-addr) :x x86)))
-         (not (xr :programmer-level-mode 0 x86))
-         (not (xr :page-structure-marking-mode 0 x86))
+         (not (programmer-level-mode x86))
          (x86p x86))
     (equal (car (mv-nth 1 (rb (list lin-addr) :x x86)))
            (combine-bytes (mv-nth 1 (rb (list lin-addr) :x x86)))))
@@ -2158,26 +2252,27 @@
       (prog-addr . ,prog-addr)
       (bytes . ,bytes))))
 
-(defthm rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode
+(defthm rb-in-terms-of-nth-and-pos
   (implies (and (bind-free
-                 (find-info-from-program-at-term
-                  'rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode
-                  mfc state)
+                 (find-info-from-program-at-term 'rb-in-terms-of-nth-and-pos mfc state)
                  (n prog-addr bytes))
                 (program-at (create-canonical-address-list n prog-addr) bytes x86)
                 (member-p lin-addr (create-canonical-address-list n prog-addr))
+                (disjoint-p
+                 (all-translation-governing-addresses
+                  (create-canonical-address-list n prog-addr) x86)
+                 (mv-nth 1 (las-to-pas
+                            (create-canonical-address-list n prog-addr)
+                            :x (cpl x86) x86)))
                 (syntaxp (quotep n))
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr :x (cpl x86) x86)))
-                ;; (not (mv-nth 0 (rb (list lin-addr) :x x86)))
                 (not (programmer-level-mode x86))
-                (not (page-structure-marking-mode x86))
                 (x86p x86))
            (equal (car (mv-nth 1 (rb (list lin-addr) :x x86)))
                   (nth (pos lin-addr (create-canonical-address-list n prog-addr)) bytes)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (program-at
-                            rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode-helper)
+                            rb-in-terms-of-nth-and-pos-helper)
                            (acl2::mv-nth-cons-meta
                             rm08-to-rb
                             member-p-canonical-address-p-canonical-address-listp))
@@ -2185,44 +2280,90 @@
                             (r-w-x :x))
                  (:instance member-p-canonical-address-p-canonical-address-listp
                             (e lin-addr))
-                 (:instance rm08-in-terms-of-nth-pos-and-rb-in-system-level-non-marking-mode
+                 (:instance rm08-in-terms-of-nth-pos-and-rb
                             (addr lin-addr)
                             (r-w-x :x)
                             (l-addrs (create-canonical-address-list n prog-addr)))))))
 
-(defthmd rb-unwinding-thm-in-system-level-non-marking-mode
+(defthmd rb-unwinding-thm
   (implies (and (consp l-addrs)
                 (not (mv-nth 0 (rb l-addrs r-w-x x86)))
-                (not (page-structure-marking-mode x86)))
+                (disjoint-p
+                 (all-translation-governing-addresses l-addrs x86)
+                 (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+                (canonical-address-listp l-addrs)
+                (not (programmer-level-mode x86))
+                (x86p x86))
            (equal (mv-nth 1 (rb l-addrs r-w-x x86))
                   (cons (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))
                         (mv-nth 1 (rb (cdr l-addrs) r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta force (force))))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (rb append disjoint-p)
+                           (acl2::mv-nth-cons-meta force (force))))))
 
-(defthmd rb-unwinding-thm-in-system-level-non-marking-mode-for-errors
+(defthmd rb-unwinding-thm-for-errors
   (implies (and (subset-p l-addrs-subset l-addrs)
                 (consp l-addrs)
                 (not (mv-nth 0 (rb l-addrs r-w-x x86)))
-                (not (page-structure-marking-mode x86)))
+                (x86p x86))
            (equal (mv-nth 0 (rb l-addrs-subset r-w-x x86))
                   nil))
-  :hints (("Goal" :in-theory (e/d (subset-p) (acl2::mv-nth-cons-meta force (force))))))
+  :hints
+  (("Goal" :in-theory (e/d (subset-p)
+                           (acl2::mv-nth-cons-meta force (force))))))
 
-(defthm rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+(defthm mv-nth-1-las-to-pas-subset-p
+  (implies (and (subset-p l-addrs-subset l-addrs)
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (x86p x86))
+           (subset-p (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))
+                     (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+(defthm append-subset-p-1
+  (implies (and (subset-p a x)
+                (subset-p b x))
+           (subset-p (append a b) x))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+(defthm all-translation-governing-addresses-subset-p-all-translation-governing-addresses
+  (implies (subset-p l-addrs-subset l-addrs)
+           (equal
+            (subset-p (all-translation-governing-addresses l-addrs-subset x86)
+                      (all-translation-governing-addresses l-addrs x86))
+            t))
+  :hints (("Goal" :in-theory (e/d* (subset-p member-p) ()))))
+
+(local
+ (defthmd rb-in-terms-of-rb-subset-p-helper
+   (implies (and (subset-p l-addrs-subset l-addrs)
+                 (disjoint-p (all-translation-governing-addresses l-addrs x86)
+                             (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                 (x86p x86))
+            (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
+                        (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))))
+
+(defthm rb-in-terms-of-rb-subset-p
   (implies
    (and (bind-free
          (find-info-from-program-at-term
-          'rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+          'rb-in-terms-of-rb-subset-p
           mfc state)
          (n prog-addr bytes))
         (program-at (create-canonical-address-list n prog-addr) bytes x86)
         (subset-p l-addrs (create-canonical-address-list n prog-addr))
+        (disjoint-p (all-translation-governing-addresses
+                     (create-canonical-address-list n prog-addr)
+                     x86)
+                    (mv-nth 1 (las-to-pas
+                               (create-canonical-address-list n prog-addr)
+                               :x (cpl x86) x86)))
         (syntaxp (quotep n))
         (consp l-addrs)
-        ;; (not (mv-nth 0 (rb l-addrs :x x86)))
-        (not (mv-nth 0 (las-to-pas l-addrs :x (cpl x86) x86)))
+        (not (mv-nth 0 (las-to-pas (create-canonical-address-list n prog-addr) :x (cpl x86) x86)))
         (not (programmer-level-mode x86))
-        (not (page-structure-marking-mode x86))
         (x86p x86))
    (equal (mv-nth 1 (rb l-addrs :x x86))
           (append (list (nth (pos
@@ -2233,34 +2374,42 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (subset-p
-                            member-p)
+                            member-p
+                            disjoint-p
+                            rb-in-terms-of-rb-subset-p-helper)
                            (rb
                             canonical-address-p
                             acl2::mv-nth-cons-meta
-                            rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode))
-           :use ((:instance rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode
+                            rb-in-terms-of-nth-and-pos
+                            all-translation-governing-addresses
+                            las-to-pas))
+           :use ((:instance rb-in-terms-of-nth-and-pos
                             (lin-addr (car l-addrs)))
-                 (:instance rb-unwinding-thm-in-system-level-non-marking-mode
+                 (:instance rb-unwinding-thm
                             (r-w-x :x))
-                 (:instance rb-unwinding-thm-in-system-level-non-marking-mode-for-errors
+                 (:instance rb-unwinding-thm-for-errors
                             (r-w-x :x)
                             (l-addrs-subset (list (car l-addrs))))))))
 
-(defthm combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+(defthm combine-bytes-rb-in-terms-of-rb-subset-p
   (implies
    (and (bind-free
          (find-info-from-program-at-term
-          'combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+          'combine-bytes-rb-in-terms-of-rb-subset-p
           mfc state)
          (n prog-addr bytes))
         (program-at (create-canonical-address-list n prog-addr) bytes x86)
         (subset-p l-addrs (create-canonical-address-list n prog-addr))
+        (disjoint-p (all-translation-governing-addresses
+                     (create-canonical-address-list n prog-addr)
+                     x86)
+                    (mv-nth 1 (las-to-pas
+                               (create-canonical-address-list n prog-addr)
+                               :x (cpl x86) x86)))
         (syntaxp (quotep n))
         (consp l-addrs)
-        ;; (not (mv-nth 0 (rb l-addrs :x x86)))
-        (not (mv-nth 0 (las-to-pas l-addrs :x (cpl x86) x86)))
+        (not (mv-nth 0 (las-to-pas (create-canonical-address-list n prog-addr) :x (cpl x86) x86)))
         (not (programmer-level-mode x86))
-        (not (page-structure-marking-mode x86))
         (x86p x86))
    (equal (combine-bytes (mv-nth 1 (rb l-addrs :x x86)))
           (combine-bytes
@@ -2272,7 +2421,7 @@
   :hints (("Goal" :in-theory (union-theories
                               '()
                               (theory 'minimal-theory))
-           :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)))))
+           :use ((:instance rb-in-terms-of-rb-subset-p)))))
 
 (defthm unsigned-byte-p-of-combine-bytes-and-rb-in-system-level-mode
   (implies (and (syntaxp (quotep m))
@@ -2294,17 +2443,21 @@
 ;; Lemmas about memory writes:
 
 (defthm xr-mem-wb-in-system-level-mode
-  (implies (and (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (disjoint-p (list index)
+  (implies (and (disjoint-p (list index)
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (not (page-structure-marking-mode x86))
-                (not (programmer-level-mode x86)))
+                (disjoint-p (list index)
+                            (all-translation-governing-addresses (strip-cars addr-lst) x86))
+                (addr-byte-alistp addr-lst)
+                (not (programmer-level-mode x86))
+                (x86p x86))
            (equal (xr :mem index (mv-nth 1 (wb addr-lst x86)))
                   (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (wb disjoint-p member-p)
-                                   (write-to-physical-memory
-                                    (:meta acl2::mv-nth-cons-meta)
-                                    force (force))))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (wb disjoint-p member-p)
+                            (write-to-physical-memory
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 (defun-nx wb-duplicate-writes-induct (addr-list x86)
   (if (endp addr-list)
@@ -2322,9 +2475,8 @@
                    (remove-duplicates-equal (strip-cars alst))))))
 
 (defthm remove-duplicate-keys-mv-nth-0-las-to-pas
-  (implies (and (canonical-address-listp l-addrs)
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                (not (page-structure-marking-mode x86)))
+  (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (x86p x86))
            (equal (mv-nth 0 (las-to-pas (remove-duplicates-equal l-addrs) r-w-x cpl x86))
                   (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
   :hints (("Goal" :induct (las-to-pas (remove-duplicates-equal l-addrs) r-w-x cpl x86))))
@@ -2378,47 +2530,57 @@
   (implies (not (member-p addr (all-translation-governing-addresses l-addrs x86)))
            (not (member-p addr (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)))))
 
-(defthm wb-remove-duplicate-writes-in-system-level-non-marking-mode
-  (implies (and (syntaxp (not (and (consp addr-lst)
-                                   (eq (car addr-lst) 'remove-duplicate-keys))))
-                (disjoint-p
-                 ;; Physical addresses corresponding to (strip-cars
-                 ;; addr-lst) are disjoint from the
-                 ;; translation-governing addresses.
-                 (all-translation-governing-addresses (strip-cars addr-lst)  x86)
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (addr-byte-alistp addr-lst)
-                ;; (not (mv-nth 0 (wb addr-lst x86)))
-                (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (not (programmer-level-mode x86))
-                (not (page-structure-marking-mode x86)))
-           (equal (wb addr-lst x86)
-                  ;; TO-DO: I need to replace remove-duplicate-keys
-                  ;; with remove-duplicate-phy-addresses or something
-                  ;; like that.
-                  (wb (remove-duplicate-keys addr-lst) x86)))
-  :hints (("Goal" :do-not '(generalize)
-           :in-theory (e/d (disjoint-p member-p subset-p)
-                           (acl2::mv-nth-cons-meta
-                            translation-governing-addresses))
-           :induct (wb-duplicate-writes-induct addr-lst x86))))
+;; (defthm wb-remove-duplicate-writes
+;;   (implies (and (syntaxp (not (and (consp addr-lst)
+;;                                    (eq (car addr-lst) 'remove-duplicate-keys))))
+;;                 (disjoint-p
+;;                  ;; Physical addresses corresponding to (strip-cars
+;;                  ;; addr-lst) are disjoint from the
+;;                  ;; translation-governing addresses.
+;;                  (all-translation-governing-addresses (strip-cars addr-lst)  x86)
+;;                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+;;                 (addr-byte-alistp addr-lst)
+;;                 ;; (not (mv-nth 0 (wb addr-lst x86)))
+;;                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+;;                 (not (programmer-level-mode x86))
+;;                 (x86p x86))
+;;            (equal (wb addr-lst x86)
+;;                   ;; TO-DO: I need to replace remove-duplicate-keys
+;;                   ;; with remove-duplicate-phy-addresses or something
+;;                   ;; like that.
+;;                   (wb (remove-duplicate-keys addr-lst) x86)))
+;;   :hints (("Goal" :do-not '(generalize)
+;;            :in-theory (e/d (disjoint-p member-p subset-p)
+;;                            (acl2::mv-nth-cons-meta
+;;                             translation-governing-addresses))
+;;            :induct (wb-duplicate-writes-induct addr-lst x86))))
 
 ;; ======================================================================
 
 ;; Lemmas about interaction of writes and paging walkers:
 
 (defthm rm-low-32-wb-in-system-level-mode-disjoint
-  (implies (and (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (disjoint-p (addr-range 4 index)
-                            (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (not (page-structure-marking-mode x86)))
+  (implies (and
+            (disjoint-p (addr-range 4 index)
+                        (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+            (disjoint-p (addr-range 4 index)
+                        (all-translation-governing-addresses (strip-cars addr-lst) x86))
+            (addr-byte-alistp addr-lst)
+            (x86p x86))
            (equal (rm-low-32 index (mv-nth 1 (wb addr-lst x86)))
                   (rm-low-32 index x86)))
-  :hints (("Goal" :in-theory (e/d* (rm-low-32 disjoint-p member-p)
-                                   (write-to-physical-memory
-                                    (:meta acl2::mv-nth-cons-meta)
-                                    force (force))))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (rm-low-32 disjoint-p member-p)
+                            (wb
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
+(local
+ (defthmd open-addr-range-4
+   (implies (integerp x)
+            (equal (addr-range 4 x)
+                   (list x (+ 1 x) (+ 2 x) (+ 3 x))))))
 (local
  (defthmd open-addr-range-8
    (implies (integerp x)
@@ -2426,29 +2588,61 @@
                    (list x (+ 1 x) (+ 2 x) (+ 3 x)
                          (+ 4 x) (+ 5 x) (+ 6 x) (+ 7 x))))))
 
+(defthmd disjoint-p-and-addr-range-first-part
+  (implies (and (disjoint-p (addr-range n index) xs)
+                (natp n)
+                (< m n))
+           (disjoint-p (addr-range m index) xs))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
+
+(local
+ (defthmd disjoint-p-and-addr-range-second-part-n=8
+   ;; TO-DO: Speed this up!
+   (implies (and (disjoint-p (addr-range 8 index) xs)
+                 (integerp index))
+            (disjoint-p (addr-range 4 (+ 4 index)) xs))
+   :hints (("Goal"
+            :use ((:instance open-addr-range-4 (x index))
+                  (:instance open-addr-range-8 (x index)))
+            :in-theory (e/d* (disjoint-p member-p) ())))))
+
 (defthm rm-low-64-wb-in-system-level-mode-disjoint
-  (implies (and (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (disjoint-p (addr-range 8 index)
-                            (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (not (page-structure-marking-mode x86))
-                (integerp index))
+  (implies (and
+            (disjoint-p (addr-range 8 index)
+                        (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+            (disjoint-p (addr-range 8 index)
+                        (all-translation-governing-addresses (strip-cars addr-lst) x86))
+            (addr-byte-alistp addr-lst)
+            (integerp index)
+            (x86p x86))
            (equal (rm-low-64 index (mv-nth 1 (wb addr-lst x86)))
                   (rm-low-64 index x86)))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (rm-low-64
-                             disjoint-p
-                             open-addr-range-8)
-                            (wb
-                             (:meta acl2::mv-nth-cons-meta)
+           :use ((:instance rm-low-32-wb-in-system-level-mode-disjoint
+                            (index index))
+                 (:instance disjoint-p-and-addr-range-first-part
+                            (n 8)
+                            (m 4)
+                            (index index)
+                            (xs (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
+                 (:instance disjoint-p-and-addr-range-first-part
+                            (n 8)
+                            (m 4)
+                            (index index)
+                            (xs (all-translation-governing-addresses (strip-cars addr-lst) x86)))
+                 (:instance disjoint-p-and-addr-range-second-part-n=8
+                            (index index)
+                            (xs (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
+                 (:instance disjoint-p-and-addr-range-second-part-n=8
+                            (index index)
+                            (xs (all-translation-governing-addresses (strip-cars addr-lst) x86)))
+                 (:instance rm-low-32-wb-in-system-level-mode-disjoint
+                            (index (+ 4 index))))
+           :in-theory (e/d* (rm-low-64)
+                            (rm-low-32-wb-in-system-level-mode-disjoint
+                             wb (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
-
-(defthm rm-low-64-and-write-to-physical-memory-disjoint
-  (implies (disjoint-p (addr-range 8 p-addr-1) p-addrs-2)
-           (equal (rm-low-64 p-addr-1 (write-to-physical-memory p-addrs-2 bytes x86))
-                  (rm-low-64 p-addr-1 x86)))
-  :hints (("Goal" :in-theory (e/d* (rm-low-64 rm-low-32 disjoint-p)
-                                   (force (force))))))
 
 (defthm xr-mem-write-to-physical-memory-member
   (implies (and (member-p index p-addrs)
@@ -2554,11 +2748,15 @@
            :induct (write-to-physical-memory p-addrs bytes x86)
            :in-theory (e/d* (disjoint-p) (translation-governing-addresses)))))
 
+
+(i-am-here)
+
 (defthm las-to-pas-values-and-write-to-physical-memory-disjoint
-  (implies (and (disjoint-p (all-translation-governing-addresses l-addrs x86) p-addrs)
+  (implies (and (disjoint-p p-addrs (all-translation-governing-addresses l-addrs x86))
                 (physical-address-listp p-addrs)
                 (canonical-address-listp l-addrs)
-                (not (page-structure-marking-mode x86)))
+                (not (programmer-level-mode x86))
+                (x86p x86))
            (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
                        (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                 (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
@@ -2871,7 +3069,7 @@
                   (read-from-physical-memory p-addrs-1 x86)))
   :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
 
-(defthm rb-wb-disjoint-in-system-level-non-marking-mode
+(defthm rb-wb-disjoint
   (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -2892,7 +3090,7 @@
   :hints (("Goal" :do-not-induct t)))
 
 (defthm read-from-physical-memory-and-mv-nth-1-wb-disjoint
-  ;; Similar to rb-wb-disjoint-in-system-level-non-marking-mode
+  ;; Similar to rb-wb-disjoint
   (implies (and (disjoint-p
                  p-addrs
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -2929,7 +3127,7 @@
            :induct (read-from-physical-memory p-addrs (write-to-physical-memory p-addrs bytes x86))
            :in-theory (e/d* (member-p) ()))))
 
-(defthmd rb-wb-equal-in-system-level-non-marking-mode
+(defthmd rb-wb-equal
   (implies (and (equal
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -2955,7 +3153,7 @@
 
 ;; Lemmas about program-at:
 
-(defthm program-at-wb-disjoint-in-system-level-non-marking-mode
+(defthm program-at-wb-disjoint
   (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -3019,7 +3217,6 @@
            (equal (program-at l-addrs bytes (!flgi-undefined index x86))
                   (program-at l-addrs bytes x86)))
   :hints (("Goal" :in-theory (e/d* (program-at) (rb)))))
-
 
 ;; ======================================================================
 
