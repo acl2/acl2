@@ -9,6 +9,7 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 
 ;; ======================================================================
 

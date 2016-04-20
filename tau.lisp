@@ -7357,19 +7357,23 @@
 ; If term is tau-like we return (mv sign recog e criterion'), else we return all
 ; nils.  If recog is non-nil, then it is the internal representation of a tau recognizer:
 
-; tau recognizer   concrete          notes
-; form             representation
+; tau recognizer       concrete          notes
+; form                 representation
 
-; (fn x)           (index . fn)      fn is a symbol with given tau pair
+; (fn x)               (index . fn)      fn is a symbol with given tau pair
 
-; (equiv x 'evg)   (evg   . nil)     equiv is EQUAL, EQ, EQL, or =
+; (equiv x 'evg)       (evg   . nil)     equiv is EQUAL, EQ, EQL, or =
 ; (equiv 'evg x)
 
-; (< x 'k)         (k . :lessp-x-k)  k is a rational
+; (< x 'k)             (k . :lessp-x-k)  k is a rational
 ; (> 'k x)
 
-; (< 'k x)         (k . :lessp-k-x)  k is a rational
+; (< 'k x)             (k . :lessp-k-x)  k is a rational
 ; (> x 'k)
+
+; (IF (equiv x '0)     (index . BITP)    opened form of BITP recog
+;     T                                  (We also handle the case where the
+;     (equiv x '1))                      equiv-terms are swapped.)
 
 ; To be ``tau-like'' term must be a possibly negated term of one of the forms
 ; above The returned sign is T if term is positive; sign is nil for negated
@@ -7444,6 +7448,20 @@
                                 (cons k :lessp-k-x)
                                 (cons k :lessp-x-k))
                             e next-criterion))
+                       (t (mv nil nil nil nil)))))
+              (t (mv nil nil nil nil))))
+       (('IF (g e ''0) ''t (g e ''1))
+        (cond ((member-eq g equiv-fns)
+               (let ((next-criterion (tau-like-subject-criterion criterion e)))
+                 (cond (next-criterion
+                        (mv sign *tau-bitp-pair* e next-criterion))
+                       (t (mv nil nil nil nil)))))
+              (t (mv nil nil nil nil))))
+       (('IF (g e ''1) ''t (g e ''0))
+        (cond ((member-eq g equiv-fns)
+               (let ((next-criterion (tau-like-subject-criterion criterion e)))
+                 (cond (next-criterion
+                        (mv sign *tau-bitp-pair* e next-criterion))
                        (t (mv nil nil nil nil)))))
               (t (mv nil nil nil nil))))
        (& (mv nil nil nil nil))))))

@@ -7451,6 +7451,14 @@
                     (getpropc 'natp 'tau-pair))))
     (cond
      ((not
+       (equal *tau-bitp-pair*
+              (getpropc 'bitp 'tau-pair)))
+      (interface-er str
+                    '*tau-bitp-pair*
+                    *tau-bitp-pair*
+                    (getpropc 'bitp 'tau-pair))))
+    (cond
+     ((not
        (equal *tau-posp-pair*
               (getpropc 'posp 'tau-pair)))
       (interface-er str

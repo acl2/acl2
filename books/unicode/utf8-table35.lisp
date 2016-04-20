@@ -36,7 +36,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "std/typed-lists/signed-byte-listp" :dir :system))
-
+(local (in-theory (disable signed-byte-p)))
 (local (defthm signed-byte-p-resolver
          (implies (and (integerp n)
                        (<= 1 n)

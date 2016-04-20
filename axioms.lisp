@@ -4039,6 +4039,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(20 . NATP)
   #-non-standard-analysis
   '(17 . NATP))
+(defconst *tau-bitp-pair*
+  #+non-standard-analysis
+  '(21 . BITP)
+  #-non-standard-analysis
+  '(18 . BITP))
 (defconst *tau-posp-pair*
   #+non-standard-analysis
   '(22 . POSP)
@@ -4916,6 +4921,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (or (equal x 0)
              (equal x 1)))
   :rule-classes :compound-recognizer)
+
+(defthm bitp-as-inequality
+  (implies (bitp x) (and (natp x) (< x 2)))
+  :rule-classes :tau-system)
 
 (defun posp (x)
   (declare (xargs :guard t :mode :logic))

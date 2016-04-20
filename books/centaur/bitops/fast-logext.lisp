@@ -83,7 +83,6 @@ into a call of a specialized, inlined function.</p>
     (- (logxor x1 m) m))              ;; r = (x ^ m) - m
   ///
   (local (include-book "arithmetic/top" :dir :system))
-  (local (include-book "ihs-extensions"))
 
   (local (defthm l0
            (implies (integerp x)
