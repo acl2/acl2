@@ -567,14 +567,14 @@ Books, because building it:</p>
 <ul>
 <li>takes several hours</li>
 <li>requires a lot of memory and hard disk space, and</li>
-<li>requires both Clozure Common Lisp (CCL) and ACL2(h).</li>
+<li>requires Clozure Common Lisp (CCL).</li>
 </ul>
 
 <p>Instead, to build Milawa, you should:</p>
 
 <ol>
 
-<li>Build CCL and ACL2(h) according to the instructions in
+<li>Build CCL and ACL2 according to the instructions in
 @('books/centaur/README.html').</li>
 
 <li>Then run these commands:

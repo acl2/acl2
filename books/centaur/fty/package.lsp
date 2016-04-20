@@ -30,9 +30,11 @@
 
 (in-package "ACL2")
 (include-book "std/portcullis" :dir :system)
+(include-book "centaur/bitops/portcullis" :dir :system)
 
 (defpkg "FTY"
   (append *std-pkg-symbols*
+          *bitops-exports*
           '(std::def-primitive-aggregate
              std::extract-keywords
              std::getarg

@@ -711,7 +711,9 @@ directly with ACL2.</p>
                                              (expander-repeat-limit state)
                                              0
                                              type-alist
-                                             (geneqv-from-g?equiv g?equiv wrld)
+                                             (geneqv-from-g?equiv
+                                              (if not-flg 'iff g?equiv)
+                                              wrld)
                                              wrld state step-limit
                                              simplify-clause-pot-lst rcnst gstack
                                              nil

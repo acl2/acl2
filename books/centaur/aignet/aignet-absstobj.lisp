@@ -674,15 +674,6 @@
 
 ;; Network size
 
-(defxdoc node-count
-  :short "@(call node-count) is an alias for @(see len)."
-  :long "<p>This is mainly of use in the logical definition of @(see
-  num-nodes).  We use a different function than @(see len) only so that we can
-  feel free to use rules that would be expensive to generally apply to
-  @('len').</p>
-
-  @(def node-count)")
-
 (defxdoc num-nodes
   :short "@(call num-nodes) returns the total number of nodes in an aignet."
   :long "<p>Logically this is @('(+ 1 (node-count aignet))'), (where

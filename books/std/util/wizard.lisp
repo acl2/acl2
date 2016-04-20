@@ -32,11 +32,11 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "defaggregate")
-(include-book "deflist")
+(include-book "da-base")
+;; (include-book "deflist")
 (include-book "clause-processors/unify-subst" :dir :system)
 
-(std::defaggregate wizadvice
+(std::def-primitive-aggregate wizadvice
   (pattern  ;; pattern to match
    restrict ;; syntactic restrictions required on resulting sigma
    msg      ;; message to print
@@ -44,9 +44,9 @@
    )
   :tag :advice-form)
 
-(std::deflist wizadvicelist-p (x)
-  (wizadvice-p x)
-  :guard t)
+;; (std::deflist wizadvicelist-p (x)
+;;   (wizadvice-p x)
+;;   :guard t)
 
 (mutual-recursion
  (defun collect-matches-from-term (pattern x acc)

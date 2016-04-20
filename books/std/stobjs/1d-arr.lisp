@@ -386,18 +386,10 @@ documentation can be generated automatically.</dd>
 
 
 
-(deffunmac def-1d-arr (arrname
-                       &key
-                       slotname
-                       pred
-                       fix
-                       default-val
-                       pkg-sym
-                       rename
-                       (type-decl 't)
-                       parents
-                       short
-                       long)
+(defun def-1d-arr-fn (arrname slotname
+                              pred fix default-val
+                              pkg-sym rename type-decl
+                              parents short long)
   (declare (xargs :mode :program))
   (b* (((unless (and (symbolp arrname)
                      (not (keywordp arrname))))
@@ -431,4 +423,28 @@ documentation can be generated automatically.</dd>
     (if rename
         (sublis rename tmpl)
       tmpl)))
+
+
+(defmacro def-1d-arr (arrname
+                      &key
+                      slotname
+                      pred
+                      fix
+                      default-val
+                      pkg-sym
+                      rename
+                      (type-decl 't)
+                      (parents 'nil parents-p)
+                      short
+                      long)
+  `(make-event
+    (b* ((parents (if ,parents-p
+                      ',parents
+                    (or (xdoc::get-default-parents (w state))
+                        '(acl2::undocumented))))
+         (event (def-1d-arr-fn ',arrname ',slotname
+                  ',pred ',fix ',default-val
+                  ',pkg-sym ',rename ',type-decl
+                  parents ',short ',long)))
+      (value event))))
 

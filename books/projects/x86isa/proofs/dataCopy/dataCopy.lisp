@@ -1179,7 +1179,6 @@
                              effects-copyData-loop-recur-destination-address-projection-original
                              rb-rb-split-reads
                              take-and-rb
-                             acl2::take-of-append
                              (loop-clk-recur)
                              force (force))))
           ("Subgoal 7" :use ((:instance rb-rb-split-reads
@@ -1194,7 +1193,6 @@
                              effects-copyData-loop-recur-destination-address-projection-original
                              rb-rb-split-reads
                              take-and-rb
-                             acl2::take-of-append
                              (loop-clk-recur)
                              force (force))))
           ("Subgoal 5" :use ((:instance rb-rb-split-reads
@@ -1209,7 +1207,6 @@
                              effects-copyData-loop-recur-destination-address-projection-original
                              rb-rb-split-reads
                              take-and-rb
-                             acl2::take-of-append
                              (loop-clk-recur)
                              force (force))))
           ("Subgoal 2" :use ((:instance rb-rb-split-reads
@@ -1224,7 +1221,6 @@
                              effects-copyData-loop-recur-destination-address-projection-original
                              rb-rb-split-reads
                              take-and-rb
-                             acl2::take-of-append
                              (loop-clk-recur)
                              force (force))))
           ("Subgoal 1" :use ((:instance rb-rb-split-reads
@@ -1239,7 +1235,6 @@
                              effects-copyData-loop-recur-destination-address-projection-original
                              rb-rb-split-reads
                              take-and-rb
-                             acl2::take-of-append
                              (loop-clk-recur)
                              force (force))))))
 
@@ -1295,7 +1290,6 @@
                              effects-copyData-loop-recur-source-address-projection-original
                              rb-rb-split-reads
                              take-and-rb
-                             acl2::take-of-append
                              (loop-clk-recur)
                              force (force))))
           ("Subgoal 1" :use ((:instance rb-rb-split-reads
@@ -1310,7 +1304,6 @@
                              effects-copyData-loop-recur-source-address-projection-original
                              rb-rb-split-reads
                              take-and-rb
-                             acl2::take-of-append
                              (loop-clk-recur)
                              force (force))))))
 
@@ -1585,7 +1578,6 @@
                             (loop-clk-recur
                              rb-rb-split-reads
                              take-and-rb
-                             acl2::take-of-append
                              (loop-clk-recur)
                              force (force))))))
 
@@ -1619,7 +1611,6 @@
                              effects-copyData-loop-recur-source-address-projection-original
                              rb-rb-split-reads
                              take-and-rb
-                             acl2::take-of-append
                              (loop-clk-recur)
                              force (force))))))
 

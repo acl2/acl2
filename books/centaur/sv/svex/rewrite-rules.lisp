@@ -3534,7 +3534,18 @@
                                (hons-equal (second res.args) x)
                                (hons-equal (third res.args) y))
                     :otherwise nil)))
-    :rhs res))
+    :rhs res)
+
+  (def-svex-rewrite ?-of-uor
+    :lhs (? (uor test) x y)
+    :rhs (? test x y)
+    :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                      3vec-reduction-or
+                                      4vec-?
+                                      3vec-? 3vec-fix
+                                      4vec-mask
+                                      svex-apply))
+           (svex-generalize-lookups))))
 
 
 (def-svex-rewrite ==-1-of-concat-1
