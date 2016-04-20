@@ -1102,22 +1102,60 @@ memory.</li>
 
     (defthm las-to-pas-values-and-!flgi
       (implies (and (not (equal index *ac*))
-                    (not (page-structure-marking-mode x86))
                     (x86p x86))
                (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
                            (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                     (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
-                           (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
+                           (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
+      :hints
+      (("Goal"
+        :do-not-induct t
+        :cases ((equal index *iopl*))
+        :use
+        ((:instance rflags-slice-ac-simplify
+                    (index index)
+                    (rflags (xr :rflags 0 x86)))
+         (:instance las-to-pas-xw-rflags-not-ac
+                    (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                   (logand (xr :rflags 0 x86)
+                                           (loghead 32 (lognot (expt 2 (nfix index))))))))
+         (:instance las-to-pas-xw-rflags-not-ac
+                    (value (logior (ash (loghead 2 value) 12)
+                                   (logand 4294955007 (xr :rflags 0 x86))))))
+        :in-theory (e/d* (!flgi-open-to-xw-rflags)
+                         (las-to-pas-xw-rflags-not-ac)))))
 
     (defthm las-to-pas-values-and-!flgi-undefined
       (implies (and (not (equal index *ac*))
-                    (not (page-structure-marking-mode x86))
                     (x86p x86))
                (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (!flgi-undefined index x86)))
                            (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                     (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (!flgi-undefined index x86)))
                            (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
-      :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (las-to-pas))))))
+      :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (las-to-pas)))))
+
+    (defthm mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
+      (implies (and (not (equal index *ac*))
+                    (x86p x86))
+               (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
+                      (!flgi index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
+      :hints
+      (("Goal"
+        :do-not-induct t
+        :cases ((equal index *iopl*))
+        :use
+        ((:instance rflags-slice-ac-simplify
+                    (index index)
+                    (rflags (xr :rflags 0 x86)))
+         (:instance las-to-pas-xw-rflags-state-not-ac
+                    (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                   (logand (xr :rflags 0 x86)
+                                           (loghead 32 (lognot (expt 2 (nfix index))))))))
+         (:instance las-to-pas-xw-rflags-state-not-ac
+                    (value (logior (ash (loghead 2 value) 12)
+                                   (logand 4294955007 (xr :rflags 0 x86))))))
+        :in-theory (e/d* (!flgi-open-to-xw-rflags)
+                         (las-to-pas-xw-rflags-state-not-ac))))))
 
   (define read-from-physical-memory
     ((p-addrs physical-address-listp)
@@ -1130,7 +1168,18 @@ memory.</li>
         nil
       (b* ((addr (car p-addrs))
            (byte (memi addr x86)))
-        (cons byte (read-from-physical-memory (cdr p-addrs) x86)))))
+        (cons byte (read-from-physical-memory (cdr p-addrs) x86))))
+
+    ///
+
+    (defthm read-from-physical-memory-!flgi
+      (equal (read-from-physical-memory p-addrs (!flgi index val x86))
+             (read-from-physical-memory p-addrs x86)))
+
+    (defthm read-from-physical-memory-xw-not-mem
+      (implies (not (equal fld :mem))
+               (equal (read-from-physical-memory p-addrs (xw fld index val x86))
+                      (read-from-physical-memory p-addrs x86)))))
 
   (define rb ((l-addrs canonical-address-listp)
               (r-w-x :type (member :r :w :x))
@@ -1186,25 +1235,27 @@ memory.</li>
 
     (defthm rb-values-and-!flgi-in-system-level-mode
       (implies (and (not (equal index *ac*))
-                    (not (page-structure-marking-mode x86))
                     (not (programmer-level-mode x86))
                     (x86p x86))
                (and (equal (mv-nth 0 (rb lin-addr r-w-x (!flgi index value x86)))
                            (mv-nth 0 (rb lin-addr r-w-x x86)))
                     (equal (mv-nth 1 (rb lin-addr r-w-x (!flgi index value x86)))
                            (mv-nth 1 (rb lin-addr r-w-x x86)))))
-      :hints (("Goal" :in-theory (e/d* (rb) ()))))
+      :hints (("Goal"
+               :do-not-induct t
+               :in-theory (e/d* (rb) ()))))
 
     (defthm rb-values-and-!flgi-undefined-in-system-level-mode
       (implies (and (not (equal index *ac*))
-                    (not (page-structure-marking-mode x86))
                     (not (programmer-level-mode x86))
                     (x86p x86))
                (and (equal (mv-nth 0 (rb lin-addr r-w-x (!flgi-undefined index x86)))
                            (mv-nth 0 (rb lin-addr r-w-x x86)))
                     (equal (mv-nth 1 (rb lin-addr r-w-x (!flgi-undefined index x86)))
                            (mv-nth 1 (rb lin-addr r-w-x x86)))))
-      :hints (("Goal" :in-theory (e/d* (!flgi-undefined) ())))))
+      :hints (("Goal"
+               :do-not-induct t
+               :in-theory (e/d* (!flgi-undefined) ())))))
 
   ;; Definition of WB and other related events:
 

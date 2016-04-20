@@ -12,50 +12,45 @@
 
 ;; ======================================================================
 
-(local
- (defthmd xlate-equiv-memory-and-cr0
-   (implies (and (xlate-equiv-memory x86-1 x86-2)
-                 (not (programmer-level-mode x86-2)))
-            (equal (bool->bit (logbitp 16 (xr :ctr *cr0* x86-1)))
-                   (bool->bit (logbitp 16 (xr :ctr *cr0* x86-2)))))
-   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                    ())))))
+(defthmd xlate-equiv-memory-and-cr0
+  (implies (and (xlate-equiv-memory x86-1 x86-2)
+                (not (programmer-level-mode x86-2)))
+           (equal (bool->bit (logbitp 16 (xr :ctr *cr0* x86-1)))
+                  (bool->bit (logbitp 16 (xr :ctr *cr0* x86-2)))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+                                   ()))))
 
-(local
- (defthmd xlate-equiv-memory-and-cr3
-   (implies (and (xlate-equiv-memory x86-1 x86-2)
-                 (not (programmer-level-mode x86-2)))
-            (equal (loghead 40 (logtail 12 (xr :ctr *cr3* x86-1)))
-                   (loghead 40 (logtail 12 (xr :ctr *cr3* x86-2)))))
-   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                    ())))))
+(defthmd xlate-equiv-memory-and-cr3
+  (implies (and (xlate-equiv-memory x86-1 x86-2)
+                (not (programmer-level-mode x86-2)))
+           (equal (loghead 40 (logtail 12 (xr :ctr *cr3* x86-1)))
+                  (loghead 40 (logtail 12 (xr :ctr *cr3* x86-2)))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+                                   ()))))
 
-(local
- (defthmd xlate-equiv-memory-and-cr4
-   (implies (and (xlate-equiv-memory x86-1 x86-2)
-                 (not (programmer-level-mode x86-2)))
-            (equal (bool->bit (logbitp 20 (xr :ctr *cr4* x86-1)))
-                   (bool->bit (logbitp 20 (xr :ctr *cr4* x86-2)))))
-   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                    ())))))
+(defthmd xlate-equiv-memory-and-cr4
+  (implies (and (xlate-equiv-memory x86-1 x86-2)
+                (not (programmer-level-mode x86-2)))
+           (equal (bool->bit (logbitp 20 (xr :ctr *cr4* x86-1)))
+                  (bool->bit (logbitp 20 (xr :ctr *cr4* x86-2)))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+                                   ()))))
 
-(local
- (defthmd xlate-equiv-memory-and-msr
-   (implies (and (xlate-equiv-memory x86-1 x86-2)
-                 (not (programmer-level-mode x86-2)))
-            (equal (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-1)))
-                   (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-2)))))
-   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                    ())))))
+(defthmd xlate-equiv-memory-and-msr
+  (implies (and (xlate-equiv-memory x86-1 x86-2)
+                (not (programmer-level-mode x86-2)))
+           (equal (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-1)))
+                  (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-2)))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+                                   ()))))
 
-(local
- (defthmd xlate-equiv-memory-and-rflags
-   (implies (and (xlate-equiv-memory x86-1 x86-2)
-                 (not (programmer-level-mode x86-2)))
-            (equal (bool->bit (logbitp 18 (xr :rflags 0 x86-1)))
-                   (bool->bit (logbitp 18 (xr :rflags 0 x86-2)))))
-   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                    ())))))
+(defthmd xlate-equiv-memory-and-rflags
+  (implies (and (xlate-equiv-memory x86-1 x86-2)
+                (not (programmer-level-mode x86-2)))
+           (equal (bool->bit (logbitp 18 (xr :rflags 0 x86-1)))
+                  (bool->bit (logbitp 18 (xr :rflags 0 x86-2)))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+                                   ()))))
 
 ;; ======================================================================
 

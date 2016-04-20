@@ -2127,8 +2127,7 @@ accesses.</p>
   :guard (and (not (programmer-level-mode x86))
               (canonical-address-p lin-addr))
 
-  :guard-hints (("Goal" :in-theory (e/d (
-                                         acl2::bool->bit)
+  :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit)
                                         (unsigned-byte-p
                                          signed-byte-p
                                          member-equal
@@ -2313,7 +2312,29 @@ accesses.</p>
                          (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
                   (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi-undefined index x86)))
                          (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
-    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (!flgi ia32e-la-to-pa))))))
+    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (!flgi ia32e-la-to-pa)))))
+
+  (defthm mv-nth-2-ia32e-la-to-pa-and-!flgi-not-ac-commute
+    (implies (and (not (equal index *ac*))
+                  (x86p x86))
+             (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi index value x86)))
+                    (!flgi index value (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+
+    :hints (("Goal"
+             :cases ((equal index *iopl*))
+             :use
+             ((:instance rflags-slice-ac-simplify
+                         (index index)
+                         (rflags (xr :rflags 0 x86)))
+              (:instance ia32e-la-to-pa-xw-rflags-state-not-ac
+                         (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                        (logand (xr :rflags 0 x86)
+                                                (loghead 32 (lognot (expt 2 (nfix index))))))))
+              (:instance ia32e-la-to-pa-xw-rflags-state-not-ac
+                         (value (logior (ash (loghead 2 value) 12)
+                                        (logand 4294955007 (xr :rflags 0 x86))))))
+             :in-theory (e/d* (!flgi-open-to-xw-rflags)
+                              (ia32e-la-to-pa-xw-rflags-state-not-ac))))))
 
 ;; ======================================================================
 
