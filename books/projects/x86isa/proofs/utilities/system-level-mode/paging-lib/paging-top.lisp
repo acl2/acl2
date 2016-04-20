@@ -91,11 +91,18 @@
 
 (defthm xlate-equiv-structures-and-mv-nth-2-ia32e-la-to-pa
   (implies
-   ;; TODO: Can this hypothesis be removed?
    (x86p x86)
    (xlate-equiv-structures (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
                            (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) ()))))
+
+(defthmd xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa
+  (implies
+   (and (x86p x86-1)
+        (x86p x86-2)
+        (xlate-equiv-structures x86-1 x86-2))
+   (xlate-equiv-structures (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-1))
+                           (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2)))))
 
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa
   (implies
@@ -110,6 +117,15 @@
                                     dirty-bit
                                     not)))))
 
+(defthmd all-mem-except-paging-structures-equal-with-two-mv-nth-2-ia32e-la-to-pa
+  (implies
+   (and (x86p x86-1)
+        (x86p x86-2)
+        (all-mem-except-paging-structures-equal x86-1 x86-2))
+   (all-mem-except-paging-structures-equal
+    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-1))
+    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2)))))
+
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa
   (implies (x86p x86)
            (xlate-equiv-memory
@@ -121,6 +137,14 @@
                              accessed-bit
                              dirty-bit
                              not)))))
+
+(defthmd xlate-equiv-memory-with-two-mv-nth-2-ia32e-la-to-pa
+  (implies (and (x86p x86-1)
+                (x86p x86-2)
+                (xlate-equiv-memory x86-1 x86-2))
+           (xlate-equiv-memory
+            (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-1))
+            (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2)))))
 
 (defthm two-page-walks-ia32e-la-to-pa
   (implies
@@ -142,9 +166,6 @@
 (in-theory (e/d* () (ia32e-la-to-pa)))
 
 ;; ======================================================================
-
-;; The following come in useful when reasoning about higher paging
-;; structure traversals...
 
 (defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa
   (implies (and (x86p x86)
@@ -182,5 +203,40 @@
                             (addrs (gather-all-paging-structure-qword-addresses x86))
                             (x x86)
                             (y (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))))))
+
+;; ======================================================================
+
+;; Lemmas about las-to-pas:
+
+(defthmd xlate-equiv-memory-and-las-to-pas
+  (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+                (x86p x86-1)
+                (x86p x86-2))
+           (and
+            (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86-1))
+                   (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86-2)))
+            (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1))
+                   (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-2)))))
+  :hints (("Goal"
+           :induct (cons (las-to-pas l-addrs r-w-x cpl x86-1)
+                         (las-to-pas l-addrs r-w-x cpl x86-2)))))
+
+(defthm xlate-equiv-memory-with-mv-nth-2-las-to-pas
+  (implies (x86p x86)
+           (xlate-equiv-memory
+            (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86))
+            (double-rewrite x86)))
+  :hints (("Goal" :induct (las-to-pas l-addrs r-w-x cpl x86))))
+
+(defthmd xlate-equiv-memory-with-two-mv-nth-2-las-to-pas
+  (implies (and (x86p x86-1)
+                (x86p x86-2)
+                (xlate-equiv-memory x86-1 x86-2))
+           (xlate-equiv-memory
+            (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86-1))
+            (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86-2))))
+  :hints (("Goal"
+           :induct (cons (las-to-pas l-addrs r-w-x cpl x86-1)
+                         (las-to-pas l-addrs r-w-x cpl x86-2)))))
 
 ;; ======================================================================

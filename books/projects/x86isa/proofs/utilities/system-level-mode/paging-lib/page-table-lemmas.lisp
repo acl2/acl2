@@ -353,6 +353,19 @@
                              dirty-bit
                              not)))))
 
+(defthmd xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-page-table
+  (implies
+   (and (x86p x86-1)
+        (x86p x86-2)
+        (xlate-equiv-structures x86-1 x86-2))
+   (xlate-equiv-structures
+    (mv-nth 2 (ia32e-la-to-pa-page-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-1))
+    (mv-nth 2 (ia32e-la-to-pa-page-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-2)))))
+
 (defthm all-mem-except-paging-structures-equal-and-paging-entry-no-page-fault-p
   (all-mem-except-paging-structures-equal
    (mv-nth
@@ -369,7 +382,6 @@
 
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-page-table
   (implies
-   ;; TODO: Can this hypothesis be removed?
    (and (x86p x86)
         (member-p (page-table-entry-addr (logext 48 lin-addr)
                                          (logand 18446744073709547520 (loghead 52 base-addr)))
@@ -385,6 +397,25 @@
                                     dirty-bit
                                     not)))))
 
+(defthmd all-mem-except-paging-structures-equal-with-two-mv-nth-2-ia32e-la-to-pa-page-table
+  (implies
+   (and (x86p x86-1)
+        (x86p x86-2)
+        (all-mem-except-paging-structures-equal x86-1 x86-2)
+        (member-p (page-table-entry-addr (logext 48 lin-addr)
+                                         (logand 18446744073709547520 (loghead 52 base-addr)))
+                  (gather-all-paging-structure-qword-addresses x86-1))
+        (member-p (page-table-entry-addr (logext 48 lin-addr)
+                                         (logand 18446744073709547520 (loghead 52 base-addr)))
+                  (gather-all-paging-structure-qword-addresses x86-2)))
+   (all-mem-except-paging-structures-equal
+    (mv-nth 2 (ia32e-la-to-pa-page-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-1))
+    (mv-nth 2 (ia32e-la-to-pa-page-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-2)))))
+
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-page-table
   (implies
    ;; TODO: Can this hypothesis be removed?
@@ -399,14 +430,34 @@
     (double-rewrite x86)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (xlate-equiv-memory)
-                            (bitops::logand-with-negated-bitmask
+                            (xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-page-table
+                             all-mem-except-paging-structures-equal-with-two-mv-nth-2-ia32e-la-to-pa-page-table
+                             bitops::logand-with-negated-bitmask
                              accessed-bit
                              dirty-bit
                              not)))))
 
+(defthmd xlate-equiv-memory-with-two-mv-nth-2-ia32e-la-to-pa-page-table
+  (implies
+   (and (xlate-equiv-memory x86-1 x86-2)
+        (member-p (page-table-entry-addr (logext 48 lin-addr)
+                                         (logand 18446744073709547520 (loghead 52 base-addr)))
+                  (gather-all-paging-structure-qword-addresses x86-1))
+        (member-p (page-table-entry-addr (logext 48 lin-addr)
+                                         (logand 18446744073709547520 (loghead 52 base-addr)))
+                  (gather-all-paging-structure-qword-addresses x86-2))
+        (x86p x86-1)
+        (x86p x86-2))
+   (xlate-equiv-memory
+    (mv-nth 2 (ia32e-la-to-pa-page-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-1))
+    (mv-nth 2 (ia32e-la-to-pa-page-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-2)))))
+
 (defthm two-page-table-walks-ia32e-la-to-pa-page-table
   (implies
-   ;; TODO: Can this hypothesis be removed?
    (and (x86p x86)
         (member-p (page-table-entry-addr (logext 48 lin-addr-2)
                                          (logand 18446744073709547520 (loghead 52 base-addr-2)))

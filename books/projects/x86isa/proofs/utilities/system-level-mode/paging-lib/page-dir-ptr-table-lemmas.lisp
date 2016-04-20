@@ -20,7 +20,7 @@
                  (x86-2))
                 (syntaxp (and (not (eq x86-1 x86-2))
                               ;; x86-1 must be smaller than x86-2.
-                              (term-order x86-1 x86-2)))                
+                              (term-order x86-1 x86-2)))
                 (xlate-equiv-structures x86-1 x86-2)
                 (member-p (page-dir-ptr-table-entry-addr lin-addr base-addr)
                           (gather-all-paging-structure-qword-addresses x86-1)))
@@ -244,9 +244,21 @@
                              dirty-bit
                              not)))))
 
+(defthmd xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
+  (implies
+   (and (x86p x86-1)
+        (x86p x86-2)
+        (xlate-equiv-structures x86-1 x86-2))
+   (xlate-equiv-structures
+    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-1))
+    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-2)))))
+
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
   (implies
-   ;; TODO: Can this hypothesis be removed?
    (and (x86p x86)
         (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
                                                  (logand 18446744073709547520 (loghead 52 base-addr)))
@@ -331,9 +343,165 @@
                                     dirty-bit
                                     not)))))
 
+(defthmd all-mem-except-paging-structures-equal-with-two-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
+  (implies
+   (and (x86p x86-1)
+        (x86p x86-2)
+        (all-mem-except-paging-structures-equal x86-1 x86-2)
+        (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
+                                                 (logand 18446744073709547520 (loghead 52 base-addr)))
+                  (gather-all-paging-structure-qword-addresses x86-1))
+        (if (equal (page-size (rm-low-64 (page-dir-ptr-table-entry-addr
+                                          (logext 48 lin-addr)
+                                          (logand
+                                           18446744073709547520
+                                           (loghead 52 base-addr)))
+                                         x86-1))
+                   0)
+            (and
+             (member-p
+              (page-directory-entry-addr
+               (logext 48 lin-addr)
+               (ash
+                (loghead
+                 40
+                 (logtail
+                  12
+                  (rm-low-64 (page-dir-ptr-table-entry-addr
+                              (logext 48 lin-addr)
+                              (logand 18446744073709547520
+                                      (loghead 52 base-addr)))
+                             x86-1)))
+                12))
+              (gather-all-paging-structure-qword-addresses x86-1))
+             (if (equal
+                  (page-size
+                   (rm-low-64
+                    (page-directory-entry-addr
+                     (logext 48 lin-addr)
+                     (ash
+                      (loghead
+                       40
+                       (logtail
+                        12
+                        (rm-low-64 (page-dir-ptr-table-entry-addr
+                                    (logext 48 lin-addr)
+                                    (logand 18446744073709547520
+                                            (loghead 52 base-addr)))
+                                   x86-1)))
+                      12))
+                    x86-1))
+                  0)
+                 (member-p
+                  (page-table-entry-addr
+                   (logext 48 lin-addr)
+                   (ash
+                    (loghead
+                     40
+                     (logtail
+                      12
+                      (rm-low-64
+                       (page-directory-entry-addr
+                        (logext 48 lin-addr)
+                        (ash
+                         (loghead
+                          40
+                          (logtail
+                           12
+                           (rm-low-64
+                            (page-dir-ptr-table-entry-addr
+                             (logext 48 lin-addr)
+                             (logand 18446744073709547520
+                                     (loghead 52 base-addr)))
+                            x86-1)))
+                         12))
+                       x86-1)))
+                    12))
+                  (gather-all-paging-structure-qword-addresses x86-1))
+               t))
+          t)
+        (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
+                                                 (logand 18446744073709547520 (loghead 52 base-addr)))
+                  (gather-all-paging-structure-qword-addresses x86-2))
+        (if (equal (page-size (rm-low-64 (page-dir-ptr-table-entry-addr
+                                          (logext 48 lin-addr)
+                                          (logand
+                                           18446744073709547520
+                                           (loghead 52 base-addr)))
+                                         x86-2))
+                   0)
+            (and
+             (member-p
+              (page-directory-entry-addr
+               (logext 48 lin-addr)
+               (ash
+                (loghead
+                 40
+                 (logtail
+                  12
+                  (rm-low-64 (page-dir-ptr-table-entry-addr
+                              (logext 48 lin-addr)
+                              (logand 18446744073709547520
+                                      (loghead 52 base-addr)))
+                             x86-2)))
+                12))
+              (gather-all-paging-structure-qword-addresses x86-2))
+             (if (equal
+                  (page-size
+                   (rm-low-64
+                    (page-directory-entry-addr
+                     (logext 48 lin-addr)
+                     (ash
+                      (loghead
+                       40
+                       (logtail
+                        12
+                        (rm-low-64 (page-dir-ptr-table-entry-addr
+                                    (logext 48 lin-addr)
+                                    (logand 18446744073709547520
+                                            (loghead 52 base-addr)))
+                                   x86-2)))
+                      12))
+                    x86-2))
+                  0)
+                 (member-p
+                  (page-table-entry-addr
+                   (logext 48 lin-addr)
+                   (ash
+                    (loghead
+                     40
+                     (logtail
+                      12
+                      (rm-low-64
+                       (page-directory-entry-addr
+                        (logext 48 lin-addr)
+                        (ash
+                         (loghead
+                          40
+                          (logtail
+                           12
+                           (rm-low-64
+                            (page-dir-ptr-table-entry-addr
+                             (logext 48 lin-addr)
+                             (logand 18446744073709547520
+                                     (loghead 52 base-addr)))
+                            x86-2)))
+                         12))
+                       x86-2)))
+                    12))
+                  (gather-all-paging-structure-qword-addresses x86-2))
+               t))
+          t))
+   (all-mem-except-paging-structures-equal
+    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-1))
+    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-2)))))
+
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
   (implies
-   ;; TODO: Can this hypothesis be removed?
    (and (x86p x86)
         (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
                                                  (logand 18446744073709547520 (loghead 52 base-addr)))
@@ -418,9 +586,163 @@
                              dirty-bit
                              not)))))
 
+(defthmd xlate-equiv-memory-with-two-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
+  (implies
+   (and (x86p x86-1)
+        (x86p x86-2)
+        (xlate-equiv-memory x86-1 x86-2)
+        (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
+                                                 (logand 18446744073709547520 (loghead 52 base-addr)))
+                  (gather-all-paging-structure-qword-addresses x86-1))
+        (if (equal (page-size (rm-low-64 (page-dir-ptr-table-entry-addr
+                                          (logext 48 lin-addr)
+                                          (logand 18446744073709547520 (loghead 52 base-addr)))
+                                         x86-1))
+                   0)
+            (and
+             (member-p
+              (page-directory-entry-addr
+               (logext 48 lin-addr)
+               (ash
+                (loghead
+                 40
+                 (logtail
+                  12
+                  (rm-low-64 (page-dir-ptr-table-entry-addr
+                              (logext 48 lin-addr)
+                              (logand 18446744073709547520
+                                      (loghead 52 base-addr)))
+                             x86-1)))
+                12))
+              (gather-all-paging-structure-qword-addresses x86-1))
+             (if
+                 (equal
+                  (page-size
+                   (rm-low-64
+                    (page-directory-entry-addr
+                     (logext 48 lin-addr)
+                     (ash
+                      (loghead
+                       40
+                       (logtail
+                        12
+                        (rm-low-64 (page-dir-ptr-table-entry-addr
+                                    (logext 48 lin-addr)
+                                    (logand 18446744073709547520
+                                            (loghead 52 base-addr)))
+                                   x86-1)))
+                      12))
+                    x86-1))
+                  0)
+                 (member-p
+                  (page-table-entry-addr
+                   (logext 48 lin-addr)
+                   (ash
+                    (loghead
+                     40
+                     (logtail
+                      12
+                      (rm-low-64
+                       (page-directory-entry-addr
+                        (logext 48 lin-addr)
+                        (ash
+                         (loghead
+                          40
+                          (logtail
+                           12
+                           (rm-low-64
+                            (page-dir-ptr-table-entry-addr
+                             (logext 48 lin-addr)
+                             (logand 18446744073709547520
+                                     (loghead 52 base-addr)))
+                            x86-1)))
+                         12))
+                       x86-1)))
+                    12))
+                  (gather-all-paging-structure-qword-addresses x86-1))
+               t))
+          t)
+        (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
+                                                 (logand 18446744073709547520 (loghead 52 base-addr)))
+                  (gather-all-paging-structure-qword-addresses x86-2))
+        (if (equal (page-size (rm-low-64 (page-dir-ptr-table-entry-addr
+                                          (logext 48 lin-addr)
+                                          (logand 18446744073709547520 (loghead 52 base-addr)))
+                                         x86-2))
+                   0)
+            (and
+             (member-p
+              (page-directory-entry-addr
+               (logext 48 lin-addr)
+               (ash
+                (loghead
+                 40
+                 (logtail
+                  12
+                  (rm-low-64 (page-dir-ptr-table-entry-addr
+                              (logext 48 lin-addr)
+                              (logand 18446744073709547520
+                                      (loghead 52 base-addr)))
+                             x86-2)))
+                12))
+              (gather-all-paging-structure-qword-addresses x86-2))
+             (if
+                 (equal
+                  (page-size
+                   (rm-low-64
+                    (page-directory-entry-addr
+                     (logext 48 lin-addr)
+                     (ash
+                      (loghead
+                       40
+                       (logtail
+                        12
+                        (rm-low-64 (page-dir-ptr-table-entry-addr
+                                    (logext 48 lin-addr)
+                                    (logand 18446744073709547520
+                                            (loghead 52 base-addr)))
+                                   x86-2)))
+                      12))
+                    x86-2))
+                  0)
+                 (member-p
+                  (page-table-entry-addr
+                   (logext 48 lin-addr)
+                   (ash
+                    (loghead
+                     40
+                     (logtail
+                      12
+                      (rm-low-64
+                       (page-directory-entry-addr
+                        (logext 48 lin-addr)
+                        (ash
+                         (loghead
+                          40
+                          (logtail
+                           12
+                           (rm-low-64
+                            (page-dir-ptr-table-entry-addr
+                             (logext 48 lin-addr)
+                             (logand 18446744073709547520
+                                     (loghead 52 base-addr)))
+                            x86-2)))
+                         12))
+                       x86-2)))
+                    12))
+                  (gather-all-paging-structure-qword-addresses x86-2))
+               t))
+          t))
+   (xlate-equiv-memory
+    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-1))
+    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86-2)))))
+
 (defthm two-page-dir-ptr-table-walks-ia32e-la-to-pa-page-dir-ptr-table
   (implies
-   ;; TODO: Can this hypothesis be removed?
    (and (x86p x86)
         (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr-2)
                                                  (logand 18446744073709547520 (loghead 52 base-addr-2)))
