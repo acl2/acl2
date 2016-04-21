@@ -7,4 +7,4 @@
 ;; the system-level mode.
 
 (include-book "non-marking-mode-utils" :ttags :all)
-(include-book "paging-lib/paging-top" :ttags :all)
+(include-book "marking-mode-utils" :ttags :all)

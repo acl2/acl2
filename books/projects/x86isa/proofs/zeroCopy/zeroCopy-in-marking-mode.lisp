@@ -3,12 +3,15 @@
 
 (in-package "X86ISA")
 
-(include-book "../utilities/system-level-mode/non-marking-mode-utils")
+(include-book "../utilities/system-level-mode/marking-mode-utils")
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/gl/gl" :dir :system))
+
+(local (in-theory (e/d () (disjoint-p-of-remove-duplicates-equal
+                           not-disjoint-p-of-remove-duplicates-equal))))
 
 ;; ======================================================================
 
@@ -96,7 +99,7 @@
 
 ;; Argh, ACL2's default ancestors-check is killing me --- it prevents
 ;; program-at-wb-disjoint-in-system-level-non-marking-mode from being
-;; used. So I'm going to use Sol's trivial ancestors-check version.
+;; used. So, I'm going to use Sol's trivial ancestors-check version.
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
 
@@ -133,8 +136,23 @@
   (implies (unsigned-byte-p 64 x)
            (unsigned-byte-p 52 (ash (loghead 40 (logtail 12 x)) 12))))
 
+(i-am-here)
+
 (defthm page-dir-ptr-table-base-addr-and-mv-nth-1-wb
   (implies (and
+            ;; The physical addresses corresponding to the PML4TE are
+            ;; disjoint from the physical addresses pertaining to the
+            ;; write.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list
+                         8
+                         (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
+                        :r (cpl x86) x86))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+            ;; The physical addresses corresponding to the PML4TE are
+            ;; disjoint from the translation-governing addresses
+            ;; pertaining to the PML4TE.
             (disjoint-p
              (mv-nth
               1
@@ -143,17 +161,39 @@
                 8
                 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
                :r (cpl x86) x86))
-             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-            (disjoint-p
              (all-translation-governing-addresses
               (create-canonical-address-list
-               8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
-              x86)
-             (mv-nth 1
-                     (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+               8
+               (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
+              x86))
+            ;; The physical addresses pertaining to the write are
+            ;; disjoint from the translation-governing addresses
+            ;; pertaining to the PML4TE.
+            (disjoint-p
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
+             (all-translation-governing-addresses
+              (create-canonical-address-list
+               8
+               (pml4-table-entry-addr
+                lin-addr
+                (pml4-table-base-addr x86)))
+              x86))
+            ;; The physical addresses corresponding to the PML4TE are
+            ;; disjoint from the translation-governing addresses
+            ;; pertaining to the write.
+;;; TODO: Why do we need this hyp.?
+            (disjoint-p
+             (mv-nth
+              1
+              (las-to-pas
+               (create-canonical-address-list
+                8
+                (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
+               :r (cpl x86) x86))
+             (all-translation-governing-addresses (strip-cars addr-lst) x86))
             (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+            (addr-byte-alistp addr-lst)
             (not (programmer-level-mode x86))
-            (not (page-structure-marking-mode x86))
             (x86p x86))
            (equal (page-dir-ptr-table-base-addr lin-addr (mv-nth 1 (wb addr-lst x86)))
                   (page-dir-ptr-table-base-addr lin-addr x86)))
@@ -221,23 +261,12 @@
 
 (defun rewire_dst_to_src-clk () 58)
 
-;; (acl2::why x86-run-opener-not-ms-not-zp-n)
-;; (acl2::why x86-fetch-decode-execute-opener)
-;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
-;; (acl2::why ia32e-la-to-pa-values-and-mv-nth-1-wb)
-;; (acl2::why rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode)
-;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)
-;; (acl2::why program-at-wb-disjoint-in-system-level-non-marking-mode)
-;; (acl2::why rb-wb-disjoint-in-system-level-non-marking-mode)
-;; (acl2::why disjointness-of-translation-governing-addresses-from-all-translation-governing-addresses)
-;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
-
 (defthm rewire_dst_to_src-effects
   (implies (and
             (equal prog-len (len *rewire_dst_to_src*))
             (x86p x86)
             (not (programmer-level-mode x86))
-            (not (page-structure-marking-mode x86))
+            (page-structure-marking-mode x86)
             (not (alignment-checking-enabled-p x86))
 
             ;; CR3's reserved bits must be zero (MBZ).
@@ -1114,16 +1143,14 @@
                              !flgi-undefined
                              write-user-rflags
 
-                             rb-wb-equal-in-system-level-non-marking-mode
+                             rb-wb-equal-in-system-level-mode
 
                              pos member-p subset-p)
 
                             (member-p-strip-cars-of-remove-duplicate-keys
-                             wb-remove-duplicate-writes-in-system-level-non-marking-mode
                              las-to-pas
 
-                             mv-nth-1-ia32e-la-to-pa-when-error
-                             mv-nth-1-las-to-pas-when-error
+                             ;; (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
                              (:REWRITE
                               DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P)
@@ -1160,8 +1187,9 @@
                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX)
                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX)
                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX)
-                             (:REWRITE
-                              COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
+                             ;; (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             ;; (:REWRITE
+                             ;;  COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
                              (:DEFINITION MEMBER-P)
                              (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
                              (:TYPE-PRESCRIPTION ACL2::|x < y  =>  0 < -x+y|)
@@ -1276,8 +1304,8 @@
                              (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2)
                              (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
                              (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
+                             (:REWRITE
+                              MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
                              (:LINEAR MV-NTH-1-IDIV-SPEC)
                              (:LINEAR MV-NTH-1-DIV-SPEC)
                              (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-2)
@@ -1349,7 +1377,7 @@
                  (create-canonical-address-list 8 direct-mapped-addr)
                  r-w-x (cpl x86) x86))
                (addr-range 8 direct-mapped-addr))
-              (not (page-structure-marking-mode x86))
+              (page-structure-marking-mode x86)
               (not (programmer-level-mode x86))
               (x86p x86))
              (equal (combine-bytes
@@ -1407,7 +1435,7 @@
               (canonical-address-p lin-addr)
               (physical-address-p base-addr)
               (equal (loghead 12 base-addr) 0)
-              (not (page-structure-marking-mode x86))
+              (page-structure-marking-mode x86)
               (not (programmer-level-mode x86))
               (x86p x86))
              ;; ia32e-la-to-pa-page-dir-ptr-table returns the physical
@@ -1487,7 +1515,7 @@
               (physical-address-p base-addr)
               (equal (loghead 12 base-addr) 0)
               (not (programmer-level-mode x86))
-              (not (page-structure-marking-mode x86))
+              (page-structure-marking-mode x86)
               (x86p x86))
              ;; ia32e-la-to-pa-pml4-table returns the physical address
              ;; corresponding to "lin-addr" after the PDPTE
@@ -1564,7 +1592,7 @@
               (byte-listp bytes)
               (canonical-address-p lin-addr)
               (not (programmer-level-mode x86))
-              (not (page-structure-marking-mode x86))
+              (page-structure-marking-mode x86)
               (x86p x86))
              ;; ia32e-la-to-pa returns the physical address
              ;; corresponding to "lin-addr" after the PDPTE
@@ -1650,7 +1678,7 @@
     (equal (len addr-lst) 8)
     (canonical-address-p lin-addr)
     (not (programmer-level-mode x86))
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    ;; ia32e-la-to-pa returns the physical address
    ;; corresponding to "lin-addr" after the PDPTE
@@ -1754,7 +1782,7 @@
     (unsigned-byte-p 30 n)
     (physical-address-p page-dir-ptr-table-base-addr)
     (equal (loghead 12 page-dir-ptr-table-base-addr) 0)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 0
                   (ia32e-la-to-pa-page-dir-ptr-table
@@ -1806,7 +1834,7 @@
     (unsigned-byte-p 30 n)
     (physical-address-p pml4-table-base-addr)
     (equal (loghead 12 pml4-table-base-addr) 0)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 0
                   (ia32e-la-to-pa-pml4-table
@@ -1852,7 +1880,7 @@
     (canonical-address-p (+ n lin-addr))
     (equal (loghead 30 (+ n lin-addr)) n)
     (unsigned-byte-p 30 n)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 0 (ia32e-la-to-pa (+ n lin-addr) r-w-x cpl x86))
           nil))
@@ -1943,7 +1971,7 @@
     (<= m *2^30*)
     (natp iteration)
     (equal (loghead 30 lin-addr) 0)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 0 (las-to-pas
                      (create-canonical-address-list-alt iteration m lin-addr)
@@ -1955,8 +1983,7 @@
                              mv-nth-0-ia32e-la-to-pa-for-same-1G-page
                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
-                             ;; open-mv-nth-0-las-to-pas
-                             )
+                             open-mv-nth-0-las-to-pas)
                             (not
                              pml4-table-base-addr
                              pml4-table-entry-addr
@@ -1998,7 +2025,7 @@
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 0 (las-to-pas (create-canonical-address-list *2^30* lin-addr)
                                 r-w-x cpl x86))
@@ -2009,7 +2036,7 @@
                             (m *2^30*)))
            :in-theory (e/d* (create-canonical-address-list-alt-is-create-canonical-address-list)
                             (las-to-pas
-                             ;; open-mv-nth-0-las-to-pas
+                             open-mv-nth-0-las-to-pas
                              mv-nth-0-ia32e-la-to-pa-for-same-1G-page
                              not
                              pml4-table-base-addr
@@ -2045,7 +2072,7 @@
     (unsigned-byte-p 30 n)
     (physical-address-p page-dir-ptr-table-base-addr)
     (equal (loghead 12 page-dir-ptr-table-base-addr) 0)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 1
                   (ia32e-la-to-pa-page-dir-ptr-table
@@ -2104,7 +2131,7 @@
     (unsigned-byte-p 30 n)
     (physical-address-p pml4-table-base-addr)
     (equal (loghead 12 pml4-table-base-addr) 0)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 1
                   (ia32e-la-to-pa-pml4-table
@@ -2158,7 +2185,7 @@
     (canonical-address-p (+ n lin-addr))
     (equal (loghead 30 (+ n lin-addr)) n)
     (unsigned-byte-p 30 n)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 1 (ia32e-la-to-pa (+ n lin-addr) r-w-x cpl x86))
           (+ n
@@ -2226,7 +2253,7 @@
     (<= m *2^30*)
     (natp iteration)
     (equal (loghead 30 lin-addr) 0)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 1 (las-to-pas
                      (create-canonical-address-list-alt iteration m lin-addr)
@@ -2248,7 +2275,7 @@
                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
                              open-mv-nth-0-las-to-pas-for-same-1G-page-general
-                             ;; open-mv-nth-1-las-to-pas
+                             open-mv-nth-1-las-to-pas
                              mv-nth-1-ia32e-la-to-pa-for-same-1G-page)
                             (not
                              pml4-table-base-addr
@@ -2297,7 +2324,7 @@
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (equal (mv-nth 1 (las-to-pas
                      (create-canonical-address-list *2^30* lin-addr)
@@ -2319,7 +2346,7 @@
            :in-theory (e/d* (create-canonical-address-list-alt-is-create-canonical-address-list)
                             (open-mv-nth-1-las-to-pas-for-same-1G-page-general-2
                              las-to-pas
-                             ;; open-mv-nth-0-las-to-pas
+                             open-mv-nth-0-las-to-pas
                              mv-nth-0-ia32e-la-to-pa-for-same-1G-page
                              not
                              pml4-table-base-addr
@@ -2392,7 +2419,7 @@
     (natp iteration)
     (equal (loghead 30 lin-addr) 0)
     (not (programmer-level-mode x86))
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    ;; las-to-pas returns the physical addresses corresponding to
    ;; linear addresses after the PDPTE corresponding to these linear
@@ -2422,8 +2449,7 @@
                              open-mv-nth-0-las-to-pas-for-same-1G-page-general
                              mv-nth-0-ia32e-la-to-pa-for-same-1G-page
                              mv-nth-1-ia32e-la-to-pa-for-same-1G-page
-                             ;; open-mv-nth-1-las-to-pas
-                             )
+                             open-mv-nth-1-las-to-pas)
                             (commutativity-of-+
                              member-p-strip-cars-of-remove-duplicate-keys
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
@@ -2434,10 +2460,10 @@
                              (:REWRITE XR-IA32E-LA-TO-PA)
                              (:REWRITE xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
-                             ;; (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE X86P-MV-NTH-2-IA32E-LA-TO-PA)
                              (:REWRITE WB-REMOVE-DUPLICATE-WRITES-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-                             ;; (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-VALUE-OF-ADDRESS-WHEN-ERROR)
                              (:REWRITE ACL2::LOGHEAD-IDENTITY)
                              (:REWRITE MV-NTH-2-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE)
@@ -2454,8 +2480,8 @@
                              (:REWRITE ACL2::ZIP-OPEN)
                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
                              (:DEFINITION CREATE-CANONICAL-ADDRESS-LIST)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-0-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
+                             (:REWRITE
+                              MV-NTH-0-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
                              (:DEFINITION COMBINE-BYTES)
                              (:REWRITE LOGHEAD-UNEQUAL)
                              (:REWRITE DEFAULT-+-2)
@@ -2490,9 +2516,9 @@
                              (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
                              (:LINEAR SIZE-OF-COMBINE-BYTES)
                              (:REWRITE CDR-STRIP-CARS-IS-STRIP-CARS-CDR)
-                             ;; (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-LAS-TO-PAS-WHEN-NO-ERRORS)
+                             (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-LAS-TO-PAS-WHEN-NO-ERRORS)
                              (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-                             ;; (:REWRITE LAS-TO-PAS-SUBSET-P-WITH-L-ADDRS-FROM-BIND-FREE)
+                             (:REWRITE LAS-TO-PAS-SUBSET-P-WITH-L-ADDRS-FROM-BIND-FREE)
                              (:REWRITE WB-NOT-CONSP-ADDR-LST)
                              (:TYPE-PRESCRIPTION ALL-TRANSLATION-GOVERNING-ADDRESSES)
                              (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER)
@@ -2516,8 +2542,8 @@
                              (:TYPE-PRESCRIPTION ZIP)
                              (:REWRITE NOT-MEMBER-P-ADDR-RANGE)
                              (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
-                             ;; (:REWRITE la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
-                             ;; (:REWRITE ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
+                             (:REWRITE la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
+                             (:REWRITE ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
                              (:TYPE-PRESCRIPTION IFIX)
                              (:REWRITE DEFAULT-<-1)
                              (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-0)
@@ -2608,7 +2634,7 @@
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
     (not (programmer-level-mode x86))
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    ;; las-to-pas returns the physical addresses corresponding to
    ;; linear addresses after the PDPTE corresponding to these linear
@@ -2700,7 +2726,7 @@
       ;; 1G-aligned linear address
       (equal (loghead 30 lin-addr) 0)
       (not (programmer-level-mode x86))
-      (not (page-structure-marking-mode x86))
+      (page-structure-marking-mode x86)
       (x86p x86))
      (equal (read-from-physical-memory
              (addr-range *2^30* (ash (loghead 22 (logtail 30 value)) 30))
@@ -2727,10 +2753,10 @@
                              (:REWRITE XR-IA32E-LA-TO-PA)
                              (:REWRITE xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
-                             ;; (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE X86P-MV-NTH-2-IA32E-LA-TO-PA)
                              (:REWRITE WB-REMOVE-DUPLICATE-WRITES-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-                             ;; (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-VALUE-OF-ADDRESS-WHEN-ERROR)
                              (:REWRITE ACL2::LOGHEAD-IDENTITY)
                              (:REWRITE WB-RETURNS-X86P)
@@ -2746,8 +2772,8 @@
                              (:REWRITE ACL2::ZIP-OPEN)
                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
                              (:DEFINITION CREATE-CANONICAL-ADDRESS-LIST)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-0-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
+                             (:REWRITE
+                              MV-NTH-0-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
                              (:DEFINITION COMBINE-BYTES)
                              (:REWRITE LOGHEAD-UNEQUAL)
                              (:REWRITE DEFAULT-+-2)
@@ -2782,9 +2808,9 @@
                              (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
                              (:LINEAR SIZE-OF-COMBINE-BYTES)
                              (:REWRITE CDR-STRIP-CARS-IS-STRIP-CARS-CDR)
-                             ;; (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-LAS-TO-PAS-WHEN-NO-ERRORS)
+                             (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-LAS-TO-PAS-WHEN-NO-ERRORS)
                              (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-                             ;; (:REWRITE LAS-TO-PAS-SUBSET-P-WITH-L-ADDRS-FROM-BIND-FREE)
+                             (:REWRITE LAS-TO-PAS-SUBSET-P-WITH-L-ADDRS-FROM-BIND-FREE)
                              (:REWRITE WB-NOT-CONSP-ADDR-LST)
                              (:TYPE-PRESCRIPTION ALL-TRANSLATION-GOVERNING-ADDRESSES)
                              (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER)
@@ -2808,8 +2834,8 @@
                              (:TYPE-PRESCRIPTION ZIP)
                              (:REWRITE NOT-MEMBER-P-ADDR-RANGE)
                              (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
-                             ;; (:REWRITE la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
-                             ;; (:REWRITE ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
+                             (:REWRITE la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
+                             (:REWRITE ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
                              (:TYPE-PRESCRIPTION IFIX)
                              (:REWRITE DEFAULT-<-1)
                              (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-0)
@@ -2908,7 +2934,7 @@
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
     (not (programmer-level-mode x86))
-    (not (page-structure-marking-mode x86))
+    (page-structure-marking-mode x86)
     (x86p x86))
    (and (equal (mv-nth 0 (rb (create-canonical-address-list *2^30* lin-addr)
                              r-w-x (mv-nth 1 (wb addr-lst x86)))) nil)
@@ -2958,7 +2984,7 @@
 
 (defthm rb-of-1G-in-terms-of-read-from-physical-memory
   (implies (and (not (programmer-level-mode x86))
-                (not (page-structure-marking-mode x86)))
+                (page-structure-marking-mode x86))
            (equal
             (mv-nth 1 (rb (create-canonical-address-list
                            *2^30* (xr :rgf *rdi* x86)) :r x86))
@@ -3002,7 +3028,7 @@
             (equal prog-len (len *rewire_dst_to_src*))
             (x86p x86)
             (not (programmer-level-mode x86))
-            (not (page-structure-marking-mode x86))
+            (page-structure-marking-mode x86)
             (not (alignment-checking-enabled-p x86))
 
             ;; CR3's reserved bits must be zero (MBZ).
@@ -3298,7 +3324,7 @@
                              wb-remove-duplicate-writes-in-system-level-non-marking-mode
                              las-to-pas
 
-                             ;; (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
                              (:REWRITE
                               DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P)
@@ -3335,7 +3361,7 @@
                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX)
                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX)
                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX)
-                             ;; (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE
                               COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
                              (:DEFINITION MEMBER-P)
@@ -3452,8 +3478,8 @@
                              (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2)
                              (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
                              (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
+                             (:REWRITE
+                              MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
                              (:LINEAR MV-NTH-1-IDIV-SPEC)
                              (:LINEAR MV-NTH-1-DIV-SPEC)
                              (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-2)
@@ -3493,7 +3519,7 @@
             (equal prog-len (len *rewire_dst_to_src*))
             (x86p x86)
             (not (programmer-level-mode x86))
-            (not (page-structure-marking-mode x86))
+            (page-structure-marking-mode x86)
             (not (alignment-checking-enabled-p x86))
 
             ;; CR3's reserved bits must be zero (MBZ).
@@ -4150,7 +4176,7 @@
                              wb-remove-duplicate-writes-in-system-level-non-marking-mode
                              las-to-pas
 
-                             ;; (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
                              (:REWRITE
                               DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P)
@@ -4187,7 +4213,7 @@
                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX)
                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX)
                              (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX)
-                             ;; (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
+                             (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
                              (:REWRITE
                               COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
                              (:DEFINITION MEMBER-P)
@@ -4304,8 +4330,8 @@
                              (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2)
                              (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
                              (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
+                             (:REWRITE
+                              MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
                              (:LINEAR MV-NTH-1-IDIV-SPEC)
                              (:LINEAR MV-NTH-1-DIV-SPEC)
                              (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-2)
