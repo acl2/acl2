@@ -1474,7 +1474,7 @@ accesses.</p>
 
                (x86
                 (if (page-structure-marking-mode x86)
-                    ;; Mark A and D bits.
+                    ;; Mark A bit.
                     (b* (
                          ;; Get accessed bit.  Dirty bit is ignored when PDE
                          ;; references the PT.
@@ -1765,7 +1765,7 @@ accesses.</p>
 
                (x86
                 (if (page-structure-marking-mode x86)
-                    ;; Mark A and D bits.
+                    ;; Mark A bit.
                     (b* (
                          ;; Get accessed bit. Dirty bit is ignored when PDPTE
                          ;; references the PD.
@@ -1985,8 +1985,7 @@ accesses.</p>
 
            (x86
             (if (page-structure-marking-mode x86)
-                ;; Mark A and D bits.
-
+                ;; Mark A bit.
                 (b* (
                      ;; Get accessed bit. Dirty bit is ignored when PDPTE
                      ;; references the PDPT.

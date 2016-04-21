@@ -116,8 +116,6 @@
 
 ;; ======================================================================
 
-;; For use in normalize-memory-accesses.lisp:
-
 (def-gl-export rm32-rb-system-level-mode-proof-helper
   :hyp (and (n08p a)
             (n08p b)
@@ -152,5 +150,49 @@
   (gl::auto-bindings
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+
+(def-gl-export rm-low-64-and-write-to-physical-memory-equal-helper-2
+  :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+            (n08p e) (n08p f) (n08p g) (n08p h))
+  :concl (equal
+          (logior (ash b 8)
+                  (ash (logior (ash d 8)
+                               c)
+                       16)
+                  (ash (logior (ash f 8)
+                               (ash (logior (ash h 8)
+                                            g)
+                                    16)
+                               e)
+                       32)
+                  a)
+          (logior
+           a
+           (ash
+            (logior
+             b
+             (ash
+              (logior
+               c
+               (ash
+                (logior
+                 d
+                 (ash
+                  (logior e
+                          (ash (logior f
+                                       (ash (logior g
+                                                    (ash h 8))
+                                            8))
+                               8))
+                  8))
+                8))
+              8))
+            8)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+         (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+
+(in-theory (e/d () (rm-low-64-and-write-to-physical-memory-equal-helper-2)))
 
 ;; ======================================================================

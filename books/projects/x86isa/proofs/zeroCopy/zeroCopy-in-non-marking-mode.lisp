@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../utilities/system-level-mode/system-level-memory-utils")
+(include-book "../utilities/system-level-mode/non-marking-mode-utils")
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))

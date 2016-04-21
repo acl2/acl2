@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 (include-book "physical-memory-utils")
-(include-book "paging-lib/paging-top")
+(include-book "paging-lib/translation-governing-addresses")
 (include-book "gl-lemmas")
 (include-book "clause-processors/find-subterms" :dir :system)
 
@@ -179,12 +179,6 @@
 
 ;; Normalizing memory writes:
 
-(defthm xr-mem-write-to-physical-memory-disjoint
-  (implies (not (member-p index p-addrs))
-           (equal (xr :mem index (write-to-physical-memory p-addrs bytes x86))
-                  (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (member-p) (force (force))))))
-
 (defthm wm08-to-wb
   (implies (and (force (canonical-address-p lin-addr))
                 (force (unsigned-byte-p 8 byte)))
@@ -247,961 +241,6 @@
            (equal (mv-nth 0 (wb addr-lst x86))
                   (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
   :hints (("Goal" :in-theory (e/d* (wb) (force (force))))))
-
-;; ======================================================================
-
-;; Defining translation-governing-addresses of linear addresses:
-
-(defthm |(logand -4096 base-addr) = base-addr when low 12 bits are 0|
-  (implies (and (equal (loghead 12 base-addr) 0)
-                (physical-address-p base-addr))
-           (equal (logand -4096 base-addr) base-addr))
-  :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
-                                    bitops::ihsext-inductions)
-                                   (bitops::logand-with-negated-bitmask)))))
-
-(define translation-governing-addresses-for-page-table
-  ((lin-addr             :type (signed-byte   #.*max-linear-address-size*))
-   (page-table-base-addr :type (unsigned-byte #.*physical-address-size*))
-   (x86))
-  :guard (and (not (programmer-level-mode x86))
-              (canonical-address-p lin-addr)
-              (equal (loghead 12 page-table-base-addr) 0))
-  :ignore-ok t
-
-  (b* ((page-table-entry-addr
-        (page-table-entry-addr lin-addr page-table-base-addr)))
-    ;; 4K pages
-    (addr-range 8 page-table-entry-addr))
-
-  ///
-
-  (defthm translation-governing-addresses-for-page-table-and-xlate-equiv-memory
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (equal (translation-governing-addresses-for-page-table lin-addr base-addr x86-1)
-                    (translation-governing-addresses-for-page-table lin-addr base-addr x86-2)))
-    :rule-classes :congruence)
-
-  (defthm translation-governing-addresses-for-page-table-and-xw
-    (equal (translation-governing-addresses-for-page-table lin-addr base-addr (xw fld index value x86))
-           (translation-governing-addresses-for-page-table lin-addr base-addr x86)))
-
-  (defthm ia32e-la-to-pa-page-table-values-and-xw-mem-not-member
-    (implies (and
-              ;; (disjoint-p
-              ;;  (addr-range 1 index)
-              ;;  (translation-governing-addresses-for-page-table lin-addr base-addr x86))
-              (not
-               (member-p
-                index
-                (translation-governing-addresses-for-page-table lin-addr base-addr x86)))
-              (integerp index)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (canonical-address-p lin-addr))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa-page-table
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 0 (ia32e-la-to-pa-page-table
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-                  (equal (mv-nth 1 (ia32e-la-to-pa-page-table
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 1 (ia32e-la-to-pa-page-table
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-table disjoint-p member-p)
-                                     (bitops::logand-with-negated-bitmask
-                                      negative-logand-to-positive-logand-with-integerp-x))))))
-
-(define translation-governing-addresses-for-page-directory
-  ((lin-addr                 :type (signed-byte   #.*max-linear-address-size*))
-   (page-directory-base-addr :type (unsigned-byte #.*physical-address-size*))
-   (x86))
-  :guard (and (not (programmer-level-mode x86))
-              (canonical-address-p lin-addr)
-              (equal (loghead 12 page-directory-base-addr) 0))
-  :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
-                                         (translation-governing-addresses-for-page-table
-                                          unsigned-byte-p
-                                          signed-byte-p
-                                          acl2::commutativity-of-logior))))
-
-  (b* (
-       ;; 2M pages:
-       (page-directory-entry-addr
-        (page-directory-entry-addr lin-addr page-directory-base-addr))
-       (page-directory-entry (rm-low-64 page-directory-entry-addr x86))
-
-       (pde-ps? (equal (page-size page-directory-entry) 1))
-       ((when pde-ps?)
-        (addr-range 8 page-directory-entry-addr))
-
-       ;; 4K pages:
-       (page-table-base-addr
-        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry) 12))
-       (page-table-addresses
-        (translation-governing-addresses-for-page-table
-         lin-addr page-table-base-addr x86)))
-
-    (append
-     (addr-range 8 page-directory-entry-addr) page-table-addresses))
-
-  ///
-
-  (defthm translation-governing-addresses-for-page-directory-and-xlate-equiv-memory
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (equal (translation-governing-addresses-for-page-directory lin-addr base-addr x86-1)
-                    (translation-governing-addresses-for-page-directory lin-addr base-addr x86-2)))
-    :hints (("Goal" :in-theory (e/d* () (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-directory-entry-addr))
-             :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-directory-entry-addr)
-                   (:instance xlate-equiv-entries-and-page-size
-                              (e-1 (rm-low-64 (page-directory-entry-addr lin-addr base-addr) x86-1))
-                              (e-2 (rm-low-64 (page-directory-entry-addr lin-addr base-addr) x86-2))))))
-    :rule-classes :congruence)
-
-  (defthm translation-governing-addresses-for-page-directory-and-xw-not-mem
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (equal (translation-governing-addresses-for-page-directory lin-addr base-addr (xw fld index value x86))
-                    (translation-governing-addresses-for-page-directory lin-addr base-addr x86)))
-    :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses-for-page-table)))))
-
-  (defthm translation-governing-addresses-for-page-directory-and-xw-mem-not-member
-    (implies (and
-              (not (member-p index (translation-governing-addresses-for-page-directory lin-addr base-addr x86)))
-              ;; (not (member-p index (addr-range 8 (page-directory-entry-addr lin-addr base-addr))))
-              (integerp index))
-             (equal (translation-governing-addresses-for-page-directory lin-addr base-addr (xw :mem index value x86))
-                    (translation-governing-addresses-for-page-directory lin-addr base-addr x86)))
-    :hints (("Goal" :in-theory (e/d* (page-size disjoint-p member-p) (translation-governing-addresses-for-page-table)))))
-
-  (defthm ia32e-la-to-pa-page-directory-values-and-xw-mem-not-member
-    (implies (and
-              (not (member-p
-                    index
-                    (translation-governing-addresses-for-page-directory lin-addr base-addr x86)))
-              (integerp index)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (canonical-address-p lin-addr))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa-page-directory
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 0 (ia32e-la-to-pa-page-directory
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-                  (equal (mv-nth 1 (ia32e-la-to-pa-page-directory
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 1 (ia32e-la-to-pa-page-directory
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory member-p disjoint-p)
-                                     (bitops::logand-with-negated-bitmask
-                                      negative-logand-to-positive-logand-with-integerp-x
-                                      force (force)))))))
-
-(define translation-governing-addresses-for-page-dir-ptr-table
-  ((lin-addr                 :type (signed-byte   #.*max-linear-address-size*))
-   (ptr-table-base-addr :type (unsigned-byte #.*physical-address-size*))
-   (x86))
-  :guard (and (not (programmer-level-mode x86))
-              (canonical-address-p lin-addr)
-              (equal (loghead 12 ptr-table-base-addr) 0))
-  :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
-                                         (translation-governing-addresses-for-page-directory
-                                          unsigned-byte-p
-                                          signed-byte-p
-                                          acl2::commutativity-of-logior))))
-
-  (b* ((page-dir-ptr-table-entry-addr
-        (page-dir-ptr-table-entry-addr lin-addr ptr-table-base-addr))
-       (page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
-
-       (pdpte-ps? (equal (page-size page-dir-ptr-table-entry) 1))
-
-       ;; 1G pages:
-       ((when pdpte-ps?)
-        (addr-range 8 page-dir-ptr-table-entry-addr))
-
-       ;; 2M or 4K pages:
-
-       (page-directory-base-addr (ash (ia32e-pdpte-pg-dir-slice :pdpte-pd page-dir-ptr-table-entry) 12))
-       (page-directory-addresses
-        (translation-governing-addresses-for-page-directory
-         lin-addr page-directory-base-addr x86)))
-
-    (append (addr-range 8 page-dir-ptr-table-entry-addr) page-directory-addresses))
-
-  ///
-
-  (defthm translation-governing-addresses-for-page-dir-ptr-table-and-xlate-equiv-memory
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (equal (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr x86-1)
-                    (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr x86-2)))
-    :hints (("Goal" :in-theory (e/d* () (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-dir-ptr-table-entry-addr))
-             :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-dir-ptr-table-entry-addr)
-                   (:instance xlate-equiv-entries-and-page-size
-                              (e-1 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86-1))
-                              (e-2 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86-2))))))
-    :rule-classes :congruence)
-
-  (defthm translation-governing-addresses-for-page-dir-ptr-table-and-xw-not-mem
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (equal (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr (xw fld index value x86))
-                    (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr x86)))
-    :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses-for-page-table)))))
-
-  (defthm translation-governing-addresses-for-page-dir-ptr-table-and-xw-mem-not-member
-    (implies (and (not (member-p index (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr x86)))
-                  ;; (not (member-p index (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr base-addr))))
-                  ;; (not (member-p index (addr-range 8 (page-directory-entry-addr
-                  ;;                                     lin-addr
-                  ;;                                     (ash (loghead 40
-                  ;;                                                   (logtail 12
-                  ;;                                                            (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86)))
-                  ;;                                          12)))))
-                  (integerp index))
-             (equal (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr (xw :mem index value x86))
-                    (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr x86)))
-    :hints (("Goal" :in-theory (e/d* (page-size disjoint-p member-p) (translation-governing-addresses-for-page-directory)))))
-
-  (defthm ia32e-la-to-pa-page-dir-ptr-table-values-and-xw-mem-not-member
-    (implies (and
-              (not
-               (member-p
-                index
-                (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr x86)))
-              (integerp index)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (canonical-address-p lin-addr))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-                  (equal (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
-                                    lin-addr
-                                    base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
-                                      member-p disjoint-p)
-                                     (bitops::logand-with-negated-bitmask
-                                      negative-logand-to-positive-logand-with-integerp-x
-                                      force (force)))))))
-
-(define translation-governing-addresses-for-pml4-table
-  ((lin-addr       :type (signed-byte   #.*max-linear-address-size*))
-   (pml4-base-addr :type (unsigned-byte #.*physical-address-size*))
-   (x86))
-
-  :guard (and (not (programmer-level-mode x86))
-              (canonical-address-p lin-addr)
-              (equal (loghead 12 pml4-base-addr) 0))
-  :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
-                                         (translation-governing-addresses-for-page-dir-ptr-table
-                                          unsigned-byte-p
-                                          signed-byte-p
-                                          acl2::commutativity-of-logior))))
-
-  (b* ((pml4-entry-addr
-        (pml4-table-entry-addr lin-addr pml4-base-addr))
-       (pml4-entry (rm-low-64 pml4-entry-addr x86))
-
-       ;; Page Directory Pointer Table:
-       (ptr-table-base-addr
-        (ash (ia32e-pml4e-slice :pml4e-pdpt pml4-entry) 12))
-
-       (ptr-table-addresses
-        (translation-governing-addresses-for-page-dir-ptr-table
-         lin-addr ptr-table-base-addr x86)))
-
-    (append (addr-range 8 pml4-entry-addr) ptr-table-addresses))
-
-  ///
-
-  (defthm translation-governing-addresses-for-pml4-table-and-xlate-equiv-memory
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (equal (translation-governing-addresses-for-pml4-table lin-addr base-addr x86-1)
-                    (translation-governing-addresses-for-pml4-table lin-addr base-addr x86-2)))
-    :hints (("Goal" :in-theory (e/d* () (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr))
-             :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr)
-                   (:instance xlate-equiv-entries-and-page-size
-                              (e-1 (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86-1))
-                              (e-2 (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86-2))))))
-    :rule-classes :congruence)
-
-  (defthm translation-governing-addresses-for-pml4-table-and-xw-not-mem
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (equal (translation-governing-addresses-for-pml4-table lin-addr base-addr (xw fld index value x86))
-                    (translation-governing-addresses-for-pml4-table lin-addr base-addr x86)))
-    :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses-for-page-table)))))
-
-  (defthm translation-governing-addresses-for-pml4-table-and-xw-mem-not-member
-    (implies (and
-              (not (member-p index (translation-governing-addresses-for-pml4-table lin-addr base-addr x86)))
-              (integerp index))
-             (equal (translation-governing-addresses-for-pml4-table lin-addr base-addr (xw :mem index value x86))
-                    (translation-governing-addresses-for-pml4-table lin-addr base-addr x86)))
-    :hints (("Goal" :in-theory (e/d* (page-size disjoint-p member-p) (translation-governing-addresses-for-page-dir-ptr-table)))))
-
-  (defthm ia32e-la-to-pa-pml4-table-values-and-xw-mem-not-member
-    (implies (and
-              (not
-               (member-p
-                index
-                (translation-governing-addresses-for-pml4-table lin-addr base-addr x86)))
-              (integerp index)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (canonical-address-p lin-addr))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa-pml4-table
-                                    lin-addr base-addr
-                                    wp smep smap ac nxe r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 0 (ia32e-la-to-pa-pml4-table
-                                    lin-addr base-addr
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-                  (equal (mv-nth 1 (ia32e-la-to-pa-pml4-table
-                                    lin-addr base-addr
-                                    wp smep smap ac nxe r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 1 (ia32e-la-to-pa-pml4-table
-                                    lin-addr base-addr
-                                    wp smep smap ac nxe r-w-x cpl x86)))))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-pml4-table
-                                      member-p disjoint-p)
-                                     (bitops::logand-with-negated-bitmask
-                                      negative-logand-to-positive-logand-with-integerp-x
-                                      force (force)))))))
-
-(define translation-governing-addresses
-  ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
-             "Canonical linear address to be mapped to a physical address")
-   (x86 "x86 state"))
-
-
-  :long "<p>@('translation-governing-addresses') returns a
-  @('true-listp') of physical addresses that govern the translation of
-  a linear address @('lin-addr') to its corresponding physical address
-  @('p-addr').  Addresses that can be a part of the
-  output (depending on the page configurations, i.e., 4K, 2M, or 1G
-  pages) include:</p>
-
-<ol>
-<li>The addresses of the relevant PML4 entry</li>
-
-<li>The addresses of the relevant PDPT entry</li>
-
-<li>The addresses of the relevant PD entry</li>
-
-<li>The addresses of the relevant PT entry</li>
-
-</ol>"
-
-  :guard (not (xr :programmer-level-mode 0 x86))
-  :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
-                                         (translation-governing-addresses-for-pml4-table
-                                          unsigned-byte-p
-                                          signed-byte-p
-                                          acl2::commutativity-of-logior))))
-
-  (if (mbt (not (programmer-level-mode x86)))
-      (b* ((cr3       (ctri *cr3* x86))
-           ;; PML4 Table:
-           (pml4-base-addr (ash (cr3-slice :cr3-pdb cr3) 12)))
-
-        (translation-governing-addresses-for-pml4-table
-         lin-addr pml4-base-addr x86))
-    nil)
-
-  ///
-
-  (defthm translation-governing-addresses-and-xlate-equiv-memory
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (equal (translation-governing-addresses lin-addr x86-1)
-                    (translation-governing-addresses lin-addr x86-2)))
-    :hints (("Goal" :use ((:instance xlate-equiv-memory-and-cr3))))
-    :rule-classes :congruence)
-
-  (defthm translation-governing-addresses-and-xw-not-mem
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :ctr))
-                  (not (equal fld :programmer-level-mode)))
-             (equal (translation-governing-addresses lin-addr (xw fld index value x86))
-                    (translation-governing-addresses lin-addr x86)))
-    :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses-for-pml4-table)))))
-
-  (defthm translation-governing-addresses-and-xw-mem-not-member
-    (implies (and (not (member-p index (translation-governing-addresses lin-addr x86)))
-                  (integerp index))
-             (equal (translation-governing-addresses lin-addr (xw :mem index value x86))
-                    (translation-governing-addresses lin-addr x86)))
-    :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses-for-pml4-table)))))
-
-  (defthm ia32e-la-to-pa-values-and-xw-mem-not-member
-    (implies (and (not (member-p index (translation-governing-addresses lin-addr x86)))
-                  (integerp index)
-                  (canonical-address-p lin-addr))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (translation-governing-addresses-for-pml4-table)))))
-
-  (defthm translation-governing-addresses-and-!flgi
-    (equal (translation-governing-addresses lin-addr (!flgi index value x86))
-           (translation-governing-addresses lin-addr x86))
-    :hints (("Goal" :in-theory (e/d* (!flgi) (translation-governing-addresses force (force))))))
-
-  (defthm translation-governing-addresses-and-!flgi-undefined
-    (equal (translation-governing-addresses lin-addr (!flgi-undefined index x86))
-           (translation-governing-addresses lin-addr x86))
-    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (translation-governing-addresses force (force))))))
-
-  (defthm translation-governing-addresses-and-write-to-physical-memory-disjoint
-    (implies (and (disjoint-p (translation-governing-addresses lin-addr x86) p-addrs)
-                  (physical-address-listp p-addrs))
-             (equal (translation-governing-addresses lin-addr (write-to-physical-memory p-addrs bytes x86))
-                    (translation-governing-addresses lin-addr x86)))
-    :hints (("Goal" :induct (write-to-physical-memory p-addrs bytes x86)
-             :in-theory (e/d* (disjoint-p disjoint-p-commutative) (translation-governing-addresses))))))
-
-(define all-translation-governing-addresses
-  ((l-addrs canonical-address-listp)
-   x86)
-  :guard (not (xr :programmer-level-mode 0 x86))
-  :enabled t
-  (if (endp l-addrs)
-      nil
-    (append (translation-governing-addresses (car l-addrs) x86)
-            (all-translation-governing-addresses (cdr l-addrs)  x86)))
-  ///
-
-  (defthm all-translation-governing-addresses-and-xlate-equiv-memory
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (equal (all-translation-governing-addresses lin-addr x86-1)
-                    (all-translation-governing-addresses lin-addr x86-2)))
-    :rule-classes :congruence)
-
-  (defthm all-translation-governing-addresses-and-xw-not-mem
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :ctr))
-                  (not (equal fld :programmer-level-mode)))
-             (equal (all-translation-governing-addresses l-addrs (xw fld index value x86))
-                    (all-translation-governing-addresses l-addrs x86)))
-    :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses)))))
-
-  (defthm all-translation-governing-addresses-and-xw-mem-not-member
-    (implies (and (not (member-p index (all-translation-governing-addresses l-addrs x86)))
-                  (integerp index))
-             (equal (all-translation-governing-addresses l-addrs (xw :mem index value x86))
-                    (all-translation-governing-addresses l-addrs x86)))
-    :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses)))))
-
-  (defthm all-translation-governing-addresses-and-!flgi
-    (equal (all-translation-governing-addresses l-addrs (!flgi index value x86))
-           (all-translation-governing-addresses l-addrs x86))
-    :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses force (force))))))
-
-  (defthm all-translation-governing-addresses-and-!flgi-undefined
-    (equal (all-translation-governing-addresses l-addrs (!flgi-undefined index x86))
-           (all-translation-governing-addresses l-addrs x86))
-    :hints (("Goal" :in-theory (e/d* () (translation-governing-addresses force (force)))))))
-
-;; ----------------------------------------------------------------------
-
-;; Proof of
-;; all-translation-governing-addresses-and-mv-nth-1-wb-disjoint and
-;; translation-governing-addresses-and-mv-nth-1-wb-disjoint-p:
-
-(defthm xr-mem-disjoint-ia32e-la-to-pa-page-table-in-marking-mode
-  (implies (and (disjoint-p (list index)
-                            (translation-governing-addresses-for-page-table
-                             lin-addr base-addr x86))
-                (canonical-address-p lin-addr)
-                (physical-address-p base-addr)
-                (equal (loghead 12 base-addr) 0))
-           (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-table
-                                            lin-addr
-                                            base-addr u/s-acc r/w-acc x/d-acc
-                                            wp smep smap ac nxe r-w-x cpl x86)))
-                  (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-table
-                                    translation-governing-addresses-for-page-table)
-                                   (negative-logand-to-positive-logand-with-integerp-x
-                                    bitops::logand-with-negated-bitmask)))))
-
-(defthm xr-mem-disjoint-ia32e-la-to-pa-page-directory-in-marking-mode
-  (implies (and (disjoint-p (list index)
-                            (translation-governing-addresses-for-page-directory
-                             lin-addr base-addr x86))
-                (canonical-address-p lin-addr)
-                (physical-address-p base-addr)
-                (equal (loghead 12 base-addr) 0))
-           (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-directory
-                                            lin-addr
-                                            base-addr u/s-acc r/w-acc x/d-acc
-                                            wp smep smap ac nxe r-w-x cpl x86)))
-                  (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory
-                                    translation-governing-addresses-for-page-directory)
-                                   (negative-logand-to-positive-logand-with-integerp-x
-                                    bitops::logand-with-negated-bitmask)))))
-
-(defthm xr-mem-disjoint-ia32e-la-to-pa-page-dir-ptr-table-in-marking-mode
-  (implies (and (disjoint-p (list index)
-                            (translation-governing-addresses-for-page-dir-ptr-table
-                             lin-addr base-addr x86))
-                (canonical-address-p lin-addr)
-                (physical-address-p base-addr)
-                (equal (loghead 12 base-addr) 0))
-           (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
-                                            lin-addr
-                                            base-addr u/s-acc r/w-acc x/d-acc
-                                            wp smep smap ac nxe r-w-x cpl x86)))
-                  (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
-                                    translation-governing-addresses-for-page-dir-ptr-table)
-                                   (negative-logand-to-positive-logand-with-integerp-x
-                                    bitops::logand-with-negated-bitmask)))))
-
-(defthm xr-mem-disjoint-ia32e-la-to-pa-pml4-table-in-marking-mode
-  (implies (and (disjoint-p (list index)
-                            (translation-governing-addresses-for-pml4-table
-                             lin-addr base-addr x86))
-                (canonical-address-p lin-addr)
-                (physical-address-p base-addr)
-                (equal (loghead 12 base-addr) 0))
-           (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-pml4-table
-                                            lin-addr base-addr
-                                            wp smep smap ac nxe r-w-x cpl x86)))
-                  (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-pml4-table
-                                    translation-governing-addresses-for-pml4-table)
-                                   (negative-logand-to-positive-logand-with-integerp-x
-                                    bitops::logand-with-negated-bitmask)))))
-
-(defthm xr-mem-disjoint-ia32e-la-to-pa-in-marking-mode
-  (implies (and (disjoint-p (list index)
-                            (translation-governing-addresses lin-addr x86))
-                (canonical-address-p lin-addr))
-           (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
-                                    translation-governing-addresses)
-                                   (negative-logand-to-positive-logand-with-integerp-x
-                                    bitops::logand-with-negated-bitmask
-                                    force (force))))))
-
-(defthm rm-low-64-disjoint-ia32e-la-to-pa-in-marking-mode
-  (implies (and (disjoint-p (addr-range 8 index)
-                            (translation-governing-addresses lin-addr x86))
-                (canonical-address-p lin-addr))
-           (equal (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (rm-low-64 index x86)))
-  :hints (("Goal" :in-theory (e/d* (rm-low-64 rm-low-32 disjoint-p)
-                                   (translation-governing-addresses
-                                    negative-logand-to-positive-logand-with-integerp-x
-                                    bitops::logand-with-negated-bitmask
-                                    force (force))))))
-
-;; For the proof of rm-low-64-disjoint-las-to-pas-in-marking-mode-disjoint:
-
-;; (defthm translation-governing-addresses-for-page-table-and-mv-nth-2-ia32e-la-to-pa
-;;   (equal (translation-governing-addresses-for-page-table
-;;           lin-addr-1 base-addr-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86)))
-;;          (translation-governing-addresses-for-page-table
-;;           lin-addr-1 base-addr-1 x86))
-;;   :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-page-table) ()))))
-
-;; (defthm translation-governing-addresses-for-page-directory-and-mv-nth-2-ia32e-la-to-pa
-;;   (implies (x86p x86)
-;;            (equal (translation-governing-addresses-for-page-directory
-;;                    lin-addr-1 base-addr-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86)))
-;;                   (translation-governing-addresses-for-page-directory
-;;                    lin-addr-1 base-addr-1 x86)))
-;;   :hints (("Goal"
-;;            :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-directory-entry-addr
-;;                             (lin-addr lin-addr-1)
-;;                             (base-addr base-addr-1)
-;;                             (x86-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86)))
-;;                             (x86-2 x86))
-;;                  (:instance xlate-equiv-entries-and-page-size
-;;                             (e-1 (rm-low-64 (page-directory-entry-addr lin-addr-1 base-addr-1)
-;;                                             (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86))))
-;;                             (e-2 (rm-low-64 (page-directory-entry-addr lin-addr-1 base-addr-1)
-;;                                             x86))))
-;;            :in-theory (e/d* (translation-governing-addresses-for-page-directory
-;;                              translation-governing-addresses
-;;                              translation-governing-addresses-for-page-table
-;;                              translation-governing-addresses-for-page-dir-ptr-table
-;;                              translation-governing-addresses-for-pml4-table
-;;                              disjoint-p
-;;                              member-p)
-;;                             (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-directory-entry-addr)))))
-
-;; (defthm translation-governing-addresses-for-page-dir-ptr-table-and-mv-nth-2-ia32e-la-to-pa
-;;   (implies (x86p x86)
-;;            (equal (translation-governing-addresses-for-page-dir-ptr-table
-;;                    lin-addr-1 base-addr-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86)))
-;;                   (translation-governing-addresses-for-page-dir-ptr-table
-;;                    lin-addr-1 base-addr-1 x86)))
-;;   :hints (("Goal"
-;;            :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-dir-ptr-table-entry-addr
-;;                             (lin-addr lin-addr-1)
-;;                             (base-addr base-addr-1)
-;;                             (x86-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86)))
-;;                             (x86-2 x86))
-;;                  (:instance xlate-equiv-entries-and-page-size
-;;                             (e-1 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr-1 base-addr-1)
-;;                                             (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86))))
-;;                             (e-2 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr-1 base-addr-1)
-;;                                             x86))))
-;;            :in-theory (e/d* (translation-governing-addresses-for-page-dir-ptr-table
-;;                              translation-governing-addresses-for-pml4-table
-;;                              translation-governing-addresses
-;;                              disjoint-p
-;;                              member-p)
-;;                             (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-dir-ptr-table-entry-addr)))))
-
-;; (defthm translation-governing-addresses-for-pml4-table-and-mv-nth-2-ia32e-la-to-pa
-;;   (implies (x86p x86)
-;;            (equal (translation-governing-addresses-for-pml4-table
-;;                    lin-addr-1 base-addr-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86)))
-;;                   (translation-governing-addresses-for-pml4-table
-;;                    lin-addr-1 base-addr-1 x86)))
-;;   :hints (("Goal"
-;;            :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr
-;;                             (lin-addr lin-addr-1)
-;;                             (base-addr base-addr-1)
-;;                             (x86-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86)))
-;;                             (x86-2 x86))
-;;                  (:instance xlate-equiv-entries-and-page-size
-;;                             (e-1 (rm-low-64 (pml4-table-entry-addr lin-addr-1 base-addr-1)
-;;                                             (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86))))
-;;                             (e-2 (rm-low-64 (pml4-table-entry-addr lin-addr-1 base-addr-1)
-;;                                             x86))))
-;;            :in-theory (e/d* (translation-governing-addresses-for-pml4-table
-;;                              translation-governing-addresses
-;;                              disjoint-p
-;;                              member-p)
-;;                             (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr)))))
-
-;; (defthm translation-governing-addresses-and-mv-nth-2-ia32e-la-to-pa
-;;   (implies (x86p x86)
-;;            (equal (translation-governing-addresses
-;;                    lin-addr-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86)))
-;;                   (translation-governing-addresses
-;;                    lin-addr-1 x86)))
-;;   :hints (("Goal" :in-theory (e/d* (translation-governing-addresses) ()))))
-
-;; (defthm all-translation-governing-addresses-and-mv-nth-2-ia32e-la-to-pa
-;;   (implies (x86p x86)
-;;            (equal (all-translation-governing-addresses
-;;                    l-addrs-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x cpl x86)))
-;;                   (all-translation-governing-addresses
-;;                    l-addrs-1 x86)))
-;;   :hints (("Goal" :in-theory (e/d* (all-translation-governing-addresses) ()))))
-
-
-(defthm rm-low-64-disjoint-las-to-pas-in-marking-mode-disjoint
-  (implies (and (disjoint-p (addr-range 8 index)
-                            (all-translation-governing-addresses l-addrs x86))
-                (canonical-address-listp l-addrs)
-                (x86p x86))
-           (equal (rm-low-64 index (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                  (rm-low-64 index x86)))
-  :hints (("Goal" :induct (las-to-pas l-addrs r-w-x cpl x86)
-           :in-theory (e/d* (las-to-pas
-                             disjoint-p)
-                            (translation-governing-addresses
-                             negative-logand-to-positive-logand-with-integerp-x
-                             bitops::logand-with-negated-bitmask
-                             force (force))))))
-
-(defthm rm-low-64-and-write-to-physical-memory-disjoint
-  (implies (disjoint-p (addr-range 8 p-addr-1) p-addrs-2)
-           (equal (rm-low-64 p-addr-1 (write-to-physical-memory p-addrs-2 bytes x86))
-                  (rm-low-64 p-addr-1 x86)))
-  :hints (("Goal" :in-theory (e/d* (rm-low-64 rm-low-32 disjoint-p)
-                                   (force (force))))))
-
-;; ----------------------------------------------------------------------
-
-(defthm translation-governing-addresses-for-page-table-and-write-to-physical-memory
-  (equal (translation-governing-addresses-for-page-table
-          lin-addr page-table-base-addr
-          (write-to-physical-memory p-addrs bytes x86))
-         (translation-governing-addresses-for-page-table
-          lin-addr page-table-base-addr x86))
-  :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-page-table)
-                                   ()))))
-
-(defthm translation-governing-addresses-for-page-table-and-mv-nth-2-las-to-pas
-  (equal (translation-governing-addresses-for-page-table
-          lin-addr page-table-base-addr
-          (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-         (translation-governing-addresses-for-page-table
-          lin-addr page-table-base-addr x86))
-  :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-page-table)
-                                   ()))))
-
-(defthm translation-governing-addresses-for-page-table-and-mv-nth-1-wb
-  (equal (translation-governing-addresses-for-page-table
-          lin-addr page-table-base-addr
-          (mv-nth 1 (wb addr-lst x86)))
-         (translation-governing-addresses-for-page-table
-          lin-addr page-table-base-addr x86))
-  :hints (("Goal" :in-theory (e/d* (wb
-                                    translation-governing-addresses-for-page-table)
-                                   ()))))
-
-
-;; ----------------------------------------------------------------------
-
-(defthm translation-governing-addresses-for-page-directory-and-write-to-physical-memory-disjoint-p
-  (implies (disjoint-p (translation-governing-addresses-for-page-directory
-                        lin-addr page-directory-base-addr x86)
-                       p-addrs)
-           (equal (translation-governing-addresses-for-page-directory
-                   lin-addr page-directory-base-addr
-                   (write-to-physical-memory p-addrs bytes x86))
-                  (translation-governing-addresses-for-page-directory
-                   lin-addr page-directory-base-addr x86)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjoint-p
-                             translation-governing-addresses-for-page-directory)
-                            ()))))
-
-(defthm translation-governing-addresses-for-page-directory-and-mv-nth-2-las-to-pas
-  (implies (x86p x86)
-           (equal (translation-governing-addresses-for-page-directory
-                   lin-addr page-directory-base-addr
-                   (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                  (translation-governing-addresses-for-page-directory
-                   lin-addr page-directory-base-addr x86))))
-
-(defthm translation-governing-addresses-for-page-directory-and-mv-nth-1-wb-disjoint-p
-  (implies (and (disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr page-directory-base-addr x86)
-                 (all-translation-governing-addresses (strip-cars addr-lst) x86))
-                (disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr page-directory-base-addr x86)
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (addr-byte-alistp addr-lst)
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (translation-governing-addresses-for-page-directory
-                   lin-addr page-directory-base-addr
-                   (mv-nth 1 (wb addr-lst x86)))
-                  (translation-governing-addresses-for-page-directory
-                   lin-addr page-directory-base-addr x86)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjoint-p
-                             wb
-                             translation-governing-addresses-for-page-directory)
-                            ()))))
-
-;; ----------------------------------------------------------------------
-
-(defthm translation-governing-addresses-for-page-dir-ptr-table-and-write-to-physical-memory-disjoint-p
-  (implies (and (disjoint-p (translation-governing-addresses-for-page-dir-ptr-table
-                             lin-addr page-dir-ptr-table-base-addr x86)
-                            p-addrs)
-                (x86p x86))
-           (equal (translation-governing-addresses-for-page-dir-ptr-table
-                   lin-addr page-dir-ptr-table-base-addr
-                   (write-to-physical-memory p-addrs bytes x86))
-                  (translation-governing-addresses-for-page-dir-ptr-table
-                   lin-addr page-dir-ptr-table-base-addr x86)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjoint-p
-                             translation-governing-addresses-for-page-dir-ptr-table)
-                            ()))))
-
-(defthm translation-governing-addresses-for-page-dir-ptr-table-and-mv-nth-2-las-to-pas-disjoint-p
-  (implies (x86p x86)
-           (equal (translation-governing-addresses-for-page-dir-ptr-table
-                   lin-addr page-dir-ptr-table-base-addr
-                   (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                  (translation-governing-addresses-for-page-dir-ptr-table
-                   lin-addr page-dir-ptr-table-base-addr x86))))
-
-(defthm translation-governing-addresses-for-page-dir-ptr-table-and-mv-nth-1-wb-disjoint-p
-  (implies (and (disjoint-p
-                 (translation-governing-addresses-for-page-dir-ptr-table
-                  lin-addr page-dir-ptr-table-base-addr x86)
-                 (all-translation-governing-addresses (strip-cars addr-lst) x86))
-                (disjoint-p
-                 (translation-governing-addresses-for-page-dir-ptr-table
-                  lin-addr page-dir-ptr-table-base-addr x86)
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (addr-byte-alistp addr-lst)
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (translation-governing-addresses-for-page-dir-ptr-table
-                   lin-addr page-dir-ptr-table-base-addr
-                   (mv-nth 1 (wb addr-lst x86)))
-                  (translation-governing-addresses-for-page-dir-ptr-table
-                   lin-addr page-dir-ptr-table-base-addr x86)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjoint-p
-                             disjoint-p-commutative
-                             wb
-                             translation-governing-addresses-for-page-dir-ptr-table)
-                            ()))))
-
-;; ----------------------------------------------------------------------
-
-(defthm translation-governing-addresses-for-pml4-table-and-write-to-physical-memory-disjoint-p
-  (implies (and (disjoint-p (translation-governing-addresses-for-pml4-table
-                             lin-addr pml4-table-base-addr x86)
-                            p-addrs)
-                (x86p x86))
-           (equal (translation-governing-addresses-for-pml4-table
-                   lin-addr pml4-table-base-addr
-                   (write-to-physical-memory p-addrs bytes x86))
-                  (translation-governing-addresses-for-pml4-table
-                   lin-addr pml4-table-base-addr x86)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjoint-p
-                             disjoint-p-commutative
-                             translation-governing-addresses-for-pml4-table)
-                            ()))))
-
-(defthm translation-governing-addresses-for-pml4-table-and-mv-nth-2-las-to-pas-disjoint-p
-  (implies (x86p x86)
-           (equal (translation-governing-addresses-for-pml4-table
-                   lin-addr pml4-table-base-addr
-                   (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                  (translation-governing-addresses-for-pml4-table
-                   lin-addr pml4-table-base-addr x86))))
-
-(defthm translation-governing-addresses-for-pml4-table-and-mv-nth-1-wb-disjoint-p
-  (implies (and (disjoint-p
-                 (translation-governing-addresses-for-pml4-table
-                  lin-addr pml4-table-base-addr x86)
-                 (all-translation-governing-addresses (strip-cars addr-lst) x86))
-                (disjoint-p
-                 (translation-governing-addresses-for-pml4-table
-                  lin-addr pml4-table-base-addr x86)
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (not (programmer-level-mode x86))
-                (addr-byte-alistp addr-lst)
-                (x86p x86))
-           (equal (translation-governing-addresses-for-pml4-table
-                   lin-addr pml4-table-base-addr
-                   (mv-nth 1 (wb addr-lst x86)))
-                  (translation-governing-addresses-for-pml4-table
-                   lin-addr pml4-table-base-addr x86)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjoint-p
-                             wb
-                             translation-governing-addresses-for-pml4-table)
-                            (force (force))))))
-
-;; ----------------------------------------------------------------------
-
-(defthm translation-governing-addresses-and-write-to-physical-memory-disjoint-p
-  (implies (and (disjoint-p (translation-governing-addresses lin-addr x86)
-                            p-addrs)
-                (x86p x86))
-           (equal (translation-governing-addresses
-                   lin-addr (write-to-physical-memory p-addrs bytes x86))
-                  (translation-governing-addresses lin-addr x86)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjoint-p translation-governing-addresses) ()))))
-
-(defthm translation-governing-addresses-and-mv-nth-2-las-to-pas-disjoint-p
-  (implies (x86p x86)
-           (equal (translation-governing-addresses
-                   lin-addr (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                  (translation-governing-addresses lin-addr x86))))
-
-(defthm translation-governing-addresses-and-mv-nth-1-wb-disjoint-p
-  (implies (and
-            (disjoint-p (translation-governing-addresses lin-addr x86)
-                        (all-translation-governing-addresses (strip-cars addr-lst) x86))
-            (disjoint-p (translation-governing-addresses lin-addr x86)
-                        (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-            (not (programmer-level-mode x86))
-            (addr-byte-alistp addr-lst)
-            (x86p x86))
-           (equal (translation-governing-addresses lin-addr (mv-nth 1 (wb addr-lst x86)))
-                  (translation-governing-addresses lin-addr x86)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (disjoint-p
-                             translation-governing-addresses)
-                            (wb)))))
-
-(defthm all-translation-governing-addresses-and-write-to-physical-memory-disjoint-p
-  (implies (and (disjoint-p (all-translation-governing-addresses l-addrs x86)
-                            p-addrs)
-                (physical-address-listp p-addrs)
-                (byte-listp bytes)
-                (equal (len p-addrs) (len bytes)))
-           (equal (all-translation-governing-addresses
-                   l-addrs (write-to-physical-memory p-addrs bytes x86))
-                  (all-translation-governing-addresses l-addrs x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (disjoint-p
-                             disjoint-p-commutative
-                             all-translation-governing-addresses)
-                            ()))))
-
-(defthm all-translation-governing-addresses-and-mv-nth-2-las-to-pas
-  (implies (x86p x86)
-           (equal (all-translation-governing-addresses
-                   l-addrs-1 (mv-nth 2 (las-to-pas l-addrs-2 r-w-x cpl x86)))
-                  (all-translation-governing-addresses l-addrs-1 x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (disjoint-p all-translation-governing-addresses) ()))))
-
-(defthm all-translation-governing-addresses-and-mv-nth-1-wb-disjoint
-  (implies (and
-            (disjoint-p (all-translation-governing-addresses l-addrs x86)
-                        (all-translation-governing-addresses (strip-cars addr-lst) x86))
-            (disjoint-p (all-translation-governing-addresses l-addrs x86)
-                        (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-            (not (programmer-level-mode x86))
-            (addr-byte-alistp addr-lst)
-            (x86p x86))
-           (equal (all-translation-governing-addresses l-addrs (mv-nth 1 (wb addr-lst x86)))
-                  (all-translation-governing-addresses l-addrs x86)))
-  :hints (("Goal"
-           :in-theory (e/d* (all-translation-governing-addresses)
-                            (translation-governing-addresses
-                             wb))
-           :induct (all-translation-governing-addresses l-addrs x86))))
 
 ;; ======================================================================
 
@@ -1283,388 +322,390 @@
 
 ;; ----------------------------------------------------------------------
 
-;; Commuting two page walks:
+;; Commuting two page walks ...
 
-(defthm rm-low-64-and-paging-entry-no-page-fault-p
-  (equal (rm-low-64 index
-                    (mv-nth
-                     2
-                     (paging-entry-no-page-fault-p structure-type lin-addr
-                                                   entry u/s-acc r/w-acc x/d-acc wp smep
-                                                   smap ac nxe r-w-x cpl x86 ignored)))
-         (rm-low-64 index x86))
-  :hints (("Goal" :in-theory (e/d* (rm-low-64 rm-low-32) ()))))
+;; (defthm rm-low-64-and-paging-entry-no-page-fault-p
+;;   (equal (rm-low-64 index
+;;                     (mv-nth
+;;                      2
+;;                      (paging-entry-no-page-fault-p structure-type lin-addr
+;;                                                    entry u/s-acc r/w-acc x/d-acc wp smep
+;;                                                    smap ac nxe r-w-x cpl x86 ignored)))
+;;          (rm-low-64 index x86))
+;;   :hints (("Goal" :in-theory (e/d* (rm-low-64 rm-low-32) ()))))
 
-(defthm paging-entry-no-page-fault-p-and-wm-low-64-if-no-error
-  (implies (and (not (mv-nth
-                      0
-                      (paging-entry-no-page-fault-p
-                       structure-type lin-addr
-                       entry u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl x86 ignored)))
-                (x86p x86))
-           (equal (mv-nth
-                   2
-                   (paging-entry-no-page-fault-p
-                    structure-type lin-addr
-                    entry u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl
-                    (wm-low-64 index value x86)
-                    ignored))
-                  (wm-low-64 index value x86)))
-  :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p) ()))))
+;; (defthm paging-entry-no-page-fault-p-and-wm-low-64-if-no-error
+;;   (implies (and (not (mv-nth
+;;                       0
+;;                       (paging-entry-no-page-fault-p
+;;                        structure-type lin-addr
+;;                        entry u/s-acc r/w-acc x/d-acc
+;;                        wp smep smap ac nxe r-w-x cpl x86 ignored)))
+;;                 (x86p x86))
+;;            (equal (mv-nth
+;;                    2
+;;                    (paging-entry-no-page-fault-p
+;;                     structure-type lin-addr
+;;                     entry u/s-acc r/w-acc x/d-acc
+;;                     wp smep smap ac nxe r-w-x cpl
+;;                     (wm-low-64 index value x86)
+;;                     ignored))
+;;                   (wm-low-64 index value x86)))
+;;   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p) ()))))
 
-(defthm commute-two-paging-entry-no-page-fault-p
-  (implies (and (x86p x86)
-                (not (mv-nth
-                      0
-                      (paging-entry-no-page-fault-p
-                       structure-type-1 lin-addr-1
-                       entry-1
-                       u/s-acc-1
-                       r/w-acc-1 x/d-acc-1 wp-1 smep-1
-                       smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86 ignored-1)))
-                (not (mv-nth
-                      0
-                      (paging-entry-no-page-fault-p
-                       structure-type-2 lin-addr-2
-                       entry-2
-                       u/s-acc-2
-                       r/w-acc-2 x/d-acc-2 wp-2 smep-2
-                       smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86 ignored-2))))
-           (equal
-            (mv-nth
-             2
-             (paging-entry-no-page-fault-p
-              structure-type-1 lin-addr-1
-              entry-1
-              u/s-acc-1 r/w-acc-1 x/d-acc-1 wp-1
-              smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
-              (mv-nth
-               2
-               (paging-entry-no-page-fault-p
-                structure-type-2 lin-addr-2
-                entry-2
-                u/s-acc-2
-                r/w-acc-2 x/d-acc-2 wp-2 smep-2
-                smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86 ignored-2))
-              ignored-1))
-            (mv-nth
-             2
-             (paging-entry-no-page-fault-p
-              structure-type-2 lin-addr-2
-              entry-2
-              u/s-acc-2 r/w-acc-2 x/d-acc-2 wp-2
-              smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
-              (mv-nth
-               2
-               (paging-entry-no-page-fault-p
-                structure-type-1 lin-addr-1
-                entry-1
-                u/s-acc-1
-                r/w-acc-1 x/d-acc-1 wp-1 smep-1
-                smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86 ignored-1))
-              ignored-2))))
-  :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p)
-                                   ((:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-                                    (:REWRITE ACL2::LOGHEAD-IDENTITY)
-                                    (:TYPE-PRESCRIPTION N01P-PAGE-USER-SUPERVISOR)
-                                    (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK)
-                                    (:TYPE-PRESCRIPTION BOOLEANP)
-                                    (:TYPE-PRESCRIPTION N01P-PAGE-READ-WRITE)
-                                    (:TYPE-PRESCRIPTION N01P-PAGE-EXECUTE-DISABLE)
-                                    (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-                                    (:TYPE-PRESCRIPTION N01P-PAGE-PRESENT)
-                                    (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-                                    (:TYPE-PRESCRIPTION N01P-PAGE-SIZE)
-                                    (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
-                                    (:REWRITE WEED-OUT-IRRELEVANT-LOGAND-WHEN-FIRST-OPERAND-CONSTANT)
-                                    (:REWRITE NEGATIVE-LOGAND-TO-POSITIVE-LOGAND-WITH-INTEGERP-X)
-                                    (:REWRITE LOGAND-REDUNDANT)
-                                    (:REWRITE DEFAULT-<-1)
-                                    (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-                                    (:REWRITE ACL2::LOGTAIL-IDENTITY)
-                                    (:REWRITE DEFAULT-<-2)
-                                    (:REWRITE BITOPS::LOGHEAD-OF-LOGHEAD-2)
-                                    (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-                                    (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-                                    (:TYPE-PRESCRIPTION NATP)
-                                    (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
-                                    (:REWRITE ACL2::IFIX-NEGATIVE-TO-NEGP)
-                                    (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
-                                    (:LINEAR BITOPS::LOGAND-<-0-LINEAR)
-                                    (:REWRITE ACL2::NEGP-WHEN-LESS-THAN-0)
-                                    (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
-                                    (:TYPE-PRESCRIPTION NEGP)
-                                    (:REWRITE ACL2::NEGP-WHEN-INTEGERP))))))
+;; (defthm commute-two-paging-entry-no-page-fault-p
+;;   (implies (and (x86p x86)
+;;                 (not (mv-nth
+;;                       0
+;;                       (paging-entry-no-page-fault-p
+;;                        structure-type-1 lin-addr-1
+;;                        entry-1
+;;                        u/s-acc-1
+;;                        r/w-acc-1 x/d-acc-1 wp-1 smep-1
+;;                        smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86 ignored-1)))
+;;                 (not (mv-nth
+;;                       0
+;;                       (paging-entry-no-page-fault-p
+;;                        structure-type-2 lin-addr-2
+;;                        entry-2
+;;                        u/s-acc-2
+;;                        r/w-acc-2 x/d-acc-2 wp-2 smep-2
+;;                        smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86 ignored-2))))
+;;            (equal
+;;             (mv-nth
+;;              2
+;;              (paging-entry-no-page-fault-p
+;;               structure-type-1 lin-addr-1
+;;               entry-1
+;;               u/s-acc-1 r/w-acc-1 x/d-acc-1 wp-1
+;;               smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
+;;               (mv-nth
+;;                2
+;;                (paging-entry-no-page-fault-p
+;;                 structure-type-2 lin-addr-2
+;;                 entry-2
+;;                 u/s-acc-2
+;;                 r/w-acc-2 x/d-acc-2 wp-2 smep-2
+;;                 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86 ignored-2))
+;;               ignored-1))
+;;             (mv-nth
+;;              2
+;;              (paging-entry-no-page-fault-p
+;;               structure-type-2 lin-addr-2
+;;               entry-2
+;;               u/s-acc-2 r/w-acc-2 x/d-acc-2 wp-2
+;;               smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
+;;               (mv-nth
+;;                2
+;;                (paging-entry-no-page-fault-p
+;;                 structure-type-1 lin-addr-1
+;;                 entry-1
+;;                 u/s-acc-1
+;;                 r/w-acc-1 x/d-acc-1 wp-1 smep-1
+;;                 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86 ignored-1))
+;;               ignored-2))))
+;;   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p)
+;;                                    ((:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
+;;                                     (:REWRITE ACL2::LOGHEAD-IDENTITY)
+;;                                     (:TYPE-PRESCRIPTION N01P-PAGE-USER-SUPERVISOR)
+;;                                     (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK)
+;;                                     (:TYPE-PRESCRIPTION BOOLEANP)
+;;                                     (:TYPE-PRESCRIPTION N01P-PAGE-READ-WRITE)
+;;                                     (:TYPE-PRESCRIPTION N01P-PAGE-EXECUTE-DISABLE)
+;;                                     (:REWRITE LOGHEAD-OF-NON-INTEGERP)
+;;                                     (:TYPE-PRESCRIPTION N01P-PAGE-PRESENT)
+;;                                     (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
+;;                                     (:TYPE-PRESCRIPTION N01P-PAGE-SIZE)
+;;                                     (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
+;;                                     (:REWRITE WEED-OUT-IRRELEVANT-LOGAND-WHEN-FIRST-OPERAND-CONSTANT)
+;;                                     (:REWRITE NEGATIVE-LOGAND-TO-POSITIVE-LOGAND-WITH-INTEGERP-X)
+;;                                     (:REWRITE LOGAND-REDUNDANT)
+;;                                     (:REWRITE DEFAULT-<-1)
+;;                                     (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
+;;                                     (:REWRITE ACL2::LOGTAIL-IDENTITY)
+;;                                     (:REWRITE DEFAULT-<-2)
+;;                                     (:REWRITE BITOPS::LOGHEAD-OF-LOGHEAD-2)
+;;                                     (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
+;;                                     (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
+;;                                     (:TYPE-PRESCRIPTION NATP)
+;;                                     (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
+;;                                     (:REWRITE ACL2::IFIX-NEGATIVE-TO-NEGP)
+;;                                     (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
+;;                                     (:LINEAR BITOPS::LOGAND-<-0-LINEAR)
+;;                                     (:REWRITE ACL2::NEGP-WHEN-LESS-THAN-0)
+;;                                     (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
+;;                                     (:TYPE-PRESCRIPTION NEGP)
+;;                                     (:REWRITE ACL2::NEGP-WHEN-INTEGERP))))))
 
-(local
- (defthm mv-nth-0-paging-entry-no-page-fault-p-with-rm-low-64-and-wm-low-64-entries
-   ;; See mv-nth-0-paging-entry-no-page-fault-p-with-xlate-equiv-entries
-   (implies (and (xlate-equiv-entries (double-rewrite val) (rm-low-64 index-2 x86))
-                 (unsigned-byte-p 64 val)
-                 (member-p index-1 (gather-all-paging-structure-qword-addresses x86))
-                 (member-p index-2 (gather-all-paging-structure-qword-addresses x86)))
-            (equal (mv-nth
-                    0
-                    (paging-entry-no-page-fault-p
-                     structure-type lin-addr
-                     (rm-low-64 index-1 (wm-low-64 index-2 val x86))
-                     u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl
-                     x86 ignored))
-                   (mv-nth
-                    0
-                    (paging-entry-no-page-fault-p
-                     structure-type lin-addr
-                     (rm-low-64 index-1 x86)
-                     u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl
-                     x86 ignored))))
-   :hints (("Goal"
-            :use ((:instance xlate-equiv-structures-and-xlate-equiv-entries
-                             (index index-1)
-                             (x86-1 x86)
-                             (x86-2 (wm-low-64 index-2 val x86)))
-                  (:instance xlate-equiv-structures-and-wm-low-64-entry-addr
-                             (index index-2)
-                             (val val)
-                             (x86 x86)
-                             (x86-equiv x86)))
-            :in-theory (e/d* ()
-                             (xlate-equiv-structures-and-wm-low-64-entry-addr))))))
+;; (local
+;;  (defthm mv-nth-0-paging-entry-no-page-fault-p-with-rm-low-64-and-wm-low-64-entries
+;;    ;; See mv-nth-0-paging-entry-no-page-fault-p-with-xlate-equiv-entries
+;;    (implies (and (xlate-equiv-entries (double-rewrite val) (rm-low-64 index-2 x86))
+;;                  (unsigned-byte-p 64 val)
+;;                  (member-p index-1 (gather-all-paging-structure-qword-addresses x86))
+;;                  (member-p index-2 (gather-all-paging-structure-qword-addresses x86)))
+;;             (equal (mv-nth
+;;                     0
+;;                     (paging-entry-no-page-fault-p
+;;                      structure-type lin-addr
+;;                      (rm-low-64 index-1 (wm-low-64 index-2 val x86))
+;;                      u/s-acc r/w-acc x/d-acc
+;;                      wp smep smap ac nxe r-w-x cpl
+;;                      x86 ignored))
+;;                    (mv-nth
+;;                     0
+;;                     (paging-entry-no-page-fault-p
+;;                      structure-type lin-addr
+;;                      (rm-low-64 index-1 x86)
+;;                      u/s-acc r/w-acc x/d-acc
+;;                      wp smep smap ac nxe r-w-x cpl
+;;                      x86 ignored))))
+;;    :hints (("Goal"
+;;             :use ((:instance xlate-equiv-structures-and-xlate-equiv-entries
+;;                              (index index-1)
+;;                              (x86-1 x86)
+;;                              (x86-2 (wm-low-64 index-2 val x86)))
+;;                   (:instance xlate-equiv-structures-and-wm-low-64-entry-addr
+;;                              (index index-2)
+;;                              (val val)
+;;                              (x86 x86)
+;;                              (x86-equiv x86)))
+;;             :in-theory (e/d* ()
+;;                              (xlate-equiv-structures-and-wm-low-64-entry-addr))))))
 
-(defthm multiples-of-8-if-not-disjoint-then-equal
-  (implies (and (equal (loghead 3 index-1) 0)
-                (equal (loghead 3 index-2) 0)
-                (physical-address-p index-1)
-                (physical-address-p index-2))
-           (equal (disjoint-p (addr-range 8 index-1)
-                              (addr-range 8 index-2))
-                  (not (equal index-1 index-2)))))
+;; (defthm multiples-of-8-if-not-disjoint-then-equal
+;;   (implies (and (equal (loghead 3 index-1) 0)
+;;                 (equal (loghead 3 index-2) 0)
+;;                 (physical-address-p index-1)
+;;                 (physical-address-p index-2))
+;;            (equal (disjoint-p (addr-range 8 index-1)
+;;                               (addr-range 8 index-2))
+;;                   (not (equal index-1 index-2)))))
 
-(defthm dirty-bit-from-rm-low-64-after-wm-low-64-of-set-accessed-bit
-  (implies
-   (and
-    (equal (loghead 3 index-1) 0)
-    (equal (loghead 3 index-2) 0)
-    (physical-address-p index-1)
-    (physical-address-p index-2)
-    (not (programmer-level-mode x86)))
-   (equal (dirty-bit (rm-low-64 index-1
-                                (wm-low-64
-                                 index-2
-                                 (set-accessed-bit (rm-low-64 index-2 x86))
-                                 x86)))
-          (dirty-bit (rm-low-64 index-1 x86))))
-  :hints (("Goal"
-           :cases ((disjoint-p (addr-range 8 index-1) (addr-range 8 index-2)))
-           :in-theory (e/d* (set-accessed-bit unsigned-byte-p) ()))))
+;; (defthm dirty-bit-from-rm-low-64-after-wm-low-64-of-set-accessed-bit
+;;   (implies
+;;    (and
+;;     (equal (loghead 3 index-1) 0)
+;;     (equal (loghead 3 index-2) 0)
+;;     (physical-address-p index-1)
+;;     (physical-address-p index-2)
+;;     (not (programmer-level-mode x86)))
+;;    (equal (dirty-bit (rm-low-64 index-1
+;;                                 (wm-low-64
+;;                                  index-2
+;;                                  (set-accessed-bit (rm-low-64 index-2 x86))
+;;                                  x86)))
+;;           (dirty-bit (rm-low-64 index-1 x86))))
+;;   :hints (("Goal"
+;;            :cases ((disjoint-p (addr-range 8 index-1) (addr-range 8 index-2)))
+;;            :in-theory (e/d* (set-accessed-bit unsigned-byte-p) ()))))
 
-(defthm dirty-bit-from-rm-low-64-after-wm-low-64-of-set-dirty-bit
-  (implies
-   (and (equal (loghead 3 index-1) 0)
-        (equal (loghead 3 index-2) 0)
-        (physical-address-p index-1)
-        (physical-address-p index-2)
-        (not (programmer-level-mode x86)))
-   (equal (dirty-bit (rm-low-64 index-1
-                                (wm-low-64
-                                 index-2
-                                 (set-dirty-bit (rm-low-64 index-2 x86))
-                                 x86)))
-          (if (equal index-1 index-2)
-              1
-            (dirty-bit (rm-low-64 index-1 x86)))))
-  :hints (("Goal"
-           :in-theory (e/d* (set-dirty-bit unsigned-byte-p) ()))))
+;; (defthm dirty-bit-from-rm-low-64-after-wm-low-64-of-set-dirty-bit
+;;   (implies
+;;    (and (equal (loghead 3 index-1) 0)
+;;         (equal (loghead 3 index-2) 0)
+;;         (physical-address-p index-1)
+;;         (physical-address-p index-2)
+;;         (not (programmer-level-mode x86)))
+;;    (equal (dirty-bit (rm-low-64 index-1
+;;                                 (wm-low-64
+;;                                  index-2
+;;                                  (set-dirty-bit (rm-low-64 index-2 x86))
+;;                                  x86)))
+;;           (if (equal index-1 index-2)
+;;               1
+;;             (dirty-bit (rm-low-64 index-1 x86)))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (set-dirty-bit unsigned-byte-p) ()))))
 
-(defthm dirty-bit-from-rm-low-64-after-wm-low-64-of-set-dirty-bit-set-accessed-bit
-  (implies
-   (and (equal (loghead 3 index-1) 0)
-        (equal (loghead 3 index-2) 0)
-        (physical-address-p index-1)
-        (physical-address-p index-2)
-        (not (programmer-level-mode x86)))
-   (equal (dirty-bit (rm-low-64 index-1
-                                (wm-low-64
-                                 index-2
-                                 (set-dirty-bit (set-accessed-bit (rm-low-64 index-2 x86)))
-                                 x86)))
-          (if (equal index-1 index-2)
-              1
-            (dirty-bit (rm-low-64 index-1 x86)))))
-  :hints (("Goal"
-           :in-theory (e/d* (set-dirty-bit unsigned-byte-p) ()))))
+;; (defthm dirty-bit-from-rm-low-64-after-wm-low-64-of-set-dirty-bit-set-accessed-bit
+;;   (implies
+;;    (and (equal (loghead 3 index-1) 0)
+;;         (equal (loghead 3 index-2) 0)
+;;         (physical-address-p index-1)
+;;         (physical-address-p index-2)
+;;         (not (programmer-level-mode x86)))
+;;    (equal (dirty-bit (rm-low-64 index-1
+;;                                 (wm-low-64
+;;                                  index-2
+;;                                  (set-dirty-bit (set-accessed-bit (rm-low-64 index-2 x86)))
+;;                                  x86)))
+;;           (if (equal index-1 index-2)
+;;               1
+;;             (dirty-bit (rm-low-64 index-1 x86)))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (set-dirty-bit unsigned-byte-p) ()))))
 
-(defthm accessed-bit-from-rm-low-64-after-wm-low-64-of-set-dirty-bit
-  (implies
-   (and
-    (equal (loghead 3 index-1) 0)
-    (equal (loghead 3 index-2) 0)
-    (physical-address-p index-1)
-    (physical-address-p index-2)
-    (not (programmer-level-mode x86)))
-   (equal (accessed-bit (rm-low-64 index-1
-                                   (wm-low-64
-                                    index-2
-                                    (set-dirty-bit (rm-low-64 index-2 x86))
-                                    x86)))
-          (accessed-bit (rm-low-64 index-1 x86))))
-  :hints (("Goal"
-           :cases ((disjoint-p (addr-range 8 index-1) (addr-range 8 index-2)))
-           :in-theory (e/d* (set-dirty-bit unsigned-byte-p) ()))))
+;; (defthm accessed-bit-from-rm-low-64-after-wm-low-64-of-set-dirty-bit
+;;   (implies
+;;    (and
+;;     (equal (loghead 3 index-1) 0)
+;;     (equal (loghead 3 index-2) 0)
+;;     (physical-address-p index-1)
+;;     (physical-address-p index-2)
+;;     (not (programmer-level-mode x86)))
+;;    (equal (accessed-bit (rm-low-64 index-1
+;;                                    (wm-low-64
+;;                                     index-2
+;;                                     (set-dirty-bit (rm-low-64 index-2 x86))
+;;                                     x86)))
+;;           (accessed-bit (rm-low-64 index-1 x86))))
+;;   :hints (("Goal"
+;;            :cases ((disjoint-p (addr-range 8 index-1) (addr-range 8 index-2)))
+;;            :in-theory (e/d* (set-dirty-bit unsigned-byte-p) ()))))
 
-(defthm accessed-bit-from-rm-low-64-after-wm-low-64-of-set-accessed-bit
-  (implies
-   (and
-    (equal (loghead 3 index-1) 0)
-    (equal (loghead 3 index-2) 0)
-    (physical-address-p index-1)
-    (physical-address-p index-2)
-    (not (programmer-level-mode x86)))
-   (equal (accessed-bit (rm-low-64 index-1
-                                   (wm-low-64
-                                    index-2
-                                    (set-accessed-bit (rm-low-64 index-2 x86))
-                                    x86)))
-          (if (equal index-1 index-2)
-              1
-            (accessed-bit (rm-low-64 index-1 x86)))))
-  :hints (("Goal"
-           :in-theory (e/d* (set-accessed-bit unsigned-byte-p) ()))))
+;; (defthm accessed-bit-from-rm-low-64-after-wm-low-64-of-set-accessed-bit
+;;   (implies
+;;    (and
+;;     (equal (loghead 3 index-1) 0)
+;;     (equal (loghead 3 index-2) 0)
+;;     (physical-address-p index-1)
+;;     (physical-address-p index-2)
+;;     (not (programmer-level-mode x86)))
+;;    (equal (accessed-bit (rm-low-64 index-1
+;;                                    (wm-low-64
+;;                                     index-2
+;;                                     (set-accessed-bit (rm-low-64 index-2 x86))
+;;                                     x86)))
+;;           (if (equal index-1 index-2)
+;;               1
+;;             (accessed-bit (rm-low-64 index-1 x86)))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (set-accessed-bit unsigned-byte-p) ()))))
 
-(defthm accessed-bit-from-rm-low-64-after-wm-low-64-of-set-dirty-bit-set-accessed-bit
-  (implies
-   (and
-    (equal (loghead 3 index-1) 0)
-    (equal (loghead 3 index-2) 0)
-    (physical-address-p index-1)
-    (physical-address-p index-2)
-    (not (programmer-level-mode x86)))
-   (equal (accessed-bit (rm-low-64 index-1
-                                   (wm-low-64
-                                    index-2
-                                    (set-dirty-bit (set-accessed-bit (rm-low-64 index-2 x86)))
-                                    x86)))
-          (if (equal index-1 index-2)
-              1
-            (accessed-bit (rm-low-64 index-1 x86)))))
-  :hints (("Goal"
-           :in-theory (e/d* (set-accessed-bit unsigned-byte-p) ()))))
+;; (defthm accessed-bit-from-rm-low-64-after-wm-low-64-of-set-dirty-bit-set-accessed-bit
+;;   (implies
+;;    (and
+;;     (equal (loghead 3 index-1) 0)
+;;     (equal (loghead 3 index-2) 0)
+;;     (physical-address-p index-1)
+;;     (physical-address-p index-2)
+;;     (not (programmer-level-mode x86)))
+;;    (equal (accessed-bit (rm-low-64 index-1
+;;                                    (wm-low-64
+;;                                     index-2
+;;                                     (set-dirty-bit (set-accessed-bit (rm-low-64 index-2 x86)))
+;;                                     x86)))
+;;           (if (equal index-1 index-2)
+;;               1
+;;             (accessed-bit (rm-low-64 index-1 x86)))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (set-accessed-bit unsigned-byte-p) ()))))
 
-(defthm commute-two-page-table-walks-if-no-error
-  (implies (and (x86p x86)
-                (not (mv-nth 0 (ia32e-la-to-pa-page-table
-                                lin-addr-1
-                                base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-                                wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86)))
-                (not (mv-nth 0 (ia32e-la-to-pa-page-table
-                                lin-addr-2
-                                base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-                                wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86)))
-                (member-p
-                 (page-table-entry-addr (logext 48 lin-addr-1)
-                                        (bitops::logsquash 12 (loghead 52 base-addr-1)))
-                 (gather-all-paging-structure-qword-addresses x86))
-                (member-p
-                 (page-table-entry-addr (logext 48 lin-addr-2)
-                                        (bitops::logsquash 12 (loghead 52 base-addr-2)))
-                 (gather-all-paging-structure-qword-addresses x86)))
-           (equal (mv-nth 2 (ia32e-la-to-pa-page-table
-                             lin-addr-1
-                             base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-                             wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
-                             (mv-nth 2 (ia32e-la-to-pa-page-table
-                                        lin-addr-2
-                                        base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-                                        wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86))))
-                  (mv-nth 2 (ia32e-la-to-pa-page-table
-                             lin-addr-2
-                             base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-                             wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
-                             (mv-nth 2 (ia32e-la-to-pa-page-table
-                                        lin-addr-1
-                                        base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-                                        wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86))))))
-  :hints (("Goal"
-           :cases ((equal (page-table-entry-addr (logext 48 lin-addr-1)
-                                                 (bitops::logsquash 12 (loghead 52 base-addr-1)))
-                          (page-table-entry-addr (logext 48 lin-addr-2)
-                                                 (bitops::logsquash 12 (loghead 52 base-addr-2)))))
-           :in-theory (e/d* (ia32e-la-to-pa-page-table)
-                            (accessed-bit dirty-bit)))))
+;; (defthm commute-two-page-table-walks-if-no-error
+;;   (implies (and (x86p x86)
+;;                 (not (mv-nth 0 (ia32e-la-to-pa-page-table
+;;                                 lin-addr-1
+;;                                 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
+;;                                 wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86)))
+;;                 (not (mv-nth 0 (ia32e-la-to-pa-page-table
+;;                                 lin-addr-2
+;;                                 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
+;;                                 wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86)))
+;;                 (member-p
+;;                  (page-table-entry-addr (logext 48 lin-addr-1)
+;;                                         (bitops::logsquash 12 (loghead 52 base-addr-1)))
+;;                  (gather-all-paging-structure-qword-addresses x86))
+;;                 (member-p
+;;                  (page-table-entry-addr (logext 48 lin-addr-2)
+;;                                         (bitops::logsquash 12 (loghead 52 base-addr-2)))
+;;                  (gather-all-paging-structure-qword-addresses x86)))
+;;            (equal (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                              lin-addr-1
+;;                              base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
+;;                              wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
+;;                              (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                                         lin-addr-2
+;;                                         base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
+;;                                         wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86))))
+;;                   (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                              lin-addr-2
+;;                              base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
+;;                              wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
+;;                              (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                                         lin-addr-1
+;;                                         base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
+;;                                         wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86))))))
+;;   :hints (("Goal"
+;;            :cases ((equal (page-table-entry-addr (logext 48 lin-addr-1)
+;;                                                  (bitops::logsquash 12 (loghead 52 base-addr-1)))
+;;                           (page-table-entry-addr (logext 48 lin-addr-2)
+;;                                                  (bitops::logsquash 12 (loghead 52 base-addr-2)))))
+;;            :in-theory (e/d* (ia32e-la-to-pa-page-table)
+;;                             (accessed-bit dirty-bit)))))
+
+;; ;; (i-am-here)
+
+;; (defthm mv-nth-2-paging-entry-no-page-fault-p-returns-page-table-walk-if-no-fault
+;;   ;; See mv-nth-2-paging-entry-no-page-fault-p-does-not-modify-x86-if-no-fault
+;;   (implies
+;;    (not (mv-nth 0
+;;                 (paging-entry-no-page-fault-p
+;;                  structure-type-1 lin-addr-1
+;;                  entry-1 u/s-acc-1 r/w-acc-1 x/d-acc-1 wp-1 smep-1
+;;                  smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86 ignored-1)))
+;;    (equal (mv-nth 2
+;;                   (paging-entry-no-page-fault-p
+;;                    structure-type-1 lin-addr-1
+;;                    entry-1 u/s-acc-1 r/w-acc-1 x/d-acc-1 wp-1 smep-1
+;;                    smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
+;;                    (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                               lin-addr-2 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
+;;                               wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86))
+;;                    ignored-1))
+;;           (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                      lin-addr-2 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
+;;                      wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86))))
+;;   :hints
+;;   (("Goal" :in-theory (e/d (paging-entry-no-page-fault-p) ()))))
+
+;; (defthm page-execute-disable-and-rm-low-64-after-page-table-walk
+;;   (implies (and (member-p index (gather-all-paging-structure-qword-addresses x86))
+;;                 (not (programmer-level-mode x86))
+;;                 (x86p x86))
+;;            (equal (page-execute-disable
+;;                    (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                                                lin-addr base-addr u/s-acc r/w-acc x/d-acc
+;;                                                wp smep smap ac nxe r-w-x cpl x86))))
+;;                   (page-execute-disable
+;;                    (rm-low-64 index x86))))
+;;   :hints (("Goal"
+;;            :use ((:instance xlate-equiv-structures-and-xlate-equiv-entries
+;;                             (x86-1 (mv-nth 2
+;;                                            (ia32e-la-to-pa-page-table
+;;                                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
+;;                                             wp smep smap ac nxe r-w-x cpl x86)))
+;;                             (x86-2 x86))
+;;                  (:instance xlate-equiv-entries-and-page-execute-disable
+;;                             (e-1 (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                                                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+;;                                                              wp smep smap ac nxe r-w-x cpl x86))))
+;;                             (e-2 (rm-low-64 index x86)))))))
+
+;; (defthm page-size-and-rm-low-64-after-page-table-walk
+;;   (implies (and (member-p index (gather-all-paging-structure-qword-addresses x86))
+;;                 (not (programmer-level-mode x86))
+;;                 (x86p x86))
+;;            (equal (page-size
+;;                    (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                                                lin-addr base-addr u/s-acc r/w-acc x/d-acc
+;;                                                wp smep smap ac nxe r-w-x cpl x86))))
+;;                   (page-size
+;;                    (rm-low-64 index x86))))
+;;   :hints (("Goal"
+;;            :use ((:instance xlate-equiv-structures-and-xlate-equiv-entries
+;;                             (x86-1 (mv-nth 2
+;;                                            (ia32e-la-to-pa-page-table
+;;                                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
+;;                                             wp smep smap ac nxe r-w-x cpl x86)))
+;;                             (x86-2 x86))
+;;                  (:instance xlate-equiv-entries-and-page-size
+;;                             (e-1 (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa-page-table
+;;                                                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+;;                                                              wp smep smap ac nxe r-w-x cpl x86))))
+;;                             (e-2 (rm-low-64 index x86)))))))
 
 ;; (i-am-here)
-
-(defthm mv-nth-2-paging-entry-no-page-fault-p-returns-page-table-walk-if-no-fault
-  ;; See mv-nth-2-paging-entry-no-page-fault-p-does-not-modify-x86-if-no-fault
-  (implies
-   (not (mv-nth 0
-                (paging-entry-no-page-fault-p
-                 structure-type-1 lin-addr-1
-                 entry-1 u/s-acc-1 r/w-acc-1 x/d-acc-1 wp-1 smep-1
-                 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86 ignored-1)))
-   (equal (mv-nth 2
-                  (paging-entry-no-page-fault-p
-                   structure-type-1 lin-addr-1
-                   entry-1 u/s-acc-1 r/w-acc-1 x/d-acc-1 wp-1 smep-1
-                   smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
-                   (mv-nth 2 (ia32e-la-to-pa-page-table
-                              lin-addr-2 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-                              wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86))
-                   ignored-1))
-          (mv-nth 2 (ia32e-la-to-pa-page-table
-                     lin-addr-2 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-                     wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86))))
-  :hints
-  (("Goal" :in-theory (e/d (paging-entry-no-page-fault-p) ()))))
-
-(defthm page-execute-disable-and-rm-low-64-after-page-table-walk
-  (implies (and (member-p index (gather-all-paging-structure-qword-addresses x86))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (page-execute-disable
-                   (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa-page-table
-                                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                               wp smep smap ac nxe r-w-x cpl x86))))
-                  (page-execute-disable
-                   (rm-low-64 index x86))))
-  :hints (("Goal"
-           :use ((:instance xlate-equiv-structures-and-xlate-equiv-entries
-                            (x86-1 (mv-nth 2
-                                           (ia32e-la-to-pa-page-table
-                                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                            wp smep smap ac nxe r-w-x cpl x86)))
-                            (x86-2 x86))
-                 (:instance xlate-equiv-entries-and-page-execute-disable
-                            (e-1 (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa-page-table
-                                                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                                             wp smep smap ac nxe r-w-x cpl x86))))
-                            (e-2 (rm-low-64 index x86)))))))
-
-(defthm page-size-and-rm-low-64-after-page-table-walk
-  (implies (and (member-p index (gather-all-paging-structure-qword-addresses x86))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (page-size
-                   (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa-page-table
-                                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                               wp smep smap ac nxe r-w-x cpl x86))))
-                  (page-size
-                   (rm-low-64 index x86))))
-  :hints (("Goal"
-           :use ((:instance xlate-equiv-structures-and-xlate-equiv-entries
-                            (x86-1 (mv-nth 2
-                                           (ia32e-la-to-pa-page-table
-                                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                            wp smep smap ac nxe r-w-x cpl x86)))
-                            (x86-2 x86))
-                 (:instance xlate-equiv-entries-and-page-size
-                            (e-1 (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa-page-table
-                                                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                                             wp smep smap ac nxe r-w-x cpl x86))))
-                            (e-2 (rm-low-64 index x86)))))))
 
 ;; The following two facts mean that page-directory-entry-addr and
 ;; page-table-entry-addr are the same.
@@ -1722,111 +763,125 @@
 ;;              X86))
 ;;  0)
 
-(defthm commute-two-page-directory-walks-if-no-error
-  (implies (and (x86p x86)
-                (not (mv-nth 0 (ia32e-la-to-pa-page-directory
-                                lin-addr-1
-                                base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-                                wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86)))
-                (not (mv-nth 0 (ia32e-la-to-pa-page-directory
-                                lin-addr-2
-                                base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-                                wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86)))
-                (member-p
-                 (page-directory-entry-addr (logext 48 lin-addr-1)
-                                            (bitops::logsquash 12 (loghead 52 base-addr-1)))
-                 (gather-all-paging-structure-qword-addresses x86))
-                (member-p
-                 (page-table-entry-addr
-                  (logext 48 lin-addr-1)
-                  (ash
-                   (loghead
-                    40
-                    (logtail
-                     12
-                     (rm-low-64 (page-directory-entry-addr
-                                 (logext 48 lin-addr-1)
-                                 (bitops::logsquash 12 (loghead 52 base-addr-1)))
-                                x86)))
-                   12))
-                 (gather-all-paging-structure-qword-addresses x86))
-                (member-p
-                 (page-directory-entry-addr (logext 48 lin-addr-2)
-                                            (bitops::logsquash 12 (loghead 52 base-addr-2)))
-                 (gather-all-paging-structure-qword-addresses x86))
-                (member-p
-                 (page-table-entry-addr
-                  (logext 48 lin-addr-2)
-                  (ash
-                   (loghead
-                    40
-                    (logtail
-                     12
-                     (rm-low-64 (page-directory-entry-addr
-                                 (logext 48 lin-addr-2)
-                                 (bitops::logsquash 12 (loghead 52 base-addr-2)))
-                                x86)))
-                   12))
-                 (gather-all-paging-structure-qword-addresses x86)))
-           (equal (mv-nth 2 (ia32e-la-to-pa-page-directory
-                             lin-addr-1
-                             base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-                             wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
-                             (mv-nth 2 (ia32e-la-to-pa-page-directory
-                                        lin-addr-2
-                                        base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-                                        wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86))))
-                  (mv-nth 2 (ia32e-la-to-pa-page-directory
-                             lin-addr-2
-                             base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-                             wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
-                             (mv-nth 2 (ia32e-la-to-pa-page-directory
-                                        lin-addr-1
-                                        base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-                                        wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86))))))
-  :hints (("Goal"
-           :cases ((equal (page-directory-entry-addr (logext 48 lin-addr-1)
-                                                     (bitops::logsquash 12 (loghead 52 base-addr-1)))
-                          (page-directory-entry-addr (logext 48 lin-addr-2)
-                                                     (bitops::logsquash 12 (loghead 52 base-addr-2)))))
-           :in-theory (e/d* (ia32e-la-to-pa-page-directory)
-                            (accessed-bit
-                             dirty-bit
-                             (:meta acl2::mv-nth-cons-meta))))))
+;; (defthm commute-two-page-directory-walks-if-no-error
+;;   (implies (and (x86p x86)
+;;                 (not (mv-nth 0 (ia32e-la-to-pa-page-directory
+;;                                 lin-addr-1
+;;                                 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
+;;                                 wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86)))
+;;                 (not (mv-nth 0 (ia32e-la-to-pa-page-directory
+;;                                 lin-addr-2
+;;                                 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
+;;                                 wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86)))
+;;                 (member-p
+;;                  (page-directory-entry-addr (logext 48 lin-addr-1)
+;;                                             (bitops::logsquash 12 (loghead 52 base-addr-1)))
+;;                  (gather-all-paging-structure-qword-addresses x86))
+;;                 (member-p
+;;                  (page-table-entry-addr
+;;                   (logext 48 lin-addr-1)
+;;                   (ash
+;;                    (loghead
+;;                     40
+;;                     (logtail
+;;                      12
+;;                      (rm-low-64 (page-directory-entry-addr
+;;                                  (logext 48 lin-addr-1)
+;;                                  (bitops::logsquash 12 (loghead 52 base-addr-1)))
+;;                                 x86)))
+;;                    12))
+;;                  (gather-all-paging-structure-qword-addresses x86))
+;;                 (member-p
+;;                  (page-directory-entry-addr (logext 48 lin-addr-2)
+;;                                             (bitops::logsquash 12 (loghead 52 base-addr-2)))
+;;                  (gather-all-paging-structure-qword-addresses x86))
+;;                 (member-p
+;;                  (page-table-entry-addr
+;;                   (logext 48 lin-addr-2)
+;;                   (ash
+;;                    (loghead
+;;                     40
+;;                     (logtail
+;;                      12
+;;                      (rm-low-64 (page-directory-entry-addr
+;;                                  (logext 48 lin-addr-2)
+;;                                  (bitops::logsquash 12 (loghead 52 base-addr-2)))
+;;                                 x86)))
+;;                    12))
+;;                  (gather-all-paging-structure-qword-addresses x86)))
+;;            (equal (mv-nth 2 (ia32e-la-to-pa-page-directory
+;;                              lin-addr-1
+;;                              base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
+;;                              wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
+;;                              (mv-nth 2 (ia32e-la-to-pa-page-directory
+;;                                         lin-addr-2
+;;                                         base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
+;;                                         wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2 x86))))
+;;                   (mv-nth 2 (ia32e-la-to-pa-page-directory
+;;                              lin-addr-2
+;;                              base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
+;;                              wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
+;;                              (mv-nth 2 (ia32e-la-to-pa-page-directory
+;;                                         lin-addr-1
+;;                                         base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
+;;                                         wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86))))))
+;;   :hints (("Goal"
+;;            :cases ((equal (page-directory-entry-addr (logext 48 lin-addr-1)
+;;                                                      (bitops::logsquash 12 (loghead 52 base-addr-1)))
+;;                           (page-directory-entry-addr (logext 48 lin-addr-2)
+;;                                                      (bitops::logsquash 12 (loghead 52 base-addr-2)))))
+;;            :in-theory (e/d* (ia32e-la-to-pa-page-directory)
+;;                             (accessed-bit
+;;                              dirty-bit
+;;                              (:meta acl2::mv-nth-cons-meta))))))
 
-(skip-proofs
- (defthm commute-two-page-walks
-   (implies (and (x86p x86)
-                 (not (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))
-                 (not (mv-nth 0 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-            (equal (mv-nth 2 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
-                                             (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-                   (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2
-                                             (mv-nth 2 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86))))))
-   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa)
-                                    ())))))
+;; (skip-proofs
+;;  (defthm commute-two-page-walks
+;;    (implies (and (x86p x86)
+;;                  (not (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))
+;;                  (not (mv-nth 0 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+;;             (equal (mv-nth 2 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
+;;                                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+;;                    (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2
+;;                                              (mv-nth 2 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86))))))
+;;    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa)
+;;                                     ())))))
 
 ;; ----------------------------------------------------------------------
 
 (defthm mv-nth-0-las-to-pas-after-mv-nth-2-ia32e-la-to-pa
-  (implies (and (x86p x86)
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+  (implies (x86p x86)
            (equal (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
                                         (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
                   (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86))))
   :hints (("Goal"
            :induct (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)
-           :in-theory (e/d* (las-to-pas) ()))))
+           :in-theory (e/d* (las-to-pas)
+                            ()))
+          ("Subgoal *1/3"
+           :use ((:instance xlate-equiv-memory-and-las-to-pas
+                            (l-addrs l-addrs-1)
+                            (r-w-x r-w-x-1)
+                            (cpl cpl-1)
+                            (x86-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86)))
+                            (x86-2 x86))))))
 
 (defthm mv-nth-1-las-to-pas-after-mv-nth-2-ia32e-la-to-pa
-  (implies (and (x86p x86)
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+  (implies (x86p x86)
            (equal (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
                                         (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
                   (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86))))
   :hints (("Goal"
            :induct (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)
-           :in-theory (e/d* (las-to-pas) ()))))
+           :in-theory (e/d* (las-to-pas)
+                            ()))
+          ("Subgoal *1/3"
+           :use ((:instance xlate-equiv-memory-and-las-to-pas
+                            (l-addrs l-addrs-1)
+                            (r-w-x r-w-x-1)
+                            (cpl cpl-1)
+                            (x86-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86)))
+                            (x86-2 x86))))))
 
 (defthmd open-mv-nth-0-las-to-pas
   (implies (and (canonical-address-p lin-addr)
@@ -2731,50 +1786,6 @@
             (equal (combine-bytes (cdddr (cddddr bytes)))
                    (car (cdddr (cddddr bytes)))))))
 
-(def-gl-export rm-low-64-and-write-to-physical-memory-equal-helper-2
-  :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-            (n08p e) (n08p f) (n08p g) (n08p h))
-  :concl (equal
-          (logior (ash b 8)
-                  (ash (logior (ash d 8)
-                               c)
-                       16)
-                  (ash (logior (ash f 8)
-                               (ash (logior (ash h 8)
-                                            g)
-                                    16)
-                               e)
-                       32)
-                  a)
-          (logior
-           a
-           (ash
-            (logior
-             b
-             (ash
-              (logior
-               c
-               (ash
-                (logior
-                 d
-                 (ash
-                  (logior e
-                          (ash (logior f
-                                       (ash (logior g
-                                                    (ash h 8))
-                                            8))
-                               8))
-                  8))
-                8))
-              8))
-            8)))
-  :g-bindings
-  (gl::auto-bindings
-   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
-         (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
-
-(in-theory (e/d () (rm-low-64-and-write-to-physical-memory-equal-helper-2)))
-
 (defthm rm-low-64-and-write-to-physical-memory-equal
   (implies (and (equal p-addrs-2 (addr-range 8 p-addr-1))
                 (equal (len bytes) (len p-addrs-2))
@@ -2845,6 +1856,55 @@
                   (wm-low-64 index-2 val-2 (xw :mem index-1 val-1 x86))))
   :hints (("Goal" :in-theory (e/d* (wm-low-64 wm-low-32) ()))))
 
+(defthm rm-low-64-and-paging-entry-no-page-fault-p
+  (equal (rm-low-64 index
+                    (mv-nth
+                     2
+                     (paging-entry-no-page-fault-p structure-type lin-addr
+                                                   entry u/s-acc r/w-acc x/d-acc wp smep
+                                                   smap ac nxe r-w-x cpl x86 ignored)))
+         (rm-low-64 index x86))
+  :hints (("Goal" :in-theory (e/d* (rm-low-64 rm-low-32) ()))))
+
+(defthm mv-nth-0-paging-entry-no-page-fault-p-and-wm-low-64
+  (equal (mv-nth
+          0
+          (paging-entry-no-page-fault-p
+           structure-type lin-addr
+           entry u/s-acc r/w-acc x/d-acc
+           wp smep smap ac nxe r-w-x cpl
+           (wm-low-64 index value x86)
+           ignored))
+         (mv-nth
+          0
+          (paging-entry-no-page-fault-p
+           structure-type lin-addr
+           entry u/s-acc r/w-acc x/d-acc
+           wp smep smap ac nxe r-w-x cpl
+           x86
+           ignored)))
+  :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
+                                    page-fault-exception)
+                                   ()))))
+
+(defthm mv-nth-2-paging-entry-no-page-fault-p-and-wm-low-64-if-no-error
+  (implies (not (mv-nth
+                 0
+                 (paging-entry-no-page-fault-p
+                  structure-type lin-addr
+                  entry u/s-acc r/w-acc x/d-acc
+                  wp smep smap ac nxe r-w-x cpl x86 ignored)))
+           (equal (mv-nth
+                   2
+                   (paging-entry-no-page-fault-p
+                    structure-type lin-addr
+                    entry u/s-acc r/w-acc x/d-acc
+                    wp smep smap ac nxe r-w-x cpl
+                    (wm-low-64 index value x86)
+                    ignored))
+                  (wm-low-64 index value x86)))
+  :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p) ()))))
+
 (defthm xw-mem-and-ia32e-la-to-pa-page-table-commute
   (implies (and
             (disjoint-p
@@ -2865,7 +1925,7 @@
   :hints (("Goal" :in-theory (e/d* (disjoint-p
                                     translation-governing-addresses-for-page-table
                                     ia32e-la-to-pa-page-table)
-                                   ()))))
+                                   (bitops::logand-with-negated-bitmask)))))
 
 (defthm xw-mem-and-ia32e-la-to-pa-page-directory-commute
   (implies (and
@@ -2888,7 +1948,8 @@
   :hints (("Goal" :in-theory (e/d* (disjoint-p
                                     translation-governing-addresses-for-page-directory
                                     ia32e-la-to-pa-page-directory)
-                                   (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|)))))
+                                   (bitops::logand-with-negated-bitmask
+                                    |(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|)))))
 
 (defthm xw-mem-and-ia32e-la-to-pa-page-dir-ptr-table-commute
   (implies (and
@@ -2911,7 +1972,8 @@
   :hints (("Goal" :in-theory (e/d* (disjoint-p
                                     translation-governing-addresses-for-page-dir-ptr-table
                                     ia32e-la-to-pa-page-dir-ptr-table)
-                                   (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|)))))
+                                   (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
+                                    bitops::logand-with-negated-bitmask)))))
 
 (defthm xw-mem-and-ia32e-la-to-pa-pml4-table-commute
   (implies (and
@@ -2932,7 +1994,8 @@
   :hints (("Goal" :in-theory (e/d* (disjoint-p
                                     translation-governing-addresses-for-pml4-table
                                     ia32e-la-to-pa-pml4-table)
-                                   (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|)))))
+                                   (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
+                                    bitops::logand-with-negated-bitmask)))))
 
 (defthm xw-mem-and-ia32e-la-to-pa-commute
   (implies (and
