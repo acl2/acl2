@@ -12,49 +12,63 @@
 
 ;; ======================================================================
 
-(defthmd xlate-equiv-memory-and-cr0
-  (implies (and (xlate-equiv-memory x86-1 x86-2)
-                (not (programmer-level-mode x86-2)))
+(defthm xlate-equiv-memory-and-cr0
+  (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (bool->bit (logbitp 16 (xr :ctr *cr0* x86-1)))
                   (bool->bit (logbitp 16 (xr :ctr *cr0* x86-2)))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                   ()))))
+                                   ())))
+  :rule-classes :congruence)
 
-(defthmd xlate-equiv-memory-and-cr3
-  (implies (and (xlate-equiv-memory x86-1 x86-2)
-                (not (programmer-level-mode x86-2)))
+(defthm xlate-equiv-memory-and-cr3
+  (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (loghead 40 (logtail 12 (xr :ctr *cr3* x86-1)))
                   (loghead 40 (logtail 12 (xr :ctr *cr3* x86-2)))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                   ()))))
+                                   ())))
+  :rule-classes :congruence)
 
-(defthmd xlate-equiv-memory-and-cr4
-  (implies (and (xlate-equiv-memory x86-1 x86-2)
-                (not (programmer-level-mode x86-2)))
+(defthm xlate-equiv-memory-and-cr4
+  (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (bool->bit (logbitp 20 (xr :ctr *cr4* x86-1)))
                   (bool->bit (logbitp 20 (xr :ctr *cr4* x86-2)))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                   ()))))
+                                   ())))
+  :rule-classes :congruence)
 
-(defthmd xlate-equiv-memory-and-msr
-  (implies (and (xlate-equiv-memory x86-1 x86-2)
-                (not (programmer-level-mode x86-2)))
+(defthm xlate-equiv-memory-and-msr
+  (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-1)))
                   (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-2)))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                   ()))))
+                                   ())))
+  :rule-classes :congruence)
 
-(defthmd xlate-equiv-memory-and-rflags
-  (implies (and (xlate-equiv-memory x86-1 x86-2)
-                (not (programmer-level-mode x86-2)))
+(defthm xlate-equiv-memory-and-rflags
+  (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (bool->bit (logbitp 18 (xr :rflags 0 x86-1)))
                   (bool->bit (logbitp 18 (xr :rflags 0 x86-2)))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
-                                   ()))))
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-and-seg-visible
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (loghead 2 (xr :seg-visible 1 x86-1))
+                  (loghead 2 (xr :seg-visible 1 x86-2))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+                                   ())))
+  :rule-classes :congruence)
 
 ;; ======================================================================
 
 ;; Lemmas about ia32e-la-to-pa:
+
+(defthm ia32e-la-to-pa-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (ia32e-la-to-pa lin-addr r-w-x cpl x86)
+                  (mv t 0 x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) ()))))
 
 (defthmd xlate-equiv-memory-and-ia32e-la-to-pa
   (implies (xlate-equiv-memory (double-rewrite x86-1) x86-2)
@@ -63,12 +77,7 @@
                    (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2)))
             (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86-1))
                    (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2)))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) ())
-           :use ((:instance xlate-equiv-memory-and-rflags)
-                 (:instance xlate-equiv-memory-and-msr)
-                 (:instance xlate-equiv-memory-and-cr0)
-                 (:instance xlate-equiv-memory-and-cr3)
-                 (:instance xlate-equiv-memory-and-cr4)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) ()))))
 
 (defthm xlate-equiv-memory-and-mv-nth-0-ia32e-la-to-pa
   (implies (xlate-equiv-memory x86-1 x86-2)
@@ -152,10 +161,9 @@
 ;; ======================================================================
 
 (defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa
-  (implies (not (programmer-level-mode x86))
-           (equal (gather-all-paging-structure-qword-addresses
-                   (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (gather-all-paging-structure-qword-addresses x86)))
+  (equal (gather-all-paging-structure-qword-addresses
+          (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+         (gather-all-paging-structure-qword-addresses x86))
   :hints (("Goal"
            :use ((:instance
                   gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
@@ -163,8 +171,7 @@
 
 
 (defthm xlate-equiv-entries-at-qword-addresses-mv-nth-2-ia32e-la-to-pa
-  (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
-                (not (programmer-level-mode x86)))
+  (implies (equal addrs (gather-all-paging-structure-qword-addresses x86))
            (equal (xlate-equiv-entries-at-qword-addresses
                    addrs addrs
                    x86

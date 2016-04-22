@@ -73,6 +73,13 @@
 
 ;; Finally, lemmas about ia32e-la-to-pa-pml4-table:
 
+(defthm ia32e-la-to-pa-pml4-table-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (ia32e-la-to-pa-pml4-table
+                   lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)
+                  (mv t 0 x86)))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-pml4-table) ()))))
+
 (defthmd xlate-equiv-memory-and-ia32e-la-to-pa-pml4-table
   (implies (xlate-equiv-memory (double-rewrite x86-1) x86-2)
            (and
@@ -1227,12 +1234,11 @@
 ;; structure traversals...
 
 (defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa-pml4-table
-  (implies (not (programmer-level-mode x86))
-           (equal (gather-all-paging-structure-qword-addresses
-                   (mv-nth 2 (ia32e-la-to-pa-pml4-table
-                              lin-addr base-addr
-                              wp smep smap ac nxe r-w-x cpl x86)))
-                  (gather-all-paging-structure-qword-addresses x86)))
+  (equal (gather-all-paging-structure-qword-addresses
+          (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                     lin-addr base-addr
+                     wp smep smap ac nxe r-w-x cpl x86)))
+         (gather-all-paging-structure-qword-addresses x86))
   :hints (("Goal"
            :use ((:instance
                   gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
@@ -1242,8 +1248,7 @@
 
 
 (defthm xlate-equiv-entries-at-qword-addresses-mv-nth-2-ia32e-la-to-pa-pml4-table
-  (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
-                (not (programmer-level-mode x86)))
+  (implies (equal addrs (gather-all-paging-structure-qword-addresses x86))
            (equal (xlate-equiv-entries-at-qword-addresses
                    addrs addrs
                    x86
