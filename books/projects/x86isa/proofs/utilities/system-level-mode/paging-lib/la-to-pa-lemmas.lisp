@@ -85,47 +85,39 @@
   :rule-classes :congruence)
 
 (defthm xlate-equiv-structures-and-mv-nth-2-ia32e-la-to-pa
-  (implies
-   (x86p x86)
-   (xlate-equiv-structures (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
-                           (double-rewrite x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) ()))))
+  (xlate-equiv-structures (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                          (double-rewrite x86))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (force (force))))))
 
-(defthmd xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa
-  (implies
-   (and (x86p x86-1)
-        (x86p x86-2)
-        (xlate-equiv-structures x86-1 x86-2))
-   (xlate-equiv-structures (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-1))
-                           (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2)))))
+(defthm xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa
+  (implies (xlate-equiv-structures x86-1 x86-2)
+           (xlate-equiv-structures (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-1))
+                                   (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2))))
+  :rule-classes :congruence)
 
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa
-  (implies
-   (x86p x86)
-   (all-mem-except-paging-structures-equal
-    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
-    (double-rewrite x86)))
+  (all-mem-except-paging-structures-equal
+   (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+   (double-rewrite x86))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
                                     ia32e-la-to-pa-pml4-table)
                                    (bitops::logand-with-negated-bitmask
                                     accessed-bit
                                     dirty-bit
+                                    force (force)
                                     not)))))
 
-(defthmd all-mem-except-paging-structures-equal-with-two-mv-nth-2-ia32e-la-to-pa
-  (implies
-   (and (x86p x86-1)
-        (x86p x86-2)
-        (all-mem-except-paging-structures-equal x86-1 x86-2))
-   (all-mem-except-paging-structures-equal
-    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-1))
-    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2)))))
+(defthm all-mem-except-paging-structures-equal-with-two-mv-nth-2-ia32e-la-to-pa
+  (implies (all-mem-except-paging-structures-equal x86-1 x86-2)
+           (all-mem-except-paging-structures-equal
+            (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-1))
+            (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2))))
+  :rule-classes :congruence)
 
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa
-  (implies (x86p x86)
-           (xlate-equiv-memory
-            (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
-            (double-rewrite x86)))
+  (xlate-equiv-memory
+   (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+   (double-rewrite x86))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (xlate-equiv-memory)
                             (bitops::logand-with-negated-bitmask
@@ -133,28 +125,25 @@
                              dirty-bit
                              not)))))
 
-(defthmd xlate-equiv-memory-with-two-mv-nth-2-ia32e-la-to-pa
-  (implies (and (x86p x86-1)
-                (x86p x86-2)
-                (xlate-equiv-memory x86-1 x86-2))
+(defthm xlate-equiv-memory-with-two-mv-nth-2-ia32e-la-to-pa
+  (implies (xlate-equiv-memory x86-1 x86-2)
            (xlate-equiv-memory
             (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-1))
-            (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2)))))
+            (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2))))
+  :rule-classes :congruence)
 
 (defthm two-page-walks-ia32e-la-to-pa
-  (implies
-   (x86p x86)
-   (and
+  (and
 
-    (equal
-     (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
-                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-     (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))
+   (equal
+    (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
+                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+    (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))
 
-    (equal
-     (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
-                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-     (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86)))))
+   (equal
+    (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1
+                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+    (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 cpl-1 x86))))
 
   :hints (("Goal" :in-theory (e/d* () (ia32e-la-to-pa)))))
 
@@ -163,8 +152,7 @@
 ;; ======================================================================
 
 (defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa
-  (implies (and (x86p x86)
-                (not (programmer-level-mode x86)))
+  (implies (not (programmer-level-mode x86))
            (equal (gather-all-paging-structure-qword-addresses
                    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
                   (gather-all-paging-structure-qword-addresses x86)))
@@ -176,7 +164,6 @@
 
 (defthm xlate-equiv-entries-at-qword-addresses-mv-nth-2-ia32e-la-to-pa
   (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
-                (x86p x86)
                 (not (programmer-level-mode x86)))
            (equal (xlate-equiv-entries-at-qword-addresses
                    addrs addrs
@@ -204,9 +191,7 @@
 ;; Lemmas about las-to-pas:
 
 (defthmd xlate-equiv-memory-and-las-to-pas
-  (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-                (x86p x86-1)
-                (x86p x86-2))
+  (implies (xlate-equiv-memory (double-rewrite x86-1) x86-2)
            (and
             (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86-1))
                    (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86-2)))
@@ -216,22 +201,34 @@
            :induct (cons (las-to-pas l-addrs r-w-x cpl x86-1)
                          (las-to-pas l-addrs r-w-x cpl x86-2)))))
 
+(defthm xlate-equiv-memory-and-mv-nth-0-las-to-pas
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86-1))
+                  (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86-2))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory-and-las-to-pas) ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-and-mv-nth-1-las-to-pas
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1))
+                  (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-2))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory-and-las-to-pas) ())))
+  :rule-classes :congruence)
+
 (defthm xlate-equiv-memory-with-mv-nth-2-las-to-pas
-  (implies (x86p x86)
-           (xlate-equiv-memory
-            (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86))
-            (double-rewrite x86)))
+  (xlate-equiv-memory
+   (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86))
+   (double-rewrite x86))
   :hints (("Goal" :induct (las-to-pas l-addrs r-w-x cpl x86))))
 
-(defthmd xlate-equiv-memory-with-two-mv-nth-2-las-to-pas
-  (implies (and (x86p x86-1)
-                (x86p x86-2)
-                (xlate-equiv-memory x86-1 x86-2))
+(defthm xlate-equiv-memory-with-two-mv-nth-2-las-to-pas
+  (implies (xlate-equiv-memory x86-1 x86-2)
            (xlate-equiv-memory
             (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86-1))
             (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86-2))))
   :hints (("Goal"
            :induct (cons (las-to-pas l-addrs r-w-x cpl x86-1)
-                         (las-to-pas l-addrs r-w-x cpl x86-2)))))
+                         (las-to-pas l-addrs r-w-x cpl x86-2))))
+  :rule-classes :congruence)
 
 ;; ======================================================================

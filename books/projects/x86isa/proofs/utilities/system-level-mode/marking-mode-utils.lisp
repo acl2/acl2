@@ -9,7 +9,6 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
-(local (include-book "centaur/gl/gl" :dir :system))
 
 (local (in-theory (e/d* () (signed-byte-p unsigned-byte-p))))
 
@@ -56,8 +55,7 @@
          (read-from-physical-memory (cdr p-addrs) x86)))
 
 (defthm cdr-mv-nth-1-las-to-pas
-  (implies (and (x86p x86)
-                (not (mv-nth 0 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))))
+  (implies (not (mv-nth 0 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86)))
            (equal (cdr (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
                   (mv-nth 1 (las-to-pas (cdr l-addrs) r-w-x cpl x86)))))
 
@@ -72,8 +70,7 @@
   ;; See xr-mem-disjoint-ia32e-la-to-pa-in-marking-mode
   (implies (and (disjoint-p (list index)
                             (all-translation-governing-addresses l-addrs x86))
-                (canonical-address-listp l-addrs)
-                (x86p x86))
+                (canonical-address-listp l-addrs))
            (equal (xr :mem index (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
                   (xr :mem index x86)))
   :hints (("Goal"
@@ -88,8 +85,7 @@
 
 (defthm read-from-physical-memory-and-mv-nth-2-las-to-pas
   (implies (and (disjoint-p (all-translation-governing-addresses l-addrs x86) p-addrs)
-                (canonical-address-listp l-addrs)
-                (x86p x86))
+                (canonical-address-listp l-addrs))
            (equal (read-from-physical-memory p-addrs (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* (disjoint-p) (force (force))))))
@@ -103,8 +99,7 @@
 (defthm nth-of-mv-nth-1-las-to-pas
   (implies (and (natp i)
                 (< i (len l-addrs))
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                (x86p x86))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
            (equal (nth i (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
                   (mv-nth 1 (ia32e-la-to-pa (nth i l-addrs) r-w-x cpl x86)))))
 
@@ -133,10 +128,7 @@
    (implies (and (disjoint-p (all-translation-governing-addresses l-addrs x86)
                              (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
                  (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                 (member-p addr l-addrs)
-                 (canonical-address-listp l-addrs)
-                 (not (programmer-level-mode x86))
-                 (x86p x86))
+                 (member-p addr l-addrs))
             (equal (member-p
                     (mv-nth 1 (ia32e-la-to-pa addr r-w-x cpl x86))
                     (all-translation-governing-addresses l-addrs x86))
@@ -174,9 +166,7 @@
 (local
  (defthmd rb-in-terms-of-nth-and-pos-helper
    (implies
-    (and (signed-byte-p 48 lin-addr)
-         (not (mv-nth 0 (rb (list lin-addr) :x x86)))
-         (not (programmer-level-mode x86))
+    (and (not (mv-nth 0 (rb (list lin-addr) :x x86)))
          (x86p x86))
     (equal (car (mv-nth 1 (rb (list lin-addr) :x x86)))
            (combine-bytes (mv-nth 1 (rb (list lin-addr) :x x86)))))
@@ -218,12 +208,12 @@
 (defthmd rb-unwinding-thm-in-system-level-mode
   (implies (and (consp l-addrs)
                 (not (mv-nth 0 (rb l-addrs r-w-x x86)))
-                (disjoint-p
-                 (all-translation-governing-addresses l-addrs x86)
-                 (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+                (disjoint-p (all-translation-governing-addresses l-addrs x86)
+                            (mv-nth 1
+                                    (las-to-pas l-addrs r-w-x (cpl x86)
+                                                x86)))
                 (canonical-address-listp l-addrs)
-                (not (programmer-level-mode x86))
-                (x86p x86))
+                (not (programmer-level-mode x86)))
            (equal (mv-nth 1 (rb l-addrs r-w-x x86))
                   (cons (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))
                         (mv-nth 1 (rb (cdr l-addrs) r-w-x x86)))))
@@ -234,9 +224,7 @@
 
 (defthmd rb-unwinding-thm-in-system-level-mode-for-errors
   (implies (and (subset-p l-addrs-subset l-addrs)
-                (consp l-addrs)
-                (not (mv-nth 0 (rb l-addrs r-w-x x86)))
-                (x86p x86))
+                (not (mv-nth 0 (rb l-addrs r-w-x x86))))
            (equal (mv-nth 0 (rb l-addrs-subset r-w-x x86))
                   nil))
   :hints
@@ -245,8 +233,7 @@
 
 (defthm mv-nth-1-las-to-pas-subset-p
   (implies (and (subset-p l-addrs-subset l-addrs)
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                (x86p x86))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
            (subset-p (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))
                      (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
@@ -270,8 +257,7 @@
    (implies (and (subset-p l-addrs-subset l-addrs)
                  (disjoint-p (all-translation-governing-addresses l-addrs x86)
                              (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                 (x86p x86))
+                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
             (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
                         (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))))
 
@@ -363,8 +349,7 @@
                 (disjoint-p (list index)
                             (all-translation-governing-addresses (strip-cars addr-lst) x86))
                 (addr-byte-alistp addr-lst)
-                (not (programmer-level-mode x86))
-                (x86p x86))
+                (not (programmer-level-mode x86)))
            (equal (xr :mem index (mv-nth 1 (wb addr-lst x86)))
                   (xr :mem index x86)))
   :hints (("Goal"
@@ -475,13 +460,11 @@
 ;; Lemmas about interaction of writes and paging walkers:
 
 (defthm rm-low-32-wb-in-system-level-mode-disjoint
-  (implies (and
-            (disjoint-p (addr-range 4 index)
-                        (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-            (disjoint-p (addr-range 4 index)
-                        (all-translation-governing-addresses (strip-cars addr-lst) x86))
-            (addr-byte-alistp addr-lst)
-            (x86p x86))
+  (implies (and (disjoint-p (addr-range 4 index)
+                            (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                (disjoint-p (addr-range 4 index)
+                            (all-translation-governing-addresses (strip-cars addr-lst) x86))
+                (addr-byte-alistp addr-lst))
            (equal (rm-low-32 index (mv-nth 1 (wb addr-lst x86)))
                   (rm-low-32 index x86)))
   :hints (("Goal"
@@ -498,8 +481,7 @@
             (disjoint-p (addr-range 8 index)
                         (all-translation-governing-addresses (strip-cars addr-lst) x86))
             (addr-byte-alistp addr-lst)
-            (integerp index)
-            (x86p x86))
+            (integerp index))
            (equal (rm-low-64 index (mv-nth 1 (wb addr-lst x86)))
                   (rm-low-64 index x86)))
   :hints (("Goal"
@@ -561,8 +543,7 @@
             (addr-byte-alistp addr-lst)
             (canonical-address-p lin-addr)
             (physical-address-p base-addr)
-            (equal (loghead 12 base-addr) 0)
-            (x86p x86))
+            (equal (loghead 12 base-addr) 0))
            (and
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-table
@@ -603,8 +584,7 @@
             (addr-byte-alistp addr-lst)
             (canonical-address-p lin-addr)
             (physical-address-p base-addr)
-            (equal (loghead 12 base-addr) 0)
-            (x86p x86))
+            (equal (loghead 12 base-addr) 0))
            (and
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-directory
@@ -645,8 +625,7 @@
             (addr-byte-alistp addr-lst)
             (canonical-address-p lin-addr)
             (physical-address-p base-addr)
-            (equal (loghead 12 base-addr) 0)
-            (x86p x86))
+            (equal (loghead 12 base-addr) 0))
            (and
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
@@ -687,8 +666,7 @@
             (addr-byte-alistp addr-lst)
             (canonical-address-p lin-addr)
             (physical-address-p base-addr)
-            (equal (loghead 12 base-addr) 0)
-            (x86p x86))
+            (equal (loghead 12 base-addr) 0))
            (and
             (equal (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
@@ -722,8 +700,7 @@
                 (disjoint-p (translation-governing-addresses lin-addr x86)
                             (all-translation-governing-addresses (strip-cars addr-lst) x86))
                 (addr-byte-alistp addr-lst)
-                (canonical-address-p lin-addr)
-                (x86p x86))
+                (canonical-address-p lin-addr))
            (and
             (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
                    (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
@@ -747,8 +724,7 @@
                 (disjoint-p (all-translation-governing-addresses l-addrs x86)
                             (all-translation-governing-addresses (strip-cars addr-lst) x86))
                 (addr-byte-alistp addr-lst)
-                (canonical-address-listp l-addrs)
-                (x86p x86))
+                (canonical-address-listp l-addrs))
            (and
             (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
                    (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
@@ -794,7 +770,6 @@
              (all-translation-governing-addresses l-addrs x86))
             (canonical-address-listp l-addrs)
             (addr-byte-alistp addr-lst)
-            (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
             (not (programmer-level-mode x86))
             (x86p x86))
            (and
@@ -886,7 +861,6 @@
              (all-translation-governing-addresses l-addrs x86))
             (canonical-address-listp l-addrs)
             (addr-byte-alistp addr-lst)
-            (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
             (not (programmer-level-mode x86))
             (x86p x86))
            (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-lst x86)))
@@ -911,8 +885,7 @@
                           ;; r-w-x-2 must be smaller than r-w-x-1.
                           (term-order r-w-x-2 r-w-x-1)))
                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x-1 cpl x86)))
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x-2 cpl x86)))
-                (x86p x86))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x-2 cpl x86))))
            (equal (mv-nth 1 (las-to-pas l-addrs r-w-x-2 cpl x86))
                   (mv-nth 1 (las-to-pas l-addrs r-w-x-1 cpl x86))))
   :hints (("Goal" :in-theory (e/d* (r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)

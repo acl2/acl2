@@ -8,3 +8,4 @@
 
 (include-book "non-marking-mode-utils" :ttags :all)
 (include-book "marking-mode-utils" :ttags :all)
+(include-book "symbolic-simulation-in-marking-mode" :ttags :all)

@@ -201,14 +201,11 @@
   :rule-classes :congruence)
 
 (defthm xlate-equiv-structures-and-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
-  (implies
-   ;; TODO: Can this hypothesis be removed?
-   (x86p x86)
-   (xlate-equiv-structures
-    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
-               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86))
-    (double-rewrite x86)))
+  (xlate-equiv-structures
+   (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+              wp smep smap ac nxe r-w-x cpl x86))
+   (double-rewrite x86))
   :hints (("Goal"
            :cases
            ;; Either (page-dir-ptr-table-entry-addr lin-addr base-addr) is in
@@ -246,21 +243,19 @@
 
 (defthmd xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
   (implies
-   (and (x86p x86-1)
-        (x86p x86-2)
-        (xlate-equiv-structures x86-1 x86-2))
+   (xlate-equiv-structures x86-1 x86-2)
    (xlate-equiv-structures
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
                wp smep smap ac nxe r-w-x cpl x86-1))
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-2)))))
+               wp smep smap ac nxe r-w-x cpl x86-2))))
+  :rule-classes :congruence)
 
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
   (implies
-   (and (x86p x86)
-        (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
+   (and (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
                                                  (logand 18446744073709547520 (loghead 52 base-addr)))
                   (gather-all-paging-structure-qword-addresses x86))
         (if (equal (page-size (rm-low-64 (page-dir-ptr-table-entry-addr
@@ -345,9 +340,7 @@
 
 (defthmd all-mem-except-paging-structures-equal-with-two-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
   (implies
-   (and (x86p x86-1)
-        (x86p x86-2)
-        (all-mem-except-paging-structures-equal x86-1 x86-2)
+   (and (all-mem-except-paging-structures-equal x86-1 x86-2)
         (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
                                                  (logand 18446744073709547520 (loghead 52 base-addr)))
                   (gather-all-paging-structure-qword-addresses x86-1))
@@ -502,8 +495,7 @@
 
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
   (implies
-   (and (x86p x86)
-        (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
+   (and (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
                                                  (logand 18446744073709547520 (loghead 52 base-addr)))
                   (gather-all-paging-structure-qword-addresses x86))
         (if (equal (page-size (rm-low-64 (page-dir-ptr-table-entry-addr
@@ -588,9 +580,7 @@
 
 (defthmd xlate-equiv-memory-with-two-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
   (implies
-   (and (x86p x86-1)
-        (x86p x86-2)
-        (xlate-equiv-memory x86-1 x86-2)
+   (and (xlate-equiv-memory x86-1 x86-2)
         (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
                                                  (logand 18446744073709547520 (loghead 52 base-addr)))
                   (gather-all-paging-structure-qword-addresses x86-1))
@@ -743,8 +733,7 @@
 
 (defthm two-page-dir-ptr-table-walks-ia32e-la-to-pa-page-dir-ptr-table
   (implies
-   (and (x86p x86)
-        (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr-2)
+   (and (member-p (page-dir-ptr-table-entry-addr (logext 48 lin-addr-2)
                                                  (logand 18446744073709547520 (loghead 52 base-addr-2)))
                   (gather-all-paging-structure-qword-addresses x86))
         (if (equal (page-size (rm-low-64 (page-dir-ptr-table-entry-addr
@@ -864,8 +853,7 @@
 ;; structure traversals...
 
 (defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
-  (implies (and (x86p x86)
-                (not (programmer-level-mode x86)))
+  (implies (not (programmer-level-mode x86))
            (equal (gather-all-paging-structure-qword-addresses
                    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -881,7 +869,6 @@
 
 (defthm xlate-equiv-entries-at-qword-addresses-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
   (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))
-                (x86p x86)
                 (not (programmer-level-mode x86)))
            (equal (xlate-equiv-entries-at-qword-addresses
                    addrs addrs

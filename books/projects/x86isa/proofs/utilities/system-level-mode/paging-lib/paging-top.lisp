@@ -329,12 +329,11 @@
                             ()))))
 
 (defthm translation-governing-addresses-for-page-directory-and-mv-nth-2-las-to-pas
-  (implies (x86p x86)
-           (equal (translation-governing-addresses-for-page-directory
-                   lin-addr page-directory-base-addr
-                   (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                  (translation-governing-addresses-for-page-directory
-                   lin-addr page-directory-base-addr x86))))
+  (equal (translation-governing-addresses-for-page-directory
+          lin-addr page-directory-base-addr
+          (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+         (translation-governing-addresses-for-page-directory
+          lin-addr page-directory-base-addr x86)))
 
 (defthm translation-governing-addresses-for-page-directory-and-mv-nth-1-wb-disjoint-p
   (implies (and (disjoint-p
@@ -363,10 +362,9 @@
 ;; ----------------------------------------------------------------------
 
 (defthm translation-governing-addresses-for-page-dir-ptr-table-and-write-to-physical-memory-disjoint-p
-  (implies (and (disjoint-p (translation-governing-addresses-for-page-dir-ptr-table
-                             lin-addr page-dir-ptr-table-base-addr x86)
-                            p-addrs)
-                (x86p x86))
+  (implies (disjoint-p (translation-governing-addresses-for-page-dir-ptr-table
+                        lin-addr page-dir-ptr-table-base-addr x86)
+                       p-addrs)
            (equal (translation-governing-addresses-for-page-dir-ptr-table
                    lin-addr page-dir-ptr-table-base-addr
                    (write-to-physical-memory p-addrs bytes x86))
@@ -379,12 +377,11 @@
                             ()))))
 
 (defthm translation-governing-addresses-for-page-dir-ptr-table-and-mv-nth-2-las-to-pas-disjoint-p
-  (implies (x86p x86)
-           (equal (translation-governing-addresses-for-page-dir-ptr-table
-                   lin-addr page-dir-ptr-table-base-addr
-                   (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                  (translation-governing-addresses-for-page-dir-ptr-table
-                   lin-addr page-dir-ptr-table-base-addr x86))))
+  (equal (translation-governing-addresses-for-page-dir-ptr-table
+          lin-addr page-dir-ptr-table-base-addr
+          (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+         (translation-governing-addresses-for-page-dir-ptr-table
+          lin-addr page-dir-ptr-table-base-addr x86)))
 
 (defthm translation-governing-addresses-for-page-dir-ptr-table-and-mv-nth-1-wb-disjoint-p
   (implies (and (disjoint-p
@@ -414,10 +411,9 @@
 ;; ----------------------------------------------------------------------
 
 (defthm translation-governing-addresses-for-pml4-table-and-write-to-physical-memory-disjoint-p
-  (implies (and (disjoint-p (translation-governing-addresses-for-pml4-table
-                             lin-addr pml4-table-base-addr x86)
-                            p-addrs)
-                (x86p x86))
+  (implies (disjoint-p (translation-governing-addresses-for-pml4-table
+                        lin-addr pml4-table-base-addr x86)
+                       p-addrs)
            (equal (translation-governing-addresses-for-pml4-table
                    lin-addr pml4-table-base-addr
                    (write-to-physical-memory p-addrs bytes x86))
@@ -431,12 +427,11 @@
                             ()))))
 
 (defthm translation-governing-addresses-for-pml4-table-and-mv-nth-2-las-to-pas-disjoint-p
-  (implies (x86p x86)
-           (equal (translation-governing-addresses-for-pml4-table
-                   lin-addr pml4-table-base-addr
-                   (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                  (translation-governing-addresses-for-pml4-table
-                   lin-addr pml4-table-base-addr x86))))
+  (equal (translation-governing-addresses-for-pml4-table
+          lin-addr pml4-table-base-addr
+          (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+         (translation-governing-addresses-for-pml4-table
+          lin-addr pml4-table-base-addr x86)))
 
 (defthm translation-governing-addresses-for-pml4-table-and-mv-nth-1-wb-disjoint-p
   (implies (and (disjoint-p
@@ -465,9 +460,8 @@
 ;; ----------------------------------------------------------------------
 
 (defthm translation-governing-addresses-and-write-to-physical-memory-disjoint-p
-  (implies (and (disjoint-p (translation-governing-addresses lin-addr x86)
-                            p-addrs)
-                (x86p x86))
+  (implies (disjoint-p (translation-governing-addresses lin-addr x86)
+                       p-addrs)
            (equal (translation-governing-addresses
                    lin-addr (write-to-physical-memory p-addrs bytes x86))
                   (translation-governing-addresses lin-addr x86)))
@@ -476,10 +470,9 @@
            :in-theory (e/d* (disjoint-p translation-governing-addresses) ()))))
 
 (defthm translation-governing-addresses-and-mv-nth-2-las-to-pas-disjoint-p
-  (implies (x86p x86)
-           (equal (translation-governing-addresses
-                   lin-addr (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                  (translation-governing-addresses lin-addr x86))))
+  (equal (translation-governing-addresses
+          lin-addr (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+         (translation-governing-addresses lin-addr x86)))
 
 (defthm translation-governing-addresses-and-mv-nth-1-wb-disjoint-p
   (implies (and
@@ -514,10 +507,9 @@
                             ()))))
 
 (defthm all-translation-governing-addresses-and-mv-nth-2-las-to-pas
-  (implies (x86p x86)
-           (equal (all-translation-governing-addresses
-                   l-addrs-1 (mv-nth 2 (las-to-pas l-addrs-2 r-w-x cpl x86)))
-                  (all-translation-governing-addresses l-addrs-1 x86)))
+  (equal (all-translation-governing-addresses
+          l-addrs-1 (mv-nth 2 (las-to-pas l-addrs-2 r-w-x cpl x86)))
+         (all-translation-governing-addresses l-addrs-1 x86))
   :hints (("Goal"
            :in-theory (e/d* (disjoint-p all-translation-governing-addresses) ()))))
 
@@ -554,57 +546,34 @@
   (implies (and (bind-free (find-l-addrs-from-las-to-pas 'l-addrs mfc state)
                            (l-addrs))
                 (member-p lin-addr l-addrs)
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                (x86p x86))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)) nil))
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
 (defthm mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
   (implies (and (member-p lin-addr l-addrs)
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                (x86p x86))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
            (member-p (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
                      (mv-nth 1 (las-to-pas     l-addrs r-w-x cpl x86))))
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
 (defthm mv-nth-0-las-to-pas-after-mv-nth-2-ia32e-la-to-pa
-  (implies (x86p x86)
-           (equal (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
-                                        (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-                  (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86))))
-  :hints (("Goal"
-           :induct (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)
-           :in-theory (e/d* (las-to-pas)
-                            ()))
-          ("Subgoal *1/3"
-           :use ((:instance xlate-equiv-memory-and-las-to-pas
-                            (l-addrs l-addrs-1)
-                            (r-w-x r-w-x-1)
-                            (cpl cpl-1)
-                            (x86-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86)))
-                            (x86-2 x86))))))
+  ;; (:CONGRUENCE XLATE-EQUIV-MEMORY-AND-MV-NTH-0-LAS-TO-PAS)
+  ;; (:REWRITE XLATE-EQUIV-MEMORY-WITH-MV-NTH-2-IA32E-LA-TO-PA)
+  (equal (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
+                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+         (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86))))
 
 (defthm mv-nth-1-las-to-pas-after-mv-nth-2-ia32e-la-to-pa
-  (implies (x86p x86)
-           (equal (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
-                                        (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
-                  (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86))))
-  :hints (("Goal"
-           :induct (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)
-           :in-theory (e/d* (las-to-pas)
-                            ()))
-          ("Subgoal *1/3"
-           :use ((:instance xlate-equiv-memory-and-las-to-pas
-                            (l-addrs l-addrs-1)
-                            (r-w-x r-w-x-1)
-                            (cpl cpl-1)
-                            (x86-1 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86)))
-                            (x86-2 x86))))))
+  ;; (:CONGRUENCE XLATE-EQUIV-MEMORY-AND-MV-NTH-1-LAS-TO-PAS)
+  ;; (:REWRITE XLATE-EQUIV-MEMORY-WITH-MV-NTH-2-IA32E-LA-TO-PA)
+  (equal (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1
+                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
+         (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86))))
 
 (defthmd open-mv-nth-0-las-to-pas
   (implies (and (canonical-address-p lin-addr)
-                (not (zp n))
-                (x86p x86))
+                (not (zp n)))
            (equal (mv-nth 0 (las-to-pas (create-canonical-address-list n lin-addr) r-w-x cpl x86))
                   (if (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
                       (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
@@ -614,8 +583,7 @@
 (defthmd open-mv-nth-1-las-to-pas
   (implies (and (canonical-address-p lin-addr)
                 (not (zp n))
-                (not (mv-nth 0 (las-to-pas (create-canonical-address-list n lin-addr) r-w-x cpl x86)))
-                (x86p x86))
+                (not (mv-nth 0 (las-to-pas (create-canonical-address-list n lin-addr) r-w-x cpl x86))))
            (equal (mv-nth 1 (las-to-pas (create-canonical-address-list n lin-addr) r-w-x cpl x86))
                   (cons (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
                         (mv-nth 1 (las-to-pas (create-canonical-address-list (+ -1 n) (+ 1 lin-addr))
@@ -624,9 +592,7 @@
 (defthm las-to-pas-values-and-xw-mem-not-member
   (implies (and (not (member-p index (all-translation-governing-addresses l-addrs x86)))
                 (physical-address-p index)
-                (canonical-address-listp l-addrs)
-                (unsigned-byte-p 8 byte)
-                (x86p x86))
+                (canonical-address-listp l-addrs))
            (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (xw :mem index byte x86)))
                        (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                 (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw :mem index byte x86)))
@@ -766,13 +732,13 @@
 (defthmd las-to-pas-subset-p
   ;; This is a pretty expensive rule --- a more general version of
   ;; las-to-pas-subset-p-with-l-addrs-from-bind-free.
-  (implies (and (bind-free
-                 (find-l-addrs-from-fn 'las-to-pas 'l-addrs mfc state)
-                 (l-addrs))
+  (implies (and (bind-free (find-l-addrs-from-fn 'las-to-pas
+                                                 'l-addrs
+                                                 mfc state)
+                           (l-addrs))
                 (syntaxp (not (eq l-addrs-subset l-addrs)))
                 (subset-p l-addrs-subset l-addrs)
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                (x86p x86))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
            (equal (mv-nth 0 (las-to-pas l-addrs-subset r-w-x cpl x86))
                   nil))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
@@ -784,8 +750,7 @@
                  (l-addrs))
                 (syntaxp (not (eq l-addrs-subset l-addrs)))
                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                (subset-p l-addrs-subset l-addrs)
-                (x86p x86))
+                (subset-p l-addrs-subset l-addrs))
            (equal (mv-nth 0 (las-to-pas l-addrs-subset r-w-x cpl x86))
                   nil))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))

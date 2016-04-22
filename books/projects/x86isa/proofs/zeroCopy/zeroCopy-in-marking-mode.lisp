@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../utilities/system-level-mode/marking-mode-utils")
+(include-book "../utilities/system-level-mode/symbolic-simulation-in-marking-mode")
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -136,7 +136,7 @@
   (implies (unsigned-byte-p 64 x)
            (unsigned-byte-p 52 (ash (loghead 40 (logtail 12 x)) 12))))
 
-(i-am-here)
+;; (i-am-here)
 
 (defthm page-dir-ptr-table-base-addr-and-mv-nth-1-wb
   (implies (and
@@ -260,6 +260,20 @@
   (gl::auto-bindings (:mix (:nat destination-entry 64) (:nat source-entry 64))))
 
 (defun rewire_dst_to_src-clk () 58)
+
+(i-am-here)
+
+(acl2::why x86-run-opener-not-ms-not-zp-n)
+(acl2::why x86-fetch-decode-execute-opener-in-marking-mode)
+(acl2::why get-prefixes-opener-lemma-no-prefix-byte)
+(acl2::why ia32e-la-to-pa-values-and-mv-nth-1-wb)
+(acl2::why rb-in-terms-of-nth-and-pos-in-system-level-mode)
+(acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode)
+(acl2::why program-at-wb-disjoint)
+(acl2::why rb-wb-disjoint-in-system-level-mode)
+(acl2::why disjointness-of-translation-governing-addresses-from-all-translation-governing-addresses)
+(acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
+(acl2::why las-to-pas-subset-p)
 
 (defthm rewire_dst_to_src-effects
   (implies (and
@@ -742,381 +756,25 @@
                      (combine-bytes
                       (mv-nth 1
                               (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                                  :r x86))))))
+                                  :r x86)))))
+
+
+            ;; -------------------------------------------------------------------------------
+
+            ;; Pre-conditions added in the marking mode --- these were
+            ;; not required in the non-marking mode.
+            (disjoint-p
+             (all-translation-governing-addresses
+              (create-canonical-address-list prog-len (xr :rip 0 x86))
+              x86)
+             (mv-nth 1 (las-to-pas
+                        (create-canonical-address-list prog-len (xr :rip 0 x86))
+                        :x (cpl x86) x86)))
+
+            )
 
            (equal (x86-run (rewire_dst_to_src-clk) x86)
-                  (xw
-                   :rgf *rax* 1
-                   (xw
-                    :rgf *rcx*
-                    (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))
-                    (xw
-                     :rgf *rdx*
-                     (logand
-                      4503598553628672
-                      (logior
-                       (logand
-                        -4503598553628673
-                        (logext
-                         64
-                         (combine-bytes
-                          (mv-nth
-                           1
-                           (rb
-                            (create-canonical-address-list
-                             8
-                             (page-dir-ptr-table-entry-addr
-                              (xr :rgf *rsi* x86)
-                              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                            :r x86)))))
-                       (logand
-                        4503598553628672
-                        (logext
-                         64
-                         (combine-bytes
-                          (mv-nth
-                           1
-                           (rb
-                            (create-canonical-address-list
-                             8
-                             (page-dir-ptr-table-entry-addr
-                              (xr :rgf *rdi* x86)
-                              (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                            :r x86)))))))
-                     (xw
-                      :rgf *rsp* (+ 8 (xr :rgf *rsp* x86))
-                      (xw
-                       :rgf *rsi* 0
-                       (xw
-                        :rgf *rdi*
-                        (logand
-                         4503598553628672
-                         (logext
-                          64
-                          (combine-bytes
-                           (mv-nth
-                            1
-                            (rb
-                             (create-canonical-address-list
-                              8
-                              (page-dir-ptr-table-entry-addr
-                               (xr :rgf *rdi* x86)
-                               (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                             :r x86)))))
-                        (xw
-                         :rgf *r8* 1099511627775
-                         (xw
-                          :rgf *r9*
-                          (logand
-                           4503598553628672
-                           (logext
-                            64
-                            (combine-bytes
-                             (mv-nth
-                              1
-                              (rb
-                               (create-canonical-address-list
-                                8
-                                (page-dir-ptr-table-entry-addr
-                                 (xr :rgf *rdi* x86)
-                                 (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                               :r x86)))))
-                          (xw
-                           :rip 0
-                           (logext
-                            64
-                            (combine-bytes
-                             (mv-nth
-                              1
-                              (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                                  :r x86))))
-                           (xw
-                            :undef 0 (+ 46 (nfix (xr :undef 0 x86)))
-                            (!flgi
-                             *cf*
-                             (loghead
-                              1
-                              (bool->bit
-                               (<
-                                (logand
-                                 4503598553628672
-                                 (combine-bytes
-                                  (mv-nth
-                                   1
-                                   (rb
-                                    (create-canonical-address-list
-                                     8
-                                     (page-dir-ptr-table-entry-addr
-                                      (xr :rgf *rdi* x86)
-                                      (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                    :r x86))))
-                                (logand
-                                 4503598553628672
-                                 (logior
-                                  (logand
-                                   18442240475155922943
-                                   (combine-bytes
-                                    (mv-nth
-                                     1
-                                     (rb
-                                      (create-canonical-address-list
-                                       8
-                                       (page-dir-ptr-table-entry-addr
-                                        (xr :rgf *rsi* x86)
-                                        (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                                      :r x86))))
-                                  (logand
-                                   4503598553628672
-                                   (combine-bytes
-                                    (mv-nth
-                                     1
-                                     (rb
-                                      (create-canonical-address-list
-                                       8
-                                       (page-dir-ptr-table-entry-addr
-                                        (xr :rgf *rdi* x86)
-                                        (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                      :r x86)))))))))
-                             (!flgi
-                              *pf*
-                              (pf-spec64
-                               (loghead
-                                64
-                                (+
-                                 (logand
-                                  4503598553628672
-                                  (logext
-                                   64
-                                   (combine-bytes
-                                    (mv-nth
-                                     1
-                                     (rb
-                                      (create-canonical-address-list
-                                       8
-                                       (page-dir-ptr-table-entry-addr
-                                        (xr :rgf *rdi* x86)
-                                        (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                      :r x86)))))
-                                 (-
-                                  (logand
-                                   4503598553628672
-                                   (logior
-                                    (logand
-                                     -4503598553628673
-                                     (logext
-                                      64
-                                      (combine-bytes
-                                       (mv-nth
-                                        1
-                                        (rb
-                                         (create-canonical-address-list
-                                          8
-                                          (page-dir-ptr-table-entry-addr
-                                           (xr :rgf *rsi* x86)
-                                           (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                                         :r x86)))))
-                                    (logand
-                                     4503598553628672
-                                     (logext
-                                      64
-                                      (combine-bytes
-                                       (mv-nth
-                                        1
-                                        (rb
-                                         (create-canonical-address-list
-                                          8
-                                          (page-dir-ptr-table-entry-addr
-                                           (xr :rgf *rdi* x86)
-                                           (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                         :r x86)))))))))))
-                              (!flgi
-                               *af*
-                               (sub-af-spec64
-                                (logand
-                                 4503598553628672
-                                 (combine-bytes
-                                  (mv-nth
-                                   1
-                                   (rb
-                                    (create-canonical-address-list
-                                     8
-                                     (page-dir-ptr-table-entry-addr
-                                      (xr :rgf *rdi* x86)
-                                      (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                    :r x86))))
-                                (logand
-                                 4503598553628672
-                                 (logior
-                                  (logand
-                                   18442240475155922943
-                                   (combine-bytes
-                                    (mv-nth
-                                     1
-                                     (rb
-                                      (create-canonical-address-list
-                                       8
-                                       (page-dir-ptr-table-entry-addr
-                                        (xr :rgf *rsi* x86)
-                                        (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                                      :r x86))))
-                                  (logand
-                                   4503598553628672
-                                   (combine-bytes
-                                    (mv-nth
-                                     1
-                                     (rb
-                                      (create-canonical-address-list
-                                       8
-                                       (page-dir-ptr-table-entry-addr
-                                        (xr :rgf *rdi* x86)
-                                        (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                      :r x86)))))))
-                               (!flgi
-                                *zf* 1
-                                (!flgi
-                                 *sf*
-                                 (sf-spec64
-                                  (loghead
-                                   64
-                                   (+
-                                    (logand
-                                     4503598553628672
-                                     (logext
-                                      64
-                                      (combine-bytes
-                                       (mv-nth
-                                        1
-                                        (rb
-                                         (create-canonical-address-list
-                                          8
-                                          (page-dir-ptr-table-entry-addr
-                                           (xr :rgf *rdi* x86)
-                                           (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                         :r x86)))))
-                                    (-
-                                     (logand
-                                      4503598553628672
-                                      (logior
-                                       (logand
-                                        -4503598553628673
-                                        (logext
-                                         64
-                                         (combine-bytes
-                                          (mv-nth
-                                           1
-                                           (rb
-                                            (create-canonical-address-list
-                                             8
-                                             (page-dir-ptr-table-entry-addr
-                                              (xr :rgf *rsi* x86)
-                                              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                                            :r x86)))))
-                                       (logand
-                                        4503598553628672
-                                        (logext
-                                         64
-                                         (combine-bytes
-                                          (mv-nth
-                                           1
-                                           (rb
-                                            (create-canonical-address-list
-                                             8
-                                             (page-dir-ptr-table-entry-addr
-                                              (xr :rgf *rdi* x86)
-                                              (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                            :r x86)))))))))))
-                                 (!flgi
-                                  *of*
-                                  (of-spec64
-                                   (+
-                                    (logand
-                                     4503598553628672
-                                     (logext
-                                      64
-                                      (combine-bytes
-                                       (mv-nth
-                                        1
-                                        (rb
-                                         (create-canonical-address-list
-                                          8
-                                          (page-dir-ptr-table-entry-addr
-                                           (xr :rgf *rdi* x86)
-                                           (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                         :r x86)))))
-                                    (-
-                                     (logand
-                                      4503598553628672
-                                      (logior
-                                       (logand
-                                        -4503598553628673
-                                        (logext
-                                         64
-                                         (combine-bytes
-                                          (mv-nth
-                                           1
-                                           (rb
-                                            (create-canonical-address-list
-                                             8
-                                             (page-dir-ptr-table-entry-addr
-                                              (xr :rgf *rsi* x86)
-                                              (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                                            :r x86)))))
-                                       (logand
-                                        4503598553628672
-                                        (logext
-                                         64
-                                         (combine-bytes
-                                          (mv-nth
-                                           1
-                                           (rb
-                                            (create-canonical-address-list
-                                             8
-                                             (page-dir-ptr-table-entry-addr
-                                              (xr :rgf *rdi* x86)
-                                              (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                            :r x86))))))))))
-                                  (mv-nth
-                                   1
-                                   (wb
-                                    (create-addr-bytes-alist
-                                     (create-canonical-address-list
-                                      8
-                                      (page-dir-ptr-table-entry-addr
-                                       (xr :rgf *rsi* x86)
-                                       (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                                     (byte-ify
-                                      8
-                                      (logior
-                                       (logand
-                                        18442240475155922943
-                                        (combine-bytes
-                                         (mv-nth
-                                          1
-                                          (rb
-                                           (create-canonical-address-list
-                                            8
-                                            (page-dir-ptr-table-entry-addr
-                                             (xr :rgf *rsi* x86)
-                                             (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
-                                           :r x86))))
-                                       (logand
-                                        4503598553628672
-                                        (combine-bytes
-                                         (mv-nth
-                                          1
-                                          (rb
-                                           (create-canonical-address-list
-                                            8
-                                            (page-dir-ptr-table-entry-addr
-                                             (xr :rgf *rdi* x86)
-                                             (page-dir-ptr-table-base-addr (xr :rgf *rdi* x86) x86)))
-                                           :r x86)))))))
-                                    (mv-nth 1
-                                            (wb (create-addr-bytes-alist
-                                                 (create-canonical-address-list
-                                                  8 (+ -24 (xr :rgf *rsp* x86)))
-                                                 (byte-ify 8 (xr :ctr *cr3* x86)))
-                                                x86))))))))))))))))))))))
+                  xxx))
   :hints (("Goal"
            :do-not '(preprocess)
            :do-not-induct t
