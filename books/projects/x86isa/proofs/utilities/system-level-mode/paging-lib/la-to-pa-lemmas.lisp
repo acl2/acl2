@@ -60,6 +60,14 @@
                                    ())))
   :rule-classes :congruence)
 
+(defthm xlate-equiv-memory-and-page-structure-marking-mode
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (xr :page-structure-marking-mode 0 x86-1)
+                  (xr :page-structure-marking-mode 0 x86-2)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+                                   ())))
+  :rule-classes :congruence)
+
 ;; ======================================================================
 
 ;; Lemmas about ia32e-la-to-pa:

@@ -267,6 +267,7 @@
 (acl2::why x86-fetch-decode-execute-opener-in-marking-mode)
 (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
 (acl2::why xlate-equiv-memory-and-mv-nth-2-get-prefixes) ;; For mv-nth-0-rb-values-and-xlate-equiv-memory
+(acl2::why mv-nth-2-rb-and-xlate-equiv-memory)
 (acl2::why ia32e-la-to-pa-values-and-mv-nth-1-wb)
 (acl2::why rb-in-terms-of-nth-and-pos-in-system-level-mode)
 (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode)
@@ -274,7 +275,14 @@
 (acl2::why rb-wb-disjoint-in-system-level-mode)
 (acl2::why disjointness-of-translation-governing-addresses-from-all-translation-governing-addresses)
 (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
-;; (acl2::why las-to-pas-subset-p) ;; This is disabled by default.
+
+;; TODO: I need lemmas about:
+
+;; *  (mv-nth 1 (rb .... (mv-nth 2 (get-prefixes ....))))
+;;    [maybe (mv-nth 1 (rb... )) with xlate-equiv-memory states in general?]
+
+;; *  (program-at .... (mv-nth 2 (get-prefixes ....)))
+;;    [maybe (program-at ...) with xlate-equiv-memory states in general?]
 
 (defthm rewire_dst_to_src-effects
   (implies (and

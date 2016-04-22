@@ -2053,6 +2053,8 @@
                     (ia32_efer-slice :ia32_efer-nxe (n12 (msri *ia32_efer-idx* x86-2))))
              (equal (rflags-slice :ac (rflags x86-1))
                     (rflags-slice :ac (rflags x86-2)))
+             (equal (xr :page-structure-marking-mode 0 x86-1)
+                    (xr :page-structure-marking-mode 0 x86-2))
              (equal paging-qword-addresses-1 paging-qword-addresses-2)
              (xlate-equiv-entries-at-qword-addresses
               paging-qword-addresses-1 paging-qword-addresses-2 x86-1 x86-2)))
@@ -2111,8 +2113,7 @@
                   (not (equal fld :ctr))
                   (not (equal fld :rflags))
                   (not (equal fld :programmer-level-mode))
-                  ;; (not (equal fld :page-structure-marking-mode))
-                  )
+                  (not (equal fld :page-structure-marking-mode)))
              (xlate-equiv-structures (xw fld index val x86)
                                      (double-rewrite x86))))
 
