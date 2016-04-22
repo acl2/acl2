@@ -647,10 +647,10 @@ implementations.")
 
   #+gcl
   (or (probe-file filename)
-      (let ((x (and (not (equal filename ""))
-                    (cond ((eql (char filename (1- (length filename))) #\/)
-                           filename)
-                          (t (concatenate 'string filename "/"))))))
+      (equal filename "")
+      (let ((x (cond ((eql (char filename (1- (length filename))) #\/)
+                      filename)
+                     (t (concatenate 'string filename "/")))))
         (directory x)))
   #-gcl
   (probe-file filename))
