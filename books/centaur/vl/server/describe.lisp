@@ -388,6 +388,7 @@ to describe all of the places that @('name') is used.</p>")
 
 (define vl-pp-describe ((name stringp)
                         (x    vl-module-p)
+                        (ss   vl-scopestack-p "design level")
                         &key (ps 'ps))
   :guard-debug t
   (b* (((vl-module x) x)
@@ -418,8 +419,6 @@ to describe all of the places that @('name') is used.</p>")
                   ps))
              ps))
 
-       (ss (make-vl-scopestack-null) ;; bozo stupid hack
-           )
        (ss (vl-scopestack-push x ss))
 
        (portdecl (vl-find-portdecl name x.portdecls))
@@ -436,7 +435,11 @@ to describe all of the places that @('name') is used.</p>")
                                      (vl-cw "~a0" item))
                         ps)
                       (if item
-                          (vl-cw "~a0" item)
+                          (case (tag item)
+                            (:vl-typedef
+                             (vl-pp-typedef item))
+                            (otherwise
+                             (vl-cw "~a0" item)))
                         ps)
                       (vl-when-html (vl-println-markup "</div>")))
                    (vl-ps-seq
@@ -456,5 +459,6 @@ to describe all of the places that @('name') is used.</p>")
       ps))
 
 (define vl-describe ((name stringp)
-                     (x    vl-module-p))
-  (with-local-ps (vl-pp-describe name x)))
+                     (x    vl-module-p)
+                     (ss   vl-scopestack-p "design level"))
+  (with-local-ps (vl-pp-describe name x ss)))
