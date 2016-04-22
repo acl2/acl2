@@ -429,7 +429,12 @@
    (equal (nencode x p q)
           (nencode_alt x p q))
    :hints (("Goal" :in-theory (e/d (nencode_alt
-                                    nencode) ())))))
+                                    nencode)
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   ((force)))))))
 
 
 
@@ -447,7 +452,12 @@
    (equal (dencode x p q)
           (dencode_alt x p q))
    :hints (("Goal" :in-theory (e/d (dencode_alt
-                                    dencode) ())))))
+                                    dencode)
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   ((force)))))))
 
 
 (defund iencode (x p q)

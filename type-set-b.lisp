@@ -7257,6 +7257,49 @@
 (defattach (oncep-tp oncep-tp-builtin)
   :skip-checks t)
 
+(defun strengthen-recog-call (x)
+
+; X is a recognizer call (r u).  This function normally returns (mv nil (fargn
+; x 1)).  However, it may return (mv ts y) if (r u) implies the disjunction (or
+; (ts' y) (r y), where (ts' y) is the assertion that y has type ts, and (not (r
+; u)) implies (not (r y)).  For example, (integerp (+ '3 y)) is equivalent to
+; (or (not (acl2-numberp y)) (integerp y)), so we return (mv (ts-complement
+; *ts-acl2-number*) y) in that case.  Thus, the first argument serves both as a
+; flag to indicate that something special is returned, and as a type-set that
+; the caller is responsibile for taking into account.
+
+  (let ((arg (fargn x 1)))
+    (case (ffn-symb x)
+      (integerp
+       (cond
+        ((ffn-symb-p arg 'binary-+) ; (+ const term)
+         (cond
+          ((and (quotep (fargn arg 1))
+                (integerp (unquote (fargn arg 1))))
+           (mv (ts-complement *ts-acl2-number*)
+               (fargn arg 2)))
+          (t (mv nil arg))))
+        (t (mv nil arg))))
+      (rationalp
+       (cond
+        ((ffn-symb-p arg 'binary-+) ; (+ const term)
+         (cond
+          ((and (quotep (fargn arg 1))
+                (rationalp (unquote (fargn arg 1))))
+           (mv (ts-complement *ts-acl2-number*)
+               (fargn arg 2)))
+          (t (mv nil arg))))
+        ((ffn-symb-p arg 'binary-*) ; (* const term)
+         (cond
+          ((and (quotep (fargn arg 1))
+                (rationalp (unquote (fargn arg 1)))
+                (not (eql 0 (unquote (fargn arg 1)))))
+           (mv (ts-complement *ts-acl2-number*)
+               (fargn arg 2)))
+          (t (mv nil arg))))
+        (t (mv nil arg))))
+      (otherwise (mv nil arg)))))
+
 (mutual-recursion
 
 (defun type-set-rec (x force-flg dwp type-alist ancestors ens w ttree
@@ -9521,29 +9564,38 @@
               ((and ts (ts-disjointp ts *ts-nil*))
                (mv-atf xnot-flg t nil type-alist nil ttree xttree))
               (t
-               (mv-let
-                 (ts ttree)
-                 (type-set-rec (fargn x 1) force-flg
-                               dwp
-                               type-alist ancestors ens w nil
-                               pot-lst pt backchain-limit)
-                 (let ((t-int (ts-intersection ts
-                                               (access recognizer-tuple
-                                                       recog-tuple :true-ts)))
-                       (f-int (ts-intersection ts
-                                               (access recognizer-tuple
-                                                       recog-tuple :false-ts)))
-                       (rune (access recognizer-tuple recog-tuple :rune)))
-                   (cond
-                    ((ts= t-int *ts-empty*)
-                     (mv-atf xnot-flg nil t nil type-alist
-                             (push-lemma rune ttree)
-                             xttree))
-                    ((ts= f-int *ts-empty*)
-                     (mv-atf xnot-flg t nil type-alist nil
-                             (push-lemma rune ttree)
-                             xttree))
-                    (t
+               (mv-let (ts0 arg)
+                 (strengthen-recog-call x)
+                 (mv-let
+                   (ts ttree)
+                   (type-set-rec arg force-flg
+                                 dwp
+                                 type-alist ancestors ens w nil
+                                 pot-lst pt backchain-limit)
+                   (let ((t-int (ts-intersection ts
+                                                 (if ts0
+                                                     (ts-union
+                                                      ts0
+                                                      (access recognizer-tuple
+                                                              recog-tuple
+                                                              :true-ts))
+                                                   (access recognizer-tuple
+                                                           recog-tuple
+                                                           :true-ts))))
+                         (f-int (ts-intersection ts
+                                                 (access recognizer-tuple
+                                                         recog-tuple :false-ts)))
+                         (rune (access recognizer-tuple recog-tuple :rune)))
+                     (cond
+                      ((ts= t-int *ts-empty*)
+                       (mv-atf xnot-flg nil t nil type-alist
+                               (push-lemma rune (if ts0 (puffert ttree) ttree))
+                               xttree))
+                      ((ts= f-int *ts-empty*)
+                       (mv-atf xnot-flg t nil type-alist nil
+                               (push-lemma rune ttree)
+                               xttree))
+                      (t
 
 ; At this point we know that we can't determine whether (recog arg) is
 ; true or false.  We therefore will be returning two type-alists which
@@ -9556,8 +9608,12 @@
 ; shared-ttree below so we don't have to recreate this ttree twice (once
 ; for the tta and once for the fta).
 
-                     (let ((shared-ttree
-                            (push-lemma rune (cons-tag-trees ttree xttree))))
+                       (let ((shared-ttree
+                              (push-lemma rune
+                                          (if ts0
+                                              (puffert
+                                               (cons-tag-trees ttree xttree))
+                                            (cons-tag-trees ttree xttree)))))
 
 ; The two calls of extend-with-proper/improper-cons-ts-tuple below can be
 ; thought of as simply extending a type-alist with (list* arg int
@@ -9575,29 +9631,29 @@
 ; and the rune, since we are exploiting the fact that recog is Boolean.  The
 ; assumption that (recog arg) is false only depends on xttree.
 
-                       (mv-atf xnot-flg nil nil
-                               (and (not (eq ignore :tta))
-                                    (extend-with-proper/improper-cons-ts-tuple
-                                     (fargn x 1) t-int shared-ttree force-flg
-                                     dwp type-alist ancestors ens
-                                     (if strongp
-                                         type-alist
-                                       (extend-type-alist-simple
-                                        x *ts-t* (push-lemma rune xttree)
-                                        type-alist))
-                                     w
-                                     pot-lst pt backchain-limit))
-                               (and (not (eq ignore :fta))
-                                    (extend-with-proper/improper-cons-ts-tuple
-                                     (fargn x 1) f-int shared-ttree force-flg
-                                     dwp type-alist ancestors ens
-                                     (if strongp
-                                         type-alist
-                                       (extend-type-alist-simple
-                                        x *ts-nil* xttree type-alist))
-                                     w
-                                     pot-lst pt backchain-limit))
-                               nil nil)))))))))))
+                         (mv-atf xnot-flg nil nil
+                                 (and (not (eq ignore :tta))
+                                      (extend-with-proper/improper-cons-ts-tuple
+                                       arg t-int shared-ttree force-flg
+                                       dwp type-alist ancestors ens
+                                       (if strongp
+                                           type-alist
+                                         (extend-type-alist-simple
+                                          x *ts-t* (push-lemma rune xttree)
+                                          type-alist))
+                                       w
+                                       pot-lst pt backchain-limit))
+                                 (and (not (eq ignore :fta))
+                                      (extend-with-proper/improper-cons-ts-tuple
+                                       arg f-int shared-ttree force-flg
+                                       dwp type-alist ancestors ens
+                                       (if strongp
+                                           type-alist
+                                         (extend-type-alist-simple
+                                          x *ts-nil* xttree type-alist))
+                                       w
+                                       pot-lst pt backchain-limit))
+                                 nil nil))))))))))))
         ((member-eq (ffn-symb x)
                     *expandable-boot-strap-non-rec-fns*)
 

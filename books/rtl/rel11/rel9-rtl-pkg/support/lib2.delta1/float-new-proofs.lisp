@@ -697,7 +697,12 @@
  (defthm nencode_alt-is-nencode
    (equal (nencode_alt x p q)
           (nencode x p q))
-   :hints (("Goal" :in-theory (e/d (nencode_alt nencode) ())))))
+   :hints (("Goal" :in-theory (e/d (nencode_alt nencode)
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   ((force)))))))
 
 
 
@@ -862,7 +867,12 @@
  (defthm dencode_alt-is-dencode
    (equal (dencode_alt x p q)
           (dencode x p q))
-   :hints (("Goal" :in-theory (e/d (dencode_alt dencode) ())))))
+   :hints (("Goal" :in-theory (e/d (dencode_alt dencode)
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   ((force)))))))
 
 
 (defthmd drepp-ddecode_alt

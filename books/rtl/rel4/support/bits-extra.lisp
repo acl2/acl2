@@ -237,42 +237,84 @@
                y
                n)
          (lior x y n))
-  :hints (("Goal" :in-theory (e/d (lior) (logior lior-commutative)))))
+  :hints (("Goal" :in-theory (e/d (lior)
+                                  (logior
+                                   lior-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd lior-bits-2
   (equal (lior x
                (bits y (1- n) 0)
                n)
          (lior x y n))
-  :hints (("Goal" :in-theory (e/d (lior) (logior lior-commutative)))))
+  :hints (("Goal" :in-theory (e/d (lior)
+                                  (logior
+                                   lior-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd land-bits-1
   (equal (land (bits x (1- n) 0)
                y
                n)
          (land x y n))
-  :hints (("Goal" :in-theory (e/d (land) (logior land-commutative)))))
+  :hints (("Goal" :in-theory (e/d (land)
+                                  (logior
+                                   land-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd land-bits-2
   (equal (land x
                (bits y (1- n) 0)
                n)
          (land x y n))
-  :hints (("Goal" :in-theory (e/d (land) (logior land-commutative)))))
+  :hints (("Goal" :in-theory (e/d (land)
+                                  (logior
+                                   land-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd lxor-bits-1
   (equal (lxor (bits x (1- n) 0)
                y
                n)
          (lxor x y n))
-  :hints (("Goal" :in-theory (e/d (lxor) (logior lxor-commutative)))))
+  :hints (("Goal" :in-theory (e/d (lxor)
+                                  (logior
+                                   lxor-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd lxor-bits-2
   (equal (lxor x
                (bits y (1- n) 0)
                n)
          (lxor x y n))
-  :hints (("Goal" :in-theory (e/d (lxor) (logior lxor-commutative)))))
+  :hints (("Goal" :in-theory (e/d (lxor)
+                                  (logior
+                                   lxor-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 ; Proof of lior-slice:
 
