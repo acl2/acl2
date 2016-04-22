@@ -51,12 +51,13 @@
    updater
    type pred fix equiv
    signedp
+   rule-classes
    doc
    subfield-hierarchy ;; for subfields -- list of fields, innermost first
    kwd-alist))
 
 (defconst *bitstruct-field-keywords*
-  '(:accessor :updater :default :subfields))
+  '(:accessor :updater :default :subfields :rule-classes))
 
 (def-primitive-aggregate bitstruct
   (name
@@ -125,6 +126,7 @@
              :updater (intern-in-package-of-symbol
                        (cat "!" (symbol-name x.name) "->" (symbol-name subfield-name))
                         x.name)
+             :rule-classes field.rule-classes
              :type field.type
              :pred field.pred
              :fix field.fix
@@ -151,6 +153,7 @@
                                    (cat "!" (symbol-name structname) "->" (symbol-name fieldname))
                                    structname)
                          field-kwd-alist))
+       (rule-classes (getarg :rule-classes :rewrite field-kwd-alist))
        (bitstruct (lookup-bitstruct type bitstruct-table))
        ((unless bitstruct)
         (raise "In field ~x0, ~x1 is not a valid bitstruct type" x type))
@@ -161,6 +164,7 @@
                :lsb lsb
                :accessor accessor
                :updater updater
+               :rule-classes rule-classes
                :type bitstruct.name
                :pred bitstruct.pred
                :fix bitstruct.fix
@@ -647,7 +651,7 @@
        
        ,@(and
           (not field.subfield-hierarchy)
-          `((defthm ,(intern-in-package-of-symbol
+          `((defthmd ,(intern-in-package-of-symbol
                           (cat (symbol-name field.updater) "-IS-" (symbol-name x.name))
                           x.name)
                   (equal (,field.updater ,field.name ,x.xvar)
@@ -841,28 +845,48 @@ fields that are bits, Booleans, or other bitstructs.  Such a product is
 represented as a single integer produced by concatenating all the fields
 together, where the first field is least significant.</p>
 
-<p>Examples:</p>
+<h5>Examples:</h5>
 
-@({
- ;; Type containing three bits, a, b, and c
+<p>A bitstruct can be made up of single bits and Booleans.  (The difference is
+only in the return type of the accessors and the input type of the updaters;
+the representation is the same.)  The fields are ordered LSB first, so @('a')
+is bit 0 of the representation and @('c') is bit 2.  This defines a predicate,
+fixing function, accessors, and a constructor similar to @('defprod'), but also
+updaters such as @('!foo->a').</p> @({
  (defbitstruct foo
    ((a bitp)
-    (b bitp)
+    (b booleanp)
     (c bitp)))
+})
 
- ;; Packs a field of type foo in with two more bits, one of which is treated as
- ;; a Boolean rather than a bitp, and represents the product as a signed value
+<p>A bitstruct can also contain fields that are other bitstructs.  Here, the
+first field is a @('foo'), which is three bits wide, so the @('b') and @('c')
+fields are bits 3 and 4, respectively.  Also, since @(':signedp t') was
+specified, the representation is signed: the product is represented as a 5-bit
+signed integer rather than a 5-bit natural.</p>
+@({
  (defbitstruct bar
    ((myfoo foo-p)
     (b booleanp)
     (c bitp))
    :signedp t)
+ })
 
- ;; Providing a natural number instead of a field list causes defbitstruct to
- ;; define a new base type instead -- this is simply a 2-bit unsigned value.
+<p>A bitstruct can also be defined without any fields, giving only a
+width. These are mainly useful as fields of other bitstructs.  This makes sense
+when the individual bits aren't meaningful, and their combined value is what's
+important.  This defines a rounding-control as a 2-bit unsigned value.</p>
+@({
  (defbitstruct rounding-control 2)
+ })
 
- ;; ...
+<p>Sometimes we may want to nest one bitstruct inside another, but also
+directly access the fields of the internal struct.  Providing the
+@(':subfields') keyword causes defbitstruct to produce direct accessors and
+updaters for the subfields of the nested struct.  The following definition of
+@('mxcsr') produces the usual accesors and updaters including @('mxcsr->flags')
+and @('mxcsr->masks'), but also @('mxcsr->ie') and @('mxcsr->im'), etc.</p>
+@({
  (defbitstruct fp-flags
    ((ie bitp)
     (de bitp)
@@ -872,12 +896,115 @@ together, where the first field is least significant.</p>
     (pe bitp)))
 
  (defbitstruct mxcsr
-   ((flags fp-flags)
+   ((flags fp-flags :subfields (ie de ze oe ue pe))
     (daz bitp)
-    (masks fp-flags)
-    (rc  rc)
+    (masks fp-flags :subfields (im dm zm om um pm))
+    (rc  rounding-control)
     (ftz bitp)))
- })")
+ })
+
+<h5>Syntax</h5>
+<p>A @('defbitstruct') form is one of:</p>
+@({
+ (defbitstruct typename fields [ options ] )
+ })
+<p>or</p>
+@({
+ (defbitstruct typename width [ options ] ).
+ })
+<p>The syntax of fields is described below.</p>
+
+<h5>Top-level options</h5>
+
+<ul>
+
+<li>@(':pred'), @(':fix'), @(':equiv') -- override the default names (foo-p,
+foo-fix, and foo-equiv) for the predicate, fixing function, and equivalence
+relation.</li>
+
+<li>@(':parents'), @(':short'), @(':long') -- provide xdoc for the bitstruct</li>
+
+<li>@(':signedp') -- when true, represents the structure as a signed integer
+rather than an unsigned one.  (Signed and unsigned fields can be used inside
+unsigned and signed bitstructs -- they are simply sign- or zero-extended as
+necessary when accessed.)</li>
+
+</ul>
+
+<h5>Field Syntax</h5>
+<p>A field has the following form:</p>
+@({
+ (fieldname type [ docstring ] [ options ... ] )
+ })
+
+<p>The type can be either a predicate or type name, i.e., @('bit') or
+@('bitp'), and must refer to either a single-bit type (bit or boolean) or a
+previously-defined bitstruct type.  The docstring is a string which may contain
+xdoc syntax.</p>
+
+<h5>Field Options</p>
+<ul>
+
+<li>@(':accessor'), @(':updater') -- override the default names
+@('struct->field'), @('!struct->field') for the accessor and updater
+functions.</li>
+
+<li>@(':default') -- change the default value for the field in the
+@('make-foo') macro.  The default default is NIL for Boolean fields and 0 for
+everything else.</li>
+
+<li>@(':rule-classes') -- override the rule classes of the accessor function's
+return type theorem.  The default is @(':rewrite'); it may be appealing to use
+@(':type-prescription'), but typically the type prescription for the accessor
+should be determined automatically anyway.</li>
+
+<li>@(':subfields') -- Indicates that accessors and updaters should be created
+for subfields of this field, and gives their subfield names.  See the section
+on subfields below.</li> </li>
+
+<h5>Subfields</h5>
+
+<p>The @(':subfields') field option may only be used on a field whose type is
+itself a bitstruct type containing fields.  The value of the @(':subfields')
+argument should be a list of @('subfield_entries'), according to the following
+syntax:</p>
+ @({ subfield_entry ::= name | ( name ( subfield_entry ... ) ) })
+
+<p>Each top-level entry corresponds to a subfield of the field type.  If the
+entry uses the second syntax, which itself has a list of entries, those entries
+correspond to sub-subfields of the subfield type.  For example:</p>
+
+@({
+ (defbitstruct innermost
+   ((aa bitp)
+    (bb bitp)))
+
+ (defbitstruct midlevel
+   ((ii innermost :subfields (iaa ibb))
+    (qq bitp)
+    (jj innermost :subfields (jaa jbb))))
+
+ (defbitstruct toplevel
+   ((ss innermost :subfields (saa sbb))
+    (tt midlevel  :subfields ((tii (tiaa tibb))
+                              tqq
+                              tjj))))
+ })
+
+<p>For the @('toplevel') bitstruct, this generates the following subfield
+accessors, in addition to the direct accessors @('toplevel->ss') and
+@('toplevel->tt'):</p>
+
+@({
+ (toplevel->saa x)    == (innermost->aa (toplevel->ss x))
+ (toplevel->sbb x)    == (innermost->bb (toplevel->ss x))
+ (toplevel->tii x)    == (midlevel->ii (toplevel->ss x))
+ (toplevel->tiaa x)   == (innermost->aa (midlevel->ii (toplevel->tt x)))
+ (toplevel->tibb x)   == (innermost->bb (midlevel->ii (toplevel->tt x)))
+ (toplevel->tqq x)    == (midlevel->qq (toplevel->tt x))
+ (toplevel->tjj x)    == (midlevel->jj (toplevel->tt x))
+ })
+")
 
 
 
