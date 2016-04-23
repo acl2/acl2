@@ -40,6 +40,11 @@
   i.e. it has a @('theorem') property."
   (not (eq t (getpropc sym 'theorem t w))))
 
+(define macro-symbolp ((sym symbolp) (w plist-worldp))
+  :returns (yes/no booleanp)
+  :short "True iff the symbol @('sym') names a macro."
+  (not (eq (getpropc sym 'macro-args t w) t)))
+
 (define function-namep (x (w plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a function."
@@ -49,6 +54,11 @@
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a theorem."
   (and (symbolp x) (theorem-symbolp x w)))
+
+(define macro-namep (x (w plist-worldp))
+  :returns (yes/no booleanp)
+  :short "True iff @('x') is a symbol that names a macro."
+  (and (symbolp x) (macro-symbolp x w)))
 
 (define definedp ((fun (function-namep fun w)) (w plist-worldp))
   :returns (yes/no booleanp)
@@ -72,6 +82,44 @@
   :short "The @(tsee non-executable) status of the defined function @('fun')."
   (getpropc fun 'non-executablep nil w))
 
+(define unwrapped-nonexec-body ((fun (and (function-namep fun w)
+                                          (non-executablep fun w)))
+                                (w plist-worldp))
+  :returns (unwrapped-body pseudo-termp)
+  :short
+  "Body of a non-executable function,
+  without the &ldquo;non-executable wrapper&rdquo;."
+  :long
+  "<p>
+  @(tsee defun-nx) wraps the body of the function @('fun') being defined
+  in a wrapper that has
+  the following <see topic='@(url term)'>translated</see> form:
+  </p>
+  @({
+    (return-last 'progn
+                 (throw-nonexec-error 'fun
+                                      (cons arg1 ... (cons argN 'nil)...))
+                 body)
+  })
+  <p>
+  If @(tsee defun) is used with
+  <see topic='@(url non-executable)'>@(':non-executable')</see> set to @('t'),
+  the submitted body (once translated) must be wrapped like that.
+  </p>
+  <p>
+  @(tsee unwrapped-nonexec-body) returns
+  the unwrapped body of the non-executable function @('fun').
+  </p>"
+  (fourth (body fun nil w)))
+
+(define no-stobjs-p ((fun (function-namep fun w)) (w plist-worldp))
+  :returns (yes/no booleanp)
+  :short
+  "True iff the function @('fun') has no
+  input or output <see topic='@(url stobj)'>stobjs</see>."
+  (and (equal (stobjs-in fun w) (repeat (len (stobjs-in fun w)) nil))
+       (equal (stobjs-out fun w) (repeat (len (stobjs-out fun w)) nil))))
+
 (define measure ((fun (and (function-namep fun w)
                            (logicalp fun w)
                            (recursivep fun w)))
@@ -92,6 +140,55 @@
   for a discussion of well-founded relations in ACL2,
   including the @(':well-founded-relation') rule class.</p>"
   (access justification (getpropc fun 'justification nil w) :rel))
+
+(define ruler-extenders ((fun (and (function-namep fun w)
+                                   (logicalp fun w)
+                                   (recursivep fun w)))
+                         (w plist-worldp))
+  :returns (ruler-extenders (or (symbol-listp ruler-extenders)
+                                (equal ruler-extenders :all)))
+  :short
+  "<see topic='@(url rulers)'>Ruler</see> extenders
+  of a logic-mode recursive function."
+  (access justification (getpropc fun 'justification nil w) :ruler-extenders))
+
+(define macro-required-args ((mac (macro-namep mac w)) (w plist-worldp))
+  :returns (required-args symbol-listp)
+  :short "Required arguments of the macro @('mac'), in order."
+  :long
+  "<p>
+  The arguments of a macro form a list that
+  optionally starts with @('&whole') followed by another symbol,
+  continues with zero or more symbols that do not start with @('&')
+  which are the required arguments,
+  and possibly ends with a symbol starting with @('&') followed by more symbols.
+  </p>"
+  (let ((all-args (macro-args mac w)))
+    (if (null all-args)
+        nil
+      (if (eq (car all-args) '&whole)
+          (macro-required-args-aux (cddr all-args))
+        (macro-required-args-aux all-args))))
+
+  :prepwork
+  ((define macro-required-args-aux ((args symbol-listp))
+     :returns (required-args symbol-listp)
+     :parents (macro-required-args)
+     :short "Auxiliary function of @(tsee macro-required-args)."
+     :long
+     "<p>
+     After removing @('&whole') and the symbol following it
+     (if the list of arguments starts with @('&whole')),
+     collect all the arguments until
+     either the end of the list is reached
+     or a symbol starting with @('&') is encountered.
+     </p>"
+     (if (endp args)
+         nil
+       (let ((arg (car args)))
+         (if (eql (char (symbol-name arg) 0) #\&)
+             nil
+           (cons arg (macro-required-args-aux (cdr args)))))))))
 
 (define fundef-enabledp ((fun (function-namep fun (w state))) state)
   :returns (yes/no booleanp)
