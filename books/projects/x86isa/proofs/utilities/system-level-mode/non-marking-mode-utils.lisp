@@ -283,16 +283,16 @@
   (implies (canonical-address-listp x)
            (canonical-address-listp (remove-duplicates-equal x))))
 
-(defthm all-translation-governing-addresses-remove-duplicates-equal-and-subset-p
+(defthmd all-translation-governing-addresses-remove-duplicates-equal-and-subset-p
   (subset-p (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)
             (all-translation-governing-addresses l-addrs x86))
   :hints (("Goal" :in-theory (e/d* (subset-p) (translation-governing-addresses)))))
 
-(defthm member-p-of-all-translation-governing-addresses-and-remove-duplicates-equal
+(defthmd member-p-of-all-translation-governing-addresses-and-remove-duplicates-equal
   (implies (not (member-p addr (all-translation-governing-addresses l-addrs x86)))
            (not (member-p addr (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)))))
 
-(defthm wb-remove-duplicate-writes-in-system-level-non-marking-mode
+(defthmd wb-remove-duplicate-writes-in-system-level-non-marking-mode
   (implies (and (syntaxp (not (and (consp addr-lst)
                                    (eq (car addr-lst) 'remove-duplicate-keys))))
                 (disjoint-p
@@ -313,7 +313,11 @@
                   ;; like that.
                   (wb (remove-duplicate-keys addr-lst) x86)))
   :hints (("Goal" :do-not '(generalize)
-           :in-theory (e/d (disjoint-p member-p subset-p)
+           :in-theory (e/d (disjoint-p
+                            member-p
+                            subset-p
+                            member-p-of-all-translation-governing-addresses-and-remove-duplicates-equal
+                            all-translation-governing-addresses-remove-duplicates-equal-and-subset-p)
                            (acl2::mv-nth-cons-meta
                             disjoint-p-subset-p
                             member-p-and-remove-duplicates-equal

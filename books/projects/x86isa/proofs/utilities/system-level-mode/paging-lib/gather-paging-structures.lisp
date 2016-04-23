@@ -55,18 +55,6 @@
                                     bitops::ihsext-recursive-redefs)
                                    ()))))
 
-(defthm member-list-p-no-duplicates-list-p-and-member-p
-  (implies (and (member-list-p index addrs-2)
-                (true-listp addrs-1)
-                (true-list-listp addrs-2)
-                (no-duplicates-list-p (append (list addrs-1) addrs-2)))
-           (not (member-p index addrs-1)))
-  :hints (("Goal" :in-theory (e/d* (member-p
-                                    member-list-p
-                                    acl2::flatten
-                                    no-duplicates-p)
-                                   ()))))
-
 ;; (local (include-book "ihs/logops-lemmas" :dir :system))
 
 ;; (defthmd loghead-logtail-bigger-and-logbitp
@@ -135,34 +123,6 @@
     (implies (qword-paddr-listp xs)
              (qword-paddr-listp (nthcdr n xs)))
     :rule-classes (:rewrite :type-prescription)))
-
-(define qword-paddr-list-listp (xs)
-  :parents (reasoning-about-page-tables)
-  :enabled t
-  (cond ((atom xs) (eq xs nil))
-        (t (and (qword-paddr-listp (car xs))
-                (qword-paddr-list-listp (cdr xs)))))
-
-  ///
-
-  (defthm qword-paddr-list-listp-and-remove-duplicates-equal
-    (implies (qword-paddr-list-listp a)
-             (qword-paddr-list-listp (remove-duplicates-equal a))))
-
-  (defthm append-of-qword-paddr-list-listp
-    (implies (and (qword-paddr-list-listp xs)
-                  (qword-paddr-list-listp ys))
-             (qword-paddr-list-listp (append xs ys))))
-
-  (defthm qword-paddr-list-listp-implies-true-list-listp
-    (implies (qword-paddr-list-listp xs)
-             (true-list-listp xs))
-    :rule-classes :forward-chaining))
-
-(defthm append-of-true-list-listp
-  (implies (and (true-list-listp xs)
-                (true-list-listp ys))
-           (true-list-listp (append xs ys))))
 
 (define mult-8-qword-paddr-listp (xs)
   :enabled t
@@ -284,47 +244,6 @@
    :hints (("Goal" :in-theory (e/d* () (open-addr-range))))
    :rule-classes :forward-chaining))
 
-(define mult-8-qword-paddr-list-listp (xs)
-  :parents (reasoning-about-page-tables)
-  :enabled t
-  (cond ((atom xs) (eq xs nil))
-        (t (and (mult-8-qword-paddr-listp (car xs))
-                (mult-8-qword-paddr-list-listp (cdr xs)))))
-
-  ///
-
-  (defthm mult-8-qword-paddr-list-listp-remove-duplicates-equal
-    (implies (mult-8-qword-paddr-list-listp addrs)
-             (mult-8-qword-paddr-list-listp (remove-duplicates-equal addrs))))
-
-  (defthm append-of-mult-8-qword-paddr-list-listp
-    (implies (and (mult-8-qword-paddr-list-listp xs)
-                  (mult-8-qword-paddr-list-listp ys))
-             (mult-8-qword-paddr-list-listp (append xs ys))))
-
-  (defthm mult-8-qword-paddr-list-listp-implies-true-list-listp
-    (implies (mult-8-qword-paddr-list-listp xs)
-             (true-list-listp xs))
-    :rule-classes :forward-chaining)
-
-  (defthm mult-8-qword-paddr-list-listp-and-append-1
-    (implies (and (mult-8-qword-paddr-list-listp (append x y))
-                  (true-listp x))
-             (mult-8-qword-paddr-list-listp x))
-    :rule-classes (:rewrite :forward-chaining))
-
-  (defthm mult-8-qword-paddr-list-listp-and-append-2
-    (implies (mult-8-qword-paddr-list-listp (append x y))
-             (mult-8-qword-paddr-list-listp y))
-    :rule-classes (:rewrite :forward-chaining))
-
-  (defthm member-list-p-and-mult-8-qword-paddr-list-listp
-    (implies (and (member-list-p index addrs)
-                  (mult-8-qword-paddr-list-listp addrs))
-             (and (physical-address-p index)
-                  (equal (loghead 3 index) 0)))
-    :rule-classes (:rewrite :forward-chaining)))
-
 (define open-qword-paddr-list (xs)
   :guard (qword-paddr-listp xs)
   :enabled t
@@ -344,40 +263,6 @@
     (equal (open-qword-paddr-list (append xs ys))
            (append (open-qword-paddr-list xs)
                    (open-qword-paddr-list ys)))))
-
-(define open-qword-paddr-list-list (xs)
-  :guard (qword-paddr-list-listp xs)
-  :enabled t
-  (if (endp xs)
-      nil
-    (cons (open-qword-paddr-list (car xs))
-          (open-qword-paddr-list-list (cdr xs))))
-  ///
-
-  (defthm open-qword-paddr-list-list-and-member-list-p
-    (implies (and (mult-8-qword-paddr-list-listp addrs)
-                  (member-list-p index addrs))
-             (member-list-p index (open-qword-paddr-list-list addrs)))
-    :hints (("Goal" :in-theory (e/d* (member-list-p member-p) ()))))
-
-  (defthm open-qword-paddr-list-list-and-append
-    (equal (open-qword-paddr-list-list (append xs ys))
-           (append (open-qword-paddr-list-list xs)
-                   (open-qword-paddr-list-list ys))))
-
-  (defthm open-qword-paddr-list-list-pairwise-disjoint-p-aux-and-disjoint-p
-    (implies (and
-              (pairwise-disjoint-p-aux (list index) (open-qword-paddr-list-list addrs))
-              (member-list-p entry-addr addrs))
-             (disjoint-p (list index) (addr-range 8 entry-addr)))
-    :hints (("Goal" :in-theory (e/d* (pairwise-disjoint-p-aux)
-                                     ()))))
-
-  (defthm open-qword-paddr-list-list-pairwise-disjoint-p-aux-and-member-p
-    (implies (and (pairwise-disjoint-p-aux (list index) (open-qword-paddr-list-list addrs))
-                  (member-list-p entry-addr addrs))
-             (not (member-p index (addr-range 8 entry-addr))))
-    :hints (("Goal" :in-theory (e/d* (pairwise-disjoint-p-aux) ())))))
 
 (define create-qword-address-list
   ((count natp)
@@ -901,17 +786,6 @@
                               (n 12)))))))
 
 
-;; (local
-;;  (defthm member-p-member-list-p-mult-8-qword-paddr-list-listp-lemma
-;;    (implies (and (member-list-p index (cdr addrs))
-;;                  (mult-8-qword-paddr-list-listp addrs)
-;;                  (no-duplicates-list-p addrs))
-;;             (not (member-p index (car addrs))))
-;;    :hints (("Goal" :in-theory (e/d* (disjoint-p
-;;                                      member-list-p
-;;                                      member-p)
-;;                                     ())))))
-
 (local
  (defthm member-p-mult-8-qword-paddr-listp-lemma
    (implies (and (mult-8-qword-paddr-listp addrs)
@@ -929,19 +803,6 @@
    (implies (and (member-p index (cdr addrs))
                  (no-duplicates-p addrs))
             (not (equal index (car addrs))))))
-
-;; (local
-;;  (defthm member-list-p-mult-8-qword-paddr-list-listp-lemma
-;;    (implies (and (mult-8-qword-paddr-list-listp addrs)
-;;                  (not (member-list-p index addrs))
-;;                  (physical-address-p index)
-;;                  (equal (loghead 3 index) 0))
-;;             (pairwise-disjoint-p-aux
-;;              (addr-range 8 index)
-;;              (open-qword-paddr-list-list addrs)))
-;;    :hints (("Goal" :in-theory (e/d* (open-qword-paddr-list-list
-;;                                      member-list-p)
-;;                                     ())))))
 
 (define gather-qword-addresses-corresponding-to-entries-aux
   (superior-structure-paddrs x86)
@@ -998,7 +859,6 @@
     :hints (("Goal"
              :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries-aux
                                ifix
-                               pairwise-disjoint-p
                                disjoint-p)
                               (addr-range
                                (addr-range))))))
@@ -1061,7 +921,6 @@
     :hints (("Goal"
              :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries-aux
                                ifix
-                               pairwise-disjoint-p
                                disjoint-p)
                               ()))))
 
@@ -1137,7 +996,6 @@
     :hints (("Goal"
              :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries
                                ifix
-                               pairwise-disjoint-p
                                disjoint-p)
                               (addr-range
                                (addr-range))))))
@@ -1199,7 +1057,6 @@
     :hints (("Goal"
              :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries
                                ifix
-                               pairwise-disjoint-p
                                disjoint-p)
                               ()))))
 
@@ -1252,14 +1109,14 @@
            (disjoint-p index a))
   :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
 
+(defthmd not-disjoint-p-of-remove-duplicates-equal
+  (implies (not (disjoint-p index (remove-duplicates-equal a)))
+           (not (disjoint-p index a)))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
+
 (defthm disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
   (implies (disjoint-p index (open-qword-paddr-list (remove-duplicates-equal a)))
            (disjoint-p index (open-qword-paddr-list a)))
-  :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
-
-(defthm not-disjoint-p-of-remove-duplicates-equal
-  (implies (not (disjoint-p index (remove-duplicates-equal a)))
-           (not (disjoint-p index a)))
   :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
 
 (defthm not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
@@ -2148,8 +2005,7 @@
            :use ((:instance gather-all-paging-structure-qword-addresses-wm-low-64-disjoint
                             (x86 x86-1)))
            :in-theory (e/d* (xlate-equiv-structures)
-                            (pairwise-disjoint-p-aux
-                             open-qword-paddr-list
+                            (open-qword-paddr-list
                              gather-all-paging-structure-qword-addresses-wm-low-64-disjoint
                              gather-all-paging-structure-qword-addresses
                              force (force))))))

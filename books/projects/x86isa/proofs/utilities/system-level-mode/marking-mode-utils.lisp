@@ -78,7 +78,8 @@
            :in-theory (e/d* (las-to-pas
                              all-translation-governing-addresses
                              disjoint-p
-                             member-p)
+                             member-p
+                             not-disjoint-p-of-remove-duplicates-equal)
                             (negative-logand-to-positive-logand-with-integerp-x
                              bitops::logand-with-negated-bitmask
                              force (force))))))
@@ -358,102 +359,6 @@
                             (write-to-physical-memory
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
-
-;; (defun-nx wb-duplicate-writes-induct (addr-list x86)
-;;   (if (endp addr-list)
-;;       nil
-;;     (if (member-p (car (car addr-list)) (strip-cars (cdr addr-list)))
-;;         (wb-duplicate-writes-induct (cdr addr-list) x86)
-;;       (wb-duplicate-writes-induct
-;;        (cdr addr-list)
-;;        (mv-nth 1 (wb (list (car addr-list)) x86))))))
-
-;; (local
-;;  (defthm strip-cars-of-remove-duplicate-keys-is-remove-duplicates-equal-of-strip-cars
-;;    (implies (alistp alst)
-;;             (equal (strip-cars (remove-duplicate-keys alst))
-;;                    (remove-duplicates-equal (strip-cars alst))))))
-
-;; (defthm remove-duplicate-keys-mv-nth-0-las-to-pas
-;;   (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-;;                 (x86p x86))
-;;            (equal (mv-nth 0 (las-to-pas (remove-duplicates-equal l-addrs) r-w-x cpl x86))
-;;                   (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
-;;   :hints (("Goal" :induct (las-to-pas (remove-duplicates-equal l-addrs) r-w-x cpl x86))))
-
-;; (local
-;;  (defthmd write-to-physical-memory-xw-mem-member-p-helper
-;;    (implies (equal (write-to-physical-memory (cdr p-addrs)
-;;                                              (cdr bytes)
-;;                                              (xw :mem index byte
-;;                                                  (xw :mem (car p-addrs)
-;;                                                      (car bytes)
-;;                                                      x86)))
-;;                    (write-to-physical-memory (cdr p-addrs)
-;;                                              (cdr bytes)
-;;                                              (xw :mem (car p-addrs)
-;;                                                  (car bytes)
-;;                                                  x86)))
-;;             (equal (write-to-physical-memory (cdr p-addrs)
-;;                                              (cdr bytes)
-;;                                              (xw :mem (car p-addrs)
-;;                                                  (car bytes)
-;;                                                  (xw :mem index byte x86)))
-;;                    (write-to-physical-memory (cdr p-addrs)
-;;                                              (cdr bytes)
-;;                                              (xw :mem (car p-addrs)
-;;                                                  (car bytes)
-;;                                                  x86))))
-;;    :hints (("Goal" :cases ((equal index (car p-addrs)))))))
-
-;; (defthm write-to-physical-memory-xw-mem-member-p
-;;   (implies (member-p index p-addrs)
-;;            (equal (write-to-physical-memory p-addrs bytes (xw :mem index byte x86))
-;;                   (write-to-physical-memory p-addrs bytes x86)))
-;;   :hints (("Goal" :in-theory (e/d* (member-p write-to-physical-memory-xw-mem-member-p-helper) ()))))
-
-;; (defthm member-p-and-remove-duplicates-equal
-;;   (equal (member-p e (remove-duplicates-equal x))
-;;          (member-p e x))
-;;   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
-
-;; (defthm canonical-address-listp-and-remove-duplicates-equal
-;;   (implies (canonical-address-listp x)
-;;            (canonical-address-listp (remove-duplicates-equal x))))
-
-;; (defthm all-translation-governing-addresses-remove-duplicates-equal-and-subset-p
-;;   (subset-p (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)
-;;             (all-translation-governing-addresses l-addrs x86))
-;;   :hints (("Goal" :in-theory (e/d* (subset-p) (translation-governing-addresses)))))
-
-;; (defthm member-p-of-all-translation-governing-addresses-and-remove-duplicates-equal
-;;   (implies (not (member-p addr (all-translation-governing-addresses l-addrs x86)))
-;;            (not (member-p addr (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)))))
-
-;; (defthm wb-remove-duplicate-writes
-;;   (implies (and (syntaxp (not (and (consp addr-lst)
-;;                                    (eq (car addr-lst) 'remove-duplicate-keys))))
-;;                 (disjoint-p
-;;                  ;; Physical addresses corresponding to (strip-cars
-;;                  ;; addr-lst) are disjoint from the
-;;                  ;; translation-governing addresses.
-;;                  (all-translation-governing-addresses (strip-cars addr-lst)  x86)
-;;                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-;;                 (addr-byte-alistp addr-lst)
-;;                 ;; (not (mv-nth 0 (wb addr-lst x86)))
-;;                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-;;                 (not (programmer-level-mode x86))
-;;                 (x86p x86))
-;;            (equal (wb addr-lst x86)
-;;                   ;; TO-DO: I need to replace remove-duplicate-keys
-;;                   ;; with remove-duplicate-phy-addresses or something
-;;                   ;; like that.
-;;                   (wb (remove-duplicate-keys addr-lst) x86)))
-;;   :hints (("Goal" :do-not '(generalize)
-;;            :in-theory (e/d (disjoint-p member-p subset-p)
-;;                            (acl2::mv-nth-cons-meta
-;;                             translation-governing-addresses))
-;;            :induct (wb-duplicate-writes-induct addr-lst x86))))
 
 ;; ======================================================================
 

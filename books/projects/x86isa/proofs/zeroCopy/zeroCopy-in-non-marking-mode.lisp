@@ -5,7 +5,7 @@
 
 (include-book "../utilities/system-level-mode/non-marking-mode-utils")
 
-(include-book "centaur/bitops/ihs-extensions" :dir :system)
+(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/gl/gl" :dir :system))
@@ -13,6 +13,69 @@
 ;; ======================================================================
 
 ;; Introducing the system-level program:
+
+;;  1 mov %cr3,%rax
+;;  2 mov %rax,-0x18(%rsp)
+;;  3 mov -0x18(%rsp),%rdx
+;;  4 mov %rdi,%rax
+;;  5 shr $0x24,%rax
+;;  6 and $0xff8,%eax
+;;  7 and $0xfffffffffffff000,%rdx
+;;  8 or %rdx,%rax
+;;  9 mov (%rax),%rax
+;; 10 test $0x1,%al
+;; 11 je 400780 <rewire_dst_to_src+0x100>
+;; 12 shr $0xc,%rax
+;; 13 movabs $0xffffffffff,%r8
+;; 14 mov %rdi,%rcx
+;; 15 and %r8,%rax
+;; 16 shr $0x1b,%rcx
+;; 17 and $0xff8,%ecx
+;; 18 shl $0xc,%rax
+;; 19 or %rcx,%rax
+;; 20 mov (%rax),%rax
+;; 21 mov %rax,%rcx
+;; 22 and $0x81,%ecx
+;; 23 cmp $0x81,%rcx
+;; 24 jne 400780 <rewire_dst_to_src+0x100>
+;; 25 mov %rsi,%rcx
+;; 26 movabs $0xfffffc0000000,%r9
+;; 27 shr $0x24,%rcx
+;; 28 and %rax,%r9
+;; 29 and $0xff8,%ecx
+;; 30 or %rdx,%rcx
+;; 31 mov (%rcx),%rax
+;; 32 test $0x1,%al
+;; 33 je 400780 <rewire_dst_to_src+0x100>
+;; 34 shr $0xc,%rax
+;; 35 mov %rsi,%rdx
+;; 36 and %r8,%rax
+;; 37 shr $0x1b,%rdx
+;; 38 and $0xff8,%edx
+;; 39 shl $0xc,%rax
+;; 40 or %rdx,%rax
+;; 41 movabs $0xfff000003fffffff,%rdx
+;; 42 and (%rax),%rdx
+;; 43 or %r9,%rdx
+;; 44 mov %rdx,(%rax)
+;; 45 mov %rdx,%rax
+;; 46 and $0x81,%eax
+;; 47 cmp $0x81,%rax
+;; 48 jne 400780 <rewire_dst_to_src+0x100>
+;; 49 movabs $0xfffffc0000000,%rax
+;; 50 and $0x3fffffff,%esi
+;; 51 and $0x3fffffff,%edi
+;; 52 and %rax,%rdx
+;; 53 or %r9,%rdi
+;; 54 xor %eax,%eax
+;; 55 or %rsi,%rdx
+;; 56 cmp %rdx,%rdi
+;; 57 sete %al
+;; 58 retq
+;; 59 nopw %cs:0x0(%rax,%rax,1)
+;; 60 mov $0xffffffffffffffff,%rax
+;; 61 retq
+;; 62 nopl 0x0(%rax,%rax,1)
 
 (defconst *rewire_dst_to_src*
 
@@ -86,23 +149,16 @@
              *rewire_dst_to_src*
              x86))
 
-(local
- (defthm loghead-negative
-   (implies (and (syntaxp (and (quotep n)
-                               (< (cadr n) 0)))
-                 (< n 0)
-                 (integerp n))
-            (equal (loghead n x) 0))))
-
 ;; ======================================================================
 
 ;; Proof of rewire_dst_to_src effects theorem:
 
-;; Argh, ACL2's default ancestors-check is killing me --- it prevents
-;; program-at-wb-disjoint-in-system-level-non-marking-mode from being
-;; used. So I'm going to use Sol's trivial ancestors-check version.
-(local (include-book "tools/trivial-ancestors-check" :dir :system))
-(local (acl2::use-trivial-ancestors-check))
+(defthm loghead-negative
+  (implies (and (syntaxp (and (quotep n)
+                              (< (cadr n) 0)))
+                (< n 0)
+                (integerp n))
+           (equal (loghead n x) 0)))
 
 (define pml4-table-base-addr (x86)
   :enabled t
@@ -722,6 +778,198 @@
 ;; (acl2::why disjointness-of-translation-governing-addresses-from-all-translation-governing-addresses)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
 
+;; Argh, ACL2's default ancestors-check is killing me --- it prevents
+;; program-at-wb-disjoint-in-system-level-non-marking-mode from being
+;; used. So I'm going to use Sol's trivial ancestors-check version.
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
+(local (acl2::use-trivial-ancestors-check))
+
+(def-ruleset rewire_dst_to_src-disable
+  '((:rewrite ia32e-la-to-pa-lower-12-bits-error)
+    (:rewrite
+     disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p)
+    (:type-prescription natp-pml4-table-entry-addr)
+    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+    (:rewrite ia32e-la-to-pa-xw-state)
+    (:rewrite r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
+    (:linear adding-7-to-pml4-table-entry-addr)
+    (:linear *physical-address-size*p-pml4-table-entry-addr)
+    (:rewrite las-to-pas-xw-state)
+    (:rewrite acl2::equal-of-booleans-rewrite)
+    (:rewrite loghead-unequal)
+    (:rewrite negative-logand-to-positive-logand-with-integerp-x)
+    (:definition combine-bytes)
+    (:rewrite |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
+    (:rewrite xr-ia32e-la-to-pa)
+    (:rewrite acl2::nfix-when-not-natp)
+    (:rewrite acl2::nfix-when-natp)
+    (:rewrite constant-upper-bound-of-logior-for-naturals)
+    (:linear combine-bytes-size-for-rm64-programmer-level-mode)
+    (:rewrite acl2::natp-when-integerp)
+    (:rewrite acl2::natp-when-gte-0)
+    (:rewrite 4k-aligned-physical-address-helper)
+    (:rewrite bitops::signed-byte-p-of-logtail)
+    (:linear adding-7-to-page-dir-ptr-table-entry-addr)
+    (:linear *physical-address-size*p-page-dir-ptr-table-entry-addr)
+    (:type-prescription adding-7-to-pml4-table-entry-addr)
+    (:type-prescription adding-7-to-page-dir-ptr-table-entry-addr)
+    (:rewrite acl2::signed-byte-p-logext)
+    (:type-prescription booleanp)
+    (:rewrite loghead-64-n64-to-i64-canonical-address)
+    (:type-prescription pml4-table-base-addr)
+    (:rewrite get-prefixes-opener-lemma-group-4-prefix)
+    (:rewrite get-prefixes-opener-lemma-group-3-prefix)
+    (:rewrite get-prefixes-opener-lemma-group-2-prefix)
+    (:rewrite get-prefixes-opener-lemma-group-1-prefix)
+    (:rewrite
+     combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)
+    (:definition member-p)
+    (:linear unsigned-byte-p-of-combine-bytes)
+    (:type-prescription acl2::|x < y  =>  0 < -x+y|)
+    (:rewrite default-+-2)
+    (:rewrite acl2::natp-rw)
+    (:rewrite ia32e-la-to-pa-lower-12-bits)
+    (:rewrite default-+-1)
+    (:rewrite acl2::ash-0)
+    (:rewrite acl2::zip-open)
+    (:rewrite loghead-of-non-integerp)
+    (:type-prescription addr-byte-alistp-create-addr-bytes-alist)
+    (:rewrite canonical-address-p-limits-thm-3)
+    (:rewrite canonical-address-p-limits-thm-2)
+    (:rewrite zf-spec-thm)
+    (:linear acl2::loghead-upper-bound)
+    (:linear bitops::logior-<-0-linear-2)
+    (:linear size-of-combine-bytes)
+    (:rewrite disjoint-p-subset-p)
+    (:definition binary-append)
+    (:definition create-addr-bytes-alist)
+    (:rewrite member-p-of-subset-is-member-p-of-superset)
+    (:linear rgfi-is-i64p . 1)
+    (:rewrite member-p-cdr)
+    (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+    (:rewrite acl2::difference-unsigned-byte-p)
+    (:linear rgfi-is-i64p . 2)
+    (:rewrite acl2::append-when-not-consp)
+    (:linear rip-is-i48p . 2)
+    (:linear rip-is-i48p . 1)
+    (:type-prescription byte-ify)
+    (:rewrite acl2::ifix-when-not-integerp)
+    (:rewrite bitops::basic-unsigned-byte-p-of-+)
+    (:rewrite disjoint-p-append-1)
+    (:rewrite default-<-1)
+    (:rewrite default-car)
+    (:rewrite default-cdr)
+    (:meta acl2::cancel_plus-lessp-correct)
+    (:rewrite wb-not-consp-addr-lst)
+    (:definition nthcdr)
+    (:rewrite subset-p-cdr-y)
+    (:rewrite ia32e-la-to-pa-lower-12-bits-value-of-address-when-error)
+    (:rewrite default-<-2)
+    (:type-prescription n52p-mv-nth-1-ia32e-la-to-pa)
+    (:meta acl2::cancel_plus-equal-correct)
+    (:definition nth)
+    (:rewrite consp-create-addr-bytes-alist)
+    (:rewrite subset-p-reflexive)
+    (:meta acl2::cancel_times-equal-correct)
+    (:rewrite set::sets-are-true-lists)
+    (:linear rflags-is-n32p)
+    (:rewrite consp-byte-ify)
+    (:definition true-listp)
+    (:type-prescription rflags-is-n32p)
+    (:rewrite cdr-append-is-append-cdr)
+    (:type-prescription bitops::logtail-natp)
+    (:rewrite subset-p-cdr-x)
+    (:rewrite bitops::logbitp-nonzero-of-bit)
+    (:rewrite set::nonempty-means-set)
+    (:type-prescription xw)
+    (:type-prescription consp-create-addr-bytes-alist-in-terms-of-len)
+    (:type-prescription consp-create-addr-bytes-alist)
+    (:type-prescription natp-combine-bytes)
+    (:type-prescription true-listp)
+    (:rewrite unsigned-byte-p-of-logtail)
+    (:rewrite bitops::logbitp-when-bitmaskp)
+    (:type-prescription all-translation-governing-addresses)
+    (:type-prescription set::setp-type)
+    (:type-prescription set::empty-type)
+    (:rewrite acl2::equal-constant-+)
+    (:definition byte-listp)
+    (:rewrite unsigned-byte-p-of-ash)
+    (:rewrite bitops::normalize-logbitp-when-mods-equal)
+    (:rewrite bitops::logbitp-of-negative-const)
+    (:rewrite bitops::logbitp-of-mask)
+    (:rewrite bitops::logbitp-of-const)
+    (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
+    (:meta bitops::open-logbitp-of-const-lite-meta)
+    (:rewrite rb-returns-byte-listp)
+    (:rewrite car-of-append)
+    (:type-prescription rb-returns-true-listp)
+    (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
+    (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller)
+    (:type-prescription consp-append)
+    (:type-prescription bitops::logand-natp-type-2)
+    (:definition acons)
+    (:rewrite unsigned-byte-p-of-combine-bytes)
+    (:rewrite unsigned-byte-p-of-logior)
+    (:type-prescription natp)
+    (:rewrite set::in-set)
+    (:type-prescription acl2::logtail-type)
+    (:rewrite acl2::member-of-cons)
+    (:type-prescription true-listp-create-addr-bytes-alist)
+    (:type-prescription rb-returns-byte-listp)
+    (:rewrite rationalp-implies-acl2-numberp)
+    (:type-prescription bitops::ash-natp-type)
+    (:type-prescription combine-bytes)
+    (:definition n08p$inline)
+    (:definition len)
+    (:rewrite xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
+    (:rewrite bitops::logsquash-of-loghead-zero)
+    (:rewrite default-unary-minus)
+    (:rewrite len-of-rb-in-programmer-level-mode)
+    (:type-prescription acl2::bitp$inline)
+    (:type-prescription acl2::true-listp-append)
+    (:linear bitops::upper-bound-of-logand . 2)
+    (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
+    (:rewrite logand-redundant)
+    (:linear ash-monotone-2)
+    (:linear bitops::logand->=-0-linear-2)
+    (:linear bitops::upper-bound-of-logand . 1)
+    (:linear bitops::logand->=-0-linear-1)
+    (:linear mv-nth-1-idiv-spec)
+    (:linear mv-nth-1-div-spec)
+    (:rewrite unsigned-byte-p-of-logand-2)
+    (:linear acl2::expt->-1)
+    (:rewrite acl2::unsigned-byte-p-loghead)
+    (:type-prescription zip)
+    (:linear bitops::logand-<-0-linear)
+    (:rewrite bitops::logior-fold-consts)
+    (:linear <=-logior)
+    (:linear member-p-pos-value)
+    (:linear member-p-pos-1-value)
+    (:linear bitops::logior->=-0-linear)
+    (:rewrite no-duplicates-p-and-append)
+    (:rewrite acl2::subsetp-member . 2)
+    (:rewrite acl2::subsetp-member . 1)
+    (:type-prescription wr32$inline)
+    (:rewrite unsigned-byte-p-of-logand-1)
+    (:rewrite subset-p-cons-member-p-lemma)
+    (:rewrite member-p-of-not-a-consp)
+    (:rewrite get-prefixes-opener-lemma-zero-cnt)
+    (:rewrite acl2::expt-with-violated-guards)
+    (:rewrite bitops::basic-signed-byte-p-of-+)
+    (:type-prescription ash)
+    (:linear acl2::expt-is-increasing-for-base>1)
+    (:definition member-equal)
+    (:linear bitops::logior-<-0-linear-1)
+    (:linear bitops::upper-bound-of-logior-for-naturals)
+    (:linear bitops::expt-2-lower-bound-by-logbitp)
+    member-p-strip-cars-of-remove-duplicate-keys
+    mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p-in-non-marking-mode
+    mv-nth-1-ia32e-la-to-pa-when-error
+    mv-nth-1-las-to-pas-when-error
+    bitops::logand-with-negated-bitmask
+    unsigned-byte-p
+    force (force)))
+
 (defthm rewire_dst_to_src-effects
   (implies (rewire_dst_to_src-assumptions x86)
            (equal (x86-run (rewire_dst_to_src-clk) x86)
@@ -1122,203 +1370,12 @@
                              rim08 rim32 rim64
                              !flgi-undefined
                              write-user-rflags
+                             pos
+                             member-p
+                             subset-p
+                             rb-wb-equal-in-system-level-non-marking-mode)
 
-                             rb-wb-equal-in-system-level-non-marking-mode
-
-                             pos member-p subset-p)
-
-                            (member-p-strip-cars-of-remove-duplicate-keys
-                             wb-remove-duplicate-writes-in-system-level-non-marking-mode
-                             las-to-pas
-
-                             mv-nth-1-ia32e-la-to-pa-when-error
-                             mv-nth-1-las-to-pas-when-error
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
-                             (:REWRITE
-                              DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P)
-                             (:TYPE-PRESCRIPTION NATP-PML4-TABLE-ENTRY-ADDR)
-                             (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
-                             (:REWRITE IA32E-LA-TO-PA-XW-STATE)
-                             (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-IA32E-LA-TO-PA-WHEN-NO-ERRORS)
-                             (:LINEAR ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PML4-TABLE-ENTRY-ADDR)
-                             (:REWRITE LAS-TO-PAS-XW-STATE)
-                             (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-                             (:REWRITE LOGHEAD-UNEQUAL)
-                             (:REWRITE NEGATIVE-LOGAND-TO-POSITIVE-LOGAND-WITH-INTEGERP-X)
-                             (:DEFINITION COMBINE-BYTES)
-                             (:REWRITE |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
-                             (:REWRITE XR-IA32E-LA-TO-PA)
-                             (:REWRITE ACL2::NFIX-WHEN-NOT-NATP)
-                             (:REWRITE ACL2::NFIX-WHEN-NATP)
-                             (:REWRITE CONSTANT-UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-                             (:LINEAR COMBINE-BYTES-SIZE-FOR-RM64-PROGRAMMER-LEVEL-MODE)
-                             (:REWRITE ACL2::NATP-WHEN-INTEGERP)
-                             (:REWRITE ACL2::NATP-WHEN-GTE-0)
-                             (:REWRITE 4K-ALIGNED-PHYSICAL-ADDRESS-HELPER)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-OF-LOGTAIL)
-                             (:LINEAR ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:TYPE-PRESCRIPTION ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-                             (:TYPE-PRESCRIPTION ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:REWRITE ACL2::SIGNED-BYTE-P-LOGEXT)
-                             (:TYPE-PRESCRIPTION BOOLEANP)
-                             (:REWRITE LOGHEAD-64-N64-TO-I64-CANONICAL-ADDRESS)
-                             (:TYPE-PRESCRIPTION PML4-TABLE-BASE-ADDR)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-4-PREFIX)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX)
-                             (:REWRITE
-                              COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-                             (:DEFINITION MEMBER-P)
-                             (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-                             (:TYPE-PRESCRIPTION ACL2::|x < y  =>  0 < -x+y|)
-                             (:REWRITE DEFAULT-+-2)
-                             (:REWRITE ACL2::NATP-RW)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS)
-                             (:REWRITE DEFAULT-+-1)
-                             (:REWRITE ACL2::ASH-0)
-                             (:REWRITE ACL2::ZIP-OPEN)
-                             (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-                             (:TYPE-PRESCRIPTION ADDR-BYTE-ALISTP-CREATE-ADDR-BYTES-ALIST)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-                             (:REWRITE ZF-SPEC-THM)
-                             (:LINEAR ACL2::LOGHEAD-UPPER-BOUND)
-                             (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2)
-                             (:LINEAR SIZE-OF-COMBINE-BYTES)
-                             (:REWRITE DISJOINT-P-SUBSET-P)
-                             (:DEFINITION BINARY-APPEND)
-                             (:DEFINITION CREATE-ADDR-BYTES-ALIST)
-                             (:REWRITE MEMBER-P-OF-SUBSET-IS-MEMBER-P-OF-SUPERSET)
-                             (:LINEAR RGFI-IS-I64P . 1)
-                             (:REWRITE MEMBER-P-CDR)
-                             (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-                             (:REWRITE ACL2::DIFFERENCE-UNSIGNED-BYTE-P)
-                             (:LINEAR RGFI-IS-I64P . 2)
-                             (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
-                             (:LINEAR RIP-IS-I48P . 2)
-                             (:LINEAR RIP-IS-I48P . 1)
-                             (:TYPE-PRESCRIPTION BYTE-IFY)
-                             (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-                             (:REWRITE BITOPS::BASIC-UNSIGNED-BYTE-P-OF-+)
-                             (:REWRITE DISJOINT-P-APPEND-1)
-                             (:REWRITE DEFAULT-<-1)
-                             (:REWRITE DEFAULT-CAR)
-                             (:REWRITE DEFAULT-CDR)
-                             (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
-                             (:REWRITE WB-NOT-CONSP-ADDR-LST)
-                             (:DEFINITION NTHCDR)
-                             (:REWRITE SUBSET-P-CDR-Y)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-VALUE-OF-ADDRESS-WHEN-ERROR)
-                             (:REWRITE DEFAULT-<-2)
-                             (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-LA-TO-PA)
-                             (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
-                             (:DEFINITION NTH)
-                             (:REWRITE CONSP-CREATE-ADDR-BYTES-ALIST)
-                             (:REWRITE SUBSET-P-REFLEXIVE)
-                             (:META ACL2::CANCEL_TIMES-EQUAL-CORRECT)
-                             (:REWRITE SET::SETS-ARE-TRUE-LISTS)
-                             (:LINEAR RFLAGS-IS-N32P)
-                             (:REWRITE CONSP-BYTE-IFY)
-                             (:DEFINITION TRUE-LISTP)
-                             (:TYPE-PRESCRIPTION RFLAGS-IS-N32P)
-                             (:REWRITE CDR-APPEND-IS-APPEND-CDR)
-                             (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
-                             (:REWRITE SUBSET-P-CDR-X)
-                             (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT)
-                             (:REWRITE SET::NONEMPTY-MEANS-SET)
-                             (:TYPE-PRESCRIPTION XW)
-                             (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST-IN-TERMS-OF-LEN)
-                             (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST)
-                             (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-                             (:TYPE-PRESCRIPTION TRUE-LISTP)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
-                             (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP)
-                             (:TYPE-PRESCRIPTION ALL-TRANSLATION-GOVERNING-ADDRESSES)
-                             (:TYPE-PRESCRIPTION SET::SETP-TYPE)
-                             (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)
-                             (:REWRITE ACL2::EQUAL-CONSTANT-+)
-                             (:DEFINITION BYTE-LISTP)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-ASH)
-                             (:REWRITE BITOPS::NORMALIZE-LOGBITP-WHEN-MODS-EQUAL)
-                             (:REWRITE BITOPS::LOGBITP-OF-NEGATIVE-CONST)
-                             (:REWRITE BITOPS::LOGBITP-OF-MASK)
-                             (:REWRITE BITOPS::LOGBITP-OF-CONST)
-                             (:REWRITE GREATER-LOGBITP-OF-UNSIGNED-BYTE-P . 1)
-                             (:META BITOPS::OPEN-LOGBITP-OF-CONST-LITE-META)
-                             (:REWRITE RB-RETURNS-BYTE-LISTP)
-                             (:REWRITE CAR-OF-APPEND)
-                             (:TYPE-PRESCRIPTION RB-RETURNS-TRUE-LISTP)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER)
-                             (:TYPE-PRESCRIPTION CONSP-APPEND)
-                             (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-2)
-                             (:DEFINITION ACONS)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGIOR)
-                             (:TYPE-PRESCRIPTION NATP)
-                             (:REWRITE SET::IN-SET)
-                             (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
-                             (:REWRITE ACL2::MEMBER-OF-CONS)
-                             (:TYPE-PRESCRIPTION TRUE-LISTP-CREATE-ADDR-BYTES-ALIST)
-                             (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-                             (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE)
-                             (:TYPE-PRESCRIPTION COMBINE-BYTES)
-                             (:DEFINITION N08P$INLINE)
-                             (:DEFINITION LEN)
-                             (:REWRITE xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
-                             (:REWRITE BITOPS::LOGSQUASH-OF-LOGHEAD-ZERO)
-                             (:REWRITE DEFAULT-UNARY-MINUS)
-                             (:REWRITE LEN-OF-RB-IN-PROGRAMMER-LEVEL-MODE)
-                             (:TYPE-PRESCRIPTION ACL2::BITP$INLINE)
-                             (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND)
-                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2)
-                             (:REWRITE WEED-OUT-IRRELEVANT-LOGAND-WHEN-FIRST-OPERAND-CONSTANT)
-                             (:REWRITE LOGAND-REDUNDANT)
-                             (:LINEAR ASH-MONOTONE-2)
-                             (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2)
-                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
-                             (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
-                             (:LINEAR MV-NTH-1-IDIV-SPEC)
-                             (:LINEAR MV-NTH-1-DIV-SPEC)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-2)
-                             (:LINEAR ACL2::EXPT->-1)
-                             (:REWRITE ACL2::UNSIGNED-BYTE-P-LOGHEAD)
-                             (:TYPE-PRESCRIPTION ZIP)
-                             (:LINEAR BITOPS::LOGAND-<-0-LINEAR)
-                             (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS)
-                             (:LINEAR <=-LOGIOR)
-                             (:LINEAR MEMBER-P-POS-VALUE)
-                             (:LINEAR MEMBER-P-POS-1-VALUE)
-                             (:LINEAR BITOPS::LOGIOR->=-0-LINEAR)
-                             (:REWRITE NO-DUPLICATES-P-AND-APPEND)
-                             (:REWRITE ACL2::SUBSETP-MEMBER . 2)
-                             (:REWRITE ACL2::SUBSETP-MEMBER . 1)
-                             (:TYPE-PRESCRIPTION WR32$INLINE)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-1)
-                             (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
-                             (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)
-                             (:REWRITE ACL2::EXPT-WITH-VIOLATED-GUARDS)
-                             (:REWRITE BITOPS::BASIC-SIGNED-BYTE-P-OF-+)
-                             (:TYPE-PRESCRIPTION ASH)
-                             (:LINEAR ACL2::EXPT-IS-INCREASING-FOR-BASE>1)
-                             (:DEFINITION MEMBER-EQUAL)
-                             (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1)
-                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-                             (:LINEAR BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
-
-                             bitops::logand-with-negated-bitmask
-                             unsigned-byte-p
-                             force (force))))))
+                            (rewire_dst_to_src-disable)))))
 
 ;; ======================================================================
 
@@ -1687,7 +1744,6 @@
                              (:meta acl2::mv-nth-cons-meta)
                              not
                              force (force))))))
-
 
 (def-gl-export same-pml4-table-entry-addr-for-n-+-lin-addrs
   :hyp (and (physical-address-p pml4-table-base-addr)
@@ -2422,141 +2478,23 @@
   :hints (("Goal"
            :do-not '(preprocess)
            :induct (create-canonical-address-list-alt iteration m lin-addr)
-           :in-theory (e/d* (disjoint-p
-                             member-p
-                             las-to-pas
-                             open-mv-nth-1-las-to-pas-for-same-1G-page-general-1
-                             open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
-                             open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
-                             open-mv-nth-0-las-to-pas-for-same-1G-page-general
-                             mv-nth-0-ia32e-la-to-pa-for-same-1G-page
-                             mv-nth-1-ia32e-la-to-pa-for-same-1G-page
-                             ;; open-mv-nth-1-las-to-pas
-                             )
-                            (commutativity-of-+
-                             member-p-strip-cars-of-remove-duplicate-keys
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
-                             bitops::logand-with-negated-bitmask
-                             force (force)
-                             not
-                             (:REWRITE XR-IA32E-LA-TO-PA)
-                             (:REWRITE xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
-                             ;; (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-                             (:REWRITE X86P-MV-NTH-2-IA32E-LA-TO-PA)
-                             (:REWRITE WB-REMOVE-DUPLICATE-WRITES-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-                             ;; (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-VALUE-OF-ADDRESS-WHEN-ERROR)
-                             (:REWRITE ACL2::LOGHEAD-IDENTITY)
-                             (:REWRITE MV-NTH-2-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE)
-                             (:REWRITE WB-RETURNS-X86P)
-                             (:DEFINITION DISJOINT-P)
-                             (:DEFINITION ADDR-BYTE-ALISTP)
-                             (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS)
-                             (:DEFINITION MEMBER-P)
-                             (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
-                             (:REWRITE ACL2::ASH-0)
-                             (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-                             (:TYPE-PRESCRIPTION N64P-RM-LOW-64)
-                             (:REWRITE ACL2::ZIP-OPEN)
-                             (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-                             (:DEFINITION CREATE-CANONICAL-ADDRESS-LIST)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-0-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
-                             (:DEFINITION COMBINE-BYTES)
-                             (:REWRITE LOGHEAD-UNEQUAL)
-                             (:REWRITE DEFAULT-+-2)
-                             (:REWRITE DEFAULT-+-1)
-                             (:REWRITE LOGHEAD-NEGATIVE)
-                             (:REWRITE CDR-CREATE-CANONICAL-ADDRESS-LIST)
-                             (:REWRITE CONSP-OF-CREATE-CANONICAL-ADDRESS-LIST)
-                             (:REWRITE CAR-CREATE-CANONICAL-ADDRESS-LIST)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-USER-SUPERVISOR)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-READ-WRITE)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-PRESENT)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-EXECUTE-DISABLE)
-                             (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
-                             (:DEFINITION N08P$INLINE)
-                             (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-                             (:TYPE-PRESCRIPTION MEMBER-P)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-SIZE)
-                             (:DEFINITION STRIP-CARS)
-                             (:REWRITE BITOPS::BASIC-UNSIGNED-BYTE-P-OF-+)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-1)
-                             (:DEFINITION BYTE-LISTP)
-                             (:TYPE-PRESCRIPTION SIGNED-BYTE-P)
-                             (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-IA32E-LA-TO-PA-WHEN-NO-ERRORS)
-                             (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-LA-TO-PA)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
-                             (:META ACL2::CANCEL_TIMES-EQUAL-CORRECT)
-                             (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
-                             (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
-                             (:REWRITE MEMBER-P-CDR)
-                             (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-                             (:LINEAR SIZE-OF-COMBINE-BYTES)
-                             (:REWRITE CDR-STRIP-CARS-IS-STRIP-CARS-CDR)
-                             ;; (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-LAS-TO-PAS-WHEN-NO-ERRORS)
-                             (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-                             ;; (:REWRITE LAS-TO-PAS-SUBSET-P-WITH-L-ADDRS-FROM-BIND-FREE)
-                             (:REWRITE WB-NOT-CONSP-ADDR-LST)
-                             (:TYPE-PRESCRIPTION ALL-TRANSLATION-GOVERNING-ADDRESSES)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER)
-                             (:REWRITE MEMBER-P-OF-SUBSET-IS-MEMBER-P-OF-SUPERSET)
-                             (:REWRITE ACL2::LOGTAIL-IDENTITY)
-                             (:REWRITE MEMBER-P-CANONICAL-ADDRESS-LISTP)
-                             (:TYPE-PRESCRIPTION BOOLEANP)
-                             (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
-                             (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P-PHYSICAL-ADDRESS-LISTP)
-                             (:TYPE-PRESCRIPTION CTRI-IS-N64P)
-                             (:REWRITE RIGHT-SHIFT-TO-LOGTAIL)
-                             (:REWRITE
-                              DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P)
-                             (:DEFINITION STRIP-CDRS)
-                             (:REWRITE CDR-ADDR-RANGE)
-                             (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P)
-                             (:TYPE-PRESCRIPTION ZIP)
-                             (:REWRITE NOT-MEMBER-P-ADDR-RANGE)
-                             (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
-                             ;; (:REWRITE la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
-                             ;; (:REWRITE ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
-                             (:TYPE-PRESCRIPTION IFIX)
-                             (:REWRITE DEFAULT-<-1)
-                             (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-0)
-                             (:REWRITE NOT-DISJOINT-P-TWO-ADDR-RANGES-THM)
-                             (:REWRITE ACL2::EQUAL-CONSTANT-+)
-                             (:REWRITE DEFAULT-<-2)
-                             (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-1)
-                             (:LINEAR ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:REWRITE CAR-ADDR-RANGE)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-OF-LOGTAIL)
-                             (:REWRITE MEMBER-P-ADDR-RANGE)
-                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-                             (:TYPE-PRESCRIPTION NATP)
-                             (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
-                             (:REWRITE STRIP-CDRS-ADDR-BYTE-ALISTP-IS-BYTE-LISTP)
-                             (:LINEAR ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PML4-TABLE-ENTRY-ADDR)
-                             (:REWRITE SUBSET-P-CDR-Y)
-                             (:REWRITE ACL2::CONSP-OF-CAR-WHEN-ATOM-LISTP)
-                             (:REWRITE SEG-VISIBLEI-IS-N16P)
-                             (:REWRITE SUBSET-P-CDR-X)
-                             (:TYPE-PRESCRIPTION ATOM-LISTP)
-                             (:LINEAR MEMBER-P-POS-VALUE)
-                             (:LINEAR MEMBER-P-POS-1-VALUE)
-                             (:LINEAR ACL2::INDEX-OF-<-LEN)
-                             (:REWRITE NOT-MEMBER-P-ADDR-RANGE-FROM-NOT-MEMBER-P-ADDR-RANGE)
-                             (:REWRITE MEMBER-P-ADDR-RANGE-FROM-MEMBER-P-ADDR-RANGE)
-                             (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-3)
-                             (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-2))))))
+           :in-theory (e/d*
+                       (disjoint-p
+                        member-p
+                        las-to-pas
+                        open-mv-nth-1-las-to-pas-for-same-1G-page-general-1
+                        open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
+                        open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
+                        open-mv-nth-0-las-to-pas-for-same-1G-page-general
+                        mv-nth-0-ia32e-la-to-pa-for-same-1G-page
+                        mv-nth-1-ia32e-la-to-pa-for-same-1G-page)
+                       (mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p-in-non-marking-mode
+                        member-p-strip-cars-of-remove-duplicate-keys
+                        page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                        page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
+                        bitops::logand-with-negated-bitmask
+                        force (force)
+                        not)))))
 
 (defthm las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
   (implies
@@ -2726,129 +2664,13 @@
                              page-dir-ptr-table-entry-addr
                              pml4-table-entry-addr)
                             (read-from-physical-memory
-                             ;; las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
                              member-p-strip-cars-of-remove-duplicate-keys
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
                              bitops::logand-with-negated-bitmask
                              force (force)
                              not
-                             (:REWRITE XR-IA32E-LA-TO-PA)
-                             (:REWRITE xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
-                             ;; (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-                             (:REWRITE X86P-MV-NTH-2-IA32E-LA-TO-PA)
-                             (:REWRITE WB-REMOVE-DUPLICATE-WRITES-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-                             ;; (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-VALUE-OF-ADDRESS-WHEN-ERROR)
-                             (:REWRITE ACL2::LOGHEAD-IDENTITY)
-                             (:REWRITE WB-RETURNS-X86P)
-                             (:DEFINITION DISJOINT-P)
-                             (:DEFINITION ADDR-BYTE-ALISTP)
-                             (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS)
-                             (:DEFINITION MEMBER-P)
-                             (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
-                             (:REWRITE ACL2::ASH-0)
-                             (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-                             (:TYPE-PRESCRIPTION N64P-RM-LOW-64)
-                             (:REWRITE ACL2::ZIP-OPEN)
-                             (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-                             (:DEFINITION CREATE-CANONICAL-ADDRESS-LIST)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-0-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
-                             (:DEFINITION COMBINE-BYTES)
-                             (:REWRITE LOGHEAD-UNEQUAL)
-                             (:REWRITE DEFAULT-+-2)
-                             (:REWRITE DEFAULT-+-1)
-                             (:REWRITE LOGHEAD-NEGATIVE)
-                             (:REWRITE CDR-CREATE-CANONICAL-ADDRESS-LIST)
-                             (:REWRITE CONSP-OF-CREATE-CANONICAL-ADDRESS-LIST)
-                             (:REWRITE CAR-CREATE-CANONICAL-ADDRESS-LIST)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-USER-SUPERVISOR)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-READ-WRITE)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-PRESENT)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-EXECUTE-DISABLE)
-                             (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
-                             (:DEFINITION N08P$INLINE)
-                             (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-                             (:TYPE-PRESCRIPTION MEMBER-P)
-                             (:TYPE-PRESCRIPTION N01P-PAGE-SIZE)
-                             (:DEFINITION STRIP-CARS)
-                             (:REWRITE BITOPS::BASIC-UNSIGNED-BYTE-P-OF-+)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-1)
-                             (:DEFINITION BYTE-LISTP)
-                             (:TYPE-PRESCRIPTION SIGNED-BYTE-P)
-                             (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-IA32E-LA-TO-PA-WHEN-NO-ERRORS)
-                             (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-LA-TO-PA)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
-                             (:META ACL2::CANCEL_TIMES-EQUAL-CORRECT)
-                             (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
-                             (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
-                             (:REWRITE MEMBER-P-CDR)
-                             (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-                             (:LINEAR SIZE-OF-COMBINE-BYTES)
-                             (:REWRITE CDR-STRIP-CARS-IS-STRIP-CARS-CDR)
-                             ;; (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-LAS-TO-PAS-WHEN-NO-ERRORS)
-                             (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-                             ;; (:REWRITE LAS-TO-PAS-SUBSET-P-WITH-L-ADDRS-FROM-BIND-FREE)
-                             (:REWRITE WB-NOT-CONSP-ADDR-LST)
-                             (:TYPE-PRESCRIPTION ALL-TRANSLATION-GOVERNING-ADDRESSES)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER)
-                             (:REWRITE MEMBER-P-OF-SUBSET-IS-MEMBER-P-OF-SUPERSET)
-                             (:REWRITE ACL2::LOGTAIL-IDENTITY)
-                             (:REWRITE MEMBER-P-CANONICAL-ADDRESS-LISTP)
-                             (:TYPE-PRESCRIPTION BOOLEANP)
-                             (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
-                             (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P-PHYSICAL-ADDRESS-LISTP)
-                             (:TYPE-PRESCRIPTION CTRI-IS-N64P)
-                             (:REWRITE RIGHT-SHIFT-TO-LOGTAIL)
-                             (:REWRITE
-                              DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P)
-                             (:DEFINITION STRIP-CDRS)
-                             (:REWRITE CDR-ADDR-RANGE)
-                             (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P)
-                             (:TYPE-PRESCRIPTION ZIP)
-                             (:REWRITE NOT-MEMBER-P-ADDR-RANGE)
-                             (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
-                             ;; (:REWRITE la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
-                             ;; (:REWRITE ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
-                             (:TYPE-PRESCRIPTION IFIX)
-                             (:REWRITE DEFAULT-<-1)
-                             (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-0)
-                             (:REWRITE NOT-DISJOINT-P-TWO-ADDR-RANGES-THM)
-                             (:REWRITE ACL2::EQUAL-CONSTANT-+)
-                             (:REWRITE DEFAULT-<-2)
-                             (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-1)
-                             (:LINEAR ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:REWRITE CAR-ADDR-RANGE)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-OF-LOGTAIL)
-                             (:REWRITE MEMBER-P-ADDR-RANGE)
-                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-                             (:TYPE-PRESCRIPTION NATP)
-                             (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
-                             (:REWRITE STRIP-CDRS-ADDR-BYTE-ALISTP-IS-BYTE-LISTP)
-                             (:LINEAR ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PML4-TABLE-ENTRY-ADDR)
-                             (:REWRITE SUBSET-P-CDR-Y)
-                             (:REWRITE ACL2::CONSP-OF-CAR-WHEN-ATOM-LISTP)
-                             (:REWRITE SEG-VISIBLEI-IS-N16P)
-                             (:REWRITE SUBSET-P-CDR-X)
-                             (:TYPE-PRESCRIPTION ATOM-LISTP)
-                             (:LINEAR MEMBER-P-POS-VALUE)
-                             (:LINEAR MEMBER-P-POS-1-VALUE)
-                             (:LINEAR ACL2::INDEX-OF-<-LEN)
-                             (:REWRITE NOT-MEMBER-P-ADDR-RANGE-FROM-NOT-MEMBER-P-ADDR-RANGE)
-                             (:REWRITE MEMBER-P-ADDR-RANGE-FROM-MEMBER-P-ADDR-RANGE)
-                             (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-3)
-                             (:REWRITE DISJOINT-P-TWO-ADDR-RANGES-THM-2))))))
+                             rewire_dst_to_src-disable)))))
 
 (defthm rb-wb-equal-with-modified-1G-page-map-in-system-level-non-marking-mode
   (implies
@@ -2996,11 +2818,6 @@
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
 
-                             member-p-strip-cars-of-remove-duplicate-keys
-                             wb-remove-duplicate-writes-in-system-level-non-marking-mode
-                             las-to-pas
-
-
                              not
                              bitops::logand-with-negated-bitmask
                              unsigned-byte-p
@@ -3142,224 +2959,49 @@
                                                 x86)))
                              30))))
   :hints (("Goal"
-           :use ((:instance ;; las-to-pas-open-up-for-a-1G-page-setup
-                  las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
-                  (lin-addr (xr :rgf *rdi* x86))
-                  (r-w-x :r)
-                  (cpl (cpl x86))))
+           :use ((:instance las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
+                            (lin-addr (xr :rgf *rdi* x86))
+                            (r-w-x :r)
+                            (cpl (cpl x86))))
            :do-not '(preprocess)
            :do-not-induct t
            :in-theory (e/d* (page-dir-ptr-table-base-addr
                              pml4-table-base-addr
-                             pos member-p subset-p
+                             pos
                              page-size)
-
                             (rewire_dst_to_src-clk
                              (rewire_dst_to_src-clk)
                              addr-range
                              (addr-range)
-
-                             ;; pml4-table-base-addr
-                             ;; page-dir-ptr-table-base-addr
                              pml4-table-entry-addr
+                             natp-pml4-table-entry-addr
                              page-dir-ptr-table-entry-addr
-
                              pml4-table-entry-addr-to-c-program-optimized-form
                              pml4-table-entry-addr-to-c-program-optimized-form-gl
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
-
-                             member-p-strip-cars-of-remove-duplicate-keys
-                             wb-remove-duplicate-writes-in-system-level-non-marking-mode
-                             las-to-pas
-
-                             ;; (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
-                             (:REWRITE
-                              DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P)
-                             (:TYPE-PRESCRIPTION NATP-PML4-TABLE-ENTRY-ADDR)
-                             (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
-                             (:REWRITE IA32E-LA-TO-PA-XW-STATE)
-                             (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-IA32E-LA-TO-PA-WHEN-NO-ERRORS)
-                             (:LINEAR ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PML4-TABLE-ENTRY-ADDR)
-                             (:REWRITE LAS-TO-PAS-XW-STATE)
-                             (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-                             (:REWRITE LOGHEAD-UNEQUAL)
-                             (:REWRITE NEGATIVE-LOGAND-TO-POSITIVE-LOGAND-WITH-INTEGERP-X)
-                             (:DEFINITION COMBINE-BYTES)
-                             (:REWRITE |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
-                             (:REWRITE XR-IA32E-LA-TO-PA)
-                             (:REWRITE ACL2::NFIX-WHEN-NOT-NATP)
-                             (:REWRITE ACL2::NFIX-WHEN-NATP)
-                             (:REWRITE CONSTANT-UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-                             (:LINEAR COMBINE-BYTES-SIZE-FOR-RM64-PROGRAMMER-LEVEL-MODE)
-                             (:REWRITE ACL2::NATP-WHEN-INTEGERP)
-                             (:REWRITE ACL2::NATP-WHEN-GTE-0)
-                             (:REWRITE 4K-ALIGNED-PHYSICAL-ADDRESS-HELPER)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-OF-LOGTAIL)
-                             (:LINEAR ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:TYPE-PRESCRIPTION ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-                             (:TYPE-PRESCRIPTION ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:REWRITE ACL2::SIGNED-BYTE-P-LOGEXT)
-                             (:TYPE-PRESCRIPTION BOOLEANP)
-                             (:REWRITE LOGHEAD-64-N64-TO-I64-CANONICAL-ADDRESS)
-                             (:TYPE-PRESCRIPTION PML4-TABLE-BASE-ADDR)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-4-PREFIX)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX)
-                             ;; (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-                             (:REWRITE
-                              COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-                             (:DEFINITION MEMBER-P)
-                             (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-                             (:TYPE-PRESCRIPTION ACL2::|x < y  =>  0 < -x+y|)
-                             (:REWRITE DEFAULT-+-2)
-                             (:REWRITE ACL2::NATP-RW)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS)
-                             (:REWRITE DEFAULT-+-1)
-                             (:REWRITE ACL2::ASH-0)
-                             (:REWRITE ACL2::ZIP-OPEN)
-                             (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-                             (:TYPE-PRESCRIPTION ADDR-BYTE-ALISTP-CREATE-ADDR-BYTES-ALIST)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-                             (:REWRITE ZF-SPEC-THM)
-                             (:LINEAR ACL2::LOGHEAD-UPPER-BOUND)
-                             (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2)
-                             (:LINEAR SIZE-OF-COMBINE-BYTES)
-                             (:REWRITE DISJOINT-P-SUBSET-P)
-                             (:DEFINITION BINARY-APPEND)
-                             (:DEFINITION CREATE-ADDR-BYTES-ALIST)
-                             (:REWRITE MEMBER-P-OF-SUBSET-IS-MEMBER-P-OF-SUPERSET)
-                             (:LINEAR RGFI-IS-I64P . 1)
-                             (:REWRITE MEMBER-P-CDR)
-                             (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-                             (:REWRITE ACL2::DIFFERENCE-UNSIGNED-BYTE-P)
-                             (:LINEAR RGFI-IS-I64P . 2)
-                             (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
-                             (:LINEAR RIP-IS-I48P . 2)
-                             (:LINEAR RIP-IS-I48P . 1)
-                             (:TYPE-PRESCRIPTION BYTE-IFY)
-                             (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-                             (:REWRITE BITOPS::BASIC-UNSIGNED-BYTE-P-OF-+)
-                             (:REWRITE DISJOINT-P-APPEND-1)
-                             (:REWRITE DEFAULT-<-1)
-                             (:REWRITE DEFAULT-CAR)
-                             (:REWRITE DEFAULT-CDR)
-                             (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
-                             (:REWRITE WB-NOT-CONSP-ADDR-LST)
-                             (:DEFINITION NTHCDR)
-                             (:REWRITE SUBSET-P-CDR-Y)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-VALUE-OF-ADDRESS-WHEN-ERROR)
-                             (:REWRITE DEFAULT-<-2)
-                             (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-LA-TO-PA)
-                             (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
-                             (:DEFINITION NTH)
-                             (:REWRITE CONSP-CREATE-ADDR-BYTES-ALIST)
-                             (:REWRITE SUBSET-P-REFLEXIVE)
-                             (:META ACL2::CANCEL_TIMES-EQUAL-CORRECT)
-                             (:REWRITE SET::SETS-ARE-TRUE-LISTS)
-                             (:LINEAR RFLAGS-IS-N32P)
-                             (:REWRITE CONSP-BYTE-IFY)
-                             (:DEFINITION TRUE-LISTP)
-                             (:TYPE-PRESCRIPTION RFLAGS-IS-N32P)
-                             (:REWRITE CDR-APPEND-IS-APPEND-CDR)
-                             (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
-                             (:REWRITE SUBSET-P-CDR-X)
-                             (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT)
-                             (:REWRITE SET::NONEMPTY-MEANS-SET)
-                             (:TYPE-PRESCRIPTION XW)
-                             (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST-IN-TERMS-OF-LEN)
-                             (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST)
-                             (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-                             (:TYPE-PRESCRIPTION TRUE-LISTP)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
-                             (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP)
-                             (:TYPE-PRESCRIPTION ALL-TRANSLATION-GOVERNING-ADDRESSES)
-                             (:TYPE-PRESCRIPTION SET::SETP-TYPE)
-                             (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)
-                             (:REWRITE ACL2::EQUAL-CONSTANT-+)
-                             (:DEFINITION BYTE-LISTP)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-ASH)
-                             (:REWRITE BITOPS::NORMALIZE-LOGBITP-WHEN-MODS-EQUAL)
-                             (:REWRITE BITOPS::LOGBITP-OF-NEGATIVE-CONST)
-                             (:REWRITE BITOPS::LOGBITP-OF-MASK)
-                             (:REWRITE BITOPS::LOGBITP-OF-CONST)
-                             (:REWRITE GREATER-LOGBITP-OF-UNSIGNED-BYTE-P . 1)
-                             (:META BITOPS::OPEN-LOGBITP-OF-CONST-LITE-META)
-                             (:REWRITE RB-RETURNS-BYTE-LISTP)
-                             (:REWRITE CAR-OF-APPEND)
-                             (:TYPE-PRESCRIPTION RB-RETURNS-TRUE-LISTP)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER)
-                             (:TYPE-PRESCRIPTION CONSP-APPEND)
-                             (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-2)
-                             (:DEFINITION ACONS)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGIOR)
-                             (:TYPE-PRESCRIPTION NATP)
-                             (:REWRITE SET::IN-SET)
-                             (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
-                             (:REWRITE ACL2::MEMBER-OF-CONS)
-                             (:TYPE-PRESCRIPTION TRUE-LISTP-CREATE-ADDR-BYTES-ALIST)
-                             (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-                             (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE)
-                             (:TYPE-PRESCRIPTION COMBINE-BYTES)
-                             (:DEFINITION N08P$INLINE)
-                             (:DEFINITION LEN)
-                             (:REWRITE xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
-                             (:REWRITE BITOPS::LOGSQUASH-OF-LOGHEAD-ZERO)
-                             (:REWRITE DEFAULT-UNARY-MINUS)
-                             (:REWRITE LEN-OF-RB-IN-PROGRAMMER-LEVEL-MODE)
-                             (:TYPE-PRESCRIPTION ACL2::BITP$INLINE)
-                             (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND)
-                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2)
-                             (:REWRITE WEED-OUT-IRRELEVANT-LOGAND-WHEN-FIRST-OPERAND-CONSTANT)
-                             (:REWRITE LOGAND-REDUNDANT)
-                             (:LINEAR ASH-MONOTONE-2)
-                             (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2)
-                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
-                             (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
-                             (:LINEAR MV-NTH-1-IDIV-SPEC)
-                             (:LINEAR MV-NTH-1-DIV-SPEC)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-2)
-                             (:LINEAR ACL2::EXPT->-1)
-                             (:REWRITE ACL2::UNSIGNED-BYTE-P-LOGHEAD)
-                             (:TYPE-PRESCRIPTION ZIP)
-                             (:LINEAR BITOPS::LOGAND-<-0-LINEAR)
-                             (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS)
-                             (:LINEAR <=-LOGIOR)
-                             (:LINEAR MEMBER-P-POS-VALUE)
-                             (:LINEAR MEMBER-P-POS-1-VALUE)
-                             (:LINEAR BITOPS::LOGIOR->=-0-LINEAR)
-                             (:REWRITE NO-DUPLICATES-P-AND-APPEND)
-                             (:REWRITE ACL2::SUBSETP-MEMBER . 2)
-                             (:REWRITE ACL2::SUBSETP-MEMBER . 1)
-                             (:TYPE-PRESCRIPTION WR32$INLINE)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-1)
-                             (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
-                             (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)
-                             (:REWRITE ACL2::EXPT-WITH-VIOLATED-GUARDS)
-                             (:REWRITE BITOPS::BASIC-SIGNED-BYTE-P-OF-+)
-                             (:TYPE-PRESCRIPTION ASH)
-                             (:LINEAR ACL2::EXPT-IS-INCREASING-FOR-BASE>1)
-                             (:DEFINITION MEMBER-EQUAL)
-                             (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1)
-                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-                             (:LINEAR BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
-
+                             disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                             acl2::consp-when-member-equal-of-atom-listp
+                             r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
+                             ia32e-la-to-pa-xw-state
+                             (:linear adding-7-to-pml4-table-entry-addr)
+                             (:linear *physical-address-size*p-pml4-table-entry-addr)
+                             (:rewrite las-to-pas-xw-state)
+                             (:rewrite acl2::equal-of-booleans-rewrite)
+                             (:rewrite loghead-unequal)
+                             (:rewrite negative-logand-to-positive-logand-with-integerp-x)
+                             (:definition combine-bytes)
+                             (:rewrite |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
                              not
+                             unsigned-byte-p-of-combine-bytes
+                             unsigned-byte-p-of-logtail
+                             disjoint-p-subset-p
+                             acl2::loghead-identity
+                             acl2::ash-0
+                             acl2::zip-open
+                             acl2::logtail-identity
                              bitops::logand-with-negated-bitmask
+                             member-p-strip-cars-of-remove-duplicate-keys
                              unsigned-byte-p
                              force (force))))))
 
@@ -3378,7 +3020,7 @@
            :do-not '(preprocess)
            :do-not-induct t
            :in-theory (e/d* (rb-wb-equal-in-system-level-non-marking-mode
-                             pos member-p subset-p
+                             pos
                              page-dir-ptr-table-base-addr
                              page-size)
 
@@ -3397,195 +3039,19 @@
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
 
+                             disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                             acl2::consp-when-member-equal-of-atom-listp
+                             r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
+                             ia32e-la-to-pa-xw-state
+                             (:linear adding-7-to-pml4-table-entry-addr)
+                             (:linear *physical-address-size*p-pml4-table-entry-addr)
+                             (:rewrite las-to-pas-xw-state)
+                             (:rewrite acl2::equal-of-booleans-rewrite)
+                             (:rewrite loghead-unequal)
+                             (:rewrite negative-logand-to-positive-logand-with-integerp-x)
+                             (:definition combine-bytes)
+                             (:rewrite |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
                              member-p-strip-cars-of-remove-duplicate-keys
-                             wb-remove-duplicate-writes-in-system-level-non-marking-mode
-                             las-to-pas
-
-                             ;; (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-ERROR)
-                             (:REWRITE
-                              DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P)
-                             (:TYPE-PRESCRIPTION NATP-PML4-TABLE-ENTRY-ADDR)
-                             (:REWRITE ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP)
-                             (:REWRITE IA32E-LA-TO-PA-XW-STATE)
-                             (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-IA32E-LA-TO-PA-WHEN-NO-ERRORS)
-                             (:LINEAR ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PML4-TABLE-ENTRY-ADDR)
-                             (:REWRITE LAS-TO-PAS-XW-STATE)
-                             (:REWRITE ACL2::EQUAL-OF-BOOLEANS-REWRITE)
-                             (:REWRITE LOGHEAD-UNEQUAL)
-                             (:REWRITE NEGATIVE-LOGAND-TO-POSITIVE-LOGAND-WITH-INTEGERP-X)
-                             (:DEFINITION COMBINE-BYTES)
-                             (:REWRITE |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
-                             (:REWRITE XR-IA32E-LA-TO-PA)
-                             (:REWRITE ACL2::NFIX-WHEN-NOT-NATP)
-                             (:REWRITE ACL2::NFIX-WHEN-NATP)
-                             (:REWRITE CONSTANT-UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-                             (:LINEAR COMBINE-BYTES-SIZE-FOR-RM64-PROGRAMMER-LEVEL-MODE)
-                             (:REWRITE ACL2::NATP-WHEN-INTEGERP)
-                             (:REWRITE ACL2::NATP-WHEN-GTE-0)
-                             (:REWRITE 4K-ALIGNED-PHYSICAL-ADDRESS-HELPER)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-OF-LOGTAIL)
-                             (:LINEAR ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:LINEAR *PHYSICAL-ADDRESS-SIZE*P-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:TYPE-PRESCRIPTION ADDING-7-TO-PML4-TABLE-ENTRY-ADDR)
-                             (:TYPE-PRESCRIPTION ADDING-7-TO-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)
-                             (:REWRITE ACL2::SIGNED-BYTE-P-LOGEXT)
-                             (:TYPE-PRESCRIPTION BOOLEANP)
-                             (:REWRITE LOGHEAD-64-N64-TO-I64-CANONICAL-ADDRESS)
-                             (:TYPE-PRESCRIPTION PML4-TABLE-BASE-ADDR)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-4-PREFIX)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX)
-                             ;; (:REWRITE MV-NTH-1-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE-WHEN-ERROR)
-                             (:REWRITE
-                              COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-                             (:DEFINITION MEMBER-P)
-                             (:LINEAR UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-                             (:TYPE-PRESCRIPTION ACL2::|x < y  =>  0 < -x+y|)
-                             (:REWRITE DEFAULT-+-2)
-                             (:REWRITE ACL2::NATP-RW)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS)
-                             (:REWRITE DEFAULT-+-1)
-                             (:REWRITE ACL2::ASH-0)
-                             (:REWRITE ACL2::ZIP-OPEN)
-                             (:REWRITE LOGHEAD-OF-NON-INTEGERP)
-                             (:TYPE-PRESCRIPTION ADDR-BYTE-ALISTP-CREATE-ADDR-BYTES-ALIST)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-3)
-                             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-                             (:REWRITE ZF-SPEC-THM)
-                             (:LINEAR ACL2::LOGHEAD-UPPER-BOUND)
-                             (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2)
-                             (:LINEAR SIZE-OF-COMBINE-BYTES)
-                             (:REWRITE DISJOINT-P-SUBSET-P)
-                             (:DEFINITION BINARY-APPEND)
-                             (:DEFINITION CREATE-ADDR-BYTES-ALIST)
-                             (:REWRITE MEMBER-P-OF-SUBSET-IS-MEMBER-P-OF-SUPERSET)
-                             (:LINEAR RGFI-IS-I64P . 1)
-                             (:REWRITE MEMBER-P-CDR)
-                             (:REWRITE BITOPS::UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-LESS)
-                             (:REWRITE ACL2::DIFFERENCE-UNSIGNED-BYTE-P)
-                             (:LINEAR RGFI-IS-I64P . 2)
-                             (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
-                             (:LINEAR RIP-IS-I48P . 2)
-                             (:LINEAR RIP-IS-I48P . 1)
-                             (:TYPE-PRESCRIPTION BYTE-IFY)
-                             (:REWRITE ACL2::IFIX-WHEN-NOT-INTEGERP)
-                             (:REWRITE BITOPS::BASIC-UNSIGNED-BYTE-P-OF-+)
-                             (:REWRITE DISJOINT-P-APPEND-1)
-                             (:REWRITE DEFAULT-<-1)
-                             (:REWRITE DEFAULT-CAR)
-                             (:REWRITE DEFAULT-CDR)
-                             (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
-                             (:REWRITE WB-NOT-CONSP-ADDR-LST)
-                             (:DEFINITION NTHCDR)
-                             (:REWRITE SUBSET-P-CDR-Y)
-                             (:REWRITE IA32E-LA-TO-PA-LOWER-12-BITS-VALUE-OF-ADDRESS-WHEN-ERROR)
-                             (:REWRITE DEFAULT-<-2)
-                             (:TYPE-PRESCRIPTION N52P-MV-NTH-1-IA32E-LA-TO-PA)
-                             (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
-                             (:DEFINITION NTH)
-                             (:REWRITE CONSP-CREATE-ADDR-BYTES-ALIST)
-                             (:REWRITE SUBSET-P-REFLEXIVE)
-                             (:META ACL2::CANCEL_TIMES-EQUAL-CORRECT)
-                             (:REWRITE SET::SETS-ARE-TRUE-LISTS)
-                             (:LINEAR RFLAGS-IS-N32P)
-                             (:REWRITE CONSP-BYTE-IFY)
-                             (:DEFINITION TRUE-LISTP)
-                             (:TYPE-PRESCRIPTION RFLAGS-IS-N32P)
-                             (:REWRITE CDR-APPEND-IS-APPEND-CDR)
-                             (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-TRUE-LIST-LIST-DISJOINT-P)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P-AUX)
-                             (:REWRITE DISJOINT-P-MEMBERS-OF-PAIRWISE-DISJOINT-P)
-                             (:REWRITE SUBSET-P-CDR-X)
-                             (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT)
-                             (:REWRITE SET::NONEMPTY-MEANS-SET)
-                             (:TYPE-PRESCRIPTION XW)
-                             (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST-IN-TERMS-OF-LEN)
-                             (:TYPE-PRESCRIPTION CONSP-CREATE-ADDR-BYTES-ALIST)
-                             (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-                             (:TYPE-PRESCRIPTION TRUE-LISTP)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL)
-                             (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP)
-                             (:TYPE-PRESCRIPTION ALL-TRANSLATION-GOVERNING-ADDRESSES)
-                             (:TYPE-PRESCRIPTION SET::SETP-TYPE)
-                             (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)
-                             (:REWRITE ACL2::EQUAL-CONSTANT-+)
-                             (:DEFINITION BYTE-LISTP)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-ASH)
-                             (:REWRITE BITOPS::NORMALIZE-LOGBITP-WHEN-MODS-EQUAL)
-                             (:REWRITE BITOPS::LOGBITP-OF-NEGATIVE-CONST)
-                             (:REWRITE BITOPS::LOGBITP-OF-MASK)
-                             (:REWRITE BITOPS::LOGBITP-OF-CONST)
-                             (:REWRITE GREATER-LOGBITP-OF-UNSIGNED-BYTE-P . 1)
-                             (:META BITOPS::OPEN-LOGBITP-OF-CONST-LITE-META)
-                             (:REWRITE RB-RETURNS-BYTE-LISTP)
-                             (:REWRITE CAR-OF-APPEND)
-                             (:TYPE-PRESCRIPTION RB-RETURNS-TRUE-LISTP)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER)
-                             (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER)
-                             (:TYPE-PRESCRIPTION CONSP-APPEND)
-                             (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-2)
-                             (:DEFINITION ACONS)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-COMBINE-BYTES)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGIOR)
-                             (:TYPE-PRESCRIPTION NATP)
-                             (:REWRITE SET::IN-SET)
-                             (:TYPE-PRESCRIPTION ACL2::LOGTAIL-TYPE)
-                             (:REWRITE ACL2::MEMBER-OF-CONS)
-                             (:TYPE-PRESCRIPTION TRUE-LISTP-CREATE-ADDR-BYTES-ALIST)
-                             (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)
-                             (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE)
-                             (:TYPE-PRESCRIPTION COMBINE-BYTES)
-                             (:DEFINITION N08P$INLINE)
-                             (:DEFINITION LEN)
-                             (:REWRITE xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
-                             (:REWRITE BITOPS::LOGSQUASH-OF-LOGHEAD-ZERO)
-                             (:REWRITE DEFAULT-UNARY-MINUS)
-                             (:REWRITE LEN-OF-RB-IN-PROGRAMMER-LEVEL-MODE)
-                             (:TYPE-PRESCRIPTION ACL2::BITP$INLINE)
-                             (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND)
-                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2)
-                             (:REWRITE WEED-OUT-IRRELEVANT-LOGAND-WHEN-FIRST-OPERAND-CONSTANT)
-                             (:REWRITE LOGAND-REDUNDANT)
-                             (:LINEAR ASH-MONOTONE-2)
-                             (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2)
-                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1)
-                             (:LINEAR BITOPS::LOGAND->=-0-LINEAR-1)
-                             ;; (:REWRITE
-                             ;;  MV-NTH-1-IA32E-LA-TO-PA-MEMBER-OF-MV-NTH-1-LAS-TO-PAS-IF-LIN-ADDR-MEMBER-P)
-                             (:LINEAR MV-NTH-1-IDIV-SPEC)
-                             (:LINEAR MV-NTH-1-DIV-SPEC)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-2)
-                             (:LINEAR ACL2::EXPT->-1)
-                             (:REWRITE ACL2::UNSIGNED-BYTE-P-LOGHEAD)
-                             (:TYPE-PRESCRIPTION ZIP)
-                             (:LINEAR BITOPS::LOGAND-<-0-LINEAR)
-                             (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS)
-                             (:LINEAR <=-LOGIOR)
-                             (:LINEAR MEMBER-P-POS-VALUE)
-                             (:LINEAR MEMBER-P-POS-1-VALUE)
-                             (:LINEAR BITOPS::LOGIOR->=-0-LINEAR)
-                             (:REWRITE NO-DUPLICATES-P-AND-APPEND)
-                             (:REWRITE ACL2::SUBSETP-MEMBER . 2)
-                             (:REWRITE ACL2::SUBSETP-MEMBER . 1)
-                             (:TYPE-PRESCRIPTION WR32$INLINE)
-                             (:REWRITE UNSIGNED-BYTE-P-OF-LOGAND-1)
-                             (:REWRITE SUBSET-P-CONS-MEMBER-P-LEMMA)
-                             (:REWRITE MEMBER-P-OF-NOT-A-CONSP)
-                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)
-                             (:REWRITE ACL2::EXPT-WITH-VIOLATED-GUARDS)
-                             (:REWRITE BITOPS::BASIC-SIGNED-BYTE-P-OF-+)
-                             (:TYPE-PRESCRIPTION ASH)
-                             (:LINEAR ACL2::EXPT-IS-INCREASING-FOR-BASE>1)
-                             (:DEFINITION MEMBER-EQUAL)
-                             (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1)
-                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGIOR-FOR-NATURALS)
-                             (:LINEAR BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
-
                              not
                              bitops::logand-with-negated-bitmask
                              unsigned-byte-p

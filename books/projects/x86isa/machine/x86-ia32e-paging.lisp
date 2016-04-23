@@ -2628,7 +2628,7 @@ accesses.</p>
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa)
                                   ()))))
 
-(defthm ia32e-la-to-pa-lower-12-bits-error
+(defthmd ia32e-la-to-pa-lower-12-bits-error
   (implies (and
             ;; Here's a dumb bind-free, but hey, it works for my
             ;; purposes!  I can make a nicer rule in the future or I
@@ -2644,7 +2644,7 @@ accesses.</p>
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa)
                                   (force (force))))))
 
-(defthm ia32e-la-to-pa-lower-12-bits-value-of-address-when-error
+(defthmd ia32e-la-to-pa-lower-12-bits-value-of-address-when-error
   (implies (and (natp n)
                 (<= n 12)
                 (x86p x86)

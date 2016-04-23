@@ -17,6 +17,69 @@
 
 ;; Introducing the system-level program:
 
+;;  1 mov %cr3,%rax
+;;  2 mov %rax,-0x18(%rsp)
+;;  3 mov -0x18(%rsp),%rdx
+;;  4 mov %rdi,%rax
+;;  5 shr $0x24,%rax
+;;  6 and $0xff8,%eax
+;;  7 and $0xfffffffffffff000,%rdx
+;;  8 or %rdx,%rax
+;;  9 mov (%rax),%rax
+;; 10 test $0x1,%al
+;; 11 je 400780 <rewire_dst_to_src+0x100>
+;; 12 shr $0xc,%rax
+;; 13 movabs $0xffffffffff,%r8
+;; 14 mov %rdi,%rcx
+;; 15 and %r8,%rax
+;; 16 shr $0x1b,%rcx
+;; 17 and $0xff8,%ecx
+;; 18 shl $0xc,%rax
+;; 19 or %rcx,%rax
+;; 20 mov (%rax),%rax
+;; 21 mov %rax,%rcx
+;; 22 and $0x81,%ecx
+;; 23 cmp $0x81,%rcx
+;; 24 jne 400780 <rewire_dst_to_src+0x100>
+;; 25 mov %rsi,%rcx
+;; 26 movabs $0xfffffc0000000,%r9
+;; 27 shr $0x24,%rcx
+;; 28 and %rax,%r9
+;; 29 and $0xff8,%ecx
+;; 30 or %rdx,%rcx
+;; 31 mov (%rcx),%rax
+;; 32 test $0x1,%al
+;; 33 je 400780 <rewire_dst_to_src+0x100>
+;; 34 shr $0xc,%rax
+;; 35 mov %rsi,%rdx
+;; 36 and %r8,%rax
+;; 37 shr $0x1b,%rdx
+;; 38 and $0xff8,%edx
+;; 39 shl $0xc,%rax
+;; 40 or %rdx,%rax
+;; 41 movabs $0xfff000003fffffff,%rdx
+;; 42 and (%rax),%rdx
+;; 43 or %r9,%rdx
+;; 44 mov %rdx,(%rax)
+;; 45 mov %rdx,%rax
+;; 46 and $0x81,%eax
+;; 47 cmp $0x81,%rax
+;; 48 jne 400780 <rewire_dst_to_src+0x100>
+;; 49 movabs $0xfffffc0000000,%rax
+;; 50 and $0x3fffffff,%esi
+;; 51 and $0x3fffffff,%edi
+;; 52 and %rax,%rdx
+;; 53 or %r9,%rdi
+;; 54 xor %eax,%eax
+;; 55 or %rsi,%rdx
+;; 56 cmp %rdx,%rdi
+;; 57 sete %al
+;; 58 retq
+;; 59 nopw %cs:0x0(%rax,%rax,1)
+;; 60 mov $0xffffffffffffffff,%rax
+;; 61 retq
+;; 62 nopl 0x0(%rax,%rax,1)
+
 (defconst *rewire_dst_to_src*
 
   '(#xF #x20 #xD8 #x48 #x89 #x44 #x24 #xE8
