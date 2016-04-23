@@ -263,12 +263,51 @@
 
 ;; rb and xlate-equiv-memory:
 
-(defthm mv-nth-0-rb-values-and-xlate-equiv-memory
+(defthm mv-nth-0-rb-and-xlate-equiv-memory
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (mv-nth 0 (rb l-addrs r-w-x x86-1))
                   (mv-nth 0 (rb l-addrs r-w-x x86-2))))
   :hints (("Goal" :in-theory (e/d* (rb) (force (force)))))
   :rule-classes :congruence)
+
+(local
+ (defthm xlate-equiv-memory-in-programmer-level-mode-implies-equal-states
+   (implies (and (xlate-equiv-memory x86-1 x86-2)
+                 (programmer-level-mode x86-1))
+            (equal x86-1 x86-2))
+   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory) ())))
+   :rule-classes nil))
+
+;; (i-am-here)
+
+;; (acl2::why  READ-FROM-PHYSICAL-MEMORY-AND-MV-NTH-2-LAS-TO-PAS)
+
+;; (local
+;;  (defthm read-from-physical-memory-and-xlate-equiv-memory
+;;    (implies (and (equal cpl (cpl x86-1))
+;;                  (xlate-equiv-memory x86-1 x86-2)
+;;                  (not (xr :programmer-level-mode 0 x86-1))
+;;                  (disjoint-p (all-translation-governing-addresses l-addrs x86-1)
+;;                              (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)))
+;;                  (canonical-address-listp l-addrs))
+;;             (equal (read-from-physical-memory (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)) x86-1)
+;;                    (read-from-physical-memory (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)) x86-2)))
+;;    :hints (("Goal"
+;;             :induct (las-to-pas l-addrs r-w-x cpl x86-1)
+;;             :in-theory (e/d* (las-to-pas disjoint-p) ())))))
+
+;; (defthm mv-nth-1-rb-and-xlate-equiv-memory
+;;   (implies (and (xlate-equiv-memory x86-1 x86-2)
+;;                 (disjoint-p (all-translation-governing-addresses l-addrs x86-1)
+;;                             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86-1) x86-1)))
+;;                 (canonical-address-listp l-addrs))
+;;            (equal (mv-nth 1 (rb l-addrs r-w-x x86-1))
+;;                   (mv-nth 1 (rb l-addrs r-w-x x86-2))))
+;;   :hints (("Goal"
+;;            :do-not-induct t
+;;            :use ((:instance xlate-equiv-memory-in-programmer-level-mode-implies-equal-states))
+;;            :in-theory (e/d* (rb) (force (force)))))
+;;   :otf-flg t)
 
 (defthm mv-nth-2-rb-and-xlate-equiv-memory
   (implies (and (page-structure-marking-mode x86)
