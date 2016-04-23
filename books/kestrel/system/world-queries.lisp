@@ -17,6 +17,7 @@
 
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/lists/list-defuns" :dir :system)
 
 (local (set-default-parents world-queries))
 
