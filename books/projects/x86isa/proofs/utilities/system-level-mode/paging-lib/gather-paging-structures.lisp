@@ -1556,6 +1556,7 @@
                                               IA32E-LA-TO-PA-PAGE-DIR-PTR-TABLE
                                               IA32E-LA-TO-PA-PML4-TABLE
                                               IA32E-LA-TO-PA
+                                              LAS-TO-PAS
                                               PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE
                                               RM08
                                               RB

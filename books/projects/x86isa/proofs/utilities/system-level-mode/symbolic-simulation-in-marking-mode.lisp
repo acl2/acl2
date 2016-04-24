@@ -270,6 +270,34 @@
   :hints (("Goal" :in-theory (e/d* (rb) (force (force)))))
   :rule-classes :congruence)
 
+(defthm read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures
+  (implies (and (bind-free
+                 (find-an-xlate-equiv-x86
+                  'read-from-physical-memory-and-xlate-equiv-memory
+                  x86-1 'x86-2 mfc state)
+                 (x86-2))
+                (syntaxp (and (not (eq x86-2 x86-1))
+                              ;; x86-2 must be smaller than x86-1.
+                              (term-order x86-2 x86-1)))
+                (xlate-equiv-memory x86-1 x86-2)
+                (disjoint-p (all-translation-governing-addresses l-addrs x86-1)
+                            (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)))
+                (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1))
+                            (open-qword-paddr-list
+                             (gather-all-paging-structure-qword-addresses x86-1)))
+                (canonical-address-listp l-addrs))
+           (equal (read-from-physical-memory (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)) x86-1)
+                  (read-from-physical-memory (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)) x86-2)))
+  :hints (("Goal"
+           :induct (las-to-pas l-addrs r-w-x cpl x86-1)
+           :in-theory (e/d* (las-to-pas
+                             disjoint-p
+                             xlate-equiv-memory)
+                            (disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal)))))
+
 (local
  (defthm xlate-equiv-memory-in-programmer-level-mode-implies-equal-states
    (implies (and (xlate-equiv-memory x86-1 x86-2)
@@ -278,36 +306,37 @@
    :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory) ())))
    :rule-classes nil))
 
-;; (i-am-here)
-
-;; (acl2::why  READ-FROM-PHYSICAL-MEMORY-AND-MV-NTH-2-LAS-TO-PAS)
-
-;; (local
-;;  (defthm read-from-physical-memory-and-xlate-equiv-memory
-;;    (implies (and (equal cpl (cpl x86-1))
-;;                  (xlate-equiv-memory x86-1 x86-2)
-;;                  (not (xr :programmer-level-mode 0 x86-1))
-;;                  (disjoint-p (all-translation-governing-addresses l-addrs x86-1)
-;;                              (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)))
-;;                  (canonical-address-listp l-addrs))
-;;             (equal (read-from-physical-memory (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)) x86-1)
-;;                    (read-from-physical-memory (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)) x86-2)))
-;;    :hints (("Goal"
-;;             :induct (las-to-pas l-addrs r-w-x cpl x86-1)
-;;             :in-theory (e/d* (las-to-pas disjoint-p) ())))))
-
-;; (defthm mv-nth-1-rb-and-xlate-equiv-memory
-;;   (implies (and (xlate-equiv-memory x86-1 x86-2)
-;;                 (disjoint-p (all-translation-governing-addresses l-addrs x86-1)
-;;                             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86-1) x86-1)))
-;;                 (canonical-address-listp l-addrs))
-;;            (equal (mv-nth 1 (rb l-addrs r-w-x x86-1))
-;;                   (mv-nth 1 (rb l-addrs r-w-x x86-2))))
-;;   :hints (("Goal"
-;;            :do-not-induct t
-;;            :use ((:instance xlate-equiv-memory-in-programmer-level-mode-implies-equal-states))
-;;            :in-theory (e/d* (rb) (force (force)))))
-;;   :otf-flg t)
+(defthm mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
+  (implies (and (bind-free
+                 (find-an-xlate-equiv-x86
+                  'mv-nth-1-rb-and-xlate-equiv-memory
+                  x86-1 'x86-2 mfc state)
+                 (x86-2))
+                (syntaxp (and
+                          (not (eq x86-2 x86-1))
+                          ;; x86-2 must be smaller than x86-1.
+                          (term-order x86-2 x86-1)))
+                (xlate-equiv-memory x86-1 x86-2)
+                (disjoint-p (all-translation-governing-addresses l-addrs x86-1)
+                            (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86-1) x86-1)))
+                (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86-1) x86-1))
+                            (open-qword-paddr-list
+                             (gather-all-paging-structure-qword-addresses x86-1)))
+                (canonical-address-listp l-addrs))
+           (equal (mv-nth 1 (rb l-addrs r-w-x x86-1))
+                  (mv-nth 1 (rb l-addrs r-w-x x86-2))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance xlate-equiv-memory-in-programmer-level-mode-implies-equal-states)
+                 (:instance read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures
+                            (cpl (cpl x86-1))))
+           :in-theory (e/d* (rb)
+                            (read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures
+                             disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             force (force))))))
 
 (defthm mv-nth-2-rb-and-xlate-equiv-memory
   (implies (and (page-structure-marking-mode x86)
@@ -315,5 +344,40 @@
                 (not (programmer-level-mode x86))
                 (x86p x86))
            (xlate-equiv-memory (mv-nth 2 (rb l-addrs r-w-x x86)) x86)))
+
+;; ======================================================================
+
+;; program-at and xlate-equiv-memory:
+
+(defthm program-at-and-xlate-equiv-memory-disjoint-from-paging-structures
+  (implies (and (bind-free
+                 (find-an-xlate-equiv-x86
+                  'mv-nth-1-rb-and-xlate-equiv-memory
+                  x86-1 'x86-2 mfc state)
+                 (x86-2))
+                (syntaxp (and
+                          (not (eq x86-2 x86-1))
+                          ;; x86-2 must be smaller than x86-1.
+                          (term-order x86-2 x86-1)))
+                (xlate-equiv-memory x86-1 x86-2)
+                (disjoint-p (all-translation-governing-addresses l-addrs x86-1)
+                            (mv-nth 1 (las-to-pas l-addrs :x (cpl x86-1) x86-1)))
+                (disjoint-p (mv-nth 1 (las-to-pas l-addrs :x (cpl x86-1) x86-1))
+                            (open-qword-paddr-list
+                             (gather-all-paging-structure-qword-addresses x86-1)))
+                (canonical-address-listp l-addrs))
+           (equal (program-at l-addrs bytes x86-1)
+                  (program-at l-addrs bytes x86-2)))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
+                            (r-w-x :x)))
+           :in-theory (e/d* (program-at)
+                            (mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
+                             disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                             force (force))))))
 
 ;; ======================================================================
