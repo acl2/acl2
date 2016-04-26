@@ -1089,16 +1089,31 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
                    (value ',event)
                  (value ',alt-event))))
 
-(defmacro OS (l d)
-  #+(and linux (not darwin))
-  (declare (ignore d))
-  #+(and linux (not darwin))
+(defmacro OS (l d f)
+  ;; Linux system:
+  #+(and linux (not darwin) (not freebsd))
+  (declare (ignore d) (ignore f))
+  #+(and linux (not darwin) (not freebsd))
   l
-  #+(and darwin (not linux))
-  (declare (ignore l))
-  #+(and darwin (not linux))
+
+  ;; Darwin system:
+  #+(and darwin (not linux) (not freebsd))
+  (declare (ignore l) (ignore f))
+  #+(and darwin (not linux) (not freebsd))
+  d
+
+  ;; FreeBSD system, for which we do what's done on a Darwin system
+  ;; for now.
+  #+(and freebsd (not darwin) (not linux))
+  (declare (ignore l) (ignore f))
+  #+(and freebsd (not linux) (not darwin))
   d
   )
+
+;; Note that if the x86 books are certified using the accompanying
+;; Makefile, the function x86isa_syscall_exec_support will be
+;; undefined, and hence, build-with-full-exec-support will always
+;; return its third argument.
 
 (defsection x86-syscalls-exec
   :parents (x86-syscalls)
@@ -1157,11 +1172,11 @@ x86isa-build-instructions) for details.</p>
       `(defconst *current-dir* ',(cbd)))
 
      (defconst *os-specific-dynamic-lib*
-       ;; Hopefully, one day I'll have FreeBSD listed here as well.
        (os
         "shared/libsyscallutils.so"    ;; Linux
         "shared/libsyscallutils.dylib" ;; Darwin
-        ))
+        ;; Hopefully, one day I'll have FreeBSD listed here as well.
+        ""))
 
      (defconst *shared-syscall-dir-path*
        (string-append *current-dir* *os-specific-dynamic-lib*))
