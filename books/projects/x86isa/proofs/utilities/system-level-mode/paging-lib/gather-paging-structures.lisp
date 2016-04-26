@@ -880,7 +880,7 @@
      (implies (and (member-p index addrs)
                    (mult-8-qword-paddr-listp addrs)
                    (no-duplicates-p addrs)
-                   (xlate-equiv-entries val (rm-low-64 index x86))
+                   (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                    (unsigned-byte-p 64 val)
                    (physical-address-p index)
                    (not (xr :programmer-level-mode 0 x86)))
@@ -894,7 +894,7 @@
     (implies (and (member-p index addrs)
                   (mult-8-qword-paddr-listp addrs)
                   (no-duplicates-p addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                   (unsigned-byte-p 64 val)
                   (not (xr :programmer-level-mode 0 x86)))
              (equal (gather-qword-addresses-corresponding-to-entries-aux
@@ -1017,7 +1017,7 @@
      (implies (and (member-p index addrs)
                    (mult-8-qword-paddr-listp addrs)
                    (no-duplicates-p addrs)
-                   (xlate-equiv-entries val (rm-low-64 index x86))
+                   (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                    (unsigned-byte-p 64 val)
                    (not (xr :programmer-level-mode 0 x86)))
               (equal (gather-qword-addresses-corresponding-to-entries
@@ -1030,7 +1030,7 @@
     (implies (and (member-p index addrs)
                   (mult-8-qword-paddr-listp addrs)
                   (no-duplicates-p addrs)
-                  (xlate-equiv-entries val (rm-low-64 index x86))
+                  (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                   (unsigned-byte-p 64 val)
                   (not (xr :programmer-level-mode 0 x86)))
              (equal (gather-qword-addresses-corresponding-to-entries
@@ -2093,7 +2093,7 @@
                                    ()))))
 
 (defthmd xlate-equiv-structures-and-xlate-equiv-entries
-  (implies (and (xlate-equiv-structures x86-1 x86-2)
+  (implies (and (xlate-equiv-structures (double-rewrite x86-1) x86-2)
                 (member-p index (gather-all-paging-structure-qword-addresses x86-1))
                 ;; (equal (page-structure-marking-mode x86-1) t)
                 (equal (programmer-level-mode x86-1) nil))
