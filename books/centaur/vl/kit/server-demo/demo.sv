@@ -270,6 +270,8 @@ module top () ;
   IPlane TheCanary(.clk, .*);
   IPlane AirforceOne(.*);
 
+  wire [BUS_WIDTH-1:0] foo;
+
   wire [3:0] mode;
   assign mode = (3 + 4) * theBus.opcode[2:0] << theBus.flags[0];
 
@@ -279,7 +281,7 @@ module top () ;
 
   typedef struct packed {
     logic [3:0]  inco;
-    logic [3:0]  herent;
+    logic [ADDR_WIDTH-1:0]  herent;
   } importantType_t;
 
   importantType_t realWiresHaveHorribleNamesLikeThisA,

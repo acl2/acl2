@@ -387,14 +387,14 @@ to describe all of the places that @('name') is used.</p>")
                (vl-describe-pp-gateinstlist-aux relevant))))
 
 (define vl-pp-describe ((name stringp)
-                        (x    vl-module-p)
+                        (x vl-genblob-p)
                         (ss   vl-scopestack-p "design level")
                         &key (ps 'ps))
   :guard-debug t
-  (b* (((vl-module x) x)
+  (b* (((vl-genblob x) x)
 
        (some-uses-will-not-be-displayed-p
-        (b* ((x-prime (change-vl-module x
+        (b* ((x-prime (change-vl-genblob x
                                         :modinsts nil
                                         :assigns nil
                                         ;; BOZO we don't actually print the
@@ -403,7 +403,7 @@ to describe all of the places that @('name') is used.</p>")
                                         :ports nil
                                         :portdecls nil
                                         :gateinsts nil))
-             (others  (vl-exprlist-varnames (vl-module-allexprs x-prime))))
+             (others  (vl-exprlist-varnames (with-local-nrev (vl-genblob-allexprs-nrev x-prime nrev)))))
           (member-equal name others)))
 
        (htmlp (vl-ps->htmlp))
@@ -422,7 +422,7 @@ to describe all of the places that @('name') is used.</p>")
        (ss (vl-scopestack-push x ss))
 
        (portdecl (vl-find-portdecl name x.portdecls))
-       (item     (vl-scopestack-find-item name ss))
+       ((mv item item-ss)     (vl-scopestack-find-item/ss name ss))
 
        (ps       (if item
                      (vl-ps-seq
@@ -438,10 +438,21 @@ to describe all of the places that @('name') is used.</p>")
                           (case (tag item)
                             (:vl-typedef
                              (vl-pp-typedef item))
+                            (:vl-paramdecl
+                             (vl-pp-paramdecl item))
+                            (:vl-vardecl
+                             (vl-pp-vardecl item))
                             (otherwise
                              (vl-cw "~a0" item)))
                         ps)
-                      (vl-when-html (vl-println-markup "</div>")))
+                      (vl-when-html (vl-println-markup "</div>"))
+                      (if (not (hons-equal item-ss ss))
+                          (vl-ps-seq
+                           (vl-when-html (vl-print-markup "<h5>"))
+                           (vl-print " from ")
+                           (vl-pp-scope-summary item-ss)
+                           (vl-when-html (vl-print-markup "</h5>")))
+                        ps))
                    (vl-ps-seq
                     (vl-when-html (vl-print-markup "<h4>"))
                     (vl-basic-cw "No module item found for ~s0" name)
@@ -459,6 +470,6 @@ to describe all of the places that @('name') is used.</p>")
       ps))
 
 (define vl-describe ((name stringp)
-                     (x    vl-module-p)
+                     (x    vl-genblob-p)
                      (ss   vl-scopestack-p "design level"))
   (with-local-ps (vl-pp-describe name x ss)))
