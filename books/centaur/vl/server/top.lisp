@@ -298,6 +298,8 @@
                        (eq (tag x) :vl-package))
                   (vl-package-p x))))
 
+(local (in-theory (disable (force))))
+
 (define-vls-html vls-describe (origname what data)
   (b* (((vls-data data))
        (desc (cdr (hons-assoc-equal origname data.orig-descalist)))
