@@ -1999,7 +1999,7 @@ To certify this book, first, create a world with the following packages:
 		 (acl2-agp::inv (lambda (x)(divides-pp-witness x (1_e)))))
 		(acl2-agp::x x)
 		(acl2-agp::y y)))
-	  ("Subgoal 3"
+	  ("Subgoal 5"
 ; Changed after v4-3 by Kaufmann/Moore, for tau system --
 ; tau on {"Subgoal 3"} tau off: {"Subgoal 8"}
 	   :use (:instance
