@@ -12,59 +12,59 @@
 
 ;; Some lemmas about translation-governing-addresses:
 
-(defthm translation-governing-addresses-for-page-table-and-xlate-equiv-memory
+(defthm translation-governing-addresses-for-page-table-and-xlate-equiv-memory-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (translation-governing-addresses-for-page-table lin-addr base-addr x86-1)
                   (translation-governing-addresses-for-page-table lin-addr base-addr x86-2)))
   :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-page-table) ())))
   :rule-classes :congruence)
 
-(defthm translation-governing-addresses-for-page-directory-and-xlate-equiv-memory
+(defthm translation-governing-addresses-for-page-directory-and-xlate-equiv-memory-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (translation-governing-addresses-for-page-directory lin-addr base-addr x86-1)
                   (translation-governing-addresses-for-page-directory lin-addr base-addr x86-2)))
   :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-page-directory)
-                                   (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-directory-entry-addr))
-           :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-directory-entry-addr)
+                                   (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-directory-entry-addr-cong))
+           :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-directory-entry-addr-cong)
                  (:instance xlate-equiv-entries-and-page-size
                             (e-1 (rm-low-64 (page-directory-entry-addr lin-addr base-addr) x86-1))
                             (e-2 (rm-low-64 (page-directory-entry-addr lin-addr base-addr) x86-2))))))
   :rule-classes :congruence)
 
-(defthm translation-governing-addresses-for-page-dir-ptr-table-and-xlate-equiv-memory
+(defthm translation-governing-addresses-for-page-dir-ptr-table-and-xlate-equiv-memory-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr x86-1)
                   (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr x86-2)))
   :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-page-dir-ptr-table)
-                                   (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-dir-ptr-table-entry-addr))
-           :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-dir-ptr-table-entry-addr)
+                                   (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-dir-ptr-table-entry-addr-cong))
+           :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-page-dir-ptr-table-entry-addr-cong)
                  (:instance xlate-equiv-entries-and-page-size
                             (e-1 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86-1))
                             (e-2 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86-2))))))
   :rule-classes :congruence)
 
-(defthm translation-governing-addresses-for-pml4-table-and-xlate-equiv-memory
+(defthm translation-governing-addresses-for-pml4-table-and-xlate-equiv-memory-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (translation-governing-addresses-for-pml4-table lin-addr base-addr x86-1)
                   (translation-governing-addresses-for-pml4-table lin-addr base-addr x86-2)))
   :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-pml4-table)
-                                   (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr))
-           :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr)
+                                   (xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr-cong))
+           :use ((:instance xlate-equiv-memory-and-xlate-equiv-entries-rm-low-64-with-pml4-table-entry-addr-cong)
                  (:instance xlate-equiv-entries-and-page-size
                             (e-1 (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86-1))
                             (e-2 (rm-low-64 (pml4-table-entry-addr lin-addr base-addr) x86-2))))))
   :rule-classes :congruence)
 
-(defthm translation-governing-addresses-and-xlate-equiv-memory
+(defthm translation-governing-addresses-and-xlate-equiv-memory-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (translation-governing-addresses lin-addr x86-1)
                   (translation-governing-addresses lin-addr x86-2)))
   :hints (("Goal"
            :in-theory (e/d* (translation-governing-addresses) ())
-           :use ((:instance xlate-equiv-memory-and-cr3))))
+           :use ((:instance xlate-equiv-memory-and-cr3-cong))))
   :rule-classes :congruence)
 
-(defthm all-translation-governing-addresses-and-xlate-equiv-memory
+(defthm all-translation-governing-addresses-and-xlate-equiv-memory-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (all-translation-governing-addresses lin-addr x86-1)
                   (all-translation-governing-addresses lin-addr x86-2)))
@@ -789,7 +789,7 @@
 
 ;; ======================================================================
 
-(defthm gather-all-paging-structure-qword-addresses-with-xlate-equiv-memory
+(defthm gather-all-paging-structure-qword-addresses-with-xlate-equiv-memory-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (gather-all-paging-structure-qword-addresses x86-1)
                   (gather-all-paging-structure-qword-addresses x86-2)))

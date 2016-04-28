@@ -413,7 +413,7 @@
            :use ((:instance subsetp-equal-and-gather-qword-addresses-corresponding-to-entries-aux-1)
                  (:instance subsetp-equal-and-gather-qword-addresses-corresponding-to-entries-aux-2)))))
 
-(defthm set-equiv-and-gather-qword-addresses-corresponding-to-entries-aux
+(defthm set-equiv-and-gather-qword-addresses-corresponding-to-entries-aux-cong
   (implies (std::set-equiv a b)
            (std::set-equiv (gather-qword-addresses-corresponding-to-entries-aux a x86)
                            (gather-qword-addresses-corresponding-to-entries-aux b x86)))
@@ -421,7 +421,7 @@
                                    ())))
   :rule-classes :congruence)
 
-(defthm set-equiv-implies-iff-member-p-2
+(defthm set-equiv-implies-iff-member-p-2-cong
   (implies (acl2::set-equiv x y)
            (iff (member-p a x) (member-p a y)))
   :hints (("Goal" :in-theory (e/d* (member-p-iff-member-equal) ())))

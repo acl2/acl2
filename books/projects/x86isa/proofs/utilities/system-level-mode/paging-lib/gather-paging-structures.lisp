@@ -489,7 +489,7 @@
     :hints (("Goal" :use ((:instance loghead-smaller-equality
                                      (x e-1) (y e-2) (n 5) (m n))))))
 
-  (defthm xlate-equiv-entries-and-page-present
+  (defthm xlate-equiv-entries-and-page-present-cong
     (implies (xlate-equiv-entries e-1 e-2)
              (equal (page-present e-1) (page-present e-2)))
     :hints (("Goal"
@@ -498,7 +498,7 @@
              :in-theory (e/d* (page-present) ())))
     :rule-classes :congruence)
 
-  (defthm xlate-equiv-entries-and-page-read-write
+  (defthm xlate-equiv-entries-and-page-read-write-cong
     (implies (xlate-equiv-entries e-1 e-2)
              (equal (page-read-write e-1) (page-read-write e-2)))
     :hints (("Goal"
@@ -507,7 +507,7 @@
              :in-theory (e/d* (page-read-write) ())))
     :rule-classes :congruence)
 
-  (defthm xlate-equiv-entries-and-page-user-supervisor
+  (defthm xlate-equiv-entries-and-page-user-supervisor-cong
     (implies (xlate-equiv-entries e-1 e-2)
              (equal (page-user-supervisor e-1) (page-user-supervisor e-2)))
     :hints (("Goal"
@@ -547,7 +547,7 @@
                               (e-1 e-1) (e-2 e-2) (m 7) (n 63)))
              :in-theory (e/d* (page-execute-disable) ()))))
 
-  (defthm xlate-equiv-entries-with-loghead-64
+  (defthm xlate-equiv-entries-with-loghead-64-cong
     (implies (xlate-equiv-entries e-1 e-2)
              (xlate-equiv-entries (loghead 64 e-1) (loghead 64 e-2)))
     :rule-classes :congruence))
@@ -707,7 +707,7 @@
     :hints (("Goal"
              :in-theory (e/d* (member-p)
                               (xlate-equiv-entries))
-             :use ((:instance xlate-equiv-entries-and-page-present
+             :use ((:instance xlate-equiv-entries-and-page-present-cong
                               (e-1 val)
                               (e-2 (rm-low-64 addr x86)))
                    (:instance xlate-equiv-entries-and-page-size
@@ -728,7 +728,7 @@
              :use ((:instance xlate-equiv-entries-and-page-size
                               (e-1 (rm-low-64 addr x86-equiv))
                               (e-2 (rm-low-64 addr x86)))
-                   (:instance xlate-equiv-entries-and-page-present
+                   (:instance xlate-equiv-entries-and-page-present-cong
                               (e-1 (rm-low-64 addr x86-equiv))
                               (e-2 (rm-low-64 addr x86)))
                    (:instance xlate-equiv-entries-and-logtail
@@ -777,7 +777,7 @@
              :use ((:instance xlate-equiv-entries-and-page-size
                               (e-1 val)
                               (e-2 (rm-low-64 addr x86)))
-                   (:instance xlate-equiv-entries-and-page-present
+                   (:instance xlate-equiv-entries-and-page-present-cong
                               (e-1 val)
                               (e-2 (rm-low-64 addr x86)))
                    (:instance xlate-equiv-entries-and-logtail
@@ -1980,7 +1980,7 @@
              (xlate-equiv-structures (xw fld index val x86)
                                      (double-rewrite x86))))
 
-  (defthm xlate-equiv-structures-and-programmer-level-mode
+  (defthm xlate-equiv-structures-and-programmer-level-mode-cong
     (implies (xlate-equiv-structures x86-1 x86-2)
              (equal (xr :programmer-level-mode 0 x86-1)
                     (xr :programmer-level-mode 0 x86-2)))
