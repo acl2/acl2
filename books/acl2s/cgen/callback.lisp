@@ -98,10 +98,33 @@
 
 (set-state-ok t)
 (program)
+
+(mutual-recursion
+ (defun strip-return-last (term)
+   (declare (xargs :verify-guards nil :guard (pseudo-termp term)))
+   (cond ((acl2::variablep term) term)
+         ((acl2::fquotep term) term)
+         ((eq (acl2::ffn-symb term) 'acl2::hide) term)
+         (t
+          (let* ((stripped-args (strip-return-last-lst (fargs term)))
+                 (fn (acl2::ffn-symb term)))
+               
+            (cond ((eq fn 'ACL2::RETURN-LAST) ;get rid return-last
+                   (car (last stripped-args)))
+                  (t (acl2::cons-term fn stripped-args)))))))
+
+(defun strip-return-last-lst (term-lst)
+  (declare (xargs :guard (pseudo-term-listp term-lst)))
+  (cond ((endp term-lst) '())
+        (t (cons (strip-return-last (car term-lst))
+                 (strip-return-last-lst (cdr term-lst))))))
+
+ )
+
 (defun partition-hyps-concl (term str state)
   ;; (decl :mode :program
   ;;       :sig ((pseudo-termp stringp state) -> (mv pseudo-term-listp pseudo-termp state))
-  ;;       :doc "expand lambdas, extracts hyps and concl from term")
+  ;;       :doc "expand lambdas,strip return-last, extracts hyps and concl from term")
 ;expensive operation
   ;; get rid of lambdas i.e let/let*
   (b* ((term  (defdata::expand-lambda term))
@@ -110,8 +133,11 @@
        ((mv phyps pconcl)  (mv (get-hyps pform) (get-concl pform)))
        
        ((er hyps) (acl2::translate-term-lst phyps 
-                                            t nil t str wrld state)) 
-       ((er concl) (acl2::translate pconcl t nil t str wrld state)))
+                                            t nil t str wrld state))
+       (hyps (strip-return-last-lst hyps))
+       ((er concl) (acl2::translate pconcl t nil t str wrld state))
+       (concl (strip-return-last concl))
+       )
     (mv hyps concl state)))
   
 

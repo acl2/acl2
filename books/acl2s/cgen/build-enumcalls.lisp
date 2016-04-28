@@ -417,6 +417,7 @@ thought about how to implement it.
 ;    in 
      `(mv-let (seed. BE. ,var)
               ,(_mv-value var (first ecalls) (second ecalls))
+              (declare (ignorable ,var))
             ,(make-next-sigma_mv-let (rest var-enumcalls-alist) body))))))
 
 (def make-guard-var-member-eq (vars alst)

@@ -314,7 +314,14 @@ A-lst top-vars elide-map))
       (boolean-fn-symb-1 tp-lst)))))
 
 (defun assoc-fn-p (f)
-  (member-eq f '(ACL2::ASSOC-EQUAL ACL2::ASSOC-EQ ACL2::ASSOC-EQL)))
+  (member-eq f '(ACL2::ASSOC-EQUAL ACL2::ASSOC-EQ)))
+
+(defun subsetp-fn-p (f)
+  (member-eq f '(ACL2::SUBSETP-EQUAL ACL2::SUBSETP-EQ)))
+
+(defun intersectp-fn-p (f)
+  (member-eq f '(ACL2::INTERSECTP-EQUAL ACL2::INTERSECTP-EQ)))
+
 (defun equal-fn-p (f)
   (member-eq f '(ACL2::EQUAL ACL2::= ACL2::EQ ACL2::EQL)))
 
@@ -334,7 +341,12 @@ A-lst top-vars elide-map))
        ((when (member-eq f '(ACL2::<)))
         (if (or (proper-symbolp (first args)) (proper-symbolp (second args)))
             (list :LESS/VAR)
-          (list :LESS))))
+          (list :LESS)))
+       ((when (intersectp-fn-p f))
+        (list  :INTERSECTP))
+       ((when (subsetp-fn-p f))
+        (list  :SUBSETP))
+       )
     '()))
 
 (defun classify-hyp/kinds (f args wrld)
@@ -399,6 +411,10 @@ A-lst top-vars elide-map))
          (sat% (rational-to-decimal-string (* 100 (/ (- total-runs/subgoal |#vacs|) total-runs/subgoal))))
          (cl (clausify-hyps-concl hyps concl))
          (pform (acl2::prettyify-clause cl nil wrld))
+
+         (disp-enum-alist (access test-outcomes% disp-enum-alist))
+         (elim-bindings   (access test-outcomes% elim-bindings))
+         
          (hyp->num-sat (pairlis$ hyps (make-list (len hyps) :initial-element 0)))
          (kinds (classify-hyps hyps wrld))
          )
@@ -406,6 +422,9 @@ A-lst top-vars elide-map))
        (cw? (verbose-stats-flag vl) "~|__SUBGOAL_BEGIN__~%")
        (cw? (verbose-stats-flag vl) "SUBGOAL_NAME;~f0;SAT%;~s1~%" name sat%)
        (cw? (verbose-stats-flag vl) "~x0~%" pform)
+       (cw? (verbose-stats-flag vl) "Enum: ~x0~%"  disp-enum-alist)
+       (cw? (and (verbose-stats-flag vl) elim-bindings)
+            "elim/fixer: ~x0~%"  elim-bindings)
        (print-vacuous-stats/subgoal vac-hyp-vals-list hyps kinds |#vacs| hyp->num-sat)
        (cw? (verbose-stats-flag vl) "~|__SUBGOAL_END__~%" )
        (print-vacuous-stats/subgoals (cdr s-hist) vl wrld)))))
@@ -645,9 +664,12 @@ history s-hist.")
        ((mv all-execp unsupportedp) 
           (cgen-exceptional-functions (list term) vl (w state)))
 ; 21st March 2013 - catch stobj taking and constrained functions, skip testing.
-         ((unless all-execp)  (mv :? cgen-state state)) ;possible with test? ?
-         ((when unsupportedp) (mv :? cgen-state state))
-
+       ((unless all-execp)  (mv :? cgen-state state)) ;possible with test? ?
+       ((when unsupportedp) (mv :? cgen-state state))
+       ((when (acl2::global-val 'acl2::include-book-path (w state)))
+        (prog2$ (cw? (verbose-flag vl) 
+                      "~|CEgen/Note: Inside include-book; skip testing altogether.~|")
+                 (mv :? cgen-state state)))
          
 ; No syntax error in input form, check for program-mode fns
 ; Note: translate gives nil as the term if form has

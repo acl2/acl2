@@ -75,6 +75,9 @@ downloaded from the webpage.
      (cw ,@rst)
      nil))
 
+(defun collect-vars (term)
+  (reverse (acl2::all-vars term)))
+
 (defmacro s+ (&rest args)
   "string/symbol(s) concat to return a symbol.
   :pkg and :separator keyword args recognized."
@@ -145,7 +148,7 @@ downloaded from the webpage.
   (union-eq (g1 :in f) (g1 :out f)))
 (defun all-vars/lit (l)
   "assume literal l is a term; return all variables in l"
-  (gl::collect-vars l))
+  (collect-vars l))
 
 (program)
 (defun lit-name (lit)
@@ -586,7 +589,13 @@ downloaded from the webpage.
   (or (and (member-equal l (g1 :preserves fixer)) t)
       (and (member-equal l (g1 :fixes fixer)) t)
       ;;output vars of fixer function disjoint from vars of lit --> it trivially preserves lit
-      (null (intersection-eq (g1 :out fixer) (all-vars/lit l)))))
+      (null (intersection-eq (g1 :out fixer) (all-vars/lit l)))
+      ;;hack -- assume that all monadic/type literals are preserved
+      ;;to avoid specifying too many preservation rules [2016-04-17 Sun]
+      ;;TODO -- restrict this to defdata-type only
+      (and (consp l) (= (len l) 2))
+      
+      ))
 
 (deffilter filter-spreserves-lit (fixers l)
   (lambda (f) (spreserves-lit f l)))
@@ -809,7 +818,7 @@ of the entries is same as the keys"
 (defloop C-truth-val-f/p/other-inst (lits fixers prules{})
   (for ((lit in lits))
        (C-truth-val-f/p/other-inst1 lit
-                                    (gl::collect-vars lit)
+                                    (collect-vars lit)
                                     fixers
                                     (g1 lit prules{}))))
 
@@ -960,15 +969,20 @@ of the entries is same as the keys"
          ;(in-terms (cdr (strip-mv-nth term1)))
          (fxr-b (g1 :fixer-let-binding fxri-data))
          (fxr-term (cadr (assoc-eq x fxr-b)))
-         (actual-term (acl2::sublis-var (pairlis$ In in-terms) fxr-term))
+         (actual-term (if fxr-b ;to let fixer-regression still run
+                          (acl2::sublis-var (pairlis$ In in-terms) fxr-term)
+                        (cons f in-terms)))
          (dag-term (if (null in-terms)
                        ;;enum exp -- record these so that we can easily find them for Cgen
                        (list :enum f :out x)
                      actual-term))
          )
-      (if (and (consp out-list) (consp (cdr out-list)))
-          ;;take care of mv expressions here only!!
-          (list 'MV-NTH (kwote x-pos) (list 'MV-LIST (len out-list) dag-term)) 
+      (if (and (null fxr-b) ;fixer-regression! HACK
+               (consp out-list)
+               (consp (cdr out-list)))
+          ;;take care of mv expressions here only for fixer-regression!
+          (list 'MV-NTH (kwote x-pos)
+                (list 'MV-LIST (kwote (len out-list)) dag-term)) 
         dag-term))
   (let ((fxs fx))
     (if (endp fxs)
@@ -1166,7 +1180,7 @@ of the entries is same as the keys"
                      (value nil)))
        ((er trconcl) (acl2::translate concl t t nil 'gl-hint-fn (w state) state))
        ; (- (cw "~|trconcl is ~x0~%" trconcl))
-       (concl-vars (gl::collect-vars trconcl))
+       (concl-vars (collect-vars trconcl))
        (missing-vars (set-difference-eq concl-vars (strip-cars bindings)))
        ;(- (cw "missing-vars is ~x0~%" missing-vars))
        (- (and missing-vars

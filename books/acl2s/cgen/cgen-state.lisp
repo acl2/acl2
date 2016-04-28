@@ -183,14 +183,14 @@ cgen-state"
 ; #dups is the number of duplicates encountered (but only in wts and cts [2015-04-07 Tue]) 
 ; [2015-04-07 Tue] vacs-hyp-vals-list is (listof (listof boolean))
 (defrec test-outcomes% 
-  ((|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) . |#dups|)
+  ((|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) |#dups| disp-enum-alist elim-bindings) ;[2016-04-25 Mon] record these too
   NIL)
 
 
 (defun test-outcomes%-p (v)
   (declare (xargs :guard T))
   (case-match v ;internal layout hidden everywhere else
-    (('test-outcomes% (|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) . |#dups|)
+    (('test-outcomes% (|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) |#dups| disp-enum-alist elim-bindings)
 ; symbol-doublet-list-listp is a list of assignments/value-bindings              
      (and (symbol-doublet-list-listp cts)
           (symbol-doublet-list-listp wts)
@@ -201,7 +201,10 @@ cgen-state"
           (unsigned-29bits-p |#wts|)
           (unsigned-29bits-p |#cts|)
           (unsigned-29bits-p |#vacs|)
-          (unsigned-29bits-p |#dups|)))))
+          (unsigned-29bits-p |#dups|)
+          (symbol-alistp disp-enum-alist)
+          (symbol-doublet-listp elim-bindings)
+          ))))
           
 
 (defmacro test-outcomes-1+ (fld)

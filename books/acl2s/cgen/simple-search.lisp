@@ -805,13 +805,13 @@ Use :simple search strategy to find counterexamples and witnesses.
            (cw? (normal-output-flag vl)
                 "~|CEgen/Error: Couldn't determine enumerators. Skip searching ~x0.~|" name)
            (mv t (list nil test-outcomes% gcs%) state)))
+
+       ;;[2016-04-25 Mon] record these for later printing in vacuous-stats
+       (test-outcomes% (change test-outcomes% disp-enum-alist disp-enum-alist))
+       (test-outcomes% (change test-outcomes% elim-bindings elim-bindings))
+       
        (- (cw? (system-debug-flag vl) 
                "~|CEgen/Sysdebug: next-sigma : ~| ~x0~|" next-sigma-defuns))
-
-   
-       ;;initialize temp result
-       ((er &) (assign ss-temp-result :init))
-       
        (- (cw? (verbose-flag vl) 
                "~|CEgen/Note: Enumerating ~x0 with ~x1~|" name disp-enum-alist))
        (- (cw? (and (verbose-flag vl) elim-bindings)
@@ -820,10 +820,11 @@ Use :simple search strategy to find counterexamples and witnesses.
 ; print form if origin was :incremental
        (cl (clausify-hyps-concl hyps concl))
        (pform (acl2::prettyify-clause cl nil (w state)))
-       (- (cw? (and incremental-flag?
-                    (verbose-flag vl)) 
+       (- (cw? (and incremental-flag? (verbose-flag vl)) 
                "~| incrementally on ~x0 under assignment ~x1~%" pform (append partial-A elim-bindings)))
 
+       ;;initialize temp result
+       ((er &) (assign ss-temp-result :init))
 
        (call-form   
         `(acl2::state-global-let*
@@ -854,11 +855,15 @@ Use :simple search strategy to find counterexamples and witnesses.
 ; - Is this parallelizable? Are wormholes?
 ; [2014-09-21 Sun] Reverted back to trans-eval. It is simpler and hopefully the interrupt story is saner!
 ; But we still dont use make-event, due to which we have to redef.
-    (trans-eval 
-     `(er-progn
-           
-          (with-output :stack :pop ,@(and (not (debug-flag vl)) '(:off :all))
-          (encapsulate () ; Matt's tip
+    (trans-eval
+       
+     `(with-output :stack :pop ,@(and (not (debug-flag vl)) '(:off :all))
+        (STATE-GLOBAL-LET*
+         ((LD-SKIP-PROOFSP 'ACL2::INCLUDE-BOOK)
+          (INSIDE-SKIP-PROOFS T)
+          )
+         (er-progn
+        (encapsulate () ; Matt's tip
 ; added 2nd May '12. Support program context
           ,@(and programp '((program)))
 
@@ -866,7 +871,7 @@ Use :simple search strategy to find counterexamples and witnesses.
 ; ACHTUNG -- Ask Matt if this is okay!!
           (table acl2::acl2-defaults-table :ttag :cgen-testing-driver-loop)
 
-; [2014-09-22 Mon] Instead of make-event, using redef. (Is this thread-safe?)
+;; ; [2014-09-22 Mon] Instead of make-event, using redef. (Is this thread-safe?)
           #!acl2(PROGN! (SET-LD-REDEFINITION-ACTION '(:WARN! . :OVERWRITE) STATE))
           ,@hyp-val-defuns
           ,@concl-val-defuns
@@ -889,12 +894,12 @@ Use :simple search strategy to find counterexamples and witnesses.
                 (defattach (conclusion-val conclusion-val-current-gv))
                 (defattach (hyp-val-list hyp-val-list-current-gv))
                 (defattach (next-sigma next-sigma-current-gv))))
-          ; remove trust tag
-          (table acl2::acl2-defaults-table :ttag 'nil)
-          ))
+          ;; ; remove trust tag
+          ;; (table acl2::acl2-defaults-table :ttag 'nil)
+          ) ;end of progn
           ,call-form
-          (mv t nil state) ;always give error, to abort the er-progn and revert to the old world
-          )
+          (mv t nil state) ;always give error, to abort the er-progn and revert to the old world before the preceding PROGN
+          )))
      ctx state t)
         ;; :ld-pre-eval-print nil
         ;; :ld-post-eval-print nil

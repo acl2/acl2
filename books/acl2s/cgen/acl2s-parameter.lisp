@@ -229,7 +229,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
     :doc use-fixers
    </code>
    "
- :guard (boolean value))
+ :guard (booleanp value))
 
 ;; Use natural seeds or random tree of natural numbers 
 

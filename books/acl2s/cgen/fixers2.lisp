@@ -25,18 +25,23 @@
 (program)
 (set-state-ok t)
 
+(defun collect-vars (term)
+  (reverse (acl2::all-vars term)))
+(defloop collect-vars-lst (terms)
+  (for ((term in terms)) (append (collect-vars term))))
+  
 (defun assoc-equal-lst (keys alist)
   "give back the subset of the alist that correspond to these keys. the order
-of the entries is same as the keys"
+of the entries is same as of the alist"
   (declare (xargs :guard (and (true-listp keys)
                               (alistp alist))))
-  (if (endp keys)
+  (if (endp alist)
       nil
-    (b* ((entry (assoc-equal (car keys) alist)))
-      (if entry
-          (cons entry
-                (assoc-equal-lst (cdr keys) alist))
-        (assoc-equal-lst (cdr keys) alist)))))
+    (b* (((cons k &) (car alist)))
+      (if (member-equal k keys)
+          (cons (car alist)
+                (assoc-equal-lst keys (cdr alist)))
+        (assoc-equal-lst keys (cdr alist))))))
 
 (defun to-string (x)
   (declare (xargs :mode :program))
@@ -119,11 +124,11 @@ a renaming r-alist (modulo xi=constant).
   (for ((term in terms))
        (append (and (intersectp-eq (acl2::all-vars term) vars)
                     (list term)))))
-  
+
 
 (defun fixer-rule-instance (frule alist)
   (b* ((fixer-termI (acl2::sublis-expr alist (get1 :fixer-term frule)))
-       (InI         (acl2::sublis-expr-lst alist (get1 :In frule)))
+       (InI         (collect-vars-lst (acl2::sublis-expr-lst alist (get1 :In frule))))
        (OutI        (acl2::sublis-expr-lst alist (get1 :Out frule)))
        (fixer-varsI (union-eq InI OutI))
 
@@ -209,10 +214,11 @@ a renaming r-alist (modulo xi=constant).
        (or (variablep (second term))
            (variablep (third term)))))
 
-(defun instantiate-fixer-rule/term (frule cterm all-terms vl state W{} fxri{})
+(defun instantiate-fixer-rule/term (frule cterm all-terms allvars vl state W{} fxri{})
   (declare (xargs :guard (and ;(fixer-rule-p frule)
                               (pseudo-termp cterm) ;constraint term
                               (pseudo-term-listp all-terms)
+                              (proper-symbol-listp allvars)
                               (var-term-alistp W{}) ;W{internal variable} -> term
                               (alistp fxri{}) ;fxri{fixer-term-name} -> fixer-metadata
                               )))
@@ -221,6 +227,7 @@ a renaming r-alist (modulo xi=constant).
        (cterm1 (acl2::sublis-expr (invert-alist W{}) cterm))
        ((mv yesp s-alist) (acl2::one-way-unify (get1 :constraint-term frule) cterm1))
        ((unless yesp) (value (list nil '() W{} fxri{})))
+       
 
        ;; check that meta-precondition is satisfied
        (meta-precondition (get1 :meta-precondition frule))
@@ -243,17 +250,22 @@ a renaming r-alist (modulo xi=constant).
        (r-alist (pairlis$ (strip-cars s-alist)
                           (acl2::sublis-expr-lst (invert-alist W1{})
                                                  (strip-cdrs s-alist))))
+       ((unless (proper-symbol-listp (acl2::sublis-expr-lst r-alist (get1 :Out frule))))
+        (value (list nil '() W{} fxri{})))
+       
+       (fruleI (fixer-rule-instance frule r-alist))
+
        ;;get equations for all internal variables
        (E (equalitize-lst (append W1{} (assoc-equal-lst (acl2::all-vars cterm1) W{}))))
-       (fruleI (fixer-rule-instance frule r-alist))
        (unlikely-p (dumb-unsolvable-equations-p E (get1 :Out fruleI)))
        ((when unlikely-p)
         (prog2$
          (cw? (verbose-flag vl) "~| ~x0 with fixed ~x1 is unlikely to be simultaneously satisfied!~%" E (get1 :Out fruleI))
          (value (list nil '() W{} fxri{}))))
 
-       
-       (relieve-hyps-query `(IMPLIES (AND ,@all-terms) (AND . ,(get1 :hyps fruleI))))
+       (rule-hyps (filter-terms-with-vars (get1 :hyps fruleI) allvars))
+       (new-lits (set-difference-equal (get1 :hyps fruleI) rule-hyps))
+       (relieve-hyps-query `(IMPLIES (AND ,@all-terms) (AND . ,rule-hyps)))
        ;; (cgen-state (cgen::make-cgen-state-fn test-form
        ;;                                       '(:testing-enabled :naive)
        ;;                                       (w state)))
@@ -262,12 +274,12 @@ a renaming r-alist (modulo xi=constant).
        ;;  (with-prover-time-limit (cget cgen-timeout)
        ;;                          (prove/cgen test-form nil cgen-state state)))
        (hints '())
-       ((mv erp res state) (bash-fn relieve-hyps-query hints (debug-flag vl) ctx state))
+       ((mv erp res state) (cgen::bash-fn relieve-hyps-query hints (debug-flag vl) ctx state))
        ((unless (and (not erp) (eq res nil)))
         (prog2$
-         (cw? (verbose-flag vl) "~| Unable to prove (by bash) ~x0! Skip rule ..~%" relieve-hyps-query)
+         (cw? (verbose-flag vl) "~| Unable to relieve hyps ~x0! Skip rule ..~%" relieve-hyps-query)
          (value (list nil '() W{} fxri{}))))
-       (f-lits (cons (get1 :constraint-term fruleI) E))
+       (f-lits (cons (get1 :constraint-term fruleI) (union-equal new-lits E)))
        (W{} (append W{} W1{}))
        (fxri{} (update-dynamic-fixer-instance-alist/frule fruleI fxri{}))
        (fxri{} (union-equal (make-dummy-equality-frule-instances E) fxri{}))
@@ -276,7 +288,7 @@ a renaming r-alist (modulo xi=constant).
         
                       
 
-(defun instantiate-fixer-rules/term (frules cterm all-terms vl state f-lits-lst W{} fxri{})
+(defun instantiate-fixer-rules/term (frules cterm all-terms allvars vl state f-lits-lst W{} fxri{})
   (declare (xargs :guard (and ;(fixer-rules-p frules)
                               (pseudo-termp cterm) ;constraint term
                               (pseudo-term-listp all-terms)
@@ -288,11 +300,11 @@ a renaming r-alist (modulo xi=constant).
   (b* (((when (endp frules)) (value (list f-lits-lst W{} fxri{})))
        (frule (car frules))
        ((mv erp (list hitp f-lits W{} fxri{}) state)
-        (instantiate-fixer-rule/term frule cterm all-terms vl state W{} fxri{}))
+        (instantiate-fixer-rule/term frule cterm all-terms allvars vl state W{} fxri{}))
        ((when (or erp (not hitp)))
-        (instantiate-fixer-rules/term (cdr frules) cterm all-terms vl state f-lits-lst W{} fxri{}))
+        (instantiate-fixer-rules/term (cdr frules) cterm all-terms allvars vl state f-lits-lst W{} fxri{}))
        (f-lits-lst (union-equal f-lits-lst (list f-lits)))) ;TODO -- append or union??
-    (instantiate-fixer-rules/term (cdr frules) cterm all-terms vl state f-lits-lst W{} fxri{})))
+    (instantiate-fixer-rules/term (cdr frules) cterm all-terms allvars vl state f-lits-lst W{} fxri{})))
 
 #|
 1. Flatten: R(g x)y matches with Rx1x2 of fixer rule to get s-alist x1->gx, x2->y
@@ -309,40 +321,121 @@ SAT(term) == \/ SAT(f-lits_i)
 |#
 
 
-(defun instantiate-fixer-rules/terms (cterms frules all-terms vl state term->f-lits-lst W{} fxri{})
+(defun instantiate-fixer-rules/terms (cterms frules all-terms allvars vl state term->f-lits-lst new-lits W{} fxri{})
 ;return (mv erp (list term->f-lits-lst W{} fxri{}) state)
 ; term->f-lits-lst is an alist from each cterm to a list of f-lits
 ; this list structure corresponds to DNF form, i.e., a sum of products
-  (b* (((when (endp cterms)) (value (list term->f-lits-lst W{} fxri{})))
+  (b* (((when (endp cterms)) (value (list term->f-lits-lst new-lits W{} fxri{})))
        (cterm (car cterms))
        ((mv erp (list f-lits-lst W{} fxri{}) state)
-        (instantiate-fixer-rules/term frules cterm all-terms vl state '() W{} fxri{}))
+        (instantiate-fixer-rules/term frules cterm all-terms allvars vl state '() W{} fxri{}))
        ((when (or erp (null f-lits-lst)))
         (prog2$
          (cw? (verbose-stats-flag vl) "~| No corresponding fixer-rule found for ~x0.~%" cterm)
-         (instantiate-fixer-rules/terms (cdr cterms) frules all-terms vl state
-                                        term->f-lits-lst W{} fxri{})))
+         (instantiate-fixer-rules/terms (cdr cterms) frules all-terms allvars vl state
+                                        term->f-lits-lst new-lits W{} fxri{})))
+       (new-lits (set-difference-equal (union-lsts f-lits-lst) all-terms))
        (term->f-lits-lst (put-assoc-equal cterm f-lits-lst term->f-lits-lst)))
-    (instantiate-fixer-rules/terms (cdr cterms) frules all-terms vl state
-                                   term->f-lits-lst W{} fxri{})))
+    (instantiate-fixer-rules/terms (cdr cterms) frules all-terms allvars vl state
+                                   term->f-lits-lst new-lits W{} fxri{})))
 
 
-(defun instantiate-fixer-rules/terms-iter (cterms frules vl state term->f-lits-lst W{} fxri{})
+(include-book "infer-enum-shape")
+(defloop access-cs%-alst (x-cs%-alst)
+  (for ((x-cs% in x-cs%-alst))
+       (collect (acl2::access cs% (cdr x-cs%) :defdata-type))))
+
+
+(defun make-type-and-eq-hyp (x defdata-type eq-constraint defdata::wrld)
+  (b* ((P (defdata::predicate-name defdata-type))
+       ((when (eq eq-constraint 'defdata::empty-eq-constraint))
+        (list P x)))
+    (list 'EQUAL x eq-constraint)))
+
+(defloop make-type-and-eq-hyps (v-cs%-alst defdata::wrld)
+  (for ((v--cs% in v-cs%-alst))
+       (collect (make-type-and-eq-hyp (car v--cs%)
+                                      (acl2::access cs% (cdr v--cs%) :defdata-type)
+                                      (acl2::access cs% (cdr v--cs%) :eq-constraint)
+                                      defdata::wrld))))
+
+(defun make-dummy-defdata-type-frule-instance (x defdata-type defdata::wrld)
+  (b* ((E (defdata::enumerator-name defdata-type))
+       (P (defdata::predicate-name defdata-type))
+       (vars (list x))
+       (fixer-term (list E))
+       (constraint-term (cons P vars))
+       (nm (s+ (term-name fixer-term) "/" (to-string x)))
+       (rule (list (cons :hyps '())
+                   (cons :In '())
+                   (cons :Out vars)
+                   (cons :fixer-vars vars)
+                   (cons :fixer-term fixer-term)
+                   (cons :name nm)
+                   (cons :constraint-vars vars)
+                   (cons :constraint-term constraint-term)
+                   (cons :fixer-let-binding `((,x (,E))))
+                   (cons :fixes (list constraint-term))
+                   )))
+    (cons nm rule)))
+
+
+
+(defun make-dummy-cgen-builtin-fxri-entry (v--cs% defdata::wrld)
+  (b* (((cons x cs%) v--cs%)
+       (equal-to-term (acl2::access cs% cs% :eq-constraint))
+       ((when (not (equal 'defdata::empty-eq-constraint equal-to-term)))
+        (make-dummy-equality-frule-instance x equal-to-term))
+       (defdata-type (acl2::access cs% cs% :defdata-type)))
+    (make-dummy-defdata-type-frule-instance x defdata-type defdata::wrld)))
+  
+
+(defloop make-dummy-cgen-builtin-frule-instances (v-cs%-alst defdata::wrld)
+  (for ((v--cs% in v-cs%-alst))
+       (collect (make-dummy-cgen-builtin-fxri-entry v--cs% defdata::wrld))))
+
+(defloop two-level-flatten1 (lits-lst-list)
+  (for ((lits-lst in lits-lst-list))
+       (append (union-lsts lits-lst))))
+(defun two-level-flatten (lits-lst-list)
+  (remove-duplicates-equal (two-level-flatten1 lits-lst-list)))
+(defloop singletonize (xs)
+  ;"convert (x1 x2 ... xn) to ((x1) (x2) (x3) ... (xn))"
+  (for ((x in xs)) (collect (list x))))
+
+(defun instantiate-fixer-rules/terms-iter (hyps all-hyps frules type-alist vl state term->f-lits-lst W{} fxri{})
 ;fixed-point iteration of above function
-  (b* (((mv ?erp (list term->f-lits-lst1 W1{} fxri1{}) state) ;drop erp TODO
-        (instantiate-fixer-rules/terms cterms frules cterms vl state '() '() '()))
-
-       (term->f-lits-lst (append term->f-lits-lst1 term->f-lits-lst))
-       (W{} (append W1{} W{}))
-       (fxri{} (append fxri1{} fxri{}))
+  (b* ((wrld (w state))
+       (v-cs%-alst (collect-constraints% hyps (acl2::all-vars1-lst hyps '()) type-alist '() vl wrld))
+       (type-hyps  (remove-duplicates-equal (make-type-and-eq-hyps v-cs%-alst wrld)))
+       (term->f-lits-lst0 (pairlis$ type-hyps (singletonize (singletonize type-hyps))))
+       (fxri0{} (make-dummy-cgen-builtin-frule-instances v-cs%-alst wrld))
+       (term->f-lits-lst (union-equal term->f-lits-lst0 term->f-lits-lst))
+       (fxri{} (union-equal fxri0{} fxri{}))
        
-       ((when (null W1{})) ;no new internal equations
+       (other-hyps (set-difference-equal hyps type-hyps))
+       ((when (null other-hyps))
         (value (list term->f-lits-lst W{} fxri{})))
 
-       (E (equalitize-lst W1{}))
+       (- (cw? (debug-flag vl) "~| type-hyps: ~x0 and hyps: ~x1~%" type-hyps hyps))
+
+       (allvars (acl2::all-vars1-lst all-hyps '()))
+
+       ((mv ?erp (list term->f-lits-lst1 new-lits W1{} fxri1{}) state) ;drop erp TODO
+        (instantiate-fixer-rules/terms other-hyps frules all-hyps allvars vl state '() '() '() '()))
+
+       (term->f-lits-lst (append term->f-lits-lst1 term->f-lits-lst))
+       (W{} (union-equal W1{} W{}))
+       (fxri{} (union-equal fxri1{} fxri{}))
+       
+       ((when (null new-lits)) ;no new internal equations or new hyps (backchaining)
+        (value (list term->f-lits-lst W{} fxri{})))
+
+       ;(E (equalitize-lst W1{}))
+       (all-hyps (union-equal new-lits all-hyps))
        )
        
-    (instantiate-fixer-rules/terms-iter E frules vl state term->f-lits-lst W{} fxri{})))
+    (instantiate-fixer-rules/terms-iter new-lits all-hyps frules type-alist vl state term->f-lits-lst W{} fxri{})))
 
 
 
@@ -625,62 +718,6 @@ should we completely be general?
 
 
 
-(include-book "infer-enum-shape")
-(defloop access-cs%-alst (x-cs%-alst)
-  (for ((x-cs% in x-cs%-alst))
-       (collect (acl2::access cs% (cdr x-cs%) :defdata-type))))
-
-
-(defun make-type-hyp (x defdata-type defdata::wrld)
-  (b* ((P (defdata::predicate-name defdata-type)))
-    (list P x)))
-
-(defloop make-type-hyps (v-cs%-alst defdata::wrld)
-  (for ((v--cs% in v-cs%-alst))
-       (collect (make-type-hyp (car v--cs%)
-                               (acl2::access cs% (cdr v--cs%) :defdata-type)
-                               defdata::wrld))))
-
-(defun make-dummy-defdata-type-frule-instance (x defdata-type defdata::wrld)
-  (b* ((E (defdata::enumerator-name defdata-type))
-       (P (defdata::predicate-name defdata-type))
-       (vars (list x))
-       (fixer-term (list E))
-       (constraint-term (cons P vars))
-       (nm (s+ (term-name fixer-term) "/" (to-string x)))
-       (rule (list (cons :hyps '())
-                   (cons :In '())
-                   (cons :Out vars)
-                   (cons :fixer-vars vars)
-                   (cons :fixer-term fixer-term)
-                   (cons :name nm)
-                   (cons :constraint-vars vars)
-                   (cons :constraint-term constraint-term)
-                   (cons :fixer-let-binding `((,x (,E))))
-                   (cons :fixes (list constraint-term))
-                   )))
-    (cons nm rule)))
-
-
-
-(defun make-dummy-cgen-builtin-fxri-entry (v--cs% defdata::wrld)
-  (b* (((cons x cs%) v--cs%)
-       (equal-to-term (acl2::access cs% cs% :eq-constraint))
-       ((when (not (equal 'defdata::empty-eq-constraint equal-to-term)))
-        (make-dummy-equality-frule-instance x equal-to-term))
-       (defdata-type (acl2::access cs% cs% :defdata-type)))
-    (make-dummy-defdata-type-frule-instance x defdata-type defdata::wrld)))
-  
-
-(defloop make-dummy-cgen-builtin-frule-instances (v-cs%-alst defdata::wrld)
-  (for ((v--cs% in v-cs%-alst))
-       (collect (make-dummy-cgen-builtin-fxri-entry v--cs% defdata::wrld))))
-
-(defloop two-level-flatten1 (lits-lst-list)
-  (for ((lits-lst in lits-lst-list))
-       (append (union-lsts lits-lst))))
-(defun two-level-flatten (lits-lst-list)
-  (remove-duplicates-equal (two-level-flatten1 lits-lst-list)))
 
   
 ; Putting together the middle and back ends! [2016-04-01 Fri]
@@ -689,20 +726,8 @@ should we completely be general?
   (b* ((frules (strip-cdrs (defdata::fixer-rules-table wrld)))
        (prules (strip-cdrs (defdata::preservation-rules-table wrld)))
 
-       (v-cs%-alst (collect-constraints% hyps vars type-alist '() vl wrld ))
-       (type-hyps  (remove-duplicates-equal (make-type-hyps v-cs%-alst wrld)))
-       (fxri{} (make-dummy-cgen-builtin-frule-instances v-cs%-alst wrld))
-       (other-hyps (set-difference-equal hyps type-hyps))
-       ((when (null other-hyps))
-        (prog2$
-         (cw? (verbose-flag vl) "~| fixer-arrangement: No non-type hypotheses! Returning NIL.~%")
-         (value nil)))
-
-       (- (cw? (debug-flag vl) "~| type-hyps: ~x0 and hyps: ~x1~%" type-hyps hyps))
-       (term->f-lits-lst (pairlis$ type-hyps (singletonize (singletonize type-hyps))))
-       
        ((mv ?erp1 (list term->f-lits-lst ?W{} fxri{}) state)
-        (instantiate-fixer-rules/terms-iter hyps frules vl state term->f-lits-lst '() fxri{}))
+        (instantiate-fixer-rules/terms-iter hyps hyps frules type-alist vl state '() '() '()))
 
        (f-lits (two-level-flatten (strip-cdrs term->f-lits-lst)))
 
