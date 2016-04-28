@@ -287,4 +287,14 @@
        (new-arg-lists (strip-cdrs calls)))
     (find-almost-matching-ia32e-la-to-pas-aux free-r-w-x-var new-arg-lists original-arg-list)))
 
+(defun find-arg-of-fn (fn arg-number free-var mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((calls (acl2::find-calls-lst fn (acl2::mfc-clause mfc)))
+       ((when (not calls)) nil)
+       (bind-candidates (get-subterm-from-list-of-terms arg-number calls))
+       (alst-lst
+        (make-bind-free-alist-lists free-var bind-candidates)))
+    alst-lst))
+
 ;; ======================================================================

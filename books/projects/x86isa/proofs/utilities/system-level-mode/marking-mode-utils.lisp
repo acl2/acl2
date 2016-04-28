@@ -52,291 +52,291 @@
 
 (defthm cdr-read-from-physical-memory
   (equal (cdr (read-from-physical-memory p-addrs x86))
-	 (read-from-physical-memory (cdr p-addrs) x86)))
+         (read-from-physical-memory (cdr p-addrs) x86)))
 
 (defthm cdr-mv-nth-1-las-to-pas
   (implies (not (mv-nth 0 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86)))
-	   (equal (cdr (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-		  (mv-nth 1 (las-to-pas (cdr l-addrs) r-w-x cpl x86)))))
+           (equal (cdr (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                  (mv-nth 1 (las-to-pas (cdr l-addrs) r-w-x cpl x86)))))
 
 (defthm read-from-physical-memory-and-mv-nth-2-ia32e-la-to-pa
   (implies (and (canonical-address-p lin-addr)
-		(disjoint-p (translation-governing-addresses lin-addr (double-rewrite x86)) p-addrs))
-	   (equal (read-from-physical-memory p-addrs (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-		  (read-from-physical-memory p-addrs x86)))
+                (disjoint-p (translation-governing-addresses lin-addr (double-rewrite x86)) p-addrs))
+           (equal (read-from-physical-memory p-addrs (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                  (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* (disjoint-p) (force (force))))))
 
 (defthm xr-mem-disjoint-las-to-pas
   ;; See xr-mem-disjoint-ia32e-la-to-pa-in-marking-mode
   (implies (and (disjoint-p (list index)
-			    (all-translation-governing-addresses l-addrs (double-rewrite x86)))
-		(canonical-address-listp l-addrs))
-	   (equal (xr :mem index (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-		  (xr :mem index x86)))
+                            (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+                (canonical-address-listp l-addrs))
+           (equal (xr :mem index (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+                  (xr :mem index x86)))
   :hints (("Goal"
-	   :induct (las-to-pas l-addrs r-w-x cpl x86)
-	   :in-theory (e/d* (las-to-pas
-			     all-translation-governing-addresses
-			     disjoint-p
-			     member-p
-			     not-disjoint-p-of-remove-duplicates-equal)
-			    (negative-logand-to-positive-logand-with-integerp-x
-			     bitops::logand-with-negated-bitmask
-			     force (force))))))
+           :induct (las-to-pas l-addrs r-w-x cpl x86)
+           :in-theory (e/d* (las-to-pas
+                             all-translation-governing-addresses
+                             disjoint-p
+                             member-p
+                             not-disjoint-p-of-remove-duplicates-equal)
+                            (negative-logand-to-positive-logand-with-integerp-x
+                             bitops::logand-with-negated-bitmask
+                             force (force))))))
 
 (defthm read-from-physical-memory-and-mv-nth-2-las-to-pas
   (implies (and (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86)) p-addrs)
-		(canonical-address-listp l-addrs))
-	   (equal (read-from-physical-memory p-addrs (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-		  (read-from-physical-memory p-addrs x86)))
+                (canonical-address-listp l-addrs))
+           (equal (read-from-physical-memory p-addrs (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+                  (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* (disjoint-p) (force (force))))))
 
 (defthm nth-of-read-from-physical-memory
   (implies (and (natp i)
-		(< i (len p-addrs)))
-	   (equal (nth i (read-from-physical-memory p-addrs x86))
-		  (xr :mem (nth i p-addrs) x86))))
+                (< i (len p-addrs)))
+           (equal (nth i (read-from-physical-memory p-addrs x86))
+                  (xr :mem (nth i p-addrs) x86))))
 
 (defthm nth-of-mv-nth-1-las-to-pas
   (implies (and (natp i)
-		(< i (len l-addrs))
-		(not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
-	   (equal (nth i (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-		  (mv-nth 1 (ia32e-la-to-pa (nth i l-addrs) r-w-x cpl x86)))))
+                (< i (len l-addrs))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
+           (equal (nth i (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                  (mv-nth 1 (ia32e-la-to-pa (nth i l-addrs) r-w-x cpl x86)))))
 
 (defthm nth-pos-member-p
   (implies (member-p addr l-addrs)
-	   (equal (nth (pos addr l-addrs) l-addrs) addr))
+           (equal (nth (pos addr l-addrs) l-addrs) addr))
   :hints (("Goal" :in-theory (e/d* (pos nth) ()))))
 
 (defthm translation-governing-addresses-subset-p-all-translation-governing-addresses
   (implies (member-p addr l-addrs)
-	   (equal (subset-p (translation-governing-addresses addr x86)
-			    (all-translation-governing-addresses l-addrs x86))
-		  t))
+           (equal (subset-p (translation-governing-addresses addr x86)
+                            (all-translation-governing-addresses l-addrs x86))
+                  t))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
 (defthm not-member-p-when-disjoint-p-rewrite
   ;; Note that not-member-p-when-disjoint-p is a forward-chaining rule
   ;; --- that can be made a rewrite rule as well.
   (implies (and (member-p e x)
-		(disjoint-p x y))
-	   (equal (member-p e y) nil))
+                (disjoint-p x y))
+           (equal (member-p e y) nil))
   :hints (("Goal" :in-theory (e/d* (member-p subset-p disjoint-p) ()))))
 
 (local
  (defthmd rm08-in-terms-of-nth-pos-and-rb-helper
    (implies (and (disjoint-p (all-translation-governing-addresses l-addrs x86)
-			     (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-		 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-		 (member-p addr l-addrs))
-	    (equal (member-p
-		    (mv-nth 1 (ia32e-la-to-pa addr r-w-x cpl x86))
-		    (all-translation-governing-addresses l-addrs x86))
-		   nil))
+                             (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                 (member-p addr l-addrs))
+            (equal (member-p
+                    (mv-nth 1 (ia32e-la-to-pa addr r-w-x cpl x86))
+                    (all-translation-governing-addresses l-addrs x86))
+                   nil))
    :hints (("Goal"
-	    :do-not-induct t
-	    :use ((:instance not-member-p-when-disjoint-p-rewrite
-			     (e (mv-nth 1 (ia32e-la-to-pa addr r-w-x cpl x86)))
-			     (x (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-			     (y (all-translation-governing-addresses l-addrs x86))))
-	    :in-theory (e/d* (member-p
-			      disjoint-p subset-p
-			      disjoint-p-commutative)
-			     (not-member-p-when-disjoint-p-rewrite))))))
+            :do-not-induct t
+            :use ((:instance not-member-p-when-disjoint-p-rewrite
+                             (e (mv-nth 1 (ia32e-la-to-pa addr r-w-x cpl x86)))
+                             (x (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                             (y (all-translation-governing-addresses l-addrs x86))))
+            :in-theory (e/d* (member-p
+                              disjoint-p subset-p
+                              disjoint-p-commutative)
+                             (not-member-p-when-disjoint-p-rewrite))))))
 
 (defthmd rm08-in-terms-of-nth-pos-and-rb-in-system-level-mode
   (implies (and
-	    (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
-			(mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-	    (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-	    (member-p addr l-addrs)
-	    (canonical-address-listp l-addrs)
-	    (not (programmer-level-mode x86))
-	    (x86p x86))
-	   (equal (mv-nth 1 (rm08 addr r-w-x x86))
-		  (nth (pos addr l-addrs) (mv-nth 1 (rb l-addrs r-w-x x86)))))
+            (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
+                        (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+            (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+            (member-p addr l-addrs)
+            (canonical-address-listp l-addrs)
+            (not (programmer-level-mode x86))
+            (x86p x86))
+           (equal (mv-nth 1 (rm08 addr r-w-x x86))
+                  (nth (pos addr l-addrs) (mv-nth 1 (rb l-addrs r-w-x x86)))))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d (rm08
-			    member-p disjoint-p
-			    rm08-in-terms-of-nth-pos-and-rb-helper)
-			   (signed-byte-p
-			    (:meta acl2::mv-nth-cons-meta))))))
+           :do-not-induct t
+           :in-theory (e/d (rm08
+                            member-p disjoint-p
+                            rm08-in-terms-of-nth-pos-and-rb-helper)
+                           (signed-byte-p
+                            (:meta acl2::mv-nth-cons-meta))))))
 
 (local
  (defthmd rb-in-terms-of-nth-and-pos-helper
    (implies
     (and (not (mv-nth 0 (rb (list lin-addr) :x x86)))
-	 (x86p x86))
+         (x86p x86))
     (equal (car (mv-nth 1 (rb (list lin-addr) :x x86)))
-	   (combine-bytes (mv-nth 1 (rb (list lin-addr) :x x86)))))
+           (combine-bytes (mv-nth 1 (rb (list lin-addr) :x x86)))))
    :hints (("Goal" :in-theory (e/d* () ((:meta acl2::mv-nth-cons-meta)))))))
 
 (defthm rb-in-terms-of-nth-and-pos-in-system-level-mode
   (implies (and (bind-free
-		 (find-info-from-program-at-term 'rb-in-terms-of-nth-and-pos-in-system-level-mode mfc state)
-		 (n prog-addr bytes))
-		(program-at (create-canonical-address-list n prog-addr) bytes x86)
-		(member-p lin-addr (create-canonical-address-list n prog-addr))
-		(disjoint-p
-		 (all-translation-governing-addresses
-		  (create-canonical-address-list n prog-addr) (double-rewrite x86))
-		 (mv-nth 1 (las-to-pas
-			    (create-canonical-address-list n prog-addr)
-			    :x (cpl x86) (double-rewrite x86))))
-		(syntaxp (quotep n))
-		(not (programmer-level-mode x86))
-		(x86p x86))
-	   (equal (car (mv-nth 1 (rb (list lin-addr) :x x86)))
-		  (nth (pos lin-addr (create-canonical-address-list n prog-addr)) bytes)))
+                 (find-info-from-program-at-term 'rb-in-terms-of-nth-and-pos-in-system-level-mode mfc state)
+                 (n prog-addr bytes))
+                (program-at (create-canonical-address-list n prog-addr) bytes x86)
+                (member-p lin-addr (create-canonical-address-list n prog-addr))
+                (disjoint-p
+                 (all-translation-governing-addresses
+                  (create-canonical-address-list n prog-addr) (double-rewrite x86))
+                 (mv-nth 1 (las-to-pas
+                            (create-canonical-address-list n prog-addr)
+                            :x (cpl x86) (double-rewrite x86))))
+                (syntaxp (quotep n))
+                (not (programmer-level-mode x86))
+                (x86p x86))
+           (equal (car (mv-nth 1 (rb (list lin-addr) :x x86)))
+                  (nth (pos lin-addr (create-canonical-address-list n prog-addr)) bytes)))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d (program-at
-			    rb-in-terms-of-nth-and-pos-helper)
-			   (acl2::mv-nth-cons-meta
-			    rm08-to-rb
-			    member-p-canonical-address-p-canonical-address-listp))
-	   :use ((:instance rm08-to-rb
-			    (r-w-x :x))
-		 (:instance member-p-canonical-address-p-canonical-address-listp
-			    (e lin-addr))
-		 (:instance rm08-in-terms-of-nth-pos-and-rb-in-system-level-mode
-			    (addr lin-addr)
-			    (r-w-x :x)
-			    (l-addrs (create-canonical-address-list n prog-addr)))))))
+           :do-not-induct t
+           :in-theory (e/d (program-at
+                            rb-in-terms-of-nth-and-pos-helper)
+                           (acl2::mv-nth-cons-meta
+                            rm08-to-rb
+                            member-p-canonical-address-p-canonical-address-listp))
+           :use ((:instance rm08-to-rb
+                            (r-w-x :x))
+                 (:instance member-p-canonical-address-p-canonical-address-listp
+                            (e lin-addr))
+                 (:instance rm08-in-terms-of-nth-pos-and-rb-in-system-level-mode
+                            (addr lin-addr)
+                            (r-w-x :x)
+                            (l-addrs (create-canonical-address-list n prog-addr)))))))
 
 (defthmd rb-unwinding-thm-in-system-level-mode
   (implies (and (consp l-addrs)
-		(not (mv-nth 0 (rb l-addrs r-w-x x86)))
-		(disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
-			    (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
-		(canonical-address-listp l-addrs)
-		(not (programmer-level-mode x86)))
-	   (equal (mv-nth 1 (rb l-addrs r-w-x x86))
-		  (cons (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))
-			(mv-nth 1 (rb (cdr l-addrs) r-w-x x86)))))
+                (not (mv-nth 0 (rb l-addrs r-w-x x86)))
+                (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
+                            (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
+                (canonical-address-listp l-addrs)
+                (not (programmer-level-mode x86)))
+           (equal (mv-nth 1 (rb l-addrs r-w-x x86))
+                  (cons (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))
+                        (mv-nth 1 (rb (cdr l-addrs) r-w-x x86)))))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d (rb append disjoint-p)
-			   (acl2::mv-nth-cons-meta force (force))))))
+           :do-not-induct t
+           :in-theory (e/d (rb append disjoint-p)
+                           (acl2::mv-nth-cons-meta force (force))))))
 
 (defthmd rb-unwinding-thm-in-system-level-mode-for-errors
   (implies (and (subset-p l-addrs-subset l-addrs)
-		(not (mv-nth 0 (rb l-addrs r-w-x x86))))
-	   (equal (mv-nth 0 (rb l-addrs-subset r-w-x x86))
-		  nil))
+                (not (mv-nth 0 (rb l-addrs r-w-x x86))))
+           (equal (mv-nth 0 (rb l-addrs-subset r-w-x x86))
+                  nil))
   :hints
   (("Goal" :in-theory (e/d (subset-p)
-			   (acl2::mv-nth-cons-meta force (force))))))
+                           (acl2::mv-nth-cons-meta force (force))))))
 
 (defthm mv-nth-1-las-to-pas-subset-p
   (implies (and (subset-p l-addrs-subset l-addrs)
-		(not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
-	   (subset-p (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))
-		     (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
+           (subset-p (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))
+                     (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
 (defthm append-subset-p-1
   (implies (and (subset-p a x)
-		(subset-p b x))
-	   (subset-p (append a b) x))
+                (subset-p b x))
+           (subset-p (append a b) x))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
 (defthm all-translation-governing-addresses-subset-p-all-translation-governing-addresses
   (implies (subset-p l-addrs-subset l-addrs)
-	   (equal
-	    (subset-p (all-translation-governing-addresses l-addrs-subset x86)
-		      (all-translation-governing-addresses l-addrs x86))
-	    t))
+           (equal
+            (subset-p (all-translation-governing-addresses l-addrs-subset x86)
+                      (all-translation-governing-addresses l-addrs x86))
+            t))
   :hints (("Goal" :in-theory (e/d* (subset-p member-p) ()))))
 
 (local
  (defthmd rb-in-terms-of-rb-subset-p-helper
    (implies (and (subset-p l-addrs-subset l-addrs)
-		 (disjoint-p (all-translation-governing-addresses l-addrs x86)
-			     (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-		 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
-	    (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
-			(mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))))
+                 (disjoint-p (all-translation-governing-addresses l-addrs x86)
+                             (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
+            (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
+                        (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))))
 
 (defthm rb-in-terms-of-rb-subset-p-in-system-level-mode
   (implies
    (and (bind-free
-	 (find-info-from-program-at-term
-	  'rb-in-terms-of-rb-subset-p-in-system-level-mode
-	  mfc state)
-	 (n prog-addr bytes))
-	(program-at (create-canonical-address-list n prog-addr) bytes x86)
-	(subset-p l-addrs (create-canonical-address-list n prog-addr))
-	(disjoint-p (all-translation-governing-addresses
-		     (create-canonical-address-list n prog-addr)
-		     (double-rewrite x86))
-		    (mv-nth 1 (las-to-pas
-			       (create-canonical-address-list n prog-addr)
-			       :x (cpl x86) (double-rewrite x86))))
-	(syntaxp (quotep n))
-	(consp l-addrs)
-	(not (mv-nth 0 (las-to-pas (create-canonical-address-list n prog-addr) :x (cpl x86) x86)))
-	(not (programmer-level-mode x86))
-	(x86p x86))
+         (find-info-from-program-at-term
+          'rb-in-terms-of-rb-subset-p-in-system-level-mode
+          mfc state)
+         (n prog-addr bytes))
+        (program-at (create-canonical-address-list n prog-addr) bytes x86)
+        (subset-p l-addrs (create-canonical-address-list n prog-addr))
+        (disjoint-p (all-translation-governing-addresses
+                     (create-canonical-address-list n prog-addr)
+                     (double-rewrite x86))
+                    (mv-nth 1 (las-to-pas
+                               (create-canonical-address-list n prog-addr)
+                               :x (cpl x86) (double-rewrite x86))))
+        (syntaxp (quotep n))
+        (consp l-addrs)
+        (not (mv-nth 0 (las-to-pas (create-canonical-address-list n prog-addr) :x (cpl x86) x86)))
+        (not (programmer-level-mode x86))
+        (x86p x86))
    (equal (mv-nth 1 (rb l-addrs :x x86))
-	  (append (list (nth (pos
-			      (car l-addrs)
-			      (create-canonical-address-list n prog-addr))
-			     bytes))
-		  (mv-nth 1 (rb (cdr l-addrs) :x x86)))))
+          (append (list (nth (pos
+                              (car l-addrs)
+                              (create-canonical-address-list n prog-addr))
+                             bytes))
+                  (mv-nth 1 (rb (cdr l-addrs) :x x86)))))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d (subset-p
-			    member-p
-			    disjoint-p
-			    rb-in-terms-of-rb-subset-p-helper)
-			   (rb
-			    canonical-address-p
-			    acl2::mv-nth-cons-meta
-			    rb-in-terms-of-nth-and-pos-in-system-level-mode
-			    all-translation-governing-addresses
-			    las-to-pas))
-	   :use ((:instance rb-in-terms-of-nth-and-pos-in-system-level-mode
-			    (lin-addr (car l-addrs)))
-		 (:instance rb-unwinding-thm-in-system-level-mode
-			    (r-w-x :x))
-		 (:instance rb-unwinding-thm-in-system-level-mode-for-errors
-			    (r-w-x :x)
-			    (l-addrs-subset (list (car l-addrs))))))))
+           :do-not-induct t
+           :in-theory (e/d (subset-p
+                            member-p
+                            disjoint-p
+                            rb-in-terms-of-rb-subset-p-helper)
+                           (rb
+                            canonical-address-p
+                            acl2::mv-nth-cons-meta
+                            rb-in-terms-of-nth-and-pos-in-system-level-mode
+                            all-translation-governing-addresses
+                            las-to-pas))
+           :use ((:instance rb-in-terms-of-nth-and-pos-in-system-level-mode
+                            (lin-addr (car l-addrs)))
+                 (:instance rb-unwinding-thm-in-system-level-mode
+                            (r-w-x :x))
+                 (:instance rb-unwinding-thm-in-system-level-mode-for-errors
+                            (r-w-x :x)
+                            (l-addrs-subset (list (car l-addrs))))))))
 
 (defthm combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode
   (implies
    (and (bind-free
-	 (find-info-from-program-at-term
-	  'combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode
-	  mfc state)
-	 (n prog-addr bytes))
-	(program-at (create-canonical-address-list n prog-addr) bytes x86)
-	(subset-p l-addrs (create-canonical-address-list n prog-addr))
-	(disjoint-p (all-translation-governing-addresses
-		     (create-canonical-address-list n prog-addr)
-		     (double-rewrite x86))
-		    (mv-nth 1 (las-to-pas
-			       (create-canonical-address-list n prog-addr)
-			       :x (cpl x86) (double-rewrite x86))))
-	(syntaxp (quotep n))
-	(consp l-addrs)
-	(not (mv-nth 0 (las-to-pas (create-canonical-address-list n prog-addr) :x (cpl x86) x86)))
-	(not (programmer-level-mode x86))
-	(x86p x86))
+         (find-info-from-program-at-term
+          'combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode
+          mfc state)
+         (n prog-addr bytes))
+        (program-at (create-canonical-address-list n prog-addr) bytes x86)
+        (subset-p l-addrs (create-canonical-address-list n prog-addr))
+        (disjoint-p (all-translation-governing-addresses
+                     (create-canonical-address-list n prog-addr)
+                     (double-rewrite x86))
+                    (mv-nth 1 (las-to-pas
+                               (create-canonical-address-list n prog-addr)
+                               :x (cpl x86) (double-rewrite x86))))
+        (syntaxp (quotep n))
+        (consp l-addrs)
+        (not (mv-nth 0 (las-to-pas (create-canonical-address-list n prog-addr) :x (cpl x86) x86)))
+        (not (programmer-level-mode x86))
+        (x86p x86))
    (equal (combine-bytes (mv-nth 1 (rb l-addrs :x x86)))
-	  (combine-bytes
-	   (append (list (nth (pos
-			       (car l-addrs)
-			       (create-canonical-address-list n prog-addr))
-			      bytes))
-		   (mv-nth 1 (rb (cdr l-addrs) :x x86))))))
+          (combine-bytes
+           (append (list (nth (pos
+                               (car l-addrs)
+                               (create-canonical-address-list n prog-addr))
+                              bytes))
+                   (mv-nth 1 (rb (cdr l-addrs) :x x86))))))
   :hints (("Goal" :in-theory (union-theories
-			      '()
-			      (theory 'minimal-theory))
-	   :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-mode)))))
+                              '()
+                              (theory 'minimal-theory))
+           :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-mode)))))
 
 ;; ======================================================================
 
@@ -344,19 +344,19 @@
 
 (defthm xr-mem-wb-in-system-level-mode
   (implies (and (disjoint-p (list index)
-			    (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-		(disjoint-p (list index)
-			    (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-		(addr-byte-alistp addr-lst)
-		(not (programmer-level-mode x86)))
-	   (equal (xr :mem index (mv-nth 1 (wb addr-lst x86)))
-		  (xr :mem index x86)))
+                            (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+                (disjoint-p (list index)
+                            (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+                (addr-byte-alistp addr-lst)
+                (not (programmer-level-mode x86)))
+           (equal (xr :mem index (mv-nth 1 (wb addr-lst x86)))
+                  (xr :mem index x86)))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d* (wb disjoint-p member-p)
-			    (write-to-physical-memory
-			     (:meta acl2::mv-nth-cons-meta)
-			     force (force))))))
+           :do-not-induct t
+           :in-theory (e/d* (wb disjoint-p member-p)
+                            (write-to-physical-memory
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 ;; ======================================================================
 
@@ -364,282 +364,284 @@
 
 (defthm rm-low-32-wb-in-system-level-mode-disjoint
   (implies (and (disjoint-p (addr-range 4 index)
-			    (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-		(disjoint-p (addr-range 4 index)
-			    (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-		(addr-byte-alistp addr-lst))
-	   (equal (rm-low-32 index (mv-nth 1 (wb addr-lst x86)))
-		  (rm-low-32 index x86)))
+                            (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+                (disjoint-p (addr-range 4 index)
+                            (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+                (addr-byte-alistp addr-lst))
+           (equal (rm-low-32 index (mv-nth 1 (wb addr-lst x86)))
+                  (rm-low-32 index x86)))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d* (rm-low-32 disjoint-p member-p)
-			    (wb
-			     (:meta acl2::mv-nth-cons-meta)
-			     force (force))))))
+           :do-not-induct t
+           :in-theory (e/d* (rm-low-32 disjoint-p member-p)
+                            (wb
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 (defthm rm-low-64-wb-in-system-level-mode-disjoint
   (implies (and
-	    (disjoint-p (addr-range 8 index)
-			(mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-	    (disjoint-p (addr-range 8 index)
-			(all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-	    (addr-byte-alistp addr-lst)
-	    (integerp index))
-	   (equal (rm-low-64 index (mv-nth 1 (wb addr-lst x86)))
-		  (rm-low-64 index x86)))
+            (disjoint-p (addr-range 8 index)
+                        (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+            (disjoint-p (addr-range 8 index)
+                        (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+            (addr-byte-alistp addr-lst)
+            (integerp index))
+           (equal (rm-low-64 index (mv-nth 1 (wb addr-lst x86)))
+                  (rm-low-64 index x86)))
   :hints (("Goal"
-	   :do-not-induct t
-	   :use ((:instance rm-low-32-wb-in-system-level-mode-disjoint
-			    (index index))
-		 (:instance disjoint-p-and-addr-range-first-part
-			    (n 8)
-			    (m 4)
-			    (index index)
-			    (xs (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
-		 (:instance disjoint-p-and-addr-range-first-part
-			    (n 8)
-			    (m 4)
-			    (index index)
-			    (xs (all-translation-governing-addresses (strip-cars addr-lst) x86)))
-		 (:instance disjoint-p-and-addr-range-second-part-n=8
-			    (index index)
-			    (xs (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
-		 (:instance disjoint-p-and-addr-range-second-part-n=8
-			    (index index)
-			    (xs (all-translation-governing-addresses (strip-cars addr-lst) x86)))
-		 (:instance rm-low-32-wb-in-system-level-mode-disjoint
-			    (index (+ 4 index))))
-	   :in-theory (e/d* (rm-low-64)
-			    (rm-low-32-wb-in-system-level-mode-disjoint
-			     wb (:meta acl2::mv-nth-cons-meta)
-			     force (force))))))
+           :do-not-induct t
+           :use ((:instance rm-low-32-wb-in-system-level-mode-disjoint
+                            (index index))
+                 (:instance disjoint-p-and-addr-range-first-part
+                            (n 8)
+                            (m 4)
+                            (index index)
+                            (xs (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
+                 (:instance disjoint-p-and-addr-range-first-part
+                            (n 8)
+                            (m 4)
+                            (index index)
+                            (xs (all-translation-governing-addresses (strip-cars addr-lst) x86)))
+                 (:instance disjoint-p-and-addr-range-second-part-n=8
+                            (index index)
+                            (xs (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
+                 (:instance disjoint-p-and-addr-range-second-part-n=8
+                            (index index)
+                            (xs (all-translation-governing-addresses (strip-cars addr-lst) x86)))
+                 (:instance rm-low-32-wb-in-system-level-mode-disjoint
+                            (index (+ 4 index))))
+           :in-theory (e/d* (rm-low-64)
+                            (rm-low-32-wb-in-system-level-mode-disjoint
+                             wb (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 (defthm las-to-pas-values-and-write-to-physical-memory-disjoint
   ;; Generalization of
   ;; ia32e-la-to-pa-values-and-write-to-physical-memory-disjoint.
   (implies (and (disjoint-p p-addrs (all-translation-governing-addresses l-addrs (double-rewrite x86)))
-		(physical-address-listp p-addrs)
-		(byte-listp bytes)
-		(equal (len bytes) (len p-addrs))
-		(canonical-address-listp l-addrs)
-		(not (programmer-level-mode x86))
-		(x86p x86))
-	   (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl
-					     (write-to-physical-memory p-addrs bytes x86)))
-		       (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-		(equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl
-					     (write-to-physical-memory p-addrs bytes x86)))
-		       (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
+                (physical-address-listp p-addrs)
+                (byte-listp bytes)
+                (equal (len bytes) (len p-addrs))
+                (canonical-address-listp l-addrs)
+                (not (programmer-level-mode x86))
+                (x86p x86))
+           (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl
+                                             (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl
+                                             (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
   :hints (("Goal" :induct (las-to-pas l-addrs r-w-x cpl x86)
-	   :in-theory (e/d* (disjoint-p disjoint-p-commutative)
-			    (translation-governing-addresses)))))
+           :in-theory (e/d* (disjoint-p disjoint-p-commutative)
+                            (translation-governing-addresses)))))
 
 (defthm ia32e-la-to-pa-page-table-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and
-	    (equal cpl (cpl x86))
-	    (disjoint-p
-	     (translation-governing-addresses-for-page-table lin-addr base-addr (double-rewrite x86))
-	     (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
-	    (disjoint-p
-	     (translation-governing-addresses-for-page-table lin-addr base-addr (double-rewrite x86))
-	     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-	    (addr-byte-alistp addr-lst)
-	    (canonical-address-p lin-addr)
-	    (physical-address-p base-addr)
-	    (equal (loghead 12 base-addr) 0))
-	   (and
-	    (equal (mv-nth 0
-			   (ia32e-la-to-pa-page-table
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 0
-			   (ia32e-la-to-pa-page-table
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl x86)))
-	    (equal (mv-nth 1
-			   (ia32e-la-to-pa-page-table
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 1
-			   (ia32e-la-to-pa-page-table
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl x86)))))
+            (equal cpl (cpl x86))
+            (disjoint-p
+             (translation-governing-addresses-for-page-table lin-addr base-addr (double-rewrite x86))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+            (disjoint-p
+             (translation-governing-addresses-for-page-table lin-addr base-addr (double-rewrite x86))
+             (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+            (addr-byte-alistp addr-lst)
+            (canonical-address-p lin-addr)
+            (physical-address-p base-addr)
+            (equal (loghead 12 base-addr) 0))
+           (and
+            (equal (mv-nth 0
+                           (ia32e-la-to-pa-page-table
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 0
+                           (ia32e-la-to-pa-page-table
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl x86)))
+            (equal (mv-nth 1
+                           (ia32e-la-to-pa-page-table
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 1
+                           (ia32e-la-to-pa-page-table
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl x86)))))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d* (disjoint-p
-			     member-p
-			     ia32e-la-to-pa-page-table
-			     translation-governing-addresses-for-page-table)
-			    (wb
-			     bitops::logand-with-negated-bitmask
-			     (:meta acl2::mv-nth-cons-meta)
-			     force (force))))))
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-page-table
+                             translation-governing-addresses-for-page-table)
+                            (wb
+                             bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 (defthm ia32e-la-to-pa-page-directory-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and
-	    (equal cpl (cpl x86))
-	    (disjoint-p
-	     (translation-governing-addresses-for-page-directory lin-addr base-addr (double-rewrite x86))
-	     (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
-	    (disjoint-p
-	     (translation-governing-addresses-for-page-directory lin-addr base-addr (double-rewrite x86))
-	     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-	    (addr-byte-alistp addr-lst)
-	    (canonical-address-p lin-addr)
-	    (physical-address-p base-addr)
-	    (equal (loghead 12 base-addr) 0))
-	   (and
-	    (equal (mv-nth 0
-			   (ia32e-la-to-pa-page-directory
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 0
-			   (ia32e-la-to-pa-page-directory
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl x86)))
-	    (equal (mv-nth 1
-			   (ia32e-la-to-pa-page-directory
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 1
-			   (ia32e-la-to-pa-page-directory
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl x86)))))
+            (equal cpl (cpl x86))
+            (disjoint-p
+             (translation-governing-addresses-for-page-directory lin-addr base-addr (double-rewrite x86))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+            (disjoint-p
+             (translation-governing-addresses-for-page-directory lin-addr base-addr (double-rewrite x86))
+             (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+            (addr-byte-alistp addr-lst)
+            (canonical-address-p lin-addr)
+            (physical-address-p base-addr)
+            (equal (loghead 12 base-addr) 0))
+           (and
+            (equal (mv-nth 0
+                           (ia32e-la-to-pa-page-directory
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 0
+                           (ia32e-la-to-pa-page-directory
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl x86)))
+            (equal (mv-nth 1
+                           (ia32e-la-to-pa-page-directory
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 1
+                           (ia32e-la-to-pa-page-directory
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl x86)))))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d* (disjoint-p
-			     member-p
-			     ia32e-la-to-pa-page-directory
-			     translation-governing-addresses-for-page-directory)
-			    (wb
-			     bitops::logand-with-negated-bitmask
-			     (:meta acl2::mv-nth-cons-meta)
-			     force (force))))))
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-page-directory
+                             translation-governing-addresses-for-page-directory)
+                            (wb
+                             bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 (defthm ia32e-la-to-pa-page-dir-ptr-table-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and
-	    (equal cpl (cpl x86))
-	    (disjoint-p
-	     (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr (double-rewrite x86))
-	     (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
-	    (disjoint-p
-	     (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr (double-rewrite x86))
-	     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-	    (addr-byte-alistp addr-lst)
-	    (canonical-address-p lin-addr)
-	    (physical-address-p base-addr)
-	    (equal (loghead 12 base-addr) 0))
-	   (and
-	    (equal (mv-nth 0
-			   (ia32e-la-to-pa-page-dir-ptr-table
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 0
-			   (ia32e-la-to-pa-page-dir-ptr-table
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl x86)))
-	    (equal (mv-nth 1
-			   (ia32e-la-to-pa-page-dir-ptr-table
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 1
-			   (ia32e-la-to-pa-page-dir-ptr-table
-			    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-			    wp smep smap ac nxe r-w-x cpl x86)))))
+            (equal cpl (cpl x86))
+            (disjoint-p
+             (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr (double-rewrite x86))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+            (disjoint-p
+             (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr (double-rewrite x86))
+             (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+            (addr-byte-alistp addr-lst)
+            (canonical-address-p lin-addr)
+            (physical-address-p base-addr)
+            (equal (loghead 12 base-addr) 0))
+           (and
+            (equal (mv-nth 0
+                           (ia32e-la-to-pa-page-dir-ptr-table
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 0
+                           (ia32e-la-to-pa-page-dir-ptr-table
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl x86)))
+            (equal (mv-nth 1
+                           (ia32e-la-to-pa-page-dir-ptr-table
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 1
+                           (ia32e-la-to-pa-page-dir-ptr-table
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl x86)))))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d* (disjoint-p
-			     member-p
-			     ia32e-la-to-pa-page-dir-ptr-table
-			     translation-governing-addresses-for-page-dir-ptr-table)
-			    (wb
-			     bitops::logand-with-negated-bitmask
-			     (:meta acl2::mv-nth-cons-meta)
-			     force (force))))))
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-page-dir-ptr-table
+                             translation-governing-addresses-for-page-dir-ptr-table)
+                            (wb
+                             bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 (defthm ia32e-la-to-pa-pml4-table-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and
-	    (equal cpl (cpl x86))
-	    (disjoint-p
-	     (translation-governing-addresses-for-pml4-table lin-addr base-addr (double-rewrite x86))
-	     (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
-	    (disjoint-p
-	     (translation-governing-addresses-for-pml4-table lin-addr base-addr (double-rewrite x86))
-	     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-	    (addr-byte-alistp addr-lst)
-	    (canonical-address-p lin-addr)
-	    (physical-address-p base-addr)
-	    (equal (loghead 12 base-addr) 0))
-	   (and
-	    (equal (mv-nth 0
-			   (ia32e-la-to-pa-pml4-table
-			    lin-addr base-addr wp smep smap ac nxe r-w-x cpl
-			    (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 0
-			   (ia32e-la-to-pa-pml4-table
-			    lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
-	    (equal (mv-nth 1
-			   (ia32e-la-to-pa-pml4-table
-			    lin-addr base-addr wp smep smap ac nxe r-w-x cpl
-			    (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 1
-			   (ia32e-la-to-pa-pml4-table
-			    lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))))
+            (equal cpl (cpl x86))
+            (disjoint-p
+             (translation-governing-addresses-for-pml4-table lin-addr base-addr (double-rewrite x86))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+            (disjoint-p
+             (translation-governing-addresses-for-pml4-table lin-addr base-addr (double-rewrite x86))
+             (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+            (addr-byte-alistp addr-lst)
+            (canonical-address-p lin-addr)
+            (physical-address-p base-addr)
+            (equal (loghead 12 base-addr) 0))
+           (and
+            (equal (mv-nth 0
+                           (ia32e-la-to-pa-pml4-table
+                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 0
+                           (ia32e-la-to-pa-pml4-table
+                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
+            (equal (mv-nth 1
+                           (ia32e-la-to-pa-pml4-table
+                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 1
+                           (ia32e-la-to-pa-pml4-table
+                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d* (disjoint-p
-			     member-p
-			     ia32e-la-to-pa-pml4-table
-			     translation-governing-addresses-for-pml4-table)
-			    (wb
-			     bitops::logand-with-negated-bitmask
-			     (:meta acl2::mv-nth-cons-meta)
-			     force (force))))))
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-pml4-table
+                             translation-governing-addresses-for-pml4-table)
+                            (wb
+                             bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 (defthm ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and (equal cpl (cpl x86))
-		(disjoint-p (translation-governing-addresses lin-addr (double-rewrite x86))
-			    (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
-		(disjoint-p (translation-governing-addresses lin-addr (double-rewrite x86))
-			    (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-		(addr-byte-alistp addr-lst)
-		(canonical-address-p lin-addr))
-	   (and
-	    (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-	    (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+                (disjoint-p (translation-governing-addresses lin-addr (double-rewrite x86))
+                            (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+                (disjoint-p (translation-governing-addresses lin-addr (double-rewrite x86))
+                            (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+                (addr-byte-alistp addr-lst)
+                (canonical-address-p lin-addr))
+           (and
+            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
   :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (e/d* (disjoint-p
-			     member-p
-			     ia32e-la-to-pa
-			     translation-governing-addresses)
-			    (wb
-			     bitops::logand-with-negated-bitmask
-			     (:meta acl2::mv-nth-cons-meta)
-			     force (force))))))
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa
+                             translation-governing-addresses)
+                            (wb
+                             bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 (defthm la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and (equal cpl (cpl x86))
-		(disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
-			    (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
-		(disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
-			    (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-		(addr-byte-alistp addr-lst)
-		(canonical-address-listp l-addrs))
-	   (and
-	    (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-	    (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
+                (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
+                            (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+                (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
+                            (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+                (addr-byte-alistp addr-lst)
+                (canonical-address-listp l-addrs))
+           (and
+            (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+            (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
   :hints (("Goal"
-	   :induct (all-translation-governing-addresses l-addrs x86)
-	   :in-theory (e/d* ()
-			    (wb
-			     translation-governing-addresses
-			     (:meta acl2::mv-nth-cons-meta)
-			     force (force))))))
+           :induct (all-translation-governing-addresses l-addrs x86)
+           :in-theory (e/d* ()
+                            (disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                             disjointness-of-las-to-pas-from-las-to-pas-subset-p
+                             wb
+                             translation-governing-addresses
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
 
 ;; ======================================================================
 
@@ -647,91 +649,93 @@
 
 (defthm rb-wb-disjoint-in-system-level-mode
   (implies (and
-	    (disjoint-p
-	     ;; The physical addresses pertaining to the read
-	     ;; operation are disjoint from those pertaining to the
-	     ;; write operation.
-	     (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-	     (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-	    (disjoint-p
-	     ;; The physical addresses corresponding to the read are
-	     ;; disjoint from the translation-governing-addresses
-	     ;; pertaining to the write.
-	     (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-	     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-	    (disjoint-p
-	     ;; The physical addresses pertaining to the read are
-	     ;; disjoint from the translation-governing-addresses
-	     ;; pertaining to the read.
-	     (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-	     (all-translation-governing-addresses l-addrs (double-rewrite x86)))
-	    (disjoint-p
-	     ;; The physical addresses pertaining to the write are
-	     ;; disjoint from the translation-governing-addresses
-	     ;; pertaining to the read.
-	     (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
-	     (all-translation-governing-addresses l-addrs (double-rewrite x86)))
-	    (canonical-address-listp l-addrs)
-	    (addr-byte-alistp addr-lst)
-	    (not (programmer-level-mode x86))
-	    (x86p x86))
-	   (and
-	    (equal (mv-nth 0 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 0 (rb l-addrs r-w-x x86)))
-	    (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
-		   (mv-nth 1 (rb l-addrs r-w-x x86)))))
+            (disjoint-p
+             ;; The physical addresses pertaining to the read
+             ;; operation are disjoint from those pertaining to the
+             ;; write operation.
+             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+            (disjoint-p
+             ;; The physical addresses corresponding to the read are
+             ;; disjoint from the translation-governing-addresses
+             ;; pertaining to the write.
+             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
+             (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+            (disjoint-p
+             ;; The physical addresses pertaining to the read are
+             ;; disjoint from the translation-governing-addresses
+             ;; pertaining to the read.
+             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
+             (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+            (disjoint-p
+             ;; The physical addresses pertaining to the write are
+             ;; disjoint from the translation-governing-addresses
+             ;; pertaining to the read.
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+             (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+            (canonical-address-listp l-addrs)
+            (addr-byte-alistp addr-lst)
+            (not (programmer-level-mode x86))
+            (x86p x86))
+           (and
+            (equal (mv-nth 0 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 0 (rb l-addrs r-w-x x86)))
+            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+                   (mv-nth 1 (rb l-addrs r-w-x x86)))))
   :hints (("Goal" :do-not-induct t
-	   :use ((:instance xlate-equiv-memory-and-las-to-pas
-			    (cpl (cpl x86))
-			    (x86-1 (mv-nth 2 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-			    (x86-2 x86)))
-	   :in-theory (e/d* (disjoint-p-commutative) ()))))
+           :use ((:instance xlate-equiv-memory-and-las-to-pas
+                            (cpl (cpl x86))
+                            (x86-1 (mv-nth 2 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                            (x86-2 x86)))
+           :in-theory (e/d* (disjoint-p-commutative)
+                            (disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                             disjointness-of-las-to-pas-from-las-to-pas-subset-p)))))
 
 (defthm read-from-physical-memory-and-mv-nth-1-wb-disjoint
   ;; Similar to rb-wb-disjoint-in-system-level-mode
   (implies (and (disjoint-p
-		 p-addrs
-		 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-		(disjoint-p (all-translation-governing-addresses
-			     (strip-cars addr-lst) (double-rewrite x86))
-			    p-addrs)
-		(addr-byte-alistp addr-lst)
-		(not (programmer-level-mode x86))
-		(x86p x86))
-	   (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb addr-lst x86)))
-		  (read-from-physical-memory p-addrs x86)))
+                 p-addrs
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                (disjoint-p (all-translation-governing-addresses
+                             (strip-cars addr-lst) (double-rewrite x86))
+                            p-addrs)
+                (addr-byte-alistp addr-lst)
+                (not (programmer-level-mode x86))
+                (x86p x86))
+           (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb addr-lst x86)))
+                  (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
 (defthmd rb-wb-equal-in-system-level-mode
   (implies (and (equal
-		 ;; The physical addresses pertaining to the read
-		 ;; operation are equal to those pertaining to the
-		 ;; write operation.
-		 (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-		 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-		(disjoint-p
-		 ;; The physical addresses pertaining to the write are
-		 ;; disjoint from the translation-governing-addresses
-		 ;; pertaining to the read.
-		 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
-		 (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+                 ;; The physical addresses pertaining to the read
+                 ;; operation are equal to those pertaining to the
+                 ;; write operation.
+                 (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+                (disjoint-p
+                 ;; The physical addresses pertaining to the write are
+                 ;; disjoint from the translation-governing-addresses
+                 ;; pertaining to the read.
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+                 (all-translation-governing-addresses l-addrs (double-rewrite x86)))
 
-		(no-duplicates-p
-		 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-		(not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-		(not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-		(canonical-address-listp l-addrs)
-		(addr-byte-alistp addr-lst)
-		(not (programmer-level-mode x86))
-		(x86p x86))
-	   (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
-		  (strip-cdrs addr-lst)))
+                (no-duplicates-p
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+                (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                (canonical-address-listp l-addrs)
+                (addr-byte-alistp addr-lst)
+                (not (programmer-level-mode x86))
+                (x86p x86))
+           (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+                  (strip-cdrs addr-lst)))
   :hints (("Goal" :do-not-induct t
-	   :in-theory (e/d* (disjoint-p-commutative) (force (force)))
-	   :use ((:instance xlate-equiv-memory-and-las-to-pas
-			    (cpl (cpl x86))
-			    (x86-1 (mv-nth 2 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-			    (x86-2 x86))))))
+           :in-theory (e/d* (disjoint-p-commutative) (force (force)))
+           :use ((:instance xlate-equiv-memory-and-las-to-pas
+                            (cpl (cpl x86))
+                            (x86-1 (mv-nth 2 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                            (x86-2 x86))))))
 
 ;; ======================================================================
 
@@ -739,66 +743,70 @@
 
 (defthm program-at-wb-disjoint-in-system-level-mode
   (implies (and
-	    (disjoint-p
-	     ;; The physical addresses pertaining to the read
-	     ;; operation are disjoint from those pertaining to the
-	     ;; write operation.
-	     (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86)))
-	     (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-	    (disjoint-p
-	     ;; The physical addresses corresponding to the read are
-	     ;; disjoint from the translation-governing-addresses
-	     ;; pertaining to the write.
-	     (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86)))
-	     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-	    (disjoint-p
-	     ;; The physical addresses pertaining to the read are
-	     ;; disjoint from the translation-governing-addresses
-	     ;; pertaining to the read.
-	     (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86)))
-	     (all-translation-governing-addresses l-addrs (double-rewrite x86)))
-	    (disjoint-p
-	     ;; The physical addresses pertaining to the write are
-	     ;; disjoint from the translation-governing-addresses
-	     ;; pertaining to the read.
-	     (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
-	     (all-translation-governing-addresses l-addrs (double-rewrite x86)))
-	    (canonical-address-listp l-addrs)
-	    (addr-byte-alistp addr-lst)
-	    (not (programmer-level-mode x86))
-	    (x86p x86))
-	   (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-lst x86)))
-		  (program-at l-addrs bytes x86)))
+            (disjoint-p
+             ;; The physical addresses pertaining to the read
+             ;; operation are disjoint from those pertaining to the
+             ;; write operation.
+             (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86)))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+            (disjoint-p
+             ;; The physical addresses corresponding to the read are
+             ;; disjoint from the translation-governing-addresses
+             ;; pertaining to the write.
+             (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86)))
+             (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+            (disjoint-p
+             ;; The physical addresses pertaining to the read are
+             ;; disjoint from the translation-governing-addresses
+             ;; pertaining to the read.
+             (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86)))
+             (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+            (disjoint-p
+             ;; The physical addresses pertaining to the write are
+             ;; disjoint from the translation-governing-addresses
+             ;; pertaining to the read.
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+             (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+            (canonical-address-listp l-addrs)
+            (addr-byte-alistp addr-lst)
+            (not (programmer-level-mode x86))
+            (x86p x86))
+           (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-lst x86)))
+                  (program-at l-addrs bytes x86)))
   :hints (("Goal"
-	   :do-not-induct t
-	   :use ((:instance rb-wb-disjoint-in-system-level-mode
-			    (r-w-x :x)))
-	   :in-theory (e/d (program-at) (rb-wb-disjoint-in-system-level-mode rb wb)))))
+           :do-not-induct t
+           :use ((:instance rb-wb-disjoint-in-system-level-mode
+                            (r-w-x :x)))
+           :in-theory (e/d (program-at)
+                           (rb-wb-disjoint-in-system-level-mode
+                            disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                            disjointness-of-las-to-pas-from-las-to-pas-subset-p
+                            rb wb)))))
 
 ;; ======================================================================
 
 (defthm r-w-x-is-irrelevant-for-mv-nth-1-las-to-pas-when-no-errors
   (implies (and (bind-free (find-almost-matching-ia32e-la-to-pas
-			    'las-to-pas 'r-w-x-1 (list l-addrs r-w-x-2 cpl x86) mfc state)
-			   (r-w-x-1))
-		(syntaxp (and
-			  ;; The bind-free ensures that r-w-x-2 and
-			  ;; r-w-x-1 are unequal, but I'll still leave
-			  ;; this thing in.
-			  (not (eq r-w-x-2 r-w-x-1))
-			  ;; r-w-x-2 must be smaller than r-w-x-1.
-			  (term-order r-w-x-2 r-w-x-1)))
-		(not (mv-nth 0 (las-to-pas l-addrs r-w-x-1 cpl x86)))
-		(not (mv-nth 0 (las-to-pas l-addrs r-w-x-2 cpl x86))))
-	   (equal (mv-nth 1 (las-to-pas l-addrs r-w-x-2 cpl x86))
-		  (mv-nth 1 (las-to-pas l-addrs r-w-x-1 cpl x86))))
+                            'las-to-pas 'r-w-x-1 (list l-addrs r-w-x-2 cpl x86) mfc state)
+                           (r-w-x-1))
+                (syntaxp (and
+                          ;; The bind-free ensures that r-w-x-2 and
+                          ;; r-w-x-1 are unequal, but I'll still leave
+                          ;; this thing in.
+                          (not (eq r-w-x-2 r-w-x-1))
+                          ;; r-w-x-2 must be smaller than r-w-x-1.
+                          (term-order r-w-x-2 r-w-x-1)))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x-1 cpl x86)))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x-2 cpl x86))))
+           (equal (mv-nth 1 (las-to-pas l-addrs r-w-x-2 cpl x86))
+                  (mv-nth 1 (las-to-pas l-addrs r-w-x-1 cpl x86))))
   :hints (("Goal" :in-theory (e/d* (r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
-				   ()))))
+                                   ()))))
 
 ;; ======================================================================
 
 (globally-disable '(rb wb canonical-address-p program-at
-		       unsigned-byte-p signed-byte-p
-		       las-to-pas all-translation-governing-addresses))
+                       unsigned-byte-p signed-byte-p
+                       las-to-pas all-translation-governing-addresses))
 
 ;; ======================================================================

@@ -439,15 +439,36 @@
 	   (disjoint-p (translation-governing-addresses lin-addr x86) other-p-addrs))
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
+;; (defthm disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+;;   (implies (and (bind-free
+;; 		 (find-l-addrs-from-fn 'all-translation-governing-addresses 'l-addrs mfc state)
+;; 		 (l-addrs))
+;; 		(syntaxp (not (eq l-addrs-subset l-addrs)))
+;; 		(disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86)) other-p-addrs)
+;; 		(subset-p l-addrs-subset l-addrs))
+;; 	   (disjoint-p (all-translation-governing-addresses l-addrs-subset x86) other-p-addrs))
+;;   :hints (("Goal" :in-theory (e/d* (subset-p member-p) (translation-governing-addresses)))))
+
 (defthm disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
-  (implies (and (bind-free
-		 (find-l-addrs-from-fn 'all-translation-governing-addresses 'l-addrs mfc state)
-		 (l-addrs))
-		(syntaxp (not (eq l-addrs-subset l-addrs)))
-		(disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86)) other-p-addrs)
-		(subset-p l-addrs-subset l-addrs))
-	   (disjoint-p (all-translation-governing-addresses l-addrs-subset x86) other-p-addrs))
-  :hints (("Goal" :in-theory (e/d* (subset-p member-p) (translation-governing-addresses)))))
+  (implies
+   (and
+    (bind-free
+     (find-l-addrs-from-fn 'all-translation-governing-addresses 'l-addrs mfc state)
+     (l-addrs))
+    (bind-free
+     (find-arg-of-fn 'disjoint-p 2 'other-p-addrs mfc state)
+     (other-p-addrs))
+    (syntaxp (not (eq l-addrs-subset l-addrs)))
+    ;; (syntaxp (not (eq other-p-addrs-subset other-p-addrs)))
+    (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
+                other-p-addrs)
+    (subset-p other-p-addrs-subset other-p-addrs)
+    (subset-p l-addrs-subset l-addrs))
+   (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
+               other-p-addrs-subset))
+  :hints
+  (("Goal" :in-theory (e/d* (subset-p member-p)
+                            (translation-governing-addresses)))))
 
 ;; ======================================================================
 

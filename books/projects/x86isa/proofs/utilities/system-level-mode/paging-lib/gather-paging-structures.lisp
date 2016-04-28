@@ -1539,6 +1539,7 @@
     (b* ((outer-fn (car x86-term))
          ((when (and (not (equal outer-fn 'MV-NTH))
                      (not (equal outer-fn 'WM-LOW-64))
+                     (not (equal outer-fn '!FLGI))
                      (not (and (equal outer-fn 'XW)
                                (equal (second x86-term) '':MEM)))))
           (cw "~%~p0: Unexpected x86-term encountered:~p1~%" thm-name x86-term)
@@ -1560,7 +1561,9 @@
                                               PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE
                                               RM08
                                               RB
-                                              GET-PREFIXES)))
+                                              GET-PREFIXES
+                                              RB-ALT
+                                              GET-PREFIXES-ALT)))
                            (if (equal mv-nth-index ''1)
                                (not (member-p inner-fn '(WM08 WB)))
                              t)))
@@ -1573,9 +1576,11 @@
                      (first (last inner-fn-call)))))
                sub-x86))
             ((or (equal outer-fn 'WM-LOW-64)
-                 (equal outer-fn 'XW))
+                 (equal outer-fn 'XW)
+                 (equal outer-fn '!FLGI))
              ;; We expect x86-term to be of the form (wm-low-64 index
-             ;; val sub-x86) or (xw :mem val index).
+             ;; val sub-x86) or (xw :mem val index) or (!flgi index
+             ;; val x86).
              (b* ((sub-x86 (first (last x86-term))))
                sub-x86))))))
 
