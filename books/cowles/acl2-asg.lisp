@@ -55,7 +55,9 @@ both Associative and Commutative :@(see rewrite) rules. The macro
 <p>with the following, constraining axioms:</p>
 
 @(def Equiv-is-an-equivalence)
-@(def Equiv-2-implies-equiv-op)
+@(def Equiv-implies-iff-pred-1)
+@(def Equiv-implies-equiv-op-1)
+@(def Equiv-implies-equiv-op-2)
 @(def Closure-of-op-for-pred)
 @(def Associativity-of-op)
 @(def Commutativity-of-op)
@@ -85,21 +87,13 @@ both Associative and Commutative :@(see rewrite) rules. The macro
              (and (or x y)
                   (not (and x y)))))
 
-    (defthm Equiv-is-an-equivalence
-      (and (acl2::booleanp (equiv x y))
-           (equiv x x)
-           (implies (equiv x y)
-                    (equiv y x))
-           (implies (and (equiv x y)
-                         (equiv y z))
-                    (equiv x z)))
-      :rule-classes :equivalence)
+    (defequiv equiv)
 
-    (defthm Equiv-2-implies-equiv-op
-      (implies (equiv y1 y2)
-               (equiv (op x y1)
-                      (op x y2)))
-      :rule-classes :congruence)
+    (defcong equiv iff (pred x) 1)
+
+    (defcong equiv equiv (op x y) 1)
+
+    (defcong equiv equiv (op x y) 2)
 
     (defthm Closure-of-op-for-pred
       (implies (and (pred x)
