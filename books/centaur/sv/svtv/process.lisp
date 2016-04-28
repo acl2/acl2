@@ -1181,6 +1181,7 @@ decomposition proof.</li>
                   (inalist     "Alist mapping input names to @(see 4vec) values")
                   &key
                   ((skip "List of output names that should NOT be computed")   'nil)
+                  ((include "List of output names that SHOULD be computed")    'nil)
                   ((boolvars "For symbolic execution, assume inputs are Boolean-valued") 't)
                   ((simplify "For symbolic execution, apply svex rewriting to the SVTV") 'nil)
                   ((quiet "Don't print inputs/outputs")  'nil)
@@ -1224,9 +1225,10 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
        (boolmasks (hons-copy
                    (and boolvars
                         (svar-boolmasks-limit-to-bound-vars keys svtv.inmasks))))
-       (outs (b* (((unless (consp skip)) svtv.outexprs)
-                  (outkeys (difference (mergesort (svex-alist-keys svtv.outexprs))
-                                       (mergesort skip))))
+       (outs (b* (((unless (or skip include)) svtv.outexprs)
+                  (outkeys (or include
+                               (difference (mergesort (svex-alist-keys svtv.outexprs))
+                                           (mergesort skip)))))
                (acl2::fal-extract outkeys svtv.outexprs)))
        (res
         (mbe :logic (svex-alist-eval-for-symbolic outs

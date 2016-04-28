@@ -391,6 +391,8 @@ to describe all of the places that @('name') is used.</p>")
                         (ss   vl-scopestack-p "design level")
                         &key (ps 'ps))
   :guard-debug t
+  :short "Prints out the definition of @('name') (wherever it can be found in the
+          scopestack) and uses of it in the current module."
   (b* (((vl-genblob x) x)
 
        (some-uses-will-not-be-displayed-p
@@ -431,8 +433,7 @@ to describe all of the places that @('name') is used.</p>")
                       (vl-when-html (vl-println-markup "</h4>"))
                       (vl-when-html (vl-println-markup "<div class=\"vl_src\">"))
                       (if (and portdecl (not (equal item portdecl)))
-                          (vl-ps-seq (vl-cw "~a0" portdecl)
-                                     (vl-cw "~a0" item))
+                          (vl-pp-portdecl portdecl)
                         ps)
                       (if item
                           (case (tag item)

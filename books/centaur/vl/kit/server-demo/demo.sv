@@ -143,7 +143,7 @@ typedef struct {
 } student_t;
 
 
-module EventGen (IBus bus, input [3:0] mode, input clk);
+module EventGen (IBus bus, input [3:0] mode, input clk, input student_t hi);
 
   wire [$bits(mode)-1:0] modebar;
 
