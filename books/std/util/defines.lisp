@@ -872,3 +872,167 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
        ,@(and (not verbosep)
               '(:off :all))
        (make-event (defines-fn ',name ',args (w state))))))
+
+
+
+
+
+
+(defxdoc defret-mutual
+  :parents (define returns-specifiers)
+  :short "Prove additional theorems about a mutual-recursion created using @(see defines), implicitly binding the return variables."
+
+  :long "<p>@('defret-mutual') uses flag-function-based induction to prove
+theorems about a mutual recursion created using @(see defines).  See also @(see
+make-flag) for information about the approach.</p>
+
+<p>@('defret-mutual') is mostly just a wrapper around the flag defthm macro
+created for the mutual recursion.  It generates the individual theorems within
+the mutual induction using @(see defret), so the main features are inherited
+from defret, such as automatic binding of return value names and support for
+the @(':hyp') keyword.</p>
+
+<h5>Syntax:</h5>
+<p>Using the following mutual recursion as an example:</p>
+@({
+ (defines pseudo-term-vars
+   (define pseudo-term-vars ((x psuedo-termp))
+     :returns (vars)
+     ...)
+   (define pseudo-term-list-vars ((x pseudo-term-listp))
+     :returns (vars)
+     ...))
+ })
+
+<p>Then we can use @('defret-mutual') as follows:</p>
+
+@({
+ (defret-mutual symbol-listp-of-pseudo-term-vars
+   (defret symbol-listp-of-pseudo-term-vars
+     (symbol-listp vars)
+     :hints ...
+     :fn pseudo-term-vars)
+   (defret symbol-listp-of-pseudo-term-list-vars
+     (symbol-listp vars)
+     :hints ...
+     :fn pseudo-term-list-vars)
+   :mutual-recursion pseudo-term-vars
+   ...)
+ })
+
+<p>If the @(':mutual-recursion') keyword is omitted, then the last mutual
+recursion introduced with @('defines') is assumed to be the subject.</p>
+
+<p>@('defret-mutual') supports all of the top-level options of flag defthm macros such as:</p>
+@({
+ :hints
+ :no-induction-hint
+ :skip-others
+ :instructions
+ :otf-flg })
+
+<p>The individual @('defret') forms inside the mutual recursion support all the
+options supported by @(see defret), plus the @(':skip') option from the flag
+defthm macro, which if set to nonnil uses the theorem only as an inductive
+lemma for the overall mutually recursive proof, and doesn't export it.</p>
+ })")
+
+(defun pass-kwd-args (names kwd-alist)
+  (if (atom names)
+      nil
+    (let ((look (assoc (car names) kwd-alist)))
+      (if look
+          `(,(car names) ,(cdr look) . ,(pass-kwd-args (cdr names) kwd-alist))
+        (pass-kwd-args (cdr names) kwd-alist)))))
+
+(defun defgutslist-find (name x)
+  (if (atom x)
+      nil
+    (if (eq name (defguts->name (car x)))
+        (car x)
+      (defgutslist-find name (cdr x)))))
+
+(defun defret-mutual-process-defret (defret guts name world)
+  (b* ((__function__ 'defret-mutual)
+       ((defines-guts guts))
+       ((unless (and (<= 3 (len defret))
+                     (member (car defret) '(defret defretd))
+                     (symbolp (cadr defret))))
+        (raise "Invaid defret/defretd form in ~x0: ~x1"
+               `(defret-mutual ,name) defret))
+       (disabledp (eq (car defret) 'defretd))
+       (thmname (cadr defret))
+       (ctx `(,(car defret) ,thmname))
+       (rest (cddr defret))
+       ((mv kwd-alist body-lst)
+        (extract-keywords ctx
+                          '(:hyp :fn :hints :rule-classes :pre-bind :otf-flg :skip)
+                          rest nil))
+       ((unless (consp body-lst))
+        (raise "No body in ~x0" ctx))
+       ((unless (atom (cdr body-lst)))
+        (raise "Extra args besides the body in ~x0" ctx))
+       (body (car body-lst))
+
+       (fn (cdr (assoc :fn kwd-alist)))
+       ((unless fn)
+        (raise "~x0: The function name must be specified (with :fn)." ctx))
+       (flag (cdr (assoc fn guts.flag-mapping)))
+       ((unless flag)
+        (raise "~x0: Invalid function name ~x1 (no flag mapping)." ctx fn))
+       (fnguts (defgutslist-find fn guts.gutslist))
+       ((unless fnguts)
+        (raise "~x0: Invalid function name ~x1 (no define-guts)." ctx fn)))
+    (append (defret-core thmname body kwd-alist disabledp fnguts world)
+            `(:flag ,flag :skip ,(cdr (assoc :skip kwd-alist))))))
+
+
+(defun defret-mutual-process-defrets (defrets guts name world)
+  (if (atom defrets)
+      nil
+    (cons (defret-mutual-process-defret (car defrets) guts name world)
+          (defret-mutual-process-defrets (cdr defrets) guts name world))))
+
+(defun defret-mutual-fn (name args world)
+  (b* ((__function__ 'defret-mutual)
+       ((unless (and (symbolp name)
+                     (not (keywordp name))))
+        (raise "Defret-mutual requires a name as the first argument."))
+       ((mv kwd-alist defrets)
+        (extract-keywords `(defret-mutual ,name)
+                          '(:mutual-recursion
+                            :hints
+                            :no-induction-hint
+                            :skip-others
+                            :instructions
+                            :otf-flg) args nil))
+
+       ((unless (consp defrets))
+        (raise "Defret-mutual needs at least 1 defret/defretd form."))
+
+       (defines-alist (get-defines-alist world))
+       (mutual-recursion (let ((look (assoc :mutual-recursion kwd-alist)))
+                           (if look
+                               (cdr look)
+                             (caar defines-alist))))
+       ((unless mutual-recursion)
+        (raise "Defret-mutual needs a mutual recursion created with defines to work on."))
+       (guts (cdr (assoc mutual-recursion defines-alist)))
+       ((unless guts)
+        (raise "~x0 is not the name of a mutual recursion created with defines."))
+       ((defines-guts guts))
+       ((unless guts.flag-defthm-macro)
+        (raise "No flag defthm macro for ~x0." mutual-recursion))
+       (defthms (defret-mutual-process-defrets defrets guts name world)))
+    `(,guts.flag-defthm-macro
+      ,name
+      ,@defthms
+      . ,(pass-kwd-args
+          '(:hints :no-induction-hint :skip-others :instructions :otf-flg) kwd-alist))))
+
+(defmacro defret-mutual (name &rest args)
+  `(make-event
+    (defret-mutual-fn ',name ',args (w state))))
+                              
+       
+        
