@@ -15,14 +15,9 @@
 (in-package "ACL2-ASG")
 (include-book "xdoc/top" :dir :system)
 
-(defsection cowles
-  :parents (acl2::arithmetic)
-  :short "Fundamental notions of groups and rings, developed by John Cowles,
-typically used in other @(see acl2::arithmetic) libraries.")
-
 (defsection abelian-semigroups
-  :parents (cowles)
-  :short "Axiomatization of an associative and commutative binary operation."
+  :parents (algebra)
+  :short "Axiomatization of an associative and commutative binary operation, developed by John Cowles."
   :autodoc nil
   :long "<h3>Theory of Abelian SemiGroups</h3>
 
