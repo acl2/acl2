@@ -238,7 +238,7 @@ acl2-agp::abelian-groups).</p>"
                      (acl2-agp::op plus)
                      (acl2-agp::id zero)
                      (acl2-agp::inv minus))
-                    (acl2-agp::x (times (zero) x)))
+                    (x (times (zero) x)))
                    (:instance Left-distributivity-of-times-over-plus
                               (y (zero))
                               (z (zero)))))))
@@ -262,8 +262,8 @@ acl2-agp::abelian-groups).</p>"
                      (acl2-agp::op plus)
                      (acl2-agp::id zero)
                      (acl2-agp::inv minus))
-                    (acl2-agp::x (times x y))
-                    (acl2-agp::y (times x (minus y))))
+                    (x (times x y))
+                    (y (times x (minus y))))
                    (:instance
                     Left-distributivity-of-times-over-plus
                     (z (minus y)))))))
