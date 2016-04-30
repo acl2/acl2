@@ -10,27 +10,40 @@
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
-;; This book contains a proof of Euler's Criterion for quadratic residues:
-;; If p is an odd prime and m is not divisible by p, then
-
-;;   mod(m^((p-1)/2),p) = 1 if m is a quadratic residue mod p
-;;                        p-1 if not.
-
-;; Along the way, we also prove Wilson's Theorem: If p is prime, then
-;; mod((p-1)!,p) = p-1.
-
-;; Finally, as a consequence of Euler's Criterion, we derive the First
-;; Supplement to the Law of Quadratic Reciprocity: -1 is a quadratic
-;; residue mod p iff mod(p,4) = 1.
-
-;; The proof depends on Fermat's Theorem:
-
 (include-book "fermat")
 
-;; Let p be a prime, let m be relatively prime to p, and let 0 < j < p.
-;; Then there exists a unique j' such that 0 < j' < p and
-;;         mod(j*j',p) = mod(m,p),
-;; called the associate of j w.r.t. a mod p.
+(defsection euler
+  :parents (number-theory)
+  :short "This book contains a proof of Euler's Criterion for quadratic residues"
+  :long "This book contains a proof of Euler's Criterion for quadratic residues:
+ If @('p') is an odd prime and @('m') is not divisible by @('p'), then
+@({
+   mod(m^((p-1)/2),p) = 1 if m is a quadratic residue mod p
+                        p-1 if not.
+})
+
+ Along the way, we also prove Wilson's Theorem: If @('p') is prime, then
+ @('mod((p-1)!,p) = p-1').
+
+ Finally, as a consequence of Euler's Criterion, we derive the First
+ Supplement to the Law of Quadratic Reciprocity: @('-1') is a quadratic
+ residue mod @('p') iff @('mod(p,4) = 1').
+
+ The proof depends on Fermat's Theorem:"
+
+"Let @('p') be a prime, let @('m') be relatively prime to @('p'), and let @('0 < j < p').
+ Then there exists a unique <tt>j'</tt> such that <tt>0 &lt; j' &lt; p</tt> and
+<code>
+         mod(j*j',p) = mod(m,p),
+</code>
+ called the associate of @('j') w.r.t. a mod @('p').
+@(def associate)
+@(thm associate-property)
+@(thm associate-bnds)
+@(thm associate-is-unique)
+@(thm associate-of-associate)
+@(thm associate-equal)
+@(thm associate-square)"
 
 (defund associate (j m p)
   (mod (* m (expt j (- p 2))) p))
@@ -97,8 +110,8 @@
 		  (= (mod (* j j) p) (mod m p))))
   :rule-classes ())
 
-;; If there exists x such that mod(x*x,p) = mod(m,p), then m is said to be
-;; m (quadratic) residue mod p.
+"If there exists @('x') such that @('mod(x*x,p) = mod(m,p)'), then @('m') is said to be
+@('m') (quadratic) residue mod @('p')."
 
 (defun find-root (n m p)
   (if (zp n)
@@ -137,8 +150,15 @@
 	     (not (equal (associate j m p) j)))
   :rule-classes ())
 
-;; If m is a residue mod p, then there are exactly 2 roots of
-;; mod(x*x,p) = mod(m,p) in the range 0 < x < p.
+"If @('m') is a residue mod @('p'), then there are exactly 2 roots of
+ @('mod(x*x,p) = mod(m,p)') in the range @('0 < x < p').
+@(def root1)
+@(thm res-root1)
+@(def root2)
+@(thm res-root2)
+@(thm associate-roots)
+@(thm only-2-roots)
+@(thm roots-distinct)"
 
 (defun root1 (m p)
   (find-root (1- p) m p))
@@ -197,10 +217,15 @@
 	     (not (= (root1 m p) (root2 m p))))
   :rule-classes ())
 
-;; For 0 <= n < p, we construct a list associates(n,m,p) of distinct integers 
-;; between 1 and p-1 with the following properties:
-;; (a) If 1 <= j <= n, then j is in associates(n,m,p).
-;; (b) If j is in associates(n,m,p), then so is associate(j,m,p).
+"For @('0 <= n < p'), we construct a list @('associates(n,m,p)') of distinct integers
+between @('1') and @('p-1') with the following properties:
+<ul>
+  <li>If @('1 <= j <= n'), then @('j') is in @('associates(n,m,p)').</li>
+  <li>If @('j') is in @('associates(n,m,p)'), then so is @('associate(j,m,p)').</li>
+</ul>
+@(def associates)
+@(thm member-associates)"
+
 
 (defun associates (n m p)
   (if (zp n)
@@ -224,7 +249,11 @@
 	     (iff (member (associate j m p) (associates n m p))
 		  (member j (associates n m p)))))
 
-;; We shall show that associates(p-1,m,p) is a permutation of positives(p-1).
+"We shall show that @('associates(p-1,m,p)') is a permutation of @('positives(p-1)').
+@(thm subset-positives-associates)
+@(thm member-self-associate)
+@(thm distinct-positives-associates-lemma)
+@(thm distinct-positives-associates)"
 
 (defthm subset-positives-associates
     (subsetp (positives n) (associates n m p)))
@@ -256,7 +285,9 @@
 	     (distinct-positives (associates (1- p) m p) (1- p)))
   :rule-classes ())
 
-;; We shall require a variation of the pigeonhole principle.
+"We shall require a variation of the pigeonhole principle.
+@(thm pigeonhole-principle-2)
+@(thm perm-associates-positives)"
 
 (defthm pigeonhole-principle-2
     (implies (and (natp n)
@@ -274,8 +305,13 @@
 		   (associates (1- p) m p)))
   :rule-classes ())
 
-;; It follows that the product of associates(p-1,m,p) is (p-1)! and its
-;; length is p-1.
+"It follows that the product of @('associates(p-1,m,p)') is @('(p-1)!') and its
+length is @('p-1').
+@(thm times-list-associates-fact)
+@(thm perm-len)
+@(thm len-positives)
+@(thm len-associates)
+@(thm len-associates-even)"
 
 (defthm times-list-associates-fact
     (implies (and (primep p)
@@ -313,8 +349,9 @@
 	     (integerp (* 1/2 (len (associates n m p)))))
   :rule-classes (:type-prescription))
 
-;; On the other hand, we can compute the product of associates(p-1,a,p) as
-;; follows.
+"On the other hand, we can compute the product of @('associates(p-1,a,p)') as
+follows.
+@(thm times-list-associates)"
 
 (defthm times-list-associates
     (implies (and (primep p)
@@ -328,7 +365,10 @@
 		      (mod (expt m (/ (len (associates n m p)) 2)) p))))
   :rule-classes ())
 
-;; Both Wilson's Theorem and Euler's Criterion now follow easily.
+"Both Wilson's Theorem and Euler's Criterion now follow easily.
+@(thm euler-lemma)
+@(thm wilson)
+@(thm euler-criterion)"
 
 (defthm euler-lemma
     (implies (and (primep p)
@@ -358,7 +398,8 @@
 		      (1- p))))
   :rule-classes ())
 
-;;  The "First Supplement" is the case a = 1:
+"The First Supplement is the case @('a = 1')
+@(thm first-supplement)"
 
 (defthm first-supplement
     (implies (and (primep p)
@@ -366,3 +407,5 @@
 	     (iff (residue -1 p)
 		  (= (mod p 4) 1)))
   :rule-classes ())
+
+)
