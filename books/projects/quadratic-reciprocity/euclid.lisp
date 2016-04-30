@@ -277,37 +277,40 @@
 		(g-c-d-nat x y)))
   :rule-classes ())
 
-(defun r (x y)
+(defun r-int (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< x 0)
       (- (r-nat (abs x) (abs y)))
     (r-nat (abs x) (abs y))))
 
-(defun s (x y)
+(defun s-int (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< y 0)
       (- (s-nat (abs x) (abs y)))
     (s-nat (abs x) (abs y))))
+#|
+These type-prescription rules are redundant.
+ACL2 derives them from definitions.
 
-(defthm integerp-r
-    (integerp (r x y))
+(defthm integerp-r-int
+    (integerp (r-int x y))
   :rule-classes (:type-prescription))
 
-(defthm integerp-s
-    (integerp (s x y))
+(defthm integerp-s-int
+    (integerp (s-int x y))
   :rule-classes (:type-prescription))
-
+|#
 (defthm g-c-d-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r x y) x)
-		   (* (s x y) y))
+	     (= (+ (* (r-int x y) x)
+		   (* (s-int x y) y))
 		(g-c-d x y)))
   :rule-classes ())
 
-(in-theory (disable g-c-d r s))
+(in-theory (disable g-c-d r-int s-int))
 
 (defthm divides-g-c-d
     (implies (and (integerp x)
