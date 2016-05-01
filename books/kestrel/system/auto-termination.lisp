@@ -4,13 +4,6 @@
 
 ;;; TO DO:
 
-; - Handle redundancy.
-
-; - Handle reflexive functions if possible, probably by ignoring unmeasured
-;   formals for recursive calls in the old function.
-
-; - Perhaps improve documentation.
-
 ; - Support DEFINE.
 
 ; - Support mutual-recursion.
@@ -85,32 +78,37 @@
 
   (flatten-ands-in-lit-lst (push-down-ifs-lst (normalize-lit-lst clause))))
 
-(defun termination-clause-set-2 (calls tests)
+(defun termination-clause-set-2 (calls tests fn-subst)
   (cond ((endp calls) nil)
         (t (let ((call (car calls)))
-             (assert$ (and (nvariablep call)
-                           (not (fquotep call)))
-                      (cons (cons (fcons-term :P (fargs call))
-                                  tests)
-                            (termination-clause-set-2 (cdr calls) tests)))))))
+             (assert$
+              (and (nvariablep call)
+                   (not (fquotep call)))
+              (cons (cons (sublis-fn-simple fn-subst call)
+                          tests)
+                    (termination-clause-set-2 (cdr calls) tests fn-subst)))))))
 
-(defun termination-clause-set-1 (tc-lst)
+(defun termination-clause-set-1 (tc-lst fn-subst)
   (cond ((endp tc-lst) nil)
         (t (let ((calls (access tests-and-calls
                                 (car tc-lst)
                                 :calls)))
              (cond
               ((null calls)
-               (termination-clause-set-1 (cdr tc-lst)))
+               (termination-clause-set-1 (cdr tc-lst) fn-subst))
               (t (append (termination-clause-set-2 calls
                                                    (normalize-clause
-                                                    (access tests-and-calls
-                                                            (car tc-lst)
-                                                            :tests)))
-                         (termination-clause-set-1 (cdr tc-lst)))))))))
+                                                    (sublis-fn-lst-simple
+                                                     fn-subst
+                                                     (access tests-and-calls
+                                                             (car tc-lst)
+                                                             :tests)))
+                                                   fn-subst)
+                         (termination-clause-set-1 (cdr tc-lst) fn-subst))))))))
 
 (defun termination-clause-set (fn wrld)
-  (termination-clause-set-1 (getpropc fn 'induction-machine nil wrld)))
+  (termination-clause-set-1 (getpropc fn 'induction-machine nil wrld)
+                            (list (cons fn :FN))))
 
 (mutual-recursion
 
@@ -268,7 +266,7 @@
   (let ((thm (termination-theorem fn wrld)))
     (alist-to-doublets (restrict-alist (all-vars thm) unify-subst))))
 
-(defun auto-termination-declare-2 (old-fn new-fn-clause-set wrld)
+(defun auto-termination-declare-2 (old-fn new-fn-clause-set theory expand wrld)
   (let ((recursivep (getpropc old-fn 'recursivep nil wrld)))
     (and recursivep
          (null (cdr recursivep)) ; singly-recursive
@@ -293,17 +291,20 @@
                                                 ,@(term-thm-alist old-fn
                                                                   unify-subst
                                                                   wrld))
-                                     :in-theory
-                                     (theory 'auto-termination-theory))))))))))))))
+                                     ,@(and expand
+                                            `(:expand ,expand))
+                                     :in-theory ,theory)))))))))))))
 
-(defun auto-termination-declare-1 (fns new-fn-clause-set wrld)
+(defun auto-termination-declare-1 (fns new-fn-clause-set theory expand wrld)
   (cond ((endp fns) nil)
-        (t (or (auto-termination-declare-2 (car fns) new-fn-clause-set wrld)
-               (auto-termination-declare-1 (cdr fns) new-fn-clause-set wrld)))))
+        (t (or (auto-termination-declare-2 (car fns) new-fn-clause-set
+                                           theory expand wrld)
+               (auto-termination-declare-1 (cdr fns) new-fn-clause-set
+                                           theory expand wrld)))))
 
-(defun auto-termination-declare (new-fn-clause-set wrld)
+(defun auto-termination-declare (new-fn-clause-set theory expand wrld)
   (let ((old-fns (strip-cadrs (let ((world wrld)) (function-theory :here)))))
-    (auto-termination-declare-1 old-fns new-fn-clause-set wrld)))
+    (auto-termination-declare-1 old-fns new-fn-clause-set theory expand wrld)))
 
 (defconst *legal-auto-termination-event-types*
   '(defun defund))
@@ -317,7 +318,7 @@
   t)
 (defattach auto-termination-check auto-termination-check-strict)
 
-(defun auto-termination-info (defun-form result-spec state)
+(defun auto-termination-info (defun-form result-spec theory expand state)
 
 ; Result-spec is :event if we want an event, otherwise :dcl if we want the
 ; declare form.
@@ -351,7 +352,7 @@
                       "Original defun failed, even under skip-proofs!"))
                  (t (let ((decl (auto-termination-declare
                                  (f-get-global 'auto-termination-cl-set state)
-                                 (w state))))
+                                 theory expand (w state))))
                       (cond
                        (decl (value
                               (case result-spec
@@ -369,77 +370,51 @@
            "Unsupported event for auto termination: ~x0."
            defun-form))))
 
-(defmacro with-auto-termination (defun-form &key show)
+(defmacro with-auto-termination (defun-form
+                                  &key
+                                  show
+                                  (theory '(theory 'auto-termination-theory))
+                                  expand
+                                  verbose)
   (declare (xargs :guard (member-eq show '(nil :event :dcl))))
-  (cond (show `(auto-termination-info ',defun-form ',show state))
-        (t `(with-output
+  (let ((theory (if (eq theory :current)
+                    '(current-theory :here)
+                  theory)))
+    (cond (show `(auto-termination-info ',defun-form ',show ',theory ',expand
+                                        state))
+          (verbose `(make-event
+                     (auto-termination-info ',defun-form :event
+                                            ',theory ',expand state)))
+          (t `(with-output
                 :stack :push
                 :off :all
                 :gag-mode nil
                 (make-event
-                 (with-output
-                   :stack :pop
-                   (auto-termination-info ',defun-form :event state)))))))
+                 (er-let* ((form
+                            (with-output
+                              :stack :pop
+                              (auto-termination-info ',defun-form
+                                                     :event
+                                                     ',theory
+                                                     ',expand
+                                                     state))))
+                   (value
+                    (list :OR
+                          form
+                          `(make-event
+                            (with-output :stack :pop
+                              (er soft 'with-auto-termination
+                                  "The following form was generated but ~
+                                   failed to be admitted:~|~X01~|Consider ~
+                                   calling ~x2 with option :VERBOSE T, or try ~
+                                   directly submitting the form printed above."
+                                  ',form nil 'with-auto-termination))))))))))))
 
-(logic) ; since local events are skipped in :program mode
+; For the deftheory below, since local events are skipped in :program mode:
+(logic)
 
 (deftheory auto-termination-theory
   *auto-termination-fns*)
-
-; A little test.
-
-(local
- (encapsulate
-   ()
-
-   (defund my-dec (x) (1- x))
-   (defun my-max (x y)
-     (declare (xargs :measure (+ (nfix x) (nfix y))
-                     :hints (("Goal" :in-theory (enable my-dec)))))
-     (cond ((zp x) y)
-           ((zp y) x)
-           (t (1+ (my-max (my-dec x) (my-dec y))))))
-   (with-auto-termination
-    (defun my-sum (a b)
-      (cond ((and (posp a) (posp b))
-             (+ 2 (my-sum (my-dec a) (my-dec b))))
-            ((zp b) a)
-            (t b))))
-
-   (local (include-book "projects/paco/paco" :dir :system))
-   (with-auto-termination ; finds PACO::ENNI
-    (defun f1 (x y)
-      (cond ((zp x) y)
-            (t (f1 (floor x 10)
-                   (cons x y))))))
-
-   (local (verify-termination copy-ens1))
-   (with-auto-termination ; finds COPY-ENS1
-    (defun g1 (i max array-name array ans)
-      (declare (xargs :measure anything-here-is-ignored))
-      (cond ((not (and (integerp i)
-                       (<= 0 i)
-                       (integerp max)
-                       (<= 0 max)))
-             nil)
-            ((> i max) (revappend ans nil))
-            ((aref1 array-name array i)
-             (g1 (+ 1 i) max array-name array ans))
-            (t (g1 (+ 1 i) max array-name array (cons i ans))))))
-
-; Now let's mangle things somewhat, rearranging COND clauses, and introducing
-; NATP and then changing the order of the two NATP calls.
-
-   (with-auto-termination
-    (defun g2 (i max array-name array ans)
-      (declare (xargs :measure anything-here-is-ignored))
-      (and (natp max)
-           (natp i)
-           (cond ((> i max) (revappend ans nil))
-                 ((not (aref1 array-name array i))
-                  (g2 (+ 1 i) max array-name array (cons i ans)))
-                 (t (g2 (+ 1 i) max array-name array ans))))))
-))
 
 (defxdoc with-auto-termination
   :parents (kestrel-system-utilities system-utilities)
@@ -512,19 +487,47 @@
  General Form:
  (with-auto-termination
   form
-  :show s)
+  :theory th ; default (theory 'auto-termination-theory)
+  :expand ex ; default nil
+  :show s    ; default nil
+  :verbose v ; default nil
+  )
  })
 
- <p>where @('form') is a call of @(tsee defun) or @(tsee defund), and
- @(':show') is @('nil') by default.  If @(':show') is @('nil') then ACL2 will
- attempt to admit the given definition, ignoring any @(':measure') and
- @(':hints') that may have been provided, by using the termination theorem for
- an existing function.  Otherwise, @(':show') should be either @(':event') or
- @(':dcl'), in which case no change to the ACL2 @(see world) will take place.
- If @(':show') is @(':event'), then the resulting value will be the event that
- would have been submitted if @(':show') had been @('nil').  That event is the
- result of removing any existing @(':measure') and @(':hints'), then inserting
- an appropriate @(tsee declare) form that provides appropriate @(':measure')
- and @(':hints') in order to take advantage of an existing function's
- termination argument.  If @(':show') is @(':dcl'), then the resulting value
- will be just that @('declare') form.</p>")
+ <p>where @('form') is a call of @(tsee defun) or @(tsee defund), and keyword
+ arguments, which are not evaluated, have the defaults shown above.  If this
+ event is successful, then the input definition is modified by adding a
+ generated @('declare') form, which provides a @(':measure') and @(':hints')
+ that take advantage of the @(see termination-theorem) for an existing
+ function.  The @(see hints) include a @(':use') hint for that earlier
+ termination-theorem, as well as an @(':in-theory') hint and possibly an
+ @(':expand') hint, as discussed below.  But before adding the new @('declare')
+ form, any @(':measure') and @(':hints') are removed from the input form.</p>
+
+ <p>We now describe the keyword arguments.</p>
+
+ <ul>
+
+ <li>@(':theory') and @(':expand') &mdash; These are probably only necessary in
+ the case of defining a reflexive function (one with a recursive call within a
+ recursive call, such as @('(f (f x))')).  These are passed along as
+ @(':')@(tsee in-theory) and @(tsee expand) @(see hints), respectively, on
+ @('\"Goal\"') in the generated @('declare') form.  A convenient special value
+ for @(':theory') is @(':current'), which is equivalent to supplying the value
+ @('(current-theory :here)').</li>
+
+ <li>@(':show') &mdash; If this is @('nil') then ACL2 will attempt to admit the
+ resulting definition.  Otherwise, @(':show') should be either @(':event') or
+ @(':dcl'), in which case an @(see error-triple) is returned without changing
+ the ACL2 @(see world).  If @(':show') is @(':event'), then the resulting value
+ will be the generated definition, while if @(':show') is @(':dcl'), then the
+ resulting value will be just the generated @('declare') form.</li>
+
+ <li>@(':verbose') &mdash; By default, if a @('declare') form is successfully
+ generated, then the resulting event will be processed without any output.  To
+ avoid turning off output, use @(':verbose t').</li>
+
+ </ul>
+
+ <p>See community book @('kestrel/system/auto-termination-tests.lisp') for more
+ examples.</p>")
