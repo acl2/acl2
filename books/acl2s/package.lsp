@@ -1,7 +1,7 @@
 (acl2::in-package "ACL2")
 
-(ld "data-structures/define-u-package.lsp" :dir :system)
-(ld "coi/symbol-fns/symbol-fns-defpkg.lsp" :dir :system)
+(include-book "data-structures/portcullis" :dir :system)
+(include-book "coi/symbol-fns/portcullis" :dir :system)
 
 (defpkg "DEFDATA"
   (append 
