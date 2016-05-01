@@ -349,7 +349,36 @@
    ;; where the program is located.
    (not (mv-nth 0 (las-to-pas
                    (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-                   :x (cpl x86) x86)))))
+                   :x (cpl x86) x86)))
+
+   ;; The following preconditions were not required in the non-marking
+   ;; mode.
+
+   ;; Translation-governing addresses of the program are
+   ;; disjoint from the physical addresses corresponding to
+   ;; the program.
+   (disjoint-p
+    (all-translation-governing-addresses
+     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+     x86)
+    (mv-nth 1 (las-to-pas
+               (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+               :x (cpl x86) x86)))
+   ;; Physical addresses corresponding to the program are
+   ;; disjoint from the paging physical addresses.
+   (disjoint-p
+    (mv-nth 1 (las-to-pas
+               (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+               :x (cpl x86) x86))
+    (open-qword-paddr-list
+     (gather-all-paging-structure-qword-addresses x86)))))
+
+(defthmd x86-state-okp-and-program-ok-p-implies-program-alt
+  (implies (and (x86-state-okp x86)
+                (program-ok-p x86))
+           (program-at-alt
+            (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+            *rewire_dst_to_src* x86)))
 
 (defun-nx stack-ok-p (x86)
   (and
@@ -383,7 +412,21 @@
      x86)
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-               :w (cpl x86) x86)))))
+               :w (cpl x86) x86)))
+
+   ;; The following preconditions were not required in the non-marking
+   ;; mode.
+
+   ;; Physical addresses corresponding to the stack are disjoint from
+   ;; the paging physical addresses.
+   (disjoint-p
+    (mv-nth 1
+            (las-to-pas (create-canonical-address-list
+                         8 (+ -24 (xr :rgf *rsp* x86)))
+                        :w (cpl x86)
+                        x86))
+    (open-qword-paddr-list
+     (gather-all-paging-structure-qword-addresses x86)))))
 
 (defun-nx source-addresses-ok-p (x86)
   (and
@@ -809,6 +852,583 @@
 
 ;; ======================================================================
 
+;; (def-ruleset rewire_dst_to_src-disable
+;;   '((:type-prescription natp-pml4-table-entry-addr)
+;;     (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+;;     (:rewrite ia32e-la-to-pa-xw-state)
+;;     (:rewrite r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
+;;     (:linear adding-7-to-pml4-table-entry-addr)
+;;     (:linear *physical-address-size*p-pml4-table-entry-addr)
+;;     (:rewrite las-to-pas-xw-state)
+;;     (:rewrite acl2::equal-of-booleans-rewrite)
+;;     (:rewrite loghead-unequal)
+;;     (:rewrite negative-logand-to-positive-logand-with-integerp-x)
+;;     (:definition combine-bytes)
+;;     (:rewrite |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
+;;     (:rewrite xr-ia32e-la-to-pa)
+;;     (:rewrite acl2::nfix-when-not-natp)
+;;     (:rewrite acl2::nfix-when-natp)
+;;     (:rewrite constant-upper-bound-of-logior-for-naturals)
+;;     (:linear combine-bytes-size-for-rm64-programmer-level-mode)
+;;     (:rewrite acl2::natp-when-integerp)
+;;     (:rewrite acl2::natp-when-gte-0)
+;;     (:rewrite 4k-aligned-physical-address-helper)
+;;     (:rewrite bitops::signed-byte-p-of-logtail)
+;;     (:linear adding-7-to-page-dir-ptr-table-entry-addr)
+;;     (:linear *physical-address-size*p-page-dir-ptr-table-entry-addr)
+;;     (:type-prescription adding-7-to-pml4-table-entry-addr)
+;;     (:type-prescription adding-7-to-page-dir-ptr-table-entry-addr)
+;;     (:rewrite acl2::signed-byte-p-logext)
+;;     (:type-prescription booleanp)
+;;     (:rewrite loghead-64-n64-to-i64-canonical-address)
+;;     (:type-prescription pml4-table-base-addr)
+;;     (:rewrite get-prefixes-opener-lemma-group-4-prefix)
+;;     (:rewrite get-prefixes-opener-lemma-group-3-prefix)
+;;     (:rewrite get-prefixes-opener-lemma-group-2-prefix)
+;;     (:rewrite get-prefixes-opener-lemma-group-1-prefix)
+;;     (:definition member-p)
+;;     (:linear unsigned-byte-p-of-combine-bytes)
+;;     (:type-prescription acl2::|x < y  =>  0 < -x+y|)
+;;     (:rewrite default-+-2)
+;;     (:rewrite acl2::natp-rw)
+;;     (:rewrite ia32e-la-to-pa-lower-12-bits)
+;;     (:rewrite default-+-1)
+;;     (:rewrite acl2::ash-0)
+;;     (:rewrite acl2::zip-open)
+;;     (:rewrite loghead-of-non-integerp)
+;;     (:type-prescription addr-byte-alistp-create-addr-bytes-alist)
+;;     (:rewrite canonical-address-p-limits-thm-3)
+;;     (:rewrite canonical-address-p-limits-thm-2)
+;;     (:rewrite zf-spec-thm)
+;;     (:linear acl2::loghead-upper-bound)
+;;     (:linear bitops::logior-<-0-linear-2)
+;;     (:linear size-of-combine-bytes)
+;;     (:rewrite disjoint-p-subset-p)
+;;     (:definition binary-append)
+;;     (:definition create-addr-bytes-alist)
+;;     (:rewrite member-p-of-subset-is-member-p-of-superset)
+;;     (:linear rgfi-is-i64p . 1)
+;;     (:rewrite member-p-cdr)
+;;     (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+;;     (:rewrite acl2::difference-unsigned-byte-p)
+;;     (:linear rgfi-is-i64p . 2)
+;;     (:rewrite acl2::append-when-not-consp)
+;;     (:linear rip-is-i48p . 2)
+;;     (:linear rip-is-i48p . 1)
+;;     (:type-prescription byte-ify)
+;;     (:rewrite acl2::ifix-when-not-integerp)
+;;     (:rewrite bitops::basic-unsigned-byte-p-of-+)
+;;     (:rewrite disjoint-p-append-1)
+;;     (:rewrite default-<-1)
+;;     (:rewrite default-car)
+;;     (:rewrite default-cdr)
+;;     (:meta acl2::cancel_plus-lessp-correct)
+;;     (:rewrite wb-not-consp-addr-lst)
+;;     (:definition nthcdr)
+;;     (:rewrite subset-p-cdr-y)
+;;     (:rewrite ia32e-la-to-pa-lower-12-bits-value-of-address-when-error)
+;;     (:rewrite default-<-2)
+;;     (:type-prescription n52p-mv-nth-1-ia32e-la-to-pa)
+;;     (:meta acl2::cancel_plus-equal-correct)
+;;     (:definition nth)
+;;     (:rewrite consp-create-addr-bytes-alist)
+;;     (:rewrite subset-p-reflexive)
+;;     (:meta acl2::cancel_times-equal-correct)
+;;     (:rewrite set::sets-are-true-lists)
+;;     (:linear rflags-is-n32p)
+;;     (:rewrite consp-byte-ify)
+;;     (:definition true-listp)
+;;     (:type-prescription rflags-is-n32p)
+;;     (:rewrite cdr-append-is-append-cdr)
+;;     (:type-prescription bitops::logtail-natp)
+;;     (:rewrite subset-p-cdr-x)
+;;     (:rewrite bitops::logbitp-nonzero-of-bit)
+;;     (:rewrite set::nonempty-means-set)
+;;     (:type-prescription xw)
+;;     (:type-prescription consp-create-addr-bytes-alist-in-terms-of-len)
+;;     (:type-prescription consp-create-addr-bytes-alist)
+;;     (:type-prescription natp-combine-bytes)
+;;     (:type-prescription true-listp)
+;;     (:rewrite unsigned-byte-p-of-logtail)
+;;     (:rewrite bitops::logbitp-when-bitmaskp)
+;;     (:type-prescription all-translation-governing-addresses)
+;;     (:type-prescription set::setp-type)
+;;     (:type-prescription set::empty-type)
+;;     (:rewrite acl2::equal-constant-+)
+;;     (:definition byte-listp)
+;;     (:rewrite unsigned-byte-p-of-ash)
+;;     (:rewrite bitops::normalize-logbitp-when-mods-equal)
+;;     (:rewrite bitops::logbitp-of-negative-const)
+;;     (:rewrite bitops::logbitp-of-mask)
+;;     (:rewrite bitops::logbitp-of-const)
+;;     (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
+;;     (:meta bitops::open-logbitp-of-const-lite-meta)
+;;     (:rewrite rb-returns-byte-listp)
+;;     (:rewrite car-of-append)
+;;     (:type-prescription rb-returns-true-listp)
+;;     (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
+;;     (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller)
+;;     (:type-prescription consp-append)
+;;     (:type-prescription bitops::logand-natp-type-2)
+;;     (:definition acons)
+;;     (:rewrite unsigned-byte-p-of-combine-bytes)
+;;     (:rewrite unsigned-byte-p-of-logior)
+;;     (:type-prescription natp)
+;;     (:rewrite set::in-set)
+;;     (:type-prescription acl2::logtail-type)
+;;     (:rewrite acl2::member-of-cons)
+;;     (:type-prescription true-listp-create-addr-bytes-alist)
+;;     (:type-prescription rb-returns-byte-listp)
+;;     (:rewrite rationalp-implies-acl2-numberp)
+;;     (:type-prescription bitops::ash-natp-type)
+;;     (:type-prescription combine-bytes)
+;;     (:definition n08p$inline)
+;;     (:definition len)
+;;     (:rewrite xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
+;;     (:rewrite bitops::logsquash-of-loghead-zero)
+;;     (:rewrite default-unary-minus)
+;;     (:rewrite len-of-rb-in-programmer-level-mode)
+;;     (:type-prescription acl2::bitp$inline)
+;;     (:type-prescription acl2::true-listp-append)
+;;     (:linear bitops::upper-bound-of-logand . 2)
+;;     (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
+;;     (:rewrite logand-redundant)
+;;     (:linear ash-monotone-2)
+;;     (:linear bitops::logand->=-0-linear-2)
+;;     (:linear bitops::upper-bound-of-logand . 1)
+;;     (:linear bitops::logand->=-0-linear-1)
+;;     (:linear mv-nth-1-idiv-spec)
+;;     (:linear mv-nth-1-div-spec)
+;;     (:rewrite unsigned-byte-p-of-logand-2)
+;;     (:linear acl2::expt->-1)
+;;     (:rewrite acl2::unsigned-byte-p-loghead)
+;;     (:type-prescription zip)
+;;     (:linear bitops::logand-<-0-linear)
+;;     (:rewrite bitops::logior-fold-consts)
+;;     (:linear <=-logior)
+;;     (:linear member-p-pos-value)
+;;     (:linear member-p-pos-1-value)
+;;     (:linear bitops::logior->=-0-linear)
+;;     (:rewrite no-duplicates-p-and-append)
+;;     (:rewrite acl2::subsetp-member . 2)
+;;     (:rewrite acl2::subsetp-member . 1)
+;;     (:type-prescription wr32$inline)
+;;     (:rewrite unsigned-byte-p-of-logand-1)
+;;     (:rewrite subset-p-cons-member-p-lemma)
+;;     (:rewrite member-p-of-not-a-consp)
+;;     (:rewrite get-prefixes-opener-lemma-zero-cnt)
+;;     (:rewrite acl2::expt-with-violated-guards)
+;;     (:rewrite bitops::basic-signed-byte-p-of-+)
+;;     (:type-prescription ash)
+;;     (:linear acl2::expt-is-increasing-for-base>1)
+;;     (:definition member-equal)
+;;     (:linear bitops::logior-<-0-linear-1)
+;;     (:linear bitops::upper-bound-of-logior-for-naturals)
+;;     (:linear bitops::expt-2-lower-bound-by-logbitp)
+;;     member-p-strip-cars-of-remove-duplicate-keys
+;;     not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+;;     disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+;;     not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+;;     member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+;;     mv-nth-1-ia32e-la-to-pa-when-error
+;;     mv-nth-1-las-to-pas-when-error
+;;     bitops::logand-with-negated-bitmask
+;;     unsigned-byte-p))
+
+;; (in-theory (e/d (las-to-pas-subset-p member-p subset-p)
+;;                 (disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+;;                  not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+;;                  member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+;;                  not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+;;                  xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+
+(encapsulate
+  ()
+
+  (local
+   (in-theory (e/d (las-to-pas-subset-p member-p subset-p)
+                   (disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                    not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                    member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                    not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+                    xlate-equiv-memory-and-xr-mem-from-rest-of-memory))))
+
+  (defthm xr-fault-ia32e-la-to-pa
+    (implies (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+             (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                    (xr :fault index x86)))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
+                                      ia32e-la-to-pa-pml4-table
+                                      ia32e-la-to-pa-page-dir-ptr-table
+                                      ia32e-la-to-pa-page-directory
+                                      ia32e-la-to-pa-page-table)
+                                     (force
+                                      (force)
+                                      (:definition not)
+                                      (:meta acl2::mv-nth-cons-meta))))))
+
+  (defthm xr-fault-rb-alt-state-in-system-level-mode
+    (equal (xr :fault index (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
+           (xr :fault index x86))
+    :hints (("Goal" :in-theory (e/d* (rb-alt las-to-pas)
+                                     (rewrite-rb-to-rb-alt
+                                      force (force))))))
+
+  (defthm xr-fault-and-get-prefixes
+    (implies (not (mv-nth 0 (las-to-pas
+                             (create-canonical-address-list cnt start-rip)
+                             :x (cpl x86) x86)))
+             (equal (xr :fault index (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+                    (xr :fault index x86)))
+    :hints (("Goal"
+             :induct (get-prefixes start-rip prefixes cnt x86)
+             :in-theory (e/d* (get-prefixes rm08)
+                              (rm08-to-rb
+                               not force (force))))))
+
+  (defthm xr-fault-and-get-prefixes-alt
+    (equal (xr :fault index (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
+           (xr :fault index x86))
+    :hints (("Goal" :in-theory (e/d* (get-prefixes-alt)
+                                     (rewrite-get-prefixes-to-get-prefixes-alt
+                                      not force (force))))))
+
+  (defthm rb-alt-xw-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (and (equal (mv-nth 0 (rb-alt addr r-w-x (xw fld index value x86)))
+                         (mv-nth 0 (rb-alt addr r-w-x x86)))
+                  (equal (mv-nth 1 (rb-alt addr r-w-x (xw fld index value x86)))
+                         (mv-nth 1 (rb-alt addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb-alt) (rewrite-rb-to-rb-alt force (force))))))
+
+  (defthm rb-alt-xw-rflags-not-ac-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and (equal (mv-nth 0 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 0 (rb-alt addr r-w-x x86)))
+                  (equal (mv-nth 1 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 1 (rb-alt addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb-alt) (force (force) rewrite-rb-to-rb-alt)))))
+
+  (defthm rb-alt-xw-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (equal (mv-nth 2 (rb-alt addr r-w-x (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (rb-alt addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb-alt) (rewrite-rb-to-rb-alt force (force))))))
+
+  (defthm rb-alt-xw-rflags-not-ac-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (equal (mv-nth 2 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
+                    (xw :rflags 0 value (mv-nth 2 (rb-alt addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb-alt) (rewrite-rb-to-rb-alt force (force))))))
+
+  (defthm gather-all-paging-structure-qword-addresses-!flgi
+    (equal (gather-all-paging-structure-qword-addresses (!flgi index val x86))
+           (gather-all-paging-structure-qword-addresses x86))
+    :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
+
+  (defthm rb-alt-values-and-!flgi-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (and (equal (mv-nth 0 (rb-alt l-addrs r-w-x (!flgi index value x86)))
+                         (mv-nth 0 (rb-alt l-addrs r-w-x x86)))
+                  (equal (mv-nth 1 (rb-alt l-addrs r-w-x (!flgi index value x86)))
+                         (mv-nth 1 (rb-alt l-addrs r-w-x x86)))))
+    :hints (("Goal" :do-not-induct t
+             :in-theory (e/d* (rb-alt) (rewrite-rb-to-rb-alt force (force))))))
+
+  (defthm rb-and-!flgi-state-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (equal (mv-nth 2 (rb lin-addr r-w-x (!flgi index value x86)))
+                    (!flgi index value (mv-nth 2 (rb lin-addr r-w-x x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :cases ((equal index *iopl*))
+             :use ((:instance rflags-slice-ac-simplify
+                              (index index)
+                              (rflags (xr :rflags 0 x86)))
+                   (:instance rb-xw-rflags-not-ac-state-in-system-level-mode
+                              (addr lin-addr)
+                              (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                             (logand (xr :rflags 0 x86)
+                                                     (loghead 32 (lognot (expt 2 (nfix index))))))))
+                   (:instance rb-xw-rflags-not-ac-state-in-system-level-mode
+                              (addr lin-addr)
+                              (value (logior (ash (loghead 2 value) 12)
+                                             (logand 4294955007 (xr :rflags 0 x86))))))
+             :in-theory (e/d* (!flgi-open-to-xw-rflags)
+                              (rewrite-rb-to-rb-alt force (force))))))
+
+  (defthm rb-alt-and-!flgi-state-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (equal (mv-nth 2 (rb-alt lin-addr r-w-x (!flgi index value x86)))
+                    (!flgi index value (mv-nth 2 (rb-alt lin-addr r-w-x x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (rb-alt)
+                              (rewrite-rb-to-rb-alt force (force))))))
+
+  (defthm get-prefixes-xw-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (and (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (xw fld index value x86)))
+                         (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
+                  (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt (xw fld index value x86)))
+                         (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :induct (get-prefixes start-rip prefixes cnt x86)
+             :expand (get-prefixes start-rip prefixes cnt (xw fld index value x86))
+             :in-theory (e/d* (get-prefixes)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               force (force))))))
+
+  (defthm get-prefixes-xw-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :induct (get-prefixes start-rip prefixes cnt x86)
+             :expand (get-prefixes start-rip prefixes cnt (xw fld index value x86))
+             :in-theory (e/d* (get-prefixes)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               force (force))))))
+
+  (defthm get-prefixes-alt-xw-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (and (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt (xw fld index value x86)))
+                         (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86)))
+                  (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt (xw fld index value x86)))
+                         (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :in-theory (e/d* (get-prefixes-alt)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               force (force))))))
+
+  (defthm get-prefixes-alt-xw-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (equal (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :in-theory (e/d* (get-prefixes-alt)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               force (force))))))
+
+  (defthm get-prefixes-xw-rflags-not-ac-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86)))
+                    (xw :rflags 0 value (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :induct (get-prefixes start-rip prefixes cnt x86)
+             :expand (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86))
+             :in-theory (e/d* (get-prefixes)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               force (force))))))
+
+  (defthm get-prefixes-and-!flgi-state-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt (!flgi index value x86)))
+                    (!flgi index value (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :cases ((equal index *iopl*))
+             :use ((:instance rflags-slice-ac-simplify
+                              (index index)
+                              (rflags (xr :rflags 0 x86)))
+                   (:instance get-prefixes-xw-rflags-not-ac-state-in-system-level-mode
+                              (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                             (logand (xr :rflags 0 x86)
+                                                     (loghead 32 (lognot (expt 2 (nfix index))))))))
+                   (:instance get-prefixes-xw-rflags-not-ac-state-in-system-level-mode
+                              (value (logior (ash (loghead 2 value) 12)
+                                             (logand 4294955007 (xr :rflags 0 x86))))))
+             :in-theory (e/d* (!flgi-open-to-xw-rflags
+                               !flgi)
+                              (rewrite-get-prefixes-to-get-prefixes-alt force (force))))))
+
+  (defthm get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and
+              (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86)))
+                     (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
+              (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86)))
+                     (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :induct (get-prefixes start-rip prefixes cnt x86)
+             :expand (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86))
+             :in-theory (e/d* (get-prefixes)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               force (force))))))
+
+  (defthm get-prefixes-values-and-!flgi-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (and (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (!flgi index value x86)))
+                         (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
+                  (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt (!flgi index value x86)))
+                         (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :cases ((equal index *iopl*))
+             :use ((:instance rflags-slice-ac-simplify
+                              (index index)
+                              (rflags (xr :rflags 0 x86)))
+                   (:instance get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
+                              (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                             (logand (xr :rflags 0 x86)
+                                                     (loghead 32 (lognot (expt 2 (nfix index))))))))
+                   (:instance get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
+                              (value (logior (ash (loghead 2 value) 12)
+                                             (logand 4294955007 (xr :rflags 0 x86))))))
+             :in-theory (e/d* (!flgi-open-to-xw-rflags
+                               !flgi)
+                              (get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
+                               rewrite-get-prefixes-to-get-prefixes-alt
+                               force (force))))))
+
+  (defthm get-prefixes-alt-values-and-!flgi-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (x86p x86))
+             (and (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt (!flgi index value x86)))
+                         (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86)))
+                  (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt (!flgi index value x86)))
+                         (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (get-prefixes-alt)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               force (force))))))
+
+  (defthm get-prefixes-alt-and-!flgi-state-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (equal (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt (!flgi index value x86)))
+                    (!flgi index value (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (get-prefixes-alt)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               force (force))))))
+
+  (defthm flgi-and-mv-nth-2-rb-alt
+    (equal (flgi index (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
+           (flgi index x86))
+    :hints (("Goal" :in-theory (e/d* (flgi) ()))))
+
+  (defthm alignment-checking-enabled-p-and-mv-nth-2-rb-alt
+    (equal (alignment-checking-enabled-p (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
+           (alignment-checking-enabled-p x86))
+    :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p) ()))))
+
+  (defthm flgi-and-mv-nth-2-get-prefixes-alt
+    (equal (flgi index (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
+           (flgi index x86))
+    :hints (("Goal" :in-theory (e/d* (flgi) ()))))
+
+  (defthm alignment-checking-enabled-p-and-mv-nth-2-get-prefixes-alt
+    (equal (alignment-checking-enabled-p (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
+           (alignment-checking-enabled-p x86))
+    :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p) ()))))
+
+  (defthm mv-nth-1-wb-and-!flgi-commute-in-marking-mode
+    ;; Subsumes MV-NTH-1-WB-AND-!FLGI-COMMUTE
+    (implies (not (equal index *ac*))
+             (equal (mv-nth 1 (wb addr-lst (!flgi index val x86)))
+                    (!flgi index val (mv-nth 1 (wb addr-lst x86)))))
+    :hints (("Goal" :in-theory (e/d* (!flgi rflags-slice-ac-simplify
+                                            !flgi-open-to-xw-rflags)
+                                     (force (force))))))
+
+  (defthm xr-fault-las-to-pas
+    (implies (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+             (equal (xr :fault 0
+                        (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+                    (xr :fault 0 x86)))
+    :hints (("Goal" :in-theory (e/d* (las-to-pas) (force (force))))))
+
+  (defthm xr-fault-wb-in-system-level-marking-mode
+    (implies
+     (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (loghead 2 (xr :seg-visible 1 x86)) x86)))
+     (equal (xr :fault 0 (mv-nth 1 (wb addr-lst x86)))
+            (xr :fault 0 x86)))
+    :hints
+    (("Goal"
+      :do-not-induct t
+      :in-theory (e/d* (wb)
+                       (member-p-strip-cars-of-remove-duplicate-keys
+                        (:meta acl2::mv-nth-cons-meta)
+                        force (force)))))))
+
+(i-am-here)
+
+;; Argh, ACL2's default ancestors-check is killing me --- it prevents
+;; x86-fetch-decode-execute from opening up (why?). So I'm going to
+;; use Sol's trivial ancestors-check version.
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
+(local (acl2::use-trivial-ancestors-check))
+
 (def-ruleset rewire_dst_to_src-disable
   '((:type-prescription natp-pml4-table-entry-addr)
     (:rewrite acl2::consp-when-member-equal-of-atom-listp)
@@ -990,381 +1610,20 @@
     mv-nth-1-ia32e-la-to-pa-when-error
     mv-nth-1-las-to-pas-when-error
     bitops::logand-with-negated-bitmask
+    disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+    not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+    member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+    not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
+    xlate-equiv-memory-and-xr-mem-from-rest-of-memory
+    disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+    member-p-of-remove-duplicates-equal
     unsigned-byte-p))
 
-;; --------------------------------------------------
+;; For mv-nth 0 get-prefixes-alt...
+;; (acl2::why get-prefixes-alt-opener-lemma-no-prefix-byte)
+;; (acl2::why mv-nth-1-rb-alt-and-xlate-equiv-memory-disjoint-from-paging-structures)
+;; (acl2::why combine-bytes-rb-alt-in-terms-of-rb-alt-subset-p-in-system-level-mode)
 
-(in-theory (e/d (las-to-pas-subset-p member-p subset-p)
-                (disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-                 not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-                 member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-                 not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal)))
-
-;; (thm
-;;  (implies (and
-;;            (x86-state-okp x86)
-;;            (program-ok-p x86))
-;;           (and
-;;            (equal (ALL-TRANSLATION-GOVERNING-ADDRESSES
-;;                    (CREATE-CANONICAL-ADDRESS-LIST '272
-;;                                                   (XR ':RIP '0 X86))
-;;                    (MV-NTH '2
-;;                            (GET-PREFIXES (XR ':RIP '0 X86)
-;;                                          '0
-;;                                          '5
-;;                                          X86)))
-;;                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
-;;                    (CREATE-CANONICAL-ADDRESS-LIST '272
-;;                                                   (XR ':RIP '0 X86))
-;;                    x86))
-;;            (equal (MV-NTH
-;;                    '1
-;;                    (LAS-TO-PAS
-;;                     (CREATE-CANONICAL-ADDRESS-LIST '272
-;;                                                    (XR ':RIP '0 X86))
-;;                     ':X
-;;                     (ACL2::LOGHEAD$INLINE '2
-;;                                           (XR ':SEG-VISIBLE
-;;                                               '1
-;;                                               (MV-NTH '2
-;;                                                       (GET-PREFIXES (XR ':RIP '0 X86)
-;;                                                                     '0
-;;                                                                     '5
-;;                                                                     X86))))
-;;                     (MV-NTH '2
-;;                             (GET-PREFIXES (XR ':RIP '0 X86)
-;;                                           '0
-;;                                           '5
-;;                                           X86))))
-;;                   (MV-NTH
-;;                    '1
-;;                    (LAS-TO-PAS
-;;                     (CREATE-CANONICAL-ADDRESS-LIST '272
-;;                                                    (XR ':RIP '0 X86))
-;;                     ':X
-;;                     (ACL2::LOGHEAD$INLINE '2
-;;                                           (XR ':SEG-VISIBLE
-;;                                               '1
-;;                                               (MV-NTH '2
-;;                                                       (GET-PREFIXES (XR ':RIP '0 X86)
-;;                                                                     '0
-;;                                                                     '5
-;;                                                                     X86))))
-;;                     x86)))))
-;;  :hints (("Goal"
-;;           :do-not '(preprocess)
-;;           :do-not-induct t
-;;           :in-theory (e/d* (instruction-decoding-and-spec-rules
-;;                             shr-spec
-;;                             shr-spec-64
-;;                             sal/shl-spec
-;;                             sal/shl-spec-64
-;;                             gpr-and-spec-1
-;;                             gpr-and-spec-4
-;;                             gpr-and-spec-8
-;;                             gpr-sub-spec-8
-;;                             gpr-or-spec-8
-;;                             gpr-xor-spec-4
-;;                             jcc/cmovcc/setcc-spec
-;;                             top-level-opcode-execute
-;;                             two-byte-opcode-decode-and-execute
-;;                             x86-operand-from-modr/m-and-sib-bytes
-;;                             x86-effective-addr
-;;                             x86-effective-addr-from-sib
-;;                             x86-operand-to-reg/mem
-;;                             rr08 rr32 rr64 wr08 wr32 wr64
-;;                             rim08 rim32 rim64
-;;                             !flgi-undefined
-;;                             write-user-rflags
-;;                             pos
-;;                             member-p
-;;                             subset-p
-;;                             rb-wb-equal-in-system-level-mode)
-
-;;                            (rewire_dst_to_src-disable)))))
-
-;; (thm
-;;  (implies (and
-;;            (x86-state-okp x86)
-;;            (program-ok-p x86))
-;;           (NOT (MV-NTH '0
-;;                        (RB (CONS (BINARY-+ '1 (XR ':RIP '0 X86))
-;;                                  'NIL)
-;;                            ':X
-;;                            (MV-NTH '2
-;;                                    (GET-PREFIXES (XR ':RIP '0 X86)
-;;                                                  '0
-;;                                                  '5
-;;                                                  X86))))))
-;;  :hints (("Goal"
-;;           :do-not '(preprocess)
-;;           :do-not-induct t
-;;           :in-theory (e/d* (instruction-decoding-and-spec-rules
-;;                             shr-spec
-;;                             shr-spec-64
-;;                             sal/shl-spec
-;;                             sal/shl-spec-64
-;;                             gpr-and-spec-1
-;;                             gpr-and-spec-4
-;;                             gpr-and-spec-8
-;;                             gpr-sub-spec-8
-;;                             gpr-or-spec-8
-;;                             gpr-xor-spec-4
-;;                             jcc/cmovcc/setcc-spec
-;;                             top-level-opcode-execute
-;;                             two-byte-opcode-decode-and-execute
-;;                             x86-operand-from-modr/m-and-sib-bytes
-;;                             x86-effective-addr
-;;                             x86-effective-addr-from-sib
-;;                             x86-operand-to-reg/mem
-;;                             rr08 rr32 rr64 wr08 wr32 wr64
-;;                             rim08 rim32 rim64
-;;                             !flgi-undefined
-;;                             write-user-rflags
-;;                             pos
-;;                             member-p
-;;                             subset-p
-;;                             rb-wb-equal-in-system-level-mode)
-
-;;                            (rewire_dst_to_src-disable)))))
-
-;; (thm
-;;  (implies (and
-;;            (x86-state-okp x86)
-;;            (program-ok-p x86))
-;;           (xlate-equiv-memory
-;;            (MV-NTH '2
-;;                    (RB (CONS (BINARY-+ '1 (XR ':RIP '0 X86))
-;;                              'NIL)
-;;                        ':X
-;;                        (MV-NTH '2
-;;                                (GET-PREFIXES (XR ':RIP '0 X86)
-;;                                              '0
-;;                                              '5
-;;                                              X86))))
-;;            x86))
-;;  :hints (("Goal"
-;;           :do-not '(preprocess)
-;;           :do-not-induct t
-;;           :in-theory (e/d* (instruction-decoding-and-spec-rules
-;;                             shr-spec
-;;                             shr-spec-64
-;;                             sal/shl-spec
-;;                             sal/shl-spec-64
-;;                             gpr-and-spec-1
-;;                             gpr-and-spec-4
-;;                             gpr-and-spec-8
-;;                             gpr-sub-spec-8
-;;                             gpr-or-spec-8
-;;                             gpr-xor-spec-4
-;;                             jcc/cmovcc/setcc-spec
-;;                             top-level-opcode-execute
-;;                             two-byte-opcode-decode-and-execute
-;;                             x86-operand-from-modr/m-and-sib-bytes
-;;                             x86-effective-addr
-;;                             x86-effective-addr-from-sib
-;;                             x86-operand-to-reg/mem
-;;                             rr08 rr32 rr64 wr08 wr32 wr64
-;;                             rim08 rim32 rim64
-;;                             !flgi-undefined
-;;                             write-user-rflags
-;;                             pos
-;;                             member-p
-;;                             subset-p
-;;                             rb-wb-equal-in-system-level-mode)
-
-;;                            (rewire_dst_to_src-disable
-;;                             )))))
-
-;; (thm
-;;  (implies (and
-;;            (x86-state-okp x86)
-;;            (program-ok-p x86))
-;;           (equal
-;;            (ALL-TRANSLATION-GOVERNING-ADDRESSES
-;;             (CREATE-CANONICAL-ADDRESS-LIST '272
-;;                                            (XR ':RIP '0 X86))
-;;             (MV-NTH '2
-;;                     (RB (CONS (BINARY-+ '2 (XR ':RIP '0 X86))
-;;                               'NIL)
-;;                         ':X
-;;                         (MV-NTH '2
-;;                                 (RB (CONS (BINARY-+ '1 (XR ':RIP '0 X86))
-;;                                           'NIL)
-;;                                     ':X
-;;                                     (MV-NTH '2
-;;                                             (GET-PREFIXES (XR ':RIP '0 X86)
-;;                                                           '0
-;;                                                           '5
-;;                                                           X86)))))))
-;;            (ALL-TRANSLATION-GOVERNING-ADDRESSES
-;;             (CREATE-CANONICAL-ADDRESS-LIST '272
-;;                                            (XR ':RIP '0 X86))
-;;             x86)))
-;;  :hints (("Goal"
-;;           :do-not '(preprocess)
-;;           :do-not-induct t
-;;           :in-theory (e/d* (instruction-decoding-and-spec-rules
-;;                             shr-spec
-;;                             shr-spec-64
-;;                             sal/shl-spec
-;;                             sal/shl-spec-64
-;;                             gpr-and-spec-1
-;;                             gpr-and-spec-4
-;;                             gpr-and-spec-8
-;;                             gpr-sub-spec-8
-;;                             gpr-or-spec-8
-;;                             gpr-xor-spec-4
-;;                             jcc/cmovcc/setcc-spec
-;;                             top-level-opcode-execute
-;;                             two-byte-opcode-decode-and-execute
-;;                             x86-operand-from-modr/m-and-sib-bytes
-;;                             x86-effective-addr
-;;                             x86-effective-addr-from-sib
-;;                             x86-operand-to-reg/mem
-;;                             rr08 rr32 rr64 wr08 wr32 wr64
-;;                             rim08 rim32 rim64
-;;                             !flgi-undefined
-;;                             write-user-rflags
-;;                             pos
-;;                             member-p
-;;                             subset-p
-;;                             rb-wb-equal-in-system-level-mode)
-
-;;                            (rewire_dst_to_src-disable
-;;                             )))))
-
-;; (thm
-;;  (implies (and
-;;            (x86-state-okp x86)
-;;            (program-ok-p x86))
-;;           (XLATE-EQUIV-MEMORY
-;;            X86
-;;            (MV-NTH '2
-;;                    (RB (CONS (BINARY-+ '2 (XR ':RIP '0 X86))
-;;                              'NIL)
-;;                        ':X
-;;                        (MV-NTH '2
-;;                                (RB (CONS (BINARY-+ '1 (XR ':RIP '0 X86))
-;;                                          'NIL)
-;;                                    ':X
-;;                                    (MV-NTH '2
-;;                                            (GET-PREFIXES (XR ':RIP '0 X86)
-;;                                                          '0
-;;                                                          '5
-;;                                                          X86))))))))
-;;  :hints (("Goal"
-;;           :do-not '(preprocess)
-;;           :do-not-induct t
-;;           :in-theory (e/d* (instruction-decoding-and-spec-rules
-;;                             shr-spec
-;;                             shr-spec-64
-;;                             sal/shl-spec
-;;                             sal/shl-spec-64
-;;                             gpr-and-spec-1
-;;                             gpr-and-spec-4
-;;                             gpr-and-spec-8
-;;                             gpr-sub-spec-8
-;;                             gpr-or-spec-8
-;;                             gpr-xor-spec-4
-;;                             jcc/cmovcc/setcc-spec
-;;                             top-level-opcode-execute
-;;                             two-byte-opcode-decode-and-execute
-;;                             x86-operand-from-modr/m-and-sib-bytes
-;;                             x86-effective-addr
-;;                             x86-effective-addr-from-sib
-;;                             x86-operand-to-reg/mem
-;;                             rr08 rr32 rr64 wr08 wr32 wr64
-;;                             rim08 rim32 rim64
-;;                             !flgi-undefined
-;;                             write-user-rflags
-;;                             pos
-;;                             member-p
-;;                             subset-p
-;;                             rb-wb-equal-in-system-level-mode)
-
-;;                            (rewire_dst_to_src-disable
-;;                             force (force))))))
-
-;; (thm
-;;  (implies
-;;   (and
-;;    (x86-state-okp x86)
-;;    (program-ok-p x86)
-
-;;    ;; Pre-conditions added in the marking mode --- these were
-;;    ;; not required in the non-marking mode.
-
-;;    ;; Translation-governing addresses of the program are
-;;    ;; disjoint from the physical addresses corresponding to
-;;    ;; the program.
-;;    (disjoint-p
-;;     (all-translation-governing-addresses
-;;      (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-;;      x86)
-;;     (mv-nth 1 (las-to-pas
-;;                (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-;;                :x (cpl x86) x86)))
-;;    ;; Physical addresses corresponding to the program are
-;;    ;; disjoint from the paging physical addresses.
-;;    (disjoint-p
-;;     (mv-nth 1 (las-to-pas
-;;                (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-;;                :x (cpl x86) x86))
-;;     (open-qword-paddr-list
-;;      (gather-all-paging-structure-qword-addresses x86))))
-
-;;   (equal (MV-NTH 1
-;;                  (RB (LIST (+ 2 (XR :RIP 0 X86)))
-;;                      :X (MV-NTH 2
-;;                                 (RB (LIST (+ 1 (XR :RIP 0 X86)))
-;;                                     :X (MV-NTH 2
-;;                                                (GET-PREFIXES-ALT (XR :RIP 0 X86)
-;;                                                                  0 5 X86))))))
-;;          (MV-NTH 1
-;;                  (RB-alt (LIST (+ 2 (XR :RIP 0 X86)))
-;;                          :X (MV-NTH 2
-;;                                     (RB-alt (LIST (+ 1 (XR :RIP 0 X86)))
-;;                                             :X (MV-NTH 2
-;;                                                        (GET-PREFIXES-ALT (XR :RIP 0 X86)
-;;                                                                          0 5 X86))))))))
-;;  :hints (("Goal"
-;;           :do-not '(preprocess)
-;;           :do-not-induct t
-;;           :in-theory (e/d* (instruction-decoding-and-spec-rules
-;;                             shr-spec
-;;                             shr-spec-64
-;;                             sal/shl-spec
-;;                             sal/shl-spec-64
-;;                             gpr-and-spec-1
-;;                             gpr-and-spec-4
-;;                             gpr-and-spec-8
-;;                             gpr-sub-spec-8
-;;                             gpr-or-spec-8
-;;                             gpr-xor-spec-4
-;;                             jcc/cmovcc/setcc-spec
-;;                             top-level-opcode-execute
-;;                             two-byte-opcode-decode-and-execute
-;;                             x86-operand-from-modr/m-and-sib-bytes
-;;                             x86-effective-addr
-;;                             x86-effective-addr-from-sib
-;;                             x86-operand-to-reg/mem
-;;                             rr08 rr32 rr64 wr08 wr32 wr64
-;;                             rim08 rim32 rim64
-;;                             !flgi-undefined
-;;                             write-user-rflags
-;;                             pos
-;;                             member-p
-;;                             subset-p
-;;                             rb-wb-equal-in-system-level-mode)
-
-;;                            (rewire_dst_to_src-disable)))))
-
-;; Argh, ACL2's default ancestors-check is killing me --- it prevents
-;; program-at-wb-disjoint-in-system-level-non-marking-mode from being
-;; used. So I'm going to use Sol's trivial ancestors-check version.
-(local (include-book "tools/trivial-ancestors-check" :dir :system))
-(local (acl2::use-trivial-ancestors-check))
 
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener-in-marking-mode)
@@ -1378,593 +1637,149 @@
 ;; (acl2::why rb-wb-disjoint-in-system-level-mode)
 ;; (acl2::why disjointness-of-translation-governing-addresses-from-all-translation-governing-addresses)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
-;; (acl2::why program-at-and-xlate-equiv-memory-disjoint-from-paging-structures)
 ;; (acl2::why mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode)
 ;; (acl2::why mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures)
 ;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode)
-;; (acl2::why program-at-and-xlate-equiv-memory-disjoint-from-paging-structures)
 ;; (acl2::why xlate-equiv-memory-and-mv-nth-2-get-prefixes)
 ;; (acl2::why mv-nth-2-rb-and-xlate-equiv-memory)
 ;; (acl2::why get-prefixes-alt-opener-lemma-no-prefix-byte)
 ;; (acl2::why combine-bytes-rb-alt-in-terms-of-rb-alt-subset-p-in-system-level-mode)
-;; (acl2::why disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p)
-;; (acl2::why mv-nth-1-rb-alt-and-xlate-equiv-memory-disjoint-from-paging-structures)
 
-(local (in-theory (e/d () (xlate-equiv-memory-and-xr-mem-from-rest-of-memory))))
+;; Now why the heck do I need FOO and BAR when ACL2 can prove them if
+;; they have the same hyps as those in the 2 instructions thm?  Ugh, I
+;; hate this. Also, I tried geneqv --- things seem to be fine. I'm
+;; getting tired of this.
 
-(defthm xr-fault-ia32e-la-to-pa
-  (implies (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-           (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (xr :fault index x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
-                                    ia32e-la-to-pa-pml4-table
-                                    ia32e-la-to-pa-page-dir-ptr-table
-                                    ia32e-la-to-pa-page-directory
-                                    ia32e-la-to-pa-page-table)
-                                   (force
-                                    (force)
-                                    (:definition not)
-                                    (:meta acl2::mv-nth-cons-meta))))))
-
-(defthm xr-fault-rb-alt-state-in-system-level-mode
-  (equal (xr :fault index (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
-         (xr :fault index x86))
-  :hints (("Goal" :in-theory (e/d* (rb-alt las-to-pas)
-                                   (rewrite-rb-to-rb-alt
-                                    force (force))))))
-
-(defthm xr-fault-and-get-prefixes
-  (implies (not (mv-nth 0 (las-to-pas
-                           (create-canonical-address-list cnt start-rip)
-                           :x (cpl x86) x86)))
-           (equal (xr :fault index (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
-                  (xr :fault index x86)))
-  :hints (("Goal"
-           :induct (get-prefixes start-rip prefixes cnt x86)
-           :in-theory (e/d* (get-prefixes rm08)
-                            (rm08-to-rb
-                             not force (force))))))
-
-(defthm xr-fault-and-get-prefixes-alt
-  (equal (xr :fault index (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
-         (xr :fault index x86))
-  :hints (("Goal" :in-theory (e/d* (get-prefixes-alt)
-                                   (rewrite-get-prefixes-to-get-prefixes-alt
-                                    not force (force))))))
-
-(defthm rb-alt-xw-values-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (not (equal fld :mem))
-                (not (equal fld :rflags))
-                (not (equal fld :ctr))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (not (equal fld :fault))
-                (not (equal fld :programmer-level-mode))
-                (not (equal fld :page-structure-marking-mode)))
-           (and (equal (mv-nth 0 (rb-alt addr r-w-x (xw fld index value x86)))
-                       (mv-nth 0 (rb-alt addr r-w-x x86)))
-                (equal (mv-nth 1 (rb-alt addr r-w-x (xw fld index value x86)))
-                       (mv-nth 1 (rb-alt addr r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d* (rb-alt) (rewrite-rb-to-rb-alt force (force))))))
-
-(defthm rb-alt-xw-rflags-not-ac-values-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (equal (rflags-slice :ac value)
-                       (rflags-slice :ac (rflags x86))))
-           (and (equal (mv-nth 0 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
-                       (mv-nth 0 (rb-alt addr r-w-x x86)))
-                (equal (mv-nth 1 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
-                       (mv-nth 1 (rb-alt addr r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d* (rb-alt) (force (force) rewrite-rb-to-rb-alt)))))
-
-(defthm rb-alt-xw-state-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (not (equal fld :mem))
-                (not (equal fld :rflags))
-                (not (equal fld :ctr))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (not (equal fld :fault))
-                (not (equal fld :programmer-level-mode))
-                (not (equal fld :page-structure-marking-mode)))
-           (equal (mv-nth 2 (rb-alt addr r-w-x (xw fld index value x86)))
-                  (xw fld index value (mv-nth 2 (rb-alt addr r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d* (rb-alt) (rewrite-rb-to-rb-alt force (force))))))
-
-(defthm rb-alt-xw-rflags-not-ac-state-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (equal (rflags-slice :ac value)
-                       (rflags-slice :ac (rflags x86))))
-           (equal (mv-nth 2 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
-                  (xw :rflags 0 value (mv-nth 2 (rb-alt addr r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d* (rb-alt) (rewrite-rb-to-rb-alt force (force))))))
-
-(defthm rb-alt-values-and-!flgi-in-system-level-mode
-  (implies (and (not (equal index *ac*))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (and (equal (mv-nth 0 (rb-alt lin-addr r-w-x (!flgi index value x86)))
-                       (mv-nth 0 (rb-alt lin-addr r-w-x x86)))
-                (equal (mv-nth 1 (rb-alt lin-addr r-w-x (!flgi index value x86)))
-                       (mv-nth 1 (rb-alt lin-addr r-w-x x86)))))
-  :hints (("Goal" :do-not-induct t
-           :in-theory (e/d* (rb-alt) (rewrite-rb-to-rb-alt force (force))))))
-
-(defthm rb-and-!flgi-state-in-system-level-mode
-  (implies (and (not (equal index *ac*))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (mv-nth 2 (rb lin-addr r-w-x (!flgi index value x86)))
-                  (!flgi index value (mv-nth 2 (rb lin-addr r-w-x x86)))))
-  :hints (("Goal"
-           :do-not-induct t
-           :cases ((equal index *iopl*))
-           :use ((:instance rflags-slice-ac-simplify
-                            (index index)
-                            (rflags (xr :rflags 0 x86)))
-                 (:instance rb-xw-rflags-not-ac-state-in-system-level-mode
-                            (addr lin-addr)
-                            (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
-                                           (logand (xr :rflags 0 x86)
-                                                   (loghead 32 (lognot (expt 2 (nfix index))))))))
-                 (:instance rb-xw-rflags-not-ac-state-in-system-level-mode
-                            (addr lin-addr)
-                            (value (logior (ash (loghead 2 value) 12)
-                                           (logand 4294955007 (xr :rflags 0 x86))))))
-           :in-theory (e/d* (!flgi-open-to-xw-rflags)
-                            (rewrite-rb-to-rb-alt force (force))))))
-
-(defthm rb-alt-and-!flgi-state-in-system-level-mode
-  (implies (and (not (equal index *ac*))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (mv-nth 2 (rb-alt lin-addr r-w-x (!flgi index value x86)))
-                  (!flgi index value (mv-nth 2 (rb-alt lin-addr r-w-x x86)))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (rb-alt)
-                            (rewrite-rb-to-rb-alt force (force))))))
-
-(defthm get-prefixes-xw-values-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (not (equal fld :mem))
-                (not (equal fld :rflags))
-                (not (equal fld :ctr))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (not (equal fld :fault))
-                (not (equal fld :programmer-level-mode))
-                (not (equal fld :page-structure-marking-mode)))
-           (and (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (xw fld index value x86)))
-                       (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
-                (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt (xw fld index value x86)))
-                       (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :induct (get-prefixes start-rip prefixes cnt x86)
-           :expand (get-prefixes start-rip prefixes cnt (xw fld index value x86))
-           :in-theory (e/d* (get-prefixes)
-                            (rewrite-get-prefixes-to-get-prefixes-alt
-                             force (force))))))
-
-(defthm get-prefixes-xw-state-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (not (equal fld :mem))
-                (not (equal fld :rflags))
-                (not (equal fld :ctr))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (not (equal fld :fault))
-                (not (equal fld :programmer-level-mode))
-                (not (equal fld :page-structure-marking-mode)))
-           (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt (xw fld index value x86)))
-                  (xw fld index value (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :induct (get-prefixes start-rip prefixes cnt x86)
-           :expand (get-prefixes start-rip prefixes cnt (xw fld index value x86))
-           :in-theory (e/d* (get-prefixes)
-                            (rewrite-get-prefixes-to-get-prefixes-alt
-                             force (force))))))
-
-(defthm get-prefixes-alt-xw-values-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (not (equal fld :mem))
-                (not (equal fld :rflags))
-                (not (equal fld :ctr))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (not (equal fld :fault))
-                (not (equal fld :programmer-level-mode))
-                (not (equal fld :page-structure-marking-mode)))
-           (and (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt (xw fld index value x86)))
-                       (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86)))
-                (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt (xw fld index value x86)))
-                       (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :in-theory (e/d* (get-prefixes-alt)
-                            (rewrite-get-prefixes-to-get-prefixes-alt
-                             force (force))))))
-
-(defthm get-prefixes-alt-xw-state-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (not (equal fld :mem))
-                (not (equal fld :rflags))
-                (not (equal fld :ctr))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (not (equal fld :fault))
-                (not (equal fld :programmer-level-mode))
-                (not (equal fld :page-structure-marking-mode)))
-           (equal (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt (xw fld index value x86)))
-                  (xw fld index value (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :in-theory (e/d* (get-prefixes-alt)
-                            (rewrite-get-prefixes-to-get-prefixes-alt
-                             force (force))))))
-
-(defthm get-prefixes-xw-rflags-not-ac-state-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (equal (rflags-slice :ac value)
-                       (rflags-slice :ac (rflags x86))))
-           (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86)))
-                  (xw :rflags 0 value (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :induct (get-prefixes start-rip prefixes cnt x86)
-           :expand (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86))
-           :in-theory (e/d* (get-prefixes)
-                            (rewrite-get-prefixes-to-get-prefixes-alt
-                             force (force))))))
-
-(defthm get-prefixes-and-!flgi-state-in-system-level-mode
-  (implies (and (not (equal index *ac*))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt (!flgi index value x86)))
-                  (!flgi index value (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :do-not-induct t
-           :cases ((equal index *iopl*))
-           :use ((:instance rflags-slice-ac-simplify
-                            (index index)
-                            (rflags (xr :rflags 0 x86)))
-                 (:instance get-prefixes-xw-rflags-not-ac-state-in-system-level-mode
-                            (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
-                                           (logand (xr :rflags 0 x86)
-                                                   (loghead 32 (lognot (expt 2 (nfix index))))))))
-                 (:instance get-prefixes-xw-rflags-not-ac-state-in-system-level-mode
-                            (value (logior (ash (loghead 2 value) 12)
-                                           (logand 4294955007 (xr :rflags 0 x86))))))
-           :in-theory (e/d* (!flgi-open-to-xw-rflags
-                             !flgi)
-                            (rewrite-get-prefixes-to-get-prefixes-alt force (force))))))
-
-(defthm get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (equal (rflags-slice :ac value)
-                       (rflags-slice :ac (rflags x86))))
-           (and
-            (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86)))
-                   (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
-            (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86)))
-                   (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :induct (get-prefixes start-rip prefixes cnt x86)
-           :expand (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86))
-           :in-theory (e/d* (get-prefixes)
-                            (rewrite-get-prefixes-to-get-prefixes-alt
-                             force (force))))))
-
-(defthm get-prefixes-values-and-!flgi-in-system-level-mode
-  (implies (and (not (equal index *ac*))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (and (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (!flgi index value x86)))
-                       (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
-                (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt (!flgi index value x86)))
-                       (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :do-not-induct t
-           :cases ((equal index *iopl*))
-           :use ((:instance rflags-slice-ac-simplify
-                            (index index)
-                            (rflags (xr :rflags 0 x86)))
-                 (:instance get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
-                            (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
-                                           (logand (xr :rflags 0 x86)
-                                                   (loghead 32 (lognot (expt 2 (nfix index))))))))
-                 (:instance get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
-                            (value (logior (ash (loghead 2 value) 12)
-                                           (logand 4294955007 (xr :rflags 0 x86))))))
-           :in-theory (e/d* (!flgi-open-to-xw-rflags
-                             !flgi)
-                            (get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
-                             rewrite-get-prefixes-to-get-prefixes-alt
-                             force (force))))))
-
-(defthm get-prefixes-alt-values-and-!flgi-in-system-level-mode
-  (implies (and (not (equal index *ac*))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (and (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt (!flgi index value x86)))
-                       (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86)))
-                (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt (!flgi index value x86)))
-                       (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (get-prefixes-alt)
-                            (rewrite-get-prefixes-to-get-prefixes-alt
-                             force (force))))))
-
-(defthm get-prefixes-alt-and-!flgi-state-in-system-level-mode
-  (implies (and (not (equal index *ac*))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt (!flgi index value x86)))
-                  (!flgi index value (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (get-prefixes-alt)
-                            (rewrite-get-prefixes-to-get-prefixes-alt
-                             force (force))))))
-
-(i-am-here)
-
-(acl2::why get-prefixes-alt-opener-lemma-no-prefix-byte)
-(acl2::why mv-nth-1-rb-alt-and-xlate-equiv-memory-disjoint-from-paging-structures)
-(acl2::why combine-bytes-rb-alt-in-terms-of-rb-alt-subset-p-in-system-level-mode)
-
-;; (defthm mv-nth-2-rb-alt-and-xlate-equiv-memory-tmp
-;;   (implies (xlate-equiv-memory x86-1 (double-rewrite x86-2))
-;;            (and
-;;             (xlate-equiv-memory x86-1 (mv-nth 2 (rb-alt l-addrs r-w-x x86-2)))
-;;             (xlate-equiv-memory (mv-nth 2 (rb-alt l-addrs r-w-x x86-2)) x86-1))))
-
-;; (defthm mv-nth-2-get-prefixes-alt-and-xlate-equiv-memory-tmp
-;;   (implies (xlate-equiv-memory x86-1 (double-rewrite x86-2))
-;;            (and
-;;             (xlate-equiv-memory x86-1 (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86-2)))
-;;             (xlate-equiv-memory (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86-2)) x86-1))))
-
-
-;; Maybe syntaxp here?
-
-(defthm xlate-equiv-memory-rewrite-smaller-arg-to-second-one-for-rb-alt
-  (implies (syntaxp (not (consp x86-1)))
-           (equal
-            (xlate-equiv-memory x86-1 (mv-nth 2 (rb-alt l-addrs r-w-x x86-2)))
-            (xlate-equiv-memory (mv-nth 2 (rb-alt l-addrs r-w-x x86-2)) x86-1))))
-
-(defthm xlate-equiv-memory-rewrite-smaller-arg-to-second-one-for-get-prefixes-alt
-  (implies (syntaxp (not (consp x86-1)))
-           (equal
-            (xlate-equiv-memory x86-1 (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86-2)))
-            (xlate-equiv-memory (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86-2)) x86-1))))
-
-(defthm mv-nth-2-rb-alt-and-xlate-equiv-memory-tmp
-  (implies (xlate-equiv-memory x86-1 (double-rewrite x86-2))
-           (xlate-equiv-memory (mv-nth 2 (rb-alt l-addrs r-w-x x86-2)) x86-1)))
-
-(defthm mv-nth-2-get-prefixes-alt-and-xlate-equiv-memory-tmp
-  (implies (xlate-equiv-memory x86-1 (double-rewrite x86-2))
-           (xlate-equiv-memory (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86-2)) x86-1)))
-
-
-;; (skip-proofs
-;;  (DEFTHM XLATE-EQUIV-MEMORY-AND-TWO-MV-NTH-2-RB-ALT-cong
-;;    (IMPLIES (XLATE-EQUIV-MEMORY X86-1 X86-2)
-;;             (XLATE-EQUIV-MEMORY
-;;              (MV-NTH 2 (RB-ALT L-ADDRS R-W-X X86-1))
-;;              (MV-NTH 2 (RB-ALT L-ADDRS R-W-X X86-2))))
-;;    :HINTS
-;;    (("Goal"
-;;      :IN-THEORY (E/D* (RB-ALT) NIL)
-;;      :USE ((:INSTANCE XLATE-EQUIV-MEMORY-AND-TWO-MV-NTH-2-RB))))
-;;    :RULE-CLASSES :CONGRUENCE))
-
-(skip-proofs
- (DEFTHM XLATE-EQUIV-MEMORY-AND-TWO-MV-NTH-0-GET-PREFIXES-ALT
-   ;; Is this a theorem?
-   (IMPLIES
-    (XLATE-EQUIV-MEMORY X86-1 X86-2)
-    (EQUAL (MV-NTH 0 (GET-PREFIXES-ALT START-RIP PREFIXES CNT X86-1))
-           (MV-NTH 0 (GET-PREFIXES-ALT START-RIP PREFIXES CNT X86-2))))
-   :HINTS
-   (("Goal"
-     :USE
-     ((:INSTANCE
-       XLATE-EQUIV-MEMORY-AND-TWO-MV-NTH-2-GET-PREFIXES))
-     :IN-THEORY
-     (E/D* (GET-PREFIXES-ALT)
-           (XLATE-EQUIV-MEMORY-AND-MV-NTH-2-GET-PREFIXES))))
-   :RULE-CLASSES :CONGRUENCE))
-
-;; (defthm bar
-;;   (implies
-;;    (and
-;;     (x86-state-okp x86)
-;;     (program-ok-p x86)
-
-;;     ;; Pre-conditions added in the marking mode --- these were
-;;     ;; not required in the non-marking mode.
-
-;;     ;; Translation-governing addresses of the program are
-;;     ;; disjoint from the physical addresses corresponding to
-;;     ;; the program.
-;;     (disjoint-p
-;;      (all-translation-governing-addresses
-;;       (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-;;       x86)
-;;      (mv-nth 1 (las-to-pas
-;;                 (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-;;                 :x (cpl x86) x86)))
-;;     ;; Physical addresses corresponding to the program are
-;;     ;; disjoint from the paging physical addresses.
-;;     (disjoint-p
-;;      (mv-nth 1 (las-to-pas
-;;                 (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-;;                 :x (cpl x86) x86))
-;;      (open-qword-paddr-list
-;;       (gather-all-paging-structure-qword-addresses x86))))
-
-;;    (NOT
-;;     (MV-NTH
-;;      '0
-;;      (LAS-TO-PAS
-;;       (CREATE-CANONICAL-ADDRESS-LIST '5
-;;                                      (BINARY-+ '3 (XR ':RIP '0 X86)))
-;;       ':X
-;;       '0
-;;       (MV-NTH
-;;        '2
-;;        (RB-ALT (CONS (BINARY-+ '2 (XR ':RIP '0 X86))
-;;                      'NIL)
-;;                ':X
-;;                (MV-NTH '2
-;;                        (RB-ALT (CONS (BINARY-+ '1 (XR ':RIP '0 X86))
-;;                                      'NIL)
-;;                                ':X
-;;                                (MV-NTH '2
-;;                                        (GET-PREFIXES-ALT (XR ':RIP '0 X86)
-;;                                                          '0
-;;                                                          '5
-;;                                                          X86))))))))))
-;;   :hints (("Goal"
-;;            :do-not-induct t
-;;            :in-theory (e/d* (instruction-decoding-and-spec-rules
-;;                              shr-spec
-;;                              shr-spec-64
-;;                              sal/shl-spec
-;;                              sal/shl-spec-64
-;;                              gpr-and-spec-1
-;;                              gpr-and-spec-4
-;;                              gpr-and-spec-8
-;;                              gpr-sub-spec-8
-;;                              gpr-or-spec-8
-;;                              gpr-xor-spec-4
-;;                              jcc/cmovcc/setcc-spec
-;;                              top-level-opcode-execute
-;;                              two-byte-opcode-decode-and-execute
-;;                              x86-operand-from-modr/m-and-sib-bytes
-;;                              x86-effective-addr
-;;                              x86-effective-addr-from-sib
-;;                              x86-operand-to-reg/mem
-;;                              rr08 rr32 rr64 wr08 wr32 wr64
-;;                              rim08 rim32 rim64
-;;                              !flgi-undefined
-;;                              write-user-rflags
-;;                              pos
-;;                              member-p
-;;                              subset-p
-;;                              rb-wb-equal-in-system-level-mode)
-
-;;                             (rewire_dst_to_src-disable)))))
-
-(defthm foo ;; Fails without XLATE-EQUIV-MEMORY-AND-TWO-MV-NTH-0-GET-PREFIXES-ALT.
-  (implies
-   (and
-    (x86-state-okp x86)
-    (program-ok-p x86)
-
-    ;; Pre-conditions added in the marking mode --- these were
-    ;; not required in the non-marking mode.
-
-    ;; Translation-governing addresses of the program are
-    ;; disjoint from the physical addresses corresponding to
-    ;; the program.
-    (disjoint-p
-     (all-translation-governing-addresses
-      (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-      x86)
-     (mv-nth 1 (las-to-pas
-                (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-                :x (cpl x86) x86)))
-    ;; Physical addresses corresponding to the program are
-    ;; disjoint from the paging physical addresses.
-    (disjoint-p
-     (mv-nth 1 (las-to-pas
-                (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-                :x (cpl x86) x86))
-     (open-qword-paddr-list
-      (gather-all-paging-structure-qword-addresses x86))))
-
-   (NOT
-    (MV-NTH
+(DEFAXIOM foo
+  (NOT
+   (MV-NTH
+    '0
+    (GET-PREFIXES-ALT
+     (BINARY-+ '3 (XR ':RIP '0 X86))
      '0
-     (GET-PREFIXES-ALT
-      (BINARY-+ '3 (XR ':RIP '0 X86))
-      '0
-      '5
-      (MV-NTH
-       '2
-       (RB-ALT (CONS (BINARY-+ '2 (XR ':RIP '0 X86))
+     '5
+     (MV-NTH
+      '2
+      (RB-ALT
+       (CONS (BINARY-+ '2 (XR ':RIP '0 X86))
+             'NIL)
+       ':X
+       (MV-NTH
+        '2
+        (RB-ALT (CONS (BINARY-+ '1 (XR ':RIP '0 X86))
+                      'NIL)
+                ':X
+                (MV-NTH '2
+                        (GET-PREFIXES-ALT (XR ':RIP '0 X86)
+                                          '0
+                                          '5
+                                          X86))))))))))
+
+(DEFAXIOM bar
+  (EQUAL
+   (MV-NTH
+    '1
+    (GET-PREFIXES-ALT
+     (BINARY-+ '3 (XR ':RIP '0 X86))
+     '0
+     '5
+     (MV-NTH
+      '2
+      (RB-ALT
+       (CONS (BINARY-+ '2 (XR ':RIP '0 X86))
+             'NIL)
+       ':X
+       (MV-NTH
+        '2
+        (RB-ALT (CONS (BINARY-+ '1 (XR ':RIP '0 X86))
+                      'NIL)
+                ':X
+                (MV-NTH '2
+                        (GET-PREFIXES-ALT (XR ':RIP '0 X86)
+                                          '0
+                                          '5
+                                          X86))))))))
+   (MV-NTH '1
+           (GET-PREFIXES-ALT (BINARY-+ '3 (XR ':RIP '0 X86))
+                             '0
+                             '5
+                             X86))))
+
+;; Similarly, why does the following work in the proof checker but not
+;; during a proof? Maybe brr output is not helpful. I'm so confused.
+
+(verify
+ (MV-NTH
+  '0
+  (LAS-TO-PAS
+   (CREATE-CANONICAL-ADDRESS-LIST '8
+                                  (BINARY-+ '-24 (XR ':RGF '4 X86)))
+   ':W
+   '0
+   (MV-NTH
+    '2
+    (RB-ALT
+     (CONS (BINARY-+ '7 (XR ':RIP '0 X86))
+           'NIL)
+     ':X
+     (MV-NTH
+      '2
+      (RB-ALT
+       (CONS (BINARY-+ '6 (XR ':RIP '0 X86))
+             'NIL)
+       ':X
+       (MV-NTH
+        '2
+        (RB-ALT
+         (CONS (BINARY-+ '5 (XR ':RIP '0 X86))
+               'NIL)
+         ':X
+         (MV-NTH
+          '2
+          (RB-ALT
+           (CONS (BINARY-+ '4 (XR ':RIP '0 X86))
+                 'NIL)
+           ':X
+           (MV-NTH
+            '2
+            (GET-PREFIXES-ALT
+             (BINARY-+ '3 (XR ':RIP '0 X86))
+             '0
+             '5
+             (MV-NTH
+              '2
+              (RB-ALT
+               (CONS (BINARY-+ '2 (XR ':RIP '0 X86))
                      'NIL)
                ':X
-               (MV-NTH '2
-                       (RB-ALT (CONS (BINARY-+ '1 (XR ':RIP '0 X86))
-                                     'NIL)
-                               ':X
-                               (MV-NTH '2
-                                       (GET-PREFIXES-ALT (XR ':RIP '0 X86)
-                                                         '0
-                                                         '5 X86))))))))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             shr-spec
-                             shr-spec-64
-                             sal/shl-spec
-                             sal/shl-spec-64
-                             gpr-and-spec-1
-                             gpr-and-spec-4
-                             gpr-and-spec-8
-                             gpr-sub-spec-8
-                             gpr-or-spec-8
-                             gpr-xor-spec-4
-                             jcc/cmovcc/setcc-spec
-                             top-level-opcode-execute
-                             two-byte-opcode-decode-and-execute
-                             x86-operand-from-modr/m-and-sib-bytes
-                             x86-effective-addr
-                             x86-effective-addr-from-sib
-                             x86-operand-to-reg/mem
-                             rr08 rr32 rr64 wr08 wr32 wr64
-                             rim08 rim32 rim64
-                             !flgi-undefined
-                             write-user-rflags
-                             pos
-                             member-p
-                             subset-p
-                             rb-wb-equal-in-system-level-mode)
+               (MV-NTH
+                '2
+                (RB-ALT (CONS (BINARY-+ '1 (XR ':RIP '0 X86))
+                              'NIL)
+                        ':X
+                        (MV-NTH '2
+                                (GET-PREFIXES-ALT (XR ':RIP '0 X86)
+                                                  '0
+                                                  '5
+                                                  X86)))))))))))))))))))
 
-                            (rewire_dst_to_src-disable)))))
 
-(thm ;; execute 2 instructions -- somehow, I need foo for this to make a bit more progress.
+(thm ;; execute 2 instructions
  (implies
   (and
    (x86-state-okp x86)
    (program-ok-p x86)
+   (stack-ok-p x86)
+   ;; !! TODO: I can use
+   ;; !! x86-state-okp-and-program-ok-p-implies-program-alt to make
+   ;; !! this hyp go away later.
+   (program-at-alt
+    (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+    *rewire_dst_to_src* x86)
 
    ;; Pre-conditions added in the marking mode --- these were
    ;; not required in the non-marking mode.
-
-   ;; Translation-governing addresses of the program are
-   ;; disjoint from the physical addresses corresponding to
-   ;; the program.
-   (disjoint-p
-    (all-translation-governing-addresses
-     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-     x86)
-    (mv-nth 1 (las-to-pas
-               (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-               :x (cpl x86) x86)))
-   ;; Physical addresses corresponding to the program are
-   ;; disjoint from the paging physical addresses.
-   (disjoint-p
-    (mv-nth 1 (las-to-pas
-               (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-               :x (cpl x86) x86))
-    (open-qword-paddr-list
-     (gather-all-paging-structure-qword-addresses x86))))
+   )
 
   (equal (x86-run 2 x86)
          xxxx))
@@ -1992,9 +1807,12 @@
                             rim08 rim32 rim64
                             !flgi-undefined
                             write-user-rflags
+
                             pos
+                            las-to-pas-subset-p
                             member-p
                             subset-p
+
                             rb-wb-equal-in-system-level-mode)
 
                            (rewire_dst_to_src-disable)))))
