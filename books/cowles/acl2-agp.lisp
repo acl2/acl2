@@ -16,9 +16,9 @@
 (include-book "acl2-asg")
 
 (defsection abelian-groups
-  :parents (cowles)
+  :parents (algebra)
   :short "Axiomatization of an associative and commutative binary operation
-with an identity and an unary inverse operation."
+with an identity and an unary inverse operation, developed by John Cowles."
 
   :long "<h3>Theory of Abelian Groups</h3>
 
