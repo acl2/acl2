@@ -297,8 +297,9 @@
 
 (defun auto-termination-declare-1 (fns new-fn-clause-set theory expand wrld)
   (cond ((endp fns) nil)
-        (t (or (auto-termination-declare-2 (car fns) new-fn-clause-set
-                                           theory expand wrld)
+        (t (or (and (not (get-skipped-proofs-p (car fns) wrld))
+                    (auto-termination-declare-2 (car fns) new-fn-clause-set
+                                           theory expand wrld))
                (auto-termination-declare-1 (cdr fns) new-fn-clause-set
                                            theory expand wrld)))))
 
@@ -498,11 +499,13 @@
  arguments, which are not evaluated, have the defaults shown above.  If this
  event is successful, then the input definition is modified by adding a
  generated @('declare') form, which provides a @(':measure') and @(':hints')
- that take advantage of the @(see termination-theorem) for an existing
- function.  The @(see hints) include a @(':use') hint for that earlier
- termination-theorem, as well as an @(':in-theory') hint and possibly an
- @(':expand') hint, as discussed below.  But before adding the new @('declare')
- form, any @(':measure') and @(':hints') are removed from the input form.</p>
+ that take advantage of the @(see termination-theorem) for an existing function
+ that was admitted without skipping proofs (see @(see skip-proofs) and @(see
+ set-ld-skip-proofs)).  The @(see hints) include a @(':use') hint for that
+ earlier termination-theorem, as well as an @(':in-theory') hint and possibly
+ an @(':expand') hint, as discussed below.  But before adding the new
+ @('declare') form, any @(':measure') and @(':hints') are removed from the
+ input form.</p>
 
  <p>We now describe the keyword arguments.</p>
 

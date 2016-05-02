@@ -5,6 +5,7 @@
 (in-package "ACL2")
 
 (include-book "auto-termination")
+(include-book "misc/eval" :dir :system)
 
 ; First, a basic test.
 
@@ -25,6 +26,27 @@
           (+ 2 (my-sum (my-dec b) (my-dec a))))
          ((zp b) a)
          (t b))))
+
+; Here is a version of the first function that uses skip-proofs.
+(defund my-dec2 (x) (1- x))
+
+(skip-proofs
+ (defun my-max2 (x y)
+   (declare (xargs :measure (+ (nfix x) (nfix y))
+                   :hints (("Goal" :in-theory (enable my-dec2)))))
+   (cond ((zp x) y)
+         ((zp y) x)
+         (t (1+ (my-max2 (my-dec2 x) (my-dec2 y)))))))
+
+; Test that now we fail, because of the skip-proofs.
+
+(must-fail
+ (with-auto-termination
+  (defun my-sum2 (b a)
+    (cond ((and (posp a) (posp b))
+           (+ 2 (my-sum2 (my-dec2 b) (my-dec2 a))))
+          ((zp b) a)
+          (t b)))))
 
 ; Next, let's search the database for not-quite-trivial termination arguments;
 ; e.g., (include-book "arithmetic-5/top" :dir :system) is not sufficient for
@@ -135,3 +157,13 @@
      1))
  :theory '(zp-compound-recognizer posp len nfix car-cons cdr-cons
                                   o<-of-nat-list-measure))
+
+; We tried this earlier, but let's try again with some separation after the
+; skip-proofs, just to make sure that the skip-proofs is stil noticed.
+(must-fail
+ (with-auto-termination
+  (defun my-sum2 (b a)
+    (cond ((and (posp a) (posp b))
+           (+ 2 (my-sum2 (my-dec2 b) (my-dec2 a))))
+          ((zp b) a)
+          (t b)))))
