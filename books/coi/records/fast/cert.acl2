@@ -32,5 +32,5 @@
 ;
 ; COI Version.  See books/data-structures/memories/ for the original version.
 
-(ld "data-structures/memories/package.lsp" :dir :system)
+(include-book "data-structures/memories/portcullis" :dir :system)
 

@@ -28,9 +28,5 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(ld "rec-defpkg.lsp")
-(ld "../symbol-fns/symbol-fns-defpkg.lsp")
-(ld "../osets/set-defpkg.lsp")
-(ld "../bags/bag-defpkg.lsp")
-(include-book "../lists/portcullis")
-(ld "data-structures/memories/package.lsp" :dir :system)
+(include-book "portcullis")
+
