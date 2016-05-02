@@ -10,14 +10,18 @@
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
-;; This book contains a proof of Fermat's Theorem: if p is a prime and m
-;; is not divisible by p, then mod(m^(p-1),p) = 1.
-
 ;; The proof depends on Euclid's Theorem:
 
 (include-book "euclid")
 
-;; We shall construct two lists of integers, each of which is a permutation of the other.
+(defsection fermat
+  :parents (number-theory)
+  :short "This book contains a proof of Fermat's Theorem: if @('p') is a prime and @('m')
+ is not divisible by @('p'), then @('mod(m^(p-1),p) = 1')."
+  :long "The proof depends on Euclid's Theorem:"
+
+"We shall construct two lists of integers, each of which is a permutation of the other.
+ @(def perm)"
 
 (defun perm (a b)
   (if (consp a)
@@ -26,14 +30,16 @@
 	())
     (not (consp b))))
 
-;; The first list is positives(p-1) = (1, 2, ..., p-1):
+"The first list is @({positives(p-1) = (1, 2, ..., p-1)})
+ @(def positives)"
 
 (defun positives (n)
   (if (zp n)
       ()
     (cons n (positives (1- n)))))
 
-;;The second list is mod-prods(p-1,a,p) = (mod(a,p), mod(2*a,p), ..., mod((p-1)*a,p)):
+"The second list is @({mod-prods(p-1,a,p) = (mod(a,p), mod(2*a,p), ..., mod((p-1)*a,p))})
+ @(def mod-prods)"
 
 (defun mod-prods (n m p)
   (if (zp n)
@@ -41,7 +47,12 @@
     (cons (mod (* m n) p)
 	  (mod-prods (1- n) m p))))
 
-;; The proof is based on the pigeonhole principle, as stated below.
+"The proof is based on the pigeonhole principle, as stated below.
+ @(thm not-member-remove1)
+ @(thm perm-member)
+ @(def distinct-positives)
+ @(thm member-positives)
+ @(thm pigeonhole-principle)"
 
 (defthm not-member-remove1
     (implies (not (member x l))
@@ -72,8 +83,13 @@
 	     (perm (positives (len l)) l))
   :rule-classes ())
 
-;; We must show that mod-prods(p-1,m,p) is a list of length p-1 of distinct
-;; integers between 1 and p-1.
+"We must show that @('mod-prods(p-1,m,p)') is a list of length @('p-1') of distinct
+ integers between @('1') and @('p-1').
+ @(thm len-mod-prods)
+ @(thm mod-distinct)
+ @(thm mod-p-bnds)
+ @(thm mod-prods-distinct-positives)
+ @(thm perm-mod-prods)"
 
 (defthm len-mod-prods
     (implies (natp n)
@@ -117,7 +133,9 @@
 		   (mod-prods (1- p) m p)))
   :rule-classes ())
 
-;; The product of the members of a list is invariant under permutation:
+"The product of the members of a list is invariant under permutation:
+ @(def times-list)
+ @(thm perm-times-list)"
 
 (defun times-list (l)
   (if (consp l)
@@ -131,7 +149,10 @@
 		    (times-list l2)))
   :rule-classes ())
 
-;; It follows that the product of the members of mod-prods(p-1,m,p) is (p-1)!.
+"It follows that the product of the members of @('mod-prods(p-1,m,p)') is @('(p-1)!').
+ @(thm times-list-positives)
+ @(thm times-list-equal-fact)
+ @(thm times-list-mod-prods)"
 
 (defthm times-list-positives
   (equal (times-list (positives n))
@@ -148,7 +169,8 @@
 	     (equal (times-list (mod-prods (1- p) m p))
 		    (fact (1- p)))))
 
-;; On the other hand, the product modulo p may be computed as follows.
+"On the other hand, the product modulo @('p') may be computed as follows.
+ @(thm mod-mod-prods)"
 
 (defthm mod-mod-prods
     (implies (and (not (zp p))
@@ -158,7 +180,10 @@
 		    (mod (* (fact n) (expt m n)) p)))
   :rule-classes ())
 
-;; Fermat's theorem now follows easily.
+"Fermat's theorem now follows easily.
+ @(thm not-divides-p-fact)
+ @(thm mod-times-prime)
+ @(thm fermat)"
 
 (defthm not-divides-p-fact
     (implies (and (primep p)
@@ -185,4 +210,4 @@
 		    1))
   :rule-classes ())
 
-
+)
