@@ -864,24 +864,16 @@ To certify this book, first, create a world with the following packages:
 		(==_e (**_e x y z)
 		      (**_e y x z))))
   :hints (("Goal"
-	   :use ((:instance
-		  (:functional-instance
-		   acl2-asg::commutativity-2-of-op
-		   (acl2-asg::equiv ==_e)
-		   (acl2-asg::pred edp)
-		   (acl2-asg::op binary-++_e))
-		  (acl2-asg::x x)
-		  (acl2-asg::y y)
-		  (acl2-asg::z z))
-		 (:instance
-		  (:functional-instance
-		   acl2-asg::commutativity-2-of-op
-		   (acl2-asg::equiv ==_e)
-		   (acl2-asg::pred edp)
-		   (acl2-asg::op binary-**_e))
-		  (acl2-asg::x x)
-		  (acl2-asg::y y)
-		  (acl2-asg::z z))))))
+	   :use ((:functional-instance
+                  acl2-asg::commutativity-2-of-op
+                  (acl2-asg::equiv ==_e)
+                  (acl2-asg::pred edp)
+                  (acl2-asg::op binary-++_e))
+		 (:functional-instance
+                  acl2-asg::commutativity-2-of-op
+                  (acl2-asg::equiv ==_e)
+                  (acl2-asg::pred edp)
+                  (acl2-asg::op binary-**_e))))))
 
 (defthm
   Nullity-Laws
@@ -897,15 +889,13 @@ To certify this book, first, create a world with the following packages:
 	   (==_e (-_e (-_e x))
 		 x))
   :hints (("Goal"
-	   :use ((:instance
-		  (:functional-instance
-		   acl2-agp::Involution-of-inv
-		   (acl2-agp::equiv ==_e)
-		   (acl2-agp::pred edp)
-		   (acl2-agp::op binary-++_e)
-		   (acl2-agp::id 0_e)
-		   (acl2-agp::inv -_e))
-		  (acl2-agp::x x))))))
+	   :use (:functional-instance
+                 acl2-agp::Involution-of-inv
+                 (acl2-agp::equiv ==_e)
+                 (acl2-agp::pred edp)
+                 (acl2-agp::op binary-++_e)
+                 (acl2-agp::id 0_e)
+                 (acl2-agp::inv -_e)))))
 
 (defthm
   Inverse-Distributive-Law
@@ -914,16 +904,13 @@ To certify this book, first, create a world with the following packages:
 	   (==_e (-_e (++_e x y))
 		 (++_e (-_e x)(-_e y))))
   :hints (("Goal"
-	   :use ((:instance
-                  (:functional-instance
-                   acl2-agp::Distributivity-of-inv-over-op
-                   (acl2-agp::equiv ==_e)
-                   (acl2-agp::pred edp)
-                   (acl2-agp::op binary-++_e)
-                   (acl2-agp::id 0_e)
-                   (acl2-agp::inv -_e))
-                  (acl2-agp::x x)
-                  (acl2-agp::y y))))))
+	   :use (:functional-instance
+                 acl2-agp::Distributivity-of-inv-over-op
+                 (acl2-agp::equiv ==_e)
+                 (acl2-agp::pred edp)
+                 (acl2-agp::op binary-++_e)
+                 (acl2-agp::id 0_e)
+                 (acl2-agp::inv -_e)))))
 
 (defthm
   Inverse-Cancellation-Laws
@@ -934,16 +921,13 @@ To certify this book, first, create a world with the following packages:
 		(==_e (++_e x (-_e x) y)
 		      y)))
   :hints (("Goal"
-	   :use ((:instance
-		  (:functional-instance
-		   acl2-agp::inv-cancellation-on-right
-		   (acl2-agp::equiv ==_e)
-		   (acl2-agp::pred edp)
-		   (acl2-agp::op binary-++_e)
-		   (acl2-agp::id 0_e)
-		   (acl2-agp::inv -_e))
-		  (acl2-agp::x x)
-		  (acl2-agp::y y))))))
+	   :use (:functional-instance
+                 acl2-agp::inv-cancellation-on-right
+                 (acl2-agp::equiv ==_e)
+                 (acl2-agp::pred edp)
+                 (acl2-agp::op binary-++_e)
+                 (acl2-agp::id 0_e)
+                 (acl2-agp::inv -_e)))))
 
 (defthm
   Cancellation-Laws-for-++_e
@@ -959,17 +943,13 @@ To certify this book, first, create a world with the following packages:
 		(equal (==_e (++_e x z)(++_e z y))
 		       (==_e x y))))
   :hints (("Goal"
-	   :use ((:instance
-		  (:functional-instance
-		   acl2-agp::Right-cancellation-for-op
-		   (acl2-agp::equiv ==_e)
-		   (acl2-agp::pred edp)
-		   (acl2-agp::op binary-++_e)
-		   (acl2-agp::id 0_e)
-		   (acl2-agp::inv -_e))
-		  (acl2-agp::x x)
-		  (acl2-agp::y y)
-		  (acl2-agp::z z))))))
+	   :use (:functional-instance
+                 acl2-agp::Right-cancellation-for-op
+                 (acl2-agp::equiv ==_e)
+                 (acl2-agp::pred edp)
+                 (acl2-agp::op binary-++_e)
+                 (acl2-agp::id 0_e)
+                 (acl2-agp::inv -_e)))))
 
 (defthm
   Functional-Commutativity-Laws-1
@@ -980,17 +960,14 @@ To certify this book, first, create a world with the following packages:
 		(==_e (**_e (-_e y) x)
 		      (-_e (**_e y x)))))
   :hints (("Goal"
-	   :use ((:instance
-		  (:functional-instance
-		   acl2-crg::functional-commutativity-of-minus-times-right
-		   (acl2-crg::equiv ==_e)
-		   (acl2-crg::pred edp)
-		   (acl2-crg::plus binary-++_e)
-		   (acl2-crg::times binary-**_e)
-		   (acl2-crg::zero 0_e)
-		   (acl2-crg::minus -_e))
-		  (acl2-crg::x x)
-		  (acl2-crg::y y))))))
+	   :use (:functional-instance
+                 acl2-crg::functional-commutativity-of-minus-times-right
+                 (acl2-crg::equiv ==_e)
+                 (acl2-crg::pred edp)
+                 (acl2-crg::plus binary-++_e)
+                 (acl2-crg::times binary-**_e)
+                 (acl2-crg::zero 0_e)
+                 (acl2-crg::minus -_e)))))
 
 (defthm
   -_e-0
@@ -1032,15 +1009,13 @@ To certify this book, first, create a world with the following packages:
 	   (equal (==_e (++_e x x) x)
 		  (==_e x (0_e))))
   :hints (("Goal"
-	   :use ((:instance
-		  (:functional-instance
-		   acl2-agp::Uniqueness-of-id-as-op-idempotent
-		   (acl2-agp::equiv ==_e)
-		   (acl2-agp::pred edp)
-		   (acl2-agp::op binary-++_e)
-		   (acl2-agp::id 0_e)
-		   (acl2-agp::inv -_e))
-		  (acl2-agp::x x))))))
+	   :use (:functional-instance
+                 acl2-agp::Uniqueness-of-id-as-op-idempotent
+                 (acl2-agp::equiv ==_e)
+                 (acl2-agp::pred edp)
+                 (acl2-agp::op binary-++_e)
+                 (acl2-agp::id 0_e)
+                 (acl2-agp::inv -_e)))))
 
 (defthm
   ==_e_-_e-0_e
@@ -1989,23 +1964,20 @@ To certify this book, first, create a world with the following packages:
 		 (**_e (divides-pp-witness x (1_e))
 		       (divides-pp-witness y (1_e)))))
   :hints (("Goal"
-	   :by (:instance
-		(:functional-instance
-		 acl2-agp::Distributivity-of-inv-over-op
-		 (acl2-agp::equiv ==_e)
-		 (acl2-agp::pred unit-pp)
-		 (acl2-agp::op binary-**_e)
-		 (acl2-agp::id 1_e)
-		 (acl2-agp::inv (lambda (x)(divides-pp-witness x (1_e)))))
-		(acl2-agp::x x)
-		(acl2-agp::y y)))
-	  ("Subgoal 3"
+	   :by (:functional-instance
+                acl2-agp::Distributivity-of-inv-over-op
+                (acl2-agp::equiv ==_e)
+                (acl2-agp::pred unit-pp)
+                (acl2-agp::op binary-**_e)
+                (acl2-agp::id 1_e)
+                (acl2-agp::inv (lambda (x)(divides-pp-witness x (1_e))))))
+	  ("Subgoal 5"
 ; Changed after v4-3 by Kaufmann/Moore, for tau system --
 ; tau on {"Subgoal 3"} tau off: {"Subgoal 8"}
 	   :use (:instance
-		 Unit-pp-closure-**_e
-		 (u acl2-agp::x)
-		 (v acl2-agp::y)))))
+                 Unit-pp-closure-**_e
+                 (u x)
+                 (v y)))))
 
 (defthm
   Divides-pp-witness-1_e

@@ -149,8 +149,8 @@
   :returns (ruler-extenders (or (symbol-listp ruler-extenders)
                                 (equal ruler-extenders :all)))
   :short
-  "<see topic='@(url rulers)'>Ruler</see> extenders
-  of a logic-mode recursive function."
+  "Ruler-extenders of a logic-mode recursive function (see @(see rulers) for
+  background)."
   (access justification (getpropc fun 'justification nil w) :ruler-extenders))
 
 (define macro-required-args ((mac (macro-namep mac w)) (w plist-worldp))

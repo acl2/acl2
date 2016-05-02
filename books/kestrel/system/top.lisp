@@ -19,6 +19,8 @@
 (include-book "prove-interface")
 (include-book "terms")
 (include-book "world-queries")
+(include-book "minimize-ruler-extenders")
+(include-book "auto-termination")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

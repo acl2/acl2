@@ -220,6 +220,7 @@
 (include-book "rtl/rel11/lib/sqrt" :dir :system)
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "centaur/fty/bitstruct" :dir :system)
 
 (include-book "misc/find-lemmas" :dir :system)
 (include-book "misc/simp" :dir :system)

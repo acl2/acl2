@@ -20,6 +20,7 @@
                defxdoc
                defsection
                rewrite
+               x y z
                ))
    '(zero)))
 

@@ -1623,8 +1623,11 @@ expression into a string."
                                   (vl-ps-span "vl_key" (vl-print-str "signed "))
                                 ps)
                               (vl-pp-packeddimensionlist (vl-coretype->pdims x.type))
-                              (vl-print " "))
-                 (vl-pp-datatype x.type))
+                              (if (consp (vl-coretype->pdims x.type))
+                                  (vl-print " ")
+                                ps))
+                 (vl-ps-seq (vl-pp-datatype x.type)
+                            (vl-print " ")))
                (vl-print-wirename x.name)
                (let ((udims (vl-datatype->udims x.type)))
                  (if (consp udims)
@@ -4220,3 +4223,74 @@ module elements and its comments.</p>"
                (vl-pp-udplist x.udps)
                (vl-pp-programlist x.programs)
                (vl-pp-configlist x.configs))))
+
+
+
+(define vl-pp-scopetype ((x vl-scopetype-p) &key (ps 'ps))
+  (vl-print (case (vl-scopetype-fix x)
+              (:vl-module     "module")
+              (:vl-interface  "interface")
+              (:vl-fundecl    "function")
+              (:vl-taskdecl   "task")
+              (:vl-blockstmt  "block statement")
+              (:vl-forstmt    "for statement")
+              (:vl-design     "global design")
+              (:vl-package    "package")
+              (:vl-genblock   "generate block")
+              (:vl-genarrayblock "generate array block")
+              (:vl-genarray      "generate array")
+              (otherwise "anonymous scope"))))
+
+
+(define vl-pp-definition-scope-summary ((x vl-scopestack-p)
+                                        &key (ps 'ps))
+  :measure (vl-scopestack-count x)
+  (b* ((scope (vl-scopestack-case x
+                :global x.design
+                :local x.top
+                :otherwise nil))
+       ((unless scope) (vl-print "[empty scopestack]"))
+       (id (vl-scope->id scope))
+       (type (vl-scope->scopetype scope)))
+    (case type
+      (:vl-module (vl-ps-seq (vl-pp-scopetype type)
+                             (vl-print " ")
+                             (if (stringp id)
+                                 (vl-pp-modulename-link id x)
+                               (vl-print "[unknown]"))))
+      ((:vl-interface
+        :vl-package) (vl-ps-seq (vl-pp-scopetype type)
+                                (vl-print " ")
+                                (if (stringp id)
+                                    (vl-print-modname id)
+                                  (vl-print "[unknown]"))))
+      (:vl-design     (vl-pp-scopetype type))
+      (otherwise
+       (vl-scopestack-case x
+         :local (vl-pp-definition-scope-summary x.super)
+         :otherwise (vl-print "[empty scopestack]"))))))
+                                                   
+
+(define vl-pp-scope-summary ((x vl-scopestack-p)
+                             &key (ps 'ps))
+  (b* ((scope (vl-scopestack-case x
+                :global x.design
+                :local x.top
+                :otherwise nil))
+       ((unless scope) (vl-print "[empty scopestack]"))
+       (id (vl-scope->id scope))
+       (type (vl-scope->scopetype scope)))
+    (case type
+      ((:vl-module
+        :vl-interface
+        :vl-package
+        :vl-design)
+       (vl-pp-definition-scope-summary x))
+      (otherwise      (vl-ps-seq (vl-pp-scopetype type)
+                                 (vl-print " ")
+                                 (if (stringp id)
+                                     (vl-print-wirename id)
+                                   (vl-print "[unknown]"))
+                                 (vl-print " inside ")
+                                 (vl-pp-definition-scope-summary x))))))
+
