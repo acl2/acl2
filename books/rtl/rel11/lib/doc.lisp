@@ -214,7 +214,7 @@
                           ,(rtl-node-name-lst children)))
 
 (defxdoc rtl
-  :parents (acl2::arithmetic acl2::hardware-verification)
+  :parents (acl2::bit-vectors acl2::hardware-verification)
   :short "A library of register-transfer logic and computer arithmetic"
   :long "<p>This @(see documentation) for @(see community-books) residing under
   @('rtl/rel11') contains links to David Russinoff's online rtl manual, <i><a

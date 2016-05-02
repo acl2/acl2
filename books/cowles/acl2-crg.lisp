@@ -15,10 +15,10 @@
 (include-book "acl2-agp")
 
 (defsection commutative-rings
-  :parents (cowles)
+  :parents (algebra)
   :short "Axiomatization of two associative and commutative operations, one
 distributes over the other, while the other has an identity and an unary
-inverse operation."
+inverse operation, developed by John Cowles."
 
   :long "<h3>Theory of Commutative Rings</h3>
 

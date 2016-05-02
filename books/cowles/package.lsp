@@ -12,8 +12,7 @@
 ; information about that, see:
 ; http://code.google.com/p/acl2-books/issues/detail?id=4
 
-             '(arithmetic
-               cowles
+             '(algebra
                abelian-semigroups
                abelian-groups
                commutative-rings

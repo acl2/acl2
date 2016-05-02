@@ -321,38 +321,38 @@
 		(g-c-d-nat x y)))
   :rule-classes ())
 
-(defun r (x y)
+(defun r-int (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< x 0)
       (- (r-nat (abs x) (abs y)))
     (r-nat (abs x) (abs y))))
 
-(defun s (x y)
+(defun s-int (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< y 0)
       (- (s-nat (abs x) (abs y)))
     (s-nat (abs x) (abs y))))
-
-(defthm integerp-r
-    (integerp (r x y))
+#|
+(defthm integerp-r-int
+    (integerp (r-int x y))
   :rule-classes (:type-prescription))
 
-(defthm integerp-s
-    (integerp (s x y))
+(defthm integerp-s-int
+    (integerp (s-int x y))
   :rule-classes (:type-prescription))
-
+|#
 (defthm g-c-d-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r x y) x)
-		   (* (s x y) y))
+	     (= (+ (* (r-int x y) x)
+		   (* (s-int x y) y))
 		(g-c-d x y)))
   :rule-classes ()
   :hints (("Goal" :use (:instance r-s-nat (x (abs x)) (y (abs y))))))
 
-(in-theory (disable g-c-d r s))
+(in-theory (disable g-c-d r-int s-int))
 
 (defthm divides-g-c-d
     (implies (and (integerp x)
@@ -363,9 +363,9 @@
 		  (divides d y))
 	     (divides d (g-c-d x y)))
   :hints (("Goal" :use (g-c-d-linear-combination
-			(:instance divides-sum (x d) (y (* (r x y) x)) (z (* (s x y) y)))
-			(:instance divides-product (x d) (y x) (z (r x y)))
-			(:instance divides-product (x d) (z (s x y)))))))
+			(:instance divides-sum (x d) (y (* (r-int x y) x)) (z (* (s-int x y) y)))
+			(:instance divides-product (x d) (y x) (z (r-int x y)))
+			(:instance divides-product (x d) (z (s-int x y)))))))
 
 (defthm g-c-d-prime
     (implies (and (primep p)
@@ -381,8 +381,8 @@
   (implies (and (primep p)
                 (integerp a)
                 (integerp b)
-                (= (+ (* a (s p a)) (* p (r p a))) 1))
-           (equal (+ (* a b (s p a)) (* b p (r p a)))
+                (= (+ (* a (s-int p a)) (* p (r-int p a))) 1))
+           (equal (+ (* a b (s-int p a)) (* b p (r-int p a)))
                   b)))
 
 ;; the main theorem:
@@ -396,9 +396,8 @@
 	     (not (divides p (* a b))))
   :rule-classes ()
   :hints (("Goal" :use (g-c-d-prime
-			;(:instance cancel-equal-* (a b) (r (+ (* (r p a) p) (* (s p a) a))) (s 1))
 			(:instance g-c-d-linear-combination (x p) (y a))
-			(:instance divides-sum (x p) (y (* (r p a) p b)) (z (* (s p a) a b)))
-			(:instance divides-product (x p) (y (* a b)) (z (s p a)))
-			(:instance divides-product (x p) (y p) (z (* b (r p a))))))))
+			(:instance divides-sum (x p) (y (* (r-int p a) p b)) (z (* (s-int p a) a b)))
+			(:instance divides-product (x p) (y (* a b)) (z (s-int p a)))
+			(:instance divides-product (x p) (y p) (z (* b (r-int p a))))))))
 
