@@ -28,10 +28,12 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(ld "coi/syntax/syn-defpkg.lsp" :dir :system)
-(ld "coi/util/defun-defpkg.lsp" :dir :system)
-(ld "coi/symbol-fns/symbol-fns-defpkg.lsp" :dir :system)
-(ld "coi/util/def-defpkg.lsp" :dir :system)
-(ld "coi/util/gensym-defpkg.lsp" :dir :system)
-(ld "coi/util/table-defpkg.lsp" :dir :system)
-(ld "defung-defpkg.lsp")
+(include-book "portcullis")
+
+;; (ld "coi/syntax/syn-defpkg.lsp" :dir :system)
+;; (ld "coi/util/defun-defpkg.lsp" :dir :system)
+;; (ld "coi/symbol-fns/symbol-fns-defpkg.lsp" :dir :system)
+;; (ld "coi/util/def-defpkg.lsp" :dir :system)
+;; (ld "coi/util/gensym-defpkg.lsp" :dir :system)
+;; (ld "coi/util/table-defpkg.lsp" :dir :system)
+;; (ld "defung-defpkg.lsp")

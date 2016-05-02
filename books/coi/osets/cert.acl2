@@ -31,4 +31,6 @@
 ;; COI version, modified by Jared Davis, 2014-10, to include std/osets books
 ;; and only add the new functions and theorems that had been in COI.
 
-(ld "set-defpkg.lsp")
+(in-package "ACL2")
+(include-book "std/portcullis" :dir :system)
+(include-book "../lists/portcullis")

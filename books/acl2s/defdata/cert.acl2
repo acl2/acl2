@@ -1,6 +1,4 @@
-(ld "data-structures/define-u-package.lsp" :dir :system)
 (ld "../package.lsp")
-(ld "coi/symbol-fns/symbol-fns-defpkg.lsp" :dir :system)
 
 ; Added by Jared, justified by ACL2_COMPILE_FLG setting in Makefile
 ; cert-flags: ? t :ttags :all

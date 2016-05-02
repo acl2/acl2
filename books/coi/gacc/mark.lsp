@@ -40,6 +40,11 @@
 
 (in-package "GACC")
 
+(er hard 'books/gacc/mark.lsp "Jared thinks nobody is using this file.  If he ~
+                               is wrong, please send him an email and delete ~
+                               this error message.  If nobody sends me such an ~
+                               email, I'm just going to delete this.")
+
 (defmacro ac (&rest rst) `(accumulated-persistence ,@(if rst rst `(t))))
 (defmacro sac () `(show-accumulated-persistence))
 
