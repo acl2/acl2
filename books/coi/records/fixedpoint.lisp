@@ -28,7 +28,6 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-
 (in-package "ACL2")
 
 ;; It would be nice to do development in a package other than ACL2.

@@ -28,15 +28,4 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(ld "path-defpkg.lsp")
-
-;(include-book "../bags/bag-pkg")
-(ld "../bags/bag-defpkg.lsp")
-
-;(include-book "../osets/sets-pkg")
-(ld "../osets/set-defpkg.lsp")
-
-;(include-book "../records/record-exports")
-(ld "../records/rec-defpkg.lsp") ;trying without the exports -ews
-
-; (ld "Makefile.acl2")
+(include-book "portcullis")

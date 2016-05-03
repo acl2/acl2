@@ -1,5 +1,4 @@
 ;; Author - Harsh Raju Chamarthi (harshrc)
-(ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "package.lsp")
 
-(ACL2::CERTIFY-BOOK "portcullis" ACL2::? T)
+;; [Jared] removed newline that was fooling dependency scanner.
+(ld "package.lsp")
