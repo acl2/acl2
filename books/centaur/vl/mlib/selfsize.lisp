@@ -189,13 +189,11 @@ only meant as a heuristic for generating more useful warnings.</p>"
       (append (vl-expr-interesting-size-atoms x.then)
               (vl-expr-interesting-size-atoms x.else))
 
-      :vl-concat
-      (vl-exprlist-interesting-size-atoms x.parts)
-
-      :vl-multiconcat
-      ;; This probably doesn't make a whole lot of sense.
-      (vl-exprlist-interesting-size-atoms x.parts)
-
+      ;; sswords: changed vl-concat and vl-multiconcat to not return any atoms.
+      ;; If there is an unsized integer in a concatenation, that's a bit
+      ;; strange to begin with.
+      :vl-concat nil
+      :vl-multiconcat nil
       :vl-mintypmax nil
       :vl-call      nil
       :vl-stream    nil
@@ -224,7 +222,10 @@ only meant as a heuristic for generating more useful warnings.</p>"
   (deffixequiv-mutual vl-interesting-size-atoms))
 
 
-(define vl-collect-unsized-ints ((x vl-exprlist-p))
+(define vl-collect-unsized-ints
+  ((x vl-exprlist-p)
+   (ss       vl-scopestack-p  "Scope where the expression occurs.")
+   (scopes   vl-elabscopes-p "Precomputed overrides for parameter and function types"))
   :parents (vl-tweak-fussy-warning-type)
   :returns (sub-x vl-exprlist-p)
   (b* (((when (atom x))
@@ -234,12 +235,37 @@ only meant as a heuristic for generating more useful warnings.</p>"
                :vl-literal (vl-value-case x1.val
                              :vl-constint x1.val.wasunsized
                              :otherwise nil)
+               :vl-index (b* (((mv err opinfo) (vl-index-expr-typetrace x1 ss scopes))
+                              ((when err) nil)
+                              ((vl-operandinfo opinfo)))
+                           (vl-datatype-case opinfo.type
+                             :vl-coretype (and (atom opinfo.type.pdims)
+                                               (atom opinfo.type.udims)
+                                               (or (vl-coretypename-equiv opinfo.type.name :vl-int)
+                                                   (vl-coretypename-equiv opinfo.type.name :vl-integer)))
+                             :vl-enum (vl-datatype-case opinfo.type.basetype
+                                        :vl-coretype (and (atom opinfo.type.basetype.pdims)
+                                                          (atom opinfo.type.basetype.udims)
+                                                          (or (vl-coretypename-equiv opinfo.type.basetype.name :vl-int)
+                                                              (vl-coretypename-equiv opinfo.type.basetype.name :vl-integer)))
+                                        :otherwise nil)
+                             :otherwise nil))
                :otherwise nil)))
     (if keep
-        (cons x1 (vl-collect-unsized-ints (cdr x)))
-      (vl-collect-unsized-ints (cdr x))))
+        (cons x1 (vl-collect-unsized-ints (cdr x) ss scopes))
+      (vl-collect-unsized-ints (cdr x) ss scopes))))
+
+(define vl-collect-resolved-exprs ((x vl-exprlist-p))
+  :parents (vl-tweak-fussy-warning-type)
+  :returns (sub-x vl-exprlist-p)
+  (if (atom x)
+      nil
+    (if (vl-expr-resolved-p (car x))
+        (cons (vl-expr-fix (car x))
+              (vl-collect-resolved-exprs (cdr x)))
+      (vl-collect-resolved-exprs (cdr x))))
   ///
-  (defret vl-exprlist-resolved-p-of-vl-collect-unsized-ints
+  (defret vl-exprlist-resolved-p-of-vl-collect-resolved-exprs
     (vl-exprlist-resolved-p sub-x)
     :hints(("Goal" :in-theory (enable vl-expr-resolved-p)))))
 
@@ -273,7 +299,9 @@ only meant as a heuristic for generating more useful warnings.</p>"
    (b     vl-expr-p "RHS expression, i.e., B in: A + B, or C ? A : B")
    (asize natp      "Self-determined size of A.")
    (bsize natp      "Self-determined size of B.")
-   (op    symbolp   "The particular operation."))
+   (op    symbolp   "The particular operation.")
+   (ss       vl-scopestack-p  "Scope where the expression occurs.")
+   (scopes   vl-elabscopes-p "Precomputed overrides for parameter and function types"))
   :returns
   (adjusted-type symbolp :rule-classes :type-prescription
                  "@('NIL') for <i>do not warn</i>, or some other warning type
@@ -348,9 +376,10 @@ details.</p>"
        ;; has unsized ints, they're probably the reason it's 32 bits.  After
        ;; collecting them, see if they fit into the size of the other expr.
        (atoms         (vl-expr-interesting-size-atoms expr-32))
-       (unsized       (vl-collect-unsized-ints atoms))
+       (unsized       (vl-collect-unsized-ints atoms ss scopes))
        (unsized-fit-p (nats-below-p (ash 1 size-other)
-                                    (vl-exprlist-resolved->vals unsized)))
+                                    (vl-exprlist-resolved->vals
+                                     (vl-collect-resolved-exprs unsized))))
        ((unless unsized-fit-p)
         ;; Well, hrmn, there's some integer here that doesn't fit into the size
         ;; of the other argument.  This is especially interesting because
@@ -388,7 +417,9 @@ details.</p>"
   :short "Main function for computing self-determined expression sizes."
   ((x         vl-expr-p)
    (left-size  maybe-natp)
-   (right-size maybe-natp))
+   (right-size maybe-natp)
+   (ss       vl-scopestack-p  "Scope where the expression occurs.")
+   (scopes   vl-elabscopes-p "Precomputed overrides for parameter and function types"))
   :guard
   (vl-expr-case x :vl-binary)
   :returns
@@ -450,7 +481,7 @@ SystemVerilog-2012 Table 11-21.</p>"
                                                     x.right
                                                     left-size
                                                     right-size
-                                                    x.op)))
+                                                    x.op ss scopes)))
             (warnings
              (if (not type)
                  (ok)
@@ -496,7 +527,7 @@ SystemVerilog-2012 Table 11-21.</p>"
                                                     x.right
                                                     left-size
                                                     right-size
-                                                    x.op)))
+                                                    x.op ss scopes)))
             (warnings
              (if (not type)
                  (ok)
@@ -859,7 +890,8 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
         :vl-binary (b* (((wmv warnings leftsize) (vl-expr-selfsize x.left ss scopes))
                         ((wmv warnings rightsize) (vl-expr-selfsize x.right ss scopes))
                         ((wmv warnings ans) (vl-binaryop-selfsize x leftsize
-                                                                  rightsize)))
+                                                                  rightsize
+                                                                  ss scopes)))
                      (mv warnings ans))
 
         ;; Note: We used to fail if we couldn't size the test.  Should we?
@@ -870,7 +902,7 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
                        (warningtype (and (/= thensize elsesize)
                                          (vl-tweak-fussy-warning-type
                                           :vl-fussy-size-warning-3
-                                          x.then x.else thensize elsesize :vl-qmark)))
+                                          x.then x.else thensize elsesize :vl-qmark ss scopes)))
                        (warnings
                         (if warningtype
                             (warn :type warningtype
