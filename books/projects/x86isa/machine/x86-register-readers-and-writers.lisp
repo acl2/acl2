@@ -1155,27 +1155,29 @@ using the @(see undef-read) function.</p>"
 
 (local (include-book "centaur/gl/gl" :dir :system))
 
+;; sswords: trivially changed the form of the LHS to match what is produced
+;; below since bitp typeset rule changes
 (local
  (def-gl-thm write-user-rflags-mbe-proof
    :hyp (and (n32p user-flags-vector)
              (n32p rflags))
    :concl (equal (logior
-                  (ash (loghead 1 (bool->bit (logbitp 11 user-flags-vector))) 11)
+                  (ash (bool->bit (logbitp 11 user-flags-vector)) 11)
                   (logand
                    4294965247
                    (logior
-                    (ash (loghead 1 (bool->bit (logbitp 7 user-flags-vector))) 7)
+                    (ash (bool->bit (logbitp 7 user-flags-vector)) 7)
                     (logand
                      4294967167
                      (logior
-                      (ash (loghead 1 (bool->bit (logbitp 6 user-flags-vector))) 6)
+                      (ash (bool->bit (logbitp 6 user-flags-vector)) 6)
                       (logand
                        4294967231
                        (logior
-                        (ash (loghead 1 (bool->bit (logbitp 4 user-flags-vector))) 4)
+                        (ash (bool->bit (logbitp 4 user-flags-vector)) 4)
                         (logand
                          4294967279
-                         (logior (ash (loghead 1 (bool->bit (logbitp 2 user-flags-vector))) 2)
+                         (logior (ash (bool->bit (logbitp 2 user-flags-vector)) 2)
                                  (logand 4294967291
                                          (logior (loghead 1 user-flags-vector)
                                                  (logand 4294967294 rflags))))))))))))
@@ -1185,6 +1187,20 @@ using the @(see undef-read) function.</p>"
    :g-bindings (gl::auto-bindings
                 (:nat user-flags-vector 32)
                 (:nat rflags 32))))
+
+
+;; sswords: need this because of new rules taking advantage of bitp typeset
+(local (defthm unsigned-byte-p-when-bitp
+         (implies (and (bitp x)
+                       (posp n))
+                  (unsigned-byte-p n x))
+         :hints(("Goal" :in-theory (enable bitp expt)))
+         :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+;; (local (defthm loghead-1-is-logbit
+;;          (equal (loghead 1 x)
+;;                 (logbit 0 x))
+;;          :hints(("Goal" :in-theory (enable loghead** logbitp**)))))
 
 (define write-user-rflags
   ((user-flags-vector :type (unsigned-byte 32))
