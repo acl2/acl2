@@ -383,10 +383,14 @@
       (t
        (let* ((new-dcls (strip-dcls '(:hints :measure) (butlast rest 1)))
               (body (car (last rest)))
-              (form `(,defun-or-defund ,fn ,formals ,@new-dcls ,body)))
+              (skip-proofs-form
+               `(skip-proofs
+                 (,defun-or-defund ,fn ,formals
+                   (declare (xargs :measure (acl2-count ,(car formals)))) ; bogus
+                   ,@new-dcls ,body))))
          (er-let* ((steps
                     (event-steps
-                     (list 'skip-proofs form)
+                     skip-proofs-form
                      nil
                      `((f-put-global 'auto-termination-cl-set
                                      (termination-clause-set ',fn (w state))
