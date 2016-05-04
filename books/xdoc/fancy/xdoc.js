@@ -550,18 +550,20 @@ function navFlatReallyInstall()
 // count it.  So that's pretty great.  Probably the above sort isn't ideal; I
 // haven't tried out others yet.  But this is probably getting fast enough.
 
-    var little_a = "a".charCodeAt(0);
-    var little_z = "z".charCodeAt(0);
     var big_a = "A".charCodeAt(0);
     var big_z = "Z".charCodeAt(0);
 
     var myarr = [];
     var keys = allKeys();
+
+    // Preprocessing: upcase and chunkify everything
     for(var i in keys) {
 	var key = keys[i];
-	var rawname = topicRawname(key);
+	var rawname = topicRawname(key).toUpperCase();
         myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
     }
+
+    // Sort using faster algorithm
     myarr = navFlatSort(myarr);
     // myarr.sort(function(a,b) {
     // 	return alphanumChunks(a.chunks, b.chunks);
@@ -587,12 +589,12 @@ function navFlatReallyInstall()
 	// + "</p>";
 
 	var code = rawname.charCodeAt(0);
-        if ((rawname.charAt(0).toUpperCase() != current_startchar) &&
-	    // startsWithAlpha(rawname):
-	    ((little_a <= code && code <= little_z)
-	     || (big_a <= code && code <= big_z)))
+        if ((rawname.charAt(0) != current_startchar) &&
+	    // Avoid headers unless it's alphabetic.  Only need to check for
+	    // upper-case things since we're upcasing everything to begin with.
+	    ((big_a <= code && code <= big_z)))
 	{
-            current_startchar = rawname.charAt(0).toUpperCase();
+            current_startchar = rawname.charAt(0);
 	    dl += "<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
                       + current_startchar + "</b></li>";
         }
