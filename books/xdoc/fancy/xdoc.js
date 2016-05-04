@@ -60,9 +60,10 @@ function htmlEncode(value){
   return $('<div/>').text(value).html();
 }
 
-function alphanum(a, b) { // Alphanumeric comparison (for nice sorting)
-  // Credit: http://my.opera.com/GreyWyvern/blog/show.dml/1671288
-  function chunkify(t) {
+// Alphanumeric comparison (for nice sorting), adapted from
+//    http://my.opera.com/GreyWyvern/blog/show.dml/1671288
+
+function chunkify(t) {
     var tz = [], x = 0, y = -1, n = 0, i, j;
 
     while ((i = (j = t.charAt(x++)).charCodeAt(0))) {
@@ -74,11 +75,9 @@ function alphanum(a, b) { // Alphanumeric comparison (for nice sorting)
       tz[y] += j;
     }
     return tz;
-  }
+}
 
-  var aa = chunkify(a);
-  var bb = chunkify(b);
-
+function alphanumChunks(aa,bb) {
   for (var x = 0; aa[x] && bb[x]; x++) {
     if (aa[x] !== bb[x]) {
       var c = Number(aa[x]), d = Number(bb[x]);
@@ -90,14 +89,10 @@ function alphanum(a, b) { // Alphanumeric comparison (for nice sorting)
   return aa.length - bb.length;
 }
 
-function startsWithAlpha(str) {
-    var little_a = "a".charCodeAt(0);
-    var little_z = "z".charCodeAt(0);
-    var big_a = "A".charCodeAt(0);
-    var big_z = "Z".charCodeAt(0);
-    var code = str.charCodeAt(0);
-    return (little_a <= code && code <= little_z)
-        || (   big_a <= code && code <= big_z   );
+function alphanum(a, b) {
+  var aa = chunkify(a);
+  var bb = chunkify(b);
+  return alphanumChunks(aa,bb);
 }
 
 var waitmsg = 0;
@@ -497,38 +492,122 @@ function navFlat() {
     setTimeout(navFlatReallyInstall, 10);
 }
 
-function navFlatReallyInstall() {
+
+function navFlatSort(array)
+{
+    var len = array.length;
+    if(len < 2) {
+	return array;
+    }
+    var pivot = Math.ceil(len/2);
+    return navFlatMerge(navFlatSort(array.slice(0,pivot)), navFlatSort(array.slice(pivot)));
+}
+
+function navFlatMerge(left, right)
+{
+    var result = [];
+    while((left.length > 0) && (right.length > 0))
+    {
+	if (alphanumChunks(left[0].chunks, right[0].chunks) == -1)
+	    result.push(left.shift());
+	else
+	    result.push(right.shift());
+    }
+
+    result = result.concat(left, right);
+    return result;
+};
+
+function navFlatReallyInstall()
+{
+// On the combined ACL2+Books manual circa May 2016, this had gotten unusably
+// slow (175s).  The main culprits seemed to be:
+//
+//   - Sorting the topic names was unnecessarily and incredibly slow.  The
+//     alphanum function was chunkifying its arguments each time it was called.
+//     We can do a lot better by (linearly) chunkifying everything first before
+//     sorting, and then just sorting the chunks.
+//
+//   - Building tooltips for every single topic was slow.  Just calling
+//     topicShortPlaintext(key) for each key seemed to take around 14 seconds.
+//     It seems difficult to reduce this expense.  For now I think the most
+//     reasonable thing to do is just abandon these tooltips as too slow :(
+//
+//   - Building the <ul>...</ul> with jquery was slow.  Switching to just use
+//     string concatenation seems to help a lot.
+//
+// The above changes got the flat index down to about 6 seconds without
+// sorting, but sorting the array with the nice:
+//
+//     myarr.sort(function(a,b) {
+//         return alphanumChunks(a.chunks, b.chunks);
+//     });
+//
+// was bringing the time up to 20 seconds in Firefox's profile, or about 6
+// seconds of walltime as I actually count along without profiling enabled.
+// Using the above mergesort instead reduced the time down to 14 seconds in the
+// profile, which translates into about 3 seconds of walltime as I actually
+// count it.  So that's pretty great.  Probably the above sort isn't ideal; I
+// haven't tried out others yet.  But this is probably getting fast enough.
+
+    var little_a = "a".charCodeAt(0);
+    var little_z = "z".charCodeAt(0);
+    var big_a = "A".charCodeAt(0);
+    var big_z = "Z".charCodeAt(0);
 
     var myarr = [];
     var keys = allKeys();
     for(var i in keys) {
 	var key = keys[i];
-        myarr.push({key:key, rawname: topicRawname(key)});
+	var rawname = topicRawname(key);
+        myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
     }
-    myarr.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
+    myarr = navFlatSort(myarr);
+    // myarr.sort(function(a,b) {
+    // 	return alphanumChunks(a.chunks, b.chunks);
+    // });
 
-    var dl = jQuery("<ul></ul>");
+    // Previously used jQuery("<ul></ul>") and extended it with append.  That
+    // was much slower -- switching to string appends cut off 2.3 seconds from
+    // a small manual.
+    var dl = "<ul>";
     var current_startchar = "";
+
+    // Previously we used a separate function to test if things started with
+    // alphabetic characters.  Now we inline this to gain some small
+    // efficiency.
+
     for(var i in myarr) {
         var key = myarr[i].key;
         var name = topicName(key);
-        var rawname = topicRawname(key);
-        var tooltip = "<p>" + topicShortPlaintext(key) + "</p>";
-        if ((rawname.charAt(0) != current_startchar) && startsWithAlpha(rawname)) {
+        var rawname = myarr[i].rawname;
+
+	// If you want to resurrect this, also need to add the data-powertip
+	// stuff into the link.  var tooltip = "<p>" + topicShortPlaintext(key)
+	// + "</p>";
+
+	var code = rawname.charCodeAt(0);
+        if ((rawname.charAt(0).toUpperCase() != current_startchar) &&
+	    // startsWithAlpha(rawname):
+	    ((little_a <= code && code <= little_z)
+	     || (big_a <= code && code <= big_z)))
+	{
             current_startchar = rawname.charAt(0).toUpperCase();
-            dl.append("<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
-                      + current_startchar + "</b></li>");
+	    dl += "<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
+                      + current_startchar + "</b></li>";
         }
 
-        dl.append("<li><a class=\"flatnav\""
+        dl += "<li><a class=\"flatnav\""
                   + " href=\"index.html?topic=" + key + "\""
-                  + " onclick=\"return dolink(event, '" + key + "');\""
-                  + " data-powertip=\"" + tooltip + "\">"
+                  + " onclick=\"return dolink(event, '" + key + "');\">"
                   + name
-                  + "</li>");
+                  + "</a></li>";
     }
+    dl += "</ul>";
     $("#flat").html(dl);
-    maybePowertip(".flatnav", {placement:'se',smartPlacement: true});
+
+    // If we ever restore tooltips...
+    //    maybePowertip(".flatnav", {placement:'se',smartPlacement: true});
 }
 
 
