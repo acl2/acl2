@@ -10,7 +10,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc ihs
-  :parents (arithmetic)
+  :parents (bit-vectors)
   :short "The Integer Hardware Specification (IHS) library is a collection of
 arithmetic books, mainly geared toward bit-vector arithmetic."
 

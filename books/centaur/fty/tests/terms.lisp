@@ -193,7 +193,7 @@
      :ctor-body (list 'lambda formals body))
     :xvar z)
 
-  (deflist ptermlist :elt-type pterm-p :xvar acl2-asg::x))
+  (deflist ptermlist :elt-type pterm-p))
 
 (deflist fnsymlist :elt-type fnsym)
 
@@ -272,7 +272,7 @@
       :xvar z
       :count nil)
 
-    (deflist pterm1list :elt-type pterm1-p :xvar acl2-asg::x)))
+    (deflist pterm1list :elt-type pterm1-p)))
 
 (with-output :off (prove event observation)
   :summary (acl2::form)
@@ -323,7 +323,7 @@
        :ctor-body (list 'lambda formals body))
       :xvar z)
 
-    (deflist pterm2list :elt-type pterm2-p :xvar acl2-asg::x :count nil)))
+    (deflist pterm2list :elt-type pterm2-p :count nil)))
 
 
 ;; non-recursive SOP
@@ -890,7 +890,7 @@
   ;;    :ctor-body (list 'lambda formals body))
   ;;   :xvar z)
 
-  (deflist pterm3list :elt-type pterm3-p :xvar acl2-asg::x
+  (deflist pterm3list :elt-type pterm3-p
     :elementp-of-nil t
     :true-listp t))
 
@@ -988,10 +988,10 @@
   ;;    :ctor-body (list 'lambda formals body))
   ;;   :xvar z)
 
-  (deflist pterm4list :elt-type pterm4-p :xvar acl2-asg::x
+  (deflist pterm4list :elt-type pterm4-p
     :true-listp t
     :elementp-of-nil nil
-    :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
+    :measure (two-nats-measure (acl2-count x) 0) )
 
 
 
@@ -1102,10 +1102,10 @@
   ;;    :ctor-body (list 'lambda formals body))
   ;;   :xvar z)
 
-  (deflist pterm5list :elt-type pterm5-p :xvar acl2-asg::x
+  (deflist pterm5list :elt-type pterm5-p
     :true-listp t
     :elementp-of-nil nil
-    :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
+    :measure (two-nats-measure (acl2-count x) 0) )
 
 
 

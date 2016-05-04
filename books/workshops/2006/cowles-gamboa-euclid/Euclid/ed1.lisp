@@ -811,24 +811,16 @@ To certify this book, first, create a world with the following package:
 		(==_e (**_e x (**_e y z))
 		      (**_e y (**_e x z)))))
   :hints (("Goal"
-	   :use ((:instance
-		  (:functional-instance
-		   acl2-asg::commutativity-2-of-op
-		   (acl2-asg::equiv ==_e)
-		   (acl2-asg::pred edp)
-		   (acl2-asg::op ++_e))
-		  (acl2-asg::x x)
-		  (acl2-asg::y y)
-		  (acl2-asg::z z))
-		 (:instance
-		  (:functional-instance
-		   acl2-asg::commutativity-2-of-op
-		   (acl2-asg::equiv ==_e)
-		   (acl2-asg::pred edp)
-		   (acl2-asg::op **_e))
-		  (acl2-asg::x x)
-		  (acl2-asg::y y)
-		  (acl2-asg::z z))))))
+	   :use ((:functional-instance
+                  acl2-asg::commutativity-2-of-op
+                  (acl2-asg::equiv ==_e)
+                  (acl2-asg::pred edp)
+                  (acl2-asg::op ++_e))
+		 (:functional-instance
+                  acl2-asg::commutativity-2-of-op
+                  (acl2-asg::equiv ==_e)
+                  (acl2-asg::pred edp)
+                  (acl2-asg::op **_e))))))
 
 (defthm
   Nullity-Laws
