@@ -32,43 +32,88 @@
  `(defconst *auto-termination-fn-alist*
     ',(pair-with-formals-and-body *auto-termination-fns* (w state))))
 
+(defun negated-p (x y)
+  (cond ((ffn-symb-p y 'not)
+         (equal x (fargn y 1)))
+        ((ffn-symb-p x 'not)
+         (equal y (fargn x 1)))
+        ((ffn-symb-p x 'if)
+         (and (ffn-symb-p y 'if)
+              (equal (fargn x 1) (fargn y 1))
+              (negated-p (fargn x 2) (fargn y 2))
+              (negated-p (fargn x 3) (fargn y 3))))
+        ((ffn-symb-p y 'if)
+         nil)
+        ((variablep x)
+         nil)
+        ((variablep y)
+         nil)
+        ((fquotep x)
+         (if (equal x *nil*)
+             (equal y *t*)
+           (equal y *nil*)))
+        (t nil)))
+
+(defun my-negate-lit (x)
+  (cond ((ffn-symb-p x 'if)
+         (fcons-term* 'if
+                      (fargn x 1)
+                      (my-negate-lit (fargn x 2))
+                      (my-negate-lit (fargn x 3))))
+        (t (dumb-negate-lit x))))
+
 (mutual-recursion
 
-(defun normalize-lit (lit)
-  (cond ((variablep lit) lit)
-        ((fquotep lit) lit)
+(defun normalize-lit (lit not-flg iff-flg)
+  (cond ((variablep lit) (if not-flg (dumb-negate-lit lit) lit))
+        ((fquotep lit) (if not-flg
+                           (if (equal lit *nil*) *t* *nil*)
+                         lit))
         ((eq (ffn-symb lit) 'not)
-         (dumb-negate-lit (normalize-lit (fargn lit 1))))
+         (normalize-lit (fargn lit 1) (not not-flg) t))
+        ((eq (ffn-symb lit) 'if)
+         (mv-let
+           (tst tbr fbr)
+           (if (ffn-symb-p (fargn lit 1) 'not)
+               (mv (fargn (fargn lit 1) 1)
+                   (fargn lit 3)
+                   (fargn lit 2))
+             (mv (fargn lit 1) (fargn lit 2) (fargn lit 3)))
+           (let ((tst (normalize-lit tst nil t))
+                 (tbr (normalize-lit tbr not-flg iff-flg))
+                 (fbr (normalize-lit fbr not-flg iff-flg)))
+             (mv-let
+               (tst tbr fbr)
+               (if (ffn-symb-p tst 'not)
+                   (mv (my-negate-lit tst) fbr tbr)
+                 (mv tst tbr fbr))
+               (fcons-term*
+                'if
+                tst
+                (cond ((and (equal tst tbr) iff-flg)
+                       *t*)
+                      ((negated-p tst tbr)
+                       *nil*)
+                      (t tbr))
+                (cond ((equal tst fbr)
+                       *nil*)
+                      ((negated-p tst fbr)
+                       *t*)
+                      (t fbr)))))))
         ((member-eq (ffn-symb lit) *auto-termination-fns*)
          (let* ((pair (cdr (assoc-eq (ffn-symb lit) *auto-termination-fn-alist*)))
                 (formals (car pair))
                 (body (cdr pair)))
-           (normalize-lit (subcor-var formals (fargs lit) body))))
-        (t (cons-term (ffn-symb lit)
-                      (normalize-lit-lst (fargs lit))))))
+           (normalize-lit (subcor-var formals (fargs lit) body) not-flg iff-flg)))
+        (t (let ((x (cons-term (ffn-symb lit)
+                               (normalize-lit-lst (fargs lit)))))
+             (if not-flg (dumb-negate-lit x) x)))))
 
 (defun normalize-lit-lst (lst)
   (cond ((endp lst) nil)
-        (t (cons (normalize-lit (car lst))
+        (t (cons (normalize-lit (car lst) nil nil)
                  (normalize-lit-lst (cdr lst))))))
 )
-
-(defun push-down-ifs (x)
-  (case-match x
-    (('not ('if tst tbr fbr))
-     `(if ,tst
-          ,(push-down-ifs (dumb-negate-lit tbr))
-        ,(push-down-ifs (dumb-negate-lit fbr))))
-    (('if tst tbr fbr)
-     `(if ,tst
-          ,(push-down-ifs tbr)
-        ,(push-down-ifs fbr)))
-    (& x)))
-
-(defun push-down-ifs-lst (lst)
-  (cond ((endp lst) nil)
-        (t (cons (push-down-ifs (car lst))
-                 (push-down-ifs-lst (cdr lst))))))
 
 (defun normalize-clause (clause)
 
@@ -76,7 +121,7 @@
 
 ; Replace (not (and x y)) by {(not x),(not y)}.
 
-  (flatten-ands-in-lit-lst (push-down-ifs-lst (normalize-lit-lst clause))))
+  (flatten-ands-in-lit-lst (normalize-lit-lst clause)))
 
 (defun termination-clause-set-2 (calls tests fn-subst)
   (cond ((endp calls) nil)
