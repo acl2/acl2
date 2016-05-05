@@ -1215,7 +1215,6 @@
                            (acl2::mv-nth-cons-meta
                             member-p-of-remove-duplicates-equal
                             disjoint-p-of-remove-duplicates-equal
-                            acl2::remove-duplicates-equal-under-set-equiv
                             rb-in-terms-of-nth-and-pos-in-system-level-mode
                             disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
                             rewrite-rb-to-rb-alt
@@ -1270,7 +1269,6 @@
                             acl2::mv-nth-cons-meta
                             member-p-of-remove-duplicates-equal
                             disjoint-p-of-remove-duplicates-equal
-                            acl2::remove-duplicates-equal-under-set-equiv
                             disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
                             disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p))
            :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-mode)

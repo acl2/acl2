@@ -925,7 +925,6 @@
     (:rewrite bitops::logsquash-of-loghead-zero)
     (:rewrite default-unary-minus)
     (:rewrite len-of-rb-in-programmer-level-mode)
-    (:type-prescription acl2::bitp$inline)
     (:type-prescription acl2::true-listp-append)
     (:linear bitops::upper-bound-of-logand . 2)
     (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)

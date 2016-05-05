@@ -77,6 +77,7 @@ in the system-level mode can be found in
   (local
    (encapsulate
      ()
+     ;; This is nowhere near finished right now.
      (local (include-book "zeroCopy/zeroCopy-in-marking-mode" :ttags :all)))))
 
 ;; ======================================================================

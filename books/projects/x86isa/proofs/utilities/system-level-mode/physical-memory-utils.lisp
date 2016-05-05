@@ -439,7 +439,6 @@
                              rm32-rb-system-level-mode-proof-helper
                              member-p-cons
                              acl2::commutativity-of-logior
-                             acl2::cdr-of-repeat-increment
                              mv-nth-2-rcl-spec-16
                              write-to-physical-memory-xw-mem-member-p
                              (:linear bitops::logior-<-0-linear-2)

@@ -6,6 +6,7 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (include-book "std/lists/sets" :dir :system))
 
 (local (in-theory (e/d () (unsigned-byte-p signed-byte-p))))
 
@@ -385,7 +386,8 @@
   (implies (member-equal a b)
            (subsetp-equal (gather-qword-addresses-corresponding-to-1-entry a x86)
                           (gather-qword-addresses-corresponding-to-entries-aux b x86)))
-  :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries-aux) ()))))
+  :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-entries-aux)
+                                   ()))))
 
 (defthmd subsetp-equal-and-gather-qword-addresses-corresponding-to-entries-aux-1
   (implies (subsetp-equal (cons e a) b)
