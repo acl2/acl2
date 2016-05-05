@@ -70,12 +70,16 @@
 
 ; What a pain.  We have to implement a symbol parser.
 
-(defun parse-symbol-name-part (x n xl
-                                 bar-escape-p        ; have we read an opening bar?
-                                 slash-escape-p      ; have we just read a backslash?
-                                 some-chars-p        ; have we read any chars at all yet?
-                                 nice-error-msg-p    ; do we care about nice error msgs?
-                                 acc)
+(defun parse-symbol-name-part
+  (x n xl                ; usual string stuff
+     bar-escape-p        ; have we read an opening bar?
+     slash-escape-p      ; have we just read a backslash?
+     some-chars-p        ; have we read any chars at all yet?
+     nice-error-msg-p    ; optimization: do we care about nice error messages?  we often
+                         ; don't (e.g., for autolinking), and it's inefficient to create
+                         ; strings for error messages, so use crappy error messages if
+                         ; we don't care.
+     acc)
   ;; ==> (MV ERROR NAME N-PRIME)
   (declare (type string x))
 
@@ -137,23 +141,20 @@
     ;; Otherwise add the char verbatim
     (parse-symbol-name-part x n+1 xl nil nil t nice-error-msg-p (cons char acc))))
 
-(defun parse-symbol (x n xl
-                       base-pkg ; default package to intern into
-                       kpa      ; (known-package-alist state)
-                       nice-error-msg-p)
-  ;; ==> (MV ERROR SYMBOL N-PRIME)
+(defun parse-symbol-main (x n xl base-pkg nice-error-msg-p)
+  ;; ==> (MV ERROR PKG-NAME SYM-NAME N-PRIME)
   (declare (type string x))
 
 ; This extends parse-symbol-name-part to read both parts.  We support keywords,
-; etc.  This is definitely not going to handle everything in Common Lisp, but
-; whatever.
+; etc.  We don't check whether the PKG-NAME is known to ACL2 or try to actually
+; intern a symbol, but we check everything else.
 
   (b* (((when (= xl n))
         (mv (if nice-error-msg-p
                 (str::cat "Near " (error-context x n xl)
                           ": end of string while trying to parse a symbol.")
               "Symbol Parse Error")
-            nil n))
+            nil nil n))
        (char (char x n))
 
        ((when (eql char #\:))
@@ -161,30 +162,24 @@
         (b* (((mv error name n)
               (parse-symbol-name-part x (+ n 1) xl nil nil nil nice-error-msg-p nil)))
           (if error
-              (mv error nil n)
-            (mv nil (intern-in-package-of-symbol name :keyword) n))))
+              (mv error nil nil n)
+            (mv nil "KEYWORD" name n))))
 
        ;; Could start with a package name, or with the symbol name (for symbols
        ;; in the base pkg). Either way, we need to read a symbol name part.
        ((mv error part1 n)
         (parse-symbol-name-part x n xl nil nil nil nice-error-msg-p nil))
        ((when error)
-        (mv error nil n))
+        (mv error nil nil n))
 
        ((when (and (< (+ n 1) xl)
                    (eql (char x n) #\:)
                    (eql (char x (+ n 1)) #\:)))
         ;; Found "::" after the first part, so it's a package name.
-        (b* (((unless (assoc-equal part1 kpa))
-              (mv (if nice-error-msg-p
-                      (str::cat "Near " (error-context x n xl)
-                                ": not a known package: " part1 ".")
-                    "Symbol Parse Error")
-                  nil n))
-             ((mv error part2 n)
+        (b* (((mv error part2 n)
               (parse-symbol-name-part x (+ n 2) xl nil nil nil nice-error-msg-p nil))
              ((when error)
-              (mv error nil n))
+              (mv error nil nil n))
              ;; Things look pretty good here.  One weird thing we will try to
              ;; detect is if there are extra colons, e.g., foo::bar::baz should
              ;; be disallowed.  We really want a whitespace or paren or quote
@@ -195,8 +190,8 @@
                       (str::cat "Near " (error-context x n xl)
                                 ": Three layers of colons in symbol name?")
                     "Symbol Parse Error")
-                  nil n)))
-          (mv nil (intern$ part2 part1) n)))
+                  nil nil n)))
+          (mv nil part1 part2 n)))
 
        ;; Didn't find a :: after part1.
        ((when (and (< n xl)
@@ -205,11 +200,34 @@
                 (str::cat "Near " (error-context x n xl)
                           ": Lone colon after symbol name?")
               "Symbol Parse Error")
-            nil n)))
+            nil nil n)))
 
     ;; We seem to have an okay package name, but no ::, so put it into the base
     ;; package.
-    (mv nil (intern-in-package-of-symbol part1 base-pkg) n)))
+    (mv nil (symbol-package-name base-pkg) part1 n)))
+
+(defun parse-symbol (x n xl
+                       base-pkg ; default package to intern into
+                       kpa      ; (known-package-alist state)
+                       nice-error-msg-p)
+  ;; ==> (MV ERROR SYMBOL N-PRIME)
+  (declare (type string x))
+
+; This extends parse-symbol-main to intern the symbol, if the package is known
+; to ACL2.  This is the usual, safe, correct way we should parse a symbol.
+
+  (b* (((mv error pkg-name sym-name n)
+        (parse-symbol-main x n xl base-pkg nice-error-msg-p))
+       ((when error)
+        (mv error nil n))
+       ((unless (assoc-equal pkg-name kpa))
+        (mv (if nice-error-msg-p
+                (str::cat "Near " (error-context x n xl)
+                          ": not a known package: " pkg-name ".")
+              "Symbol Parse Error")
+            nil n))
+       (ans (intern$ sym-name pkg-name)))
+    (mv nil ans n)))
 
 (encapsulate
   ()
@@ -256,9 +274,6 @@
 
      ;; Uh... bug?  feature?
      (assert! (test "123" nil 'acl2::|123| 3)))))
-
-
-
 
 (defun autolink-and-encode (x n xl topics base-pkg kpa acc) ;; ==> ACC
 
