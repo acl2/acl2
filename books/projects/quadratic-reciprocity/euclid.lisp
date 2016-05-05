@@ -3,6 +3,7 @@
 ;; http://www.russinoff.com
 
 (in-package "RTL")
+(include-book "xdoc/top" :dir :system)
 
 (include-book "support/euclid")
 
@@ -10,13 +11,32 @@
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
-;; This book contains proofs of two theorems of Euclid:
+(defsection number-theory
+  :parents (acl2::arithmetic)
+  :short "Quadratic Reciprocity Theorem and other facts from Number Theory")
 
-;;   (1) There exist infinitely many primes.
+(defsection euclid
+  :parents (number-theory)
+  :short "Definition of prime number and two theorems of Euclid"
+  :long "<h3>Overview</h3>
 
-;;   (2) If p is a prime divisor of a*b, then p divides either a or b.
+This book contains proofs of two theorems of Euclid:
+<ol>
+  <li>There exist infinitely many primes.</li>
+  <li>If @('p') is a prime divisor of @('a*b'), then @('p') divides either @('a') or @('b').</li>
+ </ol>"
 
-;; We first list some basic properties of divisibility.
+"We first list some basic properties of divisibility.
+ @(def divides)
+ @(thm divides-leq)
+ @(thm divides-minus)
+ @(thm divides-sum)
+ @(thm divides-product)
+ @(thm divides-transitive)
+ @(thm divides-self)
+ @(thm divides-0)
+ @(thm divides-mod-equal)
+ @(thm divides-mod-0)"
 
 (defn divides (x y)
   (and (acl2-numberp x)
@@ -84,10 +104,17 @@
 
 (in-theory (disable divides))
 
-;; Our definition of primality is based on the following function, which computes
-;; the least divisor of a natural number n that is greater than or equal to k.
-;; (In the book "mersenne", in which we are concerned with efficiency, we shall
-;; introduce an equivalent version that checks for divisors only up to sqrt(n).)
+"Our definition of primality is based on the following function, which computes
+ the least divisor of a natural number @('n') that is greater than or equal to @('k').
+ (In the book @(see mersenne), in which we are concerned with efficiency, we shall
+ introduce an equivalent version that checks for divisors only up to @('sqrt(n)').)
+ @(def least-divisor)
+ @(thm least-divisor-divides)
+ @(thm least-divisor-is-least)
+ @(def primep)
+ @(thm primep-gt-1)
+ @(thm primep-no-divisor)
+ @(thm primep-least-divisor)"
 
 (defn least-divisor (k n)
   (declare (xargs :measure (:? k n)))
@@ -149,8 +176,14 @@
 
 (in-theory (disable primep))
 
-;; Our formulation of the infinitude of the set of primes is based on a function that
-;; returns a prime that is greater than its argument:
+"Our formulation of the infinitude of the set of primes is based on a function that
+ returns a prime that is greater than its argument:
+ @(def fact)
+ @(def greater-prime)
+ @(thm greater-prime-divides)
+ @(thm divides-fact)
+ @(thm not-divides-fact-plus1)
+ @(thm infinitude-of-primes)"
 
 (defun fact (n)
   (declare (xargs :guard (natp n)))
@@ -187,8 +220,14 @@
 		  (> (greater-prime n) n)))
   :rule-classes ())
 
-;; Our main theorem of Euclid depends on the properties of the greatest common divisor,
-;; which we define according to Euclid's algorithm.
+"Our main theorem of Euclid depends on the properties of the greatest common divisor,
+ which we define according to Euclid's algorithm.
+ @(def g-c-d-nat)
+ @(def g-c-d)
+ @(thm g-c-d-nat-pos)
+ @(thm g-c-d-pos)
+ @(thm divides-g-c-d-nat)
+ @(thm g-c-d-divides)"
 
 (defun g-c-d-nat (x y)
   (declare (xargs :guard (and (natp x)
@@ -236,10 +275,18 @@
 		  (or (= y 0) (divides (g-c-d x y) y))))
   :rule-classes ())
 
-;; It remains to be shown that the gcd of x and y is divisible by any common
-;; divisor of x and y.  This depends on the observation that the gcd may be
-;; expressed as a linear combination r*x + s*y.  We construct the coefficients r
-;; and s explicitly.
+"It remains to be shown that the gcd of @('x') and @('y') is divisible by any common
+ divisor of @('x') and @('y').  This depends on the observation that the gcd may be
+ expressed as a linear combination @({r*x + s*y}).  We construct the coefficients @('r')
+ and @('s') explicitly.
+ @(def r-nat)
+ @(def s-nat)
+ @(thm r-s-nat)
+ @(def r-int)
+ @(def s-int)
+ @(thm g-c-d-linear-combination)
+ @(thm divides-g-c-d)
+ @(thm g-c-d-prime)"
 
 (mutual-recursion
 
@@ -277,37 +324,40 @@
 		(g-c-d-nat x y)))
   :rule-classes ())
 
-(defun r (x y)
+(defun r-int (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< x 0)
       (- (r-nat (abs x) (abs y)))
     (r-nat (abs x) (abs y))))
 
-(defun s (x y)
+(defun s-int (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< y 0)
       (- (s-nat (abs x) (abs y)))
     (s-nat (abs x) (abs y))))
+#|
+These type-prescription rules are redundant.
+ACL2 derives them from definitions.
 
-(defthm integerp-r
-    (integerp (r x y))
+(defthm integerp-r-int
+    (integerp (r-int x y))
   :rule-classes (:type-prescription))
 
-(defthm integerp-s
-    (integerp (s x y))
+(defthm integerp-s-int
+    (integerp (s-int x y))
   :rule-classes (:type-prescription))
-
+|#
 (defthm g-c-d-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r x y) x)
-		   (* (s x y) y))
+	     (= (+ (* (r-int x y) x)
+		   (* (s-int x y) y))
 		(g-c-d x y)))
   :rule-classes ())
 
-(in-theory (disable g-c-d r s))
+(in-theory (disable g-c-d r-int s-int))
 
 (defthm divides-g-c-d
     (implies (and (integerp x)
@@ -325,7 +375,8 @@
 	     (= (g-c-d p a) 1))
   :rule-classes ())
 
-;; the main theorem:
+"The main theorem:
+ @(thm euclid)"
 
 (defthm euclid
     (implies (and (primep p)
@@ -336,3 +387,4 @@
 	     (not (divides p (* a b))))
   :rule-classes ())
 
+)

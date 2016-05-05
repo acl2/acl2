@@ -2013,7 +2013,8 @@
          (access-event-tuple-skipped-proofs-p
           (cddr
            (car
-            (lookup-world-index 'event index wrld)))))))
+            (lookup-world-index 'event index wrld))))
+         (not (getpropc name 'predefined nil wrld)))))
 
 (defun negate-untranslated-form (x iff-flg)
   (cond ((and iff-flg
