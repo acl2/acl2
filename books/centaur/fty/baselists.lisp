@@ -33,6 +33,7 @@
 (in-package "ACL2")
 (include-book "deftypes")
 (include-book "basetypes")
+(include-book "std/strings/eqv" :dir :system)
 
 (defxdoc fty::baselists
   :parents (fty::fty)
@@ -41,7 +42,13 @@ suitable fixing functions and equivalence relations, for use in the @(see
 fty::fty-discipline)."
   :long "<p>This is similar in spirit to the @(see fty::basetypes) book: it
 arranges so that various list recognizers like @(see integer-listp), @(see
-character-listp), etc., can be used with FTY.</p>")
+boolean-listp), etc., can be directly used with FTY.</p>
+
+<p>Special note: even though @(see character-listp) and @(see string-listp)
+aren't listed below, you will still be able to use them with FTY after
+including the @('baselists') book.  For historical reasons these types are
+defined in a special way in the @(see std/strings) library, see in particular
+@(see str::equivalences).</p>")
 
 (local (xdoc::set-default-parents fty::baselists))
 
@@ -67,11 +74,7 @@ character-listp), etc., can be used with FTY.</p>")
   :true-listp t
   :elementp-of-nil t)
 
-(fty::deflist character-list
-  :elt-type character
-  :pred character-listp
-  :true-listp t
-  :elementp-of-nil nil)
+;; character-listp is handled specially in std/strings/eqv.
 
 (fty::deflist integer-list
   :elt-type int
@@ -97,9 +100,4 @@ character-listp), etc., can be used with FTY.</p>")
   :true-listp t
   :elementp-of-nil t)
 
-(fty::deflist string-list
-  :elt-type string
-  :pred string-listp
-  :true-listp t
-  :elementp-of-nil nil)
-
+;; string-listp is handled specially in std/strings/eqv.
