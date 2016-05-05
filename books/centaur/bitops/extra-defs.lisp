@@ -46,6 +46,20 @@ instructions.</p>")
 
 (local (in-theory (enable* arith-equiv-forwarding)))
 
+(define nth-slice ((size natp  "size of a slice")
+                   (n    natp  "which slice")
+                   (x    integerp))
+  :returns (slice natp :rule-classes :type-prescription)
+  (loghead size (logtail (* (lnfix size) (lnfix n)) x))
+  ///
+  (defcong nat-equiv equal (nth-slice size n x) 1)
+  (defcong nat-equiv equal (nth-slice size n x) 2)
+  (defcong int-equiv equal (nth-slice size n x) 3)
+
+  (defret unsigned-byte-p-of-nth-slice
+    (implies (and (<= (nfix size) width)
+                  (natp width))
+             (unsigned-byte-p width (nth-slice size n x)))))
 
 (define nth-slice2 ((n natp)
                     (x integerp))
