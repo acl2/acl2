@@ -193,7 +193,11 @@
 
 
 (defpkg "BV"
-    (union-eq *acl2-exports*
-	      (union-eq *common-lisp-symbols-from-main-lisp-package*
-			*ihs-symbols*)))
+; Matt K. mod April 2016: removed bitp to avoid name clash, now that bitp is
+; defined in ACL2.
+  (set-difference-eq
+   (union-eq *acl2-exports*
+             (union-eq *common-lisp-symbols-from-main-lisp-package*
+                       *ihs-symbols*))
+   '(bitp)))
 

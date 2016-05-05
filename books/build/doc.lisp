@@ -172,7 +172,7 @@ Make 3.81.\"</p>
 that your @('perl') executable is in your @('$PATH').</p>
 
 <p>We assume you have <a href='http://www.cs.utexas.edu/~moore/acl2/'>ACL2</a>
-or one of its variants like ACL2(h), ACL2(p), or ACL2(r) installed, and that
+or one of its variants like ACL2(p) or ACL2(r) installed, and that
 you know how to launch ACL2&mdash;usually with a script named @('saved_acl2')
 or similar.</p>
 
@@ -1196,7 +1196,8 @@ certification using @('make')"
  <li>@('ccl-only'): only certify when the host Lisp is CCL</li>
 
  <li>@('hons-only'): only certify when special @(tsee hons) support is
- available, i.e., in ACL2(h)</li>
+ available (now always the case; required ACL2(h) until the @(see
+ acl2::hons-and-memoization) features were incorporated into ACL2)</li>
 
  <li>@('non-acl2r'): only certify when the (@see real) numbers are NOT
  supported, i.e., when NOT using ACL2(r)</li>

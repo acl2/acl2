@@ -17,7 +17,6 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/top" :dir :system)
 (include-book "make-event/eval-check" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

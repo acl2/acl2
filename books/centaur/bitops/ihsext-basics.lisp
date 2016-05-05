@@ -3050,7 +3050,42 @@ off looking at the source code.</p>")
 
   (defthm signed-byte-p-n-minus1
     (equal (signed-byte-p n -1)
-           (< 0 (nfix n)))))
+           (< 0 (nfix n))))
+
+  (local (defun signed-byte-p-of-logtail-ind (size1 size i)
+           (if (zp size)
+               (list size1 i)
+             (signed-byte-p-of-logtail-ind (1+ size1) (1- size) i))))
+
+  (defthm signed-byte-p-of-logtail
+    (equal (signed-byte-p size (logtail shift i))
+           (and (posp size)
+                (signed-byte-p (+ size (nfix shift)) (ifix i))))
+    :hints (("goal" :induct (signed-byte-p-of-logtail-ind size shift i))))
+
+  (defthm signed-byte-p-of-logcdr
+    (equal (signed-byte-p width (logcdr x))
+           (and (posp width)
+                (signed-byte-p (+ 1 width) (ifix x)))))
+
+
+  (local (in-theory (disable minus-to-lognot)))
+
+  (local (defun signed-byte-of-ash-ind (shift n)
+           (declare (xargs :measure (abs (ifix shift))))
+           (if (zip shift)
+               n
+             (if (< 0 shift)
+                 (signed-byte-of-ash-ind (1- shift) (1- n))
+               (signed-byte-of-ash-ind (1+ shift) (1+ n))))))
+
+  (defthm signed-byte-p-of-ash-split
+    (equal (signed-byte-p n (ash x shift))
+           (and (posp n)
+                (or (zip x)
+                    (signed-byte-p (- n (ifix shift)) x))))
+    :hints(("Goal" :in-theory (enable signed-byte-p** ash**)
+            :induct (signed-byte-of-ash-ind shift n)))))
 
 
 
@@ -3100,6 +3135,11 @@ off looking at the source code.</p>")
                           (:instance logapp-fixes
                                      (size (1- size)) (i (logcdr i))))
              :in-theory (disable logapp (force)
+
+; Modified by Matt K. April 2016 because the addition of a type-set bit for the
+; set {1} sent the proof in a different direction with this rewrite rule.
+
+                                 acl2::<-+-negative-0-1
                                  acl2::int-equiv-implies-equal-logapp-2
                                  acl2::int-equiv-implies-equal-logapp-3
                                  acl2::nat-equiv-implies-equal-logapp-1)))
@@ -3679,6 +3719,27 @@ off looking at the source code.</p>")
     :hints(("Goal" :in-theory (e/d (unsigned-byte-p**)
                                    (unsigned-byte-p))
             :induct (logmask width))))
+
+  (local (defthmd signed-byte-p-of-logmask-lemma
+           (signed-byte-p (+ 1 (nfix width)) (logmask width))
+           :hints(("Goal" :in-theory (e/d* (signed-byte-p** logmask**
+                                                            ihsext-inductions)
+                                           (signed-byte-p logmask))
+                   :induct (logmask width)))))
+
+  (defthm signed-byte-p-monotonicity
+    (implies (and (signed-byte-p a x)
+                  (<= a b)
+                  (integerp b))
+             (signed-byte-p b x))
+    :hints(("Goal" :in-theory (enable signed-byte-p**))))
+
+  (defthm signed-byte-p-of-logmask
+    (implies (and (posp width2)
+                  (<= (+ 1 (nfix width)) width2))
+             (signed-byte-p width2 (logmask width)))
+    :hints(("Goal" :use signed-byte-p-of-logmask-lemma
+            :in-theory (disable signed-byte-p logmask))))
 
   (defthmd ash-minus-1-is-logmask
     (implies (natp n)

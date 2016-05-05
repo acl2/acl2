@@ -1783,23 +1783,10 @@ the @(':pre-bind') argument accepts a list of @(see b*) bindings that occur
 before the binding of the return values.  You may also just want to not share
 names between your formals and returns.</p>")
 
-(defun defret-fn (name args disablep world)
+(defun defret-core (name concl-term kwd-alist disablep guts world)
   (b* ((__function__ 'defret)
-       ((mv kwd-alist args)
-        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind
-                                            :otf-flg)
-                          args nil))
-       ((unless (consp args))
-        (raise "No body"))
-       ((when (cdr args))
-        (raise "Extra junk: ~x0" (cdr args)))
-       (concl-term (car args))
-       (fn (let ((look (assoc :fn kwd-alist)))
-             (if look (cdr look) (get-define-current-function world))))
-       (guts (cdr (assoc fn (get-define-guts-alist world))))
-       ((unless guts)
-        (raise "No define-guts for ~x0" fn))
        ((defguts guts) guts)
+       (fn guts.name)
        ((unless guts.returnspecs)
         (raise "No return names provided for ~x0" fn))
        (names (returnspeclist->names guts.returnspecs))
@@ -1822,10 +1809,29 @@ names between your formals and returns.</p>")
                 `(implies ,hyp ,concl)
               concl)))
     `(,(if disablep 'defthmd 'defthm) ,name
-       ,thm
-       ,@(and hints?        `(:hints ,(cdr hints?)))
-       ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
-       ,@(and rule-classes? `(:rule-classes ,(cdr rule-classes?))))))
+      ,thm
+      ,@(and hints?        `(:hints ,(cdr hints?)))
+      ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
+      ,@(and rule-classes? `(:rule-classes ,(cdr rule-classes?))))))
+
+
+(defun defret-fn (name args disablep world)
+  (b* ((__function__ 'defret)
+       ((mv kwd-alist args)
+        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind
+                                            :otf-flg)
+                          args nil))
+       ((unless (consp args))
+        (raise "No body"))
+       ((when (cdr args))
+        (raise "Extra junk: ~x0" (cdr args)))
+       (concl-term (car args))
+       (fn (let ((look (assoc :fn kwd-alist)))
+             (if look (cdr look) (get-define-current-function world))))
+       (guts (cdr (assoc fn (get-define-guts-alist world))))
+       ((unless guts)
+        (raise "No define-guts for ~x0" fn)))
+    (defret-core name concl-term kwd-alist disablep guts world)))
 
 
 (defmacro defret (name &rest args)

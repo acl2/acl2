@@ -67,7 +67,7 @@
                                  ,aignet-transv ,aignetv)))))
   :verify-guards nil
   :guard (and (id-existsp id aignet)
-              (<= (num-nodes aignet)
+              (<= (+ 1 (max-fanin aignet))
                   (aigs-length aigtrans)))
   :measure (nfix id)
   (b* ((type (id->type id aignet)))
@@ -87,7 +87,8 @@
   (defcong nth-equiv equal (id-trans-logic id aignet-vals aignet) 2
     :event-name id-trans-logic-aignet-eval-nth-equiv-cong)
 
-  (verify-guards id-trans-logic)
+  (verify-guards id-trans-logic
+    :hints(("Goal" :in-theory (enable id-less-than-max-fanin-by-ctype))))
 
   (defthm id-trans-logic-aignet-trans-frame
     (implies (not (equal (id->type m aignet) (in-type)))
@@ -111,13 +112,14 @@
 
 
 (define aignet-trans-invariant ((n natp) aigtrans aignet)
-  :guard (and (<= (num-nodes aignet) (aigs-length aigtrans))
-              (<= n (num-nodes aignet)))
+  :guard (and (<= (+ 1 (max-fanin aignet)) (aigs-length aigtrans))
+              (<= n (+ 1 (max-fanin aignet))))
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   (if (zp n)
       t
-    (and (equal (id-trans-logic (1- n) aigtrans aignet)
-                (get-aig (1- n) aigtrans))
+    (and (or (int= (id->type (1- n) aignet) (out-type))
+             (equal (id-trans-logic (1- n) aigtrans aignet)
+                    (get-aig (1- n) aigtrans)))
          (aignet-trans-invariant (1- n) aigtrans aignet)))
   ///
   (defcong nat-equiv equal (aignet-trans-invariant n aigtrans aignet) 1)
@@ -125,7 +127,8 @@
 
   (defthm aignet-trans-id-when-aignet-trans-invariant
     (implies (and (aignet-trans-invariant n aigtrans aignet)
-                  (< (nfix m) (nfix n)))
+                  (< (nfix m) (nfix n))
+                  (not (equal (ctype (stype (car (lookup-id m aignet)))) :output)))
              (equal (nth m aigtrans)
                     (id-trans-logic m aigtrans aignet))))
 
@@ -147,11 +150,12 @@
   (defiteration aignet-translate (aigtrans aignet)
     (declare (xargs :stobjs (aigtrans aignet)
                     :guard
-                    (<= (num-nodes aignet) (aigs-length aigtrans))
+                    (<= (+ 1 (max-fanin aignet)) (aigs-length aigtrans))
                     :guard-hints
                     ('(:in-theory (enable aignet-idp)))))
     (b* ((type (id->type id aignet))
-         ((when (int= type (in-type)))
+         ((when (or (int= type (in-type))
+                    (int= type (out-type))))
           aigtrans)
          (aig
           (aignet-case
@@ -160,13 +164,12 @@
                       (f1 (gate-id->fanin1 id aignet)))
                    (aig-and (lit->aig f0 aigtrans)
                             (lit->aig f1 aigtrans)))
-           :out (lit->aig (co-id->fanin id aignet) aigtrans)
            :const nil)))
       (set-aig id aig aigtrans))
     :returns aigtrans
     :index id
     :first 0
-    :last (num-nodes aignet))
+    :last (+ 1 (max-fanin aignet)))
 
   (in-theory (disable aignet-translate))
   (local (in-theory (enable aignet-translate)))
@@ -217,7 +220,7 @@
 
   (defthm aignet-trans-invariant-of-aignet-translate
     (aignet-trans-invariant
-     (+ 1 (node-count aignet))
+     (+ 1 (node-count (find-max-fanin aignet)))
      (aignet-translate aigtrans aignet) aignet))
 
   (defthm aignet-aigs-size-of-aignet-translate
@@ -231,9 +234,10 @@
                                    aigtrans aignet
                                    aig-acc)
   :enabled t
-  :guard (and (<= (num-nodes aignet) (aigs-length aigtrans))
+  :guard (and (<= (+ 1 (max-fanin aignet)) (aigs-length aigtrans))
               (<= n (num-outs aignet))
               (true-listp aig-acc))
+  :guard-hints (("goal" :in-theory (enable LOOKUP-STYPE-IN-BOUNDS)))
   :measure (nfix (- (nfix (num-outs aignet))
                     (nfix n)))
   (b* (((when (mbe :logic (zp (- (num-outs aignet)
@@ -242,12 +246,12 @@
         (reverse aig-acc)))
     (aignet-trans-get-outs-aux
      (1+ (lnfix n)) aigtrans aignet
-     (cons (get-aig (outnum->id n aignet) aigtrans)
+     (cons (lit->aig (co-id->fanin (outnum->id n aignet) aignet) aigtrans)
            aig-acc))))
 
 (define aignet-trans-get-outs ((n :type (integer 0 *))
                                aigtrans aignet)
-  :guard (and (<= (num-nodes aignet) (aigs-length aigtrans))
+  :guard (and (<= (+ 1 (max-fanin aignet)) (aigs-length aigtrans))
               (<= n (num-outs aignet)))
   :measure (nfix (- (nfix (num-outs aignet))
                     (nfix n)))
@@ -259,7 +263,7 @@
                                       (nfix n)))
                         :exec (int= n (num-outs aignet))))
              nil))
-         (cons (get-aig (outnum->id n aignet) aigtrans)
+         (cons (lit->aig (co-id->fanin (outnum->id n aignet) aignet) aigtrans)
                (aignet-trans-get-outs (1+ (lnfix n)) aigtrans aignet)))
        :exec
        (aignet-trans-get-outs-aux n aigtrans aignet nil))
@@ -273,8 +277,9 @@
 
 (define aignet-trans-get-nxsts ((n :type (integer 0 *))
                                 aigtrans aignet)
-  :guard (and (<= (num-nodes aignet) (aigs-length aigtrans))
+  :guard (and (<= (+ 1 (max-fanin aignet)) (aigs-length aigtrans))
               (<= (nfix n) (num-regs aignet)))
+  :guard-hints (("goal" :in-theory (enable LOOKUP-STYPE-IN-BOUNDS)))
   :measure (nfix (- (nfix (num-regs aignet))
                     (nfix n)))
   (b* (((when (mbe :logic (zp (- (nfix (num-regs aignet))
@@ -282,13 +287,13 @@
                    :exec (int= n (num-regs aignet))))
         nil)
        (reg (regnum->id n aignet))
-       (nxst (reg-id->nxst reg aignet)))
-    (cons (get-aig nxst aigtrans)
+       (nxst (reg-id->nxst-lit reg aignet)))
+    (cons (lit->aig nxst aigtrans)
           (aignet-trans-get-nxsts (1+ (lnfix n)) aigtrans aignet))))
 
 (define aignet-trans-set-ins ((n :type (integer 0 *))
                               innames aigtrans aignet)
-  :guard (and (<= (num-nodes aignet) (aigs-length aigtrans))
+  :guard (and (<= (+ 1 (max-fanin aignet)) (aigs-length aigtrans))
               (<= n (num-ins aignet))
               (equal (len innames) (- (num-ins aignet) n)))
   :measure (nfix (- (nfix (num-ins aignet))
@@ -308,7 +313,7 @@
 
 (define aignet-trans-set-regs ((n :type (integer 0 *))
                                regnames aigtrans aignet)
-  :guard (and (<= (num-nodes aignet) (aigs-length aigtrans))
+  :guard (and (<= (+ 1 (max-fanin aignet)) (aigs-length aigtrans))
               (<= (nfix n) (num-regs aignet))
               (equal (len regnames) (- (num-regs aignet) n)))
   :measure (nfix (- (nfix (num-regs aignet))
@@ -341,7 +346,7 @@
                                  (acl2::list-fix regnames)))))
   (b* (((local-stobjs aigtrans)
         (mv outlist regalist aigtrans))
-       (aigtrans (resize-aigs (num-nodes aignet) aigtrans))
+       (aigtrans (resize-aigs (+ 1 (max-fanin aignet)) aigtrans))
        (aigtrans (aignet-trans-set-ins 0 innames aigtrans aignet))
        (aigtrans (aignet-trans-set-regs 0 regnames aigtrans aignet))
        (aigtrans (aignet-translate aigtrans aignet))

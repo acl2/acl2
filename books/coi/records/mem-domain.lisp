@@ -626,12 +626,8 @@
   :hints (("Goal" :in-theory (enable MEM::DOMAIN-AUX)
            :do-not '(generalize eliminate-destructors))))
 
-; The definition of bitp here was changed 11/10/2012 by Matt K. to match the
-; definition of bitp in books/ihs/basic-definitions.lisp (which has changed).
-(defun-inline bitp (b)
-  (declare (xargs :guard t))
-  (or (eql b 0)
-      (eql b 1)))
+; The definition of bitp here was deleted April 2016 by Matt K. now that
+; bitp is defined in ACL2.
 
 (defun bit-listp (lst)
   (declare (xargs :guard t))

@@ -47,11 +47,13 @@
 
   (defiteration aignet-count-refs (aignet-refcounts aignet)
     (declare (xargs :stobjs (aignet-refcounts aignet)
-                    :guard (<= (num-nodes aignet) (u32-length aignet-refcounts))
+                    :guard (<= (+ 1 (max-fanin aignet)) (u32-length aignet-refcounts))
                     :guard-hints ('(:do-not-induct t
                                     :in-theory (enable aignet-idp)))))
     (b* ((id n)
-         (aignet-refcounts (set-u32 id 0 aignet-refcounts)))
+         (aignet-refcounts (if (<= id (max-fanin aignet))
+                               (set-u32 id 0 aignet-refcounts)
+                             aignet-refcounts)))
       (aignet-case
        (id->type id aignet)
        :gate  (b* ((id0 (lit-id (gate-id->fanin0 id aignet)))
@@ -73,14 +75,26 @@
   (local (in-theory (enable aignet-count-refs)))
 
   (defthm aignet-refcounts-sizedp-after-aignet-refcounts-iter
-    (implies (< (node-count aignet) (len aignet-refcounts))
-             (< (node-count aignet)
+    (implies (< (node-count (find-max-fanin aignet)) (len aignet-refcounts))
+             (< (node-count (find-max-fanin aignet))
                 (len (aignet-count-refs-iter n aignet-refcounts aignet))))
     :hints((acl2::just-induct-and-expand
             (aignet-count-refs-iter n aignet-refcounts aignet)))
     :rule-classes :linear)
 
   (defthm aignet-refcounts-sizedp-after-aignet-refcounts
-    (implies (< (node-count aignet) (len aignet-refcounts))
-             (< (node-count aignet) (len (aignet-count-refs aignet-refcounts aignet))))
+    (implies (< (node-count (find-max-fanin aignet)) (len aignet-refcounts))
+             (< (node-count (find-max-fanin aignet)) (len (aignet-count-refs aignet-refcounts aignet))))
+    :rule-classes :linear)
+
+  (defthm aignet-count-refs-iter-does-not-shrink-refcounts
+    (<= (len aignet-refcounts)
+        (len (aignet-count-refs-iter n aignet-refcounts aignet)))
+    :rule-classes :linear
+    :hints(("Goal" :in-theory (enable aignet-count-refs-iter))))
+
+  (defthm aignet-count-refs-does-not-shrink-refcounts
+    (<= (len aignet-refcounts)
+        (len (aignet-count-refs aignet-refcounts aignet)))
     :rule-classes :linear))
+

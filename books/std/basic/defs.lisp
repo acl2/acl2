@@ -33,18 +33,6 @@
 
 (local (xdoc::set-default-parents std/basic))
 
-(defsection bitp
-  :parents (std/basic logops-definitions)
-  :short "Bit recognizer.  @('(bitp b)') recognizes 0 and 1."
-  :long "<p>This is a predicate form of the @(see type-spec) declaration
-@('(TYPE BIT b)').</p>"
-
-  (defun-inline bitp (b)
-    (declare (xargs :guard t))
-    (or (eql b 0)
-        (eql b 1)))
-  )
-
 (defsection bfix
   :parents (std/basic logops-definitions bitp)
   :short "Bit fix.  @('(bfix b)') is a fixing function for @(see bitp)s.  It
@@ -55,7 +43,14 @@
     (declare (xargs :guard t))
     (if (eql b 1)
         1
-      0)))
+      0))
+
+  (defthm bitp-bfix
+    (bitp (bfix b)))
+
+  (defthm bfix-bitp
+    (implies (bitp b)
+             (equal (bfix b) b))))
 
 (defsection lbfix
   :parents (std/basic logops-definitions bitp)
@@ -66,16 +61,6 @@ expands to just @('b')."
 
   (defmacro lbfix (x)
     `(mbe :logic (bfix ,x) :exec ,x)))
-
-(defsection bitp-basics
-  :extension bitp
-
-  (defthm bitp-bfix
-    (bitp (bfix b)))
-
-  (defthm bfix-bitp
-    (implies (bitp b)
-             (equal (bfix b) b))))
 
 (defsection maybe-bitp
   :parents (std/basic bitp)

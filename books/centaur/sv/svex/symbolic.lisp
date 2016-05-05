@@ -1986,7 +1986,11 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     (implies (and (or (booleanp x) (natp x))
                   (nat-bool-listp y))
              (nat-bool-listp (aig-scons x y)))
-    :hints(("Goal" :in-theory (enable gl::bfr-scons)))))
+    :hints(("Goal" :in-theory (enable gl::bfr-scons))))
+
+  (defthm nat-bool-listp-of-list-fix
+    (implies (nat-bool-listp x)
+             (nat-bool-listp (list-fix x)))))
 
 (define nat-bool-list-nats ((x nat-bool-listp))
   :prepwork ((local (in-theory (enable nat-bool-listp))))
@@ -1997,6 +2001,10 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
       (cons (lnfix (car x))
             (nat-bool-list-nats (cdr x)))))
   ///
+  (defthm nat-bool-list-nats-of-list-fix
+    (equal (nat-bool-list-nats (list-fix x))
+           (nat-bool-list-nats x)))
+
   (defthm nat-bool-list-nats-of-aig-sterm
     (equal (nat-bool-list-nats (aig-sterm x))
            (if (booleanp x)
@@ -2025,6 +2033,10 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
              (<= (lnfix bound) (lnfix (car x))))
          (nat-bool-list-lower-boundp bound (cdr x))))
   ///
+  (defthm nat-bool-list-lower-boundp-of-list-fix
+    (equal (nat-bool-list-lower-boundp bound (list-fix x))
+           (nat-bool-list-lower-boundp bound x)))
+
   (defthm nat-bool-list-nonmember-by-lower-bound
     (implies (and (nat-bool-list-lower-boundp bound x)
                   (< v (nfix bound))
@@ -2045,6 +2057,10 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
              (< (lnfix (car x)) (lnfix bound)))
          (nat-bool-list-upper-boundp bound (cdr x))))
   ///
+  (defthm nat-bool-list-upper-boundp-of-list-fix
+    (equal (nat-bool-list-upper-boundp bound (list-fix x))
+           (nat-bool-list-upper-boundp bound x)))
+
   (defthm nat-bool-list-nonmember-by-upper-bound
     (implies (and (nat-bool-list-upper-boundp bound x)
                   (<= (nfix bound) v)
@@ -2424,7 +2440,9 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     :hints(("Goal" :in-theory (enable aig-list->s nat-bool-listp
                                       nat-bool-list-nats
                                       gl::scdr
-                                      gl::s-endp))))
+                                      gl::s-endp)
+            :induct (aig-list->s x env)
+            :expand ((:Free (env) (aig-list->s x env))))))
 
   (local (defthm equal-nfix-plus-1
            (not (equal x (+ 1 (nfix x))))
@@ -2668,8 +2686,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                    gl::scdr
                                    gl::s-endp)
                                  ((:rules-of-class :type-prescription :here)))
-          :induct (aig-list->s x env))))
-
+          :induct (aig-list->s x env)
+          :expand ((:free (env) (aig-list->s x env))))))
 
 (defthm a4vec-eval-of-append-when-first-superset
   (implies (and (nat-bool-a4vec-p x)
@@ -2693,7 +2711,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                    gl::scdr
                                    gl::s-endp)
                                  ((:rules-of-class :type-prescription :here)))
-          :induct (aig-list->s x env))))
+          :induct (aig-list->s x env)
+          :expand ((:free (env) (aig-list->s x env))))))
 
 
 (defthm a4vec-eval-of-append-when-first-not-intersect

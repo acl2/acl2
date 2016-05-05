@@ -430,7 +430,27 @@ functions) and that it is being given the right number of arguments.</p>
         (implies (and (svexlist-toposort-p sort)
                       (equal (strip-cars contents) (svexlist-fix sort)))
                  (svexlist-toposort-p sort1)))
-      :flag svexlist-toposort)))
+      :flag svexlist-toposort))
+
+  (define svexlist-count-calls-aux ((x svexlist-p) (acc natp))
+    :returns (call-count natp :rule-classes :type-prescription)
+    (if (atom x)
+        (lnfix acc)
+      (svexlist-count-calls-aux (cdr x)
+                                (+ (let ((x1 (car x)))
+                                     (svex-case x1 :call 1 :otherwise 0))
+                                   (lnfix acc)))))
+
+  (define svexlist-count-calls ((x svexlist-p))
+    ;; Has nothing to do with svex-toposort, but you can use
+    ;; svexlist-count-calls of svex-toposort instead of svex-opcount.
+    ;; Tail recursive because it blew up on us before.
+    :returns (call-count natp :rule-classes :type-prescription)
+    :inline t
+    (svexlist-count-calls-aux x 0)))
+
+                      
+
 
 (defsection svex-argmasks-okp
   ;; (svex-argmasks-okp x mask argmasks) if
@@ -894,9 +914,11 @@ functions) and that it is being given the right number of arguments.</p>
                                          (svex-env-fix env)))
     ///
     (defthm svex-rewrite-memo-correct-of-empty
-      (svex-rewrite-memo-correct nil masks env)
+      (implies (atom x)
+               (svex-rewrite-memo-correct x masks env))
       :hints(("Goal" :in-theory (enable svex-rewrite-memo-correct
-                                        svex-rewrite-memo-correct1))))
+                                        svex-rewrite-memo-correct1)))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
     (defthm svex-rewrite-memo-correct-implies
       (implies (svex-rewrite-memo-correct x masks env)
@@ -974,9 +996,11 @@ functions) and that it is being given the right number of arguments.</p>
                                          var))
     ///
     (defthm svex-rewrite-memo-vars-ok-of-empty
-      (svex-rewrite-memo-vars-ok nil var)
+      (implies (atom atom)
+               (svex-rewrite-memo-vars-ok atom var))
       :hints(("Goal" :in-theory (enable svex-rewrite-memo-vars-ok
-                                        svex-rewrite-memo-vars-ok1))))
+                                        svex-rewrite-memo-vars-ok1)))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
     (defthm svex-rewrite-memo-vars-ok-implies
       (implies (svex-rewrite-memo-vars-ok x var)
@@ -1048,7 +1072,7 @@ functions) and that it is being given the right number of arguments.</p>
          ((svex-call x) x)
          ((mv args out-multirefs memo)
           (svexlist-rewrite x.args masks multirefs out-multirefs memo))
-         (res (svex-rewrite-fncall 1000 mask (svex-call->fn x) args multirefp out-multirefs))
+         (res (svex-rewrite-fncall 10000 mask (svex-call->fn x) args multirefp out-multirefs))
          ((unless multirefp)
           (mv res out-multirefs memo)))
       (mv res
@@ -1289,11 +1313,41 @@ functions) and that it is being given the right number of arguments.</p>
            (append (svexlist-fix x) (svex-mask-alist-keys al)))
     :hints(("Goal" :in-theory (enable svexlist-fix)))))
 
+
+(define svexlist-mask-alist/toposort ((x svexlist-p))
+  :returns (mv (mask-al svex-mask-alist-p)
+               (toposort (and (svexlist-p toposort)
+                              (svexlist-toposort-p toposort))))
+  (b* (((mv toposort al) (cwtime (svexlist-toposort x nil nil) :mintime 1))
+       (- (fast-alist-free al))
+       (mask-al
+        (cwtime (svexlist-compute-masks toposort (svexlist-mask-acons x -1 nil)) :mintime 1)))
+    (mv mask-al toposort))
+  ///
+  (fty::deffixequiv svexlist-mask-alist/toposort)
+
+  (defret svexlist-mask-alist/toposort-complete
+    (svex-mask-alist-complete mask-al))
+
+  (defret svexlist-mask-alist/toposort-lookup
+    (implies (member-equal (svex-fix y) (svexlist-fix x))
+             (equal (svex-mask-lookup y mask-al)
+                    -1)))
+
+  (defret svex-argmasks-lookup-of-svexlist-mask-alist/toposort
+    (implies (subsetp-equal (svexlist-fix y) (svexlist-fix x))
+             (equal (svex-argmasks-lookup y mask-al)
+                    (replicate (len y) -1)))
+    :hints(("Goal" :induct (len y)
+            :in-theory (e/d (replicate) (svexlist-mask-alist/toposort))
+            :expand ((svexlist-fix y)
+                     (:free (x) (svex-argmasks-lookup y x)))))))
+
+
 (define svexlist-mask-alist ((x svexlist-p))
   :returns (mask-al svex-mask-alist-p)
-  (b* (((mv toposort al) (cwtime (svexlist-toposort x nil nil) :mintime 1))
-       (- (fast-alist-free al)))
-    (cwtime (svexlist-compute-masks toposort (svexlist-mask-acons x -1 nil)) :mintime 1))
+  (b* (((mv mask-al ?toposort) (svexlist-mask-alist/toposort x)))
+    mask-al)
   ///
   (fty::deffixequiv svexlist-mask-alist)
 
@@ -1312,7 +1366,13 @@ functions) and that it is being given the right number of arguments.</p>
     :hints(("Goal" :induct (len y)
             :in-theory (e/d (replicate) (svexlist-mask-alist))
             :expand ((svexlist-fix y)
-                     (:free (x) (svex-argmasks-lookup y x)))))))
+                     (:free (x) (svex-argmasks-lookup y x))))))
+
+  (defthm svexlist-mask-alist/toposort-to-mask-alist
+    (equal (svexlist-mask-alist/toposort x)
+           (mv (svexlist-mask-alist x)
+               (mv-nth 0 (svexlist-toposort x nil nil))))
+    :hints(("Goal" :in-theory (enable svexlist-mask-alist/toposort)))))
 
 ;; (define svexlist-mask-alist-for-given-masks ((x svexlist-p) (masks svex-mask-alist-p))
 ;;   (b* (((mv toposort al
@@ -1430,18 +1490,24 @@ functions) and that it is being given the right number of arguments.</p>
 
 (define svexlist-rewrite-top ((x svexlist-p) &key (verbosep 'nil))
   :returns (xx svexlist-p)
-  (b* ((masks (svexlist-mask-alist x))
+  (b* (((mv masks toposort) (svexlist-mask-alist/toposort x))
        (multirefs (svexlist-multirefs-top x))
+       (multiref-count (len multirefs))
        (- (and verbosep (cw "opcount before rewrite: ~x0 multiply-referenced: ~x1~%"
-                            (cwtime (svexlist-opcount x))
-                            (len multirefs))))
+                            (svexlist-count-calls toposort)
+                            multiref-count)))
        ((mv new-x out-multirefs memo)
-        (mbe :logic (svexlist-rewrite x masks multirefs nil nil)
+        (mbe :logic (svexlist-rewrite x masks multirefs
+                                      ;; fast alist sizes
+                                      multiref-count multiref-count)
              :exec (with-local-stobj acl2::nrev
                      (mv-let (new-x out-multirefs memo acl2::nrev)
                        (b* (((mv acl2::nrev out-multirefs memo)
                              (cwtime (svexlist-rewrite-nrev
-                                      x masks multirefs nil nil acl2::nrev)
+                                      x masks multirefs
+                                      multiref-count ;; out-multirefs
+                                      multiref-count ;; memo
+                                      acl2::nrev)
                                      :mintime 1))
                             ((mv new-x acl2::nrev) (acl2::nrev-finish acl2::nrev)))
                          (mv new-x out-multirefs memo acl2::nrev))
@@ -1467,7 +1533,8 @@ functions) and that it is being given the right number of arguments.</p>
     :hints (("goal" :use ((:instance svexlist-rewrite-correct
                            (masks (svexlist-mask-alist x))
                            (multirefs (svexlist-multirefs-top x))
-                           (out-multirefs nil) (memo nil)))
+                           (out-multirefs (len (svexlist-multirefs-top x)))
+                           (memo (len (svexlist-multirefs-top x)))))
              :in-theory (disable svexlist-rewrite-correct))
             (acl2::witness)))
 

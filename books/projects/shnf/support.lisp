@@ -6,6 +6,35 @@
 
 (include-book "arithmetic-5/top" :dir :system)
 
+
+;; [Jared] trying to speed up this book
+(local (deftheory jared-disables
+         '(ACL2::ACL2-NUMBERP-X
+           ACL2::RATIONALP-X
+           ACL2::DEFAULT-PLUS-2
+           ACL2::DEFAULT-TIMES-2
+           default-car
+           default-cdr
+
+           acl2::default-plus-1
+           acl2::default-times-1
+           acl2::default-expt-1
+           acl2::default-expt-2
+           acl2::default-minus
+
+           acl2::|(equal (/ x) (/ y))|
+           acl2::|(equal c (/ x))|
+           acl2::|(equal (- x) (- y))|
+           acl2::|(equal c (- x))|
+           acl2::|(equal (- x) c)|
+           acl2::REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL
+           acl2::EQUAL-OF-PREDICATES-REWRITE
+
+           )))
+
+(local (in-theory (disable jared-disables)))
+
+
 ;;*********************************************************************************
 ;;                              Polynomial Terms
 ;;*********************************************************************************
@@ -123,7 +152,9 @@
 
 (defthm shnfp-shfp
   (implies (shnfp x)
-           (shfp x)))
+           (shfp x))
+  ;; [Jared] trying to cheapen this very expensive rule.
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
 (defthm shnfp-pow-q
   (implies (and (shnfp x) (eql (car x) 'pow))
@@ -155,7 +186,11 @@
   (implies (and (shfp x)
                 (all-integers vals))
            (integerp (evalh x vals)))
-  :rule-classes (:type-prescription :rewrite))
+  ;; [Jared] dropping this rule-classes because the type-prescription rule
+  ;; seems to be very expensive and the hyps don't look like type prescription
+  ;; reasoning stuff anyway.
+  ;; :rule-classes (:type-prescription :rewrite)
+  )
 
 ;; We shall define a function norm that computes a SHNF
 ;; representing a polynomial with respect to a given variable ordering.
@@ -378,7 +413,8 @@
         (norm-pow i (norm-add (list 'pow (- j i) r 0) p) (norm-add s q))))))
 
 (defun norm-add (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                  :hints(("Goal" :in-theory (enable jared-disables)))))
   (and (shfp x)
        (if (atom x)
            (add-int x y)
@@ -411,7 +447,8 @@
   :hints (("Goal" :use shnfp-norm-add)))
 
 (defun norm-add-induct (x y vals)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                  :hints(("Goal" :in-theory (enable jared-disables)))))
   (if (or (not (shnfp x))
           (not (shnfp y))
           (atom x)
@@ -534,7 +571,9 @@
               (+ (* i p) (* i r) q s)))
   :rule-classes ())
 
-(local-defthm evalh-add-pow-pow-1
+;; [Jared] disabling this because accumulated persistence says it's expensive and never
+;; useful (but it gets explicitly :use'd later)o
+(local-defthmd evalh-add-pow-pow-1
   (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
         (j (cadr y)) (r (caddr y)) (s (cadddr y)))
     (implies (and (shnfp x)
@@ -721,7 +760,8 @@
                 (consp x)
                 (eql (car x) 'pow))
            (integerp (evalh (caddr x) vals)))
-  :rule-classes ())
+  :rule-classes ()
+  :hints(("Goal" :in-theory (enable jared-disables))))
 
 (local-defthm evalh-add-pow-pow-10
   (let ((i (cadr x)) (p (caddr x)) (j (cadr y)))
@@ -782,7 +822,9 @@
   :hints (("Goal" :use (evalh-add-pow-pow-3 evalh-add-pow-pow-6 evalh-add-pow-pow-7 evalh-add-pow-pow-8 evalh-add-pow-pow-11)
                   :in-theory (theory 'minimal-theory))))
 
-(local-defthm evalh-add-pow-pow-13
+;; [Jared] disabling this because accumulated persistence says it is expensive and never
+;; useful.  it is, however, :use'd later on.
+(local-defthmd evalh-add-pow-pow-13
   (let ((i (cadr y)) (p (caddr y)) (q (cadddr y))
         (j (cadr x)) (r (caddr x)) (s (cadddr x)))
     (implies (and (shnfp x)
@@ -1013,7 +1055,8 @@
 (in-theory (enable norm-pop norm-pow))
 
 (defun norm-mul (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                  :hints(("Goal" :in-theory (enable jared-disables)))))
   (and (shfp x)
        (if (atom x)
            (mul-int x y)
@@ -1045,7 +1088,8 @@
 (in-theory (enable norm-pop norm-pow))
 
 (defun norm-mul-induct (x y vals)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                  :hints(("Goal" :in-theory (enable jared-disables)))))
   (if (or (not (shnfp x))
           (not (shnfp y))
           (atom x)
@@ -1126,7 +1170,7 @@
                                  (evalh p (nthcdr i vals))))))
              (equal (evalh (norm-mul x y) vals)
                     (* (evalh x vals) (evalh y vals)))))
-  :hints (("Goal" :in-theory (disable shnfp)
+  :hints (("Goal" :in-theory (e/d (jared-disables) (shnfp))
                   :use (evalh-mul-pop-pop-1))))
 
 (local-defthm evalh-mul-pop-pow-1

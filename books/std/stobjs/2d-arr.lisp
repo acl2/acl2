@@ -716,7 +716,7 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                                         (str::rchars-to-string
                                          (xdoc::simple-html-encode-str '_elt-type-str_
                                                                        0 (length '_elt-type-str_) nil))
-                                        "')."))))
+                                        "</tt>."))))
        :long (or _long_
                  (str::cat "<p>This is a two dimensional abstract stobj array,
                             introduced by @(see stobjs::def-2d-arr).</p>
@@ -854,11 +854,15 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                       (elt-guard 'true-predicate elt-guard-present-p)
                       (elt-okp   't)
                       (xvar      'acl2::x)
-                      parents
+                      (parents   'nil parents-p)
                       short
                       long)
   `(make-event
     (b* ((base-pkg (pkg-witness (current-package state)))
+         (parents (if ,parents-p
+                      ',parents
+                    (or (xdoc::get-default-parents (w state))
+                        '(acl2::undocumented))))
          ((mv elt-type-str state) (xdoc::fmt-to-str-orig ',pred base-pkg state))
          (elt-guard (if ,elt-guard-present-p
                         ',elt-guard
@@ -866,13 +870,13 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
          (- (cw "elt-guard is ~x0~%" elt-guard))
          (symsubst-alist (list* (cons '_elt-type-str_ elt-type-str)
                                 (cons '_elt-guard_    elt-guard)
+                                (cons '_parents_      parents)
                                 '((_elt-type_ . ,type-decl)
                                   (_elt-typep_ . ,pred)
                                   (_default-elt_ . ,default-val)
                                   (_elt-fix_ . ,fix)
                                   (_elt-okp_ . ,elt-okp)
                                   (_xvar_    . ,xvar)
-                                  (_parents_ . ,parents)
                                   (_short_ . ,short)
                                   (_long_ . ,long))))
          (strsubst-alist '(("_STOBJ-NAME_" . ,(symbol-name stobj-name))

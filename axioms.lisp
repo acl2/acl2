@@ -1407,6 +1407,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            add-to-set-eq-exec
            aref1 ; already inlined in Version_6.2 and before
            aref2 ; already inlined in Version_6.2 and before
+           bitp
            booleanp
            complex-rationalp
            cons-with-hint
@@ -4038,25 +4039,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(20 . NATP)
   #-non-standard-analysis
   '(17 . NATP))
+(defconst *tau-bitp-pair*
+  #+non-standard-analysis
+  '(21 . BITP)
+  #-non-standard-analysis
+  '(18 . BITP))
 (defconst *tau-posp-pair*
   #+non-standard-analysis
-  '(21 . POSP)
+  '(22 . POSP)
   #-non-standard-analysis
-  '(18 . POSP))
+  '(19 . POSP))
 (defconst *tau-minusp-pair*
   #+non-standard-analysis
-  '(29 . MINUSP)
+  '(30 . MINUSP)
   #-non-standard-analysis
-  '(26 . MINUSP))
+  '(27 . MINUSP))
 (defconst *tau-booleanp-pair*
   #+(and (not non-standard-analysis) acl2-par)
-  '(108 . BOOLEANP)
+  '(109 . BOOLEANP)
   #+(and (not non-standard-analysis) (not acl2-par))
-  '(107 . BOOLEANP)
+  '(108 . BOOLEANP)
   #+(and non-standard-analysis (not acl2-par))
-  '(110 . BOOLEANP)
-  #+(and non-standard-analysis acl2-par)
   '(111 . BOOLEANP)
+  #+(and non-standard-analysis acl2-par)
+  '(112 . BOOLEANP)
   )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
@@ -4904,6 +4910,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (and (integerp x)
               (<= 0 x)))
   :rule-classes :compound-recognizer)
+
+(defun bitp (x)
+  (declare (xargs :guard t :mode :logic))
+  (or (eql x 0)
+      (eql x 1)))
+
+(defthm bitp-compound-recognizer
+  (equal (bitp x)
+         (or (equal x 0)
+             (equal x 1)))
+  :rule-classes :compound-recognizer)
+
+(defthm bitp-as-inequality
+  (implies (bitp x) (and (natp x) (< x 2)))
+  :rule-classes :tau-system)
 
 (defun posp (x)
   (declare (xargs :guard t :mode :logic))
@@ -23774,10 +23795,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; We check that (cadr x) is between *min-type-set* and *max-type-set*, which
 ; are checked by check-built-in-constants.
 
-       (<= #-:non-standard-analysis -8192 #+:non-standard-analysis -65536
+       (<= #-:non-standard-analysis -16384 #+:non-standard-analysis -131072
            (cadr x))
        (<= (cadr x)
-           #-:non-standard-analysis 8191 #+:non-standard-analysis 65535)))
+           #-:non-standard-analysis 16383 #+:non-standard-analysis 131071)))
 
 (defun type-alistp (x)
   (declare (xargs :guard t))

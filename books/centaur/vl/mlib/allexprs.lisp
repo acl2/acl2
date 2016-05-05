@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "blocks")
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -68,7 +68,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 
 (fty::defvisitors vl-allexprs-nrev
   :template allexprs-nrev
-  :types (vl-design))
+  :types (vl-design vl-genblob))
 
 
 (fty::defvisitor-template allexprs ((x :object))
@@ -87,7 +87,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 
 (fty::defvisitors vl-allexprs
   :template allexprs
-  :types (vl-design))
+  :types (vl-design vl-genblob))
 
 
 (fty::defvisitor-template allexprs-nrev ((x :object)
@@ -106,4 +106,4 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 (with-output :off (event)
   (fty::defvisitors vl-allexprs-nrev
     :template allexprs-nrev
-    :types (vl-design)))
+    :types (vl-design vl-genblob)))

@@ -4119,20 +4119,19 @@
 
 (defun obj-table (term ts ts-ttree obj geneqv wrld ttree)
 
-; This function is (mv term' ttree'), where term' is equivalent modulo
-; geneqv (see the essay on Equivalence, Refinements and Congruence-
-; based Rewriting) to term and ttree' includes ttree and may include
-; additional stuff.  Depending on ts, the type-set of term (which is
-; supported by the ts-ttree), we may coerce term to 0, t, or nil.
+; This function is (mv term' ttree'), where term' is equivalent modulo geneqv
+; (see the essay on Equivalence, Refinements and Congruence- based Rewriting)
+; to term and ttree' includes ttree and may include additional stuff.
+; Depending on ts, the type-set of term (which is supported by the ts-ttree),
+; we may coerce term to 0, 1, t, or nil.
 
-; Note: This function used to depend on the objective, obj, of the
-; rewrite.  When obj was nil, that dependency prevented obj-table from
-; reducing term to t when term was known to have non-nil type-set.
-; That, in turn, caused relieve-hyp to force (not term), even though
-; (not term) was known nil.  We now reduce term to t, nil or 0 as
-; appropriate by the geneqv and ts, regardless of obj.  However, we have
-; left the obj parameter in place, in case we someday want to restore
-; dependency on it.
+; Note: This function used to depend on the objective, obj, of the rewrite.
+; When obj was nil, that dependency prevented obj-table from reducing term to t
+; when term was known to have non-nil type-set.  That, in turn, caused
+; relieve-hyp to force (not term), even though (not term) was known nil.  We
+; now reduce term to t, nil or 0 as appropriate by the geneqv and ts,
+; regardless of obj.  However, we have left the obj parameter in place, in case
+; we someday want to restore dependency on it.
 
   (declare (ignore obj))
   (cond
@@ -4149,6 +4148,44 @@
         (cons-tag-trees ts-ttree ttree)))
    ((ts= ts *ts-zero*)
     (mv *0*
+        (cons-tag-trees ts-ttree ttree)))
+   ((ts= ts *ts-one*)
+
+; This case coerces the term to '1.  We introduced this case when adding a new
+; type-set bit for the set {1}.  However, we considered skipping this case when
+; we found a failure for the book demo.lisp (which exists in three
+; subdirectories of the community books: models/jvm/m5/demo.lisp,
+; projects/symbolic/m5/demo.lisp, and books/workshops/2003/moore_vcg/support/),
+; for the lemma symbolic-computation.  However, that was the only problematic
+; book.  Moreover, consider the following generated subgoal for that proof
+; attempt.
+
+;   (IMPLIES (AND (ZP K)
+;                 (INTP (+ 1 K))
+;                 (< 0 (+ 1 K))
+;                 (ACL2-NUMBERP K))
+;            (EQUAL (INT-FIX (* 2
+;                               (INT-FIX (+ (FACTORIAL K)
+;                                           (* K (FACTORIAL K))))))
+;                   (INT-FIX (+ (* 2 (FACTORIAL K))
+;                               (* 2 K (FACTORIAL K))))))
+
+; With this case included, that subgoal simplified to the following, which ACL2
+; fails to prove whether we include this case or not.  So the only problem with
+; this case is that it adds extra reasoning that sends the proof in a bad
+; direction; and we believe (but aren't sure) that it only does that for this
+; one (thrice-occurring) book among the community books.
+
+;   (IMPLIES (AND (ZP K)
+;                 (INTP (+ 1 K))
+;                 (< 0 (+ 1 K))
+;                 (ACL2-NUMBERP K))
+;            (EQUAL 2 (INT-FIX (+ 2 (* 2 K)))))
+
+; For more discussion regarding *ts-one*, see the Essay on Strong Handling of
+; *ts-one*.
+
+    (mv *1*
         (cons-tag-trees ts-ttree ttree)))
    (t (let ((rune (geneqv-refinementp 'iff geneqv wrld)))
         (cond

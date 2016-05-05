@@ -9,6 +9,7 @@
 (include-book "milawa/doc")
 (include-book "regex/regex-ui")
 (include-book "leftist-trees/top")
+(include-book "quadratic-reciprocity/euler")
 (include-book "sidekick/server")
 (include-book "x86isa/top")
 

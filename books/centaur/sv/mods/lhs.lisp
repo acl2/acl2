@@ -38,6 +38,8 @@
 (include-book "std/stobjs/clone" :dir :system)
 (include-book "std/alists/hons-remove-assoc" :dir :system) ;; bozo
 (include-book "defsort/defsort" :dir :system)
+(local (include-book "std/lists/sets" :dir :system))
+(local (include-book "std/lists/update-nth" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -900,7 +902,7 @@ the order given (LSBs-first).</p>")
     :hints(("Goal" :in-theory (e/d (lhatom-vars)
                                    ((:d svex->lhs-bound)
                                     append default-car default-cdr not
-                                    member acl2::subsetp-member))
+                                    member))
             :induct (svex->lhs-bound w x)
             :expand ((svex->lhs-bound w x)))))
 
@@ -959,7 +961,7 @@ the order given (LSBs-first).</p>")
     :hints(("Goal" :in-theory (e/d (lhatom-vars)
                                    ((:d svex->lhs)
                                     append default-car default-cdr not
-                                    member acl2::subsetp-member))
+                                    member))
             :induct (svex->lhs x)
             :expand ((svex->lhs x)))))
 

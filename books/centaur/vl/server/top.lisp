@@ -288,18 +288,37 @@
                        (eq (tag x) :vl-module))
                   (vl-module-p x))))
 
+(local (defthm vl-interface-p-by-tag-when-vl-description-p-unlimited
+         (implies (and (vl-description-p x)
+                       (eq (tag x) :vl-interface))
+                  (vl-interface-p x))))
+
+(local (defthm vl-package-p-by-tag-when-vl-description-p-unlimited
+         (implies (and (vl-description-p x)
+                       (eq (tag x) :vl-package))
+                  (vl-package-p x))))
+
+(local (in-theory (disable (force))))
+
 (define-vls-html vls-describe (origname what data)
   (b* (((vls-data data))
        (desc (cdr (hons-assoc-equal origname data.orig-descalist)))
-       ;;(- (raise "Testing error handling"))
+       ; (- (raise "Testing error handling"))
        ((unless desc)
         (cat "Error: " origname " not found."))
-       ((unless (mbe :logic (vl-module-p desc)
-                     :exec (eq (tag desc) :vl-module)))
-        (cat "BOZO implement describe page for " (ec-call (symbol-name (tag desc))))))
+       ;; ((unless (mbe :logic (vl-module-p desc)
+       ;;               :exec (eq (tag desc) :vl-module)))
+       ;;  (cat "BOZO implement describe page for " (ec-call (symbol-name (tag desc)))))
+       (ss (vl-scopestack-init data.orig))
+       (blob
+        (case (tag desc)
+          (:vl-module (vl-module->genblob desc))
+          (:vl-interface (vl-interface->genblob desc))
+          (:vl-package    (vl-package->genblob desc))
+          (otherwise (make-vl-genblob :id origname :scopetype :vl-anonymous-scope)))))
     (with-local-ps
       (vl-ps-update-htmlp t)
-      (vl-pp-describe what desc))))
+      (vl-pp-describe what blob ss))))
 
 (define-vls-html vls-showloc (file line col data)
   (b* (((vls-data data))

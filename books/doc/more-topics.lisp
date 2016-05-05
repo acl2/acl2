@@ -32,10 +32,22 @@
 (include-book "xdoc/top" :dir :system)
 
 
-(defsection arithmetic
+(defsection math
   :parents (top)
+  :short "Math-related libraries: arithmetic, algebra, bit-vectors.")
+
+(defsection algebra
+  :parents (math)
+  :short "Libraries to reason about algebraic structures, e.g. groups, rings, fields, polynomials.")
+
+(defsection arithmetic
+  :parents (math)
   :short "Libraries for reasoning about basic arithmetic, bit-vector
 arithmetic, modular arithmetic, etc.")
+
+(defsection bit-vectors
+  :parents (math)
+  :short "Libraries for reasoning about bit vectors.")
 
 (defsection boolean-reasoning
   :parents (top)

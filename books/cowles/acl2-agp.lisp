@@ -16,9 +16,9 @@
 (include-book "acl2-asg")
 
 (defsection abelian-groups
-  :parents (cowles)
+  :parents (algebra)
   :short "Axiomatization of an associative and commutative binary operation
-with an identity and an unary inverse operation."
+with an identity and an unary inverse operation, developed by John Cowles."
 
   :long "<h3>Theory of Abelian Groups</h3>
 
@@ -61,8 +61,10 @@ acts as an @('ACL2-AGP::op-inverse') for @('ACL2-AGP:: id').</p>
 <p>with the following, constraining axioms:</p>
 
 @(def Equiv-is-an-equivalence)
-@(def Equiv-1-implies-equiv-op)
-@(def Equiv-2-implies-equiv-op)
+@(def Equiv-implies-iff-pred-1)
+@(def Equiv-implies-equiv-op-1)
+@(def Equiv-implies-equiv-op-2)
+@(def Equiv-implies-equiv-inv-1)
 @(def Closure-of-op-for-pred)
 @(def Closure-of-id-for-pred)
 @(def Closure-of-inv-for-pred)
@@ -103,31 +105,20 @@ acts as an @('ACL2-AGP::op-inverse') for @('ACL2-AGP:: id').</p>
              (declare (xargs :guard (pred x)))
              x))
 
-    (defthm Equiv-is-an-equivalence
-      (and (booleanp (equiv x y))
-           (equiv x x)
-           (implies (equiv x y)
-                    (equiv y x))
-           (implies (and (equiv x y)
-                         (equiv y z))
-                    (equiv x z)))
+    (defequiv equiv
       :rule-classes (:equivalence
                      (:type-prescription
                       :corollary
                       (or (equal (equiv x y) t)
                           (equal (equiv x y) nil)))))
 
-    (defthm Equiv-1-implies-equiv-op
-      (implies (equiv x1 x2)
-               (equiv (op x1 y)
-                      (op x2 y)))
-      :rule-classes :congruence)
+    (defcong equiv iff (pred x) 1)
 
-    (defthm Equiv-2-implies-equiv-op
-      (implies (equiv y1 y2)
-               (equiv (op x y1)
-                      (op x y2)))
-      :rule-classes :congruence)
+    (defcong equiv equiv (op x y) 1)
+
+    (defcong equiv equiv (op x y) 2)
+
+    (defcong equiv equiv (inv x) 1)
 
     (defthm Closure-of-op-for-pred
       (implies (and (pred x)
@@ -192,10 +183,10 @@ acts as an @('ACL2-AGP::op-inverse') for @('ACL2-AGP:: id').</p>
                          (equiv x y)))
            :rule-classes nil
            :hints (("Subgoal 1"
-                    :in-theory (disable Equiv-1-implies-equiv-op)
-                    :use (:instance Equiv-1-implies-equiv-op
-                                    (x1 (op x z))
-                                    (x2 (op y z))
+                    :in-theory (disable Equiv-implies-equiv-op-1)
+                    :use (:instance Equiv-implies-equiv-op-1
+                                    (x (op x z))
+                                    (x-equiv (op y z))
                                     (y  (inv z)))))))
 
   (defthm Right-cancellation-for-op

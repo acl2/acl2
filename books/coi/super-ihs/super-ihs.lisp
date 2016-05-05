@@ -549,7 +549,10 @@
 ;bzo drop or move?
 (defthmd bitp-signed-byte-p-32
   (implies (bitp x)
-           (signed-byte-p 32 x)))
+           (signed-byte-p 32 x))
+; Added by Matt K. April 2016 upon addition of type-set bit for {1}.
+; (Bitp$inline was formerly already disabled here.)
+  :hints (("Goal" :in-theory (enable bitp))))
 
 
 (encapsulate
@@ -1451,7 +1454,13 @@
                       (logcdr a) (logcdr b)))))
   :hints (("goal" :induct (logcdr-logcdr-induction a b)
            ;:do-not '(generalize eliminate-destructors)
-           :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY b-and b-xor open-logcons))))
+           :in-theory (e/d (LOGOPS-RECURSIVE-DEFINITIONS-THEORY b-and b-xor open-logcons)
+                           
+; Modified April 2016 by Matt K. upon the addition of a type-set bit for the
+; set {1}.  (Same change made in books/misc/mult.lisp.)
+
+                           (BITP-COMPOUND-RECOGNIZER))
+)))
 
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; signed-byte-p, unsigned-byte-p

@@ -33,7 +33,7 @@
 (include-book "bddify")
 (include-book "centaur/ubdds/param" :dir :system)
 (include-book "centaur/ubdds/lite" :dir :system)
-(include-book "centaur/misc/suffixp" :dir :system)
+(include-book "std/lists/suffixp" :dir :system)
 (include-book "clause-processors/witness-cp" :dir :system)
 (include-book "clause-processors/just-expand" :dir :system)
 (include-book "centaur/misc/universal-equiv" :dir :system)
@@ -1489,10 +1489,6 @@
 (local
  (progn
    (in-theory (enable suffixp))
-   (defthm suffixp-transitive
-     (implies (and (suffixp a b)
-                   (suffixp b c))
-              (suffixp a c)))
 
    (defthm suffixp-transitive-3
      (implies (and (suffixp a b)
@@ -1530,14 +1526,6 @@
      (implies (suffixp x y)
               (equal (<= (len y) (len x))
                      (equal x y))))
-
-   (encapsulate nil
-     (local (include-book "arithmetic/top-with-meta" :dir :system))
-     (defthmd suffixp-equals-nthcdr
-       (equal (suffixp x y)
-              (equal x (nthcdr (- (len y) (len x)) y)))
-       :hints (("Subgoal *1/1.2"
-                :use suffixp-len-<=))))
 
    (defthm suffixp-len
      (implies (suffixp x y)
@@ -2539,7 +2527,8 @@
                          abs-bdd-al-okp
                          bdds-compatible-for-al-suffix
                          bdds-compatible-for-al-cons
-                         suffixp-self assign-for-bdd-al-suffix
+                         suffixp-of-self
+                         assign-for-bdd-al-suffix
                          suffixp-len len
 ;                     (:REWRITE |(equal (- x) (- y))|)
 ;                     (:REWRITE |(< (- x) (- y))|)

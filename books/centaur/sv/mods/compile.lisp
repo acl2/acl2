@@ -978,6 +978,69 @@ should address this again later.</p>"
 ;;              (svarlist-addr-p (aliases-vars aliases)))
 ;;     :hints(("Goal" :in-theory (enable aliases-vars)))))
 
+(define svex-design-flatten-and-normalize ((x design-p)
+                                           &key
+                                           (indexedp 'nil)
+                                           ((moddb "overwritten") 'moddb)
+                                           ((aliases "overwritten") 'aliases))
+  
+  :parents (svex-compilation)
+  :short "Flatten a hierarchical SV design and apply alias normalization to it."
+  :long "<p>This does all of the steps of @(see svex-design-compile) except for
+         the final composition of local assignments into global 0-delay update
+         functions.</p>"
+  :returns (mv err
+               (flat-assigns svex-alist-p)
+               (flat-delays svar-map-p)
+               (moddb (and (moddb-basics-ok moddb)
+                           (moddb-mods-ok moddb)))
+               (aliases))
+  :guard (modalist-addr-p (design->modalist x))
+  :verify-guards nil
+  (b* (((mv err assigns moddb aliases)
+        (svex-design-flatten x))
+       ((when err)
+        (mv err nil nil moddb aliases))
+       (modidx (moddb-modname-get-index (design->top x) moddb))
+       (aliases (if indexedp
+                    aliases
+                  (cwtime (aliases-indexed->named aliases
+                                                  (make-modscope-top :modidx modidx)
+                                                  moddb)
+                          :mintime 1)))
+       ((mv res-assigns res-delays)
+        (svex-normalize-assigns assigns aliases)))
+    (mv nil res-assigns res-delays moddb aliases))
+  ///
+  (verify-guards svex-design-flatten-and-normalize-fn
+    :hints(("Goal" :in-theory (enable modscope-okp
+                                      modscope->modidx
+                                      modscope-local-bound))))
+
+  (defthm alias-length-of-svex-design-flatten-and-normalize
+    (b* (((mv ?err ?res-assigns ?res-delays ?moddb ?aliases)
+          (svex-design-flatten-and-normalize design
+                                             :indexedp indexedp)))
+      (implies (not err)
+               (equal (len aliases)
+                      (moddb-mod-totalwires
+                       (moddb-modname-get-index (design->top design) moddb)
+                       moddb)))))
+
+  (defthm modidx-of-svex-design-flatten-and-normalize
+    (b* (((mv ?err ?res-assigns ?res-delays ?moddb ?aliases)
+          (svex-design-flatten-and-normalize design
+                                             :indexedp indexedp)))
+      (implies (not err)
+               (moddb-modname-get-index (design->top design) moddb)))
+    :rule-classes (:rewrite
+                   (:type-prescription :corollary
+                    (b* (((mv ?err ?res-assigns ?res-delays ?moddb ?aliases)
+                          (svex-design-flatten-and-normalize design)))
+                      (implies (not err)
+                               (natp (moddb-modname-get-index (design->top design) moddb))))))))
+
+
 (define svex-design-compile ((x design-p)
                              &key
                              (indexedp 'nil)
@@ -997,19 +1060,8 @@ should address this again later.</p>"
                (aliases))
   :guard (modalist-addr-p (design->modalist x))
   :verify-guards nil
-    (b* (((mv err assigns moddb aliases)
-          (svex-design-flatten x))
-         ((when err)
-          (mv err nil nil nil nil moddb aliases))
-         (modidx (moddb-modname-get-index (design->top x) moddb))
-         (aliases (if indexedp
-                      aliases
-                    (cwtime (aliases-indexed->named aliases
-                                                    (make-modscope-top :modidx modidx)
-                                                    moddb)
-                            :mintime 1)))
-         ((mv res-assigns res-delays)
-          (svex-normalize-assigns assigns aliases))
+    (b* (((mv err res-assigns res-delays moddb aliases)
+          (svex-design-flatten-and-normalize x :indexedp indexedp))
          ((mv updates nextstates)
           (svex-compose-assigns/delays res-assigns res-delays
                                        :rewrite rewrite

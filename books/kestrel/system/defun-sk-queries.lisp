@@ -16,9 +16,9 @@
 
 (in-package "ACL2")
 
-(include-book "std/basic/top" :dir :system)
-(include-book "std/util/top" :dir :system)
 (include-book "kestrel/system/world-queries" :dir :system)
+(include-book "std/util/defenum" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 
 (local (set-default-parents defun-sk-queries))
 
@@ -87,13 +87,13 @@
   have the same form as in @(tsee defun-sk)).
   </p>")
 
-(std::defenum defun-sk-quantifierp (exists forall)
+(std::defenum defun-sk-quantifier-p (exists forall)
   :short
   "<see topic='@(url exists)'>Existential</see>
   and <see topic='@(url forall)'>universal</see>
   quantifiers.")
 
-(std::defenum defun-sk-rewrite-kindp (:default :direct :custom)
+(std::defenum defun-sk-rewrite-kind-p (:default :direct :custom)
   :short
   "Kinds of rewrite rules associated to
   @(tsee defun-sk) functions with the
@@ -109,7 +109,7 @@
   :short
   "@(tsee defun-sk)-specific constituents of a @(tsee defun-sk) function."
   ((quantifier "Quantifier."
-               defun-sk-quantifierp)
+               defun-sk-quantifier-p)
    (bound-vars "Variables bound by the quantifier."
                symbol-listp)
    (matrix "Matrix (in <see topic='@(url term)'>translated form</see>)."
@@ -121,7 +121,7 @@
    (rewrite-name "Name of the rewrite rule."
                  symbolp)
    (rewrite-kind "Kind of the rewrite rule."
-                 defun-sk-rewrite-kindp)
+                 defun-sk-rewrite-kind-p)
    (strengthen "Value of the @(':strengthen') flag."
                booleanp)
    (non-executable "Value of the @(':non-executable') flag."
@@ -285,7 +285,7 @@
                                      (bound-vars symbol-listp))
   :returns (mv (yes/no booleanp)
                untrans-matrix
-               (quantifier defun-sk-quantifierp)
+               (quantifier defun-sk-quantifier-p)
                (non-executable booleanp))
   :short
   "Check the (non-local) definition of the @(tsee defun-sk) function
@@ -371,12 +371,12 @@
 (define defun-sk-check-rewrite-rule (rewrite
                                      (fun symbolp)
                                      (args symbol-listp)
-                                     (quantifier defun-sk-quantifierp)
+                                     (quantifier defun-sk-quantifier-p)
                                      untrans-matrix
                                      (witness symbolp))
   :returns (mv (yes/no booleanp)
                (rewrite-name symbolp)
-               (rewrite-kind defun-sk-rewrite-kindp))
+               (rewrite-kind defun-sk-rewrite-kind-p))
   :short
   "Check the rewrite rule in the @('encapsulate')
   of a @(tsee defun-sk) function,

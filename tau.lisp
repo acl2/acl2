@@ -471,50 +471,50 @@
 ;; negative irrational, positive irrational, and complex.
 
 (defconst *initial-type-set-inverter-rules*
-  (list (make type-set-inverter-rule                 ;;; 11 (14) bits
+  (list (make type-set-inverter-rule                 ;;; 12 (15) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-complement *ts-cons*)
               :terms '((atom x)))
-        (make type-set-inverter-rule                 ;;; 6 (9) bits
+        (make type-set-inverter-rule                 ;;; 7 (10) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-acl2-number*
               :terms '((acl2-numberp x)))
         #+:non-standard-analysis
-        (make type-set-inverter-rule                 ;;; _ (7) bits
+        (make type-set-inverter-rule                 ;;; _ (8) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-real*
               :terms '((realp x)))
-        (make type-set-inverter-rule                 ;;; 5 bits
+        (make type-set-inverter-rule                 ;;; 6 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-rational*
               :terms '((rationalp x)))
-        (make type-set-inverter-rule                 ;;; 5 (8) bits
+        (make type-set-inverter-rule                 ;;; 6 (9) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-acl2-number* (ts-complement *ts-zero*))
               :terms '((acl2-numberp x) (not (equal x '0))))
         #+:non-standard-analysis
-        (make type-set-inverter-rule                 ;;; _ (6) bits
+        (make type-set-inverter-rule                 ;;; _ (7) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-real* (ts-complement *ts-zero*))
               :terms '((realp x) (not (equal x '0))))
-        (make type-set-inverter-rule                 ;;; 4 bits
+        (make type-set-inverter-rule                 ;;; 5 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-rational* (ts-complement *ts-zero*))
               :terms '((rationalp x) (not (equal x '0))))
         #+:non-standard-analysis
-        (make type-set-inverter-rule                 ;;; _ (4) bits
+        (make type-set-inverter-rule                 ;;; _ (5) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-positive-real* *ts-zero*)
               :terms '((realp x) (not (< x '0))))
-        (make type-set-inverter-rule                 ;;; 3 bits
+        (make type-set-inverter-rule                 ;;; 4 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-positive-rational* *ts-zero*)
@@ -530,23 +530,23 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-negative-rational* *ts-zero*)
               :terms '((rationalp x) (not (< '0 x))))
-        (make type-set-inverter-rule                 ;;; 3 bits
+        (make type-set-inverter-rule                 ;;; 4 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-integer*
               :terms'((integerp x)))
-        (make type-set-inverter-rule                 ;;; 2 bits
+        (make type-set-inverter-rule                 ;;; 3 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-integer* (ts-complement *ts-zero*))
               :terms '((integerp x) (not (equal x '0))))
         #+:non-standard-analysis
-        (make type-set-inverter-rule                 ;;; _ (3) bits
+        (make type-set-inverter-rule                 ;;; _ (4) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-real*
               :terms'((realp x) (< '0 x)))
-        (make type-set-inverter-rule                 ;;; 2 bits
+        (make type-set-inverter-rule                 ;;; 3 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-rational*
@@ -562,7 +562,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-negative-rational*
               :terms'((rationalp x) (< x '0)))
-        (make type-set-inverter-rule                 ;;; 2 bits
+        (make type-set-inverter-rule                 ;;; 3 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-positive-integer* *ts-zero*)
@@ -610,7 +610,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-ratio*
               :terms'((rationalp x) (not (integerp x)) (< '0 x)))
-        (make type-set-inverter-rule                 ;;; 1 bit
+        (make type-set-inverter-rule                 ;;; 2 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-integer*
@@ -621,6 +621,11 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-complex*
               :terms'((complexp x)))
+        (make type-set-inverter-rule                 ;;; 1 bit
+              :nume nil
+              :rune *fake-rune-for-anonymous-enabled-rule*
+              :ts *ts-integer>1*
+              :terms'((integerp x) (< '1 x)))
         (make type-set-inverter-rule                 ;;; 1 bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -637,6 +642,11 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-zero*
               :terms'((equal x '0)))
+        (make type-set-inverter-rule                 ;;; 1 bit
+              :nume nil
+              :rune *fake-rune-for-anonymous-enabled-rule*
+              :ts *ts-one*
+              :terms'((equal x '1)))
         (make type-set-inverter-rule                 ;;; 3 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -7347,19 +7357,23 @@
 ; If term is tau-like we return (mv sign recog e criterion'), else we return all
 ; nils.  If recog is non-nil, then it is the internal representation of a tau recognizer:
 
-; tau recognizer   concrete          notes
-; form             representation
+; tau recognizer       concrete          notes
+; form                 representation
 
-; (fn x)           (index . fn)      fn is a symbol with given tau pair
+; (fn x)               (index . fn)      fn is a symbol with given tau pair
 
-; (equiv x 'evg)   (evg   . nil)     equiv is EQUAL, EQ, EQL, or =
+; (equiv x 'evg)       (evg   . nil)     equiv is EQUAL, EQ, EQL, or =
 ; (equiv 'evg x)
 
-; (< x 'k)         (k . :lessp-x-k)  k is a rational
+; (< x 'k)             (k . :lessp-x-k)  k is a rational
 ; (> 'k x)
 
-; (< 'k x)         (k . :lessp-k-x)  k is a rational
+; (< 'k x)             (k . :lessp-k-x)  k is a rational
 ; (> x 'k)
+
+; (IF (equiv x '0)     (index . BITP)    opened form of BITP recog
+;     T                                  (We also handle the case where the
+;     (equiv x '1))                      equiv-terms are swapped.)
 
 ; To be ``tau-like'' term must be a possibly negated term of one of the forms
 ; above The returned sign is T if term is positive; sign is nil for negated
@@ -7434,6 +7448,20 @@
                                 (cons k :lessp-k-x)
                                 (cons k :lessp-x-k))
                             e next-criterion))
+                       (t (mv nil nil nil nil)))))
+              (t (mv nil nil nil nil))))
+       (('IF (g e ''0) ''t (g e ''1))
+        (cond ((member-eq g equiv-fns)
+               (let ((next-criterion (tau-like-subject-criterion criterion e)))
+                 (cond (next-criterion
+                        (mv sign *tau-bitp-pair* e next-criterion))
+                       (t (mv nil nil nil nil)))))
+              (t (mv nil nil nil nil))))
+       (('IF (g e ''1) ''t (g e ''0))
+        (cond ((member-eq g equiv-fns)
+               (let ((next-criterion (tau-like-subject-criterion criterion e)))
+                 (cond (next-criterion
+                        (mv sign *tau-bitp-pair* e next-criterion))
                        (t (mv nil nil nil nil)))))
               (t (mv nil nil nil nil))))
        (& (mv nil nil nil nil))))))

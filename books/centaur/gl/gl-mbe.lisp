@@ -140,15 +140,18 @@ If this can be proved, @('x-chop') is bound to the @(see logand) result, which
 cuts off the upper bits of @('x'), which may improve symbolic execution
 performance.  However, logically @('gl-mbe') just binds @('x-chop') to @('x'),
 so this @('logand') term does not complicate reasoning about the
-specification.</p>"
+specification.</p>
+
+<p>See also @(see gl-mbe-fast).</p>"
 
   (defun gl-mbe-fn (spec impl spec-form impl-form)
     (declare (xargs :guard t))
     (mbe :logic spec
          :exec (prog2$
                 (or (equal spec impl)
-                    (er hard?
-                        "GL-MBE failure: ~x0 and ~x1 unequal.~%Values: ~x2 versus ~x3."
+                    (er hard? 'gl-mbe
+                               "GL-MBE failure: ~x0 and ~x1 unequal.~% ~
+                                Values: ~x2 versus ~x3."
                         spec-form impl-form spec impl))
                 spec)))
 
@@ -164,6 +167,46 @@ specification.</p>"
 
   (defmacro gl-mbe (spec impl)
     `(gl-mbe-fn ,spec ,impl ',spec ',impl)))
+
+
+(defsection gl-mbe-fast
+  :parents (gl-mbe)
+  :short "Like @(see gl-mbe), but faster and without error checking during
+execution."
+  :long "<p>See @(see gl-mbe) for background.  @('(gl-mbe-fast spec exec)') is
+logically identical to @('gl-mbe') and should have exactly the same effect
+during symbolic execution.  However, @('gl-mbe-fast') may run more quickly
+during concrete execution, at the cost of some error checking.</p>
+
+<p>In particular, for ordinary, concrete execution, a @('(gl-mbe spec impl)')
+form requires both the @('spec') and @('impl') forms to be evaluated and
+checked for equality.  In contrast, @('gl-mbe-fast') is essentially a macro
+that expands to:</p>
+
+@({
+     (mbe :logic (gl-mbe spec exec)
+          :exec spec)
+})
+
+<p>The guard proof you will incur should be trivial because @('gl-mbe') always
+just logically returns @('spec').</p>
+
+<p>Aside from performance, this <b>behaves differently</b> than @(see gl-mbe)
+in the degenerate case where your @('spec') and @('exec') forms produce
+different results.  For example:</p>
+
+@({
+     (defun test1 (x y) (declare (xargs :guard t)) (gl-mbe x y))
+     (defun test2 (x y) (declare (xargs :guard t)) (gl-mbe-fast x y))
+
+     (test1 3 7)   --> causes a hard error
+     (test2 3 7)   --> no error, returns 3
+})"
+
+  (defmacro gl-mbe-fast (spec impl)
+    `(let ((spec ,spec))
+       (mbe :logic (gl-mbe spec ,impl)
+            :exec spec))))
 
 
 ;; BOZO document these
