@@ -32,43 +32,88 @@
  `(defconst *auto-termination-fn-alist*
     ',(pair-with-formals-and-body *auto-termination-fns* (w state))))
 
+(defun negated-p (x y)
+  (cond ((ffn-symb-p y 'not)
+         (equal x (fargn y 1)))
+        ((ffn-symb-p x 'not)
+         (equal y (fargn x 1)))
+        ((ffn-symb-p x 'if)
+         (and (ffn-symb-p y 'if)
+              (equal (fargn x 1) (fargn y 1))
+              (negated-p (fargn x 2) (fargn y 2))
+              (negated-p (fargn x 3) (fargn y 3))))
+        ((ffn-symb-p y 'if)
+         nil)
+        ((variablep x)
+         nil)
+        ((variablep y)
+         nil)
+        ((fquotep x)
+         (if (equal x *nil*)
+             (equal y *t*)
+           (equal y *nil*)))
+        (t nil)))
+
+(defun my-negate-lit (x)
+  (cond ((ffn-symb-p x 'if)
+         (fcons-term* 'if
+                      (fargn x 1)
+                      (my-negate-lit (fargn x 2))
+                      (my-negate-lit (fargn x 3))))
+        (t (dumb-negate-lit x))))
+
 (mutual-recursion
 
-(defun normalize-lit (lit)
-  (cond ((variablep lit) lit)
-        ((fquotep lit) lit)
+(defun normalize-lit (lit not-flg iff-flg)
+  (cond ((variablep lit) (if not-flg (dumb-negate-lit lit) lit))
+        ((fquotep lit) (if not-flg
+                           (if (equal lit *nil*) *t* *nil*)
+                         lit))
         ((eq (ffn-symb lit) 'not)
-         (dumb-negate-lit (normalize-lit (fargn lit 1))))
+         (normalize-lit (fargn lit 1) (not not-flg) t))
+        ((eq (ffn-symb lit) 'if)
+         (mv-let
+           (tst tbr fbr)
+           (if (ffn-symb-p (fargn lit 1) 'not)
+               (mv (fargn (fargn lit 1) 1)
+                   (fargn lit 3)
+                   (fargn lit 2))
+             (mv (fargn lit 1) (fargn lit 2) (fargn lit 3)))
+           (let ((tst (normalize-lit tst nil t))
+                 (tbr (normalize-lit tbr not-flg iff-flg))
+                 (fbr (normalize-lit fbr not-flg iff-flg)))
+             (mv-let
+               (tst tbr fbr)
+               (if (ffn-symb-p tst 'not)
+                   (mv (my-negate-lit tst) fbr tbr)
+                 (mv tst tbr fbr))
+               (fcons-term*
+                'if
+                tst
+                (cond ((and (equal tst tbr) iff-flg)
+                       *t*)
+                      ((negated-p tst tbr)
+                       *nil*)
+                      (t tbr))
+                (cond ((equal tst fbr)
+                       *nil*)
+                      ((negated-p tst fbr)
+                       *t*)
+                      (t fbr)))))))
         ((member-eq (ffn-symb lit) *auto-termination-fns*)
          (let* ((pair (cdr (assoc-eq (ffn-symb lit) *auto-termination-fn-alist*)))
                 (formals (car pair))
                 (body (cdr pair)))
-           (normalize-lit (subcor-var formals (fargs lit) body))))
-        (t (cons-term (ffn-symb lit)
-                      (normalize-lit-lst (fargs lit))))))
+           (normalize-lit (subcor-var formals (fargs lit) body) not-flg iff-flg)))
+        (t (let ((x (cons-term (ffn-symb lit)
+                               (normalize-lit-lst (fargs lit)))))
+             (if not-flg (dumb-negate-lit x) x)))))
 
 (defun normalize-lit-lst (lst)
   (cond ((endp lst) nil)
-        (t (cons (normalize-lit (car lst))
+        (t (cons (normalize-lit (car lst) nil nil)
                  (normalize-lit-lst (cdr lst))))))
 )
-
-(defun push-down-ifs (x)
-  (case-match x
-    (('not ('if tst tbr fbr))
-     `(if ,tst
-          ,(push-down-ifs (dumb-negate-lit tbr))
-        ,(push-down-ifs (dumb-negate-lit fbr))))
-    (('if tst tbr fbr)
-     `(if ,tst
-          ,(push-down-ifs tbr)
-        ,(push-down-ifs fbr)))
-    (& x)))
-
-(defun push-down-ifs-lst (lst)
-  (cond ((endp lst) nil)
-        (t (cons (push-down-ifs (car lst))
-                 (push-down-ifs-lst (cdr lst))))))
 
 (defun normalize-clause (clause)
 
@@ -76,7 +121,7 @@
 
 ; Replace (not (and x y)) by {(not x),(not y)}.
 
-  (flatten-ands-in-lit-lst (push-down-ifs-lst (normalize-lit-lst clause))))
+  (flatten-ands-in-lit-lst (normalize-lit-lst clause)))
 
 (defun termination-clause-set-2 (calls tests fn-subst)
   (cond ((endp calls) nil)
@@ -303,9 +348,52 @@
                (auto-termination-declare-1 (cdr fns) new-fn-clause-set
                                            theory expand wrld)))))
 
-(defun auto-termination-declare (new-fn-clause-set theory expand wrld)
-  (let ((old-fns (strip-cadrs (let ((world wrld)) (function-theory :here)))))
-    (auto-termination-declare-1 old-fns new-fn-clause-set theory expand wrld)))
+(defun event-book (name state)
+  (let ((wrld (w state)))
+    (er-let* ((ev-wrld (er-decode-logical-name name wrld 'event-location
+                                               state)))
+      (value (car (global-val 'include-book-path ; path could be nil
+                              ev-wrld))))))
+
+(defun auto-termination-declare (new-fn-clause-set theory expand verbose state)
+  (let* ((world (w state)) ; needs to be WORLD for function-theory
+         (old-fns (strip-cadrs (function-theory :here))))
+    (pprogn
+     (cond (verbose (fms "; Searching ~x0 functions..."
+                         (list (cons #\0 (length old-fns)))
+                         (standard-co state) state nil))
+           (t state))
+     (let ((decl (auto-termination-declare-1 old-fns new-fn-clause-set theory
+                                             expand world)))
+       (case-match decl
+         (('declare
+           ('xargs ':measure &
+                   ':hints
+                   (('"Goal"
+                     ':use
+                     (':instance (':termination-theorem fn) . &)
+                     . &))))
+          (er-let* ((book (event-book fn state)))
+            (state-global-let*
+             ((fmt-hard-right-margin 100000 set-fmt-hard-right-margin)
+              (fmt-soft-right-margin 100000 set-fmt-soft-right-margin))
+             (pprogn
+              (cond
+               (verbose
+                (fms "; Reusing measure and termination theorem for ~
+                      function~|; ~x0, defined ~@1.~|"
+                     (list (cons #\0 fn)
+                           (cons #\1
+                                 (cond (book (msg "in the book~|; ~s0" book))
+                                       (t "at the top level"))))
+                     (standard-co state) state nil))
+               (t state))
+              (value decl)))))
+         ('nil (value decl))
+         (& (er soft 'auto-termination-declare
+                "Implementation error!  Unexpected declare form,~|~x0.~|See ~
+                 auto-termination-declare."
+                decl)))))))
 
 (defconst *legal-auto-termination-event-types*
   '(defun defund))
@@ -319,7 +407,8 @@
   t)
 (defattach auto-termination-check auto-termination-check-strict)
 
-(defun auto-termination-info (defun-form result-spec theory expand state)
+(defun auto-termination-info (defun-form result-spec theory expand verbose
+                               state)
 
 ; Result-spec is :event if we want an event, otherwise :dcl if we want the
 ; declare form.
@@ -339,10 +428,14 @@
       (t
        (let* ((new-dcls (strip-dcls '(:hints :measure) (butlast rest 1)))
               (body (car (last rest)))
-              (form `(,defun-or-defund ,fn ,formals ,@new-dcls ,body)))
+              (skip-proofs-form
+               `(skip-proofs
+                 (,defun-or-defund ,fn ,formals
+                   (declare (xargs :measure (acl2-count ,(car formals)))) ; bogus
+                   ,@new-dcls ,body))))
          (er-let* ((steps
                     (event-steps
-                     (list 'skip-proofs form)
+                     skip-proofs-form
                      nil
                      `((f-put-global 'auto-termination-cl-set
                                      (termination-clause-set ',fn (w state))
@@ -351,9 +444,10 @@
            (cond ((null steps)
                   (er soft 'with-auto-termination
                       "Original defun failed, even under skip-proofs!"))
-                 (t (let ((decl (auto-termination-declare
-                                 (f-get-global 'auto-termination-cl-set state)
-                                 theory expand (w state))))
+                 (t (er-let* ((decl (auto-termination-declare
+                                     (f-get-global 'auto-termination-cl-set
+                                                   state)
+                                     theory expand verbose state)))
                       (cond
                        (decl (value
                               (case result-spec
@@ -376,16 +470,17 @@
                                   show
                                   (theory '(theory 'auto-termination-theory))
                                   expand
-                                  verbose)
+                                  (verbose ':minimal))
   (declare (xargs :guard (member-eq show '(nil :event :dcl))))
   (let ((theory (if (eq theory :current)
                     '(current-theory :here)
                   theory)))
     (cond (show `(auto-termination-info ',defun-form ',show ',theory ',expand
                                         state))
-          (verbose `(make-event
-                     (auto-termination-info ',defun-form :event
-                                            ',theory ',expand state)))
+          ((eq verbose t)
+           `(make-event
+             (auto-termination-info ',defun-form :event
+                                    ',theory ',expand ',verbose state)))
           (t `(with-output
                 :stack :push
                 :off :all
@@ -398,6 +493,7 @@
                                                      :event
                                                      ',theory
                                                      ',expand
+                                                     ',verbose
                                                      state))))
                    (value
                     (list :OR
@@ -491,7 +587,7 @@
   :theory th ; default (theory 'auto-termination-theory)
   :expand ex ; default nil
   :show s    ; default nil
-  :verbose v ; default nil
+  :verbose v ; default :minimal
   )
  })
 
@@ -527,10 +623,14 @@
  resulting value will be just the generated @('declare') form.</li>
 
  <li>@(':verbose') &mdash; By default, if a @('declare') form is successfully
- generated, then the resulting event will be processed without any output.  To
- avoid turning off output, use @(':verbose t').</li>
+ generated, then the resulting event will be processed without output from the
+ prover.  To see output from the prover, use @(':verbose t').  To avoid even
+ the little messages about ``Searching'' and ``Reusing'', use @(':verbose
+ nil').</li>
 
  </ul>
 
  <p>See community book @('kestrel/system/auto-termination-tests.lisp') for more
  examples.</p>")
+
+(defpointer auto-termination with-auto-termination)

@@ -54,7 +54,7 @@
 
 (local (include-book "projects/paco/paco" :dir :system))
 
-(with-auto-termination ; finds PACO::ENNI
+(with-auto-termination ; finds PACO::ENNI-INDUCT
  (defun f1 (x y)
    (cond ((zp x) y)
          (t (f1 (floor x 10)
@@ -167,3 +167,23 @@
            (+ 2 (my-sum2 (my-dec2 b) (my-dec2 a))))
           ((zp b) a)
           (t b)))))
+
+(defun my-merge (x y)
+  (declare (xargs :measure (+ (len x) (len y))))
+  (cond ((endp x) y)
+        ((endp y) x)
+        ((< (car x) (car y))
+         (cons (car x)
+               (my-merge (cdr x) y)))
+        (t (cons (car y)
+                 (my-merge x (cdr y))))))
+
+(with-auto-termination
+ (defun my-merge2 (x y)
+   (cond ((endp x) y)
+         ((endp y) x)
+         ((< (car x) (car y))
+          (cons (car x)
+                (my-merge2 (cdr x) y)))
+         (t (cons (car y)
+                  (my-merge2 x (cdr y)))))))
