@@ -750,7 +750,7 @@ programmer-level mode.</p>" )
            (equal (mv-nth 1 (rm08 addr r-w-x x86))
                   (car (mv-nth 1 (rb (list addr) r-w-x x86))))))
 
-(defun find-info-from-program-at-term (thm mfc state)
+(defun find-info-from-program-at-term-in-programmer-mode (thm mfc state)
   (declare (xargs :stobjs (state) :mode :program)
            (ignorable thm state))
   (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
@@ -770,7 +770,7 @@ programmer-level mode.</p>" )
         (bytes . ,bytes))))
 
 (defthm rb-in-terms-of-nth-and-pos
-  (implies (and (bind-free (find-info-from-program-at-term
+  (implies (and (bind-free (find-info-from-program-at-term-in-programmer-mode
                             'rb-in-terms-of-nth-and-pos
                             mfc state)
                            (n prog-addr bytes))
@@ -819,7 +819,7 @@ programmer-level mode.</p>" )
 
 (defthm rb-in-terms-of-rb-subset-p
   (implies
-   (and (bind-free (find-info-from-program-at-term
+   (and (bind-free (find-info-from-program-at-term-in-programmer-mode
                     'rb-in-terms-of-rb-subset-p
                     mfc state)
                    (n prog-addr bytes))
@@ -847,7 +847,7 @@ programmer-level mode.</p>" )
 
 (defthm combine-bytes-rb-in-terms-of-rb-subset-p
   (implies
-   (and (bind-free (find-info-from-program-at-term
+   (and (bind-free (find-info-from-program-at-term-in-programmer-mode
                     'combine-bytes-rb-in-terms-of-rb-subset-p
                     mfc state)
                    (n prog-addr bytes))

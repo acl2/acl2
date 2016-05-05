@@ -236,7 +236,7 @@
   (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
        (call (if (not call)
                  (acl2::find-call-lst 'program-at-alt (acl2::mfc-clause mfc))
-               nil))
+               call))
        ((when (not call))
         ;; (cw "~%~p0: Program-At and Program-At-Alt term not encountered.~%" thm)
         nil)

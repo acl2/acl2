@@ -770,7 +770,7 @@
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
-;; (acl2::why ia32e-la-to-pa-values-and-mv-nth-1-wb)
+;; (acl2::why ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
 ;; (acl2::why rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode)
 ;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)
 ;; (acl2::why program-at-wb-disjoint-in-system-level-non-marking-mode)

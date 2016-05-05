@@ -72,6 +72,11 @@ in the system-level mode can be found in
   (local
    (encapsulate
      ()
-     (local (include-book "zeroCopy/zeroCopy-in-non-marking-mode" :ttags :all)))))
+     (local (include-book "zeroCopy/zeroCopy-in-non-marking-mode" :ttags :all))))
+
+  (local
+   (encapsulate
+     ()
+     (local (include-book "zeroCopy/zeroCopy-in-marking-mode" :ttags :all)))))
 
 ;; ======================================================================
