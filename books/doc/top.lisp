@@ -423,7 +423,8 @@
  (er-progn (xdoc::save "./manual"
                        ;; Allow redefinition so that we don't have to get
                        ;; everything perfect (until it's release time)
-                       :redef-okp t)
+                       :redef-okp t
+                       :logo-image "./acl2-big.png")
            (value `(value-triple :manual))))
 
 (value-triple
@@ -523,7 +524,8 @@
       "new-doc.lsp")
      (xdoc::save "./manual"
                  :redef-okp t
-                 :zip-p nil)
+                 :zip-p nil
+                 :logo-image "./acl2-big.png")
      (value `(value-triple :manual)))))
 
 
