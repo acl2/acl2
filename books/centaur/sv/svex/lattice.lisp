@@ -140,7 +140,7 @@ acl2::4v-monotonicity).</p>"
                              BITOPS::LOGBITP-WHEN-BIT
                              2VEC-P$INLINE
                              (:t logbitp)
-                             acl2::bit-functions-type
+                             ;acl2::bit-functions-type
                              bitops::logbitp-of-mask
                              acl2::bfix-when-not-1
                              bitops::logand-with-bitmask

@@ -235,7 +235,43 @@ in the hardware being analyzed.</p>"
 (define logcar
   :short "Least significant bit of a number."
   ((i integerp))
-  :returns bit
+  :returns (bit bitp
+                ;; [Jared] 2016-04-08: Originally this rule had the following
+                ;; rule-classes:
+                ;;
+                ;; :rule-classes ((:rewrite)
+                ;;                (:type-prescription :corollary (natp (logcar i)))
+                ;;                 (:generalize :corollary (or (equal (logcar i) 0)
+                ;;                                             (equal (logcar i) 1)))))
+                ;;
+                ;; Now that bitp is a proper type-set, I think we don't need
+                ;; the natp corollary and may as well get rid of the :rewrite
+                ;; rule and just make it a type-prescription.
+                ;;
+                ;; I had hoped that we wouldn't need the generalize rule,
+                ;; because when we do destructor elimination, ACL2 should be
+                ;; smart enough to know that the new variable for the logcar is
+                ;; a bit, right?  But this generalize rule is actually more
+                ;; powerful than that, because it lets us case-split on whether
+                ;; logcar is 0 or 1, and when I remove it, many theorems in the
+                ;; logops-lemmas book fail because they are relying on this
+                ;; case splitting to allow calls of functions like b-ior,
+                ;; b-and, etc., to evaluate.
+                ;;
+                ;; Well, I don't think this is a very good way to do these
+                ;; proofs, and it would be better to just explicitly enable the
+                ;; bit functions instead of letting it case split when it does
+                ;; destructor elimination.  But, this is such an old and
+                ;; well-established book that, in this case, I think
+                ;; maintaining backward compatibility is probably worth it.
+                ;; So, I'll hold my nose and leave the generalize rule here.
+                :rule-classes
+                ((:type-prescription)
+                 (:generalize :corollary (or (equal (logcar i) 0)
+                                             (equal (logcar i) 1))))
+                ;; Explicit name for backward compatibility
+                :name logcar-type)
+
   :long "<p>@('(logcar i)') is the @(see car) of an integer conceptualized as a
 bit-vector, where the least significant bit is at the head of the list.</p>
 
@@ -243,15 +279,7 @@ bit-vector, where the least significant bit is at the head of the list.</p>
   :enabled t
   :inline t
   (mbe :logic (imod i 2)
-       :exec (the (unsigned-byte 1) (logand (the integer i) 1)))
-  ///
-  (defthm logcar-type
-    (bitp (logcar i))
-    :rule-classes ((:rewrite)
-                   (:type-prescription :corollary (natp (logcar i)))
-                   (:generalize :corollary
-                    (or (equal (logcar i) 0)
-                        (equal (logcar i) 1))))))
+       :exec (the (unsigned-byte 1) (logand (the integer i) 1))))
 
 (define logcdr
   :short "All but the least significant bit of a number."
@@ -295,7 +323,10 @@ of the list."
 as a @(see bitp), 0 or 1."
   ((pos natp)
    (i   integerp))
-  :returns bit
+  :returns (bit bitp
+                :rule-classes :type-prescription
+                :name logbit-type ;; for backward compatibility with the old name
+                )
   :long "<p>This is just like the Common Lisp function @('(logbitp pos i)'),
 except that we return 1 or 0 (instead of t or nil).</p>
 
@@ -306,14 +337,17 @@ except that we return 1 or 0 (instead of t or nil).</p>
   (if (logbitp pos i)
       1
     0)
-
   ///
-  (defthm logbit-type
-    (bitp (logbit pos i))
-    :rule-classes ((:rewrite)
-                   (:type-prescription :corollary (natp (logbit pos i))))
-    ;; BOZO want a generalize rule like in logcar?
-    ))
+  ;; [Jared] 2016-04-08: as with logcar, switch to just a type-prescription
+  ;; in the :returns, now that bitp is known to type-set.
+  ;;
+  ;; (defthm logbit-type
+  ;;   (bitp (logbit pos i))
+  ;;   :rule-classes ((:rewrite)
+  ;;                  (:type-prescription :corollary (natp (logbit pos i))))
+  ;; BOZO want a generalize rule like in logcar?
+  ;; )
+  )
 
 
 (define logmask
@@ -676,7 +710,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
 (local (xdoc::set-default-parents logops-bit-functions))
 
 (define b-not ((i bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "Negation for @(see bitp)s."
   :inline t
   :enabled t
@@ -685,7 +719,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                (- 1 (the (unsigned-byte 1) i)))))
 
 (define b-and ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "Conjunction for @(see bitp)s."
   :inline t
   :enabled t
@@ -695,7 +729,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                        (the (unsigned-byte 1) j)))))
 
 (define b-ior ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "Inclusive or for @(see bitp)s."
   :inline t
   :enabled t
@@ -705,7 +739,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                        (the (unsigned-byte 1) j)))))
 
 (define b-xor ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "Exclusive or for @(see bitp)s."
   :enabled t
   :inline t
@@ -715,7 +749,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                        (the (unsigned-byte 1) j)))))
 
 (define b-eqv ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "Equivalence (a.k.a. if and only if, xnor) for @(see bitp)s."
   :enabled t
   :inline t
@@ -730,7 +764,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                        1))))
 
 (define b-nand ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "Negated and for @(see bitp)s."
   :enabled t
   :inline t
@@ -743,7 +777,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                        1))))
 
 (define b-nor ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "Negated or for @(see bitp)s."
   :enabled t
   :inline t
@@ -755,7 +789,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                        1))))
 
 (define b-andc1 ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "And of @(see bitp)s, complementing the first."
   :enabled t
   :inline t
@@ -765,7 +799,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                          (the (unsigned-byte 1) j)))))
 
 (define b-andc2 ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "And of @(see bitp)s, complementing the second."
   :enabled t
   :inline t
@@ -775,7 +809,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                          (the (unsigned-byte 1) j)))))
 
 (define b-orc1 ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "Inclusive or of @(see bitp)s, complementing the first."
   :enabled t
   :inline t
@@ -786,7 +820,7 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                        (the (unsigned-byte 1) j)))))
 
 (define b-orc2 ((i bitp) (j bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "Inclusive or of @(see bitp)s, complementing the second."
   :enabled t
   :inline t
@@ -797,42 +831,45 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
                          (logxor 1 (the (unsigned-byte 1) j)))))))
 
 (define b-ite ((test bitp) (then bitp) (else bitp))
-  :returns bit
+  :returns (bit bitp :rule-classes :type-prescription)
   :short "If-then-else for @(see bitp)s."
   :inline t
   :enabled t
   (if (zbp test) (bfix else) (bfix then)))
 
-(defsection bit-functions-type
-  :short "Basic type rules for the @(see logops-bit-functions)."
+;; [Jared] this is subsumed by the bitp :returns specs above, now that
+;; bitp is a type-set type.
 
-  (defthm bit-functions-type
-    (and (bitp (b-not i))
-         (bitp (b-and i j))
-         (bitp (b-ior i j))
-         (bitp (b-xor i j))
-         (bitp (b-eqv i j))
-         (bitp (b-nand i j))
-         (bitp (b-nor i j))
-         (bitp (b-andc1 i j))
-         (bitp (b-andc2 i j))
-         (bitp (b-orc1 i j))
-         (bitp (b-orc2 i j))
-         (bitp (b-ite test then else)))
-    :rule-classes
-    ((:rewrite)
-     (:type-prescription :corollary (natp (b-not i)))
-     (:type-prescription :corollary (natp (b-and i j)))
-     (:type-prescription :corollary (natp (b-ior i j)))
-     (:type-prescription :corollary (natp (b-xor i j)))
-     (:type-prescription :corollary (natp (b-eqv i j)))
-     (:type-prescription :corollary (natp (b-nand i j)))
-     (:type-prescription :corollary (natp (b-nor i j)))
-     (:type-prescription :corollary (natp (b-andc1 i j)))
-     (:type-prescription :corollary (natp (b-andc2 i j)))
-     (:type-prescription :corollary (natp (b-orc1 i j)))
-     (:type-prescription :corollary (natp (b-orc2 i j)))
-     (:type-prescription :corollary (natp (b-ite test then else))))))
+;; (defsection bit-functions-type
+;;   :short "Basic type rules for the @(see logops-bit-functions)."
+;;
+;;   (defthm bit-functions-type
+;;     (and (bitp (b-not i))
+;;          (bitp (b-and i j))
+;;          (bitp (b-ior i j))
+;;          (bitp (b-xor i j))
+;;          (bitp (b-eqv i j))
+;;          (bitp (b-nand i j))
+;;          (bitp (b-nor i j))
+;;          (bitp (b-andc1 i j))
+;;          (bitp (b-andc2 i j))
+;;          (bitp (b-orc1 i j))
+;;          (bitp (b-orc2 i j))
+;;          (bitp (b-ite test then else)))
+;;     :rule-classes
+;;     ((:rewrite)
+;;      (:type-prescription :corollary (natp (b-not i)))
+;;      (:type-prescription :corollary (natp (b-and i j)))
+;;      (:type-prescription :corollary (natp (b-ior i j)))
+;;      (:type-prescription :corollary (natp (b-xor i j)))
+;;      (:type-prescription :corollary (natp (b-eqv i j)))
+;;      (:type-prescription :corollary (natp (b-nand i j)))
+;;      (:type-prescription :corollary (natp (b-nor i j)))
+;;      (:type-prescription :corollary (natp (b-andc1 i j)))
+;;      (:type-prescription :corollary (natp (b-andc2 i j)))
+;;      (:type-prescription :corollary (natp (b-orc1 i j)))
+;;      (:type-prescription :corollary (natp (b-orc2 i j)))
+;;      (:type-prescription :corollary (natp (b-ite test then else))))))
 
 
 (defmacro loglist* (&rest args)
