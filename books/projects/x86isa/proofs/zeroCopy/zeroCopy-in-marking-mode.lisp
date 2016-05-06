@@ -852,195 +852,6 @@
 
 ;; ======================================================================
 
-;; (def-ruleset rewire_dst_to_src-disable
-;;   '((:type-prescription natp-pml4-table-entry-addr)
-;;     (:rewrite acl2::consp-when-member-equal-of-atom-listp)
-;;     (:rewrite ia32e-la-to-pa-xw-state)
-;;     (:rewrite r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
-;;     (:linear adding-7-to-pml4-table-entry-addr)
-;;     (:linear *physical-address-size*p-pml4-table-entry-addr)
-;;     (:rewrite las-to-pas-xw-state)
-;;     (:rewrite acl2::equal-of-booleans-rewrite)
-;;     (:rewrite loghead-unequal)
-;;     (:rewrite negative-logand-to-positive-logand-with-integerp-x)
-;;     (:definition combine-bytes)
-;;     (:rewrite |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
-;;     (:rewrite xr-ia32e-la-to-pa)
-;;     (:rewrite acl2::nfix-when-not-natp)
-;;     (:rewrite acl2::nfix-when-natp)
-;;     (:rewrite constant-upper-bound-of-logior-for-naturals)
-;;     (:linear combine-bytes-size-for-rm64-programmer-level-mode)
-;;     (:rewrite acl2::natp-when-integerp)
-;;     (:rewrite acl2::natp-when-gte-0)
-;;     (:rewrite 4k-aligned-physical-address-helper)
-;;     (:rewrite bitops::signed-byte-p-of-logtail)
-;;     (:linear adding-7-to-page-dir-ptr-table-entry-addr)
-;;     (:linear *physical-address-size*p-page-dir-ptr-table-entry-addr)
-;;     (:type-prescription adding-7-to-pml4-table-entry-addr)
-;;     (:type-prescription adding-7-to-page-dir-ptr-table-entry-addr)
-;;     (:rewrite acl2::signed-byte-p-logext)
-;;     (:type-prescription booleanp)
-;;     (:rewrite loghead-64-n64-to-i64-canonical-address)
-;;     (:type-prescription pml4-table-base-addr)
-;;     (:rewrite get-prefixes-opener-lemma-group-4-prefix)
-;;     (:rewrite get-prefixes-opener-lemma-group-3-prefix)
-;;     (:rewrite get-prefixes-opener-lemma-group-2-prefix)
-;;     (:rewrite get-prefixes-opener-lemma-group-1-prefix)
-;;     (:definition member-p)
-;;     (:linear unsigned-byte-p-of-combine-bytes)
-;;     (:type-prescription acl2::|x < y  =>  0 < -x+y|)
-;;     (:rewrite default-+-2)
-;;     (:rewrite acl2::natp-rw)
-;;     (:rewrite ia32e-la-to-pa-lower-12-bits)
-;;     (:rewrite default-+-1)
-;;     (:rewrite acl2::ash-0)
-;;     (:rewrite acl2::zip-open)
-;;     (:rewrite loghead-of-non-integerp)
-;;     (:type-prescription addr-byte-alistp-create-addr-bytes-alist)
-;;     (:rewrite canonical-address-p-limits-thm-3)
-;;     (:rewrite canonical-address-p-limits-thm-2)
-;;     (:rewrite zf-spec-thm)
-;;     (:linear acl2::loghead-upper-bound)
-;;     (:linear bitops::logior-<-0-linear-2)
-;;     (:linear size-of-combine-bytes)
-;;     (:rewrite disjoint-p-subset-p)
-;;     (:definition binary-append)
-;;     (:definition create-addr-bytes-alist)
-;;     (:rewrite member-p-of-subset-is-member-p-of-superset)
-;;     (:linear rgfi-is-i64p . 1)
-;;     (:rewrite member-p-cdr)
-;;     (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
-;;     (:rewrite acl2::difference-unsigned-byte-p)
-;;     (:linear rgfi-is-i64p . 2)
-;;     (:rewrite acl2::append-when-not-consp)
-;;     (:linear rip-is-i48p . 2)
-;;     (:linear rip-is-i48p . 1)
-;;     (:type-prescription byte-ify)
-;;     (:rewrite acl2::ifix-when-not-integerp)
-;;     (:rewrite bitops::basic-unsigned-byte-p-of-+)
-;;     (:rewrite disjoint-p-append-1)
-;;     (:rewrite default-<-1)
-;;     (:rewrite default-car)
-;;     (:rewrite default-cdr)
-;;     (:meta acl2::cancel_plus-lessp-correct)
-;;     (:rewrite wb-not-consp-addr-lst)
-;;     (:definition nthcdr)
-;;     (:rewrite subset-p-cdr-y)
-;;     (:rewrite ia32e-la-to-pa-lower-12-bits-value-of-address-when-error)
-;;     (:rewrite default-<-2)
-;;     (:type-prescription n52p-mv-nth-1-ia32e-la-to-pa)
-;;     (:meta acl2::cancel_plus-equal-correct)
-;;     (:definition nth)
-;;     (:rewrite consp-create-addr-bytes-alist)
-;;     (:rewrite subset-p-reflexive)
-;;     (:meta acl2::cancel_times-equal-correct)
-;;     (:rewrite set::sets-are-true-lists)
-;;     (:linear rflags-is-n32p)
-;;     (:rewrite consp-byte-ify)
-;;     (:definition true-listp)
-;;     (:type-prescription rflags-is-n32p)
-;;     (:rewrite cdr-append-is-append-cdr)
-;;     (:type-prescription bitops::logtail-natp)
-;;     (:rewrite subset-p-cdr-x)
-;;     (:rewrite bitops::logbitp-nonzero-of-bit)
-;;     (:rewrite set::nonempty-means-set)
-;;     (:type-prescription xw)
-;;     (:type-prescription consp-create-addr-bytes-alist-in-terms-of-len)
-;;     (:type-prescription consp-create-addr-bytes-alist)
-;;     (:type-prescription natp-combine-bytes)
-;;     (:type-prescription true-listp)
-;;     (:rewrite unsigned-byte-p-of-logtail)
-;;     (:rewrite bitops::logbitp-when-bitmaskp)
-;;     (:type-prescription all-translation-governing-addresses)
-;;     (:type-prescription set::setp-type)
-;;     (:type-prescription set::empty-type)
-;;     (:rewrite acl2::equal-constant-+)
-;;     (:definition byte-listp)
-;;     (:rewrite unsigned-byte-p-of-ash)
-;;     (:rewrite bitops::normalize-logbitp-when-mods-equal)
-;;     (:rewrite bitops::logbitp-of-negative-const)
-;;     (:rewrite bitops::logbitp-of-mask)
-;;     (:rewrite bitops::logbitp-of-const)
-;;     (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
-;;     (:meta bitops::open-logbitp-of-const-lite-meta)
-;;     (:rewrite rb-returns-byte-listp)
-;;     (:rewrite car-of-append)
-;;     (:type-prescription rb-returns-true-listp)
-;;     (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
-;;     (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller)
-;;     (:type-prescription consp-append)
-;;     (:type-prescription bitops::logand-natp-type-2)
-;;     (:definition acons)
-;;     (:rewrite unsigned-byte-p-of-combine-bytes)
-;;     (:rewrite unsigned-byte-p-of-logior)
-;;     (:type-prescription natp)
-;;     (:rewrite set::in-set)
-;;     (:type-prescription acl2::logtail-type)
-;;     (:rewrite acl2::member-of-cons)
-;;     (:type-prescription true-listp-create-addr-bytes-alist)
-;;     (:type-prescription rb-returns-byte-listp)
-;;     (:rewrite rationalp-implies-acl2-numberp)
-;;     (:type-prescription bitops::ash-natp-type)
-;;     (:type-prescription combine-bytes)
-;;     (:definition n08p$inline)
-;;     (:definition len)
-;;     (:rewrite xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode)
-;;     (:rewrite bitops::logsquash-of-loghead-zero)
-;;     (:rewrite default-unary-minus)
-;;     (:rewrite len-of-rb-in-programmer-level-mode)
-;;     (:type-prescription acl2::true-listp-append)
-;;     (:linear bitops::upper-bound-of-logand . 2)
-;;     (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
-;;     (:rewrite logand-redundant)
-;;     (:linear ash-monotone-2)
-;;     (:linear bitops::logand->=-0-linear-2)
-;;     (:linear bitops::upper-bound-of-logand . 1)
-;;     (:linear bitops::logand->=-0-linear-1)
-;;     (:linear mv-nth-1-idiv-spec)
-;;     (:linear mv-nth-1-div-spec)
-;;     (:rewrite unsigned-byte-p-of-logand-2)
-;;     (:linear acl2::expt->-1)
-;;     (:rewrite acl2::unsigned-byte-p-loghead)
-;;     (:type-prescription zip)
-;;     (:linear bitops::logand-<-0-linear)
-;;     (:rewrite bitops::logior-fold-consts)
-;;     (:linear <=-logior)
-;;     (:linear member-p-pos-value)
-;;     (:linear member-p-pos-1-value)
-;;     (:linear bitops::logior->=-0-linear)
-;;     (:rewrite no-duplicates-p-and-append)
-;;     (:rewrite acl2::subsetp-member . 2)
-;;     (:rewrite acl2::subsetp-member . 1)
-;;     (:type-prescription wr32$inline)
-;;     (:rewrite unsigned-byte-p-of-logand-1)
-;;     (:rewrite subset-p-cons-member-p-lemma)
-;;     (:rewrite member-p-of-not-a-consp)
-;;     (:rewrite get-prefixes-opener-lemma-zero-cnt)
-;;     (:rewrite acl2::expt-with-violated-guards)
-;;     (:rewrite bitops::basic-signed-byte-p-of-+)
-;;     (:type-prescription ash)
-;;     (:linear acl2::expt-is-increasing-for-base>1)
-;;     (:definition member-equal)
-;;     (:linear bitops::logior-<-0-linear-1)
-;;     (:linear bitops::upper-bound-of-logior-for-naturals)
-;;     (:linear bitops::expt-2-lower-bound-by-logbitp)
-;;     member-p-strip-cars-of-remove-duplicate-keys
-;;     not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;     disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;     not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;     member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;     mv-nth-1-ia32e-la-to-pa-when-error
-;;     mv-nth-1-las-to-pas-when-error
-;;     bitops::logand-with-negated-bitmask
-;;     unsigned-byte-p))
-
-;; (in-theory (e/d (las-to-pas-subset-p member-p subset-p)
-;;                 (disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;                  not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;                  member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;                  not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;                  xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
-
 (encapsulate
   ()
 
@@ -1422,14 +1233,6 @@
                         (:meta acl2::mv-nth-cons-meta)
                         force (force)))))))
 
-;; Argh, ACL2's default ancestors-check is killing me --- it prevents
-;; x86-fetch-decode-execute from opening up (because the first hyp of
-;; get-prefixes-alt-opener-lemma-no-prefix-byte is judged more
-;; complicated than its ancestors --- why?). So I'm going to use Sol's
-;; trivial ancestors-check version.
-(local (include-book "tools/trivial-ancestors-check" :dir :system))
-(local (acl2::use-trivial-ancestors-check))
-
 (def-ruleset rewire_dst_to_src-disable
   '((:type-prescription natp-pml4-table-entry-addr)
     (:rewrite acl2::consp-when-member-equal-of-atom-listp)
@@ -1763,317 +1566,2768 @@
 
 #||
 
-(defthm mv-nth-0-rb-and-xw-mem-in-system-level-mode
-  (implies (and (disjoint-p
-                 (list index)
-                 (all-translation-governing-addresses l-addrs (double-rewrite x86)))
-                (canonical-address-listp l-addrs)
-                (physical-address-p index))
-           (equal (mv-nth 0 (rb l-addrs r-w-x (xw :mem index value x86)))
-                  (mv-nth 0 (rb l-addrs r-w-x x86))))
-  :hints (("Goal" :in-theory (e/d* (rb
-                                    disjoint-p
-                                    las-to-pas)
-                                   (rewrite-rb-to-rb-alt
-                                    force (force))))))
-
-(defthm read-from-physical-memory-xw-mem
-  (implies (disjoint-p (list index) p-addrs)
-           (equal (read-from-physical-memory p-addrs (xw :mem index value x86))
-                  (read-from-physical-memory p-addrs x86)))
-  :hints (("Goal" :in-theory (e/d* (read-from-physical-memory
-                                    disjoint-p
-                                    member-p)
-                                   ()))))
-
-(defthm mv-nth-1-rb-and-xw-mem-in-system-level-mode
-  (implies (and
-            (disjoint-p
-             (list index)
-             (all-translation-governing-addresses l-addrs (double-rewrite x86)))
-            (disjoint-p
-             (list index)
-             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
-            (disjoint-p
-             (all-translation-governing-addresses l-addrs (double-rewrite x86))
-             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
-            (canonical-address-listp l-addrs)
-            (physical-address-p index)
-            (not (programmer-level-mode x86)))
-           (equal (mv-nth 1 (rb l-addrs r-w-x (xw :mem index value x86)))
-                  (mv-nth 1 (rb l-addrs r-w-x x86))))
-  :hints (("Goal" :in-theory (e/d* (rb
-                                    disjoint-p
-                                    las-to-pas)
-                                   (rewrite-rb-to-rb-alt
-                                    xlate-equiv-memory-and-xr-mem-from-rest-of-memory
-                                    force (force))))))
-
-(local
- (defthm get-prefixes-xw-mem-values-in-system-level-mode-helper-1
-   (implies (and (not (zp cnt))
-                 (canonical-address-p start-rip)
-                 (canonical-address-p (+ cnt start-rip)))
-            (canonical-address-p (+ 1 start-rip)))
-   :hints (("Goal" :in-theory (e/d* (canonical-address-p
-                                     signed-byte-p)
-                                    ())))))
-
-(defthm get-prefixes-xw-mem-values-in-system-level-mode-helper-2
-  (implies
-   (and
-    (not
-     (member-p
-      (mv-nth 1 (ia32e-la-to-pa start-rip :x (loghead 2 (xr :seg-visible 1 x86)) x86))
-      (translation-governing-addresses start-rip x86)))
-    (not (equal (mv-nth 1 (ia32e-la-to-pa start-rip :x (loghead 2 (xr :seg-visible 1 x86)) x86))
-                index))
-    (not (member-p index (translation-governing-addresses start-rip x86)))
-    (canonical-address-p start-rip)
-    (canonical-address-p (+ 1 start-rip))
-    (unsigned-byte-p 52 index)
-    (unsigned-byte-p 8 value)
-    (not (xr :programmer-level-mode 0 x86))
-    (x86p x86))
-   (equal (mv-nth 0 (get-prefixes start-rip prefixes 1 (xw :mem index value x86)))
-          (mv-nth 0 (get-prefixes start-rip prefixes 1 x86))))
-  :hints
-  (("Goal"
-    :do-not '(preprocess)
-    :expand ((get-prefixes start-rip prefixes 1 x86)
-             (get-prefixes start-rip prefixes 1 (xw :mem index value x86)))
-    :in-theory (e/d* (get-prefixes
-                      las-to-pas
-                      disjoint-p member-p
-                      all-translation-governing-addresses
-                      disjoint-p-append-1)
-                     ((:REWRITE ACL2::LOGHEAD-IDENTITY)
-                      (:DEFINITION PAGE-STRUCTURE-MARKING-MODE$INLINE)
-                      (:REWRITE LOGHEAD-ZERO-SMALLER)
-                      (:REWRITE MV-NTH-2-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE)
-                      (:REWRITE MV-NTH-2-LAS-TO-PAS-SYSTEM-LEVEL-NON-MARKING-MODE)
-                      (:TYPE-PRESCRIPTION BOOLEANP-PAGE-STRUCTURE-MARKING-MODE-TYPE)
-                      (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-15*-WHEN-LOW-12-BITS-=-4081)
-                      (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-=-4090)
-                      (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-=-4089)
-                      (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-15*-WHEN-LOW-12-BITS-<-4081)
-                      (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-<-4093)
-                      (:LINEAR IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-<-4089)
-                      (:LINEAR
-                       IA32E-LA-TO-PA-<-*MEM-SIZE-IN-BYTES-1*-WHEN-LOW-12-BITS-!=-ALL-ONES)
-                      (:REWRITE MV-NTH-2-RB-IN-SYSTEM-LEVEL-MARKING-MODE)
-                      (:REWRITE GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE-HELPER-1)
-                      (:REWRITE XR-AND-IA32E-LA-TO-PA-IN-NON-MARKING-MODE)
-                      (:REWRITE XR-XW-INTER-FIELD)
-                      (:REWRITE R-W-X-IS-IRRELEVANT-FOR-MV-NTH-1-LAS-TO-PAS-WHEN-NO-ERRORS)
-                      (:REWRITE LAS-TO-PAS-SUBSET-P)
-                      (:REWRITE DUMB-CHECK)
-                      (:REWRITE RB-RETURNS-X86-PROGRAMMER-LEVEL-MODE)
-                      (:REWRITE MV-NTH-2-RB-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-                      (:REWRITE
-                       MV-NTH-1-RB-AND-XLATE-EQUIV-MEMORY-DISJOINT-FROM-PAGING-STRUCTURES)
-                      (:LINEAR N08P-MV-NTH-1-RM08)
-                      (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-0)
-                      (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-1)
-                      (:REWRITE RB-XW-STATE-IN-SYSTEM-LEVEL-MODE)
-                      (:REWRITE RB-XW-STATE-IN-PROGRAMMER-LEVEL-MODE)
-                      (:REWRITE RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-MODE)
-                      (:REWRITE COMBINE-BYTES-RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-MODE)
-                      (:TYPE-PRESCRIPTION SIGNED-BYTE-P)
-                      (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P-PHYSICAL-ADDRESS-LISTP)
-                      (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P)
-                      (:REWRITE
-                       DISJOINTNESS-OF-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES)
-                      (:REWRITE RB-XW-VALUES-IN-SYSTEM-LEVEL-MODE)
-                      (:REWRITE RB-XW-VALUES-IN-PROGRAMMER-LEVEL-MODE)
-                      (:REWRITE COMMUTATIVITY-OF-+)
-                      (:TYPE-PRESCRIPTION XLATE-EQUIV-MEMORY)
-                      (:REWRITE BITOPS::LOGAND-WITH-BITMASK)
-                      (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-4-PREFIX-IN-MARKING-MODE)
-                      (:TYPE-PRESCRIPTION ACL2::BITMASKP$INLINE)
-                      (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX-IN-MARKING-MODE)
-                      (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX-IN-MARKING-MODE)
-                      (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX-IN-MARKING-MODE)
-                      (:REWRITE RIGHT-SHIFT-TO-LOGTAIL)
-                      (:REWRITE ACL2::FOLD-CONSTS-IN-+)
-                      (:TYPE-PRESCRIPTION IFIX)
-                      (:REWRITE PROGRAMMER-LEVEL-MODE-RM08-NO-ERROR)
-                      (:REWRITE RM08-DOES-NOT-AFFECT-STATE-IN-PROGRAMMER-LEVEL-MODE)
-                      (:REWRITE MV-NTH-2-RM08-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
-                      (:TYPE-PRESCRIPTION BITOPS::LOGIOR-NATP-TYPE)
-                      (:REWRITE RM08-VALUE-WHEN-ERROR)
-                      (:REWRITE RM08-XW-SYSTEM-MODE)
-                      (:REWRITE RM08-XW-PROGRAMMER-LEVEL-MODE)
-                      (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-1)
-                      (:TYPE-PRESCRIPTION BINARY-LOGAND)
-                      rewrite-get-prefixes-to-get-prefixes-alt
-                      rewrite-rb-to-rb-alt
-                      xlate-equiv-memory-and-two-get-prefixes-values
-                      xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))))
-
-(defthm get-prefixes-xw-mem-values-in-system-level-mode
-  ;; TODO: Why the heck does this take 10min?
-  (implies
-   (and
-    (disjoint-p
-     (mv-nth 1 (las-to-pas
-                (create-canonical-address-list cnt start-rip)
-                :x (cpl x86) x86))
-     (open-qword-paddr-list
-      (gather-all-paging-structure-qword-addresses x86)))
-    (disjoint-p
-     (all-translation-governing-addresses
-      (create-canonical-address-list cnt start-rip) (double-rewrite x86))
-     (mv-nth 1 (las-to-pas
-                (create-canonical-address-list cnt start-rip)
-                :x (cpl x86) (double-rewrite x86))))
-    (disjoint-p
-     (list index)
-     (mv-nth 1 (las-to-pas (create-canonical-address-list cnt start-rip)
-                           :x (cpl x86) (double-rewrite x86))))
-    (disjoint-p
-     (list index)
-     (all-translation-governing-addresses
-      (create-canonical-address-list cnt start-rip) (double-rewrite x86)))
-    (not (mv-nth 0 (las-to-pas (create-canonical-address-list cnt start-rip) :x (cpl x86) x86)))
-    (posp cnt)
-    (canonical-address-p start-rip)
-    (canonical-address-p (+ cnt start-rip))
-    (physical-address-p index)
-    (unsigned-byte-p 8 value)
-    (not (programmer-level-mode x86))
-    (page-structure-marking-mode x86)
-    (x86p x86))
-   (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
-          (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
-  :hints
-  (("Goal"
-    :do-not '(preprocess)
-    :induct (get-prefixes-two-x86-induct-hint
-             start-rip prefixes cnt x86 (xw :mem index value x86))
-    :in-theory (e/d* (get-prefixes
-                      las-to-pas
-                      disjoint-p
-                      member-p
-                      all-translation-governing-addresses
-                      disjoint-p-append-1)
-                     (rewrite-get-prefixes-to-get-prefixes-alt
-                      rewrite-rb-to-rb-alt
-                      xlate-equiv-memory-and-two-get-prefixes-values
-                      xlate-equiv-memory-and-xr-mem-from-rest-of-memory
-                      ;; force (force)
-                      )))
-   (if
-       ;; Apply to all subgoals under a top-level induction.
-       (and (consp (car id))
-            (< 1 (len (car id))))
-       '(:expand ((get-prefixes start-rip prefixes cnt x86)
-                  (create-canonical-address-list cnt start-rip)
-                  (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
-                 :in-theory
-                 (e/d* (get-prefixes
-                        las-to-pas
-                        disjoint-p
-                        member-p
-                        all-translation-governing-addresses
-                        disjoint-p-append-1
-                        las-to-pas-subset-p)
-                       (rewrite-get-prefixes-to-get-prefixes-alt
-                        rewrite-rb-to-rb-alt
-                        xlate-equiv-memory-and-two-get-prefixes-values
-                        xlate-equiv-memory-and-xr-mem-from-rest-of-memory
-                        disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-                        disjointness-of-las-to-pas-from-las-to-pas-subset-p
-                        (:rewrite disjoint-p-of-remove-duplicates-equal)
-                        (:rewrite mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p)
-                        (:rewrite not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal)
-                        (:rewrite cdr-mv-nth-1-las-to-pas)
-                        (:rewrite member-p-remove-duplicates-equal-iff-member-p)
-                        (:rewrite not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal)
-                        (:definition remove-duplicates-equal)
-                        (:rewrite member-p-canonical-address-listp)
-                        (:rewrite not-member-p-of-remove-duplicates-equal)
-                        (:rewrite member-p-of-open-qword-paddr-list-and-remove-duplicates-equal)
-                        (:rewrite subset-p-two-create-canonical-address-lists-general)
-                        (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-0)
-                        (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-1)
-                        (:REWRITE GET-PREFIXES-OPENER-LEMMA-NO-PREFIX-BYTE)
-                        (:REWRITE
-                         MV-NTH-1-RB-AND-XLATE-EQUIV-MEMORY-DISJOINT-FROM-PAGING-STRUCTURES)
-                        (:REWRITE ACL2::LOGHEAD-IDENTITY)
-                        (:REWRITE MV-NTH-2-IA32E-LA-TO-PA-SYSTEM-LEVEL-NON-MARKING-MODE)
-                        (:REWRITE DISJOINTNESS-OF-LAS-TO-PAS-FROM-LAS-TO-PAS-SUBSET-P))))
-     nil)))
-
 (i-am-here)
 
-(defthm get-prefixes-and-write-to-physical-memory
-  (implies (and
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list cnt start-rip)
-                        :x (cpl x86) x86))
-             (open-qword-paddr-list
-              (gather-all-paging-structure-qword-addresses x86)))
-            (not (mv-nth 0
-                         (las-to-pas
-                          (create-canonical-address-list cnt start-rip)
-                          :x (cpl x86) x86)))
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list cnt start-rip)
-                        :x (cpl x86) x86))
-             p-addrs)
-            (canonical-address-p start-rip)
-            (physical-address-listp p-addrs)
-            (byte-listp bytes)
-            (equal (len p-addrs) (len bytes))
-            (not (programmer-level-mode x86))
-            (page-structure-marking-mode x86)
-            (x86p x86))
-           (equal
-            (mv-nth 0 (get-prefixes start-rip prefixes cnt
-                                    (write-to-physical-memory p-addrs bytes x86)))
-            (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
-  :hints (("Goal" :in-theory (e/d* (las-to-pas
-                                    get-prefixes
-                                    write-to-physical-memory
-                                    byte-listp)
-                                   (rewrite-get-prefixes-to-get-prefixes-alt
-                                    xlate-equiv-memory-and-two-get-prefixes-values)))))
+(encapsulate
+  ()
+  (defthm mv-nth-0-rb-and-xw-mem-in-system-level-mode
+    (implies (and (disjoint-p
+                   (list index)
+                   (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+                  (canonical-address-listp l-addrs)
+                  (physical-address-p index))
+             (equal (mv-nth 0 (rb l-addrs r-w-x (xw :mem index value x86)))
+                    (mv-nth 0 (rb l-addrs r-w-x x86))))
+    :hints (("Goal" :in-theory (e/d* (rb
+                                      disjoint-p
+                                      las-to-pas)
+                                     (rewrite-rb-to-rb-alt
+                                      force (force))))))
 
-(defthm get-prefixes-values-and-wb-in-system-level-marking-mode
-  (implies (and
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list cnt start-rip)
-                        :x (cpl x86) x86))
-             (open-qword-paddr-list
-              (gather-all-paging-structure-qword-addresses x86)))
-            (not (mv-nth 0
-                         (las-to-pas
-                          (create-canonical-address-list cnt start-rip)
-                          :x (cpl x86) x86)))
-            (disjoint-p
-             (mv-nth 1 (las-to-pas
-                        (create-canonical-address-list cnt start-rip)
-                        :x (cpl x86) x86))
-             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-            (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-            (canonical-address-p start-rip)
-            (not (programmer-level-mode x86))
-            (page-structure-marking-mode x86)
-            (x86p x86))
-           (equal
-            (mv-nth 0 (get-prefixes start-rip prefixes cnt (mv-nth 1 (wb addr-lst x86))))
-            (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
-  :hints (("Goal" :in-theory (e/d* (las-to-pas
-                                    get-prefixes
-                                    wb)
-                                   (rewrite-get-prefixes-to-get-prefixes-alt
-                                    xlate-equiv-memory-and-two-get-prefixes-values
-                                    xlate-equiv-memory-and-mv-nth-1-rm08
-                                    xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))))
+  (defthm read-from-physical-memory-xw-mem
+    (implies (disjoint-p (list index) p-addrs)
+             (equal (read-from-physical-memory p-addrs (xw :mem index value x86))
+                    (read-from-physical-memory p-addrs x86)))
+    :hints (("Goal" :in-theory (e/d* (read-from-physical-memory
+                                      disjoint-p
+                                      member-p)
+                                     ()))))
+
+  (defthm mv-nth-1-rb-and-xw-mem-in-system-level-mode
+    (implies (and
+              (disjoint-p
+               (list index)
+               (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+              (disjoint-p
+               (list index)
+               (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
+              (disjoint-p
+               (all-translation-governing-addresses l-addrs (double-rewrite x86))
+               (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
+              (canonical-address-listp l-addrs)
+              (physical-address-p index)
+              (not (programmer-level-mode x86)))
+             (equal (mv-nth 1 (rb l-addrs r-w-x (xw :mem index value x86)))
+                    (mv-nth 1 (rb l-addrs r-w-x x86))))
+    :hints (("Goal" :in-theory (e/d* (rb
+                                      disjoint-p
+                                      las-to-pas)
+                                     (rewrite-rb-to-rb-alt
+                                      xlate-equiv-memory-and-xr-mem-from-rest-of-memory
+                                      force (force))))))
+
+  (local
+   (defthm get-prefixes-xw-mem-values-in-system-level-mode-helper-1
+     (implies (and (not (zp cnt))
+                   (canonical-address-p start-rip)
+                   (canonical-address-p (+ cnt start-rip)))
+              (canonical-address-p (+ 1 start-rip)))
+     :hints (("Goal" :in-theory (e/d* (canonical-address-p
+                                       signed-byte-p)
+                                      ())))))
+
+  (local
+   (defthm get-prefixes-xw-mem-values-in-system-level-mode-helper-2
+     (implies
+      (and
+       (not
+        (member-p
+         (mv-nth 1 (ia32e-la-to-pa start-rip :x (loghead 2 (xr :seg-visible 1 x86)) x86))
+         (translation-governing-addresses start-rip x86)))
+       (not (equal (mv-nth 1 (ia32e-la-to-pa start-rip :x (loghead 2 (xr :seg-visible 1 x86)) x86))
+                   index))
+       (not (member-p index (translation-governing-addresses start-rip x86)))
+       (canonical-address-p start-rip)
+       (canonical-address-p (+ 1 start-rip))
+       (unsigned-byte-p 52 index)
+       (unsigned-byte-p 8 value)
+       (not (xr :programmer-level-mode 0 x86))
+       (x86p x86))
+      (and (equal (mv-nth 0 (get-prefixes start-rip prefixes 1 (xw :mem index value x86)))
+                  (mv-nth 0 (get-prefixes start-rip prefixes 1 x86)))
+           (equal (mv-nth 1 (get-prefixes start-rip prefixes 1 (xw :mem index value x86)))
+                  (mv-nth 1 (get-prefixes start-rip prefixes 1 x86)))))
+     :hints
+     (("Goal"
+       :do-not '(preprocess)
+       :expand ((get-prefixes start-rip prefixes 1 x86)
+                (get-prefixes start-rip prefixes 1 (xw :mem index value x86)))
+       :in-theory (e/d* (get-prefixes
+                         las-to-pas
+                         disjoint-p member-p
+                         all-translation-governing-addresses
+                         disjoint-p-append-1)
+                        (get-prefixes-xw-mem-values-in-system-level-mode-helper-1
+                         (:rewrite acl2::loghead-identity)
+                         (:definition page-structure-marking-mode$inline)
+                         (:rewrite loghead-zero-smaller)
+                         (:rewrite mv-nth-2-ia32e-la-to-pa-system-level-non-marking-mode)
+                         (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-mode)
+                         (:type-prescription booleanp-page-structure-marking-mode-type)
+                         (:linear ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-=-4081)
+                         (:linear ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4090)
+                         (:linear ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4089)
+                         (:linear ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-<-4081)
+                         (:linear ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4093)
+                         (:linear ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4089)
+                         (:linear
+                          ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-!=-all-ones)
+                         (:rewrite mv-nth-2-rb-in-system-level-marking-mode)
+                         (:rewrite get-prefixes-xw-mem-values-in-system-level-mode-helper-1)
+                         (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                         (:rewrite xr-xw-inter-field)
+                         (:rewrite r-w-x-is-irrelevant-for-mv-nth-1-las-to-pas-when-no-errors)
+                         (:rewrite las-to-pas-subset-p)
+                         (:rewrite rb-returns-x86-programmer-level-mode)
+                         (:rewrite mv-nth-2-rb-in-system-level-non-marking-mode)
+                         (:rewrite
+                          mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures)
+                         (:linear n08p-mv-nth-1-rm08)
+                         (:rewrite canonical-address-p-limits-thm-0)
+                         (:rewrite canonical-address-p-limits-thm-1)
+                         (:rewrite rb-xw-state-in-system-level-mode)
+                         (:rewrite rb-xw-state-in-programmer-level-mode)
+                         (:rewrite rb-in-terms-of-rb-subset-p-in-system-level-mode)
+                         (:rewrite combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-mode)
+                         (:type-prescription signed-byte-p)
+                         (:type-prescription member-p-physical-address-p-physical-address-listp)
+                         (:type-prescription member-p-physical-address-p)
+                         (:rewrite
+                          disjointness-of-translation-governing-addresses-from-all-translation-governing-addresses)
+                         (:rewrite rb-xw-values-in-system-level-mode)
+                         (:rewrite rb-xw-values-in-programmer-level-mode)
+                         (:rewrite commutativity-of-+)
+                         (:type-prescription xlate-equiv-memory)
+                         (:rewrite bitops::logand-with-bitmask)
+                         (:rewrite get-prefixes-opener-lemma-group-4-prefix-in-marking-mode)
+                         (:type-prescription acl2::bitmaskp$inline)
+                         (:rewrite get-prefixes-opener-lemma-group-3-prefix-in-marking-mode)
+                         (:rewrite get-prefixes-opener-lemma-group-2-prefix-in-marking-mode)
+                         (:rewrite get-prefixes-opener-lemma-group-1-prefix-in-marking-mode)
+                         (:rewrite right-shift-to-logtail)
+                         (:rewrite acl2::fold-consts-in-+)
+                         (:type-prescription ifix)
+                         (:rewrite programmer-level-mode-rm08-no-error)
+                         (:rewrite rm08-does-not-affect-state-in-programmer-level-mode)
+                         (:rewrite mv-nth-2-rm08-in-system-level-non-marking-mode)
+                         (:type-prescription bitops::logior-natp-type)
+                         (:rewrite rm08-value-when-error)
+                         (:rewrite rm08-xw-system-mode)
+                         (:rewrite rm08-xw-programmer-level-mode)
+                         (:type-prescription bitops::logand-natp-type-1)
+                         (:type-prescription binary-logand)
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory))))))
+
+  (local
+   (defthm las-to-pas-and-cons-l-addrs
+     (implies (not (mv-nth 0 (las-to-pas (cons lin-addr l-addrs) r-w-x cpl x86)))
+              (and (and
+                    (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)) nil)
+                    (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)) nil))
+                   (equal (mv-nth 1 (las-to-pas (cons lin-addr l-addrs) r-w-x cpl x86))
+                          (cons (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                                (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
+     :hints (("Goal" :in-theory (e/d* (las-to-pas)
+                                      ())))))
+
+  (local (in-theory (e/d* (disjoint-p-cons-1 member-p-of-nil) ())))
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/1|
+    (IMPLIES
+     (ZP CNT)
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))))))
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/2|
+    (IMPLIES
+     (AND (NOT (ZP CNT))
+          (MV-NTH 0 (RM08 START-RIP :X X86)))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))))))
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/3|
+    (IMPLIES
+     (AND (NOT (ZP CNT))
+          (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+          (MV-NTH 0
+                  (RM08 START-RIP
+                        :X (XW :MEM INDEX VALUE X86))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    )
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/5|
+    (IMPLIES
+     (AND (NOT (ZP CNT))
+          (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+          (NOT (MV-NTH 0
+                       (RM08 START-RIP
+                             :X (XW :MEM INDEX VALUE X86))))
+          (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+                 (MV-NTH 1
+                         (RM08 START-RIP
+                               :X (XW :MEM INDEX VALUE X86))))
+          (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+               (MV-NTH 1 (RM08 START-RIP :X X86)))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    )
+
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/7|
+    (IMPLIES
+     (AND
+      (NOT (ZP CNT))
+      (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+      (NOT (MV-NTH 0
+                   (RM08 START-RIP
+                         :X (XW :MEM INDEX VALUE X86))))
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (NOT (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+                (MV-NTH 1 (RM08 START-RIP :X X86)))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       1)
+      (OR (EQL 0
+               (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 3))
+          (EQL (MV-NTH 1 (RM08 START-RIP :X X86))
+               (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 3)))
+      (NOT (CANONICAL-ADDRESS-P (+ 1 START-RIP))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    )
+
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/10|
+    (IMPLIES
+     (AND
+      (NOT (ZP CNT))
+      (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+      (NOT (MV-NTH 0
+                   (RM08 START-RIP
+                         :X (XW :MEM INDEX VALUE X86))))
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (NOT (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+                (MV-NTH 1 (RM08 START-RIP :X X86)))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       2)
+      (OR (EQL 0
+               (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 11))
+          (EQL (MV-NTH 1 (RM08 START-RIP :X X86))
+               (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 11)))
+      (NOT (CANONICAL-ADDRESS-P (+ 1 START-RIP))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    )
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/13|
+    (IMPLIES
+     (AND
+      (NOT (ZP CNT))
+      (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+      (NOT (MV-NTH 0
+                   (RM08 START-RIP
+                         :X (XW :MEM INDEX VALUE X86))))
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (NOT (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+                (MV-NTH 1 (RM08 START-RIP :X X86)))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       3)
+      (OR (EQL 0
+               (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 19))
+          (EQL (MV-NTH 1 (RM08 START-RIP :X X86))
+               (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 19)))
+      (NOT (CANONICAL-ADDRESS-P (+ 1 START-RIP))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    )
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/16|
+    (IMPLIES
+     (AND
+      (NOT (ZP CNT))
+      (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+      (NOT (MV-NTH 0
+                   (RM08 START-RIP
+                         :X (XW :MEM INDEX VALUE X86))))
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (NOT (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+                (MV-NTH 1 (RM08 START-RIP :X X86)))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       4)
+      (OR (EQL 0
+               (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 27))
+          (EQL (MV-NTH 1 (RM08 START-RIP :X X86))
+               (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 27)))
+      (NOT (CANONICAL-ADDRESS-P (+ 1 START-RIP))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    )
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/18|
+    (IMPLIES
+     (AND
+      (NOT (ZP CNT))
+      (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+      (NOT (MV-NTH 0
+                   (RM08 START-RIP
+                         :X (XW :MEM INDEX VALUE X86))))
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (NOT (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+                (MV-NTH 1 (RM08 START-RIP :X X86)))))
+      (NOT
+       (EQL
+        (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+        1))
+      (NOT
+       (EQL
+        (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+        2))
+      (NOT
+       (EQL
+        (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+        3))
+      (NOT
+       (EQL
+        (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+        4)))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    )
+
+  (DEFTHM |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/14|
+    (IMPLIES
+     (AND
+      (NOT (ZP CNT))
+      (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+      (NOT (MV-NTH 0
+                   (RM08 START-RIP
+                         :X (XW :MEM INDEX VALUE X86))))
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (NOT (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+                (MV-NTH 1 (RM08 START-RIP :X X86)))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       3)
+      (NOT (OR (EQL 0
+                    (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 19))
+               (EQL (MV-NTH 1 (RM08 START-RIP :X X86))
+                    (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 19)))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    :hints (("Goal"
+             :expand ((get-prefixes start-rip prefixes cnt x86)
+                      (create-canonical-address-list cnt start-rip)
+                      (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
+             :in-theory
+             (e/d* (get-prefixes
+                    all-translation-governing-addresses
+                    disjoint-p-append-1
+                    member-p-cons)
+                   (rewrite-get-prefixes-to-get-prefixes-alt
+                    rewrite-rb-to-rb-alt
+                    force (force)))))
+    )
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/17|
+    (IMPLIES
+     (AND
+      (NOT (ZP CNT))
+      (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+      (NOT (MV-NTH 0
+                   (RM08 START-RIP
+                         :X (XW :MEM INDEX VALUE X86))))
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (NOT (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+                (MV-NTH 1 (RM08 START-RIP :X X86)))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       4)
+      (NOT (OR (EQL 0
+                    (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 27))
+               (EQL (MV-NTH 1 (RM08 START-RIP :X X86))
+                    (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 27)))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    :hints (("Goal"
+             :expand ((get-prefixes start-rip prefixes cnt x86)
+                      (create-canonical-address-list cnt start-rip)
+                      (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
+             :in-theory
+             (e/d* (get-prefixes
+                    all-translation-governing-addresses
+                    disjoint-p-append-1
+                    member-p-cons)
+                   (rewrite-get-prefixes-to-get-prefixes-alt
+                    rewrite-rb-to-rb-alt
+                    force (force)))))
+    )
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/11|
+    (IMPLIES
+     (AND
+      (NOT (ZP CNT))
+      (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+      (NOT (MV-NTH 0
+                   (RM08 START-RIP
+                         :X (XW :MEM INDEX VALUE X86))))
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (NOT (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+                (MV-NTH 1 (RM08 START-RIP :X X86)))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       2)
+      (NOT (OR (EQL 0
+                    (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 11))
+               (EQL (MV-NTH 1 (RM08 START-RIP :X X86))
+                    (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 11)))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    :hints (("Goal"
+             :expand ((get-prefixes start-rip prefixes cnt x86)
+                      (create-canonical-address-list cnt start-rip)
+                      (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
+             :in-theory
+             (e/d* (get-prefixes
+                    all-translation-governing-addresses
+                    disjoint-p-append-1
+                    member-p-cons)
+                   (rewrite-get-prefixes-to-get-prefixes-alt
+                    rewrite-rb-to-rb-alt
+                    force (force)))))
+    )
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/8|
+    (IMPLIES
+     (AND
+      (NOT (ZP CNT))
+      (NOT (MV-NTH 0 (RM08 START-RIP :X X86)))
+      (NOT (MV-NTH 0
+                   (RM08 START-RIP
+                         :X (XW :MEM INDEX VALUE X86))))
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (NOT (ZP (GET-ONE-BYTE-PREFIX-ARRAY-CODE
+                (MV-NTH 1 (RM08 START-RIP :X X86)))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       1)
+      (NOT (OR (EQL 0
+                    (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 3))
+               (EQL (MV-NTH 1 (RM08 START-RIP :X X86))
+                    (BITOPS::PART-SELECT-WIDTH-LOW PREFIXES 8 3)))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    :hints (("Goal"
+             :expand ((get-prefixes start-rip prefixes cnt x86)
+                      (create-canonical-address-list cnt start-rip)
+                      (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
+             :in-theory
+             (e/d* (get-prefixes
+                    all-translation-governing-addresses
+                    disjoint-p-append-1
+                    member-p-cons)
+                   (rewrite-get-prefixes-to-get-prefixes-alt
+                    rewrite-rb-to-rb-alt
+                    force (force)))))
+    )
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/15|
+    (IMPLIES
+     (AND
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1 (RM08 START-RIP :X (XW :MEM INDEX VALUE X86))))
+      (EQL (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+           4)
+      (IMPLIES
+       (AND
+        (DISJOINT-P
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (MV-NTH 2 (RM08 START-RIP :X X86))))
+         (OPEN-QWORD-PADDR-LIST (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES
+                                 (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (DISJOINT-P
+         (ALL-TRANSLATION-GOVERNING-ADDRESSES
+          (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                         (+ 1 START-RIP))
+          (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))))
+        (DISJOINT-P
+         (LIST INDEX)
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))))
+        (DISJOINT-P (LIST INDEX)
+                    (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                     (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                                    (+ 1 START-RIP))
+                     (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (NOT
+         (MV-NTH
+          0
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (POSP (+ -1 CNT))
+        (CANONICAL-ADDRESS-P (+ 1 START-RIP))
+        (CANONICAL-ADDRESS-P (+ (+ -1 CNT) 1 START-RIP))
+        (PHYSICAL-ADDRESS-P INDEX)
+        (UNSIGNED-BYTE-P 8 VALUE)
+        (NOT (PROGRAMMER-LEVEL-MODE (MV-NTH 2 (RM08 START-RIP :X X86))))
+        (PAGE-STRUCTURE-MARKING-MODE (MV-NTH 2 (RM08 START-RIP :X X86)))
+        (X86P (MV-NTH 2 (RM08 START-RIP :X X86))))
+       (AND
+        (EQUAL
+         (MV-NTH 0
+                 (GET-PREFIXES (+ 1 START-RIP)
+                               (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                                     (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                                    (BITOPS::PART-INSTALL-WIDTH-LOW
+                                     BYTE REG-FOR-!SLICE-DO-NOT-USE 8 27))
+                               (+ -1 CNT)
+                               (XW :MEM INDEX VALUE
+                                   (MV-NTH 2 (RM08 START-RIP :X X86)))))
+         (MV-NTH 0
+                 (GET-PREFIXES (+ 1 START-RIP)
+                               (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                                     (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                                    (BITOPS::PART-INSTALL-WIDTH-LOW
+                                     BYTE REG-FOR-!SLICE-DO-NOT-USE 8 27))
+                               (+ -1 CNT)
+                               (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (EQUAL
+         (MV-NTH 1
+                 (GET-PREFIXES (+ 1 START-RIP)
+                               (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                                     (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                                    (BITOPS::PART-INSTALL-WIDTH-LOW
+                                     BYTE REG-FOR-!SLICE-DO-NOT-USE 8 27))
+                               (+ -1 CNT)
+                               (XW :MEM INDEX VALUE
+                                   (MV-NTH 2 (RM08 START-RIP :X X86)))))
+         (MV-NTH 1
+                 (GET-PREFIXES (+ 1 START-RIP)
+                               (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                                     (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                                    (BITOPS::PART-INSTALL-WIDTH-LOW
+                                     BYTE REG-FOR-!SLICE-DO-NOT-USE 8 27))
+                               (+ -1 CNT)
+                               (MV-NTH 2 (RM08 START-RIP :X X86))))))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                     :X
+                     (LET NIL
+                          (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                                         2 0))
+                     X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                     :X
+                     (LET NIL
+                          (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                                         2 0))
+                     (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                     :X
+                     (LET NIL
+                          (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                                         2 0))
+                     (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                     :X
+                     (LET NIL
+                          (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                                         2 0))
+                     X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND (EQUAL (MV-NTH 0
+                          (GET-PREFIXES START-RIP
+                                        PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+                  (MV-NTH 0
+                          (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+           (EQUAL (MV-NTH 1
+                          (GET-PREFIXES START-RIP
+                                        PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+                  (MV-NTH 1
+                          (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    :HINTS
+    (("Goal" :EXPAND ((GET-PREFIXES START-RIP PREFIXES CNT X86)
+                      (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                      (GET-PREFIXES START-RIP PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+      :IN-THEORY (E/D* (GET-PREFIXES ALL-TRANSLATION-GOVERNING-ADDRESSES
+                                     DISJOINT-P-APPEND-1 MEMBER-P-CONS)
+                       (REWRITE-GET-PREFIXES-TO-GET-PREFIXES-ALT
+                        REWRITE-RB-TO-RB-ALT FORCE (FORCE))))))
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/12|
+    (IMPLIES
+     (AND
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       3)
+      (IMPLIES
+       (AND
+        (DISJOINT-P
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (MV-NTH 2 (RM08 START-RIP :X X86))))
+         (OPEN-QWORD-PADDR-LIST (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES
+                                 (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (DISJOINT-P
+         (ALL-TRANSLATION-GOVERNING-ADDRESSES
+          (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                         (+ 1 START-RIP))
+          (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))))
+        (DISJOINT-P
+         (LIST INDEX)
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))))
+        (DISJOINT-P
+         (LIST INDEX)
+         (ALL-TRANSLATION-GOVERNING-ADDRESSES
+          (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                         (+ 1 START-RIP))
+          (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (NOT
+         (MV-NTH
+          0
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (POSP (+ -1 CNT))
+        (CANONICAL-ADDRESS-P (+ 1 START-RIP))
+        (CANONICAL-ADDRESS-P (+ (+ -1 CNT) 1 START-RIP))
+        (PHYSICAL-ADDRESS-P INDEX)
+        (UNSIGNED-BYTE-P 8 VALUE)
+        (NOT (PROGRAMMER-LEVEL-MODE (MV-NTH 2 (RM08 START-RIP :X X86))))
+        (PAGE-STRUCTURE-MARKING-MODE (MV-NTH 2 (RM08 START-RIP :X X86)))
+        (X86P (MV-NTH 2 (RM08 START-RIP :X X86))))
+       (AND
+        (EQUAL
+         (MV-NTH
+          0
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 19))
+                        (+ -1 CNT)
+                        (XW :MEM INDEX VALUE
+                            (MV-NTH 2 (RM08 START-RIP :X X86)))))
+         (MV-NTH
+          0
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 19))
+                        (+ -1 CNT)
+                        (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (EQUAL
+         (MV-NTH
+          1
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 19))
+                        (+ -1 CNT)
+                        (XW :MEM INDEX VALUE
+                            (MV-NTH 2 (RM08 START-RIP :X X86)))))
+         (MV-NTH
+          1
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 19))
+                        (+ -1 CNT)
+                        (MV-NTH 2 (RM08 START-RIP :X X86))))))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    :hints (("Goal"
+             :expand ((get-prefixes start-rip prefixes cnt x86)
+                      (create-canonical-address-list cnt start-rip)
+                      (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
+             :in-theory
+             (e/d* (get-prefixes
+                    all-translation-governing-addresses
+                    disjoint-p-append-1
+                    member-p-cons)
+                   (rewrite-get-prefixes-to-get-prefixes-alt
+                    rewrite-rb-to-rb-alt
+                    force (force))))))
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/9|
+    (IMPLIES
+     (AND
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1
+                     (RM08 START-RIP
+                           :X (XW :MEM INDEX VALUE X86))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       2)
+      (IMPLIES
+       (AND
+        (DISJOINT-P
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (MV-NTH 2 (RM08 START-RIP :X X86))))
+         (OPEN-QWORD-PADDR-LIST (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES
+                                 (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (DISJOINT-P
+         (ALL-TRANSLATION-GOVERNING-ADDRESSES
+          (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                         (+ 1 START-RIP))
+          (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))))
+        (DISJOINT-P
+         (LIST INDEX)
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))))
+        (DISJOINT-P
+         (LIST INDEX)
+         (ALL-TRANSLATION-GOVERNING-ADDRESSES
+          (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                         (+ 1 START-RIP))
+          (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (NOT
+         (MV-NTH
+          0
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (POSP (+ -1 CNT))
+        (CANONICAL-ADDRESS-P (+ 1 START-RIP))
+        (CANONICAL-ADDRESS-P (+ (+ -1 CNT) 1 START-RIP))
+        (PHYSICAL-ADDRESS-P INDEX)
+        (UNSIGNED-BYTE-P 8 VALUE)
+        (NOT (PROGRAMMER-LEVEL-MODE (MV-NTH 2 (RM08 START-RIP :X X86))))
+        (PAGE-STRUCTURE-MARKING-MODE (MV-NTH 2 (RM08 START-RIP :X X86)))
+        (X86P (MV-NTH 2 (RM08 START-RIP :X X86))))
+       (AND
+        (EQUAL
+         (MV-NTH
+          0
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 11))
+                        (+ -1 CNT)
+                        (XW :MEM INDEX VALUE
+                            (MV-NTH 2 (RM08 START-RIP :X X86)))))
+         (MV-NTH
+          0
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 11))
+                        (+ -1 CNT)
+                        (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (EQUAL
+         (MV-NTH
+          1
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 11))
+                        (+ -1 CNT)
+                        (XW :MEM INDEX VALUE
+                            (MV-NTH 2 (RM08 START-RIP :X X86)))))
+         (MV-NTH
+          1
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 11))
+                        (+ -1 CNT)
+                        (MV-NTH 2 (RM08 START-RIP :X X86))))))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    :hints (("Goal"
+             :expand ((get-prefixes start-rip prefixes cnt x86)
+                      (create-canonical-address-list cnt start-rip)
+                      (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
+             :in-theory
+             (e/d* (get-prefixes
+                    all-translation-governing-addresses
+                    disjoint-p-append-1
+                    member-p-cons)
+                   (rewrite-get-prefixes-to-get-prefixes-alt
+                    rewrite-rb-to-rb-alt
+                    force (force))))))
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/6|
+    (IMPLIES
+     (AND
+      (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+             (MV-NTH 1 (RM08 START-RIP :X (XW :MEM INDEX VALUE X86))))
+      (EQL
+       (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RM08 START-RIP :X X86)))
+       1)
+      (IMPLIES
+       (AND
+        (DISJOINT-P
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (MV-NTH 2 (RM08 START-RIP :X X86))))
+         (OPEN-QWORD-PADDR-LIST (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES
+                                 (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (DISJOINT-P
+         (ALL-TRANSLATION-GOVERNING-ADDRESSES
+          (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                         (+ 1 START-RIP))
+          (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))))
+        (DISJOINT-P
+         (LIST INDEX)
+         (MV-NTH
+          1
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86))))))
+        (DISJOINT-P
+         (LIST INDEX)
+         (ALL-TRANSLATION-GOVERNING-ADDRESSES
+          (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                         (+ 1 START-RIP))
+          (DOUBLE-REWRITE (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (NOT
+         (MV-NTH
+          0
+          (LAS-TO-PAS
+           (CREATE-CANONICAL-ADDRESS-LIST (+ -1 CNT)
+                                          (+ 1 START-RIP))
+           :X
+           (LET ((X86 (MV-NTH 2 (RM08 START-RIP :X X86))))
+                (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                               2 0))
+           (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (POSP (+ -1 CNT))
+        (CANONICAL-ADDRESS-P (+ 1 START-RIP))
+        (CANONICAL-ADDRESS-P (+ (+ -1 CNT) 1 START-RIP))
+        (PHYSICAL-ADDRESS-P INDEX)
+        (UNSIGNED-BYTE-P 8 VALUE)
+        (NOT (PROGRAMMER-LEVEL-MODE (MV-NTH 2 (RM08 START-RIP :X X86))))
+        (PAGE-STRUCTURE-MARKING-MODE (MV-NTH 2 (RM08 START-RIP :X X86)))
+        (X86P (MV-NTH 2 (RM08 START-RIP :X X86))))
+       (AND
+        (EQUAL
+         (MV-NTH
+          0
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 3))
+                        (+ -1 CNT)
+                        (XW :MEM INDEX VALUE
+                            (MV-NTH 2 (RM08 START-RIP :X X86)))))
+         (MV-NTH
+          0
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 3))
+                        (+ -1 CNT)
+                        (MV-NTH 2 (RM08 START-RIP :X X86)))))
+        (EQUAL
+         (MV-NTH
+          1
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 3))
+                        (+ -1 CNT)
+                        (XW :MEM INDEX VALUE
+                            (MV-NTH 2 (RM08 START-RIP :X X86)))))
+         (MV-NTH
+          1
+          (GET-PREFIXES (+ 1 START-RIP)
+                        (LET ((REG-FOR-!SLICE-DO-NOT-USE PREFIXES)
+                              (BYTE (MV-NTH 1 (RM08 START-RIP :X X86))))
+                             (BITOPS::PART-INSTALL-WIDTH-LOW
+                              BYTE REG-FOR-!SLICE-DO-NOT-USE 8 3))
+                        (+ -1 CNT)
+                        (MV-NTH 2 (RM08 START-RIP :X X86))))))))
+     (IMPLIES
+      (AND
+       (DISJOINT-P
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86))
+        (OPEN-QWORD-PADDR-LIST
+         (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES X86)))
+       (DISJOINT-P
+        (ALL-TRANSLATION-GOVERNING-ADDRESSES
+         (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+         (DOUBLE-REWRITE X86))
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P
+        (LIST INDEX)
+        (MV-NTH
+         1
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          (DOUBLE-REWRITE X86))))
+       (DISJOINT-P (LIST INDEX)
+                   (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                    (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    (DOUBLE-REWRITE X86)))
+       (NOT
+        (MV-NTH
+         0
+         (LAS-TO-PAS
+          (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+          :X
+          (LET NIL
+               (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                              2 0))
+          X86)))
+       (POSP CNT)
+       (CANONICAL-ADDRESS-P START-RIP)
+       (CANONICAL-ADDRESS-P (+ CNT START-RIP))
+       (PHYSICAL-ADDRESS-P INDEX)
+       (UNSIGNED-BYTE-P 8 VALUE)
+       (NOT (PROGRAMMER-LEVEL-MODE X86))
+       (PAGE-STRUCTURE-MARKING-MODE X86)
+       (X86P X86))
+      (AND
+       (EQUAL
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 0
+                (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+       (EQUAL
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP
+                              PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+        (MV-NTH 1
+                (GET-PREFIXES START-RIP PREFIXES CNT X86))))))
+    :hints (("Goal"
+             :expand ((get-prefixes start-rip prefixes cnt x86)
+                      (create-canonical-address-list cnt start-rip)
+                      (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
+             :in-theory
+             (e/d* (get-prefixes
+                    all-translation-governing-addresses
+                    disjoint-p-append-1
+                    member-p-cons)
+                   (rewrite-get-prefixes-to-get-prefixes-alt
+                    rewrite-rb-to-rb-alt
+                    force (force))))))
+
+  (defthmd not-member-p-of-superset-is-not-member-p-of-subset
+    (implies (and (equal (member-p e y) nil)
+                  (subset-p x y))
+             (equal (member-p e x) nil))
+    :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
+  (local
+   (defthmd |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/4|-helper-1
+     (implies (and (not (member-p index
+                                  (all-translation-governing-addresses
+                                   (create-canonical-address-list cnt start-rip)
+                                   x86)))
+                   (canonical-address-p start-rip)
+                   (not (zp cnt)))
+              (not (member-p index
+                             (all-translation-governing-addresses (list start-rip)
+                                                                  x86))))
+     :hints (("Goal" :in-theory (e/d* (member-p
+                                       subset-p
+                                       all-translation-governing-addresses)
+                                      ())))))
+
+  (local
+   (defthmd |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/4|-helper-2
+     (implies (and (not (member-p
+                         index
+                         (mv-nth 1
+                                 (las-to-pas (create-canonical-address-list cnt start-rip)
+                                             :x (loghead 2 (xr :seg-visible 1 x86))
+                                             x86))))
+                   (not (mv-nth 0
+                                (las-to-pas (create-canonical-address-list cnt start-rip)
+                                            :x (loghead 2 (xr :seg-visible 1 x86))
+                                            x86)))
+                   (canonical-address-p start-rip)
+                   (not (zp cnt)))
+              (not (member-p index
+                             (mv-nth 1
+                                     (las-to-pas (list start-rip)
+                                                 :x (loghead 2 (xr :seg-visible 1 x86))
+                                                 x86)))))
+     :hints (("Goal" :in-theory (e/d* (member-p
+                                       subset-p
+                                       las-to-pas)
+                                      ())))))
+
+  (local
+   (defthmd |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/4|-helper-3
+     (implies (and (disjoint-p
+                    (all-translation-governing-addresses
+                     (create-canonical-address-list cnt start-rip)
+                     x86)
+                    (mv-nth 1
+                            (las-to-pas (create-canonical-address-list cnt start-rip)
+                                        :x (loghead 2 (xr :seg-visible 1 x86))
+                                        x86)))
+                   (not (mv-nth 0
+                                (las-to-pas (create-canonical-address-list cnt start-rip)
+                                            :x (loghead 2 (xr :seg-visible 1 x86))
+                                            x86)))
+                   (canonical-address-p start-rip)
+                   (not (zp cnt)))
+              (disjoint-p (all-translation-governing-addresses (list start-rip)
+                                                               x86)
+                          (mv-nth 1
+                                  (las-to-pas (list start-rip)
+                                              :x (loghead 2 (xr :seg-visible 1 x86))
+                                              x86))))
+     :hints (("Goal" :in-theory (e/d* (member-p
+                                       subset-p
+                                       all-translation-governing-addresses)
+                                      ())))))
+
+  (DEFTHM
+    |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/4|
+    (IMPLIES
+     (AND
+      (NOT (EQUAL (MV-NTH 1 (RM08 START-RIP :X X86))
+                  (MV-NTH 1
+                          (RM08 START-RIP
+                                :X (XW :MEM INDEX VALUE X86)))))
+      (not (zp cnt))
+      (not (mv-nth 0
+                   (las-to-pas (create-canonical-address-list cnt start-rip)
+                               :x (loghead 2 (xr :seg-visible 1 x86))
+                               x86)))
+      (DISJOINT-P
+       (ALL-TRANSLATION-GOVERNING-ADDRESSES
+        (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+        (DOUBLE-REWRITE X86))
+       (MV-NTH
+        1
+        (LAS-TO-PAS (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    :X
+                    (LET NIL
+                         (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                                        2 0))
+                    (DOUBLE-REWRITE X86))))
+      (DISJOINT-P
+       (LIST INDEX)
+       (MV-NTH
+        1
+        (LAS-TO-PAS (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    :X
+                    (LET NIL
+                         (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                                        2 0))
+                    (DOUBLE-REWRITE X86))))
+      (DISJOINT-P (LIST INDEX)
+                  (ALL-TRANSLATION-GOVERNING-ADDRESSES
+                   (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                   (DOUBLE-REWRITE X86)))
+      (NOT
+       (MV-NTH
+        0
+        (LAS-TO-PAS (CREATE-CANONICAL-ADDRESS-LIST CNT START-RIP)
+                    :X
+                    (LET NIL
+                         (BITOPS::PART-SELECT-WIDTH-LOW (XR :SEG-VISIBLE 1 X86)
+                                                        2 0))
+                    X86)))
+      (CANONICAL-ADDRESS-P START-RIP)
+      (PHYSICAL-ADDRESS-P INDEX)
+      (UNSIGNED-BYTE-P 8 VALUE)
+      (NOT (PROGRAMMER-LEVEL-MODE X86))
+      (X86P X86))
+     (AND (EQUAL (MV-NTH 0
+                         (GET-PREFIXES START-RIP
+                                       PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+                 (MV-NTH 0
+                         (GET-PREFIXES START-RIP PREFIXES CNT X86)))
+          (EQUAL (MV-NTH 1
+                         (GET-PREFIXES START-RIP
+                                       PREFIXES CNT (XW :MEM INDEX VALUE X86)))
+                 (MV-NTH 1
+                         (GET-PREFIXES START-RIP PREFIXES CNT X86)))))
+    :HINTS
+    (("Goal"
+      :do-not-induct t
+      :use ((:instance mv-nth-1-rb-and-xw-mem-in-system-level-mode
+                       (l-addrs (list start-rip))
+                       (r-w-x :x)
+                       (index index)
+                       (value value)
+                       (x86 x86)))
+      :IN-THEORY (E/D* (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/4|-helper-1
+                        |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/4|-helper-2
+                        |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/4|-helper-3)
+                       (mv-nth-1-rb-and-xw-mem-in-system-level-mode
+                        MEMBER-P-START-RIP-OF-CREATE-CANONICAL-ADDRESS-LIST
+                        REWRITE-GET-PREFIXES-TO-GET-PREFIXES-ALT
+                        REWRITE-RB-TO-RB-ALT FORCE (FORCE))))))
+
+  (local
+   (defthm get-prefixes-xw-mem-values-in-system-level-mode
+     (implies
+      (and
+       (disjoint-p
+        (mv-nth 1 (las-to-pas
+                   (create-canonical-address-list cnt start-rip)
+                   :x (cpl x86) x86))
+        (open-qword-paddr-list
+         (gather-all-paging-structure-qword-addresses x86)))
+
+       (disjoint-p
+        (all-translation-governing-addresses
+         (create-canonical-address-list cnt start-rip) (double-rewrite x86))
+        (mv-nth 1 (las-to-pas
+                   (create-canonical-address-list cnt start-rip)
+                   :x (cpl x86) (double-rewrite x86))))
+       (disjoint-p
+        (list index)
+        (mv-nth 1 (las-to-pas (create-canonical-address-list cnt start-rip)
+                              :x (cpl x86) (double-rewrite x86))))
+       (disjoint-p
+        (list index)
+        (all-translation-governing-addresses
+         (create-canonical-address-list cnt start-rip) (double-rewrite x86)))
+
+       (not (mv-nth 0 (las-to-pas (create-canonical-address-list cnt start-rip) :x (cpl x86) x86)))
+
+       (posp cnt)
+       (canonical-address-p start-rip)
+       (canonical-address-p (+ cnt start-rip))
+       (physical-address-p index)
+       (unsigned-byte-p 8 value)
+       (not (programmer-level-mode x86))
+       (page-structure-marking-mode x86)
+       (x86p x86))
+      (and
+       (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
+              (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
+       (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
+              (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))
+     :hints
+     (("Goal"
+       :do-not '(preprocess)
+       :induct (get-prefixes-two-x86-induct-hint
+                start-rip prefixes cnt x86 (xw :mem index value x86))
+       :in-theory (e/d* (get-prefixes)
+                        (rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/18"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/18|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/18|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/17"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/17|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/17|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/16"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/16|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/16|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/15"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/15|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/15|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/14"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/14|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/14|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/13"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/13|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/13|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/12"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/12|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/12|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/11"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/11|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/11|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/10"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/10|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/10|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/9"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/9|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/9|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/8"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/8|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/8|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/7"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/7|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/7|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/6"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/6|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/6|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/5"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/5|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/5|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/4"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/4|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/4|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/3"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/3|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/3|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/2"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/2|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/2|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory)))
+      ("Subgoal *1/1"
+       :use ((:instance |GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/1|))
+       :in-theory (e/d* ()
+                        (|GET-PREFIXES-XW-MEM-VALUES-IN-SYSTEM-LEVEL-MODE Subgoal *1/1|
+                         get-prefixes
+                         rewrite-get-prefixes-to-get-prefixes-alt
+                         rewrite-rb-to-rb-alt
+                         xlate-equiv-memory-and-two-get-prefixes-values
+                         xlate-equiv-memory-and-xr-mem-from-rest-of-memory))))))
+
+  (defthm get-prefixes-and-write-to-physical-memory
+    (implies
+     (and (disjoint-p
+           (mv-nth 1 (las-to-pas
+                      (create-canonical-address-list cnt start-rip)
+                      :x (cpl x86) x86))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses x86)))
+          (disjoint-p
+           (all-translation-governing-addresses
+            (create-canonical-address-list cnt start-rip) (double-rewrite x86))
+           (mv-nth 1
+                   (las-to-pas (create-canonical-address-list cnt start-rip)
+                               :x (cpl x86) (double-rewrite x86))))
+          (disjoint-p p-addrs
+                      (mv-nth
+                       1
+                       (las-to-pas (create-canonical-address-list cnt start-rip)
+                                   :x (cpl x86) (double-rewrite x86))))
+          (disjoint-p p-addrs
+                      (open-qword-paddr-list
+                       (gather-all-paging-structure-qword-addresses x86)))
+          ;; TODO: !!! The prev. hyp should imply this one.
+          (disjoint-p p-addrs
+                      (all-translation-governing-addresses
+                       (create-canonical-address-list cnt start-rip)
+                       (double-rewrite x86)))
+          (not (mv-nth 0 (las-to-pas (create-canonical-address-list cnt start-rip)
+                                     :x (cpl x86) x86)))
+          (posp cnt)
+          (canonical-address-p start-rip)
+          (canonical-address-p (+ cnt start-rip))
+          (physical-address-listp p-addrs)
+          (byte-listp bytes)
+          (equal (len p-addrs) (len bytes))
+          (not (programmer-level-mode x86))
+          (page-structure-marking-mode x86)
+          (x86p x86))
+     (and
+      (equal
+       (mv-nth 0 (get-prefixes start-rip prefixes cnt
+                               (write-to-physical-memory p-addrs bytes x86)))
+       (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
+      (equal
+       (mv-nth 1 (get-prefixes start-rip prefixes cnt
+                               (write-to-physical-memory p-addrs bytes x86)))
+       (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :induct (cons (write-to-physical-memory p-addrs bytes x86)
+                           (byte-listp bytes))
+             :in-theory (e/d* (get-prefixes
+                               disjoint-p
+                               member-p
+                               write-to-physical-memory
+                               byte-listp
+                               n08p len)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               xlate-equiv-memory-and-two-get-prefixes-values)))))
+
+  (defthm gather-all-paging-structure-qword-addresses-and-write-to-physical-memory-disjoint
+    (implies
+     (and (disjoint-p p-addrs
+                      (open-qword-paddr-list
+                       (gather-all-paging-structure-qword-addresses x86)))
+          (physical-address-listp p-addrs))
+     (equal
+      (gather-all-paging-structure-qword-addresses (write-to-physical-memory p-addrs bytes x86))
+      (gather-all-paging-structure-qword-addresses x86)))
+    :hints (("Goal" :in-theory (e/d* (write-to-physical-memory
+                                      byte-listp
+                                      n08p
+                                      len)
+                                     ()))))
+  (defthm get-prefixes-alt-and-write-to-physical-memory
+    (implies
+     (and
+      ;; I really shouldn't need this first hyp.
+      (disjoint-p
+       (all-translation-governing-addresses
+        (create-canonical-address-list cnt start-rip)
+        (double-rewrite x86))
+       (mv-nth 1
+               (las-to-pas (create-canonical-address-list cnt start-rip)
+                           :x (cpl x86) (double-rewrite x86))))
+      (disjoint-p p-addrs
+                  (mv-nth 1
+                          (las-to-pas (create-canonical-address-list cnt start-rip)
+                                      :x (cpl x86) (double-rewrite x86))))
+      (disjoint-p p-addrs
+                  (open-qword-paddr-list
+                   (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+      (disjoint-p p-addrs
+                  (all-translation-governing-addresses
+                   (create-canonical-address-list cnt start-rip)
+                   (double-rewrite x86)))
+      (posp cnt)
+      (canonical-address-p (+ cnt start-rip))
+      (physical-address-listp p-addrs)
+      (byte-listp bytes)
+      (equal (len p-addrs) (len bytes))
+      (x86p x86))
+     (and
+      (equal
+       (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt (write-to-physical-memory p-addrs bytes x86)))
+       (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86)))
+      (equal
+       (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt (write-to-physical-memory p-addrs bytes x86)))
+       (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86)))))
+    :hints
+    (("Goal"
+      :do-not-induct t
+      :use ((:instance get-prefixes-and-write-to-physical-memory))
+      :in-theory
+      (e/d*
+       (get-prefixes-alt)
+       (rewrite-rb-to-rb-alt
+        rewrite-get-prefixes-to-get-prefixes-alt
+        get-prefixes-and-write-to-physical-memory
+        xlate-equiv-memory-and-two-get-prefixes-values
+        mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
+        force (force))))))
+
+  (defthm get-prefixes-alt-values-and-wb-in-system-level-marking-mode
+    (implies
+     (and
+      ;; I shouldn't need this hyp.
+      (disjoint-p
+       (all-translation-governing-addresses
+        (create-canonical-address-list cnt start-rip) (double-rewrite x86))
+       (mv-nth 1
+               (las-to-pas (create-canonical-address-list cnt start-rip)
+                           :x (cpl x86) (double-rewrite x86))))
+      (disjoint-p
+       (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+       (mv-nth 1
+               (las-to-pas (create-canonical-address-list cnt start-rip)
+                           :x (cpl x86) (double-rewrite x86))))
+      (disjoint-p (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+                  (open-qword-paddr-list
+                   (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+      (disjoint-p (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+                  (all-translation-governing-addresses
+                   (create-canonical-address-list cnt start-rip) (double-rewrite x86)))
+      (posp cnt)
+      (canonical-address-p (+ cnt start-rip))
+      (addr-byte-alistp addr-lst)
+      (not (programmer-level-mode x86))
+      (x86p x86))
+     (and
+      (equal
+       (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt (mv-nth 1 (wb addr-lst x86))))
+       (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86)))
+      (equal
+       (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt (mv-nth 1 (wb addr-lst x86))))
+       (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (las-to-pas wb)
+                              (rewrite-get-prefixes-to-get-prefixes-alt
+                               xlate-equiv-memory-and-two-get-prefixes-values
+                               xlate-equiv-memory-and-xr-mem-from-rest-of-memory))))))
+
+(i-am-here)
 
 
 ;; For mv-nth 0 get-prefixes-alt...
@@ -2101,6 +4355,14 @@
 ;; (acl2::why get-prefixes-alt-opener-lemma-no-prefix-byte)
 ;; (acl2::why combine-bytes-rb-alt-in-terms-of-rb-alt-subset-p-in-system-level-mode)
 
+;; Argh, ACL2's default ancestors-check is killing me --- it prevents
+;; x86-fetch-decode-execute from opening up (because the first hyp of
+;; get-prefixes-alt-opener-lemma-no-prefix-byte is judged more
+;; complicated than its ancestors --- why?). So I'm going to use Sol's
+;; trivial ancestors-check version.
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
+(local (acl2::use-trivial-ancestors-check))
+
 (defthm rewire_dst_to_src-effects
   ;; !!! Note: no double-rewrites in the first three hypotheses...
   (implies
@@ -2108,13 +4370,66 @@
     (x86-state-okp x86)
     (program-ok-p x86)
     (stack-ok-p x86)
+    (program-and-stack-no-interfere-p x86)
     ;; !! TODO: I can use
     ;; !! x86-state-okp-and-program-ok-p-implies-program-alt to make
     ;; !! this hyp go away later.
     (program-at-alt
      (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
      *rewire_dst_to_src*
-     (double-rewrite x86)))
+     (double-rewrite x86))
+
+
+    ;; I need to be able to infer the following from
+    ;; (program-and-stack-no-interfere-p x86) for relieving the hyps
+    ;; of get-prefixes-alt-values-and-wb-in-system-level-marking-mode.
+    (DISJOINT-P
+     (ALL-TRANSLATION-GOVERNING-ADDRESSES
+      (CREATE-CANONICAL-ADDRESS-LIST '5
+                                     (BINARY-+ '8 (XR ':RIP '0 X86)))
+      X86)
+     (MV-NTH
+      '1
+      (LAS-TO-PAS (CREATE-CANONICAL-ADDRESS-LIST '5
+                                                 (BINARY-+ '8 (XR ':RIP '0 X86)))
+                  ':X
+                  (ACL2::LOGHEAD$INLINE '2
+                                        (XR ':SEG-VISIBLE '1 X86))
+                  X86)))
+
+    (DISJOINT-P
+     (MV-NTH
+      '1
+      (LAS-TO-PAS
+       (CREATE-CANONICAL-ADDRESS-LIST '8
+                                      (BINARY-+ '-24 (XR ':RGF '4 X86)))
+       ':W
+       '0
+       X86))
+     (MV-NTH
+      '1
+      (LAS-TO-PAS (CREATE-CANONICAL-ADDRESS-LIST '5
+                                                 (BINARY-+ '8 (XR ':RIP '0 X86)))
+                  ':X
+                  '0
+                  X86)))
+
+
+    (DISJOINT-P
+     (MV-NTH
+      '1
+      (LAS-TO-PAS
+       (CREATE-CANONICAL-ADDRESS-LIST '8
+                                      (BINARY-+ '-24 (XR ':RGF '4 X86)))
+       ':W
+       '0
+       X86))
+     (ALL-TRANSLATION-GOVERNING-ADDRESSES
+      (CREATE-CANONICAL-ADDRESS-LIST '5
+                                     (BINARY-+ '8 (XR ':RIP '0 X86)))
+      X86))
+
+    )
 
    (equal (x86-run 3 x86) ;; (rewire_dst_to_src-clk)
           xxxx))

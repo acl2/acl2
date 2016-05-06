@@ -30,7 +30,7 @@
              (equal (member-p e x) nil)))
 
   (defthm member-p-of-nil
-    (equal (member-p e nil) nil))
+    (equal (member-p e nil) nil))  
 
   (defthm member-p-cons
     (equal (member-p e1 (cons e2 x))
@@ -99,7 +99,13 @@
     :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ())))
     :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-  (defthm disjoint-p-cons
+(defthmd disjoint-p-cons-1
+  (equal (disjoint-p (cons e x) a)
+         (and (disjoint-p x a)
+              (equal (member-p e a) nil)))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
+
+  (defthm disjoint-p-cons-2
     (equal (disjoint-p a (cons e x))
            (and (disjoint-p a x)
                 (equal (member-p e a) nil))))

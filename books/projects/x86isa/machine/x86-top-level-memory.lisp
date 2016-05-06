@@ -1036,6 +1036,11 @@ memory.</li>
       (implies (x86p x86)
                (x86p (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
 
+    (defthm las-to-pas-l-addrs=nil
+      (and (equal (mv-nth 0 (las-to-pas nil r-w-x cpl x86)) nil)
+           (equal (mv-nth 1 (las-to-pas nil r-w-x cpl x86)) nil)
+           (equal (mv-nth 2 (las-to-pas nil r-w-x cpl x86)) x86)))
+
     (defthm xr-las-to-pas
       (implies (and (not (equal fld :mem))
                     (not (equal fld :fault)))

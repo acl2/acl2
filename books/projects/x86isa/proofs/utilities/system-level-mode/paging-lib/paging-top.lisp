@@ -704,6 +704,24 @@
   :hints (("Goal" :in-theory (e/d* (disjoint-p translation-governing-addresses ia32e-la-to-pa)
                                    ()))))
 
+(defthm xw-mem-and-las-to-pas-commute
+  (implies
+   (and (disjoint-p (list index)
+                    (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+        (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+        (canonical-address-listp l-addrs)
+        (integerp index))
+   (equal (xw :mem index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+          (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw :mem index value x86)))))
+  :hints
+  (("Goal"
+    :expand ((las-to-pas l-addrs r-w-x cpl (xw :mem index value x86)))
+    :in-theory (e/d* (disjoint-p
+                      las-to-pas
+                      member-p
+                      all-translation-governing-addresses)
+                     ()))))
+
 (defthm write-to-physical-memory-and-mv-nth-2-ia32e-la-to-pa-commute
   (implies (and (disjoint-p
                  p-addrs
