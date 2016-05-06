@@ -124,12 +124,14 @@
 (defsection bitp-basics
   :parents (bitp)
 
-  (defthm bitp-forward
-    (implies (bitp i)
-             (and (integerp i)
-                  (>= i 0)
-                  (< i 2)))
-    :rule-classes :forward-chaining)
+  ;; [Jared] 2016-04-08: I think we shouldn't need this now that bitp is
+  ;; more deeply known to type-set.
+  ;; (defthm bitp-forward
+  ;;   (implies (bitp i)
+  ;;            (and (integerp i)
+  ;;                 (>= i 0)
+  ;;                 (< i 2)))
+  ;;   :rule-classes :forward-chaining)
 
   (defthm bitp-mod-2
     (implies (integerp i)
