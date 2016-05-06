@@ -2958,13 +2958,13 @@
     ;; Note that this lemma is applicable in the system-level mode too.
     ;; This lemma would be used for those instructions which do not have
     ;; any prefix byte.
-    (implies (and (not (zp cnt))
-                  (let*
+    (implies (and (let*
                       ((flg (mv-nth 0 (rm08 start-rip :x x86)))
                        (prefix-byte-group-code
                         (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))))
                     (and (not flg)
-                         (zp prefix-byte-group-code))))
+                         (zp prefix-byte-group-code)))
+                  (not (zp cnt)))
              (and
               (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))
                      nil)
@@ -2976,18 +2976,18 @@
                        (!prefixes-slice :num-prefixes (- 5 cnt) prefixes))))))
 
   (defthm get-prefixes-opener-lemma-group-1-prefix
-    (implies (and (canonical-address-p (1+ start-rip))
-                  (or (programmer-level-mode x86)
+    (implies (and (or (programmer-level-mode x86)
                       (and (not (programmer-level-mode x86))
                            (not (page-structure-marking-mode x86))))
-                  (not (zp cnt))
-                  (equal (prefixes-slice :group-1-prefix prefixes) 0)
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
                            (mv-nth 1 (rm08 start-rip :x x86)))))
                     (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 1))))
+                         (equal prefix-byte-group-code 1)))
+                  (equal (prefixes-slice :group-1-prefix prefixes) 0)
+                  (not (zp cnt))
+                  (canonical-address-p (1+ start-rip)))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice :group-1-prefix
@@ -3000,18 +3000,18 @@
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-2-prefix
-    (implies (and (canonical-address-p (1+ start-rip))
-                  (or (programmer-level-mode x86)
+    (implies (and (or (programmer-level-mode x86)
                       (and (not (programmer-level-mode x86))
                            (not (page-structure-marking-mode x86))))
-                  (not (zp cnt))
-                  (equal (prefixes-slice :group-2-prefix prefixes) 0)
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
                            (mv-nth 1 (rm08 start-rip :x x86)))))
                     (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 2))))
+                         (equal prefix-byte-group-code 2)))
+                  (equal (prefixes-slice :group-2-prefix prefixes) 0)
+                  (canonical-address-p (1+ start-rip))
+                  (not (zp cnt)))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice :group-2-prefix
@@ -3024,18 +3024,18 @@
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-3-prefix
-    (implies (and (canonical-address-p (1+ start-rip))
-                  (or (programmer-level-mode x86)
+    (implies (and (or (programmer-level-mode x86)
                       (and (not (programmer-level-mode x86))
                            (not (page-structure-marking-mode x86))))
-                  (not (zp cnt))
-                  (equal (prefixes-slice :group-3-prefix prefixes) 0)
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
                            (mv-nth 1 (rm08 start-rip :x x86)))))
                     (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 3))))
+                         (equal prefix-byte-group-code 3)))
+                  (equal (prefixes-slice :group-3-prefix prefixes) 0)
+                  (canonical-address-p (1+ start-rip))
+                  (not (zp cnt)))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice :group-3-prefix
@@ -3048,18 +3048,18 @@
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-4-prefix
-    (implies (and (canonical-address-p (1+ start-rip))
-                  (or (programmer-level-mode x86)
+    (implies (and (or (programmer-level-mode x86)
                       (and (not (programmer-level-mode x86))
                            (not (page-structure-marking-mode x86))))
-                  (not (zp cnt))
-                  (equal (prefixes-slice :group-4-prefix prefixes) 0)
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
                            (mv-nth 1 (rm08 start-rip :x x86)))))
                     (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 4))))
+                         (equal prefix-byte-group-code 4)))
+                  (equal (prefixes-slice :group-4-prefix prefixes) 0)
+                  (canonical-address-p (1+ start-rip))
+                  (not (zp cnt)))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice :group-4-prefix
