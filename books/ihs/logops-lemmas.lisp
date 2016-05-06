@@ -644,6 +644,9 @@
 
   (defthm bitp-loghead-1
     (bitp (loghead 1 i))
+    ;; [Jared] 2016-04-08: changing this to a type-prescription now that bitp
+    ;; is a good type-prescription
+    :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable bitp loghead)))))
 
 
@@ -1694,7 +1697,7 @@ definitions of logical operations."
                (equal (logand x (logior y z))
                       (logior (logand x y) (logand x z))))
       :hints (("Goal" :induct (logcdr-induction-3 x y z)
-               :in-theory (enable ifix)))))
+               :in-theory (enable ifix bfix)))))
 
   (encapsulate ()
     (local (defthm logand-logxor-lemma
@@ -2262,7 +2265,7 @@ definitions of logical operations."
              (equal (equal (logext size (+ i j)) (logext size (+ i k)))
                     (equal (logext size j) (logext size k))))
     :hints (("Goal"
-             :in-theory (e/d (bitp logext*)
+             :in-theory (e/d (bitp b-and b-xor logext*)
 ; Modified April 2016 by Matt K. with addition of type-set bit for {1}.
                              ((:t b-not$inline)))
              :restrict ((logext-+ ((size size) (i i) (j j))

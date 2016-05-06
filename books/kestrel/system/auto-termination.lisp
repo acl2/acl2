@@ -396,6 +396,10 @@
                 decl)))))))
 
 (defconst *legal-auto-termination-event-types*
+
+; Warning: If this changes, revisit the comment about this constant in
+; auto-termination-info.
+
   '(defun defund))
 
 (defstub auto-termination-check () t)
@@ -426,41 +430,56 @@
             types are ~&1."
            defun-or-defund *legal-auto-termination-event-types*))
       (t
-       (let* ((new-dcls (strip-dcls '(:hints :measure) (butlast rest 1)))
-              (body (car (last rest)))
-              (skip-proofs-form
-               `(skip-proofs
-                 (,defun-or-defund ,fn ,formals
-                   (declare (xargs :measure (acl2-count ,(car formals)))) ; bogus
-                   ,@new-dcls ,body))))
-         (er-let* ((steps
-                    (event-steps
-                     skip-proofs-form
-                     nil
-                     `((f-put-global 'auto-termination-cl-set
-                                     (termination-clause-set ',fn (w state))
-                                     state))
-                     state)))
-           (cond ((null steps)
-                  (er soft 'with-auto-termination
-                      "Original defun failed, even under skip-proofs!"))
-                 (t (er-let* ((decl (auto-termination-declare
-                                     (f-get-global 'auto-termination-cl-set
-                                                   state)
-                                     theory expand verbose state)))
-                      (cond
-                       (decl (value
-                              (case result-spec
-                                (:event `(,defun-or-defund ,fn ,formals
-                                           ,decl ,@new-dcls
-                                           ,body))
-                                (:dcl decl)
-                                (otherwise (er hard 'with-auto-termination-fn
-                                               "Unsupported result-spec: ~x0"
-                                               result-spec)))))
-                       (t (er soft 'with-auto-termination
-                              "No suitable :termination-theorem instances ~
-                               were found.")))))))))))
+       (let ((all-but-body (butlast rest 1)))
+         (cond
+          ((not (plausible-dclsp all-but-body))
+
+; This case depends on *legal-auto-termination-event-types*: we assume the form
+; of a defun (or defund) here.
+
+           (er soft 'with-auto-termination
+               "Illegal ~x0 form: expected it to end with a definition body, ~
+                preceded by declare forms and strings."
+               defun-or-defund))
+          (t
+           (let* ((new-dcls (strip-dcls '(:hints :measure) all-but-body))
+                  (body (car (last rest)))
+                  (skip-proofs-form
+                   `(skip-proofs
+                     (,defun-or-defund ,fn ,formals
+                       (declare (xargs :measure
+                                       (acl2-count ,(car formals)))) ; bogus
+                       ,@new-dcls ,body))))
+             (er-let* ((steps
+                        (event-steps
+                         skip-proofs-form
+                         nil
+                         `((f-put-global 'auto-termination-cl-set
+                                         (termination-clause-set ',fn
+                                                                 (w state))
+                                         state))
+                         state)))
+               (cond ((null steps)
+                      (er soft 'with-auto-termination
+                          "Original defun failed, even under skip-proofs!"))
+                     (t (er-let* ((decl (auto-termination-declare
+                                         (f-get-global 'auto-termination-cl-set
+                                                       state)
+                                         theory expand verbose state)))
+                          (cond
+                           (decl
+                            (value
+                             (case result-spec
+                               (:event `(,defun-or-defund ,fn ,formals
+                                          ,decl ,@new-dcls
+                                          ,body))
+                               (:dcl decl)
+                               (otherwise (er hard 'with-auto-termination-fn
+                                              "Unsupported result-spec: ~x0"
+                                              result-spec)))))
+                           (t (er soft 'with-auto-termination
+                                  "No suitable :termination-theorem instances ~
+                                   were found."))))))))))))))
     (& (er soft 'with-auto-termination
            "Unsupported event for auto termination: ~x0."
            defun-form))))
@@ -476,7 +495,7 @@
                     '(current-theory :here)
                   theory)))
     (cond (show `(auto-termination-info ',defun-form ',show ',theory ',expand
-                                        state))
+                                        ',verbose state))
           ((eq verbose t)
            `(make-event
              (auto-termination-info ',defun-form :event

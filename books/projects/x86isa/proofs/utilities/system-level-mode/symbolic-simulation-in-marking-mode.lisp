@@ -1791,6 +1791,13 @@
 
 ;; Some misc. rules:
 
+(defthmd not-member-p-of-superset-is-not-member-p-of-subset
+  ;; TODO: Move to disjoint-p.lisp
+  (implies (and (equal (member-p e y) nil)
+                (subset-p x y))
+           (equal (member-p e x) nil))
+  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
 (defun get-subterms-if-match (n match-fn terms)
   (declare (xargs :guard (and (natp n)
                               (symbolp match-fn)
@@ -1823,7 +1830,9 @@
         (make-bind-free-alist-lists l-addrs-var l-addrs)))
     alst-lst))
 
-(defthm disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p
+;; TODO: Maybe merge -1 and -2 rules by removing the first syntaxp?
+
+(defthm disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p-1
   ;; This rule is tailored to rewrite terms of the form
 
   ;; (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
@@ -1873,7 +1882,48 @@
                       all-translation-governing-addresses)
                      ()))))
 
-(defthm not-member-p-of-all-translation-governing-addresses
+(defthm disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p-2
+  ;; This rule is tailored to rewrite terms of the form
+
+  ;; (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
+  ;;             (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))
+
+  ;; where l-addrs-subset is a subset of l-addrs, and both l-addrs and
+  ;; l-addrs-subset are of the form (create-canonical-address-list
+  ;; ...).
+
+  (implies
+   (and
+    (syntaxp (and (consp l-addrs-subset)
+                  (eq (car l-addrs-subset) 'create-canonical-address-list)))
+    (bind-free (find-l-addrs-like-create-canonical-address-list-from-fn
+                'all-translation-governing-addresses 'l-addrs mfc state)
+               (l-addrs))
+    ;; (syntaxp (not (cw "~% l-addrs: ~x0~%" l-addrs)))
+    (syntaxp (and (consp l-addrs)
+                  (eq (car l-addrs) 'create-canonical-address-list)))
+    (disjoint-p
+     (all-translation-governing-addresses l-addrs (double-rewrite x86))
+     (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
+    (subset-p l-addrs-subset l-addrs)
+    (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))))
+   (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
+               (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))
+  :hints
+  (("Goal"
+    :use ((:instance disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                     (l-addrs l-addrs)
+                     (l-addrs-subset l-addrs-subset)
+                     (other-p-addrs (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                     (other-p-addrs-subset (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))))
+    :in-theory (e/d* (subset-p
+                      member-p
+                      disjoint-p-append-1
+                      las-to-pas
+                      all-translation-governing-addresses)
+                     ()))))
+
+(defthm not-member-p-of-all-translation-governing-addresses-1
   ;; This rule is tailored to rewrite terms of the form to nil
 
   ;; (member-p index (all-translation-governing-addresses l-addrs-subset x86))
@@ -1899,14 +1949,33 @@
                                     all-translation-governing-addresses)
                                    ()))))
 
-(defthmd not-member-p-of-superset-is-not-member-p-of-subset
-  ;; TODO: Move to disjoint-p.lisp
-  (implies (and (equal (member-p e y) nil)
-                (subset-p x y))
-           (equal (member-p e x) nil))
-  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+(defthm not-member-p-of-all-translation-governing-addresses-2
+  ;; This rule is tailored to rewrite terms of the form to nil
 
-(defthm not-member-p-of-mv-nth-1-las-to-pas
+  ;; (member-p index (all-translation-governing-addresses l-addrs-subset x86))
+
+  ;; where l-addrs-subset is a subset of l-addrs, and both l-addrs and
+  ;; l-addrs-subset are of the form (create-canonical-address-list
+  ;; ...).
+
+  (implies (and (syntaxp (and (consp l-addrs-subset)
+                              (eq (car l-addrs-subset) 'create-canonical-address-list)))
+                (bind-free (find-l-addrs-like-create-canonical-address-list-from-fn
+                            'all-translation-governing-addresses 'l-addrs mfc state)
+                           (l-addrs))
+                ;; (syntaxp (not (cw "~% l-addrs: ~x0~%" l-addrs)))
+                (syntaxp (and (consp l-addrs)
+                              (eq (car l-addrs) 'create-canonical-address-list)))
+                (not (member-p index (all-translation-governing-addresses l-addrs x86)))
+                (subset-p l-addrs-subset l-addrs))
+           (equal (member-p index (all-translation-governing-addresses l-addrs-subset x86))
+                  nil))
+  :hints (("Goal" :in-theory (e/d* (subset-p
+                                    member-p
+                                    all-translation-governing-addresses)
+                                   ()))))
+
+(defthm not-member-p-of-mv-nth-1-las-to-pas-1
   ;; This rule is tailored to rewrite terms of the form to nil
 
   ;; (member-p index (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))
@@ -1917,6 +1986,37 @@
 
   (implies (and (syntaxp (and (consp l-addrs-subset)
                               (not (eq (car l-addrs-subset) 'create-canonical-address-list))))
+                (bind-free (find-l-addrs-like-create-canonical-address-list-from-fn
+                            'las-to-pas 'l-addrs mfc state)
+                           (l-addrs))
+                ;; (syntaxp (not (cw "~% l-addrs: ~x0~%" l-addrs)))
+                (syntaxp (and (consp l-addrs)
+                              (eq (car l-addrs) 'create-canonical-address-list)))
+                (not (member-p index (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
+                (subset-p l-addrs-subset l-addrs)
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
+           (equal (member-p index (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))
+                  nil))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance mv-nth-1-las-to-pas-subset-p)
+                 (:instance not-member-p-of-superset-is-not-member-p-of-subset
+                            (e index)
+                            (y (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                            (x (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))))
+           :in-theory (e/d* () (mv-nth-1-las-to-pas-subset-p)))))
+
+(defthm not-member-p-of-mv-nth-1-las-to-pas-2
+  ;; This rule is tailored to rewrite terms of the form to nil
+
+  ;; (member-p index (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))
+
+  ;; where l-addrs-subset is a subset of l-addrs, and both l-addrs and
+  ;; l-addrs-subset are of the form (create-canonical-address-list
+  ;; ...).
+
+  (implies (and (syntaxp (and (consp l-addrs-subset)
+                              (eq (car l-addrs-subset) 'create-canonical-address-list)))
                 (bind-free (find-l-addrs-like-create-canonical-address-list-from-fn
                             'las-to-pas 'l-addrs mfc state)
                            (l-addrs))

@@ -59,7 +59,7 @@ reason about.  However, it isn't particularly efficient; see @(see fast-parity)
 for a more efficient, logically identical function.</p>"
 
   :measure (nfix n)
-  :returns (p bitp)
+  :returns (p bitp :rule-classes :type-prescription)
   (cond ((zp n) 0)
         (t (logxor (logand x 1) (parity (1- n) (ash x -1)))))
   ///
@@ -108,7 +108,7 @@ for a more efficient, logically identical function.</p>"
   :inline t
   :enabled t
   :verify-guards nil
-  :returns (p bitp :rule-classes (:rewrite :type-prescription))
+  :returns (p bitp :rule-classes :type-prescription)
   :long "<p>The basic idea is from Sean Anderson's <a
 href='http://graphics.stanford.edu/~seander/bithacks.html'>bit twiddling
 hacks</a> page.  The number @('#x6996') acts as a lookup table for the parity
@@ -169,7 +169,7 @@ parity4) for details about why we don't do that.</p>"
 
 
 (define fast-parity ((n natp) (x integerp))
-  :returns (p bitp :rule-classes (:rewrite :type-prescription))
+  :returns (p bitp :rule-classes :type-prescription)
   :short "Optimized alternative to @(see parity)."
   :enabled t
   :long "<p>This is faster than @(see parity) because it computes up to 32 bits

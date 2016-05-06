@@ -354,6 +354,13 @@
                            (b-and (logcar a) (logcar c))
                            (b-and (logcar b) (logcar c))))))))
 
+   (local (defthm logxor-1
+            (implies (bitp x)
+                     (equal (logxor 1 x)
+                            (b-not x)))))
+
+   (local (set-default-hints nil))
+
 ; Reordering the rewrite-clause-type-alist: I added the uppercase text below to
 ; make this work.  See the comment in rewrite-clause-type-alist.
 ; JSM April 7, 2013.
@@ -370,7 +377,7 @@
               :do-not '(generalize fertilize)
               :expand ((:free (b) (loghead n b))
                        (:free (b) (loghead m b)))
-              :in-theory (e/d (nfix logcdr-of-bit b-and b-ior)
+              :in-theory (e/d (nfix logcdr-of-bit b-and b-ior b-not)
                               (loghead-identity
                                (:FORWARD-CHAINING LOGCAR-POSSIBILITIES)
                                ))
