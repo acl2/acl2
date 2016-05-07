@@ -70,6 +70,127 @@
                   (all-translation-governing-addresses lin-addr x86-2)))
   :rule-classes :congruence)
 
+;; Proof that the translation-governing-addresses for every canonical
+;; address are a subset of the addresses described by
+;; gather-all-paging-structure-qword-addresses:
+
+(defthm translation-governing-addresses-for-page-table-subset-of-paging-structures
+  (implies
+   (and (canonical-address-p lin-addr)
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
+   (subset-p
+    (translation-governing-addresses-for-page-table
+     lin-addr
+     (ash
+      (loghead
+       40
+       (logtail
+        12
+        (rm-low-64
+         (page-directory-entry-addr
+          lin-addr
+          (ash
+           (loghead
+            40
+            (logtail
+             12
+             (rm-low-64
+              (page-dir-ptr-table-entry-addr
+               lin-addr
+               (ash (loghead 40
+                             (logtail 12
+                                      (rm-low-64
+                                       (pml4-table-entry-addr lin-addr base-addr)
+                                       x86)))
+                    12))
+              x86)))
+           12))
+         x86)))
+      12)
+     x86)
+    (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (translation-governing-addresses-for-page-table)
+                            ()))))
+
+(defthm translation-governing-addresses-for-page-directory-subset-of-paging-structures
+  (implies
+   (and (canonical-address-p lin-addr)
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
+   (subset-p
+    (translation-governing-addresses-for-page-directory
+     lin-addr
+     (ash
+      (loghead
+       40
+       (logtail
+        12
+        (rm-low-64
+         (page-dir-ptr-table-entry-addr
+          lin-addr
+          (ash (loghead 40
+                        (logtail 12
+                                 (rm-low-64
+                                  (pml4-table-entry-addr lin-addr base-addr)
+                                  x86)))
+               12))
+         x86)))
+      12)
+     x86)
+    (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal" :in-theory (e/d* (subset-p
+                                    translation-governing-addresses-for-page-directory)
+                                   ()))))
+
+(defthm translation-governing-addresses-for-page-dir-ptr-table-subset-of-paging-structures
+  (implies (and (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+                (canonical-address-p lin-addr))
+           (subset-p
+            (translation-governing-addresses-for-page-dir-ptr-table
+             lin-addr
+             (ash (loghead 40
+                           (logtail 12
+                                    (rm-low-64
+                                     (pml4-table-entry-addr lin-addr base-addr)
+                                     x86)))
+                  12)
+             x86)
+            (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal" :in-theory (e/d* (subset-p
+                                    translation-governing-addresses-for-page-dir-ptr-table)
+                                   ()))))
+
+(defthm translation-governing-addresses-for-pml4-table-subset-of-paging-structures
+  (implies (and (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+                (canonical-address-p lin-addr))
+           (subset-p
+            (translation-governing-addresses-for-pml4-table
+             lin-addr base-addr x86)
+            (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal" :in-theory (e/d* (subset-p
+                                    translation-governing-addresses-for-pml4-table)
+                                   ()))))
+
+(defthm translation-governing-addresses-subset-of-paging-structures
+  (implies (canonical-address-p lin-addr)
+           (subset-p
+            (translation-governing-addresses lin-addr x86)
+            (open-qword-paddr-list
+             (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal" :in-theory (e/d* (translation-governing-addresses
+                                    subset-p)
+                                   (canonical-address-p)))))
+
+(defthm all-translation-governing-addresses-subset-of-paging-structures
+  (implies (canonical-address-listp l-addrs)
+           (subset-p
+            (all-translation-governing-addresses l-addrs x86)
+            (open-qword-paddr-list
+             (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal" :in-theory (e/d* (all-translation-governing-addresses
+                                    subset-p)
+                                   (canonical-address-p)))))
+
 ;; ----------------------------------------------------------------------
 
 ;; Proof of

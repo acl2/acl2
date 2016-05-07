@@ -435,7 +435,6 @@
                                (:rewrite mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p)
                                (:rewrite not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal)
                                (:rewrite cdr-mv-nth-1-las-to-pas)
-                               (:rewrite member-p-remove-duplicates-equal-iff-member-p)
                                (:rewrite not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal)
                                (:definition remove-duplicates-equal)
                                (:rewrite member-p-canonical-address-listp)
@@ -2037,20 +2036,6 @@
                             (x (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))))
            :in-theory (e/d* () (mv-nth-1-las-to-pas-subset-p)))))
 
-;; (local
-;;  (in-theory (e/d (las-to-pas-subset-p member-p subset-p)
-;;                  (disjoint-p-of-remove-duplicates-equal
-;;                   disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;                   not-disjoint-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;                   member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;                   not-member-p-of-open-qword-paddr-list-and-remove-duplicates-equal
-;;                   disjoint-p-of-remove-duplicates-equal
-;;                   disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
-;;                   disjoint-p-append-1
-;;                   xlate-equiv-memory-and-xr-mem-from-rest-of-memory
-;;                   xlate-equiv-memory-and-mv-nth-1-rm08
-;;                   xlate-equiv-memory-and-two-get-prefixes-values))))
-
 ;; (defun find-l-addrs-from-program-at-term (thm l-addrs-var mfc state)
 ;;   (declare (xargs :stobjs (state) :mode :program)
 ;;            (ignorable thm state))
@@ -2064,34 +2049,4 @@
 ;;         nil))
 ;;     `((,l-addrs-var . ,addresses))))
 
-;; (defthm disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p
-;;   ;; This rule helps in figuring out that each instruction's physical
-;;   ;; address is disjoint from its translation-governing addresses,
-;;   ;; given that the whole program's physical addresses are disjoint
-;;   ;; from all the translation-governing addresses.
-;;   (implies
-;;    (and (bind-free (find-l-addrs-from-program-at-term
-;;                     'disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p 'l-addrs
-;;                     mfc state)
-;;                    (l-addrs))
-;;         (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
-;;                     (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
-;;         (subset-p l-addrs-subset l-addrs)
-;;         (syntaxp (not (eq l-addrs-subset l-addrs)))
-;;         (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))))
-;;    (disjoint-p
-;;     (all-translation-governing-addresses l-addrs-subset x86)
-;;     (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))
-;;   :hints
-;;   (("Goal"
-;;     :use ((:instance disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
-;;                      (l-addrs l-addrs)
-;;                      (l-addrs-subset l-addrs-subset)
-;;                      (other-p-addrs (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-;;                      (other-p-addrs-subset (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))))
-;;     :in-theory (e/d* (subset-p
-;;                       member-p
-;;                       disjoint-p-append-1
-;;                       las-to-pas
-;;                       all-translation-governing-addresses)
-;;                      (translation-governing-addresses)))))
+;; ======================================================================

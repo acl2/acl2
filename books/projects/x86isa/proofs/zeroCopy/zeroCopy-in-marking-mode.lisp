@@ -1996,17 +1996,6 @@
                                xlate-equiv-memory-and-xr-mem-from-rest-of-memory))))))
 
 
-;; (defthm translation-governing-addresses-subset-p-of-gather-all-paging-structure-qword-addresses
-;;   ;; Wish this were trivial to prove... Sigh.
-;;   (implies (and (canonical-address-p lin-addr)
-;;                 (x86p x86))
-;;            (subset-p
-;;             (translation-governing-addresses lin-addr x86)
-;;             (gather-all-paging-structure-qword-addresses x86)))
-;;   :hints (("Goal" :in-theory (e/d* (subset-p
-;;                                     gather-all-paging-structure-qword-addresses)
-;;                                    ()))))
-
 (i-am-here)
 
 

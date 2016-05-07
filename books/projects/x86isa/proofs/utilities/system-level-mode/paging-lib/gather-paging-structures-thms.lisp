@@ -12,14 +12,15 @@
 
 ;; ======================================================================
 
-(defthm member-p-remove-duplicates-equal-iff-member-p
-  ;; See MEMBER-P-OF-REMOVE-DUPLICATES-EQUAL in
-  ;; gather-paging-structures.lisp.
-  (iff (member-p index (remove-duplicates-equal a))
-       (member-p index a))
-  :hints (("Goal"
-           :in-theory (e/d* (member-p-iff-member-equal)
-                            (member-p)))))
+(local
+ (defthm member-p-remove-duplicates-equal-iff-member-p
+   ;; See MEMBER-P-OF-REMOVE-DUPLICATES-EQUAL in
+   ;; gather-paging-structures.lisp.
+   (iff (member-p index (remove-duplicates-equal a))
+        (member-p index a))
+   :hints (("Goal"
+            :in-theory (e/d* (member-p-iff-member-equal)
+                             (member-p))))))
 
 (defthm member-p-and-gather-qword-addresses-corresponding-to-1-entry
   (implies (and (<=
@@ -517,5 +518,99 @@
                              gather-qword-addresses-corresponding-to-entries)
                             (page-table-entry-addr-is-at-the-fourth-level
                              member-p-after-remove-duplicates-equal-of-superior-paddrs-in-gather-qword-addresses-corresponding-to-entries-aux-new)))))
+
+;; ----------------------------------------------------------------------
+
+(defthm pml4-table-entry-addresses-subset-of-open-qword-paddr-list-gather-all-paging-structure-qword-addresses
+  (implies (and (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+                (canonical-address-p lin-addr))
+           (subset-p
+            (addr-range 8 (pml4-table-entry-addr lin-addr base-addr))
+            (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal" :in-theory (e/d* (subset-p)
+                                   ()))))
+
+(defthm page-dir-ptr-table-entry-addresses-subset-of-open-qword-paddr-list-gather-all-paging-structure-qword-addresses
+  (implies (and (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+                (canonical-address-p lin-addr))
+           (subset-p
+            (addr-range 8
+                        (page-dir-ptr-table-entry-addr
+                         lin-addr
+                         (ash (loghead 40
+                                       (logtail 12
+                                                (rm-low-64
+                                                 (pml4-table-entry-addr lin-addr base-addr)
+                                                 x86)))
+                              12)))
+            (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal" :in-theory (e/d* (subset-p)
+                                   ()))))
+
+(defthm page-directory-entry-addresses-subset-of-open-qword-paddr-list-gather-all-paging-structure-qword-addresses
+  (implies
+   (and (canonical-address-p lin-addr)
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
+   (subset-p
+    (addr-range 8
+                (page-directory-entry-addr
+                 lin-addr
+                 (ash
+                  (loghead
+                   40
+                   (logtail
+                    12
+                    (rm-low-64
+                     (page-dir-ptr-table-entry-addr
+                      lin-addr
+                      (ash (loghead 40
+                                    (logtail 12
+                                             (rm-low-64
+                                              (pml4-table-entry-addr lin-addr base-addr)
+                                              x86)))
+                           12))
+                     x86)))
+                  12)))
+    (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+(defthm page-table-entry-addresses-subset-of-open-qword-paddr-list-gather-all-paging-structure-qword-addresses
+  (implies
+   (and (canonical-address-p lin-addr)
+        (equal base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)))
+   (subset-p
+    (addr-range 8
+                (page-table-entry-addr
+                 lin-addr
+                 (ash
+                  (loghead
+                   40
+                   (logtail
+                    12
+                    (rm-low-64
+                     (page-directory-entry-addr
+                      lin-addr
+                      (ash
+                       (loghead
+                        40
+                        (logtail
+                         12
+                         (rm-low-64
+                          (page-dir-ptr-table-entry-addr
+                           lin-addr
+                           (ash (loghead 40
+                                         (logtail 12
+                                                  (rm-low-64
+                                                   (pml4-table-entry-addr lin-addr base-addr)
+                                                   x86)))
+                                12))
+                          x86)))
+                       12))
+                     x86)))
+                  12)))
+    (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (subset-p)
+                            ()))))
 
 ;; ======================================================================

@@ -259,6 +259,11 @@
              (member-p index (open-qword-paddr-list addrs)))
     :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
+  (defthm open-qword-paddr-list-and-subset-p
+    (implies (member-p index addrs)
+             (subset-p (addr-range 8 index) (open-qword-paddr-list addrs)))
+    :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
   (defthm open-qword-paddr-list-and-append
     (equal (open-qword-paddr-list (append xs ys))
            (append (open-qword-paddr-list xs)

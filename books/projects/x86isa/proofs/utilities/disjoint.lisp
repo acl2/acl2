@@ -30,7 +30,7 @@
              (equal (member-p e x) nil)))
 
   (defthm member-p-of-nil
-    (equal (member-p e nil) nil))  
+    (equal (member-p e nil) nil))
 
   (defthm member-p-cons
     (equal (member-p e1 (cons e2 x))
@@ -259,7 +259,14 @@
     (implies (true-listp x)
              (equal (subset-p x x) t)))
 
-  (defthm subset-p-of-append
+  (defthm subset-p-of-append-1
+    (implies (true-listp a)
+             (equal (subset-p (append a b) x)
+                    (and (subset-p a x)
+                         (subset-p b x))))
+    :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+  (defthm subset-p-of-append-2
     (implies (or (subset-p a x)
                  (subset-p a y))
              (subset-p a (append x y))))
