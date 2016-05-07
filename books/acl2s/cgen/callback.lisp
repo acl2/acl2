@@ -121,6 +121,29 @@
 
  )
 
+
+(mutual-recursion
+ (defun strip-force (term)
+   (declare (xargs :verify-guards nil :guard (pseudo-termp term)))
+   (cond ((acl2::variablep term) term)
+         ((acl2::fquotep term) term)
+         ((eq (acl2::ffn-symb term) 'acl2::hide) term)
+         (t
+          (let* ((stripped-args (strip-force-lst (fargs term)))
+                 (fn (acl2::ffn-symb term)))
+               
+            (cond ((eq fn 'ACL2::FORCE) ;get rid force
+                   (first stripped-args))
+                  (t (acl2::cons-term fn stripped-args)))))))
+
+(defun strip-force-lst (term-lst)
+  (declare (xargs :guard (pseudo-term-listp term-lst)))
+  (cond ((endp term-lst) '())
+        (t (cons (strip-force (car term-lst))
+                 (strip-force-lst (cdr term-lst))))))
+
+ )
+
 (defun partition-hyps-concl (term str state)
   ;; (decl :mode :program
   ;;       :sig ((pseudo-termp stringp state) -> (mv pseudo-term-listp pseudo-termp state))
@@ -135,8 +158,10 @@
        ((er hyps) (acl2::translate-term-lst phyps 
                                             t nil t str wrld state))
        (hyps (strip-return-last-lst hyps))
+       (hyps (strip-force-lst hyps))
        ((er concl) (acl2::translate pconcl t nil t str wrld state))
        (concl (strip-return-last concl))
+       (concl (strip-force concl))
        )
     (mv hyps concl state)))
   
