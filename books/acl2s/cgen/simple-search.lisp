@@ -561,7 +561,7 @@ where
 (def make-next-sigma-defuns (hyps concl ord-vs 
                                   partial-A elim-bindings
                                   type-alist tau-interval-alist
-                                  programp vl wrld )
+                                  programp vl state)
   (decl :sig ((pseudo-term-list pseudo-term symbol-list 
                                 symbol-doublet-listp symbol-doublet-listp
                                 symbol-alist symbol-alist
@@ -608,8 +608,9 @@ where
 ; information that was ignored during creation of ord-vs, so there is
 ; an ugly hack in place to reorder in the middle of put-var-eq-constraint.
        
-   (b* ((v-cs%-alst (collect-constraints% (cons (dumb-negate-lit concl) hyps)
-                                          ord-vs type-alist tau-interval-alist vl wrld ))
+    (b* ((wrld (w state))
+         (v-cs%-alst (collect-constraints% (cons (dumb-negate-lit concl) hyps)
+                                          ord-vs type-alist tau-interval-alist vl wrld))
         ((mv erp var-enumcalls-alist) (make-enumerator-calls-alist v-cs%-alst vl wrld '()))
         ((when erp) (mv erp '() '()))
         )
@@ -788,10 +789,17 @@ Use :simple search strategy to find counterexamples and witnesses.
          (mv t (list NIL test-outcomes% gcs%) state)))
 
        ;;[2016-04-03 Sun] Added support for fixers
-       ((er fixer-bindings)
+       ((mv erp fixer-bindings state)
         (if (cget use-fixers)
             (fixer-arrangement hyps concl vars type-alist vl ctx wrld state)
           (value nil)))
+
+       ((when erp)
+        (prog2$ 
+           (cw? (and (normal-output-flag vl) (cget use-fixers))
+                "~|CEgen/Error: Couldn't determine fixer bindings. Skip searching ~x0.~|" name)
+           (mv t (list nil test-outcomes% gcs%) state)))
+       
        (elim-bindings (append elim-bindings fixer-bindings))
        
        ((mv erp next-sigma-defuns disp-enum-alist)
@@ -799,7 +807,7 @@ Use :simple search strategy to find counterexamples and witnesses.
                                 vars partial-A elim-bindings
                                 type-alist tau-interval-alist
                                 t ; programp ;;Aug 2014 -- New defdata has program-mode enumerators
-                                vl wrld))
+                                vl state))
        ((when erp)
         (prog2$ 
            (cw? (normal-output-flag vl)
