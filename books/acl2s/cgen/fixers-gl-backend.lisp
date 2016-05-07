@@ -1136,7 +1136,7 @@ of the entries is same as the keys"
   
 
 
-(defun fixers-sat-glcp-query (vars lits term->lits-lst fixer-inst-table num-sat-lits vl state)
+(defun fixers-sat-glcp-query (vars lits term->lits-lst orig-hyps fixer-inst-table num-sat-lits vl state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* ((fixers (strip-cdrs fixer-inst-table))
        ((mv start-code-gen state) (acl2::read-run-time state))
@@ -1152,7 +1152,7 @@ of the entries is same as the keys"
                                  (C/atleast-one-final-value vars fixers)
                                  ;(C/atmost-one-final-value vars fixers)
                                  (C/TheChosenFixer lits fixers)
-                                 ;(C/final-value-implies-valid vars fixers)
+                                 (C/final-value-implies-valid vars fixers)
                                  (C/connection-implies-valid fixers vars)
                                  (C/atmost-one-input-conn fixers vars)
                                  (C/atleast-one-input-conn fixers vars)
@@ -1163,7 +1163,7 @@ of the entries is same as the keys"
                                  (C/sat-terms term->lits-lst fixers)
                                  ))
              
-                     (NOT (EQUAL ,(num-sat-literals terms)
+                     (NOT (EQUAL ,(num-sat-literals orig-hyps)
                                  ,num-sat-lits))))
        (- (cw? (debug-flag vl) "~|concl is ~x0~%" concl))
        ((mv end-code-gen state) (acl2::read-run-time state))
@@ -1207,23 +1207,30 @@ bindings:
         )
       (mv t sat-assignment state)))
       
-(defun fixers-maxsat-glcp-query-loop (n vars lits term->lits-lst fixer-inst-table vl state)
+(defun fixers-maxsat-glcp-query-loop (n vars lits term->lits-lst orig-hyps fixer-inst-table vl state)
   (declare (xargs :mode :program :stobjs (state)))
   (if (zp n)
     (mv t :unsat 0 state) ;nothing satisfied
-    (b* (((mv erp A state) (fixers-sat-glcp-query vars lits term->lits-lst fixer-inst-table n vl state))
+    (b* (((mv erp A state) (fixers-sat-glcp-query vars lits term->lits-lst orig-hyps fixer-inst-table n vl state))
          ((when erp) ;got sat assignment
           (prog2$ 
            (cw? (verbose-stats-flag vl) "~|Got a sat assignment for #literals = ~x0~%" n)
            (mv nil A n state))))
-      (fixers-maxsat-glcp-query-loop (1- n) vars lits term->lits-lst fixer-inst-table vl state))))
+      (fixers-maxsat-glcp-query-loop (1- n) vars lits term->lits-lst orig-hyps fixer-inst-table vl state))))
 
-(defun fixers-maxsat-glcp-query (vars lits term->lits-lst fixer-inst-table vl state)
+(defun fixers-maxsat-glcp-query (vars lits term->lits-lst relevant-hyps fixer-inst-table vl state)
   (declare (xargs :mode :program :stobjs (state)))
-  (b* (((when (or (null vars) (null lits) (null term->lits-lst))) ;pathological case
+  (b* (((when (or (null vars)
+                  (null lits)
+                  (null term->lits-lst)
+                  (null relevant-hyps)
+                  )) ;pathological cases
         (value nil))
        ((mv erp sat-A n state)
-        (fixers-maxsat-glcp-query-loop (len lits) vars lits term->lits-lst fixer-inst-table vl state))
+        (fixers-maxsat-glcp-query-loop (len relevant-hyps) vars lits
+                                       term->lits-lst
+                                       relevant-hyps ;[2016-05-04 Wed] only count these
+                                       fixer-inst-table vl state))
         ((when erp) ;unsat, abort
          (mv erp nil state))
         (ssigma (soln-sigma-top sat-A vars fixer-inst-table)))

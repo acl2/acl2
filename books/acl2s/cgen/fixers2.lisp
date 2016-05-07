@@ -334,7 +334,8 @@ SAT(term) == \/ SAT(f-lits_i)
          (cw? (verbose-stats-flag vl) "~| No corresponding fixer-rule found for ~x0.~%" cterm)
          (instantiate-fixer-rules/terms (cdr cterms) frules all-terms allvars vl state
                                         term->f-lits-lst new-lits W{} fxri{})))
-       (new-lits (set-difference-equal (union-lsts f-lits-lst) all-terms))
+       (new-lits1 (set-difference-equal (union-lsts f-lits-lst) all-terms))
+       (new-lits  (union-equal new-lits new-lits1))
        (term->f-lits-lst (put-assoc-equal cterm f-lits-lst term->f-lits-lst)))
     (instantiate-fixer-rules/terms (cdr cterms) frules all-terms allvars vl state
                                    term->f-lits-lst new-lits W{} fxri{})))
@@ -359,9 +360,10 @@ SAT(term) == \/ SAT(f-lits_i)
                                       (acl2::access cs% (cdr v--cs%) :eq-constraint)
                                       defdata::wrld))))
 
-(defun make-dummy-defdata-type-frule-instance (x defdata-type defdata::wrld)
-  (b* ((E (defdata::enumerator-name defdata-type))
-       (P (defdata::predicate-name defdata-type))
+(defun make-dummy-defdata-type-frule-instance (x P defdata::wrld)
+  (b* ((defdata-type (or (defdata::is-type-predicate P defdata::wrld)
+                         'ACL2S::ALL))
+       (E (defdata::enumerator-name defdata-type))
        (vars (list x))
        (fixer-term (list E))
        (constraint-term (cons P vars))
@@ -381,18 +383,32 @@ SAT(term) == \/ SAT(f-lits_i)
 
 
 
-(defun make-dummy-cgen-builtin-fxri-entry (v--cs% defdata::wrld)
-  (b* (((cons x cs%) v--cs%)
-       (equal-to-term (acl2::access cs% cs% :eq-constraint))
-       ((when (not (equal 'defdata::empty-eq-constraint equal-to-term)))
-        (make-dummy-equality-frule-instance x equal-to-term))
-       (defdata-type (acl2::access cs% cs% :defdata-type)))
-    (make-dummy-defdata-type-frule-instance x defdata-type defdata::wrld)))
+;; (defun make-dummy-cgen-builtin-fxri-entry (v--cs% defdata::wrld)
+;;   (b* (((cons x cs%) v--cs%)
+;;        (equal-to-term (acl2::access cs% cs% :eq-constraint))
+;;        ((when (not (equal 'defdata::empty-eq-constraint equal-to-term)))
+;;         (make-dummy-equality-frule-instance x equal-to-term))
+;;        (defdata-type (acl2::access cs% cs% :defdata-type)))
+;;     (make-dummy-defdata-type-frule-instance x defdata-type defdata::wrld)))
   
 
-(defloop make-dummy-cgen-builtin-frule-instances (v-cs%-alst defdata::wrld)
-  (for ((v--cs% in v-cs%-alst))
-       (collect (make-dummy-cgen-builtin-fxri-entry v--cs% defdata::wrld))))
+(defun destruct-equality-hyp (hyp)
+  (case-match hyp
+    (('EQUAL x (f . args)) (list x (acl2::cons-term f args)))
+    (('EQUAL (f . args) x) (list x (acl2::cons-term f args)))
+    (('EQUAL x y) (list x y))))
+
+(defun make-dummy-cgen-builtin-fxri-entry (type-hyp defdata::wrld)
+  (if (equal (len type-hyp) 2) ;type predicate
+      (make-dummy-defdata-type-frule-instance (cadr type-hyp) (car type-hyp) defdata::wrld)
+    (b* (((list x equal-to-term) (destruct-equality-hyp type-hyp)))
+      (make-dummy-equality-frule-instance x equal-to-term))))
+
+
+
+(defloop make-dummy-cgen-builtin-frule-instances (type-hyps defdata::wrld)
+  (for ((type-hyp in type-hyps))
+       (collect (make-dummy-cgen-builtin-fxri-entry type-hyp defdata::wrld))))
 
 (defloop two-level-flatten1 (lits-lst-list)
   (for ((lits-lst in lits-lst-list))
@@ -403,13 +419,36 @@ SAT(term) == \/ SAT(f-lits_i)
   ;"convert (x1 x2 ... xn) to ((x1) (x2) (x3) ... (xn))"
   (for ((x in xs)) (collect (list x))))
 
-(defun instantiate-fixer-rules/terms-iter (hyps all-hyps frules type-alist vl state term->f-lits-lst W{} fxri{})
+(defloop make-allp-hyps (xs)
+  (for ((x in xs)) (collect (list 'ACL2S::ALLP x))))
+
+(defun is-type-hyp (term wrld)
+  (or (defdata::is-type-predicate (car term) wrld)
+      (and (equal (len term) 3)
+           (equal (car term) 'EQUAL)
+           (or (proper-symbolp (second term))
+               (proper-symbolp (third term))))))
+
+(defloop filter-type-hyps (terms wrld)
+  (for ((term in terms))
+       (append (and (consp term) (is-type-hyp term wrld)
+                    (list term)))))
+
+
+
+(defun instantiate-fixer-rules/terms-iter (hyps all-hyps frules vl state term->f-lits-lst W{} fxri{})
 ;fixed-point iteration of above function
   (b* ((wrld (w state))
-       (v-cs%-alst (collect-constraints% hyps (acl2::all-vars1-lst hyps '()) type-alist '() vl wrld))
-       (type-hyps  (remove-duplicates-equal (make-type-and-eq-hyps v-cs%-alst wrld)))
+       ;; (v-cs%-alst (collect-constraints% hyps (acl2::all-vars1-lst hyps '())
+       ;;                                   type-alist '() vl wrld))
+       ;; (type-hyps  (remove-duplicates-equal (make-type-and-eq-hyps v-cs%-alst wrld)))
+       (type-hyps (filter-type-hyps hyps wrld))
+       (type-vars (acl2::all-vars1-lst type-hyps '()))
+       (notype-vars (set-difference-equal (acl2::all-vars1-lst hyps '()) type-vars))
+       (allp-hyps (make-allp-hyps notype-vars))
+       (type-hyps (append type-hyps allp-hyps))
        (term->f-lits-lst0 (pairlis$ type-hyps (singletonize (singletonize type-hyps))))
-       (fxri0{} (make-dummy-cgen-builtin-frule-instances v-cs%-alst wrld))
+       (fxri0{} (make-dummy-cgen-builtin-frule-instances type-hyps wrld))
        (term->f-lits-lst (union-equal term->f-lits-lst0 term->f-lits-lst))
        (fxri{} (union-equal fxri0{} fxri{}))
        
@@ -435,7 +474,7 @@ SAT(term) == \/ SAT(f-lits_i)
        (all-hyps (union-equal new-lits all-hyps))
        )
        
-    (instantiate-fixer-rules/terms-iter new-lits all-hyps frules type-alist vl state term->f-lits-lst W{} fxri{})))
+    (instantiate-fixer-rules/terms-iter new-lits all-hyps frules vl state term->f-lits-lst W{} fxri{})))
 
 
 
@@ -717,17 +756,13 @@ should we completely be general?
 |#
 
 
-
-
-  
 ; Putting together the middle and back ends! [2016-04-01 Fri]
 (defun fixer-arrangement/main (hyps concl vars type-alist vl ctx wrld state)
-  (declare (ignorable concl))
+  (declare (ignorable concl type-alist)) ;TODO add negated concl to hyps
   (b* ((frules (strip-cdrs (defdata::fixer-rules-table wrld)))
        (prules (strip-cdrs (defdata::preservation-rules-table wrld)))
-
        ((mv ?erp1 (list term->f-lits-lst ?W{} fxri{}) state)
-        (instantiate-fixer-rules/terms-iter hyps hyps frules type-alist vl state '() '() '()))
+        (instantiate-fixer-rules/terms-iter hyps hyps frules vl state '() '() '()))
 
        (f-lits (two-level-flatten (strip-cdrs term->f-lits-lst)))
 
@@ -737,9 +772,20 @@ should we completely be general?
         (er soft ctx "~| Something has gone wrong!"))
        ;; (?litWt{} (pairlis$ f-lits
        ;;                    (make-list (length f-lits) :initial-element 1)))
+
+       (type-hyps  (filter-type-hyps hyps wrld))
+       (non-type-hyps (set-difference-equal hyps type-hyps))
+; [2016-05-04 Wed] Only count the SAT of non-type-hyps
+; But discard those hyps that have no entry in the term->f-lits-lst       
+       (non-type-hyps (intersection-equal non-type-hyps (strip-cars term->f-lits-lst)))
+
        ((mv erp soln-subst state)
-        (fixers-maxsat-glcp-query (acl2::all-vars1-lst f-lits '()) f-lits
-                                  term->f-lits-lst fxri{} vl state))
+        (fixers-maxsat-glcp-query (acl2::all-vars1-lst f-lits '())
+                                  f-lits
+                                  term->f-lits-lst
+                                  non-type-hyps
+                                  fxri{}
+                                  vl state))
        ((when erp) ;unsat
         (prog2$
          (cw? (verbose-flag vl) "~| UNSAT -- no fixer arrangement possible! Returning NIL.~%")
