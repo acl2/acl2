@@ -140,14 +140,6 @@
 	 :gen-linear t))
     ))
 
-;; sswords: need this because of new rules taking advantage of bitp typeset
-(local (defthm unsigned-byte-p-when-bitp
-         (implies (and (bitp x)
-                       (posp n))
-                  (unsigned-byte-p n x))
-         :hints(("Goal" :in-theory (enable bitp expt)))
-         :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
 (make-event (rcl-spec-gen  8))
 (make-event (rcl-spec-gen 16))
 (make-event (rcl-spec-gen 32))

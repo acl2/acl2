@@ -1102,7 +1102,19 @@
 		  (<= (bits y (+ -1 (* 2 m)) 0)
                       (sum-odd-powers-of-2 m)))
 	     (equal (chi m y) 0))
-    :hints (("Goal" :do-not '(generalize))
+    :hints (("Goal" :do-not '(generalize)
+
+; Matt K. mod 5/2016 (type-set bit for {1}) [note: this comment was written
+; before a recent update, "Library updates for bitp changes" (github commit
+; hash 6bc56b062cd7a1b5ff3547aa8133f5006a75b913), but I suspect that it still
+; is valid, and at any rate some patch is needed here]: formerly Goal' was
+; proved by induction (so, an alternate fix is to specify :induct t for that
+; subgoal), but now, we get to Goal'' because from falsity of (EQUAL (CHI M Y)
+; 0) we know (EQUAL (CHI M Y) 1), which allows linear arithmetic to make some
+; progress after Goal' (using ACL2 function polys-from-type-set).  So I'm
+; disabling the type-prescription rule responsible for that progress.
+
+             :in-theory (disable (:t chi)))
             ("Subgoal *1/5":use chi-m-subgoal-1-5)
             ("Subgoal *1/4":cases ((not (<= (bits y (+ -1 (* 2 m))
                                                   (+ -2 (* 2 m)))

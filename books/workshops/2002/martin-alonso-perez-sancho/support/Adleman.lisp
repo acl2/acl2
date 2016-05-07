@@ -161,9 +161,11 @@
 	((equal (clause-value (car F) assig) 0) 0)
 	(t (cnf-formula-value (cdr F) assig))))
 
-(defthm clause-value-not-0-is-1
-  (implies (not (equal (clause-value C assig) 0))
-	   (equal (clause-value C assig) 1)))
+; Matt K. mod 5/2016 (type-set bit for {1}): This is harmless but is no longer
+; needed.
+;(defthm clause-value-not-0-is-1
+;  (implies (not (equal (clause-value C assig) 0))
+;	    (equal (clause-value C assig) 1)))
 
 ;;; Variable set of a formula
 
@@ -305,7 +307,9 @@
 	   (equal (clause-value C aggr) 1))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable l-element member-separate+)
+	   :in-theory (disable l-element member-separate+
+; Matt K. mod May 2016 for addition of type-set bit for {1}:
+                               (:t clause-value))
 	   :induct (sat-lipton-clause C tube acc))))
 
 (defthm soundness-sat-lipton-clause-acc-nil

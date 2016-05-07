@@ -627,14 +627,6 @@ T
                      (run (fact-sched th n) s))))
                   (int-fix (factorial n)))))
 
-;; sswords (2016-04-27) -- needed this lemma presumably due to new rules taking
-;; advantage of new bitp typeset stuff
-(local (defthm integerp-of-+-1-forward
-         (implies (and (integerp (+ 1 k))
-                       (acl2-numberp k))
-                  (integerp k))
-         :rule-classes :forward-chaining))
-
 ; Symbolic Computation and Use of fact as a Subroutine
 
 (defthm symbolic-computation

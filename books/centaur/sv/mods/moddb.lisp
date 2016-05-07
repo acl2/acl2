@@ -2529,7 +2529,9 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       (take n mods) mods
       :hints(("Goal" :in-theory (e/d (elab-modlist-norm
                                       my-open-take)
-                                     (acl2::take-when-atom)))))
+                                     (acl2::take-when-atom
+; Matt K. mod 5/2016 (type-set bit for {1}):
+                                      acl2::<-0-+-negative-1)))))
 
     (fty::deffixcong elab-modlist-norm-equiv moddb-norm-equiv
       (update-nth *moddb->modsi* mods moddb) mods)
