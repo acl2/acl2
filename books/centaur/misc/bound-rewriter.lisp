@@ -292,7 +292,9 @@
     :hints (("goal" :use ((:instance boundrw-ev-meta-extract-typeset
                            (term x)))
              :in-theory (disable boundrw-ev-meta-extract-typeset
-                                 bitops::logand-with-negated-bitmask))
+                                 bitops::logand-with-negated-bitmask
+; Matt K. mod 5/2016 (type-set bit for {1}):
+                                 bitp-loghead-1))
             (logbitp-reasoning)))
 
   (defret ts-check-sign-strict-negative-correct
@@ -345,7 +347,9 @@
     :hints (("goal" :use ((:instance boundrw-ev-meta-extract-typeset
                            (term x)))
              :in-theory (disable boundrw-ev-meta-extract-typeset
-                                 bitops::logand-with-negated-bitmask))
+                                 bitops::logand-with-negated-bitmask
+; Matt K. mod 5/2016 (type-set bit for {1}):
+                                 bitp-loghead-1))
             (logbitp-reasoning))))
 
 (define ts-check-rational ((x pseudo-termp)

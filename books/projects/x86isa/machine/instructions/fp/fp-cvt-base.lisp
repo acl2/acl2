@@ -9,9 +9,6 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (in-theory (e/d (bitops::ash-1-removal) ())))
 
-;; sswords: fix breakage due to bitp typeset rule changes
-(local (in-theory (disable bitops::loghead-1-of-logtail)))
-
 ;; ======================================================================
 
 (defsection floating-point-converts

@@ -493,6 +493,9 @@
                                       (:rules-of-class :type-prescription
                                                        :here))
                                      ((:type-prescription bfr-eval)
+; Matt K. mod 5/2016 (type-set bit for {1}); avoids the need for
+; bitp-of-bool->bit in books/std/basic/arith-equivs.lisp.
+                                      (:type-prescription acl2::bool->bit$inline)
                                       (:type-prescription ash)
                                       (:type-prescription bfr-list->s)
                                       (:type-prescription acl2::eval-bdd)))
