@@ -629,7 +629,7 @@ independence of certain lemmas.
 	       (tuple-set->ordinal-partial-sum k A i)))
   :hints (("Goal"
 	   :expand (tuple-set->ordinal-partial-sum k A i))
-	  ("Subgoal 1'"
+	  ("Subgoal 2" ; Matt K. mod 5/2016 (type-set bit for {1})
 	   :expand (tuple-set->ordinal-partial-sum k A (+ 1 i)))))
 
 (defthm map-lemma-3.3
@@ -710,27 +710,17 @@ independence of certain lemmas.
                 (< 1 k)
                 (equal (tuple-set->ordinal-partial-sum k A i)
                        (tuple-set->ordinal-partial-sum k B i)))
-	   (equal (tuple-set->ordinal-partial-sum k A (1+ i))
-		  (tuple-set->ordinal-partial-sum k B (1+ i))))
-  :hints (("Goal"
-	   :do-not-induct t
-	   :in-theory (disable |a^(b+c)  =  a^b * a^c|)
-	   :use map-lemma-3.4)
-	  ("goal'"
-	   :expand ((tuple-set->ordinal-partial-sum k a i)
-		    (tuple-set->ordinal-partial-sum k b i)))
-	  ("subgoal 5'"
-	   :expand ((tuple-set->ordinal-partial-sum k a (+ 1 i))
-		    (tuple-set->ordinal-partial-sum k b (+ 1 i))))
-	  ("subgoal 4'"
-	   :expand ((tuple-set->ordinal-partial-sum k a (+ 1 i))
-		    (tuple-set->ordinal-partial-sum k b (+ 1 i))))
-	  ("subgoal 3'"
-	   :expand ((tuple-set->ordinal-partial-sum k a (+ 1 i))))
-	  ("subgoal 2'"
-	   :expand ((tuple-set->ordinal-partial-sum k b (+ 1 i))))
-	  ("subgoal 1'"
-	   :expand ((tuple-set->ordinal-partial-sum k b (+ 1 i))))))
+           (equal (tuple-set->ordinal-partial-sum k A (1+ i))
+                  (tuple-set->ordinal-partial-sum k B (1+ i))))
+  :hints ; Matt K. mod 5/2016 (type-set bit for {1}): avoid subgoal hints
+  (("Goal"
+    :do-not-induct t
+    :in-theory (disable |a^(b+c)  =  a^b * a^c|)
+    :use map-lemma-3.4
+    :expand ((tuple-set->ordinal-partial-sum k a i)
+             (tuple-set->ordinal-partial-sum k b i)
+             (tuple-set->ordinal-partial-sum k a (+ 1 i))
+             (tuple-set->ordinal-partial-sum k b (+ 1 i))))))
 
 (defun map-lemma-3.6-induction-hint (i j)
   (cond ((not (natp i)) nil)

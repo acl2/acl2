@@ -6619,6 +6619,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *0* (quote (quote 0)))
 (defconst *1* (quote (quote 1)))
 (defconst *-1* (quote (quote -1)))
+(defconst *2* (quote (quote 2)))
 
 (defun kwote (x)
   (declare (xargs :guard t))
