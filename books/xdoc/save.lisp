@@ -78,8 +78,9 @@
    x))
 
 (defmacro save (dir &key
-                    (redef-okp 'nil)
-                    (zip-p     't))
+                    (redef-okp  'nil)
+                    (zip-p      't)
+                    (logo-image 'nil))
   `(progn
      ;; ugh, stupid stupid writes-ok stupidity
      (defttag :xdoc)
@@ -109,5 +110,5 @@
            ;; Now remove all shadowed topics before doing anything more.
            ((mv & & state) (assign acl2::writes-okp t))
            (- (acl2::tshell-ensure))
-           (state (save-fancy all-xdoc-topics ,dir ',zip-p state)))
+           (state (save-fancy all-xdoc-topics ,dir ',zip-p ',logo-image state)))
         (value '(value-triple :invisible))))))

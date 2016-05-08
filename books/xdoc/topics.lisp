@@ -623,8 +623,9 @@ manual with others, you should read about @(see deploying-manuals).</li>
 
 @({
     (save <target-dir>
-          [:redef-okp bool]      ;; default is nil
-          [:zip-p     bool]      ;; default is t
+          [:redef-okp  bool]      ;; default is nil
+          [:zip-p      bool]      ;; default is t
+          [:logo-image path]      ;; default is nil
           )
 })
 
@@ -639,6 +640,36 @@ directory where the want the manual to go.  As might be expected:</p>
 overwritten</color>.</li>
 
 </ul>
+
+<h5>Option Summary</h5>
+
+<dl>
+
+<dt>@('redef-okp')</dt>
+
+<dd>By default, the @('save') command will complain if any topic is defined
+more than once.  This is often annoying when you are developing books,
+especially if your books are slow to certify and you don't want to have your
+build fail just because of a documentation problem.  So, if you want to
+suppress this error (and turn it into a printed warning), you can set
+@(':redef-okp t').</dd>
+
+<dt>@('zip-p')</dt>
+
+<dd>To support the <a href='download/'>Download this Manual</a>
+feature (normally accessed from the toolbar button) the @('save') command will
+zip up the manual to create @('.tar.gz'), @('.tar.bz2'), and @('.zip') files.
+If you don't care about generating these files and want to avoid the time to
+build them, you can set @(':zip-p nil').</dd>
+
+<dt>@(':logo-image')</dt>
+
+<dd>You can provide a custom image to use as the logo for the @(see top) topic.
+The path you provide should be relative to whatever book contains the @('save')
+command.</dd>
+
+</dl>
+
 
 <h3>Avoiding Unwanted Documentation</h3>
 

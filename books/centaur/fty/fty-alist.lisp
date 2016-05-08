@@ -178,8 +178,8 @@
     `(define ,x.fix ((,x.xvar ,x.pred))
        :parents (,x.name)
        :short ,(cat "@(call " (xdoc::full-escape-symbol x.fix)
-                    ") is a @(see fty::fty) alist fixing function that follows the "
-                    (str::downcase-string (symbol-name x.strategy)) "strategy.")
+                    ") is an @(see fty::fty) alist fixing function that follows the "
+                    (str::downcase-string (symbol-name x.strategy)) " strategy.")
        ;; BOZO it would be nice to describe the fixing strategy that is used
        ;; and connect it to discussion of the non-alist convention, etc.  However
        ;; the fixing strategy to use is parameterized and I don't remember all the

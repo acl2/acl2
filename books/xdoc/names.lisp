@@ -70,6 +70,13 @@
         (file-name-mangle-aux x (+ n 1) xl (list* #\_ #\_ acc))))
     (file-name-mangle-aux x (+ n 1) xl (funny-char-code char (cons #\_ acc)))))
 
+(defun file-name-mangle-main (pkg-name sym-name acc)
+  ;; Print pkg-name::sym-name, except mangled.  : becomes __, as above.
+  (b* ((acc (file-name-mangle-aux pkg-name 0 (length pkg-name) acc))
+       (acc (list* #\_ #\_ #\_ #\_ acc))
+       (acc (file-name-mangle-aux sym-name 0 (length sym-name) acc)))
+    acc))
+
 (defun file-name-mangle (x acc)
 
 ; Our "standard" for generating safe file names from symbols.  The mangled
@@ -77,8 +84,7 @@
 ; package and the symbol name when creating file names.
 
   (declare (type symbol x))
-  (b* ((str (str::cat (symbol-package-name x) "::" (symbol-name x))))
-    (file-name-mangle-aux str 0 (length str) acc)))
+  (file-name-mangle-main (symbol-package-name x) (symbol-name x) acc))
 
 (defun url (x)
 
@@ -176,6 +182,15 @@
 
  (defattach rendered-name rendered-name-default))
 
+(defun sym-mangle-aux (pkg-name sym-name in-pkg-p acc)
+  (b* ((name-low (name-low (rendered-name sym-name)))
+       (acc (if in-pkg-p
+                acc
+              (let ((pkg-low (name-low pkg-name)))
+                (list* #\: #\:
+                       (simple-html-encode-chars (explode pkg-low) acc))))))
+    (simple-html-encode-chars (explode name-low) acc)))
+
 (defun sym-mangle (x base-pkg acc)
 
 ; This is our "standard" for displaying symbols in HTML (in lowercase).  We
@@ -183,28 +198,30 @@
 ; Characters to print are accumulated onto acc in reverse order.  BOZO think
 ; about adding keyword support?
 
-  (b* ((base-pkg (base-pkg-display-override base-pkg))
-       (name-low (name-low (rendered-name (symbol-name x))))
-       (acc (if (in-package-p x base-pkg)
-                acc
-              (let ((pkg-low (name-low (symbol-package-name x))))
-                (list* #\: #\:
-                       (simple-html-encode-chars (explode pkg-low) acc))))))
+  (b* ((base-pkg (base-pkg-display-override base-pkg)))
+    (sym-mangle-aux (symbol-package-name x)
+                    (symbol-name x)
+                    (in-package-p x base-pkg)
+                    acc)))
+
+(defun sym-mangle-cap-aux (pkg-name sym-name in-pkg-p acc)
+  (b* ((name-low (name-low (rendered-name sym-name)))
+       ((when in-pkg-p)
+        (let* ((name-cap (str::upcase-first name-low)))
+          (simple-html-encode-chars (explode name-cap) acc)))
+       (pkg-low (name-low pkg-name))
+       (pkg-cap (str::upcase-first pkg-low))
+       (acc (list* #\: #\: (simple-html-encode-chars (explode pkg-cap) acc))))
     (simple-html-encode-chars (explode name-low) acc)))
 
 (defun sym-mangle-cap (x base-pkg acc)
 
 ; Same as sym-mangle, but upper-case the first letter.
-
-  (b* ((base-pkg (base-pkg-display-override base-pkg))
-       (name-low (name-low (rendered-name (symbol-name x))))
-       ((when (in-package-p x base-pkg))
-        (let* ((name-cap (str::upcase-first name-low)))
-          (simple-html-encode-chars (explode name-cap) acc)))
-       (pkg-low (name-low (symbol-package-name x)))
-       (pkg-cap (str::upcase-first pkg-low))
-       (acc (list* #\: #\: (simple-html-encode-chars (explode pkg-cap) acc))))
-    (simple-html-encode-chars (explode name-low) acc)))
+  (b* ((base-pkg (base-pkg-display-override base-pkg)))
+    (sym-mangle-cap-aux (symbol-package-name x)
+                        (symbol-name x)
+                        (in-package-p x base-pkg)
+                        acc)))
 
 ; (reverse (implode (sym-mangle 'acl2 'acl2::foo nil)))
 ; (reverse (implode (sym-mangle 'acl2-tutorial 'acl2::foo nil)))

@@ -31,7 +31,6 @@
 ; definitions, e.g., from Centaur libraries.
 
 (in-package "ACL2")
-(include-book "std/util/bstar" :dir :system)
 
 ; This book is intended to be a rather bare-minimum set of list definitions.
 ; Historically it included most of the books in the std/lists library and then
