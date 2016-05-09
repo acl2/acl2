@@ -318,16 +318,23 @@ a bleeding edge zip.</p>")
   (defun maybe-start-support-threads ()
     (unless support-started
       (bt:make-thread 'vls-scanner-thread
-                                    ;(list :name "vls-scanner-thread"
-                                    ;      :stack-size  (* 8  (expt 2 20))  ;; 8 MB
-                                    ;      :vstack-size (* 16 (expt 2 20))  ;; 16 MB
-                                    ;      :tstack-size (* 8  (expt 2 20))  ;; 8 MB
-                                    )
-      (bt:make-thread 'vls-loader-thread
-                                    ;; :stack-size  (* 8 (expt 2 20))   ;; 8 MB
-                                    ;; :vstack-size (* 128 (expt 2 20)) ;; 128 MB
-                                    ;; :tstack-size (* 8 (expt 2 20))   ;; 8 MB
-                                    )
+                                      ;(list :name "vls-scanner-thread"
+                                      ;      :stack-size  (* 8  (expt 2 20))  ;; 8 MB
+                                      ;      :vstack-size (* 16 (expt 2 20))  ;; 16 MB
+                                      ;      :tstack-size (* 8  (expt 2 20))  ;; 8 MB
+                                      )
+      ;; sswords -- use big stacks for loader thread, for ccl at least
+      (let
+        #+ccl
+        ((ccl::*default-control-stack-size* (* 20 (expt 2 20)))
+         (ccl::*default-value-stack-size* (* 256 (expt 2 20))))
+        #-ccl
+        ()
+        (bt:make-thread 'vls-loader-thread
+                                        ;; :stack-size  (* 8 (expt 2 20))   ;; 8 MB
+                                        ;; :vstack-size (* 128 (expt 2 20)) ;; 128 MB
+                                        ;; :tstack-size (* 8 (expt 2 20))   ;; 8 MB
+                        ))
       (setq support-started t))))
 
 (defun vls-loaded-translations (db)
