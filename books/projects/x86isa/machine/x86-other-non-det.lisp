@@ -4,7 +4,7 @@
 (in-package "X86ISA")
 
 (include-book "x86-syscalls"
-	      :ttags (:include-raw :undef-flg :syscall-exec))
+              :ttags (:include-raw :undef-flg :syscall-exec))
 
 ;; ======================================================================
 
@@ -30,8 +30,8 @@ HW_RND_GEN)\).</p>"
   ((size :type (integer 2 8))
    x86)
   :guard (or (equal size 2)
-	     (equal size 4)
-	     (equal size 8))
+             (equal size 4)
+             (equal size 8))
   (declare (ignorable size))
   (pop-x86-oracle x86))
 
@@ -40,17 +40,17 @@ HW_RND_GEN)\).</p>"
    x86)
   :inline nil
   :guard (or (equal size 2)
-	     (equal size 4)
-	     (equal size 8))
+             (equal size 4)
+             (equal size 8))
   (declare (ignorable size))
   (HW_RND_GEN-logic size x86))
 
 ;; ======================================================================
 
 (push-untouchable (
-		   HW_RND_GEN-logic
-		   )
-		  t)
+                   HW_RND_GEN-logic
+                   )
+                  t)
 
 ;; Exec definitions:
 
@@ -77,11 +77,12 @@ x86isa-build-instructions) for details.</p>
      (defttag :other-non-det)
 
      (defconst *os-specific-other-non-det-lib*
-       ;; Hopefully, one day I'll have FreeBSD listed here as well.
        (os
-	"shared/librdrand.so"    ;; Linux
-	"shared/librdrand.dylib" ;; Darwin
-	))
+        "shared/librdrand.so"    ;; Linux
+        "shared/librdrand.dylib" ;; Darwin
+        ;; Hopefully, one day I'll have FreeBSD listed here as well.
+        ""
+        ))
 
      (defconst *shared-other-non-det-dir-path*
        (string-append *current-dir* *os-specific-other-non-det-lib*))

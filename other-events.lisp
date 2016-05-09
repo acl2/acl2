@@ -16952,13 +16952,13 @@
            body))
      (t nil))))
 
-(defmacro defun-sk (name args body
-                         &key
-                         quant-ok skolem-name thm-name rewrite strengthen
-                         #+:non-standard-analysis
-                         (classicalp 't classicalp-p)
-                         (witness-dcls
-                          '((declare (xargs :non-executable t)))))
+(defmacro defun-sk (&whole form name args body
+                           &key
+                           quant-ok skolem-name thm-name rewrite strengthen
+                           #+:non-standard-analysis
+                           (classicalp 't classicalp-p)
+                           (witness-dcls
+                            '((declare (xargs :non-executable t)))))
   (let* ((exists-p (and (true-listp body)
                         (eq (car body) 'exists)))
          (bound-vars (and (true-listp body)
@@ -16985,58 +16985,59 @@
              "~@0"
              ',msg)
       `(encapsulate
-        ()
-        (logic)
-        (set-match-free-default :all)
-        (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec" "Infected")
-        (encapsulate
-         ((,skolem-name ,args
-                         ,(if (= (length bound-vars) 1)
-                              (car bound-vars)
-                            (cons 'mv bound-vars))
-                         #+:non-standard-analysis
-                         ,@(and classicalp-p
-                                `(:classicalp ,classicalp))))
-         (local (in-theory '(implies)))
-         (local
-          (defchoose ,skolem-name ,bound-vars ,args
-            ,defchoose-body
-            ,@(and strengthen
-                   '(:strengthen t))))
-         ,@(and strengthen
-                `((defthm ,(packn (list skolem-name '-strengthen))
-                    ,(defchoose-constraint-extra skolem-name bound-vars args
-                       defchoose-body)
-                    :hints (("Goal"
-                             :use ,skolem-name
-                             :in-theory (theory 'minimal-theory)))
-                    :rule-classes nil)))
-         (,(if (member-equal '(declare (xargs :non-executable t)) witness-dcls)
-               'defun-nx
-             'defun)
-           ,name ,args
-           ,@(remove1-equal '(declare (xargs :non-executable t)) witness-dcls)
-           ,(if (= (length bound-vars) 1)
-                `(let ((,(car bound-vars) (,skolem-name ,@args)))
-                   ,body-guts)
-              `(mv-let (,@bound-vars)
-                       (,skolem-name ,@args)
-                       ,body-guts)))
-         (in-theory (disable (,name)))
-         (defthm ,thm-name
-           ,(cond (exists-p
-                   `(implies ,body-guts
-                             (,name ,@args)))
-                  ((eq rewrite :direct)
-                   `(implies (,name ,@args)
-                             ,body-guts))
-                  ((member-eq rewrite '(nil :default))
-                   `(implies (not ,body-guts)
-                             (not (,name ,@args))))
-                  (t rewrite))
-           :hints (("Goal"
-                     :use (,skolem-name ,name)
-                     :in-theory (theory 'minimal-theory)))))))))
+         ()
+         (logic)
+         (set-match-free-default :all)
+         (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec" "Infected")
+         (encapsulate
+           ((,skolem-name ,args
+                          ,(if (= (length bound-vars) 1)
+                               (car bound-vars)
+                             (cons 'mv bound-vars))
+                          #+:non-standard-analysis
+                          ,@(and classicalp-p
+                                 `(:classicalp ,classicalp))))
+           (local (in-theory '(implies)))
+           (local
+            (defchoose ,skolem-name ,bound-vars ,args
+              ,defchoose-body
+              ,@(and strengthen
+                     '(:strengthen t))))
+           ,@(and strengthen
+                  `((defthm ,(packn (list skolem-name '-strengthen))
+                      ,(defchoose-constraint-extra skolem-name bound-vars args
+                         defchoose-body)
+                      :hints (("Goal"
+                               :use ,skolem-name
+                               :in-theory (theory 'minimal-theory)))
+                      :rule-classes nil)))
+           (,(if (member-equal '(declare (xargs :non-executable t)) witness-dcls)
+                 'defun-nx
+               'defun)
+            ,name ,args
+            ,@(remove1-equal '(declare (xargs :non-executable t)) witness-dcls)
+            ,(if (= (length bound-vars) 1)
+                 `(let ((,(car bound-vars) (,skolem-name ,@args)))
+                    ,body-guts)
+               `(mv-let (,@bound-vars)
+                  (,skolem-name ,@args)
+                  ,body-guts)))
+           (in-theory (disable (,name)))
+           (defthm ,thm-name
+             ,(cond (exists-p
+                     `(implies ,body-guts
+                               (,name ,@args)))
+                    ((eq rewrite :direct)
+                     `(implies (,name ,@args)
+                               ,body-guts))
+                    ((member-eq rewrite '(nil :default))
+                     `(implies (not ,body-guts)
+                               (not (,name ,@args))))
+                    (t rewrite))
+             :hints (("Goal"
+                      :use (,skolem-name ,name)
+                      :in-theory (theory 'minimal-theory))))
+           (extend-pe-table ,name ,form))))))
 
 ; Here is the defstobj event.  Note that many supporting functions have been
 ; moved from this file to basis-a.lisp, in support of ACL2 "toothbrush"

@@ -79,7 +79,7 @@ satisfies @('maybe-bitp'), then either it is a @(see bitp) or nothing.</p>"
   (defthm maybe-bitp-compound-recognizer
     (implies (maybe-bitp x)
              (or (not x)
-                 (natp x)))
+                 (bitp x)))
     :rule-classes :compound-recognizer))
 
 (defsection lnfix
