@@ -1375,21 +1375,6 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
 
 
 
-
-(define svtv-easy-bindings-inside-mix ((x "Some arguments inside of a :mix")
-                                      (svtv svtv-p))
-  :parents (svtv-easy-bindings)
-  (cond ((atom x)
-         nil)
-        ((symbolp (car x))
-         ;; Should be an SVTV input.
-         (cons `(:nat ,(car x) ,(svtv->in-width (car x) svtv))
-               (svtv-easy-bindings-inside-mix (cdr x) svtv)))
-        (t
-         ;; Anything else is illegal inside mix.
-         (raise "Inside a :mix you can only have symbols (the names of svtv ~
-                 inputs), so ~x0 is illegal." (car x)))))
-
 (define svtv-easy-bindings-main ((x   "Some arguments to easy-bindings")
                                 (svtv svtv-p))
   (cond ((atom x)
@@ -1398,16 +1383,23 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
          ;; Should be an SVTV input.
          (cons `(:nat ,(car x) ,(svtv->in-width (car x) svtv))
                (svtv-easy-bindings-main (cdr x) svtv)))
-        ((and (consp (car x))
-              (equal (caar x) :mix))
-         (let ((things-to-mix (cdar x)))
-           (if (consp things-to-mix)
-               (cons `(:mix . ,(svtv-easy-bindings-inside-mix things-to-mix svtv))
-                     (svtv-easy-bindings-main (cdr x) svtv))
-             (raise ":MIX with no arguments? ~x0" (car x)))))
+        ((atom (car x))
+         (raise "Illegal argumen to svtv-easy-bindings: ~x0" (car x)))
+        ((or (eq (caar x) :nat)
+             (eq (caar x) :int)
+             (eq (caar x) :bool))
+         (cons (car x) (svtv-easy-bindings-main (cdr x) svtv)))
+        ((or (eq (caar x) :mix)
+             (eq (caar x) :seq))
+         (let ((elems (cdar x)))
+           (cons (cons (caar x) (svtv-easy-bindings-main elems svtv))
+                 (svtv-easy-bindings-main (cdr x) svtv))))
+        ((eq (caar x) :rev)
+         (cons (cons :rev (svtv-easy-bindings-main (cdar x) svtv))
+               (svtv-easy-bindings-main (cdr x) svtv)))
         (t
          (raise "Arguments to svtv-easy-bindings should be input names or ~
-                 (:mix input-name-list), so ~x0 is illegal." (car x)))))
+                 a :mix, :seq, or :rev form, so ~x0 is illegal." (car x)))))
 
 (program)
 
@@ -1466,10 +1458,39 @@ irrelevant inputs are removed.</p>"
     (gl::auto-bindings-fn
      (append binds
              ;; bozo ugly, but workable enough...
-             (svtv-easy-bindings-inside-mix unbound svtv))))
+             (svtv-easy-bindings-main unbound svtv))))
   ///
   (defmacro stv-easy-bindings (&rest args) (cons 'svtv-easy-bindings args))
   (add-macro-alias stv-easy-bindings svtv-easy-bindings))
+
+
+(define svtv-flex-bindings
+  :hooks nil
+  :parents (symbolic-test-vector)
+  :short "Generating G-bindings from an SVTV using @(see gl::flex-bindings)."
+
+  ((svtv   "The SVTV you are dealing with."
+          svtv-p)
+   (order "The variable order you want to use.")
+   &key
+   (arrange "Arrangement of the indices."))
+
+  (b* ((binds   (svtv-easy-bindings-main order svtv))
+       (arrange1 (or arrange
+                     (gl::auto-bindings-list-collect-arrange
+                      (gl::auto-bind-xlate-list binds nil))))
+       (unbound (set-difference-equal (svtv->ins svtv)
+                                      (strip-cars (strip-cdrs arrange1))))
+       (unbound-binds (svtv-easy-bindings-main unbound svtv))
+       (unbound-arrange (gl::auto-bindings-list-collect-arrange
+                         (gl::auto-bind-xlate-list unbound-binds nil))))
+    (gl::flex-bindings-fn
+     (append binds unbound-binds)
+     (append arrange1 unbound-arrange)
+     0))
+  ///
+  (defmacro stv-flex-bindings (&rest args) (cons 'svtv-flex-bindings args))
+  (add-macro-alias stv-flex-bindings svtv-flex-bindings))
 
 
 
