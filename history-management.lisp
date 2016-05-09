@@ -8290,7 +8290,7 @@
 (defun default-ruler-extenders (wrld)
   (default-ruler-extenders-from-table (table-alist 'acl2-defaults-table wrld)))
 
-(defun get-ruler-extenders-lst (symbol-class lst ctx state)
+(defun get-ruler-extenders-lst (symbol-class lst ctx wrld state)
 
 ; This function returns a list in 1:1 correspondence with lst containing the
 ; user's specified :RULER-EXTENDERS (or *no-ruler-extenders* if no
@@ -8304,9 +8304,8 @@
   (cond
    ((eq symbol-class :program)
     (value (make-list (length lst) :initial-element *no-ruler-extenders*)))
-   (t (let ((wrld (w state)))
-        (get-ruler-extenders2 lst (default-ruler-extenders wrld) ctx wrld
-                              state)))))
+   (t (get-ruler-extenders2 lst (default-ruler-extenders wrld) ctx wrld
+                            state))))
 
 (defun get-hints1 (edcls)
 
@@ -11039,8 +11038,8 @@
          (all-calls names (fargn body 1) alist nil)
          branch-result)))))
    ((and (eq (ffn-symb body) 'return-last)
-              (quotep (fargn body 1))
-              (eq (unquote (fargn body 1)) 'mbe1-raw))
+         (quotep (fargn body 1))
+         (eq (unquote (fargn body 1)) 'mbe1-raw))
 
 ; It is sound to treat return-last as a macro for logic purposes.  We do so for
 ; (return-last 'mbe1-raw exec logic) both for induction and for termination.

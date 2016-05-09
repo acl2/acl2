@@ -10739,7 +10739,7 @@
   (declare (xargs :guard (alistp alist)))
   (if (consp lst)
       (delete-assoc-equal-lst (cdr lst)
-                              (delete-assoc-eq (car lst) alist))
+                              (delete-assoc-equal (car lst) alist))
     alist))
 
 (defun set-difference-assoc-equal (lst alist)

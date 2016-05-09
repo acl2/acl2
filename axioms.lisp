@@ -15471,7 +15471,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          nil)
         ((and (consp x)
               (eq (car x) 'quote))
-         (msg "~x0 has a superfluous QUOTE, which you may wish to remove"
+         (msg "~x0 has a superfluous QUOTE, which needs to be removed"
               x))
         ((not (symbol-listp x))
          (msg "~x0 is not a true list of symbols" x))
@@ -15481,13 +15481,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                              (table-alist 'return-last-table wrld))))
              (cond (vals
                     (msg "~&0 ~#0~[is not a~/are not~] legal ruler-extenders ~
-                          value~#0~[~/s~].~@1"
+                          value~#0~[~/s~]~@1"
                          vals
                          (cond (suspects
-                                (msg "  Note in particular that ~&0 ~#0~[is a ~
+                                (msg ".  Note in particular that ~&0 ~#0~[is a ~
                                       macro~/are macros~] that may expand to ~
                                       calls of ~x1, which you may want to ~
-                                      specify instead."
+                                      specify instead"
                                      suspects 'return-last))
                                (t ""))))
                    (t nil))))))
