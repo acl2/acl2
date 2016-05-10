@@ -2135,35 +2135,6 @@
                                (t (princ$ steps channel state)))
                          (newline channel state)))))))))
 
-(defun print-rules-summary (state)
-  (let ((acc-ttree (f-get-global 'accumulated-ttree state)))
-    (mv-let
-     (col state)
-     (io? summary nil (mv col state)
-          (acc-ttree)
-          (let ((channel (proofs-co state)))
-            (cond ((member-eq 'rules
-                              (f-get-global 'inhibited-summary-types
-                                            state))
-                   (mv 0 state))
-                  (t
-                   (let ((runes (merge-sort-runes
-                                 (all-runes-in-ttree acc-ttree nil))))
-                     (fmt1 "Rules: ~y0~|"
-                           (list (cons #\0 runes))
-                           0 channel state nil)))))
-          :default-bindings ((col 0)))
-     (declare (ignore col))
-     (pprogn (f-put-global 'accumulated-ttree nil state)
-
-; Since we've already printed the appropriate rules, there is no need to print
-; them again the next time we want to print rules.  That is why we set the
-; accumulated-ttree to nil here.  If we ever want certify-book, say, to be able
-; to print rules when it fails, then we should use a stack of ttrees rather
-; than a single accumulated-ttree.
-
-             state))))
-
 #+acl2-rewrite-meter
 (defun merge-cdr-> (l1 l2)
   (cond ((null l1) l2)
@@ -2558,17 +2529,18 @@
          (cons (car lst) (filter-atoms flg (cdr lst))))
         (t (filter-atoms flg (cdr lst)))))
 
-(defun print-runes-summary (ttree channel state)
+(defun print-runes-summary (ttree state)
   (let ((runes (merge-sort-runes (all-runes-in-ttree ttree nil))))
     (pprogn (put-event-data 'rules runes state)
             (io? summary nil state
-                 (runes channel)
-                 (mv-let (col state)
-                   (fmt1 "Rules: ~y0~|"
-                         (list (cons #\0 runes))
-                         0 channel state nil)
-                   (declare (ignore col))
-                   state)))))
+                 (runes)
+                 (let ((channel (proofs-co state)))
+                   (mv-let (col state)
+                     (fmt1 "Rules: ~y0~|"
+                           (list (cons #\0 runes))
+                           0 channel state nil)
+                     (declare (ignore col))
+                     state))))))
 
 (defun use-names-in-ttree (ttree)
   (let* ((objs (tagged-objects :USE ttree))
@@ -2601,7 +2573,7 @@
          (cl-proc-fns (clause-processor-fns cl-proc-hints)))
     (sort-symbol-listp cl-proc-fns)))
 
-(defun print-hint-events-summary (ttree channel state)
+(defun print-hint-events-summary (ttree state)
   (flet ((make-rune-like-objs (kwd lst)
                               (and lst ; optimization for common case
                                    (pairlis$ (make-list (length lst)
@@ -2615,29 +2587,31 @@
                         (make-rune-like-objs :USE use-lst))))
       (pprogn (put-event-data 'hint-events lst state)
               (cond (lst (io? summary nil state
-                              (lst channel)
-                              (mv-let (col state)
-                                (fmt1 "Hint-events: ~y0~|"
-                                      (list (cons #\0 lst))
-                                      0 channel state nil)
-                                (declare (ignore col))
-                                state)))
+                              (lst)
+                              (let ((channel (proofs-co state)))
+                                (mv-let (col state)
+                                  (fmt1 "Hint-events: ~y0~|"
+                                        (list (cons #\0 lst))
+                                        0 channel state nil)
+                                  (declare (ignore col))
+                                  state))))
                     (t state))))))
 
 (defun print-splitter-rules-summary-1 (cl-id clauses
                                              case-split immed-forced if-intro
-                                             channel state)
+                                             state)
 
 ; The caller (or its caller, etc.) must take responsibility for surrounding
 ; this call with any necessary io? wrapper.
 
-  (mv-let
-    (col state)
-    (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
-          (list
-           (cons #\0 (if cl-id "note" "rules"))
-           (cons #\1
-                 (if cl-id
+  (let ((channel (proofs-co state)))
+    (mv-let
+      (col state)
+      (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
+            (list
+             (cons #\0 (if cl-id "note" "rules"))
+             (cons #\1
+                   (if cl-id
 
 ; Since we are printing during a proof (see comment above) but not already
 ; printing the clause-id, we do so now.  This is redundant if (f-get-global
@@ -2647,34 +2621,34 @@
 ; We leave it to waterfall-msg1 to track print-time, so we avoid calling
 ; waterfall-print-clause-id.
 
-                     (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
-                          (tilde-@-clause-id-phrase cl-id)
-                          (length clauses)
-                          clauses)
-                   ""))
-           (cons #\2 (if cl-id "." ":"))
-           (cons #\3
-                 (cond
-                  (case-split (msg "  case-split: ~y0"
-                                   case-split))
-                  (t "")))
-           (cons #\4
-                 (cond
-                  (immed-forced (msg "  immed-forced: ~y0"
-                                     immed-forced))
-                  (t "")))
-           (cons #\5
-                 (cond
-                  (if-intro (msg "  if-intro: ~y0"
-                                 if-intro))
-                  (t ""))))
-          0 channel state nil)
-    (declare (ignore col))
-    (cond ((and cl-id (gag-mode))
-           (newline channel state))
-          (t state))))
+                       (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
+                            (tilde-@-clause-id-phrase cl-id)
+                            (length clauses)
+                            clauses)
+                     ""))
+             (cons #\2 (if cl-id "." ":"))
+             (cons #\3
+                   (cond
+                    (case-split (msg "  case-split: ~y0"
+                                     case-split))
+                    (t "")))
+             (cons #\4
+                   (cond
+                    (immed-forced (msg "  immed-forced: ~y0"
+                                       immed-forced))
+                    (t "")))
+             (cons #\5
+                   (cond
+                    (if-intro (msg "  if-intro: ~y0"
+                                   if-intro))
+                    (t ""))))
+            0 channel state nil)
+      (declare (ignore col))
+      (cond ((and cl-id (gag-mode))
+             (newline channel state))
+            (t state)))))
 
-(defun print-splitter-rules-summary (cl-id clauses ttree channel state)
+(defun print-splitter-rules-summary (cl-id clauses ttree state)
 
 ; When cl-id is nil, we are printing for the summary; so clauses is ignored,
 ; and we need here to use a suitable wrapper (io? summary ...).  Otherwise we
@@ -2688,22 +2662,22 @@
         (immed-forced (merge-sort-runes
                        (tagged-objects 'splitter-immed-forced ttree))))
     (cond ((or if-intro case-split immed-forced)
-           (pprogn
-            (cond (cl-id (newline channel state))
-                  (t (put-event-data 'splitter-rules
-                                     (list case-split immed-forced if-intro)
-                                     state)))
-            (cond
-             (cl-id ; printing during a proof
+           (cond
+            (cl-id ; printing during a proof
+             (pprogn
+              (newline (proofs-co state) state)
               (with-output-lock
                (print-splitter-rules-summary-1
-                cl-id clauses case-split immed-forced if-intro channel state)))
-             (t ; printing for the summary
+                cl-id clauses case-split immed-forced if-intro state))))
+            (t ; printing for the summary
+             (pprogn
+              (put-event-data 'splitter-rules
+                              (list case-split immed-forced if-intro)
+                              state)
               (io? summary nil state
-                   (cl-id clauses case-split immed-forced if-intro channel)
+                   (cl-id clauses case-split immed-forced if-intro)
                    (print-splitter-rules-summary-1
-                    cl-id clauses case-split immed-forced if-intro channel
-                    state))))))
+                    cl-id clauses case-split immed-forced if-intro state))))))
           (cl-id state)
           (t (put-event-data 'splitter-rules nil state)))))
 
@@ -2713,22 +2687,20 @@
 ; are responsible for adding such wrappers.  With this structure, the
 ; subroutines can (and are) also responsible for calling put-event-data outside
 ; such (io? ...) wrappers, so that put-event-data is not called again during
-; proof reply (via :pso and related utilities).
+; proof replay (via :pso and related utilities).
 
-  (let ((channel (proofs-co state))
-        (inhibited-summary-types (f-get-global 'inhibited-summary-types
+  (let ((inhibited-summary-types (f-get-global 'inhibited-summary-types
                                                state)))
     (pprogn
      (cond ((member-eq 'rules inhibited-summary-types)
             state)
-           (t (print-runes-summary acc-ttree channel state)))
+           (t (print-runes-summary acc-ttree state)))
      (cond ((member-eq 'hint-events inhibited-summary-types)
             state)
-           (t (print-hint-events-summary acc-ttree channel state)))
+           (t (print-hint-events-summary acc-ttree state)))
      (cond ((member-eq 'splitter-rules inhibited-summary-types)
             state)
-           (t (print-splitter-rules-summary nil nil acc-ttree channel
-                                            state)))
+           (t (print-splitter-rules-summary nil nil acc-ttree state)))
 
 ; Since we've already printed from the accumulated-ttree, there is no need to
 ; print again the next time we want to print rules or hint-events.  That is why
@@ -3672,10 +3644,6 @@
 
 ; Form should evaluate to an error triple.
 
-; We assign to saved-output-reversed, rather than binding it, so that saved
-; output for gag-mode replay (using pso or psog) is available outside the scope
-; of with-ctx-summarized.
-
   `(state-global-let*
     ((accumulated-ttree nil)
      (gag-state nil)
@@ -3685,8 +3653,7 @@
      (saved-output-p
       (not (member-eq 'PROVE
                       (f-get-global 'inhibit-output-lst state)))))
-    (pprogn (f-put-global 'saved-output-reversed nil state)
-            (with-prover-step-limit! :START ,form))))
+    (with-prover-step-limit! :START ,form)))
 
 (defun attachment-alist (fn wrld)
   (let ((prop (getpropc fn 'attachment nil wrld)))
@@ -4148,28 +4115,11 @@
               (erp val state)
               (save-event-state-globals
                (mv-let (erp val state)
-                       (pprogn
-                        (push-io-record
-                         :ctx
-                         (list 'mv-let
-                               '(col state)
-                               '(fmt "Output replay for: "
-                                     nil (standard-co state) state nil)
-                               (list 'mv-let
-                                     '(col state)
-                                     (list 'fmt-ctx
-                                           (list 'quote ctx)
-                                           'col
-                                           '(standard-co state)
-                                           'state)
-                                     '(declare (ignore col))
-                                     '(newline (standard-co state) state)))
-                         state)
-                        (er-progn
-                         (xtrans-eval-state-fn-attachment
-                          (initialize-event-user ',ctx ',body)
-                          ctx)
-                         ,body))
+                       (er-progn
+                        (xtrans-eval-state-fn-attachment
+                         (initialize-event-user ',ctx ',body)
+                         ctx)
+                        ,body)
                        (pprogn
                         (print-summary erp
                                        (equal saved-wrld (w state))

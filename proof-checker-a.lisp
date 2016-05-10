@@ -544,15 +544,18 @@
             (mv ,@signature)))))
 
 (defun print-pc-prompt (state)
-  ;; Does NOT print a new line before or after, but assumes that we're in column 0.
-  (let ((chan (proofs-co state)))
-    (with-output-forced
-     chan
-     (col state)
-     (io? proof-checker nil (mv col state)
-          (chan)
-          (fmt1 (pc-prompt) nil 0 chan state nil)
-          :default-bindings ((col 0))))))
+
+; This function does not print a new line before or after the prompt.  It
+; assumes that we're in column 0.
+
+  (io? proof-checker nil (mv col state)
+       ()
+       (let ((chan (proofs-co state)))
+         (with-output-forced
+          chan
+          (col state)
+          (fmt1 (pc-prompt) nil 0 chan state nil)))
+       :default-bindings ((col 0))))
 
 (defun pc-macroexpand (raw-instr state)
 
