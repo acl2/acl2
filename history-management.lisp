@@ -10769,6 +10769,10 @@
                     (pairlis$ (lambda-formals (ffn-symb term))
                               (sublis-var-lst alist (fargs term)))
                     (all-calls-lst names (fargs term) alist ans)))
+        ((and (eq (ffn-symb term) 'return-last)
+              (quotep (fargn term 1))
+              (eq (unquote (fargn term 1)) 'mbe1-raw))
+         (all-calls names (fargn term 3) alist ans))
         (t (all-calls-lst names
                           (fargs term)
                           alist
