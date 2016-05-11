@@ -3407,27 +3407,31 @@
   (declare (ignore args))
   nil)
 
-(defmacro incompatible (rune1 rune2)
-  (cond ((and (consp rune1)
-              (consp (cdr rune1))
-              (symbolp (cadr rune1))
-              (consp rune2)
-              (consp (cdr rune2))
-              (symbolp (cadr rune2)))
+(defmacro incompatible (rune1 rune2 &optional strictp)
+  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep)))
+    (cond ((and (consp rune1)
+                (consp (cdr rune1))
+                (symbolp (cadr rune1))
+                (consp rune2)
+                (consp (cdr rune2))
+                (symbolp (cadr rune2)))
 
 ; The above condition is similar to conditions in runep and active-runep.
 
-         `(not (and (active-runep ',rune1)
-                    (active-runep ',rune2))))
-        (t (er hard 'incompatible
-               "Each argument to ~x0 should have the shape of a rune, ~
-                (:KEYWORD BASE-SYMBOL), unlike ~x1."
-               'incompatible
-               (or (and (consp rune1)
-                        (consp (cdr rune1))
-                        (symbolp (cadr rune1))
-                        rune2)
-                   rune1)))))
+           `(not (and (,active-fn ',rune1)
+                      (,active-fn ',rune2))))
+          (t (er hard 'incompatible
+                 "Each argument to ~x0 should have the shape of a rune, ~
+                  (:KEYWORD BASE-SYMBOL), unlike ~x1."
+                 'incompatible
+                 (or (and (consp rune1)
+                          (consp (cdr rune1))
+                          (symbolp (cadr rune1))
+                          rune2)
+                     rune1))))))
+
+(defmacro incompatible! (rune1 rune2)
+  `(incompatible ,rune1 ,rune2 t))
 
 ; We now begin the development of the encapsulate event.  Often in this
 ; development we refer to the Encapsulate Essay.  See the comment in
