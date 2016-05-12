@@ -124,6 +124,14 @@ endif
 
 $(info ACL2_WD is $(ACL2_WD))
 
+# The build of saved_acl2 may succeed even if the directory name has
+# spaces, but book certification will almost surely fail, so we
+# disallow such a build.  Comment out the three lines below if you
+# want to take your chances nonetheless!
+ifneq (,$(word 2, $(ACL2_WD)))
+$(error Illegal ACL2 build directory (contains a space): $(ACL2_WD)/)
+endif
+
 # ACL2 includes support for hash cons, function memoization, and
 # applicative hash tables (see :doc hons-and-memoization).  In order
 # to avoid including those features, you can try commenting out the
