@@ -25,6 +25,37 @@
 
 ;; ======================================================================
 
+(defthm gather-all-paging-structure-qword-addresses-and-write-to-physical-memory-disjoint
+  (implies
+   (and (disjoint-p p-addrs
+                    (open-qword-paddr-list
+                     (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+        (physical-address-listp p-addrs))
+   (equal
+    (gather-all-paging-structure-qword-addresses (write-to-physical-memory p-addrs bytes x86))
+    (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+  :hints (("Goal" :in-theory (e/d* (write-to-physical-memory
+                                    byte-listp
+                                    n08p
+                                    len
+                                    disjoint-p
+                                    gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)
+                                   ()))))
+
+(defthm gather-all-paging-structure-qword-addresses-and-wb-disjoint
+  (implies
+   (and (disjoint-p (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
+                    (open-qword-paddr-list
+                     (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+        (not (programmer-level-mode x86))
+        (addr-byte-alistp addr-lst))
+   (equal
+    (gather-all-paging-structure-qword-addresses (mv-nth 1 (wb addr-lst x86)))
+    (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+  :hints (("Goal" :in-theory (e/d* (wb) (force (force) (:meta acl2::mv-nth-cons-meta))))))
+
+; ======================================================================
+
 (defsection get-prefixes-alt
   :parents (marking-mode-top)
 
@@ -692,86 +723,57 @@
                               (l-addrs (cdr l-addrs))
                               (r-w-x :x))))))
 
-  ;; (defthm combine-bytes-rb-alt-in-terms-of-rb-alt-subset-p-in-system-level-mode
-  ;;   (implies
-  ;;    (and
-  ;;     (bind-free (find-info-from-program-at-term
-  ;;                 'combine-bytes-rb-alt-in-terms-of-rb-alt-subset-p-in-system-level-mode
-  ;;                 mfc state)
-  ;;                (n prog-addr bytes))
-  ;;     (program-at (create-canonical-address-list n prog-addr) bytes x86)
-  ;;     (subset-p l-addrs (create-canonical-address-list n prog-addr))
-  ;;     ;; (disjoint-p
-  ;;     ;;  (all-translation-governing-addresses
-  ;;     ;;   (create-canonical-address-list n prog-addr)
-  ;;     ;;   (double-rewrite x86))
-  ;;     ;;  (mv-nth 1 (las-to-pas
-  ;;     ;;             (create-canonical-address-list n prog-addr)
-  ;;     ;;             :x (cpl x86) (double-rewrite x86))))
-  ;;     (syntaxp (quotep n))
-  ;;     (consp l-addrs)
-  ;;     (not (mv-nth 0
-  ;;                  (las-to-pas (create-canonical-address-list n prog-addr)
-  ;;                              :x (cpl x86) (double-rewrite x86))))
-  ;;     (disjoint-p
-  ;;      (mv-nth 1
-  ;;              (las-to-pas (create-canonical-address-list n prog-addr)
-  ;;                          :x (cpl x86) (double-rewrite x86)))
-  ;;      (open-qword-paddr-list
-  ;;       (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-  ;;     (page-structure-marking-mode x86)
-  ;;     (x86p x86))
-  ;;    (equal (combine-bytes (mv-nth 1 (rb-alt l-addrs :x x86)))
-  ;;           (combine-bytes
-  ;;            (append (list (nth (pos
-  ;;                                (car l-addrs)
-  ;;                                (create-canonical-address-list n prog-addr))
-  ;;                               bytes))
-  ;;                    (mv-nth 1 (rb-alt (cdr l-addrs) :x x86))))))
-  ;;   :hints (("Goal" :in-theory (union-theories
-  ;;                               '()
-  ;;                               (theory 'minimal-theory))
-  ;;            :use ((:instance rb-alt-in-terms-of-rb-alt-subset-p-in-system-level-mode)))))
-
-  ;; (defthm gather-all-paging-structure-qword-addresses-and-write-to-physical-memory-disjoint
-  ;;   (implies
-  ;;    (and (disjoint-p p-addrs
-  ;;                     (open-qword-paddr-list
-  ;;                      (gather-all-paging-structure-qword-addresses x86)))
-  ;;         (physical-address-listp p-addrs))
-  ;;    (equal
-  ;;     (gather-all-paging-structure-qword-addresses (write-to-physical-memory p-addrs bytes x86))
-  ;;     (gather-all-paging-structure-qword-addresses x86)))
-  ;;   :hints (("Goal" :in-theory (e/d* (write-to-physical-memory
-  ;;                                     byte-listp
-  ;;                                     n08p
-  ;;                                     len)
-  ;;                                    ()))))
-
-  ;; (defthm gather-all-paging-structure-qword-addresses-and-mv-nth-1-wb-disjoint
-  ;;   (implies (and (disjoint-p (strip-cars addr-bytes)
-  ;;                             (open-qword-paddr-list (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-  ;;                 (addr-byte-alistp addr-bytes)
-  ;;                 (not (programmer-level-mode x86)))
-  ;;            (equal (gather-all-paging-structure-qword-addresses (mv-nth 1 (wb addr-lst x86)))
-  ;;                   (gather-all-paging-structure-qword-addresses x86)))
-  ;;   :hints (("Goal" :in-theory (e/d* (wb) ()))))
+  (defthmd rb-alt-wb-equal-in-system-level-mode
+    (implies (and (equal
+                   ;; The physical addresses pertaining to the read
+                   ;; operation are equal to those pertaining to the
+                   ;; write operation.
+                   (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
+                   (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+                  (disjoint-p
+                   ;; The physical addresses pertaining to the write are
+                   ;; disjoint from the translation-governing-addresses
+                   ;; pertaining to the read.
+                   (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+                   (open-qword-paddr-list (gather-all-paging-structure-qword-addresses
+                                           (double-rewrite x86))))
+                  (no-duplicates-p
+                   (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+                  (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
+                  (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+                  (canonical-address-listp l-addrs)
+                  (addr-byte-alistp addr-lst)
+                  (page-structure-marking-mode x86)
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (equal (mv-nth 1 (rb-alt l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+                    (strip-cdrs addr-lst)))
+    :hints (("Goal" :do-not-induct t
+             :in-theory (e/d* (las-to-pas
+                               disjoint-p-commutative)
+                              (rewrite-rb-to-rb-alt
+                               disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                               mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                               force (force)))
+             :use ((:instance rewrite-rb-to-rb-alt
+                              (x86 (mv-nth 1 (wb addr-lst x86))))
+                   (:instance rb-wb-equal-in-system-level-mode)))))
 
   (defthm rb-alt-wb-disjoint-in-system-level-mode
     (implies (and
               (disjoint-p
-               ;; The physical addresses pertaining to the read
+               ;; The physical addresses pertaining to the write
                ;; operation are disjoint from those pertaining to the
-               ;; write operation.
-               (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-               (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+               ;; read operation.
+               (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+               (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
               (disjoint-p
                ;; The physical addresses pertaining to the read are
                ;; disjoint from the physical addresses of the paging
                ;; structures.
                (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-               (open-qword-paddr-list
-                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+               (open-qword-paddr-list (gather-all-paging-structure-qword-addresses
+                                       (double-rewrite x86))))
               (disjoint-p
                ;; The physical addresses pertaining to the write are
                ;; disjoint from the physical addresses of the paging
@@ -779,25 +781,7 @@
                (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
                (open-qword-paddr-list
                 (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-
-              ;; I need the following hypothesis for relieving the hyps
-              ;; of
-              ;; all-translation-governing-addresses-and-mv-nth-1-wb-disjoint.
-              ;; Fix that rule if you want to look into removing this
-              ;; hyp below.
-              ;; (disjoint-p (all-translation-governing-addresses l-addrs x86)
-              ;;             (all-translation-governing-addresses (strip-cars addr-lst) x86))
-              ;; !!! The following hyp needs to go away. See WB expression
-              ;; in the x86 slot of
-              ;; GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES.
-              (DISJOINT-P
-               (OPEN-QWORD-PADDR-LIST (GATHER-ALL-PAGING-STRUCTURE-QWORD-ADDRESSES
-                                       (MV-NTH 1 (WB ADDR-LST X86))))
-               (MV-NTH 1
-                       (LAS-TO-PAS L-ADDRS R-W-X
-                                   (LOGHEAD 2 (XR :SEG-VISIBLE 1 X86))
-                                   (MV-NTH 1 (WB ADDR-LST X86)))))
-              (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+              (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
               (canonical-address-listp l-addrs)
               (addr-byte-alistp addr-lst)
               (page-structure-marking-mode x86)
@@ -805,9 +789,9 @@
               (x86p x86))
              (and
               (equal (mv-nth 0 (rb-alt l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
-                     (mv-nth 0 (rb-alt l-addrs r-w-x x86)))
+                     (mv-nth 0 (rb-alt l-addrs r-w-x (double-rewrite x86))))
               (equal (mv-nth 1 (rb-alt l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
-                     (mv-nth 1 (rb-alt l-addrs r-w-x x86)))))
+                     (mv-nth 1 (rb-alt l-addrs r-w-x (double-rewrite x86))))))
     :hints (("Goal" :do-not-induct t
              :use ((:instance rewrite-rb-to-rb-alt
                               (x86 (mv-nth 1 (wb addr-lst x86))))
@@ -817,50 +801,7 @@
                               (rewrite-rb-to-rb-alt
                                rb-wb-disjoint-in-system-level-mode
                                disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
-                               mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas)))))
-
-  ;; (defthmd rb-alt-wb-equal-in-system-level-mode
-  ;;   (implies (and (equal
-  ;;                  ;; The physical addresses pertaining to the read
-  ;;                  ;; operation are equal to those pertaining to the
-  ;;                  ;; write operation.
-  ;;                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-  ;;                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-  ;;                 (disjoint-p
-  ;;                  ;; The physical addresses pertaining to the write are
-  ;;                  ;; disjoint from the translation-governing-addresses
-  ;;                  ;; pertaining to the read.
-  ;;                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
-  ;;                  (all-translation-governing-addresses l-addrs (double-rewrite x86)))
-  ;;                 ;; The following hyp comes from
-  ;;                 ;; LA-TO-PAS-VALUES-AND-MV-NTH-1-WB-DISJOINT-FROM-XLATION-GOV-ADDRS.
-  ;;                 (disjoint-p
-  ;;                  (all-translation-governing-addresses l-addrs (double-rewrite x86))
-  ;;                  (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-
-  ;;                 (no-duplicates-p
-  ;;                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-  ;;                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-  ;;                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-  ;;                 (canonical-address-listp l-addrs)
-  ;;                 (addr-byte-alistp addr-lst)
-  ;;                 (page-structure-marking-mode x86)
-  ;;                 (not (programmer-level-mode x86))
-  ;;                 (x86p x86))
-  ;;            (equal (mv-nth 1 (rb-alt l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
-  ;;                   (strip-cdrs addr-lst)))
-  ;;   :hints (("Goal" :do-not-induct t
-  ;;            :in-theory (e/d* (las-to-pas
-  ;;                              disjoint-p-commutative)
-  ;;                             (rewrite-rb-to-rb-alt
-  ;;                              disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
-  ;;                              mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas
-  ;;                              force (force)))
-  ;;            :use ((:instance rewrite-rb-to-rb-alt
-  ;;                             (x86 (mv-nth 1 (wb addr-lst x86))))
-  ;;                  (:instance rb-wb-equal-in-system-level-mode)))))
-
-  )
+                               mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs))))))
 
 ;; ======================================================================
 
@@ -952,7 +893,7 @@
 ;; TODO: Maybe merge -1 and -2 rules by removing the first syntaxp?
 
 (defthm disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p-1
-  ;; Follows from MV-NTH-1-LAS-TO-PAS-SUBSET-P-DISJOINT-FROM-LAS-TO-PAS.
+  ;; Follows from MV-NTH-1-LAS-TO-PAS-SUBSET-P-DISJOINT-FROM-OTHER-P-ADDRS.
 
   ;; This rule is tailored to rewrite terms of the form
 

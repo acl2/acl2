@@ -324,21 +324,12 @@
                             ()))))
 
 (defthm translation-governing-addresses-for-page-directory-and-mv-nth-1-wb-disjoint-p
-  (implies (and (disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr page-directory-base-addr (double-rewrite x86))
-                 (all-translation-governing-addresses (strip-cars addr-lst)
-                                                      (double-rewrite x86)))
-                (disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr page-directory-base-addr (double-rewrite x86))
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst)
-                                       :w
-                                       (cpl x86)
-                                       (double-rewrite x86))))
-                (addr-byte-alistp addr-lst)
-                (not (programmer-level-mode x86))
-                (x86p x86))
+  (implies (and
+            (disjoint-p
+             (translation-governing-addresses-for-page-directory
+              lin-addr page-directory-base-addr (double-rewrite x86))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+            (not (programmer-level-mode x86)))
            (equal (translation-governing-addresses-for-page-directory
                    lin-addr page-directory-base-addr
                    (mv-nth 1 (wb addr-lst x86)))
@@ -346,6 +337,11 @@
                    lin-addr page-directory-base-addr (double-rewrite x86))))
   :hints (("Goal"
            :do-not-induct t
+           :use ((:instance xlate-equiv-entries-and-page-size
+                            (e-1 (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
+                                            x86))
+                            (e-2 (rm-low-64 (page-directory-entry-addr lin-addr page-directory-base-addr)
+                                            (mv-nth 2 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))))
            :in-theory (e/d* (disjoint-p
                              wb
                              translation-governing-addresses-for-page-directory)
@@ -370,16 +366,9 @@
   (implies (and (disjoint-p
                  (translation-governing-addresses-for-page-dir-ptr-table
                   lin-addr page-dir-ptr-table-base-addr (double-rewrite x86))
-                 (all-translation-governing-addresses (strip-cars addr-lst)
-                                                      (double-rewrite x86)))
-                (disjoint-p
-                 (translation-governing-addresses-for-page-dir-ptr-table
-                  lin-addr page-dir-ptr-table-base-addr (double-rewrite x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86)
                                        (double-rewrite x86))))
-                (addr-byte-alistp addr-lst)
-                (not (programmer-level-mode x86))
-                (x86p x86))
+                (not (programmer-level-mode x86)))
            (equal (translation-governing-addresses-for-page-dir-ptr-table
                    lin-addr page-dir-ptr-table-base-addr
                    (mv-nth 1 (wb addr-lst x86)))
@@ -387,6 +376,11 @@
                    lin-addr page-dir-ptr-table-base-addr (double-rewrite x86))))
   :hints (("Goal"
            :do-not-induct t
+           :use ((:instance xlate-equiv-entries-and-page-size
+                            (e-1 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
+                                            x86))
+                            (e-2 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-base-addr)
+                                            (mv-nth 2 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))))
            :in-theory (e/d* (disjoint-p
                              disjoint-p-commutative
                              wb
@@ -413,15 +407,9 @@
   (implies (and (disjoint-p
                  (translation-governing-addresses-for-pml4-table
                   lin-addr pml4-table-base-addr (double-rewrite x86))
-                 (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-                (disjoint-p
-                 (translation-governing-addresses-for-pml4-table
-                  lin-addr pml4-table-base-addr (double-rewrite x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86)
                                        (double-rewrite x86))))
-                (not (programmer-level-mode x86))
-                (addr-byte-alistp addr-lst)
-                (x86p x86))
+                (not (programmer-level-mode x86)))
            (equal (translation-governing-addresses-for-pml4-table
                    lin-addr pml4-table-base-addr
                    (mv-nth 1 (wb addr-lst x86)))
@@ -447,14 +435,9 @@
 (defthm translation-governing-addresses-and-mv-nth-1-wb-disjoint-p
   (implies (and
             (disjoint-p (translation-governing-addresses lin-addr (double-rewrite x86))
-                        (all-translation-governing-addresses
-                         (strip-cars addr-lst) (double-rewrite x86)))
-            (disjoint-p (translation-governing-addresses lin-addr (double-rewrite x86))
                         (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86)
                                               (double-rewrite x86))))
-            (not (programmer-level-mode x86))
-            (addr-byte-alistp addr-lst)
-            (x86p x86))
+            (not (programmer-level-mode x86)))
            (equal (translation-governing-addresses lin-addr (mv-nth 1 (wb addr-lst x86)))
                   (translation-governing-addresses lin-addr (double-rewrite x86))))
   :hints (("Goal"
@@ -464,11 +447,10 @@
                             (wb)))))
 
 (defthm all-translation-governing-addresses-and-write-to-physical-memory-disjoint-p
-  (implies (and (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
-                            p-addrs)
-                (physical-address-listp p-addrs)
-                (byte-listp bytes)
-                (equal (len p-addrs) (len bytes)))
+  (implies (and
+            (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
+                        p-addrs)
+            (physical-address-listp p-addrs))
            (equal (all-translation-governing-addresses
                    l-addrs (write-to-physical-memory p-addrs bytes x86))
                   (all-translation-governing-addresses l-addrs (double-rewrite x86))))
@@ -481,12 +463,8 @@
 (defthm all-translation-governing-addresses-and-mv-nth-1-wb-disjoint
   (implies (and
             (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
-                        (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
-            (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86))
                         (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-            (not (programmer-level-mode x86))
-            (addr-byte-alistp addr-lst)
-            (x86p x86))
+            (not (programmer-level-mode x86)))
            (equal (all-translation-governing-addresses l-addrs (mv-nth 1 (wb addr-lst x86)))
                   (all-translation-governing-addresses l-addrs (double-rewrite x86))))
   :hints (("Goal"
@@ -678,6 +656,23 @@
            :induct (write-to-physical-memory p-addrs bytes x86)
            :in-theory (e/d* (disjoint-p) ()))))
 
+(defthm write-to-physical-memory-and-mv-nth-2-las-to-pas-commute
+  (implies
+   (and (disjoint-p p-addrs
+                    (all-translation-governing-addresses
+                     l-addrs (double-rewrite x86)))
+        (canonical-address-listp l-addrs)
+        (physical-address-listp p-addrs)
+        (byte-listp bytes)
+        (equal (len bytes) (len p-addrs)))
+   (equal
+    (write-to-physical-memory p-addrs bytes (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+    (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))))
+  :hints
+  (("Goal" :induct (cons (las-to-pas l-addrs r-w-x cpl x86)
+                         (write-to-physical-memory p-addrs bytes x86))
+    :in-theory (e/d* (disjoint-p las-to-pas all-translation-governing-addresses) ()))))
+
 ;; ======================================================================
 
 ;; Misc. lemmas about las-to-pas that need some congruence-based
@@ -797,7 +792,7 @@
                   nil))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
-(defthm mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas
+(defthm mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
   (implies
    (and
     (bind-free
@@ -821,7 +816,7 @@
                      (lin-addr (car l-addrs-subset))
                      (l-addrs l-addrs))))))
 
-(defthm mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas-alt
+(defthm mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs-alt
   ;; This rule is tailored to rewrite terms of the form to t
 
   ;; (disjoint-p other-p-addrs (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))
@@ -840,9 +835,9 @@
     (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
    (disjoint-p other-p-addrs (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))
   :hints (("Goal"
-           :use ((:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas))
+           :use ((:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs))
            :in-theory (e/d* (disjoint-p-commutative)
-                            (mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas)))))
+                            (mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)))))
 
 (defthm disjoint-p-all-translation-governing-addresses-subset-p
   ;; This rule is tailored to rewrite terms of the form to t
@@ -867,7 +862,7 @@
                                    ()))))
 
 ;; (defthm disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p-1
-;;   ;; Follows from MV-NTH-1-LAS-TO-PAS-SUBSET-P-DISJOINT-FROM-LAS-TO-PAS.
+;;   ;; Follows from MV-NTH-1-LAS-TO-PAS-SUBSET-P-DISJOINT-FROM-OTHER-P-ADDRS.
 
 ;;   ;; This rule is tailored to rewrite terms of the form
 
