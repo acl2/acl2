@@ -68,6 +68,21 @@
                                    ())))
   :rule-classes :congruence)
 
+(defthm xlate-equiv-memory-and-programmer-level-mode-cong
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (xr :programmer-level-mode 0 x86-1)
+                  (xr :programmer-level-mode 0 x86-2)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-in-programmer-level-mode-implies-equal-states
+  (implies (and (xlate-equiv-memory x86-1 x86-2)
+                (programmer-level-mode x86-1))
+           (equal x86-1 x86-2))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory) ())))
+  :rule-classes nil)
+
 ;; ======================================================================
 
 ;; Lemmas about ia32e-la-to-pa:

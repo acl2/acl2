@@ -1029,6 +1029,24 @@ memory.</li>
 
     ///
 
+    (defthm consp-mv-nth-1-las-to-pas
+      (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                    (consp l-addrs))
+               (consp (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
+      :hints (("Goal" :in-theory (e/d* (las-to-pas) ())))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm true-listp-mv-nth-1-las-to-pas
+      (true-listp (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm car-mv-nth-1-las-to-pas
+      (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                    (consp l-addrs))
+               (equal (car (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                      (mv-nth 1 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))))
+      :hints (("Goal" :in-theory (e/d* (las-to-pas) ()))))
+
     (defthm physical-address-listp-mv-nth-1-las-to-pas
       (physical-address-listp (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
 
@@ -1176,6 +1194,10 @@ memory.</li>
         (cons byte (read-from-physical-memory (cdr p-addrs) x86))))
 
     ///
+
+    (defthm cdr-read-from-physical-memory
+      (equal (cdr (read-from-physical-memory p-addrs x86))
+             (read-from-physical-memory (cdr p-addrs) x86)))
 
     (defthm read-from-physical-memory-!flgi
       (equal (read-from-physical-memory p-addrs (!flgi index val x86))

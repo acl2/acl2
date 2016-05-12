@@ -403,6 +403,24 @@
             (all-translation-governing-addresses (cdr l-addrs)  x86)))
   ///
 
+  (defthm all-translation-governing-addresses-and-nil
+    (equal (all-translation-governing-addresses nil x86) nil))
+
+  (defthm translation-governing-addresses-subset-p-all-translation-governing-addresses
+    (implies (member-p addr l-addrs)
+             (equal (subset-p (translation-governing-addresses addr x86)
+                              (all-translation-governing-addresses l-addrs x86))
+                    t))
+    :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+  (defthm all-translation-governing-addresses-subset-p-all-translation-governing-addresses
+    (implies (subset-p l-addrs-subset l-addrs)
+             (equal
+              (subset-p (all-translation-governing-addresses l-addrs-subset x86)
+                        (all-translation-governing-addresses l-addrs x86))
+              t))
+    :hints (("Goal" :in-theory (e/d* (subset-p member-p) ()))))
+
   (defthm all-translation-governing-addresses-and-xw-not-mem
     (implies (and (not (equal fld :mem))
                   (not (equal fld :ctr))

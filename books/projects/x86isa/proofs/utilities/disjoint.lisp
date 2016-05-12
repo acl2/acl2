@@ -51,7 +51,11 @@
     ;; contextual information (without backchaining, i.e., without
     ;; recursively rewriting hypotheses) by executing
     ;; :set-backchain-limit 0.
-    :rule-classes ((:rewrite :backchain-limit-lst (0)))))
+    :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+  (defthmd member-p-iff-member-equal
+    (iff (member-p e x)
+         (member-equal e x))))
 
 ;; ======================================================================
 
@@ -99,11 +103,11 @@
     :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ())))
     :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthmd disjoint-p-cons-1
-  (equal (disjoint-p (cons e x) a)
-         (and (disjoint-p x a)
-              (equal (member-p e a) nil)))
-  :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
+  (defthmd disjoint-p-cons-1
+    (equal (disjoint-p (cons e x) a)
+           (and (disjoint-p x a)
+                (equal (member-p e a) nil)))
+    :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
 
   (defthm disjoint-p-cons-2
     (equal (disjoint-p a (cons e x))
@@ -115,19 +119,15 @@
            (disjoint-p b a))
     :rule-classes ((:rewrite :loop-stopper ((a b)))))
 
-  (defthm member-p-when-not-disjoint-p
-    ;; Ugh, free variables.
+  (defthmd member-p-when-not-disjoint-p
     (implies (and (member-p e x)
                   (member-p e y))
-             (equal (disjoint-p x y) nil))
-    :rule-classes :forward-chaining)
+             (equal (disjoint-p x y) nil)))
 
   (defthm not-member-p-when-disjoint-p
-    ;; Ugh, free variables.
     (implies (and (disjoint-p x y)
                   (member-p e x))
-             (equal (member-p e y) nil))
-    :rule-classes :forward-chaining)
+             (equal (member-p e y) nil)))
 
   (defthm disjoint-p-append-1
     (implies (true-listp a)
@@ -259,12 +259,16 @@
     (implies (true-listp x)
              (equal (subset-p x x) t)))
 
+  ;; (defthm append-subset-p-1
+  ;;   (implies (and (subset-p a x)
+  ;;                 (subset-p b x))
+  ;;            (subset-p (append a b) x)))
+
   (defthm subset-p-of-append-1
     (implies (true-listp a)
              (equal (subset-p (append a b) x)
                     (and (subset-p a x)
-                         (subset-p b x))))
-    :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+                         (subset-p b x)))))
 
   (defthm subset-p-of-append-2
     (implies (or (subset-p a x)
@@ -273,8 +277,7 @@
 
   (defthm subset-p-and-append-both
     (implies (subset-p a b)
-             (subset-p (append e a) (append e b)))
-    :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+             (subset-p (append e a) (append e b))))
 
   (defthm subset-p-of-nil
     (equal (subset-p x nil)
@@ -287,7 +290,13 @@
   (defthm member-p-of-subset-is-member-p-of-superset
     (implies (and (subset-p x y)
                   (member-p e x))
-             (member-p e y))))
+             (member-p e y)))
+
+  (defthmd not-member-p-of-superset-is-not-member-p-of-subset
+    (implies (and (equal (member-p e y) nil)
+                  (subset-p x y))
+             (equal (member-p e x) nil))
+    :hints (("Goal" :in-theory (e/d* (member-p) ())))))
 
 ;; ======================================================================
 
@@ -338,15 +347,14 @@
                  (strip-cars y))))
 
 (defthm disjoint-p-subset-p
-  ;; This is a bad rule.  For the :rewrite rule, x and y are free.
-  ;; For the :forward-chaining rule, a and b are free. Ugh.
+  ;; Ugh, free vars.
   (implies (and (disjoint-p x y)
                 (subset-p a x)
                 (subset-p b y))
-           (disjoint-p a b))
-  :rule-classes (:rewrite :forward-chaining))
+           (disjoint-p a b)))
 
 (defthm subset-p-cons-member-p-lemma
+  ;; Ugh, free vars.
   (implies (and (subset-p x (cons e y))
                 (not (subset-p x y)))
            (not (member-p e y))))
