@@ -267,10 +267,12 @@ ifdef GLUCOSE_EXISTS
   OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
 
-$(info Determining whether Smtlink is supported -- BOZO todo, for now pretending it does not!)
-# BOZO TODO figure out how to do this right.  For now, just say that SMTLINK
-OS_HAS_SMTLINK :=
-
+$(info Skipping the determination of whether Smtlink is supported)
+# Needs to be implemented as part of SMTlink integration.
+SMTLINK_EXISTS := $(shell smtlink --version 2>/dev/null)
+ifdef SMTLINK_EXISTS
+  OS_HAS_SMTLINK ?= 1
+endif # ifdef SMTLINK_EXISTS
 
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
