@@ -1493,6 +1493,25 @@ irrelevant inputs are removed.</p>"
   (add-macro-alias stv-flex-bindings svtv-flex-bindings))
 
 
+(define svtv-flex-param-bindings ((svtv svtv-p)
+                                   (in-alist))
+  :hooks nil
+  :parents (symbolic-test-vector)
+  :short "Generating parametrized g-bindings from an SVTV using @(see gl::flex-bindings)."
+  (b* (((when (atom in-alist)) nil)
+       (case1 (car in-alist))
+       ((unless (and (true-listp case1)
+                     (or (eql (len case1) 2)
+                         (and (eql (len case1) 4)
+                              (eq (nth 2 case1) :arrange)))))
+        (raise "Unsupported entry in svtv-flex-param-bindings: ~x0" case1))
+       ((list params auto-bindings ?arrange-keyword arrange) case1))
+    (cons (list params (svtv-flex-bindings svtv auto-bindings :arrange arrange))
+          (svtv-flex-param-bindings svtv (cdr in-alist)))))
+       
+       
+
+
 
 
 

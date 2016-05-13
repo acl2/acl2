@@ -181,7 +181,7 @@ mentioned in the auto-bindings.</p>")
        ((:nat :int)
         (if (and (= (len x) 3)
                  (acl2::legal-variablep (second x))
-                 (posp (third x)))
+                 (natp (third x)))
             (list :int (second x) (if (eq (first x) :nat)
                                       (+ 1 (third x))
                                     (third x)))
@@ -414,6 +414,21 @@ mentioned in the auto-bindings.</p>")
 
 (defmacro flex-bindings (auto-bindings &key arrange (start '0))
   `(flex-bindings-fn ',auto-bindings ',arrange ,start))
+
+(defun flex-param-bindings (in-alist)
+  ;; In-alist maps a parameter binding to an input list for flex-bindings, e.g. auto-bindings :arrange arrange.
+  ;; Returns a full param-bindings alist, flex-bindings resolved.
+  (b* (((when (atom in-alist)) nil)
+       (case1 (car in-alist))
+       ((unless (and (true-listp case1)
+                     (or (eql (len case1) 2)
+                         (and (eql (len case1) 4)
+                              (eq (nth 2 case1) :arrange)))))
+        (er hard? 'flex-param-bindings "Unsupported entry in flex-param-bindings: ~x0" case1))
+       ((list params auto-bindings ?arrange-keyword arrange) case1))
+    (cons (list params (flex-bindings-fn auto-bindings arrange 0))
+          (flex-param-bindings (cdr in-alist)))))
+    
 
        
 
