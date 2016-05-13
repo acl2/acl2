@@ -9058,7 +9058,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
     (when (probe-file os-full-book-name-compiled)
       (delete-file os-full-book-name-compiled))
     (acl2-compile-file full-book-name expansion-filename)
-    state))
+    os-full-book-name-compiled))
 
 (defun compile-for-include-book (full-book-name certified-p ctx state)
   (cond

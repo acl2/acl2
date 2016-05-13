@@ -42,6 +42,8 @@
 (include-book "std/lists/acl2-count" :dir :system)
 (set-state-ok t)
 
+(set-compile-fns t) ; avoid possible GCL stack overflow
+
 ;; Lemmas for deftagprod.
 (defthmd equal-of-strip-cars
   (implies (syntaxp (quotep y))

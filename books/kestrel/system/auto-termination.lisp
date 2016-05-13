@@ -8,6 +8,25 @@
 
 ; - Support mutual-recursion.
 
+; - Do more testing, which could suggest changes to *auto-termination-fns* and
+;   too-many-injections.
+
+; - Strengthen the algorithm to find more matches, for example as follows.
+
+;   - Extend one-way-unify1+ to do more powerful matching.
+
+; - Consider improving efficiency by using a table to be traversed instead of
+;   the world, and store in it:
+
+;   - the set of function symbols in each clause, to be used as a filter to
+;     avoid attempting matching when subset test fails;
+
+;   - info for a reduced set of functions, to avoid testing old clauses that
+;     are subsumed by other old clauses; and
+
+;   - changeables and unchangeables, which probably should be preserved in
+;     order for matching to have a hope of succeeding.
+
 (in-package "ACL2")
 
 (include-book "kestrel/system/world-queries" :dir :system) ; for measure
@@ -276,59 +295,246 @@
 
 )
 
-(defun some-member-subsumes+ (init-subsumes-count cl-set cl unify-subst)
-  (cond ((null cl-set) :fail)
-        (t (mv-let (new-count unify-subst2)
-             (subsumes+-rec init-subsumes-count (car cl-set) cl unify-subst)
-             (declare (type (signed-byte 30) new-count))
-             (cond ((< 0 new-count) unify-subst2)
-                   (t (some-member-subsumes+ init-subsumes-count
-                                             (cdr cl-set) cl unify-subst)))))))
+(defun one-way-unify1+ (pat term unify-subst)
 
-(defun clause-set-subsumes+-1 (init-subsumes-count cl-set1 cl-set2 unify-subst)
+; Warning: If we allow more matches here, then consider extending (deftheory
+; auto-termination-theory ...).  For now, the only extra matching we allow is
+; based on commutativity of plus, and then only at the top level of the pattern
+; and term.  This is something we imagine being very commonly needed,
+; especially for matching a recursive call using (+ '1 x) with one using (+ x
+; '1).
+
+; If we want to allow more general commutative matching, we might consider
+; modifying the one-way-unify1 nest in the ACL2 sources to pass in a list of
+; commutative functions, which would be (equal) to match the current behavior.
+; Of course, if we don't want to have to track runes then we should be careful
+; only to put functions in there whose commutativity need not be tracked.
+
+  (cond ((and (ffn-symb-p pat 'binary-+)
+              (ffn-symb-p term 'binary-+))
+         (one-way-unify1-equal (fargn pat 1) (fargn pat 2)
+                               (fargn term 1) (fargn term 2)
+                               unify-subst))
+        (t (one-way-unify1 pat term unify-subst))))
+
+(defun unify-calls (old-args new-args old-formals old-subset new-formals
+                             unify-subst)
+
+; Old-args and new-args are, respectively, the arguments of calls of an old and
+; a proposed recursive function.  We are also given the old measured subset,
+; the formals of both functions, and a unify-subst that maps (at least) every
+; member of the old measured subset to a new formal.  We determine whether some
+; extension of unify-subst can instantiate the old arguments in measured
+; positions with new arguments, all in different positions.  This is the right
+; criterion for whether an extension of unify-subst can instantiate the
+; corresponding old measure inequality.  Imagine we have the following, where
+; unify-subst is ((x . u) (y . v)).
+
+; old:
+;   (implies (and (tst x y z) ...)
+;            (o< (m (d x y z))
+;                (m x y)))
+
+; new:
+;   (implies (and (tst u v w) ...)
+;            (o< (m (d u v w))
+;                (m u v)))
+
+; For these to match, we must be able to match (d x y z) to (d u v w).  But
+; then the inequalities will automatically match, because we will define the
+; new measure to be (m u v), by instantiating the old measure with unify-subst.
+; Of course, we then need to match the tests, which we do with subsumes+-rec.
+
+  (cond
+   ((endp old-args) unify-subst)
+   ((not (member-eq (car old-formals) old-subset))
+    (unify-calls (cdr old-args) new-args (cdr old-formals) old-subset
+                 new-formals unify-subst))
+   (t
+    (let ((new-formal (cdr (assoc-eq (car old-formals) unify-subst))))
+      (assert$
+       new-formal ; old-formal is in old-subset, hence is bound in unify-subst
+       (let ((posn (position-eq new-formal new-formals)))
+         (assert$
+          posn
+          (mv-let (flg unify-subst)
+            (one-way-unify1+ (car old-args) (nth posn new-args) unify-subst)
+            (cond (flg (unify-calls (cdr old-args) new-args (cdr old-formals)
+                                    old-subset new-formals unify-subst))
+                  (t :fail))))))))))
+
+(defun some-member-subsumes+ (init-subsumes-count cl-set cl
+                                                  old-formals old-subset
+                                                  new-formals unify-subst)
+
+; Cl is a list of terms produced by termination-clause-set for a proposed
+; definition; thus, cl is of the form (recursive-call . tests).  Each member of
+; cl-set is of this same form, but for the recursive calls of an old function.
+; We search for an extension of unify-subst that can instantiate some member M of
+; cl-set to subsume cl in the following sense: the instantiated recursive-call
+; of M equals that of cl, and the instantiated tests of M are a superset of the
+; tests of cl.  See the comment in unify-calls for why this suffices for our
+; purpose, which is to provide a unify-subst that can instantiate an old
+; measure theorem to yield (up to simplifications provided by normalize-clause)
+; the new measure theorem.
+
+  (cond
+   ((null cl-set) :fail)
+   (t (let ((unify-subst1 (unify-calls (fargs (caar cl-set))
+                                       (fargs (car cl))
+                                       old-formals old-subset new-formals
+                                       unify-subst)))
+        (cond
+         ((eq unify-subst1 :fail)
+          (some-member-subsumes+ init-subsumes-count
+                                 (cdr cl-set) cl old-formals old-subset
+                                 new-formals unify-subst))
+         (t (mv-let (new-count unify-subst2)
+              (subsumes+-rec init-subsumes-count (cdar cl-set) (cdr cl)
+                             unify-subst1)
+              (declare (type (signed-byte 30) new-count))
+              (cond ((< 0 new-count) unify-subst2)
+                    (t (some-member-subsumes+ init-subsumes-count
+                                              (cdr cl-set) cl
+                                              old-formals old-subset
+                                              new-formals unify-subst)))))))))) 
+
+(defun clause-set-subsumes+-1 (init-subsumes-count cl-set1 cl-set2
+                                                   old-formals old-subset
+                                                   new-formals unify-subst)
   (cond ((null cl-set2) unify-subst)
         (t (let ((unify-subst (some-member-subsumes+ init-subsumes-count
                                                      cl-set1
                                                      (car cl-set2)
-                                                     unify-subst)))
+                                                     old-formals old-subset
+                                                     new-formals unify-subst)))
              (if (eq unify-subst :fail)
                  :fail
                (clause-set-subsumes+-1 init-subsumes-count
-                                       cl-set1
-                                       (cdr cl-set2)
-                                       unify-subst))))))
+                                       cl-set1 (cdr cl-set2)
+                                       old-formals old-subset
+                                       new-formals unify-subst))))))
 
-(defun clause-set-subsumes+ (init-subsumes-count cl-set1 cl-set2)
+(defun clause-set-subsumes+-0 (init-subsumes-count cl-set1 cl-set2
+                                                   old-formals old-subset
+                                                   new-formals
+                                                   unify-subst-lst)
+  (cond ((endp unify-subst-lst) :fail)
+        (t (let ((unify-subst (clause-set-subsumes+-1 init-subsumes-count
+                                                      cl-set1 cl-set2
+                                                      old-formals old-subset
+                                                      new-formals
+                                                      (car unify-subst-lst))))
+             (cond ((eq unify-subst :fail)
+                    (clause-set-subsumes+-0 init-subsumes-count cl-set1 cl-set2
+                                            old-formals old-subset
+                                            new-formals
+                                            (cdr unify-subst-lst)))
+                   (t unify-subst))))))
+
+(defun extend-injections-1 (x range injection)
+  (cond ((endp range) nil)
+        ((rassoc-eq (car range) injection)
+         (extend-injections-1 x (cdr range) injection))
+        (t (cons (acons x (car range) injection)
+                 (extend-injections-1 x (cdr range) injection)))))
+
+(defun extend-injections (x range injections)
+  (cond ((endp injections) nil)
+        (t (append (extend-injections-1 x range (car injections))
+                   (extend-injections x range (cdr injections))))))
+
+(defun injections (domain range)
+
+; Return a list of all one-to-one maps from domain to range (each represented
+; as an alist).
+
+  (cond ((endp domain) (list nil))
+        (t (extend-injections (car domain)
+                              range
+                              (injections (cdr domain) range)))))
+
+(defun injection-count (from to acc)
+
+; This is (at least approximately) a theorem:
+
+;   (implies (natp acc)
+;            (equal (injection-count (len dom) (len ran) acc)
+;                   (* acc (len (injections dom ran)))))
+
+  (declare (type (signed-byte 30) from to))
+  (cond ((zp from) acc)
+        (t (injection-count (1- from) (1- to) (* to acc)))))
+
+(defun too-many-injections (domain range)
+
+; The value 1000, below, is highly arbitrary.
+
+  (let ((len-domain (length domain)))
+    (and (<= 3 len-domain) ; quick filter; we always tolerate range * (range-1)
+         (> (injection-count (the-fixnum! len-domain 'too-many-injections)
+                             (the-fixnum! (length range) 'too-many-injections)
+                             1)
+            1000))))
+
+(defun clause-set-subsumes+ (init-subsumes-count cl-set1 cl-set2
+                                                 old-formals
+                                                 measured-subset
+                                                 new-formals)
+
+; Returns :fail if suitable subsumption fails, else returns suitable unify-subst.
+
   (cond ((or (equal cl-set1 cl-set2)
              (and cl-set1
                   cl-set2
                   (null (cdr cl-set2))
                   (subsetp-equal (car cl-set1) (car cl-set2))))
          nil)
-        (t (clause-set-subsumes+-1 init-subsumes-count cl-set1 cl-set2 nil))))
+        ((too-many-injections measured-subset new-formals)
+         :fail)
+        (t (clause-set-subsumes+-0 init-subsumes-count cl-set1 cl-set2
+                                   old-formals measured-subset new-formals
+                                   (injections measured-subset new-formals)))))
 
 (defun term-thm-alist (fn unify-subst wrld)
   (let ((thm (termination-theorem fn wrld)))
     (alist-to-doublets (restrict-alist (all-vars thm) unify-subst))))
 
-(defun auto-termination-declare-2 (old-fn new-fn-clause-set theory expand wrld)
+(defun length<= (lst1 lst2)
+  (cond ((endp lst1) t)
+        ((endp lst2) nil)
+        (t (length<= (cdr lst1) (cdr lst2)))))
+
+(defun auto-termination-declare-2 (old-fn new-fn-clause-set theory expand
+                                          default-wf-rel new-formals
+                                          wrld)
   (let ((recursivep (getpropc old-fn 'recursivep nil wrld)))
     (and recursivep
          (null (cdr recursivep)) ; singly-recursive
-         (let ((measure (measure old-fn wrld)))
+         (let ((measure (measure old-fn wrld))
+               (subset (measured-subset old-fn wrld)))
            (assert$
             (and measure (nvariablep measure) (not (fquotep measure)))
             (and (not (eq (ffn-symb measure) ':?))
+                 (length<= subset new-formals)
                  (let* ((old-fn-clause-set (termination-clause-set old-fn wrld))
                         (unify-subst
                          (clause-set-subsumes+ *init-subsumes-count*
                                                old-fn-clause-set
-                                               new-fn-clause-set)))
+                                               new-fn-clause-set
+                                               (formals old-fn wrld)
+                                               subset
+                                               new-formals)))
                    (and (not (eq unify-subst :fail))
                         (let ((thm `(:termination-theorem ,old-fn)))
                           `(declare
                             (xargs :measure
                                    ,(sublis-var unify-subst measure)
+                                   ,@(let ((wf-rel (well-founded-relation
+                                                    old-fn wrld)))
+                                       (and
+                                        (not (eq wf-rel default-wf-rel))
+                                        `(:well-founded-relation ,wf-rel)))
                                    :hints
                                    (("Goal"
                                      :use
@@ -340,13 +546,16 @@
                                             `(:expand ,expand))
                                      :in-theory ,theory)))))))))))))
 
-(defun auto-termination-declare-1 (fns new-fn-clause-set theory expand wrld)
+(defun auto-termination-declare-1 (fns new-fn-clause-set theory expand
+                                       default-wf-rel new-formals wrld)
   (cond ((endp fns) nil)
         (t (or (and (not (get-skipped-proofs-p (car fns) wrld))
                     (auto-termination-declare-2 (car fns) new-fn-clause-set
-                                           theory expand wrld))
+                                                theory expand default-wf-rel
+                                                new-formals wrld))
                (auto-termination-declare-1 (cdr fns) new-fn-clause-set
-                                           theory expand wrld)))))
+                                           theory expand default-wf-rel
+                                           new-formals wrld)))))
 
 (defun event-book (name state)
   (let ((wrld (w state)))
@@ -355,7 +564,8 @@
       (value (car (global-val 'include-book-path ; path could be nil
                               ev-wrld))))))
 
-(defun auto-termination-declare (new-fn-clause-set theory expand verbose state)
+(defun auto-termination-declare (new-fn-clause-set new-formals
+                                                   theory expand verbose state)
   (let* ((world (w state)) ; needs to be WORLD for function-theory
          (old-fns (strip-cadrs (function-theory :here))))
     (pprogn
@@ -363,8 +573,12 @@
                          (list (cons #\0 (length old-fns)))
                          (standard-co state) state nil))
            (t state))
-     (let ((decl (auto-termination-declare-1 old-fns new-fn-clause-set theory
-                                             expand world)))
+     (let ((decl
+            (auto-termination-declare-1 old-fns new-fn-clause-set theory
+                                        expand
+                                        (default-well-founded-relation world)
+                                        new-formals
+                                        world)))
        (case-match decl
          (('declare
            ('xargs ':measure &
@@ -465,6 +679,7 @@
                      (t (er-let* ((decl (auto-termination-declare
                                          (f-get-global 'auto-termination-cl-set
                                                        state)
+                                         formals
                                          theory expand verbose state)))
                           (cond
                            (decl
@@ -530,7 +745,8 @@
 (logic)
 
 (deftheory auto-termination-theory
-  *auto-termination-fns*)
+  (cons '(:rewrite commutativity-of-+) ; see one-way-unify1+
+        *auto-termination-fns*))
 
 (defxdoc with-auto-termination
   :parents (kestrel-system-utilities system-utilities)
