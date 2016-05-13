@@ -267,9 +267,8 @@ ifdef GLUCOSE_EXISTS
   OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
 
-$(info Determining whether Smtlink is installed)
-# Needs to be implemented as part of SMTlink integration.
-SMTLINK_EXISTS := $(shell smtlink --version 2>/dev/null)
+$(info Determining whether Z3 is installed, for use by SMTLink)
+SMTLINK_EXISTS := $(shell z3 --version 2>/dev/null)
 ifdef SMTLINK_EXISTS
   OS_HAS_SMTLINK ?= 1
 endif # ifdef SMTLINK_EXISTS
@@ -397,7 +396,7 @@ OK_CERTS := $(filter-out $(CERT_PL_USES_GLUCOSE), $(OK_CERTS))
 endif
 
 ifeq ($(OS_HAS_SMTLINK), )
-$(info Excluding books that need Smtlink: [$(CERT_PL_USES_SMTLINK)])
+$(info Excluding books that need SMTLINK: [$(CERT_PL_USES_SMTLINK)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_SMTLINK), $(OK_CERTS))
 endif
 
