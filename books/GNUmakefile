@@ -267,7 +267,7 @@ ifdef GLUCOSE_EXISTS
   OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
 
-$(info Skipping the determination of whether Smtlink is supported)
+$(info Determining whether Smtlink is installed)
 # Needs to be implemented as part of SMTlink integration.
 SMTLINK_EXISTS := $(shell smtlink --version 2>/dev/null)
 ifdef SMTLINK_EXISTS
