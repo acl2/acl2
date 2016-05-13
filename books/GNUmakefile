@@ -148,6 +148,14 @@ ifneq ($(ACL2_JOBS), )
 ${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book-makefiles }
 endif # ifneq ($(ACL2_JOBS), )
 
+# The build of saved_acl2 may succeed even if the directory name has
+# spaces, but book certification will almost surely fail, so we
+# disallow such a build.  Comment out the three lines below if you
+# want to take your chances nonetheless!
+ifneq (,$(word 2, $(ACL2_SYSTEM_BOOKS)))
+$(error Illegal ACL2 books directory (contains a space): $(ACL2_SYSTEM_BOOKS)/)
+endif
+
 BUILD_DIR := $(ACL2_SYSTEM_BOOKS)/build
 
 # Here is an undocumented way to specify a different shell, e.g., sh.
@@ -259,10 +267,12 @@ ifdef GLUCOSE_EXISTS
   OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
 
-$(info Determining whether Smtlink is supported -- BOZO todo, for now pretending it does not!)
-# BOZO TODO figure out how to do this right.  For now, just say that SMTLINK
-OS_HAS_SMTLINK :=
-
+$(info Determining whether Smtlink is installed)
+# Needs to be implemented as part of SMTlink integration.
+SMTLINK_EXISTS := $(shell smtlink --version 2>/dev/null)
+ifdef SMTLINK_EXISTS
+  OS_HAS_SMTLINK ?= 1
+endif # ifdef SMTLINK_EXISTS
 
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.

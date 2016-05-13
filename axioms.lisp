@@ -18287,7 +18287,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (if (position sep str)
                (illegal 'pathname-unix-to-os
                         "Unable to convert pathname ~p0 for OS ~p1 because ~
-                 character ~p2 occurs in that pathname string at position ~p3."
+                         character ~p2 occurs in that pathname string at ~
+                         position ~p3."
                         (list (cons #\0 str)
                               (cons #\1 os)
                               (cons #\2 sep)

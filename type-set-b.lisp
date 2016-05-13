@@ -974,9 +974,11 @@
 
 (defmacro active-runep (rune)
 
+; Warning: Keep this in sync with active-or-non-runep.
+
 ; This takes a rune and determines if it is enabled in the enabled structure
 ; ens.  Unlike enabled-runep, this returns nil if the rune is a fake-rune or is
-; not a runep in the given wrld.
+; not a runep in the given wrld.  See also active-or-non-runep.
 
   `(let* ((rune ,rune)
           (nume (and (consp rune)
@@ -989,6 +991,26 @@
                      (fnume rune (w state)))))
      (and nume
           (enabled-numep nume ens))))
+
+(defmacro active-or-non-runep (rune)
+
+; Warning: Keep this in sync with active-runep.
+
+; This takes a rune and determines if it is enabled in the enabled structure
+; ens.  This also returns t if the rune is a fake-rune or is not a runep in the
+; given wrld.  See also active-runep.
+
+  `(let* ((rune ,rune)
+          (nume (and (consp rune)
+                     (consp (cdr rune))
+                     (symbolp (cadr rune))
+
+; The tests above guard the call of fnume just below, the same way that runep
+; guards the computation made in its body from the property list.
+
+                     (fnume rune (w state)))))
+     (or (not nume)
+         (enabled-numep nume ens))))
 
 (defun enabled-xfnp (fn ens wrld)
 

@@ -56,7 +56,9 @@ find valuable.  For instance:</p>
 <ul>
 
 <li>ACL2 features like packages, ttags, @(see add-include-book-dir), and @(see
-save-exec) images are properly supported.</li>
+save-exec) images are properly supported.  In particular, @(see portcullis)
+(@('.port')) files of included books are loaded automatically before
+certification; see @(see pre-certify-book-commands).</li>
 
 <li>Parallel builds (as in @('make -j')) are well-supported.  For the truly
 adventurous, you may even be able to distribute your build over a cluster.</li>
@@ -559,11 +561,11 @@ above in far greater detail.</p>
 these extra @('defpkg') commands that can't go directly into the book.</p>
 
 <p>If you are using only packages from existing libraries, these should be
-dealt with automatically by the build system, which loads the portculli of all
-included books before certifying a book.  (To defeat this mechanism, add a
-comment containing \"no_port\" at the end of the line of each include-book
-whose portculli you don't want.) However, if you are defining a new package,
-you need to know how to put it in your book's portcullis.</p>
+dealt with automatically by the build system, which loads the portcullus
+(@('.port') file) of each included book before certifying a book.  (To defeat
+this mechanism, add a comment containing \"no_port\" at the end of the line of
+each include-book whose portculli you don't want.) However, if you are defining
+a new package, you need to know how to put it in your book's portcullis.</p>
 
 <p>The most basic way to tell @('cert.pl') how to certify a file like
 @('mybook.lisp') is to put the @('defpkg') form into a corresponding file,
