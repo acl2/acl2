@@ -44,7 +44,8 @@
 
 (defthm gather-all-paging-structure-qword-addresses-and-wb-disjoint
   (implies
-   (and (disjoint-p (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
+   (and (disjoint-p (mv-nth 1 (las-to-pas
+                               (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
                     (open-qword-paddr-list
                      (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
         (not (programmer-level-mode x86))
@@ -176,15 +177,15 @@
                           (create-canonical-address-list cnt start-rip)
                           :x (cpl x86) (double-rewrite x86)))
                (open-qword-paddr-list
-                (gather-all-paging-structure-qword-addresses x86)))
+                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
               (not (mv-nth 0 (las-to-pas
                               (create-canonical-address-list cnt start-rip)
-                              :x (cpl x86) x86)))
+                              :x (cpl x86) (double-rewrite x86))))
               (page-structure-marking-mode x86)
               (not (programmer-level-mode x86))
               (canonical-address-p start-rip))
              (equal (get-prefixes start-rip prefixes cnt x86)
-                    (get-prefixes-alt start-rip prefixes cnt x86)))
+                    (get-prefixes-alt start-rip prefixes cnt (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* (get-prefixes-alt) ()))))
 
   ;; Opener lemmas:
@@ -593,17 +594,16 @@
 
   (defthm rewrite-rb-to-rb-alt
     (implies (forced-and
-              ;; (disjoint-p (all-translation-governing-addresses l-addrs x86)
-              ;;             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-              (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
-                          (open-qword-paddr-list
-                           (gather-all-paging-structure-qword-addresses x86)))
-              (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+              (disjoint-p
+               (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
+               (open-qword-paddr-list
+                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+              (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
               (canonical-address-listp l-addrs)
               (page-structure-marking-mode x86)
               (not (programmer-level-mode x86)))
              (equal (rb l-addrs r-w-x x86)
-                    (rb-alt l-addrs r-w-x x86)))
+                    (rb-alt l-addrs r-w-x (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* (rb-alt) ()))))
 
   ;; rb-alt and xlate-equiv-memory:
@@ -669,7 +669,8 @@
              :do-not-induct t
              :in-theory (e/d (las-to-pas
                               subset-p
-                              disjoint-p)
+                              disjoint-p
+                              disjoint-p-commutative)
                              (acl2::mv-nth-cons-meta
                               rb-in-terms-of-nth-and-pos-in-system-level-mode
                               rewrite-rb-to-rb-alt
@@ -711,7 +712,8 @@
              :do-not-induct t
              :in-theory (e/d (las-to-pas
                               subset-p
-                              disjoint-p)
+                              disjoint-p
+                              disjoint-p-commutative)
                              (rb-in-terms-of-rb-subset-p-in-system-level-mode
                               rewrite-rb-to-rb-alt
                               acl2::mv-nth-cons-meta
@@ -826,15 +828,16 @@
 
   (defthm rewrite-program-at-to-program-at-alt
     (implies (forced-and
-              (disjoint-p (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
-                          (open-qword-paddr-list
-                           (gather-all-paging-structure-qword-addresses x86)))
-              (not (mv-nth 0 (las-to-pas l-addrs :x (cpl x86) x86)))
+              (disjoint-p
+               (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86)))
+               (open-qword-paddr-list
+                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+              (not (mv-nth 0 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86))))
               (canonical-address-listp l-addrs)
               (page-structure-marking-mode x86)
               (not (programmer-level-mode x86)))
              (equal (program-at l-addrs bytes x86)
-                    (program-at-alt l-addrs bytes x86)))
+                    (program-at-alt l-addrs bytes (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* (program-at-alt) ()))))
 
   (defthm program-at-alt-and-xlate-equiv-memory-cong

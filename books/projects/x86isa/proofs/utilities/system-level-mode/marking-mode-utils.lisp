@@ -295,7 +295,8 @@
 (defthm las-to-pas-values-and-write-to-physical-memory-disjoint
   ;; Generalization of
   ;; ia32e-la-to-pa-values-and-write-to-physical-memory-disjoint.
-  (implies (and (disjoint-p p-addrs (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+  (implies (and (disjoint-p p-addrs
+                            (all-translation-governing-addresses l-addrs (double-rewrite x86)))
                 (physical-address-listp p-addrs)
                 (byte-listp bytes)
                 (equal (len bytes) (len p-addrs))
@@ -315,10 +316,10 @@
 (defthm ia32e-la-to-pa-page-table-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and (equal cpl (cpl x86))
                 (disjoint-p
-                 (translation-governing-addresses-for-page-table
-                  lin-addr base-addr (double-rewrite x86))
                  (mv-nth 1 (las-to-pas
-                            (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+                            (strip-cars addr-lst) :w cpl (double-rewrite x86)))
+                 (translation-governing-addresses-for-page-table
+                  lin-addr base-addr (double-rewrite x86)))
                 (canonical-address-p lin-addr)
                 (physical-address-p base-addr)
                 (equal (loghead 12 base-addr) 0))
@@ -342,6 +343,7 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
+                             disjoint-p-commutative
                              member-p
                              ia32e-la-to-pa-page-table
                              translation-governing-addresses-for-page-table
@@ -356,10 +358,10 @@
   (implies
    (and (equal cpl (cpl x86))
         (disjoint-p
-         (translation-governing-addresses-for-page-directory
-          lin-addr base-addr (double-rewrite x86))
          (mv-nth 1 (las-to-pas
-                    (strip-cars addr-lst) :w cpl (double-rewrite x86)))))
+                    (strip-cars addr-lst) :w cpl (double-rewrite x86)))
+         (translation-governing-addresses-for-page-directory
+          lin-addr base-addr (double-rewrite x86))))
    (xlate-equiv-entries
     (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
                (mv-nth 1 (wb addr-lst x86)))
@@ -367,16 +369,17 @@
                x86)))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (translation-governing-addresses-for-page-directory)
+           :in-theory (e/d* (translation-governing-addresses-for-page-directory
+                             disjoint-p-commutative)
                             ()))))
 
 (defthm ia32e-la-to-pa-page-directory-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and (equal cpl (cpl x86))
                 (disjoint-p
-                 (translation-governing-addresses-for-page-directory
-                  lin-addr base-addr (double-rewrite x86))
                  (mv-nth 1 (las-to-pas
-                            (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+                            (strip-cars addr-lst) :w cpl (double-rewrite x86)))
+                 (translation-governing-addresses-for-page-directory
+                  lin-addr base-addr (double-rewrite x86)))
                 (canonical-address-p lin-addr)
                 (physical-address-p base-addr)
                 (equal (loghead 12 base-addr) 0))
@@ -422,6 +425,7 @@
                             (e-2 (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
                                             (mv-nth 1 (wb addr-lst x86))))))
            :in-theory (e/d* (disjoint-p
+                             disjoint-p-commutative
                              member-p
                              ia32e-la-to-pa-page-directory
                              translation-governing-addresses-for-page-directory)
@@ -436,10 +440,10 @@
   (implies
    (and (equal cpl (cpl x86))
         (disjoint-p
-         (translation-governing-addresses-for-page-dir-ptr-table
-          lin-addr base-addr (double-rewrite x86))
          (mv-nth 1 (las-to-pas
-                    (strip-cars addr-lst) :w cpl (double-rewrite x86)))))
+                    (strip-cars addr-lst) :w cpl (double-rewrite x86)))
+         (translation-governing-addresses-for-page-dir-ptr-table
+          lin-addr base-addr (double-rewrite x86))))
    (xlate-equiv-entries
     (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
                (mv-nth 1 (wb addr-lst x86)))
@@ -447,16 +451,17 @@
                x86)))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (translation-governing-addresses-for-page-dir-ptr-table)
+           :in-theory (e/d* (translation-governing-addresses-for-page-dir-ptr-table
+                             disjoint-p-commutative)
                             ()))))
 
 (defthm ia32e-la-to-pa-page-dir-ptr-table-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and
             (equal cpl (cpl x86))
             (disjoint-p
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86)))
              (translation-governing-addresses-for-page-dir-ptr-table
-              lin-addr base-addr (double-rewrite x86))
-             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+              lin-addr base-addr (double-rewrite x86)))
             (canonical-address-p lin-addr)
             (physical-address-p base-addr)
             (equal (loghead 12 base-addr) 0))
@@ -503,6 +508,7 @@
                                             (mv-nth 1 (wb addr-lst x86))))))
 
            :in-theory (e/d* (disjoint-p
+                             disjoint-p-commutative
                              member-p
                              ia32e-la-to-pa-page-dir-ptr-table
                              translation-governing-addresses-for-page-dir-ptr-table)
@@ -517,10 +523,10 @@
   (implies
    (and (equal cpl (cpl x86))
         (disjoint-p
-         (translation-governing-addresses-for-pml4-table
-          lin-addr base-addr (double-rewrite x86))
          (mv-nth 1 (las-to-pas
-                    (strip-cars addr-lst) :w cpl (double-rewrite x86)))))
+                    (strip-cars addr-lst) :w cpl (double-rewrite x86)))
+         (translation-governing-addresses-for-pml4-table
+          lin-addr base-addr (double-rewrite x86))))
    (xlate-equiv-entries
     (rm-low-64 (pml4-table-entry-addr lin-addr base-addr)
                (mv-nth 1 (wb addr-lst x86)))
@@ -528,16 +534,17 @@
                x86)))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (translation-governing-addresses-for-pml4-table)
+           :in-theory (e/d* (translation-governing-addresses-for-pml4-table
+                             disjoint-p-commutative)
                             (force (force))))))
 
 (defthm ia32e-la-to-pa-pml4-table-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and
             (equal cpl (cpl x86))
             (disjoint-p
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86)))
              (translation-governing-addresses-for-pml4-table
-              lin-addr base-addr (double-rewrite x86))
-             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+              lin-addr base-addr (double-rewrite x86)))
             (canonical-address-p lin-addr)
             (physical-address-p base-addr)
             (equal (loghead 12 base-addr) 0))
@@ -570,6 +577,7 @@
                             (e-2 (rm-low-64 (pml4-table-entry-addr lin-addr base-addr)
                                             (mv-nth 1 (wb addr-lst x86))))))
            :in-theory (e/d* (disjoint-p
+                             disjoint-p-commutative
                              member-p
                              ia32e-la-to-pa-pml4-table
                              translation-governing-addresses-for-pml4-table)
@@ -581,8 +589,8 @@
 (defthm ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and (equal cpl (cpl x86))
                 (disjoint-p
-                 (translation-governing-addresses lin-addr (double-rewrite x86))
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86)))
+                 (translation-governing-addresses lin-addr (double-rewrite x86)))
                 (canonical-address-p lin-addr))
            (and
             (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
@@ -592,6 +600,7 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
+                             disjoint-p-commutative
                              member-p
                              ia32e-la-to-pa
                              translation-governing-addresses)
@@ -603,8 +612,8 @@
 (defthm la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and (equal cpl (cpl x86))
                 (disjoint-p
-                 (all-translation-governing-addresses l-addrs (double-rewrite x86))
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86))))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86)))
+                 (all-translation-governing-addresses l-addrs (double-rewrite x86)))
                 (canonical-address-listp l-addrs))
            (and
             (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
@@ -1255,13 +1264,16 @@
     :rule-classes :congruence)
 
   (defthm infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses
-    (implies (and (disjoint-p x
-                              (open-qword-paddr-list
-                               (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-                  (true-listp x)
-                  (canonical-address-listp l-addrs))
-             (disjoint-p (all-translation-governing-addresses l-addrs x86)
-                         x))
+    (implies (and
+              (disjoint-p
+               x
+               (open-qword-paddr-list
+                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+              (true-listp x)
+              (canonical-address-listp l-addrs))
+             (disjoint-p
+              x
+              (all-translation-governing-addresses l-addrs x86)))
     :hints (("Goal"
              :do-not-induct t
              :use ((:instance all-translation-governing-addresses-subset-of-paging-structures)
@@ -1306,11 +1318,13 @@
                                  ;; x86-2 must be smaller than x86-1.
                                  (term-order x86-2 x86-1)))
                    (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-                   (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86-1))
-                               (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86-1))))
-                   (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86-1)))
-                               (open-qword-paddr-list
-                                (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+                   (disjoint-p
+                    (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86-1)))
+                    (all-translation-governing-addresses l-addrs (double-rewrite x86-1)))
+                   (disjoint-p
+                    (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86-1)))
+                    (open-qword-paddr-list
+                     (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
                    (canonical-address-listp l-addrs))
               (equal (read-from-physical-memory (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)) x86-1)
                      (read-from-physical-memory (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)) x86-2)))
@@ -1318,6 +1332,7 @@
               :induct (las-to-pas l-addrs r-w-x cpl x86-1)
               :in-theory (e/d* (las-to-pas
                                 disjoint-p
+                                disjoint-p-commutative
                                 xlate-equiv-memory)
                                (disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
                                 mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs))))))
@@ -1355,11 +1370,10 @@
                             ;; x86-2 must be smaller than x86-1.
                             (term-order x86-2 x86-1)))
                   (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-                  ;; (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86-1))
-                  ;;             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86-1) (double-rewrite x86-1))))
-                  (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86-1) (double-rewrite x86-1)))
-                              (open-qword-paddr-list
-                               (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+                  (disjoint-p
+                   (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86-1) (double-rewrite x86-1)))
+                   (open-qword-paddr-list
+                    (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
                   (canonical-address-listp l-addrs))
              (equal (mv-nth 1 (rb l-addrs r-w-x x86-1))
                     (mv-nth 1 (rb l-addrs r-w-x x86-2))))
@@ -1368,7 +1382,8 @@
              :use ((:instance xlate-equiv-memory-in-programmer-level-mode-implies-equal-states)
                    (:instance read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures
                               (cpl (cpl x86-1))))
-             :in-theory (e/d* (rb)
+             :in-theory (e/d* (rb
+                               disjoint-p-commutative)
                               (read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures
                                force (force))))))
 
