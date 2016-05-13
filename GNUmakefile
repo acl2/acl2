@@ -183,6 +183,9 @@ PREFIX =
 PREFIXsaved_acl2 = ${PREFIX}saved_acl2${ACL2_SUFFIX}
 PREFIXosaved_acl2 = ${PREFIX}osaved_acl2${ACL2_SUFFIX}
 
+ACL2 ?= $(ACL2_WD)/${PREFIXsaved_acl2}
+$(info ACL2 is $(ACL2))
+
 # One may define ACL2_SAFETY and/or (only useful for CCL) ACL2_STACK_ACCESS
 # to provide a safety or :stack-access setting.  We recommend
 # ACL2_SAFETY = 3
@@ -517,7 +520,7 @@ proofs: compile-ok
 	@$(MAKE) check_init_ok
 	rm -f workxxx
 
-.PHONY: DOC acl2-manual
+.PHONY: DOC acl2-manual check-acl2-exports
 
 # The next target, DOC, is the target that should generally be used
 # for rebuilding the ACL2 User's Manual.
@@ -535,6 +538,9 @@ DOC: acl2-manual STATS
 	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
 	rm -f doc/home-page.html
 	$(MAKE) doc.lisp doc/home-page.html
+
+check-acl2-exports:
+	cd books ; rm -f misc/check-acl2-exports.cert ; $(MAKE) ACL2=$(ACL2) misc/check-acl2-exports.cert
 
 # We remove doc/HTML before rebuilding it, in order to make sure that
 # it is up to date.  We could do that removal in doc/create-doc
@@ -576,30 +582,17 @@ doc.lisp: books/system/doc/acl2-doc.lisp \
 
 books/system/doc/rendered-doc.lsp:
 	rm -f books/system/doc/rendered-doc.lsp
-ifndef ACL2
-	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
-endif
-
 
 .PHONY: STATS
 
 # See the Essay on Computing Code Size in the ACL2 source code.
 STATS:
-	@if [ "$(ACL2)" = "" ]; then \
-	    ACL2="../${PREFIXsaved_acl2}" ;\
-	    export ACL2 ;\
-	    ACL2_SOURCES="$(sources)" ;\
-	    export ACL2_SOURCES ;\
-	    doc/create-acl2-code-size ;\
-	else \
-	    ACL2=$(ACL2) ;\
-	    export ACL2 ;\
-	    ACL2_SOURCES="$(sources)" ;\
-	    export ACL2_SOURCES ;\
-	    doc/create-acl2-code-size ;\
-	fi
+	@ACL2=$(ACL2) ;\
+	export ACL2 ;\
+	ACL2_SOURCES="$(sources)" ;\
+	export ACL2_SOURCES ;\
+	doc/create-acl2-code-size
 
 .PHONY: clean
 clean:
@@ -667,11 +660,7 @@ move-large:
 # log.
 .PHONY: certify-books
 certify-books:
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2)
-endif
 
 # Certify books that are not up-to-date, even those less likely to be
 # included in other books.  Success can generally be determined by
@@ -680,61 +669,35 @@ endif
 .PHONY: regression
 regression:
 	uname -a
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
-endif
 
 .PHONY: regression-everything
 regression-everything:
 	uname -a
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
-endif
 
 # Certify main books from scratch.
 .PHONY: certify-books-fresh
 certify-books-fresh: clean-books
-ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} certify-books
-else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) certify-books
-endif
 
 # Do regression tests from scratch.
 # Success can generally be determined by checking for the absence of ** in the
 # log.
 .PHONY: regression-fresh
 regression-fresh: clean-books
-ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} regression
-else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression
-endif
 
 .PHONY: regression-everything-fresh
 regression-everything-fresh: clean-books
-ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} regression-everything
-else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-everything
-endif
 
 # The following allows for a relatively short test, in response to a request
 # from GCL maintainer Camm Maguire.
 .PHONY: certify-books-short
 certify-books-short:
 	uname -a
-ifndef ACL2
-	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} basic
-else
-	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
-endif
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
 
 # The following target assumes that we are using an image built with
 # ACL2_DEVEL set, and then have certified the books mentioned in
@@ -795,11 +758,7 @@ clean-doc:
 
 .PHONY: clean-books
 clean-books:
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} moreclean
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) moreclean
-endif
 
 # This following should be executed inside the acl2-sources directory.
 # You probably need to be the owner of all files in order for the chmod
@@ -885,11 +844,7 @@ our-develenv.cl:
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds:
 	uname -a
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)
-endif
 
 # Simple targets that ignore variables not mentioned below,
 # including: ACL2_SUFFIX, PREFIX, ACL2_SAFETY, ACL2_COMPILER_DISABLED,
