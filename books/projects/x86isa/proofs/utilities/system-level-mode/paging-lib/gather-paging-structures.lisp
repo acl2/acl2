@@ -1463,7 +1463,7 @@
 
 (defun find-an-xlate-equiv-x86-aux (thm-name x86-term mfc state)
   (declare (xargs :stobjs (state) :mode :program)
-           (ignorable state))
+           (ignorable thm-name state))
 
   ;; Finds a "smaller" x86 that is xlate-equiv to x86-term.
   (if (atom x86-term)
@@ -1482,7 +1482,7 @@
                      (not (equal outer-fn '!FLGI))
                      (not (and (equal outer-fn 'XW)
                                (equal (second x86-term) '':MEM)))))
-          (cw "~%~p0: Unexpected x86-term encountered:~p1~%" thm-name x86-term)
+          ;; (cw "~%~p0: Unexpected x86-term encountered:~p1~%" thm-name x86-term)
           x86-term))
       (cond ((equal outer-fn 'MV-NTH)
              ;; We expect x86-term to be a function related to page
@@ -1507,7 +1507,7 @@
                            (if (equal mv-nth-index ''1)
                                (not (member-p inner-fn '(WM08 WB)))
                              t)))
-                   (cw "~%~p0: Unexpected mv-nth x86-term encountered:~p1~%" thm-name x86-term)
+                   ;; (cw "~%~p0: Unexpected mv-nth x86-term encountered:~p1~%" thm-name x86-term)
                    x86-term)
                   (sub-x86
                    (if (equal inner-fn 'PAGING-ENTRY-NO-PAGE-FAULT-P$INLINE)
@@ -1526,7 +1526,7 @@
 
 (defun find-an-xlate-equiv-x86 (thm-name bound-x86-term free-x86-var mfc state)
   (declare (xargs :stobjs (state) :mode :program)
-           (ignorable state))
+           (ignorable thm-name state))
   ;; bind-free for an x86 in xlate-equiv-structures: should check just
   ;; for the page traversal functions and wm-low-64.
   (declare (xargs :mode :program))

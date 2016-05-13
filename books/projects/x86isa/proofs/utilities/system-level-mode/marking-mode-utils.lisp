@@ -640,8 +640,8 @@
              ;; The physical addresses pertaining to the read
              ;; operation are disjoint from those pertaining to the
              ;; write operation.
-             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
             (disjoint-p
              ;; The physical addresses corresponding to the read are
              ;; disjoint from the translation-governing-addresses
@@ -731,11 +731,11 @@
 (defthm program-at-wb-disjoint-in-system-level-mode
   (implies (and
             (disjoint-p
-             ;; The physical addresses pertaining to the read
+             ;; The physical addresses pertaining to the write
              ;; operation are disjoint from those pertaining to the
-             ;; write operation.
-             (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86)))
-             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+             ;; read operation.
+             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+             (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86))))
             (disjoint-p
              ;; The physical addresses corresponding to the read are
              ;; disjoint from the translation-governing-addresses
@@ -1362,7 +1362,7 @@
   (defthm mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
     (implies (and (bind-free
                    (find-an-xlate-equiv-x86
-                    'mv-nth-1-rb-and-xlate-equiv-memory
+                    'mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
                     x86-1 'x86-2 mfc state)
                    (x86-2))
                   (syntaxp (and

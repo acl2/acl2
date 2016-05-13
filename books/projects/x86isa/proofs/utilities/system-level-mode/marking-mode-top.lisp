@@ -593,7 +593,11 @@
   ;; Rewrite rb to rb-alt:
 
   (defthm rewrite-rb-to-rb-alt
-    (implies (forced-and
+    ;; Note that the hyps here aren't forced --- this is because we
+    ;; don't always want rb to rewrite to rb-alt. E.g., when we're
+    ;; reading from the paging data structures, we want to reason
+    ;; about rb.
+    (implies (and
               (disjoint-p
                (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
                (open-qword-paddr-list
@@ -853,7 +857,35 @@
                               (rewrite-program-at-to-program-at-alt
                                mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
                                force (force)))))
-    :rule-classes :congruence))
+    :rule-classes :congruence)
+
+  (defthm program-at-alt-wb-disjoint-in-system-level-mode
+    (implies
+     (and
+      (disjoint-p
+       (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+       (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86))))
+      (disjoint-p
+       (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+       (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
+      (addr-byte-alistp addr-lst)
+      (x86p x86))
+     (equal (program-at-alt l-addrs bytes (mv-nth 1 (wb addr-lst x86)))
+            (program-at-alt l-addrs bytes x86)))
+    :hints
+    (("Goal"
+      :do-not-induct t
+      :use ((:instance program-at-wb-disjoint-in-system-level-mode))
+      :in-theory
+      (e/d
+       (program-at-alt
+        disjoint-p-commutative)
+       (rewrite-program-at-to-program-at-alt
+        program-at-wb-disjoint-in-system-level-mode
+        rb-wb-disjoint-in-system-level-mode
+        disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+        mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+        rb wb))))))
 
 ;; ======================================================================
 
