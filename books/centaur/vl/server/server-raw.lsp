@@ -579,6 +579,8 @@ a bleeding edge zip.</p>")
       (cl-user::format t ";~%")
       (cl-user::format t "; ----------------------------------------------------------------~%~%")
       (add-handlers)
+      (setq ccl::*default-control-stack-size*  (* 15 (expt 2 20)))
+      (setq ccl::*default-value-stack-size* (* 196 (expt 2 20)))
       (setq vl-server server))
     nil))
 

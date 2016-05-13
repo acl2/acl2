@@ -54,4 +54,5 @@
 
 (save-exec "../bin/vl" "VL Verilog Toolkit"
            :inert-args ""
+           :host-lisp-args "-Z 256M"
            :return-from-lp '(vl::vl-main))
