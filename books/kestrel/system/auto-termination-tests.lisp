@@ -187,3 +187,26 @@
                 (my-merge2 (cdr x) y)))
          (t (cons (car y)
                   (my-merge2 x (cdr y)))))))
+
+; Next we present a challenge that requires reordering parameters.
+; Note that compress21 differs from the proposed function, count-up-to, in
+; several ways:
+
+; - Compress21 has six formals, (NAME L N I J DEFAULT); count-up-to just has
+;   two formals.
+
+; - The measured formals of compress21 occur in the opposite order from those
+;   in count-up-to: in compress21, the the first (n) counts up to the second
+;   (i), while in count-up-to, the second (from) counts up to the first
+;   (bound).
+
+; - The call of + in the recursive call of compress21 is (+ N 1), while for
+; - count-up-to it is (+ 1 from); the arguments to + are thus commuted.
+
+; Searching 1028 functions...
+; Reusing measure and termination theorem for function
+; COMPRESS21, defined at the top level.
+(with-auto-termination
+ (defun count-up-to (bound from)
+   (cond ((zp (- bound from)) 0)
+         (t (cons from (count-up-to bound (+ 1 from)))))))

@@ -160,100 +160,100 @@ re-arrange these nests of updates.</p>
          (keyword (intern name "KEYWORD"))
          (type (caddr x86-model-field)))
 
-        (cond
+      (cond
 
-         ((and (consp type)
-               (equal (car type) 'array)
-               (consp (cadr type)))
-          (b* ((predicate (mk-name name "P"))
-               (namei     (mk-name name "I"))
-               (constant (mk-name "*" name "I*"))
-               (getter    namei)
-               (size      (cadr (cadr type))))
-              `(
-                ;; Field type theorem:
-                ,(if (equal (car (cadr type)) 'unsigned-byte)
-                     `(DEFTHM-USB ,(mk-name getter (if (< size 10) "-IS-N0" "-IS-N") size "P")
-                        :hyp (FORCE (X86P X86))
-                        :bound ,size
-                        :concl (XR ,keyword I X86)
-                        :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())
-                                 :USE ((:INSTANCE ,(mk-name predicate "-AUX-NECC")
-                                                  (I I)
-                                                  (X (NTH ,constant X86))))))
-                        :gen-linear t
-                        :gen-type t)
-
-                   `(DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
-                      :hyp (FORCE (X86P X86))
-                      :bound ,size
-                      :concl (XR ,keyword I X86)
-                      :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())
-                               :USE ((:INSTANCE ,(mk-name predicate "-AUX-NECC")
-                                                (I I)
-                                                (X (NTH ,constant X86))))))
-                      :gen-type t
-                      :gen-linear t)))))
-
-         ((and (consp type)
-               (equal (car type) 'unsigned-byte))
-          (b* ((getter  (mk-name name))
-               (size    (cadr type)))
-              `( ;; Field Type Theorem:
-                (DEFTHM-USB ,(mk-name getter "-IS-N" size "P")
-                  :hyp (FORCE (X86P X86))
-                  :bound ,size
-                  :concl (XR ,keyword I X86)
-                  :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())))
-                  :gen-type t
-                  :gen-linear t))))
-
-         ((and (consp type)
-               (equal (car type) 'signed-byte))
-          (b* ((getter  (mk-name name))
-               (size    (cadr type)))
-              `( ;; Field Type Theorems:
-                (DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
-                  :hyp (FORCE (X86P X86))
-                  :bound ,size
-                  :concl (XR ,keyword I X86)
-                  :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())))
-                  :gen-linear t
-                  :gen-type t))))
-
-         ((and (consp type)
-               (equal (car type) 'integer))
-          (b* ((predicate (mk-name name "P"))
-               (getter  (mk-name name))
-               (size    (caddr type)))
-              `( ;; Field Type Theorem:
-
-                (DEFTHM-NATP ,(mk-name "NATP-" getter)
-                  :hyp (FORCE (X86P X86))
-                  :concl (XR ,keyword I X86)
-                  :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate))))
-
-                (DEFTHM ,(mk-name getter "-LESS-THAN-" size)
-                  (IMPLIES (FORCE (X86P X86))
-                           (<= (XR ,keyword I X86) ,size))
-                  :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate)))
-                  :RULE-CLASSES :LINEAR))))
-
-         ((and (consp type)
-               (equal (car type) 'satisfies))
-          ;; Env field is dealt with in this case.
-          (b* ((predicate (cadr type)))
-              `( ;; Field Type Theorem:
-                (DEFTHM ,(mk-name predicate "-" name)
-                  (IMPLIES (FORCE (X86P X86))
-                           (,predicate (XR ,keyword I X86)))))))
-
-         (t
-          ;; type is presumably 'T (like MS and FAULT fields)
+       ((and (consp type)
+             (equal (car type) 'array)
+             (consp (cadr type)))
+        (b* ((predicate (mk-name name "P"))
+             (namei     (mk-name name "I"))
+             (constant (mk-name "*" name "I*"))
+             (getter    namei)
+             (size      (cadr (cadr type))))
           `(
-            ;; No Field Type Theorem
+            ;; Field type theorem:
+            ,(if (equal (car (cadr type)) 'unsigned-byte)
+                 `(DEFTHM-USB ,(mk-name getter (if (< size 10) "-IS-N0" "-IS-N") size "P")
+                    :hyp (FORCE (X86P X86))
+                    :bound ,size
+                    :concl (XR ,keyword I X86)
+                    :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())
+                             :USE ((:INSTANCE ,(mk-name predicate "-AUX-NECC")
+                                              (I I)
+                                              (X (NTH ,constant X86))))))
+                    :gen-linear t
+                    :gen-type t)
 
-            )))))
+               `(DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
+                  :hyp (FORCE (X86P X86))
+                  :bound ,size
+                  :concl (XR ,keyword I X86)
+                  :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())
+                           :USE ((:INSTANCE ,(mk-name predicate "-AUX-NECC")
+                                            (I I)
+                                            (X (NTH ,constant X86))))))
+                  :gen-type t
+                  :gen-linear t)))))
+
+       ((and (consp type)
+             (equal (car type) 'unsigned-byte))
+        (b* ((getter  (mk-name name))
+             (size    (cadr type)))
+          `( ;; Field Type Theorem:
+            (DEFTHM-USB ,(mk-name getter "-IS-N" size "P")
+              :hyp (FORCE (X86P X86))
+              :bound ,size
+              :concl (XR ,keyword I X86)
+              :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())))
+              :gen-type t
+              :gen-linear t))))
+
+       ((and (consp type)
+             (equal (car type) 'signed-byte))
+        (b* ((getter  (mk-name name))
+             (size    (cadr type)))
+          `( ;; Field Type Theorems:
+            (DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
+              :hyp (FORCE (X86P X86))
+              :bound ,size
+              :concl (XR ,keyword I X86)
+              :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())))
+              :gen-linear t
+              :gen-type t))))
+
+       ((and (consp type)
+             (equal (car type) 'integer))
+        (b* ((predicate (mk-name name "P"))
+             (getter  (mk-name name))
+             (size    (caddr type)))
+          `( ;; Field Type Theorem:
+
+            (DEFTHM-NATP ,(mk-name "NATP-" getter)
+              :hyp (FORCE (X86P X86))
+              :concl (XR ,keyword I X86)
+              :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate))))
+
+            (DEFTHM ,(mk-name getter "-LESS-THAN-" size)
+              (IMPLIES (FORCE (X86P X86))
+                       (<= (XR ,keyword I X86) ,size))
+              :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate)))
+              :RULE-CLASSES :LINEAR))))
+
+       ((and (consp type)
+             (equal (car type) 'satisfies))
+        ;; Env field is dealt with in this case.
+        (b* ((predicate (cadr type)))
+          `( ;; Field Type Theorem:
+            (DEFTHM ,(mk-name predicate "-" name)
+              (IMPLIES (FORCE (X86P X86))
+                       (,predicate (XR ,keyword I X86)))))))
+
+       (t
+        ;; type is presumably 'T (like MS and FAULT fields)
+        `(
+          ;; No Field Type Theorem
+
+          )))))
 
   (defun x86-stobj-field-thms-fn (x86-model)
     (cond ((endp x86-model)
@@ -344,9 +344,7 @@ re-arrange these nests of updates.</p>
                                      (eq (car index) ''0))))
                   (member fld *x86-simple-fields-as-keywords*))
              (equal (xw fld index value x86)
-                    (xw fld 0     value x86))))
-
-  )
+                    (xw fld 0     value x86)))))
 
 (defsection x86-Writing-the-Read-Theorem
 
@@ -355,9 +353,7 @@ re-arrange these nests of updates.</p>
   (defthmd xw-xr
     (implies (and (equal v (xr fld i x86))
                   (x86p x86))
-             (equal (xw fld i v x86) x86)))
-
-  )
+             (equal (xw fld i v x86) x86))))
 
 (defsection x86-RoW-Theorems
 
@@ -381,9 +377,7 @@ re-arrange these nests of updates.</p>
   (defthm xr-xw-inter-field
     (implies (case-split (not (equal fld1 fld2)))
              (equal (xr fld2 i2 (xw fld1 i1 v x86))
-                    (xr fld2 i2 x86))))
-
-  )
+                    (xr fld2 i2 x86)))))
 
 (defsection x86-WoW-Theorems
 
@@ -410,9 +404,7 @@ re-arrange these nests of updates.</p>
     (implies (not (equal fld1 fld2))
              (equal (xw fld2 i2 v2 (xw fld1 i1 v1 x86))
                     (xw fld1 i1 v1 (xw fld2 i2 v2 x86))))
-    :rule-classes ((:rewrite :loop-stopper ((fld2 fld1)))))
-
-  )
+    :rule-classes ((:rewrite :loop-stopper ((fld2 fld1))))))
 
 ;; ======================================================================
 

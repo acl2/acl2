@@ -646,7 +646,6 @@
 (defcong nat-equiv equal (logmask n) 1)
 
 
-
 (encapsulate
   ()
 
@@ -682,12 +681,24 @@
 
   (defcong iff equal (bool->bit x) 1)
 
-  (defthm bitp-of-bool->bit
-    (bitp (bool->bit x)))
+  ;; [Jared] 2016-04-08 BOZO.  I think we shouldn't need this rule because we
+  ;; have a bitp type-prescription for bool->bit and, given
+  ;; bitp-compound-recognizer, shouldn't we know that it's a bit?  But having
+  ;; this as a rewrite seems to be necessary for a proof in
+  ;; gl/always-equal-prep.lisp.  So, for now, I'll leave this in place, even
+  ;; though I think we shouldn't need this???
 
-  (defthm bool->bit-bound
-    (< (bool->bit x) 2)
-    :rule-classes :linear)
+  ;; [Matt K. mod 5/2016 (type-set bit for {1}):] It appears that the theorem
+  ;; in centaur/gl/always-equal-prep.lisp whose proof was failing is
+  ;; always-equal-ss-under-hyp-correct.  I've fixed it simply by enabling
+  ;; (:type-prescription acl2::bool->bit$inline).
+
+; (defthm bitp-of-bool->bit
+;   (bitp (bool->bit x)))
+
+  ;; (defthm bool->bit-bound
+  ;;   (< (bool->bit x) 2)
+  ;;   :rule-classes :linear)
 
   (defthm bfix-when-bit->bool
     (implies (bit->bool x)

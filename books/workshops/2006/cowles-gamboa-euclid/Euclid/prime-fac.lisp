@@ -162,9 +162,18 @@ To certify this book, first, create a world with the following package:
 (defthm
   not-prime1p-lemma
   (implies (and (integerp y)
-		(<= 2 z) ; (< 1 z) [see April 2016 comment in x>1-forward]
-		(<= z y)
-		(dividesp z x))
+
+; Matt K. mod 5/2016 (type-set bit for {1}): Originally the following
+; hypothesis was instead (dividesp z x), and was last.  After our type-set
+; changes, where this lemma was applied to prove divisors-of-primep, the
+; free-variable match failed for the old version of this lemma.  The problem
+; was that D was on the type-alist with type *ts-integer>1*; neither (< 1 D)
+; nor (< D 2) was on the type-alist.  Since dividesp is enabled, here we place
+; what amounts to the expanded form of (dividesp z x).
+
+                (equal (acl2::nonneg-int-mod x z) 0)
+		(< 1 z)
+		(<= z y))
 	   (not (prime1p x y))))
 
 (defun
@@ -184,12 +193,7 @@ To certify this book, first, create a world with the following package:
   x>1-forward
   (implies (and (not (equal x 1))
 		(not (zp x)))
-; Modified April 2016 by Matt K., because with the extra type-set bit for {1},
-; the old conclusion (> x 1) wasn't sufficient for proving divisors-of-primep
-; below (with the original not-prime1p-lemma below) -- that's because the
-; hypothesis of the form (< 1 x) was no longer explicitly on the type-alist, as
-; it was replaced by associating x with the type *ts-integer>1*.
-	   (>= x 2))
+	   (> x 1))
   :rule-classes :forward-chaining)
 
 (defthm

@@ -974,9 +974,11 @@
 
 (defmacro active-runep (rune)
 
+; Warning: Keep this in sync with active-or-non-runep.
+
 ; This takes a rune and determines if it is enabled in the enabled structure
 ; ens.  Unlike enabled-runep, this returns nil if the rune is a fake-rune or is
-; not a runep in the given wrld.
+; not a runep in the given wrld.  See also active-or-non-runep.
 
   `(let* ((rune ,rune)
           (nume (and (consp rune)
@@ -989,6 +991,26 @@
                      (fnume rune (w state)))))
      (and nume
           (enabled-numep nume ens))))
+
+(defmacro active-or-non-runep (rune)
+
+; Warning: Keep this in sync with active-runep.
+
+; This takes a rune and determines if it is enabled in the enabled structure
+; ens.  This also returns t if the rune is a fake-rune or is not a runep in the
+; given wrld.  See also active-runep.
+
+  `(let* ((rune ,rune)
+          (nume (and (consp rune)
+                     (consp (cdr rune))
+                     (symbolp (cadr rune))
+
+; The tests above guard the call of fnume just below, the same way that runep
+; guards the computation made in its body from the property list.
+
+                     (fnume rune (w state)))))
+     (or (not nume)
+         (enabled-numep nume ens))))
 
 (defun enabled-xfnp (fn ens wrld)
 
@@ -10073,6 +10095,12 @@
                                                   *ts-acl2-number*)
                                                  *ts-integer*)))
                       (mv (not xnot-flg) *0* (fargn x 1) *ts-zero* ts1))
+                     ((and (equal (fargn x 2) *2*)
+                           (ts-subsetp ts1
+                                       (ts-union (ts-complement
+                                                  *ts-acl2-number*)
+                                                 *ts-integer*)))
+                      (mv (not xnot-flg) *1* (fargn x 1) *ts-one* ts1))
                      ((and (equal (fargn x 1) *-1*)
                            (ts-subsetp ts2
                                        (ts-union (ts-complement
@@ -10333,6 +10361,53 @@
 
                       (mv-atf-2 not-flg true-type-alist false-type-alist
                                 (mcons-term* '< *0* arg2)
+                                xnot-flg x shared-ttree xttree ignore)))))
+                 ((equal arg1 *1*)
+                  (cond
+                   ((ts-subsetp ts2 *ts-integer>1*)
+                    (mv-atf not-flg t nil type-alist nil
+                            ttree
+                            xttree))
+                   ((ts-subsetp ts2
+                                (ts-union (ts-complement *ts-acl2-number*)
+                                          *ts-one*
+                                          *ts-non-positive-rational*))
+                    (mv-atf not-flg nil t nil type-alist
+                            ttree
+                            xttree))
+                   (t
+                    (let* ((shared-ttree (cons-tag-trees ttree xttree))
+                           (ignore (adjust-ignore-for-atf not-flg ignore0))
+                           (true-type-alist
+                            (and (not (eq ignore :tta))
+                                 (extend-type-alist
+                                  ;;*** -simple
+                                  arg2
+                                  (ts-intersection
+                                   ts2
+                                   (ts-union *ts-integer>1*
+                                             *ts-positive-ratio*
+                                             *ts-complex-rational*))
+                                  shared-ttree type-alist w)))
+                           (false-type-alist
+                            (and (not (eq ignore :fta))
+                                 (if (variablep arg2)
+
+; By restricting to variables here, we avoid a failed proof for lemma LEMMA3 in
+; community book books/data-structures/memories/memtree.lisp (and perhaps other
+; failed proofs).  This weakened heuristic seems consistent with the spirit of
+; the Essay on Strong Handling of *ts-one*, above.
+
+                                     (extend-type-alist
+                                      ;;*** -simple
+                                      arg2
+                                      (ts-intersection
+                                       ts2
+                                       (ts-complement *ts-integer>1*))
+                                      shared-ttree type-alist w)
+                                   type-alist))))
+                      (mv-atf-2 not-flg true-type-alist false-type-alist
+                                (mcons-term* '< *1* arg2)
                                 xnot-flg x shared-ttree xttree ignore)))))
                  ((equal arg2 *0*)
                   (cond

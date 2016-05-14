@@ -3136,10 +3136,13 @@ off looking at the source code.</p>")
                                      (size (1- size)) (i (logcdr i))))
              :in-theory (disable logapp (force)
 
-; Modified by Matt K. April 2016 because the addition of a type-set bit for the
-; set {1} sent the proof in a different direction with this rewrite rule.
+; Matt K. mod 5/2016 (type-set bit for {1}): the addition of a type-set bit for
+; the set {1} sent the proof in a different direction with this rewrite rule.
+; Monitoring this rule shows that (EQUAL (BINARY-+ '-1 SIZE) '0) rewrites to
+; (EQUAL SIZE '1), so with the new type-set bit for {1}, it isn't surprising
+; that the proof goes in a different direction than before.
 
-                                 acl2::<-+-negative-0-1
+                                 acl2::equal-constant-+
                                  acl2::int-equiv-implies-equal-logapp-2
                                  acl2::int-equiv-implies-equal-logapp-3
                                  acl2::nat-equiv-implies-equal-logapp-1)))

@@ -1811,7 +1811,7 @@
                  (otherwise ; including :write-acl2x
                   (er hard 'convert-book-name-to-cert-name
                       "Bad value of cert-op for ~
-                          convert-book-name-to-cert-name:  ~x0"
+                       convert-book-name-to-cert-name:  ~x0"
                       cert-op)))))
 
 (defun unrelativize-book-path (lst dir)
@@ -3407,27 +3407,31 @@
   (declare (ignore args))
   nil)
 
-(defmacro incompatible (rune1 rune2)
-  (cond ((and (consp rune1)
-              (consp (cdr rune1))
-              (symbolp (cadr rune1))
-              (consp rune2)
-              (consp (cdr rune2))
-              (symbolp (cadr rune2)))
+(defmacro incompatible (rune1 rune2 &optional strictp)
+  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep)))
+    (cond ((and (consp rune1)
+                (consp (cdr rune1))
+                (symbolp (cadr rune1))
+                (consp rune2)
+                (consp (cdr rune2))
+                (symbolp (cadr rune2)))
 
 ; The above condition is similar to conditions in runep and active-runep.
 
-         `(not (and (active-runep ',rune1)
-                    (active-runep ',rune2))))
-        (t (er hard 'incompatible
-               "Each argument to ~x0 should have the shape of a rune, ~
-                (:KEYWORD BASE-SYMBOL), unlike ~x1."
-               'incompatible
-               (or (and (consp rune1)
-                        (consp (cdr rune1))
-                        (symbolp (cadr rune1))
-                        rune2)
-                   rune1)))))
+           `(not (and (,active-fn ',rune1)
+                      (,active-fn ',rune2))))
+          (t (er hard 'incompatible
+                 "Each argument to ~x0 should have the shape of a rune, ~
+                  (:KEYWORD BASE-SYMBOL), unlike ~x1."
+                 'incompatible
+                 (or (and (consp rune1)
+                          (consp (cdr rune1))
+                          (symbolp (cadr rune1))
+                          rune2)
+                     rune1))))))
+
+(defmacro incompatible! (rune1 rune2)
+  `(incompatible ,rune1 ,rune2 t))
 
 ; We now begin the development of the encapsulate event.  Often in this
 ; development we refer to the Encapsulate Essay.  See the comment in
@@ -14836,8 +14840,9 @@
 
 (defun touch? (filename old-filename ctx state)
 
-; If old-filename is present, then filename must exist and be at least as
-; recent as old-filename in order to touch filename.
+; Filename must exist and be at least as recent as old-filename, which must
+; also exist in order to touch filename -- with one exception: if old-filename
+; is nil, then we unconditionally touch filename.
 
 ; The present implementation uses the Unix/Linux utility, "touch".  Windows
 ; environments might or might not have this utility.  If not, then a clean
@@ -14851,17 +14856,20 @@
 ; take care of this issue.  So we will defer consideration of that issue here,
 ; especially since touch? already requires the Unix "touch" utility.
 
-  (mv-let
-   (old-filename-date state)
-   (file-write-date$ old-filename state)
-   (mv-let
-    (filename-date state)
-    (file-write-date$ filename state)
-    (cond ((and old-filename-date
-                filename-date
-                (<= old-filename-date filename-date))
-           (prog2$ (sys-call "touch" (list filename))
-                   (mv-let (status state)
+  (cond
+   ((null old-filename)
+    (value (sys-call "touch" (list filename))))
+   (t (mv-let
+        (old-filename-date state)
+        (file-write-date$ old-filename state)
+        (mv-let
+          (filename-date state)
+          (file-write-date$ filename state)
+          (cond ((and old-filename-date
+                      filename-date
+                      (<= old-filename-date filename-date))
+                 (prog2$ (sys-call "touch" (list filename))
+                         (mv-let (status state)
                            (sys-call-status state)
                            (cond ((zerop status)
                                   (value nil))
@@ -14869,7 +14877,7 @@
                                         "Obtained non-zero exit status ~x0 ~
                                          when attempting to touch file ~x0 ."
                                         status filename))))))
-          (t (value nil))))))
+                (t (value nil))))))))
 
 (defun convert-book-name-to-compiled-name (full-book-name state)
 
@@ -15740,7 +15748,7 @@
                                 (global-val 'ttags-seen wrld0)
                                 nil ; correct active-book-name, but irrelevant
                                 ttags
-                                nil   ; irrelevant value for ttags-seen
+                                nil    ; irrelevant value for ttags-seen
                                 :quiet ; ttags in cert. world: already reported
                                 ctx state)))
                 (state-global-let*
@@ -16416,46 +16424,48 @@
                                                            pcert-info
                                                            cert-op
                                                            ctx
-                                                           state)))
+                                                           state))
+                                                         (compiled-file
+                                                          (cond
+                                                           (compile-flg
+; We only use the value of compile-flg when #-acl2-loop-only.
+                                                            (pprogn
+                                                             (print-certify-book-step-5
+                                                              full-book-name state)
+                                                             (er-progn
+                                                              (write-expansion-file
+                                                               portcullis-cmds
+                                                               declaim-list
+                                                               new-fns
+                                                               (expansion-filename
+                                                                full-book-name nil state)
+                                                               expansion-alist
+                                                               pkg-names
+                                                               ev-lst
+                                                               pass1-known-package-alist
+                                                               ctx state)
+                                                              #-acl2-loop-only
+                                                              (let* ((os-expansion-filename
+                                                                      (expansion-filename
+                                                                       full-book-name
+                                                                       t state))
+                                                                     (compiled-file
+                                                                      (compile-certified-file
+                                                                       os-expansion-filename
+                                                                       full-book-name
+                                                                       state)))
+                                                                (when (not (f-get-global
+                                                                            'save-expansion-file
+                                                                            state))
+                                                                  (delete-expansion-file
+                                                                   os-expansion-filename state))
+                                                                (value compiled-file)))))
+                                                           (t
+                                                            #-acl2-loop-only
+                                                            (delete-auxiliary-book-files
+                                                             full-book-name)
+                                                            (value nil)))))
                                                       (er-progn
-                                                       (cond
-                                                        (compile-flg
-                                                         (pprogn
-                                                          (print-certify-book-step-5
-                                                           full-book-name state)
-                                                          (er-progn
-                                                           (write-expansion-file
-                                                            portcullis-cmds
-                                                            declaim-list
-                                                            new-fns
-                                                            (expansion-filename
-                                                             full-book-name nil state)
-                                                            expansion-alist
-                                                            pkg-names
-                                                            ev-lst
-                                                            pass1-known-package-alist
-                                                            ctx state)
-                                                           #-acl2-loop-only
-                                                           (let ((os-expansion-filename
-                                                                  (and compile-flg
-                                                                       (expansion-filename
-                                                                        full-book-name t state))))
-                                                             (compile-certified-file
-                                                              os-expansion-filename
-                                                              full-book-name
-                                                              state)
-                                                             (when (not (f-get-global
-                                                                         'save-expansion-file
-                                                                         state))
-                                                               (delete-expansion-file
-                                                                os-expansion-filename state))
-                                                             (value nil))
-                                                           (value nil))))
-                                                        (t
-                                                         #-acl2-loop-only
-                                                         (delete-auxiliary-book-files
-                                                          full-book-name)
-                                                         (value nil)))
                                                        #-acl2-loop-only
                                                        (progn
 ; Install temporary certificate file(s).
@@ -16471,6 +16481,30 @@
                                                                 (pathname-unix-to-os
                                                                  (cdr pair)
                                                                  state)))
+                                                         (when
+                                                             (and
+                                                              compiled-file
+
+; Ensure that compiled-file is more recent than .cert file, since rename-file
+; is not guaranteed to preserve the write-date.  We first check the
+; file-write-date of the .cert file, since we have found that to be almost 3
+; orders of magnitude faster than touch? in CCL.
+
+                                                              (loop for pair
+                                                                    in temp-alist
+                                                                    with
+                                                                    compile-date =
+                                                                    (file-write-date
+                                                                     compiled-file)
+                                                                    thereis
+                                                                    (< compile-date
+                                                                       (file-write-date
+                                                                        (pathname-unix-to-os
+                                                                         (cdr pair)
+                                                                         state)))))
+                                                           (touch?
+                                                            compiled-file
+                                                            nil ctx state))
                                                          (value nil))
                                                        (pprogn
                                                         (cond
@@ -16952,13 +16986,13 @@
            body))
      (t nil))))
 
-(defmacro defun-sk (name args body
-                         &key
-                         quant-ok skolem-name thm-name rewrite strengthen
-                         #+:non-standard-analysis
-                         (classicalp 't classicalp-p)
-                         (witness-dcls
-                          '((declare (xargs :non-executable t)))))
+(defmacro defun-sk (&whole form name args body
+                           &key
+                           quant-ok skolem-name thm-name rewrite strengthen
+                           #+:non-standard-analysis
+                           (classicalp 't classicalp-p)
+                           (witness-dcls
+                            '((declare (xargs :non-executable t)))))
   (let* ((exists-p (and (true-listp body)
                         (eq (car body) 'exists)))
          (bound-vars (and (true-listp body)
@@ -16985,58 +17019,59 @@
              "~@0"
              ',msg)
       `(encapsulate
-        ()
-        (logic)
-        (set-match-free-default :all)
-        (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec" "Infected")
-        (encapsulate
-         ((,skolem-name ,args
-                         ,(if (= (length bound-vars) 1)
-                              (car bound-vars)
-                            (cons 'mv bound-vars))
-                         #+:non-standard-analysis
-                         ,@(and classicalp-p
-                                `(:classicalp ,classicalp))))
-         (local (in-theory '(implies)))
-         (local
-          (defchoose ,skolem-name ,bound-vars ,args
-            ,defchoose-body
-            ,@(and strengthen
-                   '(:strengthen t))))
-         ,@(and strengthen
-                `((defthm ,(packn (list skolem-name '-strengthen))
-                    ,(defchoose-constraint-extra skolem-name bound-vars args
-                       defchoose-body)
-                    :hints (("Goal"
-                             :use ,skolem-name
-                             :in-theory (theory 'minimal-theory)))
-                    :rule-classes nil)))
-         (,(if (member-equal '(declare (xargs :non-executable t)) witness-dcls)
-               'defun-nx
-             'defun)
-           ,name ,args
-           ,@(remove1-equal '(declare (xargs :non-executable t)) witness-dcls)
-           ,(if (= (length bound-vars) 1)
-                `(let ((,(car bound-vars) (,skolem-name ,@args)))
-                   ,body-guts)
-              `(mv-let (,@bound-vars)
-                       (,skolem-name ,@args)
-                       ,body-guts)))
-         (in-theory (disable (,name)))
-         (defthm ,thm-name
-           ,(cond (exists-p
-                   `(implies ,body-guts
-                             (,name ,@args)))
-                  ((eq rewrite :direct)
-                   `(implies (,name ,@args)
-                             ,body-guts))
-                  ((member-eq rewrite '(nil :default))
-                   `(implies (not ,body-guts)
-                             (not (,name ,@args))))
-                  (t rewrite))
-           :hints (("Goal"
-                     :use (,skolem-name ,name)
-                     :in-theory (theory 'minimal-theory)))))))))
+         ()
+         (logic)
+         (set-match-free-default :all)
+         (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec" "Infected")
+         (encapsulate
+           ((,skolem-name ,args
+                          ,(if (= (length bound-vars) 1)
+                               (car bound-vars)
+                             (cons 'mv bound-vars))
+                          #+:non-standard-analysis
+                          ,@(and classicalp-p
+                                 `(:classicalp ,classicalp))))
+           (local (in-theory '(implies)))
+           (local
+            (defchoose ,skolem-name ,bound-vars ,args
+              ,defchoose-body
+              ,@(and strengthen
+                     '(:strengthen t))))
+           ,@(and strengthen
+                  `((defthm ,(packn (list skolem-name '-strengthen))
+                      ,(defchoose-constraint-extra skolem-name bound-vars args
+                         defchoose-body)
+                      :hints (("Goal"
+                               :use ,skolem-name
+                               :in-theory (theory 'minimal-theory)))
+                      :rule-classes nil)))
+           (,(if (member-equal '(declare (xargs :non-executable t)) witness-dcls)
+                 'defun-nx
+               'defun)
+            ,name ,args
+            ,@(remove1-equal '(declare (xargs :non-executable t)) witness-dcls)
+            ,(if (= (length bound-vars) 1)
+                 `(let ((,(car bound-vars) (,skolem-name ,@args)))
+                    ,body-guts)
+               `(mv-let (,@bound-vars)
+                  (,skolem-name ,@args)
+                  ,body-guts)))
+           (in-theory (disable (,name)))
+           (defthm ,thm-name
+             ,(cond (exists-p
+                     `(implies ,body-guts
+                               (,name ,@args)))
+                    ((eq rewrite :direct)
+                     `(implies (,name ,@args)
+                               ,body-guts))
+                    ((member-eq rewrite '(nil :default))
+                     `(implies (not ,body-guts)
+                               (not (,name ,@args))))
+                    (t rewrite))
+             :hints (("Goal"
+                      :use (,skolem-name ,name)
+                      :in-theory (theory 'minimal-theory))))
+           (extend-pe-table ,name ,form))))))
 
 ; Here is the defstobj event.  Note that many supporting functions have been
 ; moved from this file to basis-a.lisp, in support of ACL2 "toothbrush"
