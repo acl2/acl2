@@ -553,11 +553,20 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat v-addr 64) (:nat base-addr 64))))
 
+(def-gl-export remove-logext-from-page-dir-ptr-table-entry-addr-to-C-program-optimized-form
+  :hyp (canonical-address-p v-addr)
+  :concl (equal (logext 64 (loghead 32 (logtail 27 v-addr)))
+                (loghead 32 (logtail 27 v-addr)))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat v-addr 64))))
+
 (def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-1
   :hyp (and (equal (part-select entry :low 7 :width 1) 1)
             (equal (part-select entry :low 0 :width 1) 1)
             (unsigned-byte-p 64 entry))
-  :concl (equal (zf-spec (loghead 64 (+ -129 (logand 129 (loghead 32 entry))))) 1)
+  :concl (equal (zf-spec
+                 (loghead 64 (+ -129 (logand 129 (logext 64 (loghead 32 entry))))))
+                1)
   :g-bindings
   (gl::auto-bindings (:nat entry 64)))
 
@@ -2456,8 +2465,103 @@
     (create-canonical-address-list 8 (+ -24 (xr :rgf 4 x86)))
     x86)))
 
+(defun-nx source-PDPTE-and-program-no-intefere-p (x86)
+  ;; The PDPTE physical addresses are disjoint from the
+  ;; translation-governing addresses of the program.
+  (disjoint-p
+   (mv-nth 1 (las-to-pas
+              (create-canonical-address-list
+               8
+               (page-dir-ptr-table-entry-addr
+                (xr :rgf *rdi* x86)
+                (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+              :r (cpl x86) x86))
+   (all-translation-governing-addresses
+    (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+    x86)))
+
+(defun-nx source-PDPTE-itself-no-intefere-p (x86)
+  ;; The PDPTE physical addresses are disjoint from the
+  ;; translation-governing addresses of the PDPTE.
+  (disjoint-p
+   (mv-nth 1 (las-to-pas
+              (create-canonical-address-list
+               8
+               (page-dir-ptr-table-entry-addr
+                (xr :rgf *rdi* x86)
+                (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+              :r (cpl x86) x86))
+   (all-translation-governing-addresses
+    (create-canonical-address-list
+     8
+     (page-dir-ptr-table-entry-addr
+      (xr :rgf *rdi* x86)
+      (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+    x86)))
+
+(defun-nx source-PDPTE-and-stack-no-interfere-p-aux (x86)
+  ;; The PDPTE physical addresses are disjoint from the
+  ;; translation-governing addresses of the PDPTE.
+  (disjoint-p
+   (mv-nth 1 (las-to-pas
+              (create-canonical-address-list
+               8
+               (page-dir-ptr-table-entry-addr
+                (xr :rgf *rdi* x86)
+                (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+              :r (cpl x86) x86))
+   (all-translation-governing-addresses
+    (create-canonical-address-list 8 (+ -24 (xr :rgf 4 x86)))
+    x86)))
+
+(defun-nx source-PDPTE-and-source-PML4E-no-intefere-p (x86)
+  ;; The PDPTE physical addresses are disjoint from the
+  ;; translation-governing addresses of the PML4E.
+  (disjoint-p
+   (mv-nth 1 (las-to-pas
+              (create-canonical-address-list
+               8
+               (page-dir-ptr-table-entry-addr
+                (xr :rgf *rdi* x86)
+                (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+              :r (cpl x86) x86))
+   (all-translation-governing-addresses
+    (create-canonical-address-list
+     8
+     (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+    x86)))
+
+(def-gl-export remove-logext-from-ash-loghead-40-expr
+  :hyp (unsigned-byte-p 64 n)
+  :concl (equal (logext 64 (ash (loghead 40 (logtail 12 n)) 12))
+                (ash (loghead 40 (logtail 12 n)) 12))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat n 64))))
+
+(defthm mv-nth-1-rb-after-mv-nth-2-rb
+  (implies
+   (and
+    (disjoint-p
+     (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 (cpl x86) (double-rewrite x86)))
+     (all-translation-governing-addresses l-addrs-2 (double-rewrite x86)))
+    (disjoint-p
+     (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 (cpl x86) (double-rewrite x86)))
+     (all-translation-governing-addresses l-addrs-1 (double-rewrite x86)))
+    (canonical-address-listp l-addrs-1)
+    (canonical-address-listp l-addrs-2))
+   (equal (mv-nth 1 (rb l-addrs-1 r-w-x-1 (mv-nth 2 (rb l-addrs-2 r-w-x-2 x86))))
+          (mv-nth 1 (rb l-addrs-1 r-w-x-1 x86))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (rb)
+                            (rewrite-rb-to-rb-alt
+                             force (force))))))
+
+(defthm unsigned-byte-p-1-bool->bit
+  ;; Why do I need this?
+  (unsigned-byte-p 1 (acl2::bool->bit x)))
+
 (defthm rewire_dst_to_src-effects
-  ;; God, this took 14 minutes.
   (implies
    ;; (rewire_dst_to_src-assumptions x86)
    (and
@@ -2467,23 +2571,47 @@
     (program-and-stack-no-interfere-p x86)
     (source-addresses-ok-p x86)
     (source-PML4TE-ok-p x86)
+    (source-PDPTE-ok-p x86)
     (source-PML4TE-and-stack-no-intefere-p x86)
     (source-PDPTE-and-stack-no-interfere-p x86)
 
     (source-PML4TE-and-program-no-intefere-p x86)
     (source-PML4TE-itself-no-intefere-p x86)
     (source-PML4TE-and-stack-no-interfere-p-aux x86)
+
+    (source-PDPTE-and-program-no-intefere-p x86)
+    (source-PDPTE-itself-no-intefere-p x86)
+    (source-PDPTE-and-stack-no-interfere-p-aux x86)
+    ;; This is too strong ('coz equality of rbs doesn't matter, but
+    ;; xlate-equiv matters), but I'll let this lie for now.
+    (source-PDPTE-and-source-PML4E-no-intefere-p x86)
     )
 
-   (equal (x86-run 14 x86) ;; (rewire_dst_to_src-clk)
+   (equal (x86-run 30 x86) ;; (rewire_dst_to_src-clk)
           xxx))
   :hints (("Goal"
            :in-theory (e/d* (consp-of-create-canonical-address-list
                              car-create-canonical-address-list
                              cdr-create-canonical-address-list
-                             loghead-negative
+                             loghead-negative                             
                              disjoint-p-all-translation-governing-addresses-subset-p)
-                            ())
+                            ((:REWRITE PROGRAM-AT-VALUES-AND-!FLGI)
+                             (:REWRITE PROGRAM-AT-XW-IN-SYSTEM-LEVEL-MODE)
+                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-4-PREFIX-IN-MARKING-MODE)
+                             (:REWRITE RB-IN-TERMS-OF-RB-SUBSET-P-IN-SYSTEM-LEVEL-MODE)
+                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX-IN-MARKING-MODE)
+                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX-IN-MARKING-MODE)
+                             (:REWRITE GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX-IN-MARKING-MODE)
+                             (:REWRITE MV-NTH-2-RB-IN-SYSTEM-LEVEL-MARKING-MODE)
+                             (:REWRITE
+                              MV-NTH-1-RB-AND-XLATE-EQUIV-MEMORY-DISJOINT-FROM-PAGING-STRUCTURES)
+                             (:REWRITE MV-NTH-2-RB-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
+                             (:REWRITE RB-RETURNS-X86-PROGRAMMER-LEVEL-MODE)
+                             (:LINEAR RM-LOW-64-LOGAND-LOGIOR-HELPER-1)
+                             (:DEFINITION N64P$INLINE)
+                             (:TYPE-PRESCRIPTION XLATE-EQUIV-MEMORY)
+                             (:REWRITE PROGRAM-AT-ALT-WB-DISJOINT-IN-SYSTEM-LEVEL-MODE)
+                             (:TYPE-PRESCRIPTION NATP-PAGE-DIR-PTR-TABLE-ENTRY-ADDR)))
            :do-not '(preprocess)
            :do-not-induct t))
   :otf-flg t)
