@@ -1501,11 +1501,8 @@ construct fast alists binding identifiers to things, etc.</p>"
   (define vl-expr-varnames-nrev ((x vl-expr-p) nrev)
     :measure (vl-expr-count x)
     :flag :expr
-    (b* ((nrev (vl-expr-case x
-                 :vl-index (if (vl-idscope-p x.scope)
-                               (nrev-push (vl-idscope->name x.scope) nrev)
-                             nrev)
-                 :otherwise nrev)))
+    (if (vl-idexpr-p x)
+        (nrev-push (vl-idexpr->name x) nrev)
       (vl-exprlist-varnames-nrev (vl-expr->subexprs x) nrev)))
 
   (define vl-exprlist-varnames-nrev ((x vl-exprlist-p) nrev)
@@ -1522,11 +1519,9 @@ construct fast alists binding identifiers to things, etc.</p>"
     :returns (names string-listp)
     :measure (vl-expr-count x)
     :flag :expr
-    (mbe :logic (append (vl-expr-case x
-                          :vl-index (and (vl-idscope-p x.scope)
-                                        (list (vl-idscope->name x.scope)))
-                          :otherwise nil)
-                        (vl-exprlist-varnames (vl-expr->subexprs x)))
+    (mbe :logic (if (vl-idexpr-p x)
+                    (list (vl-idexpr->name x))
+                  (vl-exprlist-varnames (vl-expr->subexprs x)))
          :exec (with-local-nrev
                  (vl-expr-varnames-nrev x nrev))))
 

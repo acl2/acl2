@@ -1019,7 +1019,7 @@ displays.  The module browser's web pages are responsible for defining the
     :measure (two-nats-measure (vl-casttype-count x) 10)
     (vl-casttype-case x
       :type (vl-pp-datatype x.type)
-      :size (vl-pp-expr x.size)
+      :size (vl-ps-seq (vl-print "(") (vl-pp-expr x.size) (vl-print ")"))
       :signedness (vl-ps-span "vl_key"
                               (if x.signedp
                                   (vl-print "signed")
