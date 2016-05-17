@@ -714,8 +714,6 @@
 
 ;; ======================================================================
 
-;; (i-am-here)
-
 ;; !! TODO: Check if the following three rules make things slow during
 ;; !! symbolic simulation.
 
@@ -803,6 +801,9 @@
   ;;             other-p-addrs)
   ;; to t, given that l-addrs-subset is a subset of l-addrs, which are
   ;; taken from a program-at/program-at-alt term.
+
+  ;; Disjointness of l-addrs with other addresses should be expressed
+  ;; in terms of disjoint-p$.
   (implies
    (and
     ;; (bind-free
@@ -814,15 +815,16 @@
       'l-addrs mfc state)
      (l-addrs))
     (syntaxp (not (eq l-addrs-subset l-addrs)))
-    (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))
-                other-p-addrs)
+    ;; Note: This is in terms of disjoint-p$.
+    (disjoint-p$ (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))
+                 other-p-addrs)
     (subset-p l-addrs-subset l-addrs)
     (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
    (disjoint-p (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))
                other-p-addrs))
   :hints
   (("Goal"
-    :in-theory (e/d* (disjoint-p subset-p member-p las-to-pas)
+    :in-theory (e/d* (disjoint-p disjoint-p$ subset-p member-p las-to-pas)
                      (mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p)))
    ("Subgoal *1/6"
     :in-theory (e/d* (disjoint-p subset-p member-p las-to-pas)
@@ -838,20 +840,23 @@
 
   ;; where l-addrs-subset is a subset of l-addrs, and l-addrs is of
   ;; the form (create-canonical-address-list ...).
+
+  ;; Disjointness of l-addrs with other addresses should be expressed
+  ;; in terms of disjoint-p$.
   (implies
    (and
     (bind-free (find-l-addrs-like-create-canonical-address-list-from-fn
                 'las-to-pas 'l-addrs mfc state)
                (l-addrs))
     (syntaxp (not (eq l-addrs-subset l-addrs)))
-    (disjoint-p other-p-addrs
-                (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
+    (disjoint-p$ other-p-addrs
+                 (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
     (subset-p l-addrs-subset l-addrs)
     (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
    (disjoint-p other-p-addrs (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))
   :hints (("Goal"
            :use ((:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs))
-           :in-theory (e/d* (disjoint-p-commutative)
+           :in-theory (e/d* (disjoint-p-commutative disjoint-p$)
                             (mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)))))
 
 (defthm disjoint-p-all-translation-governing-addresses-subset-p
@@ -862,17 +867,20 @@
   ;; where l-addrs-subset is a subset of l-addrs, and l-addrs is of
   ;; the form (create-canonical-address-list ...).
 
+  ;; Disjointness of l-addrs with other addresses should be expressed
+  ;; in terms of disjoint-p$.
   (implies (and (bind-free (find-l-addrs-like-create-canonical-address-list-from-fn
                             'all-translation-governing-addresses 'l-addrs mfc state)
                            (l-addrs))
                 ;; (syntaxp (not (cw "~% l-addrs: ~x0~%" l-addrs)))
-                (disjoint-p other-p-addrs
-                            (all-translation-governing-addresses l-addrs x86))
+                (disjoint-p$ other-p-addrs
+                             (all-translation-governing-addresses l-addrs x86))
                 (subset-p l-addrs-subset l-addrs))
            (disjoint-p other-p-addrs (all-translation-governing-addresses l-addrs-subset x86)))
   :hints (("Goal" :in-theory (e/d* (subset-p
                                     member-p
                                     disjoint-p
+                                    disjoint-p$
                                     all-translation-governing-addresses)
                                    ()))))
 

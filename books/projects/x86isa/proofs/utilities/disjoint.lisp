@@ -141,6 +141,13 @@
                     (and (disjoint-p a b)
                          (disjoint-p a c))))))
 
+(define disjoint-p$ ((x (true-listp x))
+                     (y (true-listp y)))
+  (disjoint-p x y)
+  ///
+  (defthmd rewrite-disjoint-p$-to-disjoint-p
+    (equal (disjoint-p$ x y) (disjoint-p x y))))
+
 ;; ======================================================================
 
 ;; Position:

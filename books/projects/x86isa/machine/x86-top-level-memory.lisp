@@ -43,6 +43,103 @@ memory.</li>
 
 ;; ======================================================================
 
+;; Some utilities to generate numerous (but efficient) RoW and WoW
+;; kinda theorems:
+
+(defun remove-elements-from-list (elems lst)
+  (if (or (endp lst) (endp elems))
+      lst
+    (if (member (car lst) elems)
+        (remove-elements-from-list (remove (car lst) elems) (cdr lst))
+      (cons (car lst) (remove-elements-from-list elems (cdr lst))))))
+
+(defun search-and-replace-once (search-term replace-term lst)
+  (if (endp lst)
+      nil
+    (if (equal search-term (car lst))
+        (cons replace-term (cdr lst))
+      (cons (car lst) (search-and-replace-once search-term replace-term (cdr lst))))))
+
+(defun generate-read-fn-over-xw-thms-1 (xw-fld read-fn read-fn-formals output-index hyps-term)
+  ;; (generate-read-fn-over-xw-thms-1 :RGF 'gather-all-paging-structure-qword-addresses '(x86) -1 t)
+  `(defthm ,(mk-name (if (equal output-index -1) read-fn (mk-name "MV-NTH-" output-index "-" read-fn))  "-XW-" xw-fld)
+     (implies ,(or hyps-term t)
+              ,(if (equal output-index -1)
+                   `(equal (,read-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) read-fn-formals))
+                           ,(cons read-fn read-fn-formals))
+                 `(equal (mv-nth ,output-index (,read-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) read-fn-formals)))
+                         (mv-nth ,output-index ,(cons read-fn read-fn-formals)))))))
+
+(defun generate-read-fn-over-xw-thms-aux (xw-flds read-fn read-fn-formals output-index hyps-term)
+  (if (endp xw-flds)
+      nil
+    (cons (generate-read-fn-over-xw-thms-1 (car xw-flds) read-fn read-fn-formals output-index hyps-term)
+          (generate-read-fn-over-xw-thms-aux (cdr xw-flds) read-fn read-fn-formals output-index hyps-term))))
+
+(defun generate-read-fn-over-xw-thms (xw-flds read-fn read-fn-formals output-index hyps-term)
+  ;; (generate-read-fn-over-xw-thms
+  ;;  *x86-field-names-as-keywords*
+  ;;  'gather-all-paging-structure-qword-addresses
+  ;;  (acl2::formals 'gather-all-paging-structure-qword-addresses (w state))
+  ;;  -1
+  ;;  t)
+  `(progn
+     ,@(generate-read-fn-over-xw-thms-aux xw-flds read-fn read-fn-formals output-index hyps-term)))
+
+(defun generate-write-fn-over-xw-thms-1 (xw-fld write-fn write-fn-formals output-index hyps-term)
+  ;; (generate-write-fn-over-xw-thms-1 :RGF 'rvm08 '(addr x86) 2 t)
+  `(defthm ,(mk-name (if (equal output-index -1) write-fn (mk-name "MV-NTH-" output-index "-" write-fn))  "-XW-" xw-fld)
+     (implies ,(or hyps-term t)
+              ,(if (equal output-index -1)
+                   `(equal (,write-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) write-fn-formals))
+                           (XW ,xw-fld index val ,(cons write-fn write-fn-formals)))
+                 `(equal (mv-nth ,output-index (,write-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) write-fn-formals)))
+                         (XW ,xw-fld index val (mv-nth ,output-index ,(cons write-fn write-fn-formals))))))))
+
+(defun generate-write-fn-over-xw-thms-aux (xw-flds write-fn write-fn-formals output-index hyps-term)
+  (if (endp xw-flds)
+      nil
+    (cons (generate-write-fn-over-xw-thms-1 (car xw-flds) write-fn write-fn-formals output-index hyps-term)
+          (generate-write-fn-over-xw-thms-aux (cdr xw-flds) write-fn write-fn-formals output-index hyps-term))))
+
+(defun generate-write-fn-over-xw-thms (xw-flds write-fn write-fn-formals output-index hyps-term)
+  ;; (generate-write-fn-over-xw-thms
+  ;;  *x86-field-names-as-keywords*
+  ;;  'rvm08
+  ;;  (acl2::formals 'rvm08$inline (w state))
+  ;;  2
+  ;;  t)
+  `(progn
+     ,@(generate-write-fn-over-xw-thms-aux xw-flds write-fn write-fn-formals output-index hyps-term)))
+
+(defun generate-xr-over-write-thms-1 (xr-fld write-fn write-formals output-index hyps-term)
+  ;; (generate-xr-over-write-thms-1 :RGF 'rb '(addr r-w-x x86) 2 t)
+  `(defthm ,(mk-name "XR-" xr-fld "-" (if (equal output-index -1) write-fn (mk-name "MV-NTH-" output-index "-" write-fn)))
+     (implies ,(or hyps-term t)
+              ,(if (equal output-index -1)
+                   `(equal (XR ,xr-fld index ,(cons write-fn write-formals))
+                           (XR ,xr-fld index x86))
+                 `(equal (XR ,xr-fld index (mv-nth ,output-index ,(cons write-fn write-formals)))
+                         (XR ,xr-fld index x86))))))
+
+(defun generate-xr-over-write-thms-aux (xr-flds write-fn write-formals output-index hyps-term)
+  (if (endp xr-flds)
+      nil
+    (cons (generate-xr-over-write-thms-1 (car xr-flds) write-fn write-formals output-index hyps-term)
+          (generate-xr-over-write-thms-aux (cdr xr-flds) write-fn write-formals output-index hyps-term))))
+
+(defun generate-xr-over-write-thms (xr-flds write-fn write-formals output-index hyps-term)
+  ;; (generate-xr-over-write-thms
+  ;;  *x86-field-names-as-keywords*
+  ;;  'rb
+  ;;  (acl2::formals 'rb (w state))
+  ;;  2
+  ;;  '(not (programmer-level-mode x86)))
+  `(progn
+     ,@(generate-xr-over-write-thms-aux xr-flds write-fn write-formals output-index hyps-term)))
+
+;; ======================================================================
+
 ;; Some misc. arithmetic lemmas:
 
 (defthm signed-byte-p-limits-thm
@@ -1069,19 +1166,41 @@ memory.</li>
                       (xr fld index x86)))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (defthm las-to-pas-xw-values
-      (implies (and (not (equal fld :mem))
-                    (not (equal fld :rflags))
-                    (not (equal fld :fault))
-                    (not (equal fld :ctr))
-                    (not (equal fld :msr))
-                    (not (equal fld :programmer-level-mode))
-                    (not (equal fld :page-structure-marking-mode)))
-               (and
-                (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
-                       (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
-                       (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
+    ;; (defthm las-to-pas-xw-values
+    ;;   (implies (and (not (equal fld :mem))
+    ;;                 (not (equal fld :rflags))
+    ;;                 (not (equal fld :fault))
+    ;;                 (not (equal fld :ctr))
+    ;;                 (not (equal fld :msr))
+    ;;                 (not (equal fld :programmer-level-mode))
+    ;;                 (not (equal fld :page-structure-marking-mode)))
+    ;;            (and
+    ;;             (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
+    ;;                    (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+    ;;             (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
+    ;;                    (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
+
+    ;; The following two make-events generate a bunch of rules that
+    ;; together say the same thing as las-to-pas-xw-values, but these
+    ;; rules are more efficient than las-to-pas-xw-values as they
+    ;; match less frequently.
+    (make-event
+     (generate-read-fn-over-xw-thms
+      (remove-elements-from-list
+       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode)
+       *x86-field-names-as-keywords*)
+      'las-to-pas
+      (acl2::formals 'las-to-pas (w state))
+      0 t))
+
+    (make-event
+     (generate-read-fn-over-xw-thms
+      (remove-elements-from-list
+       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode)
+       *x86-field-names-as-keywords*)
+      'las-to-pas
+      (acl2::formals 'las-to-pas (w state))
+      1 t))
 
     (defthm las-to-pas-xw-rflags-not-ac
       (implies (equal (rflags-slice :ac value)
@@ -1092,17 +1211,30 @@ memory.</li>
                 (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw :rflags 0 value x86)))
                        (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
 
-    (defthm las-to-pas-xw-state
-      (implies (and (not (equal fld :mem))
-                    (not (equal fld :rflags))
-                    (not (equal fld :fault))
-                    (not (equal fld :ctr))
-                    (not (equal fld :msr))
-                    (not (equal fld :programmer-level-mode))
-                    (not (equal fld :page-structure-marking-mode)))
-               (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
-                      (xw fld index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+    ;; (defthm las-to-pas-xw-state
+    ;;   (implies (and (not (equal fld :mem))
+    ;;                 (not (equal fld :rflags))
+    ;;                 (not (equal fld :fault))
+    ;;                 (not (equal fld :ctr))
+    ;;                 (not (equal fld :msr))
+    ;;                 (not (equal fld :programmer-level-mode))
+    ;;                 (not (equal fld :page-structure-marking-mode)))
+    ;;            (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
+    ;;                   (xw fld index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
+    ;;   :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    ;; The following make-event generate a bunch of rules that
+    ;; together say the same thing as las-to-pas-xw-state, but these
+    ;; rules are more efficient than las-to-pas-xw-state as they match
+    ;; less frequently.
+    (make-event
+     (generate-write-fn-over-xw-thms
+      (remove-elements-from-list
+       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode)
+       *x86-field-names-as-keywords*)
+      'las-to-pas
+      (acl2::formals 'las-to-pas (w state))
+      2 t))
 
     (defthm las-to-pas-xw-rflags-state-not-ac
       (implies (equal (rflags-slice :ac value)
@@ -1482,6 +1614,8 @@ memory.</li>
                                :condition (programmer-level-mode x86)
                                :scheme (wb-1 addr-lst x86))))
 
+  (local (in-theory (e/d () (force (force)))))
+
   ;; Relating rb and rm08:
 
   (defthmd rb-and-rm08-in-programmer-level-mode
@@ -1531,13 +1665,27 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 addr r-w-x x86 acc))))
 
-  (defthm xr-rb-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (rb addr r-w-x x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
+  ;; (defthm xr-rb-state-in-system-level-mode
+  ;;   (implies (and (not (programmer-level-mode x86))
+  ;;                 (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (equal (xr fld index (mv-nth 2 (rb addr r-w-x x86)))
+  ;;                   (xr fld index x86)))
+  ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
+
+  ;; The following make-event generates a bunch of rules that together
+  ;; say the same thing as xr-rb-state-in-system-level-mode, but these
+  ;; rules are more efficient than xr-rb-state-in-system-level-mode as
+  ;; they match less frequently.
+  (make-event
+   (generate-xr-over-write-thms
+    (remove-elements-from-list
+     '(:mem :fault)
+     *x86-field-names-as-keywords*)
+    'rb
+    (acl2::formals 'rb (w state))
+    2
+    '(not (programmer-level-mode x86))))
 
   (defthm rb-1-xw-values-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1556,21 +1704,46 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 addr r-w-x x86 acc))))
 
-  (defthm rb-xw-values-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :rflags))
-                  (not (equal fld :ctr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :msr))
-                  (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
-             (and (equal (mv-nth 0 (rb addr r-w-x (xw fld index value x86)))
-                         (mv-nth 0 (rb addr r-w-x x86)))
-                  (equal (mv-nth 1 (rb addr r-w-x (xw fld index value x86)))
-                         (mv-nth 1 (rb addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d* (rb) ()))))
+  ;; (defthm rb-xw-values-in-system-level-mode
+  ;;   (implies (and (not (programmer-level-mode x86))
+  ;;                 (not (equal fld :mem))
+  ;;                 (not (equal fld :rflags))
+  ;;                 (not (equal fld :ctr))
+  ;;                 (not (equal fld :seg-visible))
+  ;;                 (not (equal fld :msr))
+  ;;                 (not (equal fld :fault))
+  ;;                 (not (equal fld :programmer-level-mode))
+  ;;                 (not (equal fld :page-structure-marking-mode)))
+  ;;            (and (equal (mv-nth 0 (rb addr r-w-x (xw fld index value x86)))
+  ;;                        (mv-nth 0 (rb addr r-w-x x86)))
+  ;;                 (equal (mv-nth 1 (rb addr r-w-x (xw fld index value x86)))
+  ;;                        (mv-nth 1 (rb addr r-w-x x86)))))
+  ;;   :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+
+  ;; The following make-events generate a bunch of rules that together
+  ;; say the same thing as rb-xw-values-in-system-level-mode, but
+  ;; these rules are more efficient than
+  ;; rb-xw-values-in-system-level-mode as they match less frequently.
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'rb
+    (acl2::formals 'rb (w state))
+    0
+    '(not (programmer-level-mode x86))))
+
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'rb
+    (acl2::formals 'rb (w state))
+    1
+    '(not (programmer-level-mode x86))))
 
   (defthm rb-1-xw-rflags-not-ac-values-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1608,19 +1781,33 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 addr r-w-x x86 acc))))
 
-  (defthm rb-xw-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :rflags))
-                  (not (equal fld :ctr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :msr))
-                  (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
-             (equal (mv-nth 2 (rb addr r-w-x (xw fld index value x86)))
-                    (xw fld index value (mv-nth 2 (rb addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
+  ;; (defthm rb-xw-state-in-system-level-mode
+  ;;   (implies (and (not (programmer-level-mode x86))
+  ;;                 (not (equal fld :mem))
+  ;;                 (not (equal fld :rflags))
+  ;;                 (not (equal fld :ctr))
+  ;;                 (not (equal fld :seg-visible))
+  ;;                 (not (equal fld :msr))
+  ;;                 (not (equal fld :fault))
+  ;;                 (not (equal fld :programmer-level-mode))
+  ;;                 (not (equal fld :page-structure-marking-mode)))
+  ;;            (equal (mv-nth 2 (rb addr r-w-x (xw fld index value x86)))
+  ;;                   (xw fld index value (mv-nth 2 (rb addr r-w-x x86)))))
+  ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
+
+  ;; The following make-events generate a bunch of rules that together
+  ;; say the same thing as rb-xw-state-in-system-level-mode but
+  ;; these rules are more efficient than
+  ;; rb-xw-state-in-system-level-mode as they match less frequently.
+  (make-event
+   (generate-write-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'rb
+    (acl2::formals 'rb (w state))
+    2
+    '(not (programmer-level-mode x86))))
 
   (defthm rb-1-xw-rflags-not-ac-state-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1688,28 +1875,67 @@ memory.</li>
 
   ;; Relating wb and xr/xw in the system-level mode:
 
-  (defthm xr-wb-in-system-level-mode
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 1 (wb addr-lst x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory force (force))))))
+  ;; (defthm xr-wb-in-system-level-mode
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (equal (xr fld index (mv-nth 1 (wb addr-lst x86)))
+  ;;                   (xr fld index x86)))
+  ;;   :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory force (force))))))
 
-  (defthm wb-xw-in-system-level-mode
-    ;; Keep the state updated by wb inside all other nests of writes.
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :rflags))
-                  (not (equal fld :ctr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :msr))
-                  (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
-             (and (equal (mv-nth 0 (wb addr-lst (xw fld index value x86)))
-                         (mv-nth 0 (wb addr-lst x86)))
-                  (equal (mv-nth 1 (wb addr-lst (xw fld index value x86)))
-                         (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
-    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory force (force))))))
+  ;; The following make-events generate a bunch of rules that together
+  ;; say the same thing as xr-wb-in-system-level-mode but
+  ;; these rules are more efficient than
+  ;; xr-wb-in-system-level-mode as they match less frequently.
+  (make-event
+   (generate-xr-over-write-thms
+    (remove-elements-from-list
+     '(:mem :fault)
+     *x86-field-names-as-keywords*)
+    'wb
+    (acl2::formals 'wb (w state))
+    1
+    t))
+
+  ;; (defthm wb-xw-in-system-level-mode
+  ;;   ;; Keep the state updated by wb inside all other nests of writes.
+  ;;   (implies (and (not (equal fld :mem))
+  ;;                 (not (equal fld :rflags))
+  ;;                 (not (equal fld :ctr))
+  ;;                 (not (equal fld :seg-visible))
+  ;;                 (not (equal fld :msr))
+  ;;                 (not (equal fld :fault))
+  ;;                 (not (equal fld :programmer-level-mode))
+  ;;                 (not (equal fld :page-structure-marking-mode)))
+  ;;            (and (equal (mv-nth 0 (wb addr-lst (xw fld index value x86)))
+  ;;                        (mv-nth 0 (wb addr-lst x86)))
+  ;;                 (equal (mv-nth 1 (wb addr-lst (xw fld index value x86)))
+  ;;                        (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
+  ;;   :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory force (force))))))
+
+  ;; The following make-events generate a bunch of rules that together
+  ;; say the same thing as wb-xw-in-system-level-mode, but these rules
+  ;; are more efficient than wb-xw-in-system-level-mode as they match
+  ;; less frequently.  Note that wb is kept inside all other nests of
+  ;; writes.
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'wb
+    (acl2::formals 'wb (w state))
+    0
+    t))
+
+  (make-event
+   (generate-write-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'wb
+    (acl2::formals 'wb (w state))
+    1
+    t))
 
   (defthm wb-xw-rflags-not-ac-in-system-level-mode
     ;; Keep the state updated by wb inside all other nests of writes.

@@ -865,7 +865,7 @@
 (defsection get-prefixes-in-system-level-marking-mode
   :parents (marking-mode-top)
 
-  (defthm xr-not-mem-and-get-prefixes
+  (defthmd xr-not-mem-and-get-prefixes
     ;; I don't need this lemma in the programmer-level mode because
     ;; (mv-nth 2 (get-prefixes ... x86)) == x86 there.
     (implies (and (not (equal fld :mem))
@@ -880,6 +880,22 @@
                                unsigned-byte-p-of-logior
                                acl2::loghead-identity
                                not force (force))))))
+
+  ;; The following make-events generate a bunch of rules that together
+  ;; say the same thing as xr-not-mem-and-get-prefixes, but these
+  ;; rules are more efficient than xr-not-mem-and-get-prefixes as they
+  ;; match less frequently.
+  (local (in-theory (e/d (xr-not-mem-and-get-prefixes) ())))
+  (make-event
+   (generate-xr-over-write-thms
+    (remove-elements-from-list
+     '(:mem :fault)
+     *x86-field-names-as-keywords*)
+    'get-prefixes
+    (acl2::formals 'get-prefixes (w state))
+    2
+    't))
+  (local (in-theory (e/d () (xr-not-mem-and-get-prefixes))))
 
   ;; Opener lemmas:
 

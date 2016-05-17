@@ -794,7 +794,7 @@
     (:rewrite r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
     (:linear adding-7-to-pml4-table-entry-addr)
     (:linear *physical-address-size*p-pml4-table-entry-addr)
-    (:rewrite las-to-pas-xw-state)
+    ;; (:rewrite las-to-pas-xw-state)
     (:rewrite acl2::equal-of-booleans-rewrite)
     (:rewrite loghead-unequal)
     (:rewrite negative-logand-to-positive-logand-with-integerp-x)
@@ -2985,7 +2985,7 @@
                              ia32e-la-to-pa-xw-state
                              (:linear adding-7-to-pml4-table-entry-addr)
                              (:linear *physical-address-size*p-pml4-table-entry-addr)
-                             (:rewrite las-to-pas-xw-state)
+                             ;; (:rewrite las-to-pas-xw-state)
                              (:rewrite acl2::equal-of-booleans-rewrite)
                              (:rewrite loghead-unequal)
                              (:rewrite negative-logand-to-positive-logand-with-integerp-x)
@@ -3044,7 +3044,7 @@
                              ia32e-la-to-pa-xw-state
                              (:linear adding-7-to-pml4-table-entry-addr)
                              (:linear *physical-address-size*p-pml4-table-entry-addr)
-                             (:rewrite las-to-pas-xw-state)
+                             ;; (:rewrite las-to-pas-xw-state)
                              (:rewrite acl2::equal-of-booleans-rewrite)
                              (:rewrite loghead-unequal)
                              (:rewrite negative-logand-to-positive-logand-with-integerp-x)

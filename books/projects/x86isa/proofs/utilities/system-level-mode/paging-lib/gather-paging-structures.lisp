@@ -1111,13 +1111,31 @@
     :hints (("Goal" :in-theory (e/d* (no-duplicates-p-to-no-duplicatesp-equal)
                                      (no-duplicates-p)))))
 
-  (defthm gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr
+  (defthmd gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr
     (implies (and (not (equal fld :mem))
                   (not (equal fld :ctr))
                   (not (equal fld :programmer-level-mode)))
              (equal (gather-all-paging-structure-qword-addresses
                      (xw fld index val x86))
                     (gather-all-paging-structure-qword-addresses x86))))
+
+  (make-event
+
+   ;; This make-event generates rules for each fld except mem, ctr,
+   ;; and programmer-level-mode, and all these rules together say what
+   ;; the rule
+   ;; gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr
+   ;; says.  However, this rule is pretty expensive because it matches
+   ;; so often.  Hence, I'd rather define individual rules and keep
+   ;; gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr
+   ;; disabled.
+
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list '(:programmer-level-mode :ctr :mem) *x86-field-names-as-keywords*)
+    'gather-all-paging-structure-qword-addresses
+    (acl2::formals 'gather-all-paging-structure-qword-addresses (w state))
+    -1
+    t))
 
   (defthm gather-all-paging-structure-qword-addresses-xw-fld=ctr
     (implies (not (equal index *cr3*))
@@ -1758,21 +1776,26 @@
                   (not (equal fld :programmer-level-mode)))
              (equal (all-mem-except-paging-structures-equal (xw fld index val x) y)
                     (all-mem-except-paging-structures-equal (double-rewrite x) y)))
-    :hints (("Goal" :in-theory (e/d* () (all-mem-except-paging-structures-equal-aux)))))
+    :hints (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
+                                     (all-mem-except-paging-structures-equal-aux)))))
 
   (defthm all-mem-except-paging-structures-equal-and-xw-2
     (implies (and (not (equal fld :mem))
                   (not (equal fld :ctr))
                   (not (equal fld :programmer-level-mode)))
              (equal (all-mem-except-paging-structures-equal x (xw fld index val y))
-                    (all-mem-except-paging-structures-equal x (double-rewrite y)))))
+                    (all-mem-except-paging-structures-equal x (double-rewrite y))))
+    :hints (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
+                                     ()))))
 
   (defthm all-mem-except-paging-structures-equal-and-xw
     (implies (and (not (equal fld :mem))
                   (not (equal fld :ctr))
                   (not (equal fld :programmer-level-mode)))
              (equal (all-mem-except-paging-structures-equal (xw fld index val x) (xw fld index val y))
-                    (all-mem-except-paging-structures-equal x y))))
+                    (all-mem-except-paging-structures-equal x y)))
+    :hints (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
+                                     ()))))
 
   (defthm all-mem-except-paging-structures-equal-and-xw-mem-except-paging-structure
     (implies (and (bind-free (find-equiv-x86-for-components y mfc state))
@@ -1916,7 +1939,9 @@
                   (not (equal fld :programmer-level-mode))
                   (not (equal fld :page-structure-marking-mode)))
              (xlate-equiv-structures (xw fld index val x86)
-                                     (double-rewrite x86))))
+                                     (double-rewrite x86)))
+    :hints (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
+                                     ()))))
 
   (defthm xlate-equiv-structures-and-programmer-level-mode-cong
     (implies (xlate-equiv-structures x86-1 x86-2)
@@ -2004,9 +2029,7 @@
                  (open-qword-paddr-list
                   (gather-all-paging-structure-qword-addresses x86)))
                 (physical-address-p index))
-           (xlate-equiv-structures
-            (xw :mem index val x86)
-            (double-rewrite x86)))
+           (xlate-equiv-structures (xw :mem index val x86) (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-structures) ()))))
 
 (defthm xlate-equiv-structures-and-wm-low-64-disjoint

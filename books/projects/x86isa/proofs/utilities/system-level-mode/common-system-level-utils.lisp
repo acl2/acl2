@@ -85,10 +85,7 @@
                 (page-structure-marking-mode x86)
                 (not (mv-nth 0 (rb l-addrs r-w-x x86))))
            (equal (mv-nth 2 (rb l-addrs r-w-x x86))
-                  (mv-nth 2
-                          (las-to-pas l-addrs r-w-x
-                                      (loghead 2 (xr :seg-visible 1 x86))
-                                      x86))))
+                  (mv-nth 2 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))))
   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
 (defthm rm08-to-rb
@@ -266,19 +263,36 @@
   :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
                                   (rb)))))
 
-(defthm program-at-xw-in-system-level-mode
-  (implies (and (not (programmer-level-mode x86))
-                (not (equal fld :mem))
-                (not (equal fld :rflags))
-                (not (equal fld :ctr))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (not (equal fld :fault))
-                (not (equal fld :programmer-level-mode))
-                (not (equal fld :page-structure-marking-mode)))
-           (equal (program-at l-addrs bytes (xw fld index value x86))
-                  (program-at l-addrs bytes x86)))
-  :hints (("Goal" :in-theory (e/d* (program-at) (rb)))))
+;; (defthm program-at-xw-in-system-level-mode
+;;   (implies (and (not (programmer-level-mode x86))
+;;                 (not (equal fld :mem))
+;;                 (not (equal fld :rflags))
+;;                 (not (equal fld :ctr))
+;;                 (not (equal fld :seg-visible))
+;;                 (not (equal fld :msr))
+;;                 (not (equal fld :fault))
+;;                 (not (equal fld :programmer-level-mode))
+;;                 (not (equal fld :page-structure-marking-mode)))
+;;            (equal (program-at l-addrs bytes (xw fld index value x86))
+;;                   (program-at l-addrs bytes x86)))
+;;   :hints (("Goal" :in-theory (e/d* (program-at) (rb)))))
+
+;; The following make-event generates a bunch of rules that together
+;; say the same thing as program-at-xw-in-system-level-mode but these
+;; rules are more efficient than program-at-xw-in-system-level-mode as
+;; they match less frequently.
+
+(local (in-theory (e/d (program-at) (rb))))
+(make-event
+ (generate-read-fn-over-xw-thms
+  (remove-elements-from-list
+   '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+   *x86-field-names-as-keywords*)
+  'program-at
+  (acl2::formals 'program-at (w state))
+  -1
+  '(not (programmer-level-mode x86))))
+(local (in-theory (e/d (rb) (program-at))))
 
 (defthm program-at-xw-rflags-not-ac-values-in-system-level-mode
   (implies (and (not (programmer-level-mode x86))

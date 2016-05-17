@@ -44,16 +44,20 @@
 
 (defthm gather-all-paging-structure-qword-addresses-and-wb-disjoint
   (implies
-   (and (disjoint-p (mv-nth 1 (las-to-pas
-                               (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
-                    (open-qword-paddr-list
-                     (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-        (not (programmer-level-mode x86))
-        (addr-byte-alistp addr-lst))
+   (and
+    ;; We need disjoint-p$ here instead of disjoint-p because this
+    ;; first hyp should be present in the top-level hyps of the
+    ;; effects theorems of programs.
+    (disjoint-p$ (mv-nth 1 (las-to-pas
+                            (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+                 (open-qword-paddr-list
+                  (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+    (not (programmer-level-mode x86))
+    (addr-byte-alistp addr-lst))
    (equal
     (gather-all-paging-structure-qword-addresses (mv-nth 1 (wb addr-lst x86)))
     (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-  :hints (("Goal" :in-theory (e/d* (wb) (force (force) (:meta acl2::mv-nth-cons-meta))))))
+  :hints (("Goal" :in-theory (e/d* (wb disjoint-p$) (force (force) (:meta acl2::mv-nth-cons-meta))))))
 
 ; ======================================================================
 
@@ -159,16 +163,18 @@
       :gen-linear t)
 
     (defthm x86p-get-prefixes-alt
-      (implies (forced-and (x86p x86)
-                           (canonical-address-p start-rip))
+      (implies (force (x86p x86))
                (x86p (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
 
-    (defthm xr-not-mem-and-get-prefixes-alt
-      (implies (and (not (equal fld :mem))
-                    (not (equal fld :fault)))
-               (equal (xr fld index (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
-                      (xr fld index x86)))
-      :hints (("Goal" :in-theory (e/d* () (not force (force)))))))
+    (make-event
+     (generate-xr-over-write-thms
+      (remove-elements-from-list
+       '(:mem :fault)
+       *x86-field-names-as-keywords*)
+      'get-prefixes-alt
+      (acl2::formals 'get-prefixes-alt (w state))
+      2
+      't)))
 
   (defthm rewrite-get-prefixes-to-get-prefixes-alt
     (implies (forced-and
@@ -563,7 +569,7 @@
       :rule-classes (:rewrite :type-prescription))
 
     (defthm rb-alt-returns-x86p
-      (implies (x86p x86)
+      (implies (force (x86p x86))
                (x86p (mv-nth 2 (rb-alt l-addrs r-w-x x86)))))
 
     (defthm rb-alt-nil-lemma
@@ -575,12 +581,24 @@
                             (not (mv-nth 0 (las-to-pas nil r-w-x (cpl x86) x86)))))
                :in-theory (e/d* () (force (force))))))
 
-    (defthm xr-rb-alt-state-in-system-level-mode
-      (implies (and (not (equal fld :mem))
-                    (not (equal fld :fault)))
-               (equal (xr fld index (mv-nth 2 (rb-alt addr r-w-x x86)))
-                      (xr fld index x86)))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+    ;; (defthm xr-rb-alt-state-in-system-level-mode
+    ;;   (implies (and (not (equal fld :mem))
+    ;;                 (not (equal fld :fault)))
+    ;;            (equal (xr fld index (mv-nth 2 (rb-alt addr r-w-x x86)))
+    ;;                   (xr fld index x86)))
+    ;;   :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (local (in-theory (e/d () (force (force)))))
+    (make-event
+     (generate-xr-over-write-thms
+      (remove-elements-from-list
+       '(:mem :fault)
+       *x86-field-names-as-keywords*)
+      'rb-alt
+      (acl2::formals 'rb-alt (w state))
+      2
+      t))
+    (local (in-theory (e/d (force (force)) ())))
 
     (defthm mv-nth-0-rb-alt-is-nil
       (equal (mv-nth 0 (rb-alt l-addrs r-w-x x86)) nil)
@@ -658,7 +676,7 @@
                                (las-to-pas (create-canonical-address-list n prog-addr)
                                            :x (cpl x86)
                                            (double-rewrite x86))))
-                  (disjoint-p
+                  (disjoint-p$
                    (mv-nth 1
                            (las-to-pas (create-canonical-address-list n prog-addr)
                                        :x (cpl x86)
@@ -674,6 +692,7 @@
              :in-theory (e/d (las-to-pas
                               subset-p
                               disjoint-p
+                              disjoint-p$
                               disjoint-p-commutative)
                              (acl2::mv-nth-cons-meta
                               rb-in-terms-of-nth-and-pos-in-system-level-mode
@@ -698,7 +717,7 @@
       (not (mv-nth 0
                    (las-to-pas (create-canonical-address-list n prog-addr)
                                :x (cpl x86) (double-rewrite x86))))
-      (disjoint-p
+      (disjoint-p$
        (mv-nth 1
                (las-to-pas (create-canonical-address-list n prog-addr)
                            :x (cpl x86) (double-rewrite x86)))
@@ -717,6 +736,7 @@
              :in-theory (e/d (las-to-pas
                               subset-p
                               disjoint-p
+                              disjoint-p$
                               disjoint-p-commutative)
                              (rb-in-terms-of-rb-subset-p-in-system-level-mode
                               rewrite-rb-to-rb-alt
@@ -736,7 +756,11 @@
                    ;; write operation.
                    (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
                    (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-                  (disjoint-p
+                  ;; The following should be directly present as a
+                  ;; hypothesis of the effects theorem for programs.
+                  ;; That's why it's in terms of disjoint-p$ instead
+                  ;; of disjoint-p.
+                  (disjoint-p$
                    ;; The physical addresses pertaining to the write are
                    ;; disjoint from the translation-governing-addresses
                    ;; pertaining to the read.
@@ -756,6 +780,7 @@
                     (strip-cdrs addr-lst)))
     :hints (("Goal" :do-not-induct t
              :in-theory (e/d* (las-to-pas
+                               disjoint-p$
                                disjoint-p-commutative)
                               (rewrite-rb-to-rb-alt
                                disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
@@ -773,6 +798,12 @@
                ;; read operation.
                (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
                (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
+              ;; We use disjoint-p for reads and disjoint-p$ for
+              ;; writes, because l-addrs can be a subset of program
+              ;; addresses and hence, unlike (strip-cars addr-lst),
+              ;; the following hyp won't be directly present as a hyp
+              ;; of a program's effects theorem.  It'll instead be in
+              ;; terms of the superset of l-addrs.
               (disjoint-p
                ;; The physical addresses pertaining to the read are
                ;; disjoint from the physical addresses of the paging
@@ -780,7 +811,7 @@
                (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
                (open-qword-paddr-list (gather-all-paging-structure-qword-addresses
                                        (double-rewrite x86))))
-              (disjoint-p
+              (disjoint-p$
                ;; The physical addresses pertaining to the write are
                ;; disjoint from the physical addresses of the paging
                ;; structures.
@@ -803,7 +834,8 @@
                               (x86 (mv-nth 1 (wb addr-lst x86))))
                    (:instance rewrite-rb-to-rb-alt)
                    (:instance rb-wb-disjoint-in-system-level-mode))
-             :in-theory (e/d* (disjoint-p-commutative)
+             :in-theory (e/d* (disjoint-p-commutative
+                               disjoint-p$)
                               (rewrite-rb-to-rb-alt
                                rb-wb-disjoint-in-system-level-mode
                                disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
@@ -814,6 +846,10 @@
 (defsection program-at-alt
   :parents (marking-mode-top)
 
+  ;; Note that unlike rb-alt and get-prefixes-alt, we need to use
+  ;; disjoint-p$ for program-at-alt instead of disjoint-p.
+  (local (in-theory (e/d (disjoint-p$) ())))
+
   (define program-at-alt ((l-addrs canonical-address-listp)
                           (bytes byte-listp)
                           (x86))
@@ -822,9 +858,9 @@
              (not (programmer-level-mode x86))
              (canonical-address-listp l-addrs)
              (not (mv-nth 0 (las-to-pas l-addrs :x (cpl x86) x86)))
-             (disjoint-p (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
-                         (open-qword-paddr-list
-                          (gather-all-paging-structure-qword-addresses x86))))
+             (disjoint-p$ (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
+                          (open-qword-paddr-list
+                           (gather-all-paging-structure-qword-addresses x86))))
 
         (program-at l-addrs bytes x86)
 
@@ -832,7 +868,7 @@
 
   (defthm rewrite-program-at-to-program-at-alt
     (implies (forced-and
-              (disjoint-p
+              (disjoint-p$
                (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86)))
                (open-qword-paddr-list
                 (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
@@ -862,10 +898,10 @@
   (defthm program-at-alt-wb-disjoint-in-system-level-mode
     (implies
      (and
-      (disjoint-p
+      (disjoint-p$
        (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
        (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86))))
-      (disjoint-p
+      (disjoint-p$
        (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
        (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
       (addr-byte-alistp addr-lst)
