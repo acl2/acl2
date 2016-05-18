@@ -66,10 +66,10 @@
 
 (defxdoc ubi
   :parents (kestrel-system-utilities history system-utilities)
-  :short "Undo back up to longest initial segment of @(tsee defpkg) and @(tsee
- include-book) @(see command)s"
+  :short "Undo back up to longest initial segment containing only calls of
+ certain symbols, including @(tsee defpkg) and @(tsee include-book)"
   :long "<p>The following example explains how @(':ubi') works.  We start up
-  ACL2 and submit the following @(see command)s.</p>
+ ACL2 and submit the following @(see command)s.</p>
 
  @({
  (include-book \"kestrel/system/ubi\" :dir :system)
@@ -101,11 +101,11 @@
 
  <p>The @(':ubi') command, which could be viewed as abbreviating ``Undo Back to
  Initial commands that we want to keep,'' undoes commands to keep the longest
- initial segment of @(tsee include-book), @(tsee defpkg), and @(tsee xdoc)
- commands, which may be @(tsee local).  (@('Include-book') and @('defpkg')
- commands are typically those that set things up for the rest of the @(see
- events) in a given book; an @(tsee xdoc) command may be laid down when
- printing documentation at the terminal.)</p>
+ initial segment of commands in the list @('*keeper-cmds*'), including @(tsee
+ include-book), @(tsee defpkg), and @(tsee xdoc) commands; any such command may
+ be @(tsee local).  (Such commands are typically those that set things up for
+ the rest of the @(see events) in a given book; an @(tsee xdoc) command may be
+ laid down when printing documentation at the terminal.)</p>
 
  <p>So to continue the example above:</p>
 
@@ -134,7 +134,8 @@
  ACL2 !>:ubi
 
  There is nothing to undo, since all commands after the boot-strap are
- DEFPKG or INCLUDE-BOOK commands.
+ DEFUN, DEFPKG, INCLUDE-BOOK, XDOC, ADD-INCLUDE-BOOK-DIR or 
+ ADD-INCLUDE-BOOK-DIR! commands.
  ACL2 !>
  })
 
@@ -164,4 +165,37 @@
  ACL2 !>:ubi
     d       1:x(INCLUDE-BOOK \"arithmetic/top\" :DIR ...)
  ACL2 !>
- })")
+ })
+
+ <p>Finally, note that @('ubi') can be given any number of symbol arguments.
+ These are added to @('*keeper-commands*') as those whose calls may appear in
+ the initial segment of post-boot-strap commands that remain after undoing.
+ Consider for example this @(see world):</p>
+
+ @({
+ ACL2 !>:pbt 0
+            0  (EXIT-BOOT-STRAP-MODE)
+    d       1  (INCLUDE-BOOK \"kestrel/system/ubi\"
+                             :DIR ...)
+    d       2  (LOCAL (INCLUDE-BOOK \"kestrel/system/world-queries\"
+                                    :DIR ...))
+            3  (DEFPKG \"FOO\" NIL)
+    d       4  (INCLUDE-BOOK \"kestrel/system/defun-sk-queries\"
+                             :DIR ...)
+  L         5  (DEFUN F (X) ...)
+    d       6  (INCLUDE-BOOK \"arithmetic/top\" :DIR ...)
+  L         7:x(DEFUN G (X) ...)
+ ACL2 !>
+ })
+
+ <p>Our first example above showed that submitting @(':ubi') leaves us with
+ four commands after the boot-strap world.  Note that submitting @(':ubi') is
+ equivalent to submitting @('(ubi)'); see @(see keyword-commands).  Suppose
+ that instead, we submit the command @('(ubt defun)').  Then commands that are
+ @('defun') calls are allowed to remain in the resulting world.  In this
+ example, every command is either a call of @('defun') or a call of one of the
+ default commands in @('*keeper-commands*'), so @('(ubi defun)') has no effect.
+ If we then execute some other sort of command, say a call of @(tsee defmacro),
+ then @('(ubi defun)') will undo it, leaving us with the seven commands
+ displayed above.  Of course, @('(ubi defun defmacro)') would not undo the
+ @('defmacro') call.</p>")
