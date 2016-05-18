@@ -670,6 +670,18 @@
                          ))
 
             (defret ,(intern-in-package-of-symbol
+                          (cat (symbol-name field.accessor) "-OF-" (symbol-name field.updater))
+                          x.name)
+                  (equal (,field.accessor ,new-x)
+                         (,field.fix ,field.name))
+                  :hints(("Goal" :in-theory (e/d (,field.accessor)
+                                                 (,field.updater))) ;; allow the fixing to cancel
+                         (and stable-under-simplificationp
+                              '(:in-theory (enable ,field.updater)))
+                         ;; (bitstruct-logbitp-reasoning)
+                         ))
+
+            (defret ,(intern-in-package-of-symbol
                       (cat (symbol-name field.updater) "-EQUIV-UNDER-MASK")
                       x.name)
               (,x.equiv-under-mask ,new-x ,x.xvar

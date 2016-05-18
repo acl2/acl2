@@ -2907,8 +2907,15 @@ the way.</li>
              ;; (local (defcong iff iff (and* x y) 2 :hints(("Goal" :in-theory (enable and*)))))
              )
 
+ #||
 
-
+  (trace$ #!vl (vl-expr-to-svex-untyped
+  :entry (list 'vl-expr-to-svex-untyped (with-local-ps (vl-pp-expr x)))
+  :exit (b* (((list warnings svex type size) values))
+    (list 'vl-expr-to-svex-untyped
+       (with-local-ps (vl-print-warnings warnings))
+       svex (and type (with-local-ps (vl-pp-datatype type))) size))))
+ ||#
   (define vl-expr-to-svex-untyped ((x vl-expr-p)
                                    (ss vl-scopestack-p)
                                    (scopes vl-elabscopes-p))
@@ -2957,12 +2964,13 @@ vector.</p>"
                                           :msg "Unresolved size cast: ~a0"
                                           :args (list x))
                                    (svex-x) nil nil))
-                              ((mv warnings svex size)
-                               (vl-expr-to-svex-selfdet x.expr (vl-resolved->val x.to.size) ss scopes)))
+                              (castsize  (vl-resolved->val x.to.size))
+                              ((mv warnings svex ?size)
+                               (vl-expr-to-svex-selfdet x.expr castsize ss scopes)))
                            (mv warnings svex
-                               (and (posp size)
-                                    (vl-size-to-unsigned-logic size))
-                               size))
+                               (and (posp castsize)
+                                    (vl-size-to-unsigned-logic castsize))
+                               castsize))
                    :otherwise
                    (b* (((wmv warnings svex size)
                          (vl-expr-to-svex-selfdet x nil ss scopes)))
@@ -3053,7 +3061,18 @@ vector.</p>"
       ;; appropriate datatype.  But in svex, everything's just kept as a
       ;; bitstream, so we're already done.
       (mv warnings bitstream concat-size)))
+ #||
+ (trace$ #!vl (vl-expr-to-svex-selfdet
+               :entry (list 'vl-expr-to-svex-selfdet
+                             (with-local-ps (vl-pp-expr x))
+  :orig (with-local-ps (vl-pp-origexpr x))
+  ctxsize)
+               :exit (b* (((list warnings svex size) values))
+                       (list 'vl-expr-to-svex-selfdet
+                             (with-local-ps (vl-print-warnings warnings))
+                             svex size))))
 
+ ||#
 
   (define vl-expr-to-svex-selfdet ((x vl-expr-p)
                                    (ctxsize maybe-natp)
@@ -3802,7 +3821,7 @@ functions can assume all bits of it are good.</p>"
 
 #||
 
- (trace$ #!vl (vl-expr-to-svex-datatyped
+ (trace$ #!vl (vl-expr-to-svex-datatyped-fn
   :entry (list 'vl-expr-to-svex-datatyped
                 (with-local-ps (vl-pp-expr x))
                 (with-local-ps (vl-pp-datatype type))
