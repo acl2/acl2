@@ -1366,3 +1366,53 @@ result."
              (unsigned-byte-p 512 (merge-2-u256s h l))))
   "<h5>Basic @(see nat-equiv) congruences.</h5>"
   (congruences-for-merge (merge-2-u256s h l) 2))
+
+
+
+(define merge-unsigneds-aux ((width natp)
+                             (elts integer-listp)
+                             (acc natp))
+  ;; BOZO Optimize this for execution efficiency somehow?
+  :returns (packed natp :rule-classes :type-prescription)
+  (if (atom elts)
+      (lnfix acc)
+    (merge-unsigneds-aux
+     width (cdr elts)
+     (logapp width (car elts) (lnfix acc))))
+  ///
+  (local (in-theory (disable unsigned-byte-p)))
+  (local (defthm unsigned-byte-p-of-integer-length
+           (implies (natp x)
+                    (unsigned-byte-p (integer-length x) x))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+  (local (defthm integer-length-of-logapp
+           (implies (natp b)
+                    (equal (integer-length (logapp width a b))
+                           (if (posp b)
+                               (+ (nfix width) (integer-length b))
+                             (integer-length (loghead width a)))))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+                  
+  (defret width-of-merge-unsigneds-aux
+    (unsigned-byte-p (+ (integer-length (nfix acc))
+                        (* (nfix width) (len elts)))
+                     packed)))
+
+(define merge-unsigneds ((width natp)
+                         (elts integer-listp))
+  :returns (packed natp :rule-classes :type-prescription)
+  :short "Concatenate the given list of integers together at the given width, most-significant
+          first, to form a single natural number."
+  (merge-unsigneds-aux width elts 0)
+  ///
+  (local (in-theory (disable unsigned-byte-p)))
+
+  (defret width-of-merge-unsigneds
+    (implies (and (<= (* (nfix width) (len elts)) n)
+                  (natp n))
+             (unsigned-byte-p n packed))
+    :hints(("Goal" :in-theory (disable width-of-merge-unsigneds-aux)
+            :use (:instance width-of-merge-unsigneds-aux
+                  (acc 0))))))

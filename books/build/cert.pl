@@ -151,7 +151,10 @@ The following forms are recognized:
 
  - (include-book "<bookname>" [:dir :<dirname>])
      Adds the included book\'s :cert file as a dependency of the
-current book.
+current book.  Note: Adding a comment \";; no_port\" on the same line
+after the closing parenthesis will override the build system\'s default
+behavior of loading the .port file for the included book before certifying
+the containing book; see the xdoc topic pre-certify-book-commands.
 
  - (add-include-book-dir :<dirname> "<dirpath>")
      Registers an association between the given dirname and dirpath so

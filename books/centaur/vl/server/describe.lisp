@@ -50,13 +50,148 @@ have you.</p>
 a human-readable string that describes what it has found.  This report is meant
 to describe all of the places that @('name') is used.</p>")
 
+(define vl-hidexpr-varname ((x vl-hidexpr-p))
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (vl-hidexpr-case x
+    :end x.name
+    :dot (b* ((name (vl-hidindex->name x.first)))
+           (and (stringp name) name))))
+             
+
+(define vl-scopeexpr-varname ((x vl-scopeexpr-p))
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  :measure (vl-scopeexpr-count x)
+  (vl-scopeexpr-case x
+    :colon (vl-scopeexpr-varname x.rest)
+    :end (vl-hidexpr-varname x.hid)))
+
+
+(defines vl-expr-descvarnames-nrev
+  :parents (vl-expr-descvarnames)
+  :flag-local nil
+  (define vl-expr-descvarnames-nrev ((x vl-expr-p) nrev)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (b* ((nrev (vl-expr-case x
+                 :vl-index (let ((name (vl-scopeexpr-varname x.scope)))
+                             (if name
+                                 (nrev-push name nrev)
+                               nrev))
+                 :otherwise nrev)))
+      (vl-exprlist-descvarnames-nrev (vl-expr->subexprs x) nrev)))
+
+  (define vl-exprlist-descvarnames-nrev ((x vl-exprlist-p) nrev)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (if (atom x)
+        (nrev-fix nrev)
+      (let ((nrev (vl-expr-descvarnames-nrev (car x) nrev)))
+        (vl-exprlist-descvarnames-nrev (cdr x) nrev)))))
+
+(defines vl-expr-descvarnames
+  :verify-guards nil
+  (define vl-expr-descvarnames ((x vl-expr-p))
+    :returns (names string-listp)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (mbe :logic (append (vl-expr-case x
+                          :vl-index (b* ((name (vl-scopeexpr-varname x.scope)))
+                                      (and name (list name)))
+                          :otherwise nil)
+                        (vl-exprlist-descvarnames (vl-expr->subexprs x)))
+         :exec (with-local-nrev
+                 (vl-expr-descvarnames-nrev x nrev))))
+
+  (define vl-exprlist-descvarnames ((x vl-exprlist-p))
+    :returns (names string-listp)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (mbe :logic (if (consp x)
+                    (append (vl-expr-descvarnames (car x))
+                            (vl-exprlist-descvarnames (cdr x)))
+                  nil)
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev
+                   (vl-exprlist-descvarnames-nrev x nrev)))))
+  ///
+  (defthm true-listp-of-vl-expr-descvarnames
+    (true-listp (vl-expr-descvarnames x))
+    :rule-classes :type-prescription)
+
+  (defthm true-listp-of-vl-exprlist-descvarnames
+    (true-listp (vl-exprlist-descvarnames x))
+    :rule-classes :type-prescription)
+
+  (defthm-vl-expr-descvarnames-nrev-flag
+    (defthm vl-expr-descvarnames-nrev-removal
+      (equal (vl-expr-descvarnames-nrev x nrev)
+             (append nrev (vl-expr-descvarnames x)))
+      :flag :expr)
+    (defthm vl-exprlist-descvarnames-nrev-removal
+      (equal (vl-exprlist-descvarnames-nrev x nrev)
+             (append nrev (vl-exprlist-descvarnames x)))
+      :flag :list)
+    :hints(("Goal"
+            :in-theory (enable acl2::rcons)
+            :expand ((vl-expr-descvarnames-nrev x nrev)
+                     (vl-exprlist-descvarnames-nrev x nrev)
+                     (vl-expr-descvarnames x)
+                     (vl-exprlist-descvarnames x)))))
+
+  (verify-guards vl-expr-descvarnames)
+
+  (defthm vl-exprlist-descvarnames-when-atom
+    (implies (atom x)
+             (equal (vl-exprlist-descvarnames x)
+                    nil))
+    :hints(("Goal" :expand (vl-exprlist-descvarnames x))))
+
+  (defthm vl-exprlist-descvarnames-of-cons
+    (equal (vl-exprlist-descvarnames (cons a x))
+           (append (vl-expr-descvarnames a)
+                   (vl-exprlist-descvarnames x)))
+    :hints(("Goal" :expand ((vl-exprlist-descvarnames (cons a x))))))
+
+  (defthm vl-exprlist-descvarnames-of-append
+    (equal (vl-exprlist-descvarnames (append x y))
+           (append (vl-exprlist-descvarnames x)
+                   (vl-exprlist-descvarnames y)))
+    :hints(("Goal" :induct (len x))))
+
+  (local (defthm c0
+           (implies (member-equal a x)
+                    (subsetp-equal (vl-expr-descvarnames a)
+                                   (vl-exprlist-descvarnames x)))
+           :hints(("Goal" :induct (len x)))))
+
+  (local (defthm c1
+           (implies (subsetp-equal x y)
+                    (subsetp-equal (vl-exprlist-descvarnames x)
+                                   (vl-exprlist-descvarnames y)))
+           :hints(("Goal" :induct (len x)))))
+
+  (local (defthm c2
+           (implies (and (subsetp-equal x y)
+                         (member-equal a x))
+                    (subsetp-equal (vl-expr-descvarnames a)
+                                   (vl-exprlist-descvarnames y)))))
+
+  (defcong set-equiv set-equiv (vl-exprlist-descvarnames x) 1
+    :event-name vl-exprlist-descvarnames-preserves-set-equiv
+    :hints(("Goal" :in-theory (enable set-equiv))))
+
+  (deffixequiv-mutual vl-expr-descvarnames))
+
+
+
 (define vl-modinsts-that-mention ((name stringp)
                                   (x    vl-modinstlist-p))
   :returns (sub-x vl-modinstlist-p)
   (b* (((when (atom x))
         nil)
        (exprs (vl-modinst-allexprs (car x)))
-       (names (vl-exprlist-varnames exprs))
+       (names (vl-exprlist-descvarnames exprs))
        ((when (member-equal name names))
         (cons (vl-modinst-fix (car x))
               (vl-modinsts-that-mention name (cdr x)))))
@@ -68,7 +203,7 @@ to describe all of the places that @('name') is used.</p>")
   (b* (((when (atom x))
         nil)
        (exprs (vl-assign-allexprs (car x)))
-       (names (vl-exprlist-varnames exprs))
+       (names (vl-exprlist-descvarnames exprs))
        ((when (member-equal name names))
         (cons (vl-assign-fix (car x))
               (vl-assigns-that-mention name (cdr x)))))
@@ -81,7 +216,7 @@ to describe all of the places that @('name') is used.</p>")
   (b* (((vl-plainarg x) x)
        ((unless x.expr)
         ps)
-       (names (vl-expr-varnames x.expr))
+       (names (vl-expr-descvarnames x.expr))
        ((unless (member-equal name names))
         ps)
        (directp (and (vl-idexpr-p x.expr)
@@ -130,7 +265,7 @@ to describe all of the places that @('name') is used.</p>")
   (b* (((vl-namedarg x) x)
        ((unless x.expr)
         ps)
-       (names (vl-expr-varnames x.expr))
+       (names (vl-expr-descvarnames x.expr))
        ((unless (member-equal name names))
         ps)
        (directp (and (vl-idexpr-p x.expr)
@@ -259,8 +394,8 @@ to describe all of the places that @('name') is used.</p>")
                                &key (ps 'ps))
   ;; We assume that name is mentioned somewhere in X.
   (b* (((vl-assign x) x)
-       (lhs-names (vl-expr-varnames x.lvalue))
-       (rhs-names (vl-expr-varnames x.expr))
+       (lhs-names (vl-expr-descvarnames x.lvalue))
+       (rhs-names (vl-expr-descvarnames x.expr))
        (writtenp  (member-equal name lhs-names))
        (readp     (member-equal name rhs-names))
        (htmlp     (vl-ps->htmlp)))
@@ -354,7 +489,7 @@ to describe all of the places that @('name') is used.</p>")
   (b* (((when (atom x))
         nil)
        (exprs (vl-gateinst-allexprs (car x)))
-       (names (vl-exprlist-varnames exprs))
+       (names (vl-exprlist-descvarnames exprs))
        ((when (member-equal name names))
         (cons (vl-gateinst-fix (car x))
               (vl-gateinsts-that-mention name (cdr x)))))
@@ -405,7 +540,7 @@ to describe all of the places that @('name') is used.</p>")
                                         :ports nil
                                         :portdecls nil
                                         :gateinsts nil))
-             (others  (vl-exprlist-varnames (with-local-nrev (vl-genblob-allexprs-nrev x-prime nrev)))))
+             (others  (vl-exprlist-descvarnames (with-local-nrev (vl-genblob-allexprs-nrev x-prime nrev)))))
           (member-equal name others)))
 
        (htmlp (vl-ps->htmlp))
