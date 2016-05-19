@@ -36,6 +36,34 @@
   :hints (("Goal" :in-theory (e/d* (r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
                                    ()))))
 
+(defthm r/x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
+  (implies (and (bind-free (find-almost-matching-ia32e-la-to-pas
+                            'las-to-pas 'r-w-x-1 (list l-addrs r-w-x-2 cpl x86) mfc state)
+                           (r-w-x-1))
+                (syntaxp (and
+                          ;; The bind-free ensures that r-w-x-2 and
+                          ;; r-w-x-1 are unequal, but I'll still leave
+                          ;; this thing in.
+                          (not (eq r-w-x-2 r-w-x-1))
+                          ;; r-w-x-2 must be smaller than r-w-x-1.
+                          (term-order r-w-x-2 r-w-x-1)))
+                (not (equal r-w-x-1 :w))
+                (not (equal r-w-x-2 :w))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x-1 cpl x86)))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x-2 cpl x86))))
+           (equal (mv-nth 2 (las-to-pas l-addrs r-w-x-2 cpl x86))
+                  (mv-nth 2 (las-to-pas l-addrs r-w-x-1 cpl x86))))
+  :hints (("Goal" :in-theory (e/d* (r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-when-no-errors)
+                                   ()))))
+
+(defthm combine-mv-nth-2-las-to-pas-same-r-w-x
+  (implies (and (not (mv-nth 0 (las-to-pas l-addrs-1 r-w-x cpl (double-rewrite x86))))
+                (canonical-address-listp l-addrs-1))
+           (equal (mv-nth 2 (las-to-pas l-addrs-2 r-w-x cpl
+                                        (mv-nth 2 (las-to-pas l-addrs-1 r-w-x cpl x86))))
+                  (mv-nth 2 (las-to-pas (append l-addrs-1 l-addrs-2) r-w-x cpl x86))))
+  :hints (("Goal" :in-theory (e/d* (las-to-pas) ()))))
+
 ;; ======================================================================
 
 ;; Lemmas to read a byte of an instruction when symbolically
@@ -886,7 +914,7 @@
   ;; The following make-events generate a bunch of rules that together
   ;; say the same thing as xr-not-mem-and-get-prefixes, but these
   ;; rules are more efficient than xr-not-mem-and-get-prefixes as they
-  ;; match less frequently.  
+  ;; match less frequently.
   (make-event
    (generate-xr-over-write-thms
     (remove-elements-from-list
