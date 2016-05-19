@@ -233,7 +233,7 @@
 (defthm mv-nth-0-wb-and-mv-nth-0-las-to-pas-in-system-level-mode
   (implies (not (xr :programmer-level-mode 0 x86))
            (equal (mv-nth 0 (wb addr-lst x86))
-                  (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
+                  (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))))
   :hints (("Goal" :in-theory (e/d* (wb) (force (force))))))
 
 ;; ======================================================================
@@ -282,7 +282,6 @@
 ;; rules are more efficient than program-at-xw-in-system-level-mode as
 ;; they match less frequently.
 
-(local (in-theory (e/d (program-at) (rb))))
 (make-event
  (generate-read-fn-over-xw-thms
   (remove-elements-from-list
@@ -290,9 +289,8 @@
    *x86-field-names-as-keywords*)
   'program-at
   (acl2::formals 'program-at (w state))
-  -1
-  '(not (programmer-level-mode x86))))
-(local (in-theory (e/d (rb) (program-at))))
+  :hyps '(not (programmer-level-mode x86))
+  :prepwork '((local (in-theory (e/d (program-at) (rb)))))))
 
 (defthm program-at-xw-rflags-not-ac-values-in-system-level-mode
   (implies (and (not (programmer-level-mode x86))

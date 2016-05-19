@@ -630,7 +630,7 @@
    (and (disjoint-p (list index)
                     (all-translation-governing-addresses
                      l-addrs (double-rewrite x86)))
-        (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+        (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
         (canonical-address-listp l-addrs)
         (integerp index))
    (equal (xw :mem index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
@@ -758,7 +758,7 @@
                  (l-addrs))
                 (syntaxp (not (eq l-addrs-subset l-addrs)))
                 (subset-p l-addrs-subset l-addrs)
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))))
            (equal (mv-nth 0 (las-to-pas l-addrs-subset r-w-x cpl x86))
                   nil))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
@@ -789,7 +789,7 @@
                   'l-addrs mfc state)
                  (l-addrs))
                 (syntaxp (not (eq l-addrs-subset l-addrs)))
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
                 (subset-p l-addrs-subset l-addrs))
            (equal (mv-nth 0 (las-to-pas l-addrs-subset r-w-x cpl x86))
                   nil))
@@ -819,7 +819,7 @@
     (disjoint-p$ (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))
                  other-p-addrs)
     (subset-p l-addrs-subset l-addrs)
-    (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
+    (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))))
    (disjoint-p (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))
                other-p-addrs))
   :hints
@@ -852,7 +852,7 @@
     (disjoint-p$ other-p-addrs
                  (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
     (subset-p l-addrs-subset l-addrs)
-    (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
+    (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))))
    (disjoint-p other-p-addrs (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))
   :hints (("Goal"
            :use ((:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs))
@@ -874,7 +874,7 @@
                            (l-addrs))
                 ;; (syntaxp (not (cw "~% l-addrs: ~x0~%" l-addrs)))
                 (disjoint-p$ other-p-addrs
-                             (all-translation-governing-addresses l-addrs x86))
+                             (all-translation-governing-addresses l-addrs (double-rewrite x86)))
                 (subset-p l-addrs-subset l-addrs))
            (disjoint-p other-p-addrs (all-translation-governing-addresses l-addrs-subset x86)))
   :hints (("Goal" :in-theory (e/d* (subset-p

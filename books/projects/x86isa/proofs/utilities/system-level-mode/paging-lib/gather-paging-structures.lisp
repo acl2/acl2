@@ -1134,8 +1134,12 @@
     (remove-elements-from-list '(:programmer-level-mode :ctr :mem) *x86-field-names-as-keywords*)
     'gather-all-paging-structure-qword-addresses
     (acl2::formals 'gather-all-paging-structure-qword-addresses (w state))
-    -1
-    t))
+    :double-rewrite? t))
+
+  (defthm gather-all-paging-structure-qword-addresses-!flgi
+    (equal (gather-all-paging-structure-qword-addresses (!flgi index val x86))
+           (gather-all-paging-structure-qword-addresses (double-rewrite x86)))
+    :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
 
   (defthm gather-all-paging-structure-qword-addresses-xw-fld=ctr
     (implies (not (equal index *cr3*))

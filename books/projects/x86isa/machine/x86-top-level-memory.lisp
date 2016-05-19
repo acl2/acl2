@@ -60,31 +60,43 @@ memory.</li>
         (cons replace-term (cdr lst))
       (cons (car lst) (search-and-replace-once search-term replace-term (cdr lst))))))
 
-(defun generate-read-fn-over-xw-thms-1 (xw-fld read-fn read-fn-formals output-index hyps-term)
-  ;; (generate-read-fn-over-xw-thms-1 :RGF 'gather-all-paging-structure-qword-addresses '(x86) -1 t)
+(defun generate-read-fn-over-xw-thms-1 (xw-fld read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?)
+  ;; (generate-read-fn-over-xw-thms-1 :RGF 'gather-all-paging-structure-qword-addresses '(x86) -1 t t)
   `(defthm ,(mk-name (if (equal output-index -1) read-fn (mk-name "MV-NTH-" output-index "-" read-fn))  "-XW-" xw-fld)
      (implies ,(or hyps-term t)
               ,(if (equal output-index -1)
                    `(equal (,read-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) read-fn-formals))
-                           ,(cons read-fn read-fn-formals))
+                           (,read-fn ,@(if double-rewrite-in-concl?
+                                           (search-and-replace-once 'x86 '(double-rewrite x86) read-fn-formals)
+                                         read-fn-formals)))
                  `(equal (mv-nth ,output-index (,read-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) read-fn-formals)))
-                         (mv-nth ,output-index ,(cons read-fn read-fn-formals)))))))
+                         (mv-nth ,output-index (,read-fn ,@(if double-rewrite-in-concl?
+                                                               (search-and-replace-once 'x86 '(double-rewrite x86) read-fn-formals)
+                                                             read-fn-formals))))))))
 
-(defun generate-read-fn-over-xw-thms-aux (xw-flds read-fn read-fn-formals output-index hyps-term)
+(defun generate-read-fn-over-xw-thms-aux (xw-flds read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?)
   (if (endp xw-flds)
       nil
-    (cons (generate-read-fn-over-xw-thms-1 (car xw-flds) read-fn read-fn-formals output-index hyps-term)
-          (generate-read-fn-over-xw-thms-aux (cdr xw-flds) read-fn read-fn-formals output-index hyps-term))))
+    (cons (generate-read-fn-over-xw-thms-1 (car xw-flds) read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?)
+          (generate-read-fn-over-xw-thms-aux (cdr xw-flds) read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?))))
 
-(defun generate-read-fn-over-xw-thms (xw-flds read-fn read-fn-formals output-index hyps-term)
+(define generate-read-fn-over-xw-thms
+  (xw-flds read-fn read-fn-formals
+           &key
+           (output-index '-1)
+           (hyps 't)
+           (double-rewrite? 'nil)
+           (prepwork 'nil))
+  :verify-guards nil
   ;; (generate-read-fn-over-xw-thms
   ;;  *x86-field-names-as-keywords*
-  ;;  'gather-all-paging-structure-qword-addresses
-  ;;  (acl2::formals 'gather-all-paging-structure-qword-addresses (w state))
-  ;;  -1
-  ;;  t)
-  `(progn
-     ,@(generate-read-fn-over-xw-thms-aux xw-flds read-fn read-fn-formals output-index hyps-term)))
+  ;;  'rvm08
+  ;;  (acl2::formals 'rvm08$inline (w state))
+  ;;  :prepwork '((local (in-theory (e/d* () (xw))))))
+  `(encapsulate ()
+     ,@(or prepwork nil)
+     ,@(generate-read-fn-over-xw-thms-aux xw-flds read-fn read-fn-formals output-index hyps double-rewrite?)))
+
 
 (defun generate-write-fn-over-xw-thms-1 (xw-fld write-fn write-fn-formals output-index hyps-term)
   ;; (generate-write-fn-over-xw-thms-1 :RGF 'rvm08 '(addr x86) 2 t)
@@ -102,41 +114,58 @@ memory.</li>
     (cons (generate-write-fn-over-xw-thms-1 (car xw-flds) write-fn write-fn-formals output-index hyps-term)
           (generate-write-fn-over-xw-thms-aux (cdr xw-flds) write-fn write-fn-formals output-index hyps-term))))
 
-(defun generate-write-fn-over-xw-thms (xw-flds write-fn write-fn-formals output-index hyps-term)
+(define generate-write-fn-over-xw-thms
+  (xw-flds write-fn write-fn-formals
+           &key
+           (output-index '-1)
+           (hyps 't)
+           (prepwork 'nil))
+  :verify-guards nil
   ;; (generate-write-fn-over-xw-thms
   ;;  *x86-field-names-as-keywords*
-  ;;  'rvm08
-  ;;  (acl2::formals 'rvm08$inline (w state))
-  ;;  2
-  ;;  t)
-  `(progn
-     ,@(generate-write-fn-over-xw-thms-aux xw-flds write-fn write-fn-formals output-index hyps-term)))
+  ;;  'wvm08
+  ;;  (acl2::formals 'wvm08$inline (w state))
+  ;;  :prepwork '((local (in-theory (e/d* () (xw))))))
+  `(encapsulate ()
+     ,@(or prepwork nil)
+     ,@(generate-write-fn-over-xw-thms-aux xw-flds write-fn write-fn-formals output-index hyps)))
 
-(defun generate-xr-over-write-thms-1 (xr-fld write-fn write-formals output-index hyps-term)
+(defun generate-xr-over-write-thms-1 (xr-fld write-fn write-fn-formals output-index hyps-term double-rewrite-in-concl?)
   ;; (generate-xr-over-write-thms-1 :RGF 'rb '(addr r-w-x x86) 2 t)
   `(defthm ,(mk-name "XR-" xr-fld "-" (if (equal output-index -1) write-fn (mk-name "MV-NTH-" output-index "-" write-fn)))
      (implies ,(or hyps-term t)
               ,(if (equal output-index -1)
-                   `(equal (XR ,xr-fld index ,(cons write-fn write-formals))
-                           (XR ,xr-fld index x86))
-                 `(equal (XR ,xr-fld index (mv-nth ,output-index ,(cons write-fn write-formals)))
-                         (XR ,xr-fld index x86))))))
+                   `(equal (XR ,xr-fld index ,(cons write-fn write-fn-formals))
+                           (XR ,xr-fld index ,(if double-rewrite-in-concl?
+                                                  `(double-rewrite x86)
+                                                `x86)))
+                 `(equal (XR ,xr-fld index (mv-nth ,output-index ,(cons write-fn write-fn-formals)))
+                         (XR ,xr-fld index ,(if double-rewrite-in-concl?
+                                                `(double-rewrite x86)
+                                              `x86)))))))
 
-(defun generate-xr-over-write-thms-aux (xr-flds write-fn write-formals output-index hyps-term)
+(defun generate-xr-over-write-thms-aux (xr-flds write-fn write-fn-formals output-index hyps-term double-rewrite?)
   (if (endp xr-flds)
       nil
-    (cons (generate-xr-over-write-thms-1 (car xr-flds) write-fn write-formals output-index hyps-term)
-          (generate-xr-over-write-thms-aux (cdr xr-flds) write-fn write-formals output-index hyps-term))))
+    (cons (generate-xr-over-write-thms-1 (car xr-flds) write-fn write-fn-formals output-index hyps-term double-rewrite?)
+          (generate-xr-over-write-thms-aux (cdr xr-flds) write-fn write-fn-formals output-index hyps-term double-rewrite?))))
 
-(defun generate-xr-over-write-thms (xr-flds write-fn write-formals output-index hyps-term)
+(define generate-xr-over-write-thms
+  (xr-flds write-fn write-fn-formals
+           &key
+           (output-index '-1)
+           (hyps 't)
+           (double-rewrite? 'nil)
+           (prepwork 'nil))
+  :verify-guards nil
   ;; (generate-xr-over-write-thms
   ;;  *x86-field-names-as-keywords*
-  ;;  'rb
-  ;;  (acl2::formals 'rb (w state))
-  ;;  2
-  ;;  '(not (programmer-level-mode x86)))
-  `(progn
-     ,@(generate-xr-over-write-thms-aux xr-flds write-fn write-formals output-index hyps-term)))
+  ;;  'wvm08
+  ;;  (acl2::formals 'wvm08$inline (w state))
+  ;;  :prepwork '((local (in-theory (e/d* () (xw))))))
+  `(encapsulate ()
+     ,@(or prepwork nil)
+     ,@(generate-xr-over-write-thms-aux xr-flds write-fn write-fn-formals output-index hyps double-rewrite?)))
 
 ;; ======================================================================
 
@@ -1166,6 +1195,17 @@ memory.</li>
                       (xr fld index x86)))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
+    (make-event
+     (generate-xr-over-write-thms
+      (remove-elements-from-list
+       '(:mem :fault)
+       *x86-field-names-as-keywords*)
+      'las-to-pas
+      (acl2::formals 'las-to-pas (w state))
+      :output-index 2))
+
+    (local (in-theory (e/d () (xr-las-to-pas))))
+
     ;; (defthm las-to-pas-xw-values
     ;;   (implies (and (not (equal fld :mem))
     ;;                 (not (equal fld :rflags))
@@ -1191,7 +1231,8 @@ memory.</li>
        *x86-field-names-as-keywords*)
       'las-to-pas
       (acl2::formals 'las-to-pas (w state))
-      0 t))
+      :output-index 0
+      :hyps t))
 
     (make-event
      (generate-read-fn-over-xw-thms
@@ -1200,7 +1241,8 @@ memory.</li>
        *x86-field-names-as-keywords*)
       'las-to-pas
       (acl2::formals 'las-to-pas (w state))
-      1 t))
+      :output-index 1
+      :hyps t))
 
     (defthm las-to-pas-xw-rflags-not-ac
       (implies (equal (rflags-slice :ac value)
@@ -1234,7 +1276,7 @@ memory.</li>
        *x86-field-names-as-keywords*)
       'las-to-pas
       (acl2::formals 'las-to-pas (w state))
-      2 t))
+      :output-index 2))
 
     (defthm las-to-pas-xw-rflags-state-not-ac
       (implies (equal (rflags-slice :ac value)
@@ -1259,9 +1301,9 @@ memory.</li>
       (implies (and (not (equal index *ac*))
                     (x86p x86))
                (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
-                           (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
+                           (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
                     (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
-                           (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
+                           (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))))
       :hints
       (("Goal"
         :do-not-induct t
@@ -1684,8 +1726,8 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
-    2
-    '(not (programmer-level-mode x86))))
+    :output-index 2
+    :hyps '(not (programmer-level-mode x86))))
 
   (defthm rb-1-xw-values-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1732,8 +1774,8 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
-    0
-    '(not (programmer-level-mode x86))))
+    :output-index 0
+    :hyps '(not (programmer-level-mode x86))))
 
   (make-event
    (generate-read-fn-over-xw-thms
@@ -1742,8 +1784,8 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
-    1
-    '(not (programmer-level-mode x86))))
+    :output-index 1
+    :hyps '(not (programmer-level-mode x86))))
 
   (defthm rb-1-xw-rflags-not-ac-values-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1806,8 +1848,8 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
-    2
-    '(not (programmer-level-mode x86))))
+    :output-index 2
+    :hyps '(not (programmer-level-mode x86))))
 
   (defthm rb-1-xw-rflags-not-ac-state-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1893,8 +1935,7 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'wb
     (acl2::formals 'wb (w state))
-    1
-    t))
+    :output-index 1))
 
   ;; (defthm wb-xw-in-system-level-mode
   ;;   ;; Keep the state updated by wb inside all other nests of writes.
@@ -1924,8 +1965,7 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'wb
     (acl2::formals 'wb (w state))
-    0
-    t))
+    :output-index 0))
 
   (make-event
    (generate-write-fn-over-xw-thms
@@ -1934,8 +1974,7 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'wb
     (acl2::formals 'wb (w state))
-    1
-    t))
+    :output-index 1))
 
   (defthm wb-xw-rflags-not-ac-in-system-level-mode
     ;; Keep the state updated by wb inside all other nests of writes.

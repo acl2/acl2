@@ -183,15 +183,16 @@
          (n prog-addr bytes))
         (program-at (create-canonical-address-list n prog-addr) bytes x86)
         (subset-p l-addrs (create-canonical-address-list n prog-addr))
-        (disjoint-p (all-translation-governing-addresses
-                     (create-canonical-address-list n prog-addr)
-                     (double-rewrite x86))
-                    (mv-nth 1 (las-to-pas
+        (disjoint-p (mv-nth 1 (las-to-pas
                                (create-canonical-address-list n prog-addr)
-                               :x (cpl x86) (double-rewrite x86))))
+                               :x (cpl x86) (double-rewrite x86)))
+                    (all-translation-governing-addresses
+                     (create-canonical-address-list n prog-addr)
+                     (double-rewrite x86)))
         (syntaxp (quotep n))
         (consp l-addrs)
-        (not (mv-nth 0 (las-to-pas (create-canonical-address-list n prog-addr) :x (cpl x86) x86)))
+        (not (mv-nth 0 (las-to-pas (create-canonical-address-list n prog-addr)
+                                   :x (cpl x86) (double-rewrite x86))))
         (not (programmer-level-mode x86))
         (x86p x86))
    (equal (mv-nth 1 (rb l-addrs :x x86))
@@ -205,6 +206,7 @@
            :in-theory (e/d (subset-p
                             member-p
                             disjoint-p
+                            disjoint-p-commutative
                             rb-in-terms-of-rb-subset-p-helper)
                            (rb
                             canonical-address-p
@@ -884,8 +886,7 @@
   ;; The following make-events generate a bunch of rules that together
   ;; say the same thing as xr-not-mem-and-get-prefixes, but these
   ;; rules are more efficient than xr-not-mem-and-get-prefixes as they
-  ;; match less frequently.
-  (local (in-theory (e/d (xr-not-mem-and-get-prefixes) ())))
+  ;; match less frequently.  
   (make-event
    (generate-xr-over-write-thms
     (remove-elements-from-list
@@ -893,9 +894,8 @@
      *x86-field-names-as-keywords*)
     'get-prefixes
     (acl2::formals 'get-prefixes (w state))
-    2
-    't))
-  (local (in-theory (e/d () (xr-not-mem-and-get-prefixes))))
+    :output-index 2
+    :prepwork '((local (in-theory (e/d (xr-not-mem-and-get-prefixes) ()))))))
 
   ;; Opener lemmas:
 

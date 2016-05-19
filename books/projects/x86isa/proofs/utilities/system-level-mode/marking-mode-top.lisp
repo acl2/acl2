@@ -173,8 +173,7 @@
        *x86-field-names-as-keywords*)
       'get-prefixes-alt
       (acl2::formals 'get-prefixes-alt (w state))
-      2
-      't)))
+      :output-index 2)))
 
   (defthm rewrite-get-prefixes-to-get-prefixes-alt
     (implies (forced-and
@@ -203,13 +202,13 @@
                               (create-canonical-address-list cnt start-rip)
                               :x (cpl x86) (double-rewrite x86)))
                    (open-qword-paddr-list
-                    (gather-all-paging-structure-qword-addresses x86)))
+                    (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
                   (not
                    (mv-nth
                     0
                     (las-to-pas (create-canonical-address-list cnt start-rip)
                                 :x (cpl x86)
-                                x86)))
+                                (double-rewrite x86))))
                   (page-structure-marking-mode x86)
                   (not (programmer-level-mode x86))
                   (canonical-address-p start-rip))
@@ -236,13 +235,13 @@
                     0
                     (las-to-pas (create-canonical-address-list cnt start-rip)
                                 :x (cpl x86)
-                                x86)))
+                                (double-rewrite x86))))
                   (disjoint-p
                    (mv-nth 1 (las-to-pas
                               (create-canonical-address-list cnt start-rip)
                               :x (cpl x86) (double-rewrite x86)))
                    (open-qword-paddr-list
-                    (gather-all-paging-structure-qword-addresses x86))))
+                    (gather-all-paging-structure-qword-addresses (double-rewrite x86)))))
              (and
               (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86))
                      nil)
@@ -588,7 +587,7 @@
     ;;                   (xr fld index x86)))
     ;;   :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (local (in-theory (e/d () (force (force)))))
+
     (make-event
      (generate-xr-over-write-thms
       (remove-elements-from-list
@@ -596,9 +595,8 @@
        *x86-field-names-as-keywords*)
       'rb-alt
       (acl2::formals 'rb-alt (w state))
-      2
-      t))
-    (local (in-theory (e/d (force (force)) ())))
+      :output-index 2
+      :prepwork '((local (in-theory (e/d () (force (force))))))))
 
     (defthm mv-nth-0-rb-alt-is-nil
       (equal (mv-nth 0 (rb-alt l-addrs r-w-x x86)) nil)
@@ -903,11 +901,11 @@
        (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) (double-rewrite x86))))
       (disjoint-p$
        (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
-       (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
+       (open-qword-paddr-list (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
       (addr-byte-alistp addr-lst)
       (x86p x86))
      (equal (program-at-alt l-addrs bytes (mv-nth 1 (wb addr-lst x86)))
-            (program-at-alt l-addrs bytes x86)))
+            (program-at-alt l-addrs bytes (double-rewrite x86))))
     :hints
     (("Goal"
       :do-not-induct t
@@ -921,7 +919,45 @@
         rb-wb-disjoint-in-system-level-mode
         disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
         mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
-        rb wb))))))
+        rb wb)))))
+
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault
+            :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'program-at-alt
+    (acl2::formals 'program-at (w state))
+    :hyps '(not (programmer-level-mode x86))
+    :prepwork '((local (in-theory (e/d (program-at-alt)
+                                       (rewrite-program-at-to-program-at-alt)))))
+    :double-rewrite? t))
+
+  (defthm program-at-alt-!flgi
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (equal (program-at-alt l-addrs bytes (!flgi index value x86))
+                    (program-at-alt l-addrs bytes (double-rewrite x86))))
+    :hints (("Goal" :in-theory (e/d* (program-at-alt)
+                                     (rewrite-program-at-to-program-at-alt)))))
+
+  (defthm program-at-alt-after-mv-nth-2-rb
+    (implies
+     (and
+      (not (programmer-level-mode x86))
+      (not (mv-nth 0 (las-to-pas l-addrs-2 r-w-x-2 (cpl x86) (double-rewrite x86)))))
+     (equal (program-at-alt l-addrs-1 bytes-1
+                            (mv-nth 2 (rb l-addrs-2 r-w-x-2 x86)))
+            (program-at-alt l-addrs-1 bytes-1 (double-rewrite x86))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (program-at-alt
+                               program-at)
+                              (rewrite-program-at-to-program-at-alt
+                               rewrite-rb-to-rb-alt
+                               force (force)))))))
 
 ;; ======================================================================
 
