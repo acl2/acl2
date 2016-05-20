@@ -7593,7 +7593,7 @@
                                     ctx wrld2
                                     state))
       (ruler-extenders-lst (get-ruler-extenders-lst symbol-class fives
-                                                    ctx state))
+                                                    ctx wrld2 state))
       (rel (get-unambiguous-xargs-flg
             :WELL-FOUNDED-RELATION
             fives

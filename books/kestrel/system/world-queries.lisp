@@ -130,6 +130,15 @@
   :long "<p>See @(see xargs) for a discussion of the @(':measure') keyword.</p>"
   (access justification (getpropc fun 'justification nil w) :measure))
 
+(define measured-subset ((fun (and (function-namep fun w)
+                                   (logicalp fun w)
+                                   (recursivep fun w)))
+                         (w plist-worldp))
+  :returns (measure pseudo-termp)
+  :short "Measure expression of a logic-mode recursive function."
+  :long "<p>See @(see xargs) for a discussion of the @(':measure') keyword.</p>"
+  (access justification (getpropc fun 'justification nil w) :subset))
+
 (define well-founded-relation ((fun (and (function-namep fun w)
                                          (logicalp fun w)
                                          (recursivep fun w)))

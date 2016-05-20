@@ -81,6 +81,7 @@
 
 (defconst *acl2-exports-exclusions*
   '(*UNTROUBLESOME-CHARACTERS*
+    ACTIVE-OR-NON-RUNEP ; to be added to *acl2-exports*
     ADD-DIVE-INTO-MACRO
     BDD
     BOOK-HASH
@@ -92,6 +93,7 @@
     DIVE-INTO-MACROS-TABLE
     ERROR1
     FIND-RULES-OF-RUNE
+    INCOMPATIBLE! ; to be added to *acl2-exports*
     INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
     LOOP-STOPPER
     MBE1

@@ -9,6 +9,7 @@
 
 ;; For Linux systems: See /usr/include/x86_64-linux-gnu/asm/unistd_64.h
 ;; For Darwin systems: See /usr/include/sys/syscall.h
+;; For FreeBSD systems: See sys/kern/syscalls.master
 
 (defsection syscall-numbers
   :parents (x86-syscalls)
@@ -41,6 +42,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
         (cond
          ((equal os :linux)  0)
          ((equal os :darwin) #x2000003)
+         ((equal os :freebsd) 3)
          (t -1)))
     nil))
 
@@ -51,6 +53,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
         (cond
          ((equal os :linux)  1)
          ((equal os :darwin) #x2000004)
+         ((equal os :freebsd) 4)
          (t -1)))
     nil))
 
@@ -61,6 +64,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
         (cond
          ((equal os :linux)  2)
          ((equal os :darwin) #x2000005)
+         ((equal os :freebsd) 5)
          (t -1)))
     nil))
 
@@ -71,6 +75,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
         (cond
          ((equal os :linux)  3)
          ((equal os :darwin) #x2000006)
+         ((equal os :freebsd) 6)
          (t -1)))
     nil))
 

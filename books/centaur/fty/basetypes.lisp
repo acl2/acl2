@@ -482,6 +482,9 @@ necessary fixing functions and equivalences, and then sets up @(see
 fty::deffixtype) associations between the recognizers, fixing functions, and
 equivalence relations for the following types.</p>
 
+<p>See also @(see fty::baselists), which sets up similar support for various
+built-in list recognizers like @(see character-listp), etc.</p>
+
 <table>
 <tr><th>Type Name</th> <th>Recognizer</th> <th>Fix</th> <th>Equiv</th></tr>" ,rows "</table>
 

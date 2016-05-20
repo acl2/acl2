@@ -31,6 +31,7 @@
 
 (in-package "ACL2")
 (include-book "alist-equiv")
+(include-book "std/util/bstar" :dir :system)
 
 (local (in-theory (enable list-fix rev)))
 

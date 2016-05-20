@@ -4149,44 +4149,50 @@
    ((ts= ts *ts-zero*)
     (mv *0*
         (cons-tag-trees ts-ttree ttree)))
-   ((ts= ts *ts-one*)
 
-; This case coerces the term to '1.  We introduced this case when adding a new
-; type-set bit for the set {1}.  However, we considered skipping this case when
-; we found a failure for the book demo.lisp (which exists in three
-; subdirectories of the community books: models/jvm/m5/demo.lisp,
-; projects/symbolic/m5/demo.lisp, and books/workshops/2003/moore_vcg/support/),
-; for the lemma symbolic-computation.  However, that was the only problematic
-; book.  Moreover, consider the following generated subgoal for that proof
-; attempt.
+; After a new type-set bit for the set {1}, we considered adding a case for
+; (ts= ts *ts-one*), to return (mv *1* (cons-tag-trees ts-ttree ttree)) in that
+; case to coerce the term to '1.  However, some books failed.  For example, a
+; problem in community book books/demos/proofs/tightness-lemma-proof.lisp
+; simplifies to the following example.
 
-;   (IMPLIES (AND (ZP K)
-;                 (INTP (+ 1 K))
-;                 (< 0 (+ 1 K))
-;                 (ACL2-NUMBERP K))
-;            (EQUAL (INT-FIX (* 2
-;                               (INT-FIX (+ (FACTORIAL K)
-;                                           (* K (FACTORIAL K))))))
-;                   (INT-FIX (+ (* 2 (FACTORIAL K))
-;                               (* 2 K (FACTORIAL K))))))
+;   (defun i-from (n len)
+;     (cond ((zp len) nil)
+;           (t (cons n
+;                    (i-from (1+ n) (1- len))))))
+;   (defthm <-0-+-negative-1
+;     (iff (< 0 (+ (- y) x)) (< y x)))
+;   (defthm consp-i-from
+;     (equal (consp (i-from i len))
+;            (not (zp len))))
 
-; With this case included, that subgoal simplified to the following, which ACL2
-; fails to prove whether we include this case or not.  So the only problem with
-; this case is that it adds extra reasoning that sends the proof in a bad
-; direction; and we believe (but aren't sure) that it only does that for this
-; one (thrice-occurring) book among the community books.
+; The problem was presumably that under a proof by induction, obj-table was
+; replacing the goal
 
-;   (IMPLIES (AND (ZP K)
-;                 (INTP (+ 1 K))
-;                 (< 0 (+ 1 K))
-;                 (ACL2-NUMBERP K))
-;            (EQUAL 2 (INT-FIX (+ 2 (* 2 K)))))
+;   (IMPLIES (AND (NOT (ZP LEN)) (ZP (+ -1 LEN)))
+;            (CONSP (I-FROM I LEN)))
+
+; by the goal
+
+;   (IMPLIES (AND (NOT (ZP LEN)) (<= LEN 1))
+;            (CONSP (I-FROM I 1)))
+
+; and although the term (I-FROM I LEN) was a term to be expanded under
+; induction, (I-FROM I 1) was not.  We had 27 other failures that might have
+; been due to this same problem, but we didn't investigate them.  Instead, we
+; are omitting a case here for *ts-one*.
+
+; We have also had problems when including this (deleted) case, depending on
+; other heuristics involving *ts-one*, for the lemma symbolic-computation in
+; models/jvm/m5/demo.lisp, projects/symbolic/m5/demo.lisp, and
+; books/workshops/2003/moore_vcg/support/.  Sol Swords noticed that a
+; forward-chaining lemma, (implies (and (integerp (+ 1 k)) (acl2-numberp k))
+; (integerp k)), solves that problem; but without this case, we don't need that
+; lemma.
 
 ; For more discussion regarding *ts-one*, see the Essay on Strong Handling of
 ; *ts-one*.
 
-    (mv *1*
-        (cons-tag-trees ts-ttree ttree)))
    (t (let ((rune (geneqv-refinementp 'iff geneqv wrld)))
         (cond
          (rune
