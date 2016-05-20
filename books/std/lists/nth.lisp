@@ -31,6 +31,7 @@
 (in-package "ACL2")
 (include-book "list-defuns")
 (include-book "abstract")
+(include-book "std/util/bstar" :dir :system)
 (local (include-book "rev"))
 (local (include-book "append"))
 (local (include-book "take"))

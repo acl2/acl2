@@ -3790,8 +3790,7 @@
       (cond
        ((or (gag-mode)
             (f-get-global 'raw-proof-format state))
-        (print-splitter-rules-summary cl-id clauses ttree (proofs-co state)
-                                      state))
+        (print-splitter-rules-summary cl-id clauses ttree state))
        (t state))
       (cond
        (gag-mode state)
@@ -4054,7 +4053,7 @@
 ;                    state
 ;                    (cl-id ttree clauses)
 ;                    (print-splitter-rules-summary
-;                     cl-id clauses ttree (proofs-co state) state)
+;                     cl-id clauses ttree state)
 ;                    :io-marker cl-id)
                 )))
       (increment-timer@par 'print-time state)
@@ -9287,51 +9286,70 @@
                            :direction :output
                            :if-exists :append
                            :if-does-not-exist :create)
-                      (let ((*print-pretty* nil)
-                            (*package* (find-package-fast "ACL2"))
-                            (*readtable* *acl2-readtable*)
-                            (*print-escape* t)
-                            *print-level*
-                            *print-length*)
-                        (prin1 term str)
-                        (terpri str)
-                        (force-output str))))
+        (let ((*print-pretty* nil)
+              (*package* (find-package-fast "ACL2"))
+              (*readtable* *acl2-readtable*)
+              (*print-escape* t)
+              *print-level*
+              *print-length*)
+          (prin1 term str)
+          (terpri str)
+          (force-output str))))
     (progn$
      (initialize-brr-stack state)
      (initialize-fc-wormhole-sites)
-     (er-let* ((ttree1 (prove-loop (list (list term))
-                                   (change prove-spec-var pspv
-                                           :user-supplied-term term
-                                           :orig-hints hints)
-                                   hints ens wrld ctx state)))
-       (er-progn
-        (chk-assumption-free-ttree ttree1 ctx state)
-        (let ((byes (tagged-objects :bye ttree1)))
-          (cond
-           (byes
-            (pprogn
+     (pprogn
+      (f-put-global 'saved-output-reversed nil state)
+      (push-io-record
+       :ctx
+       (list 'mv-let
+             '(col state)
+             '(fmt "Output replay for: "
+                   nil (standard-co state) state nil)
+             (list 'mv-let
+                   '(col state)
+                   (list 'fmt-ctx
+                         (list 'quote ctx)
+                         'col
+                         '(standard-co state)
+                         'state)
+                   '(declare (ignore col))
+                   '(newline (standard-co state) state)))
+       state)
+      (er-let* ((ttree1 (prove-loop (list (list term))
+                                    (change prove-spec-var pspv
+                                            :user-supplied-term term
+                                            :orig-hints hints)
+                                    hints ens wrld ctx state)))
+        (er-progn
+         (chk-assumption-free-ttree ttree1 ctx state)
+         (let ((byes (tagged-objects :bye ttree1)))
+           (cond
+            (byes
+             (pprogn
 
 ; The use of ~*1 below instead of just ~&1 forces each of the defthm forms
 ; to come out on a new line indented 5 spaces.  As is already known with ~&1,
 ; it can tend to scatter the items randomly -- some on the left margin and others
 ; indented -- depending on where each item fits flat on the line first offered.
 
-             (io? prove nil state
-                  (wrld byes)
-                  (fms "To complete this proof you could try to admit the ~
+              (io? prove nil state
+                   (wrld byes)
+                   (fms "To complete this proof you could try to admit the ~
                         following event~#0~[~/s~]:~|~%~*1~%See the discussion ~
                         of :by hints in :DOC hints regarding the ~
                         name~#0~[~/s~] displayed above."
-                       (list (cons #\0 byes)
-                             (cons #\1
-                                   (list ""
-                                         "~|~     ~q*."
-                                         "~|~     ~q*,~|and~|"
-                                         "~|~     ~q*,~|~%"
-                                         (make-defthm-forms-for-byes
-                                          byes wrld))))
-                       (proofs-co state)
-                       state
-                       (term-evisc-tuple nil state)))
-             (silent-error state)))
-           (t (value ttree1))))))))))
+                        (list (cons #\0 byes)
+                              (cons #\1
+                                    (list ""
+                                          "~|~     ~q*."
+                                          "~|~     ~q*,~|and~|"
+                                          "~|~     ~q*,~|~%"
+                                          (make-defthm-forms-for-byes
+                                           byes wrld))))
+                        (proofs-co state)
+                        state
+                        (term-evisc-tuple nil state)))
+              (silent-error state)))
+            (t (value ttree1)))))))))))
+

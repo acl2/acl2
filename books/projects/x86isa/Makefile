@@ -28,33 +28,41 @@ PLATFORM = $(shell uname | tr a-z A-Z)
 ifeq ($(findstring LINUX,$(PLATFORM)), LINUX)
  RDRAND_LIB := machine/shared/librdrand.so
  SYSCALL_LIB := machine/shared/libsyscallutils.so
+ X86ISA_EXEC_CERTS = $(RDRAND_LIB)
+ X86ISA_EXEC_CERTS += $(SYSCALL_LIB)
 # PROOF_BOOKS += $(LINUX_BOOKS)
 endif # ifeq ($(findstring LINUX,$(PLATFORM)), LINUX)
 
 ifeq ($(findstring DARWIN,$(PLATFORM)), DARWIN)
  RDRAND_LIB := machine/shared/librdrand.dylib
  SYSCALL_LIB := machine/shared/libsyscallutils.dylib
+ X86ISA_EXEC_CERTS = $(RDRAND_LIB)
+ X86ISA_EXEC_CERTS += $(SYSCALL_LIB)
 # PROOF_BOOKS += $(DARWIN_BOOKS)
 endif # ifeq ($(findstring DARWIN,$(PLATFORM)), DARWIN)
 
-X86ISA_EXEC_CERTS = $(RDRAND_LIB)
-X86ISA_EXEC_CERTS += $(SYSCALL_LIB)
+# Note that X86ISA_EXEC_CERTS will be empty if we are on a machine
+# other than Darwin or Linux. Currently, for FreeBSD machines, we do
+# not have full execution support (i.e., SYSCALLS in programmer-level
+# mode and RDRAND will not be simulated.)
 
 X86ISA_FULL_EXEC_SUPPORT_EXISTS := $(wildcard machine/x86isa_full_exec_support.lisp)
 X86_SYSCALLS_ACL2_EXISTS := $(wildcard machine/x86-syscalls.acl2)
 
+ifneq ($(X86ISA_EXEC_CERTS), ) 
 ifneq ($(X86ISA_FULL_EXEC_SUPPORT_EXISTS), machine/x86isa_full_exec_support.lisp)
 ifneq ($(X86_SYSCALLS_ACL2_EXISTS), machine/x86-syscalls.acl2)
  X86ISA_EXEC_CERTS += write_exec_fn
 endif # ifneq ($(X86_SYSCALLS_ACL2_EXISTS), machine/x86-syscalls.acl2)
 endif # ifneq ($(X86ISA_FULL_EXEC_SUPPORT_EXISTS), machine/x86isa_full_exec_support.lisp)
+endif # ifneq ($(X86ISA_EXEC_CERTS), )
 endif # ifeq ($(X86ISA_EXEC), t)
 
 #======================================================================
 
 all: $(X86ISA_EXEC_CERTS) top
 
-write_exec_fn: # Here only when X86ISA_EXEC=t and if generated files don't exist already	
+write_exec_fn: # Here only when X86ISA_EXEC=t, X86ISA_EXEC_CERTS is not empty, and if generated files don't exist already	
 	@$(CC) -g -c machine/shared/get_cpuid_v1_lix64.s -o machine/shared/get_cpuid_v1_lix64.o
 	@$(CC) -o machine/shared/check-rdrand-support.o machine/shared/check-rdrand-support.c machine/shared/get_cpuid_v1_lix64.o
 	@./machine/shared/check-rdrand-support.o > /dev/null ; \
@@ -103,7 +111,8 @@ machine/shared/libsyscallutils.so: machine/shared/syscall-utils.c
 	$(CC) -shared -o machine/shared/libsyscallutils.so machine/shared/syscall-utils.o
 
 top: $(X86ISA_EXEC_CERTS)
-	@${info Note: X86ISA_EXEC is $(X86ISA_EXEC).}
+	@${info Note: X86ISA_EXEC       := $(X86ISA_EXEC)}
+	@${info Note: X86ISA_EXEC_CERTS := $(X86ISA_EXEC_CERTS)}
 	$(BUILD_DIR)/cert.pl -j $(JOBS) top
 
 execclean:
@@ -112,7 +121,7 @@ execclean:
 	rm -f machine/x86isa_full_exec_support.*
 	rm -f machine/x86-syscalls.acl2
 	rm -f $(RDRAND_LIB)
-	rm -f $(SYSCALL_LIB)	
+	rm -f $(SYSCALL_LIB)
 	rm -rf machine/shared/*.o
 
 clean:

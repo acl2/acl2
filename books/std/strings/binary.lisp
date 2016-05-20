@@ -149,21 +149,31 @@
 (define bit-digit-val
   :short "Coerces a @(see bit-digitp) character into a number, 0 or 1."
   ((x bit-digitp :type character))
+  :returns (bit bitp :rule-classes :type-prescription)
   :split-types t
-  :returns (val natp :rule-classes :type-prescription)
   :inline t
   (if (eql x #\1)
       1
     0)
   ///
   (local (in-theory (enable bit-digitp)))
+
   (defcong ichareqv equal (bit-digit-val x) 1
     :hints(("Goal" :in-theory (enable ichareqv downcase-char char-fix))))
-  (defthm bit-digit-val-upper-bound
-    (< (bit-digit-val x) 2)
-    :rule-classes ((:rewrite) (:linear)))
-  (defthm bitp-of-bit-digit-val
-    (acl2::bitp (bit-digit-val x)))
+
+  ;; [Jared] 2016-04-08: shouldn't be needed now that we have a bitp type-prescription
+  ;; :returns specifier.
+  ;;
+  ;; (defthm bit-digit-val-upper-bound
+  ;;   (< (bit-digit-val x) 2)
+  ;;   :rule-classes ((:rewrite) (:linear)))
+  ;;
+  ;; (defthm bitp-of-bit-digit-val
+  ;;   (acl2::bitp (bit-digit-val x))
+  ;;   :rule-classes :type-prescription)
+
+  ;; [Jared] this is kind of ugly, might be better to just have a global rule
+  ;; that bitp means unsigned-byte-p 1.
   (defthm unsigned-byte-p-of-bit-digit-val
     (unsigned-byte-p 1 (bit-digit-val x)))
   (defthm equal-of-bit-digit-val-and-bit-digit-val
@@ -172,8 +182,7 @@
              (equal (equal (bit-digit-val x) (bit-digit-val y))
                     (equal x y))))
   (defthm bit-digit-val-of-digit-to-char
-    (implies (and (natp n)
-                  (< n 2))
+    (implies (bitp n)
              (equal (bit-digit-val (digit-to-char n))
                     n))))
 

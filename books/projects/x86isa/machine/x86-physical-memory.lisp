@@ -104,13 +104,17 @@ recommend using these functions at the top-level.</p>")
       (let ((addr (mbe :logic (ifix addr)
                        :exec addr)))
 
-        (b* (((the (unsigned-byte 8) byte0) (memi addr x86))
-             ((the (unsigned-byte 8) byte1) (memi (1+ addr) x86))
+        (b* (((the (unsigned-byte 8) byte0) (mbe :logic (loghead 8 (memi addr x86))
+                                                 :exec (memi addr x86)))
+             ((the (unsigned-byte 8) byte1) (mbe :logic (loghead 8 (memi (1+ addr) x86))
+                                                 :exec (memi (1+ addr) x86)))
              ((the (unsigned-byte 16) word0)
               (logior (the (unsigned-byte 16)
                         (ash byte1 8)) byte0))
-             ((the (unsigned-byte 8) byte2) (memi (+ 2 addr) x86))
-             ((the (unsigned-byte 8) byte3) (memi (+ 3 addr) x86))
+             ((the (unsigned-byte 8) byte2) (mbe :logic (loghead 8 (memi (+ 2 addr) x86))
+                                                 :exec (memi (+ 2 addr) x86)))
+             ((the (unsigned-byte 8) byte3) (mbe :logic (loghead 8 (memi (+ 3 addr) x86))
+                                                 :exec (memi (+ 3 addr) x86)))
              ((the (unsigned-byte 16) word1)
               (the (unsigned-byte 16) (logior (the (unsigned-byte 16)
                                                 (ash byte3 8))
@@ -124,8 +128,11 @@ recommend using these functions at the top-level.</p>")
 
   ///
 
+  (defthm rm-low-32-in-programmer-level-mode
+    (implies (programmer-level-mode x86)
+             (equal (rm-low-32 p-addr x86) 0)))
+
   (defthm-usb n32p-rm-low-32
-    :hyp (x86p x86)
     :bound 32
     :concl (rm-low-32 addr x86)
     :hints (("Goal" :in-theory (e/d () (force (force)))))
@@ -168,8 +175,11 @@ recommend using these functions at the top-level.</p>")
 
   ///
 
+  (defthm rm-low-64-in-programmer-level-mode
+    (implies (programmer-level-mode x86)
+             (equal (rm-low-64 p-addr x86) 0)))
+
   (defthm-usb n64p-rm-low-64
-    :hyp (x86p x86)
     :bound 64
     :concl (rm-low-64 addr x86)
     :hints (("Goal" :in-theory (e/d ()
@@ -177,7 +187,6 @@ recommend using these functions at the top-level.</p>")
                                      force (force)))))
     :gen-linear t
     :gen-type t)
-
 
   (defthm rm-low-64-xw
     (implies (and (not (equal fld :mem))

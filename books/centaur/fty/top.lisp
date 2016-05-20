@@ -34,6 +34,7 @@
 (include-book "fixequiv")
 (include-book "deftypes")
 (include-book "basetypes")
+(include-book "baselists")
 (include-book "visitor")
 
 (defxdoc fty

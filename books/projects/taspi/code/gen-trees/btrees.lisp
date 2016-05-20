@@ -68,7 +68,7 @@
                  (<= 0 x))
             (< (expt 2 (+ -1 (ilog2-help x)))
                (+ 1 x)))
-   :hints (("subgoal *1/4.1.2'"
+   :hints (("subgoal *1/4.1" ; Matt K. mod 5/2016 (type-set bit for {1})
             :use (:instance crock
                             (x (expt 2
                                      (+ -1 (ilog2-help
