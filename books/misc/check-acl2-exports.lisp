@@ -95,6 +95,12 @@
     FIND-RULES-OF-RUNE
     INCOMPATIBLE! ; to be added to *acl2-exports*
     INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
+    LOGIC-FNS-LIST-LISTP ; to be added to *acl2-exports*
+    LOGIC-FNS-LISTP ; to be added to *acl2-exports*
+    LOGIC-FNSP ; to be added to *acl2-exports*
+    LOGIC-TERM-LIST-LISTP ; to be added to *acl2-exports*
+    LOGIC-TERM-LISTP ; to be added to *acl2-exports*
+    LOGIC-TERMP ; to be added to *acl2-exports*
     LOOP-STOPPER
     MBE1
     NON-LINEAR-ARITHMETIC

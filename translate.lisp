@@ -9272,6 +9272,68 @@
 (defmacro all-fnnames-lst (lst)
   `(all-fnnames1 t ,lst nil))
 
+(mutual-recursion
+
+(defun logic-fnsp (term wrld)
+
+; We check for the absence of calls (f ...) in term for which the symbol-class
+; of f is :program.  If f is a term (not merely a pseudo-term), that's
+; equivalent to saying that every function symbol called in term is in :logic
+; mode, i.e., has a 'symbol-class property of :ideal or :common-lisp-compliant.
+
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (pseudo-termp term))))
+  (cond ((mbe :logic (atom term)
+              :exec (variablep term))
+         t)
+        ((fquotep term) t)
+        ((flambdap (ffn-symb term))
+         (and (logic-fnsp (lambda-body (ffn-symb term)) wrld)
+              (logic-fns-listp (fargs term) wrld)))
+        ((programp (ffn-symb term) wrld) nil)
+        (t (logic-fns-listp (fargs term) wrld))))
+
+(defun logic-fns-listp (lst wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (pseudo-term-listp lst))))
+  (cond ((endp lst) t)
+        (t (and (logic-fnsp (car lst) wrld)
+                (logic-fns-listp (cdr lst) wrld)))))
+)
+
+(defun logic-termp (x wrld)
+
+; Warning: Checks in rewrite-with-lemma, eval-clause-processor, and
+; eval-clause-processor@par check logical-termp by separately checking termp
+; and (not (program-termp ...)).  If you change logical-termp, consider whether
+; it's also necessary to modify those checks.
+
+  (declare (xargs :guard (plist-worldp-with-formals wrld)))
+  (and (termp x wrld)
+       (logic-fnsp x wrld)))
+
+(defun logic-term-listp (x w)
+
+; We could define this recursively, but proofs about logical-termp can involve
+; program-termp and hence its mutual-recursion nest-mate, program-term-listp.
+; So we here we avoid introducing a second recursion.
+
+  (declare (xargs :guard (plist-worldp-with-formals w)))
+  (and (term-listp x w)
+       (logic-fns-listp x w)))
+
+(defun logic-fns-list-listp (x wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (pseudo-term-list-listp x))))
+  (cond ((endp x) t)
+        (t (and (logic-fns-listp (car x) wrld)
+                (logic-fns-list-listp (cdr x) wrld)))))
+
+(defun logic-term-list-listp (x w)
+  (declare (xargs :guard (plist-worldp-with-formals w)))
+  (and (term-list-listp x w)
+       (logic-fns-list-listp x w)))
+
 (defun translate-cmp (x stobjs-out logic-modep known-stobjs ctx w state-vars)
 
 ; See translate.  Here we return a context-message pair; see the Essay on
@@ -9285,7 +9347,7 @@
           (cond (erp ; erp is a ctx and val is a msg
                  (mv erp val))
                 ((and logic-modep
-                      (program-termp val w))
+                      (not (logic-fnsp val w)))
                  (er-cmp ctx
                          "Function symbols of mode :program are not allowed ~
                           in the present context.  Yet, the function ~

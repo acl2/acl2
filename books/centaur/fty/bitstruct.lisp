@@ -1025,13 +1025,7 @@ accessors, in addition to the direct accessors @('toplevel->ss') and
 
 
 (logic)
-(defthm unsigned-byte-p-1-when-bitp
-  (implies (bitp x)
-           (unsigned-byte-p 1 x)))
 
-(defthm bitp-when-unsigned-byte-p-1
-  (implies (unsigned-byte-p 1 x)
-           (bitp x)))
 
 
 
