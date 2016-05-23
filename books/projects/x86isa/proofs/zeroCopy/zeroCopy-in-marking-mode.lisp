@@ -2456,11 +2456,7 @@
        (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86)))
       (equal
        (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt (mv-nth 1 (wb addr-lst x86))))
-       (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86)))
-      ;; (equal
-      ;;  (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt (mv-nth 1 (wb addr-lst x86))))
-      ;;  (mv-nth 1 (wb addr-lst (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
-      ))
+       (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86)))))
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d* (las-to-pas
@@ -3094,6 +3090,7 @@
                              force (force))))))
 
 #||
+
 (i-am-here)
 
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
@@ -3121,6 +3118,1043 @@
 ;; trivial ancestors-check version.
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
+
+(def-gl-thm test-mapped-address
+  ;; Map the destination PDPTE to contain the same value (not
+  ;; permissions) as that in the source PDPTE.
+  :hyp (and (unsigned-byte-p 64 source-entry)
+            (unsigned-byte-p 64 destination-entry))
+  ;; pointer comes from the byte-list of wb in the following s-expr.
+  :concl (let* ((pointer (logior
+                          (logand     4503598553628672 source-entry)
+                          (logand 18442240475155922943 destination-entry))))
+           (equal (ash (part-select source-entry :low 30 :width 22) 30)
+                  (ash (part-select      pointer :low 30 :width 22) 30)))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat source-entry 64) (:nat destination-entry 64))))
+
+(MV-NTH
+ '0
+ (GET-PREFIXES-ALT
+  (BINARY-+ '190 (XR ':RIP '0 X86))
+  '0
+  '5
+  (MV-NTH
+   '1
+   (WB
+    (CREATE-ADDR-BYTES-ALIST
+     (CREATE-CANONICAL-ADDRESS-LIST
+      '8
+      (BINARY-LOGIOR
+       (BINARY-LOGAND
+        '4088
+        (ACL2::LOGHEAD$INLINE '32
+                              (ACL2::LOGTAIL$INLINE '27
+                                                    (XR ':RGF '6 X86))))
+       (ASH
+        (ACL2::LOGHEAD$INLINE
+         '40
+         (ACL2::LOGTAIL$INLINE
+          '12
+          (COMBINE-BYTES
+           (MV-NTH
+            '1
+            (RB
+             (CREATE-CANONICAL-ADDRESS-LIST
+              '8
+              (BINARY-LOGIOR
+               (BINARY-LOGAND '-4096
+                              (LOGEXT '64 (XR ':CTR '3 X86)))
+               (BINARY-LOGAND
+                '4088
+                (ACL2::LOGHEAD$INLINE
+                 '28
+                 (ACL2::LOGTAIL$INLINE '36
+                                       (XR ':RGF '6 X86))))))
+             ':R
+             X86)))))
+        '12)))
+     (BYTE-IFY
+      '8
+      (BINARY-LOGIOR
+       (BINARY-LOGAND
+        '4503598553628672
+        (COMBINE-BYTES
+         (MV-NTH
+          '1
+          (RB
+           (CREATE-CANONICAL-ADDRESS-LIST
+            '8
+            (BINARY-LOGIOR
+             (BINARY-LOGAND '4088
+                            (ACL2::LOGHEAD$INLINE
+                             '32
+                             (ACL2::LOGTAIL$INLINE '27
+                                                   (XR ':RGF '7 X86))))
+             (ASH
+              (ACL2::LOGHEAD$INLINE
+               '40
+               (ACL2::LOGTAIL$INLINE
+                '12
+                (COMBINE-BYTES
+                 (MV-NTH
+                  '1
+                  (RB
+                   (CREATE-CANONICAL-ADDRESS-LIST
+                    '8
+                    (BINARY-LOGIOR
+                     (BINARY-LOGAND '-4096
+                                    (LOGEXT '64 (XR ':CTR '3 X86)))
+                     (BINARY-LOGAND
+                      '4088
+                      (ACL2::LOGHEAD$INLINE
+                       '28
+                       (ACL2::LOGTAIL$INLINE '36
+                                             (XR ':RGF '7 X86))))))
+                   ':R
+                   X86)))))
+              '12)))
+           ':R
+           X86))))
+       (BINARY-LOGAND
+        '18442240475155922943
+        (ACL2::LOGHEAD$INLINE
+         '64
+         (COMBINE-BYTES
+          (MV-NTH
+           '1
+           (RB
+            (CREATE-CANONICAL-ADDRESS-LIST
+             '8
+             (BINARY-LOGIOR
+              (BINARY-LOGAND '4088
+                             (ACL2::LOGHEAD$INLINE
+                              '32
+                              (ACL2::LOGTAIL$INLINE '27
+                                                    (XR ':RGF '6 X86))))
+              (ASH
+               (ACL2::LOGHEAD$INLINE
+                '40
+                (ACL2::LOGTAIL$INLINE
+                 '12
+                 (COMBINE-BYTES
+                  (MV-NTH
+                   '1
+                   (RB
+                    (CREATE-CANONICAL-ADDRESS-LIST
+                     '8
+                     (BINARY-LOGIOR
+                      (BINARY-LOGAND '-4096
+                                     (LOGEXT '64 (XR ':CTR '3 X86)))
+                      (BINARY-LOGAND
+                       '4088
+                       (ACL2::LOGHEAD$INLINE
+                        '28
+                        (ACL2::LOGTAIL$INLINE '36
+                                              (XR ':RGF '6 X86))))))
+                    ':R
+                    X86)))))
+               '12)))
+            ':R
+            (MV-NTH
+             '2
+             (LAS-TO-PAS
+              (CONS
+               (BINARY-+ '140 (XR ':RIP '0 X86))
+               (CONS
+                (BINARY-+ '141 (XR ':RIP '0 X86))
+                (CONS
+                 (BINARY-+ '142 (XR ':RIP '0 X86))
+                 (CONS
+                  (BINARY-+ '144 (XR ':RIP '0 X86))
+                  (CONS
+                   (BINARY-+ '145 (XR ':RIP '0 X86))
+                   (CONS
+                    (BINARY-+ '146 (XR ':RIP '0 X86))
+                    (CONS
+                     (BINARY-+ '147 (XR ':RIP '0 X86))
+                     (CONS
+                      (BINARY-+ '148 (XR ':RIP '0 X86))
+                      (CONS
+                       (BINARY-+ '149 (XR ':RIP '0 X86))
+                       (CONS
+                        (BINARY-+ '150 (XR ':RIP '0 X86))
+                        (CONS
+                         (BINARY-+ '151 (XR ':RIP '0 X86))
+                         (CONS
+                          (BINARY-+ '152 (XR ':RIP '0 X86))
+                          (CONS
+                           (BINARY-+ '153 (XR ':RIP '0 X86))
+                           (CONS
+                            (BINARY-+ '154 (XR ':RIP '0 X86))
+                            (CONS
+                             (BINARY-+ '155 (XR ':RIP '0 X86))
+                             (CONS
+                              (BINARY-+ '156 (XR ':RIP '0 X86))
+                              (CONS
+                               (BINARY-+ '157 (XR ':RIP '0 X86))
+                               (CONS
+                                (BINARY-+ '158 (XR ':RIP '0 X86))
+                                (CONS
+                                 (BINARY-+ '159 (XR ':RIP '0 X86))
+                                 (BINARY-APPEND
+                                  (CREATE-CANONICAL-ADDRESS-LIST
+                                   '4
+                                   (BINARY-+ '160 (XR ':RIP '0 X86)))
+                                  (CONS
+                                   (BINARY-+ '164 (XR ':RIP '0 X86))
+                                   (CONS
+                                    (BINARY-+ '165 (XR ':RIP '0 X86))
+                                    (CONS
+                                     (BINARY-+ '166 (XR ':RIP '0 X86))
+                                     (CONS
+                                      (BINARY-+ '167 (XR ':RIP '0 X86))
+                                      (CONS
+                                       (BINARY-+ '168 (XR ':RIP '0 X86))
+                                       (CONS
+                                        (BINARY-+ '169 (XR ':RIP '0 X86))
+                                        (CONS
+                                         (BINARY-+ '170 (XR ':RIP '0 X86))
+                                         (CONS
+                                          (BINARY-+ '171 (XR ':RIP '0 X86))
+                                          (CONS
+                                           (BINARY-+ '172 (XR ':RIP '0 X86))
+                                           (BINARY-APPEND
+                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                             '8
+                                             (BINARY-+ '173
+                                                       (XR ':RIP '0 X86)))
+                                            (CONS
+                                             (BINARY-+ '181
+                                                       (XR ':RIP '0 X86))
+                                             (CONS
+                                              (BINARY-+ '182
+                                                        (XR ':RIP '0 X86))
+                                              (CONS
+                                               (BINARY-+ '183
+                                                         (XR ':RIP '0 X86))
+                                               'NIL)))))))))))))))))))))))))))))))))
+              ':X
+              '0
+              (MV-NTH
+               '2
+               (RB
+                (CREATE-CANONICAL-ADDRESS-LIST
+                 '8
+                 (BINARY-LOGIOR
+                  (BINARY-LOGAND '-4096
+                                 (LOGEXT '64 (XR ':CTR '3 X86)))
+                  (BINARY-LOGAND
+                   '4088
+                   (ACL2::LOGHEAD$INLINE
+                    '28
+                    (ACL2::LOGTAIL$INLINE '36
+                                          (XR ':RGF '6 X86))))))
+                ':R
+                (MV-NTH
+                 '2
+                 (LAS-TO-PAS
+                  (CONS
+                   (BINARY-+ '86 (XR ':RIP '0 X86))
+                   (CONS
+                    (BINARY-+ '87 (XR ':RIP '0 X86))
+                    (CONS
+                     (BINARY-+ '88 (XR ':RIP '0 X86))
+                     (CONS
+                      (BINARY-+ '89 (XR ':RIP '0 X86))
+                      (CONS
+                       (BINARY-+ '90 (XR ':RIP '0 X86))
+                       (BINARY-APPEND
+                        (CREATE-CANONICAL-ADDRESS-LIST
+                         '4
+                         (BINARY-+ '91 (XR ':RIP '0 X86)))
+                        (CONS
+                         (BINARY-+ '95 (XR ':RIP '0 X86))
+                         (CONS
+                          (BINARY-+ '96 (XR ':RIP '0 X86))
+                          (CONS
+                           (BINARY-+ '97 (XR ':RIP '0 X86))
+                           (BINARY-APPEND
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             '4
+                             (BINARY-+ '98 (XR ':RIP '0 X86)))
+                            (CONS
+                             (BINARY-+ '102 (XR ':RIP '0 X86))
+                             (CONS
+                              (BINARY-+ '103 (XR ':RIP '0 X86))
+                              (CONS
+                               (BINARY-+ '108 (XR ':RIP '0 X86))
+                               (CONS
+                                (BINARY-+ '109 (XR ':RIP '0 X86))
+                                (CONS
+                                 (BINARY-+ '110 (XR ':RIP '0 X86))
+                                 (CONS
+                                  (BINARY-+ '111 (XR ':RIP '0 X86))
+                                  (CONS
+                                   (BINARY-+ '112 (XR ':RIP '0 X86))
+                                   (BINARY-APPEND
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     '8
+                                     (BINARY-+ '113 (XR ':RIP '0 X86)))
+                                    (CONS
+                                     (BINARY-+ '121 (XR ':RIP '0 X86))
+                                     (CONS
+                                      (BINARY-+ '122 (XR ':RIP '0 X86))
+                                      (CONS
+                                       (BINARY-+ '123 (XR ':RIP '0 X86))
+                                       (CONS
+                                        (BINARY-+ '124 (XR ':RIP '0 X86))
+                                        (CONS
+                                         (BINARY-+ '125 (XR ':RIP '0 X86))
+                                         (CONS
+                                          (BINARY-+ '126 (XR ':RIP '0 X86))
+                                          (CONS
+                                           (BINARY-+ '127 (XR ':RIP '0 X86))
+                                           (CONS
+                                            (BINARY-+ '128 (XR ':RIP '0 X86))
+                                            (CONS
+                                             (BINARY-+ '129
+                                                       (XR ':RIP '0 X86))
+                                             (BINARY-APPEND
+                                              (CREATE-CANONICAL-ADDRESS-LIST
+                                               '4
+                                               (BINARY-+ '130
+                                                         (XR ':RIP '0 X86)))
+                                              (CONS
+                                               (BINARY-+ '134
+                                                         (XR ':RIP '0 X86))
+                                               (CONS
+                                                (BINARY-+ '135
+                                                          (XR ':RIP '0 X86))
+                                                (CONS
+                                                 (BINARY-+ '136
+                                                           (XR ':RIP '0 X86))
+                                                 (CONS
+                                                  (BINARY-+
+                                                   '137
+                                                   (XR ':RIP '0 X86))
+                                                  (CONS
+                                                   (BINARY-+
+                                                    '138
+                                                    (XR ':RIP '0 X86))
+                                                   (CONS
+                                                    (BINARY-+
+                                                     '139
+                                                     (XR ':RIP '0 X86))
+                                                    'NIL))))))))))))))))))))))))))))))))))
+                  ':X
+                  '0
+                  (MV-NTH
+                   '2
+                   (RB
+                    (CREATE-CANONICAL-ADDRESS-LIST
+                     '8
+                     (BINARY-LOGIOR
+                      (BINARY-LOGAND
+                       '4088
+                       (ACL2::LOGHEAD$INLINE
+                        '32
+                        (ACL2::LOGTAIL$INLINE '27
+                                              (XR ':RGF '7 X86))))
+                      (ASH
+                       (ACL2::LOGHEAD$INLINE
+                        '40
+                        (ACL2::LOGTAIL$INLINE
+                         '12
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           '1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             '8
+                             (BINARY-LOGIOR
+                              (BINARY-LOGAND '-4096
+                                             (LOGEXT '64 (XR ':CTR '3 X86)))
+                              (BINARY-LOGAND
+                               '4088
+                               (ACL2::LOGHEAD$INLINE
+                                '28
+                                (ACL2::LOGTAIL$INLINE '36
+                                                      (XR ':RGF '7 X86))))))
+                            ':R
+                            X86)))))
+                       '12)))
+                    ':R
+                    (MV-NTH
+                     '2
+                     (LAS-TO-PAS
+                      (CONS
+                       (BINARY-+ '38 (XR ':RIP '0 X86))
+                       (CONS
+                        (BINARY-+ '39 (XR ':RIP '0 X86))
+                        (CONS
+                         (BINARY-+ '40 (XR ':RIP '0 X86))
+                         (CONS
+                          (BINARY-+ '41 (XR ':RIP '0 X86))
+                          (CONS
+                           (BINARY-+ '46 (XR ':RIP '0 X86))
+                           (CONS
+                            (BINARY-+ '47 (XR ':RIP '0 X86))
+                            (CONS
+                             (BINARY-+ '48 (XR ':RIP '0 X86))
+                             (CONS
+                              (BINARY-+ '49 (XR ':RIP '0 X86))
+                              (CONS
+                               (BINARY-+ '50 (XR ':RIP '0 X86))
+                               (CONS
+                                (BINARY-+ '51 (XR ':RIP '0 X86))
+                                (BINARY-APPEND
+                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                  '8
+                                  (BINARY-+ '52 (XR ':RIP '0 X86)))
+                                 (CONS
+                                  (BINARY-+ '60 (XR ':RIP '0 X86))
+                                  (CONS
+                                   (BINARY-+ '61 (XR ':RIP '0 X86))
+                                   (CONS
+                                    (BINARY-+ '62 (XR ':RIP '0 X86))
+                                    (CONS
+                                     (BINARY-+ '63 (XR ':RIP '0 X86))
+                                     (CONS
+                                      (BINARY-+ '64 (XR ':RIP '0 X86))
+                                      (CONS
+                                       (BINARY-+ '65 (XR ':RIP '0 X86))
+                                       (CONS
+                                        (BINARY-+ '66 (XR ':RIP '0 X86))
+                                        (CONS
+                                         (BINARY-+ '67 (XR ':RIP '0 X86))
+                                         (CONS
+                                          (BINARY-+ '68 (XR ':RIP '0 X86))
+                                          (CONS
+                                           (BINARY-+ '69 (XR ':RIP '0 X86))
+                                           (CONS
+                                            (BINARY-+ '70 (XR ':RIP '0 X86))
+                                            (CONS
+                                             (BINARY-+ '71 (XR ':RIP '0 X86))
+                                             (BINARY-APPEND
+                                              (CREATE-CANONICAL-ADDRESS-LIST
+                                               '4
+                                               (BINARY-+ '72
+                                                         (XR ':RIP '0 X86)))
+                                              (CONS
+                                               (BINARY-+ '76
+                                                         (XR ':RIP '0 X86))
+                                               (CONS
+                                                (BINARY-+ '77
+                                                          (XR ':RIP '0 X86))
+                                                (CONS
+                                                 (BINARY-+ '78
+                                                           (XR ':RIP '0 X86))
+                                                 (CONS
+                                                  (BINARY-+
+                                                   '79
+                                                   (XR ':RIP '0 X86))
+                                                  (CONS
+                                                   (BINARY-+
+                                                    '80
+                                                    (XR ':RIP '0 X86))
+                                                   (CONS
+                                                    (BINARY-+
+                                                     '81
+                                                     (XR ':RIP '0 X86))
+                                                    (CONS
+                                                     (BINARY-+
+                                                      '82
+                                                      (XR ':RIP '0 X86))
+                                                     (CONS
+                                                      (BINARY-+
+                                                       '83
+                                                       (XR ':RIP '0 X86))
+                                                      (CONS
+                                                       (BINARY-+
+                                                        '84
+                                                        (XR ':RIP '0 X86))
+                                                       (CONS
+                                                        (BINARY-+
+                                                         '85
+                                                         (XR ':RIP '0 X86))
+                                                        'NIL))))))))))))))))))))))))))))))))))
+                      ':X
+                      '0
+                      (MV-NTH
+                       '2
+                       (RB
+                        (CREATE-CANONICAL-ADDRESS-LIST
+                         '8
+                         (BINARY-LOGIOR
+                          (BINARY-LOGAND '-4096
+                                         (LOGEXT '64 (XR ':CTR '3 X86)))
+                          (BINARY-LOGAND
+                           '4088
+                           (ACL2::LOGHEAD$INLINE
+                            '28
+                            (ACL2::LOGTAIL$INLINE '36
+                                                  (XR ':RGF '7 X86))))))
+                        ':R
+                        (MV-NTH
+                         '2
+                         (LAS-TO-PAS
+                          (CONS
+                           (BINARY-+ '13 (XR ':RIP '0 X86))
+                           (CONS
+                            (BINARY-+ '14 (XR ':RIP '0 X86))
+                            (CONS
+                             (BINARY-+ '15 (XR ':RIP '0 X86))
+                             (CONS
+                              (BINARY-+ '16 (XR ':RIP '0 X86))
+                              (CONS
+                               (BINARY-+ '17 (XR ':RIP '0 X86))
+                               (CONS
+                                (BINARY-+ '18 (XR ':RIP '0 X86))
+                                (CONS
+                                 (BINARY-+ '19 (XR ':RIP '0 X86))
+                                 (CONS
+                                  (BINARY-+ '20 (XR ':RIP '0 X86))
+                                  (BINARY-APPEND
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    '4
+                                    (BINARY-+ '21 (XR ':RIP '0 X86)))
+                                   (CONS
+                                    (BINARY-+ '25 (XR ':RIP '0 X86))
+                                    (CONS
+                                     (BINARY-+ '26 (XR ':RIP '0 X86))
+                                     (CONS
+                                      (BINARY-+ '27 (XR ':RIP '0 X86))
+                                      (BINARY-APPEND
+                                       (CREATE-CANONICAL-ADDRESS-LIST
+                                        '4
+                                        (BINARY-+ '28 (XR ':RIP '0 X86)))
+                                       (CONS
+                                        (BINARY-+ '32 (XR ':RIP '0 X86))
+                                        (CONS
+                                         (BINARY-+ '33 (XR ':RIP '0 X86))
+                                         (CONS
+                                          (BINARY-+ '34 (XR ':RIP '0 X86))
+                                          (CONS
+                                           (BINARY-+ '35 (XR ':RIP '0 X86))
+                                           (CONS
+                                            (BINARY-+ '36 (XR ':RIP '0 X86))
+                                            (CONS
+                                             (BINARY-+ '37 (XR ':RIP '0 X86))
+                                             'NIL)))))))))))))))))))
+                          ':X
+                          '0
+                          (MV-NTH
+                           '2
+                           (LAS-TO-PAS
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             '8
+                             (BINARY-+ '-24 (XR ':RGF '4 X86)))
+                            ':R
+                            '0
+                            (MV-NTH
+                             '2
+                             (LAS-TO-PAS
+                              (CONS
+                               (BINARY-+ '8 (XR ':RIP '0 X86))
+                               (CONS
+                                (BINARY-+ '9 (XR ':RIP '0 X86))
+                                (CONS
+                                 (BINARY-+ '10 (XR ':RIP '0 X86))
+                                 (CONS (BINARY-+ '11 (XR ':RIP '0 X86))
+                                       (CONS (BINARY-+ '12 (XR ':RIP '0 X86))
+                                             'NIL)))))
+                              ':X
+                              '0
+                              (MV-NTH
+                               '1
+                               (WB
+                                (CREATE-ADDR-BYTES-ALIST
+                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                  '8
+                                  (BINARY-+ '-24 (XR ':RGF '4 X86)))
+                                 (BYTE-IFY '8 (XR ':CTR '3 X86)))
+                                (MV-NTH
+                                 '2
+                                 (LAS-TO-PAS
+                                  (CONS
+                                   (XR ':RIP '0 X86)
+                                   (CONS
+                                    (BINARY-+ '1 (XR ':RIP '0 X86))
+                                    (CONS
+                                     (BINARY-+ '2 (XR ':RIP '0 X86))
+                                     (CONS
+                                      (BINARY-+ '3 (XR ':RIP '0 X86))
+                                      (CONS
+                                       (BINARY-+ '4 (XR ':RIP '0 X86))
+                                       (CONS
+                                        (BINARY-+ '5 (XR ':RIP '0 X86))
+                                        (CONS
+                                         (BINARY-+ '6 (XR ':RIP '0 X86))
+                                         (CONS
+                                          (BINARY-+ '7 (XR ':RIP '0 X86))
+                                          'NIL))))))))
+                                  ':X
+                                  '0
+                                  X86))))))))))))))))))))))))))))))
+    (MV-NTH
+     '2
+     (LAS-TO-PAS
+      (CONS (BINARY-+ '184 (XR ':RIP '0 X86))
+            (CONS (BINARY-+ '185 (XR ':RIP '0 X86))
+                  (CONS (BINARY-+ '186 (XR ':RIP '0 X86))
+                        (CONS (BINARY-+ '187 (XR ':RIP '0 X86))
+                              (CONS (BINARY-+ '188 (XR ':RIP '0 X86))
+                                    (CONS (BINARY-+ '189 (XR ':RIP '0 X86))
+                                          'NIL))))))
+      ':X
+      '0
+      (MV-NTH
+       '2
+       (RB
+        (CREATE-CANONICAL-ADDRESS-LIST
+         '8
+         (BINARY-LOGIOR
+          (BINARY-LOGAND
+           '4088
+           (ACL2::LOGHEAD$INLINE '32
+                                 (ACL2::LOGTAIL$INLINE '27
+                                                       (XR ':RGF '6 X86))))
+          (ASH
+           (ACL2::LOGHEAD$INLINE
+            '40
+            (ACL2::LOGTAIL$INLINE
+             '12
+             (COMBINE-BYTES
+              (MV-NTH
+               '1
+               (RB
+                (CREATE-CANONICAL-ADDRESS-LIST
+                 '8
+                 (BINARY-LOGIOR
+                  (BINARY-LOGAND '-4096
+                                 (LOGEXT '64 (XR ':CTR '3 X86)))
+                  (BINARY-LOGAND
+                   '4088
+                   (ACL2::LOGHEAD$INLINE
+                    '28
+                    (ACL2::LOGTAIL$INLINE '36
+                                          (XR ':RGF '6 X86))))))
+                ':R
+                X86)))))
+           '12)))
+        ':R
+        (MV-NTH
+         '2
+         (LAS-TO-PAS
+          (CONS
+           (BINARY-+ '140 (XR ':RIP '0 X86))
+           (CONS
+            (BINARY-+ '141 (XR ':RIP '0 X86))
+            (CONS
+             (BINARY-+ '142 (XR ':RIP '0 X86))
+             (CONS
+              (BINARY-+ '144 (XR ':RIP '0 X86))
+              (CONS
+               (BINARY-+ '145 (XR ':RIP '0 X86))
+               (CONS
+                (BINARY-+ '146 (XR ':RIP '0 X86))
+                (CONS
+                 (BINARY-+ '147 (XR ':RIP '0 X86))
+                 (CONS
+                  (BINARY-+ '148 (XR ':RIP '0 X86))
+                  (CONS
+                   (BINARY-+ '149 (XR ':RIP '0 X86))
+                   (CONS
+                    (BINARY-+ '150 (XR ':RIP '0 X86))
+                    (CONS
+                     (BINARY-+ '151 (XR ':RIP '0 X86))
+                     (CONS
+                      (BINARY-+ '152 (XR ':RIP '0 X86))
+                      (CONS
+                       (BINARY-+ '153 (XR ':RIP '0 X86))
+                       (CONS
+                        (BINARY-+ '154 (XR ':RIP '0 X86))
+                        (CONS
+                         (BINARY-+ '155 (XR ':RIP '0 X86))
+                         (CONS
+                          (BINARY-+ '156 (XR ':RIP '0 X86))
+                          (CONS
+                           (BINARY-+ '157 (XR ':RIP '0 X86))
+                           (CONS
+                            (BINARY-+ '158 (XR ':RIP '0 X86))
+                            (CONS
+                             (BINARY-+ '159 (XR ':RIP '0 X86))
+                             (BINARY-APPEND
+                              (CREATE-CANONICAL-ADDRESS-LIST
+                               '4
+                               (BINARY-+ '160 (XR ':RIP '0 X86)))
+                              (CONS
+                               (BINARY-+ '164 (XR ':RIP '0 X86))
+                               (CONS
+                                (BINARY-+ '165 (XR ':RIP '0 X86))
+                                (CONS
+                                 (BINARY-+ '166 (XR ':RIP '0 X86))
+                                 (CONS
+                                  (BINARY-+ '167 (XR ':RIP '0 X86))
+                                  (CONS
+                                   (BINARY-+ '168 (XR ':RIP '0 X86))
+                                   (CONS
+                                    (BINARY-+ '169 (XR ':RIP '0 X86))
+                                    (CONS
+                                     (BINARY-+ '170 (XR ':RIP '0 X86))
+                                     (CONS
+                                      (BINARY-+ '171 (XR ':RIP '0 X86))
+                                      (CONS
+                                       (BINARY-+ '172 (XR ':RIP '0 X86))
+                                       (BINARY-APPEND
+                                        (CREATE-CANONICAL-ADDRESS-LIST
+                                         '8
+                                         (BINARY-+ '173 (XR ':RIP '0 X86)))
+                                        (CONS
+                                         (BINARY-+ '181 (XR ':RIP '0 X86))
+                                         (CONS
+                                          (BINARY-+ '182 (XR ':RIP '0 X86))
+                                          (CONS
+                                           (BINARY-+ '183 (XR ':RIP '0 X86))
+                                           'NIL)))))))))))))))))))))))))))))))))
+          ':X
+          '0
+          (MV-NTH
+           '2
+           (RB
+            (CREATE-CANONICAL-ADDRESS-LIST
+             '8
+             (BINARY-LOGIOR
+              (BINARY-LOGAND '-4096
+                             (LOGEXT '64 (XR ':CTR '3 X86)))
+              (BINARY-LOGAND
+               '4088
+               (ACL2::LOGHEAD$INLINE
+                '28
+                (ACL2::LOGTAIL$INLINE '36
+                                      (XR ':RGF '6 X86))))))
+            ':R
+            (MV-NTH
+             '2
+             (LAS-TO-PAS
+              (CONS
+               (BINARY-+ '86 (XR ':RIP '0 X86))
+               (CONS
+                (BINARY-+ '87 (XR ':RIP '0 X86))
+                (CONS
+                 (BINARY-+ '88 (XR ':RIP '0 X86))
+                 (CONS
+                  (BINARY-+ '89 (XR ':RIP '0 X86))
+                  (CONS
+                   (BINARY-+ '90 (XR ':RIP '0 X86))
+                   (BINARY-APPEND
+                    (CREATE-CANONICAL-ADDRESS-LIST
+                     '4
+                     (BINARY-+ '91 (XR ':RIP '0 X86)))
+                    (CONS
+                     (BINARY-+ '95 (XR ':RIP '0 X86))
+                     (CONS
+                      (BINARY-+ '96 (XR ':RIP '0 X86))
+                      (CONS
+                       (BINARY-+ '97 (XR ':RIP '0 X86))
+                       (BINARY-APPEND
+                        (CREATE-CANONICAL-ADDRESS-LIST
+                         '4
+                         (BINARY-+ '98 (XR ':RIP '0 X86)))
+                        (CONS
+                         (BINARY-+ '102 (XR ':RIP '0 X86))
+                         (CONS
+                          (BINARY-+ '103 (XR ':RIP '0 X86))
+                          (CONS
+                           (BINARY-+ '108 (XR ':RIP '0 X86))
+                           (CONS
+                            (BINARY-+ '109 (XR ':RIP '0 X86))
+                            (CONS
+                             (BINARY-+ '110 (XR ':RIP '0 X86))
+                             (CONS
+                              (BINARY-+ '111 (XR ':RIP '0 X86))
+                              (CONS
+                               (BINARY-+ '112 (XR ':RIP '0 X86))
+                               (BINARY-APPEND
+                                (CREATE-CANONICAL-ADDRESS-LIST
+                                 '8
+                                 (BINARY-+ '113 (XR ':RIP '0 X86)))
+                                (CONS
+                                 (BINARY-+ '121 (XR ':RIP '0 X86))
+                                 (CONS
+                                  (BINARY-+ '122 (XR ':RIP '0 X86))
+                                  (CONS
+                                   (BINARY-+ '123 (XR ':RIP '0 X86))
+                                   (CONS
+                                    (BINARY-+ '124 (XR ':RIP '0 X86))
+                                    (CONS
+                                     (BINARY-+ '125 (XR ':RIP '0 X86))
+                                     (CONS
+                                      (BINARY-+ '126 (XR ':RIP '0 X86))
+                                      (CONS
+                                       (BINARY-+ '127 (XR ':RIP '0 X86))
+                                       (CONS
+                                        (BINARY-+ '128 (XR ':RIP '0 X86))
+                                        (CONS
+                                         (BINARY-+ '129 (XR ':RIP '0 X86))
+                                         (BINARY-APPEND
+                                          (CREATE-CANONICAL-ADDRESS-LIST
+                                           '4
+                                           (BINARY-+ '130 (XR ':RIP '0 X86)))
+                                          (CONS
+                                           (BINARY-+ '134 (XR ':RIP '0 X86))
+                                           (CONS
+                                            (BINARY-+ '135 (XR ':RIP '0 X86))
+                                            (CONS
+                                             (BINARY-+ '136
+                                                       (XR ':RIP '0 X86))
+                                             (CONS
+                                              (BINARY-+ '137
+                                                        (XR ':RIP '0 X86))
+                                              (CONS
+                                               (BINARY-+ '138
+                                                         (XR ':RIP '0 X86))
+                                               (CONS
+                                                (BINARY-+ '139
+                                                          (XR ':RIP '0 X86))
+                                                'NIL))))))))))))))))))))))))))))))))))
+              ':X
+              '0
+              (MV-NTH
+               '2
+               (RB
+                (CREATE-CANONICAL-ADDRESS-LIST
+                 '8
+                 (BINARY-LOGIOR
+                  (BINARY-LOGAND
+                   '4088
+                   (ACL2::LOGHEAD$INLINE
+                    '32
+                    (ACL2::LOGTAIL$INLINE '27
+                                          (XR ':RGF '7 X86))))
+                  (ASH
+                   (ACL2::LOGHEAD$INLINE
+                    '40
+                    (ACL2::LOGTAIL$INLINE
+                     '12
+                     (COMBINE-BYTES
+                      (MV-NTH
+                       '1
+                       (RB
+                        (CREATE-CANONICAL-ADDRESS-LIST
+                         '8
+                         (BINARY-LOGIOR
+                          (BINARY-LOGAND '-4096
+                                         (LOGEXT '64 (XR ':CTR '3 X86)))
+                          (BINARY-LOGAND
+                           '4088
+                           (ACL2::LOGHEAD$INLINE
+                            '28
+                            (ACL2::LOGTAIL$INLINE '36
+                                                  (XR ':RGF '7 X86))))))
+                        ':R
+                        X86)))))
+                   '12)))
+                ':R
+                (MV-NTH
+                 '2
+                 (LAS-TO-PAS
+                  (CONS
+                   (BINARY-+ '38 (XR ':RIP '0 X86))
+                   (CONS
+                    (BINARY-+ '39 (XR ':RIP '0 X86))
+                    (CONS
+                     (BINARY-+ '40 (XR ':RIP '0 X86))
+                     (CONS
+                      (BINARY-+ '41 (XR ':RIP '0 X86))
+                      (CONS
+                       (BINARY-+ '46 (XR ':RIP '0 X86))
+                       (CONS
+                        (BINARY-+ '47 (XR ':RIP '0 X86))
+                        (CONS
+                         (BINARY-+ '48 (XR ':RIP '0 X86))
+                         (CONS
+                          (BINARY-+ '49 (XR ':RIP '0 X86))
+                          (CONS
+                           (BINARY-+ '50 (XR ':RIP '0 X86))
+                           (CONS
+                            (BINARY-+ '51 (XR ':RIP '0 X86))
+                            (BINARY-APPEND
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              '8
+                              (BINARY-+ '52 (XR ':RIP '0 X86)))
+                             (CONS
+                              (BINARY-+ '60 (XR ':RIP '0 X86))
+                              (CONS
+                               (BINARY-+ '61 (XR ':RIP '0 X86))
+                               (CONS
+                                (BINARY-+ '62 (XR ':RIP '0 X86))
+                                (CONS
+                                 (BINARY-+ '63 (XR ':RIP '0 X86))
+                                 (CONS
+                                  (BINARY-+ '64 (XR ':RIP '0 X86))
+                                  (CONS
+                                   (BINARY-+ '65 (XR ':RIP '0 X86))
+                                   (CONS
+                                    (BINARY-+ '66 (XR ':RIP '0 X86))
+                                    (CONS
+                                     (BINARY-+ '67 (XR ':RIP '0 X86))
+                                     (CONS
+                                      (BINARY-+ '68 (XR ':RIP '0 X86))
+                                      (CONS
+                                       (BINARY-+ '69 (XR ':RIP '0 X86))
+                                       (CONS
+                                        (BINARY-+ '70 (XR ':RIP '0 X86))
+                                        (CONS
+                                         (BINARY-+ '71 (XR ':RIP '0 X86))
+                                         (BINARY-APPEND
+                                          (CREATE-CANONICAL-ADDRESS-LIST
+                                           '4
+                                           (BINARY-+ '72 (XR ':RIP '0 X86)))
+                                          (CONS
+                                           (BINARY-+ '76 (XR ':RIP '0 X86))
+                                           (CONS
+                                            (BINARY-+ '77 (XR ':RIP '0 X86))
+                                            (CONS
+                                             (BINARY-+ '78 (XR ':RIP '0 X86))
+                                             (CONS
+                                              (BINARY-+ '79
+                                                        (XR ':RIP '0 X86))
+                                              (CONS
+                                               (BINARY-+ '80
+                                                         (XR ':RIP '0 X86))
+                                               (CONS
+                                                (BINARY-+ '81
+                                                          (XR ':RIP '0 X86))
+                                                (CONS
+                                                 (BINARY-+ '82
+                                                           (XR ':RIP '0 X86))
+                                                 (CONS
+                                                  (BINARY-+
+                                                   '83
+                                                   (XR ':RIP '0 X86))
+                                                  (CONS
+                                                   (BINARY-+
+                                                    '84
+                                                    (XR ':RIP '0 X86))
+                                                   (CONS
+                                                    (BINARY-+
+                                                     '85
+                                                     (XR ':RIP '0 X86))
+                                                    'NIL))))))))))))))))))))))))))))))))))
+                  ':X
+                  '0
+                  (MV-NTH
+                   '2
+                   (RB
+                    (CREATE-CANONICAL-ADDRESS-LIST
+                     '8
+                     (BINARY-LOGIOR
+                      (BINARY-LOGAND '-4096
+                                     (LOGEXT '64 (XR ':CTR '3 X86)))
+                      (BINARY-LOGAND
+                       '4088
+                       (ACL2::LOGHEAD$INLINE
+                        '28
+                        (ACL2::LOGTAIL$INLINE '36
+                                              (XR ':RGF '7 X86))))))
+                    ':R
+                    (MV-NTH
+                     '2
+                     (LAS-TO-PAS
+                      (CONS
+                       (BINARY-+ '13 (XR ':RIP '0 X86))
+                       (CONS
+                        (BINARY-+ '14 (XR ':RIP '0 X86))
+                        (CONS
+                         (BINARY-+ '15 (XR ':RIP '0 X86))
+                         (CONS
+                          (BINARY-+ '16 (XR ':RIP '0 X86))
+                          (CONS
+                           (BINARY-+ '17 (XR ':RIP '0 X86))
+                           (CONS
+                            (BINARY-+ '18 (XR ':RIP '0 X86))
+                            (CONS
+                             (BINARY-+ '19 (XR ':RIP '0 X86))
+                             (CONS
+                              (BINARY-+ '20 (XR ':RIP '0 X86))
+                              (BINARY-APPEND
+                               (CREATE-CANONICAL-ADDRESS-LIST
+                                '4
+                                (BINARY-+ '21 (XR ':RIP '0 X86)))
+                               (CONS
+                                (BINARY-+ '25 (XR ':RIP '0 X86))
+                                (CONS
+                                 (BINARY-+ '26 (XR ':RIP '0 X86))
+                                 (CONS
+                                  (BINARY-+ '27 (XR ':RIP '0 X86))
+                                  (BINARY-APPEND
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    '4
+                                    (BINARY-+ '28 (XR ':RIP '0 X86)))
+                                   (CONS
+                                    (BINARY-+ '32 (XR ':RIP '0 X86))
+                                    (CONS
+                                     (BINARY-+ '33 (XR ':RIP '0 X86))
+                                     (CONS
+                                      (BINARY-+ '34 (XR ':RIP '0 X86))
+                                      (CONS
+                                       (BINARY-+ '35 (XR ':RIP '0 X86))
+                                       (CONS
+                                        (BINARY-+ '36 (XR ':RIP '0 X86))
+                                        (CONS
+                                         (BINARY-+ '37 (XR ':RIP '0 X86))
+                                         'NIL)))))))))))))))))))
+                      ':X
+                      '0
+                      (MV-NTH
+                       '2
+                       (LAS-TO-PAS
+                        (CREATE-CANONICAL-ADDRESS-LIST
+                         '8
+                         (BINARY-+ '-24 (XR ':RGF '4 X86)))
+                        ':R
+                        '0
+                        (MV-NTH
+                         '2
+                         (LAS-TO-PAS
+                          (CONS
+                           (BINARY-+ '8 (XR ':RIP '0 X86))
+                           (CONS
+                            (BINARY-+ '9 (XR ':RIP '0 X86))
+                            (CONS
+                             (BINARY-+ '10 (XR ':RIP '0 X86))
+                             (CONS (BINARY-+ '11 (XR ':RIP '0 X86))
+                                   (CONS (BINARY-+ '12 (XR ':RIP '0 X86))
+                                         'NIL)))))
+                          ':X
+                          '0
+                          (MV-NTH
+                           '1
+                           (WB
+                            (CREATE-ADDR-BYTES-ALIST
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              '8
+                              (BINARY-+ '-24 (XR ':RGF '4 X86)))
+                             (BYTE-IFY '8 (XR ':CTR '3 X86)))
+                            (MV-NTH
+                             '2
+                             (LAS-TO-PAS
+                              (CONS
+                               (XR ':RIP '0 X86)
+                               (CONS
+                                (BINARY-+ '1 (XR ':RIP '0 X86))
+                                (CONS
+                                 (BINARY-+ '2 (XR ':RIP '0 X86))
+                                 (CONS
+                                  (BINARY-+ '3 (XR ':RIP '0 X86))
+                                  (CONS
+                                   (BINARY-+ '4 (XR ':RIP '0 X86))
+                                   (CONS
+                                    (BINARY-+ '5 (XR ':RIP '0 X86))
+                                    (CONS
+                                     (BINARY-+ '6 (XR ':RIP '0 X86))
+                                     (CONS (BINARY-+ '7 (XR ':RIP '0 X86))
+                                           'NIL))))))))
+                              ':X
+                              '0
+                              X86))))))))))))))))))))))))))))))
 
 (defthmd rewire_dst_to_src-effects-44-instructions
   (implies

@@ -2225,9 +2225,7 @@ memory.</li>
                       (len addr-list)))))
 
   (define create-canonical-address-list (count addr)
-    :guard (and (natp count)
-                (canonical-address-p addr)
-                (canonical-address-p (+ addr count)))
+    :guard (natp count)
 
     :parents (programmer-level-memory-utils)
 
