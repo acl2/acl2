@@ -71,6 +71,47 @@
 
 ;; ======================================================================
 
+;; Page table base address functions:
+
+(defun-nx pml4-table-base-addr (x86)
+  (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+
+(defun-nx page-dir-ptr-table-base-addr (lin-addr x86)
+  (ash (loghead 40
+                (logtail 12
+                         (rm-low-64
+                          (pml4-table-entry-addr
+                           lin-addr
+                           (pml4-table-base-addr x86))
+                          x86)))
+       12))
+
+(defun-nx page-directory-base-addr (lin-addr x86)
+  (ash
+   (loghead
+    40
+    (logtail
+     12
+     (rm-low-64
+      (page-dir-ptr-table-entry-addr
+       lin-addr (page-dir-ptr-table-base-addr lin-addr x86))
+      x86)))
+   12))
+
+(defun-nx page-table-base-addr (lin-addr x86)
+  (ash
+   (loghead
+    40
+    (logtail
+     12
+     (rm-low-64
+      (page-directory-entry-addr
+       lin-addr (page-directory-base-addr lin-addr x86))
+      x86)))
+   12))
+
+;; ======================================================================
+
 ;; Lemmas about set-accessed-bit, etc.:
 
 (defthmd loghead-smaller-equality

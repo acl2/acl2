@@ -218,9 +218,38 @@
 ;; address are a subset of the addresses described by
 ;; gather-all-paging-structure-qword-addresses:
 
+(i-am-here)
+
 (defthm translation-governing-addresses-for-page-table-subset-of-paging-structures
   (implies
    (and (equal base-addr (page-table-base-addr lin-addr x86))
+        ;; The following hyps are not needed when an
+        ;; over-approximation of paging addresses is collected
+        ;; instead.
+        (equal
+         (page-present
+          (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+         1)
+        (equal
+         (page-size
+          (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+         0)
+        (equal
+         (page-present
+          (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+         1)
+        (equal
+         (page-size
+          (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+         0)
+        (equal
+         (page-present
+          (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
+         1)
+        (equal
+         (page-size
+          (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
+         0)
         (canonical-address-p lin-addr))
    (subset-p
     (translation-governing-addresses-for-page-table
@@ -233,6 +262,29 @@
 (defthm translation-governing-addresses-for-page-directory-subset-of-paging-structures
   (implies
    (and (equal base-addr (page-directory-base-addr lin-addr x86))
+        ;; The following hyps are not needed when an
+        ;; over-approximation of paging addresses is collected
+        ;; instead.
+        (equal
+         (page-present
+          (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+         1)
+        (equal
+         (page-size
+          (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+         0)
+        (equal
+         (page-present
+          (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+         1)
+        (equal
+         (page-size
+          (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+         0)
+        (equal
+         (page-present
+          (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
+         1)
         (canonical-address-p lin-addr))
    (subset-p
     (translation-governing-addresses-for-page-directory
@@ -240,18 +292,40 @@
     (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
   :hints (("Goal" :in-theory (e/d* (subset-p
                                     translation-governing-addresses-for-page-directory)
-                                   ()))))
+                                   (translation-governing-addresses-for-page-table)))))
+
+(i-am-here)
 
 (defthm translation-governing-addresses-for-page-dir-ptr-table-subset-of-paging-structures
   (implies (and (equal base-addr (page-dir-ptr-table-base-addr lin-addr x86))
+                ;; The following hyps are not needed when an
+                ;; over-approximation of paging addresses is collected
+                ;; instead.
+                (equal
+                 (page-present
+                  (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+                 1)
+                (equal
+                 (page-size
+                  (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+                 0)
+                (equal
+                 (page-present
+                  (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+                 1)
                 (canonical-address-p lin-addr))
            (subset-p
             (translation-governing-addresses-for-page-dir-ptr-table
              lin-addr base-addr x86)
             (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
-  :hints (("Goal" :in-theory (e/d* (subset-p
-                                    translation-governing-addresses-for-page-dir-ptr-table)
-                                   ()))))
+  :hints (("Goal"
+           :cases ((equal
+                    (page-size
+                     (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+                    1))
+           :in-theory (e/d* (subset-p
+                             translation-governing-addresses-for-page-dir-ptr-table)
+                            ()))))
 
 (defthm translation-governing-addresses-for-pml4-table-subset-of-paging-structures
   (implies (and (equal base-addr (pml4-table-base-addr x86))
@@ -270,9 +344,41 @@
             (translation-governing-addresses lin-addr x86)
             (open-qword-paddr-list
              (gather-all-paging-structure-qword-addresses x86))))
-  :hints (("Goal" :in-theory (e/d* (translation-governing-addresses
-                                    subset-p)
-                                   (canonical-address-p)))))
+  :hints (("Goal"
+           :cases ((and
+                    (equal (page-present
+                            (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+                           1)
+                    (equal
+                     (page-size (rm-low-64
+                                 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+                     0)
+                    (equal
+                     (page-size
+                      (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86))
+                                 x86))
+                     1))
+
+                   (and
+                    (equal
+                     (page-present
+                      (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+                     1)
+                    (equal
+                     (page-size
+                      (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+                     0)
+                    (equal
+                     (page-present
+                      (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86)) x86))
+                     1)
+                    (equal
+                     (page-present
+                      (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr) (page-directory-base-addr (logext 48 lin-addr) x86)) x86))
+                     1)))
+           :in-theory (e/d* (translation-governing-addresses
+                             subset-p)
+                            (canonical-address-p)))))
 
 (defthm all-translation-governing-addresses-subset-of-paging-structures
   (implies (canonical-address-listp l-addrs)

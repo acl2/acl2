@@ -597,36 +597,35 @@
 
   :returns (list-of-addresses qword-paddr-listp)
 
-  :long "<p>This function returns an over-approximation of all the
-  possible qword addresses of the inferior paging structure referred
-  by a paging entry at address @('superior-structure-paddr'). To get
-  the precise list of addresses, one can check whether the
-  superior-structure entry has its @('PS') and @('P') bits set
-  appropriately, i.e., 0 and 1, respectively.</p>"
+  :long "<p>This function returns all qword addresses of the inferior
+  paging structure referred to by a paging entry at address
+  @('superior-structure-paddr').</p>"
 
-  (b* ((superior-structure-entry (rm-low-64 superior-structure-paddr x86))
-       (this-structure-base-addr
-        (ash (ia32e-page-tables-slice
-              :reference-addr superior-structure-entry) 12)))
-    ;; The inferior table will always fit into the physical
-    ;; memory.
-    (create-qword-address-list 512 this-structure-base-addr))
+  ;; (b* ((superior-structure-entry (rm-low-64 superior-structure-paddr x86))
+  ;;      (this-structure-base-addr
+  ;;       (ash (ia32e-page-tables-slice
+  ;;             :reference-addr superior-structure-entry) 12)))
 
-  ;; (if (and
-  ;;      (equal (page-present  superior-structure-entry) 1)
-  ;;      (equal (page-size superior-structure-entry) 0))
-  ;;     ;; Gather the qword addresses of a paging structure only if a
-  ;;     ;; superior structure points to it, i.e., the
-  ;;     ;; superior-structure-entry should be present (P=1) and it
-  ;;     ;; should reference an inferior structure (PS=0).
-  ;;     (b* ((this-structure-base-addr
-  ;;           (ash (ia32e-page-tables-slice
-  ;;                 :reference-addr superior-structure-entry) 12))
-  ;;          ;; The inferior table will always fit into the physical
-  ;;          ;; memory.
-  ;;          )
-  ;;       (create-qword-address-list 512 this-structure-base-addr))
-  ;;   nil)
+  ;;   ;; The inferior table will always fit into the physical
+  ;;   ;; memory.
+  ;;   (create-qword-address-list 512 this-structure-base-addr))
+
+  (b* ((superior-structure-entry (rm-low-64 superior-structure-paddr x86)))
+    (if (and
+         (equal (page-present  superior-structure-entry) 1)
+         (equal (page-size superior-structure-entry) 0))
+        ;; Gather the qword addresses of a paging structure only if a
+        ;; superior structure points to it, i.e., the
+        ;; superior-structure-entry should be present (P=1) and it
+        ;; should reference an inferior structure (PS=0).
+        (b* ((this-structure-base-addr
+              (ash (ia32e-page-tables-slice
+                    :reference-addr superior-structure-entry) 12))
+             ;; The inferior table will always fit into the physical
+             ;; memory.
+             )
+          (create-qword-address-list 512 this-structure-base-addr))
+      nil))
 
   ///
   (std::more-returns (list-of-addresses true-listp))
@@ -763,7 +762,6 @@
                               (e-1 val)
                               (e-2 (rm-low-64 addr x86))
                               (n 12)))))))
-
 
 (local
  (defthm member-p-mult-8-qword-paddr-listp-lemma
@@ -1260,10 +1258,6 @@
                      x86)
                     x86)
                    x86))))))))
-
-;; ======================================================================
-
-;; Compare the paging structures in two x86 states:
 
 (define xlate-equiv-entries-at-qword-addresses
   (list-of-addresses-1 list-of-addresses-2 x86-1 x86-2)

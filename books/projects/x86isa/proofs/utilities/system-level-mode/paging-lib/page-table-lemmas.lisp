@@ -26,6 +26,20 @@
 
 ;; Some lemmas about page-table-entry-no-page-fault-p:
 
+(defthm page-present=0-and-paging-entry-no-page-fault-p
+  (implies (equal (page-present entry) 0)
+           (equal
+            (mv-nth
+             0
+             (paging-entry-no-page-fault-p
+              structure-type lin-addr entry u-s-acc r/w-acc x/d-acc wp
+              smep smap ac nxe r-w-x cpl x86 ignored))
+            t))
+  :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
+                                    page-fault-exception
+                                    page-present)
+                                   ()))))
+
 (defthm gather-all-paging-structure-qword-addresses-paging-entry-no-page-fault-p
   (equal (gather-all-paging-structure-qword-addresses
           (mv-nth 2 (paging-entry-no-page-fault-p
