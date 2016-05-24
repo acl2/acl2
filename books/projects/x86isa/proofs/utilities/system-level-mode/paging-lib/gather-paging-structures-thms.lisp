@@ -37,11 +37,11 @@
                              40
                              (logtail 12 (rm-low-64 superior-structure-paddr x86)))
                             12)))
-                   ;; The following two hypotheses aren't necessary if
+                   ;; The following hypothesis isn't necessary if
                    ;; gather-qword-addresses-corresponding-to-1-entry
                    ;; is modified to collect an over-approximation of
                    ;; inferior paddrs.
-                   (equal (page-present (rm-low-64 superior-structure-paddr x86)) 1)
+                   ;; (equal (page-present (rm-low-64 superior-structure-paddr x86)) 1)
                    (equal (page-size (rm-low-64 superior-structure-paddr x86)) 0)
                    (physical-address-p e)
                    (equal (loghead 3 e) 0))
@@ -131,13 +131,13 @@
    (implies
     (and (canonical-address-p lin-addr)
          (equal base-addr (page-dir-ptr-table-base-addr lin-addr x86))
-         ;; The following two hyps are not needed when an
+         ;; The following hyps are not needed when an
          ;; over-approximation of paging addresses is collected
          ;; instead.
-         (equal
-          (page-present
-           (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-          1)
+         ;; (equal
+         ;;  (page-present
+         ;;   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+         ;;  1)
          (equal
           (page-size
            (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
@@ -171,10 +171,10 @@
         ;; The following two hyps are not needed when an
         ;; over-approximation of paging addresses is collected
         ;; instead.
-        (equal
-         (page-present
-          (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
@@ -194,18 +194,18 @@
          ;; The following four hyps are not needed when an
          ;; over-approximation of paging addresses is collected
          ;; instead.
-         (equal
-          (page-present
-           (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-          1)
+         ;; (equal
+         ;;  (page-present
+         ;;   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+         ;;  1)
          (equal
           (page-size
            (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
           0)
-         (equal
-          (page-present
-           (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
-          1)
+         ;; (equal
+         ;;  (page-present
+         ;;   (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+         ;;  1)
          (equal
           (page-size
            (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
@@ -247,18 +247,18 @@
         ;; The following four hyps are not needed when an
         ;; over-approximation of paging addresses is collected
         ;; instead.
-        (equal
-         (page-present
-          (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
          0)
-        (equal
-         (page-present
-          (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
@@ -283,26 +283,26 @@
          ;; The following six hyps are not needed when an
          ;; over-approximation of paging addresses is collected
          ;; instead.
-         (equal
-          (page-present
-           (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-          1)
+         ;; (equal
+         ;;  (page-present
+         ;;   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+         ;;  1)
          (equal
           (page-size
            (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
           0)
-         (equal
-          (page-present
-           (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
-          1)
+         ;; (equal
+         ;;  (page-present
+         ;;   (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+         ;;  1)
          (equal
           (page-size
            (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
           0)
-         (equal
-          (page-present
-           (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
-          1)
+         ;; (equal
+         ;;  (page-present
+         ;;   (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
+         ;;  1)
          (equal
           (page-size
            (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
@@ -415,26 +415,26 @@
         ;; The following six hyps are not needed when an
         ;; over-approximation of paging addresses is collected
         ;; instead.
-        (equal
-         (page-present
-          (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
          0)
-        (equal
-         (page-present
-          (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
          0)
-        (equal
-         (page-present
-          (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
@@ -477,10 +477,10 @@
                 ;; The following two hyps are not needed when an
                 ;; over-approximation of paging addresses is collected
                 ;; instead.
-                (equal
-                 (page-present
-                  (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-                 1)
+                ;; (equal
+                ;;  (page-present
+                ;;   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+                ;;  1)
                 (equal
                  (page-size
                   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
@@ -498,18 +498,18 @@
         ;; The following four hyps are not needed when an
         ;; over-approximation of paging addresses is collected
         ;; instead.
-        (equal
-         (page-present
-          (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
          0)
-        (equal
-         (page-present
-          (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
@@ -526,26 +526,26 @@
         ;; The following six hyps are not needed when an
         ;; over-approximation of paging addresses is collected
         ;; instead.
-        (equal
-         (page-present
-          (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
          0)
-        (equal
-         (page-present
-          (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
          0)
-        (equal
-         (page-present
-          (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
-         1)
+        ;; (equal
+        ;;  (page-present
+        ;;   (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))
+        ;;  1)
         (equal
          (page-size
           (rm-low-64 (page-directory-entry-addr lin-addr (page-directory-base-addr lin-addr x86)) x86))

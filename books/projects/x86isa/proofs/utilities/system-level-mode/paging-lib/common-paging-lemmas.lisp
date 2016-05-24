@@ -23,24 +23,38 @@
                                     bitops::ihsext-inductions)
                                    (bitops::logand-with-negated-bitmask)))))
 
-(local
- (defthm page-present=0-and-paging-entry-no-page-fault-p
-   (implies
-    (equal (page-present entry) 0)
-    (equal (mv-nth 0
-                   (paging-entry-no-page-fault-p
-                    structure-type lin-addr
-                    entry u-s-acc r/w-acc x/d-acc wp
-                    smep smap ac nxe r-w-x cpl x86 ignored))
-           t))
-   :hints
-   (("Goal"
-     :in-theory (e/d* (paging-entry-no-page-fault-p
-                       page-fault-exception page-present)
-                      ())))))
+(defthm page-present=0-and-paging-entry-no-page-fault-p
+  (implies
+   (equal (page-present entry) 0)
+   (equal (mv-nth 0
+                  (paging-entry-no-page-fault-p
+                   structure-type lin-addr
+                   entry u-s-acc r/w-acc x/d-acc wp
+                   smep smap ac nxe r-w-x cpl x86 ignored))
+          t))
+  :hints
+  (("Goal"
+    :in-theory (e/d* (paging-entry-no-page-fault-p
+                      page-fault-exception page-present)
+                     ()))))
 
-;; !!! Note that translation-governing-addresses-* do not talk about
-;; validity of paging entries.  Is that good or bad?
+(defthm page-size=1-and-paging-entry-no-page-fault-p-for-structure-type=3
+  (implies
+   (equal (page-size entry) 1)
+   (equal (mv-nth 0
+                  (paging-entry-no-page-fault-p
+                   3 lin-addr
+                   entry u-s-acc r/w-acc x/d-acc wp
+                   smep smap ac nxe r-w-x cpl x86 ignored))
+          t))
+  :hints
+  (("Goal"
+    :in-theory (e/d* (paging-entry-no-page-fault-p
+                      page-fault-exception page-size)
+                     ()))))
+
+;; ;; !!! Note that translation-governing-addresses-* do not talk about
+;; ;; validity of paging entries.  Is that good or bad?
 
 (define translation-governing-addresses-for-page-table
   ((lin-addr             :type (signed-byte   #.*max-linear-address-size*))
@@ -274,6 +288,9 @@
   (b* ((pml4-entry-addr
         (pml4-table-entry-addr lin-addr pml4-base-addr))
        (pml4-entry (rm-low-64 pml4-entry-addr x86))
+       (pml4te-ps? (equal (page-size pml4-entry) 1))
+
+       ((when pml4te-ps?) (addr-range 8 pml4-entry-addr))
 
        ;; Page Directory Pointer Table:
        (ptr-table-base-addr

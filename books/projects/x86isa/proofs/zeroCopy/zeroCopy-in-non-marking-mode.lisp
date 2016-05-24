@@ -969,6 +969,10 @@
     unsigned-byte-p
     force (force)))
 
+(defthm unsigned-byte-p-1-bool->bit
+  ;; Why do I need this?
+  (unsigned-byte-p 1 (acl2::bool->bit x)))
+
 (defthm rewire_dst_to_src-effects
   (implies (rewire_dst_to_src-assumptions x86)
            (equal (x86-run (rewire_dst_to_src-clk) x86)

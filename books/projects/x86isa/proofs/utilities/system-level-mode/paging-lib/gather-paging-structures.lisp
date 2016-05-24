@@ -612,7 +612,7 @@
 
   (b* ((superior-structure-entry (rm-low-64 superior-structure-paddr x86)))
     (if (and
-         (equal (page-present  superior-structure-entry) 1)
+         ;; (equal (page-present  superior-structure-entry) 1)
          (equal (page-size superior-structure-entry) 0))
         ;; Gather the qword addresses of a paging structure only if a
         ;; superior structure points to it, i.e., the
