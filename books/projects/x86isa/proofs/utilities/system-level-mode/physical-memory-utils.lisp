@@ -506,3 +506,16 @@
            :in-theory (e/d* (member-p) ()))))
 
 ;; ======================================================================
+
+(defthmd rewrite-wm-low-64-to-write-to-physical-memory
+  (implies (not (programmer-level-mode x86))
+	   (equal (wm-low-64 index value x86)
+		  (write-to-physical-memory (addr-range 8 index) (byte-ify 8 value) x86)))
+  :hints (("Goal"
+	   :in-theory (e/d* (write-to-physical-memory
+			     wm-low-64
+			     wm-low-32
+			     byte-ify)
+			    ()))))
+
+;; ======================================================================
