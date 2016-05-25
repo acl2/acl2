@@ -4365,21 +4365,21 @@
 ; The global-val of 'never-untouchable-fns is an alist pairing function symbols
 ; with lists of well-formedness-guarantees.  A well-formedness-guarantee is a
 ; structure of the form ((name fn thm-name1 hyp-fn thm-name2) . arity-alist),
-; where hyp-fn and thm-name2 may omitted.  It denotes the fact that the
+; where hyp-fn and thm-name2 may be omitted.  It denotes the fact that the
 ; metatheorem named name justifies the metafunction fn (with hypothesis
 ; metafunction hyp-fn if present), and that the two metafunctions are
-; guaranteed to return TERMPs by the theorems named thm-name1 and thm-name2
-; respectively, provided the world satisfies arity-alist.  The function symbols
-; listed in arity-alist are the symbols that may be introduced by the
-; metafunction or the hypothesis metafunction.  When a metatheorem with TERMP
-; guarantees is added, we make sure that none of the introduced symbols are on
-; (forbidden-fns wrld state).  See translate-well-formedness-guarantee.  We
-; also record the fact that those introduced symbols should never be made
-; untouchable, by adding the well-formedness-guarantee to the symbol's entry on
-; never-untouchable-fns.  Thereafter, we prevent any of those function symbols
-; from being added to untouchable-fns.  This is done in push-untouchable, by
-; comparing any about-to-be-made-untouchable function with
-; never-untouchable-fns.
+; guaranteed to return LOGIC-TERMPs by the theorems named thm-name1 and
+; thm-name2 respectively, provided the world satisfies arity-alist.  The
+; function symbols listed in arity-alist are the symbols that may be introduced
+; by the metafunction or the hypothesis metafunction.  When a metatheorem with
+; LOGIC-TERMP guarantees is added, we make sure that none of the introduced
+; symbols are on (forbidden-fns wrld state).  See
+; translate-well-formedness-guarantee.  We also record the fact that those
+; introduced symbols should never be made untouchable, by adding the
+; well-formedness-guarantee to the symbol's entry on never-untouchable-fns.
+; Thereafter, we prevent any of those function symbols from being added to
+; untouchable-fns.  This is done in push-untouchable, by comparing any
+; about-to-be-made-untouchable function with never-untouchable-fns.
 
 (defun add-new-never-untouchable-fns (fns well-formedness-guarantee
                                           never-untouchable-fns)
@@ -4388,8 +4388,8 @@
 ; hyp-fn thm-name2) . arity-alist), where hyp-fn and thm-name2 may be omitted.
 ; It denotes the fact that the metatheorem named name justifies the
 ; metafunction fn (with hypothesis metafunction hyp-fn if present), and that
-; the two metafunctions are guaranteed to return TERMPs by the theorems named
-; thm-name1 and thm-name2 respectively, provided the world satisfies
+; the two metafunctions are guaranteed to return LOGIC-TERMPs by the theorems
+; named thm-name1 and thm-name2 respectively, provided the world satisfies
 ; arity-alist.  Fns, above, is a list of function symbols possibly introduced
 ; by the metatheorem described by well-formedness-guarantee.  (In fact, it is
 ; initially just the keys of the arity-alist.)  Never-untouchable-fns is an
@@ -7757,21 +7757,21 @@
 ; Token must be :META or :CLAUSE-PROCESSOR.  In the former case,
 ; thm is a term (actually a theorem) and we interpret it as 
 
-; (IMPLIES (AND (TERMP tvar wvar)
+; (IMPLIES (AND (LOGIC-TERMP tvar wvar)
 ;               (ARITIES-OKP '((fn1 . k1) ...) wvar))
-;          (TERMP (fn tvar) wvar))
+;          (LOGIC-TERMP (fn tvar) wvar))
 
 ; In the latter case, we interpret thm as
 
-; (IMPLIES (AND (TERM-LISTP tvar wvar)
+; (IMPLIES (AND (LOGIC-TERM-LISTP tvar wvar)
 ;               (ARITIES-OKP '((fn1 . k1) ...) wvar))
-;          (TERM-LIST-LISTP (fn tvar) wvar))
+;          (LOGIC-TERM-LIST-LISTP (fn tvar) wvar))
 
 ; or
 
-; (IMPLIES (AND (TERM-LISTP tvar wvar)
+; (IMPLIES (AND (LOGIC-TERM-LISTP tvar wvar)
 ;               (ARITIES-OKP '((fn1 . k1) ...) wvar))
-;          (TERM-LIST-LISTP (CLAUSES-RESULT (fn tvar)) wvar))
+;          (LOGIC-TERM-LIST-LISTP (CLAUSES-RESULT (fn tvar)) wvar))
 
 ; But we recognize certain equivalent or stronger variants, including allowing
 ; fewer or rearranged hypotheses and allowing for fn to have additional
@@ -7787,16 +7787,17 @@
 ; tvar, which is guaranteed to be a term may not actually be a variable symbol,
 ; etc.  These constraints must be checked by the caller.
 
-; We actually accept the thm (TERMP (fn tvar) wvar) and (TERM-LIST-LISTP (fn
-; tvar) wvar) without any hypotheses, though the only functions we can think of
-; for which this is provable are those that return constants and hence can't be
-; correct metafunctions or clause processor.
+; We actually accept the thm (LOGIC-TERMP (fn tvar) wvar) and
+; (LOGIC-TERM-LIST-LISTP (fn tvar) wvar) without any hypotheses, though the
+; only functions we can think of for which this is provable are those that
+; return constants and hence can't be correct metafunctions or clause
+; processor.
 
 ; We could code this more efficiently but we don't expect well-formedness
 ; guarantees to be very common.
 
-  (let ((pre (if (eq token :META) 'TERMP 'TERM-LISTP))
-        (post (if (eq token :META) 'TERMP 'TERM-LIST-LISTP)))
+  (let ((pre (if (eq token :META) 'LOGIC-TERMP 'LOGIC-TERM-LISTP))
+        (post (if (eq token :META) 'LOGIC-TERMP 'LOGIC-TERM-LIST-LISTP)))
     (case-match thm
       (('IMPLIES ('IF (!pre tvar wvar)
                       ('ARITIES-OKP ('QUOTE alist) wvar)
@@ -7860,10 +7861,11 @@
 ; be symbols that name theorems that guarantee that the metafunction or clause
 ; processor together with the hypothesis metafunction, as appropriate, return
 ; well-formed results.  In the case of token :META ``well-formed'' means the
-; output is a TERMP if the input is; in the case of token :CLAUSE-PROCESSOR,
-; ``well-formed'' means the output is a TERM-LIST-LISTP if the input is a
-; TERM-LISTP..  In both cases, the well-formedness theorems also involve
-; assumptions about the arities of certain functions.
+; output is a LOGIC-TERMP if the input is; in the case of token
+; :CLAUSE-PROCESSOR, ``well-formed'' means the output is a
+; LOGIC-TERM-LIST-LISTP if the input is a LOGIC-TERM-LISTP..  In both
+; cases, the well-formedness theorems also involve assumptions about the
+; arities of certain logic-mode functions.
 
 ; The result of this function either an error or a ``well-formedness
 ; guarantee'' of the form:
@@ -7924,20 +7926,21 @@
              following forms:~%[1]  thm-name1~%[2]  (thm-name1)~%[3]  ~
              (thm-name1 thm-name2)~%where thm-name1 names a previously proved ~
              theorem guaranteeing that the relevant metafunction returns a ~
-             TERMP when given a TERMP.  See :DOC termp.  Form [3] is only ~
-             permitted (and is required!) when the metatheorem has a ~
-             hypothesis metafunction, in which case thm-name2 names a ~
-             previously proved theorem guaranteeing that the hypothesis ~
-             metafunction also returns a TERMP when given one.  ~x1 is of ~
-             none of the expected forms.  See :DOC well-formedness-guarantee ~
-             for details."
+             LOGIC-TERMP when given a LOGIC-TERMP.  See :DOC logic-termp.  ~
+             Form [3] is only permitted (and is required!) when the ~
+             metatheorem has a hypothesis metafunction, in which case ~
+             thm-name2 names a previously proved theorem guaranteeing that ~
+             the hypothesis metafunction also returns a LOGIC-TERMP when ~
+             given one.  ~x1 is of none of the expected forms.  See :DOC ~
+             well-formedness-guarantee for details."
             name x)
         (er soft ctx
             "The :WELL-FORMEDNESS-GUARANTEE of :CLAUSE-PROCESSOR rule ~x0 ~
              must be the name of a theorem guaranteeing that the clause ~
-             processor returns a TERM-LIST-LISTP when given a TERM-LISTP.  ~
-             ~x1 is not such a name.  See :DOC term-listp, :DOC ~
-             term-list-listp, and :DOC well-formedness-guarantee for details."
+             processor returns a LOGIC-TERM-LIST-LISTP when given a ~
+             LOGIC-TERM-LISTP.  ~x1 is not such a name.  See :DOC ~
+             logic-term-listp, :DOC logic-term-list-listp, and :DOC ~
+             well-formedness-guarantee for details."
              name x)))
    (t (let* ((thm-name1 (cond ((symbolp x) x)
                               (t (car x))))
@@ -7953,9 +7956,14 @@
          (recover-metafunction-or-clause-processor-signatures token corollary)
          (let ((expected-fn-form
                 `(IMPLIES
-                  (AND (,(if (eq token :meta) 'TERMP 'TERM-LISTP) X W)
+                  (AND (,(if (eq token :meta)
+                             'LOGIC-TERMP
+                           'LOGIC-TERM-LISTP)
+                        X W)
                        (ARITY-ALISTP '<alist> W))
-                  (,(if (eq token :meta) 'TERMP 'TERM-LIST-LISTP)
+                  (,(if (eq token :meta)
+                        'LOGIC-TERMP
+                      'LOGIC-TERM-LIST-LISTP)
                    ,(if triple-flg
                         `(CLAUSES-RESULT (,fn X ,@rest-args))
                         `(,fn X ,@rest-args))
@@ -7963,9 +7971,9 @@
                (expected-hyp-fn-form
                 (if hyp-fn
                     `(IMPLIES
-                      (AND (TERMP X W)
+                      (AND (LOGIC-TERMP X W)
                            (ARITY-ALISTP '<alist> W))
-                      (TERMP (,hyp-fn X ,@rest-args)
+                      (LOGIC-TERMP (,hyp-fn X ,@rest-args)
                              W))
                     nil))
                (evisc (evisc-tuple nil nil
@@ -8035,14 +8043,14 @@
                   (arity-alistp alist1))
 
 ; We know thm is of the form (for token :meta):
-; (IMPLIES (AND (TERMP tvar1 wvar1)
+; (IMPLIES (AND (LOGIC-TERMP tvar1 wvar1)
 ;               (ARITIES-OKP '<alist1> wvar1))
-;          (TERMP (fn tvar1 . rest-args1) wvar1))
+;          (LOGIC-TERMP (fn tvar1 . rest-args1) wvar1))
 
 ; For token :clause-processor we know:
-; (IMPLIES (AND (TERM-LISTP tvar1 wvar1)
+; (IMPLIES (AND (LOGIC-TERM-LISTP tvar1 wvar1)
 ;               (ARITIES-OKP '<alist1> wvar1))
-;          (TERM-LIST-LISTP (fn tvar1 . rest-args1) wvar1))
+;          (LOGIC-TERM-LIST-LISTP (fn tvar1 . rest-args1) wvar1))
 
 ; possibly with a CLAUSES-RESULT wrapped around the fn call.  Now we know that
 ; all the terms used as variables above really are variables and they're
@@ -8052,8 +8060,9 @@
 ; triple-flg in both theorems.)
 
 ; We claim the tests above insure that thm1 guarantees that fn always returns a
-; TERMP or TERM-LIST-LISTP provided the arity alist, alist1, is valid in the
-; current world.  Now we check the same things for the hyp-fn, if any.
+; LOGIC-TERMP or LOGIC-TERM-LIST-LISTP provided the arity alist, alist1, is
+; valid in the current world.  Now we check the same things for the hyp-fn, if
+; any.
 
                  (cond
                   ((null hyp-fn)
@@ -8064,8 +8073,8 @@
                           does not mention a hypothesis metafunction.  ~
                           Therefore, it makes no sense to name a previously ~
                           proved theorem that provides a well-formedness ~
-                          guarantee for a hypothesis metafunction.  But ~
-                          you have specified such a name, ~x4, with your ~
+                          guarantee for a hypothesis metafunction.  But you ~
+                          have specified such a name, ~x4, with your ~
                           :WELL-FORMEDNESS-GUARANTEE ~x3.  This may indicate ~
                           a misunderstanding.  Replace your guarantee with ~
                           :WELL-FORMEDNESS-GUARANTEE ~x5."
@@ -8081,11 +8090,11 @@
                        "The :META rule ~x0 mentions the metafunction ~x1 and ~
                         the hypothesis metafunction ~x2.  You have correctly ~
                         named ~x3 as a previously proved theorem guaranteeing ~
-                        that ~x1 always returns a TERMP, but you have not ~
-                        specified such a name for ~x2.  We require that you ~
-                        do so.  That is, prove a theorem like ~X45 with some ~
-                        name and change your :WELL-FORMEDNESS-GUARANTEE value ~
-                        to (~x3 name)."
+                        that ~x1 always returns a LOGIC-TERMP, but you have ~
+                        not specified such a name for ~x2.  We require that ~
+                        you do so.  That is, prove a theorem like ~X45 with ~
+                        some name and change your :WELL-FORMEDNESS-GUARANTEE ~
+                        value to (~x3 name)."
                        name fn hyp-fn thm-name1 expected-hyp-fn-form evisc))
                   (t (mv-let
                       (tvar2 wvar2 alist2 triple-flg2 rest-args2)
@@ -8110,11 +8119,11 @@
                                 "The :WELL-FORMEDNESS-GUARANTEE of the :META ~
                                  rule ~x0 for the metafunction ~x1 with ~
                                  hypothesis metafunction ~x2 is inadmissible ~
-                                 because the two TERMP theorems (~x3 and ~x4) ~
-                                 assume different arities for one or more ~
-                                 function symbols, to wit ~&5.  You will have ~
-                                 to prove TERMP guarantee theorems that make ~
-                                 compatible arity assumptions!"
+                                 because the two LOGIC-TERMP theorems (~x3 ~
+                                 and ~x4) assume different arities for one or ~
+                                 more function symbols, to wit ~&5.  You will ~
+                                 have to prove LOGIC-TERMP guarantee theorems ~
+                                 that make compatible arity assumptions!"
                                 name fn hyp-fn thm-name1 thm-name2
                                 (collect-disagreeing-arity-assumptions
                                  alist1 alist2)))))
@@ -8124,8 +8133,8 @@
                                hypothesis metafunction ~x2 specified that ~x3 ~
                                is the name of the previously proved theorem ~
                                that guarantees that ~x2 always returns a ~
-                               TERMP.  But theorem ~x3 is not of the expected ~
-                               form.  We expected it to be something ~
+                               LOGIC-TERMP.  But theorem ~x3 is not of the ~
+                               expected form.  We expected it to be something ~
                                like:~X45.  See :DOC well-formedness-guarantee."
                               name fn hyp-fn thm-name2
                               expected-hyp-fn-form evisc)))))))
@@ -8133,8 +8142,8 @@
                        "The :WELL-FORMEDNESS-GUARANTEE of the ~x0 rule ~x1 ~
                         for ~x2 specified that ~x3 is the name of the ~
                         previously proved theorem that established that ~x2 ~
-                        always returns a TERMP.  But theorem ~x3 is not of ~
-                        the expected form.  We expected it to be something ~
+                        always returns a LOGIC-TERMP.  But theorem ~x3 is not ~
+                        of the expected form.  We expected it to be something ~
                         like ~X45. See :DOC well-formedness-guarantee."
                        token name fn thm-name1
                        expected-fn-form evisc))))))))))))
@@ -8531,9 +8540,9 @@
 
 ; well-formedness-guarantee is of the form ((name fn thm-name1 hyp-fn
 ; thm-name2) .  alist), where hyp-fn and thm-name2 are omitted if there is no
-; hyp-fn.  Alist is the combined arity alist of both termp theorems.  We next
-; check that all of these functions have appropriate arities in the current
-; world and that none are currently on forbidden-fns.
+; hyp-fn.  Alist is the combined arity alist of both logic-termp theorems.
+; We next check that all of these functions have appropriate arities in the
+; current world and that none are currently on forbidden-fns.
 
                          (let* ( ; (fn (nth 1 (car well-formedness-guarantee)))
                                 (thm-name1
@@ -8544,48 +8553,79 @@
                                  (nth 4 (car well-formedness-guarantee))) ; may be nil
                                 (alist
                                  (cdr well-formedness-guarantee))
-                                (bad-arities
-                                 (collect-bad-fn-arity-pairs alist wrld))
+                                (bad-arity-info (collect-bad-fn-arity-info
+                                                 alist wrld nil nil))
+                                (bad-arity-alist (car bad-arity-info))
+                                (non-logic-fns (cdr bad-arity-info))
                                 (forbidden-fns
                                  (intersection-eq (strip-cars alist)
                                                   (forbidden-fns wrld state))))
                            (cond
-                            (bad-arities
+                            (bad-arity-alist
                              (er soft ctx
-                                 ":META rule ~x0 is inadmissible because its ~
+                                 "~x0 rule ~x1 is inadmissible because its ~
                                   :WELL-FORMEDNESS-GUARANTEE ~
-                                  theorem~#1~[~/s~], named ~&1, ~
-                                  ~#1~[is~/are~] incompatible with the ~
+                                  theorem~#2~[~/s~], named ~&2, ~
+                                  ~#2~[is~/are~] incompatible with the ~
                                   current world.  In particular, the ~
-                                  ~#1~[theorem makes~/theorems make~] invalid ~
+                                  ~#2~[theorem makes~/theorems make~] invalid ~
                                   assumptions about the arities of one or ~
                                   more function symbols possibly introduced ~
-                                  by the metatheorem. The following alist ~
+                                  by the ~s3.  The following alist ~
                                   shows assumed arities that are different ~
                                   from the actual arities of those symbols in ~
-                                  the current world, ~X23."
+                                  the current world: ~X45."
+                                 token
                                  name
                                  (if hyp-fn
                                      (list thm-name1 thm-name2)
                                      (list thm-name1))
-                                 bad-arities))
+                                 (if (eq token :META)
+                                     "metafunction"
+                                   "clause-processor")
+                                 bad-arity-alist
+                                 nil))
+                            (non-logic-fns
+                             (er soft ctx
+                                 "~x0 rule ~x1 is inadmissible because its ~
+                                  :WELL-FORMEDNESS-GUARANTEE ~
+                                  theorem~#2~[~/s~], named ~&2, ~
+                                  ~#2~[is~/are~] incompatible with the ~
+                                  current world.  In particular, the ~
+                                  ~#2~[theorem makes~/theorems make~] invalid ~
+                                  assumptions about the arities of the ~
+                                  following function symbol~#3~[~/s~] ~
+                                  possibly introduced by the ~s4: ~&3."
+                                 token
+                                 name
+                                 (if hyp-fn
+                                     (list thm-name1 thm-name2)
+                                   (list thm-name1))
+                                 non-logic-fns
+                                 (if (eq token :META)
+                                     "metafunction"
+                                   "clause-processor")))
                             (forbidden-fns
                              (er soft ctx
-                                 ":META rule ~x0 is inadmissible because its ~
-                                  well-formedness theorem~#1~[~/s~], named ~
-                                  ~&1, ~#1~[is~/are~] incompatible with the ~
+                                 "~x0 rule ~x1 is inadmissible because its ~
+                                  well-formedness theorem~#2~[~/s~], named ~
+                                  ~&2, ~#2~[is~/are~] incompatible with the ~
                                   current world.  In particular, judging by ~
                                   the ARITIES-OKP ~
-                                  ~#1~[hypothesis~/hypotheses~] of the ~
-                                  theorem~#1~[~/s~], the metatheorem may ~
+                                  ~#2~[hypothesis~/hypotheses~] of the ~
+                                  theorem~#2~[~/s~], the specified ~s3 may ~
                                   introduce one or more functions that are ~
-                                  currently forbidden, to wit ~&2.  See :DOC ~
+                                  currently forbidden, to wit ~&4.  See :DOC ~
                                   set-skip-meta-termp-checks and :DOC ~
                                   well-formedness-guarantee."
+                                 token
                                  name
                                  (if hyp-fn
                                      (list thm-name1 thm-name2)
                                      (list thm-name1))
+                                 (if (eq token :META)
+                                     "metafunction"
+                                   "clause-processor")
                                  forbidden-fns))
                             (t (value well-formedness-guarantee))))))))
                   (:TYPED-TERM
