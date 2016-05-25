@@ -9613,25 +9613,6 @@
            (and (body fn nil wrld)
                 t))))
 
-(mutual-recursion
-
-(defun all-ffn-symbs (term ans)
-  (cond
-   ((variablep term) ans)
-   ((fquotep term) ans)
-   (t (all-ffn-symbs-lst (fargs term)
-                         (cond ((flambda-applicationp term)
-                                (all-ffn-symbs (lambda-body (ffn-symb term))
-                                               ans))
-                               (t (add-to-set-eq (ffn-symb term) ans)))))))
-
-(defun all-ffn-symbs-lst (lst ans)
-  (cond ((null lst) ans)
-        (t (all-ffn-symbs-lst (cdr lst)
-                              (all-ffn-symbs (car lst) ans)))))
-
-)
-
 (defconst *unknown-constraints*
 
 ; This value must not be a function symbol, because functions may need to

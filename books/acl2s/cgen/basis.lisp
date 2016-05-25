@@ -584,7 +584,7 @@ General form: ~
     number-of-digits lambda-body flambdap  make-lambda  make-let
     flambda-applicationp
     doubleton-list-p singleton-list-p ascii-code!
-    formals arity def-body program-termp equivalence-relationp
+    formals arity def-body logic-termp equivalence-relationp
     >=-len all->=-len strip-cadrs strip-cddrs sublis-var subcor-var
     new-namep global-symbol symbol-doublet-listp remove1-eq pair-lis$
     add-to-set-eq pseudo-termp all-vars ffn-symb fargs
