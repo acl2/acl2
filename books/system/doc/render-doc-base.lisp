@@ -27,8 +27,9 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; 10/29/2013, 12/2013: Mods made by Matt Kaufmann to support Emacs-based
-;   ACL2-Doc browser
+
+; 10/29/2013, 12/2013, 5/2016: Mods made by Matt Kaufmann to support
+; Emacs-based ACL2-Doc browser
 
 (in-package "XDOC")
 (include-book "xdoc/display" :dir :system)
@@ -197,8 +198,14 @@
                (state (newline *standard-co* state))
                ((mv & tokens) (parse-xml "Error rendering topic")))
             (mv tokens state))))
-
-       (merged-tokens (reverse (merge-text tokens nil 0 nil)))
+       ((mv err topic-to-rendered-table state)
+        (topic-to-rendered-table-init state))
+       ((when err) ; impossible?
+        (mv (er hard 'render-topic
+                "Unexpected implementation error!")
+            state))
+       (merged-tokens (reverse (merge-text tokens nil 0 nil
+                                           topic-to-rendered-table)))
        (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
        (terminal (str::trim (str::rchars-to-string acc))))
 
